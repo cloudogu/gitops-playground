@@ -1,0 +1,67 @@
+# TODO convert this to k3s helm CR
+
+dockerClientVersion: 19.03.9
+
+master:
+  # Use deterministic version and not "lts", which is pretty much the same as "latest".
+  # Note: When updating, check if PATH of image still matches the one listed in "containerEnv"
+  tag: 2.249.2-lts-alpine
+  # Allow builds on master in order to facilitate an agent with docker CLI 
+  numExecutors: 2
+  serviceType: NodePort
+  nodePort: 9090
+  JCasC:
+    configScripts:
+      # TODO add credential for SCM-Manager
+      # Set some more details on master agent
+      # Add /docker to the PATH. Using "PATH=:/docker:${PATH}" is not working here, so copy PATH from container :-/
+      # That is, this might have to be updated with newer version of the image
+      master-agent: |
+        jenkins:
+          labelString: "docker"
+          nodeProperties:
+            - envVars:
+                env:
+                - key: "PATH"
+                  value: "/usr/local/openjdk-8/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/docker"
+  admin:
+    # Use reproducible admin password from secret. Change there, if necessary.
+    existingSecret: jenkins-credentials
+  
+  # Set the ID of the docker group on your host here.
+  # getent group docker | awk -F: '{ print $3}'
+  fsGroup: 998
+  # Alternative: Running as root is not a good practice, but we could use it as a workaround here.
+  #runAsUser: 0
+  
+  customInitContainers:
+    # Download docker client
+    - name: download-docker-client
+      image: alpine:3.12.0
+      imagePullPolicy: "{{ .Values.master.imagePullPolicy }}"
+      command: ["/bin/sh", "-c"]
+      args:
+        # TODO only download if not present yet
+        - cd /tmp;
+          wget -qc https://download.docker.com/linux/static/stable/x86_64/docker-19.03.9.tgz -O - | tar -xz;
+          mv /tmp/docker/docker /docker/docker;
+      volumeMounts:
+        - name: docker-client
+          mountPath: /docker
+        - name: dockersock
+          mountPath: "/var/run/docker.sock"
+
+persistence:
+  volumes:
+    - name: docker-client
+      # Persist, so the client does not have to be downloaded on each start
+      persistentVolumeClaim:
+        claimName: jenkins-docker-client
+    - name: dockersock # For this demo, allow jenkins master to access docker client 
+      hostPath:
+        path: /var/run/docker.sock
+  mounts:
+    - name: docker-client
+      mountPath: /docker
+    - name: dockersock
+      mountPath: "/var/run/docker.sock"
