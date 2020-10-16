@@ -20,13 +20,18 @@ spec:
     
       serviceType: NodePort
       nodePort: 9090
+
+      additionalPlugins:
+        - docker-workflow:1.24
+        - docker-plugin:1.2.1
     
-      # Don't install plugins on every pod start
-      initializeOnce: true
+      # This would be great to not install every plugin again on startup.
+      # BUT: This also leads to CASC being ignored.
+      # initializeOnce: true
     
       # Allow builds on master in order to facilitate an agent with docker CLI 
       numExecutors: 2
-    
+
       JCasC:
         configScripts:
           # TODO use SCMM user secret keys for username and password
@@ -47,7 +52,7 @@ spec:
           master-agent: |
             jenkins:
               labelString: "docker"
-              globalNodeProperties:
+              nodeProperties:
                 - envVars:
                     env:
                     - key: "PATH"
@@ -62,7 +67,7 @@ spec:
           # The files in this folders can be used as ${variable} in CasC credentials
           # Default /run/secrets results in "read-only file system"
           value: /secrets/jenkins
-    
+
       customInitContainers:
         # Download docker client
         - name: download-docker-client
