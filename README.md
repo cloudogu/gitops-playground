@@ -3,18 +3,25 @@ Reproducible infrastructure to showcase GitOps workflows
 
 ## Jenkins
 
-Admin user: Same as SCM-Manager - scmadmin / scmadmin.
-Change in jenkins-credentials.yaml if necessary.
+```bash
+sudo ln -s $(pwd)/jenkins/jenkins-helm-chart.yaml /var/lib/rancher/k3s/server/manifests/
+sudo ln -s $(pwd)/jenkins/jenkins-credentials.yaml /var/lib/rancher/k3s/server/manifests/
+sudo ln -s $(pwd)/jenkins/jenkins-pvcs.yaml /var/lib/rancher/k3s/server/manifests/
+```
 
-```bash 
-kubectly apply -f jenkins/jenkins-credentials.yaml
-kubectly apply -f jenkins/jenkins-pvcs.yaml
+Remove if necessary
 
-helm repo add jenkins https://charts.jenkins.io
-helm upgrade --install jenkins --values jenkins/values.yaml jenkins/jenkins
+```bash
+sudo sh -c 'rm /var/lib/rancher/k3s/server/manifests/jenkins-*.yaml' 
+k delete helmchart jenkins
+k delete addon -n kube-system jenkins-credentials jenkins-pvcs jenkins-helm-chart
 ```
 
 Find jenkins on http://localhost:9090
+
+Admin user: Same as SCM-Manager - scmadmin / scmadmin.
+Change in jenkins-credentials.yaml if necessary.
+
 
 ## SCM-Manager
 
