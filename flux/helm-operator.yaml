@@ -1,0 +1,15 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: helm-operator
+  namespace: default
+spec:
+  repo: https://charts.fluxcd.io
+  chart: helm-operator
+  version: 1.0.2
+  targetNamespace: default
+  valuesContent: |-
+    helm:
+      versions: "v3"
+    prometheus:
+      enabled: false

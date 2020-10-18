@@ -4,32 +4,32 @@ metadata:
   name: jenkins
   namespace: default
 spec:
-  repo:  https://charts.jenkins.io
+  repo: https://charts.jenkins.io
   chart: jenkins
   version: 2.13.0
   targetNamespace: default
   valuesContent: |-
     # For updating, delete pvc jenkins-docker-client
     dockerClientVersion: 19.03.9
-    
+
     master:
-    
+
       # Use deterministic version and not "lts", which is pretty much the same as "latest".
       # Note: When updating, check if PATH of image still matches the one listed in "containerEnv"
       tag: 2.249.2-lts-alpine
-    
+
       serviceType: NodePort
       nodePort: 9090
 
       additionalPlugins:
         - docker-workflow:1.24
         - docker-plugin:1.2.1
-    
+
       # This would be great to not install every plugin again on startup.
       # BUT: This also leads to CASC being ignored.
       # initializeOnce: true
-    
-      # Allow builds on master in order to facilitate an agent with docker CLI 
+
+      # Allow builds on master in order to facilitate an agent with docker CLI
       numExecutors: 2
 
       JCasC:
@@ -57,11 +57,11 @@ spec:
                     env:
                     - key: "PATH"
                       value: "/usr/local/openjdk-8/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/docker"
-    
+
       admin:
         # Use reproducible admin password from secret. Change there, if necessary.
         existingSecret: jenkins-credentials
-    
+
       containerEnv:
         - name: SECRETS
           # The files in this folders can be used as ${variable} in CasC credentials
@@ -83,30 +83,30 @@ spec:
           volumeMounts:
             - name: docker-client
               mountPath: /docker
-    
-      # Allow access to docker socket. Running as root is not a good practice, but seems pragmatic here. 
+
+      # Allow access to docker socket. Running as root is not a good practice, but seems pragmatic here.
       # Because other option setting "fsgroup" depends on the group ID of the "docker" group on each host.
       # This would require individual configuration,
-      # Calling: "getent group docker | awk -F: '{ print $3}'" and setting the result manually as fsgroup.  
+      # Calling: "getent group docker | awk -F: '{ print $3}'" and setting the result manually as fsgroup.
       #  fsGroup: 998
       # Also, with access to the docker socket, the container has root access to the host anyway. So why bother about the container?
       # It's a demo, after all!
       runAsUser: 0
-    
+
     persistence:
       volumes:
         - name: docker-client
           # Persist, so the client does not have to be downloaded on each start
           persistentVolumeClaim:
             claimName: jenkins-docker-client
-        - name: docker-sock # For this demo, allow jenkins master to access docker client 
+        - name: docker-sock # For this demo, allow jenkins master to access docker client
           hostPath:
             path: /var/run/docker.sock
         - name: scmm-user
           secret:
             # TODO use SCMM user secret here
             secretName: jenkins-credentials
-    
+
       mounts:
         - name: scmm-user
           # Use k8s secret as jenkins credentials.
@@ -119,4 +119,3 @@ spec:
         - name: docker-sock
           mountPath: "/var/run/docker.sock"
           readOnly: true
-      

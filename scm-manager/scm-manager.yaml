@@ -15,6 +15,14 @@ spec:
       - prefix: JENKINS_
         secretRef:
           name: jenkins-scmm
+      - prefix: FLUX_
+        secretRef:
+          name: flux-scmm
+
+    somekey: somevalue
+
+    persistence:
+      size: 1Gi
 
     lifecycleHooks: |-
       postStart:
@@ -38,7 +46,9 @@ spec:
                 setConfig "namespaceStrategy" "CustomNamespaceStrategy"
                 addRepo "cluster" "gitops"
                 addUser "${JENKINS_USERNAME}" "${JENKINS_PASSWORD}" "jenkins@mail.de"
+                addUser "${FLUX_USERNAME}" "${FLUX_PASSWORD}" "flux@mail.de"
                 setPermission "cluster" "gitops" "${JENKINS_USERNAME}" "WRITE"
+                setPermission "cluster" "gitops" "${FLUX_USERNAME}" "READ"
 
                 rm curl
               }
