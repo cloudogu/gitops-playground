@@ -1,4 +1,4 @@
-# gitops-example-cluster
+# k8s-gitops-playground
 Reproducible infrastructure to showcase GitOps workflows
 
 ## Jenkins
