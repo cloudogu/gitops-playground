@@ -1,0 +1,137 @@
+#
+# MIT License
+#
+# Copyright (c) 2020-present Cloudogu GmbH and Contributors
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+#
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "scm-manager.fullname" . }}
+  labels:
+    app: {{ include "scm-manager.name" . }}
+    chart: {{ include "scm-manager.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: 1 # could not be scaled
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: {{ include "scm-manager.name" . }}
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "scm-manager.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      initContainers:
+      - name: volume-permissions
+        image: alpine:3.8
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'chown 1000:1000 /data']
+        volumeMounts:
+        - name: data
+          mountPath: /data
+      {{- if .Values.plugins }}
+      - name: install-plugins
+        image: alpine:3.8
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '/scripts/install-plugins.sh']
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        - name: scripts
+          mountPath: /scripts
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.lifecycleHooks }}
+          lifecycle:
+{{ tpl .Values.lifecycleHooks . | indent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /scm
+              port: http
+            initialDelaySeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /scm
+              port: http
+            initialDelaySeconds: 10
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/scm
+            - name: config
+              mountPath: /opt/scm-server/conf
+            {{- with .Values.extraVolumeMounts }}
+            {{- tpl . $ | nindent 12 }}
+            {{- end }}
+          env:
+            {{- with .Values.extraEnv }}
+            {{- tpl . $ | nindent 12 }}
+            {{- end }}
+          envFrom:
+            {{- with .Values.extraEnvFrom }}
+            {{- tpl . $ | nindent 12 }}
+            {{- end }}
+      volumes:
+        - name: data
+        {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "scm-manager.fullname" . }}
+        {{- else }}
+          emptyDir: {}
+        {{- end }}
+        - name: config
+          configMap:
+            name: {{ include "scm-manager.fullname" . }}
+        {{- if .Values.plugins }}
+        - name: scripts
+          configMap:
+            name: {{ include "scm-manager.fullname" . }}-scripts
+        {{- end }}
+        {{- with .Values.extraVolumes }}
+        {{- tpl . $ | nindent 8 }}
+        {{- end }}
+    {{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}

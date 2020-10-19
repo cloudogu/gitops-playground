@@ -1,15 +1,12 @@
 #!/usr/bin/env bash
-#set -o errexit -o nounset -o pipefail
+set -o errexit -o nounset -o pipefail
 #set -x
 
-[ "$UID" -eq 0 ] || exec sudo bash "$0" "$@"
+helm delete scmm -n default
+helm delete jenkins -n default
+helm delete flux-operator -n default
+helm delete helm-operator -n default
 
-rm /var/lib/rancher/k3s/server/manifests/flux-operator.yaml
-rm /var/lib/rancher/k3s/server/manifests/flux-scmm-secret.yaml
-rm /var/lib/rancher/k3s/server/manifests/helm-operator.yaml
-rm /var/lib/rancher/k3s/server/manifests/jenkins-credentials.yaml
-rm /var/lib/rancher/k3s/server/manifests/jenkins-helm-chart.yaml
-rm /var/lib/rancher/k3s/server/manifests/jenkins.yaml
-rm /var/lib/rancher/k3s/server/manifests/jenkins-pvcs.yaml
-rm /var/lib/rancher/k3s/server/manifests/jenkins-scmm-secret.yaml
-rm /var/lib/rancher/k3s/server/manifests/scm-manager.yaml
+kubectl delete -f jenkins/resources
+kubectl delete -f scm-manager/resources
+

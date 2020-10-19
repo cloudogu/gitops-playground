@@ -1,0 +1,9 @@
+env:
+  secretName: flux-scmm
+git:
+  url: "http://$(USERNAME):$(PASSWORD)@scmm-scm-manager:9091/scm/repo/cluster/gitops"
+  readonly: true
+registry:
+  disableScanning: true
+prometheus:
+  enabled: false

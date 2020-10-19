@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -o errexit -o nounset -o pipefail
-#set -x
+set -x
 
 SCM_USER=scmadmin
 SCM_PWD=scmadmin
@@ -14,7 +14,9 @@ function main() {
   setConfig "namespaceStrategy" "CustomNamespaceStrategy"
   addRepo "cluster" "gitops"
   addUser "${JENKINS_USERNAME}" "${JENKINS_PASSWORD}" "jenkins@mail.de"
+  addUser "${FLUX_USERNAME}" "${FLUX_PASSWORD}" "flux@mail.de"
   setPermission "cluster" "gitops" "${JENKINS_USERNAME}" "WRITE"
+  setPermission "cluster" "gitops" "${FLUX_USERNAME}" "READ"
 
   rm curl
 }
@@ -22,7 +24,7 @@ function main() {
 function addRepo() {
   ./curl -i -L -X POST -H "Content-Type: application/vnd.scmm-repository+json;v=2" \
     --data "{\"name\":\"${2}\",\"namespace\":\"${1}\",\"type\":\"git\",\"contact\":\"admin@mail.de\",\"description\":\"description\",\"contextEntries\":{},\"_links\":{}}" \
-    "http://${SCM_USER}:${SCM_PWD}@${HOST}/scm/api/v2/repositories"
+    "http://${SCM_USER}:${SCM_PWD}@${HOST}/scm/api/v2/repositories/?initialize=true"
 }
 
 function setConfig() {

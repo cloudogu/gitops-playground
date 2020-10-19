@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
-#set -o errexit -o nounset -o pipefail
+set -o errexit -o nounset -o pipefail
 #set -x
 
-[ "$UID" -eq 0 ] || exec sudo bash "$0" "$@"
+kubectl apply -f jenkins/resources
+kubectl apply -f scm-manager/resources
 
-CUR_DIR=$(pwd)
+helm repo add jenkins https://charts.jenkins.io
+helm repo add fluxcd https://charts.fluxcd.io
 
-cd /var/lib/rancher/k3s/server/manifests/
-cp -as "${CUR_DIR}/flux/"*.yaml  .
-cp -as "${CUR_DIR}/jenkins/"*.yaml  .
-cp -as "${CUR_DIR}/scm-manager/"*.yaml  .
-
-cd /var/lib/rancher/k3s/server/static/charts/
-cp -as "${CUR_DIR}/scm-manager/scm-manager-2.7.1.tgz"  .
+helm upgrade -i  scmm --values scm-manager/values.yaml --set-file=postStartHookScript=scm-manager/initscmm.sh scm-manager/chart -n default
+helm upgrade -i jenkins --values jenkins/values.yaml --version 2.13.0 jenkins/jenkins -n default
+helm upgrade -i flux-operator --values flux-operator/values.yaml --version 1.3.0 fluxcd/flux -n default
+helm upgrade -i helm-operator --values helm-operator/values.yaml --version 1.0.2 fluxcd/helm-operator -n default

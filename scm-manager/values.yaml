@@ -1,0 +1,23 @@
+service:
+  port: 9091
+
+persistence:
+  size: 1Gi
+
+extraEnvFrom: |
+  - prefix: JENKINS_
+    secretRef:
+      name: jenkins-scmm
+  - prefix: FLUX_
+    secretRef:
+      name: flux-scmm
+
+
+lifecycleHooks: |-
+  postStart:
+    exec:
+      command:
+        - "/bin/bash"
+        - "-c"
+        - >
+  {{  tpl (required ".Values.postStartHookScript required!" .Values.postStartHookScript) . | indent 8  }}
