@@ -1,5 +1,10 @@
 # k8s-gitops-playground
+
 Reproducible infrastructure to showcase GitOps workflows
+
+## Install k3s
+
+`./init-cluster.sh`
 
 ## Startup
 

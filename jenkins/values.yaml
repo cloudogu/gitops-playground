@@ -31,8 +31,8 @@ master:
             - credentials:
               - usernamePassword:
                   id: "scmm-user"
-                  username: "${jenkins-admin-user}"
-                  password: "${jenkins-admin-password}"
+                  username: "${USERNAME}"
+                  password: "${PASSWORD}"
                   description: "Credentials for accessing SCM-Manager"
                   scope: GLOBAL
       # Set some more details on master agent
@@ -94,7 +94,7 @@ persistence:
     - name: scmm-user
       secret:
         # TODO use SCMM user secret here
-        secretName: jenkins-credentials
+        secretName: jenkins-scmm
 
   mounts:
     - name: scmm-user
