@@ -3,8 +3,6 @@ set -o errexit -o nounset -o pipefail
 #set -x
 
 # See https://github.com/rancher/k3s/releases
-# Note 1.16 is the oldest version available
-# In order to match our older production version, we need to activate deprecated APIs (see bellow)
 K3S_VERSION=1.18.8+k3s1
 K3S_CLUSTER_NAME=k8s-gitops-playground
 
@@ -30,11 +28,11 @@ function installK3s() {
   # More info:
   # * On Commands: https://k3s.io/usage/commands/
   # * On exposing services: https://github.com/rancher/k3s/blob/v3.0.1/docs/usage/guides/exposing_services.md
-  K3S_ARGS=(# Use local docker daemon, so local images can be used within cluster.
+  K3S_ARGS=(# Use local docker daemon, so local images can be used within cluster and jenkins can also use docker
     '--docker'
-    # Enable APIs deprecated in K8s 1.16
+    # Enable APIs deprecated in K8s 1.16 in order to improve compatibility with apps
     '--kube-apiserver-arg=runtime-config=apps/v1beta1=true,apps/v1beta2=true,extensions/v1beta1/daemonsets=true,extensions/v1beta1/deployments=true,extensions/v1beta1/replicasets=true,extensions/v1beta1/networkpolicies=true,extensions/v1beta1/podsecuritypolicies=true'
-    # Allow for using myCloudogu's node ports
+    # Allow for using node ports with "smaller numbers"
     '--kube-apiserver-arg=service-node-port-range=8010-32767'
     # Allow accessing KUBECONFIG as non-root
     '--write-kubeconfig-mode=755'

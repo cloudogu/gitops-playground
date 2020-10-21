@@ -2,6 +2,14 @@
 set -o errexit -o nounset -o pipefail
 #set -x
 
+BASEDIR=$(dirname $0)
+ABSOLUTE_BASEDIR="$( cd ${BASEDIR} && pwd )"
+
+source ${ABSOLUTE_BASEDIR}/utils.sh
+
+confirm "Applying gitops playground to kubernetes cluster: '$(kubectl config current-context)'." 'Continue? y/n [n]' \
+ || exit 0
+
 kubectl apply -f jenkins/resources
 kubectl apply -f scm-manager/resources
 
