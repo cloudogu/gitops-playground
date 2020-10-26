@@ -4,6 +4,10 @@ service:
 persistence:
   size: 1Gi
 
+plugins:
+  - name: editor
+    url: https://maven.scm-manager.org/nexus/content/repositories/plugin-releases/sonia/scm/plugins/scm-editor-plugin/2.1.1/scm-editor-plugin-2.1.1.smp
+
 extraEnvFrom: |
   - prefix: JENKINS_
     secretRef:

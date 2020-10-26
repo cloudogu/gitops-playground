@@ -12,11 +12,16 @@ function main() {
   while [[ "$(./curl -s -L -o /dev/null -w ''%{http_code}'' "http://${HOST}/scm")" -ne "200" ]]; do sleep 5; done;
 
   setConfig "namespaceStrategy" "CustomNamespaceStrategy"
-  addRepo "cluster" "gitops"
+
   addUser "${JENKINS_USERNAME}" "${JENKINS_PASSWORD}" "jenkins@mail.de"
   addUser "${FLUX_USERNAME}" "${FLUX_PASSWORD}" "flux@mail.de"
+
+  addRepo "cluster" "gitops"
   setPermission "cluster" "gitops" "${JENKINS_USERNAME}" "WRITE"
   setPermission "cluster" "gitops" "${FLUX_USERNAME}" "READ"
+
+  addRepo "application" "petclinic-plain"
+  setPermission "application" "petclinic-plain" "${JENKINS_USERNAME}" "WRITE"
 
   rm curl
 }

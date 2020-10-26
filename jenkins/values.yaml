@@ -23,6 +23,20 @@ master:
 
   JCasC:
     configScripts:
+      test-job: |
+        jenkins:
+          systemMessage: "Simple seed job example"
+        jobs:
+          - script: |
+              multibranchPipelineJob('configuration-as-code') {
+                  branchSources {
+                      git {
+                          id = 'configuration-as-code'
+                          remote('https://github.com/jenkinsci/configuration-as-code-plugin.git')
+                      }
+                  }
+              }
+
       # TODO use SCMM user secret keys for username and password
       scmm-credentials: |
         credentials:
