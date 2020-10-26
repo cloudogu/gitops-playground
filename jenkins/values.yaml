@@ -2,7 +2,8 @@
 dockerClientVersion: 19.03.9
 
 master:
-
+  # to prevent the jenkins-ui-test pod being created
+  testEnabled: false
   # Use deterministic version and not "lts", which is pretty much the same as "latest".
   # Note: When updating, check if PATH of image still matches the one listed in "containerEnv"
   tag: 2.249.2-lts-alpine
