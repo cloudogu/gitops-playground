@@ -11,7 +11,7 @@ function main() {
   cd /tmp && wget https://github.com/dtschan/curl-static/releases/download/v7.63.0/curl && chmod +x curl
   while [[ "$(./curl -s -L -o /dev/null -w ''%{http_code}'' "http://${HOST}/scm")" -ne "200" ]]; do sleep 5; done;
 
-  setConfig "namespaceStrategy" "CustomNamespaceStrategy"
+  setConfig
 
   addUser "${JENKINS_USERNAME}" "${JENKINS_PASSWORD}" "jenkins@mail.de"
   addUser "${FLUX_USERNAME}" "${FLUX_PASSWORD}" "flux@mail.de"
@@ -34,7 +34,7 @@ function addRepo() {
 
 function setConfig() {
   ./curl -i -L -X PUT -H "Content-Type: application/vnd.scmm-config+json;v=2" \
-    --data "{\"${1}\": \"${2}\"}" \
+    --data "{\"proxyPassword\":null,\"proxyPort\":8080,\"proxyServer\":\"proxy.mydomain.com\",\"proxyUser\":null,\"enableProxy\":false,\"realmDescription\":\"SONIA :: SCM Manager\",\"disableGroupingGrid\":false,\"dateFormat\":\"YYYY-MM-DD HH:mm:ss\",\"anonymousAccessEnabled\":false,\"anonymousMode\":\"OFF\",\"baseUrl\":\"http://localhost:8080/scm\",\"forceBaseUrl\":false,\"loginAttemptLimit\":-1,\"proxyExcludes\":[],\"skipFailedAuthenticators\":false,\"pluginUrl\":\"https://plugin-center-api.scm-manager.org/api/v1/plugins/{version}?os={os}&arch={arch}\",\"loginAttemptLimitTimeout\":300,\"enabledXsrfProtection\":true,\"namespaceStrategy\":\"CustomNamespaceStrategy\",\"loginInfoUrl\":\"https://login-info.scm-manager.org/api/v1/login-info\",\"releaseFeedUrl\":\"https://scm-manager.org/download/rss.xml\",\"mailDomainName\":\"scm-manager.local\",\"_links\":{\"self\":{\"href\":\"http://localhost:9091/scm/api/v2/config\"},\"update\":{\"href\":\"http://localhost:9091/scm/api/v2/config\"}},\"adminGroups\":[],\"adminUsers\":[]}" \
     "http://${SCM_USER}:${SCM_PWD}@${HOST}/scm/api/v2/config"
 }
 

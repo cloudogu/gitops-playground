@@ -14,6 +14,9 @@ master:
   additionalPlugins:
     - docker-workflow:1.24
     - docker-plugin:1.2.1
+    - job-dsl:1.77
+    - pipeline-utility-steps:2.6.1
+    - junit:1.34
 
   # This would be great to not install every plugin again on startup.
   # BUT: This also leads to CASC being ignored.
@@ -24,20 +27,6 @@ master:
 
   JCasC:
     configScripts:
-      test-job: |
-        jenkins:
-          systemMessage: "Simple seed job example"
-        jobs:
-          - script: |
-              multibranchPipelineJob('configuration-as-code') {
-                  branchSources {
-                      git {
-                          id = 'configuration-as-code'
-                          remote('https://github.com/jenkinsci/configuration-as-code-plugin.git')
-                      }
-                  }
-              }
-
       # TODO use SCMM user secret keys for username and password
       scmm-credentials: |
         credentials:
@@ -61,6 +50,24 @@ master:
                 env:
                 - key: "PATH"
                   value: "/usr/local/openjdk-8/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/docker"
+      petclinic-plain-job: |
+        jenkins:
+          systemMessage: "Seeding petclinic-plain job"
+        jobs:
+          - script: |
+              multibranchPipelineJob('petclinic-plain') {
+                  branchSources {
+                      git {
+                          id('petclinic-plain')
+                          remote('http://scmm-scm-manager:9091/scm/repo/application/petclinic-plain')
+                          credentialsId('scmm-user')
+                      }
+                  }
+              }
+
+  sidecars:
+    configAutoReload:
+      enabled: false
 
   admin:
     # Use reproducible admin password from secret. Change there, if necessary.

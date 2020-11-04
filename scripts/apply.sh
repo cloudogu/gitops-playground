@@ -7,11 +7,15 @@ SCM_PWD=scmadmin
 
 BASEDIR=$(dirname $0)
 ABSOLUTE_BASEDIR="$( cd ${BASEDIR} && pwd )"
+PLAYGROUND_DIR="$( cd ${BASEDIR} && cd .. && pwd )"
 
 source ${ABSOLUTE_BASEDIR}/utils.sh
 
 confirm "Applying gitops playground to kubernetes cluster: '$(kubectl config current-context)'." 'Continue? y/n [n]' \
  || exit 0
+
+kubectl create namespace staging
+kubectl create namespace production
 
 kubectl apply -f jenkins/resources
 kubectl apply -f scm-manager/resources
@@ -33,3 +37,4 @@ git checkout feature/gitops_ready
 while [[ "$(curl -s -L -o /dev/null -w ''%{http_code}'' "http://localhost:${SCMM_PORT}/scm")" -ne "200" ]]; do sleep 5; done;
 git push "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/application/petclinic-plain" feature/gitops_ready:master --force
 cd .. && rm -rf spring-petclinic
+

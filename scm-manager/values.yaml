@@ -1,3 +1,6 @@
+image:
+  tag: 2.8.0
+
 service:
   port: 9091
 
@@ -5,8 +8,14 @@ persistence:
   size: 1Gi
 
 plugins:
+  - name: mail
+    url: https://packages.scm-manager.org/repository/plugin-releases/sonia/scm/plugins/scm-mail-plugin/2.2.1/scm-mail-plugin-2.2.1.smp
+  - name: review
+    url: https://packages.scm-manager.org/repository/plugin-releases/sonia/scm/plugins/scm-review-plugin/2.4.1/scm-review-plugin-2.4.1.smp
+  - name: codeeditor
+    url: https://packages.scm-manager.org/repository/plugin-releases/sonia/scm/plugins/scm-code-editor-plugin/1.0.0/scm-code-editor-plugin-1.0.0.smp
   - name: editor
-    url: https://maven.scm-manager.org/nexus/content/repositories/plugin-releases/sonia/scm/plugins/scm-editor-plugin/2.1.1/scm-editor-plugin-2.1.1.smp
+    url: https://packages.scm-manager.org/repository/plugin-releases/sonia/scm/plugins/scm-editor-plugin/2.2.0/scm-editor-plugin-2.2.0.smp
 
 extraEnvFrom: |
   - prefix: JENKINS_
