@@ -19,3 +19,5 @@ helm delete docker-registry -n default
 kubectl delete -f jenkins/resources
 kubectl delete -f scm-manager/resources
 
+kubectl delete namespace production
+kubectl delete namespace staging

@@ -5,8 +5,9 @@ Reproducible infrastructure to showcase GitOps workflows
 ## Install k3s
 
 You can use your own k3s cluster, or use the script provided.
+Run this script from root with:
 
-`scripts/init-cluster.sh`
+`./scripts/init-cluster.sh`
 
 If you use your own cluster, note that jenkins relies on the `--docker` mode to be enabled.
 
