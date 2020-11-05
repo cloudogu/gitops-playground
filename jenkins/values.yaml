@@ -52,20 +52,36 @@ master:
                 - key: "PATH"
                   value: "/usr/local/openjdk-8/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/docker"
       # TODO could we use the SCMM source here?
+      # These URLS could be helpful:
+      # http://localhost:9090/job/petclinic-plain/config.xml
+      # http://localhost:9090//plugin/job-dsl/api-viewer/index.html#path/multibranchPipelineJob-branchSources
+      # For now using "scm-manager" in JobDSL leads to an error when CASC is applied: 
+      # "No such property: scm for class: javaposse.jobdsl.plugin.structs.DescribableListContext"
+      # This is probably because "scm-manager" is invalid groovy syntax.
+      # See https://github.com/jenkinsci/scm-manager-plugin/blob/1.4.0/src/main/java/com/cloudogu/scmmanager/scm/ScmManagerSource.java
+      # This might be fixed in a later SCMM Plugin for Jenkins
       petclinic-plain-job: |
-        jenkins:
-          systemMessage: "Seeding petclinic-plain job"
-        jobs:
-          - script: |
-              multibranchPipelineJob('petclinic-plain') {
-                  branchSources {
-                      git {
-                          id('petclinic-plain')
-                          remote('http://scmm-scm-manager:9091/scm/repo/application/petclinic-plain')
-                          credentialsId('scmm-user')
+    jenkins:
+      systemMessage: "Seeding petclinic-plain job"
+    jobs:
+      - script: |
+          multibranchPipelineJob('petclinic-plain') {
+              branchSources {
+                  branchSource {
+                      source {
+                          scm-manager {
+                              id('petclinic-plain')
+                              serverUrl('http://scmm-scm-manager:9091/scm')
+                              namespace('application')
+                              name('petclinic-plain')
+                              type('git')
+                              credentialsId('scmm-user')
+                          }
                       }
                   }
               }
+          }
+
 
   sidecars:
     configAutoReload:
