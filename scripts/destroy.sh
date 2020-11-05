@@ -10,14 +10,16 @@ source ${ABSOLUTE_BASEDIR}/utils.sh
 confirm "Removing gitops playground from kubernetes cluster: '$(kubectl config current-context)'." 'Continue? y/n [n]' \
  || exit 0
  
-helm delete scmm -n default
-helm delete jenkins -n default
-helm delete flux-operator -n default
-helm delete helm-operator -n default
-helm delete docker-registry -n default
+# Don't fail when resources were not there 
 
-kubectl delete -f jenkins/resources
-kubectl delete -f scm-manager/resources
+helm delete scmm -n default || true
+helm delete jenkins -n default || true
+helm delete flux-operator -n default || true
+helm delete helm-operator -n default || true
+helm delete docker-registry -n default || true
 
-kubectl delete namespace production
-kubectl delete namespace staging
+kubectl delete -f jenkins/resources || true
+kubectl delete -f scm-manager/resources || true
+
+kubectl delete namespace production || true
+kubectl delete namespace staging || true

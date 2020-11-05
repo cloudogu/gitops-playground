@@ -22,7 +22,7 @@ kubectl apply -f scm-manager/resources
 
 helm repo add jenkins https://charts.jenkins.io
 helm repo add fluxcd https://charts.fluxcd.io
-helm repo add helm-stable https://kubernetes-charts.storage.googleapis.com
+helm repo add helm-stable https://charts.helm.sh/stable
 
 helm upgrade -i  scmm --values scm-manager/values.yaml --set-file=postStartHookScript=scm-manager/initscmm.sh scm-manager/chart -n default
 helm upgrade -i jenkins --values jenkins/values.yaml --version 2.13.0 jenkins/jenkins -n default
