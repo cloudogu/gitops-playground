@@ -3,6 +3,7 @@ env:
 git:
   url: "http://$(USERNAME):$(PASSWORD)@scmm-scm-manager:9091/scm/repo/cluster/gitops"
   readonly: true
+  pollInterval: "1m"
 registry:
   disableScanning: true
 prometheus:

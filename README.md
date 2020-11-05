@@ -18,7 +18,9 @@ Jenkins builds on the master and uses the docker agent that also runs the k8s po
 
 ## Apply apps to cluster
 
-`scripts/apply.sh`
+[`scripts/apply.sh`](scripts/apply.sh)
+
+The scripts also prints a little intro on how to get started with a GitOps deployment.
 
 ## Remove apps from cluster
 
