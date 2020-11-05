@@ -17,6 +17,7 @@ master:
     - job-dsl:1.77
     - pipeline-utility-steps:2.6.1
     - junit:1.34
+    - scm-manager:1.4.0
 
   # This would be great to not install every plugin again on startup.
   # BUT: This also leads to CASC being ignored.
@@ -50,6 +51,7 @@ master:
                 env:
                 - key: "PATH"
                   value: "/usr/local/openjdk-8/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/docker"
+      # TODO could we use the SCMM source here?
       petclinic-plain-job: |
         jenkins:
           systemMessage: "Seeding petclinic-plain job"
