@@ -61,26 +61,19 @@ master:
       # See https://github.com/jenkinsci/scm-manager-plugin/blob/1.4.0/src/main/java/com/cloudogu/scmmanager/scm/ScmManagerSource.java
       # This might be fixed in a later SCMM Plugin for Jenkins
       petclinic-plain-job: |
-    jenkins:
-      systemMessage: "Seeding petclinic-plain job"
-    jobs:
-      - script: |
-          multibranchPipelineJob('petclinic-plain') {
-              branchSources {
-                  branchSource {
-                      source {
-                          scm-manager {
-                              id('petclinic-plain')
-                              serverUrl('http://scmm-scm-manager:9091/scm')
-                              namespace('application')
-                              name('petclinic-plain')
-                              type('git')
-                              credentialsId('scmm-user')
-                          }
+        jenkins:
+          systemMessage: "Seeding petclinic-plain job"
+        jobs:
+          - script: |
+              multibranchPipelineJob('petclinic-plain') {
+                  branchSources {
+                      git {
+                          id('petclinic-plain')
+                          remote('http://scmm-scm-manager:9091/scm/repo/application/petclinic-plain')
+                          credentialsId('scmm-user')
                       }
                   }
               }
-          }
 
 
   sidecars:
