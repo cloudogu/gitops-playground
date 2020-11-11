@@ -6,7 +6,7 @@ master:
   testEnabled: false
   # Use deterministic version and not "lts", which is pretty much the same as "latest".
   # Note: When updating, check if PATH of image still matches the one listed in "containerEnv"
-  tag: 2.249.2-lts-alpine
+  tag: 2.249.3-lts-jdk11
 
   serviceType: NodePort
   nodePort: 9090
