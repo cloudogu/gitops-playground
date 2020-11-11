@@ -35,14 +35,8 @@ node {
             archiveArtifacts artifacts: '**/target/*.jar'
         }
 
-        String jacoco = "org.jacoco:jacoco-maven-plugin:0.8.5"
-
         stage('Test') {
-            mvn "${jacoco}:prepare-agent test ${jacoco}:report"
-        }
-
-        stage('Integration Test') {
-            mvn "${jacoco}:prepare-agent-integration failsafe:integration-test failsafe:verify ${jacoco}:report-integration"
+            mvn "test -Dmaven.test.failure.ignore=true"
         }
 
         String imageName = ""
@@ -63,7 +57,7 @@ node {
         }
 
         stage('Deploy') {
-            if (isBuildSuccessful()) {
+            if (isBuildSuccessful() && env.BRANCH_NAME in ['master']) {
 
                 def gitopsConfig = [
                         scmmCredentialsId: scmManagerCredentials,
@@ -79,7 +73,7 @@ node {
                 String pushedChanges = pushToConfigRepo(gitopsConfig)
                 currentBuild.description = createBuildDescription(pushedChanges, imageName)
             } else {
-                echo 'Skipping deploy, because build not successful'
+                echo 'Skipping deploy, because build not successful or not on master branch'
             }
         }
     }
