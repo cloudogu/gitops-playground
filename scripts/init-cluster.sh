@@ -5,9 +5,25 @@ set -o errexit -o nounset -o pipefail
 # See https://github.com/rancher/k3s/releases
 K3S_VERSION=1.18.8+k3s1
 K3S_CLUSTER_NAME=k8s-gitops-playground
+HELM_VERSION=3.4.0
+HELM_INSTALL_DIR='/usr/local/bin'
+HELM_BINARY_NAME='helm'
 
 function main() {
-  # Install  if necessary
+  # Install helm if necessary
+  if [[ ! -f ${HELM_INSTALL_DIR}/${HELM_BINARY_NAME} ]]; then
+    installHelm
+  else
+    ACTUAL_HELM_VERSION=$("${HELM_INSTALL_DIR}/${HELM_BINARY_NAME}" version --template="{{ .Version }}")
+    echo "helm ${ACTUAL_HELM_VERSION} already installed"
+    if [[ "$ACTUAL_HELM_VERSION" != "v$HELM_VERSION" ]]; then
+      msg="Up-/downgrade from ${ACTUAL_HELM_VERSION} to ${HELM_VERSION}?"
+      confirm "$msg" ' [y/n]' &&
+        installHelm
+    fi
+  fi
+
+  # Install k3s if necessary
   if command -v k3s >/dev/null 2>&1; then
     ACTUAL_K3S_VERSION="$(k3s --version | grep k3s | sed 's/k3s version v\(.*\) (.*/\1/')"
     echo "k3s ${ACTUAL_K3S_VERSION} already installed"
@@ -16,12 +32,18 @@ function main() {
     else
       msg="Reinstall?"
     fi
-    confirm "$msg" 'Note: Applications will not be deleted. For deleting call "k3s-uninstall.sh" in advance.' ' [y/n]' \
-      && installK3s
+    confirm "$msg" 'Note: Applications will not be deleted. For deleting call "k3s-uninstall.sh" in advance.' ' [y/n]' &&
+      installK3s
 
   else
     installK3s
   fi
+}
+
+function installHelm() {
+  # curls helm install script and installs/updates it if necessary
+  curl -s get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 |
+    bash -s -- --version v$HELM_VERSION
 }
 
 function installK3s() {
@@ -63,7 +85,7 @@ confirm() {
   # shellcheck disable=SC2145
   # - the line break between args is intended here!
   printf "%s\n" "${@:-Are you sure? [y/N]} "
-  
+
   read -r response
   case "$response" in
   [yY][eE][sS] | [yY])
