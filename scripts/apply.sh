@@ -6,8 +6,8 @@ SCM_USER=scmadmin
 SCM_PWD=scmadmin
 
 BASEDIR=$(dirname $0)
-ABSOLUTE_BASEDIR="$( cd ${BASEDIR} && pwd )"
-PLAYGROUND_DIR="$( cd ${BASEDIR} && cd .. && pwd )"
+ABSOLUTE_BASEDIR="$(cd ${BASEDIR} && pwd)"
+PLAYGROUND_DIR="$(cd ${BASEDIR} && cd .. && pwd)"
 
 PETCLINIC_COMMIT=949c5af
 # get scm-manager port from values
@@ -22,6 +22,8 @@ function main() {
   applyK8sResources
 
   pushPetClinicRepo 'petclinic/fluxv1/plain-k8s' 'application/petclinic-plain'
+  
+  initRepo 'cluster/gitops'
 
   printWelcomeScreen
 }
@@ -47,24 +49,51 @@ function applyK8sResources() {
 function pushPetClinicRepo() {
   LOCAL_PETCLINIC_SOURCE="$1"
   TARGET_REPO_SCMM="$2"
-  
+
   TMP_REPO=$(mktemp -d)
 
   git clone -n https://github.com/cloudogu/spring-petclinic.git "${TMP_REPO}" --quiet
-  ( 
+  (
     cd "${TMP_REPO}"
     # Checkout a defined commit in order to get a deterministic result
-    git checkout ${PETCLINIC_COMMIT} --quiet 
-  
+    git checkout ${PETCLINIC_COMMIT} --quiet
+
     cp -r "${PLAYGROUND_DIR}/${LOCAL_PETCLINIC_SOURCE}"/* .
+    git checkout -b main --quiet
     git add .
     git commit -m 'Add GitOps Pipeline and K8s resources' --quiet
-  
-    while [[ "$(curl -s -L -o /dev/null -w ''%{http_code}'' "http://localhost:${SCMM_PORT}/scm")" -ne "200" ]]; do sleep 5; done
-    git push "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:master --force  --quiet
+
+    waitForScmManager
+    git push -u "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
   )
 
   rm -rf "${TMP_REPO}"
+}
+
+function waitForScmManager() {
+  echo -n "Waiting for SCM-Manager to become available at http://localhost:${SCMM_PORT}/scm"
+  while [[ "$(curl -s -L -o /dev/null -w ''%{http_code}'' "http://localhost:${SCMM_PORT}/scm")" -ne "200" ]]; do
+    echo -n .
+    sleep 2
+  done
+  echo
+}
+
+function initRepo() {
+  TARGET_REPO_SCMM="$1"
+
+  TMP_REPO=$(mktemp -d)
+
+  git clone "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}" --quiet
+  (
+    cd "${TMP_REPO}"
+    git checkout -b main  --quiet
+    echo "# gitops" > README.md
+    git add README.md
+    git commit -m "Add readme" --quiet
+    waitForScmManager
+    git push -u "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
+  )
 }
 
 function printWelcomeScreen() {

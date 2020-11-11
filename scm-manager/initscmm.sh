@@ -30,7 +30,7 @@ function main() {
 function addRepo() {
   ./curl -i -L -X POST -H "Content-Type: application/vnd.scmm-repository+json;v=2" \
     --data "{\"name\":\"${2}\",\"namespace\":\"${1}\",\"type\":\"git\",\"contact\":\"admin@mail.de\",\"description\":\"description\",\"contextEntries\":{},\"_links\":{}}" \
-    "http://${SCM_USER}:${SCM_PWD}@${HOST}/scm/api/v2/repositories/?initialize=true"
+    "http://${SCM_USER}:${SCM_PWD}@${HOST}/scm/api/v2/repositories/"
 }
 
 function setConfig() {

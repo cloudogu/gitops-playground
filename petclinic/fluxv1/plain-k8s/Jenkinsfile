@@ -9,6 +9,7 @@ String getConfigRepositoryPRUrl() { 'http://scmm-scm-manager:9091/scm/api/v2/pul
 String getDockerRegistryBaseUrl() { "localhost:9092" }
 String getCesBuildLibVersion() { '1.44.3' }
 String getCesBuildLibRepo() { 'https://github.com/cloudogu/ces-build-lib/' }
+String getMainBranch() { 'main' }
 
 cesBuildLib = library(identifier: "ces-build-lib@${cesBuildLibVersion}",
         retriever: modernSCM([$class: 'GitSCMSource', remote: cesBuildLibRepo])
@@ -57,7 +58,7 @@ node {
         }
 
         stage('Deploy') {
-            if (isBuildSuccessful() && env.BRANCH_NAME in ['master']) {
+            if (isBuildSuccessful() && env.BRANCH_NAME in [mainBranch]) {
 
                 def gitopsConfig = [
                         scmmCredentialsId: scmManagerCredentials,
@@ -73,7 +74,7 @@ node {
                 String pushedChanges = pushToConfigRepo(gitopsConfig)
                 currentBuild.description = createBuildDescription(pushedChanges, imageName)
             } else {
-                echo 'Skipping deploy, because build not successful or not on master branch'
+                echo 'Skipping deploy, because build not successful or not on main branch'
             }
         }
     }
@@ -100,11 +101,11 @@ String pushToConfigRepo(Map gitopsConfig) {
 
         dir(configRepoTempDir) {
 
-            git url: gitopsConfig.scmmConfigRepoUrl, branch: 'master', changelog: false, poll: false
+            git url: gitopsConfig.scmmConfigRepoUrl, branch: mainBranch, changelog: false, poll: false
             git.fetch()
 
             def repoChanges = new HashSet<String>()
-            repoChanges += createApplicationForStageAndPushToBranch 'staging', 'master', applicationRepo, git, gitopsConfig
+            repoChanges += createApplicationForStageAndPushToBranch 'staging', mainBranch, applicationRepo, git, gitopsConfig
 
             git.checkoutOrCreate(application)
             repoChanges += createApplicationForStageAndPushToBranch 'production', application, applicationRepo, git, gitopsConfig
@@ -195,7 +196,7 @@ void createPullRequest(Map gitopsConfig) {
                 'curl -s -o /dev/null -w "%{http_code}" ' +
                         "-u ${GIT_USER}:${GIT_PASSWORD} " +
                         '-H "Content-Type: application/vnd.scmm-pullRequest+json;v=2" ' +
-                        '--data \'{"title": "created by service ' + application + '", "source": "' + application + '", "target": "master"}\' ' +
+                        '--data \'{"title": "created by service ' + application + '", "source": "' + application + '", "target": "' + mainBranch + '"}\' ' +
                         gitopsConfig.scmmPullRequestUrl
 
         // For debugging the quotation of the shell script, just do: echo script
