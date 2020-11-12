@@ -21,5 +21,10 @@ helm delete docker-registry -n default || true
 kubectl delete -f jenkins/resources || true
 kubectl delete -f scm-manager/resources || true
 
-kubectl delete namespace production || true
-kubectl delete namespace staging || true
+kubectl delete -f k8s-namespaces/production.yaml || true
+kubectl delete -f k8s-namespaces/staging.yaml || true
+
+kubectl delete -f fluxv2/k8s-resources/gotk-gitrepository.yaml || true
+kubectl delete -f fluxv2/k8s-resources/gotk-kustomization.yaml || true
+kubectl delete -f fluxv2/k8s-resources/gotk-components.yaml || true
+

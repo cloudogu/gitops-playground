@@ -20,8 +20,15 @@ function main() {
   setPermission "cluster" "gitops" "${JENKINS_USERNAME}" "WRITE"
   setPermission "cluster" "gitops" "${FLUX_USERNAME}" "READ"
 
+  addRepo "fluxv2" "gitops"
+  setPermission "fluxv2" "gitops" "${JENKINS_USERNAME}" "WRITE"
+  setPermission "fluxv2" "gitops" "${FLUX_USERNAME}" "READ"
+
   addRepo "application" "petclinic-plain"
   setPermission "application" "petclinic-plain" "${JENKINS_USERNAME}" "WRITE"
+
+  addRepo "fluxv2" "petclinic-plain"
+  setPermission "fluxv2" "petclinic-plain" "${JENKINS_USERNAME}" "WRITE"
 
   configJenkins
   rm curl
