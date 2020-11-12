@@ -68,6 +68,8 @@ function pushPetClinicRepo() {
   )
 
   rm -rf "${TMP_REPO}"
+  
+  setMainBranch "${TARGET_REPO_SCMM}"
 }
 
 function waitForScmManager() {
@@ -94,6 +96,16 @@ function initRepo() {
     waitForScmManager
     git push -u "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
   )
+
+  setMainBranch "${TARGET_REPO_SCMM}"
+}
+
+function setMainBranch() {
+  TARGET_REPO_SCMM="$1"
+  
+  curl -s -L -X PUT -H 'Content-Type: application/vnd.scmm-gitConfig+json' \
+    --data-raw "{\"defaultBranch\":\"main\"}" \
+    "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/api/v2/config/git/${TARGET_REPO_SCMM}"
 }
 
 function printWelcomeScreen() {
