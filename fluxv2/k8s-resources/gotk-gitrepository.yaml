@@ -1,0 +1,28 @@
+apiVersion: source.toolkit.fluxcd.io/v1beta1
+kind: GitRepository
+metadata:
+  labels:
+    app.kubernetes.io/instance: fluxv2
+    app.kubernetes.io/version: latest
+  name: fluxv2-gitrepository
+  namespace: fluxv2
+spec:
+  interval: 1m0s
+  ref:
+    branch: master
+  secretRef:
+    name: fluxv2-scmm-secret
+  url: http://scmm-scm-manager:9091/scm/repo/fluxv2/gitops
+---
+apiVersion: v1
+data:
+  password: c2NtYWRtaW4=
+  username: c2NtYWRtaW4=
+kind: Secret
+metadata:
+  labels:
+    app.kubernetes.io/instance: fluxv2
+    app.kubernetes.io/version: latest
+  name: fluxv2-scmm-secret
+  namespace: fluxv2
+type: Opaque
