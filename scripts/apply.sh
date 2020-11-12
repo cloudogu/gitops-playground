@@ -57,11 +57,11 @@ git --git-dir tmp/spring-petclinic/.git --work-tree=tmp/spring-petclinic push "h
 
 #fluxv2 gitops
 git clone http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/fluxv2/gitops tmp/gitops
-mkdir -p tmp/gitops/clusters/k8s-gitops-playground/flux-system
-cp fluxv2/k8s-resources/gotk-components.yaml tmp/gitops/clusters/k8s-gitops-playground/flux-system/gotk-components.yaml
-cp fluxv2/k8s-resources/gotk-gitrepository.yaml tmp/gitops/clusters/k8s-gitops-playground/flux-system/gotk-gitrepository.yaml
-cp fluxv2/k8s-resources/gotk-kustomization.yaml tmp/gitops/clusters/k8s-gitops-playground/flux-system/gotk-kustomization.yaml
-cp fluxv2/k8s-resources/kustomization.yaml tmp/gitops/clusters/k8s-gitops-playground/flux-system/kustomization.yaml
+mkdir -p tmp/gitops/clusters/k8s-gitops-playground/fluxv2
+cp fluxv2/k8s-resources/gotk-components.yaml tmp/gitops/clusters/k8s-gitops-playground/fluxv2/gotk-components.yaml
+cp fluxv2/k8s-resources/gotk-gitrepository.yaml tmp/gitops/clusters/k8s-gitops-playground/fluxv2/gotk-gitrepository.yaml
+cp fluxv2/k8s-resources/gotk-kustomization.yaml tmp/gitops/clusters/k8s-gitops-playground/fluxv2/gotk-kustomization.yaml
+cp fluxv2/k8s-resources/kustomization.yaml tmp/gitops/clusters/k8s-gitops-playground/fluxv2/kustomization.yaml
 git --git-dir tmp/gitops/.git --work-tree=tmp/gitops add -A
 git --git-dir tmp/gitops/.git --work-tree=tmp/gitops commit -a -m "adding fluxv2 config"
 while [[ "$(curl -s -L -o /dev/null -w ''%{http_code}'' "http://localhost:${SCMM_PORT}/scm")" -ne "200" ]]; do sleep 5; done;
