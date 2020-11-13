@@ -14,8 +14,7 @@ source ${ABSOLUTE_BASEDIR}/utils.sh
 confirm "Applying gitops playground to kubernetes cluster: '$(kubectl config current-context)'." 'Continue? y/n [n]' \
  || exit 0
 
-kubectl apply -f k8s-namespaces/staging.yaml
-kubectl apply -f k8s-namespaces/production.yaml
+kubectl apply -f k8s-namespaces
 
 kubectl apply -f jenkins/resources
 kubectl apply -f scm-manager/resources

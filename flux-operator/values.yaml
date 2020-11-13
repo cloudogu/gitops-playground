@@ -4,7 +4,23 @@ git:
   url: "http://$(USERNAME):$(PASSWORD)@scmm-scm-manager:9091/scm/repo/cluster/gitops"
   readonly: true
   pollInterval: "1m"
+  config:
+    enabled: true
+    secretName: ""
+    data: |
+     [http]
+             sslVerify = false
 registry:
   disableScanning: true
 prometheus:
   enabled: false
+
+extraEnvs:
+  - name: HOME
+    value: /home/flux
+
+extraVolumeMounts:
+  - name: git-config
+    mountPath: /home/flux/.gitconfig
+    subPath: gitconfig
+    readOnly: true
