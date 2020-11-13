@@ -1,0 +1,13 @@
+image:
+  name: localhost:9092/spring-petclinic-plain:202011101211-659e96b-master
+
+extraEnv: |
+  - name: TZ
+    value: Europe/Berlin
+
+service:
+  type: LoadBalancer
+  port: 8080
+
+ingress:
+  enabled: false

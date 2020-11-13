@@ -32,12 +32,20 @@ helm upgrade -i docker-registry --values docker-registry/values.yaml --version 1
 
 # get scm-manager port from values
 SCMM_PORT=$(grep -A1 'service:' scm-manager/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')
+
 rm -rf /tmp/spring-petclinic
 cd /tmp && git clone https://github.com/cloudogu/spring-petclinic.git && cd spring-petclinic
 git checkout feature/gitops_ready
 while [[ "$(curl -s -L -o /dev/null -w ''%{http_code}'' "http://localhost:${SCMM_PORT}/scm")" -ne "200" ]]; do sleep 5; done;
 git push "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/application/petclinic-plain" feature/gitops_ready:master --force
 cd .. && rm -rf spring-petclinic
+
+rm -rf  /tmp/spring-boot-helm-chart
+cd /tmp && git clone https://github.com/cloudogu/spring-boot-helm-chart.git && cd spring-boot-helm-chart
+git tag 1.0.0
+git push "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/application/spring-boot-helm-chart" main:master --follow-tags --force
+git push "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/application/spring-boot-helm-chart" refs/tags/1.0.0
+cd .. && rm -rf spring-boot-helm-chart
 
 echo "Welcome to Cloudogu's GitOps playground!"
 echo
