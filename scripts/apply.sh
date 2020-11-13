@@ -30,10 +30,8 @@ helm upgrade -i flux-operator --values flux-operator/values.yaml --version 1.3.0
 helm upgrade -i helm-operator --values helm-operator/values.yaml --version 1.0.2 fluxcd/helm-operator -n default
 helm upgrade -i docker-registry --values docker-registry/values.yaml --version 1.9.4 helm-stable/docker-registry -n default
 
-# get scm-manager ip and port from values
+# get scm-manager port from values
 SCMM_PORT=$(grep -A1 'service:' scm-manager/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')
-SCMM_CLUSTER_IP=$(kubectl --namespace=default get service/scmm-scm-manager -o jsonpath='{.spec.clusterIP}')
-sed -i "/url:/c\  url: http://${SCMM_CLUSTER_IP}:${SCMM_PORT}/scm/repo/fluxv2/gitops" fluxv2/k8s-resources/gotk-gitrepository.yaml
 kubectl apply -f fluxv2/k8s-resources/gotk-gitrepository.yaml
 kubectl apply -f fluxv2/k8s-resources/gotk-kustomization.yaml
 
