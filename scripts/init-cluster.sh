@@ -8,8 +8,18 @@ K3S_CLUSTER_NAME=k8s-gitops-playground
 HELM_VERSION=3.4.0
 HELM_INSTALL_DIR='/usr/local/bin'
 HELM_BINARY_NAME='helm'
+KUBECTL_VERSION=1.19.3
 
 function main() {
+  # Install kubectl if necessary
+  if command -v kubectl version ; then
+    echo "kubectl already installed"
+  else
+    msg="Install kubectl ${KUBECTL_VERSION}?"
+      confirm "$msg" ' [y/n]' &&
+        installKubectl
+  fi
+
   # Install helm if necessary
   if [[ ! -f ${HELM_INSTALL_DIR}/${HELM_BINARY_NAME} ]]; then
     installHelm
@@ -38,6 +48,13 @@ function main() {
   else
     installK3s
   fi
+}
+
+function installKubectl() {
+  curl -LO https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl
+  chmod +x ./kubectl
+  sudo mv ./kubectl /usr/local/bin/kubectl
+  echo "kubectl installed"
 }
 
 function installHelm() {

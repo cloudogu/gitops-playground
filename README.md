@@ -4,7 +4,7 @@ Reproducible infrastructure to showcase GitOps workflows. Derived from our [cons
 
 ## Prerequisites
 
-To be able to set up the infrastructure you are required to have **k3s** and **helm** set up.
+To be able to set up the infrastructure you are required to have **kubectl**, **k3s** and **helm** set up.
 If you use the provided script, these components will be installed, if not done yet.
 
 
