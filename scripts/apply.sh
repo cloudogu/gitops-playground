@@ -22,15 +22,17 @@ function main() {
   applyK8sResources
 
   pushPetClinicRepo 'petclinic/fluxv1/plain-k8s' 'application/petclinic-plain'
+  pushPetClinicRepo 'petclinic/argocd/plain-k8s' 'argocd/petclinic-plain'
   
   initRepo 'cluster/gitops'
+  initRepo 'argocd/gitops'
+  initRepoWithSource 'argocd/nginx-helm' 'nginx'
 
   printWelcomeScreen
 }
 
 function applyK8sResources() {
-  kubectl apply -f k8s-namespaces/staging.yaml
-  kubectl apply -f k8s-namespaces/production.yaml
+  kubectl apply -f k8s-namespaces
 
   kubectl apply -f jenkins/resources
   kubectl apply -f scm-manager/resources
@@ -38,12 +40,19 @@ function applyK8sResources() {
   helm repo add jenkins https://charts.jenkins.io
   helm repo add fluxcd https://charts.fluxcd.io
   helm repo add helm-stable https://charts.helm.sh/stable
+  helm repo add argo https://argoproj.github.io/argo-helm
 
   helm upgrade -i scmm --values scm-manager/values.yaml --set-file=postStartHookScript=scm-manager/initscmm.sh scm-manager/chart -n default
   helm upgrade -i jenkins --values jenkins/values.yaml --version 2.13.0 jenkins/jenkins -n default
   helm upgrade -i flux-operator --values flux-operator/values.yaml --version 1.3.0 fluxcd/flux -n default
   helm upgrade -i helm-operator --values helm-operator/values.yaml --version 1.0.2 fluxcd/helm-operator -n default
   helm upgrade -i docker-registry --values docker-registry/values.yaml --version 1.9.4 helm-stable/docker-registry -n default
+
+  helm upgrade -i argocd --values argocd/values.yaml --version 2.9.5 argo/argo-cd  -n default
+  kubectl apply -f argocd/resources
+
+  # set argocd admin password to 'admin' here, because it does not work through the helm chart
+  kubectl patch secret -n default argocd-secret -p '{"stringData": { "admin.password": "$2y$10$GsLZ7KlAhW9xNsb10YO3/O6jlJKEAU2oUrBKtlF/g1wVlHDJYyVom"}}'
 }
 
 function pushPetClinicRepo() {
@@ -89,10 +98,32 @@ function initRepo() {
   git clone "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}" --quiet
   (
     cd "${TMP_REPO}"
-    git checkout -b main  --quiet
+    git checkout -b main  --quiet || true
+    git checkout main --quiet || true
     echo "# gitops" > README.md
     git add README.md
-    git commit -m "Add readme" --quiet
+    git commit -m "Add readme" --quiet || true
+    waitForScmManager
+    git push -u "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
+  )
+
+  setMainBranch "${TARGET_REPO_SCMM}"
+}
+
+function initRepoWithSource() {
+  TARGET_REPO_SCMM="$1"
+  SOURCE_REPO="$2"
+
+  TMP_REPO=$(mktemp -d)
+
+  git clone "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}" --quiet
+  (
+    cp "${PLAYGROUND_DIR}/${SOURCE_REPO}"/* "${TMP_REPO}"
+    cd "${TMP_REPO}"
+    git checkout -b main  --quiet || true
+    git checkout main --quiet || true
+    git add .
+    git commit -m "Init ${TARGET_REPO_SCMM}" --quiet || true
     waitForScmManager
     git push -u "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
   )

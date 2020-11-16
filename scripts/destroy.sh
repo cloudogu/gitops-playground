@@ -21,5 +21,7 @@ helm delete docker-registry -n default || true
 kubectl delete -f jenkins/resources || true
 kubectl delete -f scm-manager/resources || true
 
-kubectl delete namespace production || true
-kubectl delete namespace staging || true
+kubectl delete -f argocd/resources || true
+helm delete argocd -n default || true
+
+kubectl delete -f k8s-namespaces || true

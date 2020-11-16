@@ -62,18 +62,29 @@ master:
       # This might be fixed in a later SCMM Plugin for Jenkins
       petclinic-plain-job: |
         jenkins:
-          systemMessage: "Seeding petclinic-plain job"
+          systemMessage: "Seeding petclinic-plain jobs"
         jobs:
           - script: |
-              multibranchPipelineJob('petclinic-plain') {
+              multibranchPipelineJob('fluxV1-petclinic-plain') {
                   branchSources {
                       git {
-                          id('petclinic-plain')
+                          id('fluxV1-petclinic-plain')
                           remote('http://scmm-scm-manager:9091/scm/repo/application/petclinic-plain')
                           credentialsId('scmm-user')
                       }
                   }
               }
+          - script: |
+              multibranchPipelineJob('argocd-petclinic-plain') {
+                  branchSources {
+                      git {
+                          id('argocd-petclinic-plain')
+                          remote('http://scmm-scm-manager:9091/scm/repo/argocd/petclinic-plain')
+                          credentialsId('scmm-user')
+                      }
+                  }
+              }
+
 
 
   sidecars:

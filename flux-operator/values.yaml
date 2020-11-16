@@ -2,6 +2,7 @@ env:
   secretName: flux-scmm
 git:
   url: "http://$(USERNAME):$(PASSWORD)@scmm-scm-manager:9091/scm/repo/cluster/gitops"
+  branch: "main"
   readonly: true
   pollInterval: "1m"
   config:
@@ -14,13 +15,3 @@ registry:
   disableScanning: true
 prometheus:
   enabled: false
-
-extraEnvs:
-  - name: HOME
-    value: /home/flux
-
-extraVolumeMounts:
-  - name: git-config
-    mountPath: /home/flux/.gitconfig
-    subPath: gitconfig
-    readOnly: true

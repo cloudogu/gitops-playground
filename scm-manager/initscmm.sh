@@ -23,6 +23,14 @@ function main() {
   addRepo "application" "petclinic-plain"
   setPermission "application" "petclinic-plain" "${JENKINS_USERNAME}" "WRITE"
 
+  addRepo "argocd" "nginx-helm"
+  setPermission "argocd" "nginx-helm" "${ARGOCD_USERNAME}" "WRITE"
+  addRepo "argocd" "petclinic-plain"
+  setPermission "argocd" "petclinic-plain" "${JENKINS_USERNAME}" "WRITE"
+  addRepo "argocd" "gitops"
+  setPermission "argocd" "gitops" "${JENKINS_USERNAME}" "WRITE"
+  setPermission "argocd" "gitops" "${ARGOCD_USERNAME}" "READ"
+
   configJenkins
   rm curl
 }
