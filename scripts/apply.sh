@@ -23,7 +23,9 @@ function main() {
 
   pushPetClinicRepo 'petclinic/fluxv1/plain-k8s' 'application/petclinic-plain'
   pushPetClinicRepo 'petclinic/argocd/plain-k8s' 'argocd/petclinic-plain'
-  
+
+  pushHelmChartRepo 'application/spring-boot-helm-chart'
+
   initRepo 'cluster/gitops'
   initRepo 'argocd/gitops'
   initRepoWithSource 'argocd/nginx-helm' 'nginx'
@@ -78,6 +80,26 @@ function pushPetClinicRepo() {
 
   rm -rf "${TMP_REPO}"
   
+  setMainBranch "${TARGET_REPO_SCMM}"
+}
+
+function pushHelmChartRepo() {
+  TARGET_REPO_SCMM="$1"
+
+  TMP_REPO=$(mktemp -d)
+
+  git clone -n https://github.com/cloudogu/spring-boot-helm-chart.git "${TMP_REPO}" --quiet
+  (
+    cd "${TMP_REPO}"
+    git tag 1.0.0
+
+    waitForScmManager
+    git push "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
+    git push "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" refs/tags/1.0.0 --quiet
+  )
+
+  rm -rf "${TMP_REPO}"
+
   setMainBranch "${TARGET_REPO_SCMM}"
 }
 

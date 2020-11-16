@@ -1,0 +1,12 @@
+image:
+  name: localhost:9092/spring-petclinic-plain:202011162104-709fdc2-master
+
+extraEnv: |
+  - name: TZ
+    value: Europe/Berlin
+
+service:
+  type: LoadBalancer
+
+ingress:
+  enabled: false

@@ -30,6 +30,9 @@ function main() {
   addRepo "argocd" "gitops"
   setPermission "argocd" "gitops" "${JENKINS_USERNAME}" "WRITE"
   setPermission "argocd" "gitops" "${ARGOCD_USERNAME}" "READ"
+  
+  addRepo "application" "spring-boot-helm-chart"
+  setPermission "application" "spring-boot-helm-chart" "${FLUX_USERNAME}" "READ"
 
   configJenkins
   rm curl
