@@ -23,6 +23,9 @@ function main() {
   addRepo "application" "petclinic-plain"
   setPermission "application" "petclinic-plain" "${JENKINS_USERNAME}" "WRITE"
 
+  addRepo "application" "spring-boot-helm-chart"
+  setPermission "application" "spring-boot-helm-chart" "${FLUX_USERNAME}" "READ"
+
   configJenkins
   rm curl
 }
