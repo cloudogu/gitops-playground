@@ -2,6 +2,12 @@
 
 Reproducible infrastructure to showcase GitOps workflows. Derived from our [consulting experience](https://cloudogu.com/en/consulting/).
 
+## Prerequisites
+
+To be able to set up the infrastructure you are required to have **kubectl**, **k3s** and **helm** set up.
+If you use the provided script, these components will be installed, if not done yet.
+
+
 ## Install k3s
 
 You can use your own k3s cluster, or use the script provided.
@@ -48,3 +54,4 @@ Change in `jenkins-credentials.yaml` if necessary.
 Find scm-manager on http://localhost:9091
 
 Login with `scmadmin/scmadmin`
+
