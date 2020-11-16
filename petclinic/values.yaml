@@ -1,5 +1,5 @@
 image:
-  name: localhost:9092/spring-petclinic-plain:202011101211-659e96b-master
+  name: localhost:9092/spring-petclinic-plain:202011162104-709fdc2-master
 
 extraEnv: |
   - name: TZ
@@ -7,7 +7,6 @@ extraEnv: |
 
 service:
   type: LoadBalancer
-  port: 8080
 
 ingress:
   enabled: false
