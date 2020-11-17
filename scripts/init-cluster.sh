@@ -94,8 +94,9 @@ function installK3s() {
   # Renaming via k3s is not possible https://github.com/rancher/k3s/issues/1806
   tmpConfig=$(mktemp)
   sed </etc/rancher/k3s/k3s.yaml "s/: default/: ${K3S_CLUSTER_NAME}/" >"$tmpConfig"
+  # Don't fail when there is no .kube dir
+  mkdir -p ~/.kube
   KUBECONFIG=${tmpConfig}:~/.kube/config kubectl config view --flatten >~/.kube/config2 && mv ~/.kube/config2 ~/.kube/config
-
 }
 
 confirm() {
