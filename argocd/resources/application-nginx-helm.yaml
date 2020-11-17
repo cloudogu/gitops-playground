@@ -1,0 +1,16 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: nginx-helm
+  namespace: default
+spec:
+  destination:
+    namespace: argocd-production
+    server: https://kubernetes.default.svc
+  project: playground
+  source:
+    path: .
+    repoURL: http://scmm-scm-manager.default.svc.cluster.local:9091/scm/repo/argocd/nginx-helm
+    targetRevision: main
+  syncPolicy:
+    automated: {}

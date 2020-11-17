@@ -30,6 +30,17 @@ function main() {
   addRepo "fluxv2" "petclinic-plain"
   setPermission "fluxv2" "petclinic-plain" "${JENKINS_USERNAME}" "WRITE"
 
+  addRepo "argocd" "nginx-helm"
+  setPermission "argocd" "nginx-helm" "${ARGOCD_USERNAME}" "WRITE"
+  addRepo "argocd" "petclinic-plain"
+  setPermission "argocd" "petclinic-plain" "${JENKINS_USERNAME}" "WRITE"
+  addRepo "argocd" "gitops"
+  setPermission "argocd" "gitops" "${JENKINS_USERNAME}" "WRITE"
+  setPermission "argocd" "gitops" "${ARGOCD_USERNAME}" "READ"
+  
+  addRepo "application" "spring-boot-helm-chart"
+  setPermission "application" "spring-boot-helm-chart" "${FLUX_USERNAME}" "READ"
+
   configJenkins
   rm curl
 }
@@ -37,7 +48,7 @@ function main() {
 function addRepo() {
   ./curl -i -L -X POST -H "Content-Type: application/vnd.scmm-repository+json;v=2" \
     --data "{\"name\":\"${2}\",\"namespace\":\"${1}\",\"type\":\"git\",\"contact\":\"admin@mail.de\",\"description\":\"description\",\"contextEntries\":{},\"_links\":{}}" \
-    "http://${SCM_USER}:${SCM_PWD}@${HOST}/scm/api/v2/repositories/?initialize=true"
+    "http://${SCM_USER}:${SCM_PWD}@${HOST}/scm/api/v2/repositories/"
 }
 
 function setConfig() {

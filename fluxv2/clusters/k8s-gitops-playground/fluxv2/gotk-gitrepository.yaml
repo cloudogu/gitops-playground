@@ -9,7 +9,7 @@ metadata:
 spec:
   interval: 1m0s
   ref:
-    branch: master
+    branch: main
   secretRef:
     name: fluxv2-scmm-secret
   url: http://scmm-scm-manager.default.svc.cluster.local:9091/scm/repo/fluxv2/gitops

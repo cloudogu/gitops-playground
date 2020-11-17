@@ -6,7 +6,7 @@ master:
   testEnabled: false
   # Use deterministic version and not "lts", which is pretty much the same as "latest".
   # Note: When updating, check if PATH of image still matches the one listed in "containerEnv"
-  tag: 2.249.2-lts-alpine
+  tag: 2.249.3-lts-jdk11
 
   serviceType: NodePort
   nodePort: 9090
@@ -62,24 +62,34 @@ master:
       # This might be fixed in a later SCMM Plugin for Jenkins
       petclinic-plain-job: |
         jenkins:
-          systemMessage: "Seeding petclinic-plain job"
+          systemMessage: "Seeding petclinic-plain jobs"
         jobs:
           - script: |
-              multibranchPipelineJob('petclinic-plain') {
+              multibranchPipelineJob('fluxV1-petclinic-plain') {
                   branchSources {
                       git {
-                          id('petclinic-plain')
+                          id('fluxV1-petclinic-plain')
                           remote('http://scmm-scm-manager:9091/scm/repo/application/petclinic-plain')
                           credentialsId('scmm-user')
                       }
                   }
               }
           - script: |
-              multibranchPipelineJob('petclinic-plain-fluxv2') {
+              multibranchPipelineJob('fluxv2-petclinic-plain') {
                   branchSources {
                       git {
-                          id('petclinic-plain')
+                          id('fluxv2-petclinic-plain')
                           remote('http://scmm-scm-manager:9091/scm/repo/fluxv2/petclinic-plain')
+                          credentialsId('scmm-user')
+                      }
+                  }
+              }
+          - script: |
+              multibranchPipelineJob('argocd-petclinic-plain') {
+                  branchSources {
+                      git {
+                          id('argocd-petclinic-plain')
+                          remote('http://scmm-scm-manager:9091/scm/repo/argocd/petclinic-plain')
                           credentialsId('scmm-user')
                       }
                   }

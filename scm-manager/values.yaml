@@ -29,6 +29,9 @@ extraEnvFrom: |
   - prefix: FLUX_
     secretRef:
       name: flux-scmm
+  - prefix: ARGOCD_
+    secretRef:
+      name: argocd-scmm
 
 
 lifecycleHooks: |-
