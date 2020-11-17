@@ -56,9 +56,6 @@ function checkDockerAccessible() {
   if ! command -v docker >/dev/null 2>&1; then
     echo "Docker not installed" 
     exit 1
-  elif ! docker ps >/dev/null 2>&1; then
-    echo "Docker not accessible for current user"
-    exit 1
   fi
 }
 
