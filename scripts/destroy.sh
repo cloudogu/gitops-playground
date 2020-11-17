@@ -31,10 +31,14 @@ kubectl delete -f scm-manager/resources || true
 
 kubectl delete -f k8s-namespaces/ || true
 
-#cleanup
-kubectl delete crd/helmreleases.helm.fluxcd.io
 
 kubectl delete -f argocd/resources || true
 helm delete argocd -n default || true
 
+#cleanup
+kubectl delete crd/helmreleases.helm.fluxcd.io || true
+kubectl delete customresourcedefinition.apiextensions.k8s.io/applications.argoproj.io || true
+kubectl delete customresourcedefinition.apiextensions.k8s.io/appprojects.argoproj.io || true
+kubectl delete apiservice.apiregistration.k8s.io/v1alpha1.argoproj.io || true
+kubectl delete appproject.argoproj.io/default || true
 
