@@ -124,16 +124,16 @@ function printWelcomeScreen() {
   echo "Welcome to Cloudogu's GitOps playground!"
   echo
   echo "The playground features an example application (Sprint PetClinic) in SCM-Manager. See here: "
-  echo "http://localhost:9091/scm/repo/application/petclinic-plain/code/sources/master/"
+  echo "http://localhost:9091/scm/repo/application/petclinic-plain/code/sources/main/"
   echo "Credentials for SCM-Manager and Jenkins are: scmadmin/scmadmin"
   echo
   echo "A simple deployment can be triggered by changing the message.properties, for example:"
-  echo "http://localhost:9091/scm/repo/application/petclinic-plain/code/sources/master/src/main/resources/messages/messages.properties/"
+  echo "http://localhost:9091/scm/repo/application/petclinic-plain/code/sources/main/src/main/resources/messages/messages.properties/"
   echo
   echo "After saving, this Jenkins job is triggered:"
-  echo "http://localhost:9090/job/petclinic-plain/job/master"
+  echo "http://localhost:9090/job/petclinic-plain/job/main"
   echo "During the job, jenkins pushes into GitOps repo and creates a pull request for production:"
-  echo "GitOps repo: http://localhost:9091/scm/repo/cluster/gitops/code/sources/master/"
+  echo "GitOps repo: http://localhost:9091/scm/repo/cluster/gitops/code/sources/main/"
   echo "Pull requests: http://localhost:9091/scm/repo/cluster/gitops/pull-requests"
   echo
   echo "After about 1 Minute, the GitOps operator Flux deploys to staging."

@@ -106,11 +106,11 @@ String pushToConfigRepo(Map gitopsConfig) {
 
         dir(configRepoTempDir) {
 
-            git url: gitopsConfig.scmmConfigRepoUrl, branch: 'master', changelog: false, poll: false
+            git url: gitopsConfig.scmmConfigRepoUrl, branch: 'main', changelog: false, poll: false
             git.fetch()
 
             def repoChanges = new HashSet<String>()
-            repoChanges += createApplicationForStageAndPushToBranch 'staging', 'master', applicationRepo, git, gitopsConfig
+            repoChanges += createApplicationForStageAndPushToBranch 'staging', 'main', applicationRepo, git, gitopsConfig
 
             git.checkoutOrCreate(application)
             repoChanges += createApplicationForStageAndPushToBranch 'production', application, applicationRepo, git, gitopsConfig
@@ -201,7 +201,7 @@ void createPullRequest(Map gitopsConfig) {
                 'curl -s -o /dev/null -w "%{http_code}" ' +
                         "-u ${GIT_USER}:${GIT_PASSWORD} " +
                         '-H "Content-Type: application/vnd.scmm-pullRequest+json;v=2" ' +
-                        '--data \'{"title": "created by service ' + application + '", "source": "' + application + '", "target": "master"}\' ' +
+                        '--data \'{"title": "created by service ' + application + '", "source": "' + application + '", "target": "main"}\' ' +
                         gitopsConfig.scmmPullRequestUrl
 
         // For debugging the quotation of the shell script, just do: echo script
