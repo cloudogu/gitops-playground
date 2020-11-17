@@ -11,8 +11,10 @@ HELM_BINARY_NAME='helm'
 KUBECTL_VERSION=1.19.3
 
 function main() {
+  checkDockerAccessible
+  
   # Install kubectl if necessary
-  if command -v kubectl version ; then
+  if command -v kubectl; then
     echo "kubectl already installed"
   else
     msg="Install kubectl ${KUBECTL_VERSION}?"
@@ -47,6 +49,16 @@ function main() {
 
   else
     installK3s
+  fi
+}
+
+function checkDockerAccessible() {
+  if ! command -v docker >/dev/null 2>&1; then
+    echo "Docker not installed" 
+    exit 1
+  elif ! docker ps >/dev/null 2>&1; then
+    echo "Docker not accessible for current user"
+    exit 1
   fi
 }
 
