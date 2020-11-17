@@ -23,6 +23,9 @@ function main() {
   addRepo "application" "petclinic-plain"
   setPermission "application" "petclinic-plain" "${JENKINS_USERNAME}" "WRITE"
 
+  addRepo "application" "nginx"
+  setPermission "application" "nginx" "${JENKINS_USERNAME}" "WRITE"
+
   configJenkins
   rm curl
 }

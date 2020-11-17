@@ -60,11 +60,20 @@ master:
       # This is probably because "scm-manager" is invalid groovy syntax.
       # See https://github.com/jenkinsci/scm-manager-plugin/blob/1.4.0/src/main/java/com/cloudogu/scmmanager/scm/ScmManagerSource.java
       # This might be fixed in a later SCMM Plugin for Jenkins
-      petclinic-plain-job: |
+      init-job: |
         jenkins:
-          systemMessage: "Seeding petclinic-plain job"
+          systemMessage: "Seeding init job"
         jobs:
           - script: |
+              multibranchPipelineJob('nginx') {
+                  branchSources {
+                      git {
+                          id('nginx')
+                          remote('http://scmm-scm-manager:9091/scm/repo/application/nginx')
+                          credentialsId('scmm-user')
+                      }
+                  }
+              }
               multibranchPipelineJob('petclinic-plain') {
                   branchSources {
                       git {
@@ -74,7 +83,6 @@ master:
                       }
                   }
               }
-
 
   sidecars:
     configAutoReload:

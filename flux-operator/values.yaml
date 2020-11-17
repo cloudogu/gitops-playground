@@ -2,6 +2,7 @@ env:
   secretName: flux-scmm
 git:
   url: "http://$(USERNAME):$(PASSWORD)@scmm-scm-manager:9091/scm/repo/cluster/gitops"
+  branch: main
   readonly: true
   pollInterval: "1m"
 registry:

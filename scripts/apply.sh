@@ -22,7 +22,9 @@ function main() {
   applyK8sResources
 
   pushPetClinicRepo 'petclinic/fluxv1/plain-k8s' 'application/petclinic-plain'
-  
+
+  pushLocalRepo 'nginx' 'application/nginx'
+
   initRepo 'cluster/gitops'
 
   printWelcomeScreen
@@ -38,6 +40,7 @@ function applyK8sResources() {
   helm repo add jenkins https://charts.jenkins.io
   helm repo add fluxcd https://charts.fluxcd.io
   helm repo add helm-stable https://charts.helm.sh/stable
+  helm repo add bitnami https://charts.bitnami.com/bitnami
 
   helm upgrade -i scmm --values scm-manager/values.yaml --set-file=postStartHookScript=scm-manager/initscmm.sh scm-manager/chart -n default
   helm upgrade -i jenkins --values jenkins/values.yaml --version 2.13.0 jenkins/jenkins -n default
@@ -68,7 +71,30 @@ function pushPetClinicRepo() {
   )
 
   rm -rf "${TMP_REPO}"
-  
+
+  setMainBranch "${TARGET_REPO_SCMM}"
+}
+
+function pushLocalRepo() {
+  LOCAL_SOURCE="$1"
+  TARGET_REPO_SCMM="$2"
+
+  TMP_REPO=$(mktemp -d)
+
+ git clone -n http://localhost:9091/scm/repo/application/nginx "${TMP_REPO}" --quiet
+  (
+    cd "${TMP_REPO}"
+    cp -r "${PLAYGROUND_DIR}/${LOCAL_SOURCE}"/* .
+    git checkout -b main --quiet
+    git add .
+    git commit -m 'Add GitOps Pipeline and K8s resources' --quiet
+
+    waitForScmManager
+    git push -u "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
+  )
+
+  rm -rf "${TMP_REPO}"
+
   setMainBranch "${TARGET_REPO_SCMM}"
 }
 
@@ -102,7 +128,7 @@ function initRepo() {
 
 function setMainBranch() {
   TARGET_REPO_SCMM="$1"
-  
+
   curl -s -L -X PUT -H 'Content-Type: application/vnd.scmm-gitConfig+json' \
     --data-raw "{\"defaultBranch\":\"main\"}" \
     "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/api/v2/config/git/${TARGET_REPO_SCMM}"
@@ -111,15 +137,16 @@ function setMainBranch() {
 function printWelcomeScreen() {
   echo "Welcome to Cloudogu's GitOps playground!"
   echo
-  echo "The playground features an example application (Sprint PetClinic) in SCM-Manager. See here: "
+  echo "The playground features an example application (Spring PetClinic) in SCM-Manager. See here: "
   echo "http://localhost:9091/scm/repo/application/petclinic-plain/code/sources/master/"
   echo "Credentials for SCM-Manager and Jenkins are: scmadmin/scmadmin"
   echo
   echo "A simple deployment can be triggered by changing the message.properties, for example:"
   echo "http://localhost:9091/scm/repo/application/petclinic-plain/code/sources/master/src/main/resources/messages/messages.properties/"
   echo
-  echo "After saving, this Jenkins job is triggered:"
+  echo "After saving, this those Jenkins jobs are triggered:"
   echo "http://localhost:9090/job/petclinic-plain/job/master"
+  echo "http://localhost:9090/job/nginx/job/main"
   echo "During the job, jenkins pushes into GitOps repo and creates a pull request for production:"
   echo "GitOps repo: http://localhost:9091/scm/repo/cluster/gitops/code/sources/master/"
   echo "Pull requests: http://localhost:9091/scm/repo/cluster/gitops/pull-requests"
