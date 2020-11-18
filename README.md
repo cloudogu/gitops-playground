@@ -4,9 +4,8 @@ Reproducible infrastructure to showcase GitOps workflows. Derived from our [cons
 
 ## Prerequisites
 
-To be able to set up the infrastructure you are required to have **kubectl**, **k3s** and **helm** set up.
-If you use the provided script, these components will be installed, if not done yet.
-
+To be able to set up the infrastructure you need a linux machine (tested with Ubuntu 20.04) with docker installed.
+All other tools like kubectl, k3s and helm are set up using the `./scripts/init-cluster.sh` script.
 
 ## Install k3s
 
