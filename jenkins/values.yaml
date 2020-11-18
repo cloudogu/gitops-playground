@@ -12,12 +12,12 @@ master:
   nodePort: 9090
 
   additionalPlugins:
-    - docker-workflow:1.24
+    - docker-workflow:1.25
     - docker-plugin:1.2.1
     - job-dsl:1.77
     - pipeline-utility-steps:2.6.1
-    - junit:1.34
-    - scm-manager:1.4.0
+    - junit:1.44
+    - scm-manager:1.5.0
 
   # This would be great to not install every plugin again on startup.
   # BUT: This also leads to CASC being ignored.
@@ -50,7 +50,7 @@ master:
             - envVars:
                 env:
                 - key: "PATH"
-                  value: "/usr/local/openjdk-8/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/docker"
+                  value: "/opt/java/openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/docker"
       # TODO could we use the SCMM source here?
       # These URLS could be helpful:
       # http://localhost:9090/job/petclinic-plain/config.xml
@@ -97,6 +97,8 @@ master:
       # The files in this folders can be used as ${variable} in CasC credentials
       # Default /run/secrets results in "read-only file system"
       value: /secrets/jenkins
+    - name: PATH
+      value: /opt/java/openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/docker
 
   customInitContainers:
     # Download docker client

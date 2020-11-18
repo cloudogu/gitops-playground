@@ -9,6 +9,8 @@ String getCesBuildLibRepo() { 'https://github.com/cloudogu/ces-build-lib/' }
 
 String getScmManagerCredentials() { 'scmm-user' }
 
+String getGitVersion() { '2.24.3' }
+
 String getKubectlImage() { 'lachlanevenson/k8s-kubectl:v1.18.2' }
 
 String getConfigRepositoryUrl() { "http://scmm-scm-manager:9091/scm/repo/cluster/gitops" }
@@ -23,16 +25,16 @@ String getHelmChartVersion() { "8.0.0" }
 
 String getMainBranch() { 'main' }
 
-cesBuildLib = library(identifier: "ces-build-lib@${cesBuildLibVersion}",
-        retriever: modernSCM([$class: 'GitSCMSource', remote: cesBuildLibRepo])
-).com.cloudogu.ces.cesbuildlib
+node('docker') {
+    cesBuildLib = library(identifier: "ces-build-lib@${cesBuildLibVersion}",
+            retriever: modernSCM([$class: 'GitSCMSource', remote: cesBuildLibRepo])
+    ).com.cloudogu.ces.cesbuildlib
 
-properties([
-        // Keep only the last 10 build to preserve space
-        disableConcurrentBuilds()
-])
+    properties([
+            // Keep only the last 10 build to preserve space
+            disableConcurrentBuilds()
+    ])
 
-node {
     def git = cesBuildLib.Git.new(this)
 
     // we can put our script inline, instead of having to load it through a configmap
@@ -51,40 +53,31 @@ node {
     ]
 
     timeout(activity: true, time: 30, unit: 'MINUTES') {
-
         catchError {
-
             stage('Checkout') {
                 checkout scm
                 git.clean('')
             }
-
             // Saves info about application git repo (as opposed to gitOps repo) before changing paths later in the pipeline
             def applicationRepo = GitRepo.create(git)
 
             stage('Deploy') {
-
                 if (isDeployableBuild()) {
-
                     String pushedChanges = pushToConfigRepo(applicationRepo)
-
                     setBuildDescription createBuildDescription(pushedChanges)
-
                 } else {
                     setBuildDescription 'No push to gitOps repo, because neither on develop branch nor "forceDeployStaging" param set'
                 }
-
             }
         }
     }
 }
 
 private isDeployableBuild() {
-    return env.BRANCH_NAME in ['main', 'develop']
+    return env.BRANCH_NAME in [mainBranch]
 }
 
 String pushToConfigRepo(GitRepo applicationRepo) {
-
     def git = cesBuildLib.Git.new(this, scmManagerCredentials)
     def changesOnGitOpsRepo = ''
 
@@ -95,8 +88,7 @@ String pushToConfigRepo(GitRepo applicationRepo) {
 
     try {
         dir(configRepoTempDir) {
-
-            git url: configRepositoryUrl, branch: 'main', changelog: false, poll: false
+            git url: configRepositoryUrl, branch: mainBranch, changelog: false, poll: false
             git.fetch()
 
             def repoChanges = new HashSet<String>()
@@ -106,6 +98,7 @@ String pushToConfigRepo(GitRepo applicationRepo) {
             repoChanges += createApplicationForStageAndPushToBranch 'production', application, applicationRepo, git
 
             changesOnGitOpsRepo = aggregateChangesOnGitOpsRepo(repoChanges)
+
             if (changesOnGitOpsRepo) {
                 createPullRequest()
             }
@@ -121,7 +114,6 @@ private setBuildDescription(String description) {
     echo "Setting build description: ${description}"
     currentBuild.description = description
 }
-
 
 private String createBuildDescription(String pushedChanges) {
     String description = ''
@@ -153,8 +145,8 @@ String createApplicationForStageAndPushToBranch(String stage, String branch, Git
     sh "cp ${env.WORKSPACE}/k8s/${stage}/*.yaml ${stage}/${application}/ || true"
 
     writeFile file: "${stage}/${application}/helmRelease.yaml", text: createHelmRelease("${stage}", createFromFileValues(stage))
-    writeFile file: "${stage}/${application}/valuesMap.yaml", text: createConfigMap("values.yaml", "../k8s/values-${stage}.yaml", "${application}-helm-operator-values", "${stage}")
-    writeFile file: "${stage}/${application}/sharedValuesMap.yaml", text: createConfigMap("values.yaml", "../k8s/values-shared.yaml", "${application}-shared-helm-operator-values", "${stage}")
+    writeFile file: "${stage}/${application}/valuesMap.yaml", text: createConfigMap("values.yaml", "${env.WORKSPACE}/k8s/values-${stage}.yaml", "${application}-helm-operator-values", "${stage}")
+    writeFile file: "${stage}/${application}/sharedValuesMap.yaml", text: createConfigMap("values.yaml", "${env.WORKSPACE}/k8s/values-shared.yaml", "${application}-shared-helm-operator-values", "${stage}")
     echo "after write"
 
     git.add('.')
@@ -233,15 +225,13 @@ String createFromFileValues(String stage) {
 
 String createConfigMap(String key, String filePath, String name, String namespace) {
     String configMap = ""
-    echo "im in here"
     withKubectl {
-        echo "im in here 2"
         String script = "KUBECONFIG=${writeKubeConfig()} kubectl create configmap ${name} " +
                 "--from-file=${key}=${filePath} " +
                 "--dry-run=client -o yaml -n ${namespace}"
+
         configMap = sh returnStdout: true, script: script
     }
-
     return configMap
 }
 
@@ -273,7 +263,7 @@ users:
 
 void withKubectl(Closure body) {
     cesBuildLib.Docker.new(this).image(kubectlImage)
-            .mountJenkinsUser()
+    // Allow accessing WORKSPACE even when we are in a child dir (using "dir() {}")
             .inside("${pwd().equals(env.WORKSPACE) ? '' : "-v ${env.WORKSPACE}:${env.WORKSPACE}"}") {
                 body()
             }
@@ -302,10 +292,6 @@ String createApplicationCommitMessage(def git, def applicationRepo) {
     def repoName = urlSplit[-1]
     String message = "${issueIds}${repoNamespace}/${repoName}@${applicationRepo.commitHash}"
     List additions = []
-
-    if (forceDeployStaging) {
-        additions.add("* on branch ${git.simpleBranchName}")
-    }
 
     if (!additions.isEmpty()) {
         // Highlight commits that ran with non-default parameters
