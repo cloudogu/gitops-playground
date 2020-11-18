@@ -69,7 +69,7 @@ master:
                   branchSources {
                       git {
                           id('fluxV1-petclinic-plain')
-                          remote('http://scmm-scm-manager:9091/scm/repo/application/petclinic-plain')
+                          remote('http://scmm-scm-manager:9091/scm/repo/fluxv1/petclinic-plain')
                           credentialsId('scmm-user')
                       }
                   }
@@ -145,8 +145,7 @@ persistence:
         path: /var/run/docker.sock
     - name: scmm-user
       secret:
-        # TODO use SCMM user secret here
-        secretName: jenkins-scmm
+        secretName: gitops-scmm
 
   mounts:
     - name: scmm-user

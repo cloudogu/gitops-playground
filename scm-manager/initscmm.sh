@@ -8,38 +8,42 @@ HOST=localhost:8080
 
 function main() {
 
+  # We need to download curl to use the REST API, because the installed wget lacks functionality
   cd /tmp && wget https://github.com/dtschan/curl-static/releases/download/v7.63.0/curl && chmod +x curl
+  # Wait for the SCM-Manager to be up and running
   while [[ "$(./curl -s -L -o /dev/null -w ''%{http_code}'' "http://${HOST}/scm")" -ne "200" ]]; do sleep 5; done;
 
   setConfig
 
-  addUser "${JENKINS_USERNAME}" "${JENKINS_PASSWORD}" "jenkins@mail.de"
-  addUser "${FLUX_USERNAME}" "${FLUX_PASSWORD}" "flux@mail.de"
+  addUser "${GITOPS_USERNAME}" "${GITOPS_PASSWORD}" "gitops@mail.de"
 
-  addRepo "cluster" "gitops"
-  setPermission "cluster" "gitops" "${JENKINS_USERNAME}" "WRITE"
-  setPermission "cluster" "gitops" "${FLUX_USERNAME}" "READ"
+  ### FluxV1 Repos
+  addRepo "fluxv1" "gitops"
+  setPermission "fluxv1" "gitops" "${GITOPS_USERNAME}" "WRITE"
 
+  addRepo "fluxv1" "petclinic-plain"
+  setPermission "fluxv1" "petclinic-plain" "${GITOPS_USERNAME}" "WRITE"
+
+  ### FluxV2 Repos
   addRepo "fluxv2" "gitops"
-  setPermission "fluxv2" "gitops" "${JENKINS_USERNAME}" "WRITE"
-  setPermission "fluxv2" "gitops" "${FLUX_USERNAME}" "READ"
-
-  addRepo "application" "petclinic-plain"
-  setPermission "application" "petclinic-plain" "${JENKINS_USERNAME}" "WRITE"
+  setPermission "fluxv2" "gitops" "${GITOPS_USERNAME}" "WRITE"
 
   addRepo "fluxv2" "petclinic-plain"
-  setPermission "fluxv2" "petclinic-plain" "${JENKINS_USERNAME}" "WRITE"
+  setPermission "fluxv2" "petclinic-plain" "${GITOPS_USERNAME}" "WRITE"
 
+  ### ArgoCD Repos
   addRepo "argocd" "nginx-helm"
-  setPermission "argocd" "nginx-helm" "${ARGOCD_USERNAME}" "WRITE"
+  setPermission "argocd" "nginx-helm" "${GITOPS_USERNAME}" "WRITE"
+
   addRepo "argocd" "petclinic-plain"
-  setPermission "argocd" "petclinic-plain" "${JENKINS_USERNAME}" "WRITE"
+  setPermission "argocd" "petclinic-plain" "${GITOPS_USERNAME}" "WRITE"
+
   addRepo "argocd" "gitops"
-  setPermission "argocd" "gitops" "${JENKINS_USERNAME}" "WRITE"
-  setPermission "argocd" "gitops" "${ARGOCD_USERNAME}" "READ"
-  
-  addRepo "application" "spring-boot-helm-chart"
-  setPermission "application" "spring-boot-helm-chart" "${FLUX_USERNAME}" "READ"
+  setPermission "argocd" "gitops" "${GITOPS_USERNAME}" "WRITE"
+
+  ### Common Repos
+  addRepo "common" "spring-boot-helm-chart"
+  setPermission "common" "spring-boot-helm-chart" "${GITOPS_USERNAME}" "READ"
 
   configJenkins
   rm curl

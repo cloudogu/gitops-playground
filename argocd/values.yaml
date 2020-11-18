@@ -11,17 +11,17 @@ server:
     repositories: |
       - url: http://scmm-scm-manager.default.svc.cluster.local:9091/scm/repo/argocd/gitops
         passwordSecret:
-          name: argocd-scmm
+          name: gitops-scmm
           key: PASSWORD
         usernameSecret:
-          name: argocd-scmm
+          name: gitops-scmm
           key: USERNAME
       - url: http://scmm-scm-manager.default.svc.cluster.local:9091/scm/repo/argocd/nginx-helm
         passwordSecret:
-          name: argocd-scmm
+          name: gitops-scmm
           key: PASSWORD
         usernameSecret:
-          name: argocd-scmm
+          name: gitops-scmm
           key: USERNAME
       - type: helm
         url: https://charts.bitnami.com/bitnami

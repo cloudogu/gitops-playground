@@ -23,16 +23,9 @@ plugins:
     url: https://packages.scm-manager.org/repository/plugin-releases/sonia/scm/plugins/scm-el-plugin/1.0.0/scm-el-plugin-1.0.0.smp
 
 extraEnvFrom: |
-  - prefix: JENKINS_
+  - prefix: GITOPS
     secretRef:
-      name: jenkins-scmm
-  - prefix: FLUX_
-    secretRef:
-      name: flux-scmm
-  - prefix: ARGOCD_
-    secretRef:
-      name: argocd-scmm
-
+      name: gitops-scmm
 
 lifecycleHooks: |-
   postStart:

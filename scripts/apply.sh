@@ -25,19 +25,20 @@ function main() {
 
   applyK8sResources
 
-  pushPetClinicRepo 'petclinic/fluxv1/plain-k8s' 'application/petclinic-plain'
-  pushPetClinicRepo 'petclinic/fluxv2/plain-k8s' 'fluxv2/petclinic-plain'
+  initRepo 'fluxv1/gitops'
+  pushPetClinicRepo 'applications/petclinic/fluxv1/plain-k8s' 'fluxv1/petclinic-plain'
 
-  initRepo 'cluster/gitops'
   initRepoWithSource 'fluxv2/gitops' 'fluxv2'
+  pushPetClinicRepo 'applications/petclinic/fluxv2/plain-k8s' 'fluxv2/petclinic-plain'
 
-  pushPetClinicRepo 'petclinic/argocd/plain-k8s' 'argocd/petclinic-plain'
 
-  pushHelmChartRepo 'application/spring-boot-helm-chart'
+  initRepo 'argocd/gitops'
+  initRepoWithSource 'argocd/nginx-helm' 'applications/nginx'
+  pushPetClinicRepo 'applications/petclinic/argocd/plain-k8s' 'argocd/petclinic-plain'
+
+  pushHelmChartRepo 'common/spring-boot-helm-chart'
 
   initRepo 'cluster/gitops'
-  initRepo 'argocd/gitops'
-  initRepoWithSource 'argocd/nginx-helm' 'nginx'
 
   printWelcomeScreen
 }
@@ -45,8 +46,9 @@ function main() {
 function applyK8sResources() {
   kubectl apply -f k8s-namespaces
 
+  createScmmSecrets
+
   kubectl apply -f jenkins/resources
-  kubectl apply -f scm-manager/resources
   kubectl apply -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-components.yaml
 
   helm repo add jenkins https://charts.jenkins.io
@@ -70,6 +72,14 @@ function applyK8sResources() {
 
   # set argocd admin password to 'admin' here, because it does not work through the helm chart
   kubectl patch secret -n default argocd-secret -p '{"stringData": { "admin.password": "$2y$10$GsLZ7KlAhW9xNsb10YO3/O6jlJKEAU2oUrBKtlF/g1wVlHDJYyVom"}}'
+}
+
+function createScmmSecrets() {
+  kubectl create secret generic gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=somePassword -n default
+  kubectl create secret generic gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=somePassword -n fluxv1
+  # fluxv2 needs lowercase fieldnames
+  kubectl create secret generic gitops-scmm --from-literal=username=gitops --from-literal=passord=somePassword -n fluxv2
+  kubectl create secret generic gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=somePassword -n argocd
 }
 
 function pushPetClinicRepo() {
