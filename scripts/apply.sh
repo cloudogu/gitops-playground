@@ -87,14 +87,16 @@ function pushLocalRepo() {
   TARGET_REPO_SCMM="$2"
 
   TMP_REPO=$(mktemp -d)
-
  git clone -n http://localhost:9091/scm/repo/application/nginx "${TMP_REPO}" --quiet
   (
     cd "${TMP_REPO}"
+    git checkout main --quiet || git checkout -b main --quiet 
     cp -r "${PLAYGROUND_DIR}/${LOCAL_SOURCE}"/* .
-    git checkout -b main --quiet
     git add .
-    git commit -m 'Add GitOps Pipeline and K8s resources' --quiet
+    # exits with 1 if there were differences and 0 means no differences.
+    if ! git diff-index --exit-code --quiet HEAD --; then
+      git commit -m 'Add GitOps Pipeline and K8s resources' --quiet
+    fi
 
     waitForScmManager
     git push -u "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
@@ -122,10 +124,13 @@ function initRepo() {
   git clone "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}" --quiet
   (
     cd "${TMP_REPO}"
-    git checkout -b main  --quiet
+    git checkout main --quiet || git checkout -b main --quiet 
     echo "# gitops" > README.md
     git add README.md
-    git commit -m "Add readme" --quiet
+    # exits with 1 if there were differences and 0 means no differences.
+    if ! git diff-index --exit-code --quiet HEAD --; then
+      git commit -m "Add readme" --quiet
+    fi
     waitForScmManager
     git push -u "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
   )
@@ -159,9 +164,9 @@ function prepareWorkspace() {
 
   if [[ "$(readlink "${JENKINS_HOME}/workspace")" = "${WORKSPACE}" ]]; then
     echo "symlink between 'WORKSPACE' and 'JENKINS_HOME' is already set correctly"
-    else
+  else
+      echo "Creating symlink from ${JENKINS_HOME}/workspace to ${WORKSPACE}"
       sudo ln -s ${WORKSPACE} ${JENKINS_HOME}
-      echo ""
   fi
 }
 

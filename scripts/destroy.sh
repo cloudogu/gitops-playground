@@ -25,4 +25,5 @@ kubectl delete namespace production || true
 kubectl delete namespace staging || true
 
 # remove symlink
+echo "Removing /var/jenkins_home/workspace (which symlinks into this directory)" 
 sudo rm -rf /var/jenkins_home/workspace
