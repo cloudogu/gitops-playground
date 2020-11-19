@@ -132,6 +132,10 @@ agent:
   # Possible values: Always, Never, OnFailure
   # Persist for faster builds (workspace is not deleted)
   podRetention: "Always" # TODO This results in "Never". Bug in chart?
+  resources:
+    limits:
+      cpu: "1"
+      memory: "1Gi"
   volumes:
     - type: HostPath
       # In our local playground infrastructure, we're using a workaround: Builds are run on the Jenkins master, which runs
