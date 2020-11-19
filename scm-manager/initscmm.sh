@@ -30,6 +30,9 @@ function main() {
   addRepo "fluxv2" "petclinic-plain"
   setPermission "fluxv2" "petclinic-plain" "${JENKINS_USERNAME}" "WRITE"
 
+  addRepo "application" "nginx"
+  setPermission "application" "nginx" "${JENKINS_USERNAME}" "WRITE"
+
   addRepo "argocd" "nginx-helm"
   setPermission "argocd" "nginx-helm" "${ARGOCD_USERNAME}" "WRITE"
   addRepo "argocd" "petclinic-plain"
@@ -37,7 +40,7 @@ function main() {
   addRepo "argocd" "gitops"
   setPermission "argocd" "gitops" "${JENKINS_USERNAME}" "WRITE"
   setPermission "argocd" "gitops" "${ARGOCD_USERNAME}" "READ"
-  
+
   addRepo "application" "spring-boot-helm-chart"
   setPermission "application" "spring-boot-helm-chart" "${FLUX_USERNAME}" "READ"
 

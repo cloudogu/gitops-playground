@@ -12,12 +12,12 @@ master:
   nodePort: 9090
 
   additionalPlugins:
-    - docker-workflow:1.24
+    - docker-workflow:1.25
     - docker-plugin:1.2.1
     - job-dsl:1.77
     - pipeline-utility-steps:2.6.1
-    - junit:1.34
-    - scm-manager:1.4.0
+    - junit:1.44
+    - scm-manager:1.5.0
 
   # This would be great to not install every plugin again on startup.
   # BUT: This also leads to CASC being ignored.
@@ -50,7 +50,7 @@ master:
             - envVars:
                 env:
                 - key: "PATH"
-                  value: "/usr/local/openjdk-8/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/docker"
+                  value: "/opt/java/openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/docker"
       # TODO could we use the SCMM source here?
       # These URLS could be helpful:
       # http://localhost:9090/job/petclinic-plain/config.xml
@@ -60,16 +60,27 @@ master:
       # This is probably because "scm-manager" is invalid groovy syntax.
       # See https://github.com/jenkinsci/scm-manager-plugin/blob/1.4.0/src/main/java/com/cloudogu/scmmanager/scm/ScmManagerSource.java
       # This might be fixed in a later SCMM Plugin for Jenkins
-      petclinic-plain-job: |
+      init-job: |
         jenkins:
-          systemMessage: "Seeding petclinic-plain jobs"
+          systemMessage: "Seeding init jobs"
         jobs:
           - script: |
               multibranchPipelineJob('fluxV1-petclinic-plain') {
+                branchSources {
+                  git {
+                    id('fluxV1-petclinic-plain')
+                    remote('http://scmm-scm-manager:9091/scm/repo/application/petclinic-plain')
+                    credentialsId('scmm-user')
+                  }
+                }
+              }
+
+          - script: |
+              multibranchPipelineJob('nginx') {
                   branchSources {
                       git {
-                          id('fluxV1-petclinic-plain')
-                          remote('http://scmm-scm-manager:9091/scm/repo/application/petclinic-plain')
+                          id('nginx')
+                          remote('http://scmm-scm-manager:9091/scm/repo/application/nginx')
                           credentialsId('scmm-user')
                       }
                   }
@@ -108,6 +119,11 @@ master:
       # The files in this folders can be used as ${variable} in CasC credentials
       # Default /run/secrets results in "read-only file system"
       value: /secrets/jenkins
+    - name: PATH
+      # We already mounted this PATH on the master-agent. Still, "docker.inside {}" failes in pipeline?
+      # Why? The docker pipeline plugin seems to set an empty environment: https://github.com/jenkinsci/docker-workflow-plugin/blob/docker-workflow-1.25/src/main/java/org/jenkinsci/plugins/docker/workflow/client/DockerClient.java#L261
+      # Workaround: Set the ENV in the container:
+      value: /opt/java/openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/docker
 
   customInitContainers:
     # Download docker client
@@ -143,12 +159,23 @@ persistence:
     - name: docker-sock # For this demo, allow jenkins master to access docker client
       hostPath:
         path: /var/run/docker.sock
+    # In our local playground infrastructure, we're using a workaround: Builds are run on the Jenkins master, which runs
+    # inside a container. During the builds, more containers are started (on the same docker host).
+    # This leads to a scenario where the Jenkins container tries to mount its filesystem into another container.
+    # The docker host is only able to realize this mounts when the mounted paths are the same inside and outside the containers.
+    # As another workaround, we provide the path inside the container also outside the container (/var/jenkins_home/workspace)
+    # In order not to pollute the host, we symlink /var/jenkins_home/workspace into this repo.
+    - name: workspace
+      hostPath:
+        path: /var/jenkins_home/workspace
     - name: scmm-user
       secret:
         # TODO use SCMM user secret here
         secretName: jenkins-scmm
 
   mounts:
+    - name: workspace
+      mountPath: "/var/jenkins_home/workspace"
     - name: scmm-user
       # Use k8s secret as jenkins credentials.
       # https://github.com/jenkinsci/configuration-as-code-plugin/blob/master/docs/features/secrets.adoc#kubernetes-secrets

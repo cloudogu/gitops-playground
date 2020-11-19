@@ -2,6 +2,25 @@
 
 Reproducible infrastructure to showcase GitOps workflows. Derived from our [consulting experience](https://cloudogu.com/en/consulting/).
 
+# Table of contents
+
+<!-- Update with `doctoc --notitle README.md`. See https://github.com/thlorenz/doctoc -->
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Prerequisites](#prerequisites)
+- [Install k3s](#install-k3s)
+- [Apply apps to cluster](#apply-apps-to-cluster)
+- [Applications](#applications)
+  - [Jenkins](#jenkins)
+  - [SCM-Manager](#scm-manager)
+- [Examples](#examples)
+  - [PetClinic with plain k8s resources](#petclinic-with-plain-k8s-resources)
+  - [3rd Party app (NGINX) via helm chart from helm repository](#3rd-party-app-nginx-via-helm-chart-from-helm-repository)
+- [Remove apps from cluster](#remove-apps-from-cluster)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 ## Prerequisites
 
 To be able to set up the infrastructure you need a linux machine (tested with Ubuntu 20.04) with docker installed.
@@ -35,11 +54,8 @@ Jenkins builds on the master and uses the docker agent that also runs the k8s po
 
 The scripts also prints a little intro on how to get started with a GitOps deployment.
 
-## Remove apps from cluster
 
-`scripts/destroy.sh`
-
-## Login
+## Applications
 
 ### Jenkins
 
@@ -54,3 +70,26 @@ Find scm-manager on http://localhost:9091
 
 Login with `scmadmin/scmadmin`
 
+## Examples
+
+### PetClinic with plain k8s resources
+
+* [Jenkinsfile](petclinic/fluxv1/plain-k8s/Jenkinsfile)
+* Deployed to 
+  * [localhost:9093](http://localhost:9093) (Staging)
+  * [localhost:9094](http://localhost:9094) (Production)
+
+### 3rd Party app (NGINX) via helm chart from helm repository
+
+* [Jenkinsfile](nginx/fluxv1/Jenkinsfile)
+* Deployed to 
+  * [localhost:9095](http://localhost:9095) (Staging)
+  * [localhost:9096](http://localhost:9096) (Production)
+
+## Remove apps from cluster
+
+`scripts/destroy.sh`
+
+## Remove apps from cluster
+
+`scripts/destroy.sh`
