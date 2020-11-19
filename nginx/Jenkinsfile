@@ -196,7 +196,7 @@ spec:
   releaseName: ${application}
   chart:
     repository: ${helmChart.repoUrl}
-    name: ${helmChart.name}
+    name: ${helmChart.chartName}
     version: ${helmChart.version}
   valuesFrom:
   - configMapKeyRef:
@@ -209,8 +209,7 @@ spec:
       namespace: ${namespace}
       key: values.yaml
       optional: false
-  values:
-""" + extraValues
+"""
 }
 
 String createFromFileValues(String stage) {
