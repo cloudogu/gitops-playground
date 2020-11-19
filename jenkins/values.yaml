@@ -74,6 +74,8 @@ master:
                   }
                 }
               }
+
+          - script: |
               multibranchPipelineJob('nginx') {
                   branchSources {
                       git {

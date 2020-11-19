@@ -82,7 +82,7 @@ Login with `scmadmin/scmadmin`
 
 ### 3rd Party app (NGINX) via helm chart from helm repository
 
-* [Jenkinsfile](nginx/Jenkinsfile)
+* [Jenkinsfile](nginx/fluxv1/Jenkinsfile)
 * Deployed to 
   * [localhost:9095](http://localhost:9095) (Staging)
   * [localhost:9096](http://localhost:9096) (Production)

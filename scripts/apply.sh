@@ -37,8 +37,8 @@ function main() {
   initRepo 'cluster/gitops'
   initRepo 'argocd/gitops'
 
-  initRepoWithSource 'application/nginx' 'nginx'
-  initRepoWithSource 'argocd/nginx-helm' 'nginx'
+  initRepoWithSource 'application/nginx' 'nginx/fluxv1'
+  initRepoWithSource 'argocd/nginx-helm' 'nginx/argocd'
 
   printWelcomeScreen
 }
