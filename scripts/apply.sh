@@ -2,7 +2,6 @@
 set -o errexit -o nounset -o pipefail
 #set -x
 
-
 # symlink -> workspace hier rein + .gitignore
 # im destroy, simlink + ordner entfernen
 SCM_USER=scmadmin
@@ -18,6 +17,10 @@ PETCLINIC_COMMIT=949c5af
 # get scm-manager port from values
 SCMM_PORT=$(grep -A1 'service:' "${PLAYGROUND_DIR}"/scm-manager/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')
 
+PETCLINIC_COMMIT=949c5af
+# get scm-manager port from values
+SCMM_PORT=$(grep -A1 'service:' scm-manager/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')
+
 source ${ABSOLUTE_BASEDIR}/utils.sh
 
 function main() {
@@ -29,6 +32,11 @@ function main() {
   applyK8sResources
 
   pushPetClinicRepo 'petclinic/fluxv1/plain-k8s' 'application/petclinic-plain'
+  pushPetClinicRepo 'petclinic/fluxv2/plain-k8s' 'fluxv2/petclinic-plain'
+
+  initRepo 'cluster/gitops'
+  initRepoWithSource 'fluxv2/gitops' 'fluxv2'
+
   pushPetClinicRepo 'petclinic/argocd/plain-k8s' 'argocd/petclinic-plain'
 
   pushHelmChartRepo 'application/spring-boot-helm-chart'
@@ -48,10 +56,12 @@ function applyK8sResources() {
 
   kubectl apply -f jenkins/resources
   kubectl apply -f scm-manager/resources
+  kubectl apply -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-components.yaml
 
   helm repo add jenkins https://charts.jenkins.io
   helm repo add fluxcd https://charts.fluxcd.io
   helm repo add helm-stable https://charts.helm.sh/stable
+
   helm repo add argo https://argoproj.github.io/argo-helm
   helm repo add bitnami https://charts.bitnami.com/bitnami
 
@@ -60,6 +70,10 @@ function applyK8sResources() {
   helm upgrade -i flux-operator --values flux-operator/values.yaml --version 1.3.0 fluxcd/flux -n default
   helm upgrade -i helm-operator --values helm-operator/values.yaml --version 1.0.2 fluxcd/helm-operator -n default
   helm upgrade -i docker-registry --values docker-registry/values.yaml --version 1.9.4 helm-stable/docker-registry -n default
+
+
+  kubectl apply -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-gitrepository.yaml
+  kubectl apply -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-kustomization.yaml
 
   helm upgrade -i argocd --values argocd/values.yaml --version 2.9.5 argo/argo-cd  -n default
   kubectl apply -f argocd/resources
@@ -110,7 +124,7 @@ function pushHelmChartRepo() {
   )
 
   rm -rf "${TMP_REPO}"
-  
+
   setMainBranch "${TARGET_REPO_SCMM}"
 }
 
@@ -124,11 +138,12 @@ function waitForScmManager() {
 }
 
 function initRepo() {
+  echo "initiating repo with $1"
   TARGET_REPO_SCMM="$1"
 
   TMP_REPO=$(mktemp -d)
 
-  git clone "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}" --quiet
+  git clone "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}"
   (
     cd "${TMP_REPO}"
     git checkout main --quiet || git checkout -b main --quiet
@@ -139,19 +154,20 @@ function initRepo() {
       git commit -m "Add readme" --quiet
     fi
     waitForScmManager
-    git push -u "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
+    git push -u "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force
   )
 
   setMainBranch "${TARGET_REPO_SCMM}"
 }
 
 function initRepoWithSource() {
+  echo "initiating repo $1 with source $2"
   TARGET_REPO_SCMM="$1"
   SOURCE_REPO="$2"
 
   TMP_REPO=$(mktemp -d)
 
-  git clone "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}" --quiet
+  git clone "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}"
   (
     cd "${TMP_REPO}"
     cp -r "${PLAYGROUND_DIR}/${SOURCE_REPO}"/* .
@@ -159,8 +175,10 @@ function initRepoWithSource() {
     git add .
     git commit -m "Init ${TARGET_REPO_SCMM}" --quiet || true
     waitForScmManager
-    git push -u "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
+    git push -u "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force
   )
+
+  rm -rf "${TMP_REPO}"
 
   rm -rf "${TMP_REPO}"
 
@@ -203,18 +221,18 @@ function printWelcomeScreen() {
   echo "Welcome to Cloudogu's GitOps playground!"
   echo
   echo "The playground features an example application (Spring PetClinic) in SCM-Manager. See here: "
-  echo "http://localhost:9091/scm/repo/application/petclinic-plain/code/sources/master/"
+  echo "http://localhost:9091/scm/repo/application/petclinic-plain/code/sources/main/"
   echo "Credentials for SCM-Manager and Jenkins are: scmadmin/scmadmin"
   echo
   echo "A simple deployment can be triggered by changing the message.properties, for example:"
-  echo "http://localhost:9091/scm/repo/application/petclinic-plain/code/sources/master/src/main/resources/messages/messages.properties/"
+  echo "http://localhost:9091/scm/repo/application/petclinic-plain/code/sources/main/src/main/resources/messages/messages.properties/"
   echo
   echo "After saving, this those Jenkins jobs are triggered:"
   echo "http://localhost:9090/job/petclinic-plain/job/master"
   echo "http://localhost:9090/job/nginx/job/main"
   echo
   echo "During the job, jenkins pushes into GitOps repo and creates a pull request for production:"
-  echo "GitOps repo: http://localhost:9091/scm/repo/cluster/gitops/code/sources/master/"
+  echo "GitOps repo: http://localhost:9091/scm/repo/cluster/gitops/code/sources/main/"
   echo "Pull requests: http://localhost:9091/scm/repo/cluster/gitops/pull-requests"
   echo
   echo "After about 1 Minute, the GitOps operator Flux deploys to staging."

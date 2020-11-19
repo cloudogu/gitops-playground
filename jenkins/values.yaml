@@ -85,7 +85,16 @@ master:
                       }
                   }
               }
-
+          - script: |
+              multibranchPipelineJob('fluxv2-petclinic-plain') {
+                  branchSources {
+                      git {
+                          id('fluxv2-petclinic-plain')
+                          remote('http://scmm-scm-manager:9091/scm/repo/fluxv2/petclinic-plain')
+                          credentialsId('scmm-user')
+                      }
+                  }
+              }
           - script: |
               multibranchPipelineJob('argocd-petclinic-plain') {
                   branchSources {
@@ -96,7 +105,6 @@ master:
                       }
                   }
               }
-
 
   sidecars:
     configAutoReload:
@@ -152,7 +160,7 @@ persistence:
       hostPath:
         path: /var/run/docker.sock
     # In our local playground infrastructure, we're using a workaround: Builds are run on the Jenkins master, which runs
-    # inside a container. During the builds, more containers are started (on the same docker host). 
+    # inside a container. During the builds, more containers are started (on the same docker host).
     # This leads to a scenario where the Jenkins container tries to mount its filesystem into another container.
     # The docker host is only able to realize this mounts when the mounted paths are the same inside and outside the containers.
     # As another workaround, we provide the path inside the container also outside the container (/var/jenkins_home/workspace)
