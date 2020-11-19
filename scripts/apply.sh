@@ -57,8 +57,14 @@ function applyBasicK8sResources() {
   helm repo add argo https://argoproj.github.io/argo-helm
   helm repo add bitnami https://charts.bitnami.com/bitnami
 
-  helm upgrade -i scmm --values scm-manager/values.yaml --set-file=postStartHookScript=scm-manager/initscmm.sh scm-manager/chart -n default
-  helm upgrade -i jenkins --values jenkins/values.yaml --version 2.13.0 jenkins/jenkins -n default
+  helm upgrade -i scmm --values scm-manager/values.yaml \
+    --set-file=postStartHookScript=scm-manager/initscmm.sh \
+    scm-manager/chart -n default
+    
+  helm upgrade -i jenkins --values jenkins/values.yaml \
+    --set agent.runAsGroup=$(getent group docker | awk -F: '{ print $3}') \
+    --version 2.13.0 jenkins/jenkins -n default
+    
   helm upgrade -i docker-registry --values docker-registry/values.yaml --version 1.9.4 helm-stable/docker-registry -n default
 }
 

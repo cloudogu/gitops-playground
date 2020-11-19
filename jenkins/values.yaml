@@ -1,6 +1,3 @@
-# For updating, delete pvc jenkins-docker-client
-dockerClientVersion: 19.03.9
-
 master:
   # to prevent the jenkins-ui-test pod being created
   testEnabled: false
@@ -23,8 +20,8 @@ master:
   # BUT: This also leads to CASC being ignored.
   # initializeOnce: true
 
-  # Allow builds on master in order to facilitate an agent with docker CLI
-  numExecutors: 2
+  # Don't use master for builds
+  numExecutors: 0
 
   JCasC:
     configScripts:
@@ -40,17 +37,7 @@ master:
                   password: "${PASSWORD}"
                   description: "Credentials for accessing SCM-Manager"
                   scope: GLOBAL
-      # Set some more details on master agent
-      # Add /docker to the PATH. Using "PATH=:/docker:${PATH}" is not working here, so copy PATH from container :-/
-      # That is, this might have to be updated with newer version of the image
-      master-agent: |
-        jenkins:
-          labelString: "docker"
-          nodeProperties:
-            - envVars:
-                env:
-                - key: "PATH"
-                  value: "/opt/java/openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/docker"
+
       # TODO could we use the SCMM source here?
       # These URLS could be helpful:
       # http://localhost:9090/job/petclinic-plain/config.xml
@@ -119,28 +106,8 @@ master:
       # The files in this folders can be used as ${variable} in CasC credentials
       # Default /run/secrets results in "read-only file system"
       value: /secrets/jenkins
-    - name: PATH
-      # We already mounted this PATH on the master-agent. Still, "docker.inside {}" failes in pipeline?
-      # Why? The docker pipeline plugin seems to set an empty environment: https://github.com/jenkinsci/docker-workflow-plugin/blob/docker-workflow-1.25/src/main/java/org/jenkinsci/plugins/docker/workflow/client/DockerClient.java#L261
-      # Workaround: Set the ENV in the container:
-      value: /opt/java/openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/docker
 
-  customInitContainers:
-    # Download docker client
-    - name: download-docker-client
-      image: alpine:3.12.0
-      imagePullPolicy: "{{ .Values.master.imagePullPolicy }}"
-      command: ["/bin/sh", "-c"]
-      args:
-        - set -x;
-          if [ -f /docker/docker ]; then echo 'Docker already installed'; exit 0; fi;
-          cd /tmp;
-          wget -qc https://download.docker.com/linux/static/stable/x86_64/docker-{{.Values.dockerClientVersion}}.tgz -O - | tar -xz;
-          mv /tmp/docker/docker /docker/docker;
-      volumeMounts:
-        - name: docker-client
-          mountPath: /docker
-
+  # TODO do we still need to do this, now that we have a separate agent?
   # Allow access to docker socket. Running as root is not a good practice, but seems pragmatic here.
   # Because other option setting "fsgroup" depends on the group ID of the "docker" group on each host.
   # This would require individual configuration,
@@ -152,38 +119,52 @@ master:
 
 persistence:
   volumes:
-    - name: docker-client
-      # Persist, so the client does not have to be downloaded on each start
-      persistentVolumeClaim:
-        claimName: jenkins-docker-client
-    - name: docker-sock # For this demo, allow jenkins master to access docker client
-      hostPath:
-        path: /var/run/docker.sock
-    # In our local playground infrastructure, we're using a workaround: Builds are run on the Jenkins master, which runs
-    # inside a container. During the builds, more containers are started (on the same docker host).
-    # This leads to a scenario where the Jenkins container tries to mount its filesystem into another container.
-    # The docker host is only able to realize this mounts when the mounted paths are the same inside and outside the containers.
-    # As another workaround, we provide the path inside the container also outside the container (/var/jenkins_home/workspace)
-    # In order not to pollute the host, we symlink /var/jenkins_home/workspace into this repo.
-    - name: workspace
-      hostPath:
-        path: /var/jenkins_home/workspace
     - name: scmm-user
       secret:
         # TODO use SCMM user secret here
         secretName: jenkins-scmm
 
   mounts:
-    - name: workspace
-      mountPath: "/var/jenkins_home/workspace"
     - name: scmm-user
       # Use k8s secret as jenkins credentials.
       # https://github.com/jenkinsci/configuration-as-code-plugin/blob/master/docs/features/secrets.adoc#kubernetes-secrets
       mountPath: /secrets/jenkins
       readOnly: true
-    - name: docker-client
-      mountPath: /docker
-      readOnly: true
-    - name: docker-sock
-      mountPath: "/var/run/docker.sock"
-      readOnly: true
+
+agent:
+  #enabled: true
+  # We need JDK11 for our PetClinic example
+  tag: "4.6-1-jdk11"
+  # TODO? move to /tmp?
+  workingDir: "/var/jenkins_home/"
+  customJenkinsLabels: [ 'docker' ]
+  # TODO is runAsGroup docker enough? See apply.sh
+  runAsUser: 0
+  #runAsGroup:
+  # Controls how agent pods are retained after the Jenkins build completes
+  # Possible values: Always, Never, OnFailure
+  # Persist for faster builds (workspace is not deleted)
+  podRetention: "Always" # TODO This results in "Never". Bug in chart?
+  volumes:
+    - type: HostPath
+      # In our local playground infrastructure, we're using a workaround: Builds are run on the Jenkins master, which runs
+      # inside a container. During the builds, more containers are started (on the same docker host).
+      # This leads to a scenario where the Jenkins container tries to mount its filesystem into another container.
+      # The docker host is only able to realize this mounts when the mounted paths are the same inside and outside the containers.
+      # As another workaround, we provide the path inside the container also outside the container (/var/jenkins_home/workspace)
+      # In order not to pollute the host, we symlink /var/jenkins_home/workspace into this repo.
+      hostPath: /var/jenkins_home/workspace
+      mountPath: /var/jenkins_home/workspace
+    - type: HostPath
+      # For this demo, allow jenkins master to access docker client
+      hostPath: /var/run/docker.sock
+      mountPath: /var/run/docker.sock
+    - type: HostPath
+     # TODO this might cause problems on some host: Risk of missing libraries because docker might be linked dynamically and libraries might be missing in container
+      hostPath: /usr/bin/docker
+      mountPath: /usr/bin/docker
+  #envVars:
+  #  - name: PATH
+  #    value: /usr/local/openjdk-11/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/docker
+  containerCap: 2
+
