@@ -153,8 +153,8 @@ function initRepoWithSource() {
 
   git clone "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}" --quiet
   (
-    cp "${PLAYGROUND_DIR}/${SOURCE_REPO}"/* "${TMP_REPO}"
     cd "${TMP_REPO}"
+    cp -r "${PLAYGROUND_DIR}/${SOURCE_REPO}"/* .
     git checkout main --quiet || git checkout -b main --quiet
     git add .
     git commit -m "Init ${TARGET_REPO_SCMM}" --quiet || true
