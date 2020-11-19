@@ -27,7 +27,7 @@ helm delete docker-registry -n default || true
 
 kubectl delete -f jenkins/resources || true
 kubectl delete -f scm-manager/resources || true
-
+kubectl delete secret gitops-scmm || true
 
 kubectl delete -f k8s-namespaces/ || true
 

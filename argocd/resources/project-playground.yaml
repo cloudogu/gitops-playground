@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
   name: playground
-  namespace: default
+  namespace: argocd
 spec:
   description: playground project
   destinations:

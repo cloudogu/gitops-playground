@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: spring-petclinic-plain
-  namespace: staging
+  namespace: fluxv1-staging
 spec:
   replicas: 1
   selector:
