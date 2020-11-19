@@ -11,6 +11,8 @@ SCM_PWD=scmadmin
 BASEDIR=$(dirname $0)
 ABSOLUTE_BASEDIR="$(cd ${BASEDIR} && pwd)"
 PLAYGROUND_DIR="$(cd ${BASEDIR} && cd .. && pwd)"
+WORKSPACE="${PLAYGROUND_DIR}/workspace"
+JENKINS_HOME="/var/jenkins_home/"
 
 PETCLINIC_COMMIT=949c5af
 # get scm-manager port from values
@@ -141,11 +143,26 @@ function setMainBranch() {
 
 function prepareWorkspace() {
   echo "Preparing jenkins workspace.."
-  echo "Creating local workspace folder and create symlink to '/var/jenkins_home/workspace"
 
-  mkdir -p ${PLAYGROUND_DIR}/workspace
-  sudo mkdir -p /var/jenkins_home/
-  sudo ln -s ${PLAYGROUND_DIR}/workspace /var/jenkins_home/
+  # check if the necessary 'workspace' and 'jenkins_home' dir exist
+  if [[ ! -d "${WORKSPACE}" ]]; then
+    mkdir -p ${WORKSPACE}
+    echo "Created WORKSPACE dir at ${WORKSPACE}"
+    else echo "WORKSPACE already exists.."
+  fi
+
+  if [[ ! -d "${JENKINS_HOME}" ]]; then
+    sudo mkdir -p ${JENKINS_HOME}
+    echo "Created JENKINS_HOME dir at ${JENKINS_HOME}"
+    else echo "JENKINS_HOME already exists.."
+  fi
+
+  if [[ "$(readlink "${JENKINS_HOME}/workspace")" = "${WORKSPACE}" ]]; then
+    echo "symlink between 'WORKSPACE' and 'JENKINS_HOME' is already set correctly"
+    else
+      sudo ln -s ${WORKSPACE} ${JENKINS_HOME}
+      echo ""
+  fi
 }
 
 function printWelcomeScreen() {
@@ -161,16 +178,19 @@ function printWelcomeScreen() {
   echo "After saving, this those Jenkins jobs are triggered:"
   echo "http://localhost:9090/job/petclinic-plain/job/master"
   echo "http://localhost:9090/job/nginx/job/main"
+  echo
   echo "During the job, jenkins pushes into GitOps repo and creates a pull request for production:"
   echo "GitOps repo: http://localhost:9091/scm/repo/cluster/gitops/code/sources/master/"
   echo "Pull requests: http://localhost:9091/scm/repo/cluster/gitops/pull-requests"
   echo
   echo "After about 1 Minute, the GitOps operator Flux deploys to staging."
-  echo "The staging application can be found at http://localhost:9093/"
+  echo "The petclinic staging application can be found at http://localhost:9093/"
+  echo "While nginx staging can be found at http://localhost:9095"
   echo
   echo "You can then go ahead and merge the pull request in order to deploy to production"
   echo "After about 1 Minute, the GitOps operator Flux deploys to production."
-  echo "The prod application can be found at http://localhost:9094/"
+  echo "The petclinic prod application can be found at http://localhost:9094/"
+  echo "While nginx prod can be found at http://localhost:9096"
 }
 
 main "$@"
