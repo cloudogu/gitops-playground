@@ -62,9 +62,18 @@ master:
       # This might be fixed in a later SCMM Plugin for Jenkins
       init-job: |
         jenkins:
-          systemMessage: "Seeding init job"
+          systemMessage: "Seeding init jobs"
         jobs:
           - script: |
+              multibranchPipelineJob('fluxV1-petclinic-plain') {
+                branchSources {
+                  git {
+                    id('fluxV1-petclinic-plain')
+                    remote('http://scmm-scm-manager:9091/scm/repo/application/petclinic-plain')
+                    credentialsId('scmm-user')
+                  }
+                }
+              }
               multibranchPipelineJob('nginx') {
                   branchSources {
                       git {
@@ -74,15 +83,18 @@ master:
                       }
                   }
               }
-              multibranchPipelineJob('petclinic-plain') {
+
+          - script: |
+              multibranchPipelineJob('argocd-petclinic-plain') {
                   branchSources {
                       git {
-                          id('petclinic-plain')
-                          remote('http://scmm-scm-manager:9091/scm/repo/application/petclinic-plain')
+                          id('argocd-petclinic-plain')
+                          remote('http://scmm-scm-manager:9091/scm/repo/argocd/petclinic-plain')
                           credentialsId('scmm-user')
                       }
                   }
               }
+
 
   sidecars:
     configAutoReload:

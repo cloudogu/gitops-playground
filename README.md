@@ -8,7 +8,7 @@ Reproducible infrastructure to showcase GitOps workflows. Derived from our [cons
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-
+- [Prerequisites](#prerequisites)
 - [Install k3s](#install-k3s)
 - [Apply apps to cluster](#apply-apps-to-cluster)
 - [Applications](#applications)
@@ -20,6 +20,12 @@ Reproducible infrastructure to showcase GitOps workflows. Derived from our [cons
 - [Remove apps from cluster](#remove-apps-from-cluster)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+## Prerequisites
+
+To be able to set up the infrastructure you are required to have **kubectl**, **k3s** and **helm** set up.
+If you use the provided script, these components will be installed, if not done yet.
+
 
 ## Install k3s
 
@@ -48,6 +54,7 @@ Jenkins builds on the master and uses the docker agent that also runs the k8s po
 [`scripts/apply.sh`](scripts/apply.sh)
 
 The scripts also prints a little intro on how to get started with a GitOps deployment.
+
 
 ## Applications
 
@@ -79,6 +86,10 @@ Login with `scmadmin/scmadmin`
 * Deployed to 
   * [localhost:9095](http://localhost:9095) (Staging)
   * [localhost:9096](http://localhost:9096) (Production)
+
+## Remove apps from cluster
+
+`scripts/destroy.sh`
 
 ## Remove apps from cluster
 

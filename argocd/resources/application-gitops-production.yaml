@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gitops-production
+  namespace: default
+spec:
+  destination:
+    namespace: argocd-production
+    server: https://kubernetes.default.svc
+  project: playground
+  source:
+    path: production
+    repoURL: http://scmm-scm-manager.default.svc.cluster.local:9091/scm/repo/argocd/gitops
+    targetRevision: main
+    directory:
+      recurse: true
+  syncPolicy:
+    automated: {}

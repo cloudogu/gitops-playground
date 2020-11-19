@@ -1,0 +1,28 @@
+## Server
+server:
+  ## Server service configuration
+  service:
+    type: LoadBalancer
+    servicePortHttp: 9080
+
+  ## ArgoCD config
+  ## reference https://github.com/argoproj/argo-cd/blob/master/docs/operator-manual/argocd-cm.yaml
+  config:
+    repositories: |
+      - url: http://scmm-scm-manager.default.svc.cluster.local:9091/scm/repo/argocd/gitops
+        passwordSecret:
+          name: argocd-scmm
+          key: PASSWORD
+        usernameSecret:
+          name: argocd-scmm
+          key: USERNAME
+      - url: http://scmm-scm-manager.default.svc.cluster.local:9091/scm/repo/argocd/nginx-helm
+        passwordSecret:
+          name: argocd-scmm
+          key: PASSWORD
+        usernameSecret:
+          name: argocd-scmm
+          key: USERNAME
+      - type: helm
+        url: https://charts.bitnami.com/bitnami
+        name: bitnami

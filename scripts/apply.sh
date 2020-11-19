@@ -29,17 +29,22 @@ function main() {
   applyK8sResources
 
   pushPetClinicRepo 'petclinic/fluxv1/plain-k8s' 'application/petclinic-plain'
+  pushPetClinicRepo 'petclinic/argocd/plain-k8s' 'argocd/petclinic-plain'
 
-  pushLocalRepo 'nginx' 'application/nginx'
+  pushHelmChartRepo 'application/spring-boot-helm-chart'
+
 
   initRepo 'cluster/gitops'
+  initRepo 'argocd/gitops'
+
+  initRepoWithSource 'application/nginx' 'nginx'
+  initRepoWithSource 'argocd/nginx-helm' 'nginx'
 
   printWelcomeScreen
 }
 
 function applyK8sResources() {
-  kubectl apply -f k8s-namespaces/staging.yaml
-  kubectl apply -f k8s-namespaces/production.yaml
+  kubectl apply -f k8s-namespaces
 
   kubectl apply -f jenkins/resources
   kubectl apply -f scm-manager/resources
@@ -47,6 +52,7 @@ function applyK8sResources() {
   helm repo add jenkins https://charts.jenkins.io
   helm repo add fluxcd https://charts.fluxcd.io
   helm repo add helm-stable https://charts.helm.sh/stable
+  helm repo add argo https://argoproj.github.io/argo-helm
   helm repo add bitnami https://charts.bitnami.com/bitnami
 
   helm upgrade -i scmm --values scm-manager/values.yaml --set-file=postStartHookScript=scm-manager/initscmm.sh scm-manager/chart -n default
@@ -54,6 +60,12 @@ function applyK8sResources() {
   helm upgrade -i flux-operator --values flux-operator/values.yaml --version 1.3.0 fluxcd/flux -n default
   helm upgrade -i helm-operator --values helm-operator/values.yaml --version 1.0.2 fluxcd/helm-operator -n default
   helm upgrade -i docker-registry --values docker-registry/values.yaml --version 1.9.4 helm-stable/docker-registry -n default
+
+  helm upgrade -i argocd --values argocd/values.yaml --version 2.9.5 argo/argo-cd  -n default
+  kubectl apply -f argocd/resources
+
+  # set argocd admin password to 'admin' here, because it does not work through the helm chart
+  kubectl patch secret -n default argocd-secret -p '{"stringData": { "admin.password": "$2y$10$GsLZ7KlAhW9xNsb10YO3/O6jlJKEAU2oUrBKtlF/g1wVlHDJYyVom"}}'
 }
 
 function pushPetClinicRepo() {
@@ -82,28 +94,23 @@ function pushPetClinicRepo() {
   setMainBranch "${TARGET_REPO_SCMM}"
 }
 
-function pushLocalRepo() {
-  LOCAL_SOURCE="$1"
-  TARGET_REPO_SCMM="$2"
+function pushHelmChartRepo() {
+  TARGET_REPO_SCMM="$1"
 
   TMP_REPO=$(mktemp -d)
- git clone -n http://localhost:9091/scm/repo/application/nginx "${TMP_REPO}" --quiet
+
+  git clone -n https://github.com/cloudogu/spring-boot-helm-chart.git "${TMP_REPO}" --quiet
   (
     cd "${TMP_REPO}"
-    git checkout main --quiet || git checkout -b main --quiet 
-    cp -r "${PLAYGROUND_DIR}/${LOCAL_SOURCE}"/* .
-    git add .
-    # exits with 1 if there were differences and 0 means no differences.
-    if ! git diff-index --exit-code --quiet HEAD --; then
-      git commit -m 'Add GitOps Pipeline and K8s resources' --quiet
-    fi
+    git tag 1.0.0
 
     waitForScmManager
-    git push -u "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
+    git push "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
+    git push "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" refs/tags/1.0.0 --quiet
   )
 
   rm -rf "${TMP_REPO}"
-
+  
   setMainBranch "${TARGET_REPO_SCMM}"
 }
 
@@ -124,7 +131,7 @@ function initRepo() {
   git clone "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}" --quiet
   (
     cd "${TMP_REPO}"
-    git checkout main --quiet || git checkout -b main --quiet 
+    git checkout main --quiet || git checkout -b main --quiet
     echo "# gitops" > README.md
     git add README.md
     # exits with 1 if there were differences and 0 means no differences.
@@ -138,9 +145,31 @@ function initRepo() {
   setMainBranch "${TARGET_REPO_SCMM}"
 }
 
+function initRepoWithSource() {
+  TARGET_REPO_SCMM="$1"
+  SOURCE_REPO="$2"
+
+  TMP_REPO=$(mktemp -d)
+
+  git clone "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}" --quiet
+  (
+    cp "${PLAYGROUND_DIR}/${SOURCE_REPO}"/* "${TMP_REPO}"
+    cd "${TMP_REPO}"
+    git checkout main --quiet || git checkout -b main --quiet
+    git add .
+    git commit -m "Init ${TARGET_REPO_SCMM}" --quiet || true
+    waitForScmManager
+    git push -u "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
+  )
+
+  rm -rf "${TMP_REPO}"
+
+  setMainBranch "${TARGET_REPO_SCMM}"
+}
+
 function setMainBranch() {
   TARGET_REPO_SCMM="$1"
-
+  
   curl -s -L -X PUT -H 'Content-Type: application/vnd.scmm-gitConfig+json' \
     --data-raw "{\"defaultBranch\":\"main\"}" \
     "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/api/v2/config/git/${TARGET_REPO_SCMM}"
