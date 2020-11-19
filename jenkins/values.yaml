@@ -107,16 +107,6 @@ master:
       # Default /run/secrets results in "read-only file system"
       value: /secrets/jenkins
 
-  # TODO do we still need to do this, now that we have a separate agent?
-  # Allow access to docker socket. Running as root is not a good practice, but seems pragmatic here.
-  # Because other option setting "fsgroup" depends on the group ID of the "docker" group on each host.
-  # This would require individual configuration,
-  # Calling: "getent group docker | awk -F: '{ print $3}'" and setting the result manually as fsgroup.
-  #  fsGroup: 998
-  # Also, with access to the docker socket, the container has root access to the host anyway. So why bother about the container?
-  # It's a demo, after all!
-  runAsUser: 0
-
 persistence:
   volumes:
     - name: scmm-user
@@ -138,9 +128,6 @@ agent:
   # TODO? move to /tmp?
   workingDir: "/var/jenkins_home/"
   customJenkinsLabels: [ 'docker' ]
-  # TODO is runAsGroup docker enough? See apply.sh
-  runAsUser: 0
-  #runAsGroup:
   # Controls how agent pods are retained after the Jenkins build completes
   # Possible values: Always, Never, OnFailure
   # Persist for faster builds (workspace is not deleted)
@@ -163,8 +150,5 @@ agent:
      # TODO this might cause problems on some host: Risk of missing libraries because docker might be linked dynamically and libraries might be missing in container
       hostPath: /usr/bin/docker
       mountPath: /usr/bin/docker
-  #envVars:
-  #  - name: PATH
-  #    value: /usr/local/openjdk-11/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/docker
   containerCap: 2
 
