@@ -42,6 +42,7 @@ kubectl delete customresourcedefinition.apiextensions.k8s.io/appprojects.argopro
 kubectl delete apiservice.apiregistration.k8s.io/v1alpha1.argoproj.io || true
 kubectl delete appproject.argoproj.io/default || true
 
+confirm "" 'Remove Jenkins workspace in this folder as well? y/n [n]' && sudo rm -rf workspace
 
 # remove symlink
 echo "Removing /var/jenkins_home/workspace (which symlinks into this directory)"
