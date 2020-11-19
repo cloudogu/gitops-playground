@@ -106,13 +106,15 @@ master:
     # Use reproducible admin password from secret. Change there, if necessary.
     existingSecret: jenkins-credentials
 
-  # Each container need to get the envVars mounted with docker on its path
   containerEnv:
     - name: SECRETS
       # The files in this folders can be used as ${variable} in CasC credentials
       # Default /run/secrets results in "read-only file system"
       value: /secrets/jenkins
     - name: PATH
+      # We already mounted this PATH on the master-agent. Still, "docker.inside {}" failes in pipeline?
+      # Why? The docker pipeline plugin seems to set an empty environment: https://github.com/jenkinsci/docker-workflow-plugin/blob/docker-workflow-1.25/src/main/java/org/jenkinsci/plugins/docker/workflow/client/DockerClient.java#L261
+      # Workaround: Set the ENV in the container:
       value: /opt/java/openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/docker
 
   customInitContainers:
@@ -149,7 +151,12 @@ persistence:
     - name: docker-sock # For this demo, allow jenkins master to access docker client
       hostPath:
         path: /var/run/docker.sock
-    # Due to the issue of mounting a docker volume into another docker, we will be using the hostpath to mount
+    # In our local playground infrastructure, we're using a workaround: Builds are run on the Jenkins master, which runs
+    # inside a container. During the builds, more containers are started (on the same docker host). 
+    # This leads to a scenario where the Jenkins container tries to mount its filesystem into another container.
+    # The docker host is only able to realize this mounts when the mounted paths are the same inside and outside the containers.
+    # As another workaround, we provide the path inside the container also outside the container (/var/jenkins_home/workspace)
+    # In order not to pollute the host, we symlink /var/jenkins_home/workspace into this repo.
     - name: workspace
       hostPath:
         path: /var/jenkins_home/workspace
@@ -159,7 +166,6 @@ persistence:
         secretName: jenkins-scmm
 
   mounts:
-    # Mounting the volume from the host into all the agents / containers to make sure build files are available
     - name: workspace
       mountPath: "/var/jenkins_home/workspace"
     - name: scmm-user
