@@ -92,6 +92,7 @@ master:
     # Use reproducible admin password from secret. Change there, if necessary.
     existingSecret: jenkins-credentials
 
+  # Each container need to get the envVars mounted with docker on its path
   containerEnv:
     - name: SECRETS
       # The files in this folders can be used as ${variable} in CasC credentials
@@ -134,12 +135,19 @@ persistence:
     - name: docker-sock # For this demo, allow jenkins master to access docker client
       hostPath:
         path: /var/run/docker.sock
+    # Due to the issue of mounting a docker volume into another docker, we will be using the hostpath to mount
+    - name: workspace
+      hostPath:
+        path: /var/jenkins_home/workspace
     - name: scmm-user
       secret:
         # TODO use SCMM user secret here
         secretName: jenkins-scmm
 
   mounts:
+    # Mounting the volume from the host into all the agents / containers to make sure build files are available
+    - name: workspace
+      mountPath: "/var/jenkins_home/workspace"
     - name: scmm-user
       # Use k8s secret as jenkins credentials.
       # https://github.com/jenkinsci/configuration-as-code-plugin/blob/master/docs/features/secrets.adoc#kubernetes-secrets

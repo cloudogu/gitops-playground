@@ -2,6 +2,9 @@
 set -o errexit -o nounset -o pipefail
 #set -x
 
+
+# symlink -> workspace hier rein + .gitignore
+# im destroy, simlink + ordner entfernen
 SCM_USER=scmadmin
 SCM_PWD=scmadmin
 
@@ -18,6 +21,8 @@ source ${ABSOLUTE_BASEDIR}/utils.sh
 function main() {
   confirm "Applying gitops playground to kubernetes cluster: '$(kubectl config current-context)'." 'Continue? y/n [n]' ||
     exit 0
+
+  prepareWorkspace
 
   applyK8sResources
 
@@ -132,6 +137,15 @@ function setMainBranch() {
   curl -s -L -X PUT -H 'Content-Type: application/vnd.scmm-gitConfig+json' \
     --data-raw "{\"defaultBranch\":\"main\"}" \
     "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/api/v2/config/git/${TARGET_REPO_SCMM}"
+}
+
+function prepareWorkspace() {
+  echo "Preparing jenkins workspace.."
+  echo "Creating local workspace folder and create symlink to '/var/jenkins_home/workspace"
+
+  mkdir -p ${PLAYGROUND_DIR}/workspace
+  sudo mkdir -p /var/jenkins_home/
+  sudo ln -s ${PLAYGROUND_DIR}/workspace /var/jenkins_home/
 }
 
 function printWelcomeScreen() {

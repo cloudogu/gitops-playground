@@ -23,3 +23,6 @@ kubectl delete -f scm-manager/resources || true
 
 kubectl delete namespace production || true
 kubectl delete namespace staging || true
+
+# remove symlink
+sudo rm -rf /var/jenkins_home/workspace

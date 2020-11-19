@@ -1,28 +1,15 @@
 #!groovy
 
-// "Constants"
 String getApplication() { "nginx" }
-
 String getCesBuildLibVersion() { '1.44.3' }
-
 String getCesBuildLibRepo() { 'https://github.com/cloudogu/ces-build-lib/' }
-
 String getScmManagerCredentials() { 'scmm-user' }
-
-String getGitVersion() { '2.24.3' }
-
 String getKubectlImage() { 'lachlanevenson/k8s-kubectl:v1.18.2' }
-
 String getConfigRepositoryUrl() { "http://scmm-scm-manager:9091/scm/repo/cluster/gitops" }
-
 String getConfigRepositoryPRUrl() { 'http://scmm-scm-manager:9091/scm/api/v2/pull-requests/cluster/gitops' }
-
 String getHelmChartRepository() { "https://charts.bitnami.com/bitnami" }
-
 String getHelmChartName() { "nginx" }
-
 String getHelmChartVersion() { "8.0.0" }
-
 String getMainBranch() { 'main' }
 
 node('docker') {
@@ -63,7 +50,20 @@ node('docker') {
 
             stage('Deploy') {
                 if (isDeployableBuild()) {
-                    String pushedChanges = pushToConfigRepo(applicationRepo)
+                    def gitopsConfig = [
+                        scmmCredentialsId: scmManagerCredentials,
+                        scmmConfigRepoUrl: configRepositoryUrl,
+                        scmmPullRequestUrl: configRepositoryPRUrl
+                    ]
+
+                    def helmChart = [
+                        repoType: 'HELM',
+                        repoUrl: helmChartRepository,
+                        chartName: helmChartName,
+                        version: helmChartVersion
+                    ]
+
+                    String pushedChanges = pushToConfigRepo(applicationRepo, gitopsConfig, helmChart)
                     setBuildDescription createBuildDescription(pushedChanges)
                 } else {
                     setBuildDescription 'No push to gitOps repo, because neither on develop branch nor "forceDeployStaging" param set'
@@ -77,7 +77,7 @@ private isDeployableBuild() {
     return env.BRANCH_NAME in [mainBranch]
 }
 
-String pushToConfigRepo(GitRepo applicationRepo) {
+String pushToConfigRepo(GitRepo applicationRepo, Map gitopsConfig, Map helmChart) {
     def git = cesBuildLib.Git.new(this, scmManagerCredentials)
     def changesOnGitOpsRepo = ''
 
@@ -88,19 +88,19 @@ String pushToConfigRepo(GitRepo applicationRepo) {
 
     try {
         dir(configRepoTempDir) {
-            git url: configRepositoryUrl, branch: mainBranch, changelog: false, poll: false
+            git url: gitopsConfig.scmmConfigRepoUrl, branch: mainBranch, changelog: false, poll: false
             git.fetch()
 
             def repoChanges = new HashSet<String>()
-            repoChanges += createApplicationForStageAndPushToBranch 'staging', mainBranch, applicationRepo, git
+            repoChanges += createApplicationForStageAndPushToBranch 'staging', mainBranch, applicationRepo, git, gitopsConfig, helmChart
 
             git.checkoutOrCreate(application)
-            repoChanges += createApplicationForStageAndPushToBranch 'production', application, applicationRepo, git
+            repoChanges += createApplicationForStageAndPushToBranch 'production', application, applicationRepo, git, gitopsConfig, helmChart
 
             changesOnGitOpsRepo = aggregateChangesOnGitOpsRepo(repoChanges)
 
             if (changesOnGitOpsRepo) {
-                createPullRequest()
+                createPullRequest(gitopsConfig)
             }
         }
     } finally {
@@ -136,7 +136,7 @@ private String aggregateChangesOnGitOpsRepo(changes) {
             .join('; ')
 }
 
-String createApplicationForStageAndPushToBranch(String stage, String branch, GitRepo applicationRepo, def git) {
+String createApplicationForStageAndPushToBranch(String stage, String branch, GitRepo applicationRepo, def git, Map gitOpsConfig, Map helmChart) {
     String commitPrefix = stage == 'staging' ? '[S] ' : ''
 
     sh "mkdir -p ${stage}/${application}"
@@ -144,10 +144,11 @@ String createApplicationForStageAndPushToBranch(String stage, String branch, Git
     echo "Copying extra resources from application repo to gitOps Repo: 'k8s/${stage}/*' to '${stage}/${application}'"
     sh "cp ${env.WORKSPACE}/k8s/${stage}/*.yaml ${stage}/${application}/ || true"
 
-    writeFile file: "${stage}/${application}/helmRelease.yaml", text: createHelmRelease("${stage}", createFromFileValues(stage))
-    writeFile file: "${stage}/${application}/valuesMap.yaml", text: createConfigMap("values.yaml", "${env.WORKSPACE}/k8s/values-${stage}.yaml", "${application}-helm-operator-values", "${stage}")
+    writeFile file: "${stage}/${application}/helmRelease.yaml", text: createHelmRelease(helmChart, "${stage}", createFromFileValues(stage))
+    writeFile file: "${stage}/${application}/valuesMap.yaml", text: createConfigMap("values.yaml", "${env.WORKSPACE}/k8s/${stage}/values-${stage}.yaml", "${application}-helm-operator-values", "${stage}")
     writeFile file: "${stage}/${application}/sharedValuesMap.yaml", text: createConfigMap("values.yaml", "${env.WORKSPACE}/k8s/values-shared.yaml", "${application}-shared-helm-operator-values", "${stage}")
-    echo "after write"
+
+    creatFileConfigmaps(stage)
 
     git.add('.')
     if (git.areChangesStagedForCommit()) {
@@ -160,15 +161,15 @@ String createApplicationForStageAndPushToBranch(String stage, String branch, Git
     }
 }
 
-void createPullRequest() {
-    withCredentials([usernamePassword(credentialsId: scmManagerCredentials, passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USER')]) {
+void createPullRequest(Map gitopsConfig) {
+    withCredentials([usernamePassword(credentialsId: gitopsConfig.scmmCredentialsId, passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USER')]) {
         echo 'creating pull request'
         String script =
                 'curl -s -o /dev/null -w "%{http_code}" ' +
                         "-u ${GIT_USER}:${GIT_PASSWORD} " +
                         '-H "Content-Type: application/vnd.scmm-pullRequest+json;v=2" ' +
                         '--data \'{"title": "created by service ' + application + '", "source": "' + application + '", "target": "' + mainBranch + '"}\' ' +
-                        configRepositoryPRUrl
+                        gitopsConfig.scmmPullRequestUrl
 
         // For debugging the quotation of the shell script, just do: echo script
         String http_code = sh returnStdout: true, script: script
@@ -183,7 +184,7 @@ void createPullRequest() {
     }
 }
 
-String createHelmRelease(String namespace, String extraValues) {
+String createHelmRelease(Map helmChart, String namespace, String extraValues) {
     return """apiVersion: helm.fluxcd.io/v1
 kind: HelmRelease
 metadata:
@@ -194,9 +195,9 @@ metadata:
 spec:
   releaseName: ${application}
   chart:
-    repository: ${helmChartRepository}
-    name: ${helmChartName}
-    version: ${helmChartVersion}
+    repository: ${helmChart.repoUrl}
+    name: ${helmChart.name}
+    version: ${helmChart.version}
   valuesFrom:
   - configMapKeyRef:
       name: ${application}-shared-helm-operator-values
@@ -221,6 +222,14 @@ String createFromFileValues(String stage) {
         }
     }
     return values
+}
+void creatFileConfigmaps(String stage) {
+    fileConfigmaps.each {
+        if(stage in it['stage']) {
+            String key = it['file'].split('/').last()
+            writeFile file: "${stage}/${application}/${it['name']}.yaml", text: createConfigMap(key, "${env.WORKSPACE}/k8s/${it['file']}", it['name'], "${stage}")
+        }
+    }
 }
 
 String createConfigMap(String key, String filePath, String name, String namespace) {
