@@ -24,6 +24,9 @@ function main() {
   confirm "Applying gitops playground to kubernetes cluster: '$(kubectl config current-context)'." 'Continue? y/n [n]' ||
     exit 0
 
+  # Create Jenkins agent working dir explicitly. Otherwise it seems to be owned by root
+  mkdir -p ${JENKINS_HOME}
+  
   applyBasicK8sResources
 
   initFluxV1
@@ -34,9 +37,6 @@ function main() {
 
   # Start Jenkins last, so all repos have been initialized when repo indexing starts
   initJenkins
-
-  # Create Jenkins agent working dir explicitly. Otherwise it seems to be owned by root
-  mkdir -p ${JENKINS_HOME}
 
   printWelcomeScreen
 }
