@@ -51,7 +51,7 @@ function applyBasicK8sResources() {
 
   helm repo add jenkins https://charts.jenkins.io
   helm repo add fluxcd https://charts.fluxcd.io
-  helm repo add helm-stable https://charts.helm.sh/stable
+  helm repo add stable https://charts.helm.sh/stable
   helm repo add argo https://argoproj.github.io/argo-helm
   helm repo add bitnami https://charts.bitnami.com/bitnami
 
@@ -59,7 +59,7 @@ function applyBasicK8sResources() {
     --set-file=postStartHookScript=scm-manager/initscmm.sh \
     scm-manager/chart -n default
 
-  helm upgrade -i docker-registry --values docker-registry/values.yaml --version 1.9.4 helm-stable/docker-registry -n default
+  helm upgrade -i docker-registry --values docker-registry/values.yaml --version 1.9.4 stable/docker-registry -n default
   
   pushHelmChartRepo 'application/spring-boot-helm-chart'
 }
