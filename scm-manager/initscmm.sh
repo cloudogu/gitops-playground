@@ -24,8 +24,8 @@ function main() {
   addRepo "fluxv1" "petclinic-plain"
   setPermission "fluxv1" "petclinic-plain" "${GITOPS_USERNAME}" "WRITE"
 
-  addRepo "fluxv1" "nginx"
-  setPermission "fluxv1" "nginx" "${GITOPS_USERNAME}" "WRITE"
+  addRepo "fluxv1" "nginx-helm"
+  setPermission "fluxv1" "nginx-helm" "${GITOPS_USERNAME}" "WRITE"
 
   ### FluxV2 Repos
   addRepo "fluxv2" "gitops"
