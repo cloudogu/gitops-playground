@@ -37,8 +37,8 @@ If you use your own cluster, note that jenkins relies on the `--docker` mode to 
 
 In a real-life scenario, it would make sense to run Jenkins agents outside the cluster for security and load reasons, 
 but in order to simplify the setup for this playground we use this slightly dirty workaround: 
-Jenkins builds on the master and uses the docker agent that also runs the k8s pods. That's why we need the k3s' 
-`--docker` mode.
+Jenkins builds in agent pods that are able to spawn plain docker containers docker host that runs the containers.
+That's why we need the k3s' `--docker` mode.
  
 **Don't use a setup such as this in production!** The diagrams bellow show an overview of the playground's architecture,
  and a possible production scenario using our [Ecosystem](https://cloudogu.com/en/ecosystem/) (more secure and better build performance using ephemeral build agents spawned in the cloud).
@@ -46,7 +46,7 @@ Jenkins builds on the master and uses the docker agent that also runs the k8s po
 
 |Playground on local machine | A possible production environment with [Cloudogu Ecosystem](https://cloudogu.com/en/ecosystem/)|
 |--------------------|----------|
-|![Playground on local machine](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/k8s-gitops-playground/main/docs/gitops-playground.puml&fmt=svg) | [![A possible production environment](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/k8s-gitops-playground/main/docs/production-setting.puml&fmt=svg)   |
+|![Playground on local machine](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/k8s-gitops-playground/main/docs/gitops-playground.puml&fmt=svg) | ![A possible production environment](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/k8s-gitops-playground/main/docs/production-setting.puml&fmt=svg)   |
 
 ## Apply apps to cluster
 
