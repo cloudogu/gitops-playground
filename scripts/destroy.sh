@@ -36,6 +36,8 @@ function main() {
   kubectl delete customresourcedefinition.apiextensions.k8s.io/appprojects.argoproj.io || true
   kubectl delete apiservice.apiregistration.k8s.io/v1alpha1.argoproj.io || true
   kubectl delete appproject.argoproj.io/default || true
+
+  confirm "" 'Remove Jenkins agent workspace in this folder as well? y/n [n]' && rm -rf /tmp/k8s-gitops-playground-jenkins-agent
 }
 
 function printUsage()
@@ -46,28 +48,15 @@ function printUsage()
     echo ""
 }
 
-confirm "" 'Remove Jenkins agent workspace in this folder as well? y/n [n]' && rm -rf /tmp/k8s-gitops-playground-jenkins-agent
 function printParameters() {
     echo "The following parameters are valid"
     echo "-h --help   - Help screen"
     echo "-d --debug  - Debug output"
 }
 
-function confirm() {
-  confirm "Removing gitops playground from kubernetes cluster: '$(kubectl config current-context)'." 'Continue? y/n [n]' ||
-  exit 0
-}
+confirm "Removing gitops playground from kubernetes cluster: '$(kubectl config current-context)'." 'Continue? y/n [n]' ||
+exit 0
 
-if [[ $1 = "-d" || $1 = "--debug" ]]; then
-  confirm
-  main "$@"
-elif [[ $1 = "-h" || $1 = "--help" ]]; then
-  printUsage
-  exit 0
-elif [[ -n "$1" ]]; then
-  printParameters
-  exit 0
-else
-  confirm
-  main "$@" > /dev/null 2>&1 & spinner "Removing all Cloudogu GitOps Playground resources..."
-fi
+main "$@"
+
+#main "$@" > /dev/null 2>&1 & spinner "Removing all Cloudogu GitOps Playground resources..."

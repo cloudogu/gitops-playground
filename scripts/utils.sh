@@ -43,5 +43,5 @@ function spinner() {
         done
         printf $reset
     done
-    printf "    \b\b\b\b"
+    echo " [ok] $1"
 }
