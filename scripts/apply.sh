@@ -32,7 +32,8 @@ function main() {
 
   initArgo
 
-  pushHelmChartRepo 'application/spring-boot-helm-chart'
+  # Start Jenkins last, so all repos have been initialized when repo indexing starts
+  initJenkins
 
   # Create Jenkins agent working dir explicitly. Otherwise it seems to be owned by root
   mkdir -p ${JENKINS_HOME}
@@ -58,6 +59,12 @@ function applyBasicK8sResources() {
     --set-file=postStartHookScript=scm-manager/initscmm.sh \
     scm-manager/chart -n default
 
+  helm upgrade -i docker-registry --values docker-registry/values.yaml --version 1.9.4 helm-stable/docker-registry -n default
+  
+  pushHelmChartRepo 'application/spring-boot-helm-chart'
+}
+
+function initJenkins() {
   # Make sure to run Jenkins and Agent containers as the current user. Avoids permission problems.
   # Find out the docker group and put the agent into it. Otherwise it has no permission to access  the docker host.
   helm upgrade -i jenkins --values jenkins/values.yaml \
@@ -65,8 +72,6 @@ function applyBasicK8sResources() {
     --set agent.runAsUser=$(id -u) \
     --set agent.runAsGroup=$(getent group docker | awk -F: '{ print $3}') \
     --version 2.13.0 jenkins/jenkins -n default
-
-  helm upgrade -i docker-registry --values docker-registry/values.yaml --version 1.9.4 helm-stable/docker-registry -n default
 }
 
 function initFluxV1() {

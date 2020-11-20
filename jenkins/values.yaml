@@ -138,7 +138,7 @@ agent:
   # We mount the same PATH as a hostPath. See bellow.
   workingDir: "/tmp/k8s-gitops-playground-jenkins-agent"
   # Number of concurrent builds. Keep it low to avoid high CPU load.
-  containerCap: 2
+  containerCap: 1
   customJenkinsLabels: [ 'docker' ]
   resources:
     limits:
@@ -167,5 +167,6 @@ agent:
       mountPath: /usr/bin/docker
   # Controls how agent pods are retained after the Jenkins build completes
   # Not in Jenkins but in K8s. Helpful for debugging
+  # In order to get rid of those many "default-xyz" pod use: kubectl delete pod -l jenkins/jenkins-jenkins-slave=true
   #podRetention: "OnFailure" 
 

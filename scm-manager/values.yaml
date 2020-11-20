@@ -29,7 +29,7 @@ plugins:
   - name: jenkins
     url: https://packages.scm-manager.org/repository/plugin-releases/sonia/scm/plugins/scm-jenkins-plugin/{{ .Values.pluginVersions.jenkins }}/scm-jenkins-plugin-{{ .Values.pluginVersions.jenkins }}.smp
   - name: activity
-    url: https://packages.scm-manager.org/repository/plugin-releases/sonia/scm/plugins/scm-activity-plugin/{{ .Values.pluginVersions.activity }}/scm-jenkins-plugin-{{ .Values.pluginVersions.activity }}.smp
+    url: https://packages.scm-manager.org/repository/plugin-releases/sonia/scm/plugins/scm-activity-plugin/{{ .Values.pluginVersions.activity }}/scm-activity-plugin-{{ .Values.pluginVersions.activity }}.smp
   - name: el
     url: https://packages.scm-manager.org/repository/plugin-releases/sonia/scm/plugins/scm-el-plugin/{{ .Values.pluginVersions.el }}/scm-el-plugin-{{ .Values.pluginVersions.el }}.smp
 
