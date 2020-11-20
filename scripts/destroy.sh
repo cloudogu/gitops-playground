@@ -46,6 +46,7 @@ function printUsage()
     echo ""
 }
 
+confirm "" 'Remove Jenkins agent workspace in this folder as well? y/n [n]' && rm -rf /tmp/k8s-gitops-playground-jenkins-agent
 function printParameters() {
     echo "The following parameters are valid"
     echo "-h --help   - Help screen"
