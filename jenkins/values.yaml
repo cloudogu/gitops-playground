@@ -122,37 +122,50 @@ persistence:
       readOnly: true
 
 agent:
-  #enabled: true
   # We need JDK11 for our PetClinic example
   tag: "4.6-1-jdk11"
-  # TODO? move to /tmp?
-  workingDir: "/var/jenkins_home/"
+  # In our local playground infrastructure builds are run in agent containers (pods). During the builds, more 
+  # containers are started via the Jenkins Docker Plugin (on the same docker host).
+  # This leads to a scenario where the agent container tries to mount its filesystem into another container.
+  # The docker host is only able to realize this mounts when the mounted paths are the same inside and outside the
+  # containers.
+  # So as a workaround, we provide the path inside the container also outside the container.
+  # The /tmp folder is a good choice, because it is writable for all users on the host.
+  # One disadvantage is, that /tmp is deleted when the host shuts down. Which might slow down builds
+  # A different option would be to link the workspace into this repo.
+  # If we should ever want to implement this, the logic can be reused from Git History:
+  # https://github.com/cloudogu/k8s-gitops-playground/blob/61e033/scripts/apply.sh#L211-L235
+  # We mount the same PATH as a hostPath. See bellow.
+  workingDir: "/tmp/k8s-gitops-playground-jenkins-agent"
+  # Number of concurrent builds. Keep it low to avoid high CPU load.
+  containerCap: 2
   customJenkinsLabels: [ 'docker' ]
-  # Controls how agent pods are retained after the Jenkins build completes
-  # Possible values: Always, Never, OnFailure
-  # Persist for faster builds (workspace is not deleted)
-  podRetention: "Always" # TODO This results in "Never". Bug in chart?
   resources:
     limits:
       cpu: "1"
       memory: "1Gi"
   volumes:
     - type: HostPath
-      # In our local playground infrastructure, we're using a workaround: Builds are run on the Jenkins master, which runs
-      # inside a container. During the builds, more containers are started (on the same docker host).
-      # This leads to a scenario where the Jenkins container tries to mount its filesystem into another container.
-      # The docker host is only able to realize this mounts when the mounted paths are the same inside and outside the containers.
-      # As another workaround, we provide the path inside the container also outside the container (/var/jenkins_home/workspace)
-      # In order not to pollute the host, we symlink /var/jenkins_home/workspace into this repo.
-      hostPath: /var/jenkins_home/workspace
-      mountPath: /var/jenkins_home/workspace
+      # See workingDir
+      hostPath: /tmp/k8s-gitops-playground-jenkins-agent
+      mountPath: /tmp/k8s-gitops-playground-jenkins-agent
     - type: HostPath
       # For this demo, allow jenkins master to access docker client
       hostPath: /var/run/docker.sock
       mountPath: /var/run/docker.sock
     - type: HostPath
-     # TODO this might cause problems on some host: Risk of missing libraries because docker might be linked dynamically and libraries might be missing in container
+      # Use the local docker binary. 
+      # This might cause problems on some host: Risk of missing libraries because docker might be linked dynamically
+      # and libraries might be missing inside the agent container.
+      # An alternative would be to download a statically linked docker container and place it into a PVC.
+      # However, the agent does not seem to provide the option for initContainers.
+      # We could use the master's initContainer an also write it to a HostPath (in /tmp)
+      # But this is more complicated and time consuming.
+      # If we should ever change our mind, the logic for downloading the docker client can be reused from Git History:
+      # https://github.com/cloudogu/k8s-gitops-playground/blob/72e644/jenkins/values.yaml#L128-L139
       hostPath: /usr/bin/docker
       mountPath: /usr/bin/docker
-  containerCap: 2
+  # Controls how agent pods are retained after the Jenkins build completes
+  # Not in Jenkins but in K8s. Helpful for debugging
+  #podRetention: "OnFailure" 
 
