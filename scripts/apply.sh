@@ -2,16 +2,13 @@
 set -o errexit -o nounset -o pipefail
 #set -x
 
-# symlink -> workspace hier rein + .gitignore
-# im destroy, simlink + ordner entfernen
 SCM_USER=scmadmin
 SCM_PWD=scmadmin
 
 BASEDIR=$(dirname $0)
 ABSOLUTE_BASEDIR="$(cd ${BASEDIR} && pwd)"
 PLAYGROUND_DIR="$(cd ${BASEDIR} && cd .. && pwd)"
-WORKSPACE="${PLAYGROUND_DIR}/workspace"
-JENKINS_HOME="/var/jenkins_home/"
+JENKINS_HOME="/tmp/k8s-gitops-playground-jenkins-agent"
 
 PETCLINIC_COMMIT=949c5af
 # get scm-manager port from values
@@ -27,59 +24,83 @@ function main() {
   confirm "Applying gitops playground to kubernetes cluster: '$(kubectl config current-context)'." 'Continue? y/n [n]' ||
     exit 0
 
-  prepareWorkspace
+  applyBasicK8sResources
 
-  applyK8sResources
+  initFluxV1
 
-  pushPetClinicRepo 'petclinic/fluxv1/plain-k8s' 'application/petclinic-plain'
-  pushPetClinicRepo 'petclinic/fluxv2/plain-k8s' 'fluxv2/petclinic-plain'
+  initFluxV2
 
-  initRepo 'cluster/gitops'
-  initRepoWithSource 'fluxv2/gitops' 'fluxv2'
+  initArgo
 
-  pushPetClinicRepo 'petclinic/argocd/plain-k8s' 'argocd/petclinic-plain'
+  # Start Jenkins last, so all repos have been initialized when repo indexing starts
+  initJenkins
 
-  pushHelmChartRepo 'application/spring-boot-helm-chart'
-
-
-  initRepo 'cluster/gitops'
-  initRepo 'argocd/gitops'
-
-  initRepoWithSource 'application/nginx' 'nginx/fluxv1'
-  initRepoWithSource 'argocd/nginx-helm' 'nginx/argocd'
+  # Create Jenkins agent working dir explicitly. Otherwise it seems to be owned by root
+  mkdir -p ${JENKINS_HOME}
 
   printWelcomeScreen
 }
 
-function applyK8sResources() {
+function applyBasicK8sResources() {
   kubectl apply -f k8s-namespaces
 
   kubectl apply -f jenkins/resources
   kubectl apply -f scm-manager/resources
+
   kubectl apply -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-components.yaml
 
   helm repo add jenkins https://charts.jenkins.io
   helm repo add fluxcd https://charts.fluxcd.io
-  helm repo add helm-stable https://charts.helm.sh/stable
-
+  helm repo add stable https://charts.helm.sh/stable
   helm repo add argo https://argoproj.github.io/argo-helm
   helm repo add bitnami https://charts.bitnami.com/bitnami
 
-  helm upgrade -i scmm --values scm-manager/values.yaml --set-file=postStartHookScript=scm-manager/initscmm.sh scm-manager/chart -n default
-  helm upgrade -i jenkins --values jenkins/values.yaml --version 2.13.0 jenkins/jenkins -n default
+  helm upgrade -i scmm --values scm-manager/values.yaml \
+    --set-file=postStartHookScript=scm-manager/initscmm.sh \
+    scm-manager/chart -n default
+
+  helm upgrade -i docker-registry --values docker-registry/values.yaml --version 1.9.4 stable/docker-registry -n default
+  
+  pushHelmChartRepo 'application/spring-boot-helm-chart'
+}
+
+function initJenkins() {
+  # Make sure to run Jenkins and Agent containers as the current user. Avoids permission problems.
+  # Find out the docker group and put the agent into it. Otherwise it has no permission to access  the docker host.
+  helm upgrade -i jenkins --values jenkins/values.yaml \
+    --set master.runAsUser=$(id -u) \
+    --set agent.runAsUser=$(id -u) \
+    --set agent.runAsGroup=$(getent group docker | awk -F: '{ print $3}') \
+    --version 2.13.0 jenkins/jenkins -n default
+}
+
+function initFluxV1() {
+  pushPetClinicRepo 'petclinic/fluxv1/plain-k8s' 'application/petclinic-plain'
+  initRepo 'cluster/gitops'
+  initRepoWithSource 'application/nginx' 'nginx/fluxv1'
+
   helm upgrade -i flux-operator --values flux-operator/values.yaml --version 1.3.0 fluxcd/flux -n default
   helm upgrade -i helm-operator --values helm-operator/values.yaml --version 1.0.2 fluxcd/helm-operator -n default
-  helm upgrade -i docker-registry --values docker-registry/values.yaml --version 1.9.4 helm-stable/docker-registry -n default
+}
 
-
+function initFluxV2() {
   kubectl apply -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-gitrepository.yaml
   kubectl apply -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-kustomization.yaml
 
-  helm upgrade -i argocd --values argocd/values.yaml --version 2.9.5 argo/argo-cd  -n default
+  pushPetClinicRepo 'petclinic/fluxv2/plain-k8s' 'fluxv2/petclinic-plain'
+  initRepoWithSource 'fluxv2/gitops' 'fluxv2'
+}
+
+function initArgo() {
+  helm upgrade -i argocd --values argocd/values.yaml --version 2.9.5 argo/argo-cd -n default
   kubectl apply -f argocd/resources
 
   # set argocd admin password to 'admin' here, because it does not work through the helm chart
   kubectl patch secret -n default argocd-secret -p '{"stringData": { "admin.password": "$2y$10$GsLZ7KlAhW9xNsb10YO3/O6jlJKEAU2oUrBKtlF/g1wVlHDJYyVom"}}'
+
+  pushPetClinicRepo 'petclinic/argocd/plain-k8s' 'argocd/petclinic-plain'
+  initRepo 'argocd/gitops'
+  initRepoWithSource 'argocd/nginx-helm' 'nginx/argocd'
 }
 
 function pushPetClinicRepo() {
@@ -147,7 +168,7 @@ function initRepo() {
   (
     cd "${TMP_REPO}"
     git checkout main --quiet || git checkout -b main --quiet
-    echo "# gitops" > README.md
+    echo "# gitops" >README.md
     git add README.md
     # exits with 1 if there were differences and 0 means no differences.
     if ! git diff-index --exit-code --quiet HEAD --; then
@@ -187,34 +208,10 @@ function initRepoWithSource() {
 
 function setMainBranch() {
   TARGET_REPO_SCMM="$1"
-  
+
   curl -s -L -X PUT -H 'Content-Type: application/vnd.scmm-gitConfig+json' \
     --data-raw "{\"defaultBranch\":\"main\"}" \
     "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/api/v2/config/git/${TARGET_REPO_SCMM}"
-}
-
-function prepareWorkspace() {
-  echo "Preparing jenkins workspace.."
-
-  # check if the necessary 'workspace' and 'jenkins_home' dir exist
-  if [[ ! -d "${WORKSPACE}" ]]; then
-    mkdir -p ${WORKSPACE}
-    echo "Created WORKSPACE dir at ${WORKSPACE}"
-    else echo "WORKSPACE already exists.."
-  fi
-
-  if [[ ! -d "${JENKINS_HOME}" ]]; then
-    sudo mkdir -p ${JENKINS_HOME}
-    echo "Created JENKINS_HOME dir at ${JENKINS_HOME}"
-    else echo "JENKINS_HOME already exists.."
-  fi
-
-  if [[ "$(readlink "${JENKINS_HOME}/workspace")" = "${WORKSPACE}" ]]; then
-    echo "symlink between 'WORKSPACE' and 'JENKINS_HOME' is already set correctly"
-  else
-      echo "Creating symlink from ${JENKINS_HOME}/workspace to ${WORKSPACE}"
-      sudo ln -s ${WORKSPACE} ${JENKINS_HOME}
-  fi
 }
 
 function printWelcomeScreen() {

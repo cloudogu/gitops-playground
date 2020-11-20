@@ -38,8 +38,8 @@ data:
     mkdir -p /data/plugins
     chown 1000:1000 /data/plugins
     {{ range $i, $plugin := .Values.plugins }}
-    # install plugin {{ $plugin.name }}
-    wget -O /data/plugins/{{ $plugin.name }}.smp {{ $plugin.url }}
-    chown 1000:1000 /data/plugins/{{ $plugin.name }}.smp
+    # install plugin {{ tpl $plugin.name $ }}
+    wget -O /data/plugins/{{ tpl $plugin.name $ }}.smp {{ tpl $plugin.url $ }}
+    chown 1000:1000 /data/plugins/{{ tpl $plugin.name $ }}.smp
     {{ end }}
 {{ end }}
