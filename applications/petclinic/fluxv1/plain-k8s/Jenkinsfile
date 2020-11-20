@@ -123,13 +123,6 @@ String pushToConfigRepo(Map gitopsConfig) {
     return changesOnGitOpsRepo
 }
 
-private String aggregateChangesOnGitOpsRepo(changes) {
-    // Remove empty
-    (changes - '')
-    // and concat into string
-            .join('; ')
-}
-
 String createApplicationForStageAndPushToBranch(String stage, String branch, GitRepo applicationRepo, def git, Map gitopsConfig) {
 
     String commitPrefix = stage == 'staging' ? '[S] ' : ''
@@ -157,6 +150,13 @@ String createApplicationForStageAndPushToBranch(String stage, String branch, Git
     }
 }
 
+private String aggregateChangesOnGitOpsRepo(changes) {
+    // Remove empty
+    (changes - '')
+    // and concat into string
+            .join('; ')
+}
+
 String createApplicationCommitMessage(def git, def applicationRepo) {
     String issueIds =  (applicationRepo.commitMessage =~ /#\d*/).collect { "${it} " }.join('')
 
@@ -166,26 +166,6 @@ String createApplicationCommitMessage(def git, def applicationRepo) {
     String message = "${issueIds}${repoNamespace}/${repoName}@${applicationRepo.commitHash}"
 
     return message
-}
-
-String createImageTag() {
-    def git = cesBuildLib.Git.new(this)
-    String branch = git.simpleBranchName
-    String branchSuffix = ""
-
-    if (!"develop".equals(branch)) {
-        branchSuffix = "-${branch}"
-    }
-
-    return "${new Date().format('yyyyMMddHHmm')}-${git.commitHashShort}${branchSuffix}"
-}
-
-void updateImageVersion(String deploymentFilePath, String containerName, String newImageTag) {
-    def data = readYaml file: deploymentFilePath
-    def containers = data.spec.template.spec.containers
-    def updateContainer = containers.find {it.name == containerName}
-    updateContainer.image = newImageTag
-    writeYaml file: deploymentFilePath, data: data, overwrite: true
 }
 
 void createPullRequest(Map gitopsConfig) {
@@ -226,6 +206,26 @@ private String createBuildDescription(String pushedChanges, String imageName) {
     description += "\nImage: ${imageName}"
 
     return description
+}
+
+String createImageTag() {
+    def git = cesBuildLib.Git.new(this)
+    String branch = git.simpleBranchName
+    String branchSuffix = ""
+
+    if (!"develop".equals(branch)) {
+        branchSuffix = "-${branch}"
+    }
+
+    return "${new Date().format('yyyyMMddHHmm')}-${git.commitHashShort}${branchSuffix}"
+}
+
+void updateImageVersion(String deploymentFilePath, String containerName, String newImageTag) {
+    def data = readYaml file: deploymentFilePath
+    def containers = data.spec.template.spec.containers
+    def updateContainer = containers.find {it.name == containerName}
+    updateContainer.image = newImageTag
+    writeYaml file: deploymentFilePath, data: data, overwrite: true
 }
 
 /** Queries and stores info about current repo and HEAD commit */ 

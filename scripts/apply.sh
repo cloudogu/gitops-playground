@@ -8,6 +8,7 @@ SCM_PWD=scmadmin
 BASEDIR=$(dirname $0)
 ABSOLUTE_BASEDIR="$(cd ${BASEDIR} && pwd)"
 PLAYGROUND_DIR="$(cd ${BASEDIR} && cd .. && pwd)"
+JENKINS_HOME="/tmp/k8s-gitops-playground-jenkins-agent"
 
 PETCLINIC_COMMIT=949c5af
 # get scm-manager port from values
@@ -23,52 +24,85 @@ function main() {
   confirm "Applying gitops playground to kubernetes cluster: '$(kubectl config current-context)'." 'Continue? y/n [n]' ||
     exit 0
 
-  applyK8sResources
+  applyBasicK8sResources
 
-  pushHelmChartRepo 'common/spring-boot-helm-chart'
+  initFluxV1
 
-  initRepo 'fluxv1/gitops'
-  pushPetClinicRepo 'applications/petclinic/fluxv1/plain-k8s' 'fluxv1/petclinic-plain'
+  initFluxV2
 
-  initRepoWithSource 'fluxv2/gitops' 'fluxv2'
-  pushPetClinicRepo 'applications/petclinic/fluxv2/plain-k8s' 'fluxv2/petclinic-plain'
+  initArgo
 
-  initRepo 'argocd/gitops'
-  initRepoWithSource 'argocd/nginx-helm' 'applications/nginx'
-  pushPetClinicRepo 'applications/petclinic/argocd/plain-k8s' 'argocd/petclinic-plain'
+  # Start Jenkins last, so all repos have been initialized when repo indexing starts
+  initJenkins
+
+  # Create Jenkins agent working dir explicitly. Otherwise it seems to be owned by root
+  mkdir -p ${JENKINS_HOME}
 
   printWelcomeScreen
 }
 
-function applyK8sResources() {
+function applyBasicK8sResources() {
   kubectl apply -f k8s-namespaces
 
   createScmmSecrets
 
   kubectl apply -f jenkins/resources
+  kubectl apply -f scm-manager/resources
+
   kubectl apply -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-components.yaml
 
   helm repo add jenkins https://charts.jenkins.io
   helm repo add fluxcd https://charts.fluxcd.io
-  helm repo add helm-stable https://charts.helm.sh/stable
-
+  helm repo add stable https://charts.helm.sh/stable
   helm repo add argo https://argoproj.github.io/argo-helm
+  helm repo add bitnami https://charts.bitnami.com/bitnami
 
-  helm upgrade -i scmm --values scm-manager/values.yaml --set-file=postStartHookScript=scm-manager/initscmm.sh scm-manager/chart -n default
-  helm upgrade -i jenkins --values jenkins/values.yaml --version 2.13.0 jenkins/jenkins -n default
-  helm upgrade -i flux-operator --values fluxv1/flux-operator/values.yaml --version 1.3.0 fluxcd/flux -n fluxv1
-  helm upgrade -i helm-operator --values fluxv1/helm-operator/values.yaml --version 1.0.2 fluxcd/helm-operator -n fluxv1
-  helm upgrade -i docker-registry --values docker-registry/values.yaml --version 1.9.4 helm-stable/docker-registry -n default
+  helm upgrade -i scmm --values scm-manager/values.yaml \
+    --set-file=postStartHookScript=scm-manager/initscmm.sh \
+    scm-manager/chart -n default
 
+  helm upgrade -i docker-registry --values docker-registry/values.yaml --version 1.9.4 stable/docker-registry -n default
 
+  pushHelmChartRepo 'common/spring-boot-helm-chart'
+}
+
+function initJenkins() {
+  # Make sure to run Jenkins and Agent containers as the current user. Avoids permission problems.
+  # Find out the docker group and put the agent into it. Otherwise it has no permission to access  the docker host.
+  helm upgrade -i jenkins --values jenkins/values.yaml \
+    --set master.runAsUser=$(id -u) \
+    --set agent.runAsUser=$(id -u) \
+    --set agent.runAsGroup=$(getent group docker | awk -F: '{ print $3}') \
+    --version 2.13.0 jenkins/jenkins -n default
+}
+
+function initFluxV1() {
+  initRepo 'fluxv1/gitops'
+  pushPetClinicRepo 'applications/petclinic/fluxv1/plain-k8s' 'fluxv1/petclinic-plain'
+  initRepoWithSource 'applications/nginx/fluxv1' 'fluxv1/nginx-helm'
+
+  helm upgrade -i flux-operator --values flux-operator/values.yaml --version 1.3.0 fluxcd/flux -n fluxv1
+  helm upgrade -i helm-operator --values helm-operator/values.yaml --version 1.0.2 fluxcd/helm-operator -n fluxv1
+}
+
+function initFluxV2() {
   kubectl apply -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-gitrepository.yaml
   kubectl apply -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-kustomization.yaml
 
-  helm upgrade -i argocd --values argocd/values.yaml --version 2.9.5 argo/argo-cd  -n argocd
+  pushPetClinicRepo 'applications/petclinic/fluxv2/plain-k8s' 'fluxv2/petclinic-plain'
+  initRepoWithSource 'fluxv2' 'fluxv2/gitops'
+}
+
+function initArgo() {
+  helm upgrade -i argocd --values argocd/values.yaml --version 2.9.5 argo/argo-cd -n argocd
   kubectl apply -f argocd/resources -n argocd
 
   # set argocd admin password to 'admin' here, because it does not work through the helm chart
   kubectl patch secret -n argocd argocd-secret -p '{"stringData": { "admin.password": "$2y$10$GsLZ7KlAhW9xNsb10YO3/O6jlJKEAU2oUrBKtlF/g1wVlHDJYyVom"}}'
+
+  pushPetClinicRepo 'applications/petclinic/argocd/plain-k8s' 'argocd/petclinic-plain'
+  initRepo 'argocd/gitops'
+  initRepoWithSource 'applications/nginx/argocd' 'argocd/nginx-helm'
 }
 
 function createScmmSecrets() {
@@ -101,7 +135,7 @@ function pushPetClinicRepo() {
   )
 
   rm -rf "${TMP_REPO}"
-  
+
   setMainBranch "${TARGET_REPO_SCMM}"
 }
 
@@ -143,11 +177,13 @@ function initRepo() {
   git clone "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}"
   (
     cd "${TMP_REPO}"
-    git checkout -b main  --quiet || true
-    git checkout main --quiet || true
-    echo "# gitops" > README.md
+    git checkout main --quiet || git checkout -b main --quiet
+    echo "# gitops" >README.md
     git add README.md
-    git commit -m "Add readme" --quiet || true
+    # exits with 1 if there were differences and 0 means no differences.
+    if ! git diff-index --exit-code --quiet HEAD --; then
+      git commit -m "Add readme" --quiet
+    fi
     waitForScmManager
     git push -u "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force
   )
@@ -157,21 +193,20 @@ function initRepo() {
 
 function initRepoWithSource() {
   echo "initiating repo $1 with source $2"
-  TARGET_REPO_SCMM="$1"
-  SOURCE_REPO="$2"
+  SOURCE_REPO="$1"
+  TARGET_REPO_SCMM="$2"
 
   TMP_REPO=$(mktemp -d)
 
-  git clone "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}" 
+  git clone "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}"
   (
-    cp -r "${PLAYGROUND_DIR}/${SOURCE_REPO}"/* "${TMP_REPO}"
     cd "${TMP_REPO}"
-    git checkout -b main  --quiet || true
-    git checkout main --quiet || true
+    cp -r "${PLAYGROUND_DIR}/${SOURCE_REPO}"/* .
+    git checkout main --quiet || git checkout -b main --quiet
     git add .
     git commit -m "Init ${TARGET_REPO_SCMM}" --quiet || true
     waitForScmManager
-    git push -u "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force 
+    git push -u "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force
   )
 
   rm -rf "${TMP_REPO}"
@@ -181,7 +216,7 @@ function initRepoWithSource() {
 
 function setMainBranch() {
   TARGET_REPO_SCMM="$1"
-  
+
   curl -s -L -X PUT -H 'Content-Type: application/vnd.scmm-gitConfig+json' \
     --data-raw "{\"defaultBranch\":\"main\"}" \
     "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/api/v2/config/git/${TARGET_REPO_SCMM}"
@@ -190,7 +225,7 @@ function setMainBranch() {
 function printWelcomeScreen() {
   echo "Welcome to Cloudogu's GitOps playground!"
   echo
-  echo "The playground features three example applications (Sprint PetClinic - one for every gitops solution) in SCM-Manager. See here: "
+  echo "The playground features multiple example applications (Sprint PetClinic - one for every gitops solution) in SCM-Manager. See here: "
   echo "http://localhost:9091/scm/repo/fluxv1/petclinic-plain/code/sources/main/"
   echo "http://localhost:9091/scm/repo/fluxv2/petclinic-plain/code/sources/main/"
   echo "http://localhost:9091/scm/repo/argocd/petclinic-plain/code/sources/main/"
@@ -199,8 +234,9 @@ function printWelcomeScreen() {
   echo "A simple deployment can be triggered by changing the message.properties, for example:"
   echo "http://localhost:9091/scm/repo/application/petclinic-plain/code/sources/main/src/main/resources/messages/messages.properties/"
   echo
-  echo "After saving, three Jenkins jobs are triggered:"
+  echo "After saving, multiple Jenkins jobs are triggered:"
   echo "http://localhost:9090/job/fluxv1-petclinic-plain/"
+  echo "http://localhost:9090/job/fluxv1-nginx/job/main"
   echo "http://localhost:9090/job/fluxv2-petclinic-plain/"
   echo "http://localhost:9090/job/argocd-petclinic-plain/"
   echo "Some of these jobs may fail on startup due to concurrency issues. Just start the build process again manually."
@@ -219,11 +255,13 @@ function printWelcomeScreen() {
   echo "Pull requests: http://localhost:9091/scm/repo/argocd/gitops/pull-requests"
   echo
   echo "After about 1 Minute, the GitOps operator Flux deploys to staging."
-  echo "The staging application can be found at http://localhost:9093/"
+  echo "The petclinic staging application can be found at http://localhost:9093/"
+  echo "While nginx staging can be found at http://localhost:9095"
   echo
   echo "You can then go ahead and merge the pull request in order to deploy to production"
   echo "After about 1 Minute, the GitOps operator Flux deploys to production."
-  echo "The prod application can be found at http://localhost:9094/"
+  echo "The petclinic prod application can be found at http://localhost:9094/"
+  echo "While nginx prod can be found at http://localhost:9096"
 }
 
 main "$@"

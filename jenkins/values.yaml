@@ -1,6 +1,3 @@
-# For updating, delete pvc jenkins-docker-client
-dockerClientVersion: 19.03.9
-
 master:
   # to prevent the jenkins-ui-test pod being created
   testEnabled: false
@@ -12,19 +9,19 @@ master:
   nodePort: 9090
 
   additionalPlugins:
-    - docker-workflow:1.24
+    - docker-workflow:1.25
     - docker-plugin:1.2.1
     - job-dsl:1.77
     - pipeline-utility-steps:2.6.1
-    - junit:1.34
-    - scm-manager:1.4.0
+    - junit:1.44
+    - scm-manager:1.5.0
 
   # This would be great to not install every plugin again on startup.
   # BUT: This also leads to CASC being ignored.
   # initializeOnce: true
 
-  # Allow builds on master in order to facilitate an agent with docker CLI
-  numExecutors: 2
+  # Don't use master for builds
+  numExecutors: 0
 
   JCasC:
     configScripts:
@@ -40,17 +37,7 @@ master:
                   password: "${PASSWORD}"
                   description: "Credentials for accessing SCM-Manager"
                   scope: GLOBAL
-      # Set some more details on master agent
-      # Add /docker to the PATH. Using "PATH=:/docker:${PATH}" is not working here, so copy PATH from container :-/
-      # That is, this might have to be updated with newer version of the image
-      master-agent: |
-        jenkins:
-          labelString: "docker"
-          nodeProperties:
-            - envVars:
-                env:
-                - key: "PATH"
-                  value: "/usr/local/openjdk-8/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/docker"
+
       # TODO could we use the SCMM source here?
       # These URLS could be helpful:
       # http://localhost:9090/job/petclinic-plain/config.xml
@@ -60,9 +47,9 @@ master:
       # This is probably because "scm-manager" is invalid groovy syntax.
       # See https://github.com/jenkinsci/scm-manager-plugin/blob/1.4.0/src/main/java/com/cloudogu/scmmanager/scm/ScmManagerSource.java
       # This might be fixed in a later SCMM Plugin for Jenkins
-      petclinic-plain-job: |
+      init-job: |
         jenkins:
-          systemMessage: "Seeding petclinic-plain jobs"
+          systemMessage: "Seeding init jobs"
         jobs:
           - script: |
               multibranchPipelineJob('fluxV1-petclinic-plain') {
@@ -70,6 +57,16 @@ master:
                       git {
                           id('fluxV1-petclinic-plain')
                           remote('http://scmm-scm-manager:9091/scm/repo/fluxv1/petclinic-plain')
+                          credentialsId('scmm-user')
+                      }
+                  }
+              }
+          - script: |
+              multibranchPipelineJob('fluxv1-nginx') {
+                  branchSources {
+                      git {
+                          id('fluxv1-nginx')
+                          remote('http://scmm-scm-manager:9091/scm/repo/fluxv1/nginx-helm')
                           credentialsId('scmm-user')
                       }
                   }
@@ -109,40 +106,8 @@ master:
       # Default /run/secrets results in "read-only file system"
       value: /secrets/jenkins
 
-  customInitContainers:
-    # Download docker client
-    - name: download-docker-client
-      image: alpine:3.12.0
-      imagePullPolicy: "{{ .Values.master.imagePullPolicy }}"
-      command: ["/bin/sh", "-c"]
-      args:
-        - set -x;
-          if [ -f /docker/docker ]; then echo 'Docker already installed'; exit 0; fi;
-          cd /tmp;
-          wget -qc https://download.docker.com/linux/static/stable/x86_64/docker-{{.Values.dockerClientVersion}}.tgz -O - | tar -xz;
-          mv /tmp/docker/docker /docker/docker;
-      volumeMounts:
-        - name: docker-client
-          mountPath: /docker
-
-  # Allow access to docker socket. Running as root is not a good practice, but seems pragmatic here.
-  # Because other option setting "fsgroup" depends on the group ID of the "docker" group on each host.
-  # This would require individual configuration,
-  # Calling: "getent group docker | awk -F: '{ print $3}'" and setting the result manually as fsgroup.
-  #  fsGroup: 998
-  # Also, with access to the docker socket, the container has root access to the host anyway. So why bother about the container?
-  # It's a demo, after all!
-  runAsUser: 0
-
 persistence:
   volumes:
-    - name: docker-client
-      # Persist, so the client does not have to be downloaded on each start
-      persistentVolumeClaim:
-        claimName: jenkins-docker-client
-    - name: docker-sock # For this demo, allow jenkins master to access docker client
-      hostPath:
-        path: /var/run/docker.sock
     - name: scmm-user
       secret:
         secretName: gitops-scmm
@@ -153,9 +118,53 @@ persistence:
       # https://github.com/jenkinsci/configuration-as-code-plugin/blob/master/docs/features/secrets.adoc#kubernetes-secrets
       mountPath: /secrets/jenkins
       readOnly: true
-    - name: docker-client
-      mountPath: /docker
-      readOnly: true
-    - name: docker-sock
-      mountPath: "/var/run/docker.sock"
-      readOnly: true
+
+agent:
+  # We need JDK11 for our PetClinic example
+  tag: "4.6-1-jdk11"
+  # In our local playground infrastructure builds are run in agent containers (pods). During the builds, more
+  # containers are started via the Jenkins Docker Plugin (on the same docker host).
+  # This leads to a scenario where the agent container tries to mount its filesystem into another container.
+  # The docker host is only able to realize this mounts when the mounted paths are the same inside and outside the
+  # containers.
+  # So as a workaround, we provide the path inside the container also outside the container.
+  # The /tmp folder is a good choice, because it is writable for all users on the host.
+  # One disadvantage is, that /tmp is deleted when the host shuts down. Which might slow down builds
+  # A different option would be to link the workspace into this repo.
+  # If we should ever want to implement this, the logic can be reused from Git History:
+  # https://github.com/cloudogu/k8s-gitops-playground/blob/61e033/scripts/apply.sh#L211-L235
+  # We mount the same PATH as a hostPath. See bellow.
+  workingDir: "/tmp/k8s-gitops-playground-jenkins-agent"
+  # Number of concurrent builds. Keep it low to avoid high CPU load.
+  containerCap: 1
+  customJenkinsLabels: [ 'docker' ]
+  resources:
+    limits:
+      cpu: "1"
+      memory: "1Gi"
+  volumes:
+    - type: HostPath
+      # See workingDir
+      hostPath: /tmp/k8s-gitops-playground-jenkins-agent
+      mountPath: /tmp/k8s-gitops-playground-jenkins-agent
+    - type: HostPath
+      # For this demo, allow jenkins master to access docker client
+      hostPath: /var/run/docker.sock
+      mountPath: /var/run/docker.sock
+    - type: HostPath
+      # Use the local docker binary.
+      # This might cause problems on some host: Risk of missing libraries because docker might be linked dynamically
+      # and libraries might be missing inside the agent container.
+      # An alternative would be to download a statically linked docker container and place it into a PVC.
+      # However, the agent does not seem to provide the option for initContainers.
+      # We could use the master's initContainer an also write it to a HostPath (in /tmp)
+      # But this is more complicated and time consuming.
+      # If we should ever change our mind, the logic for downloading the docker client can be reused from Git History:
+      # https://github.com/cloudogu/k8s-gitops-playground/blob/72e644/jenkins/values.yaml#L128-L139
+      hostPath: /usr/bin/docker
+      mountPath: /usr/bin/docker
+  # Controls how agent pods are retained after the Jenkins build completes
+  # Not in Jenkins but in K8s. Helpful for debugging
+  # In order to get rid of those many "default-xyz" pod use: kubectl delete pod -l jenkins/jenkins-jenkins-slave=true
+  #podRetention: "OnFailure"
+
