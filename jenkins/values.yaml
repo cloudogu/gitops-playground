@@ -14,7 +14,8 @@ master:
     - job-dsl:1.77
     - pipeline-utility-steps:2.6.1
     - junit:1.44
-    - scm-manager:1.5.0
+    - scm-manager:1.5.1
+    - html5-notifier-plugin:1.5
 
   # This would be great to not install every plugin again on startup.
   # BUT: This also leads to CASC being ignored.
@@ -53,21 +54,20 @@ master:
         jobs:
           - script: |
               multibranchPipelineJob('fluxV1-petclinic-plain') {
-                branchSources {
-                  git {
-                    id('fluxV1-petclinic-plain')
-                    remote('http://scmm-scm-manager:9091/scm/repo/application/petclinic-plain')
-                    credentialsId('scmm-user')
-                  }
-                }
-              }
-
-          - script: |
-              multibranchPipelineJob('nginx') {
                   branchSources {
                       git {
-                          id('nginx')
-                          remote('http://scmm-scm-manager:9091/scm/repo/application/nginx')
+                          id('fluxV1-petclinic-plain')
+                          remote('http://scmm-scm-manager:9091/scm/repo/fluxv1/petclinic-plain')
+                          credentialsId('scmm-user')
+                      }
+                  }
+              }
+          - script: |
+              multibranchPipelineJob('fluxv1-nginx') {
+                  branchSources {
+                      git {
+                          id('fluxv1-nginx')
+                          remote('http://scmm-scm-manager:9091/scm/repo/fluxv1/nginx-helm')
                           credentialsId('scmm-user')
                       }
                   }
@@ -111,8 +111,7 @@ persistence:
   volumes:
     - name: scmm-user
       secret:
-        # TODO use SCMM user secret here
-        secretName: jenkins-scmm
+        secretName: gitops-scmm
 
   mounts:
     - name: scmm-user
@@ -123,8 +122,9 @@ persistence:
 
 agent:
   # We need JDK11 for our PetClinic example
+  #tag: "4.3-4-jdk11"
   tag: "4.6-1-jdk11"
-  # In our local playground infrastructure builds are run in agent containers (pods). During the builds, more 
+  # In our local playground infrastructure builds are run in agent containers (pods). During the builds, more
   # containers are started via the Jenkins Docker Plugin (on the same docker host).
   # This leads to a scenario where the agent container tries to mount its filesystem into another container.
   # The docker host is only able to realize this mounts when the mounted paths are the same inside and outside the
@@ -154,7 +154,7 @@ agent:
       hostPath: /var/run/docker.sock
       mountPath: /var/run/docker.sock
     - type: HostPath
-      # Use the local docker binary. 
+      # Use the local docker binary.
       # This might cause problems on some host: Risk of missing libraries because docker might be linked dynamically
       # and libraries might be missing inside the agent container.
       # An alternative would be to download a statically linked docker container and place it into a PVC.
@@ -168,5 +168,5 @@ agent:
   # Controls how agent pods are retained after the Jenkins build completes
   # Not in Jenkins but in K8s. Helpful for debugging
   # In order to get rid of those many "default-xyz" pod use: kubectl delete pod -l jenkins/jenkins-jenkins-slave=true
-  #podRetention: "OnFailure" 
+  podRetention: "OnFailure"
 

@@ -24,6 +24,9 @@ function main() {
   confirm "Applying gitops playground to kubernetes cluster: '$(kubectl config current-context)'." 'Continue? y/n [n]' ||
     exit 0
 
+  # Create Jenkins agent working dir explicitly. Otherwise it seems to be owned by root
+  mkdir -p ${JENKINS_HOME}
+  
   applyBasicK8sResources
 
   initFluxV1
@@ -35,17 +38,15 @@ function main() {
   # Start Jenkins last, so all repos have been initialized when repo indexing starts
   initJenkins
 
-  # Create Jenkins agent working dir explicitly. Otherwise it seems to be owned by root
-  mkdir -p ${JENKINS_HOME}
-
   printWelcomeScreen
 }
 
 function applyBasicK8sResources() {
   kubectl apply -f k8s-namespaces
 
+  createScmmSecrets
+
   kubectl apply -f jenkins/resources
-  kubectl apply -f scm-manager/resources
 
   kubectl apply -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-components.yaml
 
@@ -60,8 +61,8 @@ function applyBasicK8sResources() {
     scm-manager/chart -n default
 
   helm upgrade -i docker-registry --values docker-registry/values.yaml --version 1.9.4 stable/docker-registry -n default
-  
-  pushHelmChartRepo 'application/spring-boot-helm-chart'
+
+  pushHelmChartRepo 'common/spring-boot-helm-chart'
 }
 
 function initJenkins() {
@@ -75,32 +76,40 @@ function initJenkins() {
 }
 
 function initFluxV1() {
-  pushPetClinicRepo 'petclinic/fluxv1/plain-k8s' 'application/petclinic-plain'
-  initRepo 'cluster/gitops'
-  initRepoWithSource 'application/nginx' 'nginx/fluxv1'
+  initRepo 'fluxv1/gitops'
+  pushPetClinicRepo 'applications/petclinic/fluxv1/plain-k8s' 'fluxv1/petclinic-plain'
+  initRepoWithSource 'applications/nginx/fluxv1' 'fluxv1/nginx-helm'
 
-  helm upgrade -i flux-operator --values flux-operator/values.yaml --version 1.3.0 fluxcd/flux -n default
-  helm upgrade -i helm-operator --values helm-operator/values.yaml --version 1.0.2 fluxcd/helm-operator -n default
+  helm upgrade -i flux-operator --values fluxv1/flux-operator/values.yaml --version 1.3.0 fluxcd/flux -n fluxv1
+  helm upgrade -i helm-operator --values fluxv1/helm-operator/values.yaml --version 1.0.2 fluxcd/helm-operator -n fluxv1
 }
 
 function initFluxV2() {
   kubectl apply -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-gitrepository.yaml
   kubectl apply -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-kustomization.yaml
 
-  pushPetClinicRepo 'petclinic/fluxv2/plain-k8s' 'fluxv2/petclinic-plain'
-  initRepoWithSource 'fluxv2/gitops' 'fluxv2'
+  pushPetClinicRepo 'applications/petclinic/fluxv2/plain-k8s' 'fluxv2/petclinic-plain'
+  initRepoWithSource 'fluxv2' 'fluxv2/gitops'
 }
 
 function initArgo() {
-  helm upgrade -i argocd --values argocd/values.yaml --version 2.9.5 argo/argo-cd -n default
-  kubectl apply -f argocd/resources
+  helm upgrade -i argocd --values argocd/values.yaml --version 2.9.5 argo/argo-cd -n argocd
+  kubectl apply -f argocd/resources -n argocd
 
   # set argocd admin password to 'admin' here, because it does not work through the helm chart
-  kubectl patch secret -n default argocd-secret -p '{"stringData": { "admin.password": "$2y$10$GsLZ7KlAhW9xNsb10YO3/O6jlJKEAU2oUrBKtlF/g1wVlHDJYyVom"}}'
+  kubectl patch secret -n argocd argocd-secret -p '{"stringData": { "admin.password": "$2y$10$GsLZ7KlAhW9xNsb10YO3/O6jlJKEAU2oUrBKtlF/g1wVlHDJYyVom"}}'
 
-  pushPetClinicRepo 'petclinic/argocd/plain-k8s' 'argocd/petclinic-plain'
+  pushPetClinicRepo 'applications/petclinic/argocd/plain-k8s' 'argocd/petclinic-plain'
   initRepo 'argocd/gitops'
-  initRepoWithSource 'argocd/nginx-helm' 'nginx/argocd'
+  initRepoWithSource 'applications/nginx/argocd' 'argocd/nginx-helm'
+}
+
+function createScmmSecrets() {
+  kubectl create secret generic gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=somePassword -n default || true
+  kubectl create secret generic gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=somePassword -n fluxv1 || true
+  # fluxv2 needs lowercase fieldnames
+  kubectl create secret generic gitops-scmm --from-literal=username=gitops --from-literal=password=somePassword -n fluxv2 || true
+  kubectl create secret generic gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=somePassword -n argocd || true
 }
 
 function pushPetClinicRepo() {
@@ -183,8 +192,8 @@ function initRepo() {
 
 function initRepoWithSource() {
   echo "initiating repo $1 with source $2"
-  TARGET_REPO_SCMM="$1"
-  SOURCE_REPO="$2"
+  SOURCE_REPO="$1"
+  TARGET_REPO_SCMM="$2"
 
   TMP_REPO=$(mktemp -d)
 
@@ -198,8 +207,6 @@ function initRepoWithSource() {
     waitForScmManager
     git push -u "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force
   )
-
-  rm -rf "${TMP_REPO}"
 
   rm -rf "${TMP_REPO}"
 
@@ -217,20 +224,34 @@ function setMainBranch() {
 function printWelcomeScreen() {
   echo "Welcome to Cloudogu's GitOps playground!"
   echo
-  echo "The playground features an example application (Spring PetClinic) in SCM-Manager. See here: "
-  echo "http://localhost:9091/scm/repo/application/petclinic-plain/code/sources/main/"
+  echo "The playground features multiple example applications (Sprint PetClinic - one for every gitops solution) in SCM-Manager. See here: "
+  echo "http://localhost:9091/scm/repo/fluxv1/petclinic-plain/code/sources/main/"
+  echo "http://localhost:9091/scm/repo/fluxv2/petclinic-plain/code/sources/main/"
+  echo "http://localhost:9091/scm/repo/argocd/petclinic-plain/code/sources/main/"
   echo "Credentials for SCM-Manager and Jenkins are: scmadmin/scmadmin"
   echo
   echo "A simple deployment can be triggered by changing the message.properties, for example:"
   echo "http://localhost:9091/scm/repo/application/petclinic-plain/code/sources/main/src/main/resources/messages/messages.properties/"
   echo
-  echo "After saving, this those Jenkins jobs are triggered:"
-  echo "http://localhost:9090/job/petclinic-plain/job/master"
-  echo "http://localhost:9090/job/nginx/job/main"
-  echo
+  echo "After saving, multiple Jenkins jobs are triggered:"
+  echo "http://localhost:9090/job/fluxv1-petclinic-plain/"
+  echo "http://localhost:9090/job/fluxv1-nginx/job/main"
+  echo "http://localhost:9090/job/fluxv2-petclinic-plain/"
+  echo "http://localhost:9090/job/argocd-petclinic-plain/"
+  echo "Some of these jobs may fail on startup due to concurrency issues. Just start the build process again manually."
   echo "During the job, jenkins pushes into GitOps repo and creates a pull request for production:"
-  echo "GitOps repo: http://localhost:9091/scm/repo/cluster/gitops/code/sources/main/"
-  echo "Pull requests: http://localhost:9091/scm/repo/cluster/gitops/pull-requests"
+  echo
+  echo "For fluxv1:"
+  echo "GitOps repo: http://localhost:9091/scm/repo/fluxv1/gitops/code/sources/main/"
+  echo "Pull requests: http://localhost:9091/scm/repo/fluxv1/gitops/pull-requests"
+  echo
+  echo "For fluxv2:"
+  echo "GitOps repo: http://localhost:9091/scm/repo/fluxv2/gitops/code/sources/main/"
+  echo "Pull requests: http://localhost:9091/scm/repo/fluxv2/gitops/pull-requests"
+  echo
+  echo "For argocd:"
+  echo "GitOps repo: http://localhost:9091/scm/repo/argocd/gitops/code/sources/main/"
+  echo "Pull requests: http://localhost:9091/scm/repo/argocd/gitops/pull-requests"
   echo
   echo "After about 1 Minute, the GitOps operator Flux deploys to staging."
   echo "The petclinic staging application can be found at http://localhost:9093/"

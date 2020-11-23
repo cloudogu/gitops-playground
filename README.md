@@ -64,6 +64,13 @@ Find jenkins on http://localhost:9090
 Admin user: Same as SCM-Manager - `scmadmin/scmadmin`
 Change in `jenkins-credentials.yaml` if necessary.
 
+Note: You can enable browser notifications about build results via a button in the lower right corner of Jenkins Web UI.
+
+![Enable Jenkins Notifications](docs/jenkins-enable-notifications.png)
+
+![Example of a Jenkins browser notifications](docs/jenkins-example-notification.png)
+  
+
 ### SCM-Manager
 
 Find scm-manager on http://localhost:9091

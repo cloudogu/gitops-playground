@@ -1,14 +1,6 @@
 ---
 # GitOps Toolkit revision latest
 # Components: source-controller,kustomize-controller,helm-controller,notification-controller
-apiVersion: v1
-kind: Namespace
-metadata:
-  labels:
-    app.kubernetes.io/instance: fluxv2
-    app.kubernetes.io/version: latest
-  name: fluxv2
----
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:

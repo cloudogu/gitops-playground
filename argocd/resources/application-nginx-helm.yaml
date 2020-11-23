@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: nginx-helm
-  namespace: default
+  namespace: argocd
 spec:
   destination:
     namespace: argocd-production
