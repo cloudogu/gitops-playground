@@ -23,7 +23,7 @@ source ${ABSOLUTE_BASEDIR}/utils.sh
 function main() {
   VERBOSE=$1
 
-  if [[ $VERBOSE = 0 ]]; then
+  if [[ $VERBOSE = false ]]; then
     applyBasicK8sResources
     initSCMM
     pushHelmChartRepo 'common/spring-boot-helm-chart'
@@ -35,7 +35,7 @@ function main() {
     # Create Jenkins agent working dir explicitly. Otherwise it seems to be owned by root
     mkdir -p ${JENKINS_HOME}
     printWelcomeScreen
-  elif [[ $VERBOSE = 1 ]]; then
+  elif [[ $VERBOSE = true ]]; then
     applyBasicK8sResources > /dev/null 2>&1 & spinner "Basic setup..."
     initSCMM > /dev/null 2>&1 & spinner "Starting SCM-Manager..."
     initFluxV1 > /dev/null 2>&1 & spinner "Starting Flux V1..."
@@ -313,14 +313,14 @@ if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
 
 eval set -- "$COMMANDS"
 
-VERBOSE=0
-DEBUG=0
+VERBOSE=false
+DEBUG=false
 while true; do
   case "$1" in
     -h | --help     ) printUsage; exit 0 ;;
-    -v | --verbose  ) VERBOSE=1; shift ;;
+    -v | --verbose  ) VERBOSE=true; shift ;;
     -w | --welcome  ) printWelcomeScreen; exit 0 ;;
-    -d | --debug    ) DEBUG=1; shift ;;
+    -d | --debug    ) DEBUG=true; shift ;;
     --              ) shift; break ;;
     *               ) break ;;
   esac
@@ -329,9 +329,9 @@ done
 confirm "Applying gitops playground to kubernetes cluster: '$(kubectl config current-context)'." 'Continue? y/n [n]' ||
   exit 0
 
-if [[ $DEBUG = 1 ]]; then
-  main 0
-elif [[ $VERBOSE = 1 ]]; then
+if [[ $DEBUG = true ]]; then
+  main false
+elif [[ $VERBOSE = true ]]; then
   main $VERBOSE
 else
   main $VERBOSE > /dev/null 2>&1 & spinner "Installing GitOps Playground. This may take a minute or two or..."
