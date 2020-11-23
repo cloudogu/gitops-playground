@@ -50,11 +50,11 @@ function main() {
 }
 
 function applyBasicK8sResources() {
-  kubectl apply -f k8s-namespaces
+  kubectl apply -f k8s-namespaces || true
 
   createScmmSecrets
 
-  kubectl apply -f jenkins/resources
+  kubectl apply -f jenkins/resources || true
 
   helm repo add jenkins https://charts.jenkins.io
   helm repo add fluxcd https://charts.fluxcd.io
@@ -93,9 +93,9 @@ function initFluxV1() {
 }
 
 function initFluxV2() {
-  kubectl apply -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-components.yaml
-  kubectl apply -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-gitrepository.yaml
-  kubectl apply -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-kustomization.yaml
+  kubectl apply -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-components.yaml || true
+  kubectl apply -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-gitrepository.yaml || true
+  kubectl apply -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-kustomization.yaml || true
 
   pushPetClinicRepo 'applications/petclinic/fluxv2/plain-k8s' 'fluxv2/petclinic-plain'
   initRepoWithSource 'fluxv2' 'fluxv2/gitops'
@@ -103,10 +103,10 @@ function initFluxV2() {
 
 function initArgo() {
   helm upgrade -i argocd --values argocd/values.yaml --version 2.9.5 argo/argo-cd -n argocd
-  kubectl apply -f argocd/resources -n argocd
+  kubectl apply -f argocd/resources -n argocd || true
 
   # set argocd admin password to 'admin' here, because it does not work through the helm chart
-  kubectl patch secret -n argocd argocd-secret -p '{"stringData": { "admin.password": "$2y$10$GsLZ7KlAhW9xNsb10YO3/O6jlJKEAU2oUrBKtlF/g1wVlHDJYyVom"}}'
+  kubectl patch secret -n argocd argocd-secret -p '{"stringData": { "admin.password": "$2y$10$GsLZ7KlAhW9xNsb10YO3/O6jlJKEAU2oUrBKtlF/g1wVlHDJYyVom"}}' || true
 
   pushPetClinicRepo 'applications/petclinic/argocd/plain-k8s' 'argocd/petclinic-plain'
   initRepo 'argocd/gitops'
