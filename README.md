@@ -96,7 +96,3 @@ Login with `scmadmin/scmadmin`
 ## Remove apps from cluster
 
 `scripts/destroy.sh`
-
-## Remove apps from cluster
-
-`scripts/destroy.sh`
