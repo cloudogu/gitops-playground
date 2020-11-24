@@ -21,13 +21,13 @@ SCMM_PORT=$(grep -A1 'service:' scm-manager/values.yaml | tail -n1 | cut -f2 -d'
 source ${ABSOLUTE_BASEDIR}/utils.sh
 
 function main() {
-  VERBOSE=$1
+  DEBUG=$1
   INSTALL_ALL_MODULES=$2
   INSTALL_FLUXV1=$3
   INSTALL_FLUXV2=$4
   INSTALL_ARGOCD=$5
 
-  if [[ $VERBOSE = false ]]; then
+  if [[ $DEBUG = true ]]; then
     applyBasicK8sResources
     initSCMM
 
@@ -44,7 +44,7 @@ function main() {
     # Start Jenkins last, so all repos have been initialized when repo indexing starts
     initJenkins
 
-  elif [[ $VERBOSE = true ]]; then
+  else
     applyBasicK8sResources > /dev/null 2>&1 & spinner "Basic setup..."
     initSCMM > /dev/null 2>&1 & spinner "Starting SCM-Manager..."
 
@@ -334,21 +334,19 @@ function printParameters() {
     echo
     echo " -w | --welcome  >> Welcome screen"
     echo
-    echo " -v | --verbose  >> Verbose output"
     echo " -d | --debug    >> Debug output"
 }
 
 
 COMMANDS=$(getopt \
-                -o hwvd \
-                --long help,fluxv1,fluxv2,argocd,welcome,verbose,debug \
+                -o hwd \
+                --long help,fluxv1,fluxv2,argocd,welcome,debug \
                 -- "$@")
 
 if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
 
 eval set -- "$COMMANDS"
 
-VERBOSE=false
 DEBUG=false
 INSTALL_ALL_MODULES=true
 INSTALL_FLUXV1=false
@@ -361,7 +359,6 @@ while true; do
     --fluxv2        ) INSTALL_FLUXV2=true; INSTALL_ALL_MODULES=false; shift ;;
     --argocd        ) INSTALL_ARGOCD=true; INSTALL_ALL_MODULES=false; shift ;;
     -w | --welcome  ) printWelcomeScreen; exit 0 ;;
-    -v | --verbose  ) VERBOSE=true; shift ;;
     -d | --debug    ) DEBUG=true; shift ;;
     --              ) shift; break ;;
     *               ) break ;;
@@ -371,11 +368,5 @@ done
 confirm "Applying gitops playground to kubernetes cluster: '$(kubectl config current-context)'." 'Continue? y/n [n]' ||
   exit 0
 
-if [[ $DEBUG = true ]]; then
-  main false $INSTALL_ALL_MODULES $INSTALL_FLUXV1 $INSTALL_FLUXV2 $INSTALL_ARGOCD
-elif [[ $VERBOSE = true ]]; then
-  main $VERBOSE $INSTALL_ALL_MODULES $INSTALL_FLUXV1 $INSTALL_FLUXV2 $INSTALL_ARGOCD
-else
-  main $VERBOSE $INSTALL_ALL_MODULES $INSTALL_FLUXV1 $INSTALL_FLUXV2 $INSTALL_ARGOCD > /dev/null 2>&1 & spinner "Installing GitOps Playground. This may take a minute or two or..."
-  printWelcomeScreen
-fi
+main $DEBUG $INSTALL_ALL_MODULES $INSTALL_FLUXV1 $INSTALL_FLUXV2 $INSTALL_ARGOCD
+

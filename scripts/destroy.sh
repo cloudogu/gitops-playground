@@ -51,9 +51,9 @@ function cleanup () {
 }
 
 function main() {
-  VERBOSE=$1
+  DEBUG=$1
 
-  if [[ $VERBOSE = false ]]; then
+  if [[ $DEBUG = true ]]; then
     removeFluxv1
     removeFluxv2
     removeArgoCD
@@ -61,7 +61,7 @@ function main() {
     removeJenkins
     removeK8sResources
     cleanup
-  elif [[ $VERBOSE = true ]]; then
+  else
     removeFluxv1 > /dev/null 2>&1 & spinner "Removing Flux V1"
     removeFluxv2 > /dev/null 2>&1 & spinner "Removing Flux V2"
     removeArgoCD > /dev/null 2>&1 & spinner "Removing ArgoCD"
@@ -84,26 +84,25 @@ function printUsage()
 
 function printParameters() {
     echo "The following parameters are valid"
+    echo
     echo "-h | --help     >> Help screen"
-    echo "-v | --verbose  >> Verbose output"
+    echo
     echo "-d | --debug    >> Debug output"
 }
 
 COMMANDS=$(getopt \
-                -o hvd \
-                --long help,verbose,debug \
+                -o hd \
+                --long help,debug \
                 -- "$@")
 
 if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
 
 eval set -- "$COMMANDS"
 
-VERBOSE=false
 DEBUG=false
 while true; do
   case "$1" in
     -h | --help     ) printUsage; exit 0 ;;
-    -v | --verbose  ) VERBOSE=true; shift ;;
     -d | --debug    ) DEBUG=true; shift ;;
     --              ) shift; break ;;
     *               ) break ;;
@@ -113,10 +112,4 @@ done
 confirm "Removing gitops playground from kubernetes cluster: '$(kubectl config current-context)'." 'Continue? y/n [n]' ||
   exit 0
 
-if [[ $DEBUG = true ]]; then
-  main false
-elif [[ $VERBOSE = true ]]; then
-  main $VERBOSE
-else
-  main $VERBOSE > /dev/null 2>&1 & spinner "Removing all Cloudogu GitOps Playground resources..."
-fi
+main $DEBUG
