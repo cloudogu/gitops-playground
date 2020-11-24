@@ -118,4 +118,4 @@ Login with `admin/admin`
 
 ## Remove apps from cluster
 
-`scripts/destroy.sh`
+[`scripts/destroy.sh`](scripts/destroy.sh)
