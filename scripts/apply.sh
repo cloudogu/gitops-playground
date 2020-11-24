@@ -22,31 +22,49 @@ source ${ABSOLUTE_BASEDIR}/utils.sh
 
 function main() {
   VERBOSE=$1
+  INSTALL_ALL_MODULES=$2
+  INSTALL_FLUXV1=$3
+  INSTALL_FLUXV2=$4
+  INSTALL_ARGOCD=$5
 
   if [[ $VERBOSE = false ]]; then
     applyBasicK8sResources
     initSCMM
-    pushHelmChartRepo 'common/spring-boot-helm-chart'
-    initFluxV1
-    initFluxV2
-    initArgo
+
+    if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV1 = true ]]; then
+      initFluxV1
+    fi
+    if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV2 = true ]]; then
+      initFluxV2
+    fi
+    if [[ $INSTALL_ALL_MODULES = true || $INSTALL_ARGOCD = true ]]; then
+      initArgo
+    fi
+
     # Start Jenkins last, so all repos have been initialized when repo indexing starts
     initJenkins
-    # Create Jenkins agent working dir explicitly. Otherwise it seems to be owned by root
-    mkdir -p ${JENKINS_HOME}
-    printWelcomeScreen
+
   elif [[ $VERBOSE = true ]]; then
     applyBasicK8sResources > /dev/null 2>&1 & spinner "Basic setup..."
     initSCMM > /dev/null 2>&1 & spinner "Starting SCM-Manager..."
-    initFluxV1 > /dev/null 2>&1 & spinner "Starting Flux V1..."
-    initFluxV2 > /dev/null 2>&1 & spinner "Starting Flux V2..."
-    initArgo > /dev/null 2>&1 & spinner "Starting ArgoCD..."
+
+    if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV1 = true ]]; then
+      initFluxV1 > /dev/null 2>&1 & spinner "Starting Flux V1..."
+    fi
+    if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV2 = true ]]; then
+      initFluxV2 > /dev/null 2>&1 & spinner "Starting Flux V2..."
+    fi
+    if [[ $INSTALL_ALL_MODULES = true || $INSTALL_ARGOCD = true ]]; then
+      initArgo > /dev/null 2>&1 & spinner "Starting ArgoCD..."
+    fi
+
     # Start Jenkins last, so all repos have been initialized when repo indexing starts
     initJenkins > /dev/null 2>&1 & spinner "Starting Jenkins..."
-    # Create Jenkins agent working dir explicitly. Otherwise it seems to be owned by root
-    mkdir -p ${JENKINS_HOME}
-    printWelcomeScreen
   fi
+
+  # Create Jenkins agent working dir explicitly. Otherwise it seems to be owned by root
+  mkdir -p ${JENKINS_HOME}
+  printWelcomeScreen
 }
 
 function applyBasicK8sResources() {
@@ -93,12 +111,13 @@ function initFluxV1() {
 }
 
 function initFluxV2() {
+  pushPetClinicRepo 'applications/petclinic/fluxv2/plain-k8s' 'fluxv2/petclinic-plain'
+  initRepoWithSource 'fluxv2' 'fluxv2/gitops'
+
   kubectl apply -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-components.yaml || true
   kubectl apply -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-gitrepository.yaml || true
   kubectl apply -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-kustomization.yaml || true
 
-  pushPetClinicRepo 'applications/petclinic/fluxv2/plain-k8s' 'fluxv2/petclinic-plain'
-  initRepoWithSource 'fluxv2' 'fluxv2/gitops'
 }
 
 function initArgo() {
@@ -231,60 +250,60 @@ function setMainBranch() {
 function printWelcomeScreen() {
   echo
   echo
-  echo "*************************************************************************************************************************"
-  echo "*                                     Welcome to the GitOps playground by Cloudogu!                                     *"
-  echo "*************************************************************************************************************************"
-  echo "*                                                                                                                       *"
-  echo "* The playground features three example applications (Sprint PetClinic - one for every gitops solution) in SCM-Manager. *"
-  echo "* See here:                                                                                                             *"
-  echo "*                                                                                                                       *"
-  echo -e "* - \e[32mhttp://localhost:9091/scm/repo/fluxv1/petclinic-plain/code/sources/main/\e[0m                                            *"
-  echo -e "* - \e[32mhttp://localhost:9091/scm/repo/fluxv2/petclinic-plain/code/sources/main/\e[0m                                            *"
-  echo -e "* - \e[32mhttp://localhost:9091/scm/repo/argocd/petclinic-plain/code/sources/main/\e[0m                                            *"
-  echo "*                                                                                                                       *"
-  echo -e "* Credentials for SCM-Manager and Jenkins are: \e[31mscmadmin/scmadmin\e[0m                                                        *"
-  echo "*                                                                                                                       *"
-  echo "* Right now, four Jenkins jobs are running: (when Jenkins is successfully deployed and running)                         *"
-  echo "*                                                                                                                       *"
-  echo -e "* - \e[32mhttp://localhost:9090/job/fluxv1-nginx/\e[0m                                                                             *"
-  echo -e "* - \e[32mhttp://localhost:9090/job/fluxv1-petclinic-plain/\e[0m                                                                   *"
-  echo -e "* - \e[32mhttp://localhost:9090/job/fluxv2-petclinic-plain/\e[0m                                                                   *"
-  echo -e "* - \e[32mhttp://localhost:9090/job/argocd-petclinic-plain/\e[0m                                                                   *"
-  echo "*                                                                                                                       *"
-  echo "* During the job, jenkins pushes into the corresponding GitOps repo and creates a pull request for production:          *"
-  echo "*                                                                                                                       *"
-  echo "* For Flux V1:                                                                                                          *"
-  echo "*                                                                                                                       *"
-  echo -e "* - GitOps repo: \e[32mhttp://localhost:9091/scm/repo/fluxv1/gitops/code/sources/main/\e[0m                                        *"
-  echo -e "* - Pull requests: \e[32mhttp://localhost:9091/scm/repo/fluxv1/gitops/pull-requests\e[0m                                           *"
-  echo "*                                                                                                                       *"
-  echo "* For Flux V2:                                                                                                          *"
-  echo "*                                                                                                                       *"
-  echo -e "* - GitOps repo: \e[32mhttp://localhost:9091/scm/repo/fluxv2/gitops/code/sources/main/\e[0m                                        *"
-  echo -e "* - Pull requests: \e[32mhttp://localhost:9091/scm/repo/fluxv2/gitops/pull-requests\e[0m                                           *"
-  echo "*                                                                                                                       *"
-  echo "* For ArgoCD:                                                                                                           *"
-  echo "*                                                                                                                       *"
-  echo -e "* - GitOps repo: \e[32mhttp://localhost:9091/scm/repo/argocd/gitops/code/sources/main/\e[0m                                        *"
-  echo -e "* - Pull requests: \e[32mhttp://localhost:9091/scm/repo/argocd/gitops/pull-requests\e[0m                                           *"
-  echo "*                                                                                                                       *"
-  echo -e "* There is also the ArgoCD UI which can be found at \e[32mhttp://localhost:9080/\e[0m                                              *"
-  echo -e "* Credentials for the ArgoCD UI are: \e[31madmin/admin\e[0m                                                                                                                       *"
-  echo "*                                                                                                                       *"
-  echo "* After a successful Jenkins build, the application will be deployed into the cluster.                                  *"
-  echo "* This may take a minute for the GitOps operator to sync.                                                               *"
-  echo "*                                                                                                                       *"
-  echo -e "* The staging application can be found at \e[32mhttp://localhost:9093/\e[0m for Flux V1                                            *"
-  echo -e "* The staging application can be found at \e[32mhttp://localhost:9095/\e[0m for Flux V2                                            *"
-  echo -e "* The staging application can be found at \e[32mhttp://localhost:9097/\e[0m for ArgoCD                                             *"
-  echo "*                                                                                                                       *"
-  echo "* You can then go ahead and merge the pull request in order to deploy to production                                     *"
-  echo "* After about 1 Minute, the GitOps operator deploys to production.                                                      *"
-  echo "*                                                                                                                       *"
-  echo -e "* The production application can be found at \e[32mhttp://localhost:9094/\e[0m for Flux V1                                         *"
-  echo -e "* The production application can be found at \e[32mhttp://localhost:9096/\e[0m for Flux V2                                         *"
-  echo -e "* The production application can be found at \e[32mhttp://localhost:9098/\e[0m for ArgoCD                                          *"
-  echo "*************************************************************************************************************************"
+  echo "|-----------------------------------------------------------------------------------------------------------------------|"
+  echo "|                                     Welcome to the GitOps playground by Cloudogu!                                     |"
+  echo "|-----------------------------------------------------------------------------------------------------------------------|"
+  echo "|                                                                                                                       |"
+  echo "| The playground features three example applications (Sprint PetClinic - one for every gitops solution) in SCM-Manager. |"
+  echo "| See here:                                                                                                             |"
+  echo "|                                                                                                                       |"
+  echo -e "| - \e[32mhttp://localhost:9091/scm/repo/fluxv1/petclinic-plain/code/sources/main/\e[0m                                            |"
+  echo -e "| - \e[32mhttp://localhost:9091/scm/repo/fluxv2/petclinic-plain/code/sources/main/\e[0m                                            |"
+  echo -e "| - \e[32mhttp://localhost:9091/scm/repo/argocd/petclinic-plain/code/sources/main/\e[0m                                            |"
+  echo "|                                                                                                                       |"
+  echo -e "| Credentials for SCM-Manager and Jenkins are: \e[31mscmadmin/scmadmin\e[0m                                                        |"
+  echo "|                                                                                                                       |"
+  echo "| Right now, four Jenkins jobs are running: (when Jenkins is successfully deployed and running)                         |"
+  echo "|                                                                                                                       |"
+  echo -e "| - \e[32mhttp://localhost:9090/job/fluxv1-nginx/\e[0m                                                                             |"
+  echo -e "| - \e[32mhttp://localhost:9090/job/fluxv1-petclinic-plain/\e[0m                                                                   |"
+  echo -e "| - \e[32mhttp://localhost:9090/job/fluxv2-petclinic-plain/\e[0m                                                                   |"
+  echo -e "| - \e[32mhttp://localhost:9090/job/argocd-petclinic-plain/\e[0m                                                                   |"
+  echo "|                                                                                                                       |"
+  echo "| During the job, jenkins pushes into the corresponding GitOps repo and creates a pull request for production:          |"
+  echo "|                                                                                                                       |"
+  echo "| For Flux V1:                                                                                                          |"
+  echo "|                                                                                                                       |"
+  echo -e "| - GitOps repo: \e[32mhttp://localhost:9091/scm/repo/fluxv1/gitops/code/sources/main/\e[0m                                        |"
+  echo -e "| - Pull requests: \e[32mhttp://localhost:9091/scm/repo/fluxv1/gitops/pull-requests\e[0m                                           |"
+  echo "|                                                                                                                       |"
+  echo "| For Flux V2:                                                                                                          |"
+  echo "|                                                                                                                       |"
+  echo -e "| - GitOps repo: \e[32mhttp://localhost:9091/scm/repo/fluxv2/gitops/code/sources/main/\e[0m                                        |"
+  echo -e "| - Pull requests: \e[32mhttp://localhost:9091/scm/repo/fluxv2/gitops/pull-requests\e[0m                                           |"
+  echo "|                                                                                                                       |"
+  echo "| For ArgoCD:                                                                                                           |"
+  echo "|                                                                                                                       |"
+  echo -e "| - GitOps repo: \e[32mhttp://localhost:9091/scm/repo/argocd/gitops/code/sources/main/\e[0m                                        |"
+  echo -e "| - Pull requests: \e[32mhttp://localhost:9091/scm/repo/argocd/gitops/pull-requests\e[0m                                           |"
+  echo "|                                                                                                                       |"
+  echo -e "| There is also the ArgoCD UI which can be found at \e[32mhttp://localhost:9080/\e[0m                                              |"
+  echo -e "| Credentials for the ArgoCD UI are: \e[31madmin/admin\e[0m                                                                        |"
+  echo "|                                                                                                                       |"
+  echo "| After a successful Jenkins build, the application will be deployed into the cluster.                                  |"
+  echo "| This may take a minute for the GitOps operator to sync.                                                               |"
+  echo "|                                                                                                                       |"
+  echo -e "| The staging application can be found at \e[32mhttp://localhost:9093/\e[0m for Flux V1                                            |"
+  echo -e "| The staging application can be found at \e[32mhttp://localhost:9095/\e[0m for Flux V2                                            |"
+  echo -e "| The staging application can be found at \e[32mhttp://localhost:9097/\e[0m for ArgoCD                                             |"
+  echo "|                                                                                                                       |"
+  echo "| You can then go ahead and merge the pull request in order to deploy to production                                     |"
+  echo "| After about 1 Minute, the GitOps operator deploys to production.                                                      |"
+  echo "|                                                                                                                       |"
+  echo -e "| The production application can be found at \e[32mhttp://localhost:9094/\e[0m for Flux V1                                         |"
+  echo -e "| The production application can be found at \e[32mhttp://localhost:9096/\e[0m for Flux V2                                         |"
+  echo -e "| The production application can be found at \e[32mhttp://localhost:9098/\e[0m for ArgoCD                                          |"
+  echo "|-----------------------------------------------------------------------------------------------------------------------|"
 }
 
 function printUsage()
@@ -296,17 +315,25 @@ function printUsage()
 }
 
 function printParameters() {
-    echo "The following parameters are valid"
-    echo "-h | --help     >> Help screen"
-    echo "-w | --welcome  >> Welcome screen"
-    echo "-v | --verbose  >> Verbose output"
-    echo "-d | --debug    >> Debug output"
+    echo "The following parameters are valid:"
+    echo
+    echo " -h | --help     >> Help screen"
+    echo
+    echo "Install only the desired GitOps modules. Multiple selections possible."
+    echo "    | --fluxv1   >> Install the Flux V1 module"
+    echo "    | --fluxv2   >> Install the Flux V2 module"
+    echo "    | --argocd   >> Install the ArgoCD module"
+    echo
+    echo " -w | --welcome  >> Welcome screen"
+    echo
+    echo " -v | --verbose  >> Verbose output"
+    echo " -d | --debug    >> Debug output"
 }
 
 
 COMMANDS=$(getopt \
-                -o hvwd \
-                --long help,verbose,welcome,debug \
+                -o hwvd \
+                --long help,fluxv1,fluxv2,argocd,welcome,verbose,debug \
                 -- "$@")
 
 if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
@@ -315,11 +342,18 @@ eval set -- "$COMMANDS"
 
 VERBOSE=false
 DEBUG=false
+INSTALL_ALL_MODULES=true
+INSTALL_FLUXV1=false
+INSTALL_FLUXV2=false
+INSTALL_ARGOCD=false
 while true; do
   case "$1" in
     -h | --help     ) printUsage; exit 0 ;;
-    -v | --verbose  ) VERBOSE=true; shift ;;
+    --fluxv1        ) INSTALL_FLUXV1=true; INSTALL_ALL_MODULES=false; shift ;;
+    --fluxv2        ) INSTALL_FLUXV2=true; INSTALL_ALL_MODULES=false; shift ;;
+    --argocd        ) INSTALL_ARGOCD=true; INSTALL_ALL_MODULES=false; shift ;;
     -w | --welcome  ) printWelcomeScreen; exit 0 ;;
+    -v | --verbose  ) VERBOSE=true; shift ;;
     -d | --debug    ) DEBUG=true; shift ;;
     --              ) shift; break ;;
     *               ) break ;;
@@ -330,9 +364,10 @@ confirm "Applying gitops playground to kubernetes cluster: '$(kubectl config cur
   exit 0
 
 if [[ $DEBUG = true ]]; then
-  main false
+  main false $INSTALL_ALL_MODULES $INSTALL_FLUXV1 $INSTALL_FLUXV2 $INSTALL_ARGOCD
 elif [[ $VERBOSE = true ]]; then
-  main $VERBOSE
+  main $VERBOSE $INSTALL_ALL_MODULES $INSTALL_FLUXV1 $INSTALL_FLUXV2 $INSTALL_ARGOCD
 else
-  main $VERBOSE > /dev/null 2>&1 & spinner "Installing GitOps Playground. This may take a minute or two or..."
+  main $VERBOSE $INSTALL_ALL_MODULES $INSTALL_FLUXV1 $INSTALL_FLUXV2 $INSTALL_ARGOCD > /dev/null 2>&1 & spinner "Installing GitOps Playground. This may take a minute or two or..."
+  printWelcomeScreen
 fi

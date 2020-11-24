@@ -26,11 +26,11 @@ function spinner() {
         printf " [%c]  $info" "$spinstr"
         local spinstr=$temp${spinstr%"$temp"}
         sleep $delay
-        local reset="\b\b\b\b\b\b"
+        local reset="\b\b\b\b\b"
         for ((i=1; i<=$(echo $info | wc -c); i++)); do
             reset+="\b"
         done
         printf $reset
     done
-    echo " [ok] $1"
+    echo " [ok] $info"
 }
