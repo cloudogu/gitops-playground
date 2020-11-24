@@ -31,9 +31,9 @@ function main() {
 
   initFluxV1
 
-  initFluxV2
+  # initFluxV2
 
-  initArgo
+  # initArgo
 
   # Start Jenkins last, so all repos have been initialized when repo indexing starts
   initJenkins
@@ -78,6 +78,7 @@ function initJenkins() {
 function initFluxV1() {
   initRepo 'fluxv1/gitops'
   pushPetClinicRepo 'applications/petclinic/fluxv1/plain-k8s' 'fluxv1/petclinic-plain'
+  pushPetClinicRepo 'applications/petclinic/fluxv1/helm' 'fluxv1/petclinic-helm'
   initRepoWithSource 'applications/nginx/fluxv1' 'fluxv1/nginx-helm'
 
   helm upgrade -i flux-operator --values fluxv1/flux-operator/values.yaml --version 1.3.0 fluxcd/flux -n fluxv1
@@ -106,7 +107,7 @@ function initArgo() {
 
 function createScmmSecrets() {
   kubectl create secret generic gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=somePassword -n default || true
-  kubectl create secret generic gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=somePassword -n fluxv1 || true
+  kubectl create secret generic gitops-scmm --from-literal=username=gitops --from-literal=password=somePassword -n fluxv1 || true
   # fluxv2 needs lowercase fieldnames
   kubectl create secret generic gitops-scmm --from-literal=username=gitops --from-literal=password=somePassword -n fluxv2 || true
   kubectl create secret generic gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=somePassword -n argocd || true

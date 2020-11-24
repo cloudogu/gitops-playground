@@ -1,80 +1,97 @@
 #!groovy
 
-String getApplication() { "nginx" }
-String getCesBuildLibVersion() { '1.44.3' }
-String getCesBuildLibRepo() { 'https://github.com/cloudogu/ces-build-lib/' }
+String getApplication() { "spring-petclinic-helm" }
 String getScmManagerCredentials() { 'scmm-user' }
-String getKubectlImage() { 'lachlanevenson/k8s-kubectl:v1.19.3' }
 String getConfigRepositoryUrl() { "http://scmm-scm-manager:9091/scm/repo/fluxv1/gitops" }
 String getConfigRepositoryPRUrl() { 'http://scmm-scm-manager:9091/scm/api/v2/pull-requests/fluxv1/gitops' }
-String getHelmChartRepository() { "https://charts.bitnami.com/bitnami" }
-String getHelmChartName() { "nginx" }
-String getHelmChartVersion() { "8.0.0" }
+// The docker daemon cant use the k8s service name, because it is not running inside the cluster
+String getDockerRegistryBaseUrl() { "localhost:9092" }
+String getCesBuildLibVersion() { '1.44.3' }
+String getCesBuildLibRepo() { 'https://github.com/cloudogu/ces-build-lib/' }
+String getKubectlImage() { 'lachlanevenson/k8s-kubectl:v1.19.3' }
+String getHelmImage() { 'ghcr.io/cloudogu/helm:3.4.1-1' }
+String getHelmChartRepository() { "http://scmm-scm-manager.default.svc.cluster.local:9091/scm/repo/common/spring-boot-helm-chart" }
+String getHelmChartName() { "springboot" }
+String getHelmChartVersion() { "1.0.0" }
 String getMainBranch() { 'main' }
 
-node('docker') {
-    cesBuildLib = library(identifier: "ces-build-lib@${cesBuildLibVersion}",
-            retriever: modernSCM([$class: 'GitSCMSource', remote: cesBuildLibRepo])
-    ).com.cloudogu.ces.cesbuildlib
+cesBuildLib = library(identifier: "ces-build-lib@${cesBuildLibVersion}",
+        retriever: modernSCM([$class: 'GitSCMSource', remote: cesBuildLibRepo])
+).com.cloudogu.ces.cesbuildlib
 
-    properties([
-            // Keep only the last 10 build to preserve space
-            disableConcurrentBuilds()
-    ])
+properties([
+        // Don't run concurrent builds, because the ITs use the same port causing random failures on concurrent builds.
+        disableConcurrentBuilds()
+])
 
-    def git = cesBuildLib.Git.new(this)
+node {
+    mvn = cesBuildLib.MavenWrapper.new(this)
 
     // In this charthelmValuesFromFile we don't need to set properties in HelmRelease's "values" field.
     // We leave this mechanism in place as an example.
     helmValuesFromFile = []
 
-    fileConfigmaps = [
-            [name : "index",
-             file : "../index.html",
-             stage: ["staging", "production"]
-            ]
-    ]
+    catchError {
 
-    timeout(activity: true, time: 30, unit: 'MINUTES') {
+        stage('Checkout') {
+            checkout scm
+        }
 
-        catchError {
+        stage('Build') {
+            mvn 'clean package -DskipTests'
 
-            stage('Checkout') {
-                checkout scm
-                git.clean('')
-            }
+            archiveArtifacts artifacts: '**/target/*.jar'
+        }
 
-            stage('Deploy') {
-                if (env.BRANCH_NAME in [mainBranch]) {
-                    def gitopsConfig = [
-                        scmmCredentialsId: scmManagerCredentials,
-                        scmmConfigRepoUrl: configRepositoryUrl,
-                        scmmPullRequestUrl: configRepositoryPRUrl
-                    ]
+        stage('Test') {
+            mvn "test -Dmaven.test.failure.ignore=true"
+        }
 
-                    def helmChart = [
-                        repoType: 'HELM',
-                        repoUrl: helmChartRepository,
-                        chartName: helmChartName,
-                        version: helmChartVersion
-                    ]
+        String imageName = ""
+        stage('Docker') {
+            String imageTag = createImageTag()
+            imageName = "${dockerRegistryBaseUrl}/${application}:${imageTag}"
+            mvn "spring-boot:build-image -DskipTests -Dspring-boot.build-image.imageName=${imageName}"
 
-                    String pushedChanges = pushToConfigRepo(gitopsConfig, helmChart)
-                    setBuildDescription createBuildDescription(pushedChanges)
-                } else {
-                    setBuildDescription 'No push to gitOps repo, because neither on develop branch nor "forceDeployStaging" param set'
+            if (isBuildSuccessful()) {
+                def docker = cesBuildLib.Docker.new(this)
+                docker.withRegistry("http://${dockerRegistryBaseUrl}") {
+                    def image = docker.image(imageName)
+                    image.push()
                 }
+            } else {
+                echo 'Skipping docker push, because build not successful'
+            }
+        }
+
+        stage('Deploy') {
+            if (isBuildSuccessful() && env.BRANCH_NAME in [mainBranch]) {
+
+                def gitopsConfig = [
+                        scmmCredentialsId : scmManagerCredentials,
+                        scmmConfigRepoUrl : configRepositoryUrl,
+                        scmmPullRequestUrl: configRepositoryPRUrl,
+                        helmChart: [
+                                repoType : 'GIT',
+                                repoUrl  : helmChartRepository,
+                                chartName: helmChartName,
+                                version  : helmChartVersion
+                        ]
+                ]
+
+                String pushedChanges = pushToConfigRepo(gitopsConfig)
+                currentBuild.description = createBuildDescription(pushedChanges, imageName)
+            } else {
+                echo 'Skipping deploy, because build not successful or not on main branch'
             }
         }
     }
+
+    // Archive Unit and integration test results, if any
+    junit allowEmptyResults: true, testResults: '**/target/failsafe-reports/TEST-*.xml,**/target/surefire-reports/TEST-*.xml'
 }
 
-private setBuildDescription(String description) {
-    echo "Setting build description: ${description}"
-    currentBuild.description = description
-}
-
-String pushToConfigRepo(Map gitopsConfig, Map helmChart) {
+String pushToConfigRepo(Map gitopsConfig) {
 
     def git = cesBuildLib.Git.new(this, scmManagerCredentials)
     def changesOnGitOpsRepo = ''
@@ -82,6 +99,7 @@ String pushToConfigRepo(Map gitopsConfig, Map helmChart) {
     // Query and store info about application repo before cloning into gitops repo
     def applicationRepo = GitRepo.create(git)
 
+    // Display that Jenkins made the GitOps commits not the application repo author
     git.committerName = 'Jenkins'
     git.committerEmail = 'jenkins@cloudogu.com'
 
@@ -95,10 +113,10 @@ String pushToConfigRepo(Map gitopsConfig, Map helmChart) {
             git.fetch()
 
             def repoChanges = new HashSet<String>()
-            repoChanges += createApplicationForStageAndPushToBranch 'staging', mainBranch, applicationRepo, git, gitopsConfig, helmChart
+            repoChanges += createApplicationForStageAndPushToBranch 'staging', mainBranch, applicationRepo, git, gitopsConfig
 
             git.checkoutOrCreate(application)
-            repoChanges += createApplicationForStageAndPushToBranch 'production', application, applicationRepo, git, gitopsConfig, helmChart
+            repoChanges += createApplicationForStageAndPushToBranch 'production', application, applicationRepo, git, gitopsConfig
 
             changesOnGitOpsRepo = aggregateChangesOnGitOpsRepo(repoChanges)
 
@@ -113,21 +131,20 @@ String pushToConfigRepo(Map gitopsConfig, Map helmChart) {
     return changesOnGitOpsRepo
 }
 
-String createApplicationForStageAndPushToBranch(String stage, String branch, GitRepo applicationRepo, def git, Map gitOpsConfig, Map helmChart) {
+String createApplicationForStageAndPushToBranch(String stage, String branch, GitRepo applicationRepo, def git, Map gitopsConfig) {
 
     String commitPrefix = stage == 'staging' ? '[S] ' : ''
 
-    sh "mkdir -p ${stage}/${application}"
-    // copy extra resources like sealed secrets
-    echo "Copying extra resources from application repo to gitOps Repo: 'k8s/${stage}/*' to '${stage}/${application}'"
-    sh "cp ${env.WORKSPACE}/k8s/${stage}/*.yaml fluxv1-${stage}/${application}/ || true"
+    sh "mkdir -p fluxv1-${stage}/${application}"
 
-    writeFile file: "fluxv1-${stage}/${application}/helmRelease.yaml", text: createHelmRelease(helmChart, "fluxv1-${stage}", createFromFileValues(stage))
+    // copy extra resources like sealed secrets
+    echo "Copying k8s payload from application repo to gitOps Repo: 'k8s/*' to 'fluxv1-${stage}/${application}'"
+    sh "cp ${env.WORKSPACE}/k8s/${stage}/* fluxv1-${stage}/${application}/ || true"
+
+    writeFile file: "fluxv1-${stage}/${application}/helmRelease.yaml", text: createHelmRelease(gitopsConfig.helmChart, "fluxv1-${stage}", createFromFileValues(stage))
     writeFile file: "fluxv1-${stage}/${application}/valuesMap.yaml", text: createConfigMap("values.yaml", "${env.WORKSPACE}/k8s/values-${stage}.yaml", "${application}-helm-operator-values", "fluxv1-${stage}")
 
     writeFile file: "fluxv1-${stage}/${application}/sharedValuesMap.yaml", text: createConfigMap("values.yaml", "${env.WORKSPACE}/k8s/values-shared.yaml", "${application}-shared-helm-operator-values", "fluxv1-${stage}")
-
-    creatFileConfigmaps(stage)
 
     git.add('.')
     if (git.areChangesStagedForCommit()) {
@@ -157,19 +174,14 @@ String createApplicationCommitMessage(def git, def applicationRepo) {
     def repoNamespace = urlSplit[-2]
     def repoName = urlSplit[-1]
     String message = "${issueIds}${repoNamespace}/${repoName}@${applicationRepo.commitHash}"
-    List additions = []
-
-    if (!additions.isEmpty()) {
-        // Highlight commits that ran with non-default parameters
-        message = "* ${message}\n\n${additions.join('\n')}"
-    }
 
     return message
 }
 
 void createPullRequest(Map gitopsConfig) {
+
     withCredentials([usernamePassword(credentialsId: gitopsConfig.scmmCredentialsId, passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USER')]) {
-        echo 'creating pull request'
+
         String script =
                 'curl -s -o /dev/null -w "%{http_code}" ' +
                         "-u ${GIT_USER}:${GIT_PASSWORD} " +
@@ -190,10 +202,10 @@ void createPullRequest(Map gitopsConfig) {
     }
 }
 
-private String createBuildDescription(String pushedChanges) {
+private String createBuildDescription(String pushedChanges, String imageName) {
     String description = ''
 
-    description += "${description ? '\n' : ''}GitOps commits: "
+    description += "GitOps commits: "
 
     if (pushedChanges) {
         description += pushedChanges
@@ -201,7 +213,21 @@ private String createBuildDescription(String pushedChanges) {
         description += 'No changes'
     }
 
+    description += "\nImage: ${imageName}"
+
     return description
+}
+
+String createImageTag() {
+    def git = cesBuildLib.Git.new(this)
+    String branch = git.simpleBranchName
+    String branchSuffix = ""
+
+    if (!"develop".equals(branch)) {
+        branchSuffix = "-${branch}"
+    }
+
+    return "${new Date().format('yyyyMMddHHmm')}-${git.commitHashShort}${branchSuffix}"
 }
 
 String createHelmRelease(Map helmChart, String namespace, String extraValues) {
@@ -215,9 +241,11 @@ metadata:
 spec:
   releaseName: ${application}
   chart:
-    repository: ${helmChart.repoUrl}
-    name: ${helmChart.chartName}
-    version: ${helmChart.version}
+    git: ${helmChart.repoUrl}
+    ref: ${helmChart.version}
+    path: .
+    secretRef:
+      name: gitops-scmm
   valuesFrom:
   - configMapKeyRef:
       name: ${application}-shared-helm-operator-values
@@ -245,9 +273,9 @@ String createFromFileValues(String stage) {
 
 void creatFileConfigmaps(String stage) {
     fileConfigmaps.each {
-        if(stage in it['stage']) {
+        if (stage in it['stage']) {
             String key = it['file'].split('/').last()
-            writeFile file: "fluxv1-${stage}/${application}/${it['name']}.yaml", text: createConfigMap(key, "${env.WORKSPACE}/k8s/${it['file']}", it['name'], "fluxv1-${stage}")
+            writeFile file: "${stage}/${application}/${it['name']}.yaml", text: createConfigMap(key, "${env.WORKSPACE}/k8s/${it['file']}", it['name'], "${stage}")
         }
     }
 }
