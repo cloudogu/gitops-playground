@@ -1,5 +1,5 @@
 image:
-  name: localhost:9092/spring-petclinic-plain:202011162104-709fdc2-master
+  name: localhost:8999/spring-petclinic-plain:202011162104-709fdc2-master
 
 extraEnv: |
   - name: TZ

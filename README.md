@@ -14,9 +14,13 @@ Reproducible infrastructure to showcase GitOps workflows. Derived from our [cons
 - [Applications](#applications)
   - [Jenkins](#jenkins)
   - [SCM-Manager](#scm-manager)
-- [Examples](#examples)
-  - [PetClinic with plain k8s resources](#petclinic-with-plain-k8s-resources)
-  - [3rd Party app (NGINX) via helm chart from helm repository](#3rd-party-app-nginx-via-helm-chart-from-helm-repository)
+  - [ArgoCD UI](#argocd-ui)
+- [Test applications deployed via GitOps](#test-applications-deployed-via-gitops)
+  - [PetClinic via Flux V1](#petclinic-via-flux-v1)
+  - [3rd Party app (NGINX) via Flux V1](#3rd-party-app-nginx-via-flux-v1)
+  - [PetClinic via Flux V2](#petclinic-via-flux-v2)
+  - [PetClinic via ArgoCD](#petclinic-via-argocd)
+
 - [Remove apps from cluster](#remove-apps-from-cluster)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -52,6 +56,9 @@ That's why we need the k3s' `--docker` mode.
 
 [`scripts/apply.sh`](scripts/apply.sh)
 
+You can also just install one GitOps module like Flux V1 or ArgoCD via parameters.  
+Use `./scripts/apply.sh --help` for more information.
+
 The scripts also prints a little intro on how to get started with a GitOps deployment.
 
 
@@ -77,25 +84,37 @@ Find scm-manager on http://localhost:9091
 
 Login with `scmadmin/scmadmin`
 
-## Examples
+### ArgoCD UI
 
-### PetClinic with plain k8s resources
+Find the ArgoCD UI on http://localhost:9092
 
-* [Jenkinsfile](petclinic/fluxv1/plain-k8s/Jenkinsfile)
-* Deployed to 
-  * [localhost:9093](http://localhost:9093) (Staging)
-  * [localhost:9094](http://localhost:9094) (Production)
+Login with `admin/admin`
 
-### 3rd Party app (NGINX) via helm chart from helm repository
+## Test applications deployed via GitOps
 
-* [Jenkinsfile](nginx/fluxv1/Jenkinsfile)
-* Deployed to 
-  * [localhost:9095](http://localhost:9095) (Staging)
-  * [localhost:9096](http://localhost:9096) (Production)
+##### PetClinic via Flux V1
 
-## Remove apps from cluster
+* [Jenkinsfile](applications/petclinic/fluxv1/plain-k8s/Jenkinsfile)
+  * [localhost:9000](http://localhost:9000) (Staging)
+  * [localhost:9001](http://localhost:9001) (Production) 
 
-`scripts/destroy.sh`
+##### 3rd Party app (NGINX) via Flux V1
+
+* [Jenkinsfile](applications/nginx/fluxv1/Jenkinsfile)
+  * [localhost:9002](http://localhost:9002) (Staging)
+  * [localhost:9003](http://localhost:9003) (Production)
+
+##### PetClinic via Flux V2
+
+* [Jenkinsfile](applications/petclinic/fluxv2/plain-k8s/Jenkinsfile)
+  * [localhost:9010](http://localhost:9010) (Staging)
+  * [localhost:9011](http://localhost:9011) (Production) 
+  
+##### PetClinic via ArgoCD
+
+* [Jenkinsfile](applications/petclinic/argocd/plain-k8s/Jenkinsfile)
+  * [localhost:9020](http://localhost:9020) (Staging)
+  * [localhost:9021](http://localhost:9021) (Production) 
 
 ## Remove apps from cluster
 

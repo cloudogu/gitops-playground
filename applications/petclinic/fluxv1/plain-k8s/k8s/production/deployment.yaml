@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: spring-petclinic-plain
-          image: localhost:9092/petclinic-plain:1
+          image: localhost:8999/petclinic-plain:1
           ports:
             - containerPort: 8080
               name: http

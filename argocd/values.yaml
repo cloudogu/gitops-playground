@@ -3,7 +3,7 @@ server:
   ## Server service configuration
   service:
     type: LoadBalancer
-    servicePortHttp: 9080
+    servicePortHttp: 9092
 
   ## ArgoCD config
   ## reference https://github.com/argoproj/argo-cd/blob/master/docs/operator-manual/argocd-cm.yaml
