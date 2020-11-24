@@ -134,13 +134,13 @@ String createApplicationForStageAndPushToBranch(String stage, String branch, Git
 
     String commitPrefix = stage == 'staging' ? '[S] ' : ''
 
-    sh "mkdir -p argocd-${stage}/${application}"
+    sh "mkdir -p ${stage}/${application}"
     // copy extra resources like sealed secrets
-    echo "Copying k8s payload from application repo to gitOps Repo: 'k8s/${stage}/*' to 'argocd-${stage}/${application}'"
-    sh "cp ${env.WORKSPACE}/k8s/${stage}/* argocd-${stage}/${application}/ || true"
+    echo "Copying k8s payload from application repo to gitOps Repo: 'k8s/${stage}/*' to '${stage}/${application}'"
+    sh "cp ${env.WORKSPACE}/k8s/${stage}/* ${stage}/${application}/ || true"
 
     gitopsConfig.updateImages.each {
-        updateImageVersion("argocd-${stage}/${application}/${it['deploymentFilename']}", it['containerName'], it['imageName'])
+        updateImageVersion("${stage}/${application}/${it['deploymentFilename']}", it['containerName'], it['imageName'])
     }
 
     git.add('.')
