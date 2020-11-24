@@ -6,7 +6,7 @@ String getScmManagerCredentials() { 'scmm-user' }
 String getConfigRepositoryUrl() { "http://scmm-scm-manager:9091/scm/repo/argocd/gitops" }
 String getConfigRepositoryPRUrl() { 'http://scmm-scm-manager:9091/scm/api/v2/pull-requests/argocd/gitops' }
 // The docker daemon cant use the k8s service name, because it is not running inside the cluster
-String getDockerRegistryBaseUrl() { "localhost:9092" }
+String getDockerRegistryBaseUrl() { "localhost:8999" }
 String getCesBuildLibVersion() { '1.44.3' }
 String getCesBuildLibRepo() { 'https://github.com/cloudogu/ces-build-lib/' }
 String getMainBranch() { 'main' }
@@ -134,13 +134,13 @@ String createApplicationForStageAndPushToBranch(String stage, String branch, Git
 
     String commitPrefix = stage == 'staging' ? '[S] ' : ''
 
-    sh "mkdir -p argocd-${stage}/${application}"
+    sh "mkdir -p ${stage}/${application}"
     // copy extra resources like sealed secrets
-    echo "Copying k8s payload from application repo to gitOps Repo: 'k8s/${stage}/*' to 'argocd-${stage}/${application}'"
-    sh "cp ${env.WORKSPACE}/k8s/${stage}/* argocd-${stage}/${application}/ || true"
+    echo "Copying k8s payload from application repo to gitOps Repo: 'k8s/${stage}/*' to '${stage}/${application}'"
+    sh "cp ${env.WORKSPACE}/k8s/${stage}/* ${stage}/${application}/ || true"
 
     gitopsConfig.updateImages.each {
-        updateImageVersion("argocd-${stage}/${application}/${it['deploymentFilename']}", it['containerName'], it['imageName'])
+        updateImageVersion("${stage}/${application}/${it['deploymentFilename']}", it['containerName'], it['imageName'])
     }
 
     git.add('.')

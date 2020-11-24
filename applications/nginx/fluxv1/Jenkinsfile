@@ -122,10 +122,10 @@ String createApplicationForStageAndPushToBranch(String stage, String branch, Git
     echo "Copying extra resources from application repo to gitOps Repo: 'k8s/${stage}/*' to '${stage}/${application}'"
     sh "cp ${env.WORKSPACE}/k8s/${stage}/*.yaml ${stage}/${application}/ || true"
 
-    writeFile file: "${stage}/${application}/helmRelease.yaml", text: createHelmRelease(helmChart, "${stage}", createFromFileValues(stage))
-    writeFile file: "${stage}/${application}/valuesMap.yaml", text: createConfigMap("values.yaml", "${env.WORKSPACE}/k8s/values-${stage}.yaml", "${application}-helm-operator-values", "${stage}")
+    writeFile file: "${stage}/${application}/helmRelease.yaml", text: createHelmRelease(helmChart, "fluxv1-${stage}", createFromFileValues(stage))
+    writeFile file: "${stage}/${application}/valuesMap.yaml", text: createConfigMap("values.yaml", "${env.WORKSPACE}/k8s/values-${stage}.yaml", "${application}-helm-operator-values", "fluxv1-${stage}")
     
-    writeFile file: "${stage}/${application}/sharedValuesMap.yaml", text: createConfigMap("values.yaml", "${env.WORKSPACE}/k8s/values-shared.yaml", "${application}-shared-helm-operator-values", "${stage}")
+    writeFile file: "${stage}/${application}/sharedValuesMap.yaml", text: createConfigMap("values.yaml", "${env.WORKSPACE}/k8s/values-shared.yaml", "${application}-shared-helm-operator-values", "fluxv1-${stage}")
 
     creatFileConfigmaps(stage)
 
@@ -247,7 +247,7 @@ void creatFileConfigmaps(String stage) {
     fileConfigmaps.each {
         if(stage in it['stage']) {
             String key = it['file'].split('/').last()
-            writeFile file: "${stage}/${application}/${it['name']}.yaml", text: createConfigMap(key, "${env.WORKSPACE}/k8s/${it['file']}", it['name'], "${stage}")
+            writeFile file: "${stage}/${application}/${it['name']}.yaml", text: createConfigMap(key, "${env.WORKSPACE}/k8s/${it['file']}", it['name'], "fluxv1-${stage}")
         }
     }
 }
