@@ -9,7 +9,7 @@ spec:
   type: LoadBalancer
   ports:
     - name: http
-      port: 9093
+      port: 9000
       targetPort: http
   selector:
     app: spring-petclinic-plain

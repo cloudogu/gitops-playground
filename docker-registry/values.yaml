@@ -1,4 +1,4 @@
 service:
-  port: 9092
+  port: 8999
   type: LoadBalancer
 

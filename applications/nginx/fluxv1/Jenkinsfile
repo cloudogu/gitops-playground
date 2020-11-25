@@ -24,7 +24,7 @@ node('docker') {
 
     def git = cesBuildLib.Git.new(this)
 
-    // In this charthelmValuesFromFile we don't need to set properties in HelmRelease's "values" field.
+    // In this chart we don't need to set properties in HelmRelease's "values" field. 
     // We leave this mechanism in place as an example.
     helmValuesFromFile = []
 
@@ -36,9 +36,9 @@ node('docker') {
     ]
 
     timeout(activity: true, time: 30, unit: 'MINUTES') {
-
+        
         catchError {
-
+            
             stage('Checkout') {
                 checkout scm
                 git.clean('')
@@ -75,11 +75,11 @@ private setBuildDescription(String description) {
 }
 
 String pushToConfigRepo(Map gitopsConfig, Map helmChart) {
-
+    
     def git = cesBuildLib.Git.new(this, scmManagerCredentials)
     def changesOnGitOpsRepo = ''
 
-    // Query and store info about application repo before cloning into gitops repo
+    // Query and store info about application repo before cloning into gitops repo  
     def applicationRepo = GitRepo.create(git)
 
     git.committerName = 'Jenkins'
@@ -88,9 +88,9 @@ String pushToConfigRepo(Map gitopsConfig, Map helmChart) {
     def configRepoTempDir = '.configRepoTempDir'
 
     try {
-
+        
         dir(configRepoTempDir) {
-
+            
             git url: gitopsConfig.scmmConfigRepoUrl, branch: mainBranch, changelog: false, poll: false
             git.fetch()
 
@@ -114,7 +114,7 @@ String pushToConfigRepo(Map gitopsConfig, Map helmChart) {
 }
 
 String createApplicationForStageAndPushToBranch(String stage, String branch, GitRepo applicationRepo, def git, Map gitOpsConfig, Map helmChart) {
-
+    
     String commitPrefix = stage == 'staging' ? '[S] ' : ''
 
     sh "mkdir -p ${stage}/${application}"
@@ -122,10 +122,10 @@ String createApplicationForStageAndPushToBranch(String stage, String branch, Git
     echo "Copying extra resources from application repo to gitOps Repo: 'k8s/${stage}/*' to '${stage}/${application}'"
     sh "cp ${env.WORKSPACE}/k8s/${stage}/*.yaml fluxv1-${stage}/${application}/ || true"
 
-    writeFile file: "fluxv1-${stage}/${application}/helmRelease.yaml", text: createHelmRelease(helmChart, "fluxv1-${stage}", createFromFileValues(stage))
-    writeFile file: "fluxv1-${stage}/${application}/valuesMap.yaml", text: createConfigMap("values.yaml", "${env.WORKSPACE}/k8s/values-${stage}.yaml", "${application}-helm-operator-values", "fluxv1-${stage}")
+    writeFile file: "${stage}/${application}/helmRelease.yaml", text: createHelmRelease(helmChart, "fluxv1-${stage}", createFromFileValues(stage))
+    writeFile file: "${stage}/${application}/valuesMap.yaml", text: createConfigMap("values.yaml", "${env.WORKSPACE}/k8s/values-${stage}.yaml", "${application}-helm-operator-values", "fluxv1-${stage}")
 
-    writeFile file: "fluxv1-${stage}/${application}/sharedValuesMap.yaml", text: createConfigMap("values.yaml", "${env.WORKSPACE}/k8s/values-shared.yaml", "${application}-shared-helm-operator-values", "fluxv1-${stage}")
+    writeFile file: "${stage}/${application}/sharedValuesMap.yaml", text: createConfigMap("values.yaml", "${env.WORKSPACE}/k8s/values-shared.yaml", "${application}-shared-helm-operator-values", "fluxv1-${stage}")
 
     creatFileConfigmaps(stage)
 
@@ -247,7 +247,7 @@ void creatFileConfigmaps(String stage) {
     fileConfigmaps.each {
         if(stage in it['stage']) {
             String key = it['file'].split('/').last()
-            writeFile file: "fluxv1-${stage}/${application}/${it['name']}.yaml", text: createConfigMap(key, "${env.WORKSPACE}/k8s/${it['file']}", it['name'], "fluxv1-${stage}")
+            writeFile file: "${stage}/${application}/${it['name']}.yaml", text: createConfigMap(key, "${env.WORKSPACE}/k8s/${it['file']}", it['name'], "fluxv1-${stage}")
         }
     }
 }
