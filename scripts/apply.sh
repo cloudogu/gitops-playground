@@ -108,7 +108,7 @@ function initFluxV1() {
   initRepoWithSource 'applications/nginx/fluxv1' 'fluxv1/nginx-helm'
 
   helm upgrade -i flux-operator --values fluxv1/flux-operator/values.yaml --version 1.3.0 fluxcd/flux -n fluxv1
-  helm upgrade -i helm-operator --values fluxv1/helm-operator/values.yaml --version 1.0.2 fluxcd/helm-operator -n fluxv1
+  helm upgrade -i helm-operator --values fluxv1/helm-operator/values.yaml --version 1.2.0 fluxcd/helm-operator -n fluxv1
 }
 
 function initFluxV2() {

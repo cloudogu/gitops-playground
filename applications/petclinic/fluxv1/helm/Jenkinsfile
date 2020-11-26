@@ -2,15 +2,14 @@
 
 String getApplication() { "spring-petclinic-helm" }
 String getScmManagerCredentials() { 'scmm-user' }
-String getConfigRepositoryUrl() { "http://scmm-scm-manager:9091/scm/repo/fluxv1/gitops" }
-String getConfigRepositoryPRUrl() { 'http://scmm-scm-manager:9091/scm/api/v2/pull-requests/fluxv1/gitops' }
+String getConfigRepositoryUrl() { 'scmm-scm-manager:9091/scm/repo/fluxv1/gitops' }
+String getConfigRepositoryPRUrl() { 'scmm-scm-manager:9091/scm/api/v2/pull-requests/fluxv1/gitops' }
 // The docker daemon cant use the k8s service name, because it is not running inside the cluster
-String getDockerRegistryBaseUrl() { "localhost:9092" }
+String getDockerRegistryBaseUrl() { "localhost:8999" }
 String getCesBuildLibVersion() { '1.44.3' }
 String getCesBuildLibRepo() { 'https://github.com/cloudogu/ces-build-lib/' }
-String getKubectlImage() { 'lachlanevenson/k8s-kubectl:v1.19.3' }
 String getHelmImage() { 'ghcr.io/cloudogu/helm:3.4.1-1' }
-String getHelmChartRepository() { "http://scmm-scm-manager.default.svc.cluster.local:9091/scm/repo/common/spring-boot-helm-chart" }
+String getHelmChartRepository() { 'scmm-scm-manager.default.svc.cluster.local:9091/scm/repo/common/spring-boot-helm-chart' }
 String getHelmChartName() { "springboot" }
 String getHelmChartVersion() { "1.0.0" }
 String getMainBranch() { 'main' }
@@ -27,10 +26,6 @@ properties([
 node {
     mvn = cesBuildLib.MavenWrapper.new(this)
 
-    // In this charthelmValuesFromFile we don't need to set properties in HelmRelease's "values" field.
-    // We leave this mechanism in place as an example.
-    helmValuesFromFile = []
-
     catchError {
 
         stage('Checkout') {
@@ -38,20 +33,18 @@ node {
         }
 
         stage('Build') {
-            mvn 'clean package -DskipTests'
-
+            mvn 'clean package -DskipTests -Dcheckstyle.skip'
             archiveArtifacts artifacts: '**/target/*.jar'
         }
 
         stage('Test') {
-            mvn "test -Dmaven.test.failure.ignore=true"
+            mvn "test -Dmaven.test.failure.ignore=true -Dcheckstyle.skip"
         }
 
-        String imageName = ""
         stage('Docker') {
             String imageTag = createImageTag()
             imageName = "${dockerRegistryBaseUrl}/${application}:${imageTag}"
-            mvn "spring-boot:build-image -DskipTests -Dspring-boot.build-image.imageName=${imageName}"
+            mvn "spring-boot:build-image -DskipTests -Dcheckstyle.skip -Dspring-boot.build-image.imageName=${imageName}"
 
             if (isBuildSuccessful()) {
                 def docker = cesBuildLib.Docker.new(this)
@@ -69,11 +62,11 @@ node {
 
                 def gitopsConfig = [
                         scmmCredentialsId : scmManagerCredentials,
-                        scmmConfigRepoUrl : configRepositoryUrl,
-                        scmmPullRequestUrl: configRepositoryPRUrl,
+                        scmmConfigRepoUrl : "http://${configRepositoryUrl}",
+                        scmmPullRequestUrl: "http://${configRepositoryPRUrl}",
                         helmChart: [
                                 repoType : 'GIT',
-                                repoUrl  : helmChartRepository,
+                                repoUrl  : "http://${helmChartRepository}",
                                 chartName: helmChartName,
                                 version  : helmChartVersion
                         ]
@@ -135,16 +128,11 @@ String createApplicationForStageAndPushToBranch(String stage, String branch, Git
 
     String commitPrefix = stage == 'staging' ? '[S] ' : ''
 
-    sh "mkdir -p fluxv1-${stage}/${application}"
+    sh "mkdir -p ${stage}/${application}"
 
-    // copy extra resources like sealed secrets
-    echo "Copying k8s payload from application repo to gitOps Repo: 'k8s/*' to 'fluxv1-${stage}/${application}'"
-    sh "cp ${env.WORKSPACE}/k8s/${stage}/* fluxv1-${stage}/${application}/ || true"
-
-    writeFile file: "fluxv1-${stage}/${application}/helmRelease.yaml", text: createHelmRelease(gitopsConfig.helmChart, "fluxv1-${stage}", createFromFileValues(stage))
-    writeFile file: "fluxv1-${stage}/${application}/valuesMap.yaml", text: createConfigMap("values.yaml", "${env.WORKSPACE}/k8s/values-${stage}.yaml", "${application}-helm-operator-values", "fluxv1-${stage}")
-
-    writeFile file: "fluxv1-${stage}/${application}/sharedValuesMap.yaml", text: createConfigMap("values.yaml", "${env.WORKSPACE}/k8s/values-shared.yaml", "${application}-shared-helm-operator-values", "fluxv1-${stage}")
+    writeFile file: "${stage}/${application}/mergedValues.yaml", text: mergeValues("http://scmm-scm-manager:9091/scm/repo/common/spring-boot-helm-chart", ["${env.WORKSPACE}/k8s/values-${stage}.yaml", "${env.WORKSPACE}/k8s/values-shared.yaml"] as String[])
+    updateImage("${stage}/${application}/mergedValues.yaml", imageName)
+    writeFile file: "${stage}/${application}/helmRelease.yaml", text: createHelmRelease(gitopsConfig.helmChart, "fluxv1-${stage}", "${stage}/${application}/mergedValues.yaml")
 
     git.add('.')
     if (git.areChangesStagedForCommit()) {
@@ -158,6 +146,13 @@ String createApplicationForStageAndPushToBranch(String stage, String branch, Git
         echo "No changes on gitOps repo for ${stage} (branch: ${branch}). Not committing or pushing."
         return ''
     }
+}
+
+void updateImage(String deploymentFilePath, String newImageName) {
+    def data = readYaml file: deploymentFilePath
+    def image = data.image
+    image.name = newImageName
+    writeYaml file: deploymentFilePath, data: data, overwrite: true
 }
 
 private String aggregateChangesOnGitOpsRepo(changes) {
@@ -179,7 +174,6 @@ String createApplicationCommitMessage(def git, def applicationRepo) {
 }
 
 void createPullRequest(Map gitopsConfig) {
-
     withCredentials([usernamePassword(credentialsId: gitopsConfig.scmmCredentialsId, passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USER')]) {
 
         String script =
@@ -204,7 +198,6 @@ void createPullRequest(Map gitopsConfig) {
 
 private String createBuildDescription(String pushedChanges, String imageName) {
     String description = ''
-
     description += "GitOps commits: "
 
     if (pushedChanges) {
@@ -230,7 +223,8 @@ String createImageTag() {
     return "${new Date().format('yyyyMMddHHmm')}-${git.commitHashShort}${branchSuffix}"
 }
 
-String createHelmRelease(Map helmChart, String namespace, String extraValues) {
+String createHelmRelease(Map helmChart, String namespace, String valuesFile) {
+    def values = fileToInlineYaml(valuesFile)
     return """apiVersion: helm.fluxcd.io/v1
 kind: HelmRelease
 metadata:
@@ -244,97 +238,44 @@ spec:
     git: ${helmChart.repoUrl}
     ref: ${helmChart.version}
     path: .
-    secretRef:
-      name: gitops-scmm
-  valuesFrom:
-  - configMapKeyRef:
-      name: ${application}-shared-helm-operator-values
-      namespace: ${namespace}
-      key: values.yaml
-      optional: false
-  - configMapKeyRef:
-      name: ${application}-helm-operator-values
-      namespace: ${namespace}
-      key: values.yaml
-      optional: false
+  valuesContent: |-
+    ${values}
 """
 }
 
-String createFromFileValues(String stage) {
+String fileToInlineYaml(String filePath) {
     String values = ""
+    String indent = "    "
 
-    helmValuesFromFile.each {
-        if (stage in it['stage']) {
-            values = fileToInlineYaml(it['key'], "${env.WORKSPACE}/k8s/${it['file']}")
-        }
-    }
+    def fileContent = readFile filePath
+    values += fileContent.split("\\n").join("\n" + indent)
     return values
 }
 
-void creatFileConfigmaps(String stage) {
-    fileConfigmaps.each {
-        if (stage in it['stage']) {
-            String key = it['file'].split('/').last()
-            writeFile file: "${stage}/${application}/${it['name']}.yaml", text: createConfigMap(key, "${env.WORKSPACE}/k8s/${it['file']}", it['name'], "${stage}")
-        }
+String mergeValues(String chart, String[] files) {
+    String merge = ""
+    String _files = ""
+    files.each {
+        _files += "-f $it "
     }
-}
 
-String createConfigMap(String key, String filePath, String name, String namespace) {
-    String configMap = ""
-    withKubectl {
-        String script = "KUBECONFIG=${writeKubeConfig()} kubectl create configmap ${name} " +
-                "--from-file=${key}=${filePath} " +
-                "--dry-run=client -o yaml -n ${namespace}"
+    sh "git clone ${chart} ${env.WORKSPACE}/spring-boot-helm-chart || true"
 
-        configMap = sh returnStdout: true, script: script
+    withHelm {
+        String script = "helm values ${env.WORKSPACE}/spring-boot-helm-chart ${_files}"
+        merge = sh returnStdout: true, script: script
     }
-    return configMap
+
+    sh "rm -rf ${env.WORKSPACE}/spring-boot-helm-chart || true"
+
+    return merge
 }
 
-// Dummy kubeConfig, so we can use `kubectl --dry-run=client`
-String writeKubeConfig() {
-    String kubeConfigPath = "${pwd()}/.kube/config"
-    echo "Writing $kubeConfigPath"
-    writeFile file: kubeConfigPath, text: """apiVersion: v1
-clusters:
-- cluster:
-    certificate-authority-data: DATA+OMITTED
-    server: https://localhost
-  name: self-hosted-cluster
-contexts:
-- context:
-    cluster: self-hosted-cluster
-    user: svcs-acct-dply
-  name: svcs-acct-context
-current-context: svcs-acct-context
-kind: Config
-preferences: {}
-users:
-- name: svcs-acct-dply
-  user:
-    token: DATA+OMITTED"""
-
-    return kubeConfigPath
-}
-
-void withKubectl(Closure body) {
-    cesBuildLib.Docker.new(this).image(kubectlImage)
-    // Allow accessing WORKSPACE even when we are in a child dir (using "dir() {}")
+void withHelm(Closure body) {
+    cesBuildLib.Docker.new(this).image(helmImage)
             .inside("${pwd().equals(env.WORKSPACE) ? '' : "-v ${env.WORKSPACE}:${env.WORKSPACE}"}") {
                 body()
             }
-}
-
-String fileToInlineYaml(String key, String filePath) {
-    String values = ""
-    String indent = "        "
-
-    def fileContent = readFile filePath
-    values += "\n    ${key}: |\n${indent}"
-    values += fileContent.split("\\n").join("\n" + indent)
-
-    return values
 }
 
 /** Queries and stores info about current repo and HEAD commit */
@@ -362,3 +303,4 @@ class GitRepo {
 }
 
 def cesBuildLib
+def imageName
