@@ -129,10 +129,11 @@ String createApplicationForStageAndPushToBranch(String stage, String branch, Git
     String commitPrefix = stage == 'staging' ? '[S] ' : ''
 
     sh "mkdir -p ${stage}/${application}"
-
     writeFile file: "${stage}/${application}/mergedValues.yaml", text: mergeValues("http://scmm-scm-manager:9091/scm/repo/common/spring-boot-helm-chart", ["${env.WORKSPACE}/k8s/values-${stage}.yaml", "${env.WORKSPACE}/k8s/values-shared.yaml"] as String[])
     updateImage("${stage}/${application}/mergedValues.yaml", imageName)
     writeFile file: "${stage}/${application}/helmRelease.yaml", text: createHelmRelease(gitopsConfig.helmChart, "fluxv1-${stage}", "${stage}/${application}/mergedValues.yaml")
+
+    sh "rm ${stage}/${application}/mergedValues.yaml"
 
     git.add('.')
     if (git.areChangesStagedForCommit()) {
@@ -243,11 +244,10 @@ spec:
 """
 }
 
-String fileToInlineYaml(String filePath) {
+String fileToInlineYaml(String fileContents) {
     String values = ""
     String indent = "    "
-
-    def fileContent = readFile filePath
+    def fileContent = readFile fileContents
     values += fileContent.split("\\n").join("\n" + indent)
     return values
 }
