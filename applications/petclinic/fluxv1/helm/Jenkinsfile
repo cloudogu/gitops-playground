@@ -129,10 +129,16 @@ String createApplicationForStageAndPushToBranch(String stage, String branch, Git
     String commitPrefix = stage == 'staging' ? '[S] ' : ''
 
     sh "mkdir -p ${stage}/${application}"
+
+    // writing the merged-values.yaml via writeYaml into a file has the advantage, that it gets formatted as valid yaml
+    // This makes it easier to read in and indent for the inline use in the helmRelease.
+    // It enables us to reuse the `fileToInlineYaml` function, without writing a complex formatting logic.
     writeFile file: "${stage}/${application}/mergedValues.yaml", text: mergeValues("http://scmm-scm-manager:9091/scm/repo/common/spring-boot-helm-chart", ["${env.WORKSPACE}/k8s/values-${stage}.yaml", "${env.WORKSPACE}/k8s/values-shared.yaml"] as String[])
     updateImage("${stage}/${application}/mergedValues.yaml", imageName)
+
     writeFile file: "${stage}/${application}/helmRelease.yaml", text: createHelmRelease(gitopsConfig.helmChart, "fluxv1-${stage}", "${stage}/${application}/mergedValues.yaml")
 
+    // since the values are already inline (helmRelease.yaml) we do not need to commit them into the gitops repo
     sh "rm ${stage}/${application}/mergedValues.yaml"
 
     git.add('.')
