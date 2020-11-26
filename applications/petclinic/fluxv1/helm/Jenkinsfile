@@ -238,7 +238,7 @@ spec:
     git: ${helmChart.repoUrl}
     ref: ${helmChart.version}
     path: .
-  valuesContent: |-
+  values:
     ${values}
 """
 }

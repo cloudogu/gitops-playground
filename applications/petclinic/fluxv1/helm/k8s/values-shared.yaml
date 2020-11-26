@@ -7,4 +7,3 @@ service:
 
 ingress:
   enabled: false
-  rules:
