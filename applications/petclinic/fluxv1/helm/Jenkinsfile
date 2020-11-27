@@ -41,6 +41,7 @@ node {
             mvn "test -Dmaven.test.failure.ignore=true -Dcheckstyle.skip"
         }
 
+        String imageName = ""
         stage('Docker') {
             String imageTag = createImageTag()
             imageName = "${dockerRegistryBaseUrl}/${application}:${imageTag}"
@@ -64,11 +65,12 @@ node {
                         scmmCredentialsId : scmManagerCredentials,
                         scmmConfigRepoUrl : "http://${configRepositoryUrl}",
                         scmmPullRequestUrl: "http://${configRepositoryPRUrl}",
-                        helmChart: [
+                        helmChart         : [
                                 repoType : 'GIT',
                                 repoUrl  : "http://${helmChartRepository}",
                                 chartName: helmChartName,
-                                version  : helmChartVersion
+                                version  : helmChartVersion,
+                                image    : imageName
                         ]
                 ]
 
@@ -133,8 +135,8 @@ String createApplicationForStageAndPushToBranch(String stage, String branch, Git
     // writing the merged-values.yaml via writeYaml into a file has the advantage, that it gets formatted as valid yaml
     // This makes it easier to read in and indent for the inline use in the helmRelease.
     // It enables us to reuse the `fileToInlineYaml` function, without writing a complex formatting logic.
-    writeFile file: "${stage}/${application}/mergedValues.yaml", text: mergeValues("http://scmm-scm-manager:9091/scm/repo/common/spring-boot-helm-chart", ["${env.WORKSPACE}/k8s/values-${stage}.yaml", "${env.WORKSPACE}/k8s/values-shared.yaml"] as String[])
-    updateImage("${stage}/${application}/mergedValues.yaml", imageName)
+    writeFile file: "${stage}/${application}/mergedValues.yaml", text: mergeValues(gitopsConfig.helmChart.repoUrl, ["${env.WORKSPACE}/k8s/values-${stage}.yaml", "${env.WORKSPACE}/k8s/values-shared.yaml"] as String[])
+    updateYamlValue("${stage}/${application}/mergedValues.yaml", "image.name", gitopsConfig.helmChart.image)
 
     writeFile file: "${stage}/${application}/helmRelease.yaml", text: createHelmRelease(gitopsConfig.helmChart, "fluxv1-${stage}", "${stage}/${application}/mergedValues.yaml")
 
@@ -155,11 +157,20 @@ String createApplicationForStageAndPushToBranch(String stage, String branch, Git
     }
 }
 
-void updateImage(String deploymentFilePath, String newImageName) {
-    def data = readYaml file: deploymentFilePath
-    def image = data.image
-    image.name = newImageName
-    writeYaml file: deploymentFilePath, data: data, overwrite: true
+// Updates a specific yaml value of a file given by its path (e.g. "image.name")
+void updateYamlValue(String yamlFilePath, String path, String updatedValue) {
+    def data = readYaml file: yamlFilePath
+    String[] paths = path.split("\\.")
+    def _tmp = data
+    paths.eachWithIndex { String p, int i ->
+        def tmp = _tmp.get(p)
+        if (i == paths.length - 1 && tmp != null) {
+            _tmp.put(p, updatedValue)
+        }
+        _tmp = tmp
+    }
+
+    writeYaml file: yamlFilePath, data: data, overwrite: true
 }
 
 private String aggregateChangesOnGitOpsRepo(changes) {
@@ -309,4 +320,3 @@ class GitRepo {
 }
 
 def cesBuildLib
-def imageName

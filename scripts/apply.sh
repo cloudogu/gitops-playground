@@ -204,8 +204,9 @@ function initRepo() {
   (
     cd "${TMP_REPO}"
     git checkout main --quiet || git checkout -b main --quiet
-    echo "# gitops" >README.md
-    git add README.md
+    echo "# gitops" > README.md
+    echo $'.*\n!/.gitignore' > .gitignore
+    git add README.md .gitignore
     # exits with 1 if there were differences and 0 means no differences.
     if ! git diff-index --exit-code --quiet HEAD --; then
       git commit -m "Add readme" --quiet

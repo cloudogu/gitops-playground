@@ -261,7 +261,6 @@ String createConfigMap(String key, String filePath, String name, String namespac
                 "--dry-run=client -o yaml -n ${namespace}"
 
         configMap = sh returnStdout: true, script: script
-        sh "rm -rf ${pwd()}/.kube/"
     }
     return configMap
 }
