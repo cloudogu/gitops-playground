@@ -11,6 +11,10 @@ String getCesBuildLibVersion() { '1.44.3' }
 String getCesBuildLibRepo() { 'https://github.com/cloudogu/ces-build-lib/' }
 String getMainBranch() { 'main' }
 
+// images, helm also offers kubeval
+String getHelmImage() { 'ghcr.io/cloudogu/helm:3.4.1-1'}
+String getYamlLintImage() { 'cytopia/yamllint:1.25' }
+
 cesBuildLib = library(identifier: "ces-build-lib@${cesBuildLibVersion}",
         retriever: modernSCM([$class: 'GitSCMSource', remote: cesBuildLibRepo])
 ).com.cloudogu.ces.cesbuildlib
@@ -19,6 +23,24 @@ properties([
         // Don't run concurrent builds, because the ITs use the same port causing random failures on concurrent builds.
         disableConcurrentBuilds()
 ])
+
+void withHelm(Closure body) {
+    cesBuildLib.Docker.new(this).image(helmImage)
+    // Allow accessing WORKSPACE even when we are in a child dir (using "dir() {}")
+            .inside("${pwd().equals(env.WORKSPACE) ? '' : "-v ${env.WORKSPACE}:${env.WORKSPACE}"}") {
+                body()
+            }
+}
+
+// Validates all yaml-resources within the target-directory against the specs of the given k8s version
+String validateK8sRessources(String targetDirectory, String k8sVersion) {
+    String result = ""
+    withHelm {
+        String script = "kubeval -d ${targetDirectory} -v ${k8sVersion}"
+        result = sh returnStdout: true, script: script
+    }
+    return result
+}
 
 node {
 
@@ -135,6 +157,9 @@ String createApplicationForStageAndPushToBranch(String stage, String branch, Git
     gitopsConfig.updateImages.each {
         updateImageVersion("${stage}/${application}/${it['deploymentFilename']}", it['containerName'], it['imageName'])
     }
+
+    String result = validateK8sRessources("${stage}/${application}/", "1.18")
+    echo "${result}"
 
     git.add('.')
     if (git.areChangesStagedForCommit()) {
