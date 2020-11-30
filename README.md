@@ -96,13 +96,17 @@ Login with `admin/admin`
 
 * [Jenkinsfile](applications/petclinic/fluxv1/plain-k8s/Jenkinsfile)
   * [localhost:9000](http://localhost:9000) (Staging)
-  * [localhost:9001](http://localhost:9001) (Production) 
+  * [localhost:9001](http://localhost:9001) (Production)
+  
+* [Jenkinsfile](applications/petclinic/fluxv1/helm/Jenkinsfile)
+  * [localhost:9002](http://localhost:9002) (Staging)
+  * [localhost:9003](http://localhost:9003) (Production) 
 
 ##### 3rd Party app (NGINX) via Flux V1
 
 * [Jenkinsfile](applications/nginx/fluxv1/Jenkinsfile)
-  * [localhost:9002](http://localhost:9002) (Staging)
-  * [localhost:9003](http://localhost:9003) (Production)
+  * [localhost:9002](http://localhost:9004) (Staging)
+  * [localhost:9003](http://localhost:9005) (Production)
 
 ##### PetClinic via Flux V2
 
