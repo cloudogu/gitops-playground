@@ -10,6 +10,8 @@ String getDockerRegistryBaseUrl() { "localhost:8999" }
 String getCesBuildLibVersion() { '1.44.3' }
 String getCesBuildLibRepo() { 'https://github.com/cloudogu/ces-build-lib/' }
 String getMainBranch() { 'main' }
+String getK8sVersion() { '1.18.1 '}
+String getConfigDir() { '.config'}
 
 // images, helm also offers kubeval
 String getHelmImage() { 'ghcr.io/cloudogu/helm:3.4.1-1'}
@@ -24,8 +26,8 @@ properties([
         disableConcurrentBuilds()
 ])
 
-void withHelm(Closure body) {
-    cesBuildLib.Docker.new(this).image(helmImage)
+void withDockerImage(String image, Closure body) {
+    cesBuildLib.Docker.new(this).image(image)
     // Allow accessing WORKSPACE even when we are in a child dir (using "dir() {}")
             .inside("${pwd().equals(env.WORKSPACE) ? '' : "-v ${env.WORKSPACE}:${env.WORKSPACE}"}") {
                 body()
@@ -33,13 +35,16 @@ void withHelm(Closure body) {
 }
 
 // Validates all yaml-resources within the target-directory against the specs of the given k8s version
-String validateK8sRessources(String targetDirectory, String k8sVersion) {
-    String result = ""
-    withHelm {
-        String script = "kubeval -d ${targetDirectory} -v ${k8sVersion}"
-        result = sh returnStdout: true, script: script
+void validateK8sRessources(String targetDirectory, String k8sVersion) {
+    withDockerImage(helmImage) {
+        result = sh returnStdout: true, script: "kubeval -d ${targetDirectory} -v ${k8sVersion} --strict"
     }
-    return result
+}
+
+void validateYamlResources(String configFile, String targetDirectory) {
+    withDockerImage(yamlLintImage) {
+        sh returnStdout: true, script: "yamllint -c ${configFile} ${targetDirectory}"
+    }
 }
 
 node {
@@ -149,17 +154,19 @@ String createApplicationForStageAndPushToBranch(String stage, String branch, Git
 
     String commitPrefix = stage == 'staging' ? '[S] ' : ''
 
-    sh "mkdir -p ${stage}/${application}"
+    sh "mkdir -p ${stage}/${application}/"
+    sh "mkdir -p ${stage}/${configDir}/"
     // copy extra resources like sealed secrets
     echo "Copying k8s payload from application repo to gitOps Repo: 'k8s/${stage}/*' to '${stage}/${application}'"
     sh "cp ${env.WORKSPACE}/k8s/${stage}/* ${stage}/${application}/ || true"
+    sh "cp ${env.WORKSPACE}/*.yamllint.yaml ${stage}/${configDir}/ || true"
 
     gitopsConfig.updateImages.each {
         updateImageVersion("${stage}/${application}/${it['deploymentFilename']}", it['containerName'], it['imageName'])
     }
 
-    String result = validateK8sRessources("${stage}/${application}/", "1.18")
-    echo "${result}"
+    validateK8sRessources("${stage}/${application}/", k8sVersion)
+    validateYamlResources("${stage}/${configDir}/config.yamllint.yaml", "${stage}/${application}/")
 
     git.add('.')
     if (git.areChangesStagedForCommit()) {
