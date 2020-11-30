@@ -155,14 +155,14 @@ String createApplicationForStageAndPushToBranch(String stage, String branch, Git
     String commitPrefix = stage == 'staging' ? '[S] ' : ''
 
     sh "mkdir -p ${stage}/${application}/"
-    sh "mkdir -p ${stage}/${configDir}/"
+    sh "mkdir -p ${configDir}/"
     // copy extra resources like sealed secrets
     echo "Copying k8s payload from application repo to gitOps Repo: 'k8s/${stage}/*' to '${stage}/${application}'"
     sh "cp ${env.WORKSPACE}/k8s/${stage}/* ${stage}/${application}/ || true"
-    sh "cp ${env.WORKSPACE}/*.yamllint.yaml ${stage}/${configDir}/ || true"
+    sh "cp ${env.WORKSPACE}/*.yamllint.yaml ${configDir}/ || true"
 
     validateK8sRessources("${stage}/${application}/", k8sVersion)
-    validateYamlResources("${stage}/${configDir}/config.yamllint.yaml", "${stage}/${application}/")
+    validateYamlResources("${configDir}/config.yamllint.yaml", "${stage}/${application}/")
 
     gitopsConfig.updateImages.each {
         updateImageVersion("${stage}/${application}/${it['deploymentFilename']}", it['containerName'], it['imageName'])
