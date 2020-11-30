@@ -161,12 +161,12 @@ String createApplicationForStageAndPushToBranch(String stage, String branch, Git
     sh "cp ${env.WORKSPACE}/k8s/${stage}/* ${stage}/${application}/ || true"
     sh "cp ${env.WORKSPACE}/*.yamllint.yaml ${stage}/${configDir}/ || true"
 
+    validateK8sRessources("${stage}/${application}/", k8sVersion)
+    validateYamlResources("${stage}/${configDir}/config.yamllint.yaml", "${stage}/${application}/")
+
     gitopsConfig.updateImages.each {
         updateImageVersion("${stage}/${application}/${it['deploymentFilename']}", it['containerName'], it['imageName'])
     }
-
-    validateK8sRessources("${stage}/${application}/", k8sVersion)
-    validateYamlResources("${stage}/${configDir}/config.yamllint.yaml", "${stage}/${application}/")
 
     git.add('.')
     if (git.areChangesStagedForCommit()) {
