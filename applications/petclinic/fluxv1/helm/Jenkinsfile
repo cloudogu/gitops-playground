@@ -33,29 +33,29 @@ node {
         }
 
         stage('Build') {
-//            mvn 'clean package -DskipTests -Dcheckstyle.skip'
-//            archiveArtifacts artifacts: '**/target/*.jar'
+            mvn 'clean package -DskipTests -Dcheckstyle.skip'
+            archiveArtifacts artifacts: '**/target/*.jar'
         }
 
         stage('Test') {
-//            mvn "test -Dmaven.test.failure.ignore=true -Dcheckstyle.skip"
+            mvn "test -Dmaven.test.failure.ignore=true -Dcheckstyle.skip"
         }
 
-        String imageName = "somefancyimagename"
+        String imageName = ""
         stage('Docker') {
-//            String imageTag = createImageTag()
-//            imageName = "${dockerRegistryBaseUrl}/${application}:${imageTag}"
-//            mvn "spring-boot:build-image -DskipTests -Dcheckstyle.skip -Dspring-boot.build-image.imageName=${imageName}"
-//
-//            if (isBuildSuccessful()) {
-//                def docker = cesBuildLib.Docker.new(this)
-//                docker.withRegistry("http://${dockerRegistryBaseUrl}") {
-//                    def image = docker.image(imageName)
-//                    image.push()
-//                }
-//            } else {
-//                echo 'Skipping docker push, because build not successful'
-//            }
+            String imageTag = createImageTag()
+            imageName = "${dockerRegistryBaseUrl}/${application}:${imageTag}"
+            mvn "spring-boot:build-image -DskipTests -Dcheckstyle.skip -Dspring-boot.build-image.imageName=${imageName}"
+
+            if (isBuildSuccessful()) {
+                def docker = cesBuildLib.Docker.new(this)
+                docker.withRegistry("http://${dockerRegistryBaseUrl}") {
+                    def image = docker.image(imageName)
+                    image.push()
+                }
+            } else {
+                echo 'Skipping docker push, because build not successful'
+            }
         }
 
         stage('Deploy') {
@@ -83,7 +83,7 @@ node {
     }
 
     // Archive Unit and integration test results, if any
-//    junit allowEmptyResults: true, testResults: '**/target/failsafe-reports/TEST-*.xml,**/target/surefire-reports/TEST-*.xml'
+    junit allowEmptyResults: true, testResults: '**/target/failsafe-reports/TEST-*.xml,**/target/surefire-reports/TEST-*.xml'
 }
 
 String pushToConfigRepo(Map gitopsConfig) {
