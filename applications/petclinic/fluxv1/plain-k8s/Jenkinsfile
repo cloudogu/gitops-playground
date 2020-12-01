@@ -10,6 +10,12 @@ String getDockerRegistryBaseUrl() { "localhost:8999" }
 String getCesBuildLibVersion() { '1.44.3' }
 String getCesBuildLibRepo() { 'https://github.com/cloudogu/ces-build-lib/' }
 String getMainBranch() { 'main' }
+String getK8sVersion() { '1.18.1 '}
+String getConfigDir() { '.config'}
+
+// images, helm also offers kubeval
+String getHelmImage() { 'ghcr.io/cloudogu/helm:3.4.1-1'}
+String getYamlLintImage() { 'cytopia/yamllint:1.25' }
 
 cesBuildLib = library(identifier: "ces-build-lib@${cesBuildLibVersion}",
         retriever: modernSCM([$class: 'GitSCMSource', remote: cesBuildLibRepo])
@@ -19,6 +25,27 @@ properties([
         // Don't run concurrent builds, because the ITs use the same port causing random failures on concurrent builds.
         disableConcurrentBuilds()
 ])
+
+void withDockerImage(String image, Closure body) {
+    cesBuildLib.Docker.new(this).image(image)
+    // Allow accessing WORKSPACE even when we are in a child dir (using "dir() {}")
+            .inside("${pwd().equals(env.WORKSPACE) ? '' : "-v ${env.WORKSPACE}:${env.WORKSPACE}"}") {
+                body()
+            }
+}
+
+// Validates all yaml-resources within the target-directory against the specs of the given k8s version
+void validateK8sRessources(String targetDirectory, String k8sVersion) {
+    withDockerImage(helmImage) {
+        result = sh returnStdout: true, script: "kubeval -d ${targetDirectory} -v ${k8sVersion} --strict"
+    }
+}
+
+void validateYamlResources(String configFile, String targetDirectory) {
+    withDockerImage(yamlLintImage) {
+        sh returnStdout: true, script: "yamllint -c ${configFile} ${targetDirectory}"
+    }
+}
 
 node {
 
@@ -127,10 +154,15 @@ String createApplicationForStageAndPushToBranch(String stage, String branch, Git
 
     String commitPrefix = stage == 'staging' ? '[S] ' : ''
 
-    sh "mkdir -p ${stage}/${application}"
+    sh "mkdir -p ${stage}/${application}/"
+    sh "mkdir -p ${configDir}/"
     // copy extra resources like sealed secrets
     echo "Copying k8s payload from application repo to gitOps Repo: 'k8s/${stage}/*' to '${stage}/${application}'"
     sh "cp ${env.WORKSPACE}/k8s/${stage}/* ${stage}/${application}/ || true"
+    sh "cp ${env.WORKSPACE}/*.yamllint.yaml ${configDir}/ || true"
+
+    validateK8sRessources("${stage}/${application}/", k8sVersion)
+    validateYamlResources("${configDir}/config.yamllint.yaml", "${stage}/${application}/")
 
     gitopsConfig.updateImages.each {
         updateImageVersion("${stage}/${application}/${it['deploymentFilename']}", it['containerName'], it['imageName'])
