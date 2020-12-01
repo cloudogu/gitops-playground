@@ -53,14 +53,24 @@ master:
           systemMessage: "Seeding init jobs"
         jobs:
           - script: |
-              multibranchPipelineJob('fluxV1-petclinic-plain') {
+              multibranchPipelineJob('fluxv1-petclinic-plain') {
                   branchSources {
                       git {
-                          id('fluxV1-petclinic-plain')
+                          id('fluxv1-petclinic-plain')
                           remote('http://scmm-scm-manager:9091/scm/repo/fluxv1/petclinic-plain')
                           credentialsId('scmm-user')
                       }
                   }
+              }
+          - script: |
+              multibranchPipelineJob('fluxv1-petclinic-helm') {
+                branchSources {
+                  git {
+                    id('fluxv1-petclinic-helm')
+                    remote('http://scmm-scm-manager:9091/scm/repo/fluxv1/petclinic-helm')
+                    credentialsId('scmm-user')
+                  }
+                }
               }
           - script: |
               multibranchPipelineJob('fluxv1-nginx') {

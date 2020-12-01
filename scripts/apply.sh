@@ -104,10 +104,11 @@ function initJenkins() {
 function initFluxV1() {
   initRepo 'fluxv1/gitops'
   pushPetClinicRepo 'applications/petclinic/fluxv1/plain-k8s' 'fluxv1/petclinic-plain'
+  pushPetClinicRepo 'applications/petclinic/fluxv1/helm' 'fluxv1/petclinic-helm'
   initRepoWithSource 'applications/nginx/fluxv1' 'fluxv1/nginx-helm'
 
   helm upgrade -i flux-operator --values fluxv1/flux-operator/values.yaml --version 1.3.0 fluxcd/flux -n fluxv1
-  helm upgrade -i helm-operator --values fluxv1/helm-operator/values.yaml --version 1.0.2 fluxcd/helm-operator -n fluxv1
+  helm upgrade -i helm-operator --values fluxv1/helm-operator/values.yaml --version 1.2.0 fluxcd/helm-operator -n fluxv1
 }
 
 function initFluxV2() {
@@ -134,7 +135,7 @@ function initArgo() {
 
 function createScmmSecrets() {
   kubectl create secret generic gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=somePassword -n default || true
-  kubectl create secret generic gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=somePassword -n fluxv1 || true
+  kubectl create secret generic gitops-scmm --from-literal=username=gitops --from-literal=password=somePassword -n fluxv1 || true
   # fluxv2 needs lowercase fieldnames
   kubectl create secret generic gitops-scmm --from-literal=username=gitops --from-literal=password=somePassword -n fluxv2 || true
   kubectl create secret generic gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=somePassword -n argocd || true
@@ -203,8 +204,9 @@ function initRepo() {
   (
     cd "${TMP_REPO}"
     git checkout main --quiet || git checkout -b main --quiet
-    echo "# gitops" >README.md
-    git add README.md
+    echo "# gitops" > README.md
+    echo $'.*\n!/.gitignore' > .gitignore
+    git add README.md .gitignore
     # exits with 1 if there were differences and 0 means no differences.
     if ! git diff-index --exit-code --quiet HEAD --; then
       git commit -m "Add readme" --quiet
