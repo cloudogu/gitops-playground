@@ -20,8 +20,9 @@ Reproducible infrastructure to showcase GitOps workflows. Derived from our [cons
   - [3rd Party app (NGINX) via Flux V1](#3rd-party-app-nginx-via-flux-v1)
   - [PetClinic via Flux V2](#petclinic-via-flux-v2)
   - [PetClinic via ArgoCD](#petclinic-via-argocd)
-
 - [Remove apps from cluster](#remove-apps-from-cluster)
+- [Options](#options)
+  - [Multiple stages](#multiple-stages)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -128,7 +129,7 @@ Login with `admin/admin`
 # Options
 
 ## Multiple stages
-#####This feature is currently only useable for the plain petclinic with fluxv1
+##### This feature is currently only useable for the plain petclinic with fluxv1
 
 You can add additional stages in this [Jenkinsfile](applications/petclinic/fluxv1/plain-k8s/Jenkinsfile) for 
 the plain-k8s petclinic version with fluxv1.
