@@ -94,19 +94,20 @@ Login with `admin/admin`
 
 ##### PetClinic via Flux V1
 
-* [Jenkinsfile](applications/petclinic/fluxv1/plain-k8s/Jenkinsfile)
+* [Jenkinsfile](applications/petclinic/fluxv1/plain-k8s/Jenkinsfile) for plain `k8s` deployment
   * [localhost:9000](http://localhost:9000) (Staging)
   * [localhost:9001](http://localhost:9001) (Production)
+  * [localhost:9002](http://localhost:9002) (qa)  
   
-* [Jenkinsfile](applications/petclinic/fluxv1/helm/Jenkinsfile)
-  * [localhost:9002](http://localhost:9002) (Staging)
-  * [localhost:9003](http://localhost:9003) (Production) 
+* [Jenkinsfile](applications/petclinic/fluxv1/helm/Jenkinsfile) for `helm` deployment
+  * [localhost:9003](http://localhost:9003) (Staging)
+  * [localhost:9004](http://localhost:9004) (Production) 
 
 ##### 3rd Party app (NGINX) via Flux V1
 
 * [Jenkinsfile](applications/nginx/fluxv1/Jenkinsfile)
-  * [localhost:9002](http://localhost:9004) (Staging)
-  * [localhost:9003](http://localhost:9005) (Production)
+  * [localhost:9005](http://localhost:9005) (Staging)
+  * [localhost:9006](http://localhost:9006) (Production)
 
 ##### PetClinic via Flux V2
 
@@ -123,3 +124,31 @@ Login with `admin/admin`
 ## Remove apps from cluster
 
 [`scripts/destroy.sh`](scripts/destroy.sh)
+
+# Options
+
+## Multiple stages
+#####This feature is currently only useable for the plain petclinic with fluxv1
+
+You can add additional stages in this [Jenkinsfile](applications/petclinic/fluxv1/plain-k8s/Jenkinsfile) for 
+the plain-k8s petclinic version with fluxv1.
+
+Look for the `gitopsConfig` map and edit the following entry:
+
+```
+stages: [
+  staging: [ deployDirectly: true ],
+  production: [ deployDirectly: false ],
+  qa: [ ]
+]
+```
+
+Just add another stage and define its deploy behaviour by setting `deployDirectly` to `true` or `false`.  
+The default is `false` so you can leave it empty like `qa: [ ]`.  
+  
+If set to `true` the changes will deploy automatically when pushed to the gitops repository.  
+If set to `false` a pull request is created.
+
+After adding a new stage you need to also create k8s-files in the corresponding folder.  
+So for the stage `qa` there have to be k8s-files in the following folder [`applications/petclinic/fluxv1/plain-k8s/k8s/qa`](applications/petclinic/fluxv1/plain-k8s/k8s/qa)
+
