@@ -154,7 +154,7 @@ String pushToConfigRepo(Map gitopsConfig) {
                     git.checkoutOrCreate(stageBranch)
                     String repoChanges = createApplicationForStageAndPushToBranch stage as String, stageBranch, applicationRepo, git, gitopsConfig
                     if(repoChanges) {
-                        createPullRequest(gitopsConfig, stageBranch)
+                        createPullRequest(gitopsConfig, stage as String, stageBranch)
                         allRepoChanges += repoChanges
                     }
                 }
@@ -218,7 +218,7 @@ String createApplicationCommitMessage(def git, def applicationRepo) {
     return message
 }
 
-void createPullRequest(Map gitopsConfig, String sourceBranch) {
+void createPullRequest(Map gitopsConfig, String stage, String sourceBranch) {
 
     withCredentials([usernamePassword(credentialsId: gitopsConfig.scmmCredentialsId, passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USER')]) {
 
@@ -226,7 +226,7 @@ void createPullRequest(Map gitopsConfig, String sourceBranch) {
                 'curl -s -o /dev/null -w "%{http_code}" ' +
                         "-u ${GIT_USER}:${GIT_PASSWORD} " +
                         '-H "Content-Type: application/vnd.scmm-pullRequest+json;v=2" ' +
-                        '--data \'{"title": "created by service ' + application + '", "source": "' + sourceBranch + '", "target": "' + mainBranch + '"}\' ' +
+                        '--data \'{"title": "created by service ' + application + ' for stage ' + stage + '", "source": "' + sourceBranch + '", "target": "' + mainBranch + '"}\' ' +
                         gitopsConfig.scmmPullRequestUrl
 
         // For debugging the quotation of the shell script, just do: echo script
