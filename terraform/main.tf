@@ -29,11 +29,6 @@ resource "google_container_cluster" "cluster" {
   initial_node_count       = 1
   remove_default_node_pool = true
 
-  # For newest k8s version
-  release_channel {
-    channel = "RAPID"
-  }
-
 
   # This block makes the cluster VPC-native, which we need for redis (Google Cloud MemoryStore) and is also useful for
   # Postgresql (Google CloudSQL)

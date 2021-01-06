@@ -7,6 +7,6 @@ gce_location= "europe-west3-a"
 
 # Cluster settings
 cluster_name = "gitops-cluster"
-min_master_version = "1.18.12-gke.1200"
-node_version = "1.18.12-gke.1200"
+min_master_version = "1.17.13-gke.2600"
+node_version = "1.17.13-gke.2600"
 node_pool_node_count = 2
