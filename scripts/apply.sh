@@ -116,27 +116,23 @@ function initSCMM() {
 }
 
 function initJenkins() {
-  # TODO find out docker group on jenkins node
-  # TODO mount hostPath /etc/groups into container
-  kubectl run tmp-docker-gid-grepper --image bash:5.1.4 \
-    --overrides='{"apiVersion": "v1", "spec": {"nodeSelector": { "node": "jenkins" }}}' \
-    -- sleep 10000
-  
+  # Find out the docker group and put the agent into it. Otherwise it has no permission to access  the docker host.
+  helm upgrade -i jenkins --values jenkins/values.yaml \
+    --set agent.runAsGroup=$(queryDockerGroupOfJenkinsNode) \
+    --version 2.13.0 jenkins/jenkins -n default
+}
+
+function queryDockerGroupOfJenkinsNode() {
+  kubectl apply -f jenkins/tmp-docker-gid-grepper.yaml > /dev/null
   until kubectl get po --field-selector=status.phase=Running | grep tmp-docker-gid-grepper > /dev/null
   do
     sleep 1
   done
   
-  #dockerGroup=$(kubectl exec tmp-docker-gid-grepper -- cat /etc/group | grep docker | cut -d: -f)
-  dockerGroup=113
+  kubectl exec tmp-docker-gid-grepper -- cat /etc/group | grep docker | cut -d: -f3
   
-  # This call blocks some (unnecessary) seconds so move to background
-  kubectl delete pod tmp-docker-gid-grepper&
-  
-  # Find out the docker group and put the agent into it. Otherwise it has no permission to access  the docker host.
-  helm upgrade -i jenkins --values jenkins/values.yaml \
-    --set agent.runAsGroup=${dockerGroup} \
-    --version 2.13.0 jenkins/jenkins -n default
+  # This call might block some (unnecessary) seconds so move to background
+  kubectl delete -f jenkins/tmp-docker-gid-grepper.yaml > /dev/null &
 }
 
 function initFluxV1() {
