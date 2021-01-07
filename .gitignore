@@ -2,3 +2,11 @@
 
 # do not check in the workspace
 workspace/
+
+# do not check in sensitive terraform files
+*.tfstate
+*.tfstate.*
+terraform/plan
+terraform/account.json
+*.lock.hcl
+**/.terraform/*

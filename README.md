@@ -23,6 +23,7 @@ Reproducible infrastructure to showcase GitOps workflows. Derived from our [cons
 - [Remove apps from cluster](#remove-apps-from-cluster)
 - [Options](#options)
   - [Multiple stages](#multiple-stages)
+- [Deploy to Google Cloud Platform using Terraform](#deploy-to-google-cloud-platform-using-terraform)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -155,3 +156,62 @@ If set to `false` a pull request is created.
 After adding a new stage you need to also create k8s-files in the corresponding folder.  
 So for the stage `qa` there have to be k8s-files in the following folder [`applications/petclinic/fluxv1/plain-k8s/k8s/qa`](applications/petclinic/fluxv1/plain-k8s/k8s/qa)
 
+
+
+# Deploy to Google Cloud Platform using Terraform
+TODO: Description
+
+The following steps are deploying a k8s cluster with a node pool to GKE in the europe-west-3 region.
+The required terraform files are located in the ./terraform/ folder.
+You have to change ```PROJECT_ID``` to the correct ID of your Google Cloud project.
+
+Login to GCP from your local machine:
+```
+gcloud auth login
+```
+
+Select the project, where you want to deploy the cluster:
+```
+gcloud config set project PROJECT_ID
+```
+
+Create a service account:
+```
+gcloud iam service-accounts create terraform-cluster --display-name terraform-cluster --project PROJECT_ID
+```
+
+Create an account.json file, which contains the keys for the service account.
+You will need this file to apply the infrastructure:
+```
+gcloud iam service-accounts keys create --iam-account terraform-cluster@PROJECT_ID.iam.gserviceaccount.com account.json
+```
+
+Create a bucket for the terraform state file:
+```
+gsutil mb -p PROJECT_ID -l EUROPE-WEST3 gs://BUCKET_NAME
+```
+
+Grant the service account permissions for the bucket:
+```
+gsutil iam ch serviceAccount:terraform-cluster@PROJECT_ID.iam.gserviceaccount.com:roles/storage.admin gs://BUCKET_NAME
+```
+
+Before continuing with the terraform steps, you have to open the ```values.tfvars``` file 
+and edit the ```gce_project``` value to your specific ID.
+
+
+Initialize the terraform backend:
+```
+terraform init -backend-config "credentials=account.json" \
+  -backend-config "BUCKET_NAME"
+```
+
+Create a plan for the new infrastructure:
+```
+terraform plan -var-file values.tfvars -out plan
+```
+
+If the configuration looks good, run apply:
+```
+terraform apply plan
+```
