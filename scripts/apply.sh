@@ -66,8 +66,6 @@ function main() {
     initJenkins > /dev/null 2>&1 & spinner "Starting Jenkins..."
   fi
 
-#  # Create Jenkins agent working dir explicitly. Otherwise it seems to be owned by root
-#  mkdir -p ${JENKINS_HOME}
   printWelcomeScreen
 }
 
@@ -83,6 +81,11 @@ function getExternalIP() {
 }
 
 function applyBasicK8sResources() {
+  # Mark the first node for Jenkins and agents. See jenkins/values.yamls "agent.workingDir" for details.   
+  # Remove first (in case new nodes were added)
+  kubectl label --all nodes node- > /dev/null
+  kubectl label $(kubectl get node -o name | sort | head -n 1) node=jenkins
+  
   kubectl apply -f k8s-namespaces || true
 
   createSecrets
@@ -113,12 +116,26 @@ function initSCMM() {
 }
 
 function initJenkins() {
-  # Make sure to run Jenkins and Agent containers as the current user. Avoids permission problems.
+  # TODO find out docker group on jenkins node
+  # TODO mount hostPath /etc/groups into container
+  kubectl run tmp-docker-gid-grepper --image bash:5.1.4 \
+    --overrides='{"apiVersion": "v1", "spec": {"nodeSelector": { "node": "jenkins" }}}' \
+    -- sleep 10000
+  
+  until kubectl get po --field-selector=status.phase=Running | grep tmp-docker-gid-grepper > /dev/null
+  do
+    sleep 1
+  done
+  
+  #dockerGroup=$(kubectl exec tmp-docker-gid-grepper -- cat /etc/group | grep docker | cut -d: -f)
+  dockerGroup=113
+  
+  # This call blocks some (unnecessary) seconds so move to background
+  kubectl delete pod tmp-docker-gid-grepper&
+  
   # Find out the docker group and put the agent into it. Otherwise it has no permission to access  the docker host.
   helm upgrade -i jenkins --values jenkins/values.yaml \
-    --set master.runAsUser=$(id -u) \
-    --set agent.runAsUser=$(id -u) \
-    --set agent.runAsGroup=$(getent group docker | awk -F: '{ print $3}') \
+    --set agent.runAsGroup=${dockerGroup} \
     --version 2.13.0 jenkins/jenkins -n default
 }
 

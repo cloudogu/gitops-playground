@@ -6,7 +6,7 @@ String getScmManagerCredentials() { 'scmm-user' }
 String getConfigRepositoryUrl() { "http://scmm-scm-manager:9091/scm/repo/argocd/gitops" }
 String getConfigRepositoryPRUrl() { 'http://scmm-scm-manager:9091/scm/api/v2/pull-requests/argocd/gitops' }
 // The docker daemon cant use the k8s service name, because it is not running inside the cluster
-String getDockerRegistryBaseUrl() { "localhost:8999" }
+String getDockerRegistryBaseUrl() { "localhost:30000" }
 String getCesBuildLibVersion() { '1.44.3' }
 String getCesBuildLibRepo() { 'https://github.com/cloudogu/ces-build-lib/' }
 String getMainBranch() { 'main' }
