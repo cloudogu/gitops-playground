@@ -5,8 +5,10 @@ master:
   # Note: When updating, check if PATH of image still matches the one listed in "containerEnv"
   tag: 2.249.3-lts-jdk11
 
-  serviceType: NodePort
-  nodePort: 9090
+#  serviceType: NodePort
+#  nodePort: 9090
+  serviceType: LoadBalancer
+  servicePort: 8080
 
   additionalPlugins:
     - docker-workflow:1.25

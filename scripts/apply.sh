@@ -13,6 +13,7 @@ JENKINS_HOME="/tmp/k8s-gitops-playground-jenkins-agent"
 PETCLINIC_COMMIT=949c5af
 # get scm-manager port from values
 SCMM_PORT=$(grep -A1 'service:' "${PLAYGROUND_DIR}"/scm-manager/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')
+SCMM_IP="localhost"
 
 PETCLINIC_COMMIT=949c5af
 # get scm-manager port from values
@@ -26,6 +27,9 @@ function main() {
   INSTALL_FLUXV1=$3
   INSTALL_FLUXV2=$4
   INSTALL_ARGOCD=$5
+  REMOTE_CLUSTER=$6
+  SET_USERNAME=$7
+  SET_PASSWORD=$8
 
   if [[ $DEBUG = true ]]; then
     applyBasicK8sResources
@@ -62,15 +66,26 @@ function main() {
     initJenkins > /dev/null 2>&1 & spinner "Starting Jenkins..."
   fi
 
-  # Create Jenkins agent working dir explicitly. Otherwise it seems to be owned by root
-  mkdir -p ${JENKINS_HOME}
+#  # Create Jenkins agent working dir explicitly. Otherwise it seems to be owned by root
+#  mkdir -p ${JENKINS_HOME}
   printWelcomeScreen
+}
+
+# getExternalIP servicename namespace
+function getExternalIP() {
+  external_ip=""
+  while [ -z $external_ip ]; do
+#    echo "Waiting for end point..."
+    external_ip=$(kubectl -n $2 get svc $1 --template="{{range .status.loadBalancer.ingress}}{{.ip}}{{end}}")
+    [ -z "$external_ip" ] && sleep 10
+  done
+  echo $external_ip
 }
 
 function applyBasicK8sResources() {
   kubectl apply -f k8s-namespaces || true
 
-  createScmmSecrets
+  createSecrets
 
   kubectl apply -f jenkins/resources || true
 
@@ -84,11 +99,17 @@ function applyBasicK8sResources() {
 }
 
 function initSCMM() {
-    helm upgrade -i scmm --values scm-manager/values.yaml \
-    --set-file=postStartHookScript=scm-manager/initscmm.sh \
-    scm-manager/chart -n default
+  helm upgrade -i scmm --values scm-manager/values.yaml \
+  --set-file=postStartHookScript=scm-manager/initscmm.sh \
+  scm-manager/chart -n default
 
-    pushHelmChartRepo 'common/spring-boot-helm-chart'
+  if [[ $REMOTE_CLUSTER = true ]]; then
+    echo "getting external scmm ip..."
+    SCMM_IP=$(getExternalIP "scmm-scm-manager" "default")
+    echo "external scmm ip is: ${SCMM_IP}"
+  fi
+
+  pushHelmChartRepo 'common/spring-boot-helm-chart'
 }
 
 function initJenkins() {
@@ -133,12 +154,13 @@ function initArgo() {
   initRepoWithSource 'applications/nginx/argocd' 'argocd/nginx-helm'
 }
 
-function createScmmSecrets() {
-  kubectl create secret generic gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=somePassword -n default || true
-  kubectl create secret generic gitops-scmm --from-literal=username=gitops --from-literal=password=somePassword -n fluxv1 || true
-  # fluxv2 needs lowercase fieldnames
-  kubectl create secret generic gitops-scmm --from-literal=username=gitops --from-literal=password=somePassword -n fluxv2 || true
-  kubectl create secret generic gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=somePassword -n argocd || true
+function createSecrets() {
+  kubectl create secret generic jenkins-credentials --from-literal=jenkins-admin-user=$SET_USERNAME --from-literal=jenkins-admin-password=$SET_PASSWORD -n default || true
+  kubectl create secret generic gitops-scmm --from-literal=USERNAME=$SET_USERNAME --from-literal=PASSWORD=$SET_PASSWORD -n default || true
+  kubectl create secret generic gitops-scmm --from-literal=USERNAME=$SET_USERNAME --from-literal=PASSWORD=$SET_PASSWORD -n argocd || true
+  # flux needs lowercase fieldnames
+  kubectl create secret generic gitops-scmm --from-literal=username=$SET_USERNAME --from-literal=password=$SET_PASSWORD -n fluxv1 || true
+  kubectl create secret generic gitops-scmm --from-literal=username=$SET_USERNAME --from-literal=password=$SET_PASSWORD -n fluxv2 || true
 }
 
 function pushPetClinicRepo() {
@@ -159,7 +181,7 @@ function pushPetClinicRepo() {
     git commit -m 'Add GitOps Pipeline and K8s resources' --quiet
 
     waitForScmManager
-    git push -u "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
+    git push -u "http://${SCM_USER}:${SCM_PWD}@${SCMM_IP}:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
   )
 
   rm -rf "${TMP_REPO}"
@@ -171,15 +193,14 @@ function pushHelmChartRepo() {
   TARGET_REPO_SCMM="$1"
 
   TMP_REPO=$(mktemp -d)
-
   git clone -n https://github.com/cloudogu/spring-boot-helm-chart.git "${TMP_REPO}" --quiet
   (
     cd "${TMP_REPO}"
     git tag 1.0.0
 
     waitForScmManager
-    git push "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
-    git push "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" refs/tags/1.0.0 --quiet
+    git push "http://${SCM_USER}:${SCM_PWD}@${SCMM_IP}:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
+    git push "http://${SCM_USER}:${SCM_PWD}@${SCMM_IP}:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" refs/tags/1.0.0 --quiet
   )
 
   rm -rf "${TMP_REPO}"
@@ -188,9 +209,9 @@ function pushHelmChartRepo() {
 }
 
 function waitForScmManager() {
-#  echo -n "Waiting for SCM-Manager to become available at http://localhost:${SCMM_PORT}/scm"
-  while [[ "$(curl -s -L -o /dev/null -w ''%{http_code}'' "http://localhost:${SCMM_PORT}/scm")" -ne "200" ]]; do
-#    echo -n .
+  echo -n "Waiting for SCM-Manager to become available at http://${SCMM_IP}:${SCMM_PORT}/scm"
+  while [[ "$(curl -s -L -o /dev/null -w ''%{http_code}'' "http://${SCMM_IP}:${SCMM_PORT}/scm")" -ne "200" ]]; do
+    echo -n .
     sleep 2
   done
 }
@@ -200,7 +221,7 @@ function initRepo() {
 
   TMP_REPO=$(mktemp -d)
 
-  git clone "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}"
+  git clone "http://${SCM_USER}:${SCM_PWD}@${SCMM_IP}:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}"
   (
     cd "${TMP_REPO}"
     git checkout main --quiet || git checkout -b main --quiet
@@ -212,7 +233,7 @@ function initRepo() {
       git commit -m "Add readme" --quiet
     fi
     waitForScmManager
-    git push -u "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force
+    git push -u "http://${SCM_USER}:${SCM_PWD}@${SCMM_IP}:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force
   )
 
   setMainBranch "${TARGET_REPO_SCMM}"
@@ -225,7 +246,7 @@ function initRepoWithSource() {
 
   TMP_REPO=$(mktemp -d)
 
-  git clone "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}"
+  git clone "http://${SCM_USER}:${SCM_PWD}@${SCMM_IP}:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}"
   (
     cd "${TMP_REPO}"
     cp -r "${PLAYGROUND_DIR}/${SOURCE_REPO}"/* .
@@ -233,7 +254,7 @@ function initRepoWithSource() {
     git add .
     git commit -m "Init ${TARGET_REPO_SCMM}" --quiet || true
     waitForScmManager
-    git push -u "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force
+    git push -u "http://${SCM_USER}:${SCM_PWD}@${SCMM_IP}:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force
   )
 
   rm -rf "${TMP_REPO}"
@@ -246,7 +267,7 @@ function setMainBranch() {
 
   curl -s -L -X PUT -H 'Content-Type: application/vnd.scmm-gitConfig+json' \
     --data-raw "{\"defaultBranch\":\"main\"}" \
-    "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/api/v2/config/git/${TARGET_REPO_SCMM}"
+    "http://${SCM_USER}:${SCM_PWD}@${SCMM_IP}:${SCMM_PORT}/scm/api/v2/config/git/${TARGET_REPO_SCMM}"
 }
 
 function printWelcomeScreen() {
@@ -342,7 +363,7 @@ function printParameters() {
 
 COMMANDS=$(getopt \
                 -o hwd \
-                --long help,fluxv1,fluxv2,argocd,welcome,debug \
+                --long help,fluxv1,fluxv2,argocd,welcome,debug,remote,username:,password: \
                 -- "$@")
 
 if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
@@ -354,12 +375,18 @@ INSTALL_ALL_MODULES=true
 INSTALL_FLUXV1=false
 INSTALL_FLUXV2=false
 INSTALL_ARGOCD=false
+REMOTE_CLUSTER=false
+SET_USERNAME="scmadmin"
+SET_PASSWORD="scmadmin"
 while true; do
   case "$1" in
     -h | --help     ) printUsage; exit 0 ;;
     --fluxv1        ) INSTALL_FLUXV1=true; INSTALL_ALL_MODULES=false; shift ;;
     --fluxv2        ) INSTALL_FLUXV2=true; INSTALL_ALL_MODULES=false; shift ;;
     --argocd        ) INSTALL_ARGOCD=true; INSTALL_ALL_MODULES=false; shift ;;
+    --remote        ) REMOTE_CLUSTER=true; shift ;;
+    --username      ) SET_USERNAME="$2"; shift 2 ;;
+    --password      ) SET_PASSWORD="$2"; shift 2 ;;
     -w | --welcome  ) printWelcomeScreen; exit 0 ;;
     -d | --debug    ) DEBUG=true; shift ;;
     --              ) shift; break ;;
@@ -370,5 +397,5 @@ done
 confirm "Applying gitops playground to kubernetes cluster: '$(kubectl config current-context)'." 'Continue? y/n [n]' ||
   exit 0
 
-main $DEBUG $INSTALL_ALL_MODULES $INSTALL_FLUXV1 $INSTALL_FLUXV2 $INSTALL_ARGOCD
+main $DEBUG $INSTALL_ALL_MODULES $INSTALL_FLUXV1 $INSTALL_FLUXV2 $INSTALL_ARGOCD $REMOTE_CLUSTER $SET_USERNAME $SET_PASSWORD
 

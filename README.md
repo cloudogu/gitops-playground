@@ -27,6 +27,8 @@ Reproducible infrastructure to showcase GitOps workflows. Derived from our [cons
 
 ## Prerequisites
 
+You will need Admin role fpr gce
+
 To be able to set up the infrastructure you need a linux machine (tested with Ubuntu 20.04) with docker installed.
 All other tools like kubectl, k3s and helm are set up using the `./scripts/init-cluster.sh` script.
 
