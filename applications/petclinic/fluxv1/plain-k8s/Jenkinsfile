@@ -95,6 +95,16 @@ node {
                                 [ deploymentFilename: "deployment.yaml",
                                   containerName: "spring-petclinic-plain",
                                   imageName: imageName ]
+                        ],
+                        // stages consists of [ $branchName: [ $deployConfig ]]
+                        // where $deployConfig is an array which consists of $deployDirectly
+                        //
+                        // deployDirectly: true  -> deploys directly
+                        // deployDirectly: false -> creates a PR (default)
+                        stages: [
+                                staging: [ deployDirectly: true ],
+                                production: [ deployDirectly: false ],
+                                qa: [ ]
                         ]
                 ]
 
@@ -131,17 +141,25 @@ String pushToConfigRepo(Map gitopsConfig) {
             git url: gitopsConfig.scmmConfigRepoUrl, branch: mainBranch, changelog: false, poll: false
             git.fetch()
 
-            def repoChanges = new HashSet<String>()
-            repoChanges += createApplicationForStageAndPushToBranch 'staging', mainBranch, applicationRepo, git, gitopsConfig
+            def allRepoChanges = new HashSet<String>()
 
-            git.checkoutOrCreate(application)
-            repoChanges += createApplicationForStageAndPushToBranch 'production', application, applicationRepo, git, gitopsConfig
+            gitopsConfig.stages.each{ stage, config ->
+                //checkout the main_branch before creating a new stage_branch. so it won't be branched off of an already checked out stage_branch
+                git.checkoutOrCreate(mainBranch)
 
-            changesOnGitOpsRepo = aggregateChangesOnGitOpsRepo(repoChanges)
-
-            if (changesOnGitOpsRepo) {
-                createPullRequest(gitopsConfig)
+                if(config.deployDirectly) {
+                    allRepoChanges += createApplicationForStageAndPushToBranch stage as String, mainBranch, applicationRepo, git, gitopsConfig
+                } else {
+                    String stageBranch = "${stage}_${application}"
+                    git.checkoutOrCreate(stageBranch)
+                    String repoChanges = createApplicationForStageAndPushToBranch stage as String, stageBranch, applicationRepo, git, gitopsConfig
+                    if(repoChanges) {
+                        createPullRequest(gitopsConfig, stage as String, stageBranch)
+                        allRepoChanges += repoChanges
+                    }
+                }
             }
+            changesOnGitOpsRepo = aggregateChangesOnGitOpsRepo(allRepoChanges)
         }
     } finally {
         sh "rm -rf ${configRepoTempDir}"
@@ -152,7 +170,7 @@ String pushToConfigRepo(Map gitopsConfig) {
 
 String createApplicationForStageAndPushToBranch(String stage, String branch, GitRepo applicationRepo, def git, Map gitopsConfig) {
 
-    String commitPrefix = stage == 'staging' ? '[S] ' : ''
+    String commitPrefix = "[${stage}] "
 
     sh "mkdir -p ${stage}/${application}/"
     sh "mkdir -p ${configDir}/"
@@ -200,7 +218,7 @@ String createApplicationCommitMessage(def git, def applicationRepo) {
     return message
 }
 
-void createPullRequest(Map gitopsConfig) {
+void createPullRequest(Map gitopsConfig, String stage, String sourceBranch) {
 
     withCredentials([usernamePassword(credentialsId: gitopsConfig.scmmCredentialsId, passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USER')]) {
 
@@ -208,7 +226,7 @@ void createPullRequest(Map gitopsConfig) {
                 'curl -s -o /dev/null -w "%{http_code}" ' +
                         "-u ${GIT_USER}:${GIT_PASSWORD} " +
                         '-H "Content-Type: application/vnd.scmm-pullRequest+json;v=2" ' +
-                        '--data \'{"title": "created by service ' + application + '", "source": "' + application + '", "target": "' + mainBranch + '"}\' ' +
+                        '--data \'{"title": "created by service ' + application + ' for stage ' + stage + '", "source": "' + sourceBranch + '", "target": "' + mainBranch + '"}\' ' +
                         gitopsConfig.scmmPullRequestUrl
 
         // For debugging the quotation of the shell script, just do: echo script
