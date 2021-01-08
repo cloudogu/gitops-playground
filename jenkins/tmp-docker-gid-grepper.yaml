@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: tmp-docker-gid-grepper
+spec:
+  containers:
+    - args:
+        - sleep
+        - "10000"
+      image: bash:5.1.4
+      name: tmp-docker-gid-grepper
+      volumeMounts:
+        - name: group
+          mountPath: /etc/group
+          readOnly: true
+  nodeSelector:
+    node: jenkins
+  volumes:
+    - name: group
+      hostPath:
+        path: /etc/group
