@@ -75,7 +75,7 @@ function main() {
     cleanup > /dev/null 2>&1 & spinner "Cleaning up"
   fi
 
-  confirm 'Remove Jenkins agent workspace in this folder as well? y/n [n]' && rm -rf /tmp/k8s-gitops-playground-jenkins-agent
+  confirm 'Remove Jenkins agent workspace as well? (tmp/k8s-gitops-playground-jenkins-agent)' 'y/n [n]' && rm -rf /tmp/k8s-gitops-playground-jenkins-agent
 }
 
 function printUsage()
