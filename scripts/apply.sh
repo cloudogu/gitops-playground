@@ -2,9 +2,6 @@
 set -o errexit -o nounset -o pipefail
 #set -x
 
-SCM_USER=scmadmin
-SCM_PWD=scmadmin
-
 BASEDIR=$(dirname $0)
 ABSOLUTE_BASEDIR="$(cd ${BASEDIR} && pwd)"
 PLAYGROUND_DIR="$(cd ${BASEDIR} && cd .. && pwd)"
@@ -35,18 +32,18 @@ function main() {
     applyBasicK8sResources
     initSCMM
 
-    if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV1 = true ]]; then
-      initFluxV1
-    fi
-    if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV2 = true ]]; then
-      initFluxV2
-    fi
-    if [[ $INSTALL_ALL_MODULES = true || $INSTALL_ARGOCD = true ]]; then
-      initArgo
-    fi
-
-    # Start Jenkins last, so all repos have been initialized when repo indexing starts
-    initJenkins
+#    if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV1 = true ]]; then
+#      initFluxV1
+#    fi
+#    if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV2 = true ]]; then
+#      initFluxV2
+#    fi
+#    if [[ $INSTALL_ALL_MODULES = true || $INSTALL_ARGOCD = true ]]; then
+#      initArgo
+#    fi
+#
+#    # Start Jenkins last, so all repos have been initialized when repo indexing starts
+#    initJenkins
 
   else
     applyBasicK8sResources > /dev/null 2>&1 & spinner "Basic setup..."
@@ -69,17 +66,6 @@ function main() {
 #  # Create Jenkins agent working dir explicitly. Otherwise it seems to be owned by root
 #  mkdir -p ${JENKINS_HOME}
   printWelcomeScreen
-}
-
-# getExternalIP servicename namespace
-function getExternalIP() {
-  external_ip=""
-  while [ -z $external_ip ]; do
-#    echo "Waiting for end point..."
-    external_ip=$(kubectl -n $2 get svc $1 --template="{{range .status.loadBalancer.ingress}}{{.ip}}{{end}}")
-    [ -z "$external_ip" ] && sleep 10
-  done
-  echo $external_ip
 }
 
 function applyBasicK8sResources() {
@@ -146,8 +132,9 @@ function initArgo() {
   helm upgrade -i argocd --values argocd/values.yaml --version 2.9.5 argo/argo-cd -n argocd
   kubectl apply -f argocd/resources -n argocd || true
 
+  BCRYPT_PW=$(bcryptPassword "${SET_PASSWORD}")
   # set argocd admin password to 'admin' here, because it does not work through the helm chart
-  kubectl patch secret -n argocd argocd-secret -p '{"stringData": { "admin.password": "$2y$10$GsLZ7KlAhW9xNsb10YO3/O6jlJKEAU2oUrBKtlF/g1wVlHDJYyVom"}}' || true
+  kubectl patch secret -n argocd argocd-secret -p "{\"stringData\": { \"admin.password\": \"${BCRYPT_PW}\"}" || true
 
   pushPetClinicRepo 'applications/petclinic/argocd/plain-k8s' 'argocd/petclinic-plain'
   initRepo 'argocd/gitops'
@@ -155,12 +142,14 @@ function initArgo() {
 }
 
 function createSecrets() {
+  kubectl create secret generic scmm-credentials --from-literal=USERNAME=$SET_USERNAME --from-literal=PASSWORD=$SET_PASSWORD -n default || true
   kubectl create secret generic jenkins-credentials --from-literal=jenkins-admin-user=$SET_USERNAME --from-literal=jenkins-admin-password=$SET_PASSWORD -n default || true
-  kubectl create secret generic gitops-scmm --from-literal=USERNAME=$SET_USERNAME --from-literal=PASSWORD=$SET_PASSWORD -n default || true
-  kubectl create secret generic gitops-scmm --from-literal=USERNAME=$SET_USERNAME --from-literal=PASSWORD=$SET_PASSWORD -n argocd || true
+
+  kubectl create secret generic gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=$SET_PASSWORD -n default || true
+  kubectl create secret generic gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=$SET_PASSWORD -n argocd || true
   # flux needs lowercase fieldnames
-  kubectl create secret generic gitops-scmm --from-literal=username=$SET_USERNAME --from-literal=password=$SET_PASSWORD -n fluxv1 || true
-  kubectl create secret generic gitops-scmm --from-literal=username=$SET_USERNAME --from-literal=password=$SET_PASSWORD -n fluxv2 || true
+  kubectl create secret generic gitops-scmm --from-literal=username=gitops --from-literal=password=$SET_PASSWORD -n fluxv1 || true
+  kubectl create secret generic gitops-scmm --from-literal=username=gitops --from-literal=password=$SET_PASSWORD -n fluxv2 || true
 }
 
 function pushPetClinicRepo() {
@@ -181,7 +170,7 @@ function pushPetClinicRepo() {
     git commit -m 'Add GitOps Pipeline and K8s resources' --quiet
 
     waitForScmManager
-    git push -u "http://${SCM_USER}:${SCM_PWD}@${SCMM_IP}:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
+    git push -u "http://${SET_USERNAME}:${SET_PASSWORD}@${SCMM_IP}:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
   )
 
   rm -rf "${TMP_REPO}"
@@ -199,8 +188,8 @@ function pushHelmChartRepo() {
     git tag 1.0.0
 
     waitForScmManager
-    git push "http://${SCM_USER}:${SCM_PWD}@${SCMM_IP}:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
-    git push "http://${SCM_USER}:${SCM_PWD}@${SCMM_IP}:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" refs/tags/1.0.0 --quiet
+    git push "http://${SET_USERNAME}:${SET_PASSWORD}@${SCMM_IP}:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
+    git push "http://${SET_USERNAME}:${SET_PASSWORD}@${SCMM_IP}:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" refs/tags/1.0.0 --quiet
   )
 
   rm -rf "${TMP_REPO}"
@@ -221,7 +210,7 @@ function initRepo() {
 
   TMP_REPO=$(mktemp -d)
 
-  git clone "http://${SCM_USER}:${SCM_PWD}@${SCMM_IP}:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}"
+  git clone "http://${SET_USERNAME}:${SET_PASSWORD}@${SCMM_IP}:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}"
   (
     cd "${TMP_REPO}"
     git checkout main --quiet || git checkout -b main --quiet
@@ -233,7 +222,7 @@ function initRepo() {
       git commit -m "Add readme" --quiet
     fi
     waitForScmManager
-    git push -u "http://${SCM_USER}:${SCM_PWD}@${SCMM_IP}:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force
+    git push -u "http://${SET_USERNAME}:${SET_PASSWORD}@${SCMM_IP}:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force
   )
 
   setMainBranch "${TARGET_REPO_SCMM}"
@@ -246,7 +235,7 @@ function initRepoWithSource() {
 
   TMP_REPO=$(mktemp -d)
 
-  git clone "http://${SCM_USER}:${SCM_PWD}@${SCMM_IP}:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}"
+  git clone "http://${SET_USERNAME}:${SET_PASSWORD}@${SCMM_IP}:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}"
   (
     cd "${TMP_REPO}"
     cp -r "${PLAYGROUND_DIR}/${SOURCE_REPO}"/* .
@@ -254,7 +243,7 @@ function initRepoWithSource() {
     git add .
     git commit -m "Init ${TARGET_REPO_SCMM}" --quiet || true
     waitForScmManager
-    git push -u "http://${SCM_USER}:${SCM_PWD}@${SCMM_IP}:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force
+    git push -u "http://${SET_USERNAME}:${SET_PASSWORD}@${SCMM_IP}:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force
   )
 
   rm -rf "${TMP_REPO}"
@@ -267,7 +256,7 @@ function setMainBranch() {
 
   curl -s -L -X PUT -H 'Content-Type: application/vnd.scmm-gitConfig+json' \
     --data-raw "{\"defaultBranch\":\"main\"}" \
-    "http://${SCM_USER}:${SCM_PWD}@${SCMM_IP}:${SCMM_PORT}/scm/api/v2/config/git/${TARGET_REPO_SCMM}"
+    "http://${SET_USERNAME}:${SET_PASSWORD}@${SCMM_IP}:${SCMM_PORT}/scm/api/v2/config/git/${TARGET_REPO_SCMM}"
 }
 
 function printWelcomeScreen() {
@@ -379,8 +368,8 @@ INSTALL_FLUXV1=false
 INSTALL_FLUXV2=false
 INSTALL_ARGOCD=false
 REMOTE_CLUSTER=false
-SET_USERNAME="scmadmin"
-SET_PASSWORD="scmadmin"
+SET_USERNAME="admin"
+SET_PASSWORD="admin"
 while true; do
   case "$1" in
     -h | --help     ) printUsage; exit 0 ;;
@@ -388,7 +377,6 @@ while true; do
     --fluxv2        ) INSTALL_FLUXV2=true; INSTALL_ALL_MODULES=false; shift ;;
     --argocd        ) INSTALL_ARGOCD=true; INSTALL_ALL_MODULES=false; shift ;;
     --remote        ) REMOTE_CLUSTER=true; shift ;;
-    --username      ) SET_USERNAME="$2"; shift 2 ;;
     --password      ) SET_PASSWORD="$2"; shift 2 ;;
     -w | --welcome  ) printWelcomeScreen; exit 0 ;;
     -d | --debug    ) DEBUG=true; shift ;;

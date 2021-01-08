@@ -37,6 +37,9 @@ extraEnvFrom: |
   - prefix: GITOPS_
     secretRef:
       name: gitops-scmm
+  - prefix: ADMIN_
+    secretRef:
+      name: scmm-credentials
 
 lifecycleHooks: |-
   postStart:

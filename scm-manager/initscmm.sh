@@ -16,6 +16,8 @@ function main() {
   setConfig
 
   addUser "${GITOPS_USERNAME}" "${GITOPS_PASSWORD}" "gitops@mail.de"
+  addUser "${ADMIN_USERNAME}" "${ADMIN_PASSWORD}" "admin@mail.de"
+  setAdmin "${ADMIN_USERNAME}"
 
   ### FluxV1 Repos
   addRepo "fluxv1" "gitops"
@@ -51,6 +53,9 @@ function main() {
   setPermission "common" "spring-boot-helm-chart" "_anonymous" "READ"
 
   configJenkins
+
+  deleteUser "${ADMIN_USERNAME}" "${ADMIN_PASSWORD}" "${SCM_USER}"
+
   rm curl
 }
 
@@ -70,6 +75,17 @@ function addUser() {
   ./curl -i -L -X POST -H "Content-Type: application/vnd.scmm-user+json;v=2" \
     --data "{\"name\":\"${1}\",\"displayName\":\"${1}\",\"mail\":\"${3}\",\"password\":\"${2}\",\"active\":true,\"_links\":{}}" \
     "http://${SCM_USER}:${SCM_PWD}@${HOST}/scm/api/v2/users"
+}
+
+function setAdmin() {
+  ./curl -i -L -X PUT -H "Content-Type: application/vnd.scmm-permissionCollection+json;v=2" \
+    --data "{\"permissions\":[\"*\"]}" \
+    "http://${SCM_USER}:${SCM_PWD}@${HOST}/scm/api/v2/users/${1}/permissions"
+}
+
+function deleteUser() {
+  ./curl -i -L -X DELETE \
+    "http://${1}:${2}@${HOST}/scm/api/v2/users/${3}"
 }
 
 function setPermission() {
