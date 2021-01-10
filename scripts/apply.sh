@@ -104,7 +104,7 @@ function initSCMM() {
 function initJenkins() {
   # Find out the docker group and put the agent into it. Otherwise it has no permission to access  the docker host.
   helm upgrade -i jenkins --values jenkins/values.yaml \
-    --set agent.runAsGroup=$(queryDockerGroupOfJenkinsNode) \
+    $(setUserIfNecessary) --set agent.runAsGroup=$(queryDockerGroupOfJenkinsNode) \
     --version 2.13.0 jenkins/jenkins -n default
 }
 
@@ -119,6 +119,12 @@ function queryDockerGroupOfJenkinsNode() {
   
   # This call might block some (unnecessary) seconds so move to background
   kubectl delete -f jenkins/tmp-docker-gid-grepper.yaml > /dev/null &
+}
+
+function setUserIfNecessary() {
+  # Run Jenkins and Agent pods as the current user.
+  # Avoids file permission problems when accessing files on the host that were written from the pods 
+  [[ $REMOTE_CLUSTER = true ]] && echo "--set master.runAsUser=$(id -u) --set agent.runAsUser=$(id -u)"
 }
 
 function initFluxV1() {
