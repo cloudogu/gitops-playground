@@ -32,18 +32,18 @@ function main() {
     applyBasicK8sResources
     initSCMM
 
-#    if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV1 = true ]]; then
-#      initFluxV1
-#    fi
-#    if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV2 = true ]]; then
-#      initFluxV2
-#    fi
-#    if [[ $INSTALL_ALL_MODULES = true || $INSTALL_ARGOCD = true ]]; then
-#      initArgo
-#    fi
-#
-#    # Start Jenkins last, so all repos have been initialized when repo indexing starts
-#    initJenkins
+    if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV1 = true ]]; then
+      initFluxV1
+    fi
+    if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV2 = true ]]; then
+      initFluxV2
+    fi
+    if [[ $INSTALL_ALL_MODULES = true || $INSTALL_ARGOCD = true ]]; then
+      initArgo
+    fi
+
+    # Start Jenkins last, so all repos have been initialized when repo indexing starts
+    initJenkins
 
   else
     applyBasicK8sResources > /dev/null 2>&1 & spinner "Basic setup..."
@@ -147,7 +147,7 @@ function initArgo() {
 
   BCRYPT_PW=$(bcryptPassword "${SET_PASSWORD}")
   # set argocd admin password to 'admin' here, because it does not work through the helm chart
-  kubectl patch secret -n argocd argocd-secret -p "{\"stringData\": { \"admin.password\": \"${BCRYPT_PW}\"}" || true
+  kubectl patch secret -n argocd argocd-secret -p '{"stringData": { "admin.password": "'${BCRYPT_PW}'"}}' || true
 
   pushPetClinicRepo 'applications/petclinic/argocd/plain-k8s' 'argocd/petclinic-plain'
   initRepo 'argocd/gitops'

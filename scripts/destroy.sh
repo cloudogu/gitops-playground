@@ -38,8 +38,9 @@ function removeJenkins() {
 
 function removeK8sResources() {
   helm delete docker-registry -n default || true
-  kubectl delete secret gitops-scmm -n default || true
   kubectl delete secret jenkins-credentials -n default || true
+  kubectl delete secret scmm-credentials -n default || true
+  kubectl delete secret gitops-scmm -n default || true
   kubectl delete secret gitops-scmm -n argocd || true
   kubectl delete secret gitops-scmm -n fluxv1 || true
   kubectl delete secret gitops-scmm -n fluxv2 || true
