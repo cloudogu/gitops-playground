@@ -16,9 +16,6 @@ provider "google" {
   project     = var.gce_project
 }
 
-
-
-# k8s cluster
 resource "google_container_cluster" "cluster" {
   name               = var.cluster_name
   location           = var.gce_location
@@ -28,6 +25,11 @@ resource "google_container_cluster" "cluster" {
   # Initial node gets destroyed immediately and is replaced by node pool
   initial_node_count       = 1
   remove_default_node_pool = true
+
+  # Add entry to local kubeconfig automatically
+  provisioner "local-exec" {
+    command = "gcloud container clusters get-credentials ${var.cluster_name} --zone ${var.gce_location} --project ${var.gce_project}"
+  }
 }
 
 

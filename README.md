@@ -73,59 +73,97 @@ You will need the `OWNER` role fpr GKE, because `apply.sh` applies `ClusterRoles
 
 #### Create Cluster using Terraform
 The following steps are deploying a k8s cluster with a node pool to GKE in the europe-west-3 region.
-The required terraform files are located in the ./terraform/ folder.
-You have to change `PROJECT_ID` to the correct ID of your Google Cloud project.
+The required terraform files are located in the `./terraform/` folder.
+You have to set `PROJECT_ID` to the correct ID of your Google Cloud project.
 
 Login to GCP from your local machine:
-```
+
+```shell
 gcloud auth login
 ```
 
 Select the project, where you want to deploy the cluster:
-```
-gcloud config set project PROJECT_ID
+```shell
+PROJECT_ID=<your project ID goes here>
+gcloud config set project ${PROJECT_ID}
 ```
 
 Create a service account:
+```shell
+gcloud iam service-accounts create terraform-cluster \
+  --display-name terraform-cluster --project ${PROJECT_ID}
 ```
-gcloud iam service-accounts create terraform-cluster --display-name terraform-cluster --project PROJECT_ID
+
+Authorize Service Accout
+
+```shell
+gcloud projects add-iam-policy-binding ${PROJECT} \
+    --member terraform-cluster@${PROJECT_ID}.iam.gserviceaccount.com --role=roles/editor
 ```
 
 Create an account.json file, which contains the keys for the service account.
 You will need this file to apply the infrastructure:
-```
-gcloud iam service-accounts keys create --iam-account terraform-cluster@PROJECT_ID.iam.gserviceaccount.com terraform/account.json
+```shell
+gcloud iam service-accounts keys create \
+  --iam-account terraform-cluster@${PROJECT_ID}.iam.gserviceaccount.com \
+  terraform/account.json
 ```
 
-Create a bucket for the terraform state file:
+##### State
+
+You can either use a remote state (default, described bellow) or use a local state by changing the following in `main.tf`: 
 ```
-gsutil mb -p PROJECT_ID -l EUROPE-WEST3 gs://BUCKET_NAME
+-  backend "gcs" {}
++  backend "local" {}
+```
+
+If you want to work several persons on the project, use a remote state. The following describes how it works:
+
+Create a bucket for the terraform state file:
+```shell
+BUCKET_NAME=terraform-cluster-state
+gsutil mb -p ${PROJECT_ID} -l EUROPE-WEST3 gs://${BUCKET_NAME}
 ```
 
 Grant the service account permissions for the bucket:
+```shell
+gsutil iam ch \
+  serviceAccount:terraform-cluster@${PROJECT_ID}.iam.gserviceaccount.com:roles/storage.admin \
+  gs://${BUCKET_NAME}
 ```
-gsutil iam ch serviceAccount:terraform-cluster@PROJECT_ID.iam.gserviceaccount.com:roles/storage.admin gs://BUCKET_NAME
-```
+
+##### Create cluster
 
 Before continuing with the terraform steps, you have to open the `values.tfvars` file
 and edit the `gce_project` value to your specific ID.
 
-
-Initialize the terraform backend:
-```
+For local state `terraform init` suffices.
+```shell
 cd terraform
-terraform init -backend-config "credentials=account.json" \
-  -backend-config "bucket=BUCKET_NAME"
+terraform init  \
+  -backend-config "credentials=account.json" \
+  -backend-config "bucket=${BUCKET_NAME}\"
 ```
 
 Apply infra:
-```
+```shell
 terraform apply -var-file values.tfvars
 ```
 
+terraform apply already adds an entry to your local `kubeconfig` and activate the context. That is calling 
+`kubectl get pod` should already connect to the cluser.
+
+If not, you can create add an entry to your local `kubeconfig` like so:
+
+```shell
+gcloud container clusters get-credentials ${cluster_name} --zone ${gce_location} --project ${gce_project}
+```
+
+##### Delete Cluster
+
 Once you're done you can destroy the cluster using
 
-```
+```shell
 terraform destroy -var-file values.tfvars
 ```
 
@@ -137,7 +175,6 @@ You can also just install one GitOps module like Flux V1 or ArgoCD via parameter
 Use `./scripts/apply.sh --help` for more information.
 
 The scripts also prints a little intro on how to get started with a GitOps deployment.
-
 
 ## Applications
 
