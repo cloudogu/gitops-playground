@@ -366,6 +366,10 @@ function printParameters() {
     echo "    | --fluxv2   >> Install the Flux V2 module"
     echo "    | --argocd   >> Install the ArgoCD module"
     echo
+    echo "    | --remote   >> Install on remote Cluster e.g. gcp"
+    echo
+    echo "    | --password=myPassword   >> Set initial admin passwords to 'myPassword'"
+    echo
     echo " -w | --welcome  >> Welcome screen"
     echo
     echo " -d | --debug    >> Debug output"
