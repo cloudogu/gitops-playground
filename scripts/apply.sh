@@ -28,7 +28,9 @@ function main() {
   SET_USERNAME=$7
   SET_PASSWORD=$8
 
-  if [[ $DEBUG = true ]]; then
+  checkPrerequisites
+
+  if [[ $DEBUG == true ]]; then
     applyBasicK8sResources
     initSCMM
 
@@ -66,12 +68,21 @@ function main() {
   printWelcomeScreen
 }
 
+function checkPrerequisites() {
+  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_ARGOCD == true ]]; then
+    if ! command -v htpasswd &>/dev/null; then
+      echo "Missing required command htpasswd"
+      exit 1
+    fi
+  fi
+}
+
 function applyBasicK8sResources() {
-  # Mark the first node for Jenkins and agents. See jenkins/values.yamls "agent.workingDir" for details.   
+  # Mark the first node for Jenkins and agents. See jenkins/values.yamls "agent.workingDir" for details.
   # Remove first (in case new nodes were added)
-  kubectl label --all nodes node- > /dev/null
+  kubectl label --all nodes node- >/dev/null
   kubectl label $(kubectl get node -o name | sort | head -n 1) node=jenkins
-  
+
   kubectl apply -f k8s-namespaces || true
 
   createSecrets
@@ -89,10 +100,10 @@ function applyBasicK8sResources() {
 
 function initSCMM() {
   helm upgrade -i scmm --values scm-manager/values.yaml \
-  --set-file=postStartHookScript=scm-manager/initscmm.sh \
-  scm-manager/chart -n default
+    --set-file=postStartHookScript=scm-manager/initscmm.sh \
+    scm-manager/chart -n default
 
-  if [[ $REMOTE_CLUSTER = true ]]; then
+  if [[ $REMOTE_CLUSTER == true ]]; then
     echo "getting external scmm ip..."
     SCMM_IP=$(getExternalIP "scmm-scm-manager" "default")
     echo "external scmm ip is: ${SCMM_IP}"
@@ -109,22 +120,21 @@ function initJenkins() {
 }
 
 function queryDockerGroupOfJenkinsNode() {
-  kubectl apply -f jenkins/tmp-docker-gid-grepper.yaml > /dev/null
-  until kubectl get po --field-selector=status.phase=Running | grep tmp-docker-gid-grepper > /dev/null
-  do
+  kubectl apply -f jenkins/tmp-docker-gid-grepper.yaml >/dev/null
+  until kubectl get po --field-selector=status.phase=Running | grep tmp-docker-gid-grepper >/dev/null; do
     sleep 1
   done
-  
+
   kubectl exec tmp-docker-gid-grepper -- cat /etc/group | grep docker | cut -d: -f3
-  
+
   # This call might block some (unnecessary) seconds so move to background
-  kubectl delete -f jenkins/tmp-docker-gid-grepper.yaml > /dev/null &
+  kubectl delete -f jenkins/tmp-docker-gid-grepper.yaml >/dev/null &
 }
 
 function setUserIfNecessary() {
   # Run Jenkins and Agent pods as the current user.
-  # Avoids file permission problems when accessing files on the host that were written from the pods 
-  [[ $REMOTE_CLUSTER = true ]] && echo "--set master.runAsUser=$(id -u) --set agent.runAsUser=$(id -u)"
+  # Avoids file permission problems when accessing files on the host that were written from the pods
+  [[ $REMOTE_CLUSTER == true ]] && echo "--set master.runAsUser=$(id -u) --set agent.runAsUser=$(id -u)"
 }
 
 function initFluxV1() {
@@ -177,7 +187,7 @@ function pushPetClinicRepo() {
 
   TMP_REPO=$(mktemp -d)
 
-  git clone -n https://github.com/cloudogu/spring-petclinic.git "${TMP_REPO}" --quiet > /dev/null 2>&1
+  git clone -n https://github.com/cloudogu/spring-petclinic.git "${TMP_REPO}" --quiet >/dev/null 2>&1
   (
     cd "${TMP_REPO}"
     # Checkout a defined commit in order to get a deterministic result
@@ -292,7 +302,7 @@ function printWelcomeScreen() {
   echo -e "| - \e[32mhttp://localhost:9091/scm/repo/fluxv2/petclinic-plain/code/sources/main/\e[0m                                            |"
   echo -e "| - \e[32mhttp://localhost:9091/scm/repo/argocd/petclinic-plain/code/sources/main/\e[0m                                            |"
   echo "|                                                                                                                       |"
-  echo -e "| Credentials for SCM-Manager and Jenkins are: \e[31mscmadmin/scmadmin\e[0m                                                        |"
+  echo -e "| Credentials for SCM-Manager and Jenkins are: \e[31m${SET_USERNAME}/${SET_PASSWORD}\e[0m                                                        |"
   echo "|                                                                                                                       |"
   echo "| Right now, four Jenkins jobs are running: (when Jenkins is successfully deployed and running)                         |"
   echo "|                                                                                                                       |"

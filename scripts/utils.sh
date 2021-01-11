@@ -16,12 +16,13 @@ function confirm() {
   esac
 }
 
-# getExternalIP servicename namespace
 function getExternalIP() {
+  servicename=$1
+  namespace=$2
+  
   external_ip=""
   while [ -z $external_ip ]; do
-#    echo "Waiting for end point..."
-    external_ip=$(kubectl -n $2 get svc $1 --template="{{range .status.loadBalancer.ingress}}{{.ip}}{{end}}")
+    external_ip=$(kubectl -n ${namespace} get svc ${servicename} --template="{{range .status.loadBalancer.ingress}}{{.ip}}{{end}}")
     [ -z "$external_ip" ] && sleep 10
   done
   echo $external_ip
