@@ -16,6 +16,8 @@ function main() {
   setConfig
 
   addUser "${GITOPS_USERNAME}" "${GITOPS_PASSWORD}" "gitops@mail.de"
+
+  # We can not set the initial user through SCM-Manager configuration, so we set the user via REST API
   addUser "${ADMIN_USERNAME}" "${ADMIN_PASSWORD}" "admin@mail.de"
   setAdmin "${ADMIN_USERNAME}"
 
@@ -54,6 +56,7 @@ function main() {
 
   configJenkins
 
+  # delete the default initial user scmadmin/scmadmin
   deleteUser "${ADMIN_USERNAME}" "${ADMIN_PASSWORD}" "${SCM_USER}"
 
   rm curl

@@ -329,7 +329,7 @@ function printWelcomeScreen() {
   echo -e "| - Pull requests: \e[32mhttp://localhost:9091/scm/repo/argocd/gitops/pull-requests\e[0m                                           |"
   echo "|                                                                                                                       |"
   echo -e "| There is also the ArgoCD UI which can be found at \e[32mhttp://localhost:9092/\e[0m                                              |"
-  echo -e "| Credentials for the ArgoCD UI are: \e[31madmin/admin\e[0m                                                                        |"
+  echo -e "| Credentials for the ArgoCD UI are: \e[31m${SET_USERNAME}/${SET_PASSWORD}\e[0m                                                                        |"
   echo "|                                                                                                                       |"
   echo "| After a successful Jenkins build, the application will be deployed into the cluster.                                  |"
   echo "| This may take a minute for the GitOps operator to sync.                                                               |"
