@@ -8,10 +8,10 @@ master:
   # Note: When updating, check if PATH of image still matches the one listed in "containerEnv"
   tag: 2.249.3-lts-jdk11
 
-#  serviceType: NodePort
-#  nodePort: 9090
   serviceType: LoadBalancer
-  servicePort: 8080
+  servicePort: 9090
+  # Is ignored when type is LoadBalancer. For local cluster we change the service type to NodePort
+  nodePort: 9090
 
   additionalPlugins:
     - docker-workflow:1.25
