@@ -30,42 +30,34 @@ function main() {
 
   checkPrerequisites
 
-  if [[ $DEBUG == true ]]; then
-    applyBasicK8sResources
-    initSCMM
+  evalWithSpinner applyBasicK8sResources "Basic setup & starting registry..."
+  evalWithSpinner initSCMM "Starting SCM-Manager..."
 
-    if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV1 = true ]]; then
-      initFluxV1
-    fi
-    if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV2 = true ]]; then
-      initFluxV2
-    fi
-    if [[ $INSTALL_ALL_MODULES = true || $INSTALL_ARGOCD = true ]]; then
-      initArgo
-    fi
-
-    # Start Jenkins last, so all repos have been initialized when repo indexing starts
-    initJenkins
-
-  else
-    applyBasicK8sResources > /dev/null 2>&1 & spinner "Basic setup..."
-    initSCMM > /dev/null 2>&1 & spinner "Starting SCM-Manager..."
-
-    if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV1 = true ]]; then
-      initFluxV1 > /dev/null 2>&1 & spinner "Starting Flux V1..."
-    fi
-    if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV2 = true ]]; then
-      initFluxV2 > /dev/null 2>&1 & spinner "Starting Flux V2..."
-    fi
-    if [[ $INSTALL_ALL_MODULES = true || $INSTALL_ARGOCD = true ]]; then
-      initArgo > /dev/null 2>&1 & spinner "Starting ArgoCD..."
-    fi
-
-    # Start Jenkins last, so all repos have been initialized when repo indexing starts
-    initJenkins > /dev/null 2>&1 & spinner "Starting Jenkins..."
+  if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV1 = true ]]; then
+    evalWithSpinner initFluxV1 "Starting Flux V1..."
+  fi
+  if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV2 = true ]]; then
+    evalWithSpinner initFluxV2 "Starting Flux V2..."
+  fi
+  if [[ $INSTALL_ALL_MODULES = true || $INSTALL_ARGOCD = true ]]; then
+    evalWithSpinner initArgo "Starting ArgoCD..."
   fi
 
+  # Start Jenkins last, so all repos have been initialized when repo indexing starts
+  evalWithSpinner initJenkins "Starting Jenkins..."
+  
   printWelcomeScreen
+}
+
+function evalWithSpinner() {
+  commandToEval=$1
+  spinnerOutput=$2
+  
+  if [[ $DEBUG == true ]]; then
+    eval "$commandToEval"
+  else 
+    eval "$commandToEval" > /dev/null 2>&1 & spinner "${spinnerOutput}"
+  fi
 }
 
 function checkPrerequisites() {
