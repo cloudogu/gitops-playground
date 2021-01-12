@@ -11,6 +11,6 @@ spec:
   - namespace: argocd-staging
     server: https://kubernetes.default.svc
   sourceRepos:
-  - http://scmm-scm-manager.default.svc.cluster.local:9091/scm/repo/argocd/gitops
-  - http://scmm-scm-manager.default.svc.cluster.local:9091/scm/repo/argocd/nginx-helm
+  - http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/gitops
+  - http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/nginx-helm
   - https://charts.bitnami.com/bitnami

@@ -1,2 +1,3 @@
 service:
-  port: 9004
+  port: 80
+  nodePort: 9004

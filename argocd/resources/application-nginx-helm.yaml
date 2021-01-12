@@ -10,7 +10,7 @@ spec:
   project: playground
   source:
     path: .
-    repoURL: http://scmm-scm-manager.default.svc.cluster.local:9091/scm/repo/argocd/nginx-helm
+    repoURL: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/nginx-helm
     targetRevision: main
   syncPolicy:
     automated: {}

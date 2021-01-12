@@ -1,7 +1,7 @@
 env:
   secretName: gitops-scmm
 git:
-  url: "http://$(username):$(password)@scmm-scm-manager.default.svc.cluster.local:9091/scm/repo/fluxv1/gitops"
+  url: "http://$(username):$(password)@scmm-scm-manager.default.svc.cluster.local/scm/repo/fluxv1/gitops"
   branch: "main"
   readonly: true
   pollInterval: "1m"

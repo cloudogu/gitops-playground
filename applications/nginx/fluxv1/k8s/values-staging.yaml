@@ -1,3 +1,5 @@
 namespace: fluxv1-staging
 service:
-  port: 9005
+  port: 80
+  nodePorts:
+    http: 9005

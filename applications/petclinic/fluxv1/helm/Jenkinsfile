@@ -2,14 +2,14 @@
 
 String getApplication() { "spring-petclinic-helm" }
 String getScmManagerCredentials() { 'scmm-user' }
-String getConfigRepositoryUrl() { 'scmm-scm-manager:9091/scm/repo/fluxv1/gitops' }
-String getConfigRepositoryPRUrl() { 'scmm-scm-manager:9091/scm/api/v2/pull-requests/fluxv1/gitops' }
+String getConfigRepositoryUrl() { 'scmm-scm-manager/scm/repo/fluxv1/gitops' }
+String getConfigRepositoryPRUrl() { 'scmm-scm-manager/scm/api/v2/pull-requests/fluxv1/gitops' }
 // The docker daemon cant use the k8s service name, because it is not running inside the cluster
 String getDockerRegistryBaseUrl() { "localhost:30000" }
 String getCesBuildLibVersion() { '1.44.3' }
 String getCesBuildLibRepo() { 'https://github.com/cloudogu/ces-build-lib/' }
 String getHelmImage() { 'ghcr.io/cloudogu/helm:3.4.1-1' }
-String getHelmChartRepository() { 'scmm-scm-manager.default.svc.cluster.local:9091/scm/repo/common/spring-boot-helm-chart' }
+String getHelmChartRepository() { 'scmm-scm-manager.default.svc.cluster.local/scm/repo/common/spring-boot-helm-chart' }
 String getHelmChartName() { "springboot" }
 String getHelmChartVersion() { "1.0.0" }
 String getMainBranch() { 'main' }

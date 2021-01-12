@@ -9,7 +9,7 @@ master:
   tag: 2.249.3-lts-jdk11
 
   serviceType: LoadBalancer
-  servicePort: 9090
+  servicePort: 80
   # Is ignored when type is LoadBalancer. For local cluster we change the service type to NodePort
   nodePort: 9090
 
@@ -66,7 +66,7 @@ master:
                   branchSources {
                       git {
                           id('fluxv1-petclinic-plain')
-                          remote('http://scmm-scm-manager:9091/scm/repo/fluxv1/petclinic-plain')
+                          remote('http://scmm-scm-manager/scm/repo/fluxv1/petclinic-plain')
                           credentialsId('scmm-user')
                       }
                   }
@@ -76,7 +76,7 @@ master:
                 branchSources {
                   git {
                     id('fluxv1-petclinic-helm')
-                    remote('http://scmm-scm-manager:9091/scm/repo/fluxv1/petclinic-helm')
+                    remote('http://scmm-scm-manager/scm/repo/fluxv1/petclinic-helm')
                     credentialsId('scmm-user')
                   }
                 }
@@ -86,7 +86,7 @@ master:
                   branchSources {
                       git {
                           id('fluxv1-nginx')
-                          remote('http://scmm-scm-manager:9091/scm/repo/fluxv1/nginx-helm')
+                          remote('http://scmm-scm-manager/scm/repo/fluxv1/nginx-helm')
                           credentialsId('scmm-user')
                       }
                   }
@@ -96,7 +96,7 @@ master:
                   branchSources {
                       git {
                           id('fluxv2-petclinic-plain')
-                          remote('http://scmm-scm-manager:9091/scm/repo/fluxv2/petclinic-plain')
+                          remote('http://scmm-scm-manager/scm/repo/fluxv2/petclinic-plain')
                           credentialsId('scmm-user')
                       }
                   }
@@ -106,7 +106,7 @@ master:
                   branchSources {
                       git {
                           id('argocd-petclinic-plain')
-                          remote('http://scmm-scm-manager:9091/scm/repo/argocd/petclinic-plain')
+                          remote('http://scmm-scm-manager/scm/repo/argocd/petclinic-plain')
                           credentialsId('scmm-user')
                       }
                   }
