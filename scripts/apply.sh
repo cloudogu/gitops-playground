@@ -169,14 +169,18 @@ function initArgo() {
 }
 
 function createSecrets() {
-  kubectl create secret generic scmm-credentials --from-literal=USERNAME=$SET_USERNAME --from-literal=PASSWORD=$SET_PASSWORD -n default || true
-  kubectl create secret generic jenkins-credentials --from-literal=jenkins-admin-user=$SET_USERNAME --from-literal=jenkins-admin-password=$SET_PASSWORD -n default || true
+  createSecret scmm-credentials --from-literal=USERNAME=$SET_USERNAME --from-literal=PASSWORD=$SET_PASSWORD -n default
+  createSecret jenkins-credentials --from-literal=jenkins-admin-user=$SET_USERNAME --from-literal=jenkins-admin-password=$SET_PASSWORD -n default
 
-  kubectl create secret generic gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=$SET_PASSWORD -n default || true
-  kubectl create secret generic gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=$SET_PASSWORD -n argocd || true
+  createSecret gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=$SET_PASSWORD -n default
+  createSecret gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=$SET_PASSWORD -n argocd
   # flux needs lowercase fieldnames
-  kubectl create secret generic gitops-scmm --from-literal=username=gitops --from-literal=password=$SET_PASSWORD -n fluxv1 || true
-  kubectl create secret generic gitops-scmm --from-literal=username=gitops --from-literal=password=$SET_PASSWORD -n fluxv2 || true
+  createSecret gitops-scmm --from-literal=username=gitops --from-literal=password=$SET_PASSWORD -n fluxv1
+  createSecret gitops-scmm --from-literal=username=gitops --from-literal=password=$SET_PASSWORD -n fluxv2
+}
+
+function createSecret() {
+  kubectl create secret generic "$@" --dry-run=client -oyaml | kubectl apply -f-
 }
 
 function pushPetClinicRepo() {
