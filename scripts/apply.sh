@@ -109,10 +109,8 @@ function setExternalHostnameIfNecessary() {
   serviceName="$2"
   namespace="$3"
   if [[ $REMOTE_CLUSTER == true ]]; then
-    echo "getting external ip..."
     hostnames[${hostKey}]=$(getExternalIP "${serviceName}" "${namespace}")
     ports[${hostKey}]=80
-    echo "external ip is: ${hostnames[${hostKey}]}"
   fi
 }
 
