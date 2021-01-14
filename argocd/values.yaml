@@ -3,8 +3,11 @@ server:
   ## Server service configuration
   service:
     type: LoadBalancer
-    # nodePort cannot be set via the helm chart, so they are set via apply.sh for local cluster
-
+    # Actual "nodePort" number cannot be set via the helm chart. 
+    # So we use LB for k3s and set well-know port numbers for remote cluster via apply.sh.
+    servicePortHttp: 9092
+    servicePortHttps: 9093
+    
   ## ArgoCD config
   ## reference https://github.com/argoproj/argo-cd/blob/master/docs/operator-manual/argocd-cm.yaml
   config:

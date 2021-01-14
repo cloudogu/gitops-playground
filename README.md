@@ -169,10 +169,19 @@ terraform destroy -var-file values.tfvars
 
 ## Apply apps to cluster
 
-[`scripts/apply.sh`](scripts/apply.sh)
+The gitops-playground can be deployed to the currently active context in kubeconfig via 
+[`scripts/apply.sh`](scripts/apply.sh).
 
 You can also just install one GitOps module like Flux V1 or ArgoCD via parameters.  
 Use `./scripts/apply.sh --help` for more information.
+
+Important options:
+* `--remote` - deploy to remote cluster (not local k3s cluster), e.g. in GKE
+* `--password` - change admin passwords for SCM-Manager, Jenkins and ArgoCD. Should be set with `--remote` for security 
+  reasons. 
+* `--argocd` - deploy only argoCD GitOps operator 
+* `--fluxv1` - deploy only Flux v1 GitOps operator
+* `--fluxv2` - deploy only Flux v2 GitOps operator
 
 The scripts also prints a little intro on how to get started with a GitOps deployment.
 
@@ -182,8 +191,7 @@ The scripts also prints a little intro on how to get started with a GitOps deplo
 
 Find jenkins on http://localhost:9090
 
-Admin user: Same as SCM-Manager - `scmadmin/scmadmin`
-Change in `jenkins-credentials.yaml` if necessary.
+Admin user: Same as SCM-Manager - `admin/admin`
 
 Note: You can enable browser notifications about build results via a button in the lower right corner of Jenkins Web UI.
 
@@ -196,44 +204,93 @@ Note: You can enable browser notifications about build results via a button in t
 
 Find scm-manager on http://localhost:9091
 
-Login with `scmadmin/scmadmin`
+Login with `admin/admin`
 
 ### ArgoCD UI
 
-Find the ArgoCD UI on http://localhost:9092
+Find the ArgoCD UI on http://localhost:9092 (redirects to https://localhost:9093)
 
 Login with `admin/admin`
 
 ## Test applications deployed via GitOps
 
+Each GitOps operator comes with a couple of demo applications that allow for experimenting with different GitOps 
+features.
+
+All applications implement a simple staging mechanism:
+
+After a successful Jenkins build, the staging application will be deployed into the cluster.
+The production applications can be deployed by accepting Pull Requests.
+
+Please note that it might take about 1 Minute after the PullRequest has been accepted for the GitOps operator to start
+deploying.
+
+The URLs of the applications depend on the environment the playground is deployed to.
+The following lists all application and how to find out their respective URLs for a GitOps playground being deployed to 
+local or remote cluster.
+
+For remote clusters you need the external IP, no need to specify the port (everything running on port 80).
+Basiscally, you can get the IP Adress as follows: `kubectl -n "${namespace}" get svc "${serviceName}" --template="{{range .status.loadBalancer.ingress}}{{.ip}}{{end}}"`
+There is also a convenience script `scripts/get-remote-url`.
+
+You can open the application in the browser right away, like so for example:
+
+```shell
+xdg-open $(scripts/get-remote-url default jenkins)
+```
+
 ##### PetClinic via Flux V1
 
 * [Jenkinsfile](applications/petclinic/fluxv1/plain-k8s/Jenkinsfile) for plain `k8s` deployment
-  * [localhost:9000](http://localhost:9000) (Staging)
-  * [localhost:9001](http://localhost:9001) (Production)
-  * [localhost:9002](http://localhost:9002) (qa)  
-  
+  * Staging: 
+    * local: [localhost:9000](http://localhost:9000) 
+    * remote: `scripts/get-remote-url spring-petclinic-plain fluxv1-staging`
+  * Production:  
+    * local: [localhost:9001](http://localhost:9001)
+    * remote: `scripts/get-remote-url spring-petclinic-plain fluxv1-production`
+  * QA (example for a 3rd stage)
+    * local: [localhost:9002](http://localhost:9002) 
+    * remote: `scripts/get-remote-url spring-petclinic-plain fluxv1-qa`
+
 * [Jenkinsfile](applications/petclinic/fluxv1/helm/Jenkinsfile) for `helm` deployment
-  * [localhost:9003](http://localhost:9003) (Staging)
-  * [localhost:9004](http://localhost:9004) (Production) 
+  * Staging
+    * local: [localhost:9003](http://localhost:9003)
+    * remote: `scripts/get-remote-url spring-petclinic-helm-springboot fluxv1-staging`
+  * Production
+    * [localhost:9004](http://localhost:9004) 
+    * remote: `scripts/get-remote-url spring-petclinic-helm-springboot fluxv1-production`
 
 ##### 3rd Party app (NGINX) via Flux V1
 
+TODO not reachable via 9005!
+
 * [Jenkinsfile](applications/nginx/fluxv1/Jenkinsfile)
-  * [localhost:9005](http://localhost:9005) (Staging)
-  * [localhost:9006](http://localhost:9006) (Production)
+  * Staging
+    * local: [localhost:9005](http://localhost:9005)
+    * remote: `scripts/get-remote-url nginx fluxv1-staging`
+  * Production
+    * local: [localhost:9006](http://localhost:9006)
+    * remote: `scripts/get-remote-url nginx fluxv1-staging`
 
 ##### PetClinic via Flux V2
 
 * [Jenkinsfile](applications/petclinic/fluxv2/plain-k8s/Jenkinsfile)
-  * [localhost:9010](http://localhost:9010) (Staging)
-  * [localhost:9011](http://localhost:9011) (Production) 
+    * Staging
+        * local: [localhost:9010](http://localhost:9010)
+        * remote: `scripts/get-remote-url spring-petclinic-plain fluxv2-staging`
+    * Production
+        * local: [localhost:9011](http://localhost:9011) 
+        * remote: `scripts/get-remote-url spring-petclinic-plain fluxv2-production`
   
 ##### PetClinic via ArgoCD
 
 * [Jenkinsfile](applications/petclinic/argocd/plain-k8s/Jenkinsfile)
-  * [localhost:9020](http://localhost:9020) (Staging)
-  * [localhost:9021](http://localhost:9021) (Production) 
+    * Staging
+        * local [localhost:9020](http://localhost:9020)
+        * remote: `scripts/get-remote-url spring-petclinic-plain argocd-staging`
+    * Remote
+        * local [localhost:9021](http://localhost:9021)
+        * remote: `scripts/get-remote-url spring-petclinic-plain argocd-production`
 
 ## Remove apps from cluster
 

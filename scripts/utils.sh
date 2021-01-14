@@ -50,3 +50,7 @@ function spinner() {
     done
     echo " [ok] $info"
 }
+
+function error() {
+     echo "$@" 1>&2; 
+}
