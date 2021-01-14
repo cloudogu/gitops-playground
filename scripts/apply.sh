@@ -7,7 +7,7 @@ ABSOLUTE_BASEDIR="$(cd ${BASEDIR} && pwd)"
 PLAYGROUND_DIR="$(cd ${BASEDIR} && cd .. && pwd)"
 
 PETCLINIC_COMMIT=949c5af
-SPRING_BOOT_HELM_CHART_COMMIT=3515518e
+SPRING_BOOT_HELM_CHART_COMMIT=0.2.0
 
 declare -A hostnames
 hostnames[scmm]="localhost"
