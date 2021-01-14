@@ -34,6 +34,11 @@ function main() {
 
   checkPrerequisites
 
+  if [[ $DEBUG != true ]]; then
+    backgroundLogFile=$(mktemp /tmp/playground-log-XXXXXXXXX.log)
+    echo "Full log output is appended to ${backgroundLogFile}"
+  fi
+  
   evalWithSpinner applyBasicK8sResources "Basic setup & starting registry..."
   evalWithSpinner initSCMM "Starting SCM-Manager..."
 
@@ -60,7 +65,7 @@ function evalWithSpinner() {
   if [[ $DEBUG == true ]]; then
     eval "$commandToEval"
   else 
-    eval "$commandToEval" > /dev/null 2>&1 & spinner "${spinnerOutput}"
+    eval "$commandToEval" >> "${backgroundLogFile}" 2>&1 & spinner "${spinnerOutput}"
   fi
 }
 
@@ -339,9 +344,6 @@ function createUrl() {
 
 function printWelcomeScreen() {
   
-  # We need to get the external IPs again here, because the "init" methods might be running in a background process
-  # (to display the spinner only)
-  setExternalHostnameIfNecessary 'scmm' 'scmm-scm-manager' 'default'
   setExternalHostnameIfNecessary 'jenkins' 'jenkins' 'default'
 
   echo
