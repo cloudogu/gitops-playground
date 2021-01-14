@@ -230,8 +230,13 @@ The following lists all application and how to find out their respective URLs fo
 local or remote cluster.
 
 For remote clusters you need the external IP, no need to specify the port (everything running on port 80).
-Basiscally, you can get the IP Adress as follows: `kubectl -n "${namespace}" get svc "${serviceName}" --template="{{range .status.loadBalancer.ingress}}{{.ip}}{{end}}"`
-There is also a convenience script `scripts/get-remote-url`.
+Basiscally, you can get the IP Adress as follows: 
+
+```shell
+kubectl -n "${namespace}" get svc "${serviceName}" --template="{{range .status.loadBalancer.ingress}}{{.ip}}{{end}}"
+```
+
+There is also a convenience script `scripts/get-remote-url`. The script waits, if externalIP is not present, yet.
 
 You can open the application in the browser right away, like so for example:
 
