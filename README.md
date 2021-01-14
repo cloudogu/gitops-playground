@@ -243,53 +243,53 @@ xdg-open $(scripts/get-remote-url default jenkins)
 
 * [Jenkinsfile](applications/petclinic/fluxv1/plain-k8s/Jenkinsfile) for plain `k8s` deployment
   * Staging: 
-    * local: [localhost:9000](http://localhost:9000) 
+    * local: [localhost:30001](http://localhost:30001) 
     * remote: `scripts/get-remote-url spring-petclinic-plain fluxv1-staging`
   * Production:  
-    * local: [localhost:9001](http://localhost:9001)
+    * local: [localhost:30002](http://localhost:30002)
     * remote: `scripts/get-remote-url spring-petclinic-plain fluxv1-production`
   * QA (example for a 3rd stage)
-    * local: [localhost:9002](http://localhost:9002) 
+    * local: [localhost:30003](http://localhost:30003) 
     * remote: `scripts/get-remote-url spring-petclinic-plain fluxv1-qa`
 
 * [Jenkinsfile](applications/petclinic/fluxv1/helm/Jenkinsfile) for `helm` deployment
   * Staging
-    * local: [localhost:9003](http://localhost:9003)
+    * local: [localhost:30004](http://localhost:30004)
     * remote: `scripts/get-remote-url spring-petclinic-helm-springboot fluxv1-staging`
   * Production
-    * [localhost:9004](http://localhost:9004) 
+    * [localhost:30005](http://localhost:30005) 
     * remote: `scripts/get-remote-url spring-petclinic-helm-springboot fluxv1-production`
 
 ##### 3rd Party app (NGINX) via Flux V1
 
-TODO not reachable via 9005!
+TODO not reachable via 30006!
 
 * [Jenkinsfile](applications/nginx/fluxv1/Jenkinsfile)
   * Staging
-    * local: [localhost:9005](http://localhost:9005)
+    * local: [localhost:30006](http://localhost:30006)
     * remote: `scripts/get-remote-url nginx fluxv1-staging`
   * Production
-    * local: [localhost:9006](http://localhost:9006)
+    * local: [localhost:30007](http://localhost:30007)
     * remote: `scripts/get-remote-url nginx fluxv1-staging`
 
 ##### PetClinic via Flux V2
 
 * [Jenkinsfile](applications/petclinic/fluxv2/plain-k8s/Jenkinsfile)
     * Staging
-        * local: [localhost:9010](http://localhost:9010)
+        * local: [localhost:30010](http://localhost:30010)
         * remote: `scripts/get-remote-url spring-petclinic-plain fluxv2-staging`
     * Production
-        * local: [localhost:9011](http://localhost:9011) 
+        * local: [localhost:30011](http://localhost:30011) 
         * remote: `scripts/get-remote-url spring-petclinic-plain fluxv2-production`
   
 ##### PetClinic via ArgoCD
 
 * [Jenkinsfile](applications/petclinic/argocd/plain-k8s/Jenkinsfile)
     * Staging
-        * local [localhost:9020](http://localhost:9020)
+        * local [localhost:30020](http://localhost:30020)
         * remote: `scripts/get-remote-url spring-petclinic-plain argocd-staging`
     * Remote
-        * local [localhost:9021](http://localhost:9021)
+        * local [localhost:30021](http://localhost:30021)
         * remote: `scripts/get-remote-url spring-petclinic-plain argocd-production`
 
 ## Remove apps from cluster

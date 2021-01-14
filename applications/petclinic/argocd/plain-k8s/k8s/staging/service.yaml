@@ -10,7 +10,7 @@ spec:
   ports:
     - name: http
       port: 80
-      nodePort: 9020
+      nodePort: 30020
       targetPort: http
   selector:
     app: spring-petclinic-plain
