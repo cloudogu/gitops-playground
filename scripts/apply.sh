@@ -41,6 +41,10 @@ function main() {
   
   evalWithSpinner applyBasicK8sResources "Basic setup & starting registry..."
   evalWithSpinner initSCMM "Starting SCM-Manager..."
+  
+  # We need to query remote IP here (in the main process) again, because the "initSCMM" methods might be running in a 
+  # background process (to display the spinner only)
+  setExternalHostnameIfNecessary 'scmm' 'scmm-scm-manager' 'default'
 
   if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV1 = true ]]; then
     evalWithSpinner initFluxV1 "Starting Flux V1..."
