@@ -2,21 +2,23 @@
 set -o errexit -o nounset -o pipefail
 #set -x
 
-SCM_USER=scmadmin
-SCM_PWD=scmadmin
-
 BASEDIR=$(dirname $0)
 ABSOLUTE_BASEDIR="$(cd ${BASEDIR} && pwd)"
 PLAYGROUND_DIR="$(cd ${BASEDIR} && cd .. && pwd)"
-JENKINS_HOME="/tmp/k8s-gitops-playground-jenkins-agent"
 
 PETCLINIC_COMMIT=949c5af
-# get scm-manager port from values
-SCMM_PORT=$(grep -A1 'service:' "${PLAYGROUND_DIR}"/scm-manager/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')
+SPRING_BOOT_HELM_CHART_COMMIT=0.2.0
 
-PETCLINIC_COMMIT=949c5af
-# get scm-manager port from values
-SCMM_PORT=$(grep -A1 'service:' scm-manager/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')
+declare -A hostnames
+hostnames[scmm]="localhost"
+hostnames[jenkins]="localhost"
+hostnames[argocd]="localhost"
+
+declare -A ports
+# get ports from values files
+ports[scmm]=$(grep 'nodePort:' "${PLAYGROUND_DIR}"/scm-manager/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')
+ports[jenkins]=$(grep 'nodePort:' "${PLAYGROUND_DIR}"/jenkins/values.yaml | grep nodePort | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')
+ports[argocd]=$(grep 'servicePortHttp:' "${PLAYGROUND_DIR}"/argocd/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')
 
 source ${ABSOLUTE_BASEDIR}/utils.sh
 
@@ -26,51 +28,69 @@ function main() {
   INSTALL_FLUXV1=$3
   INSTALL_FLUXV2=$4
   INSTALL_ARGOCD=$5
+  REMOTE_CLUSTER=$6
+  SET_USERNAME=$7
+  SET_PASSWORD=$8
 
-  if [[ $DEBUG = true ]]; then
-    applyBasicK8sResources
-    initSCMM
+  checkPrerequisites
 
-    if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV1 = true ]]; then
-      initFluxV1
-    fi
-    if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV2 = true ]]; then
-      initFluxV2
-    fi
-    if [[ $INSTALL_ALL_MODULES = true || $INSTALL_ARGOCD = true ]]; then
-      initArgo
-    fi
+  if [[ $DEBUG != true ]]; then
+    backgroundLogFile=$(mktemp /tmp/playground-log-XXXXXXXXX.log)
+    echo "Full log output is appended to ${backgroundLogFile}"
+  fi
+  
+  evalWithSpinner applyBasicK8sResources "Basic setup & starting registry..."
+  evalWithSpinner initSCMM "Starting SCM-Manager..."
+  
+  # We need to query remote IP here (in the main process) again, because the "initSCMM" methods might be running in a 
+  # background process (to display the spinner only)
+  setExternalHostnameIfNecessary 'scmm' 'scmm-scm-manager' 'default'
 
-    # Start Jenkins last, so all repos have been initialized when repo indexing starts
-    initJenkins
-
-  else
-    applyBasicK8sResources > /dev/null 2>&1 & spinner "Basic setup..."
-    initSCMM > /dev/null 2>&1 & spinner "Starting SCM-Manager..."
-
-    if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV1 = true ]]; then
-      initFluxV1 > /dev/null 2>&1 & spinner "Starting Flux V1..."
-    fi
-    if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV2 = true ]]; then
-      initFluxV2 > /dev/null 2>&1 & spinner "Starting Flux V2..."
-    fi
-    if [[ $INSTALL_ALL_MODULES = true || $INSTALL_ARGOCD = true ]]; then
-      initArgo > /dev/null 2>&1 & spinner "Starting ArgoCD..."
-    fi
-
-    # Start Jenkins last, so all repos have been initialized when repo indexing starts
-    initJenkins > /dev/null 2>&1 & spinner "Starting Jenkins..."
+  if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV1 = true ]]; then
+    evalWithSpinner initFluxV1 "Starting Flux V1..."
+  fi
+  if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV2 = true ]]; then
+    evalWithSpinner initFluxV2 "Starting Flux V2..."
+  fi
+  if [[ $INSTALL_ALL_MODULES = true || $INSTALL_ARGOCD = true ]]; then
+    evalWithSpinner initArgo "Starting ArgoCD..."
   fi
 
-  # Create Jenkins agent working dir explicitly. Otherwise it seems to be owned by root
-  mkdir -p ${JENKINS_HOME}
+  # Start Jenkins last, so all repos have been initialized when repo indexing starts
+  evalWithSpinner initJenkins "Starting Jenkins..."
+  
   printWelcomeScreen
 }
 
+function evalWithSpinner() {
+  commandToEval=$1
+  spinnerOutput=$2
+  
+  if [[ $DEBUG == true ]]; then
+    eval "$commandToEval"
+  else 
+    eval "$commandToEval" >> "${backgroundLogFile}" 2>&1 & spinner "${spinnerOutput}"
+  fi
+}
+
+function checkPrerequisites() {
+  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_ARGOCD == true ]]; then
+    if ! command -v htpasswd &>/dev/null; then
+      echo "Missing required command htpasswd"
+      exit 1
+    fi
+  fi
+}
+
 function applyBasicK8sResources() {
+  # Mark the first node for Jenkins and agents. See jenkins/values.yamls "agent.workingDir" for details.
+  # Remove first (in case new nodes were added)
+  kubectl label --all nodes node- >/dev/null
+  kubectl label $(kubectl get node -o name | sort | head -n 1) node=jenkins
+
   kubectl apply -f k8s-namespaces || true
 
-  createScmmSecrets
+  createSecrets
 
   kubectl apply -f jenkins/resources || true
 
@@ -84,21 +104,62 @@ function applyBasicK8sResources() {
 }
 
 function initSCMM() {
-    helm upgrade -i scmm --values scm-manager/values.yaml \
+  helm upgrade -i scmm --values scm-manager/values.yaml \
     --set-file=postStartHookScript=scm-manager/initscmm.sh \
-    scm-manager/chart -n default
+    $(scmmHelmSettingsForRemoteCluster) scm-manager/chart -n default
 
-    pushHelmChartRepo 'common/spring-boot-helm-chart'
+  setExternalHostnameIfNecessary 'scmm' 'scmm-scm-manager' 'default'
+  
+  pushHelmChartRepo 'common/spring-boot-helm-chart'
+}
+
+function setExternalHostnameIfNecessary() {
+  hostKey="$1"
+  serviceName="$2"
+  namespace="$3"
+  if [[ $REMOTE_CLUSTER == true ]]; then
+    hostnames[${hostKey}]=$(getExternalIP "${serviceName}" "${namespace}")
+    ports[${hostKey}]=80
+  fi
+}
+
+function scmmHelmSettingsForRemoteCluster() {
+  if [[ $REMOTE_CLUSTER == true ]]; then
+    # Default clusters don't allow for node ports < 30.000, so just unset nodePort.
+    # A defined nodePort is not needed for remote cluster, where the externalIp is used for accessing SCMM
+    echo "--set service.nodePort="
+  fi
 }
 
 function initJenkins() {
-  # Make sure to run Jenkins and Agent containers as the current user. Avoids permission problems.
   # Find out the docker group and put the agent into it. Otherwise it has no permission to access  the docker host.
   helm upgrade -i jenkins --values jenkins/values.yaml \
-    --set master.runAsUser=$(id -u) \
-    --set agent.runAsUser=$(id -u) \
-    --set agent.runAsGroup=$(getent group docker | awk -F: '{ print $3}') \
+    $(jenkinsHelmSettingsForLocalCluster) --set agent.runAsGroup=$(queryDockerGroupOfJenkinsNode) \
     --version 2.13.0 jenkins/jenkins -n default
+}
+
+function queryDockerGroupOfJenkinsNode() {
+  kubectl apply -f jenkins/tmp-docker-gid-grepper.yaml >/dev/null
+  until kubectl get po --field-selector=status.phase=Running | grep tmp-docker-gid-grepper >/dev/null; do
+    sleep 1
+  done
+
+  kubectl exec tmp-docker-gid-grepper -- cat /etc/group | grep docker | cut -d: -f3
+
+  # This call might block some (unnecessary) seconds so move to background
+  kubectl delete -f jenkins/tmp-docker-gid-grepper.yaml >/dev/null &
+}
+
+function jenkinsHelmSettingsForLocalCluster() {
+  if [[ $REMOTE_CLUSTER != true ]]; then
+    # Run Jenkins and Agent pods as the current user.
+    # Avoids file permission problems when accessing files on the host that were written from the pods
+
+    # We also need a host port, so jenkins can be reached via localhost:9090
+    # But: This helm charts only uses the nodePort value, if the type is "NodePort". So change it for local cluster.
+    echo "--set master.runAsUser=$(id -u) --set agent.runAsUser=$(id -u)" \
+      "--set master.serviceType=NodePort" 
+  fi
 }
 
 function initFluxV1() {
@@ -122,23 +183,40 @@ function initFluxV2() {
 }
 
 function initArgo() {
-  helm upgrade -i argocd --values argocd/values.yaml --version 2.9.5 argo/argo-cd -n argocd
+  helm upgrade -i argocd --values argocd/values.yaml \
+    $(argoHelmSettingsForRemoteCluster) --version 2.9.5 argo/argo-cd -n argocd
+
   kubectl apply -f argocd/resources -n argocd || true
 
+  BCRYPT_PW=$(bcryptPassword "${SET_PASSWORD}")
   # set argocd admin password to 'admin' here, because it does not work through the helm chart
-  kubectl patch secret -n argocd argocd-secret -p '{"stringData": { "admin.password": "$2y$10$GsLZ7KlAhW9xNsb10YO3/O6jlJKEAU2oUrBKtlF/g1wVlHDJYyVom"}}' || true
+  kubectl patch secret -n argocd argocd-secret -p '{"stringData": { "admin.password": "'${BCRYPT_PW}'"}}' || true
 
   pushPetClinicRepo 'applications/petclinic/argocd/plain-k8s' 'argocd/petclinic-plain'
   initRepo 'argocd/gitops'
   initRepoWithSource 'applications/nginx/argocd' 'argocd/nginx-helm'
 }
 
-function createScmmSecrets() {
-  kubectl create secret generic gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=somePassword -n default || true
-  kubectl create secret generic gitops-scmm --from-literal=username=gitops --from-literal=password=somePassword -n fluxv1 || true
-  # fluxv2 needs lowercase fieldnames
-  kubectl create secret generic gitops-scmm --from-literal=username=gitops --from-literal=password=somePassword -n fluxv2 || true
-  kubectl create secret generic gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=somePassword -n argocd || true
+function argoHelmSettingsForRemoteCluster() {
+  if [[ $REMOTE_CLUSTER == true ]]; then
+    # Can't set service nodePort for argo, so use normal service ports for both local and remote
+    echo '--set server.service.servicePortHttp=80 --set server.service.servicePortHttps=443'
+  fi
+}
+
+function createSecrets() {
+  createSecret scmm-credentials --from-literal=USERNAME=$SET_USERNAME --from-literal=PASSWORD=$SET_PASSWORD -n default
+  createSecret jenkins-credentials --from-literal=jenkins-admin-user=$SET_USERNAME --from-literal=jenkins-admin-password=$SET_PASSWORD -n default
+
+  createSecret gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=$SET_PASSWORD -n default
+  createSecret gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=$SET_PASSWORD -n argocd
+  # flux needs lowercase fieldnames
+  createSecret gitops-scmm --from-literal=username=gitops --from-literal=password=$SET_PASSWORD -n fluxv1
+  createSecret gitops-scmm --from-literal=username=gitops --from-literal=password=$SET_PASSWORD -n fluxv2
+}
+
+function createSecret() {
+  kubectl create secret generic "$@" --dry-run=client -oyaml | kubectl apply -f-
 }
 
 function pushPetClinicRepo() {
@@ -147,7 +225,7 @@ function pushPetClinicRepo() {
 
   TMP_REPO=$(mktemp -d)
 
-  git clone -n https://github.com/cloudogu/spring-petclinic.git "${TMP_REPO}" --quiet > /dev/null 2>&1
+  git clone -n https://github.com/cloudogu/spring-petclinic.git "${TMP_REPO}" --quiet >/dev/null 2>&1
   (
     cd "${TMP_REPO}"
     # Checkout a defined commit in order to get a deterministic result
@@ -159,7 +237,7 @@ function pushPetClinicRepo() {
     git commit -m 'Add GitOps Pipeline and K8s resources' --quiet
 
     waitForScmManager
-    git push -u "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
+    git push -u "http://${SET_USERNAME}:${SET_PASSWORD}@${hostnames[scmm]}:${ports[scmm]}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
   )
 
   rm -rf "${TMP_REPO}"
@@ -171,15 +249,20 @@ function pushHelmChartRepo() {
   TARGET_REPO_SCMM="$1"
 
   TMP_REPO=$(mktemp -d)
-
   git clone -n https://github.com/cloudogu/spring-boot-helm-chart.git "${TMP_REPO}" --quiet
   (
     cd "${TMP_REPO}"
+    # Checkout a defined commit in order to get a deterministic result
+    git checkout ${SPRING_BOOT_HELM_CHART_COMMIT} --quiet
+    # Create a defined version to use in demo applications
     git tag 1.0.0
+    
+    git branch -d main
+    git checkout -b main
 
     waitForScmManager
-    git push "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
-    git push "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" refs/tags/1.0.0 --quiet
+    git push "http://${SET_USERNAME}:${SET_PASSWORD}@${hostnames[scmm]}:${ports[scmm]}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
+    git push "http://${SET_USERNAME}:${SET_PASSWORD}@${hostnames[scmm]}:${ports[scmm]}/scm/repo/${TARGET_REPO_SCMM}" refs/tags/1.0.0 --quiet --force
   )
 
   rm -rf "${TMP_REPO}"
@@ -188,9 +271,9 @@ function pushHelmChartRepo() {
 }
 
 function waitForScmManager() {
-#  echo -n "Waiting for SCM-Manager to become available at http://localhost:${SCMM_PORT}/scm"
-  while [[ "$(curl -s -L -o /dev/null -w ''%{http_code}'' "http://localhost:${SCMM_PORT}/scm")" -ne "200" ]]; do
-#    echo -n .
+  echo -n "Waiting for SCM-Manager to become available at http://${hostnames[scmm]}:${ports[scmm]}/scm"
+  while [[ "$(curl -s -L -o /dev/null -w ''%{http_code}'' "http://${hostnames[scmm]}:${ports[scmm]}/scm")" -ne "200" ]]; do
+    echo -n .
     sleep 2
   done
 }
@@ -200,7 +283,7 @@ function initRepo() {
 
   TMP_REPO=$(mktemp -d)
 
-  git clone "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}"
+  git clone "http://${SET_USERNAME}:${SET_PASSWORD}@${hostnames[scmm]}:${ports[scmm]}/scm/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}"
   (
     cd "${TMP_REPO}"
     git checkout main --quiet || git checkout -b main --quiet
@@ -212,7 +295,7 @@ function initRepo() {
       git commit -m "Add readme" --quiet
     fi
     waitForScmManager
-    git push -u "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force
+    git push -u "http://${SET_USERNAME}:${SET_PASSWORD}@${hostnames[scmm]}:${ports[scmm]}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force
   )
 
   setMainBranch "${TARGET_REPO_SCMM}"
@@ -225,7 +308,7 @@ function initRepoWithSource() {
 
   TMP_REPO=$(mktemp -d)
 
-  git clone "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}"
+  git clone "http://${SET_USERNAME}:${SET_PASSWORD}@${hostnames[scmm]}:${ports[scmm]}/scm/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}"
   (
     cd "${TMP_REPO}"
     cp -r "${PLAYGROUND_DIR}/${SOURCE_REPO}"/* .
@@ -233,7 +316,7 @@ function initRepoWithSource() {
     git add .
     git commit -m "Init ${TARGET_REPO_SCMM}" --quiet || true
     waitForScmManager
-    git push -u "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force
+    git push -u "http://${SET_USERNAME}:${SET_PASSWORD}@${hostnames[scmm]}:${ports[scmm]}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force
   )
 
   rm -rf "${TMP_REPO}"
@@ -246,81 +329,105 @@ function setMainBranch() {
 
   curl -s -L -X PUT -H 'Content-Type: application/vnd.scmm-gitConfig+json' \
     --data-raw "{\"defaultBranch\":\"main\"}" \
-    "http://${SCM_USER}:${SCM_PWD}@localhost:${SCMM_PORT}/scm/api/v2/config/git/${TARGET_REPO_SCMM}"
+    "http://${SET_USERNAME}:${SET_PASSWORD}@${hostnames[scmm]}:${ports[scmm]}/scm/api/v2/config/git/${TARGET_REPO_SCMM}"
+}
+
+function createUrl() {
+  systemName=$1
+  hostname=${hostnames[${systemName}]}
+  port=${ports[${systemName}]}
+
+  if [[ -z "${port}" ]]; then
+    error "hostname ${systemName} not defined"
+    exit 1
+  fi
+
+  echo -n "http://${hostname}"
+  [[ "${port}" != "80" && "${port}" != "443" ]] && echo -n ":${port}"
 }
 
 function printWelcomeScreen() {
+  
+  setExternalHostnameIfNecessary 'jenkins' 'jenkins' 'default'
+
   echo
   echo
-  echo "|-----------------------------------------------------------------------------------------------------------------------|"
-  echo "|                                     Welcome to the GitOps playground by Cloudogu!                                     |"
-  echo "|-----------------------------------------------------------------------------------------------------------------------|"
-  echo "|                                                                                                                       |"
-  echo "| The playground features three example applications (Sprint PetClinic - one for every gitops solution) in SCM-Manager. |"
-  echo "| See here:                                                                                                             |"
-  echo "|                                                                                                                       |"
-  echo -e "| - \e[32mhttp://localhost:9091/scm/repo/fluxv1/petclinic-plain/code/sources/main/\e[0m                                            |"
-  echo -e "| - \e[32mhttp://localhost:9091/scm/repo/fluxv2/petclinic-plain/code/sources/main/\e[0m                                            |"
-  echo -e "| - \e[32mhttp://localhost:9091/scm/repo/argocd/petclinic-plain/code/sources/main/\e[0m                                            |"
-  echo "|                                                                                                                       |"
-  echo -e "| Credentials for SCM-Manager and Jenkins are: \e[31mscmadmin/scmadmin\e[0m                                                        |"
-  echo "|                                                                                                                       |"
-  echo "| Right now, four Jenkins jobs are running: (when Jenkins is successfully deployed and running)                         |"
-  echo "|                                                                                                                       |"
-  echo -e "| - \e[32mhttp://localhost:9090/job/fluxv1-nginx/\e[0m                                                                             |"
-  echo -e "| - \e[32mhttp://localhost:9090/job/fluxv1-petclinic-plain/\e[0m                                                                   |"
-  echo -e "| - \e[32mhttp://localhost:9090/job/fluxv2-petclinic-plain/\e[0m                                                                   |"
-  echo -e "| - \e[32mhttp://localhost:9090/job/argocd-petclinic-plain/\e[0m                                                                   |"
-  echo "|                                                                                                                       |"
-  echo "| During the job, jenkins pushes into the corresponding GitOps repo and creates a pull request for production:          |"
-  echo "|                                                                                                                       |"
-  echo "| For Flux V1:                                                                                                          |"
-  echo "|                                                                                                                       |"
-  echo -e "| - GitOps repo: \e[32mhttp://localhost:9091/scm/repo/fluxv1/gitops/code/sources/main/\e[0m                                        |"
-  echo -e "| - Pull requests: \e[32mhttp://localhost:9091/scm/repo/fluxv1/gitops/pull-requests\e[0m                                           |"
-  echo "|                                                                                                                       |"
-  echo "| For Flux V2:                                                                                                          |"
-  echo "|                                                                                                                       |"
-  echo -e "| - GitOps repo: \e[32mhttp://localhost:9091/scm/repo/fluxv2/gitops/code/sources/main/\e[0m                                        |"
-  echo -e "| - Pull requests: \e[32mhttp://localhost:9091/scm/repo/fluxv2/gitops/pull-requests\e[0m                                           |"
-  echo "|                                                                                                                       |"
-  echo "| For ArgoCD:                                                                                                           |"
-  echo "|                                                                                                                       |"
-  echo -e "| - GitOps repo: \e[32mhttp://localhost:9091/scm/repo/argocd/gitops/code/sources/main/\e[0m                                        |"
-  echo -e "| - Pull requests: \e[32mhttp://localhost:9091/scm/repo/argocd/gitops/pull-requests\e[0m                                           |"
-  echo "|                                                                                                                       |"
-  echo -e "| There is also the ArgoCD UI which can be found at \e[32mhttp://localhost:9092/\e[0m                                              |"
-  echo -e "| Credentials for the ArgoCD UI are: \e[31madmin/admin\e[0m                                                                        |"
-  echo "|                                                                                                                       |"
-  echo "| After a successful Jenkins build, the application will be deployed into the cluster.                                  |"
-  echo "| This may take a minute for the GitOps operator to sync.                                                               |"
-  echo "|                                                                                                                       |"
-  echo "| Flux V1 applications:                                                                                                 |"
-  echo -e "| \e[32mhttp://localhost:9000/\e[0m for Flux V1 petclinic plain for staging                                                        |"
-  echo -e "| \e[32mhttp://localhost:9001/\e[0m for Flux V1 petclinic plain for production                                                     |"
-  echo -e "| \e[32mhttp://localhost:9002/\e[0m for Flux V1 petclinic plain for qa                                                             |"
-  echo -e "| \e[32mhttp://localhost:9003/\e[0m for Flux V1 petclinic helm for staging                                                         |"
-  echo -e "| \e[32mhttp://localhost:9004/\e[0m for Flux V1 petclinic helm for production                                                      |"
-  echo -e "| \e[32mhttp://localhost:9005/\e[0m for Flux V1 nginx for staging                                                                  |"
-  echo -e "| \e[32mhttp://localhost:9006/\e[0m for Flux V1 nginx for production                                                               |"
-  echo "|                                                                                                                       |"
-  echo "| Flux V2 applications:                                                                                                 |"
-  echo -e "| \e[32mhttp://localhost:9010/\e[0m for Flux V2 petclinic for staging                                                              |"
-  echo -e "| \e[32mhttp://localhost:9011/\e[0m for Flux V2 petclinic for production                                                           |"
-  echo "|                                                                                                                       |"
-  echo "| ArgoCD applications:                                                                                                  |"
-  echo -e "| \e[32mhttp://localhost:9020/\e[0m for ArgoCD petclinic for staging                                                               |"
-  echo -e "| \e[32mhttp://localhost:9021/\e[0m for ArgoCD petclinic for production                                                            |"
-  echo "|                                                                                                                       |"
-  echo "| The applications on the *-production namespace are only available (deployed) when you merge the pull requests         |"
-  echo "| in the corresponding gitops repos.                                                                                    |"
-  echo "| After about 1 Minute after the merge, the GitOps operator deploys to production.                                      |"
-  echo "|                                                                                                                       |"
-  echo "|-----------------------------------------------------------------------------------------------------------------------|"
+  echo "|----------------------------------------------------------------------------------------------|"
+  echo "|                     ☁️  Welcome to the GitOps playground by Cloudogu! ☁️                       |"
+  echo "|----------------------------------------------------------------------------------------------|"
+  echo "|"
+  echo "| The playground features three example applications (Sprint PetClinic - one for every gitops solution) in SCM-Manager."
+  echo "| See here:"
+  echo "|"
+  echo -e "| - \e[32m$(createUrl scmm)/scm/repo/fluxv1/petclinic-plain/code/sources/main/\e[0m"
+  echo -e "| - \e[32m$(createUrl scmm)/scm/repo/fluxv2/petclinic-plain/code/sources/main/\e[0m"
+  echo -e "| - \e[32m$(createUrl scmm)/scm/repo/argocd/petclinic-plain/code/sources/main/\e[0m"
+  echo "|"
+  echo -e "| Credentials for SCM-Manager and Jenkins are: \e[31m${SET_USERNAME}/${SET_PASSWORD}\e[0m"
+  echo "|"
+  echo "| Once Jenkins is up, the following jobs will be running:"
+  echo "|"
+  echo -e "| - \e[32m$(createUrl jenkins)/job/fluxv1-nginx/\e[0m"
+  echo -e "| - \e[32m$(createUrl jenkins)/job/fluxv1-petclinic-plain/\e[0m"
+  echo -e "| - \e[32m$(createUrl jenkins)/job/fluxv2-petclinic-plain/\e[0m"
+  echo -e "| - \e[32m$(createUrl jenkins)/job/argocd-petclinic-plain/\e[0m"
+  echo "|"
+  echo "| During the job, jenkins pushes into the corresponding GitOps repo and creates a pull request for production:"
+  echo "|"
+  
+  printWelcomeScreenFluxV1
+  
+  printWelcomeScreenFluxV2
+  
+  printWelcomeScreenArgocd
+
+  echo "| After a successful Jenkins build, the staging application will be deployed into the cluster."
+  echo "|"
+  echo "| The production applications can be deployed by accepting Pull Requests."
+  echo "| After about 1 Minute after the PullRequest has been accepted, the GitOps operator deploys to production."
+  echo "|"
+  echo "| Please see the README.md for how to find out the URLs of the individual applications."
+  echo "|"
+  echo "|----------------------------------------------------------------------------------------------|"
 }
 
-function printUsage()
-{
+function printWelcomeScreenFluxV1() {
+  if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV1 = true ]]; then
+    echo "| For Flux V1:"
+    echo "|"
+    echo -e "| - GitOps repo: \e[32m$(createUrl scmm)/scm/repo/fluxv1/gitops/code/sources/main/\e[0m"
+    echo -e "| - Pull requests: \e[32m$(createUrl scmm)/scm/repo/fluxv1/gitops/pull-requests\e[0m"
+    echo "|"
+  fi
+}
+
+function printWelcomeScreenFluxV2() {
+  if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV2 = true ]]; then
+    echo "| For Flux V2:"
+    echo "|"
+    echo -e "| - GitOps repo: \e[32m$(createUrl scmm)/scm/repo/fluxv2/gitops/code/sources/main/\e[0m"
+    echo -e "| - Pull requests: \e[32m$(createUrl scmm)/scm/repo/fluxv2/gitops/pull-requests\e[0m"
+    echo "|"
+  fi
+}
+
+function printWelcomeScreenArgocd() {
+  
+  setExternalHostnameIfNecessary 'argocd' 'argocd-server' 'argocd'
+  
+  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_ARGOCD == true ]]; then
+    echo "| For ArgoCD:"
+    echo "|"
+    echo -e "| - GitOps repo: \e[32m$(createUrl scmm)/scm/repo/argocd/gitops/code/sources/main/\e[0m"
+    echo -e "| - Pull requests: \e[32m$(createUrl scmm)/scm/repo/argocd/gitops/pull-requests\e[0m"
+    echo "|"
+    echo -e "| There is also the ArgoCD UI which can be found at \e[32mhttp://$(createUrl argocd)/\e[0m"
+    echo -e "| Credentials for the ArgoCD UI are: \e[31m${SET_USERNAME}/${SET_PASSWORD}\e[0m"
+    echo "|"
+  fi
+}
+
+function printUsage() {
     echo "This script will install all necessary resources for Flux V1, Flux V2 and ArgoCD into your k8s-cluster."
     echo ""
     printParameters
@@ -337,15 +444,18 @@ function printParameters() {
     echo "    | --fluxv2   >> Install the Flux V2 module"
     echo "    | --argocd   >> Install the ArgoCD module"
     echo
+    echo "    | --remote   >> Install on remote Cluster e.g. gcp"
+    echo
+    echo "    | --password=myPassword   >> Set initial admin passwords to 'myPassword'"
+    echo
     echo " -w | --welcome  >> Welcome screen"
     echo
     echo " -d | --debug    >> Debug output"
 }
 
-
 COMMANDS=$(getopt \
                 -o hwd \
-                --long help,fluxv1,fluxv2,argocd,welcome,debug \
+                --long help,fluxv1,fluxv2,argocd,welcome,debug,remote,username:,password: \
                 -- "$@")
 
 if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
@@ -357,12 +467,17 @@ INSTALL_ALL_MODULES=true
 INSTALL_FLUXV1=false
 INSTALL_FLUXV2=false
 INSTALL_ARGOCD=false
+REMOTE_CLUSTER=false
+SET_USERNAME="admin"
+SET_PASSWORD="admin"
 while true; do
   case "$1" in
     -h | --help     ) printUsage; exit 0 ;;
     --fluxv1        ) INSTALL_FLUXV1=true; INSTALL_ALL_MODULES=false; shift ;;
     --fluxv2        ) INSTALL_FLUXV2=true; INSTALL_ALL_MODULES=false; shift ;;
     --argocd        ) INSTALL_ARGOCD=true; INSTALL_ALL_MODULES=false; shift ;;
+    --remote        ) REMOTE_CLUSTER=true; shift ;;
+    --password      ) SET_PASSWORD="$2"; shift 2 ;;
     -w | --welcome  ) printWelcomeScreen; exit 0 ;;
     -d | --debug    ) DEBUG=true; shift ;;
     --              ) shift; break ;;
@@ -373,5 +488,5 @@ done
 confirm "Applying gitops playground to kubernetes cluster: '$(kubectl config current-context)'." 'Continue? y/n [n]' ||
   exit 0
 
-main $DEBUG $INSTALL_ALL_MODULES $INSTALL_FLUXV1 $INSTALL_FLUXV2 $INSTALL_ARGOCD
+main $DEBUG $INSTALL_ALL_MODULES $INSTALL_FLUXV1 $INSTALL_FLUXV2 $INSTALL_ARGOCD $REMOTE_CLUSTER $SET_USERNAME $SET_PASSWORD
 

@@ -2,7 +2,8 @@ image:
   tag: 2.9.1
 
 service:
-  port: 9091
+  port: 80
+  nodePort: 9091
 
 persistence:
   size: 1Gi
@@ -37,6 +38,9 @@ extraEnvFrom: |
   - prefix: GITOPS_
     secretRef:
       name: gitops-scmm
+  - prefix: ADMIN_
+    secretRef:
+      name: scmm-credentials
 
 lifecycleHooks: |-
   postStart:

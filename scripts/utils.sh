@@ -16,6 +16,22 @@ function confirm() {
   esac
 }
 
+function getExternalIP() {
+  servicename=$1
+  namespace=$2
+  
+  external_ip=""
+  while [ -z $external_ip ]; do
+    external_ip=$(kubectl -n ${namespace} get svc ${servicename} --template="{{range .status.loadBalancer.ingress}}{{.ip}}{{end}}")
+    [ -z "$external_ip" ] && sleep 10
+  done
+  echo $external_ip
+}
+
+function bcryptPassword() {
+  echo $(htpasswd -bnBC 10 "" $1 | tr -d ':\n')
+}
+
 function spinner() {
     local info="$1"
     local pid=$!
@@ -33,4 +49,8 @@ function spinner() {
         printf $reset
     done
     echo " [ok] $info"
+}
+
+function error() {
+     echo "$@" 1>&2; 
 }

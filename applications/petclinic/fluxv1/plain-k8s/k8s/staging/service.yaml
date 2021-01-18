@@ -9,7 +9,8 @@ spec:
   type: LoadBalancer
   ports:
     - name: http
-      port: 9000
+      port: 80
+      nodePort: 30001
       targetPort: http
   selector:
     app: spring-petclinic-plain

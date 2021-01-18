@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -o errexit -o nounset -o pipefail
+
+BASEDIR=$(dirname $0)
+ABSOLUTE_BASEDIR="$(cd ${BASEDIR} && pwd)"
+
+source ${ABSOLUTE_BASEDIR}/utils.sh
+
+serviceName="$1"
+namespace="$2"
+ip=$(getExternalIP "${serviceName}" "${namespace}")
+
+if [[ -z "${ip}" ]]; then
+  echo "Service '${serviceName}' in namespace '${namespace}' does not have an external ip (yet)" 1>&2
+  exit 1;
+else
+  echo http://${ip}
+fi

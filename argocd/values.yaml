@@ -3,20 +3,23 @@ server:
   ## Server service configuration
   service:
     type: LoadBalancer
+    # Actual "nodePort" number cannot be set via the helm chart. 
+    # So we use LB for k3s and set well-know port numbers for remote cluster via apply.sh.
     servicePortHttp: 9092
-
+    servicePortHttps: 9093
+    
   ## ArgoCD config
   ## reference https://github.com/argoproj/argo-cd/blob/master/docs/operator-manual/argocd-cm.yaml
   config:
     repositories: |
-      - url: http://scmm-scm-manager.default.svc.cluster.local:9091/scm/repo/argocd/gitops
+      - url: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/gitops
         passwordSecret:
           name: gitops-scmm
           key: PASSWORD
         usernameSecret:
           name: gitops-scmm
           key: USERNAME
-      - url: http://scmm-scm-manager.default.svc.cluster.local:9091/scm/repo/argocd/nginx-helm
+      - url: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/nginx-helm
         passwordSecret:
           name: gitops-scmm
           key: PASSWORD

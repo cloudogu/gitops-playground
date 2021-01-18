@@ -38,7 +38,12 @@ function removeJenkins() {
 
 function removeK8sResources() {
   helm delete docker-registry -n default || true
-  kubectl delete secret gitops-scmm || true
+  kubectl delete secret jenkins-credentials -n default || true
+  kubectl delete secret scmm-credentials -n default || true
+  kubectl delete secret gitops-scmm -n default || true
+  kubectl delete secret gitops-scmm -n argocd || true
+  kubectl delete secret gitops-scmm -n fluxv1 || true
+  kubectl delete secret gitops-scmm -n fluxv2 || true
   kubectl delete -f k8s-namespaces/ || true
 }
 
@@ -71,7 +76,7 @@ function main() {
     cleanup > /dev/null 2>&1 & spinner "Cleaning up"
   fi
 
-  confirm 'Remove Jenkins agent workspace in this folder as well? y/n [n]' && rm -rf /tmp/k8s-gitops-playground-jenkins-agent
+  confirm 'Remove Jenkins agent workspace as well? (/tmp/k8s-gitops-playground-jenkins-agent)' 'y/n [n]' && rm -rf /tmp/k8s-gitops-playground-jenkins-agent
 }
 
 function printUsage()
