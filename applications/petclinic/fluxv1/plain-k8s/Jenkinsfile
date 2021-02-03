@@ -8,7 +8,9 @@ String getConfigRepositoryPRUrl() { 'http://scmm-scm-manager/scm/api/v2/pull-req
 // The docker daemon cant use the k8s service name, because it is not running inside the cluster
 String getDockerRegistryBaseUrl() { "localhost:30000" }
 String getCesBuildLibVersion() { '1.44.3' }
+String getGitOpsBuildLibVersion() { '0.0.1' }
 String getCesBuildLibRepo() { 'https://github.com/cloudogu/ces-build-lib/' }
+String getGitOpsBuildLibRepo() { 'http://scmm-scm-manager/scm/repo/common/gitops-build-lib' }
 String getMainBranch() { 'main' }
 String getK8sVersion() { '1.18.1 '}
 String getConfigDir() { '.config'}
@@ -20,6 +22,10 @@ String getYamlLintImage() { 'cytopia/yamllint:1.25' }
 cesBuildLib = library(identifier: "ces-build-lib@${cesBuildLibVersion}",
         retriever: modernSCM([$class: 'GitSCMSource', remote: cesBuildLibRepo])
 ).com.cloudogu.ces.cesbuildlib
+
+gitOpsBuildLib = library(identifier: "gitops-build-lib@${gitOpsBuildLibVersion}",
+    retriever: modernSCM([$class: 'GitSCMSource', remote: gitOpsBuildLibRepo])
+).com.cloudogu.gitops.gitopsbuildlib
 
 properties([
         // Don't run concurrent builds, because the ITs use the same port causing random failures on concurrent builds.
@@ -50,6 +56,8 @@ void validateYamlResources(String configFile, String targetDirectory) {
 node {
 
     mvn = cesBuildLib.MavenWrapper.new(this)
+
+    gitops = gitOpsBuildLib.GitOps.new(this, cesBuildLibRepo, cesBuildLibVersion)
 
     catchError {
 
@@ -303,3 +311,4 @@ class GitRepo {
 }
 
 def cesBuildLib
+def gitOpsBuildLib
