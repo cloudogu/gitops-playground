@@ -53,6 +53,10 @@ function main() {
   ### Common Repos
   addRepo "common" "spring-boot-helm-chart"
   setPermission "common" "spring-boot-helm-chart" "_anonymous" "READ"
+  addRepo "common" "gitops-build-lib"
+  setPermission "common" "gitops-build-lib" "_anonymous" "READ"
+  addRepo "common" "ces-build-lib"
+  setPermission "common" "ces-build-lib" "_anonymous" "READ"
 
   configJenkins
 

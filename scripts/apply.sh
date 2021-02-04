@@ -38,11 +38,11 @@ function main() {
     backgroundLogFile=$(mktemp /tmp/playground-log-XXXXXXXXX.log)
     echo "Full log output is appended to ${backgroundLogFile}"
   fi
-  
+
   evalWithSpinner applyBasicK8sResources "Basic setup & starting registry..."
   evalWithSpinner initSCMM "Starting SCM-Manager..."
-  
-  # We need to query remote IP here (in the main process) again, because the "initSCMM" methods might be running in a 
+
+  # We need to query remote IP here (in the main process) again, because the "initSCMM" methods might be running in a
   # background process (to display the spinner only)
   setExternalHostnameIfNecessary 'scmm' 'scmm-scm-manager' 'default'
 
@@ -58,7 +58,7 @@ function main() {
 
   # Start Jenkins last, so all repos have been initialized when repo indexing starts
   evalWithSpinner initJenkins "Starting Jenkins..."
-  
+
   printWelcomeScreen
 }
 
@@ -111,6 +111,9 @@ function initSCMM() {
   setExternalHostnameIfNecessary 'scmm' 'scmm-scm-manager' 'default'
   
   pushHelmChartRepo 'common/spring-boot-helm-chart'
+  pushRepoMirror 'https://github.com/cloudogu/gitops-build-lib.git' 'common/gitops-build-lib'
+  pushRepoMirror 'https://github.com/cloudogu/ces-build-lib.git' 'common/ces-build-lib' 'develop'
+
 }
 
 function setExternalHostnameIfNecessary() {
@@ -242,7 +245,7 @@ function pushPetClinicRepo() {
 
   rm -rf "${TMP_REPO}"
 
-  setMainBranch "${TARGET_REPO_SCMM}"
+  setDefaultBranch "${TARGET_REPO_SCMM}"
 }
 
 function pushHelmChartRepo() {
@@ -267,7 +270,25 @@ function pushHelmChartRepo() {
 
   rm -rf "${TMP_REPO}"
 
-  setMainBranch "${TARGET_REPO_SCMM}"
+  setDefaultBranch "${TARGET_REPO_SCMM}"
+}
+
+function pushRepoMirror() {
+  SOURCE_REPO_URL="$1"
+  TARGET_REPO_SCMM="$2"
+  DEFAULT_BRANCH="${3:-main}"
+
+  TMP_REPO=$(mktemp -d)
+  git clone --bare "${SOURCE_REPO_URL}" "${TMP_REPO}" --quiet
+  (
+    cd "${TMP_REPO}"
+    waitForScmManager
+    git push --mirror "http://${SET_USERNAME}:${SET_PASSWORD}@${hostnames[scmm]}:${ports[scmm]}/scm/repo/${TARGET_REPO_SCMM}" --force --quiet
+  )
+
+  rm -rf "${TMP_REPO}"
+
+  setDefaultBranch "${TARGET_REPO_SCMM}" "${DEFAULT_BRANCH}"
 }
 
 function waitForScmManager() {
@@ -298,7 +319,7 @@ function initRepo() {
     git push -u "http://${SET_USERNAME}:${SET_PASSWORD}@${hostnames[scmm]}:${ports[scmm]}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force
   )
 
-  setMainBranch "${TARGET_REPO_SCMM}"
+  setDefaultBranch "${TARGET_REPO_SCMM}"
 }
 
 function initRepoWithSource() {
@@ -321,14 +342,15 @@ function initRepoWithSource() {
 
   rm -rf "${TMP_REPO}"
 
-  setMainBranch "${TARGET_REPO_SCMM}"
+  setDefaultBranch "${TARGET_REPO_SCMM}"
 }
 
-function setMainBranch() {
+function setDefaultBranch() {
   TARGET_REPO_SCMM="$1"
+  DEFAULT_BRANCH="${2:-main}"
 
   curl -s -L -X PUT -H 'Content-Type: application/vnd.scmm-gitConfig+json' \
-    --data-raw "{\"defaultBranch\":\"main\"}" \
+    --data-raw "{\"defaultBranch\":\"${DEFAULT_BRANCH}\"}" \
     "http://${SET_USERNAME}:${SET_PASSWORD}@${hostnames[scmm]}:${ports[scmm]}/scm/api/v2/config/git/${TARGET_REPO_SCMM}"
 }
 
