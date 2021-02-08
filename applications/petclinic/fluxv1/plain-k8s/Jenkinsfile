@@ -7,17 +7,13 @@ String getConfigRepositoryUrl() { "http://scmm-scm-manager/scm/repo/fluxv1/gitop
 String getConfigRepositoryPRUrl() { 'http://scmm-scm-manager/scm/api/v2/pull-requests/fluxv1/gitops' }
 // The docker daemon cant use the k8s service name, because it is not running inside the cluster
 String getDockerRegistryBaseUrl() { "localhost:30000" }
-String getCesBuildLibRepo() { 'https://github.com/cloudogu/ces-build-lib/' }
+String getCesBuildLibRepo() { 'https://github.com/cloudogu/ces-build-lib/' } // TODO change back to scmm repo
 String getCesBuildLibVersion() { '1.44.3' }
-String getGitOpsBuildLibRepo() { 'http://scmm-scm-manager/scm/repo/common/gitops-build-lib' }
-String getGitOpsBuildLibVersion() { '0.0.2' }
+String getGitOpsBuildLibRepo() { 'https://github.com/cloudogu/gitops-build-lib' } // TODO change to scmm repo?
+String getGitOpsBuildLibVersion() { 'feature/base_structure' }
 String getMainBranch() { 'main' } 
-String getK8sVersion() { '1.18.1 '} #
-String getConfigDir() { '.config'} #
 
 // images, helm also offers kubeval
-String getHelmImage() { 'ghcr.io/cloudogu/helm:3.4.1-1'}
-String getYamlLintImage() { 'cytopia/yamllint:1.25' }
 
 cesBuildLib = library(identifier: "ces-build-lib@${cesBuildLibVersion}",
         retriever: modernSCM([$class: 'GitSCMSource', remote: cesBuildLibRepo])
@@ -36,8 +32,6 @@ node {
 
     mvn = cesBuildLib.MavenWrapper.new(this)
 
-    gitops = gitOpsBuildLib.GitOps.new(this, application, cesBuildLibRepo, cesBuildLibVersion, scmManagerCredentials)
-
     catchError {
 
         stage('Checkout') {
@@ -45,39 +39,43 @@ node {
         }
 
         stage('Build') {
-            mvn 'clean package -DskipTests'
+           mvn 'clean package -DskipTests'
 
-            archiveArtifacts artifacts: '**/target/*.jar'
+           archiveArtifacts artifacts: '**/target/*.jar'
         }
 
         stage('Test') {
-            mvn "test -Dmaven.test.failure.ignore=true"
+           mvn "test -Dmaven.test.failure.ignore=true"
         }
 
         String imageName = ""
         stage('Docker') {
-            String imageTag = gitops.createImageTag()
-            imageName = "${dockerRegistryBaseUrl}/${application}:${imageTag}"
-            mvn "spring-boot:build-image -DskipTests -Dspring-boot.build-image.imageName=${imageName}"
+           String imageTag = createImageTag()
+           imageName = "${dockerRegistryBaseUrl}/${application}:${imageTag}"
+           mvn "spring-boot:build-image -DskipTests -Dspring-boot.build-image.imageName=${imageName}"
 
-            if (isBuildSuccessful()) {
-                def docker = cesBuildLib.Docker.new(this)
-                docker.withRegistry("http://${dockerRegistryBaseUrl}") {
-                    def image = docker.image(imageName)
-                    image.push()
-                }
-            } else {
-                echo 'Skipping docker push, because build not successful'
-            }
+           if (isBuildSuccessful()) {
+               def docker = cesBuildLib.Docker.new(this)
+               docker.withRegistry("http://${dockerRegistryBaseUrl}") {
+                   def image = docker.image(imageName)
+                   image.push()
+               }
+           } else {
+               echo 'Skipping docker push, because build not successful'
+           }
         }
 
         stage('Deploy') {
             if (isBuildSuccessful() && env.BRANCH_NAME in [mainBranch]) {
 
+                // TODO set validation
                 def gitopsConfig = [
                         scmmCredentialsId: scmManagerCredentials,
                         scmmConfigRepoUrl: configRepositoryUrl,
                         scmmPullRequestUrl: configRepositoryPRUrl,
+                        cesBuildLibRepo: cesBuildLibRepo,
+                        cesBuildLibVersion: cesBuildLibVersion,
+                        application: application,
                         mainBranch: mainBranch,
                         updateImages: [
                                 [ deploymentFilename: "deployment.yaml",
@@ -96,8 +94,8 @@ node {
                         ]
                 ]
 
-                String pushedChanges = gitops.pushToConfigRepo(gitopsConfig)
-                currentBuild.description = gitops.createBuildDescription(pushedChanges, imageName)
+                deployViaGitops(gitopsConfig)
+                
             } else {
                 echo 'Skipping deploy, because build not successful or not on main branch'
             }
@@ -106,6 +104,18 @@ node {
 
     // Archive Unit and integration test results, if any
     junit allowEmptyResults: true, testResults: '**/target/failsafe-reports/TEST-*.xml,**/target/surefire-reports/TEST-*.xml'
+}
+
+String createImageTag() {
+    def git = cesBuildLib.Git.new(this)
+    String branch = git.simpleBranchName
+    String branchSuffix = ""
+
+    if (!"develop".equals(branch)) {
+        branchSuffix = "-${branch}"
+    }
+
+    return "${new Date().format('yyyyMMddHHmm')}-${git.commitHashShort}${branchSuffix}"
 }
 
 def cesBuildLib
