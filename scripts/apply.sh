@@ -138,7 +138,8 @@ function initJenkins() {
   # Find out the docker group and put the agent into it. Otherwise it has no permission to access  the docker host.
   helm upgrade -i jenkins --values jenkins/values.yaml \
     $(jenkinsHelmSettingsForLocalCluster) --set agent.runAsGroup=$(queryDockerGroupOfJenkinsNode) \
-    --version 2.13.0 jenkins/jenkins -n default
+    --version 2.19.0 jenkins/jenkins -n default
+
 }
 
 function queryDockerGroupOfJenkinsNode() {
