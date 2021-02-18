@@ -106,7 +106,7 @@ function setPermission() {
 
 function configJenkins() {
   ./curl -i -L -X PUT -H 'Content-Type: application/json' \
-    --data-raw '{"disableRepositoryConfiguration":false,"disableMercurialTrigger":false,"disableGitTrigger":false,"disableEventTrigger":false,"url":"http://jenkins:8080"}' \
+    --data-raw '{"disableRepositoryConfiguration":false,"disableMercurialTrigger":false,"disableGitTrigger":false,"disableEventTrigger":false,"url":"http://jenkins"}' \
     "http://${SCM_USER}:${SCM_PWD}@${HOST}/scm/api/v2/config/jenkins/"
 }
 
