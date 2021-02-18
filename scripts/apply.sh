@@ -9,6 +9,7 @@ PLAYGROUND_DIR="$(cd ${BASEDIR} && cd .. && pwd)"
 PETCLINIC_COMMIT=949c5af
 SPRING_BOOT_HELM_CHART_COMMIT=0.2.0
 JENKINS_HELM_CHART_VERSION=3.1.9
+SCMM_HELM_CHART_VERSION=2.13.0
 
 declare -A hostnames
 hostnames[scmm]="localhost"
@@ -101,6 +102,7 @@ function applyBasicK8sResources() {
   helm repo add stable https://charts.helm.sh/stable
   helm repo add argo https://argoproj.github.io/argo-helm
   helm repo add bitnami https://charts.bitnami.com/bitnami
+  helm repo add scm-manager https://packages.scm-manager.org/repository/helm-v2-releases/
   helm repo update
 
   helm upgrade -i docker-registry --values docker-registry/values.yaml --version 1.9.4 stable/docker-registry -n default
@@ -109,7 +111,8 @@ function applyBasicK8sResources() {
 function initSCMM() {
   helm upgrade -i scmm --values scm-manager/values.yaml \
     --set-file=postStartHookScript=scm-manager/initscmm.sh \
-    $(scmmHelmSettingsForRemoteCluster) scm-manager/chart -n default
+    $(scmmHelmSettingsForRemoteCluster) \
+    --version ${SCMM_HELM_CHART_VERSION} scm-manager/scm-manager -n default
 
   setExternalHostnameIfNecessary 'scmm' 'scmm-scm-manager' 'default'
 
