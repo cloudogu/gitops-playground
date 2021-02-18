@@ -221,6 +221,11 @@ agent:
       hostPath: /tmp/k8s-gitops-playground-jenkins-agent
       mountPath: /tmp/k8s-gitops-playground-jenkins-agent
     - type: HostPath
+      # Persist Jenkins-home on build-agents, e.g. for maven repos
+      # That is, muuuch faster builds after the first one
+      hostPath: /tmp/k8s-gitops-playground-jenkins-agent
+      mountPath: /home/jenkins
+    - type: HostPath
       # For this demo, allow jenkins controller to access docker client
       hostPath: /var/run/docker.sock
       mountPath: /var/run/docker.sock
