@@ -1,12 +1,12 @@
 # For updating, delete pvc jenkins-docker-client
 dockerClientVersion: 19.03.9
 
-master:
+controller:
   # to prevent the jenkins-ui-test pod being created
   testEnabled: false
   # Use deterministic version and not "lts", which is pretty much the same as "latest".
   # Note: When updating, check if PATH of image still matches the one listed in "containerEnv"
-  tag: 2.249.3-lts-jdk11
+  tag: 2.263.4-lts-jdk11
 
   serviceType: LoadBalancer
   servicePort: 80
@@ -14,6 +14,10 @@ master:
   nodePort: 9090
 
   additionalPlugins:
+    # Credentials plugins is a transitive dependency.
+    # We pin it's version here because it caused problems with CASC plugin in the past.
+    # CASC plugin is pinned in controller.plugins field of the chart.
+    - credentials:2.3.15
     - docker-workflow:1.25
     - docker-plugin:1.2.1
     - job-dsl:1.77
@@ -26,10 +30,10 @@ master:
   # BUT: This also leads to CASC being ignored.
   # initializeOnce: true
 
-  # Don't use master for builds
+  # Don't use controller for builds
   numExecutors: 0
 
-  # Master and agents need to run on the same host. See comment above agent.workingDir for details.
+  # controller and agents need to run on the same host. See comment above agent.workingDir for details.
   nodeSelector:
     node: jenkins
 
@@ -126,7 +130,7 @@ master:
       # Default /run/secrets results in "read-only file system"
       value: /secrets/jenkins
     - name: PATH
-      # We already mounted this PATH on the master-agent. Still, "docker.inside {}" fails in pipeline?
+      # We already mounted this PATH on the controller-agent. Still, "docker.inside {}" fails in pipeline?
       # Why? The docker pipeline plugin seems to set an empty environment: https://github.com/jenkinsci/docker-workflow-plugin/blob/docker-workflow-1.25/src/main/java/org/jenkinsci/plugins/docker/workflow/client/DockerClient.java#L261
       # Workaround: Set the ENV in the container:
       value: /opt/java/openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/tmp/docker
@@ -139,7 +143,7 @@ master:
       securityContext:
         runAsUser: 1000
       image: bash:5.1.4
-      imagePullPolicy: "{{ .Values.master.imagePullPolicy }}"
+      imagePullPolicy: "{{ .Values.controller.imagePullPolicy }}"
       command: [ "/usr/local/bin/bash", "-c" ]
       args:
         - set -x -o nounset -o pipefail -o errexit;
@@ -195,7 +199,7 @@ agent:
   # If we should ever want to implement this, the logic can be reused from Git History:
   # https://github.com/cloudogu/k8s-gitops-playground/blob/61e033/scripts/apply.sh#L211-L235
   # We mount the same PATH as a hostPath. See bellow.
-  # On Multi Node Clusters this leads to the requirement that Jenkins Master and agents run on the same host
+  # On Multi Node Clusters this leads to the requirement that Jenkins controller and agents run on the same host
   # We realize this using nodeSelectors 
   workingDir: "/tmp/k8s-gitops-playground-jenkins-agent"
   nodeSelector:
@@ -217,16 +221,16 @@ agent:
       hostPath: /tmp/k8s-gitops-playground-jenkins-agent
       mountPath: /tmp/k8s-gitops-playground-jenkins-agent
     - type: HostPath
-      # For this demo, allow jenkins master to access docker client
+      # For this demo, allow jenkins controller to access docker client
       hostPath: /var/run/docker.sock
       mountPath: /var/run/docker.sock
     - type: HostPath
       # Use a static docker binary.
-      # It's downloaded by the jenkins master's init container, so it needs to be done only once.
+      # It's downloaded by the jenkins controller's init container, so it needs to be done only once.
       hostPath: /tmp/docker/
       mountPath: /tmp/docker/
   # Controls how agent pods are retained after the Jenkins build completes
   # Not in Jenkins but in K8s. Helpful for debugging
-  # In order to get rid of those many "default-xyz" pod use: kubectl delete pod -l jenkins/jenkins-jenkins-slave=true
+  # In order to get rid of those many "default-xyz" pod use: kubectl delete pod -l jenkins/jenkins-jenkins-agent=true
   podRetention: "OnFailure"
 
