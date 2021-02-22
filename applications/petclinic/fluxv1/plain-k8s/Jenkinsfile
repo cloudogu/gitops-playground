@@ -9,7 +9,7 @@ String getConfigRepositoryPRRepo() { 'fluxv1/gitops' }
 // The docker daemon cant use the k8s service name, because it is not running inside the cluster
 String getDockerRegistryBaseUrl() { "localhost:30000" }
 String getCesBuildLibRepo() { 'https://github.com/cloudogu/ces-build-lib/' } // TODO change back to scmm repo
-String getCesBuildLibVersion() { '1.45.0' }
+String getCesBuildLibVersion() { 'bugfix/location_for_prId' }
 String getGitOpsBuildLibRepo() { 'https://github.com/cloudogu/gitops-build-lib' } // TODO change to scmm repo?
 String getGitOpsBuildLibVersion() { 'feature/tests' }
 String getMainBranch() { 'main' } 
