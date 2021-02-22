@@ -4,13 +4,14 @@
 String getApplication() {"spring-petclinic-plain" }
 String getScmManagerCredentials() { 'scmm-user' }
 String getConfigRepositoryUrl() { "http://scmm-scm-manager/scm/repo/fluxv1/gitops" }
-String getConfigRepositoryPRUrl() { 'http://scmm-scm-manager/scm/api/v2/pull-requests/fluxv1/gitops' }
+String getConfigRepositoryPRBaseUrl() { 'http://scmm-scm-manager/scm' }
+String getConfigRepositoryPRRepo() { 'fluxv1/gitops' }
 // The docker daemon cant use the k8s service name, because it is not running inside the cluster
 String getDockerRegistryBaseUrl() { "localhost:30000" }
 String getCesBuildLibRepo() { 'https://github.com/cloudogu/ces-build-lib/' } // TODO change back to scmm repo
-String getCesBuildLibVersion() { '1.44.3' }
+String getCesBuildLibVersion() { '1.45.0' }
 String getGitOpsBuildLibRepo() { 'https://github.com/cloudogu/gitops-build-lib' } // TODO change to scmm repo?
-String getGitOpsBuildLibVersion() { '0.0.4' }
+String getGitOpsBuildLibVersion() { 'feature/tests' }
 String getMainBranch() { 'main' } 
 
 // images, helm also offers kubeval
@@ -39,30 +40,30 @@ node {
         }
 
         stage('Build') {
-           mvn 'clean package -DskipTests'
+          mvn 'clean package -DskipTests'
 
-           archiveArtifacts artifacts: '**/target/*.jar'
+          archiveArtifacts artifacts: '**/target/*.jar'
         }
 
         stage('Test') {
-           mvn "test -Dmaven.test.failure.ignore=true"
+          mvn "test -Dmaven.test.failure.ignore=true"
         }
 
         String imageName = ""
         stage('Docker') {
-           String imageTag = createImageTag()
-           imageName = "${dockerRegistryBaseUrl}/${application}:${imageTag}"
-           mvn "spring-boot:build-image -DskipTests -Dspring-boot.build-image.imageName=${imageName}"
+          String imageTag = createImageTag()
+          imageName = "${dockerRegistryBaseUrl}/${application}:${imageTag}"
+          mvn "spring-boot:build-image -DskipTests -Dspring-boot.build-image.imageName=${imageName}"
 
-           if (isBuildSuccessful()) {
-               def docker = cesBuildLib.Docker.new(this)
-               docker.withRegistry("http://${dockerRegistryBaseUrl}") {
-                   def image = docker.image(imageName)
-                   image.push()
-               }
-           } else {
-               echo 'Skipping docker push, because build not successful'
-           }
+          if (isBuildSuccessful()) {
+              def docker = cesBuildLib.Docker.new(this)
+              docker.withRegistry("http://${dockerRegistryBaseUrl}") {
+                  def image = docker.image(imageName)
+                  image.push()
+              }
+          } else {
+              echo 'Skipping docker push, because build not successful'
+          }
         }
 
         stage('Deploy') {
@@ -72,7 +73,8 @@ node {
                 def gitopsConfig = [
                         scmmCredentialsId: scmManagerCredentials,
                         scmmConfigRepoUrl: configRepositoryUrl,
-                        scmmPullRequestUrl: configRepositoryPRUrl,
+                        scmmPullRequestBaseUrl: configRepositoryPRBaseUrl,
+                        scmmPullRequestRepo: configRepositoryPRRepo,
                         cesBuildLibRepo: cesBuildLibRepo,
                         cesBuildLibVersion: cesBuildLibVersion,
                         application: application,
