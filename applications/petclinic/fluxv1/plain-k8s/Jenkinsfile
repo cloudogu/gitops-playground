@@ -11,7 +11,7 @@ String getDockerRegistryBaseUrl() { "localhost:30000" }
 String getCesBuildLibRepo() { 'https://github.com/cloudogu/ces-build-lib/' } // TODO change back to scmm repo
 String getCesBuildLibVersion() { 'bugfix/location_for_prId' }
 String getGitOpsBuildLibRepo() { 'https://github.com/cloudogu/gitops-build-lib' } // TODO change to scmm repo?
-String getGitOpsBuildLibVersion() { 'feature/tests' }
+String getGitOpsBuildLibVersion() { 'feature/helm-git' }
 String getMainBranch() { 'main' } 
 
 // images, helm also offers kubeval
@@ -79,10 +79,15 @@ node {
                         cesBuildLibVersion: cesBuildLibVersion,
                         application: application,
                         mainBranch: mainBranch,
-                        updateImages: [
-                                [ deploymentFilename: "deployment.yaml",
-                                  containerName: application,
-                                  imageName: imageName ]
+                        deployments: [
+                            sourcePath: 'k8s',
+                            plain: [
+                                updateImages: [
+                                    [ deploymentFilename: "deployment.yaml",
+                                    containerName: application,
+                                    imageName: imageName ]
+                                ]
+                            ]
                         ],
                         // stages consists of [ $branchName: [ $deployConfig ]]
                         // where $deployConfig is an array which consists of $deployDirectly

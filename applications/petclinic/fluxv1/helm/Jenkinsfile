@@ -2,14 +2,16 @@
 
 String getApplication() { "spring-petclinic-helm" }
 String getScmManagerCredentials() { 'scmm-user' }
-String getConfigRepositoryUrl() { 'scmm-scm-manager/scm/repo/fluxv1/gitops' }
-String getConfigRepositoryPRUrl() { 'scmm-scm-manager/scm/api/v2/pull-requests/fluxv1/gitops' }
+String getConfigRepositoryUrl() { "http://scmm-scm-manager/scm/repo/fluxv1/gitops" }
+String getConfigRepositoryPRBaseUrl() { 'http://scmm-scm-manager/scm' }
+String getConfigRepositoryPRRepo() { 'fluxv1/gitops' }
 // The docker daemon cant use the k8s service name, because it is not running inside the cluster
 String getDockerRegistryBaseUrl() { "localhost:30000" }
-String getCesBuildLibVersion() { '1.44.3' }
-String getCesBuildLibRepo() { 'https://github.com/cloudogu/ces-build-lib/' }
-String getHelmImage() { 'ghcr.io/cloudogu/helm:3.4.1-1' }
-String getHelmChartRepository() { 'scmm-scm-manager.default.svc.cluster.local/scm/repo/common/spring-boot-helm-chart' }
+String getCesBuildLibRepo() { 'https://github.com/cloudogu/ces-build-lib/' } // TODO change back to scmm repo
+String getCesBuildLibVersion() { 'bugfix/location_for_prId' }
+String getGitOpsBuildLibRepo() { 'https://github.com/cloudogu/gitops-build-lib' } // TODO change to scmm repo?
+String getGitOpsBuildLibVersion() { 'feature/helm-git' }
+String getHelmChartRepository() { 'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/common/spring-boot-helm-chart' }
 String getHelmChartName() { "springboot" }
 String getHelmChartVersion() { "1.0.0" }
 String getMainBranch() { 'main' }
@@ -17,6 +19,10 @@ String getMainBranch() { 'main' }
 cesBuildLib = library(identifier: "ces-build-lib@${cesBuildLibVersion}",
         retriever: modernSCM([$class: 'GitSCMSource', remote: cesBuildLibRepo])
 ).com.cloudogu.ces.cesbuildlib
+
+gitOpsBuildLib = library(identifier: "gitops-build-lib@${gitOpsBuildLibVersion}",
+    retriever: modernSCM([$class: 'GitSCMSource', remote: gitOpsBuildLibRepo])
+).com.cloudogu.gitops.gitopsbuildlib
 
 properties([
         // Don't run concurrent builds, because the ITs use the same port causing random failures on concurrent builds.
@@ -63,19 +69,38 @@ node {
 
                 def gitopsConfig = [
                         scmmCredentialsId : scmManagerCredentials,
-                        scmmConfigRepoUrl : "http://${configRepositoryUrl}",
-                        scmmPullRequestUrl: "http://${configRepositoryPRUrl}",
-                        helmChart         : [
-                                repoType : 'GIT',
-                                repoUrl  : "http://${helmChartRepository}",
+                        scmmConfigRepoUrl : configRepositoryUrl,
+                        scmmPullRequestBaseUrl: configRepositoryPRBaseUrl,
+                        scmmPullRequestRepo: configRepositoryPRRepo,
+                        cesBuildLibRepo: cesBuildLibRepo,
+                        cesBuildLibVersion: cesBuildLibVersion,
+                        application: application,
+                        mainBranch: mainBranch,
+                        deployments: [
+                            sourcePath: 'k8s'
+                            helm : [
+                                repoType : 'HELM',
+                                credentialsId : 'creds',
+                                repoUrl  : helmChartRepository},
                                 chartName: helmChartName,
                                 version  : helmChartVersion,
-                                updateValues: [ [fieldPath: "image.name", newValue: imageName] ]
+                                extraResources: ['config, secrets'], // files or folders relative to deployments.path. Default empty array. 
+                                updateValues  : [[fieldPath: "image.name", newValue: imageName]]
+                            ]
+                        ],
+                        // stages consists of [ $branchName: [ $deployConfig ]]
+                        // where $deployConfig is an array which consists of $deployDirectly
+                        //
+                        // deployDirectly: true  -> deploys directly
+                        // deployDirectly: false -> creates a PR (default)
+                        stages: [
+                                staging: [ deployDirectly: true ],
+                                production: [ deployDirectly: false ],
+                                qa: [ ]
                         ]
                 ]
 
-                String pushedChanges = pushToConfigRepo(gitopsConfig)
-                currentBuild.description = createBuildDescription(pushedChanges, imageName)
+                deployViaGitops(gitopsConfig)
             } else {
                 echo 'Skipping deploy, because build not successful or not on main branch'
             }
@@ -86,150 +111,6 @@ node {
     junit allowEmptyResults: true, testResults: '**/target/failsafe-reports/TEST-*.xml,**/target/surefire-reports/TEST-*.xml'
 }
 
-String pushToConfigRepo(Map gitopsConfig) {
-
-    def git = cesBuildLib.Git.new(this, scmManagerCredentials)
-    def changesOnGitOpsRepo = ''
-
-    // Query and store info about application repo before cloning into gitops repo
-    def applicationRepo = GitRepo.create(git)
-
-    // Display that Jenkins made the GitOps commits not the application repo author
-    git.committerName = 'Jenkins'
-    git.committerEmail = 'jenkins@cloudogu.com'
-
-    def configRepoTempDir = '.configRepoTempDir'
-
-    try {
-
-        dir(configRepoTempDir) {
-
-            git url: gitopsConfig.scmmConfigRepoUrl, branch: mainBranch, changelog: false, poll: false
-            git.fetch()
-
-            def repoChanges = new HashSet<String>()
-            repoChanges += createApplicationForStageAndPushToBranch 'staging', mainBranch, applicationRepo, git, gitopsConfig
-
-            git.checkoutOrCreate(application)
-            repoChanges += createApplicationForStageAndPushToBranch 'production', application, applicationRepo, git, gitopsConfig
-
-            changesOnGitOpsRepo = aggregateChangesOnGitOpsRepo(repoChanges)
-
-            if (changesOnGitOpsRepo) {
-                createPullRequest(gitopsConfig)
-            }
-        }
-    } finally {
-        sh "rm -rf ${configRepoTempDir}"
-    }
-
-    return changesOnGitOpsRepo
-}
-
-String createApplicationForStageAndPushToBranch(String stage, String branch, GitRepo applicationRepo, def git, Map gitopsConfig) {
-
-    String commitPrefix = stage == 'staging' ? '[S] ' : ''
-
-    sh "mkdir -p ${stage}/${application}"
-
-    // writing the merged-values.yaml via writeYaml into a file has the advantage, that it gets formatted as valid yaml
-    // This makes it easier to read in and indent for the inline use in the helmRelease.
-    // It enables us to reuse the `fileToInlineYaml` function, without writing a complex formatting logic.
-    writeFile file: "${stage}/${application}/mergedValues.yaml", text: mergeValues(gitopsConfig.helmChart.repoUrl, ["${env.WORKSPACE}/k8s/values-${stage}.yaml", "${env.WORKSPACE}/k8s/values-shared.yaml"] as String[])
-    updateYamlValue("${stage}/${application}/mergedValues.yaml", gitopsConfig)
-
-    writeFile file: "${stage}/${application}/helmRelease.yaml", text: createHelmRelease(gitopsConfig.helmChart, "fluxv1-${stage}", "${stage}/${application}/mergedValues.yaml")
-
-    // since the values are already inline (helmRelease.yaml) we do not need to commit them into the gitops repo
-    sh "rm ${stage}/${application}/mergedValues.yaml"
-
-    git.add('.')
-    if (git.areChangesStagedForCommit()) {
-        git.commit(commitPrefix + createApplicationCommitMessage(git, applicationRepo), applicationRepo.authorName, applicationRepo.authorEmail)
-
-        // If some else pushes between the pull above and this push, the build will fail.
-        // So we pull if push fails and try again
-        git.pushAndPullOnFailure("origin ${branch}")
-        return "${stage} (${git.commitHashShort})"
-    } else {
-        echo "No changes on gitOps repo for ${stage} (branch: ${branch}). Not committing or pushing."
-        return ''
-    }
-}
-
-// Updates a specific yaml value of a file given by its path (e.g. "image.name")
-void updateYamlValue(String yamlFilePath, Map gitopsConfig) {
-    def data = readYaml file: yamlFilePath
-    gitopsConfig.helmChart.updateValues.each {
-        String[] paths = it["fieldPath"].split("\\.")
-        def _tmp = data
-        paths.eachWithIndex { String p, int i ->
-            def tmp = _tmp.get(p)
-            if (i == paths.length - 1 && tmp != null) {
-                _tmp.put(p, it["newValue"])
-            }
-            _tmp = tmp
-        }
-    }
-
-    writeYaml file: yamlFilePath, data: data, overwrite: true
-}
-
-private String aggregateChangesOnGitOpsRepo(changes) {
-    // Remove empty
-    (changes - '')
-    // and concat into string
-            .join('; ')
-}
-
-String createApplicationCommitMessage(def git, def applicationRepo) {
-    String issueIds = (applicationRepo.commitMessage =~ /#\d*/).collect { "${it} " }.join('')
-
-    String[] urlSplit = applicationRepo.repositoryUrl.split('/')
-    def repoNamespace = urlSplit[-2]
-    def repoName = urlSplit[-1]
-    String message = "${issueIds}${repoNamespace}/${repoName}@${applicationRepo.commitHash}"
-
-    return message
-}
-
-void createPullRequest(Map gitopsConfig) {
-    withCredentials([usernamePassword(credentialsId: gitopsConfig.scmmCredentialsId, passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USER')]) {
-
-        String script =
-                'curl -s -o /dev/null -w "%{http_code}" ' +
-                        "-u ${GIT_USER}:${GIT_PASSWORD} " +
-                        '-H "Content-Type: application/vnd.scmm-pullRequest+json;v=2" ' +
-                        '--data \'{"title": "created by service ' + application + '", "source": "' + application + '", "target": "' + mainBranch + '"}\' ' +
-                        gitopsConfig.scmmPullRequestUrl
-
-        // For debugging the quotation of the shell script, just do: echo script
-        String http_code = sh returnStdout: true, script: script
-
-        // At this point we could write a mail to the last committer that his commit triggered a new or updated GitOps PR
-
-        echo "http_code: ${http_code}"
-        // PR exists if we get 409
-        if (http_code != "201" && http_code != "409") {
-            unstable 'Could not create pull request'
-        }
-    }
-}
-
-private String createBuildDescription(String pushedChanges, String imageName) {
-    String description = ''
-    description += "GitOps commits: "
-
-    if (pushedChanges) {
-        description += pushedChanges
-    } else {
-        description += 'No changes'
-    }
-
-    description += "\nImage: ${imageName}"
-
-    return description
-}
 
 String createImageTag() {
     def git = cesBuildLib.Git.new(this)
@@ -243,82 +124,5 @@ String createImageTag() {
     return "${new Date().format('yyyyMMddHHmm')}-${git.commitHashShort}${branchSuffix}"
 }
 
-String createHelmRelease(Map helmChart, String namespace, String valuesFile) {
-    def values = fileToInlineYaml(valuesFile)
-    return """apiVersion: helm.fluxcd.io/v1
-kind: HelmRelease
-metadata:
-  name: ${application}
-  namespace: ${namespace}
-  annotations:
-    fluxcd.io/automated: "false"
-spec:
-  releaseName: ${application}
-  chart:
-    git: ${helmChart.repoUrl}
-    ref: ${helmChart.version}
-    path: .
-  values:
-    ${values}
-"""
-}
-
-String fileToInlineYaml(String fileContents) {
-    String values = ""
-    String indent = "    "
-    def fileContent = readFile fileContents
-    values += fileContent.split("\\n").join("\n" + indent)
-    return values
-}
-
-String mergeValues(String chart, String[] files) {
-    String merge = ""
-    String _files = ""
-    files.each {
-        _files += "-f $it "
-    }
-
-    sh "git clone ${chart} ${env.WORKSPACE}/spring-boot-helm-chart || true"
-
-    withHelm {
-        String script = "helm values ${env.WORKSPACE}/spring-boot-helm-chart ${_files}"
-        merge = sh returnStdout: true, script: script
-    }
-
-    sh "rm -rf ${env.WORKSPACE}/spring-boot-helm-chart || true"
-
-    return merge
-}
-
-void withHelm(Closure body) {
-    cesBuildLib.Docker.new(this).image(helmImage)
-            .inside("${pwd().equals(env.WORKSPACE) ? '' : "-v ${env.WORKSPACE}:${env.WORKSPACE}"}") {
-                body()
-            }
-}
-
-/** Queries and stores info about current repo and HEAD commit */
-class GitRepo {
-
-    static GitRepo create(git) {
-        // Constructors can't be used in Jenkins pipelines due to CPS
-        // https://www.jenkins.io/doc/book/pipeline/cps-method-mismatches/#constructors
-        return new GitRepo(git.commitAuthorName, git.commitAuthorEmail, git.commitHashShort, git.commitMessage, git.repositoryUrl)
-    }
-
-    GitRepo(String authorName, String authorEmail, String commitHash, String commitMessage, String repositoryUrl) {
-        this.authorName = authorName
-        this.authorEmail = authorEmail
-        this.commitHash = commitHash
-        this.commitMessage = commitMessage
-        this.repositoryUrl = repositoryUrl
-    }
-
-    final String authorName
-    final String authorEmail
-    final String commitHash
-    final String commitMessage
-    final String repositoryUrl
-}
-
 def cesBuildLib
+def gitOpsBuildLib
