@@ -1,6 +1,3 @@
-image:
-  tag: 2.9.1
-
 service:
   port: 80
   nodePort: 9091
@@ -9,12 +6,12 @@ persistence:
   size: 1Gi
 
 pluginVersions:
-  mail: 2.3.0
-  review: 2.5.0
+  mail: 2.4.0
+  review: 2.6.2
   codeeditor: 1.0.0
   editor: 2.2.0
   activity: 2.0.0
-  jenkins: 2.1.0
+  jenkins: 2.2.0
   # Dependency for jenkins plugin
   el: 1.0.0
   

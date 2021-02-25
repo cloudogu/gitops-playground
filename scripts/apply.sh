@@ -8,6 +8,8 @@ PLAYGROUND_DIR="$(cd ${BASEDIR} && cd .. && pwd)"
 
 PETCLINIC_COMMIT=949c5af
 SPRING_BOOT_HELM_CHART_COMMIT=0.2.0
+JENKINS_HELM_CHART_VERSION=3.1.9
+SCMM_HELM_CHART_VERSION=2.13.0
 
 declare -A hostnames
 hostnames[scmm]="localhost"
@@ -65,11 +67,12 @@ function main() {
 function evalWithSpinner() {
   commandToEval=$1
   spinnerOutput=$2
-  
+
   if [[ $DEBUG == true ]]; then
     eval "$commandToEval"
-  else 
-    eval "$commandToEval" >> "${backgroundLogFile}" 2>&1 & spinner "${spinnerOutput}"
+  else
+    eval "$commandToEval" >>"${backgroundLogFile}" 2>&1 &
+    spinner "${spinnerOutput}"
   fi
 }
 
@@ -99,6 +102,8 @@ function applyBasicK8sResources() {
   helm repo add stable https://charts.helm.sh/stable
   helm repo add argo https://argoproj.github.io/argo-helm
   helm repo add bitnami https://charts.bitnami.com/bitnami
+  helm repo add scm-manager https://packages.scm-manager.org/repository/helm-v2-releases/
+  helm repo update
 
   helm upgrade -i docker-registry --values docker-registry/values.yaml --version 1.9.4 stable/docker-registry -n default
 }
@@ -106,10 +111,11 @@ function applyBasicK8sResources() {
 function initSCMM() {
   helm upgrade -i scmm --values scm-manager/values.yaml \
     --set-file=postStartHookScript=scm-manager/initscmm.sh \
-    $(scmmHelmSettingsForRemoteCluster) scm-manager/chart -n default
+    $(scmmHelmSettingsForRemoteCluster) \
+    --version ${SCMM_HELM_CHART_VERSION} scm-manager/scm-manager -n default
 
   setExternalHostnameIfNecessary 'scmm' 'scmm-scm-manager' 'default'
-  
+
   pushHelmChartRepo 'common/spring-boot-helm-chart'
   pushRepoMirror 'https://github.com/cloudogu/gitops-build-lib.git' 'common/gitops-build-lib'
   pushRepoMirror 'https://github.com/cloudogu/ces-build-lib.git' 'common/ces-build-lib' 'develop'
@@ -138,7 +144,7 @@ function initJenkins() {
   # Find out the docker group and put the agent into it. Otherwise it has no permission to access  the docker host.
   helm upgrade -i jenkins --values jenkins/values.yaml \
     $(jenkinsHelmSettingsForLocalCluster) --set agent.runAsGroup=$(queryDockerGroupOfJenkinsNode) \
-    --version 2.19.0 jenkins/jenkins -n default
+    --version ${JENKINS_HELM_CHART_VERSION} jenkins/jenkins -n default
 
 }
 
@@ -161,8 +167,8 @@ function jenkinsHelmSettingsForLocalCluster() {
 
     # We also need a host port, so jenkins can be reached via localhost:9090
     # But: This helm charts only uses the nodePort value, if the type is "NodePort". So change it for local cluster.
-    echo "--set master.runAsUser=$(id -u) --set agent.runAsUser=$(id -u)" \
-      "--set master.serviceType=NodePort" 
+    echo "--set controller.runAsUser=$(id -u) --set agent.runAsUser=$(id -u)" \
+      "--set controller.serviceType=NodePort"
   fi
 }
 
@@ -260,7 +266,7 @@ function pushHelmChartRepo() {
     git checkout ${SPRING_BOOT_HELM_CHART_COMMIT} --quiet
     # Create a defined version to use in demo applications
     git tag 1.0.0
-    
+
     git branch -d main
     git checkout -b main
 
@@ -309,8 +315,8 @@ function initRepo() {
   (
     cd "${TMP_REPO}"
     git checkout main --quiet || git checkout -b main --quiet
-    echo "# gitops" > README.md
-    echo $'.*\n!/.gitignore' > .gitignore
+    echo "# gitops" >README.md
+    echo $'.*\n!/.gitignore' >.gitignore
     git add README.md .gitignore
     # exits with 1 if there were differences and 0 means no differences.
     if ! git diff-index --exit-code --quiet HEAD --; then
@@ -370,7 +376,7 @@ function createUrl() {
 }
 
 function printWelcomeScreen() {
-  
+
   setExternalHostnameIfNecessary 'jenkins' 'jenkins' 'default'
 
   echo
@@ -397,11 +403,11 @@ function printWelcomeScreen() {
   echo "|"
   echo "| During the job, jenkins pushes into the corresponding GitOps repo and creates a pull request for production:"
   echo "|"
-  
+
   printWelcomeScreenFluxV1
-  
+
   printWelcomeScreenFluxV2
-  
+
   printWelcomeScreenArgocd
 
   echo "| After a successful Jenkins build, the staging application will be deployed into the cluster."
@@ -435,9 +441,9 @@ function printWelcomeScreenFluxV2() {
 }
 
 function printWelcomeScreenArgocd() {
-  
+
   setExternalHostnameIfNecessary 'argocd' 'argocd-server' 'argocd'
-  
+
   if [[ $INSTALL_ALL_MODULES == true || $INSTALL_ARGOCD == true ]]; then
     echo "| For ArgoCD:"
     echo "|"
@@ -451,35 +457,35 @@ function printWelcomeScreenArgocd() {
 }
 
 function printUsage() {
-    echo "This script will install all necessary resources for Flux V1, Flux V2 and ArgoCD into your k8s-cluster."
-    echo ""
-    printParameters
-    echo ""
+  echo "This script will install all necessary resources for Flux V1, Flux V2 and ArgoCD into your k8s-cluster."
+  echo ""
+  printParameters
+  echo ""
 }
 
 function printParameters() {
-    echo "The following parameters are valid:"
-    echo
-    echo " -h | --help     >> Help screen"
-    echo
-    echo "Install only the desired GitOps modules. Multiple selections possible."
-    echo "    | --fluxv1   >> Install the Flux V1 module"
-    echo "    | --fluxv2   >> Install the Flux V2 module"
-    echo "    | --argocd   >> Install the ArgoCD module"
-    echo
-    echo "    | --remote   >> Install on remote Cluster e.g. gcp"
-    echo
-    echo "    | --password=myPassword   >> Set initial admin passwords to 'myPassword'"
-    echo
-    echo " -w | --welcome  >> Welcome screen"
-    echo
-    echo " -d | --debug    >> Debug output"
+  echo "The following parameters are valid:"
+  echo
+  echo " -h | --help     >> Help screen"
+  echo
+  echo "Install only the desired GitOps modules. Multiple selections possible."
+  echo "    | --fluxv1   >> Install the Flux V1 module"
+  echo "    | --fluxv2   >> Install the Flux V2 module"
+  echo "    | --argocd   >> Install the ArgoCD module"
+  echo
+  echo "    | --remote   >> Install on remote Cluster e.g. gcp"
+  echo
+  echo "    | --password=myPassword   >> Set initial admin passwords to 'myPassword'"
+  echo
+  echo " -w | --welcome  >> Welcome screen"
+  echo
+  echo " -d | --debug    >> Debug output"
 }
 
 COMMANDS=$(getopt \
-                -o hwd \
-                --long help,fluxv1,fluxv2,argocd,welcome,debug,remote,username:,password: \
-                -- "$@")
+  -o hwd \
+  --long help,fluxv1,fluxv2,argocd,welcome,debug,remote,username:,password: \
+  -- "$@")
 
 if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
 
@@ -504,7 +510,7 @@ while true; do
     -w | --welcome  ) printWelcomeScreen; exit 0 ;;
     -d | --debug    ) DEBUG=true; shift ;;
     --              ) shift; break ;;
-    *               ) break ;;
+  *) break ;;
   esac
 done
 
@@ -512,4 +518,3 @@ confirm "Applying gitops playground to kubernetes cluster: '$(kubectl config cur
   exit 0
 
 main $DEBUG $INSTALL_ALL_MODULES $INSTALL_FLUXV1 $INSTALL_FLUXV2 $INSTALL_ARGOCD $REMOTE_CLUSTER $SET_USERNAME $SET_PASSWORD
-
