@@ -497,8 +497,7 @@ INSTALL_FLUXV1=false
 INSTALL_FLUXV2=false
 INSTALL_ARGOCD=false
 REMOTE_CLUSTER=false
-SET_USERNAME="admin"
-SET_PASSWORD="admin"
+
 while true; do
   case "$1" in
     -h | --help     ) printUsage; exit 0 ;;
