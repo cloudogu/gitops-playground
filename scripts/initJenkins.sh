@@ -83,11 +83,44 @@ function queryDockerGroupOfJenkinsNode() {
 
 function authenticate() {
   # get jenkins crumb
-  curl -s --cookie-jar /tmp/cookies -u admin:admin http://localhost:9090/crumbIssuer/api/json
+  crumb=$(curl -s --cookie-jar /tmp/cookies -u admin:admin http://localhost:9090/crumbIssuer/api/json)
 
   # get jenkins api token
-  curl -X POST -H 'Jenkins-Crumb:9b75f1589508e47b79a604d14ab0a40176e615030efee9834b9772be1649d432' --cookie /tmp/cookies http://localhost:9090/me/descriptorByName/jenkins.security.ApiTokenProperty/generateNewToken\?newTokenName\=\foo -u admin:admin
+  token=$(curl -X POST -H "Jenkins-Crumb:$crumb" --cookie /tmp/cookies http://localhost:9090/me/descriptorByName/jenkins.security.ApiTokenProperty/generateNewToken\?newTokenName\=\foo -u admin:admin)
 
 }
 
-initJenkins
+function createJob() {
+  # createJob
+  curl -s -XPOST 'http://localhost:9090/createItem?name=fooJob' -u admin:1135fdaf21646613c8601eb6a734ee922b --data-binary @/tmp/mylocalconfig.xml -H "Content-Type:text/xml"
+}
+
+function createCreds() {
+  # create creds
+  curl -X POST 'http://localhost:9090/credentials/store/system/domain/_/createCredentials' -u admin:1135fdaf21646613c8601eb6a734ee922b --data-urlencode 'json={
+    "": "0",
+    "credentials": {
+      "scope": "GLOBAL",
+      "id": "identification",
+      "username": "manu",
+      "password": "bar",
+      "description": "linda",
+      "$class": "com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl"
+    }
+  }'
+}
+
+function installPlugin() {
+  # install plugin
+  curl -X POST -d '<jenkins><install plugin="disk-usage@0.28" /></jenkins>' --header 'Content-Type: text/xml' http://localhost:9090/pluginManager/installNecessaryPlugins -u admin:1135fdaf21646613c8601eb6a734ee922b
+
+}
+
+function restart() {
+  # restart
+  curl -X POST http://localhost:9090/safeRestart -u admin:1135fdaf21646613c8601eb6a734ee922b
+}
+
+authenticate
+
+# initJenkins
