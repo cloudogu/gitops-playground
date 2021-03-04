@@ -84,9 +84,6 @@ node {
                                 repoUrl  : helmChartRepository,
                                 chartPath: helmChartName,
                                 version  : helmChartVersion,
-                                extraResources: ['config, secrets'], // files or folders relative to deployments.path. Default empty array. 
-                                
-                                
                             ]
                         ],
                         // stages consists of [ $branchName: [ $deployConfig ]]
