@@ -57,11 +57,11 @@ function main() {
   if [[ $INSTALL_ALL_MODULES = true || $INSTALL_ARGOCD = true ]]; then
     evalWithSpinner initArgo "Starting ArgoCD..."
   fi
-
-  # Start Jenkins last, so all repos have been initialized when repo indexing starts
-  evalWithSpinner initJenkins "Starting Jenkins..."
-
-  printWelcomeScreen
+#
+#  # Start Jenkins last, so all repos have been initialized when repo indexing starts
+#  evalWithSpinner initJenkins "Starting Jenkins..."
+#
+#  printWelcomeScreen
 }
 
 function evalWithSpinner() {
@@ -497,7 +497,8 @@ INSTALL_FLUXV1=false
 INSTALL_FLUXV2=false
 INSTALL_ARGOCD=false
 REMOTE_CLUSTER=false
-
+SET_USERNAME="admin"
+SET_PASSWORD="admin"
 while true; do
   case "$1" in
     -h | --help     ) printUsage; exit 0 ;;
