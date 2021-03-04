@@ -18,13 +18,13 @@ controller:
 #    # We pin it's version here because it caused problems with CASC plugin in the past.
 #    # CASC plugin is pinned in controller.plugins field of the chart.
     - credentials:2.3.15
-#    - docker-workflow:1.25
-#    - docker-plugin:1.2.1
-#    - job-dsl:1.77
-#    - pipeline-utility-steps:2.6.1
-#    - junit:1.48
-#    - scm-manager:1.5.1
-#    - html5-notifier-plugin:1.5
+    - docker-workflow:1.25
+    - docker-plugin:1.2.1
+    - job-dsl:1.77
+    - pipeline-utility-steps:2.6.1
+    - junit:1.48
+    - scm-manager:1.5.1
+    - html5-notifier-plugin:1.5
 
   # This would be great to not install every plugin again on startup.
   # BUT: This also leads to CASC being ignored.
@@ -36,6 +36,13 @@ controller:
   # controller and agents need to run on the same host. See comment above agent.workingDir for details.
   nodeSelector:
     node: jenkins
+
+  JCasC:
+    defaultConfig: true
+    configScripts:
+      welcome-message: |
+        jenkins:
+          systemMessage: Welcome to our CI\CD server.  This Jenkins is configured and managed 'as code'.
 
 #  JCasC:
 #    configScripts:
