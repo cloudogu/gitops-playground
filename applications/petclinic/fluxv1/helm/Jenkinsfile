@@ -84,6 +84,7 @@ node {
                                 repoUrl  : helmChartRepository,
                                 chartPath: helmChartName,
                                 version  : helmChartVersion,
+                                updateValues  : [[fieldPath: "image.name", newValue: imageName]]
                             ]
                         ],
                         // stages consists of [ $branchName: [ $deployConfig ]]
