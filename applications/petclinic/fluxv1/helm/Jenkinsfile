@@ -79,12 +79,12 @@ node {
                         deployments: [
                             sourcePath: 'k8s',
                             helm : [
-                                repoType : 'HELM',
+                                repoType : 'GIT',
                                 credentialsId : 'creds',
-                                repoUrl  : helmChartRepository},
+                                repoUrl  : helmChartRepository,
                                 chartName: helmChartName,
                                 version  : helmChartVersion,
-                                extraResources: ['config, secrets'], // files or folders relative to deployments.path. Default empty array. 
+                                extraResources: ['configMap.yaml, secrets'], // files or folders relative to deployments.path.${stage} Default empty array. 
                                 updateValues  : [[fieldPath: "image.name", newValue: imageName]]
                             ]
                         ],
@@ -96,7 +96,6 @@ node {
                         stages: [
                                 staging: [ deployDirectly: true ],
                                 production: [ deployDirectly: false ],
-                                qa: [ ]
                         ]
                 ]
 
