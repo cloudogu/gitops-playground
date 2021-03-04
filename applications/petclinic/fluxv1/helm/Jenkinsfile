@@ -7,9 +7,9 @@ String getConfigRepositoryPRBaseUrl() { 'http://scmm-scm-manager/scm' }
 String getConfigRepositoryPRRepo() { 'fluxv1/gitops' }
 // The docker daemon cant use the k8s service name, because it is not running inside the cluster
 String getDockerRegistryBaseUrl() { "localhost:30000" }
-String getCesBuildLibRepo() { 'https://github.com/cloudogu/ces-build-lib/' } // TODO change back to scmm repo
-String getCesBuildLibVersion() { 'bugfix/location_for_prId' }
-String getGitOpsBuildLibRepo() { 'https://github.com/cloudogu/gitops-build-lib' } // TODO change to scmm repo?
+String getCesBuildLibRepo() { 'http://scmm-scm-manager/scm/repo/common/ces-build-lib/' }
+String getCesBuildLibVersion() { '1.45.1' }
+String getGitOpsBuildLibRepo() { 'http://scmm-scm-manager/scm/repo/common/gitops-build-lib' }
 String getGitOpsBuildLibVersion() { 'feature/helm-git' }
 String getHelmChartRepository() { 'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/common/spring-boot-helm-chart' }
 String getHelmChartName() { "springboot" }
@@ -68,8 +68,8 @@ node {
             if (isBuildSuccessful() && env.BRANCH_NAME in [mainBranch]) {
 
                 def gitopsConfig = [
-                        scmmCredentialsId : scmManagerCredentials,
-                        scmmConfigRepoUrl : configRepositoryUrl,
+                        scmmCredentialsId: scmManagerCredentials,
+                        scmmConfigRepoUrl: configRepositoryUrl,
                         scmmPullRequestBaseUrl: configRepositoryPRBaseUrl,
                         scmmPullRequestRepo: configRepositoryPRRepo,
                         cesBuildLibRepo: cesBuildLibRepo,
@@ -77,15 +77,16 @@ node {
                         application: application,
                         mainBranch: mainBranch,
                         deployments: [
-                            sourcePath: 'k8s'
+                            sourcePath: 'k8s',
                             helm : [
-                                repoType : 'HELM',
+                                repoType : 'GIT',
                                 credentialsId : 'creds',
-                                repoUrl  : helmChartRepository},
-                                chartName: helmChartName,
+                                repoUrl  : helmChartRepository,
+                                chartPath: helmChartName,
                                 version  : helmChartVersion,
                                 extraResources: ['config, secrets'], // files or folders relative to deployments.path. Default empty array. 
-                                updateValues  : [[fieldPath: "image.name", newValue: imageName]]
+                                
+                                
                             ]
                         ],
                         // stages consists of [ $branchName: [ $deployConfig ]]
@@ -95,8 +96,7 @@ node {
                         // deployDirectly: false -> creates a PR (default)
                         stages: [
                                 staging: [ deployDirectly: true ],
-                                production: [ deployDirectly: false ],
-                                qa: [ ]
+                                production: [ deployDirectly: false ]
                         ]
                 ]
 
