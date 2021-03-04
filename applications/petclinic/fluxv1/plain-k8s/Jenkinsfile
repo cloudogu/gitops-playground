@@ -11,7 +11,7 @@ String getDockerRegistryBaseUrl() { "localhost:30000" }
 String getCesBuildLibRepo() { 'https://github.com/cloudogu/ces-build-lib/' } // TODO change back to scmm repo
 String getCesBuildLibVersion() { 'bugfix/location_for_prId' }
 String getGitOpsBuildLibRepo() { 'https://github.com/cloudogu/gitops-build-lib' } // TODO change to scmm repo?
-String getGitOpsBuildLibVersion() { 'feature/helm-git' }
+String getGitOpsBuildLibVersion() { 'feature/helm-repo-type' }
 String getMainBranch() { 'main' } 
 
 // images, helm also offers kubeval
@@ -83,7 +83,7 @@ node {
                             sourcePath: 'k8s',
                             plain: [
                                 updateImages: [
-                                    [ deploymentFilename: "deployment.yaml",
+                                    [ filename: "deployment.yaml",
                                     containerName: application,
                                     imageName: imageName ]
                                 ]

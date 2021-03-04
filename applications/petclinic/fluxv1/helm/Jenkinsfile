@@ -10,7 +10,7 @@ String getDockerRegistryBaseUrl() { "localhost:30000" }
 String getCesBuildLibRepo() { 'https://github.com/cloudogu/ces-build-lib/' } // TODO change back to scmm repo
 String getCesBuildLibVersion() { 'bugfix/location_for_prId' }
 String getGitOpsBuildLibRepo() { 'https://github.com/cloudogu/gitops-build-lib' } // TODO change to scmm repo?
-String getGitOpsBuildLibVersion() { 'feature/helm-git' }
+String getGitOpsBuildLibVersion() { 'feature/helm-repo-type' }
 String getHelmChartRepository() { 'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/common/spring-boot-helm-chart' }
 String getHelmChartName() { "springboot" }
 String getHelmChartVersion() { "1.0.0" }
@@ -77,7 +77,7 @@ node {
                         application: application,
                         mainBranch: mainBranch,
                         deployments: [
-                            sourcePath: 'k8s'
+                            sourcePath: 'k8s',
                             helm : [
                                 repoType : 'HELM',
                                 credentialsId : 'creds',
