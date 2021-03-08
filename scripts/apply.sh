@@ -22,7 +22,7 @@ hostnames[argocd]="localhost"
 declare -A ports
 # get ports from values files
 ports[scmm]=$(grep 'nodePort:' "${PLAYGROUND_DIR}"/scm-manager/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')
-ports[jenkins]=$(grep 'nodePort:' "${PLAYGROUND_DIR}"/jenkins/values.yaml | grep nodePort | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')
+#ports[jenkins]=$(grep 'nodePort:' "${PLAYGROUND_DIR}"/jenkins/values.yaml | grep nodePort | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')
 ports[argocd]=$(grep 'servicePortHttp:' "${PLAYGROUND_DIR}"/argocd/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')
 
 source ${ABSOLUTE_BASEDIR}/utils.sh
@@ -41,11 +41,6 @@ function main() {
   JENKINS_USERNAME=${10}
   JENKINS_PASSWORD=${11}
 
-  if [[ -z "${JENKINS_URL}" ]]; then
-    echo "no"
-  else
-    initializeRemoteJenkins "${JENKINS_URL}" "${JENKINS_USERNAME}" "${JENKINS_PASSWORD}"
-  fi
 
 #  checkPrerequisites
 #
@@ -73,6 +68,12 @@ function main() {
 #
 #  # Start Jenkins last, so all repos have been initialized when repo indexing starts
 #  evalWithSpinner initJenkins "Starting Jenkins..."
+  if [[ -z "${JENKINS_URL}" ]]; then
+    # initializeLocalJenkins
+    echo "no"
+  else
+    initializeRemoteJenkins "${JENKINS_URL}" "${JENKINS_USERNAME}" "${JENKINS_PASSWORD}"
+  fi
 #
 #  printWelcomeScreen
 }
@@ -108,9 +109,12 @@ function applyBasicK8sResources() {
 
   createSecrets
 
-  kubectl apply -f jenkins/resources || true
+# TODO: auslagern in init-jenkins.sh
+#  kubectl apply -f jenkins/resources || true
 
-  helm repo add jenkins https://charts.jenkins.io
+# TODO: auslagern nach init-jenkins.sh
+#  helm repo add jenkins https://charts.jenkins.io
+
   helm repo add fluxcd https://charts.fluxcd.io
   helm repo add stable https://charts.helm.sh/stable
   helm repo add argo https://argoproj.github.io/argo-helm
@@ -135,6 +139,7 @@ function initSCMM() {
 
 }
 
+# TODO: in utils.sh auslagern
 function setExternalHostnameIfNecessary() {
   hostKey="$1"
   serviceName="$2"
@@ -150,38 +155,6 @@ function scmmHelmSettingsForRemoteCluster() {
     # Default clusters don't allow for node ports < 30.000, so just unset nodePort.
     # A defined nodePort is not needed for remote cluster, where the externalIp is used for accessing SCMM
     echo "--set service.nodePort="
-  fi
-}
-
-function initJenkins() {
-  # Find out the docker group and put the agent into it. Otherwise it has no permission to access  the docker host.
-  helm upgrade -i jenkins --values jenkins/values.yaml \
-    $(jenkinsHelmSettingsForLocalCluster) --set agent.runAsGroup=$(queryDockerGroupOfJenkinsNode) \
-    --version ${JENKINS_HELM_CHART_VERSION} jenkins/jenkins -n default
-
-}
-
-function queryDockerGroupOfJenkinsNode() {
-  kubectl apply -f jenkins/tmp-docker-gid-grepper.yaml >/dev/null
-  until kubectl get po --field-selector=status.phase=Running | grep tmp-docker-gid-grepper >/dev/null; do
-    sleep 1
-  done
-
-  kubectl exec tmp-docker-gid-grepper -- cat /etc/group | grep docker | cut -d: -f3
-
-  # This call might block some (unnecessary) seconds so move to background
-  kubectl delete -f jenkins/tmp-docker-gid-grepper.yaml >/dev/null &
-}
-
-function jenkinsHelmSettingsForLocalCluster() {
-  if [[ $REMOTE_CLUSTER != true ]]; then
-    # Run Jenkins and Agent pods as the current user.
-    # Avoids file permission problems when accessing files on the host that were written from the pods
-
-    # We also need a host port, so jenkins can be reached via localhost:9090
-    # But: This helm charts only uses the nodePort value, if the type is "NodePort". So change it for local cluster.
-    echo "--set controller.runAsUser=$(id -u) --set agent.runAsUser=$(id -u)" \
-      "--set controller.serviceType=NodePort"
   fi
 }
 
@@ -229,8 +202,11 @@ function argoHelmSettingsForRemoteCluster() {
 
 function createSecrets() {
   createSecret scmm-credentials --from-literal=USERNAME=$SET_USERNAME --from-literal=PASSWORD=$SET_PASSWORD -n default
-  createSecret jenkins-credentials --from-literal=jenkins-admin-user=$SET_USERNAME --from-literal=jenkins-admin-password=$SET_PASSWORD -n default
 
+  # TODO: auslagern init-jenkins
+#  createSecret jenkins-credentials --from-literal=jenkins-admin-user=$SET_USERNAME --from-literal=jenkins-admin-password=$SET_PASSWORD -n default
+
+# TODO: erzeugen mit jenkins REST-client wird aber auch vom scmm genutzt, also hier drin lassen
   createSecret gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=$SET_PASSWORD -n default
   createSecret gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=$SET_PASSWORD -n argocd
   # flux needs lowercase fieldnames
@@ -374,6 +350,7 @@ function setDefaultBranch() {
     "http://${SET_USERNAME}:${SET_PASSWORD}@${hostnames[scmm]}:${ports[scmm]}/scm/api/v2/config/git/${TARGET_REPO_SCMM}"
 }
 
+# TODO: auslagern utils.sh
 function createUrl() {
   systemName=$1
   hostname=${hostnames[${systemName}]}

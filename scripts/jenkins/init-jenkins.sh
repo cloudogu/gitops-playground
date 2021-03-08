@@ -2,9 +2,11 @@
 set -o errexit -o nounset -o pipefail
 #set -x
 
-#BASEDIR=$(dirname $0)
-#ABSOLUTE_BASEDIR="$(cd ${BASEDIR} && pwd)"
-#PLAYGROUND_DIR="$(cd ${BASEDIR} && cd .. && cd .. && pwd)"
+if [[ -z ${PLAYGROUND_DIR+x} ]]; then
+  BASEDIR=$(dirname $0)
+  ABSOLUTE_BASEDIR="$(cd ${BASEDIR} && pwd)"
+  PLAYGROUND_DIR="$(cd ${BASEDIR} && cd .. && cd .. && pwd)"
+fi
 
 PETCLINIC_COMMIT=949c5af
 SPRING_BOOT_HELM_CHART_COMMIT=0.2.0
@@ -13,18 +15,19 @@ SCMM_HELM_CHART_VERSION=2.13.0
 SET_USERNAME="admin"
 SET_PASSWORD="admin"
 
-
+# TODO: keine arrays
 declare -A hostnames
 hostnames[jenkins]="localhost"
 
+# TODO: keine arrays notwendig
 declare -A ports
 ports[jenkins]=$(grep 'nodePort:' "${PLAYGROUND_DIR}"/jenkins/values.yaml | grep nodePort | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')
 
 REMOTE_CLUSTER=false
 
-source ${ABSOLUTE_BASEDIR}/jenkins/jenkins-REST-client.sh
+source ${PLAYGROUND_DIR}/scripts/jenkins/jenkins-REST-client.sh
 
-function initializeLocal() {
+function initializeLocalJenkins() {
     # Mark the first node for Jenkins and agents. See jenkins/values.yamls "agent.workingDir" for details.
   # Remove first (in case new nodes were added)
   kubectl label --all nodes node- >/dev/null
@@ -82,15 +85,15 @@ function queryDockerGroupOfJenkinsNode() {
 
 function initializeRemoteJenkins() {
   export JENKINS_URL=${1}
-  JENKINS_USERNAME=${2}
-  JENKINS_PASSWORD=${3}
+  export JENKINS_USERNAME=${2}
+  export JENKINS_PASSWORD=${3}
 
-  echo "$JENKINS_URL" "$JENKINS_USERNAME" "$JENKINS_PASSWORD"
-#  token=$(authenticate)
-#  createCredentials "scmm-user" "gitops" "admin" "someDescription"
-#  installPlugin "subversion" "2.14.0"
-#
-#  createJob "fluxv1-applications" "$(prepareScmManagerNamspaceJob "http://scmm-scm-manager/scm/" "fluxv1" "scmm-user")"
-#  createJob "fluxv2-applications" "$(prepareScmManagerNamspaceJob "http://scmm-scm-manager/scm/" "fluxv2" "scmm-user")"
-#  createJob "argocd-applications" "$(prepareScmManagerNamspaceJob "http://scmm-scm-manager/scm/" "argocd" "scmm-user")"
+  token=$(authenticate)
+  createCredentials "scmm-user" "gitops" "admin" "someDescription"
+  installPlugin "subversion" "2.14.0"
+
+  createJob "fluxv1-applications" "$(prepareScmManagerNamspaceJob "http://scmm-scm-manager/scm/" "fluxv1" "scmm-user")"
+  createJob "fluxv2-applications" "$(prepareScmManagerNamspaceJob "http://scmm-scm-manager/scm/" "fluxv2" "scmm-user")"
+  createJob "argocd-applications" "$(prepareScmManagerNamspaceJob "http://scmm-scm-manager/scm/" "argocd" "scmm-user")"
 }
+

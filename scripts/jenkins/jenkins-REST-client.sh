@@ -2,34 +2,12 @@
 set -o errexit -o nounset -o pipefail
 #set -x
 
-#BASEDIR=$(dirname $0)
-#ABSOLUTE_BASEDIR="$(cd ${BASEDIR} && pwd)"
-#PLAYGROUND_DIR="$(cd ${BASEDIR} && cd .. && cd .. && pwd)"
-
-PETCLINIC_COMMIT=949c5af
-SPRING_BOOT_HELM_CHART_COMMIT=0.2.0
-JENKINS_HELM_CHART_VERSION=3.1.9
-SCMM_HELM_CHART_VERSION=2.13.0
-SET_USERNAME="admin"
-SET_PASSWORD="admin"
-
-declare -A hostnames
-hostnames[scmm]="localhost"
-hostnames[jenkins]="localhost"
-hostnames[argocd]="localhost"
-
-declare -A ports
-# get ports from values files
-ports[jenkins]=$(grep 'nodePort:' "${PLAYGROUND_DIR}"/jenkins/values.yaml | grep nodePort | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')
-
-REMOTE_CLUSTER=false
-
 function authenticate() {
   # get jenkins crumb
-  crumb=$(curl -s --cookie-jar /tmp/cookies -u "${SET_USERNAME}:${SET_PASSWORD}" "http://${JENKINS_HOSTNAME}:${JENKINS_PORT}/crumbIssuer/api/json" | jq -r '.crumb')
+  crumb=$(curl -s --cookie-jar /tmp/cookies -u "${JENKINS_USERNAME}:${JENKINS_PASSWORD}" "http://${JENKINS_URL}/crumbIssuer/api/json" | jq -r '.crumb')
 
   # get jenkins api token
-  token=$(curl -s -X POST -H "Jenkins-Crumb:${crumb}" --cookie /tmp/cookies "http://${JENKINS_HOSTNAME}:${JENKINS_PORT}/me/descriptorByName/jenkins.security.ApiTokenProperty/generateNewToken\?newTokenName\=\foo" -u "${SET_USERNAME}:${SET_PASSWORD}" | jq -r '.data.tokenValue')
+  token=$(curl -s -X POST -H "Jenkins-Crumb:${crumb}" --cookie /tmp/cookies "http://${JENKINS_URL}/me/descriptorByName/jenkins.security.ApiTokenProperty/generateNewToken\?newTokenName\=\foo" -u "${JENKINS_USERNAME}:${JENKINS_PASSWORD}" | jq -r '.data.tokenValue')
   echo "${token}"
 }
 
@@ -37,7 +15,7 @@ function createJob() {
   JOB_NAME=${1}
   JOB_CONFIG=${2}
   printf "Creating job '${JOB_NAME}' ... "
-  status=$(curl -s -X POST "http://${JENKINS_HOSTNAME}:${JENKINS_PORT}/createItem?name=${JOB_NAME}" -u "${SET_USERNAME}:${token}" -H "Content-Type:text/xml" --data "${JOB_CONFIG}" --write-out '%{http_code}')
+  status=$(curl -s -X POST "http://${JENKINS_URL}/createItem?name=${JOB_NAME}" -u "${JENKINS_USERNAME}:${token}" -H "Content-Type:text/xml" --data "${JOB_CONFIG}" --write-out '%{http_code}')
   printStatus $status
 }
 
@@ -55,8 +33,10 @@ function createCredentials() {
   PASSWORD=${3}
   DESCRIPTION=${4}
 
+  echo "$JENKINS_USERNAME" "$JENKINS_URL" "$token"
+
   printf "Creating credentials for ${CREDENTIALS_ID} ... "
-  status=$(curl -s -X POST "http://${JENKINS_HOSTNAME}:${JENKINS_PORT}/credentials/store/system/domain/_/createCredentials" -u "${SET_USERNAME}:${token}" --data-urlencode 'json={
+  status=$(curl -s -X POST "http://${JENKINS_URL}/credentials/store/system/domain/_/createCredentials" -u "${JENKINS_USERNAME}:${token}" --data-urlencode 'json={
     "credentials": {
       "scope": "GLOBAL",
       "id": "'${CREDENTIALS_ID}'",
@@ -70,12 +50,12 @@ function createCredentials() {
 
 function installPlugin() {
   printf "Installing plugin $1 v$2 ... "
-  status=$(curl -s -X POST "http://${JENKINS_HOSTNAME}:${JENKINS_PORT}/pluginManager/installNecessaryPlugins" -u "${SET_USERNAME}:${token}" -d '<jenkins><install plugin="'$1'@'$2'"/></jenkins>' -H 'Content-Type: text/xml' --write-out '%{http_code}')
+  status=$(curl -s -X POST "http://${JENKINS_URL}/pluginManager/installNecessaryPlugins" -u "${JENKINS_USERNAME}:${token}" -d '<jenkins><install plugin="'$1'@'$2'"/></jenkins>' -H 'Content-Type: text/xml' --write-out '%{http_code}')
   printStatus "${status}"
 }
 
 function safeRestart() {
-  curl -X POST "http://${JENKINS_HOSTNAME}:${JENKINS_PORT}/safeRestart" -u "${SET_USERNAME}:${token}"
+  curl -X POST "http://${JENKINS_URL}/safeRestart" -u "${JENKINS_USERNAME}:${token}"
 }
 
 function printStatus() {
