@@ -35,8 +35,9 @@ function authenticate() {
 
 function createJob() {
   JOB_NAME=${1}
+  JOB_CONFIG=${2}
   printf "Creating job '${JOB_NAME}' ... "
-  status=$(curl -s -X POST "http://${JENKINS_HOSTNAME}:${JENKINS_PORT}/createItem?name=${JOB_NAME}" -u "${SET_USERNAME}:${token}" -H "Content-Type:text/xml" --data "${job_config}" --write-out '%{http_code}')
+  status=$(curl -s -X POST "http://${JENKINS_HOSTNAME}:${JENKINS_PORT}/createItem?name=${JOB_NAME}" -u "${SET_USERNAME}:${token}" -H "Content-Type:text/xml" --data "${JOB_CONFIG}" --write-out '%{http_code}')
   printStatus $status
 }
 
@@ -44,7 +45,7 @@ function prepareScmManagerNamspaceJob() {
   job_config=$(SCMM_NAMESPACE_JOB_SERVER_URL="${1}" \
                SCMM_NAMESPACE_JOB_NAMESPACE="${2}" \
                SCMM_NAMESPACE_JOB_CREDENTIALS_ID="${3}" \
-               envsubst < scripts/namespaceJobTemplate.xml)
+               envsubst < scripts/jenkins/namespaceJobTemplate.xml)
   echo "${job_config}"
 }
 
@@ -70,7 +71,7 @@ function createCredentials() {
 function installPlugin() {
   printf "Installing plugin $1 v$2 ... "
   status=$(curl -s -X POST "http://${JENKINS_HOSTNAME}:${JENKINS_PORT}/pluginManager/installNecessaryPlugins" -u "${SET_USERNAME}:${token}" -d '<jenkins><install plugin="'$1'@'$2'"/></jenkins>' -H 'Content-Type: text/xml' --write-out '%{http_code}')
-  printStatus ${status}
+  printStatus "${status}"
 }
 
 function safeRestart() {
@@ -85,23 +86,3 @@ function printStatus() {
     echo -e '\u274c'
   fi
 }
-
-#token=$(authenticate)
-
-#job_config=$(prepareScmManagerNamspaceJob "http://scmm-scm-manager/scm/" "fluxv1" "scmm-user")
-#createJob "fluxv1-applications"
-#
-#job_config=$(prepareScmManagerNamspaceJob "http://scmm-scm-manager/scm/" "fluxv2" "scmm-user")
-#createJob "fluxv2-applications"
-#
-#job_config=$(prepareScmManagerNamspaceJob "http://scmm-scm-manager/scm/" "argocd" "scmm-user")
-#createJob "argocd-applications"
-
-
-#createCredentials "scmm-user" "gitops" "admin" "someDescription"
-
-#installPlugin "subversion" "2.14.0"
-
-#safeRestart
-
-#prepareScmManagerNamspaceJob "localhost:9091" "fluxv1" "scmm-user"

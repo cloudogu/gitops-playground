@@ -86,7 +86,12 @@ function initializeRemote() {
   JENKINS_PASSWORD=${4}
 
   token=$(authenticate)
-  echo "${token}"
-}
+  createCredentials "scmm-user" "gitops" "admin" "someDescription"
+  installPlugin "subversion" "2.14.0"
 
-initializeRemote "localhost" "9090" "asd" "asd"
+  createJob "fluxv1-applications" "$(prepareScmManagerNamspaceJob "http://scmm-scm-manager/scm/" "fluxv1" "scmm-user")"
+  createJob "fluxv2-applications" "$(prepareScmManagerNamspaceJob "http://scmm-scm-manager/scm/" "fluxv2" "scmm-user")"
+  createJob "argocd-applications" "$(prepareScmManagerNamspaceJob "http://scmm-scm-manager/scm/" "argocd" "scmm-user")"
+}
+#initializeLocal
+initializeRemote "localhost" "9090" "admin" "admin"
