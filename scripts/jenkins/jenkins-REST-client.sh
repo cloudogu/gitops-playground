@@ -2,9 +2,9 @@
 set -o errexit -o nounset -o pipefail
 #set -x
 
-BASEDIR=$(dirname $0)
-ABSOLUTE_BASEDIR="$(cd ${BASEDIR} && pwd)"
-PLAYGROUND_DIR="$(cd ${BASEDIR} && cd .. && cd .. && pwd)"
+#BASEDIR=$(dirname $0)
+#ABSOLUTE_BASEDIR="$(cd ${BASEDIR} && pwd)"
+#PLAYGROUND_DIR="$(cd ${BASEDIR} && cd .. && cd .. && pwd)"
 
 PETCLINIC_COMMIT=949c5af
 SPRING_BOOT_HELM_CHART_COMMIT=0.2.0

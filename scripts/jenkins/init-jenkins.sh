@@ -2,9 +2,9 @@
 set -o errexit -o nounset -o pipefail
 #set -x
 
-BASEDIR=$(dirname $0)
-ABSOLUTE_BASEDIR="$(cd ${BASEDIR} && pwd)"
-PLAYGROUND_DIR="$(cd ${BASEDIR} && cd .. && cd .. && pwd)"
+#BASEDIR=$(dirname $0)
+#ABSOLUTE_BASEDIR="$(cd ${BASEDIR} && pwd)"
+#PLAYGROUND_DIR="$(cd ${BASEDIR} && cd .. && cd .. && pwd)"
 
 PETCLINIC_COMMIT=949c5af
 SPRING_BOOT_HELM_CHART_COMMIT=0.2.0
@@ -12,6 +12,7 @@ JENKINS_HELM_CHART_VERSION=3.1.9
 SCMM_HELM_CHART_VERSION=2.13.0
 SET_USERNAME="admin"
 SET_PASSWORD="admin"
+
 
 declare -A hostnames
 hostnames[jenkins]="localhost"
@@ -21,7 +22,7 @@ ports[jenkins]=$(grep 'nodePort:' "${PLAYGROUND_DIR}"/jenkins/values.yaml | grep
 
 REMOTE_CLUSTER=false
 
-source ${ABSOLUTE_BASEDIR}/jenkins-REST-client.sh
+source ${ABSOLUTE_BASEDIR}/jenkins/jenkins-REST-client.sh
 
 function initializeLocal() {
     # Mark the first node for Jenkins and agents. See jenkins/values.yamls "agent.workingDir" for details.
@@ -79,19 +80,17 @@ function queryDockerGroupOfJenkinsNode() {
   kubectl delete -f jenkins/tmp-docker-gid-grepper.yaml >/dev/null &
 }
 
-function initializeRemote() {
-  export JENKINS_HOSTNAME=${1}
-  export JENKINS_PORT=${2}
-  JENKINS_USERNAME=${3}
-  JENKINS_PASSWORD=${4}
+function initializeRemoteJenkins() {
+  export JENKINS_URL=${1}
+  JENKINS_USERNAME=${2}
+  JENKINS_PASSWORD=${3}
 
-  token=$(authenticate)
-  createCredentials "scmm-user" "gitops" "admin" "someDescription"
-  installPlugin "subversion" "2.14.0"
-
-  createJob "fluxv1-applications" "$(prepareScmManagerNamspaceJob "http://scmm-scm-manager/scm/" "fluxv1" "scmm-user")"
-  createJob "fluxv2-applications" "$(prepareScmManagerNamspaceJob "http://scmm-scm-manager/scm/" "fluxv2" "scmm-user")"
-  createJob "argocd-applications" "$(prepareScmManagerNamspaceJob "http://scmm-scm-manager/scm/" "argocd" "scmm-user")"
+  echo "$JENKINS_URL" "$JENKINS_USERNAME" "$JENKINS_PASSWORD"
+#  token=$(authenticate)
+#  createCredentials "scmm-user" "gitops" "admin" "someDescription"
+#  installPlugin "subversion" "2.14.0"
+#
+#  createJob "fluxv1-applications" "$(prepareScmManagerNamspaceJob "http://scmm-scm-manager/scm/" "fluxv1" "scmm-user")"
+#  createJob "fluxv2-applications" "$(prepareScmManagerNamspaceJob "http://scmm-scm-manager/scm/" "fluxv2" "scmm-user")"
+#  createJob "argocd-applications" "$(prepareScmManagerNamspaceJob "http://scmm-scm-manager/scm/" "argocd" "scmm-user")"
 }
-#initializeLocal
-initializeRemote "localhost" "9090" "admin" "admin"

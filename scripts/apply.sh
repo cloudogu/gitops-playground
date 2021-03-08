@@ -3,8 +3,11 @@ set -o errexit -o nounset -o pipefail
 #set -x
 
 BASEDIR=$(dirname $0)
+export BASEDIR
 ABSOLUTE_BASEDIR="$(cd ${BASEDIR} && pwd)"
+export ABSOLUTE_BASEDIR
 PLAYGROUND_DIR="$(cd ${BASEDIR} && cd .. && pwd)"
+export PLAYGROUND_DIR
 
 PETCLINIC_COMMIT=949c5af
 SPRING_BOOT_HELM_CHART_COMMIT=0.2.0
@@ -23,6 +26,7 @@ ports[jenkins]=$(grep 'nodePort:' "${PLAYGROUND_DIR}"/jenkins/values.yaml | grep
 ports[argocd]=$(grep 'servicePortHttp:' "${PLAYGROUND_DIR}"/argocd/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')
 
 source ${ABSOLUTE_BASEDIR}/utils.sh
+source ${ABSOLUTE_BASEDIR}/jenkins/init-jenkins.sh
 
 function main() {
   DEBUG=$1
@@ -33,30 +37,39 @@ function main() {
   REMOTE_CLUSTER=$6
   SET_USERNAME=$7
   SET_PASSWORD=$8
+  JENKINS_URL=$9
+  JENKINS_USERNAME=${10}
+  JENKINS_PASSWORD=${11}
 
-  checkPrerequisites
-
-  if [[ $DEBUG != true ]]; then
-    backgroundLogFile=$(mktemp /tmp/playground-log-XXXXXXXXX.log)
-    echo "Full log output is appended to ${backgroundLogFile}"
+  if [[ -z "${JENKINS_URL}" ]]; then
+    echo "no"
+  else
+    initializeRemoteJenkins "${JENKINS_URL}" "${JENKINS_USERNAME}" "${JENKINS_PASSWORD}"
   fi
 
-  evalWithSpinner applyBasicK8sResources "Basic setup & starting registry..."
-  evalWithSpinner initSCMM "Starting SCM-Manager..."
-
-  # We need to query remote IP here (in the main process) again, because the "initSCMM" methods might be running in a
-  # background process (to display the spinner only)
-  setExternalHostnameIfNecessary 'scmm' 'scmm-scm-manager' 'default'
-
-  if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV1 = true ]]; then
-    evalWithSpinner initFluxV1 "Starting Flux V1..."
-  fi
-  if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV2 = true ]]; then
-    evalWithSpinner initFluxV2 "Starting Flux V2..."
-  fi
-  if [[ $INSTALL_ALL_MODULES = true || $INSTALL_ARGOCD = true ]]; then
-    evalWithSpinner initArgo "Starting ArgoCD..."
-  fi
+#  checkPrerequisites
+#
+#  if [[ $DEBUG != true ]]; then
+#    backgroundLogFile=$(mktemp /tmp/playground-log-XXXXXXXXX.log)
+#    echo "Full log output is appended to ${backgroundLogFile}"
+#  fi
+#
+#  evalWithSpinner applyBasicK8sResources "Basic setup & starting registry..."
+#  evalWithSpinner initSCMM "Starting SCM-Manager..."
+#
+#  # We need to query remote IP here (in the main process) again, because the "initSCMM" methods might be running in a
+#  # background process (to display the spinner only)
+#  setExternalHostnameIfNecessary 'scmm' 'scmm-scm-manager' 'default'
+#
+#  if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV1 = true ]]; then
+#    evalWithSpinner initFluxV1 "Starting Flux V1..."
+#  fi
+#  if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV2 = true ]]; then
+#    evalWithSpinner initFluxV2 "Starting Flux V2..."
+#  fi
+#  if [[ $INSTALL_ALL_MODULES = true || $INSTALL_ARGOCD = true ]]; then
+#    evalWithSpinner initArgo "Starting ArgoCD..."
+#  fi
 #
 #  # Start Jenkins last, so all repos have been initialized when repo indexing starts
 #  evalWithSpinner initJenkins "Starting Jenkins..."
@@ -484,7 +497,7 @@ function printParameters() {
 
 COMMANDS=$(getopt \
   -o hwd \
-  --long help,fluxv1,fluxv2,argocd,welcome,debug,remote,username:,password: \
+  --long help,fluxv1,fluxv2,argocd,welcome,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password: \
   -- "$@")
 
 if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
@@ -499,17 +512,24 @@ INSTALL_ARGOCD=false
 REMOTE_CLUSTER=false
 SET_USERNAME="admin"
 SET_PASSWORD="admin"
+JENKINS_URL=""
+JENKINS_USERNAME=""
+JENKINS_PASSWORD=""
+
 while true; do
   case "$1" in
-    -h | --help     ) printUsage; exit 0 ;;
-    --fluxv1        ) INSTALL_FLUXV1=true; INSTALL_ALL_MODULES=false; shift ;;
-    --fluxv2        ) INSTALL_FLUXV2=true; INSTALL_ALL_MODULES=false; shift ;;
-    --argocd        ) INSTALL_ARGOCD=true; INSTALL_ALL_MODULES=false; shift ;;
-    --remote        ) REMOTE_CLUSTER=true; shift ;;
-    --password      ) SET_PASSWORD="$2"; shift 2 ;;
-    -w | --welcome  ) printWelcomeScreen; exit 0 ;;
-    -d | --debug    ) DEBUG=true; shift ;;
-    --              ) shift; break ;;
+    -h | --help          ) printUsage; exit 0 ;;
+    --fluxv1             ) INSTALL_FLUXV1=true; INSTALL_ALL_MODULES=false; shift ;;
+    --fluxv2             ) INSTALL_FLUXV2=true; INSTALL_ALL_MODULES=false; shift ;;
+    --argocd             ) INSTALL_ARGOCD=true; INSTALL_ALL_MODULES=false; shift ;;
+    --remote             ) REMOTE_CLUSTER=true; shift ;;
+    --jenkins-url        ) JENKINS_URL="$2"; shift 2 ;;
+    --jenkins-username   ) JENKINS_USERNAME="$2"; shift 2 ;;
+    --jenkins-password   ) JENKINS_PASSWORD="$2"; shift 2 ;;
+    --password           ) SET_PASSWORD="$2"; shift 2 ;;
+    -w | --welcome       ) printWelcomeScreen; exit 0 ;;
+    -d | --debug         ) DEBUG=true; shift ;;
+    --                   ) shift; break ;;
   *) break ;;
   esac
 done
@@ -517,4 +537,4 @@ done
 confirm "Applying gitops playground to kubernetes cluster: '$(kubectl config current-context)'." 'Continue? y/n [n]' ||
   exit 0
 
-main $DEBUG $INSTALL_ALL_MODULES $INSTALL_FLUXV1 $INSTALL_FLUXV2 $INSTALL_ARGOCD $REMOTE_CLUSTER $SET_USERNAME $SET_PASSWORD
+main $DEBUG $INSTALL_ALL_MODULES $INSTALL_FLUXV1 $INSTALL_FLUXV2 $INSTALL_ARGOCD $REMOTE_CLUSTER $SET_USERNAME "$SET_PASSWORD" "$JENKINS_URL" "$JENKINS_USERNAME" "$JENKINS_PASSWORD"
