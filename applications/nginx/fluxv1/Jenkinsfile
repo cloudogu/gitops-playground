@@ -73,6 +73,8 @@ node('docker') {
                                 repoUrl  : helmChartRepository,
                                 chartName: helmChartName,
                                 version  : helmChartVersion,
+                                // extraResources: [], // convention: ${sourcePath}/stages.it} all files and folders will be copied
+
                             ]
                         ],
                         // stages consists of [ $branchName: [ $deployConfig ]]
@@ -81,13 +83,21 @@ node('docker') {
                         // deployDirectly: true  -> deploys directly
                         // deployDirectly: false -> creates a PR (default)
                         stages: [
-                                staging: [ deployDirectly: true ],
-                                production: [ deployDirectly: false ],
+                                staging: [ 
+                                    namespace: 'fluxv1-staging', // Default: key-name. e.g. staging
+                                    deployDirectly: true 
+                                    ],
+                                production: [ 
+                                    namespace: 'fluxv1-production', // Default: key-name. e.g. production
+                                    deployDirectly: false 
+                                    ],
                         ],
-                        helmValuesFromFile: [],
-                        fileConfigmaps: [
+                        // helmValuesFromFile: [], Optional
+                        fileConfigmaps: [ //TODO configmapsFromFiles;
                                 [name : "index",
-                                file : "../index.html",
+                                sourceFilePath : "../index.html", // relative to deployments.sourcePath
+                                // additional feature in the future. current default folder is '../generated-resources'
+                                // destinationFilePath: "../generated-resources/html/" // realtive to deployments.sourcePath
                                 stage: ["staging", "production"]
                                 ]
                         ]

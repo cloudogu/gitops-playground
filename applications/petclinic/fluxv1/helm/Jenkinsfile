@@ -84,7 +84,7 @@ node {
                                 repoUrl  : helmChartRepository,
                                 chartName: helmChartName,
                                 version  : helmChartVersion,
-                                extraResources: ['configMap.yaml, secrets'], // files or folders relative to deployments.path.${stage} Default empty array. 
+                                // extraResources: [], // convention: ${sourcePath}/stages.it} all files and folders will be copied
                                 updateValues  : [[fieldPath: "image.name", newValue: imageName]]
                             ]
                         ],
