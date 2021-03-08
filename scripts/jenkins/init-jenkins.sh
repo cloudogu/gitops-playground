@@ -15,14 +15,6 @@ SCMM_HELM_CHART_VERSION=2.13.0
 SET_USERNAME="admin"
 SET_PASSWORD="admin"
 
-# TODO: keine arrays
-declare -A hostnames
-hostnames[jenkins]="localhost"
-
-# TODO: keine arrays notwendig
-declare -A ports
-ports[jenkins]=$(grep 'nodePort:' "${PLAYGROUND_DIR}"/jenkins/values.yaml | grep nodePort | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')
-
 REMOTE_CLUSTER=false
 
 source ${PLAYGROUND_DIR}/scripts/jenkins/jenkins-REST-client.sh
@@ -83,17 +75,43 @@ function queryDockerGroupOfJenkinsNode() {
   kubectl delete -f jenkins/tmp-docker-gid-grepper.yaml >/dev/null &
 }
 
+function waitForJenkins() {
+  echo -n "Waiting for Jenkins to become available at ${JENKINS_URL}/login"
+  while [[ $(curl -o /dev/stderr -w ''%{http_code}'' "${JENKINS_URL}/login") -ne "200" ]]; do
+    echo -n .
+    sleep 2
+  done
+  echo ""
+}
+
 function initializeRemoteJenkins() {
-  export JENKINS_URL=${1}
-  export JENKINS_USERNAME=${2}
-  export JENKINS_PASSWORD=${3}
+  JENKINS_URL=${1}
+  JENKINS_USERNAME=${2}
+  JENKINS_PASSWORD=${3}
+  SCMM_URL="${4}"
+  SCMM_PASSWORD="${5}"
+
+#  waitForJenkins
 
   token=$(authenticate)
-  createCredentials "scmm-user" "gitops" "admin" "someDescription"
-  installPlugin "subversion" "2.14.0"
+#
+#  installPlugin "subversion" "2.14.0"
+#  installPlugin "docker-workflow" "1.25"
+#  installPlugin "docker-plugin" "1.2.1"
+#  installPlugin "job-dsl" "1.77"
+#  installPlugin "pipeline-utility-steps" "2.6.1"
+#  installPlugin "junit" "1.48"
+#  installPlugin "scm-manager" "1.5.1"
+#  installPlugin "html5-notifier-plugin" "1.5"
+#
+#  safeRestart
+#
+#  waitForJenkins
 
-  createJob "fluxv1-applications" "$(prepareScmManagerNamspaceJob "http://scmm-scm-manager/scm/" "fluxv1" "scmm-user")"
-  createJob "fluxv2-applications" "$(prepareScmManagerNamspaceJob "http://scmm-scm-manager/scm/" "fluxv2" "scmm-user")"
-  createJob "argocd-applications" "$(prepareScmManagerNamspaceJob "http://scmm-scm-manager/scm/" "argocd" "scmm-user")"
+  createCredentials "scmm-user" "gitops" "${SCMM_PASSWORD}" "somecreds for accessing scm-manager"
+
+  createJob "fluxv1-applications" "${SCMM_URL}" "fluxv1" "scmm-user"
+  createJob "fluxv2-applications" "${SCMM_URL}" "fluxv2" "scmm-user"
+  createJob "argocd-applications" "${SCMM_URL}" "argocd" "scmm-user"
 }
 

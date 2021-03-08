@@ -22,7 +22,7 @@ hostnames[argocd]="localhost"
 declare -A ports
 # get ports from values files
 ports[scmm]=$(grep 'nodePort:' "${PLAYGROUND_DIR}"/scm-manager/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')
-#ports[jenkins]=$(grep 'nodePort:' "${PLAYGROUND_DIR}"/jenkins/values.yaml | grep nodePort | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')
+ports[jenkins]=$(grep 'nodePort:' "${PLAYGROUND_DIR}"/jenkins/values.yaml | grep nodePort | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')
 ports[argocd]=$(grep 'servicePortHttp:' "${PLAYGROUND_DIR}"/argocd/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')
 
 source ${ABSOLUTE_BASEDIR}/utils.sh
@@ -69,10 +69,9 @@ function main() {
 #  # Start Jenkins last, so all repos have been initialized when repo indexing starts
 #  evalWithSpinner initJenkins "Starting Jenkins..."
   if [[ -z "${JENKINS_URL}" ]]; then
-    # initializeLocalJenkins
-    echo "no"
+    initializeLocalJenkins
   else
-    initializeRemoteJenkins "${JENKINS_URL}" "${JENKINS_USERNAME}" "${JENKINS_PASSWORD}"
+    initializeRemoteJenkins "${JENKINS_URL}" "${JENKINS_USERNAME}" "${JENKINS_PASSWORD}" "http://scmm-scm-manager:9091" "${SET_PASSWORD}"
   fi
 #
 #  printWelcomeScreen
@@ -139,7 +138,7 @@ function initSCMM() {
 
 }
 
-# TODO: in utils.sh auslagern
+# TODO: do nothing if systemname jenkins AND jenkins_url
 function setExternalHostnameIfNecessary() {
   hostKey="$1"
   serviceName="$2"
@@ -350,7 +349,7 @@ function setDefaultBranch() {
     "http://${SET_USERNAME}:${SET_PASSWORD}@${hostnames[scmm]}:${ports[scmm]}/scm/api/v2/config/git/${TARGET_REPO_SCMM}"
 }
 
-# TODO: auslagern utils.sh
+# TODO: if systemname jenkins AND jenkins_url return jenkins_url
 function createUrl() {
   systemName=$1
   hostname=${hostnames[${systemName}]}
