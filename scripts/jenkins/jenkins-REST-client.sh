@@ -40,7 +40,7 @@ function createCredentials() {
                DESCRIPTION="${4}" \
                envsubst '${CREDENTIALS_ID},${USERNAME},${PASSWORD},${DESCRIPTION}' < scripts/jenkins/credentialsTemplate.json)
 
-  status=$(curl -s -X POST "${JENKINS_URL}/credentials/store/system/domain/_/createCredentials" -u "${JENKINS_USERNAME}:${token}" --data-urlencode "json={${CRED_CONFIG}}" --write-out '%{http_code}')
+  status=$(curl -s -X POST "${JENKINS_URL}/credentials/store/system/domain/_/createCredentials" -u "${JENKINS_USERNAME}:${token}" --data-urlencode "json=${CRED_CONFIG}" --write-out '%{http_code}')
 
   printStatus "${status}"
 }
