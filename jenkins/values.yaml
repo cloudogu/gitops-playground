@@ -120,10 +120,6 @@ controller:
     existingSecret: jenkins-credentials
 
   containerEnv:
-    - name: SECRETS
-      # The files in this folders can be used as ${variable} in CasC credentials
-      # Default /run/secrets results in "read-only file system"
-      value: /secrets/jenkins
     - name: PATH
       # We already mounted this PATH on the controller-agent. Still, "docker.inside {}" fails in pipeline?
       # Why? The docker pipeline plugin seems to set an empty environment: https://github.com/jenkinsci/docker-workflow-plugin/blob/docker-workflow-1.25/src/main/java/org/jenkinsci/plugins/docker/workflow/client/DockerClient.java#L261
@@ -163,20 +159,10 @@ controller:
 
 persistence:
   volumes:
-    - name: scmm-user
-      secret:
-        secretName: gitops-scmm
     # Needed for initContainer only
     - name: host-tmp
       hostPath:
         path: /tmp
-
-  mounts:
-    - name: scmm-user
-      # Use k8s secret as jenkins credentials.
-      # https://github.com/jenkinsci/configuration-as-code-plugin/blob/master/docs/features/secrets.adoc#kubernetes-secrets
-      mountPath: /secrets/jenkins
-      readOnly: true
 
 agent:
   # We need JDK11 for our PetClinic example

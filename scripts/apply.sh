@@ -41,40 +41,48 @@ function main() {
   JENKINS_USERNAME=${10}
   JENKINS_PASSWORD=${11}
 
+  checkPrerequisites
 
-#  checkPrerequisites
-#
-#  if [[ $DEBUG != true ]]; then
-#    backgroundLogFile=$(mktemp /tmp/playground-log-XXXXXXXXX.log)
-#    echo "Full log output is appended to ${backgroundLogFile}"
-#  fi
-#
-#  evalWithSpinner applyBasicK8sResources "Basic setup & starting registry..."
-#  evalWithSpinner initSCMM "Starting SCM-Manager..."
-#
-#  # We need to query remote IP here (in the main process) again, because the "initSCMM" methods might be running in a
-#  # background process (to display the spinner only)
-#  setExternalHostnameIfNecessary 'scmm' 'scmm-scm-manager' 'default'
-#
-#  if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV1 = true ]]; then
-#    evalWithSpinner initFluxV1 "Starting Flux V1..."
-#  fi
-#  if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV2 = true ]]; then
-#    evalWithSpinner initFluxV2 "Starting Flux V2..."
-#  fi
-#  if [[ $INSTALL_ALL_MODULES = true || $INSTALL_ARGOCD = true ]]; then
-#    evalWithSpinner initArgo "Starting ArgoCD..."
-#  fi
-#
-#  # Start Jenkins last, so all repos have been initialized when repo indexing starts
-#  evalWithSpinner initJenkins "Starting Jenkins..."
-  if [[ -z "${JENKINS_URL}" ]]; then
-    initializeLocalJenkins
-  else
-    initializeRemoteJenkins "${JENKINS_URL}" "${JENKINS_USERNAME}" "${JENKINS_PASSWORD}" "http://scmm-scm-manager:9091" "${SET_PASSWORD}"
+  if [[ $DEBUG != true ]]; then
+    backgroundLogFile=$(mktemp /tmp/playground-log-XXXXXXXXX.log)
+    echo "Full log output is appended to ${backgroundLogFile}"
   fi
-#
-#  printWelcomeScreen
+
+  evalWithSpinner applyBasicK8sResources "Basic setup & starting registry..."
+  evalWithSpinner initSCMM "Starting SCM-Manager..."
+
+  # We need to query remote IP here (in the main process) again, because the "initSCMM" methods might be running in a
+  # background process (to display the spinner only)
+  setExternalHostnameIfNecessary 'scmm' 'scmm-scm-manager' 'default'
+
+  if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV1 = true ]]; then
+    evalWithSpinner initFluxV1 "Starting Flux V1..."
+  fi
+  if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV2 = true ]]; then
+    evalWithSpinner initFluxV2 "Starting Flux V2..."
+  fi
+  if [[ $INSTALL_ALL_MODULES = true || $INSTALL_ARGOCD = true ]]; then
+    evalWithSpinner initArgo "Starting ArgoCD..."
+  fi
+
+  if [[ -z "${JENKINS_URL}" ]]; then
+    # TODO: configure with introduction of external scmm, right now we use just the servicename
+    SCMM_URL="http://scmm-scm-manager/scm"
+
+    deployLocalJenkins "${SET_USERNAME}" "${SET_PASSWORD}" "${REMOTE_CLUSTER}"
+
+    setExternalHostnameIfNecessary "jenkins" "jenkins" "default"
+    JENKINS_URL=$(createUrl "jenkins")
+
+    configureJenkins "${JENKINS_URL}" "${SET_USERNAME}" "${SET_PASSWORD}" "${SCMM_URL}" "${SET_PASSWORD}"
+  else
+    # TODO: configure with introduction of external scmm, right now we use just the servicename
+    SCMM_URL="http://scmm-scm-manager/scm"
+
+    configureJenkins "${JENKINS_URL}" "${JENKINS_USERNAME}" "${JENKINS_PASSWORD}" "${SCMM_URL}" "${SET_PASSWORD}"
+  fi
+
+  printWelcomeScreen
 }
 
 function evalWithSpinner() {
@@ -99,26 +107,16 @@ function checkPrerequisites() {
 }
 
 function applyBasicK8sResources() {
-  # Mark the first node for Jenkins and agents. See jenkins/values.yamls "agent.workingDir" for details.
-  # Remove first (in case new nodes were added)
-  kubectl label --all nodes node- >/dev/null
-  kubectl label $(kubectl get node -o name | sort | head -n 1) node=jenkins
-
   kubectl apply -f k8s-namespaces || true
 
   createSecrets
-
-# TODO: auslagern in init-jenkins.sh
-#  kubectl apply -f jenkins/resources || true
-
-# TODO: auslagern nach init-jenkins.sh
-#  helm repo add jenkins https://charts.jenkins.io
 
   helm repo add fluxcd https://charts.fluxcd.io
   helm repo add stable https://charts.helm.sh/stable
   helm repo add argo https://argoproj.github.io/argo-helm
   helm repo add bitnami https://charts.bitnami.com/bitnami
   helm repo add scm-manager https://packages.scm-manager.org/repository/helm-v2-releases/
+  helm repo add jenkins https://charts.jenkins.io
   helm repo update
 
   helm upgrade -i docker-registry --values docker-registry/values.yaml --version 1.9.4 stable/docker-registry -n default
@@ -138,7 +136,6 @@ function initSCMM() {
 
 }
 
-# TODO: do nothing if systemname jenkins AND jenkins_url
 function setExternalHostnameIfNecessary() {
   hostKey="$1"
   serviceName="$2"
@@ -202,10 +199,6 @@ function argoHelmSettingsForRemoteCluster() {
 function createSecrets() {
   createSecret scmm-credentials --from-literal=USERNAME=$SET_USERNAME --from-literal=PASSWORD=$SET_PASSWORD -n default
 
-  # TODO: auslagern init-jenkins
-#  createSecret jenkins-credentials --from-literal=jenkins-admin-user=$SET_USERNAME --from-literal=jenkins-admin-password=$SET_PASSWORD -n default
-
-# TODO: erzeugen mit jenkins REST-client wird aber auch vom scmm genutzt, also hier drin lassen
   createSecret gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=$SET_PASSWORD -n default
   createSecret gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=$SET_PASSWORD -n argocd
   # flux needs lowercase fieldnames
@@ -288,7 +281,7 @@ function pushRepoMirror() {
 
 function waitForScmManager() {
   echo -n "Waiting for SCM-Manager to become available at http://${hostnames[scmm]}:${ports[scmm]}/scm"
-  while [[ "$(curl -s -L -o /dev/null -w ''%{http_code}'' "http://${hostnames[scmm]}:${ports[scmm]}/scm")" -ne "200" ]]; do
+  while [[ $(curl -s -L -o /dev/null -w ''%{http_code}'' "http://${hostnames[scmm]}:${ports[scmm]}/scm") -ne "200" ]]; do
     echo -n .
     sleep 2
   done
@@ -349,9 +342,8 @@ function setDefaultBranch() {
     "http://${SET_USERNAME}:${SET_PASSWORD}@${hostnames[scmm]}:${ports[scmm]}/scm/api/v2/config/git/${TARGET_REPO_SCMM}"
 }
 
-# TODO: if systemname jenkins AND jenkins_url return jenkins_url
 function createUrl() {
-  systemName=$1
+  systemName=${1}
   hostname=${hostnames[${systemName}]}
   port=${ports[${systemName}]}
 
@@ -366,6 +358,7 @@ function createUrl() {
 
 function printWelcomeScreen() {
 
+  # TODO: use JENKINS_URL if set
   setExternalHostnameIfNecessary 'jenkins' 'jenkins' 'default'
 
   echo
