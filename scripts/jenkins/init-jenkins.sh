@@ -38,6 +38,14 @@ function initializeLocalJenkins() {
   helm upgrade -i jenkins --values jenkins/values.yaml \
     $(jenkinsHelmSettingsForLocalCluster) --set agent.runAsGroup=$(queryDockerGroupOfJenkinsNode) \
     --version ${JENKINS_HELM_CHART_VERSION} jenkins/jenkins -n default
+
+  JENKINS_URL=${1}
+  JENKINS_USERNAME=${2}
+  JENKINS_PASSWORD=${3}
+  SCMM_URL="${4}"
+  SCMM_PASSWORD="${5}"
+
+  initialize
 }
 
 function createSecrets() {
@@ -76,8 +84,7 @@ function queryDockerGroupOfJenkinsNode() {
 
 function waitForJenkins() {
   echo -n "Waiting for Jenkins to become available at ${JENKINS_URL}/login"
-#  TODO silence please
-  while [[ $(curl -s -L -o /dev/stderr -w ''%{http_code}'' "${JENKINS_URL}/login") -ne "200" ]]; do
+  while [[ $(curl -s -L -o /dev/null -w ''%{http_code}'' "${JENKINS_URL}/login") -ne "200" ]]; do
     echo -n .
     sleep 2
   done
@@ -91,6 +98,10 @@ function initializeRemoteJenkins() {
   SCMM_URL="${4}"
   SCMM_PASSWORD="${5}"
 
+  initialize
+}
+
+function initialize() {
   waitForJenkins
 
   token=$(authenticate)
@@ -103,7 +114,7 @@ function initializeRemoteJenkins() {
   installPlugin "junit" "1.48"
   installPlugin "scm-manager" "1.5.1"
   installPlugin "html5-notifier-plugin" "1.5"
-#  TODO wait until plugins are installed
+
   safeRestart
   waitForJenkins
 
@@ -113,4 +124,3 @@ function initializeRemoteJenkins() {
   createJob "fluxv2-applications" "${SCMM_URL}" "fluxv2" "scmm-user"
   createJob "argocd-applications" "${SCMM_URL}" "argocd" "scmm-user"
 }
-
