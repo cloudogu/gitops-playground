@@ -467,6 +467,11 @@ function printParameters() {
   echo
   echo "    | --password=myPassword   >> Set initial admin passwords to 'myPassword'"
   echo
+  echo "Configure external jenkins. Use this 3 parameters to configure an external jenkins"
+  echo "    | --jenkins-url=http://jenkins   >> The url of your external jenkins"
+  echo "    | --jenkins-username=myUsername  >> Mandatory when --jenkins-url is set"
+  echo "    | --jenkins-password=myPassword  >> Mandatory when --jenkins-url is set"
+  echo
   echo " -w | --welcome  >> Welcome screen"
   echo
   echo " -d | --debug    >> Debug output"
