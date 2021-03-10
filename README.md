@@ -200,6 +200,17 @@ Note: You can enable browser notifications about build results via a button in t
 ![Example of a Jenkins browser notifications](docs/jenkins-example-notification.png)
   
 
+#### External Jenkins
+
+You can set external jenkins server through this parameters:  
+`jenkins-url`, `jenkins-username`, `jenkins-password`
+
+The user has to have the following privileges: 
+* install plugins
+* set credentials
+* create jobs
+* restarting
+
 ### SCM-Manager
 
 Find scm-manager on http://localhost:9091

@@ -3,8 +3,11 @@ set -o errexit -o nounset -o pipefail
 #set -x
 
 BASEDIR=$(dirname $0)
+export BASEDIR
 ABSOLUTE_BASEDIR="$(cd ${BASEDIR} && pwd)"
+export ABSOLUTE_BASEDIR
 PLAYGROUND_DIR="$(cd ${BASEDIR} && cd .. && pwd)"
+export PLAYGROUND_DIR
 
 PETCLINIC_COMMIT=949c5af
 SPRING_BOOT_HELM_CHART_COMMIT=0.2.0
@@ -23,6 +26,7 @@ ports[jenkins]=$(grep 'nodePort:' "${PLAYGROUND_DIR}"/jenkins/values.yaml | grep
 ports[argocd]=$(grep 'servicePortHttp:' "${PLAYGROUND_DIR}"/argocd/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')
 
 source ${ABSOLUTE_BASEDIR}/utils.sh
+source ${ABSOLUTE_BASEDIR}/jenkins/init-jenkins.sh
 
 function main() {
   DEBUG=$1
@@ -33,6 +37,9 @@ function main() {
   REMOTE_CLUSTER=$6
   SET_USERNAME=$7
   SET_PASSWORD=$8
+  JENKINS_URL=$9
+  JENKINS_USERNAME=${10}
+  JENKINS_PASSWORD=${11}
 
   checkPrerequisites
 
@@ -58,8 +65,22 @@ function main() {
     evalWithSpinner initArgo "Starting ArgoCD..."
   fi
 
-  # Start Jenkins last, so all repos have been initialized when repo indexing starts
-  evalWithSpinner initJenkins "Starting Jenkins..."
+  if [[ -z "${JENKINS_URL}" ]]; then
+    # TODO: configure with introduction of external scmm, right now we use just the servicename
+    SCMM_URL="http://scmm-scm-manager/scm"
+
+    deployLocalJenkins "${SET_USERNAME}" "${SET_PASSWORD}" "${REMOTE_CLUSTER}"
+
+    setExternalHostnameIfNecessary "jenkins" "jenkins" "default"
+    JENKINS_URL=$(createUrl "jenkins")
+
+    configureJenkins "${JENKINS_URL}" "${SET_USERNAME}" "${SET_PASSWORD}" "${SCMM_URL}" "${SET_PASSWORD}"
+  else
+    # TODO: configure with introduction of external scmm, right now we use just the servicename
+    SCMM_URL="http://scmm-scm-manager/scm"
+
+    configureJenkins "${JENKINS_URL}" "${JENKINS_USERNAME}" "${JENKINS_PASSWORD}" "${SCMM_URL}" "${SET_PASSWORD}"
+  fi
 
   printWelcomeScreen
 }
@@ -86,23 +107,16 @@ function checkPrerequisites() {
 }
 
 function applyBasicK8sResources() {
-  # Mark the first node for Jenkins and agents. See jenkins/values.yamls "agent.workingDir" for details.
-  # Remove first (in case new nodes were added)
-  kubectl label --all nodes node- >/dev/null
-  kubectl label $(kubectl get node -o name | sort | head -n 1) node=jenkins
-
   kubectl apply -f k8s-namespaces || true
 
   createSecrets
 
-  kubectl apply -f jenkins/resources || true
-
-  helm repo add jenkins https://charts.jenkins.io
   helm repo add fluxcd https://charts.fluxcd.io
   helm repo add stable https://charts.helm.sh/stable
   helm repo add argo https://argoproj.github.io/argo-helm
   helm repo add bitnami https://charts.bitnami.com/bitnami
   helm repo add scm-manager https://packages.scm-manager.org/repository/helm-v2-releases/
+  helm repo add jenkins https://charts.jenkins.io
   helm repo update
 
   helm upgrade -i docker-registry --values docker-registry/values.yaml --version 1.9.4 stable/docker-registry -n default
@@ -137,38 +151,6 @@ function scmmHelmSettingsForRemoteCluster() {
     # Default clusters don't allow for node ports < 30.000, so just unset nodePort.
     # A defined nodePort is not needed for remote cluster, where the externalIp is used for accessing SCMM
     echo "--set service.nodePort="
-  fi
-}
-
-function initJenkins() {
-  # Find out the docker group and put the agent into it. Otherwise it has no permission to access  the docker host.
-  helm upgrade -i jenkins --values jenkins/values.yaml \
-    $(jenkinsHelmSettingsForLocalCluster) --set agent.runAsGroup=$(queryDockerGroupOfJenkinsNode) \
-    --version ${JENKINS_HELM_CHART_VERSION} jenkins/jenkins -n default
-
-}
-
-function queryDockerGroupOfJenkinsNode() {
-  kubectl apply -f jenkins/tmp-docker-gid-grepper.yaml >/dev/null
-  until kubectl get po --field-selector=status.phase=Running | grep tmp-docker-gid-grepper >/dev/null; do
-    sleep 1
-  done
-
-  kubectl exec tmp-docker-gid-grepper -- cat /etc/group | grep docker | cut -d: -f3
-
-  # This call might block some (unnecessary) seconds so move to background
-  kubectl delete -f jenkins/tmp-docker-gid-grepper.yaml >/dev/null &
-}
-
-function jenkinsHelmSettingsForLocalCluster() {
-  if [[ $REMOTE_CLUSTER != true ]]; then
-    # Run Jenkins and Agent pods as the current user.
-    # Avoids file permission problems when accessing files on the host that were written from the pods
-
-    # We also need a host port, so jenkins can be reached via localhost:9090
-    # But: This helm charts only uses the nodePort value, if the type is "NodePort". So change it for local cluster.
-    echo "--set controller.runAsUser=$(id -u) --set agent.runAsUser=$(id -u)" \
-      "--set controller.serviceType=NodePort"
   fi
 }
 
@@ -216,7 +198,6 @@ function argoHelmSettingsForRemoteCluster() {
 
 function createSecrets() {
   createSecret scmm-credentials --from-literal=USERNAME=$SET_USERNAME --from-literal=PASSWORD=$SET_PASSWORD -n default
-  createSecret jenkins-credentials --from-literal=jenkins-admin-user=$SET_USERNAME --from-literal=jenkins-admin-password=$SET_PASSWORD -n default
 
   createSecret gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=$SET_PASSWORD -n default
   createSecret gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=$SET_PASSWORD -n argocd
@@ -300,8 +281,10 @@ function pushRepoMirror() {
 
 function waitForScmManager() {
   echo -n "Waiting for SCM-Manager to become available at http://${hostnames[scmm]}:${ports[scmm]}/scm"
-  while [[ "$(curl -s -L -o /dev/null -w ''%{http_code}'' "http://${hostnames[scmm]}:${ports[scmm]}/scm")" -ne "200" ]]; do
-    echo -n .
+  HTTP_CODE="0"
+  while [[ "${HTTP_CODE}" -ne "200" ]]; do
+    HTTP_CODE="$(curl -s -L -o /dev/null -w ''%{http_code}'' "http://${hostnames[scmm]}:${ports[scmm]}/scm")" || true
+    echo -n "."
     sleep 2
   done
 }
@@ -362,9 +345,14 @@ function setDefaultBranch() {
 }
 
 function createUrl() {
-  systemName=$1
+  systemName=${1}
   hostname=${hostnames[${systemName}]}
   port=${ports[${systemName}]}
+
+  if [[ "${systemName}" == "jenkins" && -n "${JENKINS_URL}" ]]; then
+    echo "${JENKINS_URL}"
+    return
+  fi
 
   if [[ -z "${port}" ]]; then
     error "hostname ${systemName} not defined"
@@ -377,7 +365,9 @@ function createUrl() {
 
 function printWelcomeScreen() {
 
-  setExternalHostnameIfNecessary 'jenkins' 'jenkins' 'default'
+  if [[ -z "${JENKINS_URL}" ]]; then
+    setExternalHostnameIfNecessary 'jenkins' 'jenkins' 'default'
+  fi
 
   echo
   echo
@@ -477,6 +467,11 @@ function printParameters() {
   echo
   echo "    | --password=myPassword   >> Set initial admin passwords to 'myPassword'"
   echo
+  echo "Configure external jenkins. Use this 3 parameters to configure an external jenkins"
+  echo "    | --jenkins-url=http://jenkins   >> The url of your external jenkins"
+  echo "    | --jenkins-username=myUsername  >> Mandatory when --jenkins-url is set"
+  echo "    | --jenkins-password=myPassword  >> Mandatory when --jenkins-url is set"
+  echo
   echo " -w | --welcome  >> Welcome screen"
   echo
   echo " -d | --debug    >> Debug output"
@@ -484,7 +479,7 @@ function printParameters() {
 
 COMMANDS=$(getopt \
   -o hwd \
-  --long help,fluxv1,fluxv2,argocd,welcome,debug,remote,username:,password: \
+  --long help,fluxv1,fluxv2,argocd,welcome,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password: \
   -- "$@")
 
 if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
@@ -499,17 +494,24 @@ INSTALL_ARGOCD=false
 REMOTE_CLUSTER=false
 SET_USERNAME="admin"
 SET_PASSWORD="admin"
+JENKINS_URL=""
+JENKINS_USERNAME=""
+JENKINS_PASSWORD=""
+
 while true; do
   case "$1" in
-    -h | --help     ) printUsage; exit 0 ;;
-    --fluxv1        ) INSTALL_FLUXV1=true; INSTALL_ALL_MODULES=false; shift ;;
-    --fluxv2        ) INSTALL_FLUXV2=true; INSTALL_ALL_MODULES=false; shift ;;
-    --argocd        ) INSTALL_ARGOCD=true; INSTALL_ALL_MODULES=false; shift ;;
-    --remote        ) REMOTE_CLUSTER=true; shift ;;
-    --password      ) SET_PASSWORD="$2"; shift 2 ;;
-    -w | --welcome  ) printWelcomeScreen; exit 0 ;;
-    -d | --debug    ) DEBUG=true; shift ;;
-    --              ) shift; break ;;
+    -h | --help          ) printUsage; exit 0 ;;
+    --fluxv1             ) INSTALL_FLUXV1=true; INSTALL_ALL_MODULES=false; shift ;;
+    --fluxv2             ) INSTALL_FLUXV2=true; INSTALL_ALL_MODULES=false; shift ;;
+    --argocd             ) INSTALL_ARGOCD=true; INSTALL_ALL_MODULES=false; shift ;;
+    --remote             ) REMOTE_CLUSTER=true; shift ;;
+    --jenkins-url        ) JENKINS_URL="$2"; shift 2 ;;
+    --jenkins-username   ) JENKINS_USERNAME="$2"; shift 2 ;;
+    --jenkins-password   ) JENKINS_PASSWORD="$2"; shift 2 ;;
+    --password           ) SET_PASSWORD="$2"; shift 2 ;;
+    -w | --welcome       ) printWelcomeScreen; exit 0 ;;
+    -d | --debug         ) DEBUG=true; shift ;;
+    --                   ) shift; break ;;
   *) break ;;
   esac
 done
@@ -517,4 +519,4 @@ done
 confirm "Applying gitops playground to kubernetes cluster: '$(kubectl config current-context)'." 'Continue? y/n [n]' ||
   exit 0
 
-main $DEBUG $INSTALL_ALL_MODULES $INSTALL_FLUXV1 $INSTALL_FLUXV2 $INSTALL_ARGOCD $REMOTE_CLUSTER $SET_USERNAME $SET_PASSWORD
+main $DEBUG $INSTALL_ALL_MODULES $INSTALL_FLUXV1 $INSTALL_FLUXV2 $INSTALL_ARGOCD $REMOTE_CLUSTER $SET_USERNAME "$SET_PASSWORD" "$JENKINS_URL" "$JENKINS_USERNAME" "$JENKINS_PASSWORD"

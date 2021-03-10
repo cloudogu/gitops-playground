@@ -14,18 +14,6 @@ controller:
   nodePort: 9090
 
   additionalPlugins:
-    # Credentials plugins is a transitive dependency.
-    # We pin it's version here because it caused problems with CASC plugin in the past.
-    # CASC plugin is pinned in controller.plugins field of the chart.
-    - credentials:2.3.15
-    - docker-workflow:1.25
-    - docker-plugin:1.2.1
-    - job-dsl:1.77
-    - pipeline-utility-steps:2.6.1
-    - junit:1.48
-    - scm-manager:1.5.1
-    - html5-notifier-plugin:1.5
-
   # This would be great to not install every plugin again on startup.
   # BUT: This also leads to CASC being ignored.
   # initializeOnce: true
@@ -38,83 +26,11 @@ controller:
     node: jenkins
 
   JCasC:
+    defaultConfig: true
     configScripts:
-      # TODO use SCMM user secret keys for username and password
-      scmm-credentials: |
-        credentials:
-          system:
-            domainCredentials:
-            - credentials:
-              - usernamePassword:
-                  id: "scmm-user"
-                  username: "${USERNAME}"
-                  password: "${PASSWORD}"
-                  description: "Credentials for accessing SCM-Manager"
-                  scope: GLOBAL
-
-      # TODO could we use the SCMM source here?
-      # These URLS could be helpful:
-      # http://localhost:9090/job/petclinic-plain/config.xml
-      # http://localhost:9090//plugin/job-dsl/api-viewer/index.html#path/multibranchPipelineJob-branchSources
-      # For now using "scm-manager" in JobDSL leads to an error when CASC is applied: 
-      # "No such property: scm for class: javaposse.jobdsl.plugin.structs.DescribableListContext"
-      # This is probably because "scm-manager" is invalid groovy syntax.
-      # See https://github.com/jenkinsci/scm-manager-plugin/blob/1.4.0/src/main/java/com/cloudogu/scmmanager/scm/ScmManagerSource.java
-      # This might be fixed in a later SCMM Plugin for Jenkins
-      init-job: |
+      welcome-message: |
         jenkins:
-          systemMessage: "Seeding init jobs"
-        jobs:
-          - script: |
-              multibranchPipelineJob('fluxv1-petclinic-plain') {
-                  branchSources {
-                      git {
-                          id('fluxv1-petclinic-plain')
-                          remote('http://scmm-scm-manager/scm/repo/fluxv1/petclinic-plain')
-                          credentialsId('scmm-user')
-                      }
-                  }
-              }
-          - script: |
-              multibranchPipelineJob('fluxv1-petclinic-helm') {
-                  branchSources {
-                      git {
-                          id('fluxv1-petclinic-helm')
-                          remote('http://scmm-scm-manager/scm/repo/fluxv1/petclinic-helm')
-                          credentialsId('scmm-user')
-                      }
-                  }
-              }
-          - script: |
-              multibranchPipelineJob('fluxv1-nginx') {
-                  branchSources {
-                      git {
-                          id('fluxv1-nginx')
-                          remote('http://scmm-scm-manager/scm/repo/fluxv1/nginx-helm')
-                          credentialsId('scmm-user')
-                      }
-                  }
-              }
-          - script: |
-              multibranchPipelineJob('fluxv2-petclinic-plain') {
-                  branchSources {
-                      git {
-                          id('fluxv2-petclinic-plain')
-                          remote('http://scmm-scm-manager/scm/repo/fluxv2/petclinic-plain')
-                          credentialsId('scmm-user')
-                      }
-                  }
-              }
-          - script: |
-              multibranchPipelineJob('argocd-petclinic-plain') {
-                  branchSources {
-                      git {
-                          id('argocd-petclinic-plain')
-                          remote('http://scmm-scm-manager/scm/repo/argocd/petclinic-plain')
-                          credentialsId('scmm-user')
-                      }
-                  }
-              }
+          systemMessage: Welcome to our CI\CD server.  This Jenkins is configured and managed 'as code'.
 
   sidecars:
     configAutoReload:
@@ -125,10 +41,6 @@ controller:
     existingSecret: jenkins-credentials
 
   containerEnv:
-    - name: SECRETS
-      # The files in this folders can be used as ${variable} in CasC credentials
-      # Default /run/secrets results in "read-only file system"
-      value: /secrets/jenkins
     - name: PATH
       # We already mounted this PATH on the controller-agent. Still, "docker.inside {}" fails in pipeline?
       # Why? The docker pipeline plugin seems to set an empty environment: https://github.com/jenkinsci/docker-workflow-plugin/blob/docker-workflow-1.25/src/main/java/org/jenkinsci/plugins/docker/workflow/client/DockerClient.java#L261
@@ -168,20 +80,10 @@ controller:
 
 persistence:
   volumes:
-    - name: scmm-user
-      secret:
-        secretName: gitops-scmm
     # Needed for initContainer only
     - name: host-tmp
       hostPath:
         path: /tmp
-
-  mounts:
-    - name: scmm-user
-      # Use k8s secret as jenkins credentials.
-      # https://github.com/jenkinsci/configuration-as-code-plugin/blob/master/docs/features/secrets.adoc#kubernetes-secrets
-      mountPath: /secrets/jenkins
-      readOnly: true
 
 agent:
   # We need JDK11 for our PetClinic example
