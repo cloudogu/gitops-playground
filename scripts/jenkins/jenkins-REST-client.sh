@@ -89,9 +89,11 @@ function installPlugin() {
   printf 'Installing plugin %s v%s ...' "${PLUGIN_NAME}" "${PLUGIN_VERSION}"
 
   STATUS=$(postPlugin "${PLUGIN_NAME}" "${PLUGIN_VERSION}")
+  waitForPluginInstallation "${PLUGIN_NAME}" && PLUGIN_INSTALLED=$? || PLUGIN_INSTALLED=$?
 
-  until [[ $(waitForPluginInstallation "${PLUGIN_NAME}") ]]; do
+  until [[ $PLUGIN_INSTALLED = 0 ]]; do
     STATUS=$(postPlugin "${PLUGIN_NAME}" "${PLUGIN_VERSION}")
+    waitForPluginInstallation "${PLUGIN_NAME}" && PLUGIN_INSTALLED=$? || PLUGIN_INSTALLED=$?
   done
 
   printStatus "${STATUS}"

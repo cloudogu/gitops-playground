@@ -281,8 +281,10 @@ function pushRepoMirror() {
 
 function waitForScmManager() {
   echo -n "Waiting for SCM-Manager to become available at http://${hostnames[scmm]}:${ports[scmm]}/scm"
-  while [[ $(curl -s -L -o /dev/null -w ''%{http_code}'' "http://${hostnames[scmm]}:${ports[scmm]}/scm") -ne "200" ]]; do
-    echo -n .
+  HTTP_CODE="0"
+  while [[ "${HTTP_CODE}" -ne "200" ]]; do
+    HTTP_CODE="$(curl -s -L -o /dev/null -w ''%{http_code}'' "http://${hostnames[scmm]}:${ports[scmm]}/scm")" || true
+    echo -n "."
     sleep 2
   done
 }
@@ -347,6 +349,11 @@ function createUrl() {
   hostname=${hostnames[${systemName}]}
   port=${ports[${systemName}]}
 
+  if [[ "${systemName}" == "jenkins" && -n "${JENKINS_URL}" ]]; then
+    echo "${JENKINS_URL}"
+    return
+  fi
+
   if [[ -z "${port}" ]]; then
     error "hostname ${systemName} not defined"
     exit 1
@@ -358,8 +365,9 @@ function createUrl() {
 
 function printWelcomeScreen() {
 
-  # TODO: use JENKINS_URL if set
-  setExternalHostnameIfNecessary 'jenkins' 'jenkins' 'default'
+  if [[ -z "${JENKINS_URL}" ]]; then
+    setExternalHostnameIfNecessary 'jenkins' 'jenkins' 'default'
+  fi
 
   echo
   echo
