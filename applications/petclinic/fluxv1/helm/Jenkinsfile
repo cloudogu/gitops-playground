@@ -94,8 +94,12 @@ node {
                         // deployDirectly: true  -> deploys directly
                         // deployDirectly: false -> creates a PR (default)
                         stages: [
-                                staging: [ deployDirectly: true ],
-                                production: [ deployDirectly: false ],
+                                'fluxv1-staging': [
+                                    deployDirectly: true
+                                    ],
+                                'fluxv1-production': [
+                                    deployDirectly: false
+                                    ],
                         ]
                 ]
 

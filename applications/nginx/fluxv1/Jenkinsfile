@@ -29,21 +29,7 @@ properties([
 
 node('docker') {
 
-
-
     def git = cesBuildLib.Git.new(this)
-
-    // In this chart we don't need to set properties in HelmRelease's "values" field. 
-    // We leave this mechanism in place as an example.
-
-    // helmValuesFromFile = []
-
-    // fileConfigmaps = [
-    //         [name : "index",
-    //          file : "../index.html",
-    //          stage: ["staging", "production"]
-    //         ]
-    // ]
 
     timeout(activity: true, time: 30, unit: 'MINUTES') {
         
@@ -73,8 +59,6 @@ node('docker') {
                                 repoUrl  : helmChartRepository,
                                 chartName: helmChartName,
                                 version  : helmChartVersion,
-                                // extraResources: [], // convention: ${sourcePath}/stages.it} all files and folders will be copied
-
                             ]
                         ],
                         // stages consists of [ $branchName: [ $deployConfig ]]
@@ -93,19 +77,19 @@ node('docker') {
                                     ],
                         ],
                         // helmValuesFromFile: [], Optional
-                        fileConfigmaps: [ //TODO configmapsFromFiles;
-                                [name : "index",
-                                sourceFilePath : "../index.html", // relative to deployments.sourcePath
-                                // additional feature in the future. current default folder is '../generated-resources'
-                                // destinationFilePath: "../generated-resources/html/" // realtive to deployments.sourcePath
-                                stage: ["staging", "production"]
+                        fileConfigmaps: [ 
+                                [
+                                    name : "index",
+                                    sourceFilePath : "../index.html", // relative to deployments.sourcePath
+                                    // additional feature in the future. current default folder is '../generated-resources'
+                                    // destinationFilePath: "../generated-resources/html/" // realtive to deployments.sourcePath
+                                    stage: ["staging", "production"]
                                 ]
                         ]
                     ]
 
                 deployViaGitops(gitopsConfig)
                 } else {
-                    // setBuildDescription 'No push to gitOps repo, because neither on develop branch nor "forceDeployStaging" param set'
                     echo 'Skipping deploy, because build not successful or not on main branch'
 
                 }
