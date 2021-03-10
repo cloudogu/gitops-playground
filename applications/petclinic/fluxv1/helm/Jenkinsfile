@@ -10,7 +10,7 @@ String getDockerRegistryBaseUrl() { "localhost:30000" }
 String getCesBuildLibRepo() { 'http://scmm-scm-manager/scm/repo/common/ces-build-lib/' }
 String getCesBuildLibVersion() { '1.45.1' }
 String getGitOpsBuildLibRepo() { 'http://scmm-scm-manager/scm/repo/common/gitops-build-lib' }
-String getGitOpsBuildLibVersion() { 'feature/helm-git' }
+String getGitOpsBuildLibVersion() { '0.0.6' }
 String getHelmChartRepository() { 'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/common/spring-boot-helm-chart' }
 String getHelmChartName() { "springboot" }
 String getHelmChartVersion() { "1.0.0" }

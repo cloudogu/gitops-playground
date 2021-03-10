@@ -11,7 +11,7 @@ String getDockerRegistryBaseUrl() { "localhost:30000" }
 String getCesBuildLibRepo() { 'http://scmm-scm-manager/scm/repo/common/ces-build-lib/' }
 String getCesBuildLibVersion() { '1.45.1' }
 String getGitOpsBuildLibRepo() { 'http://scmm-scm-manager/scm/repo/common/gitops-build-lib' }
-String getGitOpsBuildLibVersion() { 'feature/helm-git' }
+String getGitOpsBuildLibVersion() { '0.0.6' }
 String getMainBranch() { 'main' } 
 
 // images, helm also offers kubeval
