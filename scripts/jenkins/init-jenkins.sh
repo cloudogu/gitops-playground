@@ -4,8 +4,7 @@ set -o errexit -o nounset -o pipefail
 
 if [[ -z ${PLAYGROUND_DIR+x} ]]; then
   BASEDIR=$(dirname $0)
-  ABSOLUTE_BASEDIR="$(cd ${BASEDIR} && pwd)"
-  PLAYGROUND_DIR="$(cd ${BASEDIR} && cd .. && cd .. && pwd)"
+  PLAYGROUND_DIR="$(cd "${BASEDIR}" && cd .. && cd .. && pwd)"
 fi
 
 JENKINS_HELM_CHART_VERSION=3.1.9
@@ -14,7 +13,7 @@ SET_USERNAME="admin"
 SET_PASSWORD="admin"
 REMOTE_CLUSTER=false
 
-source ${PLAYGROUND_DIR}/scripts/jenkins/jenkins-REST-client.sh
+source "${PLAYGROUND_DIR}"/scripts/jenkins/jenkins-REST-client.sh
 
 function deployLocalJenkins() {
   SET_USERNAME=${1}
@@ -71,16 +70,18 @@ function waitForJenkins() {
 
 function configureJenkins() {
   JENKINS_URL=${1}
-  JENKINS_USERNAME=${2:-admin}
-  JENKINS_PASSWORD=${3:-admin}
+  export JENKINS_URL
+  JENKINS_USERNAME=${2}
+  export JENKINS_USERNAME
+  JENKINS_PASSWORD=${3}
+  export JENKINS_PASSWORD
   SCMM_URL="${4}"
   SCMM_PASSWORD="${5}"
 
   waitForJenkins
 
   TOKEN=$(authenticate)
-
-  waitForPluginManager
+  export TOKEN
 
   installPlugin "subversion" "2.14.0"
   installPlugin "docker-workflow" "1.25"
@@ -100,4 +101,3 @@ function configureJenkins() {
   createJob "fluxv2-applications" "${SCMM_URL}" "fluxv2" "scmm-user"
   createJob "argocd-applications" "${SCMM_URL}" "argocd" "scmm-user"
 }
-#deployLocalJenkins "admin" "admin" "false"
