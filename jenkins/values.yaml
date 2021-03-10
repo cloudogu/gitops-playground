@@ -77,13 +77,13 @@ controller:
               }
           - script: |
               multibranchPipelineJob('fluxv1-petclinic-helm') {
-                branchSources {
-                  git {
-                    id('fluxv1-petclinic-helm')
-                    remote('http://scmm-scm-manager/scm/repo/fluxv1/petclinic-helm')
-                    credentialsId('scmm-user')
+                  branchSources {
+                      git {
+                          id('fluxv1-petclinic-helm')
+                          remote('http://scmm-scm-manager/scm/repo/fluxv1/petclinic-helm')
+                          credentialsId('scmm-user')
+                      }
                   }
-                }
               }
           - script: |
               multibranchPipelineJob('fluxv1-nginx') {

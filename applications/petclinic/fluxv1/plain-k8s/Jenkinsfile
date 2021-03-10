@@ -8,10 +8,10 @@ String getConfigRepositoryPRBaseUrl() { 'http://scmm-scm-manager/scm' }
 String getConfigRepositoryPRRepo() { 'fluxv1/gitops' }
 // The docker daemon cant use the k8s service name, because it is not running inside the cluster
 String getDockerRegistryBaseUrl() { "localhost:30000" }
-String getCesBuildLibRepo() { 'https://github.com/cloudogu/ces-build-lib/' } // TODO change back to scmm repo
+String getCesBuildLibRepo() { 'http://scmm-scm-manager/scm/repo/common/ces-build-lib/' }
 String getCesBuildLibVersion() { '1.45.1' }
-String getGitOpsBuildLibRepo() { 'https://github.com/cloudogu/gitops-build-lib' } // TODO change to scmm repo?
-String getGitOpsBuildLibVersion() { '0.0.5' }
+String getGitOpsBuildLibRepo() { 'http://scmm-scm-manager/scm/repo/common/gitops-build-lib' }
+String getGitOpsBuildLibVersion() { '0.0.6' }
 String getMainBranch() { 'main' } 
 
 // images, helm also offers kubeval
@@ -41,7 +41,6 @@ node {
 
         stage('Build') {
           mvn 'clean package -DskipTests'
-
           archiveArtifacts artifacts: '**/target/*.jar'
         }
 
@@ -79,10 +78,15 @@ node {
                         cesBuildLibVersion: cesBuildLibVersion,
                         application: application,
                         mainBranch: mainBranch,
-                        updateImages: [
-                                [ deploymentFilename: "deployment.yaml",
-                                  containerName: application,
-                                  imageName: imageName ]
+                        deployments: [
+                            sourcePath: 'k8s',
+                            plain: [
+                                updateImages: [
+                                    [ filename: "deployment.yaml",
+                                    containerName: application,
+                                    imageName: imageName ]
+                                ]
+                            ]
                         ],
                         // stages consists of [ $branchName: [ $deployConfig ]]
                         // where $deployConfig is an array which consists of $deployDirectly
