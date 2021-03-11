@@ -73,7 +73,7 @@ node('docker') {
                         ],
                         fileConfigmaps: [ 
                                 [
-                                    name : "index",
+                                    name : "index-nginx",
                                     sourceFilePath : "../index.html",
                                     stage: ["staging", "production"]
                                 ]
