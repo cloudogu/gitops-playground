@@ -10,7 +10,7 @@ String getDockerRegistryBaseUrl() { "localhost:30000" }
 String getCesBuildLibRepo() { 'http://scmm-scm-manager/scm/repo/common/ces-build-lib/' }
 String getCesBuildLibVersion() { '1.45.1' }
 String getGitOpsBuildLibRepo() { 'http://scmm-scm-manager/scm/repo/common/gitops-build-lib' }
-String getGitOpsBuildLibVersion() { '0.0.7' }
+String getGitOpsBuildLibVersion() { '0.0.9' }
 String getHelmChartRepository() { 'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/common/spring-boot-helm-chart' }
 String getHelmChartName() { "springboot" }
 String getHelmChartVersion() { "1.0.0" }
@@ -93,6 +93,13 @@ node {
                                 'fluxv1-production': [
                                     deployDirectly: false
                                     ]
+                        ],
+                        fileConfigmaps: [ 
+                                [
+                                    name : "index-helm",
+                                    sourceFilePath : "../index.html",
+                                    stage: ["fluxv1-staging", "fluxv1-production"]
+                                ]
                         ]
                 ]
 
