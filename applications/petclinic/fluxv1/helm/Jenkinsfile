@@ -82,7 +82,6 @@ node {
                                 repoType : 'GIT',
                                 credentialsId : 'creds',
                                 repoUrl  : helmChartRepository,
-                                chartPath: helmChartName,
                                 version  : helmChartVersion,
                                 updateValues  : [[fieldPath: "image.name", newValue: imageName]]
                             ]
