@@ -61,28 +61,20 @@ node('docker') {
                                 version  : helmChartVersion,
                             ]
                         ],
-                        // stages consists of [ $branchName: [ $deployConfig ]]
-                        // where $deployConfig is an array which consists of $deployDirectly
-                        //
-                        // deployDirectly: true  -> deploys directly
-                        // deployDirectly: false -> creates a PR (default)
                         stages: [
                                 staging: [ 
-                                    namespace: 'fluxv1-staging', // Default: key-name. e.g. staging
+                                    namespace: 'fluxv1-staging',
                                     deployDirectly: true 
                                     ],
                                 production: [ 
-                                    namespace: 'fluxv1-production', // Default: key-name. e.g. production
+                                    namespace: 'fluxv1-production',
                                     deployDirectly: false 
                                     ],
                         ],
-                        // helmValuesFromFile: [], Optional
                         fileConfigmaps: [ 
                                 [
                                     name : "index",
-                                    sourceFilePath : "../index.html", // relative to deployments.sourcePath
-                                    // additional feature in the future. current default folder is '../generated-resources'
-                                    // destinationFilePath: "../generated-resources/html/" // realtive to deployments.sourcePath
+                                    sourceFilePath : "../index.html",
                                     stage: ["staging", "production"]
                                 ]
                         ]

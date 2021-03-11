@@ -14,8 +14,6 @@ String getGitOpsBuildLibRepo() { 'http://scmm-scm-manager/scm/repo/common/gitops
 String getGitOpsBuildLibVersion() { 'feature/helm-repo-type' }
 String getMainBranch() { 'main' } 
 
-// images, helm also offers kubeval
-
 cesBuildLib = library(identifier: "ces-build-lib@${cesBuildLibVersion}",
         retriever: modernSCM([$class: 'GitSCMSource', remote: cesBuildLibRepo])
 ).com.cloudogu.ces.cesbuildlib
@@ -68,7 +66,6 @@ node {
         stage('Deploy') {
             if (isBuildSuccessful() && env.BRANCH_NAME in [mainBranch]) {
 
-                // TODO set validation
                 def gitopsConfig = [
                         scmmCredentialsId: scmManagerCredentials,
                         scmmConfigRepoUrl: configRepositoryUrl,

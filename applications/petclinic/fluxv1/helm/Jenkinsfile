@@ -86,11 +86,6 @@ node {
                                 updateValues  : [[fieldPath: "image.name", newValue: imageName]]
                             ]
                         ],
-                        // stages consists of [ $branchName: [ $deployConfig ]]
-                        // where $deployConfig is an array which consists of $deployDirectly
-                        //
-                        // deployDirectly: true  -> deploys directly
-                        // deployDirectly: false -> creates a PR (default)
                         stages: [
                                 'fluxv1-staging': [
                                     deployDirectly: true
