@@ -11,10 +11,8 @@ String getDockerRegistryBaseUrl() { "localhost:30000" }
 String getCesBuildLibRepo() { 'http://scmm-scm-manager/scm/repo/common/ces-build-lib/' }
 String getCesBuildLibVersion() { '1.45.1' }
 String getGitOpsBuildLibRepo() { 'http://scmm-scm-manager/scm/repo/common/gitops-build-lib' }
-String getGitOpsBuildLibVersion() { '0.0.6' }
+String getGitOpsBuildLibVersion() { '0.0.7' }
 String getMainBranch() { 'main' } 
-
-// images, helm also offers kubeval
 
 cesBuildLib = library(identifier: "ces-build-lib@${cesBuildLibVersion}",
         retriever: modernSCM([$class: 'GitSCMSource', remote: cesBuildLibRepo])
@@ -68,7 +66,6 @@ node {
         stage('Deploy') {
             if (isBuildSuccessful() && env.BRANCH_NAME in [mainBranch]) {
 
-                // TODO set validation
                 def gitopsConfig = [
                         scmmCredentialsId: scmManagerCredentials,
                         scmmConfigRepoUrl: configRepositoryUrl,
@@ -88,15 +85,23 @@ node {
                                 ]
                             ]
                         ],
-                        // stages consists of [ $branchName: [ $deployConfig ]]
-                        // where $deployConfig is an array which consists of $deployDirectly
-                        //
-                        // deployDirectly: true  -> deploys directly
-                        // deployDirectly: false -> creates a PR (default)
                         stages: [
-                                staging: [ deployDirectly: true ],
-                                production: [ deployDirectly: false ],
-                                qa: [ ]
+                                staging: [ 
+                                    namespace: 'fluxv1-staging',
+                                    deployDirectly: true ],
+                                production: [ 
+                                    namespace: 'fluxv1-production',
+                                    deployDirectly: false ],
+                                qa: [
+                                    namespace: 'fluxv1-qa'
+                                 ]
+                        ],
+                        fileConfigmaps: [ 
+                                [
+                                    name : "index-plain",
+                                    sourceFilePath : "../index.html",
+                                    stage: ["staging", "production", "qa"]
+                                ]
                         ]
                 ]
 

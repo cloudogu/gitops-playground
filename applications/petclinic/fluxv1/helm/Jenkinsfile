@@ -10,7 +10,7 @@ String getDockerRegistryBaseUrl() { "localhost:30000" }
 String getCesBuildLibRepo() { 'http://scmm-scm-manager/scm/repo/common/ces-build-lib/' }
 String getCesBuildLibVersion() { '1.45.1' }
 String getGitOpsBuildLibRepo() { 'http://scmm-scm-manager/scm/repo/common/gitops-build-lib' }
-String getGitOpsBuildLibVersion() { '0.0.6' }
+String getGitOpsBuildLibVersion() { '0.0.7' }
 String getHelmChartRepository() { 'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/common/spring-boot-helm-chart' }
 String getHelmChartName() { "springboot" }
 String getHelmChartVersion() { "1.0.0" }
@@ -82,19 +82,17 @@ node {
                                 repoType : 'GIT',
                                 credentialsId : 'creds',
                                 repoUrl  : helmChartRepository,
-                                chartPath: helmChartName,
                                 version  : helmChartVersion,
                                 updateValues  : [[fieldPath: "image.name", newValue: imageName]]
                             ]
                         ],
-                        // stages consists of [ $branchName: [ $deployConfig ]]
-                        // where $deployConfig is an array which consists of $deployDirectly
-                        //
-                        // deployDirectly: true  -> deploys directly
-                        // deployDirectly: false -> creates a PR (default)
                         stages: [
-                                staging: [ deployDirectly: true ],
-                                production: [ deployDirectly: false ]
+                                'fluxv1-staging': [
+                                    deployDirectly: true
+                                    ],
+                                'fluxv1-production': [
+                                    deployDirectly: false
+                                    ]
                         ]
                 ]
 

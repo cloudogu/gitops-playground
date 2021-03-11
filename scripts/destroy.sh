@@ -48,7 +48,6 @@ function removeK8sResources() {
 }
 
 function cleanup () {
-  kubectl delete crd/helmreleases.helm.fluxcd.io || true
   kubectl delete customresourcedefinition.apiextensions.k8s.io/applications.argoproj.io || true
   kubectl delete customresourcedefinition.apiextensions.k8s.io/appprojects.argoproj.io || true
   kubectl delete apiservice.apiregistration.k8s.io/v1alpha1.argoproj.io || true

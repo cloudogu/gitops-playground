@@ -286,7 +286,7 @@ TODO not reachable via 30006!
     * remote: `scripts/get-remote-url nginx fluxv1-staging`
   * Production
     * local: [localhost:30007](http://localhost:30007)
-    * remote: `scripts/get-remote-url nginx fluxv1-staging`
+    * remote: `scripts/get-remote-url nginx fluxv1-production`
 
 ##### PetClinic via Flux V2
 
