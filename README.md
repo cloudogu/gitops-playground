@@ -1,6 +1,11 @@
 # k8s-gitops-playground
 
-Reproducible infrastructure to showcase GitOps workflows. Derived from our [consulting experience](https://cloudogu.com/en/consulting/).
+Reproducible infrastructure to showcase GitOps workflows with Kubernetes. 
+Derived from our experiences in [consulting](https://cloudogu.com/en/consulting/) 
+and operating the [myCloudogu platform](https://my.cloudogu.com/).
+
+We are working on distilling the logic used in the example application pipelines into a reusable library for Jenkins:
+[cloudogu/gitops-build-lib](https://github.com/cloudogu/gitops-build-lib).
 
 # Table of contents
 
