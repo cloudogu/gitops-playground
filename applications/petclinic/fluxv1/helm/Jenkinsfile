@@ -12,7 +12,6 @@ String getCesBuildLibVersion() { '1.45.1' }
 String getGitOpsBuildLibRepo() { 'http://scmm-scm-manager/scm/repo/common/gitops-build-lib' }
 String getGitOpsBuildLibVersion() { '0.0.9' }
 String getHelmChartRepository() { 'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/common/spring-boot-helm-chart' }
-String getHelmChartName() { "springboot" }
 String getHelmChartVersion() { "1.0.0" }
 String getMainBranch() { 'main' }
 
@@ -90,9 +89,7 @@ node {
                                 'fluxv1-staging': [
                                     deployDirectly: true
                                     ],
-                                'fluxv1-production': [
-                                    deployDirectly: false
-                                    ]
+                                'fluxv1-production': [:]
                         ],
                         fileConfigmaps: [ 
                                 [
