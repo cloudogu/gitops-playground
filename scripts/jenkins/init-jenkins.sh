@@ -63,7 +63,7 @@ function waitForJenkins() {
   echo -n "Waiting for Jenkins to become available at ${JENKINS_URL}/login"
   HTTP_CODE="0"
   while [[ "${HTTP_CODE}" -ne "200" ]]; do
-    HTTP_CODE="$(curl -s -L -o /dev/null -w ''%{http_code}'' "${JENKINS_URL}/login")" || true
+    HTTP_CODE="$(curl -s -L -o /dev/null --max-time 10 -w ''%{http_code}'' "${JENKINS_URL}/login")" || true
     echo -n "."
     sleep 2
   done

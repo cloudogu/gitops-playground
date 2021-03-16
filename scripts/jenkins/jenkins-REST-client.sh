@@ -138,7 +138,7 @@ function waitForPluginInstallation() {
 }
 
 function safeRestart() {
-  curl -X POST "${JENKINS_URL}/safeRestart" -u "${JENKINS_USERNAME}:${TOKEN}" && EXIT_STATUS=$? || EXIT_STATUS=$?
+  curl -s -X POST "${JENKINS_URL}/safeRestart" -u "${JENKINS_USERNAME}:${TOKEN}" && EXIT_STATUS=$? || EXIT_STATUS=$?
   if [ $EXIT_STATUS != 0 ]
     then
       echo "Restarting Jenkins failed with exit code: curl: ${EXIT_STATUS}"
