@@ -69,25 +69,27 @@ function main() {
     # TODO: configure with introduction of external scmm, right now we use just the servicename
     SCMM_URL="http://scmm-scm-manager/scm"
 
-    deployLocalJenkins "${SET_USERNAME}" "${SET_PASSWORD}" "${REMOTE_CLUSTER}"
+    evalWithSpinner deployLocalJenkins "${SET_USERNAME}" "${SET_PASSWORD}" "${REMOTE_CLUSTER}" "Deploying Jenkins ..."
 
     setExternalHostnameIfNecessary "jenkins" "jenkins" "default"
     JENKINS_URL=$(createUrl "jenkins")
 
-    configureJenkins "${JENKINS_URL}" "${SET_USERNAME}" "${SET_PASSWORD}" "${SCMM_URL}" "${SET_PASSWORD}"
+    evalWithSpinner configureJenkins "${JENKINS_URL}" "${SET_USERNAME}" "${SET_PASSWORD}" "${SCMM_URL}" "${SET_PASSWORD}" "Configuring Jenkins ..."
   else
     # TODO: configure with introduction of external scmm, right now we use just the servicename
     SCMM_URL="http://scmm-scm-manager/scm"
 
-    configureJenkins "${JENKINS_URL}" "${JENKINS_USERNAME}" "${JENKINS_PASSWORD}" "${SCMM_URL}" "${SET_PASSWORD}"
+    evalWithSpinner configureJenkins "${JENKINS_URL}" "${JENKINS_USERNAME}" "${JENKINS_PASSWORD}" "${SCMM_URL}" "${SET_PASSWORD}" "Configuring Jenkins ..."
   fi
 
   printWelcomeScreen
 }
 
 function evalWithSpinner() {
-  commandToEval=$1
-  spinnerOutput=$2
+  ARGS=("$@")
+  spinnerOutput=${ARGS[-1]}
+  unset ARGS[${#ARGS[@]}-1]
+  commandToEval=${ARGS[@]}
 
   if [[ $DEBUG == true ]]; then
     eval "$commandToEval"
@@ -283,7 +285,7 @@ function waitForScmManager() {
   echo -n "Waiting for SCM-Manager to become available at http://${hostnames[scmm]}:${ports[scmm]}/scm"
   HTTP_CODE="0"
   while [[ "${HTTP_CODE}" -ne "200" ]]; do
-    HTTP_CODE="$(curl -s -L -o /dev/null -w ''%{http_code}'' "http://${hostnames[scmm]}:${ports[scmm]}/scm")" || true
+    HTTP_CODE="$(curl -s -L -o /dev/null --max-time 10 -w ''%{http_code}'' "http://${hostnames[scmm]}:${ports[scmm]}/scm")" || true
     echo -n "."
     sleep 2
   done
@@ -384,7 +386,7 @@ function printWelcomeScreen() {
   echo "|"
   echo -e "| Credentials for SCM-Manager and Jenkins are: \e[31m${SET_USERNAME}/${SET_PASSWORD}\e[0m"
   echo "|"
-  echo "| Once Jenkins is up, the following jobs will be running:"
+  echo "| Once Jenkins is up, the following jobs can be started after scanning the corresponding namespace via the jenkins UI:"
   echo "|"
   echo -e "| - \e[32m$(createUrl jenkins)/job/fluxv1-nginx/\e[0m"
   echo -e "| - \e[32m$(createUrl jenkins)/job/fluxv1-petclinic-plain/\e[0m"
