@@ -79,6 +79,10 @@ function configureJenkins() {
   export JENKINS_PASSWORD
   SCMM_URL="${4}"
   SCMM_PASSWORD="${5}"
+  REGISTRY_URL=${6}
+  REGISTRY_PATH=${7}
+  REGISTRY_USERNAME=${8}
+  REGISTRY_PASSWORD=${9}
 
   waitForJenkins
 
@@ -97,7 +101,11 @@ function configureJenkins() {
   safeRestart
   waitForJenkins
 
-  createCredentials "scmm-user" "gitops" "${SCMM_PASSWORD}" "some credentials for accessing scm-manager"
+  setGlobalProperty "REGISTRY_URL" "${REGISTRY_URL}"
+  setGlobalProperty "REGISTRY_PATH" "${REGISTRY_PATH}"
+
+  createCredentials "scmm-user" "gitops" "${SCMM_PASSWORD}" "credentials for accessing scm-manager"
+  createCredentials "registry-user" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}" "credentials for accessing the docker-registry"
 
   createJob "fluxv1-applications" "${SCMM_URL}" "fluxv1" "scmm-user"
   createJob "fluxv2-applications" "${SCMM_URL}" "fluxv2" "scmm-user"

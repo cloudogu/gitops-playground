@@ -7,7 +7,9 @@ String getConfigRepositoryUrl() { "http://scmm-scm-manager/scm/repo/fluxv1/gitop
 String getConfigRepositoryPRBaseUrl() { 'http://scmm-scm-manager/scm' }
 String getConfigRepositoryPRRepo() { 'fluxv1/gitops' }
 // The docker daemon cant use the k8s service name, because it is not running inside the cluster
-String getDockerRegistryBaseUrl() { "localhost:30000" }
+String getDockerRegistryBaseUrl() { "${env.REGISTRY_URL}" }
+String getDockerRegistryPath() { "${env.REGISTRY_PATH}" }
+String getDockerRegistryCredentials() { 'registry-user' }
 String getCesBuildLibRepo() { 'http://scmm-scm-manager/scm/repo/common/ces-build-lib/' }
 String getCesBuildLibVersion() { '1.45.1' }
 String getGitOpsBuildLibRepo() { 'http://scmm-scm-manager/scm/repo/common/gitops-build-lib' }
@@ -49,12 +51,13 @@ node {
         String imageName = ""
         stage('Docker') {
           String imageTag = createImageTag()
-          imageName = "${dockerRegistryBaseUrl}/${application}:${imageTag}"
+          String pathPrefix = !dockerRegistryPath?.trim() ? "" : "${dockerRegistryPath}/"
+          imageName = "${dockerRegistryBaseUrl}/${pathPrefix}${application}:${imageTag}"
           mvn "spring-boot:build-image -DskipTests -Dspring-boot.build-image.imageName=${imageName}"
 
           if (isBuildSuccessful()) {
               def docker = cesBuildLib.Docker.new(this)
-              docker.withRegistry("http://${dockerRegistryBaseUrl}") {
+              docker.withRegistry("http://${dockerRegistryBaseUrl}", dockerRegistryCredentials) {
                   def image = docker.image(imageName)
                   image.push()
               }
