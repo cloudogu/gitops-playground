@@ -51,8 +51,8 @@ function main() {
   evalWithSpinner applyBasicK8sResources "Basic setup & starting registry..."
   evalWithSpinner initSCMM "Starting SCM-Manager..."
 
-  # We need to query remote IP here (in the main process) again, because the "initSCMM" methods might be running in a
-  # background process (to display the spinner only)
+#   We need to query remote IP here (in the main process) again, because the "initSCMM" methods might be running in a
+#   background process (to display the spinner only)
   setExternalHostnameIfNecessary 'scmm' 'scmm-scm-manager' 'default'
 
   if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV1 = true ]]; then
@@ -180,8 +180,6 @@ function initArgo() {
   helm upgrade -i argocd --values argocd/values.yaml \
     $(argoHelmSettingsForRemoteCluster) --version 2.9.5 argo/argo-cd -n argocd
 
-  kubectl apply -f argocd/resources -n argocd || true
-
   BCRYPT_PW=$(bcryptPassword "${SET_PASSWORD}")
   # set argocd admin password to 'admin' here, because it does not work through the helm chart
   kubectl patch secret -n argocd argocd-secret -p '{"stringData": { "admin.password": "'${BCRYPT_PW}'"}}' || true
@@ -189,6 +187,7 @@ function initArgo() {
   pushPetClinicRepo 'applications/petclinic/argocd/plain-k8s' 'argocd/petclinic-plain'
   initRepo 'argocd/gitops'
   initRepoWithSource 'applications/nginx/argocd' 'argocd/nginx-helm'
+  initRepoWithSource 'argocd/control-app' 'argocd/control-app'
 }
 
 function argoHelmSettingsForRemoteCluster() {
