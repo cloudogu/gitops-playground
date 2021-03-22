@@ -3,14 +3,14 @@
 // "Constants"
 String getApplication() {"spring-petclinic-plain" }
 String getScmManagerCredentials() { 'scmm-user' }
-String getConfigRepositoryUrl() { "http://scmm-scm-manager/scm/repo/fluxv1/gitops" }
-String getConfigRepositoryPRBaseUrl() { 'http://scmm-scm-manager/scm' }
+String getConfigRepositoryUrl() { "${env.SCMM_URL}/${env.SCMM_PATH}/repo/fluxv1/gitops" }
+String getConfigRepositoryPRBaseUrl() { "${env.SCMM_URL}/${env.SCMM_PATH}" }
 String getConfigRepositoryPRRepo() { 'fluxv1/gitops' }
 // The docker daemon cant use the k8s service name, because it is not running inside the cluster
 String getDockerRegistryBaseUrl() { "localhost:30000" }
-String getCesBuildLibRepo() { 'http://scmm-scm-manager/scm/repo/common/ces-build-lib/' }
+String getCesBuildLibRepo() { "${env.SCMM_URL}/${env.SCMM_PATH}/repo/common/ces-build-lib/" }
 String getCesBuildLibVersion() { '1.45.1' }
-String getGitOpsBuildLibRepo() { 'http://scmm-scm-manager/scm/repo/common/gitops-build-lib' }
+String getGitOpsBuildLibRepo() { "${env.SCMM_URL}/${env.SCMM_PATH}/repo/common/gitops-build-lib" }
 String getGitOpsBuildLibVersion() { '0.0.9' }
 String getMainBranch() { 'main' } 
 
