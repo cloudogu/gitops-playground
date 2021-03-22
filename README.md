@@ -188,6 +188,12 @@ Important options:
 * `--fluxv1` - deploy only Flux v1 GitOps operator
 * `--fluxv2` - deploy only Flux v2 GitOps operator
 
+Optional external Registry:
+* `--registry-url=registry` - The url of your external registry (Do not use `http://`)
+* `--registry-path=public` - Optional, empty when not set
+* `--registry-username=myUsername` - Optional, empty when not set
+* `--registry-password=myPassword` - Optional, empty when not set
+
 The scripts also prints a little intro on how to get started with a GitOps deployment.
 
 ## Applications

@@ -146,6 +146,28 @@ function safeRestart() {
   fi
 }
 
+function setGlobalProperty() {
+  printf 'Setting Global Property %s:%s ...' "${1}" "${2}"
+
+  # shellcheck disable=SC2016
+  # we don't want to expand these variables in single quotes
+  GROOVY_SCRIPT=$(env -i KEY="${1}" \
+               VALUE="${2}" \
+               envsubst '${KEY},
+                         ${VALUE}' \
+               < scripts/jenkins/setGlobalPropertyTemplate.groovy)
+
+  STATUS=$(curl -o /dev/null -d "script=${GROOVY_SCRIPT}" -s --user "${JENKINS_USERNAME}:${TOKEN}" \
+       "${JENKINS_URL}/scriptText" --write-out '%{http_code}') && EXIT_STATUS=$? || EXIT_STATUS=$?
+  if [ $EXIT_STATUS != 0 ]
+    then
+      echo "Setting Global Property ${1}:${2} failed with exit code: curl: ${EXIT_STATUS}"
+      exit $EXIT_STATUS
+  fi
+
+  printStatus "${STATUS}"
+}
+
 function printStatus() {
   STATUS_CODE=${1}
   if [ "${STATUS_CODE}" -eq 200 ] || [ "${STATUS_CODE}" -eq 302 ]

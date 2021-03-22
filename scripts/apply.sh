@@ -11,7 +11,6 @@ export PLAYGROUND_DIR
 
 PETCLINIC_COMMIT=949c5af
 SPRING_BOOT_HELM_CHART_COMMIT=0.2.0
-JENKINS_HELM_CHART_VERSION=3.1.9
 SCMM_HELM_CHART_VERSION=2.13.0
 
 declare -A hostnames
@@ -40,6 +39,10 @@ function main() {
   JENKINS_URL=$9
   JENKINS_USERNAME=${10}
   JENKINS_PASSWORD=${11}
+  REGISTRY_URL=${12}
+  REGISTRY_PATH=${13}
+  REGISTRY_USERNAME=${14}
+  REGISTRY_PASSWORD=${15}
 
   checkPrerequisites
 
@@ -48,7 +51,7 @@ function main() {
     echo "Full log output is appended to ${backgroundLogFile}"
   fi
 
-  evalWithSpinner applyBasicK8sResources "Basic setup & starting registry..."
+  evalWithSpinner applyBasicK8sResources "Basic setup & configuring registry..."
   evalWithSpinner initSCMM "Starting SCM-Manager..."
 
   # We need to query remote IP here (in the main process) again, because the "initSCMM" methods might be running in a
@@ -74,12 +77,12 @@ function main() {
     setExternalHostnameIfNecessary "jenkins" "jenkins" "default"
     JENKINS_URL=$(createUrl "jenkins")
 
-    evalWithSpinner configureJenkins "${JENKINS_URL}" "${SET_USERNAME}" "${SET_PASSWORD}" "${SCMM_URL}" "${SET_PASSWORD}" "Configuring Jenkins ..."
+    evalWithSpinner configureJenkins "${JENKINS_URL}" "${SET_USERNAME}" "${SET_PASSWORD}" "${SCMM_URL}" "${SET_PASSWORD}" "${REGISTRY_URL}" "${REGISTRY_PATH}" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}" "Configuring Jenkins ..."
   else
     # TODO: configure with introduction of external scmm, right now we use just the servicename
     SCMM_URL="http://scmm-scm-manager/scm"
 
-    evalWithSpinner configureJenkins "${JENKINS_URL}" "${JENKINS_USERNAME}" "${JENKINS_PASSWORD}" "${SCMM_URL}" "${SET_PASSWORD}" "Configuring Jenkins ..."
+    evalWithSpinner configureJenkins "${JENKINS_URL}" "${JENKINS_USERNAME}" "${JENKINS_PASSWORD}" "${SCMM_URL}" "${SET_PASSWORD}" "${REGISTRY_URL}" "${REGISTRY_PATH}" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}" "Configuring Jenkins ..."
   fi
 
   printWelcomeScreen
@@ -121,7 +124,14 @@ function applyBasicK8sResources() {
   helm repo add jenkins https://charts.jenkins.io
   helm repo update
 
-  helm upgrade -i docker-registry --values docker-registry/values.yaml --version 1.9.4 stable/docker-registry -n default
+  initRegistry
+}
+
+function initRegistry() {
+  if [[ -z "${REGISTRY_URL}" ]]; then
+    helm upgrade -i docker-registry --values docker-registry/values.yaml --version 1.9.4 stable/docker-registry -n default
+    REGISTRY_URL="localhost:30000"
+  fi
 }
 
 function initSCMM() {
@@ -474,6 +484,12 @@ function printParameters() {
   echo "    | --jenkins-username=myUsername  >> Mandatory when --jenkins-url is set"
   echo "    | --jenkins-password=myPassword  >> Mandatory when --jenkins-url is set"
   echo
+  echo "Configure external docker registry. Use this 4 parameters to configure an external docker registry"
+  echo "    | --registry-url=registry         >> The url of your external registry"
+  echo "    | --registry-path=public          >> Optional when --registry-url is set"
+  echo "    | --registry-username=myUsername  >> Optional when --registry-url is set"
+  echo "    | --registry-password=myPassword  >> Optional when --registry-url is set"
+  echo
   echo " -w | --welcome  >> Welcome screen"
   echo
   echo " -d | --debug    >> Debug output"
@@ -481,7 +497,7 @@ function printParameters() {
 
 COMMANDS=$(getopt \
   -o hwd \
-  --long help,fluxv1,fluxv2,argocd,welcome,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password: \
+  --long help,fluxv1,fluxv2,argocd,welcome,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password: \
   -- "$@")
 
 if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
@@ -499,6 +515,10 @@ SET_PASSWORD="admin"
 JENKINS_URL=""
 JENKINS_USERNAME=""
 JENKINS_PASSWORD=""
+REGISTRY_URL=""
+REGISTRY_PATH=""
+REGISTRY_USERNAME=""
+REGISTRY_PASSWORD=""
 
 while true; do
   case "$1" in
@@ -510,6 +530,10 @@ while true; do
     --jenkins-url        ) JENKINS_URL="$2"; shift 2 ;;
     --jenkins-username   ) JENKINS_USERNAME="$2"; shift 2 ;;
     --jenkins-password   ) JENKINS_PASSWORD="$2"; shift 2 ;;
+    --registry-url       ) REGISTRY_URL="$2"; shift 2 ;;
+    --registry-path      ) REGISTRY_PATH="$2"; shift 2 ;;
+    --registry-username  ) REGISTRY_USERNAME="$2"; shift 2 ;;
+    --registry-password  ) REGISTRY_PASSWORD="$2"; shift 2 ;;
     --password           ) SET_PASSWORD="$2"; shift 2 ;;
     -w | --welcome       ) printWelcomeScreen; exit 0 ;;
     -d | --debug         ) DEBUG=true; shift ;;
@@ -521,4 +545,4 @@ done
 confirm "Applying gitops playground to kubernetes cluster: '$(kubectl config current-context)'." 'Continue? y/n [n]' ||
   exit 0
 
-main $DEBUG $INSTALL_ALL_MODULES $INSTALL_FLUXV1 $INSTALL_FLUXV2 $INSTALL_ARGOCD $REMOTE_CLUSTER $SET_USERNAME "$SET_PASSWORD" "$JENKINS_URL" "$JENKINS_USERNAME" "$JENKINS_PASSWORD"
+main $DEBUG $INSTALL_ALL_MODULES $INSTALL_FLUXV1 $INSTALL_FLUXV2 $INSTALL_ARGOCD $REMOTE_CLUSTER $SET_USERNAME "$SET_PASSWORD" "$JENKINS_URL" "$JENKINS_USERNAME" "$JENKINS_PASSWORD" "$REGISTRY_URL" "$REGISTRY_PATH" "$REGISTRY_USERNAME" "$REGISTRY_PASSWORD"
