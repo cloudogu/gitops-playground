@@ -12,20 +12,29 @@ server:
   ## reference https://github.com/argoproj/argo-cd/blob/master/docs/operator-manual/argocd-cm.yaml
   config:
     repositories: |
-      - url: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/gitops
+      - url: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/control-app
         passwordSecret:
           name: gitops-scmm
           key: PASSWORD
         usernameSecret:
           name: gitops-scmm
           key: USERNAME
-      - url: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/nginx-helm
-        passwordSecret:
-          name: gitops-scmm
-          key: PASSWORD
-        usernameSecret:
-          name: gitops-scmm
-          key: USERNAME
-      - type: helm
-        url: https://charts.bitnami.com/bitnami
-        name: bitnami
+  additionalApplications:
+    - name: control-app
+      namespace: argocd
+      additionalLabels: {}
+      additionalAnnotations: {}
+      project: default
+      source:
+        repoURL: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/control-app
+        targetRevision: HEAD
+        path: .
+        directory:
+          recurse: true
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: argocd
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
