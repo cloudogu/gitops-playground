@@ -28,21 +28,21 @@ source ${ABSOLUTE_BASEDIR}/utils.sh
 source ${ABSOLUTE_BASEDIR}/jenkins/init-jenkins.sh
 
 function main() {
-  DEBUG=$1
-  INSTALL_ALL_MODULES=$2
-  INSTALL_FLUXV1=$3
-  INSTALL_FLUXV2=$4
-  INSTALL_ARGOCD=$5
-  REMOTE_CLUSTER=$6
-  SET_USERNAME=$7
-  SET_PASSWORD=$8
-  JENKINS_URL=$9
-  JENKINS_USERNAME=${10}
-  JENKINS_PASSWORD=${11}
-  REGISTRY_URL=${12}
-  REGISTRY_PATH=${13}
-  REGISTRY_USERNAME=${14}
-  REGISTRY_PASSWORD=${15}
+  DEBUG="${1}"
+  INSTALL_ALL_MODULES="${2}"
+  INSTALL_FLUXV1="${3}"
+  INSTALL_FLUXV2="${4}"
+  INSTALL_ARGOCD="${5}"
+  REMOTE_CLUSTER="${6}"
+  SET_USERNAME="${7}"
+  SET_PASSWORD="${8}"
+  JENKINS_URL="${9}"
+  JENKINS_USERNAME="${10}"
+  JENKINS_PASSWORD="${11}"
+  REGISTRY_URL="${12}"
+  REGISTRY_PATH="${13}"
+  REGISTRY_USERNAME="${14}"
+  REGISTRY_PASSWORD="${15}"
 
   checkPrerequisites
 
@@ -51,48 +51,59 @@ function main() {
     echo "Full log output is appended to ${backgroundLogFile}"
   fi
 
-  evalWithSpinner applyBasicK8sResources "Basic setup & configuring registry..."
-  evalWithSpinner initSCMM "Starting SCM-Manager..."
+  evalArgs=("applyBasicK8sResources")
+  evalWithSpinner "Basic setup & configuring registry..." "${evalArgs[@]}"
+
+  evalArgs=("initSCMM")
+  evalWithSpinner "Starting SCM-Manager..." "${evalArgs[@]}"
 
   # We need to query remote IP here (in the main process) again, because the "initSCMM" methods might be running in a
   # background process (to display the spinner only)
   setExternalHostnameIfNecessary 'scmm' 'scmm-scm-manager' 'default'
 
   if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV1 = true ]]; then
-    evalWithSpinner initFluxV1 "Starting Flux V1..."
+    evalArgs=("initFluxV1")
+    evalWithSpinner "Starting Flux V1..." "${evalArgs[@]}"
   fi
   if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV2 = true ]]; then
-    evalWithSpinner initFluxV2 "Starting Flux V2..."
+    evalArgs=("initFluxV2")
+    evalWithSpinner "Starting Flux V2..." "${evalArgs[@]}"
   fi
   if [[ $INSTALL_ALL_MODULES = true || $INSTALL_ARGOCD = true ]]; then
-    evalWithSpinner initArgo "Starting ArgoCD..."
+    evalArgs=("initArgo")
+    evalWithSpinner "Starting ArgoCD..." "${evalArgs[@]}"
   fi
 
   if [[ -z "${JENKINS_URL}" ]]; then
     # TODO: configure with introduction of external scmm, right now we use just the servicename
     SCMM_URL="http://scmm-scm-manager/scm"
 
-    evalWithSpinner deployLocalJenkins "${SET_USERNAME}" "${SET_PASSWORD}" "${REMOTE_CLUSTER}" "Deploying Jenkins ..."
+    evalArgs=("deployLocalJenkins" "${SET_USERNAME}" "${SET_PASSWORD}" "${REMOTE_CLUSTER}")
+    evalWithSpinner "Deploying Jenkins..." "${evalArgs[@]}"
 
     setExternalHostnameIfNecessary "jenkins" "jenkins" "default"
     JENKINS_URL=$(createUrl "jenkins")
 
-    evalWithSpinner configureJenkins "${JENKINS_URL}" "${SET_USERNAME}" "${SET_PASSWORD}" "${SCMM_URL}" "${SET_PASSWORD}" "${REGISTRY_URL}" "${REGISTRY_PATH}" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}" "Configuring Jenkins ..."
+    evalArgs=("configureJenkins" "${JENKINS_URL}" "${SET_USERNAME}" "${SET_PASSWORD}" "${SCMM_URL}" "${SET_PASSWORD}" "${REGISTRY_URL}" "${REGISTRY_PATH}" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}")
+    evalWithSpinner "Configuring Jenkins..." "${evalArgs[@]}"
   else
     # TODO: configure with introduction of external scmm, right now we use just the servicename
     SCMM_URL="http://scmm-scm-manager/scm"
 
-    evalWithSpinner configureJenkins "${JENKINS_URL}" "${JENKINS_USERNAME}" "${JENKINS_PASSWORD}" "${SCMM_URL}" "${SET_PASSWORD}" "${REGISTRY_URL}" "${REGISTRY_PATH}" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}" "Configuring Jenkins ..."
+    evalArgs=("configureJenkins" "${JENKINS_URL}" "${JENKINS_USERNAME}" "${JENKINS_PASSWORD}" "${SCMM_URL}" "${SET_PASSWORD}" "${REGISTRY_URL}" "${REGISTRY_PATH}" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}")
+    evalWithSpinner "Configuring Jenkins..." "${evalArgs[@]}"
   fi
 
   printWelcomeScreen
 }
 
 function evalWithSpinner() {
-  ARGS=("$@")
-  spinnerOutput=${ARGS[-1]}
-  unset ARGS[${#ARGS[@]}-1]
-  commandToEval=${ARGS[@]}
+
+  spinnerOutput="${1}"
+  shift
+  function_args=("$@")
+
+  commandToEval="$(printf "'%s' " "${function_args[@]}")"
 
   if [[ $DEBUG == true ]]; then
     eval "$commandToEval"
@@ -545,4 +556,4 @@ done
 confirm "Applying gitops playground to kubernetes cluster: '$(kubectl config current-context)'." 'Continue? y/n [n]' ||
   exit 0
 
-main $DEBUG $INSTALL_ALL_MODULES $INSTALL_FLUXV1 $INSTALL_FLUXV2 $INSTALL_ARGOCD $REMOTE_CLUSTER $SET_USERNAME "$SET_PASSWORD" "$JENKINS_URL" "$JENKINS_USERNAME" "$JENKINS_PASSWORD" "$REGISTRY_URL" "$REGISTRY_PATH" "$REGISTRY_USERNAME" "$REGISTRY_PASSWORD"
+main "$DEBUG" "$INSTALL_ALL_MODULES" "$INSTALL_FLUXV1" "$INSTALL_FLUXV2" "$INSTALL_ARGOCD" "$REMOTE_CLUSTER" "$SET_USERNAME" "$SET_PASSWORD" "$JENKINS_URL" "$JENKINS_USERNAME" "$JENKINS_PASSWORD" "$REGISTRY_URL" "$REGISTRY_PATH" "$REGISTRY_USERNAME" "$REGISTRY_PASSWORD"
