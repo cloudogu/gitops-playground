@@ -33,8 +33,6 @@ function configureScmmManager() {
   # Wait for the SCM-Manager to be up and running
   while [[ "$(curl -I -s -L -o /dev/null -w ''%{http_code}'' "${SCMM_PROTOCOL}://${SCMM_HOST}/scm")" -ne "200" ]]; do sleep 5; done
 
-  setConfig
-
   # We can not set the initial user through SCM-Manager configuration (as of SCMM 2.12.0), so we set the user via REST API
   if [[ $IS_LOCAL == true ]]; then
     addUser "${ADMIN_USERNAME}" "${ADMIN_PASSWORD}" "admin@mail.de"
@@ -44,6 +42,8 @@ function configureScmmManager() {
 
   SCMM_USER=${ADMIN_USERNAME}
   SCMM_PWD=${ADMIN_PASSWORD}
+
+  setConfig
 
   addUser "${GITOPS_USERNAME}" "${GITOPS_PASSWORD}" "gitops@mail.de"
 
@@ -111,7 +111,7 @@ function addRepo() {
 function setConfig() {
   curl -i -L -X PUT -H "Content-Type: application/vnd.scmm-config+json;v=2" \
     --data "{\"proxyPassword\":null,\"proxyPort\":8080,\"proxyServer\":\"proxy.mydomain.com\",\"proxyUser\":null,\"enableProxy\":false,\"realmDescription\":\"SONIA :: SCM Manager\",\"disableGroupingGrid\":false,\"dateFormat\":\"YYYY-MM-DD HH:mm:ss\",\"anonymousAccessEnabled\":false,\"anonymousMode\":\"PROTOCOL_ONLY\",\"baseUrl\":\"${SCMM_PROTOCOL}://${SCMM_HOST}/scm\",\"forceBaseUrl\":false,\"loginAttemptLimit\":-1,\"proxyExcludes\":[],\"skipFailedAuthenticators\":false,\"pluginUrl\":\"https://plugin-center-api.scm-manager.org/api/v1/plugins/{version}?os={os}&arch={arch}\",\"loginAttemptLimitTimeout\":300,\"enabledXsrfProtection\":true,\"namespaceStrategy\":\"CustomNamespaceStrategy\",\"loginInfoUrl\":\"https://login-info.scm-manager.org/api/v1/login-info\",\"releaseFeedUrl\":\"https://scm-manager.org/download/rss.xml\",\"mailDomainName\":\"scm-manager.local\",\"adminGroups\":[],\"adminUsers\":[]}" \
-    "${SCMM_PROTOCOL}://${ADMIN_USERNAME}:${ADMIN_PASSWORD}@${SCMM_HOST}/scm/api/v2/config"
+    "${SCMM_PROTOCOL}://${SCMM_USER}:${SCMM_PWD}@${SCMM_HOST}/scm/api/v2/config"
 }
 
 function addUser() {

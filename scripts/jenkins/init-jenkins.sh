@@ -98,11 +98,10 @@ function configureJenkins() {
   waitForJenkins
 
   setGlobalProperty "SCMM_URL" "${SCMM_URL}"
-  setGlobalProperty "SCMM_PATH" "scm"
 
   createCredentials "scmm-user" "gitops" "${SCMM_PASSWORD}" "credentials for accessing scm-manager"
 
-  createJob "fluxv1-applications" "${SCMM_URL}" "fluxv1" "scmm-user"
-  createJob "fluxv2-applications" "${SCMM_URL}" "fluxv2" "scmm-user"
-  createJob "argocd-applications" "${SCMM_URL}" "argocd" "scmm-user"
+  createJob "fluxv1-applications" "${SCMM_URL}/scm" "fluxv1" "scmm-user"
+  createJob "fluxv2-applications" "${SCMM_URL}/scm" "fluxv2" "scmm-user"
+  createJob "argocd-applications" "${SCMM_URL}/scm" "argocd" "scmm-user"
 }

@@ -133,7 +133,7 @@ function initSCMM() {
     SCMM_PASSWORD=${SET_PASSWORD}
     evalWithSpinner deployLocalScmmManager "${REMOTE_CLUSTER}" "Deploying SCMM-Manager ..."
     evalWithSpinner configureScmmManager "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "http://${hostnames[scmm]}:${ports[scmm]}" "http://jenkins" "true" "Configuring SCM-Manager ..."
-    SCMM_URL="http://scmm-scm-manager/scm"
+    SCMM_URL="http://scmm-scm-manager"
   else
     evalWithSpinner configureScmmManager "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "${SCMM_URL}" "$(createUrl jenkins)" "false" "Configuring SCM-Manager ..."
   fi
