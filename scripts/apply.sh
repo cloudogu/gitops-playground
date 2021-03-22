@@ -28,21 +28,25 @@ source ${ABSOLUTE_BASEDIR}/jenkins/init-jenkins.sh
 source ${ABSOLUTE_BASEDIR}/scm-manager/init-scmm.sh
 
 function main() {
-  DEBUG=$1
-  INSTALL_ALL_MODULES=$2
-  INSTALL_FLUXV1=$3
-  INSTALL_FLUXV2=$4
-  INSTALL_ARGOCD=$5
-  REMOTE_CLUSTER=$6
-  SET_USERNAME=$7
-  SET_PASSWORD=$8
-  JENKINS_URL=$9
-  JENKINS_USERNAME=${10}
-  JENKINS_PASSWORD=${11}
-  SCMM_URL=${12}
-  SCMM_USERNAME=${13}
-  SCMM_PASSWORD=${14}
-  INSECURE=${15}
+  DEBUG="${1}"
+  INSTALL_ALL_MODULES="${2}"
+  INSTALL_FLUXV1="${3}"
+  INSTALL_FLUXV2="${4}"
+  INSTALL_ARGOCD="${5}"
+  REMOTE_CLUSTER="${6}"
+  SET_USERNAME="${7}"
+  SET_PASSWORD="${8}"
+  JENKINS_URL="${9}"
+  JENKINS_USERNAME="${10}"
+  JENKINS_PASSWORD="${11}"
+  REGISTRY_URL="${12}"
+  REGISTRY_PATH="${13}"
+  REGISTRY_USERNAME="${14}"
+  REGISTRY_PASSWORD="${15}"
+  SCMM_URL="${16}"
+  SCMM_USERNAME="${17}"
+  SCMM_PASSWORD="${18}"
+  INSECURE="${19}"
 
   if [[ $INSECURE == true ]]; then
     CURL_HOME="${PLAYGROUND_DIR}"
@@ -57,42 +61,52 @@ function main() {
     echo "Full log output is appended to ${backgroundLogFile}"
   fi
 
-  evalWithSpinner applyBasicK8sResources "Basic setup & starting registry..."
-  evalWithSpinner initSCMM "Starting SCM-Manager..."
+  evalWithSpinner "Basic setup & configuring registry..." applyBasicK8sResources
+
+  evalWithSpinner "Starting SCM-Manager..." initSCMM
 
   # We need to query remote IP here (in the main process) again, because the "initSCMM" methods might be running in a
   # background process (to display the spinner only)
   setExternalHostnameIfNecessary 'scmm' 'scmm-scm-manager' 'default'
 
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV1 == true ]]; then
-    evalWithSpinner initFluxV1 "Starting Flux V1..."
+  if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV1 = true ]]; then
+    evalWithSpinner "Starting Flux V1..." initFluxV1
   fi
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV2 == true ]]; then
-    evalWithSpinner initFluxV2 "Starting Flux V2..."
+  if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV2 = true ]]; then
+    evalWithSpinner "Starting Flux V2..." initFluxV2
   fi
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_ARGOCD == true ]]; then
-    evalWithSpinner initArgo "Starting ArgoCD..."
+  if [[ $INSTALL_ALL_MODULES = true || $INSTALL_ARGOCD = true ]]; then
+    evalWithSpinner "Starting ArgoCD..." initArgo
   fi
 
   if [[ -z "${JENKINS_URL}" ]]; then
-    evalWithSpinner deployLocalJenkins "${SET_USERNAME}" "${SET_PASSWORD}" "${REMOTE_CLUSTER}" "Deploying Jenkins ..."
+    deployJenkinsCommand=(deployLocalJenkins "${SET_USERNAME}" "${SET_PASSWORD}" "${REMOTE_CLUSTER}")
+    evalWithSpinner "Deploying Jenkins..." "${deployJenkinsCommand[@]}"
 
     setExternalHostnameIfNecessary "jenkins" "jenkins" "default"
     JENKINS_URL=$(createUrl "jenkins")
-    evalWithSpinner configureJenkins "${JENKINS_URL}" "${SET_USERNAME}" "${SET_PASSWORD}" "${SCMM_URL}" "${SCMM_PASSWORD}" "Configuring Jenkins ..."
-  else
 
-    evalWithSpinner configureJenkins "${JENKINS_URL}" "${JENKINS_USERNAME}" "${JENKINS_PASSWORD}" "${SCMM_URL}/scm" "${SCMM_PASSWORD}" "Configuring Jenkins ..."
+    configureJenkinsCommand=(configureJenkins "${JENKINS_URL}" "${SET_USERNAME}" "${SET_PASSWORD}" \
+                                              "${SCMM_URL}" "${SCMM_PASSWORD}" "${REGISTRY_URL}" \
+                                              "${REGISTRY_PATH}" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}")
+    evalWithSpinner "Configuring Jenkins..." "${configureJenkinsCommand[@]}"
+  else
+    configureJenkinsCommand=(configureJenkins "${JENKINS_URL}" "${JENKINS_USERNAME}" "${JENKINS_PASSWORD}" \
+                                              "${SCMM_URL}" "${SCMM_PASSWORD}" "${REGISTRY_URL}" \
+                                              "${REGISTRY_PATH}" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}")
+    evalWithSpinner "Configuring Jenkins..." "${configureJenkinsCommand[@]}"
   fi
 
   printWelcomeScreen
 }
 
 function evalWithSpinner() {
-  ARGS=("$@")
-  spinnerOutput=${ARGS[-1]}
-  unset ARGS[${#ARGS[@]}-1]
-  commandToEval=${ARGS[@]}
+
+  spinnerOutput="${1}"
+  shift
+  function_args=("$@")
+
+  commandToEval="$(printf "'%s' " "${function_args[@]}")"
 
   if [[ $DEBUG == true ]]; then
     eval "$commandToEval"
@@ -124,7 +138,14 @@ function applyBasicK8sResources() {
   helm repo add jenkins https://charts.jenkins.io
   helm repo update
 
-  helm upgrade -i docker-registry --values docker-registry/values.yaml --version 1.9.4 stable/docker-registry -n default
+  initRegistry
+}
+
+function initRegistry() {
+  if [[ -z "${REGISTRY_URL}" ]]; then
+    helm upgrade -i docker-registry --values docker-registry/values.yaml --version 1.9.4 stable/docker-registry -n default
+    REGISTRY_URL="localhost:30000"
+  fi
 }
 
 function initSCMM() {
@@ -177,8 +198,6 @@ function initArgo() {
   helm upgrade -i argocd --values argocd/values.yaml \
     $(argoHelmSettingsForRemoteCluster) --version 2.9.5 argo/argo-cd -n argocd
 
-  kubectl apply -f argocd/resources -n argocd || true
-
   BCRYPT_PW=$(bcryptPassword "${SET_PASSWORD}")
   # set argocd admin password to 'admin' here, because it does not work through the helm chart
   kubectl patch secret -n argocd argocd-secret -p '{"stringData": { "admin.password": "'${BCRYPT_PW}'"}}' || true
@@ -186,6 +205,7 @@ function initArgo() {
   pushPetClinicRepo 'applications/petclinic/argocd/plain-k8s' 'argocd/petclinic-plain'
   initRepo 'argocd/gitops'
   initRepoWithSource 'applications/nginx/argocd' 'argocd/nginx-helm'
+  initRepoWithSource 'argocd/control-app' 'argocd/control-app'
 }
 
 function argoHelmSettingsForRemoteCluster() {
@@ -414,7 +434,7 @@ function printWelcomeScreen() {
 }
 
 function printWelcomeScreenFluxV1() {
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV1 == true ]]; then
+  if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV1 = true ]]; then
     echo "| For Flux V1:"
     echo "|"
     echo -e "| - GitOps repo: \e[32m$(createUrl scmm)/scm/repo/fluxv1/gitops/code/sources/main/\e[0m"
@@ -424,7 +444,7 @@ function printWelcomeScreenFluxV1() {
 }
 
 function printWelcomeScreenFluxV2() {
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV2 == true ]]; then
+  if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV2 = true ]]; then
     echo "| For Flux V2:"
     echo "|"
     echo -e "| - GitOps repo: \e[32m$(createUrl scmm)/scm/repo/fluxv2/gitops/code/sources/main/\e[0m"
@@ -480,6 +500,12 @@ function printParameters() {
   echo "    | --scmm-username=myUsername  >> Mandatory when --scmm-url is set"
   echo "    | --scmm-password=myPassword  >> Mandatory when --scmm-url is set"
   echo
+  echo "Configure external docker registry. Use this 4 parameters to configure an external docker registry"
+  echo "    | --registry-url=registry         >> The url of your external registry"
+  echo "    | --registry-path=public          >> Optional when --registry-url is set"
+  echo "    | --registry-username=myUsername  >> Optional when --registry-url is set"
+  echo "    | --registry-password=myPassword  >> Optional when --registry-url is set"
+  echo
   echo " -w | --welcome  >> Welcome screen"
   echo
   echo " -d | --debug    >> Debug output"
@@ -487,13 +513,10 @@ function printParameters() {
 
 COMMANDS=$(getopt \
   -o hwd \
-  --long help,fluxv1,fluxv2,argocd,welcome,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,scmm-url:,scmm-username:,scmm-password:,insecure \
+  --long help,fluxv1,fluxv2,argocd,welcome,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,scmm-url:,scmm-username:,scmm-password:,insecure \
   -- "$@")
 
-if [ $? != 0 ]; then
-  echo "Terminating..." >&2
-  exit 1
-fi
+if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
 
 eval set -- "$COMMANDS"
 
@@ -508,6 +531,10 @@ SET_PASSWORD="admin"
 JENKINS_URL=""
 JENKINS_USERNAME=""
 JENKINS_PASSWORD=""
+REGISTRY_URL=""
+REGISTRY_PATH=""
+REGISTRY_USERNAME=""
+REGISTRY_PASSWORD=""
 SCMM_URL=""
 SCMM_USERNAME=""
 SCMM_PASSWORD=""
@@ -515,73 +542,22 @@ INSECURE=false
 
 while true; do
   case "$1" in
-  -h | --help)
-    printUsage
-    exit 0
-    ;;
-  --fluxv1)
-    INSTALL_FLUXV1=true
-    INSTALL_ALL_MODULES=false
-    shift
-    ;;
-  --fluxv2)
-    INSTALL_FLUXV2=true
-    INSTALL_ALL_MODULES=false
-    shift
-    ;;
-  --argocd)
-    INSTALL_ARGOCD=true
-    INSTALL_ALL_MODULES=false
-    shift
-    ;;
-  --remote)
-    REMOTE_CLUSTER=true
-    shift
-    ;;
-  --jenkins-url)
-    JENKINS_URL="$2"
-    shift 2
-    ;;
-  --jenkins-username)
-    JENKINS_USERNAME="$2"
-    shift 2
-    ;;
-  --jenkins-password)
-    JENKINS_PASSWORD="$2"
-    shift 2
-    ;;
-  --scmm-url)
-    SCMM_URL="$2"
-    shift 2
-    ;;
-  --scmm-username)
-    SCMM_USERNAME="$2"
-    shift 2
-    ;;
-  --scmm-password)
-    SCMM_PASSWORD="$2"
-    shift 2
-    ;;
-  --password)
-    SET_PASSWORD="$2"
-    shift 2
-    ;;
-  -w | --welcome)
-    printWelcomeScreen
-    exit 0
-    ;;
-  -d | --debug)
-    DEBUG=true
-    shift
-    ;;
-  --insecure)
-    INSECURE=true
-    shift
-    ;;
-  --)
-    shift
-    break
-    ;;
+    -h | --help          ) printUsage; exit 0 ;;
+    --fluxv1             ) INSTALL_FLUXV1=true; INSTALL_ALL_MODULES=false; shift ;;
+    --fluxv2             ) INSTALL_FLUXV2=true; INSTALL_ALL_MODULES=false; shift ;;
+    --argocd             ) INSTALL_ARGOCD=true; INSTALL_ALL_MODULES=false; shift ;;
+    --remote             ) REMOTE_CLUSTER=true; shift ;;
+    --jenkins-url        ) JENKINS_URL="$2"; shift 2 ;;
+    --jenkins-username   ) JENKINS_USERNAME="$2"; shift 2 ;;
+    --jenkins-password   ) JENKINS_PASSWORD="$2"; shift 2 ;;
+    --registry-url       ) REGISTRY_URL="$2"; shift 2 ;;
+    --registry-path      ) REGISTRY_PATH="$2"; shift 2 ;;
+    --registry-username  ) REGISTRY_USERNAME="$2"; shift 2 ;;
+    --registry-password  ) REGISTRY_PASSWORD="$2"; shift 2 ;;
+    --password           ) SET_PASSWORD="$2"; shift 2 ;;
+    -w | --welcome       ) printWelcomeScreen; exit 0 ;;
+    -d | --debug         ) DEBUG=true; shift ;;
+    --                   ) shift; break ;;
   *) break ;;
   esac
 done
@@ -589,4 +565,4 @@ done
 confirm "Applying gitops playground to kubernetes cluster: '$(kubectl config current-context)'." 'Continue? y/n [n]' ||
   exit 0
 
-main $DEBUG $INSTALL_ALL_MODULES $INSTALL_FLUXV1 $INSTALL_FLUXV2 $INSTALL_ARGOCD $REMOTE_CLUSTER "$SET_USERNAME" "$SET_PASSWORD" "$JENKINS_URL" "$JENKINS_USERNAME" "$JENKINS_PASSWORD" "$SCMM_URL" "$SCMM_USERNAME" "$SCMM_PASSWORD" "$INSECURE"
+main "$DEBUG" "$INSTALL_ALL_MODULES" "$INSTALL_FLUXV1" "$INSTALL_FLUXV2" "$INSTALL_ARGOCD" "$REMOTE_CLUSTER" "$SET_USERNAME" "$SET_PASSWORD" "$JENKINS_URL" "$JENKINS_USERNAME" "$JENKINS_PASSWORD" "$REGISTRY_URL" "$REGISTRY_PATH" "$REGISTRY_USERNAME" "$REGISTRY_PASSWORD" "$SCMM_URL" "$SCMM_USERNAME" "$SCMM_PASSWORD" "$INSECURE"

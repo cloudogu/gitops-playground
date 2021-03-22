@@ -1,15 +1,15 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: gitops-production
+  name: petclinic-plain-production
   namespace: argocd
 spec:
   destination:
     namespace: argocd-production
     server: https://kubernetes.default.svc
-  project: playground
+  project: petclinic
   source:
-    path: production
+    path: production/spring-petclinic-plain
     repoURL: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/gitops
     targetRevision: main
     directory:
