@@ -10,6 +10,10 @@ variable "gce_location" {
   description = "The GCE location to be used. Defaults to us-central1-a"
 }
 
+variable "credentials" {
+  default = "account.json"
+}
+
 variable "cluster_name" {
   type        = string
   description = "Cluster to refer to"

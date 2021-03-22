@@ -12,7 +12,7 @@ terraform {
 }
 
 provider "google" {
-  credentials = file("account.json") # Access to the cluster. Needs to be created first
+  credentials = file(var.credentials) # Access to the cluster. Needs to be created first
   project     = var.gce_project
 }
 

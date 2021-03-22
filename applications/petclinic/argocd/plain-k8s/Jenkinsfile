@@ -6,7 +6,9 @@ String getScmManagerCredentials() { 'scmm-user' }
 String getConfigRepositoryUrl() { "http://scmm-scm-manager/scm/repo/argocd/gitops" }
 String getConfigRepositoryPRUrl() { 'http://scmm-scm-manager/scm/api/v2/pull-requests/argocd/gitops' }
 // The docker daemon cant use the k8s service name, because it is not running inside the cluster
-String getDockerRegistryBaseUrl() { "localhost:30000" }
+String getDockerRegistryBaseUrl() { "${env.REGISTRY_URL}" }
+String getDockerRegistryPath() { "${env.REGISTRY_PATH}" }
+String getDockerRegistryCredentials() { 'registry-user' }
 String getCesBuildLibVersion() { '1.44.3' }
 String getCesBuildLibRepo() { 'https://github.com/cloudogu/ces-build-lib/' }
 String getMainBranch() { 'main' }
@@ -43,12 +45,13 @@ node {
         String imageName = ""
         stage('Docker') {
             String imageTag = createImageTag()
-            imageName = "${dockerRegistryBaseUrl}/${application}:${imageTag}"
+            String pathPrefix = !dockerRegistryPath?.trim() ? "" : "${dockerRegistryPath}/"
+            imageName = "${dockerRegistryBaseUrl}/${pathPrefix}${application}:${imageTag}"
             mvn "spring-boot:build-image -DskipTests -Dspring-boot.build-image.imageName=${imageName}"
 
             if (isBuildSuccessful()) {
                 def docker = cesBuildLib.Docker.new(this)
-                docker.withRegistry("http://${dockerRegistryBaseUrl}") {
+                docker.withRegistry("http://${dockerRegistryBaseUrl}", dockerRegistryCredentials) {
                     def image = docker.image(imageName)
                     image.push()
                 }
