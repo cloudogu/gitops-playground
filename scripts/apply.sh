@@ -51,47 +51,46 @@ function main() {
     echo "Full log output is appended to ${backgroundLogFile}"
   fi
 
-  evalArgs=("applyBasicK8sResources")
-  evalWithSpinner "Basic setup & configuring registry..." "${evalArgs[@]}"
+  evalWithSpinner "Basic setup & configuring registry..." applyBasicK8sResources
 
-  evalArgs=("initSCMM")
-  evalWithSpinner "Starting SCM-Manager..." "${evalArgs[@]}"
+  evalWithSpinner "Starting SCM-Manager..." initSCMM
 
   # We need to query remote IP here (in the main process) again, because the "initSCMM" methods might be running in a
   # background process (to display the spinner only)
   setExternalHostnameIfNecessary 'scmm' 'scmm-scm-manager' 'default'
 
   if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV1 = true ]]; then
-    evalArgs=("initFluxV1")
-    evalWithSpinner "Starting Flux V1..." "${evalArgs[@]}"
+    evalWithSpinner "Starting Flux V1..." initFluxV1
   fi
   if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV2 = true ]]; then
-    evalArgs=("initFluxV2")
-    evalWithSpinner "Starting Flux V2..." "${evalArgs[@]}"
+    evalWithSpinner "Starting Flux V2..." initFluxV2
   fi
   if [[ $INSTALL_ALL_MODULES = true || $INSTALL_ARGOCD = true ]]; then
-    evalArgs=("initArgo")
-    evalWithSpinner "Starting ArgoCD..." "${evalArgs[@]}"
+    evalWithSpinner "Starting ArgoCD..." initArgo
   fi
 
   if [[ -z "${JENKINS_URL}" ]]; then
     # TODO: configure with introduction of external scmm, right now we use just the servicename
     SCMM_URL="http://scmm-scm-manager/scm"
 
-    evalArgs=("deployLocalJenkins" "${SET_USERNAME}" "${SET_PASSWORD}" "${REMOTE_CLUSTER}")
-    evalWithSpinner "Deploying Jenkins..." "${evalArgs[@]}"
+    deployJenkinsCommand=(deployLocalJenkins "${SET_USERNAME}" "${SET_PASSWORD}" "${REMOTE_CLUSTER}")
+    evalWithSpinner "Deploying Jenkins..." "${deployJenkinsCommand[@]}"
 
     setExternalHostnameIfNecessary "jenkins" "jenkins" "default"
     JENKINS_URL=$(createUrl "jenkins")
 
-    evalArgs=("configureJenkins" "${JENKINS_URL}" "${SET_USERNAME}" "${SET_PASSWORD}" "${SCMM_URL}" "${SET_PASSWORD}" "${REGISTRY_URL}" "${REGISTRY_PATH}" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}")
-    evalWithSpinner "Configuring Jenkins..." "${evalArgs[@]}"
+    configureJenkinsCommand=(configureJenkins "${JENKINS_URL}" "${SET_USERNAME}" "${SET_PASSWORD}" \
+                                              "${SCMM_URL}" "${SET_PASSWORD}" "${REGISTRY_URL}" \
+                                              "${REGISTRY_PATH}" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}")
+    evalWithSpinner "Configuring Jenkins..." "${configureJenkinsCommand[@]}"
   else
     # TODO: configure with introduction of external scmm, right now we use just the servicename
     SCMM_URL="http://scmm-scm-manager/scm"
 
-    evalArgs=("configureJenkins" "${JENKINS_URL}" "${JENKINS_USERNAME}" "${JENKINS_PASSWORD}" "${SCMM_URL}" "${SET_PASSWORD}" "${REGISTRY_URL}" "${REGISTRY_PATH}" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}")
-    evalWithSpinner "Configuring Jenkins..." "${evalArgs[@]}"
+    configureJenkinsCommand=(configureJenkins "${JENKINS_URL}" "${JENKINS_USERNAME}" "${JENKINS_PASSWORD}" \
+                                              "${SCMM_URL}" "${SET_PASSWORD}" "${REGISTRY_URL}" \
+                                              "${REGISTRY_PATH}" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}")
+    evalWithSpinner "Configuring Jenkins..." "${configureJenkinsCommand[@]}"
   fi
 
   printWelcomeScreen
