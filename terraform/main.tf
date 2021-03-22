@@ -43,7 +43,7 @@ resource "google_container_cluster" "cluster" {
 
   # Add entry to local kubeconfig automatically
   provisioner "local-exec" {
-    command = "gcloud container clusters get-credentials ${var.cluster_name} --zone ${var.gce_location} --project ${var.gce_project}"
+    command = "if ! command -v gcloud >/dev/null 2>&1; then echo WARNING: gcloud not installed. Cannot add cluster to local kubeconfig; else gcloud container clusters get-credentials ${var.cluster_name} --zone ${var.gce_location} --project ${var.gce_project}; fi"
   }
 }
 
