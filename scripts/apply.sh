@@ -572,6 +572,7 @@ while true; do
     --scmm-username      ) SCMM_USERNAME="$2"; shift 2 ;;
     --scmm-password      ) SCMM_PASSWORD="$2"; shift 2 ;;
     --insecure           ) INSECURE=true; shift ;;
+    --username           ) SET_USERNAME="$2"; shift 2 ;;
     --password           ) SET_PASSWORD="$2"; shift 2 ;;
     -w | --welcome       ) printWelcomeScreen; exit 0 ;;
     -d | --debug         ) DEBUG=true; shift ;;
