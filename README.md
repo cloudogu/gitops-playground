@@ -139,7 +139,7 @@ gsutil iam ch \
 
 ##### Create cluster
 
-Before continuing with the terraform steps, you have to open the `values.tfvars` file
+Before continuing with the terraform steps, you have to open the `terraform.tfvars` file
 and edit the `gce_project` value to your specific ID.
 
 For local state `terraform init` suffices.
@@ -152,7 +152,7 @@ terraform init  \
 
 Apply infra:
 ```shell
-terraform apply -var-file values.tfvars
+terraform apply
 ```
 
 terraform apply already adds an entry to your local `kubeconfig` and activate the context. That is calling 
