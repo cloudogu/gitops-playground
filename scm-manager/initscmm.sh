@@ -41,6 +41,12 @@ function main() {
   setPermission "fluxv2" "petclinic-plain" "${GITOPS_USERNAME}" "WRITE"
 
   ### ArgoCD Repos
+  addRepo "argocd" "control-app"
+  setPermission "argocd" "control-app" "${GITOPS_USERNAME}" "WRITE"
+
+  addRepo "argocd" "petclinic-helm"
+  setPermission "argocd" "petclinic-helm" "${GITOPS_USERNAME}" "WRITE"
+
   addRepo "argocd" "nginx-helm"
   setPermission "argocd" "nginx-helm" "${GITOPS_USERNAME}" "WRITE"
 

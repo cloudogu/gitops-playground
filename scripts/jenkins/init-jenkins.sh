@@ -71,18 +71,18 @@ function waitForJenkins() {
 }
 
 function configureJenkins() {
-  JENKINS_URL=${1}
+  JENKINS_URL="${1}"
   export JENKINS_URL
-  JENKINS_USERNAME=${2}
+  JENKINS_USERNAME="${2}"
   export JENKINS_USERNAME
-  JENKINS_PASSWORD=${3}
+  JENKINS_PASSWORD="${3}"
   export JENKINS_PASSWORD
   SCMM_URL="${4}"
   SCMM_PASSWORD="${5}"
-  REGISTRY_URL=${6}
-  REGISTRY_PATH=${7}
-  REGISTRY_USERNAME=${8}
-  REGISTRY_PASSWORD=${9}
+  REGISTRY_URL="${6}"
+  REGISTRY_PATH="${7}"
+  REGISTRY_USERNAME="${8}"
+  REGISTRY_PASSWORD="${9}"
 
   waitForJenkins
 
