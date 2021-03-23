@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -o errexit -o nounset -o pipefail
-set -x
+#set -x
 
 if [[ -z ${PLAYGROUND_DIR+x} ]]; then
   BASEDIR=$(dirname $0)
@@ -89,14 +89,14 @@ function configureJenkins() {
   TOKEN=$(authenticate)
   export TOKEN
 
-#  installPlugin "subversion" "2.14.0"
-#  installPlugin "docker-workflow" "1.25"
-#  installPlugin "docker-plugin" "1.2.1"
-#  installPlugin "job-dsl" "1.77"
-#  installPlugin "pipeline-utility-steps" "2.6.1"
-#  installPlugin "junit" "1.48"
-#  installPlugin "scm-manager" "1.5.1"
-#  installPlugin "html5-notifier-plugin" "1.5"
+  installPlugin "subversion" "2.14.0"
+  installPlugin "docker-workflow" "1.25"
+  installPlugin "docker-plugin" "1.2.1"
+  installPlugin "job-dsl" "1.77"
+  installPlugin "pipeline-utility-steps" "2.6.1"
+  installPlugin "junit" "1.48"
+  installPlugin "scm-manager" "1.5.1"
+  installPlugin "html5-notifier-plugin" "1.5"
 
   safeRestart
   waitForJenkins
@@ -113,8 +113,8 @@ function configureJenkins() {
   createJob "argocd-applications" "${SCMM_URL}/scm" "argocd" "scmm-user"
 }
 
-CURL_HOME="${PLAYGROUND_DIR}"
-export CURL_HOME
-export GIT_SSL_NO_VERIFY=1
-
-configureJenkins https://192.168.56.2/jenkins admin admin https://192.168.56.2 admin localhost:9444 test admin admin
+#CURL_HOME="${PLAYGROUND_DIR}"
+#export CURL_HOME
+#export GIT_SSL_NO_VERIFY=1
+#
+#configureJenkins https://192.168.56.2/jenkins admin admin https://192.168.56.2 admin localhost:9444 test admin admin
