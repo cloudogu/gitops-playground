@@ -152,11 +152,17 @@ function initSCMM() {
   if [[ -z "${SCMM_URL}" ]]; then
     SCMM_USERNAME=${SET_USERNAME}
     SCMM_PASSWORD=${SET_PASSWORD}
-    evalWithSpinner deployLocalScmmManager "${REMOTE_CLUSTER}" "Deploying SCMM-Manager ..."
-    evalWithSpinner configureScmmManager "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "http://${hostnames[scmm]}:${ports[scmm]}" "http://jenkins" "true" "Configuring SCM-Manager ..."
+
+    deployScmmCommand=(deployLocalScmmManager "${REMOTE_CLUSTER}")
+    evalWithSpinner "Deploying SCMM-Manager ..." "${deployScmmCommand[@]}"
+
+    configureScmmCommand=(configureScmmManager "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "http://${hostnames[scmm]}:${ports[scmm]}" "http://jenkins" "true")
+    evalWithSpinner "Configuring SCM-Manager ..." "${configureScmmCommand[@]}"
+
     SCMM_URL="http://scmm-scm-manager"
   else
-    evalWithSpinner configureScmmManager "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "${SCMM_URL}" "$(createUrl jenkins)" "false" "Configuring SCM-Manager ..."
+    configureScmmCommand=(configureScmmManager "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "${SCMM_URL}" "$(createUrl jenkins)" "false")
+    evalWithSpinner "Configuring SCM-Manager ..." "${configureScmmCommand[@]}"
   fi
 
   pushHelmChartRepo 'common/spring-boot-helm-chart'
@@ -554,6 +560,10 @@ while true; do
     --registry-path      ) REGISTRY_PATH="$2"; shift 2 ;;
     --registry-username  ) REGISTRY_USERNAME="$2"; shift 2 ;;
     --registry-password  ) REGISTRY_PASSWORD="$2"; shift 2 ;;
+    --scmm-url           ) SCMM_URL="$2"; shift 2 ;;
+    --scmm-username      ) SCMM_USERNAME="$2"; shift 2 ;;
+    --scmm-password      ) SCMM_PASSWORD="$2"; shift 2 ;;
+    --insecure           ) INSECURE=true; shift ;;
     --password           ) SET_PASSWORD="$2"; shift 2 ;;
     -w | --welcome       ) printWelcomeScreen; exit 0 ;;
     -d | --debug         ) DEBUG=true; shift ;;

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -o errexit -o nounset -o pipefail
-set -x
+#set -x
 
 SCMM_USER=scmadmin
 SCMM_PWD=scmadmin
@@ -72,6 +72,9 @@ function configureScmmManager() {
 
   addRepo "argocd" "petclinic-plain"
   setPermission "argocd" "petclinic-plain" "${GITOPS_USERNAME}" "WRITE"
+
+  addRepo "argocd" "control-app"
+  setPermission "argocd" "control-app" "${GITOPS_USERNAME}" "WRITE"
 
   addRepo "argocd" "gitops"
   setPermission "argocd" "gitops" "${GITOPS_USERNAME}" "WRITE"
