@@ -228,6 +228,17 @@ Find scm-manager on http://localhost:9091
 
 Login with `admin/admin`
 
+#### External SCM-Manager
+
+You can set an external scm-manager server by providing the follow parameters:
+`scmm-url`, `scmm-username`, `scmm-password`
+
+The user on the scm has to have privileges to:
+* add / edit users
+* add / edit permissions
+* add / edit repositories
+* add / edit proxy
+
 ### ArgoCD UI
 
 Find the ArgoCD UI on http://localhost:9092 (redirects to https://localhost:9093)
