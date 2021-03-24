@@ -1,29 +1,11 @@
 #!/usr/bin/env bash
-set -o errexit -o nounset -o pipefail
-#set -x
+set -o errexit -o pipefail
 
-function authenticate() {
-  CRUMB=$(curl -s --cookie-jar /tmp/cookies \
-               -u "${JENKINS_USERNAME}:${JENKINS_PASSWORD}" \
-               "${JENKINS_URL}/crumbIssuer/api/json" | jq -r '.crumb') && EXIT_STATUS=$? || EXIT_STATUS=$?
-  if [ $EXIT_STATUS != 0 ]
-    then
-      echo "Getting Jenkins-Crumb failed with exit code: curl: ${EXIT_STATUS}"
-      exit $EXIT_STATUS
-  fi
-
-  TOKEN=$(curl -s -X POST -H "Jenkins-Crumb:${CRUMB}" --cookie /tmp/cookies \
-          "${JENKINS_URL}/me/descriptorByName/jenkins.security.ApiTokenProperty/generateNewToken\?newTokenName\=\init" \
-          -u "${JENKINS_USERNAME}:${JENKINS_PASSWORD}" | jq -r '.data.tokenValue') && EXIT_STATUS=$? || EXIT_STATUS=$?
-  if [ $EXIT_STATUS != 0 ]
-    then
-      echo "Getting Token failed with exit code: curl: ${EXIT_STATUS}"
-      exit $EXIT_STATUS
-  fi
-
-  echo "${TOKEN}"
+function curlJenkins() {
+  curl -s -H "Jenkins-Crumb:$(crumb)" --cookie /tmp/cookies \
+    -u "${JENKINS_USERNAME}:${JENKINS_PASSWORD}" \
+    "$@"
 }
-
 function createJob() {
   JOB_NAME=${1}
 
@@ -40,14 +22,14 @@ function createJob() {
 
   printf 'Creating job %s ... ' "${JOB_NAME}"
 
-  STATUS=$(curl -s -o /dev/null -X POST "${JENKINS_URL}/createItem?name=${JOB_NAME}" \
-           -u "${JENKINS_USERNAME}:${TOKEN}" \
+  # Don't add --fail here, because if the job already exists we get a return code of 400
+  STATUS=$(curlJenkins -L -o /dev/null --write-out '%{http_code}' \
+           -X POST "${JENKINS_URL}/createItem?name=${JOB_NAME}" \
            -H "Content-Type:text/xml" \
-           --data "${JOB_CONFIG}" \
-           --write-out '%{http_code}') && EXIT_STATUS=$? || EXIT_STATUS=$?
+           --data "${JOB_CONFIG}" ) && EXIT_STATUS=$? || EXIT_STATUS=$?
   if [ $EXIT_STATUS != 0 ]
     then
-      echo "Creating Job failed with exit code: curl: ${EXIT_STATUS}"
+      echo "Creating Job failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
       exit $EXIT_STATUS
   fi
 
@@ -69,17 +51,22 @@ function createCredentials() {
                          ${DESCRIPTION}' \
                < scripts/jenkins/credentialsTemplate.json)
 
-  STATUS=$(curl -s -X POST "${JENKINS_URL}/credentials/store/system/domain/_/createCredentials" \
-          -u "${JENKINS_USERNAME}:${TOKEN}" \
-          --data-urlencode "json=${CRED_CONFIG}" \
-          --write-out '%{http_code}') && EXIT_STATUS=$? || EXIT_STATUS=$?
+  STATUS=$(curlJenkins --fail -L -o /dev/null --write-out '%{http_code}' \
+        -X POST "${JENKINS_URL}/credentials/store/system/domain/_/createCredentials" \
+        --data-urlencode "json=${CRED_CONFIG}") && EXIT_STATUS=$? || EXIT_STATUS=$?
   if [ $EXIT_STATUS != 0 ]
     then
-      echo "Creating Credentials failed with exit code: curl: ${EXIT_STATUS}"
+      echo "Creating Credentials failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
       exit $EXIT_STATUS
   fi
 
   printStatus "${STATUS}"
+}
+
+function crumb() {
+  curl -s --cookie-jar /tmp/cookies \
+    -u "${JENKINS_USERNAME}:${JENKINS_PASSWORD}" \
+    "${JENKINS_URL}/crumbIssuer/api/json" | jq -r '.crumb'
 }
 
 function installPlugin() {
@@ -103,13 +90,13 @@ function postPlugin() {
   PLUGIN_NAME=${1}
   PLUGIN_VERSION=${2}
 
-  STATUS=$(curl -s -o /dev/null -X POST "${JENKINS_URL}/pluginManager/installNecessaryPlugins" \
-          -u "${JENKINS_USERNAME}:${TOKEN}" \
+  STATUS=$(curlJenkins --fail -L -o /dev/null --write-out '%{http_code}' \
+          -X POST "${JENKINS_URL}/pluginManager/installNecessaryPlugins" \
           -d '<jenkins><install plugin="'"${PLUGIN_NAME}"'@'"${PLUGIN_VERSION}"'"/></jenkins>' \
-          -H 'Content-Type: text/xml' --write-out '%{http_code}') && EXIT_STATUS=$? || EXIT_STATUS=$?
+          -H 'Content-Type: text/xml') && EXIT_STATUS=$? || EXIT_STATUS=$?
   if [ $EXIT_STATUS != 0 ]
     then
-      echo "Installing Plugin failed with exit code: curl: ${EXIT_STATUS}"
+      echo "Installing Plugin failed with exit code: curl: ${EXIT_STATUS}, ${STATUS}"
       exit $EXIT_STATUS
   fi
 
@@ -119,8 +106,8 @@ function postPlugin() {
 function waitForPluginInstallation() {
   PLUGIN_NAME=${1}
   ITERATIONS=0
-  while [[ $(curl -s -k "${JENKINS_URL}/pluginManager/api/json?depth=1" \
-            -u "${JENKINS_USERNAME}:${TOKEN}" \
+  while [[ $(curlJenkins --fail -L \
+            "${JENKINS_URL}/pluginManager/api/json?depth=1" \
             | jq '.plugins[]|{shortName}' -c \
             | grep "${PLUGIN_NAME}" >/dev/null; echo $?) \
             -ne "0" ]]; do
@@ -138,10 +125,12 @@ function waitForPluginInstallation() {
 }
 
 function safeRestart() {
-  curl -s -X POST "${JENKINS_URL}/safeRestart" -u "${JENKINS_USERNAME}:${TOKEN}" && EXIT_STATUS=$? || EXIT_STATUS=$?
+  # Don't use -L here, otherwise follows to root page which is 503 on restart. Then fails.
+  curlJenkins --fail -o /dev/null --write-out '%{http_code}' \
+    -X POST "${JENKINS_URL}/safeRestart" && EXIT_STATUS=$? || EXIT_STATUS=$?
   if [ $EXIT_STATUS != 0 ]
     then
-      echo "Restarting Jenkins failed with exit code: curl: ${EXIT_STATUS}"
+      echo "Restarting Jenkins failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
       exit $EXIT_STATUS
   fi
 }
@@ -157,11 +146,12 @@ function setGlobalProperty() {
                          ${VALUE}' \
                < scripts/jenkins/setGlobalPropertyTemplate.groovy)
 
-  STATUS=$(curl -o /dev/null -d "script=${GROOVY_SCRIPT}" -s --user "${JENKINS_USERNAME}:${TOKEN}" \
-       "${JENKINS_URL}/scriptText" --write-out '%{http_code}') && EXIT_STATUS=$? || EXIT_STATUS=$?
+  STATUS=$(curlJenkins --fail -L -o /dev/null --write-out '%{http_code}' \
+       -d "script=${GROOVY_SCRIPT}" --user "${JENKINS_USERNAME}:${JENKINS_PASSWORD}" \
+       "${JENKINS_URL}/scriptText" ) && EXIT_STATUS=$? || EXIT_STATUS=$?
   if [ $EXIT_STATUS != 0 ]
     then
-      echo "Setting Global Property ${1}:${2} failed with exit code: curl: ${EXIT_STATUS}"
+      echo "Setting Global Property ${1}:${2} failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
       exit $EXIT_STATUS
   fi
 
@@ -174,6 +164,6 @@ function printStatus() {
   then
     echo -e ' \u2705'
   else
-    echo -e ' \u274c'
+    echo -e ' \u274c ' "(status code: $STATUS_CODE)"
   fi
 }
