@@ -2,8 +2,8 @@
 
 String getApplication() { "nginx" }
 String getScmManagerCredentials() { 'scmm-user' }
-String getConfigRepositoryUrl() { "http://scmm-scm-manager/scm/repo/fluxv1/gitops" }
-String getConfigRepositoryPRBaseUrl() { 'http://scmm-scm-manager/scm' }
+String getConfigRepositoryUrl() { "${env.SCMM_URL}/scm/repo/fluxv1/gitops" }
+String getConfigRepositoryPRBaseUrl() { "${env.SCMM_URL}/scm" }
 String getConfigRepositoryPRRepo() { 'fluxv1/gitops' }
 String getCesBuildLibRepo() { 'https://github.com/cloudogu/ces-build-lib/' } // TODO change back to scmm repo
 String getCesBuildLibVersion() { 'bugfix/location_for_prId' }

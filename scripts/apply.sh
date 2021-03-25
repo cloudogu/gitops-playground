@@ -79,7 +79,7 @@ function main() {
     evalWithSpinner "Starting ArgoCD..." initArgo
   fi
 
-  initJenkins
+#  initJenkins
 
   if [[ $TRACE == true ]]; then
     set +x
@@ -208,30 +208,25 @@ function initFluxV1() {
 function initFluxV2() {
   pushPetClinicRepo 'applications/petclinic/fluxv2/plain-k8s' 'fluxv2/petclinic-plain'
 
-  initRepoWithSource 'fluxv2' 'fluxv2/gitops' "$(buildScmmUrlReplaceCmd 'clusters/k8s-gitops-playground/fluxv2/gotk-gitrepository.yaml' true)"
+  initRepoWithSource 'fluxv2' 'fluxv2/gitops' "$(buildScmmUrlReplaceCmd 'clusters/k8s-gitops-playground/fluxv2/gotk-gitrepository.yaml' "-i")"
 
 
   kubectl apply -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-components.yaml || true
-  kubectl apply -f "$(replaceScmmUrls "fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-gitrepository.yaml")" || true
+  kubectl apply -f "$(mkTmpWithReplacedScmmUrls "fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-gitrepository.yaml")" || true
   kubectl apply -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-kustomization.yaml || true
 
 }
 
 function buildScmmUrlReplaceCmd() {
-  INLINE_CHANGE=${1}
-  SED_PARAMS=''
-  if [ "${INLINE_CHANGE}" = true ] ; then
-    >&2 echo "drin"
-    SED_PARAMS='-i'
-  fi
+  SED_PARAMS="${2:-""}"
   echo 'sed '"${SED_PARAMS}"' -e '"s:scmm-scm-manager.default.svc.cluster.local:${SCMM_HOST}:g"' -e '"s:http:${SCMM_PROTOCOL}:g ${1}"
 }
 
-function replaceScmmUrls() {
+function mkTmpWithReplacedScmmUrls() {
   REPLACE_FILE="${1}"
   TMP_FILENAME=$(mktemp /tmp/scmm-replace.XXXXXX)
 
-  REPLACE_CMD=$(buildScmmUrlReplaceCmd "${REPLACE_FILE}" false)
+  REPLACE_CMD=$(buildScmmUrlReplaceCmd "${REPLACE_FILE}")
   eval "${REPLACE_CMD}" > "${TMP_FILENAME}"
 
   echo "${TMP_FILENAME}"
