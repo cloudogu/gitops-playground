@@ -79,7 +79,7 @@ function main() {
     evalWithSpinner "Starting ArgoCD..." initArgo
   fi
 
-#  initJenkins
+  initJenkins
 
   if [[ $TRACE == true ]]; then
     set +x
