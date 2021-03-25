@@ -1,20 +1,3 @@
-terraform {
-  backend "gcs" {}
-
-  required_providers {
-    google = {
-      source  = "hashicorp/google"
-      version = "~> 3.51.0"
-    }
-    google-beta = {
-      source = "hashicorp/google"
-      version = "~> 3.51.0"
-    }
-  }
-
-  required_version = ">= 0.14"
-}
-
 provider "google" {
   credentials = file(var.credentials) # Access to the cluster. Needs to be created first
   project     = var.gce_project
