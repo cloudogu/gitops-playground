@@ -183,6 +183,7 @@ Use `./scripts/apply.sh --help` for more information.
 Important options:
 * `--remote` - deploy to remote cluster (not local k3s cluster), e.g. in GKE
 * `--password` - change admin passwords for SCM-Manager, Jenkins and ArgoCD. Should be set with `--remote` for security 
+* `--username` - change admin passwords for SCM-Manager, Jenkins. Note that argo CD user cannot be changed and always is `admin` 
   reasons. 
 * `--argocd` - deploy only argoCD GitOps operator 
 * `--fluxv1` - deploy only Flux v1 GitOps operator
