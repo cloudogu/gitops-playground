@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 set -o errexit -o nounset -o pipefail
-#set -x
 
 BASEDIR=$(dirname $0)
 export BASEDIR
@@ -47,6 +46,11 @@ function main() {
   SCMM_USERNAME="${17}"
   SCMM_PASSWORD="${18}"
   INSECURE="${19}"
+  TRACE="${20}"
+  
+  if [[ $TRACE == 'true' ]]; then
+    set -x
+  fi
 
   if [[ $INSECURE == true ]]; then
     CURL_HOME="${PLAYGROUND_DIR}"
@@ -77,6 +81,9 @@ function main() {
 
 #  initJenkins
 
+  if [[ $TRACE == true ]]; then
+    set +x
+  fi
   printWelcomeScreen
 }
 
@@ -447,10 +454,9 @@ function printWelcomeScreen() {
   echo "|"
   echo "| Once Jenkins is up, the following jobs can be started after scanning the corresponding namespace via the jenkins UI:"
   echo "|"
-  echo -e "| - \e[32m$(createUrl jenkins)/job/fluxv1-nginx/\e[0m"
-  echo -e "| - \e[32m$(createUrl jenkins)/job/fluxv1-petclinic-plain/\e[0m"
-  echo -e "| - \e[32m$(createUrl jenkins)/job/fluxv2-petclinic-plain/\e[0m"
-  echo -e "| - \e[32m$(createUrl jenkins)/job/argocd-petclinic-plain/\e[0m"
+  echo -e "| - \e[32m$(createUrl jenkins)/job/fluxv1-applications/\e[0m"
+  echo -e "| - \e[32m$(createUrl jenkins)/job/fluxv2-applications/\e[0m"
+  echo -e "| - \e[32m$(createUrl jenkins)/job/argocd-applications/\e[0m"
   echo "|"
   echo "| During the job, jenkins pushes into the corresponding GitOps repo and creates a pull request for production:"
   echo "|"
@@ -547,11 +553,12 @@ function printParameters() {
   echo " -w | --welcome  >> Welcome screen"
   echo
   echo " -d | --debug    >> Debug output"
+  echo " -x | --trace    >> Show each command executed; set -x"
 }
 
 COMMANDS=$(getopt \
-  -o hwd \
-  --long help,fluxv1,fluxv2,argocd,welcome,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,scmm-url:,scmm-username:,scmm-password:,insecure \
+  -o hwdx \
+  --long help,fluxv1,fluxv2,argocd,welcome,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,scmm-url:,scmm-username:,scmm-password:,trace,insecure \
   -- "$@")
 
 if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
@@ -577,6 +584,7 @@ SCMM_URL=""
 SCMM_USERNAME=""
 SCMM_PASSWORD=""
 INSECURE=false
+TRACE=false
 
 while true; do
   case "$1" in
@@ -596,9 +604,11 @@ while true; do
     --scmm-username      ) SCMM_USERNAME="$2"; shift 2 ;;
     --scmm-password      ) SCMM_PASSWORD="$2"; shift 2 ;;
     --insecure           ) INSECURE=true; shift ;;
+    --username           ) SET_USERNAME="$2"; shift 2 ;;
     --password           ) SET_PASSWORD="$2"; shift 2 ;;
     -w | --welcome       ) printWelcomeScreen; exit 0 ;;
     -d | --debug         ) DEBUG=true; shift ;;
+    -x | --trace         ) TRACE=true; shift ;;
     --                   ) shift; break ;;
   *) break ;;
   esac
@@ -607,4 +617,4 @@ done
 confirm "Applying gitops playground to kubernetes cluster: '$(kubectl config current-context)'." 'Continue? y/n [n]' ||
   exit 0
 
-main "$DEBUG" "$INSTALL_ALL_MODULES" "$INSTALL_FLUXV1" "$INSTALL_FLUXV2" "$INSTALL_ARGOCD" "$REMOTE_CLUSTER" "$SET_USERNAME" "$SET_PASSWORD" "$JENKINS_URL" "$JENKINS_USERNAME" "$JENKINS_PASSWORD" "$REGISTRY_URL" "$REGISTRY_PATH" "$REGISTRY_USERNAME" "$REGISTRY_PASSWORD" "$SCMM_URL" "$SCMM_USERNAME" "$SCMM_PASSWORD" "$INSECURE"
+main "$DEBUG" "$INSTALL_ALL_MODULES" "$INSTALL_FLUXV1" "$INSTALL_FLUXV2" "$INSTALL_ARGOCD" "$REMOTE_CLUSTER" "$SET_USERNAME" "$SET_PASSWORD" "$JENKINS_URL" "$JENKINS_USERNAME" "$JENKINS_PASSWORD" "$REGISTRY_URL" "$REGISTRY_PATH" "$REGISTRY_USERNAME" "$REGISTRY_PASSWORD" "$SCMM_URL" "$SCMM_USERNAME" "$SCMM_PASSWORD" "$INSECURE" "$TRACE"

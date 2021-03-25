@@ -1,26 +1,24 @@
-terraform {
-  backend "gcs" {}
-
-  required_providers {
-    google = {
-      source  = "hashicorp/google"
-      version = "~> 3.51.0"
-    }
-  }
-
-  required_version = ">= 0.14"
-}
-
 provider "google" {
   credentials = file(var.credentials) # Access to the cluster. Needs to be created first
   project     = var.gce_project
 }
 
+provider "google-beta" {
+  credentials = file(var.credentials) # Access to the cluster. Needs to be created first
+  project     = var.gce_project
+}
+
+
+data "google_container_engine_versions" "k8s-versions" {
+  provider       = google-beta
+  location       = var.gce_location
+  version_prefix = var.k8s_version_prefix
+}
+
 resource "google_container_cluster" "cluster" {
   name               = var.cluster_name
   location           = var.gce_location
-  min_master_version = var.min_master_version
-
+  min_master_version = data.google_container_engine_versions.k8s-versions.latest_master_version
 
   # Initial node gets destroyed immediately and is replaced by node pool
   initial_node_count       = 1
@@ -28,7 +26,7 @@ resource "google_container_cluster" "cluster" {
 
   # Add entry to local kubeconfig automatically
   provisioner "local-exec" {
-    command = "gcloud container clusters get-credentials ${var.cluster_name} --zone ${var.gce_location} --project ${var.gce_project}"
+    command = "if ! command -v gcloud >/dev/null 2>&1; then echo WARNING: gcloud not installed. Cannot add cluster to local kubeconfig; else gcloud container clusters get-credentials ${var.cluster_name} --zone ${var.gce_location} --project ${var.gce_project}; fi"
   }
 }
 
@@ -37,7 +35,7 @@ resource "google_container_cluster" "cluster" {
 resource "google_container_node_pool" "node_pool" {
   name       = "default-node-pool"
   location   = var.gce_location
-  version    = var.node_version
+  version    = data.google_container_engine_versions.k8s-versions.latest_node_version
   cluster    = google_container_cluster.cluster.name
   node_count = var.node_pool_node_count
 

@@ -139,7 +139,7 @@ gsutil iam ch \
 
 ##### Create cluster
 
-Before continuing with the terraform steps, you have to open the `values.tfvars` file
+Before continuing with the terraform steps, you have to open the `terraform.tfvars` file
 and edit the `gce_project` value to your specific ID.
 
 For local state `terraform init` suffices.
@@ -152,7 +152,7 @@ terraform init  \
 
 Apply infra:
 ```shell
-terraform apply -var-file values.tfvars
+terraform apply
 ```
 
 terraform apply already adds an entry to your local `kubeconfig` and activate the context. That is calling 
@@ -183,6 +183,7 @@ Use `./scripts/apply.sh --help` for more information.
 Important options:
 * `--remote` - deploy to remote cluster (not local k3s cluster), e.g. in GKE
 * `--password` - change admin passwords for SCM-Manager, Jenkins and ArgoCD. Should be set with `--remote` for security 
+* `--username` - change admin passwords for SCM-Manager, Jenkins. Note that argo CD user cannot be changed and always is `admin` 
   reasons. 
 * `--argocd` - deploy only argoCD GitOps operator 
 * `--fluxv1` - deploy only Flux v1 GitOps operator

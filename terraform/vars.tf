@@ -19,17 +19,20 @@ variable "cluster_name" {
   description = "Cluster to refer to"
 }
 
-variable "min_master_version" {
-  type        = string
-  description = "Min Master version for the k8s cluster"
-}
-
 variable "node_pool_node_count" {
   type        = number
   description = "Number of initial nodes for default node pool"
+  default = 2
 }
 
-variable "node_version" {
+variable "k8s_version_prefix" {
   type        = string
-  description = "Version for all nodes"
+  description = "Master and Node version prefix to setup"
+  
+  # Docs recommend to not use fuzzy version here:
+  # https://www.terraform.io/docs/providers/google/r/container_cluster.html
+  # OTOH google deprecates support for specific version rather fast.
+  # Resulting in "Error 400: Master version "X" is unsupported., badRequest"
+  # So we use a version prefix hoping that the stable patch versions won't do unexpected things (which is unlikely!) 
+  default = "1.18."
 }
