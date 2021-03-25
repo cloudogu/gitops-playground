@@ -63,11 +63,7 @@ function main() {
 
   evalWithSpinner "Basic setup & configuring registry..." applyBasicK8sResources
 
-  evalWithSpinner "Starting SCM-Manager..." initSCMM
-
-  # We need to query remote IP here (in the main process) again, because the "initSCMM" methods might be running in a
-  # background process (to display the spinner only)
-  setExternalHostnameIfNecessary 'scmm' 'scmm-scm-manager' 'default'
+  initSCMM
 
   if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV1 = true ]]; then
     evalWithSpinner "Starting Flux V1..." initFluxV1
@@ -79,23 +75,7 @@ function main() {
     evalWithSpinner "Starting ArgoCD..." initArgo
   fi
 
-  if [[ -z "${JENKINS_URL}" ]]; then
-    deployJenkinsCommand=(deployLocalJenkins "${SET_USERNAME}" "${SET_PASSWORD}" "${REMOTE_CLUSTER}")
-    evalWithSpinner "Deploying Jenkins..." "${deployJenkinsCommand[@]}"
-
-    setExternalHostnameIfNecessary "jenkins" "jenkins" "default"
-    JENKINS_URL=$(createUrl "jenkins")
-
-    configureJenkinsCommand=(configureJenkins "${JENKINS_URL}" "${SET_USERNAME}" "${SET_PASSWORD}" \
-                                              "${SCMM_URL}" "${SCMM_PASSWORD}" "${REGISTRY_URL}" \
-                                              "${REGISTRY_PATH}" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}")
-    evalWithSpinner "Configuring Jenkins..." "${configureJenkinsCommand[@]}"
-  else
-    configureJenkinsCommand=(configureJenkins "${JENKINS_URL}" "${JENKINS_USERNAME}" "${JENKINS_PASSWORD}" \
-                                              "${SCMM_URL}" "${SCMM_PASSWORD}" "${REGISTRY_URL}" \
-                                              "${REGISTRY_PATH}" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}")
-    evalWithSpinner "Configuring Jenkins..." "${configureJenkinsCommand[@]}"
-  fi
+#  initJenkins
 
   printWelcomeScreen
 }
@@ -148,6 +128,26 @@ function initRegistry() {
   fi
 }
 
+function initJenkins() {
+  if [[ -z "${JENKINS_URL}" ]]; then
+    deployJenkinsCommand=(deployLocalJenkins "${SET_USERNAME}" "${SET_PASSWORD}" "${REMOTE_CLUSTER}")
+    evalWithSpinner "Deploying Jenkins..." "${deployJenkinsCommand[@]}"
+
+    setExternalHostnameIfNecessary "jenkins" "jenkins" "default"
+    JENKINS_URL=$(createUrl "jenkins")
+
+    configureJenkinsCommand=(configureJenkins "${JENKINS_URL}" "${SET_USERNAME}" "${SET_PASSWORD}" \
+                                              "${SCMM_URL}" "${SCMM_PASSWORD}" "${REGISTRY_URL}" \
+                                              "${REGISTRY_PATH}" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}")
+    evalWithSpinner "Configuring Jenkins..." "${configureJenkinsCommand[@]}"
+  else
+    configureJenkinsCommand=(configureJenkins "${JENKINS_URL}" "${JENKINS_USERNAME}" "${JENKINS_PASSWORD}" \
+                                              "${SCMM_URL}" "${SCMM_PASSWORD}" "${REGISTRY_URL}" \
+                                              "${REGISTRY_PATH}" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}")
+    evalWithSpinner "Configuring Jenkins..." "${configureJenkinsCommand[@]}"
+  fi
+}
+
 function initSCMM() {
   if [[ -z "${SCMM_URL}" ]]; then
     SCMM_USERNAME=${SET_USERNAME}
@@ -160,6 +160,10 @@ function initSCMM() {
     evalWithSpinner "Configuring SCM-Manager ..." "${configureScmmCommand[@]}"
 
     SCMM_URL="http://scmm-scm-manager"
+
+    # We need to query remote IP here (in the main process) again, because the "initSCMM" methods might be running in a
+    # background process (to display the spinner only)
+    setExternalHostnameIfNecessary 'scmm' 'scmm-scm-manager' 'default'
   else
     configureScmmCommand=(configureScmmManager "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "${SCMM_URL}" "$(createUrl jenkins)" "false")
     evalWithSpinner "Configuring SCM-Manager ..." "${configureScmmCommand[@]}"
@@ -186,18 +190,44 @@ function initFluxV1() {
   pushPetClinicRepo 'applications/petclinic/fluxv1/helm' 'fluxv1/petclinic-helm'
   initRepoWithSource 'applications/nginx/fluxv1' 'fluxv1/nginx-helm'
 
-  helm upgrade -i flux-operator --values fluxv1/flux-operator/values.yaml --version 1.3.0 fluxcd/flux -n fluxv1
+  # shellcheck disable=SC2016
+  # we don't want to expand $(username):$(password) here, it will be used inside the flux-operator
+  helm upgrade -i flux-operator --values fluxv1/flux-operator/values.yaml \
+               --set git.url="${SCMM_PROTOCOL}"'://$(username):$(password)@'"${SCMM_HOST}"'/scm/repo/fluxv1/gitops'\
+               --version 1.3.0 fluxcd/flux -n fluxv1
   helm upgrade -i helm-operator --values fluxv1/helm-operator/values.yaml --version 1.2.0 fluxcd/helm-operator -n fluxv1
 }
 
 function initFluxV2() {
   pushPetClinicRepo 'applications/petclinic/fluxv2/plain-k8s' 'fluxv2/petclinic-plain'
-  initRepoWithSource 'fluxv2' 'fluxv2/gitops'
+
+  initRepoWithSource 'fluxv2' 'fluxv2/gitops' "$(buildScmmUrlReplaceCmd 'clusters/k8s-gitops-playground/fluxv2/gotk-gitrepository.yaml' true)"
+
 
   kubectl apply -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-components.yaml || true
-  kubectl apply -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-gitrepository.yaml || true
+  kubectl apply -f "$(replaceScmmUrls "fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-gitrepository.yaml")" || true
   kubectl apply -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-kustomization.yaml || true
 
+}
+
+function buildScmmUrlReplaceCmd() {
+  INLINE_CHANGE=${1}
+  SED_PARAMS=''
+  if [ "${INLINE_CHANGE}" = true ] ; then
+    >&2 echo "drin"
+    SED_PARAMS='-i'
+  fi
+  echo 'sed '"${SED_PARAMS}"' -e '"s:scmm-scm-manager.default.svc.cluster.local:${SCMM_HOST}:g"' -e '"s:http:${SCMM_PROTOCOL}:g ${1}"
+}
+
+function replaceScmmUrls() {
+  REPLACE_FILE="${1}"
+  TMP_FILENAME=$(mktemp /tmp/scmm-replace.XXXXXX)
+
+  REPLACE_CMD=$(buildScmmUrlReplaceCmd "${REPLACE_FILE}" false)
+  eval "${REPLACE_CMD}" > "${TMP_FILENAME}"
+
+  echo "${TMP_FILENAME}"
 }
 
 function initArgo() {
@@ -206,7 +236,7 @@ function initArgo() {
 
   BCRYPT_PW=$(bcryptPassword "${SET_PASSWORD}")
   # set argocd admin password to 'admin' here, because it does not work through the helm chart
-  kubectl patch secret -n argocd argocd-secret -p '{"stringData": { "admin.password": "'${BCRYPT_PW}'"}}' || true
+  kubectl patch secret -n argocd argocd-secret -p '{"stringData": { "admin.password": "'"${BCRYPT_PW}"'"}}' || true
 
   pushPetClinicRepo 'applications/petclinic/argocd/plain-k8s' 'argocd/petclinic-plain'
   initRepo 'argocd/gitops'
@@ -342,6 +372,7 @@ function initRepoWithSource() {
   echo "initiating repo $1 with source $2"
   SOURCE_REPO="$1"
   TARGET_REPO_SCMM="$2"
+  MANIPULATE_SOURCES=${3:-"$()"}
 
   TMP_REPO=$(mktemp -d)
 
@@ -349,6 +380,7 @@ function initRepoWithSource() {
   (
     cd "${TMP_REPO}"
     cp -r "${PLAYGROUND_DIR}/${SOURCE_REPO}"/* .
+    $MANIPULATE_SOURCES
     git checkout main --quiet || git checkout -b main --quiet
     git add .
     git commit -m "Init ${TARGET_REPO_SCMM}" --quiet || true
