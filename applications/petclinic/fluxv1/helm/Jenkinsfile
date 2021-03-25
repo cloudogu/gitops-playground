@@ -12,17 +12,17 @@ String getDockerRegistryCredentials() { 'registry-user' }
 String getCesBuildLibRepo() { "${env.SCMM_URL}/scm/repo/common/ces-build-lib/" }
 String getCesBuildLibVersion() { '1.45.1' }
 String getGitOpsBuildLibRepo() { "${env.SCMM_URL}/scm/repo/common/gitops-build-lib" }
-String getGitOpsBuildLibVersion() { '0.0.9' }
+String getGitOpsBuildLibVersion() { '0.0.10' }
 String getHelmChartRepository() { "${env.SCMM_URL}/scm/repo/common/spring-boot-helm-chart" }
 String getHelmChartVersion() { "1.0.0" }
 String getMainBranch() { 'main' }
 
 cesBuildLib = library(identifier: "ces-build-lib@${cesBuildLibVersion}",
-        retriever: modernSCM([$class: 'GitSCMSource', remote: cesBuildLibRepo])
+        retriever: modernSCM([$class: 'GitSCMSource', remote: cesBuildLibRepo, credentialsId: scmManagerCredentials])
 ).com.cloudogu.ces.cesbuildlib
 
 gitOpsBuildLib = library(identifier: "gitops-build-lib@${gitOpsBuildLibVersion}",
-    retriever: modernSCM([$class: 'GitSCMSource', remote: gitOpsBuildLibRepo])
+    retriever: modernSCM([$class: 'GitSCMSource', remote: gitOpsBuildLibRepo, credentialsId: scmManagerCredentials])
 ).com.cloudogu.gitops.gitopsbuildlib
 
 properties([
@@ -76,13 +76,14 @@ node {
                         scmmPullRequestRepo: configRepositoryPRRepo,
                         cesBuildLibRepo: cesBuildLibRepo,
                         cesBuildLibVersion: cesBuildLibVersion,
+                        cesBuildLibCredentialsId: scmManagerCredentials,
                         application: application,
                         mainBranch: mainBranch,
                         deployments: [
                             sourcePath: 'k8s',
                             helm : [
                                 repoType : 'GIT',
-                                credentialsId : 'creds',
+                                credentialsId : scmManagerCredentials,
                                 repoUrl  : helmChartRepository,
                                 version  : helmChartVersion,
                                 updateValues  : [[fieldPath: "image.name", newValue: imageName]]

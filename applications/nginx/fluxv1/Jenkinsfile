@@ -5,21 +5,21 @@ String getScmManagerCredentials() { 'scmm-user' }
 String getConfigRepositoryUrl() { "${env.SCMM_URL}/scm/repo/fluxv1/gitops" }
 String getConfigRepositoryPRBaseUrl() { "${env.SCMM_URL}/scm" }
 String getConfigRepositoryPRRepo() { 'fluxv1/gitops' }
-String getCesBuildLibRepo() { 'https://github.com/cloudogu/ces-build-lib/' } // TODO change back to scmm repo
+String getCesBuildLibRepo() { "${env.SCMM_URL}/scm/repo/common/ces-build-lib/" }
 String getCesBuildLibVersion() { 'bugfix/location_for_prId' }
-String getGitOpsBuildLibRepo() { 'https://github.com/cloudogu/gitops-build-lib' } // TODO change to scmm repo?
-String getGitOpsBuildLibVersion() { '0.0.9' }
+String getGitOpsBuildLibRepo() { "${env.SCMM_URL}/scm/repo/common/gitops-build-lib" }
+String getGitOpsBuildLibVersion() { '0.0.10' }
 String getHelmChartRepository() { "https://charts.bitnami.com/bitnami" }
 String getHelmChartName() { "nginx" }
 String getHelmChartVersion() { "8.0.0" }
 String getMainBranch() { 'main' }
 
 cesBuildLib = library(identifier: "ces-build-lib@${cesBuildLibVersion}",
-        retriever: modernSCM([$class: 'GitSCMSource', remote: cesBuildLibRepo])
+        retriever: modernSCM([$class: 'GitSCMSource', remote: cesBuildLibRepo, credentialsId: scmManagerCredentials])
 ).com.cloudogu.ces.cesbuildlib
 
 gitOpsBuildLib = library(identifier: "gitops-build-lib@${gitOpsBuildLibVersion}",
-    retriever: modernSCM([$class: 'GitSCMSource', remote: gitOpsBuildLibRepo])
+    retriever: modernSCM([$class: 'GitSCMSource', remote: gitOpsBuildLibRepo, credentialsId: scmManagerCredentials])
 ).com.cloudogu.gitops.gitopsbuildlib
 
 properties([
@@ -49,6 +49,7 @@ node('docker') {
                         scmmPullRequestRepo: configRepositoryPRRepo,
                         cesBuildLibRepo: cesBuildLibRepo,
                         cesBuildLibVersion: cesBuildLibVersion,
+                        cesBuildLibCredentialsId: scmManagerCredentials,
                         application: application,
                         mainBranch: mainBranch,
                         deployments: [

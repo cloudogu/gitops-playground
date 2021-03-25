@@ -10,10 +10,10 @@ String getDockerRegistryBaseUrl() { "${env.REGISTRY_URL}" }
 String getDockerRegistryPath() { "${env.REGISTRY_PATH}" }
 String getDockerRegistryCredentials() { 'registry-user' }
 String getCesBuildLibVersion() { '1.44.3' }
-String getCesBuildLibRepo() { 'https://github.com/cloudogu/ces-build-lib/' }
+String getCesBuildLibRepo() { "${env.SCMM_URL}/scm/repo/common/ces-build-lib/" }
 
 cesBuildLib = library(identifier: "ces-build-lib@${cesBuildLibVersion}",
-        retriever: modernSCM([$class: 'GitSCMSource', remote: cesBuildLibRepo])
+        retriever: modernSCM([$class: 'GitSCMSource', remote: cesBuildLibRepo, credentialsId: scmManagerCredentials])
 ).com.cloudogu.ces.cesbuildlib
 
 properties([
