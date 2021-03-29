@@ -26,6 +26,8 @@ source ${ABSOLUTE_BASEDIR}/utils.sh
 source ${ABSOLUTE_BASEDIR}/jenkins/init-jenkins.sh
 source ${ABSOLUTE_BASEDIR}/scm-manager/init-scmm.sh
 
+EXTERNAL_SCMM=false
+
 function main() {
   DEBUG="${1}"
   INSTALL_ALL_MODULES="${2}"
@@ -172,6 +174,7 @@ function initSCMM() {
     # background process (to display the spinner only)
     setExternalHostnameIfNecessary 'scmm' 'scmm-scm-manager' 'default'
   else
+    EXTERNAL_SCMM=true
     configureScmmCommand=(configureScmmManager "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "${SCMM_URL}" "$(createUrl jenkins)" "false")
     evalWithSpinner "Configuring SCM-Manager ..." "${configureScmmCommand[@]}"
   fi
@@ -208,32 +211,16 @@ function initFluxV1() {
 function initFluxV2() {
   pushPetClinicRepo 'applications/petclinic/fluxv2/plain-k8s' 'fluxv2/petclinic-plain'
 
-  initRepoWithSource 'fluxv2' 'fluxv2/gitops' "$(buildScmmUrlReplaceCmd 'clusters/k8s-gitops-playground/fluxv2/gotk-gitrepository.yaml' "-i")"
+  initRepoWithSource 'fluxv2' 'fluxv2/gitops'
 
 
   kubectl apply -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-components.yaml || true
   kubectl apply -f "$(mkTmpWithReplacedScmmUrls "fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-gitrepository.yaml")" || true
   kubectl apply -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-kustomization.yaml || true
-
-}
-
-function buildScmmUrlReplaceCmd() {
-  SED_PARAMS="${2:-""}"
-  echo 'sed '"${SED_PARAMS}"' -e '"s:scmm-scm-manager.default.svc.cluster.local:${SCMM_HOST}:g"' -e '"s:http:${SCMM_PROTOCOL}:g ${1}"
-}
-
-function mkTmpWithReplacedScmmUrls() {
-  REPLACE_FILE="${1}"
-  TMP_FILENAME=$(mktemp /tmp/scmm-replace.XXXXXX)
-
-  REPLACE_CMD=$(buildScmmUrlReplaceCmd "${REPLACE_FILE}")
-  eval "${REPLACE_CMD}" > "${TMP_FILENAME}"
-
-  echo "${TMP_FILENAME}"
 }
 
 function initArgo() {
-  helm upgrade -i argocd --values argocd/values.yaml \
+  helm upgrade -i argocd --values "$(mkTmpWithReplacedScmmUrls "argocd/values.yaml")" \
     $(argoHelmSettingsForRemoteCluster) --version 2.9.5 argo/argo-cd -n argocd
 
   BCRYPT_PW=$(bcryptPassword "${SET_PASSWORD}")
@@ -244,6 +231,35 @@ function initArgo() {
   initRepo 'argocd/gitops'
   initRepoWithSource 'applications/nginx/argocd' 'argocd/nginx-helm'
   initRepoWithSource 'argocd/control-app' 'argocd/control-app'
+}
+
+function replaceAllScmmUrlsInFolder() {
+  CURRENT_DIR="${1}"
+
+  while IFS= read -r -d '' file
+  do
+    # shellcheck disable=SC2091
+    # We want to execute this here
+    $(buildScmmUrlReplaceCmd "$file" "-i")
+#    echo "$file"
+  done <   <(find "${CURRENT_DIR}" -name '*.yaml' -print0)
+}
+
+function buildScmmUrlReplaceCmd() {
+  TARGET_FILE="${1}"
+  SED_PARAMS="${2:-""}"
+  echo 'sed '"${SED_PARAMS}"' -e '"s:http\\://scmm-scm-manager.default.svc.cluster.local:${SCMM_PROTOCOL}\\://${SCMM_HOST}:g ${TARGET_FILE}"
+}
+
+function mkTmpWithReplacedScmmUrls() {
+  REPLACE_FILE="${1}"
+  TMP_FILENAME=$(mktemp /tmp/scmm-replace.XXXXXX)
+
+  # shellcheck disable=SC2091
+  # We want to execute this here
+  $(buildScmmUrlReplaceCmd "${REPLACE_FILE}") > "${TMP_FILENAME}"
+
+  echo "${TMP_FILENAME}"
 }
 
 function argoHelmSettingsForRemoteCluster() {
@@ -374,7 +390,6 @@ function initRepoWithSource() {
   echo "initiating repo $1 with source $2"
   SOURCE_REPO="$1"
   TARGET_REPO_SCMM="$2"
-  MANIPULATE_SOURCES=${3:-"$()"}
 
   TMP_REPO=$(mktemp -d)
 
@@ -382,7 +397,9 @@ function initRepoWithSource() {
   (
     cd "${TMP_REPO}"
     cp -r "${PLAYGROUND_DIR}/${SOURCE_REPO}"/* .
-    $MANIPULATE_SOURCES
+    if [[ $EXTERNAL_SCMM == true ]]; then
+      replaceAllScmmUrlsInFolder "${TMP_REPO}"
+    fi
     git checkout main --quiet || git checkout -b main --quiet
     git add .
     git commit -m "Init ${TARGET_REPO_SCMM}" --quiet || true
