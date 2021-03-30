@@ -1,6 +1,6 @@
 # k8s-gitops-playground
 
-Reproducible infrastructure to showcase GitOps workflows with Kubernetes. 
+Reproducible infrastructure to showcase GitOps workflows with Kubernetes.  
 Derived from our experiences in [consulting](https://cloudogu.com/en/consulting/) 
 and operating the [myCloudogu platform](https://my.cloudogu.com/).
 
@@ -13,7 +13,6 @@ We are working on distilling the logic used in the example application pipelines
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-
   - [Create Cluster](#create-cluster)
     - [k3s](#k3s)
       - [Prerequisites](#prerequisites)
@@ -21,10 +20,16 @@ We are working on distilling the logic used in the example application pipelines
     - [Google Kubernetes Engine](#google-kubernetes-engine)
       - [Prerequisites](#prerequisites-1)
       - [Create Cluster using Terraform](#create-cluster-using-terraform)
+        - [State](#state)
+        - [Create cluster](#create-cluster)
+        - [Delete Cluster](#delete-cluster)
   - [Apply apps to cluster](#apply-apps-to-cluster)
+    - [Integration of external applications](#integration-of-external-applications)
   - [Applications](#applications)
     - [Jenkins](#jenkins)
+      - [External Jenkins](#external-jenkins)
     - [SCM-Manager](#scm-manager)
+      - [External SCM-Manager](#external-scm-manager)
     - [ArgoCD UI](#argocd-ui)
   - [Test applications deployed via GitOps](#test-applications-deployed-via-gitops)
         - [PetClinic via Flux V1](#petclinic-via-flux-v1)
@@ -188,6 +193,27 @@ Important options:
 * `--fluxv1` - deploy only Flux v1 GitOps operator
 * `--fluxv2` - deploy only Flux v2 GitOps operator
 
+
+### Integration of external applications
+
+We now support the usage of already existing installations for `jenkins`, `scm-manager` and `registry`.
+This enables you to connect the gitops-playground to your already existing infrastructure, e.g. with your [Ecosystem](https://cloudogu.com/en/ecosystem/)!
+
+Optional external Jenkins:
+* `--jenkins-url` - The url of your external jenkins
+* `--jenkins-username` - Username for the account on jenkins
+* `--jenkins-password` - Password the the account on jenkins
+
+Note: See [external jenkins](#external-jenkins) for further information about prerequisites.
+
+Optional external SCM-Manager:
+* `--scmm-url` - The url of your external scm-manager.
+* `--scmm-username` - Username for the account on scm-manager.
+* `--scmm-password` - Password the the account on scm-manager.
+
+Note: See [external scm-manager](#external-scm-manager) for further information about prerequisites.
+
+
 Optional external Registry:
 * `--registry-url=registry` - The url of your external registry (Do not use `http://`)
 * `--registry-path=public` - Optional, empty when not set
@@ -227,6 +253,16 @@ The user has to have the following privileges:
 Find scm-manager on http://localhost:9091
 
 Login with `admin/admin`
+
+#### External SCM-Manager
+
+You can set external scm-manager server through this parameters:  
+`scmm-url`, `scmm-username`, `scmm-password`
+
+The user has to have the following privileges:
+* install plugins
+* create and modify users
+* create and modify repositories
 
 ### ArgoCD UI
 
