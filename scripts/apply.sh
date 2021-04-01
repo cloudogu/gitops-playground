@@ -207,8 +207,9 @@ function setExternalHostnameIfNecessary() {
   local serviceName="$2"
   local namespace="$3"
   
-  if [[ $REMOTE_CLUSTER == true ]]; then
+  if [[ $REMOTE_CLUSTER == true && "$(eval echo "\$${variablePrefix}_INTERNAL")" == 'false'  ]]; then
     # Update SCMM_URL or JENKINS_URL or ARGOCD_URL
+    # only if INTERNAL_SCMM or INTERNAL_JENKINS are false
     # Our apps are configured to use port 80 on remote clusters
     # Argo forwards to HTTPS so simply use HTTP here
     declare "${variablePrefix}_URL"="http://$(getExternalIP "${serviceName}" "${namespace}")"
