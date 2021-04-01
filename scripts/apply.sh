@@ -68,6 +68,11 @@ function main() {
     local jenkinsPortFromValuesYaml="$(grep 'nodePort:' "${PLAYGROUND_DIR}"/jenkins/values.yaml | grep nodePort | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')"
     JENKINS_URL=$(createUrl "localhost" "${jenkinsPortFromValuesYaml}")
   fi
+  
+  if [[ -z "${REGISTRY_URL}" ]]; then
+    REGISTRY_URL="localhost:30000"
+    REGISTRY_PATH=""
+  fi
 
   checkPrerequisites
   
@@ -153,8 +158,6 @@ function applyBasicK8sResources() {
 function initRegistry() {
   if [[ -z "${REGISTRY_URL}" ]]; then
     helm upgrade -i docker-registry --values docker-registry/values.yaml --version 1.9.4 stable/docker-registry -n default
-    REGISTRY_URL="localhost:30000"
-    REGISTRY_PATH=""
   fi
 }
 
