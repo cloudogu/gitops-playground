@@ -2,12 +2,12 @@
 
 String getApplication() { "nginx" }
 String getScmManagerCredentials() { 'scmm-user' }
-String getConfigRepositoryUrl() { "${env.SCMM_URL}/scm/repo/fluxv1/gitops" }
-String getConfigRepositoryPRBaseUrl() { "${env.SCMM_URL}/scm" }
+String getConfigRepositoryUrl() { "${env.SCMM_URL}/repo/fluxv1/gitops" }
+String getConfigRepositoryPRBaseUrl() { "${env.SCMM_URL}" }
 String getConfigRepositoryPRRepo() { 'fluxv1/gitops' }
-String getCesBuildLibRepo() { "${env.SCMM_URL}/scm/repo/common/ces-build-lib/" }
+String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/common/ces-build-lib/" }
 String getCesBuildLibVersion() { 'bugfix/location_for_prId' }
-String getGitOpsBuildLibRepo() { "${env.SCMM_URL}/scm/repo/common/gitops-build-lib" }
+String getGitOpsBuildLibRepo() { "${env.SCMM_URL}/repo/common/gitops-build-lib" }
 String getGitOpsBuildLibVersion() { '0.0.10' }
 String getHelmChartRepository() { "https://charts.bitnami.com/bitnami" }
 String getHelmChartName() { "nginx" }

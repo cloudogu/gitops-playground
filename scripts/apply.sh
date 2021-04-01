@@ -50,7 +50,7 @@ function main() {
   INSECURE="${19}"
   TRACE="${20}"
   
-  if [[ $TRACE == 'true' ]]; then
+  if [[ $TRACE == true ]]; then
     set -x
   fi
 
@@ -134,6 +134,7 @@ function initRegistry() {
   if [[ -z "${REGISTRY_URL}" ]]; then
     helm upgrade -i docker-registry --values docker-registry/values.yaml --version 1.9.4 stable/docker-registry -n default
     REGISTRY_URL="localhost:30000"
+    REGISTRY_PATH=""
   fi
 }
 
@@ -165,10 +166,10 @@ function initSCMM() {
     deployScmmCommand=(deployLocalScmmManager "${REMOTE_CLUSTER}")
     evalWithSpinner "Deploying SCMM-Manager ..." "${deployScmmCommand[@]}"
 
-    configureScmmCommand=(configureScmmManager "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "http://${hostnames[scmm]}:${ports[scmm]}" "http://jenkins" "true")
+    configureScmmCommand=(configureScmmManager "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "http://${hostnames[scmm]}:${ports[scmm]}/scm" "http://jenkins" "true")
     evalWithSpinner "Configuring SCM-Manager ..." "${configureScmmCommand[@]}"
 
-    SCMM_URL="http://scmm-scm-manager"
+    SCMM_URL="http://scmm-scm-manager.default.svc.cluster.local/scm"
 
     # We need to query remote IP here (in the main process) again, because the "initSCMM" methods might be running in a
     # background process (to display the spinner only)
@@ -200,10 +201,15 @@ function initFluxV1() {
   pushPetClinicRepo 'applications/petclinic/fluxv1/helm' 'fluxv1/petclinic-helm'
   initRepoWithSource 'applications/nginx/fluxv1' 'fluxv1/nginx-helm'
 
-  # shellcheck disable=SC2016
-  # we don't want to expand $(username):$(password) here, it will be used inside the flux-operator
+  SET_GIT_URL=""
+  if [[ $EXTERNAL_SCMM == true ]]; then
+    # shellcheck disable=SC2016
+    # we don't want to expand $(username):$(password) here, it will be used inside the flux-operator
+    SET_GIT_URL='--set git.url='"${SCMM_PROTOCOL}"'://$(username):$(password)@'"${SCMM_HOST}"'/repo/fluxv1/gitops'
+  fi
+
   helm upgrade -i flux-operator --values fluxv1/flux-operator/values.yaml \
-               --set git.url="${SCMM_PROTOCOL}"'://$(username):$(password)@'"${SCMM_HOST}"'/scm/repo/fluxv1/gitops'\
+               ${SET_GIT_URL}\
                --version 1.3.0 fluxcd/flux -n fluxv1
   helm upgrade -i helm-operator --values fluxv1/helm-operator/values.yaml --version 1.2.0 fluxcd/helm-operator -n fluxv1
 }
@@ -213,14 +219,23 @@ function initFluxV2() {
 
   initRepoWithSource 'fluxv2' 'fluxv2/gitops'
 
+  REPOSITORY_YAML_PATH="fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-gitrepository.yaml"
+  if [[ $EXTERNAL_SCMM == true ]]; then
+    REPOSITORY_YAML_PATH="$(mkTmpWithReplacedScmmUrls "fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-gitrepository.yaml")"
+  fi
 
   kubectl apply -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-components.yaml || true
-  kubectl apply -f "$(mkTmpWithReplacedScmmUrls "fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-gitrepository.yaml")" || true
+  kubectl apply -f "${REPOSITORY_YAML_PATH}" || true
   kubectl apply -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-kustomization.yaml || true
 }
 
 function initArgo() {
-  helm upgrade -i argocd --values "$(mkTmpWithReplacedScmmUrls "argocd/values.yaml")" \
+  VALUES_YAML_PATH="argocd/values.yaml"
+  if [[ $EXTERNAL_SCMM == true ]]; then
+    VALUES_YAML_PATH="$(mkTmpWithReplacedScmmUrls "argocd/values.yaml")"
+  fi
+
+  helm upgrade -i argocd --values "${VALUES_YAML_PATH}" \
     $(argoHelmSettingsForRemoteCluster) --version 2.9.5 argo/argo-cd -n argocd
 
   BCRYPT_PW=$(bcryptPassword "${SET_PASSWORD}")
@@ -241,14 +256,13 @@ function replaceAllScmmUrlsInFolder() {
     # shellcheck disable=SC2091
     # We want to execute this here
     $(buildScmmUrlReplaceCmd "$file" "-i")
-#    echo "$file"
   done <   <(find "${CURRENT_DIR}" -name '*.yaml' -print0)
 }
 
 function buildScmmUrlReplaceCmd() {
   TARGET_FILE="${1}"
   SED_PARAMS="${2:-""}"
-  echo 'sed '"${SED_PARAMS}"' -e '"s:http\\://scmm-scm-manager.default.svc.cluster.local:${SCMM_PROTOCOL}\\://${SCMM_HOST}:g ${TARGET_FILE}"
+  echo 'sed '"${SED_PARAMS}"' -e '"s:http\\://scmm-scm-manager.default.svc.cluster.local/scm:${SCMM_PROTOCOL}\\://${SCMM_HOST}:g ${TARGET_FILE}"
 }
 
 function mkTmpWithReplacedScmmUrls() {
@@ -301,7 +315,7 @@ function pushPetClinicRepo() {
     git commit -m 'Add GitOps Pipeline and K8s resources' --quiet
 
     waitForScmManager
-    git push -u "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
+    git push -u "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
   )
 
   rm -rf "${TMP_REPO}"
@@ -318,6 +332,7 @@ function pushHelmChartRepo() {
     cd "${TMP_REPO}"
     # Checkout a defined commit in order to get a deterministic result
     git checkout ${SPRING_BOOT_HELM_CHART_COMMIT} --quiet
+
     # Create a defined version to use in demo applications
     git tag 1.0.0
 
@@ -325,8 +340,8 @@ function pushHelmChartRepo() {
     git checkout -b main
 
     waitForScmManager
-    git push "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
-    git push "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/scm/repo/${TARGET_REPO_SCMM}" refs/tags/1.0.0 --quiet --force
+    git push "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
+    git push "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" refs/tags/1.0.0 --quiet --force
   )
 
   rm -rf "${TMP_REPO}"
@@ -344,7 +359,7 @@ function pushRepoMirror() {
   (
     cd "${TMP_REPO}"
     waitForScmManager
-    git push --mirror "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/scm/repo/${TARGET_REPO_SCMM}" --force --quiet
+    git push --mirror "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" --force --quiet
   )
 
   rm -rf "${TMP_REPO}"
@@ -352,23 +367,12 @@ function pushRepoMirror() {
   setDefaultBranch "${TARGET_REPO_SCMM}" "${DEFAULT_BRANCH}"
 }
 
-# TODO: either local or external
-function waitForScmManager() {
-  echo -n "Waiting for SCM-Manager to become available at ${SCMM_PROTOCOL}://${SCMM_HOST}/scm"
-  HTTP_CODE="0"
-  while [[ "${HTTP_CODE}" -ne "200" ]]; do
-    HTTP_CODE="$(curl -s -L -o /dev/null --max-time 10 -w ''%{http_code}'' "${SCMM_PROTOCOL}://${SCMM_HOST}/scm")" || true
-    echo -n "."
-    sleep 2
-  done
-}
-
 function initRepo() {
   TARGET_REPO_SCMM="$1"
 
   TMP_REPO=$(mktemp -d)
 
-  git clone "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/scm/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}"
+  git clone "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}"
   (
     cd "${TMP_REPO}"
     git checkout main --quiet || git checkout -b main --quiet
@@ -380,7 +384,7 @@ function initRepo() {
       git commit -m "Add readme" --quiet
     fi
     waitForScmManager
-    git push -u "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force
+    git push -u "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" HEAD:main --force
   )
 
   setDefaultBranch "${TARGET_REPO_SCMM}"
@@ -393,7 +397,7 @@ function initRepoWithSource() {
 
   TMP_REPO=$(mktemp -d)
 
-  git clone "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/scm/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}"
+  git clone "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}"
   (
     cd "${TMP_REPO}"
     cp -r "${PLAYGROUND_DIR}/${SOURCE_REPO}"/* .
@@ -404,7 +408,7 @@ function initRepoWithSource() {
     git add .
     git commit -m "Init ${TARGET_REPO_SCMM}" --quiet || true
     waitForScmManager
-    git push -u "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/scm/repo/${TARGET_REPO_SCMM}" HEAD:main --force
+    git push -u "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" HEAD:main --force
   )
 
   rm -rf "${TMP_REPO}"
@@ -418,7 +422,7 @@ function setDefaultBranch() {
 
   curl -s -L -X PUT -H 'Content-Type: application/vnd.scmm-gitConfig+json' \
     --data-raw "{\"defaultBranch\":\"${DEFAULT_BRANCH}\"}" \
-    "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/scm/api/v2/config/git/${TARGET_REPO_SCMM}"
+    "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/api/v2/config/git/${TARGET_REPO_SCMM}"
 }
 
 function createUrl() {
@@ -441,6 +445,9 @@ function createUrl() {
 
   echo -n "http://${hostname}"
   [[ "${port}" != "80" && "${port}" != "443" ]] && echo -n ":${port}"
+  if [[ "${systemName}" == "scmm" ]]; then
+    echo -n "/scm"
+  fi
 }
 
 function printWelcomeScreen() {
@@ -458,9 +465,9 @@ function printWelcomeScreen() {
   echo "| The playground features three example applications (Sprint PetClinic - one for every gitops solution) in SCM-Manager."
   echo "| See here:"
   echo "|"
-  echo -e "| - \e[32m$(createUrl scmm)/scm/repo/fluxv1/petclinic-plain/code/sources/main/\e[0m"
-  echo -e "| - \e[32m$(createUrl scmm)/scm/repo/fluxv2/petclinic-plain/code/sources/main/\e[0m"
-  echo -e "| - \e[32m$(createUrl scmm)/scm/repo/argocd/petclinic-plain/code/sources/main/\e[0m"
+  echo -e "| - \e[32m$(createUrl scmm)/repo/fluxv1/petclinic-plain/code/sources/main/\e[0m"
+  echo -e "| - \e[32m$(createUrl scmm)/repo/fluxv2/petclinic-plain/code/sources/main/\e[0m"
+  echo -e "| - \e[32m$(createUrl scmm)/repo/argocd/petclinic-plain/code/sources/main/\e[0m"
   echo "|"
   echo -e "| Credentials for SCM-Manager and Jenkins are: \e[31m${SET_USERNAME}/${SET_PASSWORD}\e[0m"
   echo "|"
@@ -493,8 +500,8 @@ function printWelcomeScreenFluxV1() {
   if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV1 = true ]]; then
     echo "| For Flux V1:"
     echo "|"
-    echo -e "| - GitOps repo: \e[32m$(createUrl scmm)/scm/repo/fluxv1/gitops/code/sources/main/\e[0m"
-    echo -e "| - Pull requests: \e[32m$(createUrl scmm)/scm/repo/fluxv1/gitops/pull-requests\e[0m"
+    echo -e "| - GitOps repo: \e[32m$(createUrl scmm)/repo/fluxv1/gitops/code/sources/main/\e[0m"
+    echo -e "| - Pull requests: \e[32m$(createUrl scmm)/repo/fluxv1/gitops/pull-requests\e[0m"
     echo "|"
   fi
 }
@@ -503,8 +510,8 @@ function printWelcomeScreenFluxV2() {
   if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV2 = true ]]; then
     echo "| For Flux V2:"
     echo "|"
-    echo -e "| - GitOps repo: \e[32m$(createUrl scmm)/scm/repo/fluxv2/gitops/code/sources/main/\e[0m"
-    echo -e "| - Pull requests: \e[32m$(createUrl scmm)/scm/repo/fluxv2/gitops/pull-requests\e[0m"
+    echo -e "| - GitOps repo: \e[32m$(createUrl scmm)/repo/fluxv2/gitops/code/sources/main/\e[0m"
+    echo -e "| - Pull requests: \e[32m$(createUrl scmm)/repo/fluxv2/gitops/pull-requests\e[0m"
     echo "|"
   fi
 }
@@ -516,8 +523,8 @@ function printWelcomeScreenArgocd() {
   if [[ $INSTALL_ALL_MODULES == true || $INSTALL_ARGOCD == true ]]; then
     echo "| For ArgoCD:"
     echo "|"
-    echo -e "| - GitOps repo: \e[32m$(createUrl scmm)/scm/repo/argocd/gitops/code/sources/main/\e[0m"
-    echo -e "| - Pull requests: \e[32m$(createUrl scmm)/scm/repo/argocd/gitops/pull-requests\e[0m"
+    echo -e "| - GitOps repo: \e[32m$(createUrl scmm)/repo/argocd/gitops/code/sources/main/\e[0m"
+    echo -e "| - Pull requests: \e[32m$(createUrl scmm)/repo/argocd/gitops/pull-requests\e[0m"
     echo "|"
     echo -e "| There is also the ArgoCD UI which can be found at \e[32mhttp://$(createUrl argocd)/\e[0m"
     echo -e "| Credentials for the ArgoCD UI are: \e[31m${SET_USERNAME}/${SET_PASSWORD}\e[0m"

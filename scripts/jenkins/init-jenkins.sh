@@ -105,13 +105,7 @@ function configureJenkins() {
   createCredentials "scmm-user" "gitops" "${SCMM_PASSWORD}" "credentials for accessing scm-manager"
   createCredentials "registry-user" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}" "credentials for accessing the docker-registry"
 
-  createJob "fluxv1-applications" "${SCMM_URL}/scm" "fluxv1" "scmm-user"
-  createJob "fluxv2-applications" "${SCMM_URL}/scm" "fluxv2" "scmm-user"
-  createJob "argocd-applications" "${SCMM_URL}/scm" "argocd" "scmm-user"
+  createJob "fluxv1-applications" "${SCMM_URL}" "fluxv1" "scmm-user"
+  createJob "fluxv2-applications" "${SCMM_URL}" "fluxv2" "scmm-user"
+  createJob "argocd-applications" "${SCMM_URL}" "argocd" "scmm-user"
 }
-
-#CURL_HOME="${PLAYGROUND_DIR}"
-#export CURL_HOME
-#export GIT_SSL_NO_VERIFY=1
-#
-#configureJenkins https://192.168.56.2/jenkins admin admin https://192.168.56.2 admin localhost:9444 test admin admin
