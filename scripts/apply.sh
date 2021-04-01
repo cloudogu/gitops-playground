@@ -17,6 +17,7 @@ source ${ABSOLUTE_BASEDIR}/scm-manager/init-scmm.sh
 
 INTERNAL_SCMM=true
 INTERNAL_JENKINS=true
+INTERNAL_REGISTRY=true
 # When running in k3s, connection between SCMM <-> Jenkins must be via k8s services, because external "localhost"
 # addresses will not work
 JENKINS_URL_FOR_SCMM="http://jenkins"
@@ -72,6 +73,8 @@ function main() {
   if [[ -z "${REGISTRY_URL}" ]]; then
     REGISTRY_URL="localhost:30000"
     REGISTRY_PATH=""
+  else
+    INTERNAL_REGISTRY=true
   fi
 
   checkPrerequisites
@@ -156,7 +159,7 @@ function applyBasicK8sResources() {
 }
 
 function initRegistry() {
-  if [[ -z "${REGISTRY_URL}" ]]; then
+  if [[ "${INTERNAL_REGISTRY}" == true ]]; then
     helm upgrade -i docker-registry --values docker-registry/values.yaml --version 1.9.4 stable/docker-registry -n default
   fi
 }
