@@ -1,14 +1,10 @@
 #!/usr/bin/env bash
 set -o errexit -o nounset -o pipefail
-#set -x
 
 SCMM_USER=scmadmin
 SCMM_PWD=scmadmin
-SCMM_HOST=localhost:8080/scm
 SCMM_PROTOCOL=http
-REMOTE_CLUSTER=false
 SCMM_HELM_CHART_VERSION=2.13.0
-SCMM_JENKINS_URL=http://jenkins
 
 function deployLocalScmmManager() {
   REMOTE_CLUSTER=${1}
@@ -21,19 +17,20 @@ function deployLocalScmmManager() {
 function configureScmmManager() {
   ADMIN_USERNAME=${1}
   ADMIN_PASSWORD=${2}
-  SCMM_HOST=${3}
+  SCMM_HOST=$(getHost ${3})
+  SCMM_PROTOCOL=$(getProtocol ${3})
   SCMM_JENKINS_URL=${4}
   IS_LOCAL=${5}
 
   GITOPS_USERNAME="gitops"
   GITOPS_PASSWORD=${ADMIN_PASSWORD}
-  SCMM_PROTOCOL=$(getProtocol)
-  SCMM_HOST=$(getHost)
 
   waitForScmManager
 
   # We can not set the initial user through SCM-Manager configuration (as of SCMM 2.12.0), so we set the user via REST API
   if [[ $IS_LOCAL == true ]]; then
+    # TODO this is not idempotent - on the second call the admin is aleady gone and this yield 401
+    # Unfortunately we just ignore all HTTP errors. Just calling printStatus() whose result is only printed if --debug is used.
     addUser "${ADMIN_USERNAME}" "${ADMIN_PASSWORD}" "admin@mail.de"
     setAdmin "${ADMIN_USERNAME}"
     deleteUser "${SCMM_USER}" "${ADMIN_USERNAME}" "${ADMIN_PASSWORD}"
@@ -105,9 +102,6 @@ function configureScmmManager() {
   waitForScmManager
 
   configJenkins "${SCMM_JENKINS_URL}"
-
-  export SCMM_HOST
-  export SCMM_PROTOCOL
 }
 
 function addRepo() {
@@ -222,9 +216,9 @@ function installScmmPlugin() {
 }
 
 function configJenkins() {
-  printf 'Configuring Jenkins ... '
+  printf 'Configuring Jenkins plugin in SCM-Manager ... '
 
-  STATUS=$(curl -i -L -X PUT -H 'Content-Type: application/json' \
+  STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X PUT -H 'Content-Type: application/json' \
     --data-raw "{\"disableRepositoryConfiguration\":false,\"disableMercurialTrigger\":false,\"disableGitTrigger\":false,\"disableEventTrigger\":false,\"url\":\"${1}\"}" \
     "${SCMM_PROTOCOL}://${SCMM_USER}:${SCMM_PWD}@${SCMM_HOST}/api/v2/config/jenkins/" ) && EXIT_STATUS=$? || EXIT_STATUS=$?
   if [ $EXIT_STATUS != 0 ]
@@ -246,6 +240,7 @@ function scmmHelmSettingsForRemoteCluster() {
 
 function waitForScmManager() {
   echo -n "Waiting for Scmm to become available at ${SCMM_PROTOCOL}://${SCMM_HOST}/api/v2"
+  
   HTTP_CODE="0"
   while [[ "${HTTP_CODE}" -ne "200" ]]; do
     HTTP_CODE="$(curl -s -L -o /dev/null --max-time 10 -w ''%{http_code}'' "${SCMM_PROTOCOL}://${SCMM_HOST}/api/v2")" || true
@@ -256,18 +251,20 @@ function waitForScmManager() {
 }
 
 function getHost() {
-  if [[ $SCMM_HOST == https://* ]]; then
-    echo "$SCMM_HOST" | cut -c 9-
-  elif [[ $SCMM_HOST == http://* ]]; then
-    echo "$SCMM_HOST" | cut -c 8-
+  SCMM_URL="$1"
+  if [[ "${SCMM_URL}" == https://* ]]; then
+    echo "${SCMM_URL}" | cut -c 9-
+  elif [[ "${SCMM_URL}" == http://* ]]; then
+    echo "${SCMM_URL}" | cut -c 8-
   fi
 }
 
 function getProtocol() {
-  if [[ $SCMM_HOST == https://* ]]; then
-    echo "$SCMM_HOST" | cut -c -5
-  elif [[ $SCMM_HOST == http://* ]]; then
-    echo "$SCMM_HOST" | cut -c -4
+  SCMM_URL="$1"
+  if [[ "${SCMM_URL}" == https://* ]]; then
+    echo "https"
+  elif [[ "${SCMM_URL}" == http://* ]]; then
+    echo "http"
   fi
 }
 

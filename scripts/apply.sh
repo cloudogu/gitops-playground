@@ -11,22 +11,16 @@ export PLAYGROUND_DIR
 PETCLINIC_COMMIT=949c5af
 SPRING_BOOT_HELM_CHART_COMMIT=0.2.0
 
-declare -A hostnames
-hostnames[scmm]="localhost"
-hostnames[jenkins]="localhost"
-hostnames[argocd]="localhost"
-
-declare -A ports
-# get ports from values files
-ports[scmm]=$(grep 'nodePort:' "${PLAYGROUND_DIR}"/scm-manager/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')
-ports[jenkins]=$(grep 'nodePort:' "${PLAYGROUND_DIR}"/jenkins/values.yaml | grep nodePort | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')
-ports[argocd]=$(grep 'servicePortHttp:' "${PLAYGROUND_DIR}"/argocd/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')
-
 source ${ABSOLUTE_BASEDIR}/utils.sh
 source ${ABSOLUTE_BASEDIR}/jenkins/init-jenkins.sh
 source ${ABSOLUTE_BASEDIR}/scm-manager/init-scmm.sh
 
-EXTERNAL_SCMM=false
+INTERNAL_SCMM=true
+INTERNAL_JENKINS=true
+# When running in k3s, connection between SCMM <-> Jenkins must be via k8s services, because external "localhost"
+# addresses will not work
+JENKINS_URL_FOR_SCMM="http://jenkins"
+SCMM_URL_FOR_JENKINS="http://scmm-scm-manager.default.svc.cluster.local/scm"
 
 function main() {
   DEBUG="${1}"
@@ -49,10 +43,7 @@ function main() {
   SCMM_PASSWORD="${18}"
   INSECURE="${19}"
   TRACE="${20}"
-  
-  if [[ $TRACE == true ]]; then
-    set -x
-  fi
+
 
   if [[ $INSECURE == true ]]; then
     CURL_HOME="${PLAYGROUND_DIR}"
@@ -60,8 +51,26 @@ function main() {
     export GIT_SSL_NO_VERIFY=1
   fi
 
-  checkPrerequisites
+  if [[ -n "${SCMM_URL}" ]]; then
+    INTERNAL_SCMM=false
+    # We can't use internal kubernetes services in this scenario
+    SCMM_URL_FOR_JENKINS=${SCMM_URL}
+  else
+    local scmmPortFromValuesYaml="$(grep 'nodePort:' "${PLAYGROUND_DIR}"/scm-manager/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')"
+    SCMM_URL="$(createUrl "localhost" "${scmmPortFromValuesYaml}")/scm"
+  fi
 
+  if [[ -n "${JENKINS_URL}" ]]; then
+    INTERNAL_JENKINS=false
+    # We can't use internal kubernetes services in this scenario
+    JENKINS_URL_FOR_SCMM=${JENKINS_URL}
+  else
+    local jenkinsPortFromValuesYaml="$(grep 'nodePort:' "${PLAYGROUND_DIR}"/jenkins/values.yaml | grep nodePort | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')"
+    JENKINS_URL=$(createUrl "localhost" "${jenkinsPortFromValuesYaml}")
+  fi
+
+  checkPrerequisites
+  
   if [[ $DEBUG != true ]]; then
     backgroundLogFile=$(mktemp /tmp/playground-log-XXXXXXXXX.log)
     echo "Full log output is appended to ${backgroundLogFile}"
@@ -69,15 +78,19 @@ function main() {
 
   evalWithSpinner "Basic setup & configuring registry..." applyBasicK8sResources
 
-  initSCMM
+  initSCMMVars
+  evalWithSpinner "Starting SCM-Manager..." initSCMM
+  # We need to query remote IP here (in the main process) again, because the "initSCMM" methods might be running in a
+  # background process (to display the spinner only)
+  setExternalHostnameIfNecessary 'SCMM' 'scmm-scm-manager' 'default'
 
-  if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV1 = true ]]; then
+  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV1 == true ]]; then
     evalWithSpinner "Starting Flux V1..." initFluxV1
   fi
-  if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV2 = true ]]; then
+  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV2 == true ]]; then
     evalWithSpinner "Starting Flux V2..." initFluxV2
   fi
-  if [[ $INSTALL_ALL_MODULES = true || $INSTALL_ARGOCD = true ]]; then
+  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_ARGOCD == true ]]; then
     evalWithSpinner "Starting ArgoCD..." initArgo
   fi
 
@@ -108,7 +121,14 @@ function evalWithSpinner() {
 function checkPrerequisites() {
   if [[ $INSTALL_ALL_MODULES == true || $INSTALL_ARGOCD == true ]]; then
     if ! command -v htpasswd &>/dev/null; then
-      echo "Missing required command htpasswd"
+      error "Missing required command htpasswd"
+      exit 1
+    fi
+  fi
+
+  if [[ ${INTERNAL_SCMM} == false || ${INTERNAL_JENKINS} == false ]]; then
+    if [[ ${INTERNAL_SCMM} == true || ${INTERNAL_JENKINS} == true ]]; then
+      error "When setting JENKINS_URL, SCMM_URL must also be set and the other way round."
       exit 1
     fi
   fi
@@ -139,46 +159,40 @@ function initRegistry() {
 }
 
 function initJenkins() {
-  if [[ -z "${JENKINS_URL}" ]]; then
+  if [[ ${INTERNAL_JENKINS} == true ]]; then
     deployJenkinsCommand=(deployLocalJenkins "${SET_USERNAME}" "${SET_PASSWORD}" "${REMOTE_CLUSTER}")
     evalWithSpinner "Deploying Jenkins..." "${deployJenkinsCommand[@]}"
 
-    setExternalHostnameIfNecessary "jenkins" "jenkins" "default"
-    JENKINS_URL=$(createUrl "jenkins")
+    setExternalHostnameIfNecessary "JENKINS" "jenkins" "default"
 
-    configureJenkinsCommand=(configureJenkins "${JENKINS_URL}" "${SET_USERNAME}" "${SET_PASSWORD}" \
-                                              "${SCMM_URL}" "${SCMM_PASSWORD}" "${REGISTRY_URL}" \
-                                              "${REGISTRY_PATH}" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}")
-    evalWithSpinner "Configuring Jenkins..." "${configureJenkinsCommand[@]}"
-  else
-    configureJenkinsCommand=(configureJenkins "${JENKINS_URL}" "${JENKINS_USERNAME}" "${JENKINS_PASSWORD}" \
-                                              "${SCMM_URL}" "${SCMM_PASSWORD}" "${REGISTRY_URL}" \
-                                              "${REGISTRY_PATH}" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}")
-    evalWithSpinner "Configuring Jenkins..." "${configureJenkinsCommand[@]}"
+    JENKINS_USERNAME="${SET_USERNAME}"
+    JENKINS_PASSWORD="${SET_PASSWORD}"
   fi
+
+  configureJenkinsCommand=(configureJenkins "${JENKINS_URL}" "${JENKINS_USERNAME}" "${JENKINS_PASSWORD}"
+    "${SCMM_URL_FOR_JENKINS}" "${SCMM_PASSWORD}" "${REGISTRY_URL}"
+    "${REGISTRY_PATH}" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}")
+    
+  evalWithSpinner "Configuring Jenkins..." "${configureJenkinsCommand[@]}"
+}
+
+function initSCMMVars() {
+  if [[ ${INTERNAL_SCMM} == true ]]; then
+    SCMM_USERNAME=${SET_USERNAME}
+    SCMM_PASSWORD=${SET_PASSWORD}
+  fi
+
+  # Those are set here, because the "initSCMM" methods might be running in a background process (to display the spinner only)
+  SCMM_HOST=$(getHost "${SCMM_URL}")
+  SCMM_PROTOCOL=$(getProtocol "${SCMM_URL}")
 }
 
 function initSCMM() {
-  if [[ -z "${SCMM_URL}" ]]; then
-    SCMM_USERNAME=${SET_USERNAME}
-    SCMM_PASSWORD=${SET_PASSWORD}
-
-    deployScmmCommand=(deployLocalScmmManager "${REMOTE_CLUSTER}")
-    evalWithSpinner "Deploying SCMM-Manager ..." "${deployScmmCommand[@]}"
-
-    configureScmmCommand=(configureScmmManager "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "http://${hostnames[scmm]}:${ports[scmm]}/scm" "http://jenkins" "true")
-    evalWithSpinner "Configuring SCM-Manager ..." "${configureScmmCommand[@]}"
-
-    SCMM_URL="http://scmm-scm-manager.default.svc.cluster.local/scm"
-
-    # We need to query remote IP here (in the main process) again, because the "initSCMM" methods might be running in a
-    # background process (to display the spinner only)
-    setExternalHostnameIfNecessary 'scmm' 'scmm-scm-manager' 'default'
-  else
-    EXTERNAL_SCMM=true
-    configureScmmCommand=(configureScmmManager "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "${SCMM_URL}" "$(createUrl jenkins)" "false")
-    evalWithSpinner "Configuring SCM-Manager ..." "${configureScmmCommand[@]}"
+  if [[ ${INTERNAL_SCMM} == true ]]; then
+    deployLocalScmmManager "${REMOTE_CLUSTER}"
   fi
+
+  configureScmmManager "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "${SCMM_URL}" "${JENKINS_URL_FOR_SCMM}" "${INTERNAL_SCMM}"
 
   pushHelmChartRepo 'common/spring-boot-helm-chart'
   pushRepoMirror 'https://github.com/cloudogu/gitops-build-lib.git' 'common/gitops-build-lib'
@@ -186,12 +200,15 @@ function initSCMM() {
 }
 
 function setExternalHostnameIfNecessary() {
-  hostKey="$1"
-  serviceName="$2"
-  namespace="$3"
+  local variablePrefix="$1"
+  local serviceName="$2"
+  local namespace="$3"
+  
   if [[ $REMOTE_CLUSTER == true ]]; then
-    hostnames[${hostKey}]=$(getExternalIP "${serviceName}" "${namespace}")
-    ports[${hostKey}]=80
+    # Update SCMM_URL or JENKINS_URL or ARGOCD_URL
+    # Our apps are configured to use port 80 on remote clusters
+    # Argo forwards to HTTPS so simply use HTTP here
+    declare "${variablePrefix}_URL"="http://$(getExternalIP "${serviceName}" "${namespace}")"
   fi
 }
 
@@ -202,15 +219,15 @@ function initFluxV1() {
   initRepoWithSource 'applications/nginx/fluxv1' 'fluxv1/nginx-helm'
 
   SET_GIT_URL=""
-  if [[ $EXTERNAL_SCMM == true ]]; then
+  if [[ ${INTERNAL_SCMM} == false ]]; then
     # shellcheck disable=SC2016
     # we don't want to expand $(username):$(password) here, it will be used inside the flux-operator
     SET_GIT_URL='--set git.url='"${SCMM_PROTOCOL}"'://$(username):$(password)@'"${SCMM_HOST}"'/repo/fluxv1/gitops'
   fi
 
   helm upgrade -i flux-operator --values fluxv1/flux-operator/values.yaml \
-               ${SET_GIT_URL}\
-               --version 1.3.0 fluxcd/flux -n fluxv1
+    ${SET_GIT_URL} \
+    --version 1.3.0 fluxcd/flux -n fluxv1
   helm upgrade -i helm-operator --values fluxv1/helm-operator/values.yaml --version 1.2.0 fluxcd/helm-operator -n fluxv1
 }
 
@@ -220,7 +237,7 @@ function initFluxV2() {
   initRepoWithSource 'fluxv2' 'fluxv2/gitops'
 
   REPOSITORY_YAML_PATH="fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-gitrepository.yaml"
-  if [[ $EXTERNAL_SCMM == true ]]; then
+  if [[ ${INTERNAL_SCMM} == false ]]; then
     REPOSITORY_YAML_PATH="$(mkTmpWithReplacedScmmUrls "fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-gitrepository.yaml")"
   fi
 
@@ -231,7 +248,7 @@ function initFluxV2() {
 
 function initArgo() {
   VALUES_YAML_PATH="argocd/values.yaml"
-  if [[ $EXTERNAL_SCMM == true ]]; then
+  if [[ ${INTERNAL_SCMM} == false ]]; then
     VALUES_YAML_PATH="$(mkTmpWithReplacedScmmUrls "argocd/values.yaml")"
   fi
 
@@ -256,7 +273,7 @@ function replaceAllScmmUrlsInFolder() {
     # shellcheck disable=SC2091
     # We want to execute this here
     $(buildScmmUrlReplaceCmd "$file" "-i")
-  done <   <(find "${CURRENT_DIR}" -name '*.yaml' -print0)
+  done < <(find "${CURRENT_DIR}" -name '*.yaml' -print0)
 }
 
 function buildScmmUrlReplaceCmd() {
@@ -271,7 +288,7 @@ function mkTmpWithReplacedScmmUrls() {
 
   # shellcheck disable=SC2091
   # We want to execute this here
-  $(buildScmmUrlReplaceCmd "${REPLACE_FILE}") > "${TMP_FILENAME}"
+  $(buildScmmUrlReplaceCmd "${REPLACE_FILE}") >"${TMP_FILENAME}"
 
   echo "${TMP_FILENAME}"
 }
@@ -319,8 +336,6 @@ function pushPetClinicRepo() {
   )
 
   rm -rf "${TMP_REPO}"
-
-  setDefaultBranch "${TARGET_REPO_SCMM}"
 }
 
 function pushHelmChartRepo() {
@@ -336,8 +351,8 @@ function pushHelmChartRepo() {
     # Create a defined version to use in demo applications
     git tag 1.0.0
 
-    git branch -d main
-    git checkout -b main
+    git branch --quiet -d main
+    git checkout --quiet -b main
 
     waitForScmManager
     git push "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
@@ -345,8 +360,6 @@ function pushHelmChartRepo() {
   )
 
   rm -rf "${TMP_REPO}"
-
-  setDefaultBranch "${TARGET_REPO_SCMM}"
 }
 
 function pushRepoMirror() {
@@ -387,7 +400,6 @@ function initRepo() {
     git push -u "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" HEAD:main --force
   )
 
-  setDefaultBranch "${TARGET_REPO_SCMM}"
 }
 
 function initRepoWithSource() {
@@ -401,7 +413,7 @@ function initRepoWithSource() {
   (
     cd "${TMP_REPO}"
     cp -r "${PLAYGROUND_DIR}/${SOURCE_REPO}"/* .
-    if [[ $EXTERNAL_SCMM == true ]]; then
+    if [[ ${INTERNAL_SCMM} == false ]]; then
       replaceAllScmmUrlsInFolder "${TMP_REPO}"
     fi
     git checkout main --quiet || git checkout -b main --quiet
@@ -413,7 +425,6 @@ function initRepoWithSource() {
 
   rm -rf "${TMP_REPO}"
 
-  setDefaultBranch "${TARGET_REPO_SCMM}"
 }
 
 function setDefaultBranch() {
@@ -426,34 +437,23 @@ function setDefaultBranch() {
 }
 
 function createUrl() {
-  systemName=${1}
-  hostname=${hostnames[${systemName}]}
-  port=${ports[${systemName}]}
-
-  if [[ "${systemName}" == "jenkins" && -n "${JENKINS_URL}" ]]; then
-    echo "${JENKINS_URL}"
-    return
-  elif [[ "${systemName}" == "scmm" && -n "${SCMM_URL}" ]]; then
-    echo "${SCMM_URL}"
-    return
-  fi
+  local hostname="$1"
+  local port="$2"
 
   if [[ -z "${port}" ]]; then
-    error "hostname ${systemName} not defined"
+    error "No port found for hostname ${hostname}"
     exit 1
   fi
 
+  # Argo forwards to HTTPS so simply use HTTP here
   echo -n "http://${hostname}"
   [[ "${port}" != "80" && "${port}" != "443" ]] && echo -n ":${port}"
-  if [[ "${systemName}" == "scmm" ]]; then
-    echo -n "/scm"
-  fi
 }
 
 function printWelcomeScreen() {
 
   if [[ -z "${JENKINS_URL}" ]]; then
-    setExternalHostnameIfNecessary 'jenkins' 'jenkins' 'default'
+    setExternalHostnameIfNecessary 'JENKINS' 'jenkins' 'default'
   fi
 
   echo
@@ -465,17 +465,17 @@ function printWelcomeScreen() {
   echo "| The playground features three example applications (Sprint PetClinic - one for every gitops solution) in SCM-Manager."
   echo "| See here:"
   echo "|"
-  echo -e "| - \e[32m$(createUrl scmm)/repo/fluxv1/petclinic-plain/code/sources/main/\e[0m"
-  echo -e "| - \e[32m$(createUrl scmm)/repo/fluxv2/petclinic-plain/code/sources/main/\e[0m"
-  echo -e "| - \e[32m$(createUrl scmm)/repo/argocd/petclinic-plain/code/sources/main/\e[0m"
+  echo -e "| - \e[32m${SCMM_URL}/repo/fluxv1/petclinic-plain/code/sources/main/\e[0m"
+  echo -e "| - \e[32m${SCMM_URL}/repo/fluxv2/petclinic-plain/code/sources/main/\e[0m"
+  echo -e "| - \e[32m${SCMM_URL}/repo/argocd/petclinic-plain/code/sources/main/\e[0m"
   echo "|"
   echo -e "| Credentials for SCM-Manager and Jenkins are: \e[31m${SET_USERNAME}/${SET_PASSWORD}\e[0m"
   echo "|"
   echo "| Once Jenkins is up, the following jobs can be started after scanning the corresponding namespace via the jenkins UI:"
   echo "|"
-  echo -e "| - \e[32m$(createUrl jenkins)/job/fluxv1-applications/\e[0m"
-  echo -e "| - \e[32m$(createUrl jenkins)/job/fluxv2-applications/\e[0m"
-  echo -e "| - \e[32m$(createUrl jenkins)/job/argocd-applications/\e[0m"
+  echo -e "| - \e[32m${JENKINS_URL}/job/fluxv1-applications/\e[0m"
+  echo -e "| - \e[32m${JENKINS_URL}/job/fluxv2-applications/\e[0m"
+  echo -e "| - \e[32m${JENKINS_URL}/job/argocd-applications/\e[0m"
   echo "|"
   echo "| During the job, jenkins pushes into the corresponding GitOps repo and creates a pull request for production:"
   echo "|"
@@ -497,36 +497,37 @@ function printWelcomeScreen() {
 }
 
 function printWelcomeScreenFluxV1() {
-  if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV1 = true ]]; then
+  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV1 == true ]]; then
     echo "| For Flux V1:"
     echo "|"
-    echo -e "| - GitOps repo: \e[32m$(createUrl scmm)/repo/fluxv1/gitops/code/sources/main/\e[0m"
-    echo -e "| - Pull requests: \e[32m$(createUrl scmm)/repo/fluxv1/gitops/pull-requests\e[0m"
+    echo -e "| - GitOps repo: \e[32m${SCMM_URL}/repo/fluxv1/gitops/code/sources/main/\e[0m"
+    echo -e "| - Pull requests: \e[32m${SCMM_URL}/repo/fluxv1/gitops/pull-requests\e[0m"
     echo "|"
   fi
 }
 
 function printWelcomeScreenFluxV2() {
-  if [[ $INSTALL_ALL_MODULES = true || $INSTALL_FLUXV2 = true ]]; then
+  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV2 == true ]]; then
     echo "| For Flux V2:"
     echo "|"
-    echo -e "| - GitOps repo: \e[32m$(createUrl scmm)/repo/fluxv2/gitops/code/sources/main/\e[0m"
-    echo -e "| - Pull requests: \e[32m$(createUrl scmm)/repo/fluxv2/gitops/pull-requests\e[0m"
+    echo -e "| - GitOps repo: \e[32m${SCMM_URL}/repo/fluxv2/gitops/code/sources/main/\e[0m"
+    echo -e "| - Pull requests: \e[32m${SCMM_URL}/repo/fluxv2/gitops/pull-requests\e[0m"
     echo "|"
   fi
 }
 
 function printWelcomeScreenArgocd() {
 
-  setExternalHostnameIfNecessary 'argocd' 'argocd-server' 'argocd'
+  ARGOCD_URL="$(createUrl "localhost" "$(grep 'servicePortHttp:' "${PLAYGROUND_DIR}"/argocd/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')")"
+  setExternalHostnameIfNecessary 'ARGOCD' 'argocd-server' 'argocd'
 
   if [[ $INSTALL_ALL_MODULES == true || $INSTALL_ARGOCD == true ]]; then
     echo "| For ArgoCD:"
     echo "|"
-    echo -e "| - GitOps repo: \e[32m$(createUrl scmm)/repo/argocd/gitops/code/sources/main/\e[0m"
-    echo -e "| - Pull requests: \e[32m$(createUrl scmm)/repo/argocd/gitops/pull-requests\e[0m"
+    echo -e "| - GitOps repo: \e[32m${SCMM_URL}/repo/argocd/gitops/code/sources/main/\e[0m"
+    echo -e "| - Pull requests: \e[32m${SCMM_URL}/repo/argocd/gitops/pull-requests\e[0m"
     echo "|"
-    echo -e "| There is also the ArgoCD UI which can be found at \e[32mhttp://$(createUrl argocd)/\e[0m"
+    echo -e "| There is also the ArgoCD UI which can be found at \e[32m${ARGOCD_URL}/\e[0m"
     echo -e "| Credentials for the ArgoCD UI are: \e[31m${SET_USERNAME}/${SET_PASSWORD}\e[0m"
     echo "|"
   fi
@@ -636,4 +637,7 @@ done
 confirm "Applying gitops playground to kubernetes cluster: '$(kubectl config current-context)'." 'Continue? y/n [n]' ||
   exit 0
 
+if [[ $TRACE == true ]]; then
+  set -x
+fi
 main "$DEBUG" "$INSTALL_ALL_MODULES" "$INSTALL_FLUXV1" "$INSTALL_FLUXV2" "$INSTALL_ARGOCD" "$REMOTE_CLUSTER" "$SET_USERNAME" "$SET_PASSWORD" "$JENKINS_URL" "$JENKINS_USERNAME" "$JENKINS_PASSWORD" "$REGISTRY_URL" "$REGISTRY_PATH" "$REGISTRY_USERNAME" "$REGISTRY_PASSWORD" "$SCMM_URL" "$SCMM_USERNAME" "$SCMM_PASSWORD" "$INSECURE" "$TRACE"
