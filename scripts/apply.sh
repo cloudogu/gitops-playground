@@ -340,6 +340,8 @@ function pushPetClinicRepo() {
   )
 
   rm -rf "${TMP_REPO}"
+  
+  setDefaultBranch "${TARGET_REPO_SCMM}"
 }
 
 function pushHelmChartRepo() {
@@ -364,6 +366,8 @@ function pushHelmChartRepo() {
   )
 
   rm -rf "${TMP_REPO}"
+  
+  setDefaultBranch "${TARGET_REPO_SCMM}"
 }
 
 function pushRepoMirror() {
@@ -404,6 +408,7 @@ function initRepo() {
     git push -u "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" HEAD:main --force
   )
 
+  setDefaultBranch "${TARGET_REPO_SCMM}"
 }
 
 function initRepoWithSource() {
@@ -429,6 +434,7 @@ function initRepoWithSource() {
 
   rm -rf "${TMP_REPO}"
 
+  setDefaultBranch "${TARGET_REPO_SCMM}"
 }
 
 function setDefaultBranch() {
