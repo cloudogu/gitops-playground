@@ -573,7 +573,7 @@ function printParameters() {
   echo " -w | --welcome  >> Welcome screen"
   echo
   echo " -d | --debug    >> Debug output"
-  echo " -x | --trace    >> Show each command executed; set -x"
+  echo " -x | --trace    >> Debug + Show each command executed (set -x)"
 }
 
 COMMANDS=$(getopt \
@@ -639,5 +639,7 @@ confirm "Applying gitops playground to kubernetes cluster: '$(kubectl config cur
 
 if [[ $TRACE == true ]]; then
   set -x
+  # Trace without debug does not make to much sense, as the spinner spams the output
+  DEBUG=true
 fi
 main "$DEBUG" "$INSTALL_ALL_MODULES" "$INSTALL_FLUXV1" "$INSTALL_FLUXV2" "$INSTALL_ARGOCD" "$REMOTE_CLUSTER" "$SET_USERNAME" "$SET_PASSWORD" "$JENKINS_URL" "$JENKINS_USERNAME" "$JENKINS_PASSWORD" "$REGISTRY_URL" "$REGISTRY_PATH" "$REGISTRY_USERNAME" "$REGISTRY_PASSWORD" "$SCMM_URL" "$SCMM_USERNAME" "$SCMM_PASSWORD" "$INSECURE" "$TRACE"
