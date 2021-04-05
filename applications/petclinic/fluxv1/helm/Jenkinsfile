@@ -2,27 +2,27 @@
 
 String getApplication() { "spring-petclinic-helm" }
 String getScmManagerCredentials() { 'scmm-user' }
-String getConfigRepositoryUrl() { "http://scmm-scm-manager/scm/repo/fluxv1/gitops" }
-String getConfigRepositoryPRBaseUrl() { 'http://scmm-scm-manager/scm' }
+String getConfigRepositoryUrl() { "${env.SCMM_URL}/repo/fluxv1/gitops" }
+String getConfigRepositoryPRBaseUrl() { "${env.SCMM_URL}" }
 String getConfigRepositoryPRRepo() { 'fluxv1/gitops' }
 // The docker daemon cant use the k8s service name, because it is not running inside the cluster
 String getDockerRegistryBaseUrl() { "${env.REGISTRY_URL}" }
 String getDockerRegistryPath() { "${env.REGISTRY_PATH}" }
 String getDockerRegistryCredentials() { 'registry-user' }
-String getCesBuildLibRepo() { 'http://scmm-scm-manager/scm/repo/common/ces-build-lib/' }
+String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/common/ces-build-lib/" }
 String getCesBuildLibVersion() { '1.45.1' }
-String getGitOpsBuildLibRepo() { 'http://scmm-scm-manager/scm/repo/common/gitops-build-lib' }
-String getGitOpsBuildLibVersion() { '0.0.9' }
-String getHelmChartRepository() { 'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/common/spring-boot-helm-chart' }
+String getGitOpsBuildLibRepo() { "${env.SCMM_URL}/repo/common/gitops-build-lib" }
+String getGitOpsBuildLibVersion() { '0.0.10' }
+String getHelmChartRepository() { "${env.SCMM_URL}/repo/common/spring-boot-helm-chart" }
 String getHelmChartVersion() { "1.0.0" }
 String getMainBranch() { 'main' }
 
 cesBuildLib = library(identifier: "ces-build-lib@${cesBuildLibVersion}",
-        retriever: modernSCM([$class: 'GitSCMSource', remote: cesBuildLibRepo])
+        retriever: modernSCM([$class: 'GitSCMSource', remote: cesBuildLibRepo, credentialsId: scmManagerCredentials])
 ).com.cloudogu.ces.cesbuildlib
 
 gitOpsBuildLib = library(identifier: "gitops-build-lib@${gitOpsBuildLibVersion}",
-    retriever: modernSCM([$class: 'GitSCMSource', remote: gitOpsBuildLibRepo])
+    retriever: modernSCM([$class: 'GitSCMSource', remote: gitOpsBuildLibRepo, credentialsId: scmManagerCredentials])
 ).com.cloudogu.gitops.gitopsbuildlib
 
 properties([
@@ -76,13 +76,14 @@ node {
                         scmmPullRequestRepo: configRepositoryPRRepo,
                         cesBuildLibRepo: cesBuildLibRepo,
                         cesBuildLibVersion: cesBuildLibVersion,
+                        cesBuildLibCredentialsId: scmManagerCredentials,
                         application: application,
                         mainBranch: mainBranch,
                         deployments: [
                             sourcePath: 'k8s',
                             helm : [
                                 repoType : 'GIT',
-                                credentialsId : 'creds',
+                                credentialsId : scmManagerCredentials,
                                 repoUrl  : helmChartRepository,
                                 version  : helmChartVersion,
                                 updateValues  : [[fieldPath: "image.name", newValue: imageName]]
@@ -94,7 +95,7 @@ node {
                                     ],
                                 'fluxv1-production': [:]
                         ],
-                        fileConfigmaps: [ 
+                        fileConfigmaps: [
                                 [
                                     name : "index-helm",
                                     sourceFilePath : "../index.html",
