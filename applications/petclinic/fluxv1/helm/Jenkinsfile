@@ -12,7 +12,7 @@ String getDockerRegistryCredentials() { 'registry-user' }
 String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/common/ces-build-lib/" }
 String getCesBuildLibVersion() { '1.45.1' }
 String getGitOpsBuildLibRepo() { "${env.SCMM_URL}/repo/common/gitops-build-lib" }
-String getGitOpsBuildLibVersion() { '0.0.10' }
+String getGitOpsBuildLibVersion() { '0.0.11' }
 String getHelmChartRepository() { "${env.SCMM_URL}/repo/common/spring-boot-helm-chart" }
 String getHelmChartVersion() { "1.0.0" }
 String getMainBranch() { 'main' }
@@ -89,12 +89,8 @@ node {
                                 updateValues  : [[fieldPath: "image.name", newValue: imageName]]
                             ]
                         ],
-                        stages: [
-                                'fluxv1-staging': [
-                                    deployDirectly: true
-                                    ],
-                                'fluxv1-production': [:]
-                        ],
+                        //  Use default staging config 
+                        // stages: [...]
                         fileConfigmaps: [
                                 [
                                     name : "index-helm",

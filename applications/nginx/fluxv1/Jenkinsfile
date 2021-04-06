@@ -8,7 +8,7 @@ String getConfigRepositoryPRRepo() { 'fluxv1/gitops' }
 String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/common/ces-build-lib/" }
 String getCesBuildLibVersion() { 'bugfix/location_for_prId' }
 String getGitOpsBuildLibRepo() { "${env.SCMM_URL}/repo/common/gitops-build-lib" }
-String getGitOpsBuildLibVersion() { '0.0.10' }
+String getGitOpsBuildLibVersion() { '0.0.11' }
 String getHelmChartRepository() { "https://charts.bitnami.com/bitnami" }
 String getHelmChartName() { "nginx" }
 String getHelmChartVersion() { "8.0.0" }
