@@ -198,7 +198,7 @@ function initSCMM() {
     deployLocalScmmManager "${REMOTE_CLUSTER}"
   fi
 
-  configureScmmManager "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "${SCMM_URL}" "${JENKINS_URL_FOR_SCMM}" "${INTERNAL_SCMM}"
+  configureScmmManager "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "${SCMM_URL}" "${JENKINS_URL_FOR_SCMM}" "${SCMM_URL_FOR_JENKINS}" "${INTERNAL_SCMM}"
 
   pushHelmChartRepo 'common/spring-boot-helm-chart'
   pushRepoMirror 'https://github.com/cloudogu/gitops-build-lib.git' 'common/gitops-build-lib'
