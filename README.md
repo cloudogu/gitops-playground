@@ -144,7 +144,7 @@ gsutil iam ch \
 
 ##### Create cluster
 
-Before continuing with the terraform steps, you have to open the `values.tfvars` file
+Before continuing with the terraform steps, you have to open the `terraform.tfvars` file
 and edit the `gce_project` value to your specific ID.
 
 For local state `terraform init` suffices.
@@ -157,7 +157,7 @@ terraform init  \
 
 Apply infra:
 ```shell
-terraform apply -var-file values.tfvars
+terraform apply
 ```
 
 terraform apply already adds an entry to your local `kubeconfig` and activate the context. That is calling 
@@ -188,6 +188,7 @@ Use `./scripts/apply.sh --help` for more information.
 Important options:
 * `--remote` - deploy to remote cluster (not local k3s cluster), e.g. in GKE
 * `--password` - change admin passwords for SCM-Manager, Jenkins and ArgoCD. Should be set with `--remote` for security 
+* `--username` - change admin passwords for SCM-Manager, Jenkins. Note that argo CD user cannot be changed and always is `admin` 
   reasons. 
 * `--argocd` - deploy only argoCD GitOps operator 
 * `--fluxv1` - deploy only Flux v1 GitOps operator
@@ -256,13 +257,15 @@ Login with `admin/admin`
 
 #### External SCM-Manager
 
-You can set external scm-manager server through this parameters:  
+You can set an external scm-manager server by providing the follow parameters:
 `scmm-url`, `scmm-username`, `scmm-password`
 
-The user has to have the following privileges:
+The user on the scm has to have privileges to:
+* add / edit users
+* add / edit permissions
+* add / edit repositories
+* add / edit proxy
 * install plugins
-* create and modify users
-* create and modify repositories
 
 ### ArgoCD UI
 

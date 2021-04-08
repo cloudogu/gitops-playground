@@ -3,18 +3,18 @@
 // "Constants"
 String getApplication() {"spring-petclinic-plain" }
 String getScmManagerCredentials() { 'scmm-user' }
-String getConfigRepositoryUrl() { "http://scmm-scm-manager/scm/repo/argocd/gitops" }
-String getConfigRepositoryPRUrl() { 'http://scmm-scm-manager/scm/api/v2/pull-requests/argocd/gitops' }
+String getConfigRepositoryUrl() { "${env.SCMM_URL}/repo/argocd/gitops" }
+String getConfigRepositoryPRUrl() { "${env.SCMM_URL}/api/v2/pull-requests/argocd/gitops" }
 // The docker daemon cant use the k8s service name, because it is not running inside the cluster
 String getDockerRegistryBaseUrl() { "${env.REGISTRY_URL}" }
 String getDockerRegistryPath() { "${env.REGISTRY_PATH}" }
 String getDockerRegistryCredentials() { 'registry-user' }
 String getCesBuildLibVersion() { '1.44.3' }
-String getCesBuildLibRepo() { 'https://github.com/cloudogu/ces-build-lib/' }
+String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/common/ces-build-lib/" }
 String getMainBranch() { 'main' }
 
 cesBuildLib = library(identifier: "ces-build-lib@${cesBuildLibVersion}",
-        retriever: modernSCM([$class: 'GitSCMSource', remote: cesBuildLibRepo])
+        retriever: modernSCM([$class: 'GitSCMSource', remote: cesBuildLibRepo, credentialsId: scmManagerCredentials])
 ).com.cloudogu.ces.cesbuildlib
 
 properties([

@@ -86,21 +86,17 @@ function configureJenkins() {
 
   waitForJenkins
 
-  TOKEN=$(authenticate)
-  export TOKEN
-
-  installPlugin "subversion" "2.14.0"
   installPlugin "docker-workflow" "1.25"
   installPlugin "docker-plugin" "1.2.1"
-  installPlugin "job-dsl" "1.77"
   installPlugin "pipeline-utility-steps" "2.6.1"
   installPlugin "junit" "1.48"
-  installPlugin "scm-manager" "1.5.1"
+  installPlugin "scm-manager" "1.7.3"
   installPlugin "html5-notifier-plugin" "1.5"
 
   safeRestart
   waitForJenkins
 
+  setGlobalProperty "SCMM_URL" "${SCMM_URL}"
   setGlobalProperty "REGISTRY_URL" "${REGISTRY_URL}"
   setGlobalProperty "REGISTRY_PATH" "${REGISTRY_PATH}"
 

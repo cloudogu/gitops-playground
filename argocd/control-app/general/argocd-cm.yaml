@@ -9,6 +9,7 @@ metadata:
 data:
   repositories: |
     - url: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/gitops
+      insecure: true
       passwordSecret:
         name: gitops-scmm
         key: PASSWORD
@@ -16,6 +17,7 @@ data:
         name: gitops-scmm
         key: USERNAME
     - url: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/control-app
+      insecure: true
       passwordSecret:
         name: gitops-scmm
         key: PASSWORD
@@ -23,6 +25,7 @@ data:
         name: gitops-scmm
         key: USERNAME
     - url: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/nginx-helm
+      insecure: true
       passwordSecret:
         name: gitops-scmm
         key: PASSWORD
