@@ -97,7 +97,8 @@ scripts/apply.sh
 ```shell
 scripts/apply.sh --remote
 ```
-* Start with local Cloudogu Ecosystem
+* Start with local Cloudogu Ecosystem.  
+  See our [Quickstart Guide](https://cloudogu.com/en/ecosystem/quick-start-guide/) on how to set up the instance.
 ```shell
 # In this case --password only sets the argocd admin password (Jenkins and SCMM are external) 
 /scripts/apply.sh \
@@ -110,12 +111,13 @@ scripts/apply.sh --remote
 --password=yourpassword \
 --insecure
 ```
-* Start with productive Cloudogu Ecosystem and Google Container Registry ()
+* Start with productive Cloudogu Ecosystem and Google Container Registry.  
+  Note that you can get a free CES demo instance set up with a Kubernetes Cluster as GitOps Playground [here](https://cloudogu.com/en/ecosystem/demo-appointment/).   
 ```shell
 # In this case --password only sets the argocd admin password (Jenkins and SCMM are external) 
 /scripts/apply.sh \
---jenkins-url=https://your-ecosystem.cloudogu.com/jenkins \ 
---scmm-url=https://your-ecosystem.cloudogu.com/scm \
+--jenkins-url=https://your-ecosystem.cloudogu.net/jenkins \ 
+--scmm-url=https://your-ecosystem.cloudogu.net/scm \
 --jenkins-username=admin \
 --jenkins-password=yourpassword \
 --scmm-username=admin \
