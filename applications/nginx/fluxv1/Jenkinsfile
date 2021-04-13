@@ -6,7 +6,7 @@ String getConfigRepositoryUrl() { "${env.SCMM_URL}/repo/fluxv1/gitops" }
 String getConfigRepositoryPRBaseUrl() { "${env.SCMM_URL}" }
 String getConfigRepositoryPRRepo() { 'fluxv1/gitops' }
 String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/common/ces-build-lib/" }
-String getCesBuildLibVersion() { 'bugfix/location_for_prId' }
+String getCesBuildLibVersion() { '1.46.1' }
 String getGitOpsBuildLibRepo() { "${env.SCMM_URL}/repo/common/gitops-build-lib" }
 String getGitOpsBuildLibVersion() { '0.0.11' }
 String getHelmChartRepository() { "https://charts.bitnami.com/bitnami" }
