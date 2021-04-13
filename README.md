@@ -1,7 +1,7 @@
 # k8s-gitops-playground
 
 Reproducible infrastructure to showcase GitOps workflows with Kubernetes.  
-Derived from our experiences in [consulting](https://cloudogu.com/en/consulting/) 
+Derived from our experiences in [consulting](https://cloudogu.com/en/consulting/?mtm_campaign=gitops-playground&mtm_kwd=consulting&mtm_source=github&mtm_medium=link) 
 and operating the [myCloudogu platform](https://my.cloudogu.com/).
 
 We are working on distilling the logic used in the example application pipelines into a reusable library for Jenkins:
@@ -50,7 +50,7 @@ There a several options for running the GitOps playground
 * on a remote k8s cluster
 * each with the option 
   * to use an external Jenkins, SCM-Manager and registry 
-    (this can be run in production, e.g. with a [Cloudogu Ecosystem](https://cloudogu.com/en/ecosystem/)) or  
+    (this can be run in production, e.g. with a [Cloudogu Ecosystem](https://cloudogu.com/en/ecosystem/?mtm_campaign=gitops-playground&mtm_kwd=ces&mtm_source=github&mtm_medium=link)) or  
   * to run everything inside the cluster (for demo only)  
 
 The diagrams bellow show an overview of the playground's architecture and three scenarios for running the playground. 
@@ -98,7 +98,7 @@ scripts/apply.sh
 scripts/apply.sh --remote
 ```
 * Start with local Cloudogu Ecosystem.  
-  See our [Quickstart Guide](https://cloudogu.com/en/ecosystem/quick-start-guide/) on how to set up the instance.
+  See our [Quickstart Guide](https://cloudogu.com/en/ecosystem/quick-start-guide/?mtm_campaign=gitops-playground&mtm_kwd=ces&mtm_source=github&mtm_medium=link) on how to set up the instance.
 ```shell
 # In this case --password only sets the argocd admin password (Jenkins and SCMM are external) 
 /scripts/apply.sh \
@@ -112,7 +112,7 @@ scripts/apply.sh --remote
 --insecure
 ```
 * Start with productive Cloudogu Ecosystem and Google Container Registry.  
-  Note that you can get a free CES demo instance set up with a Kubernetes Cluster as GitOps Playground [here](https://cloudogu.com/en/ecosystem/demo-appointment/).   
+  Note that you can get a free CES demo instance set up with a Kubernetes Cluster as GitOps Playground [here](https://cloudogu.com/en/ecosystem/demo-appointment/?mtm_campaign=gitops-playground&mtm_kwd=ces&mtm_source=github&mtm_medium=link).   
 ```shell
 # In this case --password only sets the argocd admin password (Jenkins and SCMM are external) 
 /scripts/apply.sh \
