@@ -52,6 +52,7 @@ node('docker') {
                         cesBuildLibCredentialsId: scmManagerCredentials,
                         application: application,
                         mainBranch: mainBranch,
+                        gitopsTool: 'FLUX',
                         deployments: [
                             sourcePath: 'k8s',
                             helm : [
