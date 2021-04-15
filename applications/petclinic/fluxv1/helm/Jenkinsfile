@@ -12,7 +12,7 @@ String getDockerRegistryCredentials() { 'registry-user' }
 String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/common/ces-build-lib/" }
 String getCesBuildLibVersion() { '1.46.1' }
 String getGitOpsBuildLibRepo() { "${env.SCMM_URL}/repo/common/gitops-build-lib" }
-String getGitOpsBuildLibVersion() { '0.0.11' }
+String getGitOpsBuildLibVersion() { 'feature/pluggable_scm_provider' }
 String getHelmChartRepository() { "${env.SCMM_URL}/repo/common/spring-boot-helm-chart" }
 String getHelmChartVersion() { "1.0.0" }
 String getMainBranch() { 'main' }
@@ -70,10 +70,12 @@ node {
             if (isBuildSuccessful() && env.BRANCH_NAME in [mainBranch]) {
 
                 def gitopsConfig = [
-                        scmmCredentialsId: scmManagerCredentials,
-                        scmmConfigRepoUrl: configRepositoryUrl,
-                        scmmPullRequestBaseUrl: configRepositoryPRBaseUrl,
-                        scmmPullRequestRepo: configRepositoryPRRepo,
+                        scm                     : [
+                                provider     : 'SCMManager',
+                                credentialsId: scmManagerCredentials,
+                                baseUrl      : 'http://scmm-scm-manager/scm',
+                                repositoryUrl   : 'fluxv1/gitops',
+                        ],
                         cesBuildLibRepo: cesBuildLibRepo,
                         cesBuildLibVersion: cesBuildLibVersion,
                         cesBuildLibCredentialsId: scmManagerCredentials,
