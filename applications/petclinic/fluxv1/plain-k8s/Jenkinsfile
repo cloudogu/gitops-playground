@@ -3,7 +3,6 @@
 // "Constants"
 String getApplication() {"spring-petclinic-plain" }
 String getScmManagerCredentials() { 'scmm-user' }
-String getConfigRepositoryUrl() { "${env.SCMM_URL}/repo/fluxv1/gitops" }
 String getConfigRepositoryPRBaseUrl() { "${env.SCMM_URL}" }
 String getConfigRepositoryPRRepo() { 'fluxv1/gitops' }
 // The docker daemon cant use the k8s service name, because it is not running inside the cluster
@@ -73,8 +72,8 @@ node {
                         scm                     : [
                                 provider     : 'SCMManager',
                                 credentialsId: scmManagerCredentials,
-                                baseUrl      : 'http://scmm-scm-manager/scm',
-                                repositoryUrl   : 'fluxv1/gitops',
+                                baseUrl      : configRepositoryPRBaseUrl,
+                                repositoryUrl   : configRepositoryPRRepo,
                         ],
                         cesBuildLibRepo: cesBuildLibRepo,
                         cesBuildLibVersion: cesBuildLibVersion,

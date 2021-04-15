@@ -2,13 +2,12 @@
 
 String getApplication() { "nginx" }
 String getScmManagerCredentials() { 'scmm-user' }
-String getConfigRepositoryUrl() { "${env.SCMM_URL}/repo/fluxv1/gitops" }
 String getConfigRepositoryPRBaseUrl() { "${env.SCMM_URL}" }
 String getConfigRepositoryPRRepo() { 'fluxv1/gitops' }
 String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/common/ces-build-lib/" }
 String getCesBuildLibVersion() { '1.46.1' }
 String getGitOpsBuildLibRepo() { "${env.SCMM_URL}/repo/common/gitops-build-lib" }
-String getGitOpsBuildLibVersion() { '0.0.11' }
+String getGitOpsBuildLibVersion() { 'feature/pluggable_scm_provider' }
 String getHelmChartRepository() { "https://charts.bitnami.com/bitnami" }
 String getHelmChartName() { "nginx" }
 String getHelmChartVersion() { "8.0.0" }
@@ -43,10 +42,12 @@ node('docker') {
             stage('Deploy') {
                 if (env.BRANCH_NAME in [mainBranch]) {
                     def gitopsConfig = [
-                        scmmCredentialsId : scmManagerCredentials,
-                        scmmConfigRepoUrl : configRepositoryUrl,
-                        scmmPullRequestBaseUrl: configRepositoryPRBaseUrl,
-                        scmmPullRequestRepo: configRepositoryPRRepo,
+                        scm                     : [
+                                provider     : 'SCMManager',
+                                credentialsId: scmManagerCredentials,
+                                baseUrl      : configRepositoryPRBaseUrl,
+                                repositoryUrl   : configRepositoryPRRepo,
+                        ],
                         cesBuildLibRepo: cesBuildLibRepo,
                         cesBuildLibVersion: cesBuildLibVersion,
                         cesBuildLibCredentialsId: scmManagerCredentials,
