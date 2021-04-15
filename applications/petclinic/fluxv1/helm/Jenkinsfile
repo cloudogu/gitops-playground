@@ -91,8 +91,14 @@ node {
                                 updateValues  : [[fieldPath: "image.name", newValue: imageName]]
                             ]
                         ],
-                        //  Use default staging config 
-                        // stages: [...]
+                        stages: [
+                                staging: [
+                                        namespace: 'fluxv1-staging',
+                                        deployDirectly: true ],
+                                production: [
+                                        namespace: 'fluxv1-production',
+                                        deployDirectly: false ]
+                        ],
                         fileConfigmaps: [
                                 [
                                     name : "index-helm",
