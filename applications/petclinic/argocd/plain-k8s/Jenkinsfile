@@ -13,7 +13,7 @@ String getDockerRegistryCredentials() { 'registry-user' }
 String getCesBuildLibVersion() { '1.46.1' }
 String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/common/ces-build-lib/" }
 String getGitOpsBuildLibRepo() { "${env.SCMM_URL}/repo/common/gitops-build-lib" }
-String getGitOpsBuildLibVersion() { '0.0.11' }
+String getGitOpsBuildLibVersion() { '0.0.12' }
 String getMainBranch() { 'main' }
 
 cesBuildLib = library(identifier: "ces-build-lib@${cesBuildLibVersion}",
