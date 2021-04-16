@@ -73,6 +73,9 @@ function configureScmmManager() {
   addRepo "argocd" "petclinic-plain"
   setPermission "argocd" "petclinic-plain" "${GITOPS_USERNAME}" "WRITE"
 
+  addRepo "argocd" "petclinic-helm"
+  setPermission "argocd" "petclinic-helm" "${GITOPS_USERNAME}" "WRITE"
+
   addRepo "argocd" "control-app"
   setPermission "argocd" "control-app" "${GITOPS_USERNAME}" "WRITE"
 

@@ -103,7 +103,7 @@ node {
                                 [
                                     name : "index-helm",
                                     sourceFilePath : "../index.html",
-                                    stage: ["fluxv1-staging", "fluxv1-production"]
+                                    stage: ["staging", "production"]
                                 ]
                         ]
                 ]

@@ -267,6 +267,7 @@ function initArgo() {
   kubectl patch secret -n argocd argocd-secret -p '{"stringData": { "admin.password": "'"${BCRYPT_PW}"'"}}' || true
 
   pushPetClinicRepo 'applications/petclinic/argocd/plain-k8s' 'argocd/petclinic-plain'
+  pushPetClinicRepo 'applications/petclinic/argocd/helm' 'argocd/petclinic-helm'
   initRepo 'argocd/gitops'
   initRepoWithSource 'applications/nginx/argocd' 'argocd/nginx-helm'
   initRepoWithSource 'argocd/control-app' 'argocd/control-app'
