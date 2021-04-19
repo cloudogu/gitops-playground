@@ -201,6 +201,7 @@ function initSCMM() {
   configureScmmManager "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "${SCMM_URL}" "${JENKINS_URL_FOR_SCMM}" "${SCMM_URL_FOR_JENKINS}" "${INTERNAL_SCMM}"
 
   pushHelmChartRepo 'common/spring-boot-helm-chart'
+  pushHelmChartRepoWithDependency 'common/spring-boot-helm-chart-with-dependency'
   pushRepoMirror 'https://github.com/cloudogu/gitops-build-lib.git' 'common/gitops-build-lib'
   pushRepoMirror 'https://github.com/cloudogu/ces-build-lib.git' 'common/ces-build-lib' 'develop'
 }
@@ -363,6 +364,39 @@ function pushHelmChartRepo() {
 
     git branch --quiet -d main
     git checkout --quiet -b main
+
+    waitForScmManager
+    git push "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
+    git push "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" refs/tags/1.0.0 --quiet --force
+  )
+
+  rm -rf "${TMP_REPO}"
+  
+  setDefaultBranch "${TARGET_REPO_SCMM}"
+}
+
+function pushHelmChartRepoWithDependency() {
+  TARGET_REPO_SCMM="$1"
+
+  TMP_REPO=$(mktemp -d)
+  git clone -n https://github.com/cloudogu/spring-boot-helm-chart.git "${TMP_REPO}" --quiet
+  (
+    cd "${TMP_REPO}"
+    # Checkout a defined commit in order to get a deterministic result
+    git checkout ${SPRING_BOOT_HELM_CHART_COMMIT} --quiet
+
+    # Create a defined version to use in demo applications
+    git tag 1.0.0
+
+    git branch --quiet -d main
+    git checkout --quiet -b main
+
+    echo "dependencies:
+- name: podinfo
+  version: \"5.2.0\"
+  repository: \"https://stefanprodan.github.io/podinfo\"" >> ./Chart.yaml
+
+    git commit -a -m "Added dependency" --quiet
 
     waitForScmManager
     git push "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet

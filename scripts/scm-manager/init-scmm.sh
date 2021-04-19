@@ -86,6 +86,9 @@ function configureScmmManager() {
   addRepo "common" "spring-boot-helm-chart"
   setPermission "common" "spring-boot-helm-chart" "${GITOPS_USERNAME}" "WRITE"
 
+  addRepo "common" "spring-boot-helm-chart-with-dependency"
+  setPermission "common" "spring-boot-helm-chart-with-dependency" "${GITOPS_USERNAME}" "WRITE"
+
   addRepo "common" "gitops-build-lib"
   setPermission "common" "gitops-build-lib" "${GITOPS_USERNAME}" "WRITE"
 
