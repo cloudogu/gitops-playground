@@ -1,0 +1,97 @@
+#!groovy
+
+String getApplication() { "nginx" }
+String getScmManagerCredentials() { 'scmm-user' }
+String getConfigRepositoryPRBaseUrl() { "${env.SCMM_URL}" }
+String getConfigRepositoryPRRepo() { 'argocd/gitops' }
+String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/common/ces-build-lib/" }
+String getCesBuildLibVersion() { '1.46.1' }
+String getGitOpsBuildLibRepo() { "${env.SCMM_URL}/repo/common/gitops-build-lib" }
+String getGitOpsBuildLibVersion() { 'feature/argocd_helm_helmrepo' }
+String getHelmChartRepository() { "https://charts.bitnami.com/bitnami" }
+String getHelmChartName() { "nginx" }
+String getHelmChartVersion() { "8.0.0" }
+String getMainBranch() { 'main' }
+
+cesBuildLib = library(identifier: "ces-build-lib@${cesBuildLibVersion}",
+        retriever: modernSCM([$class: 'GitSCMSource', remote: cesBuildLibRepo, credentialsId: scmManagerCredentials])
+).com.cloudogu.ces.cesbuildlib
+
+gitOpsBuildLib = library(identifier: "gitops-build-lib@${gitOpsBuildLibVersion}",
+    retriever: modernSCM([$class: 'GitSCMSource', remote: gitOpsBuildLibRepo, credentialsId: scmManagerCredentials])
+).com.cloudogu.gitops.gitopsbuildlib
+
+properties([
+        // Keep only the last 10 build to preserve space
+        disableConcurrentBuilds()
+])
+
+node('docker') {
+
+    def git = cesBuildLib.Git.new(this)
+
+    timeout(activity: true, time: 30, unit: 'MINUTES') {
+        
+        catchError {
+            
+            stage('Checkout') {
+                checkout scm
+                git.clean('')
+            }
+
+            stage('Deploy') {
+                if (env.BRANCH_NAME in [mainBranch]) {
+                    def gitopsConfig = [
+                        scm                     : [
+                                provider     : 'SCMManager',
+                                credentialsId: scmManagerCredentials,
+                                baseUrl      : configRepositoryPRBaseUrl,
+                                repositoryUrl   : configRepositoryPRRepo,
+                        ],
+                        cesBuildLibRepo: cesBuildLibRepo,
+                        cesBuildLibVersion: cesBuildLibVersion,
+                        cesBuildLibCredentialsId: scmManagerCredentials,
+                        application: application,
+                        mainBranch: mainBranch,
+                        gitopsTool: 'ARGO',
+                        deployments: [
+                            sourcePath: 'k8s',
+                            helm : [
+                                repoType : 'HELM',
+                                credentialsId : 'creds',
+                                repoUrl  : helmChartRepository,
+                                chartName: helmChartName,
+                                version  : helmChartVersion,
+                            ]
+                        ],
+                        stages: [
+                                staging: [ 
+                                    namespace: 'argocd-staging',
+                                    deployDirectly: true 
+                                    ],
+                                production: [ 
+                                    namespace: 'argocd-production',
+                                    deployDirectly: false 
+                                    ],
+                        ],
+                        fileConfigmaps: [ 
+                                [
+                                    name : "index-nginx",
+                                    sourceFilePath : "../index.html",
+                                    stage: ["staging", "production"]
+                                ]
+                        ]
+                    ]
+
+                deployViaGitops(gitopsConfig)
+                } else {
+                    echo 'Skipping deploy, because build not successful or not on main branch'
+
+                }
+            }
+        }
+    }
+}
+
+def cesBuildLib
+def gitOpsBuildLib
