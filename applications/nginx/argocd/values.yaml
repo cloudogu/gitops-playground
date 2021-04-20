@@ -1,4 +1,0 @@
-service:
-  port: 80
-  nodePorts:
-    http: 9022

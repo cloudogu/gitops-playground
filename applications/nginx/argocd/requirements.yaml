@@ -1,4 +1,0 @@
-dependencies:
-  - name: nginx
-    version: 7.1.6
-    repository: https://charts.bitnami.com/bitnami
