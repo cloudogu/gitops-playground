@@ -58,7 +58,6 @@ node('docker') {
                             sourcePath: 'k8s',
                             helm : [
                                 repoType : 'HELM',
-                                credentialsId : 'creds',
                                 repoUrl  : helmChartRepository,
                                 chartName: helmChartName,
                                 version  : helmChartVersion,
