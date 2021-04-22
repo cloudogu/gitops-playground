@@ -17,7 +17,15 @@ function removeFluxv2() {
   # https://stackoverflow.com/a/52012367
   kubectl patch kustomization fluxv2-kustomizer -p '{"metadata":{"finalizers":[]}}' --type=merge -n fluxv2 || true
   kubectl delete -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-kustomization.yaml || true
-  kubectl delete -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-gitrepository.yaml || true
+  # This seems to hang.
+  #kubectl delete -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-gitrepository.yaml || true
+  # Pragmatic workaround just delete whole namespace. Force call finalizer because this also hangs :/
+  kubectl delete namespace fluxv2& 
+  kubectl proxy&
+  (kubectl get ns fluxv2 -o json | \
+    jq '.spec.finalizers=[]' | \
+    curl -X PUT http://localhost:8001/api/v1/namespaces/fluxv2/finalize -H "Content-Type: application/json" --data @-) || true
+  kill $! || true
   kubectl delete -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-components.yaml || true
 }
 
