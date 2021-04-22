@@ -3,7 +3,7 @@
 String getApplication() { "spring-petclinic-helm" }
 String getScmManagerCredentials() { 'scmm-user' }
 String getConfigRepositoryPRBaseUrl() { "${env.SCMM_URL}" }
-String getConfigRepositoryPRRepo() { 'fluxv1/gitops' }
+String getConfigRepositoryPRRepo() { 'argocd/gitops' }
 // The docker daemon cant use the k8s service name, because it is not running inside the cluster
 String getDockerRegistryBaseUrl() { "${env.REGISTRY_URL}" }
 String getDockerRegistryPath() { "${env.REGISTRY_PATH}" }
@@ -11,8 +11,8 @@ String getDockerRegistryCredentials() { 'registry-user' }
 String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/common/ces-build-lib/" }
 String getCesBuildLibVersion() { '1.46.1' }
 String getGitOpsBuildLibRepo() { "${env.SCMM_URL}/repo/common/gitops-build-lib" }
-String getGitOpsBuildLibVersion() { '0.0.12' }
-String getHelmChartRepository() { "${env.SCMM_URL}/repo/common/spring-boot-helm-chart" }
+String getGitOpsBuildLibVersion() { 'feature/argocd_helm' }
+String getHelmChartRepository() { "${env.SCMM_URL}/repo/common/spring-boot-helm-chart-with-dependency" }
 String getHelmChartVersion() { "1.0.0" }
 String getMainBranch() { 'main' }
 
@@ -80,23 +80,22 @@ node {
                         cesBuildLibCredentialsId: scmManagerCredentials,
                         application: application,
                         mainBranch: mainBranch,
-                        gitopsTool: 'FLUX',
+                        gitopsTool: 'ARGO',
                         deployments: [
                             sourcePath: 'k8s',
                             helm : [
                                 repoType : 'GIT',
                                 credentialsId : scmManagerCredentials,
                                 repoUrl  : helmChartRepository,
-                                version  : helmChartVersion,
                                 updateValues  : [[fieldPath: "image.name", newValue: imageName]]
                             ]
                         ],
                         stages: [
                                 staging: [
-                                        namespace: 'fluxv1-staging',
+                                        namespace: 'argocd-staging',
                                         deployDirectly: true ],
                                 production: [
-                                        namespace: 'fluxv1-production',
+                                        namespace: 'argocd-production',
                                         deployDirectly: false ]
                         ],
                         fileConfigmaps: [

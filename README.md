@@ -297,10 +297,18 @@ Alternatively you can trigger the deployment via the respective GitOps operator'
 
 #### PetClinic via ArgoCD
 
-* [Jenkinsfile](applications/petclinic/argocd/plain-k8s/Jenkinsfile)
+* [Jenkinsfile](applications/petclinic/argocd/plain-k8s/Jenkinsfile) for `plain` deployment
     * Staging
         * local [localhost:30020](http://localhost:30020)
         * remote: `scripts/get-remote-url spring-petclinic-plain argocd-staging`
     * Production
         * local [localhost:30021](http://localhost:30021)
         * remote: `scripts/get-remote-url spring-petclinic-plain argocd-production`
+
+* [Jenkinsfile](applications/petclinic/argocd/helm/Jenkinsfile) for `helm` deployment
+    * Staging
+        * local [localhost:30022](http://localhost:30022)
+        * remote: `scripts/get-remote-url spring-petclinic-helm argocd-staging`
+    * Production
+        * local [localhost:30023](http://localhost:30023)
+        * remote: `scripts/get-remote-url spring-petclinic-helm argocd-production`

@@ -6,3 +6,8 @@ service:
 
 ingress:
   enabled: false
+
+# this is a helm chart dependency
+podinfo:
+  ui:
+    color: '#456456'

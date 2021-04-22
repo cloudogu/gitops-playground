@@ -73,6 +73,9 @@ function configureScmmManager() {
   addRepo "argocd" "petclinic-plain"
   setPermission "argocd" "petclinic-plain" "${GITOPS_USERNAME}" "WRITE"
 
+  addRepo "argocd" "petclinic-helm"
+  setPermission "argocd" "petclinic-helm" "${GITOPS_USERNAME}" "WRITE"
+
   addRepo "argocd" "control-app"
   setPermission "argocd" "control-app" "${GITOPS_USERNAME}" "WRITE"
 
@@ -82,6 +85,9 @@ function configureScmmManager() {
   ### Common Repos
   addRepo "common" "spring-boot-helm-chart"
   setPermission "common" "spring-boot-helm-chart" "${GITOPS_USERNAME}" "WRITE"
+
+  addRepo "common" "spring-boot-helm-chart-with-dependency"
+  setPermission "common" "spring-boot-helm-chart-with-dependency" "${GITOPS_USERNAME}" "WRITE"
 
   addRepo "common" "gitops-build-lib"
   setPermission "common" "gitops-build-lib" "${GITOPS_USERNAME}" "WRITE"
