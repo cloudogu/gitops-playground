@@ -25,7 +25,7 @@ cloud "Your cloud provider" {
                 rectangle "<$git>\nGitOps Repo" as configRepo
             }
             
-            rectangle "<$jenkins>\nJenkins Master" as jenkins {
+            rectangle "<$jenkins>\nJenkins Controller" as jenkins {
             }
     }
 

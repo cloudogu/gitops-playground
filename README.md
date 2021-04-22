@@ -233,7 +233,7 @@ Each GitOps operator comes with a couple of demo applications that allow for exp
 features.
 
 All applications are deployed via separated application and GitOps repos: 
-![](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/k8s-diagrams/master/diagrams/gitops-with-app-repo.puml&fmt=svg)
+![](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/k8s-diagrams/cdd6bb77/diagrams/gitops-with-app-repo.puml&fmt=svg)
 
 * Separation of app repo and GitOps repo
 * Infrastructure as Code is maintained  in app repo,

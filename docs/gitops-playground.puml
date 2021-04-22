@@ -35,7 +35,7 @@ node "Your Host" as host <<$computer>> #ffffff {
             rectangle "<$git>\nGitOps Repo" as configRepo
         }
         
-        rectangle "<$jenkins>\nJenkins master" as jenkins
+        rectangle "<$jenkins>\nJenkins Controller" as jenkins
         rectangle "<$jenkins>\nAgent Pods" as jenkinsNode
     }
 }
