@@ -21,12 +21,17 @@ function removeFluxv2() {
   #kubectl delete -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-gitrepository.yaml || true
   # Pragmatic workaround just delete whole namespace. Force call finalizer because this also hangs :/
   kubectl delete namespace fluxv2& 
+  finalizeFluxNamespace
+  
+  kubectl delete -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-components.yaml || true
+}
+
+function finalizeFluxNamespace() {
   kubectl proxy&
   (kubectl get ns fluxv2 -o json | \
     jq '.spec.finalizers=[]' | \
     curl -X PUT http://localhost:8001/api/v1/namespaces/fluxv2/finalize -H "Content-Type: application/json" --data @-) || true
   kill $! || true
-  kubectl delete -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-components.yaml || true
 }
 
 function removeArgoCD() {
@@ -52,7 +57,10 @@ function removeK8sResources() {
   kubectl delete secret gitops-scmm -n argocd || true
   kubectl delete secret gitops-scmm -n fluxv1 || true
   kubectl delete secret gitops-scmm -n fluxv2 || true
-  kubectl delete -f k8s-namespaces/ || true
+  
+  (kubectl delete -f k8s-namespaces/ || true)&
+  sleep 10
+  finalizeFluxNamespace
 }
 
 function cleanup () {
