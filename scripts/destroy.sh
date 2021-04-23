@@ -68,6 +68,8 @@ function cleanup () {
   kubectl delete customresourcedefinition.apiextensions.k8s.io/appprojects.argoproj.io || true
   kubectl delete apiservice.apiregistration.k8s.io/v1alpha1.argoproj.io || true
   kubectl delete appproject.argoproj.io/default || true
+  # In case there are any errored Jenkins agent pods left
+  kubectl delete pod -l jenkins/label=jenkins-jenkins-agent_docker || true
 }
 
 function main() {
