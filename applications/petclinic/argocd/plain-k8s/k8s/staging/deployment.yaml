@@ -19,3 +19,12 @@ spec:
           ports:
             - containerPort: 8080
               name: http
+          env:
+            - name: MANAGEMENT_SERVER_PORT
+              value: "9080"
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /actuator/health/readiness
+              port: 9080
+              scheme: HTTP
