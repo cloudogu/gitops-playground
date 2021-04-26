@@ -17,8 +17,21 @@ function removeFluxv2() {
   # https://stackoverflow.com/a/52012367
   kubectl patch kustomization fluxv2-kustomizer -p '{"metadata":{"finalizers":[]}}' --type=merge -n fluxv2 || true
   kubectl delete -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-kustomization.yaml || true
-  kubectl delete -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-gitrepository.yaml || true
+  # This seems to hang.
+  #kubectl delete -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-gitrepository.yaml || true
+  # Pragmatic workaround just delete whole namespace. Force call finalizer because this also hangs :/
+  kubectl delete namespace fluxv2& 
+  finalizeFluxNamespace
+  
   kubectl delete -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-components.yaml || true
+}
+
+function finalizeFluxNamespace() {
+  kubectl proxy&
+  (kubectl get ns fluxv2 -o json | \
+    jq '.spec.finalizers=[]' | \
+    curl -X PUT http://localhost:8001/api/v1/namespaces/fluxv2/finalize -H "Content-Type: application/json" --data @-) || true
+  kill $! || true
 }
 
 function removeArgoCD() {
@@ -44,7 +57,10 @@ function removeK8sResources() {
   kubectl delete secret gitops-scmm -n argocd || true
   kubectl delete secret gitops-scmm -n fluxv1 || true
   kubectl delete secret gitops-scmm -n fluxv2 || true
-  kubectl delete -f k8s-namespaces/ || true
+  
+  (kubectl delete -f k8s-namespaces/ || true)&
+  sleep 10
+  finalizeFluxNamespace
 }
 
 function cleanup () {
@@ -52,6 +68,8 @@ function cleanup () {
   kubectl delete customresourcedefinition.apiextensions.k8s.io/appprojects.argoproj.io || true
   kubectl delete apiservice.apiregistration.k8s.io/v1alpha1.argoproj.io || true
   kubectl delete appproject.argoproj.io/default || true
+  # In case there are any errored Jenkins agent pods left
+  kubectl delete pod -l jenkins/label=jenkins-jenkins-agent_docker || true
 }
 
 function main() {

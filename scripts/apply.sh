@@ -74,7 +74,7 @@ function main() {
     REGISTRY_URL="localhost:30000"
     REGISTRY_PATH=""
   else
-    INTERNAL_REGISTRY=true
+    INTERNAL_REGISTRY=false
   fi
 
   checkPrerequisites
