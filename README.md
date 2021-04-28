@@ -24,10 +24,13 @@ We are working on distilling the logic used in the example application pipelines
   - [SCM-Manager](#scm-manager)
   - [ArgoCD UI](#argocd-ui)
   - [Demo applications](#demo-applications)
-    - [PetClinic via Flux V1](#petclinic-via-flux-v1)
-    - [3rd Party app (NGINX) via Flux V1](#3rd-party-app-nginx-via-flux-v1)
-    - [PetClinic via Flux V2](#petclinic-via-flux-v2)
-    - [PetClinic via ArgoCD](#petclinic-via-argocd)
+    - [PetClinic with plain k8s resources via Flux V1](#petclinic-with-plain-k8s-resources-via-flux-v1)
+    - [PetClinic with helm via Flux V1](#petclinic-with-helm-via-flux-v1)
+    - [3rd Party app (NGINX) with helm via Flux V1](#3rd-party-app-nginx-with-helm-via-flux-v1)
+    - [PetClinic with plain k8s resources via Flux V2](#petclinic-with-plain-k8s-resources-via-flux-v2)
+    - [PetClinic with plain k8s resources via ArgoCD](#petclinic-with-plain-k8s-resources-via-argocd)
+    - [PetClinic with helm via ArgoCD](#petclinic-with-helm-via-argocd)
+    - [3rd Party app (NGINX) with helm via ArgoCD](#3rd-party-app-nginx-with-helm-via-argocd)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -254,7 +257,7 @@ Please note that it might take about 1 Minute after the PullRequest has been acc
 deploying.
 Alternatively you can trigger the deployment via the respective GitOps operator's CLI (flux) or UI (argo CD)
 
-#### PetClinic via Flux V1
+#### PetClinic with plain k8s resources via Flux V1
 
 * [Jenkinsfile](applications/petclinic/fluxv1/plain-k8s/Jenkinsfile) for plain `k8s` deployment
   * Staging: 
@@ -267,6 +270,8 @@ Alternatively you can trigger the deployment via the respective GitOps operator'
     * local: [localhost:30003](http://localhost:30003) 
     * remote: `scripts/get-remote-url spring-petclinic-plain fluxv1-qa`
 
+#### PetClinic with helm via Flux V1
+
 * [Jenkinsfile](applications/petclinic/fluxv1/helm/Jenkinsfile) for `helm` deployment
   * Staging
     * local: [localhost:30004](http://localhost:30004)
@@ -275,7 +280,7 @@ Alternatively you can trigger the deployment via the respective GitOps operator'
     * local: [localhost:30005](http://localhost:30005) 
     * remote: `scripts/get-remote-url spring-petclinic-helm-springboot fluxv1-production`
 
-#### 3rd Party app (NGINX) via Flux V1
+#### 3rd Party app (NGINX) with helm via Flux V1
 
 * [Jenkinsfile](applications/nginx/fluxv1/Jenkinsfile)
   * Staging
@@ -285,7 +290,7 @@ Alternatively you can trigger the deployment via the respective GitOps operator'
     * local: [localhost:30007](http://localhost:30007)
     * remote: `scripts/get-remote-url nginx fluxv1-production`
 
-#### PetClinic via Flux V2
+#### PetClinic with plain k8s resources via Flux V2
 
 * [Jenkinsfile](applications/petclinic/fluxv2/plain-k8s/Jenkinsfile)
     * Staging
@@ -295,7 +300,7 @@ Alternatively you can trigger the deployment via the respective GitOps operator'
         * local: [localhost:30011](http://localhost:30011) 
         * remote: `scripts/get-remote-url spring-petclinic-plain fluxv2-production`
 
-#### PetClinic via ArgoCD
+#### PetClinic with plain k8s resources via ArgoCD
 
 * [Jenkinsfile](applications/petclinic/argocd/plain-k8s/Jenkinsfile) for `plain` deployment
     * Staging
@@ -305,6 +310,8 @@ Alternatively you can trigger the deployment via the respective GitOps operator'
         * local [localhost:30021](http://localhost:30021)
         * remote: `scripts/get-remote-url spring-petclinic-plain argocd-production`
 
+#### PetClinic with helm via ArgoCD
+
 * [Jenkinsfile](applications/petclinic/argocd/helm/Jenkinsfile) for `helm` deployment
     * Staging
         * local [localhost:30022](http://localhost:30022)
@@ -312,3 +319,13 @@ Alternatively you can trigger the deployment via the respective GitOps operator'
     * Production
         * local [localhost:30023](http://localhost:30023)
         * remote: `scripts/get-remote-url spring-petclinic-helm argocd-production`
+
+#### 3rd Party app (NGINX) with helm via ArgoCD
+
+* [Jenkinsfile](applications/nginx/argocd/Jenkinsfile)
+    * Staging
+        * local: [localhost:30006](http://localhost:30024)
+        * remote: `scripts/get-remote-url nginx fluxv1-staging`
+    * Production
+        * local: [localhost:30007](http://localhost:30025)
+        * remote: `scripts/get-remote-url nginx fluxv1-production`
