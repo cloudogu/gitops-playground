@@ -13,10 +13,11 @@ controller:
   # Is ignored when type is LoadBalancer. For local cluster we change the service type to NodePort
   nodePort: 9090
 
-  additionalPlugins:
-  # This would be great to not install every plugin again on startup.
-  # BUT: This also leads to CASC being ignored.
-  # initializeOnce: true
+  installPlugins:
+    - kubernetes:1.29.2
+    - workflow-aggregator:2.6
+    - git:4.7.1
+    - configuration-as-code:1.50
 
   # Don't use controller for builds
   numExecutors: 0
