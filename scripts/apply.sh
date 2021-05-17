@@ -23,6 +23,12 @@ INTERNAL_REGISTRY=true
 JENKINS_URL_FOR_SCMM="http://jenkins"
 SCMM_URL_FOR_JENKINS="http://scmm-scm-manager.default.svc.cluster.local/scm"
 
+HELM_DEFAULT_IMAGE='ghcr.io/cloudogu/helm:3.5.4-1'
+KUBECTL_DEFAULT_IMAGE='lachlanevenson/k8s-kubectl:v1.19.3'
+KUBEVAL_DEFAULT_IMAGE='ghcr.io/cloudogu/helm:3.5.4-1'
+HELMKUBEVAL_DEFAULT_IMAGE='ghcr.io/cloudogu/helm:3.5.4-1'
+YAMLLINT_DEFAULT_IMAGE='cytopia/yamllint:1.25-0.7'
+
 function main() {
   DEBUG="${1}"
   INSTALL_ALL_MODULES="${2}"
@@ -44,6 +50,11 @@ function main() {
   SCMM_PASSWORD="${18}"
   INSECURE="${19}"
   TRACE="${20}"
+  KUBECTL_IMAGE="${21}"
+  HELM_IMAGE="${22}"
+  KUBEVAL_IMAGE="${23}"
+  HELMKUBEVAL_IMAGE="${24}"
+  YAMLLINT_IMAGE="${25}"
 
 
   if [[ $INSECURE == true ]]; then
@@ -302,6 +313,29 @@ function mkTmpWithReplacedScmmUrls() {
   echo "${TMP_FILENAME}"
 }
 
+function replaceAllImagesInJenkinsfile() {
+  JENKINSFILE_PATH="${1}"
+
+  replaceImageIfSet "$JENKINSFILE_PATH" 'kubectl' "$KUBECTL_DEFAULT_IMAGE" "$KUBECTL_IMAGE"
+  replaceImageIfSet "$JENKINSFILE_PATH" 'helm' "$HELM_DEFAULT_IMAGE" "$HELM_IMAGE"
+  replaceImageIfSet "$JENKINSFILE_PATH" 'kubeval' "$KUBEVAL_DEFAULT_IMAGE" "$KUBEVAL_IMAGE"
+  replaceImageIfSet "$JENKINSFILE_PATH" 'helmKubeval' "$HELMKUBEVAL_DEFAULT_IMAGE" "$HELMKUBEVAL_IMAGE"
+  replaceImageIfSet "$JENKINSFILE_PATH" 'yamllint' "$YAMLLINT_DEFAULT_IMAGE" "$YAMLLINT_IMAGE"
+}
+
+function replaceImageIfSet() {
+  JENKINSFILE_PATH="${1}"
+  IMAGE_KEY="${2}"
+  DEFAULT_IMAGE="${3}"
+  SET_IMAGE="${4:-""}"
+
+  if [[ -n "${SET_IMAGE}" ]]; then
+    FROM_IMAGE_STRING="$IMAGE_KEY: '$DEFAULT_IMAGE'"
+    TO_IMAGE_STRING="$IMAGE_KEY: '$SET_IMAGE'"
+    sed -i -e "s%${FROM_IMAGE_STRING}%${TO_IMAGE_STRING}%g" "${JENKINSFILE_PATH}"
+  fi
+}
+
 function argoHelmSettingsForRemoteCluster() {
   if [[ $REMOTE_CLUSTER == true ]]; then
     # Can't set service nodePort for argo, so use normal service ports for both local and remote
@@ -336,6 +370,9 @@ function pushPetClinicRepo() {
     git checkout ${PETCLINIC_COMMIT} --quiet
 
     cp -r "${PLAYGROUND_DIR}/${LOCAL_PETCLINIC_SOURCE}"/* .
+
+    replaceAllImagesInJenkinsfile "${TMP_REPO}/Jenkinsfile"
+
     git checkout -b main --quiet
     git add .
     git commit -m 'Add GitOps Pipeline and K8s resources' --quiet
@@ -626,7 +663,7 @@ function printParameters() {
 
 COMMANDS=$(getopt \
   -o hwdx \
-  --long help,fluxv1,fluxv2,argocd,welcome,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,scmm-url:,scmm-username:,scmm-password:,trace,insecure \
+  --long help,fluxv1,fluxv2,argocd,welcome,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,trace,insecure \
   -- "$@")
 
 if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
@@ -651,6 +688,11 @@ REGISTRY_PASSWORD=""
 SCMM_URL=""
 SCMM_USERNAME=""
 SCMM_PASSWORD=""
+KUBECTL_IMAGE=""
+HELM_IMAGE=""
+KUBEVAL_IMAGE=""
+HELMKUBEVAL_IMAGE=""
+YAMLLINT_IMAGE=""
 INSECURE=false
 TRACE=false
 
@@ -671,6 +713,11 @@ while true; do
     --scmm-url           ) SCMM_URL="$2"; shift 2 ;;
     --scmm-username      ) SCMM_USERNAME="$2"; shift 2 ;;
     --scmm-password      ) SCMM_PASSWORD="$2"; shift 2 ;;
+    --kubectl-image      ) KUBECTL_IMAGE="$2"; shift 2 ;;
+    --helm-image         ) HELM_IMAGE="$2"; shift 2 ;;
+    --kubeval-image      ) KUBEVAL_IMAGE="$2"; shift 2 ;;
+    --helmkubeval-image  ) HELMKUBEVAL_IMAGE="$2"; shift 2 ;;
+    --yamllint-image     ) YAMLLINT_IMAGE="$2"; shift 2 ;;
     --insecure           ) INSECURE=true; shift ;;
     --username           ) SET_USERNAME="$2"; shift 2 ;;
     --password           ) SET_PASSWORD="$2"; shift 2 ;;
@@ -690,4 +737,6 @@ if [[ $TRACE == true ]]; then
   # Trace without debug does not make to much sense, as the spinner spams the output
   DEBUG=true
 fi
-main "$DEBUG" "$INSTALL_ALL_MODULES" "$INSTALL_FLUXV1" "$INSTALL_FLUXV2" "$INSTALL_ARGOCD" "$REMOTE_CLUSTER" "$SET_USERNAME" "$SET_PASSWORD" "$JENKINS_URL" "$JENKINS_USERNAME" "$JENKINS_PASSWORD" "$REGISTRY_URL" "$REGISTRY_PATH" "$REGISTRY_USERNAME" "$REGISTRY_PASSWORD" "$SCMM_URL" "$SCMM_USERNAME" "$SCMM_PASSWORD" "$INSECURE" "$TRACE"
+main "$DEBUG" "$INSTALL_ALL_MODULES" "$INSTALL_FLUXV1" "$INSTALL_FLUXV2" "$INSTALL_ARGOCD" "$REMOTE_CLUSTER" "$SET_USERNAME" "$SET_PASSWORD" "$JENKINS_URL" "$JENKINS_USERNAME" "$JENKINS_PASSWORD" "$REGISTRY_URL" "$REGISTRY_PATH" "$REGISTRY_USERNAME" "$REGISTRY_PASSWORD" "$SCMM_URL" "$SCMM_USERNAME" "$SCMM_PASSWORD" "$INSECURE" "$TRACE" "$KUBECTL_IMAGE" "$HELM_IMAGE" "$KUBEVAL_IMAGE" "$HELMKUBEVAL_IMAGE" "$YAMLLINT_IMAGE"
+
+
