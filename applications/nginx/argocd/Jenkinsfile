@@ -54,6 +54,13 @@ node('docker') {
                         application: application,
                         mainBranch: mainBranch,
                         gitopsTool: 'ARGO',
+                        buildImages          : [
+                                helm: 'ghcr.io/cloudogu/helm:3.5.4-1',
+                                kubectl: 'lachlanevenson/k8s-kubectl:v1.19.3',
+                                kubeval: 'ghcr.io/cloudogu/helm:3.5.4-1',
+                                helmKubeval: 'ghcr.io/cloudogu/helm:3.5.4-1',
+                                yamllint: 'cytopia/yamllint:1.25-0.7'
+                        ],
                         deployments: [
                             sourcePath: 'k8s',
                             helm : [

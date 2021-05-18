@@ -140,6 +140,27 @@ Some more options:
 * `--fluxv1` - deploy only Flux v1 GitOps operator
 * `--fluxv2` - deploy only Flux v2 GitOps operator
 
+#### Override default images used in the gitops-build-lib
+
+Images used by the gitops-build-lib are set in the `gitopsConfig` in each `Jenkinsfile` of an application like that:
+```
+def gitopsConfig = [
+    ...
+    buildImages          : [
+            helm: 'ghcr.io/cloudogu/helm:3.5.4-1',
+            kubectl: 'lachlanevenson/k8s-kubectl:v1.19.3',
+            kubeval: 'ghcr.io/cloudogu/helm:3.5.4-1',
+            helmKubeval: 'ghcr.io/cloudogu/helm:3.5.4-1',
+            yamllint: 'cytopia/yamllint:1.25-0.7'
+    ],...
+```
+To override each image in all the applications you can use following parameters:
+* `--kubectl-image someRegistry/someImage:1.0.0`
+* `--helm-image someRegistry/someImage:1.0.0`
+* `--kubeval-image someRegistry/someImage:1.0.0`
+* `--helmkubeval-image someRegistry/someImage:1.0.0`
+* `--yamllint-image someRegistry/someImage:1.0.0`
+
 ### Remove apps from cluster
 
 ```shell
