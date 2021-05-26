@@ -28,17 +28,47 @@ RUN wget -q -O kubectl https://dl.k8s.io/release/v${K8S_VERSION}/bin/linux/amd64
 # kubectl binary download does not seem to offer signatures
 RUN echo "${KUBECTL_CHECKSUM}  kubectl" | sha256sum -c
 RUN mv /tmp/kubectl /usr/local/bin/kubectl
-RUN chmod +x /usr/local/bin/kubectl 
-# TODO add scripts (dont forget .dockerignore) and apply.sh as entrypoint
+RUN chmod +x /usr/local/bin/kubectl
 
 FROM alpine
-# htpasswd, envsubst
 RUN apk update && \
    apk add --no-cache \
      bash=5.1.0-r0 \
      curl=7.76.1-r0 \
      apache2-utils=2.4.46-r3 \
      gettext=0.20.2-r2 \
-     jq=1.6-r1
+     jq=1.6-r1 \
+     git=2.30.2-r0
+
+ENV HOME=/home
+RUN chmod a=rwx -R ${HOME}
+
+RUN git config --global user.email "job@gop.com" && \
+    git config --global user.name "gop-job"
+
 COPY --from=downloader /usr/local/bin  /usr/local/bin
+
+WORKDIR /gop/repos
+RUN git clone --bare https://github.com/cloudogu/spring-boot-helm-chart.git && \
+    git clone --bare https://github.com/cloudogu/spring-petclinic.git && \
+    git clone --bare https://github.com/cloudogu/gitops-build-lib.git && \
+    git clone --bare https://github.com/cloudogu/ces-build-lib.git
+ENV SPRING_BOOT_HELN_CHART_REPO /gop/repos/spring-boot-helm-chart.git
+ENV SPRING_PETCLINIC_REPO /gop/repos/spring-petclinic.git
+ENV GITOPS_BUILD_LIB_REPO /gop/repos/gitops-build-lib.git
+ENV CES_BUILD_LIB_REPO /gop/repos/ces-build-lib.git
+
+ENV HELM_CACHE_HOME="/home/.cache/helm" \
+    HELM_CONFIG_HOME="/home/.config/helm" \
+    HELM_DATA_HOME="/home/.local/share/helm" \
+    HELM_PLUGINS="/home/.local/share/helm/plugins" \
+    HELM_REGISTRY_CONFIG="/home/.config/helm/registry.json" \
+    HELM_REPOSITORY_CACHE="/home/.cache/helm/repository" \
+    HELM_REPOSITORY_CONFIG="/home/.config/helm/repositories.yaml"
+
+WORKDIR /gop
+COPY . /gop/
+
 USER 1000
+
+ENTRYPOINT ["scripts/apply.sh", "-y", "-x", "-c"]

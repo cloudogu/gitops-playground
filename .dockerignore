@@ -2,3 +2,18 @@
 *
 
 # Allowlist
+!applications/
+!argocd/
+!docker-registry/
+!fluxv1/
+!fluxv2/
+!jenkins/
+!k8s-namespaces/
+!scm-manager/
+!scripts/jenkins/
+!scripts/scm-manager/
+!scripts/apply.sh
+!scripts/get-remote-url
+!scripts/utils.sh
+!.curlrc
+!LICENSE
