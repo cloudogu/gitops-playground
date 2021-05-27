@@ -29,7 +29,7 @@ function deployLocalJenkins() {
 
   kubectl apply -f jenkins/resources || true
 
-  # Find out the docker group and put the agent into it. Otherwise it has no permission to access  the docker host.
+  # Find out the docker group and put the agent into it. Otherwise it has no permission to access the docker host.
   helm upgrade -i jenkins --values jenkins/values.yaml \
     $(jenkinsHelmSettingsForLocalCluster) --set agent.runAsGroup=$(queryDockerGroupOfJenkinsNode) \
     --version ${JENKINS_HELM_CHART_VERSION} jenkins/jenkins -n default

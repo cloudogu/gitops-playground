@@ -55,7 +55,9 @@ function main() {
   KUBEVAL_IMAGE="${23}"
   HELMKUBEVAL_IMAGE="${24}"
   YAMLLINT_IMAGE="${25}"
+  CLUSTER_BIND_ADDRESS="${26}"
 
+  # TODO: implement cluster address in apps
 
   if [[ $INSECURE == true ]]; then
     CURL_HOME="${PLAYGROUND_DIR}"
@@ -655,6 +657,9 @@ function printParameters() {
   echo "    | --registry-username=myUsername  >> Optional when --registry-url is set"
   echo "    | --registry-password=myPassword  >> Optional when --registry-url is set"
   echo
+  echo "Configure cluster bind address for applications."
+  echo "    | --cluster-bind-address=localhost  >> Optional defaults to localhost"
+  echo
   echo " -w | --welcome  >> Welcome screen"
   echo
   echo " -d | --debug    >> Debug output"
@@ -693,6 +698,7 @@ HELM_IMAGE=""
 KUBEVAL_IMAGE=""
 HELMKUBEVAL_IMAGE=""
 YAMLLINT_IMAGE=""
+CLUSTER_BIND_ADDRESS=""
 INSECURE=false
 TRACE=false
 
@@ -721,6 +727,7 @@ while true; do
     --insecure           ) INSECURE=true; shift ;;
     --username           ) SET_USERNAME="$2"; shift 2 ;;
     --password           ) SET_PASSWORD="$2"; shift 2 ;;
+    --cluster-bind-address) CLUSTER_BIND_ADDRESS="$2"; shift 2;;
     -w | --welcome       ) printWelcomeScreen; exit 0 ;;
     -d | --debug         ) DEBUG=true; shift ;;
     -x | --trace         ) TRACE=true; shift ;;
@@ -737,6 +744,6 @@ if [[ $TRACE == true ]]; then
   # Trace without debug does not make to much sense, as the spinner spams the output
   DEBUG=true
 fi
-main "$DEBUG" "$INSTALL_ALL_MODULES" "$INSTALL_FLUXV1" "$INSTALL_FLUXV2" "$INSTALL_ARGOCD" "$REMOTE_CLUSTER" "$SET_USERNAME" "$SET_PASSWORD" "$JENKINS_URL" "$JENKINS_USERNAME" "$JENKINS_PASSWORD" "$REGISTRY_URL" "$REGISTRY_PATH" "$REGISTRY_USERNAME" "$REGISTRY_PASSWORD" "$SCMM_URL" "$SCMM_USERNAME" "$SCMM_PASSWORD" "$INSECURE" "$TRACE" "$KUBECTL_IMAGE" "$HELM_IMAGE" "$KUBEVAL_IMAGE" "$HELMKUBEVAL_IMAGE" "$YAMLLINT_IMAGE"
+main "$DEBUG" "$INSTALL_ALL_MODULES" "$INSTALL_FLUXV1" "$INSTALL_FLUXV2" "$INSTALL_ARGOCD" "$REMOTE_CLUSTER" "$SET_USERNAME" "$SET_PASSWORD" "$JENKINS_URL" "$JENKINS_USERNAME" "$JENKINS_PASSWORD" "$REGISTRY_URL" "$REGISTRY_PATH" "$REGISTRY_USERNAME" "$REGISTRY_PASSWORD" "$SCMM_URL" "$SCMM_USERNAME" "$SCMM_PASSWORD" "$INSECURE" "$TRACE" "$KUBECTL_IMAGE" "$HELM_IMAGE" "$KUBEVAL_IMAGE" "$HELMKUBEVAL_IMAGE" "$YAMLLINT_IMAGE" "$CLUSTER_BIND_ADDRESS"
 
 

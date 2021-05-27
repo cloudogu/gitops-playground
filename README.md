@@ -52,7 +52,7 @@ The GitOps Playground is a pre-configured environment to see GitOps in motion.
 
 There a several options for running the GitOps playground
 
-* on a local k3s cluster
+* on a local k3d cluster
 * on a remote k8s cluster
 * each with the option 
   * to use an external Jenkins, SCM-Manager and registry 
@@ -73,7 +73,7 @@ Jenkins build agents spawned in the cloud.
 
 If you don't have a demo cluster at hand we provide scripts to create either 
 
-* a local k3s cluster ([see docs](docs/k3s.md)) or
+* a local k3d cluster ([see docs](docs/k3s.md)) or
 * a remote k8s cluster on Google Kubernetes Engine via terraform ([see docs](docs/gke.md)).
 * But most k8s cluster should work (tested with k8s 1.18+).  
   Note that if you want to deploy Jenkins inside the cluster, Docker is required as container runtime.

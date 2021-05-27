@@ -1,32 +1,41 @@
 #!/usr/bin/env bash
-set -o errexit -o nounset -o pipefail
-#set -x
 
-# See https://github.com/rancher/k3s/releases
-K3S_VERSION=1.18.8+k3s1
-K3S_CLUSTER_NAME=k8s-gitops-playground
-HELM_VERSION=3.4.0
-HELM_INSTALL_DIR='/usr/local/bin'
-HELM_BINARY_NAME='helm'
+# set -o errexit -o nounset -o pipefail
+set -x
+
+# See https://github.com/rancher/k3d/releases
+K3D_VERSION=4.4.4
+K3D_CLUSTER_NAME=test-k8s-gitops-playground
+K3D_SUBNET=172.31.0.0/24
+
+# env var to turn "on" when not willing to bind to localhost (e.g. run by ci-server)
+SETUP_LOCAL=$(printenv SETUP_LOCAL_GOP)
+BIND_LOCALHOST=${SETUP_LOCAL:=true}
+
+HELM_VERSION=3.4.1
 KUBECTL_VERSION=1.19.3
+BASEDIR=$(dirname $0)
+ABSOLUTE_BASEDIR="$(cd ${BASEDIR} && pwd)"
+source ${ABSOLUTE_BASEDIR}/utils.sh
 
 function main() {
+  K3D_CLUSTER_NAME="$1"
   checkDockerAccessible
-  
+
   # Install kubectl if necessary
-  if command -v kubectl; then
+  if command -v kubectl >/dev/null 2>&1; then
     echo "kubectl already installed"
   else
     msg="Install kubectl ${KUBECTL_VERSION}?"
-      confirm "$msg" ' [y/n]' &&
-        installKubectl
+    confirm "$msg" ' [y/n]' &&
+      installKubectl
   fi
 
   # Install helm if necessary
-  if [[ ! -f ${HELM_INSTALL_DIR}/${HELM_BINARY_NAME} ]]; then
+  if ! command -v helm >/dev/null 2>&1; then
     installHelm
   else
-    ACTUAL_HELM_VERSION=$("${HELM_INSTALL_DIR}/${HELM_BINARY_NAME}" version --template="{{ .Version }}")
+    ACTUAL_HELM_VERSION=$(helm version --template="{{ .Version }}")
     echo "helm ${ACTUAL_HELM_VERSION} already installed"
     if [[ "$ACTUAL_HELM_VERSION" != "v$HELM_VERSION" ]]; then
       msg="Up-/downgrade from ${ACTUAL_HELM_VERSION} to ${HELM_VERSION}?"
@@ -35,28 +44,74 @@ function main() {
     fi
   fi
 
-  # Install k3s if necessary
-  if command -v k3s >/dev/null 2>&1; then
-    ACTUAL_K3S_VERSION="$(k3s --version | grep k3s | sed 's/k3s version v\(.*\) (.*/\1/')"
-    echo "k3s ${ACTUAL_K3S_VERSION} already installed"
-    if [[ "${K3S_VERSION}" != "${ACTUAL_K3S_VERSION}" ]]; then
-      msg="Up-/downgrade from ${ACTUAL_K3S_VERSION} to ${K3S_VERSION}?"
-    else
-      msg="Reinstall?"
-    fi
-    confirm "$msg" 'Note: Applications will not be deleted. For deleting call "k3s-uninstall.sh" in advance.' ' [y/n]' &&
-      installK3s
-
+  # Install k3d if necessary
+  if ! command -v k3d >/dev/null 2>&1; then
+    installK3d
   else
-    installK3s
+    ACTUAL_K3D_VERSION="$(k3d --version | grep k3d | sed 's/k3d version v\(.*\)/\1/')"
+    echo "k3d ${ACTUAL_K3D_VERSION} already installed"
+    if [[ "${K3D_VERSION}" != "${ACTUAL_K3D_VERSION}" ]]; then
+      msg="Up-/downgrade from ${ACTUAL_K3D_VERSION} to ${K3D_VERSION}?"
+      confirm "$msg" ' [y/n]' &&
+        installK3d
+    fi
   fi
+
+  createCluster
+}
+
+function installK3d() {
+  curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=v${K3D_VERSION} bash
 }
 
 function checkDockerAccessible() {
   if ! command -v docker >/dev/null 2>&1; then
-    echo "Docker not installed" 
+    echo "Docker not installed"
     exit 1
   fi
+}
+
+function createCluster() {
+  if k3d cluster list | grep ${K3D_CLUSTER_NAME} >/dev/null; then
+    if confirm "Cluster '${K3D_CLUSTER_NAME}' already exists. Do you want to delete the cluster?" ' [y/N]'; then
+      k3d cluster delete ${K3D_CLUSTER_NAME}
+      docker network rm ${K3D_CLUSTER_NAME} >/dev/null || true
+    else
+      echo "Not reinstalled."
+      exit 0
+    fi
+    if ! confirm "Do you want to re-create the cluster now?" ' [y/N]'; then
+      echo "Abort. No installation requested."
+      exit 0
+    fi
+  fi
+
+  # if local setup is not disabled via env_var it is set to bind to localhost
+  K3D_ARGS=(
+    '--k3s-server-arg=--kube-apiserver-arg=service-node-port-range=8010-32767'
+  )
+
+  if [[ ${BIND_LOCALHOST} == 'true' ]]; then
+    K3D_ARGS+=('--network=host')
+  fi
+
+  docker network rm ${K3D_CLUSTER_NAME} >/dev/null || true
+  docker network create ${K3D_CLUSTER_NAME}  >/dev/null
+  # docker network create --subnet=${K3D_SUBNET} ${K3D_CLUSTER_NAME}  >/dev/null
+
+  k3d cluster create ${K3D_CLUSTER_NAME} ${K3D_ARGS[*]}
+
+  IMPORT_IMAGES=(
+    'jenkins/inbound-agent:4.6-1-jdk11'
+    'jenkins/jenkins:2.249.3-lts-jdk11'
+  )
+
+  for i in "${IMPORT_IMAGES[@]}"; do
+    docker pull "${i}"
+  done
+
+  k3d image import -c ${K3D_CLUSTER_NAME} ${IMPORT_IMAGES[*]}
+  k3d kubeconfig merge ${K3D_CLUSTER_NAME} --kubeconfig-switch-context
 }
 
 function installKubectl() {
@@ -72,56 +127,35 @@ function installHelm() {
     bash -s -- --version v$HELM_VERSION
 }
 
-function installK3s() {
-  # More info:
-  # * On Commands: https://k3s.io/usage/commands/
-  # * On exposing services: https://github.com/rancher/k3s/blob/v3.0.1/docs/usage/guides/exposing_services.md
-  K3S_ARGS=(# Use local docker daemon, so local images can be used within cluster and jenkins can also use docker
-    '--docker'
-    # Enable APIs deprecated in K8s 1.16 in order to improve compatibility with apps
-    '--kube-apiserver-arg=runtime-config=apps/v1beta1=true,apps/v1beta2=true,extensions/v1beta1/daemonsets=true,extensions/v1beta1/deployments=true,extensions/v1beta1/replicasets=true,extensions/v1beta1/networkpolicies=true,extensions/v1beta1/podsecuritypolicies=true'
-    # Allow for using node ports with "smaller numbers"
-    '--kube-apiserver-arg=service-node-port-range=8010-32767'
-    # Allow accessing KUBECONFIG as non-root
-    '--write-kubeconfig-mode=755'
-    # Save some resources
-    '--no-deploy=traefik'
-    '--no-deploy=metrics-server'
-  )
-
-  echo "Installing and starting k3s cluster (${K3S_VERSION}) via k3s."
-  echo "To stop the cluster and all workloads use: k3s-killall.sh && docker ps -qf 'name=k8s_*' | xargs -I{} docker rm -f {}"
-  echo "To restart the cluster use: sudo systemctl start k3s"
-  echo "To uninstall the cluster use: k3s-uninstall.sh"
+function printParameters() {
+  echo "The following parameters are valid:"
   echo
-  curl -sfL https://get.k3s.io |
-    INSTALL_K3S_VERSION="v${K3S_VERSION}" \
-      INSTALL_K3S_EXEC="${K3S_ARGS[*]}" \
-      sh -s -
+  echo " -h | --help     >> Help screen"
+  echo
+  echo "Set your prefered cluster name to install k3d. Defaults to 'k8s-gitops-playground'."
+  echo "    | --cluster-name=VALUE   >> Sets the cluster name."
+ }
 
-  # Add kubeconfig, after renaming it to not be called "default"
-  # Renaming via k3s is not possible https://github.com/rancher/k3s/issues/1806
-  tmpConfig=$(mktemp)
-  sed </etc/rancher/k3s/k3s.yaml "s/: default/: ${K3S_CLUSTER_NAME}/" >"$tmpConfig"
-  # Don't fail when there is no .kube dir
-  mkdir -p ~/.kube
-  KUBECONFIG=${tmpConfig}:~/.kube/config kubectl config view --flatten >~/.kube/config2 && mv ~/.kube/config2 ~/.kube/config
-}
+COMMANDS=$(getopt \
+  -o hwdx \
+  --long help,cluster-name \
+  -- "$@")
 
-confirm() {
-  # shellcheck disable=SC2145
-  # - the line break between args is intended here!
-  printf "%s\n" "${@:-Are you sure? [y/N]} "
 
-  read -r response
-  case "$response" in
-  [yY][eE][sS] | [yY])
-    true
-    ;;
-  *)
-    false
-    ;;
+eval set -- "$COMMANDS"
+
+CLUSTER_NAME=${K3D_CLUSTER_NAME}
+
+while true; do
+  case "$1" in
+    -h | --help     ) printParameters; exit 0 ;;
+    --cluster-name  ) CLUSTER_NAME="$2"; shift 2 ;;
+    --              ) shift; break ;;
+  *) break ;;
   esac
-}
+done
 
-main "$@"
+confirm "Run k3d-cluster initialization for cluster-name: '${CLUSTER_NAME}'." 'Continue? y/n [n]' ||
+  exit 0
+
+main "$CLUSTER_NAME"
