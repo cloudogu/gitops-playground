@@ -29,6 +29,11 @@ KUBEVAL_DEFAULT_IMAGE='ghcr.io/cloudogu/helm:3.5.4-1'
 HELMKUBEVAL_DEFAULT_IMAGE='ghcr.io/cloudogu/helm:3.5.4-1'
 YAMLLINT_DEFAULT_IMAGE='cytopia/yamllint:1.25-0.7'
 
+SPRING_BOOT_HELN_CHART_REPO=${SPRING_BOOT_HELN_CHART_REPO:-'https://github.com/cloudogu/spring-boot-helm-chart.git'}
+SPRING_PETCLINIC_REPO=${SPRING_PETCLINIC_REPO:-'https://github.com/cloudogu/spring-petclinic.git'}
+GITOPS_BUILD_LIB_REPO=${GITOPS_BUILD_LIB_REPO:-'https://github.com/cloudogu/gitops-build-lib.git'}
+CES_BUILD_LIB_REPO=${CES_BUILD_LIB_REPO:-'https://github.com/cloudogu/ces-build-lib.git'}
+
 function main() {
   DEBUG="${1}"
   INSTALL_ALL_MODULES="${2}"
@@ -55,7 +60,9 @@ function main() {
   KUBEVAL_IMAGE="${23}"
   HELMKUBEVAL_IMAGE="${24}"
   YAMLLINT_IMAGE="${25}"
-
+  CONTAINERED="${26}"
+  SKIP_HELM_UPDATE="${27}"
+  ARGOCD_CONFIG_ONLY="${28}"
 
   if [[ $INSECURE == true ]]; then
     CURL_HOME="${PLAYGROUND_DIR}"
@@ -67,6 +74,8 @@ function main() {
     INTERNAL_SCMM=false
     # We can't use internal kubernetes services in this scenario
     SCMM_URL_FOR_JENKINS=${SCMM_URL}
+  elif [[ $CONTAINERED == true ]]; then
+    SCMM_URL="$(createUrl "scmm-scm-manager.default.svc.cluster.local" "80")/scm"
   else
     local scmmPortFromValuesYaml="$(grep 'nodePort:' "${PLAYGROUND_DIR}"/scm-manager/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')"
     SCMM_URL="$(createUrl "localhost" "${scmmPortFromValuesYaml}")/scm"
@@ -76,6 +85,8 @@ function main() {
     INTERNAL_JENKINS=false
     # We can't use internal kubernetes services in this scenario
     JENKINS_URL_FOR_SCMM=${JENKINS_URL}
+  elif [[ $CONTAINERED == true ]]; then
+    JENKINS_URL=$(createUrl "jenkins.default.svc.cluster.local" "80")
   else
     local jenkinsPortFromValuesYaml="$(grep 'nodePort:' "${PLAYGROUND_DIR}"/jenkins/values.yaml | grep nodePort | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')"
     JENKINS_URL=$(createUrl "localhost" "${jenkinsPortFromValuesYaml}")
@@ -158,13 +169,15 @@ function applyBasicK8sResources() {
 
   createSecrets
 
-  helm repo add fluxcd https://charts.fluxcd.io
-  helm repo add stable https://charts.helm.sh/stable
-  helm repo add argo https://argoproj.github.io/argo-helm
-  helm repo add bitnami https://charts.bitnami.com/bitnami
-  helm repo add scm-manager https://packages.scm-manager.org/repository/helm-v2-releases/
-  helm repo add jenkins https://charts.jenkins.io
-  helm repo update
+  if [[ $SKIP_HELM_UPDATE == false ]]; then
+    helm repo add fluxcd https://charts.fluxcd.io
+    helm repo add stable https://charts.helm.sh/stable
+    helm repo add argo https://argoproj.github.io/argo-helm
+    helm repo add bitnami https://charts.bitnami.com/bitnami
+    helm repo add scm-manager https://packages.scm-manager.org/repository/helm-v2-releases/
+    helm repo add jenkins https://charts.jenkins.io
+    helm repo update
+  fi
 
   initRegistry
 }
@@ -213,8 +226,8 @@ function initSCMM() {
 
   pushHelmChartRepo 'common/spring-boot-helm-chart'
   pushHelmChartRepoWithDependency 'common/spring-boot-helm-chart-with-dependency'
-  pushRepoMirror 'https://github.com/cloudogu/gitops-build-lib.git' 'common/gitops-build-lib'
-  pushRepoMirror 'https://github.com/cloudogu/ces-build-lib.git' 'common/ces-build-lib' 'develop'
+  pushRepoMirror "${GITOPS_BUILD_LIB_REPO}" 'common/gitops-build-lib'
+  pushRepoMirror "${CES_BUILD_LIB_REPO}" 'common/ces-build-lib' 'develop'
 }
 
 function setExternalHostnameIfNecessary() {
@@ -267,16 +280,25 @@ function initFluxV2() {
 
 function initArgo() {
   VALUES_YAML_PATH="argocd/values.yaml"
+  CONTROL_APP_YAML_PATH="argocd/resources/control-app.yaml"
+  ARGOCD_CM_YAML_PATH="argocd/resources/argocd-cm.yaml"
   if [[ ${INTERNAL_SCMM} == false ]]; then
-    VALUES_YAML_PATH="$(mkTmpWithReplacedScmmUrls "argocd/values.yaml")"
+    VALUES_YAML_PATH="$(mkTmpWithReplacedScmmUrls "$VALUES_YAML_PATH")"
+    CONTROL_APP_YAML_PATH="$(mkTmpWithReplacedScmmUrls "$CONTROL_APP_YAML_PATH")"
+    ARGOCD_CM_YAML_PATH="$(mkTmpWithReplacedScmmUrls "$ARGOCD_CM_YAML_PATH")"
   fi
 
-  helm upgrade -i argocd --values "${VALUES_YAML_PATH}" \
-    $(argoHelmSettingsForRemoteCluster) --version 2.9.5 argo/argo-cd -n argocd
+  if [[ ${ARGOCD_CONFIG_ONLY} == false ]]; then
+    helm upgrade -i argocd --values "${VALUES_YAML_PATH}" \
+      $(argoHelmSettingsForRemoteCluster) --version 2.9.5 argo/argo-cd -n argocd
 
-  BCRYPT_PW=$(bcryptPassword "${SET_PASSWORD}")
-  # set argocd admin password to 'admin' here, because it does not work through the helm chart
-  kubectl patch secret -n argocd argocd-secret -p '{"stringData": { "admin.password": "'"${BCRYPT_PW}"'"}}' || true
+    BCRYPT_PW=$(bcryptPassword "${SET_PASSWORD}")
+    # set argocd admin password to 'admin' here, because it does not work through the helm chart
+    kubectl patch secret -n argocd argocd-secret -p '{"stringData": { "admin.password": "'"${BCRYPT_PW}"'"}}' || true
+  fi
+
+  kubectl apply -f "$ARGOCD_CM_YAML_PATH" || true
+  kubectl apply -f "$CONTROL_APP_YAML_PATH" || true
 
   pushPetClinicRepo 'applications/petclinic/argocd/plain-k8s' 'argocd/petclinic-plain'
   pushPetClinicRepo 'applications/petclinic/argocd/helm' 'argocd/petclinic-helm'
@@ -363,7 +385,7 @@ function pushPetClinicRepo() {
 
   TMP_REPO=$(mktemp -d)
 
-  git clone -n https://github.com/cloudogu/spring-petclinic.git "${TMP_REPO}" --quiet >/dev/null 2>&1
+  git clone -n "${SPRING_PETCLINIC_REPO}" "${TMP_REPO}" --quiet >/dev/null 2>&1
   (
     cd "${TMP_REPO}"
     # Checkout a defined commit in order to get a deterministic result
@@ -390,7 +412,7 @@ function pushHelmChartRepo() {
   TARGET_REPO_SCMM="$1"
 
   TMP_REPO=$(mktemp -d)
-  git clone -n https://github.com/cloudogu/spring-boot-helm-chart.git "${TMP_REPO}" --quiet
+  git clone -n "${SPRING_BOOT_HELN_CHART_REPO}" "${TMP_REPO}" --quiet
   (
     cd "${TMP_REPO}"
     # Checkout a defined commit in order to get a deterministic result
@@ -416,7 +438,7 @@ function pushHelmChartRepoWithDependency() {
   TARGET_REPO_SCMM="$1"
 
   TMP_REPO=$(mktemp -d)
-  git clone -n https://github.com/cloudogu/spring-boot-helm-chart.git "${TMP_REPO}" --quiet
+  git clone -n "${SPRING_BOOT_HELN_CHART_REPO}" "${TMP_REPO}" --quiet
   (
     cd "${TMP_REPO}"
     # Checkout a defined commit in order to get a deterministic result
@@ -532,7 +554,8 @@ function createUrl() {
 
   # Argo forwards to HTTPS so simply use HTTP here
   echo -n "http://${hostname}"
-  [[ "${port}" != "80" && "${port}" != "443" ]] && echo -n ":${port}"
+  echo -n ":${port}"
+#  [[ "${port}" != 80 && "${port}" != 443 ]] && echo -n ":${port}"
 }
 
 function printWelcomeScreen() {
@@ -655,15 +678,28 @@ function printParameters() {
   echo "    | --registry-username=myUsername  >> Optional when --registry-url is set"
   echo "    | --registry-password=myPassword  >> Optional when --registry-url is set"
   echo
+  echo "Configure images used by the gitops-build-lib in the application examples"
+  echo "    | --kubectl-image      >> Sets image for kubectl"
+  echo "    | --helm-image         >> Sets image for helm"
+  echo "    | --kubeval-image      >> Sets image for kubeval"
+  echo "    | --helmkubeval-image  >> Sets image for helmkubeval"
+  echo "    | --yamllint-image     >> Sets image for yamllint"
+  echo
+  echo "    | --insecure            >> Runs curl in insecure mode"
+  echo "    | --skip-helm-update    >> Skips adding and updating helm repos"
+  echo "    | --argocd-config-only  >> Skips installing argo-cd. Applies ConfigMap and Application manifests to bootstrap existing argo-cd"
+  echo
   echo " -w | --welcome  >> Welcome screen"
   echo
-  echo " -d | --debug    >> Debug output"
-  echo " -x | --trace    >> Debug + Show each command executed (set -x)"
+  echo " -d | --debug         >> Debug output"
+  echo " -x | --trace         >> Debug + Show each command executed (set -x)"
+  echo " -y | --yes           >> Skip kubecontext confirmation"
+  echo " -c | --containered   >> Runs script in containered mode (uses services instead of localhost to connect jenkins and scm-manager)"
 }
 
 COMMANDS=$(getopt \
-  -o hwdx \
-  --long help,fluxv1,fluxv2,argocd,welcome,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,trace,insecure \
+  -o hwdxyc \
+  --long help,fluxv1,fluxv2,argocd,welcome,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,trace,insecure,yes,containered,skip-helm-update,argocd-config-only \
   -- "$@")
 
 if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
@@ -695,6 +731,10 @@ HELMKUBEVAL_IMAGE=""
 YAMLLINT_IMAGE=""
 INSECURE=false
 TRACE=false
+ASSUME_YES=false
+CONTAINERED=false
+SKIP_HELM_UPDATE=false
+ARGOCD_CONFIG_ONLY=false
 
 while true; do
   case "$1" in
@@ -724,19 +764,25 @@ while true; do
     -w | --welcome       ) printWelcomeScreen; exit 0 ;;
     -d | --debug         ) DEBUG=true; shift ;;
     -x | --trace         ) TRACE=true; shift ;;
+    -y | --yes           ) ASSUME_YES=true; shift ;;
+    -c | --containered   ) CONTAINERED=true; shift ;;
+    --skip-helm-update   ) SKIP_HELM_UPDATE=true; shift ;;
+    --argocd-config-only ) ARGOCD_CONFIG_ONLY=true; shift ;;
     --                   ) shift; break ;;
   *) break ;;
   esac
 done
 
-confirm "Applying gitops playground to kubernetes cluster: '$(kubectl config current-context)'." 'Continue? y/n [n]' ||
-  exit 0
+if [[ $ASSUME_YES == false ]]; then
+  confirm "Applying gitops playground to kubernetes cluster: '$(kubectl config current-context)'." 'Continue? y/n [n]' ||
+    exit 0
+fi
 
 if [[ $TRACE == true ]]; then
   set -x
   # Trace without debug does not make to much sense, as the spinner spams the output
   DEBUG=true
 fi
-main "$DEBUG" "$INSTALL_ALL_MODULES" "$INSTALL_FLUXV1" "$INSTALL_FLUXV2" "$INSTALL_ARGOCD" "$REMOTE_CLUSTER" "$SET_USERNAME" "$SET_PASSWORD" "$JENKINS_URL" "$JENKINS_USERNAME" "$JENKINS_PASSWORD" "$REGISTRY_URL" "$REGISTRY_PATH" "$REGISTRY_USERNAME" "$REGISTRY_PASSWORD" "$SCMM_URL" "$SCMM_USERNAME" "$SCMM_PASSWORD" "$INSECURE" "$TRACE" "$KUBECTL_IMAGE" "$HELM_IMAGE" "$KUBEVAL_IMAGE" "$HELMKUBEVAL_IMAGE" "$YAMLLINT_IMAGE"
+main "$DEBUG" "$INSTALL_ALL_MODULES" "$INSTALL_FLUXV1" "$INSTALL_FLUXV2" "$INSTALL_ARGOCD" "$REMOTE_CLUSTER" "$SET_USERNAME" "$SET_PASSWORD" "$JENKINS_URL" "$JENKINS_USERNAME" "$JENKINS_PASSWORD" "$REGISTRY_URL" "$REGISTRY_PATH" "$REGISTRY_USERNAME" "$REGISTRY_PASSWORD" "$SCMM_URL" "$SCMM_USERNAME" "$SCMM_PASSWORD" "$INSECURE" "$TRACE" "$KUBECTL_IMAGE" "$HELM_IMAGE" "$KUBEVAL_IMAGE" "$HELMKUBEVAL_IMAGE" "$YAMLLINT_IMAGE" "$CONTAINERED" "$SKIP_HELM_UPDATE" "$ARGOCD_CONFIG_ONLY"
 
 
