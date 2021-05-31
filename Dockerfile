@@ -34,7 +34,7 @@ FROM alpine
 RUN apk update && \
    apk add --no-cache \
      bash=5.1.0-r0 \
-     curl=7.76.1-r0 \
+     curl=7.77.0-r0 \
      apache2-utils=2.4.46-r3 \
      gettext=0.20.2-r2 \
      jq=1.6-r1 \

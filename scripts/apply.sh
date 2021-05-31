@@ -76,7 +76,6 @@ function main() {
     SCMM_URL_FOR_JENKINS=${SCMM_URL}
   elif [[ $CONTAINERED == true ]]; then
     SCMM_URL="$(createUrl "scmm-scm-manager.default.svc.cluster.local" "80")/scm"
-    echo "test"
   else
     local scmmPortFromValuesYaml="$(grep 'nodePort:' "${PLAYGROUND_DIR}"/scm-manager/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')"
     SCMM_URL="$(createUrl "localhost" "${scmmPortFromValuesYaml}")/scm"
