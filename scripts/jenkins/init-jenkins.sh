@@ -29,7 +29,6 @@ function deployLocalJenkins() {
 
   kubectl apply -f jenkins/resources || true
 
-  # Find out the docker group and put the agent into it. Otherwise it has no permission to access the docker host.
   helm upgrade -i jenkins --values jenkins/values.yaml \
     $(jenkinsHelmSettingsForLocalCluster) --set agent.runAsGroup=$(queryDockerGroupOfJenkinsNode) \
     --version ${JENKINS_HELM_CHART_VERSION} jenkins/jenkins -n default
@@ -47,16 +46,21 @@ function jenkinsHelmSettingsForLocalCluster() {
   fi
 }
 
+# using local cluster on k3d we grep local host gid for docker
 function queryDockerGroupOfJenkinsNode() {
-  kubectl apply -f jenkins/tmp-docker-gid-grepper.yaml >/dev/null
-  until kubectl get po --field-selector=status.phase=Running | grep tmp-docker-gid-grepper >/dev/null; do
-    sleep 1
-  done
+  if [[ $REMOTE_CLUSTER == true ]]; then
+    kubectl apply -f jenkins/tmp-docker-gid-grepper.yaml >/dev/null
+    until kubectl get po --field-selector=status.phase=Running | grep tmp-docker-gid-grepper >/dev/null; do
+      sleep 1
+    done
 
-  kubectl exec tmp-docker-gid-grepper -- cat /etc/group | grep docker | cut -d: -f3
+    kubectl exec tmp-docker-gid-grepper -- cat /etc/group | grep docker | cut -d: -f3
 
-  # This call might block some (unnecessary) seconds so move to background
-  kubectl delete -f jenkins/tmp-docker-gid-grepper.yaml >/dev/null &
+    # This call might block some (unnecessary) seconds so move to background
+    kubectl delete -f jenkins/tmp-docker-gid-grepper.yaml >/dev/null &
+  else
+    cat /etc/group | grep docker | cut -d: -f3
+  fi
 }
 
 function waitForJenkins() {
@@ -106,4 +110,5 @@ function configureJenkins() {
   createJob "fluxv1-applications" "${SCMM_URL}" "fluxv1" "scmm-user"
   createJob "fluxv2-applications" "${SCMM_URL}" "fluxv2" "scmm-user"
   createJob "argocd-applications" "${SCMM_URL}" "argocd" "scmm-user"
+  createJob "infrastructure-applications" "${SCMM_URL}" "infrastructure" "scmm-user"
 }

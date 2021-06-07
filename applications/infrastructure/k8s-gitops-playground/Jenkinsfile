@@ -1,0 +1,43 @@
+#!groovy
+
+String getScmManagerCredentials() { 'scmm-user' }
+String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/common/ces-build-lib/" }
+String getK8sPlaygroundRepo() {"${env.SCMM_URL}/repo/common/k8s-gitops-playground/"}
+String getCesBuildLibVersion() { '1.46.1' }
+String getMainBranch() { 'feature/replace_k3s_with_k3d' }
+String getBaseImage() { 'ellerbrock/alpine-bash-curl-ssl:0.3.0' }
+
+cesBuildLib = library(identifier: "ces-build-lib@${cesBuildLibVersion}",
+        retriever: modernSCM([$class: 'GitSCMSource', remote: cesBuildLibRepo, credentialsId: scmManagerCredentials])
+).com.cloudogu.ces.cesbuildlib
+
+properties([
+        // Keep only the last 10 build to preserve space
+        disableConcurrentBuilds()
+])
+
+node('docker') {
+
+    def git = cesBuildLib.Git.new(this, scmManagerCredentials)
+
+    timeout(activity: true, time: 30, unit: 'MINUTES') {
+
+        catchError {
+
+            stage('Checkout') {
+                git url: k8sPlaygroundRepo, branch: mainBranch, changelog: false, poll: false
+                git.clean('')
+            }
+
+            stage('init gop') {
+                cesBuildLib.Docker.new(this).image(baseImage) // contains the docker client binary
+                        .inside("${this.pwd().equals(this.env.WORKSPACE) ? '' : "-v ${this.env.WORKSPACE}:${this.env.WORKSPACE} "}" +
+                                '--entrypoint="" -u 0:133 -e SETUP_LOCAL_GOP=false -v /tmp/docker/:/tmp/docker/ -v /var/run/docker.sock:/var/run/docker.sock -e PATH=/usr/local/openjdk-8/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/tmp/docker') {
+                            sh "yes | ./scripts/init-cluster.sh --cluster-name=citestk3d cluster stop citest && k3d cluster delete citest"
+                        }
+            }
+        }
+    }
+}
+
+def cesBuildLib

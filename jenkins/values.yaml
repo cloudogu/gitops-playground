@@ -31,6 +31,7 @@ controller:
   nodeSelector:
     node: jenkins
 
+  runAsUser: 1000
   JCasC:
     defaultConfig: true
     configScripts:
@@ -52,7 +53,7 @@ controller:
       # Why? The docker pipeline plugin seems to set an empty environment: https://github.com/jenkinsci/docker-workflow-plugin/blob/docker-workflow-1.25/src/main/java/org/jenkinsci/plugins/docker/workflow/client/DockerClient.java#L261
       # Workaround: Set the ENV in the container:
       value: /usr/local/openjdk-8/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/tmp/docker
-      
+
   customInitContainers:
     # Create Jenkins agent working dir explicitly. Otherwise it seems to be owned by root
     # The does not need this folder, but creating it in a defined way and ownership on startup is better than to run an
@@ -65,12 +66,13 @@ controller:
       command: [ "/usr/local/bin/bash", "-c" ]
       args:
         - set -x -o nounset -o pipefail -o errexit;
+
           id;
           if [[ ! -d /host-tmp/k8s-gitops-playground-jenkins-agent ]]; then
-            echo creating /tmp/k8s-gitops-playground-jenkins-agent on host and chowning to UID 1000; 
-            mkdir /host-tmp/k8s-gitops-playground-jenkins-agent;
+          echo creating /tmp/k8s-gitops-playground-jenkins-agent on host and chowning to UID 1000;
+          mkdir /host-tmp/k8s-gitops-playground-jenkins-agent;
           fi;
-          
+
           if [[ -f /host-tmp/docker/docker ]]; then echo 'Docker already installed'; exit 0; fi;
           cd /host-tmp;
           wget -q https://download.docker.com/linux/static/stable/x86_64/docker-{{.Values.dockerClientVersion}}.tgz -O docker.tgz;
@@ -80,6 +82,27 @@ controller:
           # Delete containerd, etc. We only need the docker CLI
           # Note: "wget -O- | tar" leads to the folder being owned by root, even when creating it beforehand?!
           # That's
+
+
+
+          #if [[ ! -d /host-tmp/nerdctl ]]; then
+          #  echo creating /tmp/nerdctl on host and chowning to UID 1000;
+          #  mkdir /host-tmp/nerdctl;
+          #fi;
+
+          #if [[ -f /host-tmp/nerdctl/nerdctl ]]; then echo 'nerdctl already installed'; exit 0; fi;
+          #cd /host-tmp;
+
+          #wget -q https://github.com/containerd/nerdctl/releases/download/v0.8.2/nerdctl-full-0.8.2-linux-amd64.tar.gz -O nerdctl.tar.gz;
+          #tar -xzf nerdctl.tar.gz -C /host-tmp/nerdctl;
+          #rm nerdctl.tar.gz;
+
+          #export XDG_RUNTIME_DIR=/run/user/0;
+          #export PATH=$PATH:/host-tmp/nerdctl/bin;
+
+        #containerd-rootless-setuptool.sh install;
+
+
       volumeMounts:
         - name: host-tmp
           mountPath: /host-tmp
@@ -106,13 +129,12 @@ agent:
   # A different option would be to link the workspace into this repo.
   # If we should ever want to implement this, the logic can be reused from Git History:
   # https://github.com/cloudogu/k8s-gitops-playground/blob/61e033/scripts/apply.sh#L211-L235
-  # We mount the same PATH as a hostPath. See bellow.
+  # We mount the same PATH as a hostPath. See below.
   # On Multi Node Clusters this leads to the requirement that Jenkins controller and agents run on the same host
   # We realize this using nodeSelectors 
   workingDir: "/tmp/k8s-gitops-playground-jenkins-agent"
-  privileged: true
-  runAsUser: 0
-  runAsGroup: docker
+  runAsUser: 1000
+  runAsGroup: 133
   nodeSelector:
     node: jenkins
   # Number of concurrent builds. Keep it low to avoid high CPU load.

@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 
 # set -o errexit -o nounset -o pipefail
-set -x
+# set -x
 
 # See https://github.com/rancher/k3d/releases
 K3D_VERSION=4.4.4
 K3D_CLUSTER_NAME=test-k8s-gitops-playground
 K3D_SUBNET=172.31.0.0/24
+CLUSTER_NAME=${K3D_CLUSTER_NAME}
 
 # env var to turn "on" when not willing to bind to localhost (e.g. run by ci-server)
 SETUP_LOCAL=$(printenv SETUP_LOCAL_GOP)
@@ -19,7 +20,7 @@ ABSOLUTE_BASEDIR="$(cd ${BASEDIR} && pwd)"
 source ${ABSOLUTE_BASEDIR}/utils.sh
 
 function main() {
-  K3D_CLUSTER_NAME="$1"
+  CLUSTER_NAME="$1"
   checkDockerAccessible
 
   # Install kubectl if necessary
@@ -72,10 +73,10 @@ function checkDockerAccessible() {
 }
 
 function createCluster() {
-  if k3d cluster list | grep ${K3D_CLUSTER_NAME} >/dev/null; then
-    if confirm "Cluster '${K3D_CLUSTER_NAME}' already exists. Do you want to delete the cluster?" ' [y/N]'; then
-      k3d cluster delete ${K3D_CLUSTER_NAME}
-      docker network rm ${K3D_CLUSTER_NAME} >/dev/null || true
+  if k3d cluster list | grep ${CLUSTER_NAME} >/dev/null; then
+    if confirm "Cluster '${CLUSTER_NAME}' already exists. Do you want to delete the cluster?" ' [y/N]'; then
+      k3d cluster delete ${CLUSTER_NAME}
+      docker network rm ${CLUSTER_NAME} >/dev/null || true
     else
       echo "Not reinstalled."
       exit 0
@@ -89,35 +90,40 @@ function createCluster() {
   # if local setup is not disabled via env_var it is set to bind to localhost
   K3D_ARGS=(
     '--k3s-server-arg=--kube-apiserver-arg=service-node-port-range=8010-32767'
+    '-v /var/run/docker.sock:/var/run/docker.sock'
+    '-v /tmp:/tmp'
+    '-v /usr/bin/docker:/usr/bin/docker'
+    '--k3s-server-arg=--no-deploy=metrics-server'
+    '--k3s-server-arg=--no-deploy=traefik'
+    '--no-hostip'
   )
 
   if [[ ${BIND_LOCALHOST} == 'true' ]]; then
     K3D_ARGS+=('--network=host')
   fi
 
-  docker network rm ${K3D_CLUSTER_NAME} >/dev/null || true
-  docker network create ${K3D_CLUSTER_NAME}  >/dev/null
-  # docker network create --subnet=${K3D_SUBNET} ${K3D_CLUSTER_NAME}  >/dev/null
+  docker network rm ${CLUSTER_NAME} >/dev/null || true
+  docker network create ${CLUSTER_NAME} >/dev/null
 
-  k3d cluster create ${K3D_CLUSTER_NAME} ${K3D_ARGS[*]}
+  k3d cluster create ${CLUSTER_NAME} ${K3D_ARGS[*]}
 
   IMPORT_IMAGES=(
     'jenkins/inbound-agent:4.6-1-jdk11'
-    'jenkins/jenkins:2.249.3-lts-jdk11'
+    'jenkins/jenkins:2.263.3-lts-jdk11'
   )
 
   for i in "${IMPORT_IMAGES[@]}"; do
     docker pull "${i}"
   done
 
-  k3d image import -c ${K3D_CLUSTER_NAME} ${IMPORT_IMAGES[*]}
-  k3d kubeconfig merge ${K3D_CLUSTER_NAME} --kubeconfig-switch-context
+  k3d image import -c ${CLUSTER_NAME} ${IMPORT_IMAGES[*]}
+  k3d kubeconfig merge ${CLUSTER_NAME} --kubeconfig-switch-context
 }
 
 function installKubectl() {
   curl -LO https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl
   chmod +x ./kubectl
-  sudo mv ./kubectl /usr/local/bin/kubectl
+  mv ./kubectl /usr/local/bin/kubectl
   echo "kubectl installed"
 }
 
@@ -134,23 +140,29 @@ function printParameters() {
   echo
   echo "Set your prefered cluster name to install k3d. Defaults to 'k8s-gitops-playground'."
   echo "    | --cluster-name=VALUE   >> Sets the cluster name."
- }
+}
 
 COMMANDS=$(getopt \
-  -o hwdx \
-  --long help,cluster-name \
+  -o hwdxyc \
+  --long help,cluster-name: \
   -- "$@")
-
 
 eval set -- "$COMMANDS"
 
-CLUSTER_NAME=${K3D_CLUSTER_NAME}
-
 while true; do
   case "$1" in
-    -h | --help     ) printParameters; exit 0 ;;
-    --cluster-name  ) CLUSTER_NAME="$2"; shift 2 ;;
-    --              ) shift; break ;;
+  -h | --help)
+    printParameters
+    exit 0
+    ;;
+  --cluster-name)
+    CLUSTER_NAME="$2"
+    shift 2
+    ;;
+  --)
+    shift
+    break
+    ;;
   *) break ;;
   esac
 done
