@@ -141,6 +141,29 @@ Some more options:
 * `--fluxv1` - deploy only Flux v1 GitOps operator
 * `--fluxv2` - deploy only Flux v2 GitOps operator
 
+#### Run apply.sh inside Docker container
+
+Alternatively you can apply the playground through running the apply.sh in a pod in your cluster. To do so, first build the image:
+```shell
+docker build -t gop .
+```
+
+Then create a `ServiceAccount` with the role `cluster-admin`:
+```shell
+kubectl create serviceaccount gop-job-executer -n default
+
+kubectl create clusterrolebinding gop-job-executer \
+  --clusterrole=cluster-admin \
+  --serviceaccount=default:gop-job-executer
+```
+
+Finally, you can start the job with the following command:
+```shell
+kubectl run gop --rm -i --tty --image-pull-policy='Never' \
+  --image gop --serviceaccount gop-job-executer -- \
+  --argocd --fluxv1
+```
+
 #### Override default images used in the gitops-build-lib
 
 Images used by the gitops-build-lib are set in the `gitopsConfig` in each `Jenkinsfile` of an application like that:
