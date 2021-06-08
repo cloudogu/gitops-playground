@@ -217,8 +217,7 @@ function initSCMM() {
   pushRepoMirror 'https://github.com/cloudogu/gitops-build-lib.git' 'common/gitops-build-lib'
   pushRepoMirror 'https://github.com/cloudogu/ces-build-lib.git' 'common/ces-build-lib' 'develop'
   pushRepoMirror 'https://github.com/cloudogu/k8s-gitops-playground.git' 'common/k8s-gitops-playground' 'feature/replace_k3s_with_k3d'
-  pushGopPipelineRepo 'applications/infrastructure/k8s-gitops-playground' 'infrastructure/k8s-gitops-playground'
-
+  pushGopPipeline 'applications/infrastructure/k8s-gitops-playground' 'infrastructure/k8s-gitops-playground'
 }
 
 function setExternalHostnameIfNecessary() {
@@ -360,16 +359,15 @@ function createSecret() {
   kubectl create secret generic "$@" --dry-run=client -oyaml | kubectl apply -f-
 }
 
-function pushGopPipelineRepo() {
-  LOCAL_GOP_SOURCE="$1"
+function pushGopPipeline() {
+  SOURCE_REPO_PATH="$1"
   TARGET_REPO_SCMM="$2"
   TMP_REPO=$(mktemp -d)
 
-  git clone "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/common/k8s-gitops-playground" "${TMP_REPO}" --quiet >/dev/null 2>&1
+  git clone "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}" --quiet >/dev/null 2>&1
   (
     cd "${TMP_REPO}"
-    ls -la .
-    cp -r "${LOCAL_GOP_SOURCE}"/Jenkinsfile .
+    cp -r "${PLAYGROUND_DIR}/${SOURCE_REPO_PATH}"/Jenkinsfile .
     git add .
     git commit -m 'Add GitOps Pipeline and K8s resources' --quiet
 
@@ -730,34 +728,121 @@ TRACE=false
 
 while true; do
   case "$1" in
-    -h | --help           )  printUsage;  exit 0 ;;
-    --fluxv1              ) INSTALL_FLUXV1=true; INSTALL_ALL_MODULES=false; shift ;;
-    --fluxv2              ) INSTALL_FLUXV2=true; INSTALL_ALL_MODULES=false; shift ;;
-    --argocd              ) INSTALL_ARGOCD=true; INSTALL_ALL_MODULES=false; shift ;;
-    --remote              ) REMOTE_CLUSTER=true; shift ;;
-    --jenkins-url         ) JENKINS_URL="$2"; shift 2 ;;
-    --jenkins-username    ) JENKINS_USERNAME="$2"; shift 2 ;;
-    --jenkins-password    ) JENKINS_PASSWORD="$2"; shift 2 ;;
-    --registry-url        ) REGISTRY_URL="$2"; shift 2 ;;
-    --registry-path       ) REGISTRY_PATH="$2"; shift 2 ;;
-    --registry-username   ) REGISTRY_USERNAME="$2"; shift 2 ;;
-    --registry-password   ) REGISTRY_PASSWORD="$2"; shift 2 ;;
-    --scmm-url            ) SCMM_URL="$2"; shift 2 ;;
-    --scmm-username       ) SCMM_USERNAME="$2"; shift 2 ;;
-    --scmm-password       ) SCMM_PASSWORD="$2"; shift 2 ;;
-    --kubectl-image       ) KUBECTL_IMAGE="$2"; shift 2 ;;
-    --helm-image          ) HELM_IMAGE="$2"; shift 2 ;;
-    --kubeval-image       ) KUBEVAL_IMAGE="$2"; shift 2 ;;
-    --helmkubeval-image   ) HELMKUBEVAL_IMAGE="$2"; shift 2 ;;
-    --yamllint-image      ) YAMLLINT_IMAGE="$2"; shift 2;;
-    --insecure            ) INSECURE=true; shift ;;
-    --username            ) SET_USERNAME="$2"; shift 2;;
-    --password            ) SET_PASSWORD="$2"; shift 2;;
-    --cluster-bind-address) CLUSTER_BIND_ADDRESS="$2"; shift 2;;
-    -w | --welcome        ) printWelcomeScreen; exit 0 ;;
-    -d | --debug          ) DEBUG=true; shift ;;
-    -x | --trace          ) TRACE=true; shift ;;
-    --                    ) shift; break;;
+  -h | --help)
+    printUsage
+    exit 0
+    ;;
+  --fluxv1)
+    INSTALL_FLUXV1=true
+    INSTALL_ALL_MODULES=false
+    shift
+    ;;
+  --fluxv2)
+    INSTALL_FLUXV2=true
+    INSTALL_ALL_MODULES=false
+    shift
+    ;;
+  --argocd)
+    INSTALL_ARGOCD=true
+    INSTALL_ALL_MODULES=false
+    shift
+    ;;
+  --remote)
+    REMOTE_CLUSTER=true
+    shift
+    ;;
+  --jenkins-url)
+    JENKINS_URL="$2"
+    shift 2
+    ;;
+  --jenkins-username)
+    JENKINS_USERNAME="$2"
+    shift 2
+    ;;
+  --jenkins-password)
+    JENKINS_PASSWORD="$2"
+    shift 2
+    ;;
+  --registry-url)
+    REGISTRY_URL="$2"
+    shift 2
+    ;;
+  --registry-path)
+    REGISTRY_PATH="$2"
+    shift 2
+    ;;
+  --registry-username)
+    REGISTRY_USERNAME="$2"
+    shift 2
+    ;;
+  --registry-password)
+    REGISTRY_PASSWORD="$2"
+    shift 2
+    ;;
+  --scmm-url)
+    SCMM_URL="$2"
+    shift 2
+    ;;
+  --scmm-username)
+    SCMM_USERNAME="$2"
+    shift 2
+    ;;
+  --scmm-password)
+    SCMM_PASSWORD="$2"
+    shift 2
+    ;;
+  --kubectl-image)
+    KUBECTL_IMAGE="$2"
+    shift 2
+    ;;
+  --helm-image)
+    HELM_IMAGE="$2"
+    shift 2
+    ;;
+  --kubeval-image)
+    KUBEVAL_IMAGE="$2"
+    shift 2
+    ;;
+  --helmkubeval-image)
+    HELMKUBEVAL_IMAGE="$2"
+    shift 2
+    ;;
+  --yamllint-image)
+    YAMLLINT_IMAGE="$2"
+    shift 2
+    ;;
+  --insecure)
+    INSECURE=true
+    shift
+    ;;
+  --username)
+    SET_USERNAME="$2"
+    shift 2
+    ;;
+  --password)
+    SET_PASSWORD="$2"
+    shift 2
+    ;;
+  --cluster-bind-address)
+    CLUSTER_BIND_ADDRESS="$2"
+    shift 2
+    ;;
+  -w | --welcome)
+    printWelcomeScreen
+    exit 0
+    ;;
+  -d | --debug)
+    DEBUG=true
+    shift
+    ;;
+  -x | --trace)
+    TRACE=true
+    shift
+    ;;
+  --)
+    shift
+    break
+    ;;
   *) break ;;
   esac
 done

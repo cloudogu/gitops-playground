@@ -5,7 +5,7 @@ String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/common/ces-build-lib/" }
 String getK8sPlaygroundRepo() {"${env.SCMM_URL}/repo/common/k8s-gitops-playground/"}
 String getCesBuildLibVersion() { '1.46.1' }
 String getMainBranch() { 'feature/replace_k3s_with_k3d' }
-String getBaseImage() { 'localhost:30000/alpine-bash-curl-git:0.0.1' }
+String getBaseImage() { "${env.REGISTRY_URL}/alpine-bash-curl-git:0.0.1" }
 
 cesBuildLib = library(identifier: "ces-build-lib@${cesBuildLibVersion}",
         retriever: modernSCM([$class: 'GitSCMSource', remote: cesBuildLibRepo, credentialsId: scmManagerCredentials])
@@ -66,9 +66,9 @@ node('docker') {
                             sh "sed -i -r 's/0.0.0.0([^0-9]+[0-9]*|\$)/${IP_V4}:6443/g' ~/.kube/config"
                             sh "cat ~/.kube/config"
                             sh "kubectl cluster-info"
-                            sh "yes | ./scripts/apply.sh --trace --argocd --cluster-bind-address=${IP_V4}"
-                            sh "k3d cluster stop citest"
-                            sh "k3d cluster delete citest"
+                            sh "yes | ./scripts/apply.sh --debug --argocd --cluster-bind-address=${IP_V4}"
+                            sh "k3d cluster stop ${CLUSTER_NAME}"
+                            sh "k3d cluster delete ${CLUSTER_NAME}"
                         }
             }
         }

@@ -5,7 +5,7 @@
 
 # See https://github.com/rancher/k3d/releases
 K3D_VERSION=4.4.4
-K3D_CLUSTER_NAME=test-k8s-gitops-playground
+K3D_CLUSTER_NAME=k8s-gitops-playground
 K3D_SUBNET=192.168.192.0/20
 CLUSTER_NAME=${K3D_CLUSTER_NAME}
 
