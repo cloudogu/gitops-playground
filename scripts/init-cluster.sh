@@ -6,7 +6,7 @@
 # See https://github.com/rancher/k3d/releases
 K3D_VERSION=4.4.4
 K3D_CLUSTER_NAME=test-k8s-gitops-playground
-K3D_SUBNET=172.31.0.0/24
+K3D_SUBNET=192.168.192.0/20
 CLUSTER_NAME=${K3D_CLUSTER_NAME}
 
 # env var to turn "on" when not willing to bind to localhost (e.g. run by ci-server)
@@ -98,12 +98,25 @@ function createCluster() {
     '--no-hostip'
   )
 
-  if [[ ${BIND_LOCALHOST} == 'true' ]]; then
-    K3D_ARGS+=('--network=host')
+  NETWORK_EXISTING=$(docker network ls | grep -o "[a-zA-Z0-9-]*${CLUSTER_NAME}")
+
+  if [[ -n "${NETWORK_EXISTING}" ]]; then
+    if [[ ${BIND_LOCALHOST} == 'true' ]]; then
+      docker network create ${CLUSTER_NAME} >/dev/null
+    else
+      docker network create --subnet=${K3D_SUBNET} ${CLUSTER_NAME} >/dev/null
+    fi
   fi
 
-  docker network rm ${CLUSTER_NAME} >/dev/null || true
-  docker network create ${CLUSTER_NAME} >/dev/null
+  if [[ ${BIND_LOCALHOST} == 'true' ]]; then
+    K3D_ARGS+=(
+      '--network=host'
+    )
+  else
+    K3D_ARGS+=(
+      "--network=${CLUSTER_NAME}"
+    )
+  fi
 
   k3d cluster create ${CLUSTER_NAME} ${K3D_ARGS[*]}
 
@@ -151,18 +164,9 @@ eval set -- "$COMMANDS"
 
 while true; do
   case "$1" in
-  -h | --help)
-    printParameters
-    exit 0
-    ;;
-  --cluster-name)
-    CLUSTER_NAME="$2"
-    shift 2
-    ;;
-  --)
-    shift
-    break
-    ;;
+    -h | --help   ) printParameters; exit 0 ;;
+    --cluster-name) CLUSTER_NAME="$2"; shift 2 ;;
+    --) shift; break ;;
   *) break ;;
   esac
 done

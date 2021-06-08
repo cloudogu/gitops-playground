@@ -217,7 +217,7 @@ function initSCMM() {
   pushRepoMirror 'https://github.com/cloudogu/gitops-build-lib.git' 'common/gitops-build-lib'
   pushRepoMirror 'https://github.com/cloudogu/ces-build-lib.git' 'common/ces-build-lib' 'develop'
   pushRepoMirror 'https://github.com/cloudogu/k8s-gitops-playground.git' 'common/k8s-gitops-playground' 'feature/replace_k3s_with_k3d'
-  initRepoWithSource 'applications/infrastructure/k8s-gitops-playground' 'infrastructure/k8s-gitops-playground'
+  pushGopPipelineRepo 'applications/infrastructure/k8s-gitops-playground' 'infrastructure/k8s-gitops-playground'
 
 }
 
@@ -358,6 +358,28 @@ function createSecrets() {
 
 function createSecret() {
   kubectl create secret generic "$@" --dry-run=client -oyaml | kubectl apply -f-
+}
+
+function pushGopPipelineRepo() {
+  LOCAL_GOP_SOURCE="$1"
+  TARGET_REPO_SCMM="$2"
+  TMP_REPO=$(mktemp -d)
+
+  git clone "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/common/k8s-gitops-playground" "${TMP_REPO}" --quiet >/dev/null 2>&1
+  (
+    cd "${TMP_REPO}"
+    ls -la .
+    cp -r "${LOCAL_GOP_SOURCE}"/Jenkinsfile .
+    git add .
+    git commit -m 'Add GitOps Pipeline and K8s resources' --quiet
+
+    waitForScmManager
+    git push -u "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
+  )
+
+  rm -rf "${TMP_REPO}"
+
+  setDefaultBranch "${TARGET_REPO_SCMM}"
 }
 
 function pushPetClinicRepo() {

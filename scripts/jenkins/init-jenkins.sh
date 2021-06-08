@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -o errexit -o nounset -o pipefail
-#set -x
+# set -x
 
 if [[ -z ${PLAYGROUND_DIR+x} ]]; then
   BASEDIR=$(dirname $0)
@@ -48,7 +48,9 @@ function jenkinsHelmSettingsForLocalCluster() {
 
 # using local cluster on k3d we grep local host gid for docker
 function queryDockerGroupOfJenkinsNode() {
-  if [[ $REMOTE_CLUSTER == true ]]; then
+  if [[ $REMOTE_CLUSTER != true ]]; then
+    cat /etc/group | grep docker | cut -d: -f3
+  else
     kubectl apply -f jenkins/tmp-docker-gid-grepper.yaml >/dev/null
     until kubectl get po --field-selector=status.phase=Running | grep tmp-docker-gid-grepper >/dev/null; do
       sleep 1
@@ -58,8 +60,6 @@ function queryDockerGroupOfJenkinsNode() {
 
     # This call might block some (unnecessary) seconds so move to background
     kubectl delete -f jenkins/tmp-docker-gid-grepper.yaml >/dev/null &
-  else
-    cat /etc/group | grep docker | cut -d: -f3
   fi
 }
 
