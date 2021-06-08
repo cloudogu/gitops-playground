@@ -61,10 +61,10 @@ function main() {
   KUBEVAL_IMAGE="${23}"
   HELMKUBEVAL_IMAGE="${24}"
   YAMLLINT_IMAGE="${25}"
-  CLUSTER_BIND_ADDRESS="${26}"
   CONTAINERED="${26}"
   SKIP_HELM_UPDATE="${27}"
   ARGOCD_CONFIG_ONLY="${28}"
+  CLUSTER_BIND_ADDRESS="${29}"
 
   if [[ $INSECURE == true ]]; then
     CURL_HOME="${PLAYGROUND_DIR}"
@@ -284,6 +284,8 @@ function initFluxV2() {
 
 function initArgo() {
   VALUES_YAML_PATH="argocd/values.yaml"
+  CONTROL_APP_YAML_PATH="argocd/resources/control-app.yaml"
+  ARGOCD_CM_YAML_PATH="argocd/resources/argocd-cm.yaml"
   if [[ ${INTERNAL_SCMM} == false ]]; then
     VALUES_YAML_PATH="$(mkTmpWithReplacedScmmUrls "$VALUES_YAML_PATH")"
     CONTROL_APP_YAML_PATH="$(mkTmpWithReplacedScmmUrls "$CONTROL_APP_YAML_PATH")"
@@ -794,6 +796,7 @@ while true; do
     -c | --containered   ) CONTAINERED=true; shift ;;
     --skip-helm-update   ) SKIP_HELM_UPDATE=true; shift ;;
     --argocd-config-only ) ARGOCD_CONFIG_ONLY=true; shift ;;
+    --cluster-bind-address) CLUSTER_BIND_ADDRESS="$2"; shift 2;;
     --                   ) shift; break ;;
   *) break ;;
   esac
@@ -809,6 +812,6 @@ if [[ $TRACE == true ]]; then
   # Trace without debug does not make to much sense, as the spinner spams the output
   DEBUG=true
 fi
-main "$DEBUG" "$INSTALL_ALL_MODULES" "$INSTALL_FLUXV1" "$INSTALL_FLUXV2" "$INSTALL_ARGOCD" "$REMOTE_CLUSTER" "$SET_USERNAME" "$SET_PASSWORD" "$JENKINS_URL" "$JENKINS_USERNAME" "$JENKINS_PASSWORD" "$REGISTRY_URL" "$REGISTRY_PATH" "$REGISTRY_USERNAME" "$REGISTRY_PASSWORD" "$SCMM_URL" "$SCMM_USERNAME" "$SCMM_PASSWORD" "$INSECURE" "$TRACE" "$KUBECTL_IMAGE" "$HELM_IMAGE" "$KUBEVAL_IMAGE" "$HELMKUBEVAL_IMAGE" "$YAMLLINT_IMAGE" "$CONTAINERED" "$SKIP_HELM_UPDATE" "$ARGOCD_CONFIG_ONLY"
+main "$DEBUG" "$INSTALL_ALL_MODULES" "$INSTALL_FLUXV1" "$INSTALL_FLUXV2" "$INSTALL_ARGOCD" "$REMOTE_CLUSTER" "$SET_USERNAME" "$SET_PASSWORD" "$JENKINS_URL" "$JENKINS_USERNAME" "$JENKINS_PASSWORD" "$REGISTRY_URL" "$REGISTRY_PATH" "$REGISTRY_USERNAME" "$REGISTRY_PASSWORD" "$SCMM_URL" "$SCMM_USERNAME" "$SCMM_PASSWORD" "$INSECURE" "$TRACE" "$KUBECTL_IMAGE" "$HELM_IMAGE" "$KUBEVAL_IMAGE" "$HELMKUBEVAL_IMAGE" "$YAMLLINT_IMAGE" "$CONTAINERED" "$SKIP_HELM_UPDATE" "$ARGOCD_CONFIG_ONLY" "$CLUSTER_BIND_ADDRESS"
 
 
