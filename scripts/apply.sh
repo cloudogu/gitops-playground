@@ -230,8 +230,6 @@ function initSCMM() {
   pushHelmChartRepoWithDependency 'common/spring-boot-helm-chart-with-dependency'
   pushRepoMirror "${GITOPS_BUILD_LIB_REPO}" 'common/gitops-build-lib'
   pushRepoMirror "${CES_BUILD_LIB_REPO}" 'common/ces-build-lib' 'develop'
-  pushRepoMirror 'https://github.com/cloudogu/k8s-gitops-playground.git' 'common/k8s-gitops-playground' 'feature/replace_k3s_with_k3d'
-  pushGopPipeline 'applications/infrastructure/k8s-gitops-playground' 'infrastructure/k8s-gitops-playground'
 }
 
 function setExternalHostnameIfNecessary() {

@@ -82,27 +82,6 @@ controller:
           # Delete containerd, etc. We only need the docker CLI
           # Note: "wget -O- | tar" leads to the folder being owned by root, even when creating it beforehand?!
           # That's
-
-
-
-          #if [[ ! -d /host-tmp/nerdctl ]]; then
-          #  echo creating /tmp/nerdctl on host and chowning to UID 1000;
-          #  mkdir /host-tmp/nerdctl;
-          #fi;
-
-          #if [[ -f /host-tmp/nerdctl/nerdctl ]]; then echo 'nerdctl already installed'; exit 0; fi;
-          #cd /host-tmp;
-
-          #wget -q https://github.com/containerd/nerdctl/releases/download/v0.8.2/nerdctl-full-0.8.2-linux-amd64.tar.gz -O nerdctl.tar.gz;
-          #tar -xzf nerdctl.tar.gz -C /host-tmp/nerdctl;
-          #rm nerdctl.tar.gz;
-
-          #export XDG_RUNTIME_DIR=/run/user/0;
-          #export PATH=$PATH:/host-tmp/nerdctl/bin;
-
-        #containerd-rootless-setuptool.sh install;
-
-
       volumeMounts:
         - name: host-tmp
           mountPath: /host-tmp

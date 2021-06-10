@@ -82,10 +82,6 @@ function configureScmmManager() {
   addRepo "argocd" "gitops"
   setPermission "argocd" "gitops" "${GITOPS_USERNAME}" "WRITE"
 
-  ### Infrastructure Repos
-  addRepo "infrastructure" "k8s-gitops-playground"
-  setPermission "infrastructure" "k8s-gitops-playground" "${GITOPS_USERNAME}" "WRITE"
-
   ### Common Repos
   addRepo "common" "spring-boot-helm-chart"
   setPermission "common" "spring-boot-helm-chart" "${GITOPS_USERNAME}" "WRITE"
@@ -98,9 +94,6 @@ function configureScmmManager() {
 
   addRepo "common" "ces-build-lib"
   setPermission "common" "ces-build-lib" "${GITOPS_USERNAME}" "WRITE"
-
-  addRepo "common" "k8s-gitops-playground"
-  setPermission "common" "k8s-gitops-playground" "${GITOPS_USERNAME}" "WRITE"
 
   # Install necessary plugins
   installScmmPlugin "scm-mail-plugin" "false"

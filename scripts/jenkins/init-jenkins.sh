@@ -110,5 +110,4 @@ function configureJenkins() {
   createJob "fluxv1-applications" "${SCMM_URL}" "fluxv1" "scmm-user"
   createJob "fluxv2-applications" "${SCMM_URL}" "fluxv2" "scmm-user"
   createJob "argocd-applications" "${SCMM_URL}" "argocd" "scmm-user"
-  createJob "infrastructure-applications" "${SCMM_URL}" "infrastructure" "scmm-user"
 }
