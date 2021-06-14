@@ -5,32 +5,6 @@ service:
 persistence:
   size: 1Gi
 
-#pluginVersions:
-#  mail: 2.4.0
-#  review: 2.6.2
-#  codeeditor: 1.0.0
-#  editor: 2.2.0
-#  activity: 2.0.0
-#  jenkins: 2.2.0
-  # Dependency for jenkins plugin
-#  el: 1.0.0
-  
-#plugins:
-#  - name: mail
-#    url: https://packages.scm-manager.org/repository/plugin-releases/sonia/scm/plugins/scm-mail-plugin/{{ .Values.pluginVersions.mail }}/scm-mail-plugin-{{ .Values.pluginVersions.mail }}.smp
-#  - name: review
-#    url: https://packages.scm-manager.org/repository/plugin-releases/sonia/scm/plugins/scm-review-plugin/{{ .Values.pluginVersions.review }}/scm-review-plugin-{{ .Values.pluginVersions.review }}.smp
-#  - name: codeeditor
-#    url: https://packages.scm-manager.org/repository/plugin-releases/sonia/scm/plugins/scm-code-editor-plugin/{{ .Values.pluginVersions.codeeditor }}/scm-code-editor-plugin-{{ .Values.pluginVersions.codeeditor }}.smp
-#  - name: editor
-#    url: https://packages.scm-manager.org/repository/plugin-releases/sonia/scm/plugins/scm-editor-plugin/{{ .Values.pluginVersions.editor }}/scm-editor-plugin-{{ .Values.pluginVersions.editor }}.smp
-#  - name: jenkins
-#    url: https://packages.scm-manager.org/repository/plugin-releases/sonia/scm/plugins/scm-jenkins-plugin/{{ .Values.pluginVersions.jenkins }}/scm-jenkins-plugin-{{ .Values.pluginVersions.jenkins }}.smp
-#  - name: activity
-#    url: https://packages.scm-manager.org/repository/plugin-releases/sonia/scm/plugins/scm-activity-plugin/{{ .Values.pluginVersions.activity }}/scm-activity-plugin-{{ .Values.pluginVersions.activity }}.smp
-#  - name: el
-#    url: https://packages.scm-manager.org/repository/plugin-releases/sonia/scm/plugins/scm-el-plugin/{{ .Values.pluginVersions.el }}/scm-el-plugin-{{ .Values.pluginVersions.el }}.smp
-
 extraEnvFrom: |
   - prefix: GITOPS_
     secretRef:
@@ -38,12 +12,3 @@ extraEnvFrom: |
   - prefix: ADMIN_
     secretRef:
       name: scmm-credentials
-
-#lifecycleHooks: |-
-#  postStart:
-#    exec:
-#      command:
-#        - "/bin/bash"
-#        - "-c"
-#        - >
-#  {{  tpl (required ".Values.postStartHookScript required!" .Values.postStartHookScript) . | indent 8  }}

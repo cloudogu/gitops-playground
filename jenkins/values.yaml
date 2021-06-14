@@ -1,5 +1,5 @@
 # For updating, delete pvc jenkins-docker-client
-dockerClientVersion: 19.03.9
+dockerClientVersion: 20.10.2
 
 controller:
   # to prevent the jenkins-ui-test pod being created
@@ -31,6 +31,7 @@ controller:
   nodeSelector:
     node: jenkins
 
+  runAsUser: 1000
   JCasC:
     defaultConfig: true
     configScripts:
@@ -52,7 +53,7 @@ controller:
       # Why? The docker pipeline plugin seems to set an empty environment: https://github.com/jenkinsci/docker-workflow-plugin/blob/docker-workflow-1.25/src/main/java/org/jenkinsci/plugins/docker/workflow/client/DockerClient.java#L261
       # Workaround: Set the ENV in the container:
       value: /usr/local/openjdk-8/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/tmp/docker
-      
+
   customInitContainers:
     # Create Jenkins agent working dir explicitly. Otherwise it seems to be owned by root
     # The does not need this folder, but creating it in a defined way and ownership on startup is better than to run an
@@ -65,12 +66,13 @@ controller:
       command: [ "/usr/local/bin/bash", "-c" ]
       args:
         - set -x -o nounset -o pipefail -o errexit;
+
           id;
           if [[ ! -d /host-tmp/k8s-gitops-playground-jenkins-agent ]]; then
-            echo creating /tmp/k8s-gitops-playground-jenkins-agent on host and chowning to UID 1000; 
-            mkdir /host-tmp/k8s-gitops-playground-jenkins-agent;
+          echo creating /tmp/k8s-gitops-playground-jenkins-agent on host and chowning to UID 1000;
+          mkdir /host-tmp/k8s-gitops-playground-jenkins-agent;
           fi;
-          
+
           if [[ -f /host-tmp/docker/docker ]]; then echo 'Docker already installed'; exit 0; fi;
           cd /host-tmp;
           wget -q https://download.docker.com/linux/static/stable/x86_64/docker-{{.Values.dockerClientVersion}}.tgz -O docker.tgz;
@@ -106,10 +108,12 @@ agent:
   # A different option would be to link the workspace into this repo.
   # If we should ever want to implement this, the logic can be reused from Git History:
   # https://github.com/cloudogu/k8s-gitops-playground/blob/61e033/scripts/apply.sh#L211-L235
-  # We mount the same PATH as a hostPath. See bellow.
+  # We mount the same PATH as a hostPath. See below.
   # On Multi Node Clusters this leads to the requirement that Jenkins controller and agents run on the same host
   # We realize this using nodeSelectors 
   workingDir: "/tmp/k8s-gitops-playground-jenkins-agent"
+  runAsUser: 1000
+  runAsGroup: 133
   nodeSelector:
     node: jenkins
   # Number of concurrent builds. Keep it low to avoid high CPU load.
@@ -122,7 +126,7 @@ agent:
   envVars:
     - name: PATH
       # Add /tmp/docker to the path
-      value: /usr/local/openjdk-11/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/tmp/docker
+      value: /usr/local/openjdk-8/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/tmp/docker
   volumes:
     - type: HostPath
       # See workingDir

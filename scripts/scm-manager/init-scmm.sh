@@ -20,9 +20,9 @@ function configureScmmManager() {
   SCMM_HOST=$(getHost ${3})
   SCMM_PROTOCOL=$(getProtocol ${3})
   SCMM_JENKINS_URL=${4}
-  # When running in k3s, BASE_URL must be the internal URL. Otherwise webhooks from SCMM->Jenkins will fail, as 
-  # They contain Repository URLs create with BASE_URL. Jenkins uses the internal URL for repos. So match is only 
-  # successful, when SCM also sends the Repo URLs using the internal URL 
+  # When running in k3s, BASE_URL must be the internal URL. Otherwise webhooks from SCMM->Jenkins will fail, as
+  # They contain Repository URLs create with BASE_URL. Jenkins uses the internal URL for repos. So match is only
+  # successful, when SCM also sends the Repo URLs using the internal URL
   BASE_URL=${5}
   IS_LOCAL=${6}
 
@@ -119,11 +119,10 @@ function addRepo() {
 
   STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X POST -H "Content-Type: application/vnd.scmm-repository+json;v=2" \
     --data "{\"name\":\"${2}\",\"namespace\":\"${1}\",\"type\":\"git\",\"contact\":\"admin@mail.de\",\"description\":\"description\",\"contextEntries\":{},\"_links\":{}}" \
-    "${SCMM_PROTOCOL}://${SCMM_USER}:${SCMM_PWD}@${SCMM_HOST}/api/v2/repositories/" ) && EXIT_STATUS=$? || EXIT_STATUS=$?
-  if [ $EXIT_STATUS != 0 ]
-    then
-      echo "Adding Repo failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
-      exit $EXIT_STATUS
+    "${SCMM_PROTOCOL}://${SCMM_USER}:${SCMM_PWD}@${SCMM_HOST}/api/v2/repositories/") && EXIT_STATUS=$? || EXIT_STATUS=$?
+  if [ $EXIT_STATUS != 0 ]; then
+    echo "Adding Repo failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
+    exit $EXIT_STATUS
   fi
 
   printStatus "${STATUS}"
@@ -134,11 +133,10 @@ function setConfig() {
 
   STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X PUT -H "Content-Type: application/vnd.scmm-config+json;v=2" \
     --data "{\"proxyPassword\":null,\"proxyPort\":8080,\"proxyServer\":\"proxy.mydomain.com\",\"proxyUser\":null,\"enableProxy\":false,\"realmDescription\":\"SONIA :: SCM Manager\",\"disableGroupingGrid\":false,\"dateFormat\":\"YYYY-MM-DD HH:mm:ss\",\"anonymousAccessEnabled\":false,\"anonymousMode\":\"OFF\",\"baseUrl\":\"${BASE_URL}\",\"forceBaseUrl\":false,\"loginAttemptLimit\":-1,\"proxyExcludes\":[],\"skipFailedAuthenticators\":false,\"pluginUrl\":\"https://plugin-center-api.scm-manager.org/api/v1/plugins/{version}?os={os}&arch={arch}\",\"loginAttemptLimitTimeout\":300,\"enabledXsrfProtection\":true,\"namespaceStrategy\":\"CustomNamespaceStrategy\",\"loginInfoUrl\":\"https://login-info.scm-manager.org/api/v1/login-info\",\"releaseFeedUrl\":\"https://scm-manager.org/download/rss.xml\",\"mailDomainName\":\"scm-manager.local\",\"adminGroups\":[],\"adminUsers\":[]}" \
-    "${SCMM_PROTOCOL}://${SCMM_USER}:${SCMM_PWD}@${SCMM_HOST}/api/v2/config" ) && EXIT_STATUS=$? || EXIT_STATUS=$?
-  if [ $EXIT_STATUS != 0 ]
-    then
-      echo "Setting config failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
-      exit $EXIT_STATUS
+    "${SCMM_PROTOCOL}://${SCMM_USER}:${SCMM_PWD}@${SCMM_HOST}/api/v2/config") && EXIT_STATUS=$? || EXIT_STATUS=$?
+  if [ $EXIT_STATUS != 0 ]; then
+    echo "Setting config failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
+    exit $EXIT_STATUS
   fi
 
   printStatus "${STATUS}"
@@ -149,11 +147,10 @@ function addUser() {
 
   STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X POST -H "Content-Type: application/vnd.scmm-user+json;v=2" \
     --data "{\"name\":\"${1}\",\"displayName\":\"${1}\",\"mail\":\"${3}\",\"external\":false,\"password\":\"${2}\",\"active\":true,\"_links\":{}}" \
-    "${SCMM_PROTOCOL}://${SCMM_USER}:${SCMM_PWD}@${SCMM_HOST}/api/v2/users" ) && EXIT_STATUS=$? || EXIT_STATUS=$?
-  if [ $EXIT_STATUS != 0 ]
-    then
-      echo "Adding User failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
-      exit $EXIT_STATUS
+    "${SCMM_PROTOCOL}://${SCMM_USER}:${SCMM_PWD}@${SCMM_HOST}/api/v2/users") && EXIT_STATUS=$? || EXIT_STATUS=$?
+  if [ $EXIT_STATUS != 0 ]; then
+    echo "Adding User failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
+    exit $EXIT_STATUS
   fi
 
   printStatus "${STATUS}"
@@ -164,11 +161,10 @@ function setAdmin() {
 
   STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X PUT -H "Content-Type: application/vnd.scmm-permissionCollection+json;v=2" \
     --data "{\"permissions\":[\"*\"]}" \
-    "${SCMM_PROTOCOL}://${SCMM_USER}:${SCMM_PWD}@${SCMM_HOST}/api/v2/users/${1}/permissions" ) && EXIT_STATUS=$? || EXIT_STATUS=$?
-  if [ $EXIT_STATUS != 0 ]
-    then
-      echo "Setting Admin failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
-      exit $EXIT_STATUS
+    "${SCMM_PROTOCOL}://${SCMM_USER}:${SCMM_PWD}@${SCMM_HOST}/api/v2/users/${1}/permissions") && EXIT_STATUS=$? || EXIT_STATUS=$?
+  if [ $EXIT_STATUS != 0 ]; then
+    echo "Setting Admin failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
+    exit $EXIT_STATUS
   fi
 
   printStatus "${STATUS}"
@@ -181,11 +177,10 @@ function deleteUser() {
   printf 'Deleting User %s ... ' "${userToDelete}"
 
   STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X DELETE \
-    "${SCMM_PROTOCOL}://${loginUser}:${loginPassword}@${SCMM_HOST}/api/v2/users/${userToDelete}" ) && EXIT_STATUS=$? || EXIT_STATUS=$?
-  if [ $EXIT_STATUS != 0 ]
-    then
-      echo "Deleting User failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
-      exit $EXIT_STATUS
+    "${SCMM_PROTOCOL}://${loginUser}:${loginPassword}@${SCMM_HOST}/api/v2/users/${userToDelete}") && EXIT_STATUS=$? || EXIT_STATUS=$?
+  if [ $EXIT_STATUS != 0 ]; then
+    echo "Deleting User failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
+    exit $EXIT_STATUS
   fi
 
   printStatus "${STATUS}"
@@ -196,11 +191,10 @@ function setPermission() {
 
   STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X POST -H "Content-Type: application/vnd.scmm-repositoryPermission+json" \
     --data "{\"name\":\"${3}\",\"role\":\"${4}\",\"verbs\":[],\"groupPermission\":false}" \
-    "${SCMM_PROTOCOL}://${SCMM_USER}:${SCMM_PWD}@${SCMM_HOST}/api/v2/repositories/${1}/${2}/permissions/" ) && EXIT_STATUS=$? || EXIT_STATUS=$?
-  if [ $EXIT_STATUS != 0 ]
-    then
-      echo "Setting Permission failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
-      exit $EXIT_STATUS
+    "${SCMM_PROTOCOL}://${SCMM_USER}:${SCMM_PWD}@${SCMM_HOST}/api/v2/repositories/${1}/${2}/permissions/") && EXIT_STATUS=$? || EXIT_STATUS=$?
+  if [ $EXIT_STATUS != 0 ]; then
+    echo "Setting Permission failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
+    exit $EXIT_STATUS
   fi
 
   printStatus "${STATUS}"
@@ -215,11 +209,10 @@ function installScmmPlugin() {
   printf 'Installing Plugin %s ... ' "${1}"
 
   STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X POST -H "accept: */*" --data "" \
-    "${SCMM_PROTOCOL}://${SCMM_USER}:${SCMM_PWD}@${SCMM_HOST}/api/v2/plugins/available/${1}/install${DO_RESTART}" ) && EXIT_STATUS=$? || EXIT_STATUS=$?
-  if [ $EXIT_STATUS != 0 ]
-    then
-      echo "Installing Plugin failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
-      exit $EXIT_STATUS
+    "${SCMM_PROTOCOL}://${SCMM_USER}:${SCMM_PWD}@${SCMM_HOST}/api/v2/plugins/available/${1}/install${DO_RESTART}") && EXIT_STATUS=$? || EXIT_STATUS=$?
+  if [ $EXIT_STATUS != 0 ]; then
+    echo "Installing Plugin failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
+    exit $EXIT_STATUS
   fi
 
   printStatus "${STATUS}"
@@ -230,11 +223,10 @@ function configJenkins() {
 
   STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X PUT -H 'Content-Type: application/json' \
     --data-raw "{\"disableRepositoryConfiguration\":false,\"disableMercurialTrigger\":false,\"disableGitTrigger\":false,\"disableEventTrigger\":false,\"url\":\"${1}\"}" \
-    "${SCMM_PROTOCOL}://${SCMM_USER}:${SCMM_PWD}@${SCMM_HOST}/api/v2/config/jenkins/" ) && EXIT_STATUS=$? || EXIT_STATUS=$?
-  if [ $EXIT_STATUS != 0 ]
-    then
-      echo "Configuring Jenkins failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
-      exit $EXIT_STATUS
+    "${SCMM_PROTOCOL}://${SCMM_USER}:${SCMM_PWD}@${SCMM_HOST}/api/v2/config/jenkins/") && EXIT_STATUS=$? || EXIT_STATUS=$?
+  if [ $EXIT_STATUS != 0 ]; then
+    echo "Configuring Jenkins failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
+    exit $EXIT_STATUS
   fi
 
   printStatus "${STATUS}"
@@ -250,7 +242,7 @@ function scmmHelmSettingsForRemoteCluster() {
 
 function waitForScmManager() {
   echo -n "Waiting for Scmm to become available at ${SCMM_PROTOCOL}://${SCMM_HOST}/api/v2"
-  
+
   HTTP_CODE="0"
   while [[ "${HTTP_CODE}" -ne "200" ]]; do
     HTTP_CODE="$(curl -s -L -o /dev/null --max-time 10 -w ''%{http_code}'' "${SCMM_PROTOCOL}://${SCMM_HOST}/api/v2")" || true
@@ -280,8 +272,7 @@ function getProtocol() {
 
 function printStatus() {
   STATUS_CODE=${1}
-  if [ "${STATUS_CODE}" -eq 200 ] || [ "${STATUS_CODE}" -eq 201  ] || [ "${STATUS_CODE}" -eq 302  ] || [ "${STATUS_CODE}" -eq 204  ] || [ "${STATUS_CODE}" -eq 409  ]
-  then
+  if [ "${STATUS_CODE}" -eq 200 ] || [ "${STATUS_CODE}" -eq 201 ] || [ "${STATUS_CODE}" -eq 302 ] || [ "${STATUS_CODE}" -eq 204 ] || [ "${STATUS_CODE}" -eq 409 ]; then
     echo -e ' \u2705'
   else
     echo -e ' \u274c ' "(status code: $STATUS_CODE)"

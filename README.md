@@ -52,7 +52,8 @@ The GitOps Playground is a pre-configured environment to see GitOps in motion.
 
 There a several options for running the GitOps playground
 
-* on a local k3s cluster
+* on a local k3d cluster
+  * __NOTE: Currently runs only on linux!__
 * on a remote k8s cluster
 * each with the option 
   * to use an external Jenkins, SCM-Manager and registry 
@@ -67,13 +68,13 @@ Jenkins build agents spawned in the cloud.
 
 | Demo on local machine | Demo on remote cluster | Production environment with CES |
 |--------------------|--------------------|--------------------|
-|![Playground on local machine](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/k8s-gitops-playground/main/docs/gitops-playground.puml&fmt=svg) | ![Playground on remote cluster](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/k8s-gitops-playground/main/docs/gitops-playground-remote.puml&fmt=svg)  | ![A possible production environment](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/k8s-gitops-playground/main/docs/production-setting.puml&fmt=svg) | 
+|![Playground on local machine](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/k8s-gitops-playground/main/docs/gitops-playground.puml&fmt=svg) | ![Playground on remote cluster](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/k8s-gitops-playground/main/docs/gitops-playground-remote.puml&fmt=svg)  | ![A possible production environment](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/k8s-gitops-playground/main/docs/production-setting.puml&fmt=svg) |
 
 ### Create Cluster
 
 If you don't have a demo cluster at hand we provide scripts to create either 
 
-* a local k3s cluster ([see docs](docs/k3s.md)) or
+* a local k3d cluster ([see docs](docs/k3s.md)) or
 * a remote k8s cluster on Google Kubernetes Engine via terraform ([see docs](docs/gke.md)).
 * But most k8s cluster should work (tested with k8s 1.18+).  
   Note that if you want to deploy Jenkins inside the cluster, Docker is required as container runtime.
@@ -95,7 +96,7 @@ The scripts also prints a little intro on how to get started with a GitOps deplo
 The scripts provides a number of options: See `./scripts/apply.sh --help` for more information.
 
 Examples:
-* Start on local k3s cluster
+* Start on local k3d cluster
 ```shell
 scripts/apply.sh
 ```
