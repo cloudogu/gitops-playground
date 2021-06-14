@@ -98,12 +98,11 @@ function createCluster() {
     '--no-hostip'
   )
 
+  # We create a new Docker Network to prevent port conflicts
   NETWORK_EXISTING=$(docker network ls | grep -o "[a-zA-Z0-9-]*${CLUSTER_NAME}")
 
   if [[ -n "${NETWORK_EXISTING}" ]]; then
-    if [[ ${BIND_LOCALHOST} == 'true' ]]; then
-      docker network create ${CLUSTER_NAME} >/dev/null
-    else
+    if [[ ${BIND_LOCALHOST} == 'false' ]]; then
       docker network create --subnet=${K3D_SUBNET} ${CLUSTER_NAME} >/dev/null
     fi
   fi
@@ -119,17 +118,6 @@ function createCluster() {
   fi
 
   k3d cluster create ${CLUSTER_NAME} ${K3D_ARGS[*]}
-
-  IMPORT_IMAGES=(
-    'jenkins/inbound-agent:4.6-1-jdk11'
-    'jenkins/jenkins:2.263.3-lts-jdk11'
-  )
-
-  for i in "${IMPORT_IMAGES[@]}"; do
-    docker pull "${i}"
-  done
-
-  k3d image import -c ${CLUSTER_NAME} ${IMPORT_IMAGES[*]}
   k3d kubeconfig merge ${CLUSTER_NAME} --kubeconfig-switch-context
 }
 
