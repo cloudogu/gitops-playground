@@ -52,6 +52,7 @@ node('docker') {
                     docker.withRegistry("https://${dockerRegistryBaseUrl}", 'cesmarvin-github') {
                         String imageTag = "1.0.0"
                         imageName = "${dockerRegistryBaseUrl}/${dockerRegistryPath}/gop:${imageTag}"
+//                        imageName = "gopImage"
                         def docker = cesBuildLib.Docker.new(this)
                         image = docker.build(imageName)
     //                    image.push()
@@ -98,13 +99,14 @@ node('docker') {
                                 ).trim()
 
 
+                                sh "k3d image import -c ${CLUSTER_NAME} ${imageName}"
+
                                 sh "sed -i -r 's/0.0.0.0([^0-9]+[0-9]*|\$)/${IP_V4}:6443/g' ~/.kube/config"
                                 sh "cat ~/.kube/config"
                                 sh "kubectl cluster-info"
                                 sh "kubectl create serviceaccount gop-job-executer -n default"
                                 sh "kubectl create clusterrolebinding gop-job-executer --clusterrole=cluster-admin --serviceaccount=default:gop-job-executer"
-                                sh "kubectl run gop --rm -i --tty --image-pull-policy='Never' --image ${imageName} --serviceaccount gop-job-executer -- --argocd --fluxv1"
-//                                sh "yes | ./scripts/apply.sh --debug --argocd --cluster-bind-address=${IP_V4}"
+                                sh "kubectl run --rm -i --tty --image-pull-policy='Never' --image ${imageName} --serviceaccount gop-job-executer -- --argocd --fluxv1"
                                 sh "k3d cluster stop ${CLUSTER_NAME}"
                                 sh "k3d cluster delete ${CLUSTER_NAME}"
                             }

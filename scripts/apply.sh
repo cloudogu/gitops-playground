@@ -188,6 +188,7 @@ function initRegistry() {
   if [[ "${INTERNAL_REGISTRY}" == true ]]; then
     helm upgrade -i docker-registry --values docker-registry/values.yaml --version 1.9.4 stable/docker-registry -n default
   fi
+  echo "nach init registry"
 }
 
 function initJenkins() {
@@ -209,6 +210,7 @@ function initJenkins() {
 }
 
 function initSCMMVars() {
+  echo "initSCMMVars"
   if [[ ${INTERNAL_SCMM} == true ]]; then
     SCMM_USERNAME=${SET_USERNAME}
     SCMM_PASSWORD=${SET_PASSWORD}
