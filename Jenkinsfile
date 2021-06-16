@@ -65,16 +65,9 @@ node('docker') {
                 stage('Test GOP') {
                     cesBuildLib.Docker.new(this).image(imageName) // contains the docker client binary
                             .inside("${this.pwd().equals(this.env.WORKSPACE) ? '' : "-v ${this.env.WORKSPACE}:${this.env.WORKSPACE} "}" +
-                                    '--entrypoint="" -e SETUP_LOCAL_GOP=false -u 0:133 -v /usr/bin/docker:/usr/bin/docker -v /var/run/docker.sock:/var/run/docker.sock -e PATH=/usr/local/openjdk-8/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin') {
-
-//                                sh 'sudo apt install docker -y'
-
-//                                sh 'ls -la /usr/bin'
-//                                sh 'ls -la /var/run'
-//                                sh 'ls -la /run'
-
-                                sh '/usr/bin/docker -v'
-
+                                    '--entrypoint="" -e SETUP_LOCAL_GOP=false -u 0:133  -v /var/run/docker.sock:/var/run/docker.sock -e PATH=/usr/local/openjdk-8/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin') {
+// -v /usr/bin/docker:/usr/bin/docker
+                                
                                 sh 'git config --global user.name "gop-ci-test"'
                                 sh 'git config --global user.email "gop-ci-test@test.com"'
                                 CLUSTER_NAME = "citest"
@@ -108,7 +101,10 @@ node('docker') {
                                 sh "sed -i -r 's/0.0.0.0([^0-9]+[0-9]*|\$)/${IP_V4}:6443/g' ~/.kube/config"
                                 sh "cat ~/.kube/config"
                                 sh "kubectl cluster-info"
-                                sh "yes | ./scripts/apply.sh --debug --argocd --cluster-bind-address=${IP_V4}"
+                                sh "kubectl create serviceaccount gop-job-executer -n default"
+                                sh "kubectl create clusterrolebinding gop-job-executer --clusterrole=cluster-admin --serviceaccount=default:gop-job-executer"
+                                sh "kubectl run gop --rm -i --tty --image-pull-policy='Never' --image ${imageName} --serviceaccount gop-job-executer -- --argocd --fluxv1"
+//                                sh "yes | ./scripts/apply.sh --debug --argocd --cluster-bind-address=${IP_V4}"
                                 sh "k3d cluster stop ${CLUSTER_NAME}"
                                 sh "k3d cluster delete ${CLUSTER_NAME}"
                             }
