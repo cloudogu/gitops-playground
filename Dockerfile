@@ -39,7 +39,6 @@ RUN apk update && \
      gettext=0.20.2-r2 \
      jq=1.6-r1 \
      git=2.30.2-r0 \
-     docker
 
 ENV HOME=/home
 RUN chmod a=rwx -R ${HOME}
