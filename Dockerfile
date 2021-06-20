@@ -38,7 +38,7 @@ RUN apk update && \
      apache2-utils=2.4.48-r0 \
      gettext=0.20.2-r2 \
      jq=1.6-r1 \
-     git=2.30.2-r0 \
+     git=2.30.2-r0
 
 ENV HOME=/home
 RUN chmod a=rwx -R ${HOME}

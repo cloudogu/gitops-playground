@@ -75,10 +75,8 @@ node('docker') {
                             .inside("-v ${env.WORKSPACE}/.trivy/.cache:/root/.cache/") {
                                 sh "trivy image -o .trivy/trivyOutput.txt ${severityFlag} ${imageName}"
                             }
-
-                    def vulnerabilitesFile = readFile(".trivy/trivyOutput.txt")
                     
-                    if (vulnerabilitesFile.size() != 0) {
+                    if (readFile(".trivy/trivyOutput.txt").size() != 0) {
                         currentBuild.result = 'ABORTED'
                         error('There are critical and fixable vulnerabilities.')
                         archiveArtifacts artifacts: ".trivy/trivyOutput.txt"
