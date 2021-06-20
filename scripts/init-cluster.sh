@@ -143,7 +143,6 @@ function createCluster() {
 function installKubectl() {
   curl -LO https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl
   chmod +x ./kubectl
-  mv ./kubectl ${env.WORKSPACE}/kubectl
   echo "kubectl installed"
 }
 
