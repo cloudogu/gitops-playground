@@ -108,16 +108,16 @@ function createCluster() {
   # #   # fi
   # # fi
 
-  # if [[ ! -n "${NETWORK_EXISTING}" ]]; then
-  #   echo "network not existing creating new"
-  #   if [[ ${BIND_LOCALHOST} == 'true' ]]; then
-  #     echo "it is localhost"
-  #     docker network create ${CLUSTER_NAME} >/dev/null
-  #   else
-  #     echo "it is not localhost"
-  #     docker network create --subnet=${K3D_SUBNET} ${CLUSTER_NAME} >/dev/null
-  #   fi
-  # fi
+  if [[ -z "${NETWORK_EXISTING}" ]]; then
+    echo "network not existing creating new"
+    if [[ ${BIND_LOCALHOST} == 'true' ]]; then
+      echo "it is localhost"
+      docker network create ${CLUSTER_NAME} >/dev/null
+    else
+      echo "it is not localhost so with subnet"
+      docker network create --subnet=${K3D_SUBNET} ${CLUSTER_NAME} >/dev/null
+    fi
+  fi
 
 
   if [[ ${BIND_LOCALHOST} == 'true' ]]; then
