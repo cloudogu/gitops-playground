@@ -104,8 +104,8 @@ node('docker') {
                             returnStdout: true
                     ).trim()
 
-                    sh "docker network connect ${DOCKER_NETWORK} ${HOSTNAME}"
                     sh "echo ${HOSTNAME}"
+                    sh "docker network connect ${DOCKER_NETWORK} ${HOSTNAME}"
 
                     CONTAINER_ID = sh(
                             script: "docker ps | grep ${CLUSTER_NAME}-server-0 | grep -o -m 1 '[^ ]*' | head -1",
