@@ -108,7 +108,7 @@ function createCluster() {
   # #   # fi
   # # fi
 
-  if [[ -n "${NETWORK_EXISTING}" ]]; then
+  if [[ ! -n "${NETWORK_EXISTING}" ]]; then
     echo "network not existing creating new"
     if [[ ${BIND_LOCALHOST} == 'true' ]]; then
       echo "it is localhost"
