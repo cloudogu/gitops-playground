@@ -101,11 +101,11 @@ function createCluster() {
   NETWORK_EXISTING=$(docker network ls | grep -o "[a-zA-Z0-9-]*${CLUSTER_NAME}")
   echo "NETWORK EXISTING: ${NETWORK_EXISTING}"
   if [[ -n "${NETWORK_EXISTING}" ]]; then
-      echo "setting docker network for ${CLUSTER_NAME}"
-      docker network create ${CLUSTER_NAME} >/dev/null
-    if [[ ${BIND_LOCALHOST} == 'false' ]]; then
-      // SUBNET EINSTELLEN
-    fi
+    echo "setting docker network for ${CLUSTER_NAME}"
+    docker network create ${CLUSTER_NAME} >/dev/null
+    # if [[ ${BIND_LOCALHOST} == 'false' ]]; then
+    #   // SUBNET EINSTELLEN
+    # fi
   fi
 
   if [[ ${BIND_LOCALHOST} == 'true' ]]; then
