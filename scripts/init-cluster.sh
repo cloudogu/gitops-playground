@@ -24,13 +24,13 @@ function main() {
   checkDockerAccessible
 
   # Install kubectl if necessary
-  if command -v kubectl >/dev/null 2>&1; then
-    echo "kubectl already installed"
-  else
-    msg="Install kubectl ${KUBECTL_VERSION}?"
-    confirm "$msg" ' [y/n]' &&
-      installKubectl
-  fi
+  # if command -v kubectl >/dev/null 2>&1; then
+  #   echo "kubectl already installed"
+  # else
+  #   msg="Install kubectl ${KUBECTL_VERSION}?"
+  #   confirm "$msg" ' [y/n]' &&
+  #     installKubectl
+  # fi
 
   # Install helm if necessary
   if ! command -v helm >/dev/null 2>&1; then
@@ -98,8 +98,8 @@ function createCluster() {
     '--no-hostip'
   )
 
-  NETWORK_EXISTING=$(docker network ls | grep -o "[a-zA-Z0-9-]*${CLUSTER_NAME}")
-  echo "NETWORK EXISTING: ${NETWORK_EXISTING}"
+  # NETWORK_EXISTING=$(docker network ls | grep -o "[a-zA-Z0-9-]*${CLUSTER_NAME}")
+  # echo "NETWORK EXISTING: ${NETWORK_EXISTING}"
   # # if [[ -n "${NETWORK_EXISTING}" ]]; then
   # echo "setting docker network for ${CLUSTER_NAME}"
   # docker network create ${CLUSTER_NAME} >/dev/null
@@ -108,16 +108,16 @@ function createCluster() {
   # #   # fi
   # # fi
 
-  if [[ ! -n "${NETWORK_EXISTING}" ]]; then
-    echo "network not existing creating new"
-    if [[ ${BIND_LOCALHOST} == 'true' ]]; then
-      echo "it is localhost"
-      docker network create ${CLUSTER_NAME} >/dev/null
-    else
-      echo "it is not localhost"
-      docker network create --subnet=${K3D_SUBNET} ${CLUSTER_NAME} >/dev/null
-    fi
-  fi
+  # if [[ ! -n "${NETWORK_EXISTING}" ]]; then
+  #   echo "network not existing creating new"
+  #   if [[ ${BIND_LOCALHOST} == 'true' ]]; then
+  #     echo "it is localhost"
+  #     docker network create ${CLUSTER_NAME} >/dev/null
+  #   else
+  #     echo "it is not localhost"
+  #     docker network create --subnet=${K3D_SUBNET} ${CLUSTER_NAME} >/dev/null
+  #   fi
+  # fi
 
 
   if [[ ${BIND_LOCALHOST} == 'true' ]]; then

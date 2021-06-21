@@ -94,37 +94,37 @@ node('docker') {
                     sh "export KUBECONFIG=${env.WORKSPACE}/.kube/config"
                     sh "yes | ./scripts/init-cluster.sh --cluster-name=${CLUSTER_NAME}"
 
-                    DOCKER_NETWORK = sh(
-                            script: "docker network ls | grep -o \"[a-zA-Z0-9-]*${CLUSTER_NAME}\"",
-                            returnStdout: true
-                    ).trim()
+                    // DOCKER_NETWORK = sh(
+                    //         script: "docker network ls | grep -o \"[a-zA-Z0-9-]*${CLUSTER_NAME}\"",
+                    //         returnStdout: true
+                    // ).trim()
 
-                    HOSTNAME = sh(
-                            script: "cat /etc/hostname",
-                            returnStdout: true
-                    ).trim()
+                    // HOSTNAME = sh(
+                    //         script: "cat /etc/hostname",
+                    //         returnStdout: true
+                    // ).trim()
 
-                    sh "echo ${HOSTNAME}"
-                    sh "docker network connect ${DOCKER_NETWORK} ${HOSTNAME}"
+                    // sh "echo ${HOSTNAME}"
+                    // sh "docker network connect ${DOCKER_NETWORK} ${HOSTNAME}"
 
-                    CONTAINER_ID = sh(
-                            script: "docker ps | grep ${CLUSTER_NAME}-server-0 | grep -o -m 1 '[^ ]*' | head -1",
-                            returnStdout: true
-                    ).trim()
+                    // CONTAINER_ID = sh(
+                    //         script: "docker ps | grep ${CLUSTER_NAME}-server-0 | grep -o -m 1 '[^ ]*' | head -1",
+                    //         returnStdout: true
+                    // ).trim()
 
-                    IP_V4 = sh(
-                            script: "docker inspect ${CONTAINER_ID} | grep -o  '\"IPAddress\": \"[0-9.\"]*' | grep -o '[0-9.*]*'",
-                            returnStdout: true
-                    ).trim()
+                    // IP_V4 = sh(
+                    //         script: "docker inspect ${CONTAINER_ID} | grep -o  '\"IPAddress\": \"[0-9.\"]*' | grep -o '[0-9.*]*'",
+                    //         returnStdout: true
+                    // ).trim()
 
-                    sh "k3d image import -c ${CLUSTER_NAME} ${imageName}"
+                    // sh "k3d image import -c ${CLUSTER_NAME} ${imageName}"
 
-                    sh "sed -i -r 's/0.0.0.0([^0-9]+[0-9]*|\$)/${IP_V4}:6443/g' ~/.kube/config"
-                    sh "cat ~/.kube/config"
+                    // sh "sed -i -r 's/0.0.0.0([^0-9]+[0-9]*|\$)/${IP_V4}:6443/g' ~/.kube/config"
+                    // sh "cat ~/.kube/config"
 
                     cesBuildLib.Docker.new(this).image(imageName) // contains the docker client binary
                         .inside("${this.pwd().equals(this.env.WORKSPACE) ? '' : "-v ${this.env.WORKSPACE}:${this.env.WORKSPACE} "}" +
-                        '--entrypoint="" -e SETUP_LOCAL_GOP=false -v "~/.kube/config:~/.kube/config"') {
+                        '--entrypoint="" -e SETUP_LOCAL_GOP=false -v "./.kube/config:~/.kube/config"') {
 
                     sh "kubectl config use-context k3d-${CLUSTER_NAME}"
                     sh "kubectl cluster-info"
