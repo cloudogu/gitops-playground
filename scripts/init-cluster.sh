@@ -101,10 +101,10 @@ function createCluster() {
   NETWORK_EXISTING=$(docker network ls | grep -o "[a-zA-Z0-9-]*${CLUSTER_NAME}")
 
   if [[ -n "${NETWORK_EXISTING}" ]]; then
-    if [[ ${BIND_LOCALHOST} == 'true' ]]; then
+      echo "setting docker network for ${CLUSTER_NAME}"
       docker network create ${CLUSTER_NAME} >/dev/null
-    else
-      docker network create --subnet=${K3D_SUBNET} ${CLUSTER_NAME} >/dev/null
+    if [[ ${BIND_LOCALHOST} == 'false' ]]; then
+      // SUBNET EINSTELLEN
     fi
   fi
 
@@ -130,7 +130,7 @@ function createCluster() {
   done
 
   k3d image import -c ${CLUSTER_NAME} ${IMPORT_IMAGES[*]}
-  k3d kubeconfig merge ${CLUSTER_NAME} --kubeconfig-switch-context
+  k3d kubeconfig merge ${CLUSTER_NAME} --output ./.kube/config --kubeconfig-switch-context
 }
 
 # function installKubectl() {

@@ -86,7 +86,12 @@ node('docker') {
                 stage('Test') {
                     sh 'git config --global user.name "gop-ci-test"'
                     sh 'git config --global user.email "gop-ci-test@test.com"'
-                    CLUSTER_NAME = "citest"
+                    String[] randomUUIDs = UUID.randomUUID().toString().split("-")
+                    String uuid = randomUUIDs[randomUUIDs.length-1]
+                    CLUSTER_NAME = "citest-" + uuid
+                    sh 'mkdir ./.kube'
+                    sh 'touch ./.kube/config'
+                    sh "export KUBECONFIG=${env.WORKSPACE}/.kube/config"
                     sh "yes | ./scripts/init-cluster.sh --cluster-name=${CLUSTER_NAME}"
 
                     DOCKER_NETWORK = sh(
