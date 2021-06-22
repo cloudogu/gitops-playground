@@ -109,14 +109,15 @@ function createCluster() {
     fi
   fi
 
-
+  echo "setting network for k3d cluster"
   if [[ ${BIND_LOCALHOST} == 'true' ]]; then
     K3D_ARGS+=(
+      echo "host"
       '--network=host'
     )
   else
     K3D_ARGS+=(
-      echo "setting network for k3d cluster"
+      echo "custom docker network"
       "--network=${CLUSTER_NAME}"
     )
   fi
