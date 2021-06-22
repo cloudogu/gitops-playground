@@ -96,7 +96,10 @@ node('docker') {
 
                         sh "k3d image import -c ${CLUSTER_NAME} ${imageName}"
 
-
+                        DOCKER_NETWORK = sh(
+                                script: "docker network ls | grep -o \"[a-zA-Z0-9-]*${CLUSTER_NAME}\"",
+                                returnStdout: true
+                        ).trim()
                         CONTAINER_ID = sh(
                                 script: "docker ps | grep ${CLUSTER_NAME}-server-0 | grep -o -m 1 '[^ ]*' | head -1",
                                 returnStdout: true
@@ -112,14 +115,14 @@ node('docker') {
 
 
 
-
+ 
 
 
 
 
 
                         cesBuildLib.Docker.new(this).image(imageName).mountJenkinsUser() // contains the docker client binary
-                            .inside("--entrypoint='' -e KUBECONFIG=${this.env.WORKSPACE}/.kube/config ${this.pwd().equals(this.env.WORKSPACE) ? '' : "-v ${this.env.WORKSPACE}:${this.env.WORKSPACE} "}") {  
+                            .inside("--entrypoint='' -e KUBECONFIG=${this.env.WORKSPACE}/.kube/config ${this.pwd().equals(this.env.WORKSPACE) ? '' : "-v ${this.env.WORKSPACE}:${this.env.WORKSPACE} "} --network=${DOCKER_NETWORK}") {  
                                     
                                   
 
