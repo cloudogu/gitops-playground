@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-set -o errexit -o nounset -o pipefail
-set -x
+# set -o errexit -o nounset -o pipefail
+# set -x
 
 # See https://github.com/rancher/k3d/releases
 K3D_VERSION=4.4.4
