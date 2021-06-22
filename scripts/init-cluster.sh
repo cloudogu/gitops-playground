@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-# set -o errexit -o nounset -o pipefail
-# set -x
+set -o errexit -o nounset -o pipefail
+set -x
 
 # See https://github.com/rancher/k3d/releases
 K3D_VERSION=4.4.4
@@ -11,7 +11,7 @@ CLUSTER_NAME=${K3D_CLUSTER_NAME}
 
 # env var to turn "on" when not willing to bind to localhost (e.g. run by ci-server)
 SETUP_LOCAL=$(printenv SETUP_LOCAL_GOP)
-BIND_LOCALHOST=${SETUP_LOCAL:=false}
+BIND_LOCALHOST=${SETUP_LOCAL:=false} # TODO set to true
 
 HELM_VERSION=3.4.1
 KUBECTL_VERSION=1.19.3
@@ -23,6 +23,7 @@ function main() {
   CLUSTER_NAME="$1"
   checkDockerAccessible
 
+# todo uncomment and adjust for jenkins usage
   # Install kubectl if necessary
   # if command -v kubectl >/dev/null 2>&1; then
   #   echo "kubectl already installed"
@@ -98,28 +99,20 @@ function createCluster() {
     '--no-hostip'
   )
 
-  if [[ -z "${NETWORK_EXISTING}" ]]; then
-    echo "network not existing creating new"
-    if [[ ${BIND_LOCALHOST} == 'true' ]]; then
-      echo "it is localhost"
-      docker network create ${CLUSTER_NAME} >/dev/null
-    else
-      echo "it is not localhost so with subnet"
-      docker network create --subnet=${K3D_SUBNET} ${CLUSTER_NAME} >/dev/null
-    fi
-  fi
+  # NETWORK_EXISTING=$(docker network ls | grep -o "[a-zA-Z0-9-]*${CLUSTER_NAME}")
 
-  echo "setting network for k3d cluster"
+  # if [[ -z "${NETWORK_EXISTING}" ]]; then
+  #   docker network create ${CLUSTER_NAME} >/dev/null
+  # fi
+
   if [[ ${BIND_LOCALHOST} == 'true' ]]; then
-      echo "host"
     K3D_ARGS+=(
       '--network=host'
     )
-  else
-      echo "custom docker network"
-    K3D_ARGS+=(
-      "--network=${CLUSTER_NAME}"
-    )
+  # else
+  #   K3D_ARGS+=(
+  #     "--network=${CLUSTER_NAME}"
+  #   )
   fi
 
   k3d cluster create ${CLUSTER_NAME} ${K3D_ARGS[*]}
@@ -137,12 +130,12 @@ function createCluster() {
   k3d kubeconfig merge ${CLUSTER_NAME} --output ./.kube/config --kubeconfig-switch-context
 }
 
-# function installKubectl() {
-#   curl -LO https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl
-#   chmod +x ./kubectl
-#   mv ./kubectl /usr/local/bin/kubectl
-#   echo "kubectl installed"
-# }
+function installKubectl() {
+  curl -LO https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl
+  chmod +x ./kubectl
+  mv ./kubectl /usr/local/bin/kubectl
+  echo "kubectl installed"
+}
 
 function installKubectl() {
   curl -LO https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl

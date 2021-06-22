@@ -91,30 +91,11 @@ node('docker') {
                         CLUSTER_NAME = "citest-" + uuid
                         sh 'mkdir ./.kube'
                         sh 'touch ./.kube/config'
-                        sh 'export SETUP_LOCAL_GOP=false'
                         sh "yes | ./scripts/init-cluster.sh --cluster-name=${CLUSTER_NAME}"
                         sh "chmod +r ${env.WORKSPACE}/.kube/config"
 
                         sh "k3d image import -c ${CLUSTER_NAME} ${imageName}"
 
-
-
-
-
-
-                        DOCKER_NETWORK = sh(
-                                script: "docker network ls | grep -o \"[a-zA-Z0-9-]*${CLUSTER_NAME}\"",
-                                returnStdout: true
-                        ).trim()
-
-
-                        // HOSTNAME = sh(
-                        //         script: "cat /etc/hostname",
-                        //         returnStdout: true
-                        // ).trim()
-
-                        // sh "echo ${HOSTNAME}"
-                        // sh "docker network connect ${DOCKER_NETWORK} ${HOSTNAME}"
 
                         CONTAINER_ID = sh(
                                 script: "docker ps | grep ${CLUSTER_NAME}-server-0 | grep -o -m 1 '[^ ]*' | head -1",
@@ -138,7 +119,7 @@ node('docker') {
 
 
                         cesBuildLib.Docker.new(this).image(imageName).mountJenkinsUser() // contains the docker client binary
-                            .inside("--entrypoint='' ${this.pwd().equals(this.env.WORKSPACE) ? '' : "-v ${this.env.WORKSPACE}:${this.env.WORKSPACE} "} --network=${DOCKER_NETWORK}") {  
+                            .inside("--entrypoint='' -e KUBECONFIG=${this.env.WORKSPACE}/.kube/config ${this.pwd().equals(this.env.WORKSPACE) ? '' : "-v ${this.env.WORKSPACE}:${this.env.WORKSPACE} "}") {  
                                     
                                   
 
@@ -151,21 +132,22 @@ node('docker') {
                         // sh "cat ${HOME}/.kube/config"
                         // sh "export KUBECONFIG=${HOME}/jenkins/.kube/config"
 
-                        sh "sleep 2400"
+                        // sh "sleep 2400"
 
                         // sh "export KUBECONFIG=${this.env.WORKSPACE}/.kube/config"
-                                    sh "kubectl --kubeconfig ${this.env.WORKSPACE}/.kube/config config use-context k3d-${CLUSTER_NAME}"
-                                    sh "kubectl cluster-info"
+                            // sh "kubectl --kubeconfig ${this.env.WORKSPACE}/.kube/config config use-context k3d-${CLUSTER_NAME}"
+                            // sh "kubectl cluster-info"
                 //                                sh "kubectl create serviceaccount gop-job-executer -n default"
                 //                                sh "kubectl create clusterrolebinding gop-job-executer --clusterrole=cluster-admin --serviceaccount=default:gop-job-executer"
                 //                                sh "kubectl run gop --rm -i --tty --image-pull-policy='Never' --image ${imageName} --serviceaccount gop-job-executer -- --argocd --fluxv1"
-                                    sh "yes | ./scripts/apply.sh --debug -x --argocd --cluster-bind-address=${IP_V4}"
+                            sh "yes | ./scripts/apply.sh --debug -x --argocd --cluster-bind-address=${IP_V4}"
                         }
                     }
 
 
                     // image pushen
                 } finally {
+                    sh "sudo docker network rm ${DOCKER_NETWORK}"
                     sh "k3d cluster stop ${CLUSTER_NAME}"
                     sh "k3d cluster delete ${CLUSTER_NAME}"
                 } 
