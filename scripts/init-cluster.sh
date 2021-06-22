@@ -11,7 +11,7 @@ CLUSTER_NAME=${K3D_CLUSTER_NAME}
 
 # env var to turn "on" when not willing to bind to localhost (e.g. run by ci-server)
 SETUP_LOCAL=$(printenv SETUP_LOCAL_GOP)
-BIND_LOCALHOST=${SETUP_LOCAL:=true}
+BIND_LOCALHOST=${SETUP_LOCAL:=false}
 
 HELM_VERSION=3.4.1
 KUBECTL_VERSION=1.19.3
@@ -98,16 +98,6 @@ function createCluster() {
     '--no-hostip'
   )
 
-  # NETWORK_EXISTING=$(docker network ls | grep -o "[a-zA-Z0-9-]*${CLUSTER_NAME}")
-  # echo "NETWORK EXISTING: ${NETWORK_EXISTING}"
-  # # if [[ -n "${NETWORK_EXISTING}" ]]; then
-  # echo "setting docker network for ${CLUSTER_NAME}"
-  # docker network create ${CLUSTER_NAME} >/dev/null
-  # #   # if [[ ${BIND_LOCALHOST} == 'false' ]]; then
-  # #   #   // SUBNET EINSTELLEN
-  # #   # fi
-  # # fi
-
   if [[ -z "${NETWORK_EXISTING}" ]]; then
     echo "network not existing creating new"
     if [[ ${BIND_LOCALHOST} == 'true' ]]; then
@@ -126,6 +116,7 @@ function createCluster() {
     )
   else
     K3D_ARGS+=(
+      echo "setting network for k3d cluster"
       "--network=${CLUSTER_NAME}"
     )
   fi
