@@ -11,8 +11,7 @@ CLUSTER_NAME=${K3D_CLUSTER_NAME}
 
 # env var to turn "on" when not willing to bind to localhost (e.g. run by ci-server)
 SETUP_LOCAL=$(printenv SETUP_LOCAL_GOP)
-BIND_LOCALHOST=${SETUP_LOCAL:=false} # TODO set to true
-
+BIND_LOCALHOST=${SETUP_LOCAL:=false}
 HELM_VERSION=3.4.1
 KUBECTL_VERSION=1.19.3
 BASEDIR=$(dirname $0)
