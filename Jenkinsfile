@@ -122,7 +122,7 @@ node('docker') {
 
 
 
-                        cesBuildLib.Docker.new(this).image(imageName).mountJenkinsUser() // contains the docker client binary
+                        cesBuildLib.Docker.new(this).image(imageName) // contains the docker client binary
                             .inside("--entrypoint='' -e KUBECONFIG=${this.env.WORKSPACE}/.kube/config ${this.pwd().equals(this.env.WORKSPACE) ? '' : "-v ${this.env.WORKSPACE}:${this.env.WORKSPACE}"} --network=${DOCKER_NETWORK}") {  
                                     
                                   

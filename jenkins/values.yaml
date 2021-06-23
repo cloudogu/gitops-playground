@@ -47,6 +47,10 @@ controller:
     # Use reproducible admin password from secret. Change there, if necessary.
     existingSecret: jenkins-credentials
 
+  initContainerEnv:
+    - name: HOME
+      value: "/var/jenkins_home"
+
   containerEnv:
     - name: PATH
       # We already mounted this PATH on the controller-agent. Still, "docker.inside {}" fails in pipeline?
