@@ -98,19 +98,9 @@ function createCluster() {
     '--no-hostip'
   )
 
-  NETWORK_EXISTING=$(docker network ls | grep -o "[a-zA-Z0-9-]*${CLUSTER_NAME}")
-
-  if [[ -z "${NETWORK_EXISTING}" ]]; then
-    docker network create ${CLUSTER_NAME} >/dev/null
-  fi
-
   if [[ ${BIND_LOCALHOST} == 'true' ]]; then
     K3D_ARGS+=(
       '--network=host'
-    )
-  else
-    K3D_ARGS+=(
-      "--network=${CLUSTER_NAME}"
     )
   fi
 
