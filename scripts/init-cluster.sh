@@ -148,7 +148,7 @@ function printParameters() {
 
 COMMANDS=$(getopt \
   -o h \
-  --long help,cluster-name,bind-localhost: \
+  --long help,cluster-name:,bind-localhost: \
   -- "$@")
 
 eval set -- "$COMMANDS"
