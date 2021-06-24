@@ -9,9 +9,7 @@ K3D_CLUSTER_NAME=k8s-gitops-playground
 K3D_SUBNET=192.168.192.0/20
 CLUSTER_NAME=${K3D_CLUSTER_NAME}
 
-# env var to turn "on" when not willing to bind to localhost (e.g. run by ci-server)
-SETUP_LOCAL=$(printenv SETUP_LOCAL_GOP)
-BIND_LOCALHOST=${SETUP_LOCAL:=true}
+BIND_LOCALHOST=true
 
 HELM_VERSION=3.4.1
 KUBECTL_VERSION=1.19.3
@@ -154,8 +152,9 @@ eval set -- "$COMMANDS"
 
 while true; do
   case "$1" in
-    -h | --help   ) printParameters; exit 0 ;;
-    --cluster-name) CLUSTER_NAME="$2"; shift 2 ;;
+    -h | --help   )   printParameters; exit 0 ;;
+    --cluster-name)   CLUSTER_NAME="$2"; shift 2 ;;
+    --bind-localhost) BIND_LOCALHOST=$2; shift 2 ;;
     --) shift; break ;;
   *) break ;;
   esac

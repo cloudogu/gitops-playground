@@ -127,7 +127,7 @@ def startK3d(clusterName, imageName) {
     sh 'git config --global user.email "gop-ci-test@test.com"'
     sh 'mkdir ./.kube'
     sh 'touch ./.kube/config'
-    sh "yes | ./scripts/init-cluster.sh --cluster-name=${clusterName}"
+    sh "yes | ./scripts/init-cluster.sh --cluster-name=${clusterName} --bind-localhost=false"
 
     sh "k3d image import -c ${clusterName} ${imageName}"
 }
