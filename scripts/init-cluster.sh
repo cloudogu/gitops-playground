@@ -11,7 +11,8 @@ CLUSTER_NAME=${K3D_CLUSTER_NAME}
 
 # env var to turn "on" when not willing to bind to localhost (e.g. run by ci-server)
 SETUP_LOCAL=$(printenv SETUP_LOCAL_GOP)
-BIND_LOCALHOST=${SETUP_LOCAL:=false}
+BIND_LOCALHOST=${SETUP_LOCAL:=true}
+
 HELM_VERSION=3.4.1
 KUBECTL_VERSION=1.19.3
 BASEDIR=$(dirname $0)
@@ -22,15 +23,14 @@ function main() {
   CLUSTER_NAME="$1"
   checkDockerAccessible
 
-# todo uncomment and adjust for jenkins usage
   # Install kubectl if necessary
-  # if command -v kubectl >/dev/null 2>&1; then
-  #   echo "kubectl already installed"
-  # else
-  #   msg="Install kubectl ${KUBECTL_VERSION}?"
-  #   confirm "$msg" ' [y/n]' &&
-  #     installKubectl
-  # fi
+  if command -v kubectl >/dev/null 2>&1; then
+    echo "kubectl already installed"
+  else
+    msg="Install kubectl ${KUBECTL_VERSION}?"
+    confirm "$msg" ' [y/n]' &&
+      installKubectl
+  fi
 
   # Install helm if necessary
   if ! command -v helm >/dev/null 2>&1; then
@@ -123,12 +123,6 @@ function installKubectl() {
   curl -LO https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl
   chmod +x ./kubectl
   mv ./kubectl /usr/local/bin/kubectl
-  echo "kubectl installed"
-}
-
-function installKubectl() {
-  curl -LO https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl
-  chmod +x ./kubectl
   echo "kubectl installed"
 }
 
