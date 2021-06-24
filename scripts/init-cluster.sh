@@ -147,7 +147,7 @@ function printParameters() {
 }
 
 COMMANDS=$(getopt \
-  -o hwdxyc \
+  -o h \
   --long help,cluster-name,bind-localhost: \
   -- "$@")
 
@@ -157,7 +157,7 @@ while true; do
   case "$1" in
     -h | --help   )   printParameters; exit 0 ;;
     --cluster-name)   CLUSTER_NAME="$2"; shift 2 ;;
-    --bind-localhost) BIND_LOCALHOST=$2; shift 2 ;;
+    --bind-localhost) BIND_LOCALHOST="$2"; shift 2 ;;
     --) shift; break ;;
   *) break ;;
   esac
