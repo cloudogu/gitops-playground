@@ -27,7 +27,7 @@ function main() {
 
   # Install kubectl if necessary
   if command -v kubectl >/dev/null 2>&1 || [[ $SKIP_KUBECTL == 'true' ]]; then
-    echo "kubectl already installed"
+    echo "kubectl already installed or installation skipped"
   else
     msg="Install kubectl ${KUBECTL_VERSION}?"
     confirm "$msg" ' [y/n]' &&
