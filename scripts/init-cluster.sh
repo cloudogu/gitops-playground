@@ -19,6 +19,7 @@ source ${ABSOLUTE_BASEDIR}/utils.sh
 
 function main() {
   CLUSTER_NAME="$1"
+  BIND_LOCALHOST="$2"
   checkDockerAccessible
 
   # Install kubectl if necessary
@@ -163,4 +164,4 @@ done
 confirm "Run k3d-cluster initialization for cluster-name: '${CLUSTER_NAME}'." 'Continue? y/n [n]' ||
   exit 0
 
-main "$CLUSTER_NAME"
+main "$CLUSTER_NAME" "$BIND_LOCALHOST"
