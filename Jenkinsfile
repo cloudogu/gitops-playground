@@ -44,8 +44,8 @@ node('docker') {
                         imageName = "${dockerRegistryBaseUrl}/${dockerRegistryPath}/gop:${imageTag}"
                         def docker = cesBuildLib.Docker.new(this)
                         String rfcDate = sh (returnStdout: true, script: 'date --rfc-3339 ns').trim()
-                        image = docker.build(imag   
-                                "--build-arg BUILD_DATE='${rfcDate}' --build-arg VCS_REF='${git.commitHash}'")
+                        image = docker.build(imageName, 
+                                    "--build-arg BUILD_DATE='${rfcDate}' --build-arg VCS_REF='${git.commitHash}'")
                     }
 
                     stage('Scan image and start gop') {
