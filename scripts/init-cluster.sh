@@ -26,7 +26,7 @@ function main() {
   checkDockerAccessible
 
   # Install kubectl if necessary
-  if command -v kubectl >/dev/null 2>&1 || SKIP_KUBECTL; then
+  if command -v kubectl >/dev/null 2>&1 || [[ $SKIP_KUBECTL == 'true' ]]; then
     echo "kubectl already installed"
   else
     msg="Install kubectl ${KUBECTL_VERSION}?"
