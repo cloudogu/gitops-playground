@@ -10,6 +10,7 @@ K3D_SUBNET=192.168.192.0/20
 CLUSTER_NAME=${K3D_CLUSTER_NAME}
 
 BIND_LOCALHOST=true
+SKIP_KUBECTL=false
 
 HELM_VERSION=3.4.1
 KUBECTL_VERSION=1.19.3
@@ -20,12 +21,12 @@ source ${ABSOLUTE_BASEDIR}/utils.sh
 function main() {
   CLUSTER_NAME="$1"
   BIND_LOCALHOST="$2"
-  echo "${CLUSTER_NAME}"
-  echo "${BIND_LOCALHOST}"
+  SKIP_KUBECTL="$3"
+
   checkDockerAccessible
 
   # Install kubectl if necessary
-  if command -v kubectl >/dev/null 2>&1; then
+  if command -v kubectl >/dev/null 2>&1 || SKIP_KUBECTL; then
     echo "kubectl already installed"
   else
     msg="Install kubectl ${KUBECTL_VERSION}?"
@@ -148,7 +149,7 @@ function printParameters() {
 
 COMMANDS=$(getopt \
   -o h \
-  --long help,cluster-name:,bind-localhost: \
+  --long help,cluster-name:,bind-localhost:,skip-kubectl: \
   -- "$@")
 
 eval set -- "$COMMANDS"
@@ -158,6 +159,7 @@ while true; do
     -h | --help   )   printParameters; exit 0 ;;
     --cluster-name)   CLUSTER_NAME="$2"; shift 2 ;;
     --bind-localhost) BIND_LOCALHOST="$2"; shift 2 ;;
+    --skip-kubectl)   SKIP_KUBECTL="$2"; shift 2 ;;
     --) shift; break ;;
   *) break ;;
   esac
@@ -166,4 +168,4 @@ done
 confirm "Run k3d-cluster initialization for cluster-name: '${CLUSTER_NAME}'." 'Continue? y/n [n]' ||
   exit 0
 
-main "$CLUSTER_NAME" "$BIND_LOCALHOST"
+main "$CLUSTER_NAME" "$BIND_LOCALHOST" "$SKIP_KUBECTL"

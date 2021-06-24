@@ -83,7 +83,7 @@ node('docker') {
                                 } else if (env.BRANCH_NAME == 'main') {
                                     image.push("latest")
                                 } else {
-                                    echo "Skipping deployment to docker hub because current branch is ${env.BRANCH_NAME}."
+                                    echo "Skipping deployment to github container registry because current branch is ${env.BRANCH_NAME}."
                                 }
                             }
                         }
@@ -127,7 +127,7 @@ def startK3d(clusterName, imageName) {
     sh 'git config --global user.email "gop-ci-test@test.com"'
     sh 'mkdir ./.kube'
     sh 'touch ./.kube/config'
-    sh "yes | ./scripts/init-cluster.sh --cluster-name=${clusterName} --bind-localhost=false"
+    sh "yes | ./scripts/init-cluster.sh --cluster-name=${clusterName} --bind-localhost=false --skip-kubectl=true"
 
     sh "k3d image import -c ${clusterName} ${imageName}"
 }
