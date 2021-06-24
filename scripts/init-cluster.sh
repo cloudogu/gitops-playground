@@ -116,7 +116,11 @@ function createCluster() {
   done
 
   k3d image import -c ${CLUSTER_NAME} ${IMPORT_IMAGES[*]}
-  k3d kubeconfig merge ${CLUSTER_NAME} --output ./.kube/config --kubeconfig-switch-context
+  if [[ ${BIND_LOCALHOST} == 'true' ]]; then
+    k3d kubeconfig merge ${CLUSTER_NAME} --kubeconfig-switch-context
+  else
+    k3d kubeconfig merge ${CLUSTER_NAME} --output ./.kube/config --kubeconfig-switch-context
+  fi
 }
 
 function installKubectl() {
