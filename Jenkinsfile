@@ -7,13 +7,6 @@ String getMainBranch() { 'feature/add_build_pipeline' }
 String getDockerRegistryBaseUrl() { 'ghcr.io' }
 String getDockerRegistryPath() { 'cloudogu' }
 
-//- oss.cloudogu.com Jenkins (mit GitHub anmelden!)
-//- Build nur auf main ausführen und wenn PR oder wenn per parameter explizit gesetzt
-//- automatischer Image Build
-//- automatische Vuln Scans mit trivy in ces-build-lib
-//- Image pushen nur auf main und mit git.commitHashShort (siehe ces-build-lib) als version + latest -> ghcr
-//    - Releases entweder latest + git commit als docker tag oder git tag als docker tag. Bsp
-
 cesBuildLib = library(identifier: "ces-build-lib@${cesBuildLibVersion}",
         retriever: modernSCM([$class: 'GitSCMSource', remote: cesBuildLibRepo, credentialsId: scmManagerCredentials])
 ).com.cloudogu.ces.cesbuildlib
@@ -28,8 +21,8 @@ node('docker') {
             parameters([
                     booleanParam(
                             defaultValue: false,
-                            description: 'Run Test',
-                            name: 'test'
+                            description: 'Runs this pipeline as if it was pushed to main. This includes building and scanning the gop image and running the playground.',
+                            name: 'Run as main'
                     )
             ])
     ])
@@ -46,95 +39,110 @@ node('docker') {
                         git.clean('')
                     }
 
-                    def image
-                    def imageName
                     stage('Build image') {
-                        docker.withRegistry("https://${dockerRegistryBaseUrl}", 'cesmarvin-github') {
-                            String imageTag = "1.0.0"
-                            imageName = "${dockerRegistryBaseUrl}/${dockerRegistryPath}/gop:${imageTag}"
-                            def docker = cesBuildLib.Docker.new(this)
-                            image = docker.build(imageName)
-                        }
-                    }
-
-                    stage('Scan') {
-                        sh "mkdir -p .trivy/.cache"
+                        String imageTag = "latest"
+                        imageName = "${dockerRegistryBaseUrl}/${dockerRegistryPath}/gop:${imageTag}"
                         def docker = cesBuildLib.Docker.new(this)
-                        def trivyVersion = '0.18.0'
-                        def severityFlag = '--severity=CRITICAL'
-                        
-                        docker.image("aquasec/trivy:${trivyVersion}")
-                                .mountJenkinsUser()
-                                .mountDockerSocket()
-                                .inside("-v ${env.WORKSPACE}/.trivy/.cache:/root/.cache/") {
-                                    sh "trivy image -o .trivy/trivyOutput.txt ${severityFlag} ${imageName}"
+                        String rfcDate = sh (returnStdout: true, script: 'date --rfc-3339 ns').trim()
+                        image = docker.build(imag   
+                                "--build-arg BUILD_DATE='${rfcDate}' --build-arg VCS_REF='${git.commitHash}'")
+                    }
+
+                    stage('Scan image and start gop') {
+                        parallel(
+                            'scan image': {
+                                scanImage()
+                                saveScanResultsOnVulenrabilities()
+                            },
+
+                            'start gop': {
+                                String[] randomUUIDs = UUID.randomUUID().toString().split("-")
+                                String uuid = randomUUIDs[randomUUIDs.length-1]
+                                clusterName = "citest-" + uuid
+
+                                startK3d(clusterName)
+
+                                setKubeConfigToK3dIp(clusterName)
+
+                                cesBuildLib.Docker.new(this).image(imageName) // contains the docker client binary
+                                    .inside("--entrypoint='' -e KUBECONFIG=${this.env.WORKSPACE}/.kube/config ${this.pwd().equals(this.env.WORKSPACE) ? '' : "-v ${this.env.WORKSPACE}:${this.env.WORKSPACE}"} --network=k3d-${clusterName}") {
+                                        sh "yes | ./scripts/apply.sh --debug -x --argocd --cluster-bind-address=${ipV4}"
                                 }
-                        
-                        if (readFile(".trivy/trivyOutput.txt").size() != 0) {
-                            currentBuild.result = 'ABORTED'
-                            error('There are critical and fixable vulnerabilities.')
-                            archiveArtifacts artifacts: ".trivy/trivyOutput.txt"
-                        }
+                            }
+                        )
                     }
-
-                    stage('Test') {
-                        sh 'git config --global user.name "gop-ci-test"'
-                        sh 'git config --global user.email "gop-ci-test@test.com"'
-                        String[] randomUUIDs = UUID.randomUUID().toString().split("-")
-                        String uuid = randomUUIDs[randomUUIDs.length-1]
-                        CLUSTER_NAME = "citest-" + uuid
-                        sh 'mkdir ./.kube'
-                        sh 'touch ./.kube/config'
-                        sh "yes | ./scripts/init-cluster.sh --cluster-name=${CLUSTER_NAME}"
-                        sh "chmod +r ${env.WORKSPACE}/.kube/config"
-
-                        sh "k3d image import -c ${CLUSTER_NAME} ${imageName}"
-
-                        CONTAINER_ID = sh(
-                                script: "docker ps | grep ${CLUSTER_NAME}-server-0 | grep -o -m 1 '[^ ]*' | head -1",
-                                returnStdout: true
-                        ).trim()
-
-                        IP_V4 = sh(
-                                script: "docker inspect ${CONTAINER_ID} | grep -o  '\"IPAddress\": \"[0-9.\"]*' | grep -o '[0-9.*]*'",
-                                returnStdout: true
-                        ).trim()
-
-                        sh "sed -i -r 's/0.0.0.0([^0-9]+[0-9]*|\$)/${IP_V4}:6443/g' ${env.WORKSPACE}/.kube/config"
-                        sh "cat ${env.WORKSPACE}/.kube/config"
-
-                        cesBuildLib.Docker.new(this).image(imageName) // contains the docker client binary
-                            .inside("--entrypoint='' -e KUBECONFIG=${this.env.WORKSPACE}/.kube/config ${this.pwd().equals(this.env.WORKSPACE) ? '' : "-v ${this.env.WORKSPACE}:${this.env.WORKSPACE}"} --network=${CLUSTER_NAME}") {
-                                sh "yes | ./scripts/apply.sh --debug -x --argocd --cluster-bind-address=${IP_V4}"
-                        }
-                    }
-
                     stage('Push image') {
                         if (isBuildSuccessful()) {
-                            image.push()
+                            docker.withRegistry("https://${dockerRegistryBaseUrl}", 'cesmarvin-github') {
+                                if (git.isTag()) {
+                                    image.push(git.tag)
+                                } else if (env.BRANCH_NAME == 'main') {
+                                    image.push("latest")
+                                } else {
+                                    echo "Skipping deployment to docker hub because current branch is ${env.BRANCH_NAME}."
+                                }
+                            }
                         }
                     }
-                    // image pushen
-                } finally {
-                    sh "k3d cluster stop ${CLUSTER_NAME}"
-                    sh "k3d cluster delete ${CLUSTER_NAME}"
-                }
 
+                } finally {
+                    sh "k3d cluster stop ${clusterName}"
+                    sh "k3d cluster delete ${clusterName}"
+                }
             }
         }
     }
 }
 
-String createImageTag() {
-    def git = cesBuildLib.Git.new(this)
-    String branch = git.simpleBranchName
-    String branchSuffix = ""
+def scanImage() {
+    sh "mkdir -p .trivy/.cache"
+    def docker = cesBuildLib.Docker.new(this)
+    def trivyVersion = '0.18.0'
+    def severityFlag = '--severity=CRITICAL'
 
-    if (!"develop".equals(branch)) {
-        branchSuffix = "-${branch}"
+    docker.image("aquasec/trivy:${trivyVersion}")
+            .mountJenkinsUser()
+            .mountDockerSocket()
+            .inside("-v ${env.WORKSPACE}/.trivy/.cache:/root/.cache/") {
+                sh "trivy image -o .trivy/trivyOutput.txt ${severityFlag} ${imageName}"
+            }
+}
+
+def saveScanResultsOnVulenrabilities() {
+    if (readFile(".trivy/trivyOutput.txt").size() != 0) {
+        currentBuild.result = 'ABORTED'
+        error('There are critical and fixable vulnerabilities.')
+        archiveArtifacts artifacts: ".trivy/trivyOutput.txt"
     }
+}
 
-    return "${new Date().format('yyyyMMddHHmm')}-${git.commitHashShort}${branchSuffix}"
+def startK3d(clusterName) {
+    sh 'git config --global user.name "gop-ci-test"'
+    sh 'git config --global user.email "gop-ci-test@test.com"'
+    sh 'mkdir ./.kube'
+    sh 'touch ./.kube/config'
+    sh "yes | ./scripts/init-cluster.sh --cluster-name=${clusterName}"
+
+    sh "k3d image import -c ${clusterName} ${imageName}"
+}
+
+def setKubeConfigToK3dIp(clusterName) {
+    String containerId = sh(
+            script: "docker ps | grep ${clusterName}-server-0 | grep -o -m 1 '[^ ]*' | head -1",
+            returnStdout: true
+    ).trim()
+
+    ipV4 = sh(
+            script: "docker inspect ${containerId} | grep -o  '\"IPAddress\": \"[0-9.\"]*' | grep -o '[0-9.*]*'",
+            returnStdout: true
+    ).trim()
+
+    sh "sed -i -r 's/0.0.0.0([^0-9]+[0-9]*|\$)/${ipV4}:6443/g' ${env.WORKSPACE}/.kube/config"
+    sh "cat ${env.WORKSPACE}/.kube/config"
 }
 
 def cesBuildLib
+def image
+String imageName
+String clusterName
+String ipV4
