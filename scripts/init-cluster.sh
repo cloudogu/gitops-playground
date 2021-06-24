@@ -20,6 +20,8 @@ source ${ABSOLUTE_BASEDIR}/utils.sh
 function main() {
   CLUSTER_NAME="$1"
   BIND_LOCALHOST="$2"
+  echo "${CLUSTER_NAME}"
+  echo "${BIND_LOCALHOST}"
   checkDockerAccessible
 
   # Install kubectl if necessary
