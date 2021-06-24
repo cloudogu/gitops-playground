@@ -7,27 +7,32 @@ String getMainBranch() { 'feature/add_build_pipeline' }
 String getDockerRegistryBaseUrl() { 'ghcr.io' }
 String getDockerRegistryPath() { 'cloudogu' }
 
+def cesBuildLib
+def image
+String imageName
+String clusterName
+
 cesBuildLib = library(identifier: "ces-build-lib@${cesBuildLibVersion}",
-        retriever: modernSCM([$class: 'GitSCMSource', remote: cesBuildLibRepo, credentialsId: scmManagerCredentials])
+    retriever: modernSCM([$class: 'GitSCMSource', remote: cesBuildLibRepo, credentialsId: scmManagerCredentials])
 ).com.cloudogu.ces.cesbuildlib
 
 properties([
-        // Keep only the last 10 build to preserve space
-        disableConcurrentBuilds()
+    // Keep only the last 10 build to preserve space
+    disableConcurrentBuilds()
 ])
 
 node('docker') {
     properties([
-            parameters([
-                    booleanParam(
-                            defaultValue: false,
-                            description: 'Runs this pipeline as if it was pushed to main. This includes building and scanning the gop image and running the playground.',
-                            name: 'Run as main'
-                    )
-            ])
+        parameters([
+            booleanParam(
+                defaultValue: false,
+                description: 'Runs this pipeline as if it was pushed to main. This includes building and scanning the gop image and running the playground.',
+                name: 'Run as main'
+            )
+        ])
     ])
 
-    if( "${env.BRANCH_NAME}" == 'main' || params.test) {
+    if( "${env.BRANCH_NAME}" == 'main' || params.'Run as main') {
     def git = cesBuildLib.Git.new(this, scmManagerCredentials)
 
         timeout(activity: true, time: 30, unit: 'MINUTES') {
@@ -45,24 +50,23 @@ node('docker') {
                         def docker = cesBuildLib.Docker.new(this)
                         String rfcDate = sh (returnStdout: true, script: 'date --rfc-3339 ns').trim()
                         image = docker.build(imageName, 
-                                    "--build-arg BUILD_DATE='${rfcDate}' --build-arg VCS_REF='${git.commitHash}'")
+                                    "--build-arg BUILD_DATE='${rfcDate}' --build-arg VCS_REF='${git.commitHash}' .") // if using optional parameters you need to add the '.' argument at the end for docker to build the image
                     }
 
-                    stage('Scan image and start gop') {
+                    stage('Scan image and start gitops playground') {
                         parallel(
                             'scan image': {
-                                scanImage()
+                                scanImage(cesBuildLib, imageName)
                                 saveScanResultsOnVulenrabilities()
                             },
 
-                            'start gop': {
+                            'start gitops playground': {
                                 String[] randomUUIDs = UUID.randomUUID().toString().split("-")
                                 String uuid = randomUUIDs[randomUUIDs.length-1]
                                 clusterName = "citest-" + uuid
+                                startK3d(clusterName, imageName)
 
-                                startK3d(clusterName)
-
-                                setKubeConfigToK3dIp(clusterName)
+                                String ipV4 = setKubeConfigToK3dIp(clusterName)
 
                                 cesBuildLib.Docker.new(this).image(imageName) // contains the docker client binary
                                     .inside("--entrypoint='' -e KUBECONFIG=${this.env.WORKSPACE}/.kube/config ${this.pwd().equals(this.env.WORKSPACE) ? '' : "-v ${this.env.WORKSPACE}:${this.env.WORKSPACE}"} --network=k3d-${clusterName}") {
@@ -86,15 +90,17 @@ node('docker') {
                     }
 
                 } finally {
-                    sh "k3d cluster stop ${clusterName}"
-                    sh "k3d cluster delete ${clusterName}"
+                    if(clusterName){
+                        sh "k3d cluster stop ${clusterName}"
+                        sh "k3d cluster delete ${clusterName}"
+                    }
                 }
             }
         }
     }
 }
 
-def scanImage() {
+def scanImage(cesBuildLib, imageName) {
     sh "mkdir -p .trivy/.cache"
     def docker = cesBuildLib.Docker.new(this)
     def trivyVersion = '0.18.0'
@@ -116,7 +122,7 @@ def saveScanResultsOnVulenrabilities() {
     }
 }
 
-def startK3d(clusterName) {
+def startK3d(clusterName, imageName) {
     sh 'git config --global user.name "gop-ci-test"'
     sh 'git config --global user.email "gop-ci-test@test.com"'
     sh 'mkdir ./.kube'
@@ -132,17 +138,13 @@ def setKubeConfigToK3dIp(clusterName) {
             returnStdout: true
     ).trim()
 
-    ipV4 = sh(
+    String ipV4 = sh(
             script: "docker inspect ${containerId} | grep -o  '\"IPAddress\": \"[0-9.\"]*' | grep -o '[0-9.*]*'",
             returnStdout: true
     ).trim()
 
     sh "sed -i -r 's/0.0.0.0([^0-9]+[0-9]*|\$)/${ipV4}:6443/g' ${env.WORKSPACE}/.kube/config"
     sh "cat ${env.WORKSPACE}/.kube/config"
-}
 
-def cesBuildLib
-def image
-String imageName
-String clusterName
-String ipV4
+    return ipV4
+}
