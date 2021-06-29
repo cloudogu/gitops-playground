@@ -1,20 +1,13 @@
 #!groovy
-String getScmManagerCredentials() { 'cesmarvin-github' }
-String getCesBuildLibRepo() { "https://github.com/cloudogu/ces-build-lib/" }
-String getCesBuildLibVersion() { '1.46.1' }
-String getK8sPlaygroundRepo() {"https://github.com/cloudogu/k8s-gitops-playground/"}
-String getMainBranch() { 'feature/add_build_pipeline' }
 String getDockerRegistryBaseUrl() { 'ghcr.io' }
 String getDockerRegistryPath() { 'cloudogu' }
 
-def cesBuildLib
 def image
 String imageName
 String clusterName
 
-cesBuildLib = library(identifier: "ces-build-lib@${cesBuildLibVersion}",
-    retriever: modernSCM([$class: 'GitSCMSource', remote: cesBuildLibRepo, credentialsId: scmManagerCredentials])
-).com.cloudogu.ces.cesbuildlib
+@Library('github.com/cloudogu/ces-build-lib@1.47.1')
+import com.cloudogu.ces.cesbuildlib.*
 
 properties([
     // Keep only the last 10 build to preserve space
@@ -23,21 +16,20 @@ properties([
 
 node('docker') {
 
-    def git = cesBuildLib.Git.new(this, scmManagerCredentials)
+    def git = new Git(this)
 
         timeout(activity: true, time: 30, unit: 'MINUTES') {
 
             catchError {
                 try {
                     stage('Checkout') {
-                        git url: k8sPlaygroundRepo, branch: mainBranch, changelog: false, poll: false
+                        checkout scm
                         git.clean('')
                     }
 
                     stage('Build image') {
                         String imageTag = git.commitHashShort
                         imageName = "${dockerRegistryBaseUrl}/${dockerRegistryPath}/gop:${imageTag}"
-                        def docker = cesBuildLib.Docker.new(this)
                         String rfcDate = sh (returnStdout: true, script: 'date --rfc-3339 ns').trim()
                         image = docker.build(imageName, 
                                     "--build-arg BUILD_DATE='${rfcDate}' --build-arg VCS_REF='${git.commitHash}' .") // if using optional parameters you need to add the '.' argument at the end for docker to build the image
@@ -46,7 +38,7 @@ node('docker') {
                     stage('Scan image and start gitops playground') {
                         parallel(
                             'scan image': {
-                                scanImage(cesBuildLib, imageName)
+                                scanImage(imageName)
                                 saveScanResultsOnVulenrabilities()
                             },
 
@@ -58,7 +50,7 @@ node('docker') {
 
                                 String ipV4 = setKubeConfigToK3dIp(clusterName)
 
-                                cesBuildLib.Docker.new(this).image(imageName) // contains the docker client binary
+                                docker.image(imageName) // contains the docker client binary
                                     .inside("--entrypoint='' -e KUBECONFIG=${this.env.WORKSPACE}/.kube/config ${this.pwd().equals(this.env.WORKSPACE) ? '' : "-v ${this.env.WORKSPACE}:${this.env.WORKSPACE}"} --network=k3d-${clusterName}") {
                                         sh "yes | ./scripts/apply.sh --debug -x --argocd --cluster-bind-address=${ipV4}"
                                 }
@@ -91,13 +83,12 @@ node('docker') {
         }
 }
 
-def scanImage(cesBuildLib, imageName) {
+def scanImage(imageName) {
     sh "mkdir -p .trivy/.cache"
-    def docker = cesBuildLib.Docker.new(this)
     def trivyVersion = '0.18.0'
     def severityFlag = '--severity=CRITICAL'
 
-    docker.image("aquasec/trivy:${trivyVersion}")
+    new Docker (this).image("aquasec/trivy:${trivyVersion}")
             .mountJenkinsUser()
             .mountDockerSocket()
             .inside("-v ${env.WORKSPACE}/.trivy/.cache:/root/.cache/") {
