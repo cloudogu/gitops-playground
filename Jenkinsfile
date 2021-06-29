@@ -22,17 +22,7 @@ properties([
 ])
 
 node('docker') {
-    properties([
-        parameters([
-            booleanParam(
-                defaultValue: false,
-                description: 'Runs this pipeline as if it was pushed to main. This includes building and scanning the gop image and running the playground.',
-                name: 'Run as main'
-            )
-        ])
-    ])
 
-    if( "${env.BRANCH_NAME}" == 'main' || params.'Run as main') {
     def git = cesBuildLib.Git.new(this, scmManagerCredentials)
 
         timeout(activity: true, time: 30, unit: 'MINUTES') {
@@ -45,7 +35,7 @@ node('docker') {
                     }
 
                     stage('Build image') {
-                        String imageTag = "latest"
+                        String imageTag = git.commitHashShort
                         imageName = "${dockerRegistryBaseUrl}/${dockerRegistryPath}/gop:${imageTag}"
                         def docker = cesBuildLib.Docker.new(this)
                         String rfcDate = sh (returnStdout: true, script: 'date --rfc-3339 ns').trim()
@@ -75,15 +65,17 @@ node('docker') {
                             }
                         )
                     }
+                    
                     stage('Push image') {
                         if (isBuildSuccessful()) {
                             docker.withRegistry("https://${dockerRegistryBaseUrl}", 'cesmarvin-github') {
                                 if (git.isTag()) {
                                     image.push(git.tag)
                                 } else if (env.BRANCH_NAME == 'main') {
+                                    image.push()
                                     image.push("latest")
                                 } else {
-                                    echo "Skipping deployment to github container registry because current branch is ${env.BRANCH_NAME}."
+                                    echo "Skipping deployment to github container registry because not a tag and not main branch."
                                 }
                             }
                         }
@@ -97,7 +89,6 @@ node('docker') {
                 }
             }
         }
-    }
 }
 
 def scanImage(cesBuildLib, imageName) {
@@ -131,6 +122,7 @@ def startK3d(clusterName, imageName) {
 
     sh "k3d image import -c ${clusterName} ${imageName}"
 }
+
 
 def setKubeConfigToK3dIp(clusterName) {
     String containerId = sh(
