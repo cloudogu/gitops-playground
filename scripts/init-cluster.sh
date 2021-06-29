@@ -10,10 +10,7 @@ K3D_SUBNET=192.168.192.0/20
 CLUSTER_NAME=${K3D_CLUSTER_NAME}
 
 BIND_LOCALHOST=true
-SKIP_KUBECTL=false
 
-HELM_VERSION=3.4.1
-KUBECTL_VERSION=1.19.3
 BASEDIR=$(dirname $0)
 ABSOLUTE_BASEDIR="$(cd ${BASEDIR} && pwd)"
 source ${ABSOLUTE_BASEDIR}/utils.sh
@@ -24,28 +21,6 @@ function main() {
   SKIP_KUBECTL="$3"
 
   checkDockerAccessible
-
-  # Install kubectl if necessary
-  if command -v kubectl >/dev/null 2>&1 || [[ $SKIP_KUBECTL == 'true' ]]; then
-    echo "kubectl already installed or installation skipped"
-  else
-    msg="Install kubectl ${KUBECTL_VERSION}?"
-    confirm "$msg" ' [y/n]' &&
-      installKubectl
-  fi
-
-  # Install helm if necessary
-  if ! command -v helm >/dev/null 2>&1; then
-    installHelm
-  else
-    ACTUAL_HELM_VERSION=$(helm version --template="{{ .Version }}")
-    echo "helm ${ACTUAL_HELM_VERSION} already installed"
-    if [[ "$ACTUAL_HELM_VERSION" != "v$HELM_VERSION" ]]; then
-      msg="Up-/downgrade from ${ACTUAL_HELM_VERSION} to ${HELM_VERSION}?"
-      confirm "$msg" ' [y/n]' &&
-        installHelm
-    fi
-  fi
 
   # Install k3d if necessary
   if ! command -v k3d >/dev/null 2>&1; then
@@ -115,19 +90,6 @@ function createCluster() {
   fi
 }
 
-function installKubectl() {
-  curl -LO https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl
-  chmod +x ./kubectl
-  mv ./kubectl /usr/local/bin/kubectl
-  echo "kubectl installed"
-}
-
-function installHelm() {
-  # curls helm install script and installs/updates it if necessary
-  curl -s get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 |
-    bash -s -- --version v$HELM_VERSION
-}
-
 function printParameters() {
   echo "The following parameters are valid:"
   echo
@@ -139,7 +101,7 @@ function printParameters() {
 
 COMMANDS=$(getopt \
   -o h \
-  --long help,cluster-name:,bind-localhost:,skip-kubectl: \
+  --long help,cluster-name:,bind-localhost: \
   -- "$@")
 
 eval set -- "$COMMANDS"
@@ -149,7 +111,6 @@ while true; do
     -h | --help   )   printParameters; exit 0 ;;
     --cluster-name)   CLUSTER_NAME="$2"; shift 2 ;;
     --bind-localhost) BIND_LOCALHOST="$2"; shift 2 ;;
-    --skip-kubectl)   SKIP_KUBECTL="$2"; shift 2 ;;
     --) shift; break ;;
   *) break ;;
   esac
