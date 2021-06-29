@@ -80,6 +80,8 @@ node('docker') {
                     }
                 }
             }
+            
+            mailIfStatusChanged(git.commitAuthorEmail)
         }
 }
 
