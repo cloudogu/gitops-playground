@@ -108,16 +108,6 @@ function createCluster() {
 
   k3d cluster create ${CLUSTER_NAME} ${K3D_ARGS[*]}
 
-  IMPORT_IMAGES=(
-    'jenkins/inbound-agent:4.6-1-jdk11'
-    'jenkins/jenkins:2.263.3-lts-jdk11'
-  )
-
-  for i in "${IMPORT_IMAGES[@]}"; do
-    docker pull "${i}"
-  done
-
-  k3d image import -c ${CLUSTER_NAME} ${IMPORT_IMAGES[*]}
   if [[ ${BIND_LOCALHOST} == 'true' ]]; then
     k3d kubeconfig merge ${CLUSTER_NAME} --kubeconfig-switch-context
   else
