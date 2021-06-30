@@ -19,8 +19,6 @@ function main() {
   BIND_LOCALHOST="$2"
   SKIP_KUBECTL="$3"
 
-  checkDockerAccessible
-
   # Install k3d if necessary
   if ! command -v k3d >/dev/null 2>&1; then
     installK3d
@@ -41,13 +39,6 @@ function installK3d() {
   curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=v${K3D_VERSION} bash
 }
 
-function checkDockerAccessible() {
-  if ! command -v docker >/dev/null 2>&1; then
-    echo "Docker not installed"
-    exit 1
-  fi
-}
-
 function createCluster() {
   if k3d cluster list | grep ${CLUSTER_NAME} >/dev/null; then
     if confirm "Cluster '${CLUSTER_NAME}' already exists. Do you want to delete the cluster?" ' [y/N]'; then
@@ -65,12 +56,11 @@ function createCluster() {
   # if local setup is not disabled via env_var it is set to bind to localhost
   K3D_ARGS=(
     '--k3s-server-arg=--kube-apiserver-arg=service-node-port-range=8010-32767'
+    # Used by Jenkins Agents pods
     '-v /var/run/docker.sock:/var/run/docker.sock'
     '-v /tmp:/tmp'
-    '-v /usr/bin/docker:/usr/bin/docker'
     '--k3s-server-arg=--no-deploy=metrics-server'
     '--k3s-server-arg=--no-deploy=traefik'
-    '--no-hostip'
   )
 
   if [[ ${BIND_LOCALHOST} == 'true' ]]; then
