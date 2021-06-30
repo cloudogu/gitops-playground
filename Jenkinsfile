@@ -1,6 +1,8 @@
 #!groovy
 String getDockerRegistryBaseUrl() { 'ghcr.io' }
 String getDockerRegistryPath() { 'cloudogu' }
+String getTrivyVersion() { '0.18.3' }
+
 
 def image
 String imageName
@@ -27,13 +29,14 @@ node('docker') {
             git.clean('')
         }
 
-                    stage('Build image') {
-                        String imageTag = git.commitHashShort
-                        imageName = "${dockerRegistryBaseUrl}/${dockerRegistryPath}/gop:${imageTag}"
-                        String rfcDate = sh (returnStdout: true, script: 'date --rfc-3339 ns').trim()
-                        image = docker.build(imageName, 
-                                    "--build-arg BUILD_DATE='${rfcDate}' --build-arg VCS_REF='${git.commitHash}' .") // if using optional parameters you need to add the '.' argument at the end for docker to build the image
-                    }
+        stage('Build image') {
+            String imageTag = git.commitHashShort
+            imageName = "${dockerRegistryBaseUrl}/${dockerRegistryPath}/gop:${imageTag}"
+            String rfcDate = sh(returnStdout: true, script: 'date --rfc-3339 ns').trim()
+            image = docker.build(imageName,
+                    "--build-arg BUILD_DATE='${rfcDate}' --build-arg VCS_REF='${git.commitHash}' .")
+            // if using optional parameters you need to add the '.' argument at the end for docker to build the image
+        }
 
         parallel(
                 'Scan image': {
@@ -50,11 +53,11 @@ node('docker') {
                         clusterName = "citest-" + uuid
                         startK3d(clusterName, imageName)
 
-                                String ipV4 = setKubeConfigToK3dIp(clusterName)
+                        String ipV4 = setKubeConfigToK3dIp(clusterName)
 
-                                docker.image(imageName) // contains the docker client binary
-                                    .inside("--entrypoint='' -e KUBECONFIG=${this.env.WORKSPACE}/.kube/config ${this.pwd().equals(this.env.WORKSPACE) ? '' : "-v ${this.env.WORKSPACE}:${this.env.WORKSPACE}"} --network=k3d-${clusterName}") {
-                                        sh "yes | ./scripts/apply.sh --debug -x --argocd --cluster-bind-address=${ipV4}"
+                        docker.image(imageName) // contains the docker client binary
+                                .inside("--entrypoint='' -e KUBECONFIG=${this.env.WORKSPACE}/.kube/config ${this.pwd().equals(this.env.WORKSPACE) ? '' : "-v ${this.env.WORKSPACE}:${this.env.WORKSPACE}"} --network=k3d-${clusterName}") {
+                                    sh "yes | ./scripts/apply.sh --debug -x --argocd --cluster-bind-address=${ipV4}"
                                 }
                     }
                 }
@@ -87,23 +90,27 @@ node('docker') {
 }}
 
 def scanImage(imageName) {
-    sh "mkdir -p .trivy/.cache"
-    def trivyVersion = '0.18.0'
-    def severityFlag = '--severity=CRITICAL'
+    trivy('.trivy/trivyOutput-unfixable.txt', '--severity=CRITICAL --ignore-unfixed', imageName)
+    trivy('.trivy/trivyOutput-all.txt', '', imageName)
+}
 
-    new Docker (this).image("aquasec/trivy:${trivyVersion}")
+private void trivy(output, flags, imageName) {
+    sh 'mkdir -p .trivy/.cache'
+    new Docker(this).image("aquasec/trivy:${trivyVersion}")
             .mountJenkinsUser()
             .mountDockerSocket()
             .inside("-v ${env.WORKSPACE}/.trivy/.cache:/root/.cache/") {
-                sh "trivy image -o .trivy/trivyOutput.txt ${severityFlag} ${imageName}"
+                sh "trivy image -o ${output} ${flags} ${imageName}"
             }
 }
 
 def saveScanResultsOnVulenrabilities() {
-    if (readFile(".trivy/trivyOutput.txt").size() != 0) {
-        currentBuild.result = 'ABORTED'
-        error('There are critical and fixable vulnerabilities.')
-        archiveArtifacts artifacts: ".trivy/trivyOutput.txt"
+    if (readFile('.trivy/trivyOutput-all.txt').size() != 0) {
+        archiveArtifacts artifacts: '.trivy/trivyOutput-all.txt'
+    }
+    if (readFile('.trivy/trivyOutput-unfixable.txt').size() != 0) {
+        archiveArtifacts artifacts: '.trivy/trivyOutput-unfixable.txt'
+        unstable('There are critical and fixable vulnerabilities.')
     }
 }
 
