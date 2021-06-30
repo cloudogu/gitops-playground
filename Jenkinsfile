@@ -107,11 +107,9 @@ def saveScanResultsOnVulenrabilities() {
 }
 
 def startK3d(clusterName, imageName) {
-    sh 'git config --global user.name "gop-ci-test"'
-    sh 'git config --global user.email "gop-ci-test@test.com"'
-    sh 'mkdir ./.kube'
-    sh 'touch ./.kube/config'
-    sh "yes | ./scripts/init-cluster.sh --cluster-name=${clusterName} --bind-localhost=false"
+    withEnv(["HOME=${WORKSPACE}"]) { // Make k3d write kubeconfig to WORKSPACE
+        sh "yes | ./scripts/init-cluster.sh --cluster-name=${clusterName} --bind-localhost=false"
+    }
 
     sh "k3d image import -c ${clusterName} ${imageName}"
 }

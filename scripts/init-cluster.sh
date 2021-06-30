@@ -83,11 +83,8 @@ function createCluster() {
 
   k3d cluster create ${CLUSTER_NAME} ${K3D_ARGS[*]}
 
-  if [[ ${BIND_LOCALHOST} == 'true' ]]; then
-    k3d kubeconfig merge ${CLUSTER_NAME} --kubeconfig-switch-context
-  else
-    k3d kubeconfig merge ${CLUSTER_NAME} --output ./.kube/config --kubeconfig-switch-context
-  fi
+  echo "Adding k3d cluster to ~/.kube/config"
+  k3d kubeconfig merge ${CLUSTER_NAME} --kubeconfig-switch-context > /dev/null
 }
 
 function printParameters() {
