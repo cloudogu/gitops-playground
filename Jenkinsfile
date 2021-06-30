@@ -12,8 +12,8 @@ String clusterName
 import com.cloudogu.ces.cesbuildlib.*
 
 properties([
-    // Keep only the last 10 build to preserve space
-    disableConcurrentBuilds()
+    // Dont keep builds forever to preserve space
+    buildDiscarder(logRotator(numToKeepStr: '50')),
 ])
 
 node('docker') {
