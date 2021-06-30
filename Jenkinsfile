@@ -58,7 +58,7 @@ node('docker') {
                                 .inside("-e KUBECONFIG=${env.WORKSPACE}/.kube/config " +
                                         " --network=k3d-${clusterName} --entrypoint=''" ) {
                                     
-                                    sh "yes | ./scripts/apply.sh --debug --trace --argocd --cluster-bind-address=${ipV4}"
+                                    sh "./scripts/apply.sh --yes --debug --trace --argocd --cluster-bind-address=${ipV4}"
                                 }
                     }
                 }
@@ -119,8 +119,6 @@ def startK3d(clusterName, imageName) {
     withEnv(["HOME=${WORKSPACE}"]) { // Make k3d write kubeconfig to WORKSPACE
         sh "yes | ./scripts/init-cluster.sh --cluster-name=${clusterName} --bind-localhost=false"
     }
-
-    sh "k3d image import -c ${clusterName} ${imageName}"
 }
 
 def setKubeConfigToK3dIp(clusterName) {
