@@ -75,7 +75,7 @@ Jenkins build agents spawned in the cloud.
 
 If you don't have a demo cluster at hand we provide scripts to create either 
 
-* a local k3d cluster ([see docs](docs/k3s.md)) or
+* a local k3d cluster ([see docs](docs/k3d.md)) or
 * a remote k8s cluster on Google Kubernetes Engine via terraform ([see docs](docs/gke.md)).
 * But most k8s cluster should work (tested with k8s 1.18+).  
   Note that if you want to deploy Jenkins inside the cluster, Docker is required as container runtime.
@@ -227,7 +227,7 @@ Note that you can change (an should for a remote cluster!) the password with `ap
 
 Jenkins is available at
 
-* http://localhost:9090 (k3s)
+* http://localhost:9090 (k3d)
 * `scripts/get-remote-url jenkins default` (remote k8s) 
 
 Note: You can enable browser notifications about build results via a button in the lower right corner of Jenkins Web UI.
@@ -254,7 +254,7 @@ The user has to have the following privileges:
 
 SCM-Manager is available at
 
-* http://localhost:9091 (k3s)
+* http://localhost:9091 (k3d)
 * `scripts/get-remote-url scmm-scm-manager default` (remote k8s)
 
 ###### External SCM-Manager
@@ -273,7 +273,7 @@ The user on the scm has to have privileges to:
 
 ArgoCD's web UI is available at
 
-* http://localhost:9092 (k3s)
+* http://localhost:9092 (k3d)
 * `scripts/get-remote-url argocd-server argocd` (remote k8s)
 
 ### Demo applications
