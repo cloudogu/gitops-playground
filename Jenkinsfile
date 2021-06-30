@@ -18,14 +18,14 @@ node('docker') {
 
     def git = new Git(this)
 
-        timeout(activity: true, time: 30, unit: 'MINUTES') {
+    timestamps {
+    catchError {
+    timeout(activity: true, time: 30, unit: 'MINUTES') {
 
-            catchError {
-                try {
-                    stage('Checkout') {
-                        checkout scm
-                        git.clean('')
-                    }
+        stage('Checkout') {
+            checkout scm
+            git.clean('')
+        }
 
                     stage('Build image') {
                         String imageTag = git.commitHashShort
@@ -35,18 +35,20 @@ node('docker') {
                                     "--build-arg BUILD_DATE='${rfcDate}' --build-arg VCS_REF='${git.commitHash}' .") // if using optional parameters you need to add the '.' argument at the end for docker to build the image
                     }
 
-                    stage('Scan image and start gitops playground') {
-                        parallel(
-                            'scan image': {
-                                scanImage(imageName)
-                                saveScanResultsOnVulenrabilities()
-                            },
+        parallel(
+                'Scan image': {
+                    stage('Scan image') {
+                        scanImage(imageName)
+                        saveScanResultsOnVulenrabilities()
+                    }
+                },
 
-                            'start gitops playground': {
-                                String[] randomUUIDs = UUID.randomUUID().toString().split("-")
-                                String uuid = randomUUIDs[randomUUIDs.length-1]
-                                clusterName = "citest-" + uuid
-                                startK3d(clusterName, imageName)
+                'Start gitops playground': {
+                    stage('start gitops playground') {
+                        String[] randomUUIDs = UUID.randomUUID().toString().split("-")
+                        String uuid = randomUUIDs[randomUUIDs.length-1]
+                        clusterName = "citest-" + uuid
+                        startK3d(clusterName, imageName)
 
                                 String ipV4 = setKubeConfigToK3dIp(clusterName)
 
@@ -54,36 +56,35 @@ node('docker') {
                                     .inside("--entrypoint='' -e KUBECONFIG=${this.env.WORKSPACE}/.kube/config ${this.pwd().equals(this.env.WORKSPACE) ? '' : "-v ${this.env.WORKSPACE}:${this.env.WORKSPACE}"} --network=k3d-${clusterName}") {
                                         sh "yes | ./scripts/apply.sh --debug -x --argocd --cluster-bind-address=${ipV4}"
                                 }
-                            }
-                        )
                     }
-                    
-                    stage('Push image') {
-                        if (isBuildSuccessful()) {
-                            docker.withRegistry("https://${dockerRegistryBaseUrl}", 'cesmarvin-github') {
-                                if (git.isTag()) {
-                                    image.push(git.tag)
-                                } else if (env.BRANCH_NAME == 'main') {
-                                    image.push()
-                                    image.push("latest")
-                                } else {
-                                    echo "Skipping deployment to github container registry because not a tag and not main branch."
-                                }
-                            }
-                        }
-                    }
+                }
+        )
 
-                } finally {
-                    if(clusterName){
-                        sh "k3d cluster stop ${clusterName}"
-                        sh "k3d cluster delete ${clusterName}"
+        stage('Push image') {
+            if (isBuildSuccessful()) {
+                docker.withRegistry("https://${dockerRegistryBaseUrl}", 'cesmarvin-github') {
+                    if (git.isTag()) {
+                        image.push(git.tag)
+                    } else if (env.BRANCH_NAME == 'main') {
+                        image.push()
+                        image.push("latest")
+                    } else {
+                        echo "Skipping deployment to github container registry because not a tag and not main branch."
                     }
                 }
             }
-            
-            mailIfStatusChanged(git.commitAuthorEmail)
         }
-}
+    }}
+
+    stage('Stop k3d') {
+        if (clusterName) {
+            // Don't fail build if cleaning up fails
+            sh "k3d cluster delete ${clusterName} || true"
+        }
+    }
+
+    mailIfStatusChanged(git.commitAuthorEmail)
+}}
 
 def scanImage(imageName) {
     sh "mkdir -p .trivy/.cache"
