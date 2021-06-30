@@ -78,10 +78,10 @@ ENTRYPOINT ["scripts/apply.sh", "-y", "-x", "-c"]
 
 ARG VCS_REF
 ARG BUILD_DATE
-LABEL org.opencontainers.image.title="k8s-gitops-playground" \
-      org.opencontainers.image.source="https://github.com/cloudogu/k8s-gitops-playground" \
-      org.opencontainers.image.url="https://github.com/cloudogu/k8s-gitops-playground" \
-      org.opencontainers.image.documentation="https://github.com/cloudogu/k8s-gitops-playground" \
+LABEL org.opencontainers.image.title="gitops-playground" \
+      org.opencontainers.image.source="https://github.com/cloudogu/gitops-playground" \
+      org.opencontainers.image.url="https://github.com/cloudogu/gitops-playground" \
+      org.opencontainers.image.documentation="https://github.com/cloudogu/gitops-playground" \
       org.opencontainers.image.vendor="cloudogu" \
       org.opencontainers.image.licenses="MIT" \
       org.opencontainers.image.description="Reproducible infrastructure to showcase GitOps workflows and evaluate different GitOps Operators" \ 

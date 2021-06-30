@@ -1,8 +1,7 @@
 #!groovy
 String getDockerRegistryBaseUrl() { 'ghcr.io' }
-String getDockerRegistryPath() { 'cloudogu' }
+String getDockerImageName() { 'cloudogu/gitops-playground' }
 String getTrivyVersion() { '0.18.3' }
-
 
 def image
 String imageName
@@ -31,7 +30,7 @@ node('docker') {
 
         stage('Build image') {
             String imageTag = git.commitHashShort
-            imageName = "${dockerRegistryBaseUrl}/${dockerRegistryPath}/gop:${imageTag}"
+            imageName = "${dockerRegistryBaseUrl}/${dockerImageName}:${imageTag}"
             String rfcDate = sh(returnStdout: true, script: 'date --rfc-3339 ns').trim()
             image = docker.build(imageName,
                     "--build-arg BUILD_DATE='${rfcDate}' --build-arg VCS_REF='${git.commitHash}' .")
