@@ -1,4 +1,5 @@
 # k8s-gitops-playground
+[![Build Status](https://oss.cloudogu.com/jenkins/buildStatus/icon?job=cloudogu-github/gitops-playground/main)](https://oss.cloudogu.com/jenkins/blue/organizations/jenkins/cloudogu-github%2Fgitops-playground/)
 
 Reproducible infrastructure to showcase GitOps workflows with Kubernetes.  
 Derived from our experiences in [consulting](https://cloudogu.com/en/consulting/?mtm_campaign=gitops-playground&mtm_kwd=consulting&mtm_source=github&mtm_medium=link) 
@@ -143,24 +144,21 @@ Some more options:
 
 #### Run apply.sh inside Docker container
 
-Alternatively you can apply the playground through running the apply.sh in a pod in your cluster. To do so, first build the image:
-```shell
-docker build -t gop .
-```
+Alternatively you can apply the playground through running the apply.sh in a pod in your cluster.
 
 Then create a `ServiceAccount` with the role `cluster-admin`:
 ```shell
-kubectl create serviceaccount gop-job-executer -n default
+kubectl create serviceaccount gitops-playground-job-executer -n default
 
-kubectl create clusterrolebinding gop-job-executer \
+kubectl create clusterrolebinding gitops-playground-job-executer \
   --clusterrole=cluster-admin \
-  --serviceaccount=default:gop-job-executer
+  --serviceaccount=default:gitops-playground-job-executer
 ```
 
 Finally, you can start the job with the following command:
 ```shell
-kubectl run gop --rm -i --tty --image-pull-policy='Never' \
-  --image gop --serviceaccount gop-job-executer -- \
+kubectl run gitops-playground --rm -i --tty \
+  --image ghcr.io/cloudogu/gitops-playground --serviceaccount gitops-playground-job-executer -- \
   --argocd --fluxv1
 ```
 
