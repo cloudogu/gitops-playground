@@ -47,10 +47,6 @@ function createCluster() {
       echo "Not reinstalled."
       exit 0
     fi
-    if ! confirm "Do you want to re-create the cluster now?" ' [y/N]'; then
-      echo "Abort. No installation requested."
-      exit 0
-    fi
   fi
 
   # if local setup is not disabled via env_var it is set to bind to localhost
