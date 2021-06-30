@@ -74,7 +74,7 @@ COPY . /app/
 
 USER 1000
 
-ENTRYPOINT ["scripts/apply.sh", "-y", "-x", "-c"]
+ENTRYPOINT ["scripts/apply.sh"]
 
 ARG VCS_REF
 ARG BUILD_DATE

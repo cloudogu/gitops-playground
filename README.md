@@ -144,9 +144,12 @@ Some more options:
 
 #### Run apply.sh inside Docker container
 
-Alternatively you can apply the playground through running the apply.sh in a pod in your cluster.
+Alternatively you can apply the playground through running the apply.sh in a container.
 
-Then create a `ServiceAccount` with the role `cluster-admin`:
+##### Running as pod
+
+First, creat a `ServiceAccount` with the role `cluster-admin`:
+
 ```shell
 kubectl create serviceaccount gitops-playground-job-executer -n default
 
@@ -156,10 +159,44 @@ kubectl create clusterrolebinding gitops-playground-job-executer \
 ```
 
 Finally, you can start the job with the following command:
+
 ```shell
 kubectl run gitops-playground --rm -i --tty \
   --image ghcr.io/cloudogu/gitops-playground --serviceaccount gitops-playground-job-executer -- \
-  --argocd --fluxv1
+  --containered --yes
+```
+
+##### Run as local container
+
+You could also install the playground to kubernetes from a local container.
+
+When connecting to k3d it's easiest to run the container in the host network:
+
+```shell
+docker run --rm -it -v ~/.k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
+  --net=host \
+  ghcr.io/cloudogu/gitops-playground
+``` 
+
+Alternatively you can run the container in the network of the k3d cluster:
+`--network=k3d-gitops-playground`,  
+but you'll have to replace `0.0.0.0:PORT` in `~/.k3d/kubeconfig-gitops-playground.yaml` by the actual IP address of the 
+k3d API server and port 6443:   
+
+```shell 
+IP_ADDRESS="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' k3d-gitops-playground-server-0)"
+sed -i -r \
+  "s/0.0.0.0([^0-9]+[0-9]*|$)/${IP_ADDRESS}:6443/g" \
+  ~/.k3d/kubeconfig-gitops-playground.yaml
+``` 
+
+When your k3d cluster is not bound to localhost (`init-cluster.sh --bind-localhost=false`) pass your API Server
+
+```shell
+docker run --rm -it -v ~/.k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
+  --net=host \
+  ghcr.io/cloudogu/gitops-playground \
+  --cluster-bind-address=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' k3d-gitops-playground-server-0)
 ```
 
 #### Override default images used in the gitops-build-lib
