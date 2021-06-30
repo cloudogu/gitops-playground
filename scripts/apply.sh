@@ -104,7 +104,7 @@ function main() {
   checkPrerequisites
   
   if [[ $DEBUG != true ]]; then
-    backgroundLogFile=$(mktemp /tmp/playground-log-XXXXXXXXX.log)
+    backgroundLogFile=$(mktemp /tmp/playground-log-XXXXXXXXX)
     echo "Full log output is appended to ${backgroundLogFile}"
   fi
 
