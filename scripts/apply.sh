@@ -188,7 +188,6 @@ function initRegistry() {
   if [[ "${INTERNAL_REGISTRY}" == true ]]; then
     helm upgrade -i docker-registry --values docker-registry/values.yaml --version 1.9.4 stable/docker-registry -n default
   fi
-  echo "nach init registry"
 }
 
 function initJenkins() {

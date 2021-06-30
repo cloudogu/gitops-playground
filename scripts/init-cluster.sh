@@ -6,7 +6,6 @@
 # See https://github.com/rancher/k3d/releases
 K3D_VERSION=4.4.4
 K3D_CLUSTER_NAME=gitops-playground
-K3D_SUBNET=192.168.192.0/20
 CLUSTER_NAME=${K3D_CLUSTER_NAME}
 
 BIND_LOCALHOST=true
@@ -53,7 +52,6 @@ function createCluster() {
   if k3d cluster list | grep ${CLUSTER_NAME} >/dev/null; then
     if confirm "Cluster '${CLUSTER_NAME}' already exists. Do you want to delete the cluster?" ' [y/N]'; then
       k3d cluster delete ${CLUSTER_NAME}
-      docker network rm ${CLUSTER_NAME} >/dev/null || true
     else
       echo "Not reinstalled."
       exit 0

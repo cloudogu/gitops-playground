@@ -33,8 +33,10 @@ node('docker') {
             imageName = "${dockerRegistryBaseUrl}/${dockerImageName}:${imageTag}"
             String rfcDate = sh(returnStdout: true, script: 'date --rfc-3339 ns').trim()
             image = docker.build(imageName,
-                    "--build-arg BUILD_DATE='${rfcDate}' --build-arg VCS_REF='${git.commitHash}' .")
-            // if using optional parameters you need to add the '.' argument at the end for docker to build the image
+                    "--build-arg BUILD_DATE='${rfcDate}' " +
+                    "--build-arg VCS_REF='${git.commitHash}' " +
+                    // if using optional parameters you need to add the '.' argument at the end for docker to build the image
+                    ".")
         }
 
         parallel(
@@ -47,16 +49,16 @@ node('docker') {
 
                 'Start gitops playground': {
                     stage('start gitops playground') {
-                        String[] randomUUIDs = UUID.randomUUID().toString().split("-")
-                        String uuid = randomUUIDs[randomUUIDs.length-1]
-                        clusterName = "citest-" + uuid
+                        clusterName = createClusterName()
                         startK3d(clusterName, imageName)
 
                         String ipV4 = setKubeConfigToK3dIp(clusterName)
 
-                        docker.image(imageName) // contains the docker client binary
-                                .inside("--entrypoint='' -e KUBECONFIG=${this.env.WORKSPACE}/.kube/config ${this.pwd().equals(this.env.WORKSPACE) ? '' : "-v ${this.env.WORKSPACE}:${this.env.WORKSPACE}"} --network=k3d-${clusterName}") {
-                                    sh "yes | ./scripts/apply.sh --debug -x --argocd --cluster-bind-address=${ipV4}"
+                        docker.image(imageName)
+                                .inside("-e KUBECONFIG=${env.WORKSPACE}/.kube/config " +
+                                        " --network=k3d-${clusterName} --entrypoint=''" ) {
+                                    
+                                    sh "yes | ./scripts/apply.sh --debug --trace --argocd --cluster-bind-address=${ipV4}"
                                 }
                     }
                 }
@@ -121,20 +123,21 @@ def startK3d(clusterName, imageName) {
     sh "k3d image import -c ${clusterName} ${imageName}"
 }
 
-
 def setKubeConfigToK3dIp(clusterName) {
-    String containerId = sh(
-            script: "docker ps | grep ${clusterName}-server-0 | grep -o -m 1 '[^ ]*' | head -1",
-            returnStdout: true
-    ).trim()
+    // As we're will run the playground from another container, we need to use the IP of the k3d container in kubeconfig
 
     String ipV4 = sh(
-            script: "docker inspect ${containerId} | grep -o  '\"IPAddress\": \"[0-9.\"]*' | grep -o '[0-9.*]*'",
+            script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' k3d-${clusterName}-server-0",
             returnStdout: true
     ).trim()
 
     sh "sed -i -r 's/0.0.0.0([^0-9]+[0-9]*|\$)/${ipV4}:6443/g' ${env.WORKSPACE}/.kube/config"
-    sh "cat ${env.WORKSPACE}/.kube/config"
 
     return ipV4
+}
+
+String createClusterName() {
+    String[] randomUUIDs = UUID.randomUUID().toString().split("-")
+    String uuid = randomUUIDs[randomUUIDs.length-1]
+    return "citest-" + uuid
 }
