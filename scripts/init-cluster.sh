@@ -41,7 +41,7 @@ function installK3d() {
 }
 
 function createCluster() {
-  if k3d cluster list | grep ${CLUSTER_NAME} >/dev/null; then
+  if k3d cluster list ${CLUSTER_NAME} >/dev/null 2>&1; then
     if confirm "Cluster '${CLUSTER_NAME}' already exists. Do you want to delete the cluster?" ' [y/N]'; then
       k3d cluster delete ${CLUSTER_NAME}
     else
