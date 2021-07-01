@@ -4,6 +4,7 @@
 # set -x
 
 # See https://github.com/rancher/k3d/releases
+# This variable is also read in Jenkinsfile
 K3D_VERSION=4.4.4
 K3D_CLUSTER_NAME=gitops-playground
 CLUSTER_NAME=${K3D_CLUSTER_NAME}

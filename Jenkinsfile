@@ -1,18 +1,18 @@
 #!groovy
+@Library('github.com/cloudogu/ces-build-lib@1.47.1')
+import com.cloudogu.ces.cesbuildlib.*
+
 String getDockerRegistryBaseUrl() { 'ghcr.io' }
 String getDockerImageName() { 'cloudogu/gitops-playground' }
 String getTrivyVersion() { '0.18.3' }
 
-def image
-String imageName
-String clusterName
-
-@Library('github.com/cloudogu/ces-build-lib@1.47.1')
-import com.cloudogu.ces.cesbuildlib.*
-
 properties([
     // Dont keep builds forever to preserve space
     buildDiscarder(logRotator(numToKeepStr: '50')),
+
+    // For now allow concurrent builds.
+    // This is a slight risk of failing builds if two Jobs of the same branch install k3d (workspace-local) at the same time.
+    // If this happens to occurr often, add the following here: disableConcurrentBuilds(),
 ])
 
 node('docker') {
@@ -50,7 +50,7 @@ node('docker') {
                 'Start gitops playground': {
                     stage('start gitops playground') {
                         clusterName = createClusterName()
-                        startK3d(clusterName, imageName)
+                        startK3d(clusterName)
 
                         String ipV4 = setKubeConfigToK3dIp(clusterName)
 
@@ -115,8 +115,16 @@ def saveScanResultsOnVulenrabilities() {
     }
 }
 
-def startK3d(clusterName, imageName) {
-    withEnv(["HOME=${WORKSPACE}"]) { // Make k3d write kubeconfig to WORKSPACE
+def startK3d(clusterName) {
+    sh "mkdir -p ${WORKSPACE}/.kd3/bin"
+    
+    withEnv(["HOME=${WORKSPACE}", "PATH=${WORKSPACE}/.kd3/bin:${PATH}"]) { // Make k3d write kubeconfig to WORKSPACE
+        // Install k3d binary to workspace in order to avoid concurrency issues
+        sh "if ! command -v k3d >/dev/null 2>&1; then " +
+                "curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh |" +
+                  'TAG=v$(sed -n "s/^K3D_VERSION=//p" scripts/init-cluster.sh)' +
+                  "K3D_INSTALL_DIR=${WORKSPACE}/.kd3/bin" +
+                     'bash -s -- --no-sudo; fi'
         sh "yes | ./scripts/init-cluster.sh --cluster-name=${clusterName} --bind-localhost=false"
     }
 }
@@ -139,3 +147,7 @@ String createClusterName() {
     String uuid = randomUUIDs[randomUUIDs.length-1]
     return "citest-" + uuid
 }
+
+def image
+String imageName
+String clusterName
