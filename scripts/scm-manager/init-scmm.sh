@@ -20,7 +20,7 @@ function configureScmmManager() {
   SCMM_HOST=$(getHost ${3})
   SCMM_PROTOCOL=$(getProtocol ${3})
   SCMM_JENKINS_URL=${4}
-  # When running in k3s, BASE_URL must be the internal URL. Otherwise webhooks from SCMM->Jenkins will fail, as
+  # When running in k3d, BASE_URL must be the internal URL. Otherwise webhooks from SCMM->Jenkins will fail, as
   # They contain Repository URLs create with BASE_URL. Jenkins uses the internal URL for repos. So match is only
   # successful, when SCM also sends the Repo URLs using the internal URL
   BASE_URL=${5}

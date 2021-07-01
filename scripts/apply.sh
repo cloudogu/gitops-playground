@@ -18,7 +18,7 @@ source ${ABSOLUTE_BASEDIR}/scm-manager/init-scmm.sh
 INTERNAL_SCMM=true
 INTERNAL_JENKINS=true
 INTERNAL_REGISTRY=true
-# When running in k3s, connection between SCMM <-> Jenkins must be via k8s services, because external "localhost"
+# When running in k3d, connection between SCMM <-> Jenkins must be via k8s services, because external "localhost"
 # addresses will not work
 JENKINS_URL_FOR_SCMM="http://jenkins"
 SCMM_URL_FOR_JENKINS="http://scmm-scm-manager.default.svc.cluster.local/scm"
@@ -104,7 +104,7 @@ function main() {
   checkPrerequisites
   
   if [[ $DEBUG != true ]]; then
-    backgroundLogFile=$(mktemp /tmp/playground-log-XXXXXXXXX.log)
+    backgroundLogFile=$(mktemp /tmp/playground-log-XXXXXXXXX)
     echo "Full log output is appended to ${backgroundLogFile}"
   fi
 
@@ -209,6 +209,7 @@ function initJenkins() {
 }
 
 function initSCMMVars() {
+  echo "initSCMMVars"
   if [[ ${INTERNAL_SCMM} == true ]]; then
     SCMM_USERNAME=${SET_USERNAME}
     SCMM_PASSWORD=${SET_PASSWORD}

@@ -1,4 +1,5 @@
 # k8s-gitops-playground
+[![Build Status](https://oss.cloudogu.com/jenkins/buildStatus/icon?job=cloudogu-github/gitops-playground/main)](https://oss.cloudogu.com/jenkins/blue/organizations/jenkins/cloudogu-github%2Fgitops-playground/)
 
 Reproducible infrastructure to showcase GitOps workflows with Kubernetes.  
 Derived from our experiences in [consulting](https://cloudogu.com/en/consulting/?mtm_campaign=gitops-playground&mtm_kwd=consulting&mtm_source=github&mtm_medium=link) 
@@ -74,7 +75,7 @@ Jenkins build agents spawned in the cloud.
 
 If you don't have a demo cluster at hand we provide scripts to create either 
 
-* a local k3d cluster ([see docs](docs/k3s.md)) or
+* a local k3d cluster ([see docs](docs/k3d.md)) or
 * a remote k8s cluster on Google Kubernetes Engine via terraform ([see docs](docs/gke.md)).
 * But most k8s cluster should work (tested with k8s 1.18+).  
   Note that if you want to deploy Jenkins inside the cluster, Docker is required as container runtime.
@@ -143,25 +144,59 @@ Some more options:
 
 #### Run apply.sh inside Docker container
 
-Alternatively you can apply the playground through running the apply.sh in a pod in your cluster. To do so, first build the image:
-```shell
-docker build -t gop .
-```
+Alternatively you can apply the playground through running the apply.sh in a container.
 
-Then create a `ServiceAccount` with the role `cluster-admin`:
-```shell
-kubectl create serviceaccount gop-job-executer -n default
+##### Running as pod
 
-kubectl create clusterrolebinding gop-job-executer \
+First, creat a `ServiceAccount` with the role `cluster-admin`:
+
+```shell
+kubectl create serviceaccount gitops-playground-job-executer -n default
+
+kubectl create clusterrolebinding gitops-playground-job-executer \
   --clusterrole=cluster-admin \
-  --serviceaccount=default:gop-job-executer
+  --serviceaccount=default:gitops-playground-job-executer
 ```
 
 Finally, you can start the job with the following command:
+
 ```shell
-kubectl run gop --rm -i --tty --image-pull-policy='Never' \
-  --image gop --serviceaccount gop-job-executer -- \
-  --argocd --fluxv1
+kubectl run gitops-playground --rm -i --tty \
+  --image ghcr.io/cloudogu/gitops-playground --serviceaccount gitops-playground-job-executer -- \
+  --containered --yes
+```
+
+##### Run as local container
+
+You could also install the playground to kubernetes from a local container.
+
+When connecting to k3d it's easiest to run the container in the host network:
+
+```shell
+docker run --rm -it -v ~/.k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
+  --net=host \
+  ghcr.io/cloudogu/gitops-playground
+``` 
+
+Alternatively you can run the container in the network of the k3d cluster:
+`--network=k3d-gitops-playground`,  
+but you'll have to replace `0.0.0.0:PORT` in `~/.k3d/kubeconfig-gitops-playground.yaml` by the actual IP address of the 
+k3d API server and port 6443:   
+
+```shell 
+IP_ADDRESS="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' k3d-gitops-playground-server-0)"
+sed -i -r \
+  "s/0.0.0.0([^0-9]+[0-9]*|$)/${IP_ADDRESS}:6443/g" \
+  ~/.k3d/kubeconfig-gitops-playground.yaml
+``` 
+
+When your k3d cluster is not bound to localhost (`init-cluster.sh --bind-localhost=false`) pass your API Server
+
+```shell
+docker run --rm -it -v ~/.k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
+  --net=host \
+  ghcr.io/cloudogu/gitops-playground \
+  --cluster-bind-address=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' k3d-gitops-playground-server-0)
 ```
 
 #### Override default images used in the gitops-build-lib
@@ -229,7 +264,7 @@ Note that you can change (an should for a remote cluster!) the password with `ap
 
 Jenkins is available at
 
-* http://localhost:9090 (k3s)
+* http://localhost:9090 (k3d)
 * `scripts/get-remote-url jenkins default` (remote k8s) 
 
 Note: You can enable browser notifications about build results via a button in the lower right corner of Jenkins Web UI.
@@ -256,7 +291,7 @@ The user has to have the following privileges:
 
 SCM-Manager is available at
 
-* http://localhost:9091 (k3s)
+* http://localhost:9091 (k3d)
 * `scripts/get-remote-url scmm-scm-manager default` (remote k8s)
 
 ###### External SCM-Manager
@@ -275,7 +310,7 @@ The user on the scm has to have privileges to:
 
 ArgoCD's web UI is available at
 
-* http://localhost:9092 (k3s)
+* http://localhost:9092 (k3d)
 * `scripts/get-remote-url argocd-server argocd` (remote k8s)
 
 ### Demo applications

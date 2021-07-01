@@ -4,6 +4,6 @@ server:
   service:
     type: LoadBalancer
     # Actual "nodePort" number cannot be set via the helm chart. 
-    # So we use LB for k3s and set well-know port numbers for remote cluster via apply.sh.
+    # So we use LB for k3d and set well-know port numbers for remote cluster via apply.sh.
     servicePortHttp: 9092
     servicePortHttps: 9093
