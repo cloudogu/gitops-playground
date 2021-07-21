@@ -15,6 +15,8 @@ BASEDIR=$(dirname $0)
 ABSOLUTE_BASEDIR="$(cd ${BASEDIR} && pwd)"
 source ${ABSOLUTE_BASEDIR}/utils.sh
 
+if [[ -n "${DEBUG}" ]]; then set -x; fi
+
 function main() {
   CLUSTER_NAME="$1"
   BIND_LOCALHOST="$2"
