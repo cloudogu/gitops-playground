@@ -30,7 +30,7 @@ HELMKUBEVAL_DEFAULT_IMAGE='ghcr.io/cloudogu/helm:3.5.4-1'
 YAMLLINT_DEFAULT_IMAGE='cytopia/yamllint:1.25-0.7'
 CLUSTER_BIND_ADDRESS="localhost"
 
-SPRING_BOOT_HELN_CHART_REPO=${SPRING_BOOT_HELN_CHART_REPO:-'https://github.com/cloudogu/spring-boot-helm-chart.git'}
+SPRING_BOOT_HELM_CHART_REPO=${SPRING_BOOT_HELM_CHART_REPO:-'https://github.com/cloudogu/spring-boot-helm-chart.git'}
 SPRING_PETCLINIC_REPO=${SPRING_PETCLINIC_REPO:-'https://github.com/cloudogu/spring-petclinic.git'}
 GITOPS_BUILD_LIB_REPO=${GITOPS_BUILD_LIB_REPO:-'https://github.com/cloudogu/gitops-build-lib.git'}
 CES_BUILD_LIB_REPO=${CES_BUILD_LIB_REPO:-'https://github.com/cloudogu/ces-build-lib.git'}
@@ -435,7 +435,7 @@ function pushHelmChartRepo() {
   TARGET_REPO_SCMM="$1"
 
   TMP_REPO=$(mktemp -d)
-  git clone -n "${SPRING_BOOT_HELN_CHART_REPO}" "${TMP_REPO}" --quiet
+  git clone -n "${SPRING_BOOT_HELM_CHART_REPO}" "${TMP_REPO}" --quiet
   (
     cd "${TMP_REPO}"
     # Checkout a defined commit in order to get a deterministic result
@@ -461,7 +461,7 @@ function pushHelmChartRepoWithDependency() {
   TARGET_REPO_SCMM="$1"
 
   TMP_REPO=$(mktemp -d)
-  git clone -n "${SPRING_BOOT_HELN_CHART_REPO}" "${TMP_REPO}" --quiet
+  git clone -n "${SPRING_BOOT_HELM_CHART_REPO}" "${TMP_REPO}" --quiet
   (
     cd "${TMP_REPO}"
     # Checkout a defined commit in order to get a deterministic result
