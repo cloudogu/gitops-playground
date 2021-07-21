@@ -54,8 +54,8 @@ function createCluster() {
   K3D_ARGS=(
     '--k3s-server-arg=--kube-apiserver-arg=service-node-port-range=8010-32767'
     # Used by Jenkins Agents pods
-    '-v /var/run/docker.sock:/var/run/docker.sock'
-    '-v /tmp:/tmp'
+    '-v /var/run/docker.sock:/var/run/docker.sock@server[0]'
+    '-v /tmp:/tmp@server[0]'
     '--k3s-server-arg=--no-deploy=metrics-server'
     '--k3s-server-arg=--no-deploy=traefik'
   )
