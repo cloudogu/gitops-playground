@@ -1,14 +1,9 @@
 #!/usr/bin/env bash
 
-# set -o errexit -o nounset -o pipefail
-# set -x
-
 # See https://github.com/rancher/k3d/releases
 # This variable is also read in Jenkinsfile
 K3D_VERSION=4.4.4
-K3D_CLUSTER_NAME=gitops-playground
-CLUSTER_NAME=${K3D_CLUSTER_NAME}
-
+CLUSTER_NAME=gitops-playground
 BIND_LOCALHOST=true
 
 BASEDIR=$(dirname $0)
@@ -17,10 +12,11 @@ source ${ABSOLUTE_BASEDIR}/utils.sh
 
 if [[ -n "${DEBUG}" ]]; then set -x; fi
 
+set -o errexit -o nounset -o pipefail
+
 function main() {
   CLUSTER_NAME="$1"
   BIND_LOCALHOST="$2"
-  SKIP_KUBECTL="$3"
 
   # Install k3d if necessary
   if ! command -v k3d >/dev/null 2>&1; then
@@ -100,4 +96,4 @@ while true; do
   esac
 done
 
-main "$CLUSTER_NAME" "$BIND_LOCALHOST" "$SKIP_KUBECTL"
+main "$CLUSTER_NAME" "$BIND_LOCALHOST"

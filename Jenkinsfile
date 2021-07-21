@@ -122,8 +122,8 @@ def startK3d(clusterName) {
         // Install k3d binary to workspace in order to avoid concurrency issues
         sh "if ! command -v k3d >/dev/null 2>&1; then " +
                 "curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh |" +
-                  'TAG=v$(sed -n "s/^K3D_VERSION=//p" scripts/init-cluster.sh)' +
-                  "K3D_INSTALL_DIR=${WORKSPACE}/.kd3/bin" +
+                  'TAG=v$(sed -n "s/^K3D_VERSION=//p" scripts/init-cluster.sh) ' +
+                  "K3D_INSTALL_DIR=${WORKSPACE}/.kd3/bin " +
                      'bash -s -- --no-sudo; fi'
         sh "yes | ./scripts/init-cluster.sh --cluster-name=${clusterName} --bind-localhost=false"
     }
