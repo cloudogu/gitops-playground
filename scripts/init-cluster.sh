@@ -41,11 +41,13 @@ function installK3d() {
 }
 
 function createCluster() {
+  echo "Initializing k3d-cluster '${CLUSTER_NAME}'"
+
   if k3d cluster list ${CLUSTER_NAME} >/dev/null 2>&1; then
-    if confirm "Cluster '${CLUSTER_NAME}' already exists. Do you want to delete the cluster?" ' [y/N]'; then
+    if confirm "Cluster '${CLUSTER_NAME}' already exists. Do you want to recreate the cluster?" ' [y/N]'; then
       k3d cluster delete ${CLUSTER_NAME}
     else
-      echo "Not reinstalled."
+      echo "Not recreated."
       exit 0
     fi
   fi
@@ -97,8 +99,5 @@ while true; do
   *) break ;;
   esac
 done
-
-confirm "Run k3d-cluster initialization for cluster-name: '${CLUSTER_NAME}'." 'Continue? y/n [n]' ||
-  exit 0
 
 main "$CLUSTER_NAME" "$BIND_LOCALHOST" "$SKIP_KUBECTL"
