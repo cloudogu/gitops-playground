@@ -2,7 +2,9 @@
 
 # See https://github.com/rancher/k3d/releases
 # This variable is also read in Jenkinsfile
-K3D_VERSION=4.4.4
+K3D_VERSION=4.4.7
+K8S_VERSION=1.21.2
+K3S_VERSION="rancher/k3s:v${K8S_VERSION}-k3s1"
 CLUSTER_NAME=gitops-playground
 BIND_LOCALHOST=true
 
@@ -47,8 +49,8 @@ function createCluster() {
     fi
   fi
 
-  # if local setup is not disabled via env_var it is set to bind to localhost
   K3D_ARGS=(
+    # Allow services to bind to ports < 30000
     '--k3s-server-arg=--kube-apiserver-arg=service-node-port-range=8010-32767'
     # Used by Jenkins Agents pods
     '-v /var/run/docker.sock:/var/run/docker.sock@server[0]'
@@ -56,6 +58,8 @@ function createCluster() {
     '-v /etc/group:/etc/group@server[0]'
     # Persists the cache of Jenkins agents pods for faster builds
     '-v /tmp:/tmp@server[0]'
+    # Pin k8s version via k3s image
+    "--image=$K3S_VERSION" 
   )
 
   if [[ ${BIND_LOCALHOST} == 'true' ]]; then
