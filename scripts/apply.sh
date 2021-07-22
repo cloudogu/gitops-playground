@@ -61,10 +61,16 @@ function main() {
   KUBEVAL_IMAGE="${23}"
   HELMKUBEVAL_IMAGE="${24}"
   YAMLLINT_IMAGE="${25}"
-  CONTAINERED="${26}"
-  SKIP_HELM_UPDATE="${27}"
-  ARGOCD_CONFIG_ONLY="${28}"
-  CLUSTER_BIND_ADDRESS="${29}"
+  SKIP_HELM_UPDATE="${26}"
+  ARGOCD_CONFIG_ONLY="${27}"
+  CLUSTER_BIND_ADDRESS="${28}"
+
+  # The - avoids "unbound variable", because it expands to empty string if unset
+  if [[ -n "${KUBERNETES_SERVICE_HOST-}" ]]; then
+    RUNNING_INSIDE_K8S=true
+  else
+    RUNNING_INSIDE_K8S=false
+  fi
 
   if [[ $INSECURE == true ]]; then
     CURL_HOME="${PLAYGROUND_DIR}"
@@ -76,7 +82,7 @@ function main() {
     INTERNAL_SCMM=false
     # We can't use internal kubernetes services in this scenario
     SCMM_URL_FOR_JENKINS=${SCMM_URL}
-  elif [[ $CONTAINERED == true ]]; then
+  elif [[ $RUNNING_INSIDE_K8S == true ]]; then
     SCMM_URL="$(createUrl "scmm-scm-manager.default.svc.cluster.local" "80")/scm"
   else
     local scmmPortFromValuesYaml="$(grep 'nodePort:' "${PLAYGROUND_DIR}"/scm-manager/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')"
@@ -87,7 +93,7 @@ function main() {
     INTERNAL_JENKINS=false
     # We can't use internal kubernetes services in this scenario
     JENKINS_URL_FOR_SCMM=${JENKINS_URL}
-  elif [[ $CONTAINERED == true ]]; then
+  elif [[ $RUNNING_INSIDE_K8S == true ]]; then
     JENKINS_URL=$(createUrl "jenkins.default.svc.cluster.local" "80")
   else
     local jenkinsPortFromValuesYaml="$(grep 'nodePort:' "${PLAYGROUND_DIR}"/jenkins/values.yaml | grep nodePort | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')"
@@ -102,7 +108,7 @@ function main() {
   fi
 
   checkPrerequisites
-  
+
   if [[ $DEBUG != true ]]; then
     backgroundLogFile=$(mktemp /tmp/playground-log-XXXXXXXXX)
     echo "Full log output is appended to ${backgroundLogFile}"
@@ -209,7 +215,6 @@ function initJenkins() {
 }
 
 function initSCMMVars() {
-  echo "initSCMMVars"
   if [[ ${INTERNAL_SCMM} == true ]]; then
     SCMM_USERNAME=${SET_USERNAME}
     SCMM_PASSWORD=${SET_PASSWORD}
@@ -427,7 +432,7 @@ function pushPetClinicRepo() {
   )
 
   rm -rf "${TMP_REPO}"
-  
+
   setDefaultBranch "${TARGET_REPO_SCMM}"
 }
 
@@ -453,7 +458,7 @@ function pushHelmChartRepo() {
   )
 
   rm -rf "${TMP_REPO}"
-  
+
   setDefaultBranch "${TARGET_REPO_SCMM}"
 }
 
@@ -476,7 +481,7 @@ function pushHelmChartRepoWithDependency() {
     echo "dependencies:
 - name: podinfo
   version: \"5.2.0\"
-  repository: \"https://stefanprodan.github.io/podinfo\"" >> ./Chart.yaml
+  repository: \"https://stefanprodan.github.io/podinfo\"" >>./Chart.yaml
 
     git commit -a -m "Added dependency" --quiet
 
@@ -486,7 +491,7 @@ function pushHelmChartRepoWithDependency() {
   )
 
   rm -rf "${TMP_REPO}"
-  
+
   setDefaultBranch "${TARGET_REPO_SCMM}"
 }
 
@@ -578,7 +583,7 @@ function createUrl() {
   # Argo forwards to HTTPS so simply use HTTP here
   echo -n "http://${hostname}"
   echo -n ":${port}"
-#  [[ "${port}" != 80 && "${port}" != 443 ]] && echo -n ":${port}"
+  #  [[ "${port}" != 80 && "${port}" != 443 ]] && echo -n ":${port}"
 }
 
 function printWelcomeScreen() {
@@ -720,15 +725,17 @@ function printParameters() {
   echo " -d | --debug         >> Debug output"
   echo " -x | --trace         >> Debug + Show each command executed (set -x)"
   echo " -y | --yes           >> Skip kubecontext confirmation"
-  echo " -c | --containered   >> Runs script in containered mode (uses services instead of localhost to connect jenkins and scm-manager)"
 }
 
 COMMANDS=$(getopt \
   -o hwdxyc \
-  --long help,fluxv1,fluxv2,argocd,welcome,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,trace,insecure,yes,containered,skip-helm-update,argocd-config-only,cluster-bind-address: \
+  --long help,fluxv1,fluxv2,argocd,welcome,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,trace,insecure,yes,skip-helm-update,argocd-config-only,cluster-bind-address: \
   -- "$@")
 
-if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
+if [ $? != 0 ]; then
+  echo "Terminating..." >&2
+  exit 1
+fi
 
 eval set -- "$COMMANDS"
 
@@ -759,44 +766,138 @@ CLUSTER_BIND_ADDRESS="localhost"
 INSECURE=false
 TRACE=false
 ASSUME_YES=false
-CONTAINERED=false
 SKIP_HELM_UPDATE=false
 ARGOCD_CONFIG_ONLY=false
 
 while true; do
   case "$1" in
-    -h | --help          ) printUsage; exit 0 ;;
-    --fluxv1             ) INSTALL_FLUXV1=true; INSTALL_ALL_MODULES=false; shift ;;
-    --fluxv2             ) INSTALL_FLUXV2=true; INSTALL_ALL_MODULES=false; shift ;;
-    --argocd             ) INSTALL_ARGOCD=true; INSTALL_ALL_MODULES=false; shift ;;
-    --remote             ) REMOTE_CLUSTER=true; shift ;;
-    --jenkins-url        ) JENKINS_URL="$2"; shift 2 ;;
-    --jenkins-username   ) JENKINS_USERNAME="$2"; shift 2 ;;
-    --jenkins-password   ) JENKINS_PASSWORD="$2"; shift 2 ;;
-    --registry-url       ) REGISTRY_URL="$2"; shift 2 ;;
-    --registry-path      ) REGISTRY_PATH="$2"; shift 2 ;;
-    --registry-username  ) REGISTRY_USERNAME="$2"; shift 2 ;;
-    --registry-password  ) REGISTRY_PASSWORD="$2"; shift 2 ;;
-    --scmm-url           ) SCMM_URL="$2"; shift 2 ;;
-    --scmm-username      ) SCMM_USERNAME="$2"; shift 2 ;;
-    --scmm-password      ) SCMM_PASSWORD="$2"; shift 2 ;;
-    --kubectl-image      ) KUBECTL_IMAGE="$2"; shift 2 ;;
-    --helm-image         ) HELM_IMAGE="$2"; shift 2 ;;
-    --kubeval-image      ) KUBEVAL_IMAGE="$2"; shift 2 ;;
-    --helmkubeval-image  ) HELMKUBEVAL_IMAGE="$2"; shift 2 ;;
-    --yamllint-image     ) YAMLLINT_IMAGE="$2"; shift 2 ;;
-    --insecure           ) INSECURE=true; shift ;;
-    --username           ) SET_USERNAME="$2"; shift 2 ;;
-    --password           ) SET_PASSWORD="$2"; shift 2 ;;
-    -w | --welcome       ) printWelcomeScreen; exit 0 ;;
-    -d | --debug         ) DEBUG=true; shift ;;
-    -x | --trace         ) TRACE=true; shift ;;
-    -y | --yes           ) ASSUME_YES=true; shift ;;
-    -c | --containered   ) CONTAINERED=true; shift ;;
-    --skip-helm-update   ) SKIP_HELM_UPDATE=true; shift ;;
-    --argocd-config-only ) ARGOCD_CONFIG_ONLY=true; shift ;;
-    --cluster-bind-address) CLUSTER_BIND_ADDRESS="$2"; shift 2;;
-    --                   ) shift; break ;;
+  -h | --help)
+    printUsage
+    exit 0
+    ;;
+  --fluxv1)
+    INSTALL_FLUXV1=true
+    INSTALL_ALL_MODULES=false
+    shift
+    ;;
+  --fluxv2)
+    INSTALL_FLUXV2=true
+    INSTALL_ALL_MODULES=false
+    shift
+    ;;
+  --argocd)
+    INSTALL_ARGOCD=true
+    INSTALL_ALL_MODULES=false
+    shift
+    ;;
+  --remote)
+    REMOTE_CLUSTER=true
+    shift
+    ;;
+  --jenkins-url)
+    JENKINS_URL="$2"
+    shift 2
+    ;;
+  --jenkins-username)
+    JENKINS_USERNAME="$2"
+    shift 2
+    ;;
+  --jenkins-password)
+    JENKINS_PASSWORD="$2"
+    shift 2
+    ;;
+  --registry-url)
+    REGISTRY_URL="$2"
+    shift 2
+    ;;
+  --registry-path)
+    REGISTRY_PATH="$2"
+    shift 2
+    ;;
+  --registry-username)
+    REGISTRY_USERNAME="$2"
+    shift 2
+    ;;
+  --registry-password)
+    REGISTRY_PASSWORD="$2"
+    shift 2
+    ;;
+  --scmm-url)
+    SCMM_URL="$2"
+    shift 2
+    ;;
+  --scmm-username)
+    SCMM_USERNAME="$2"
+    shift 2
+    ;;
+  --scmm-password)
+    SCMM_PASSWORD="$2"
+    shift 2
+    ;;
+  --kubectl-image)
+    KUBECTL_IMAGE="$2"
+    shift 2
+    ;;
+  --helm-image)
+    HELM_IMAGE="$2"
+    shift 2
+    ;;
+  --kubeval-image)
+    KUBEVAL_IMAGE="$2"
+    shift 2
+    ;;
+  --helmkubeval-image)
+    HELMKUBEVAL_IMAGE="$2"
+    shift 2
+    ;;
+  --yamllint-image)
+    YAMLLINT_IMAGE="$2"
+    shift 2
+    ;;
+  --insecure)
+    INSECURE=true
+    shift
+    ;;
+  --username)
+    SET_USERNAME="$2"
+    shift 2
+    ;;
+  --password)
+    SET_PASSWORD="$2"
+    shift 2
+    ;;
+  -w | --welcome)
+    printWelcomeScreen
+    exit 0
+    ;;
+  -d | --debug)
+    DEBUG=true
+    shift
+    ;;
+  -x | --trace)
+    TRACE=true
+    shift
+    ;;
+  -y | --yes)
+    ASSUME_YES=true
+    shift
+    ;;
+  --skip-helm-update)
+    SKIP_HELM_UPDATE=true
+    shift
+    ;;
+  --argocd-config-only)
+    ARGOCD_CONFIG_ONLY=true
+    shift
+    ;;
+  --cluster-bind-address)
+    CLUSTER_BIND_ADDRESS="$2"
+    shift 2
+    ;;
+  --)
+    shift
+    break
+    ;;
   *) break ;;
   esac
 done
@@ -811,6 +912,4 @@ if [[ $TRACE == true ]]; then
   # Trace without debug does not make to much sense, as the spinner spams the output
   DEBUG=true
 fi
-main "$DEBUG" "$INSTALL_ALL_MODULES" "$INSTALL_FLUXV1" "$INSTALL_FLUXV2" "$INSTALL_ARGOCD" "$REMOTE_CLUSTER" "$SET_USERNAME" "$SET_PASSWORD" "$JENKINS_URL" "$JENKINS_USERNAME" "$JENKINS_PASSWORD" "$REGISTRY_URL" "$REGISTRY_PATH" "$REGISTRY_USERNAME" "$REGISTRY_PASSWORD" "$SCMM_URL" "$SCMM_USERNAME" "$SCMM_PASSWORD" "$INSECURE" "$TRACE" "$KUBECTL_IMAGE" "$HELM_IMAGE" "$KUBEVAL_IMAGE" "$HELMKUBEVAL_IMAGE" "$YAMLLINT_IMAGE" "$CONTAINERED" "$SKIP_HELM_UPDATE" "$ARGOCD_CONFIG_ONLY" "$CLUSTER_BIND_ADDRESS"
-
-
+main "$DEBUG" "$INSTALL_ALL_MODULES" "$INSTALL_FLUXV1" "$INSTALL_FLUXV2" "$INSTALL_ARGOCD" "$REMOTE_CLUSTER" "$SET_USERNAME" "$SET_PASSWORD" "$JENKINS_URL" "$JENKINS_USERNAME" "$JENKINS_PASSWORD" "$REGISTRY_URL" "$REGISTRY_PATH" "$REGISTRY_USERNAME" "$REGISTRY_PASSWORD" "$SCMM_URL" "$SCMM_USERNAME" "$SCMM_PASSWORD" "$INSECURE" "$TRACE" "$KUBECTL_IMAGE" "$HELM_IMAGE" "$KUBEVAL_IMAGE" "$HELMKUBEVAL_IMAGE" "$YAMLLINT_IMAGE" "$SKIP_HELM_UPDATE" "$ARGOCD_CONFIG_ONLY" "$CLUSTER_BIND_ADDRESS"
