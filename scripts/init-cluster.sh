@@ -55,6 +55,9 @@ function createCluster() {
     '--k3s-server-arg=--kube-apiserver-arg=service-node-port-range=8010-32767'
     # Used by Jenkins Agents pods
     '-v /var/run/docker.sock:/var/run/docker.sock@server[0]'
+    # Allows for finding out the GID of the docker group in order to allow the Jenkins agents pod to access docker socket
+    '-v /etc/group:/etc/group@server[0]'
+    # Persists the cache of Jenkins agents pods for faster builds
     '-v /tmp:/tmp@server[0]'
   )
 

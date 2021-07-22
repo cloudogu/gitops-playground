@@ -51,19 +51,15 @@ function jenkinsHelmSettingsForLocalCluster() {
 
 # using local cluster on k3d we grep local host gid for docker
 function queryDockerGroupOfJenkinsNode() {
-  if [[ $REMOTE_CLUSTER != true ]]; then
-    cat /etc/group | grep docker | cut -d: -f3
-  else
-    kubectl apply -f jenkins/tmp-docker-gid-grepper.yaml >/dev/null
-    until kubectl get po --field-selector=status.phase=Running | grep tmp-docker-gid-grepper >/dev/null; do
-      sleep 1
-    done
+  kubectl apply -f jenkins/tmp-docker-gid-grepper.yaml >/dev/null
+  until kubectl get po --field-selector=status.phase=Running | grep tmp-docker-gid-grepper >/dev/null; do
+    sleep 1
+  done
 
-    kubectl exec tmp-docker-gid-grepper -- cat /etc/group | grep docker | cut -d: -f3
+  kubectl exec tmp-docker-gid-grepper -- cat /etc/group | grep docker | cut -d: -f3
 
-    # This call might block some (unnecessary) seconds so move to background
-    kubectl delete -f jenkins/tmp-docker-gid-grepper.yaml >/dev/null &
-  fi
+  # This call might block some (unnecessary) seconds so move to background
+  kubectl delete -f jenkins/tmp-docker-gid-grepper.yaml >/dev/null &
 }
 
 function waitForJenkins() {
