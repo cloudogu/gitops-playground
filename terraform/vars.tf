@@ -34,5 +34,5 @@ variable "k8s_version_prefix" {
   # OTOH google deprecates support for specific version rather fast.
   # Resulting in "Error 400: Master version "X" is unsupported., badRequest"
   # So we use a version prefix hoping that the stable patch versions won't do unexpected things (which is unlikely!) 
-  default = "1.18."
+  default = "1.21."
 }

@@ -71,9 +71,8 @@ function main() {
   fi
   # Use an internal IP to contact Jenkins and SCMM
   # For k3d this is either the host's IP or the IP address of the k3d API server's container IP (when --bind-localhost=false)
-  # TODO does this work for remote clusters?! 
   CLUSTER_BIND_ADDRESS=$(kubectl get "$(kubectl get node -oname | head -n1)" \
-      --template='{{range .status.addresses}}{{ if eq .type "InternalIP"}}{{.address}}{{end}}{{end}}')
+    --template='{{range .status.addresses}}{{ if eq .type "InternalIP"}}{{.address}}{{end}}{{end}}')
 
   if [[ $INSECURE == true ]]; then
     CURL_HOME="${PLAYGROUND_DIR}"
@@ -121,9 +120,6 @@ function main() {
 
   initSCMMVars
   evalWithSpinner "Starting SCM-Manager..." initSCMM
-  # We need to query remote IP here (in the main process) again, because the "initSCMM" methods might be running in a
-  # background process (to display the spinner only)
-  setExternalHostnameIfNecessary 'SCMM' 'scmm-scm-manager' 'default'
 
   if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV1 == true ]]; then
     evalWithSpinner "Starting Flux V1..." initFluxV1
@@ -234,6 +230,9 @@ function initSCMM() {
     deployLocalScmmManager "${REMOTE_CLUSTER}"
   fi
 
+  setExternalHostnameIfNecessary 'SCMM' 'scmm-scm-manager' 'default'
+  [[ "${SCMM_URL}" != *scm ]] && SCMM_URL=${SCMM_URL}/scm
+
   configureScmmManager "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "${SCMM_URL}" "${JENKINS_URL_FOR_SCMM}" "${SCMM_URL}" "${INTERNAL_SCMM}"
 
   pushHelmChartRepo 'common/spring-boot-helm-chart'
@@ -247,12 +246,14 @@ function setExternalHostnameIfNecessary() {
   local serviceName="$2"
   local namespace="$3"
 
-  if [[ $REMOTE_CLUSTER == true && "$(eval echo "\$${variablePrefix}_INTERNAL")" == 'false' ]]; then
+  # :-} expands to empty string, e.g. vor INTERNAL_ARGO which does not exist.
+  # This only works when checking for != false 😬
+  if [[ $REMOTE_CLUSTER == true && "$(eval echo "\${INTERNAL_${variablePrefix}:-}")" != 'false' ]]; then
     # Update SCMM_URL or JENKINS_URL or ARGOCD_URL
-    # only if INTERNAL_SCMM or INTERNAL_JENKINS are false
+    # Only if apps are not external
     # Our apps are configured to use port 80 on remote clusters
     # Argo forwards to HTTPS so simply use HTTP here
-    declare "${variablePrefix}_URL"="http://$(getExternalIP "${serviceName}" "${namespace}")"
+    declare -g "${variablePrefix}_URL"="http://$(getExternalIP "${serviceName}" "${namespace}")"
   fi
 }
 
@@ -594,22 +595,24 @@ function printWelcomeScreen() {
 
   if [[ $RUNNING_INSIDE_K8S == true ]]; then
     # Internal service IPs have been set above.
-    # * Local k3d: Replace them by k3d container IP. 
-    # * Remote cluster: Overwrite with setExternalHostnameIfNecessary() if necessary 
-    
+    # * Local k3d: Replace them by k3d container IP.
+    # * Remote cluster: Overwrite with setExternalHostnameIfNecessary() if necessary
+
     local scmmPortFromValuesYaml="$(grep 'nodePort:' "${PLAYGROUND_DIR}"/scm-manager/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')"
     SCMM_URL="$(createUrl "${CLUSTER_BIND_ADDRESS}" "${scmmPortFromValuesYaml}")/scm"
     setExternalHostnameIfNecessary 'SCMM' 'scmm-scm-manager' 'default'
-    
+    [[ "${SCMM_URL}" != *scm ]] && SCMM_URL=${SCMM_URL}/scm
+
+
     local jenkinsPortFromValuesYaml="$(grep 'nodePort:' "${PLAYGROUND_DIR}"/jenkins/values.yaml | grep nodePort | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')"
     JENKINS_URL=$(createUrl "${CLUSTER_BIND_ADDRESS}" "${jenkinsPortFromValuesYaml}")
     setExternalHostnameIfNecessary 'JENKINS' 'jenkins' 'default'
   fi
-  
+
   if [[ -z "${JENKINS_URL}" ]]; then
     setExternalHostnameIfNecessary 'JENKINS' 'jenkins' 'default'
   fi
-  
+
   echo
   echo
   echo "|----------------------------------------------------------------------------------------------|"
@@ -619,7 +622,7 @@ function printWelcomeScreen() {
   echo "| The playground features three example applications (Sprint PetClinic - one for every gitops solution) in SCM-Manager."
   echo "| See here:"
   echo "|"
-  
+
   if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV1 == true ]]; then
     echo -e "| - \e[32m${SCMM_URL}/repos/fluxv1/\e[0m"
   fi
@@ -629,7 +632,7 @@ function printWelcomeScreen() {
   if [[ $INSTALL_ALL_MODULES == true || $INSTALL_ARGOCD == true ]]; then
     echo -e "| - \e[32m${SCMM_URL}/repos/argocd/\e[0m"
   fi
-  
+
   echo "|"
   echo -e "| Credentials for SCM-Manager and Jenkins are: \e[31m${SET_USERNAME}/${SET_PASSWORD}\e[0m"
   echo "|"
@@ -937,4 +940,4 @@ if [[ $TRACE == true ]]; then
   # Trace without debug does not make to much sense, as the spinner spams the output
   DEBUG=true
 fi
-main "$DEBUG" "$INSTALL_ALL_MODULES" "$INSTALL_FLUXV1" "$INSTALL_FLUXV2" "$INSTALL_ARGOCD" "$REMOTE_CLUSTER" "$SET_USERNAME" "$SET_PASSWORD" "$JENKINS_URL" "$JENKINS_USERNAME" "$JENKINS_PASSWORD" "$REGISTRY_URL" "$REGISTRY_PATH" "$REGISTRY_USERNAME" "$REGISTRY_PASSWORD" "$SCMM_URL" "$SCMM_USERNAME" "$SCMM_PASSWORD" "$INSECURE" "$TRACE" "$KUBECTL_IMAGE" "$HELM_IMAGE" "$KUBEVAL_IMAGE" "$HELMKUBEVAL_IMAGE" "$YAMLLINT_IMAGE" "$SKIP_HELM_UPDATE" "$ARGOCD_CONFIG_ONLY" 
+main "$DEBUG" "$INSTALL_ALL_MODULES" "$INSTALL_FLUXV1" "$INSTALL_FLUXV2" "$INSTALL_ARGOCD" "$REMOTE_CLUSTER" "$SET_USERNAME" "$SET_PASSWORD" "$JENKINS_URL" "$JENKINS_USERNAME" "$JENKINS_PASSWORD" "$REGISTRY_URL" "$REGISTRY_PATH" "$REGISTRY_USERNAME" "$REGISTRY_PASSWORD" "$SCMM_URL" "$SCMM_USERNAME" "$SCMM_PASSWORD" "$INSECURE" "$TRACE" "$KUBECTL_IMAGE" "$HELM_IMAGE" "$KUBEVAL_IMAGE" "$HELMKUBEVAL_IMAGE" "$YAMLLINT_IMAGE" "$SKIP_HELM_UPDATE" "$ARGOCD_CONFIG_ONLY"
