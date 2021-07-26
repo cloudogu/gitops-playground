@@ -253,7 +253,7 @@ function waitForScmManager() {
 }
 
 function getHost() {
-  SCMM_URL="$1"
+  local SCMM_URL="$1"
   if [[ "${SCMM_URL}" == https://* ]]; then
     echo "${SCMM_URL}" | cut -c 9-
   elif [[ "${SCMM_URL}" == http://* ]]; then
@@ -262,7 +262,7 @@ function getHost() {
 }
 
 function getProtocol() {
-  SCMM_URL="$1"
+  local SCMM_URL="$1"
   if [[ "${SCMM_URL}" == https://* ]]; then
     echo "https"
   elif [[ "${SCMM_URL}" == http://* ]]; then

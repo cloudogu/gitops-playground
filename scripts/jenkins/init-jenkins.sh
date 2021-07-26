@@ -80,7 +80,7 @@ function configureJenkins() {
   export JENKINS_USERNAME
   JENKINS_PASSWORD="${3}"
   export JENKINS_PASSWORD
-  SCMM_URL="${4}"
+  local SCMM_URL="${4}"
   SCMM_PASSWORD="${5}"
   REGISTRY_URL="${6}"
   REGISTRY_PATH="${7}"
