@@ -208,9 +208,7 @@ When your k3d cluster is not bound to localhost (`init-cluster.sh --bind-localho
 CLUSTER_NAME=gitops-playground
 docker run --rm -it -v ~/.k3d/kubeconfig-${CLUSTER_NAME}.yaml:/home/.kube/config \
   --net=host \
-  ghcr.io/cloudogu/gitops-playground \
-  --cluster-bind-address=$(docker inspect -f \
-    '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' k3d-${CLUSTER_NAME}-server-0)
+  ghcr.io/cloudogu/gitops-playground
 ```
 
 #### Apply via script

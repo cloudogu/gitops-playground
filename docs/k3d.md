@@ -14,10 +14,7 @@ bash <(curl -s https://raw.githubusercontent.com/cloudogu/gitops-playground/main
 * `--cluster-name` - default: `gitops-playground`
 * `--bind-localhost=false` - does not bind to localhost. That is, the URLs of the application will not be reachable via
   localhost but via the IP address of the k3d docker container. Avoids port conflicts but is less convenient.
-  Note:
-  * When applying the playground, remember to use the `--cluster-bind-address` parameter with your address. 
-    See main README for details.
-  * right now, builds inside the playground using `docker push` are failing, when started with this parameter. 
+  Note that right now, builds inside the playground using `docker push` are failing, when started with this parameter. 
   See #53.  
 
 ## Implementation details

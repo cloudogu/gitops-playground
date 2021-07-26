@@ -28,7 +28,6 @@ KUBECTL_DEFAULT_IMAGE='lachlanevenson/k8s-kubectl:v1.19.3'
 KUBEVAL_DEFAULT_IMAGE='ghcr.io/cloudogu/helm:3.5.4-1'
 HELMKUBEVAL_DEFAULT_IMAGE='ghcr.io/cloudogu/helm:3.5.4-1'
 YAMLLINT_DEFAULT_IMAGE='cytopia/yamllint:1.25-0.7'
-CLUSTER_BIND_ADDRESS="localhost"
 
 SPRING_BOOT_HELM_CHART_REPO=${SPRING_BOOT_HELM_CHART_REPO:-'https://github.com/cloudogu/spring-boot-helm-chart.git'}
 SPRING_PETCLINIC_REPO=${SPRING_PETCLINIC_REPO:-'https://github.com/cloudogu/spring-petclinic.git'}
@@ -63,7 +62,6 @@ function main() {
   YAMLLINT_IMAGE="${25}"
   SKIP_HELM_UPDATE="${26}"
   ARGOCD_CONFIG_ONLY="${27}"
-  CLUSTER_BIND_ADDRESS="${28}"
 
   # The - avoids "unbound variable", because it expands to empty string if unset
   if [[ -n "${KUBERNETES_SERVICE_HOST-}" ]]; then
@@ -71,6 +69,11 @@ function main() {
   else
     RUNNING_INSIDE_K8S=false
   fi
+  # Use an internal IP to contact Jenkins and SCMM
+  # For k3d this is either the host's IP or the IP address of the k3d API server's container IP (when --bind-localhost=false)
+  # TODO does this work for remote clusters?! 
+  CLUSTER_BIND_ADDRESS=$(kubectl get "$(kubectl get node -oname | head -n1)" \
+      --template='{{range .status.addresses}}{{ if eq .type "InternalIP"}}{{.address}}{{end}}{{end}}')
 
   if [[ $INSECURE == true ]]; then
     CURL_HOME="${PLAYGROUND_DIR}"
@@ -722,9 +725,6 @@ function printParameters() {
   echo "    | --registry-username=myUsername  >> Optional when --registry-url is set"
   echo "    | --registry-password=myPassword  >> Optional when --registry-url is set"
   echo
-  echo "Configure cluster bind address for applications."
-  echo "    | --cluster-bind-address=localhost  >> Optional defaults to localhost"
-  echo
   echo "Configure images used by the gitops-build-lib in the application examples"
   echo "    | --kubectl-image      >> Sets image for kubectl"
   echo "    | --helm-image         >> Sets image for helm"
@@ -745,7 +745,7 @@ function printParameters() {
 
 COMMANDS=$(getopt \
   -o hwdxyc \
-  --long help,fluxv1,fluxv2,argocd,welcome,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,trace,insecure,yes,skip-helm-update,argocd-config-only,cluster-bind-address: \
+  --long help,fluxv1,fluxv2,argocd,welcome,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,trace,insecure,yes,skip-helm-update,argocd-config-only: \
   -- "$@")
 
 if [ $? != 0 ]; then
@@ -778,7 +778,6 @@ HELM_IMAGE=""
 KUBEVAL_IMAGE=""
 HELMKUBEVAL_IMAGE=""
 YAMLLINT_IMAGE=""
-CLUSTER_BIND_ADDRESS="localhost"
 INSECURE=false
 TRACE=false
 ASSUME_YES=false
@@ -906,10 +905,6 @@ while true; do
     ARGOCD_CONFIG_ONLY=true
     shift
     ;;
-  --cluster-bind-address)
-    CLUSTER_BIND_ADDRESS="$2"
-    shift 2
-    ;;
   --)
     shift
     break
@@ -928,4 +923,4 @@ if [[ $TRACE == true ]]; then
   # Trace without debug does not make to much sense, as the spinner spams the output
   DEBUG=true
 fi
-main "$DEBUG" "$INSTALL_ALL_MODULES" "$INSTALL_FLUXV1" "$INSTALL_FLUXV2" "$INSTALL_ARGOCD" "$REMOTE_CLUSTER" "$SET_USERNAME" "$SET_PASSWORD" "$JENKINS_URL" "$JENKINS_USERNAME" "$JENKINS_PASSWORD" "$REGISTRY_URL" "$REGISTRY_PATH" "$REGISTRY_USERNAME" "$REGISTRY_PASSWORD" "$SCMM_URL" "$SCMM_USERNAME" "$SCMM_PASSWORD" "$INSECURE" "$TRACE" "$KUBECTL_IMAGE" "$HELM_IMAGE" "$KUBEVAL_IMAGE" "$HELMKUBEVAL_IMAGE" "$YAMLLINT_IMAGE" "$SKIP_HELM_UPDATE" "$ARGOCD_CONFIG_ONLY" "$CLUSTER_BIND_ADDRESS"
+main "$DEBUG" "$INSTALL_ALL_MODULES" "$INSTALL_FLUXV1" "$INSTALL_FLUXV2" "$INSTALL_ARGOCD" "$REMOTE_CLUSTER" "$SET_USERNAME" "$SET_PASSWORD" "$JENKINS_URL" "$JENKINS_USERNAME" "$JENKINS_PASSWORD" "$REGISTRY_URL" "$REGISTRY_PATH" "$REGISTRY_USERNAME" "$REGISTRY_PASSWORD" "$SCMM_URL" "$SCMM_USERNAME" "$SCMM_PASSWORD" "$INSECURE" "$TRACE" "$KUBECTL_IMAGE" "$HELM_IMAGE" "$KUBEVAL_IMAGE" "$HELMKUBEVAL_IMAGE" "$YAMLLINT_IMAGE" "$SKIP_HELM_UPDATE" "$ARGOCD_CONFIG_ONLY" 

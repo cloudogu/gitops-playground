@@ -52,13 +52,11 @@ node('docker') {
                         clusterName = createClusterName()
                         startK3d(clusterName)
 
-                        String ipV4 = setKubeConfigToK3dIp(clusterName)
-
                         docker.image(imageName)
                                 .inside("-e KUBECONFIG=${env.WORKSPACE}/.kube/config " +
-                                        " --network=k3d-${clusterName} --entrypoint=''" ) {
+                                        " --network=host --entrypoint=''" ) {
                                     
-                                    sh "./scripts/apply.sh --yes --debug --trace --argocd --cluster-bind-address=${ipV4}"
+                                    sh "./scripts/apply.sh --yes --debug --trace --argocd" 
                                 }
                     }
                 }
@@ -127,19 +125,6 @@ def startK3d(clusterName) {
                      'bash -s -- --no-sudo; fi'
         sh "yes | ./scripts/init-cluster.sh --cluster-name=${clusterName} --bind-localhost=false"
     }
-}
-
-def setKubeConfigToK3dIp(clusterName) {
-    // As we're will run the playground from another container, we need to use the IP of the k3d container in kubeconfig
-
-    String ipV4 = sh(
-            script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' k3d-${clusterName}-server-0",
-            returnStdout: true
-    ).trim()
-
-    sh "sed -i -r 's/0.0.0.0([^0-9]+[0-9]*|\$)/${ipV4}:6443/g' ${env.WORKSPACE}/.kube/config"
-
-    return ipV4
 }
 
 String createClusterName() {
