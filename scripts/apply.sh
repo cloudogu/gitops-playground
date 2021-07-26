@@ -209,7 +209,8 @@ function initJenkins() {
 
   configureJenkinsCommand=(configureJenkins "${JENKINS_URL}" "${JENKINS_USERNAME}" "${JENKINS_PASSWORD}"
     "${SCMM_URL_FOR_JENKINS}" "${SCMM_PASSWORD}" "${REGISTRY_URL}"
-    "${REGISTRY_PATH}" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}")
+    "${REGISTRY_PATH}" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}"
+    "${INSTALL_ALL_MODULES}" "${INSTALL_FLUXV1}" "${INSTALL_FLUXV2}" "${INSTALL_ARGOCD}")
 
   evalWithSpinner "Configuring Jenkins..." "${configureJenkinsCommand[@]}"
 }
@@ -601,17 +602,32 @@ function printWelcomeScreen() {
   echo "| The playground features three example applications (Sprint PetClinic - one for every gitops solution) in SCM-Manager."
   echo "| See here:"
   echo "|"
-  echo -e "| - \e[32m${SCMM_URL}/repo/fluxv1/petclinic-plain/code/sources/main/\e[0m"
-  echo -e "| - \e[32m${SCMM_URL}/repo/fluxv2/petclinic-plain/code/sources/main/\e[0m"
-  echo -e "| - \e[32m${SCMM_URL}/repo/argocd/petclinic-plain/code/sources/main/\e[0m"
+  
+  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV1 == true ]]; then
+    echo -e "| - \e[32m${SCMM_URL}/repos/fluxv1/\e[0m"
+  fi
+  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV2 == true ]]; then
+    echo -e "| - \e[32m${SCMM_URL}/repos/fluxv2/\e[0m"
+  fi
+  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_ARGOCD == true ]]; then
+    echo -e "| - \e[32m${SCMM_URL}/repos/argocd/\e[0m"
+  fi
+  
   echo "|"
   echo -e "| Credentials for SCM-Manager and Jenkins are: \e[31m${SET_USERNAME}/${SET_PASSWORD}\e[0m"
   echo "|"
   echo "| Once Jenkins is up, the following jobs can be started after scanning the corresponding namespace via the jenkins UI:"
   echo "|"
-  echo -e "| - \e[32m${JENKINS_URL}/job/fluxv1-applications/\e[0m"
-  echo -e "| - \e[32m${JENKINS_URL}/job/fluxv2-applications/\e[0m"
-  echo -e "| - \e[32m${JENKINS_URL}/job/argocd-applications/\e[0m"
+
+  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV1 == true ]]; then
+    echo -e "| - \e[32m${JENKINS_URL}/job/fluxv1-applications/\e[0m"
+  fi
+  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV2 == true ]]; then
+    echo -e "| - \e[32m${JENKINS_URL}/job/fluxv2-applications/\e[0m"
+  fi
+  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_ARGOCD == true ]]; then
+    echo -e "| - \e[32m${JENKINS_URL}/job/argocd-applications/\e[0m"
+  fi
   echo "|"
   echo "| During the job, jenkins pushes into the corresponding GitOps repo and creates a pull request for production:"
   echo "|"
