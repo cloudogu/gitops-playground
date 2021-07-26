@@ -12,7 +12,11 @@ properties([
 
     // For now allow concurrent builds.
     // This is a slight risk of failing builds if two Jobs of the same branch install k3d (workspace-local) at the same time.
-    // If this happens to occurr often, add the following here: disableConcurrentBuilds(),
+    // If this happens to occur often, add the following here: disableConcurrentBuilds(),
+
+    parameters([
+        booleanParam(defaultValue: false, name: 'forcePushImage', description: 'Pushes the image with the current git commit as tag, even when it is on a branch')
+    ])
 ])
 
 node('docker') {
@@ -66,10 +70,16 @@ node('docker') {
             if (isBuildSuccessful()) {
                 docker.withRegistry("https://${dockerRegistryBaseUrl}", 'cesmarvin-github') {
                     if (git.isTag()) {
+                        image.push()
                         image.push(git.tag)
+                        currentBuild.description = "${dockerRegistryBaseUrl}/${dockerImageName}:${git.tag}\n${imageName}"
                     } else if (env.BRANCH_NAME == 'main') {
                         image.push()
                         image.push("latest")
+                        currentBuild.description = "${dockerRegistryBaseUrl}/${dockerImageName}:latest\n${imageName}"
+                    } else if (params.forcePushImage) {
+                        image.push()
+                        currentBuild.description = imageName
                     } else {
                         echo "Skipping deployment to github container registry because not a tag and not main branch."
                     }
