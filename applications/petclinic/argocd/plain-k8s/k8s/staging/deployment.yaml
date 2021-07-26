@@ -22,9 +22,20 @@ spec:
           env:
             - name: MANAGEMENT_SERVER_PORT
               value: "9080"
+            - name: SPRING_MESSAGES_BASENAME
+              value: "file:/tmp/messages/messages"
+            - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK
+              value: INFO
           readinessProbe:
             failureThreshold: 3
             httpGet:
               path: /actuator/health/readiness
               port: 9080
               scheme: HTTP
+          volumeMounts:
+            - name: messages
+              mountPath: /tmp/messages
+      volumes:
+        - name: messages
+          configMap:
+            name: messages
