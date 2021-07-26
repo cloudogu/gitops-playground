@@ -276,14 +276,14 @@ function initFluxV2() {
 
   initRepoWithSource 'fluxv2' 'fluxv2/gitops'
 
-  REPOSITORY_YAML_PATH="fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-gitrepository.yaml"
+  REPOSITORY_YAML_PATH="fluxv2/clusters/gitops-playground/fluxv2/gotk-gitrepository.yaml"
   if [[ ${INTERNAL_SCMM} == false ]]; then
-    REPOSITORY_YAML_PATH="$(mkTmpWithReplacedScmmUrls "fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-gitrepository.yaml")"
+    REPOSITORY_YAML_PATH="$(mkTmpWithReplacedScmmUrls "fluxv2/clusters/gitops-playground/fluxv2/gotk-gitrepository.yaml")"
   fi
 
-  kubectl apply -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-components.yaml || true
+  kubectl apply -f fluxv2/clusters/gitops-playground/fluxv2/gotk-components.yaml || true
   kubectl apply -f "${REPOSITORY_YAML_PATH}" || true
-  kubectl apply -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-kustomization.yaml || true
+  kubectl apply -f fluxv2/clusters/gitops-playground/fluxv2/gotk-kustomization.yaml || true
 }
 
 function initArgo() {

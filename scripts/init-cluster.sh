@@ -86,7 +86,7 @@ function printParameters() {
   echo
   echo " -h | --help     >> Help screen"
   echo
-  echo "Set your prefered cluster name to install k3d. Defaults to 'k8s-gitops-playground'."
+  echo "Set your prefered cluster name to install k3d. Defaults to 'gitops-playground'."
   echo "    | --cluster-name=VALUE   >> Sets the cluster name."
 }
 

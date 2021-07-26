@@ -21,14 +21,14 @@ function removeFluxv2() {
   # The following line is needed because the cr "fluxv2-kustomizer" has a finalizer set which can lead to a deadlock while deleting
   # https://stackoverflow.com/a/52012367
   kubectl patch kustomization fluxv2-kustomizer -p '{"metadata":{"finalizers":[]}}' --type=merge -n fluxv2 || true
-  kubectl delete -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-kustomization.yaml || true
+  kubectl delete -f fluxv2/clusters/gitops-playground/fluxv2/gotk-kustomization.yaml || true
   # This seems to hang.
-  #kubectl delete -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-gitrepository.yaml || true
+  #kubectl delete -f fluxv2/clusters/gitops-playground/fluxv2/gotk-gitrepository.yaml || true
   # Pragmatic workaround just delete whole namespace. Force call finalizer because this also hangs :/
   kubectl delete namespace fluxv2& 
   finalizeFluxNamespace
   
-  kubectl delete -f fluxv2/clusters/k8s-gitops-playground/fluxv2/gotk-components.yaml || true
+  kubectl delete -f fluxv2/clusters/gitops-playground/fluxv2/gotk-components.yaml || true
 }
 
 function finalizeFluxNamespace() {
@@ -98,7 +98,7 @@ function main() {
     cleanup > /dev/null 2>&1 & spinner "Cleaning up"
   fi
 
-  confirm 'Remove Jenkins agent workspace as well? (/tmp/k8s-gitops-playground-jenkins-agent)' 'y/n [n]' && rm -rf /tmp/k8s-gitops-playground-jenkins-agent
+  confirm 'Remove Jenkins agent workspace as well? (/tmp/gitops-playground-jenkins-agent)' 'y/n [n]' && rm -rf /tmp/gitops-playground-jenkins-agent
 }
 
 function printUsage()
