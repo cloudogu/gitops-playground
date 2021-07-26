@@ -5,7 +5,12 @@ set -o errexit -o nounset -o pipefail
 BASEDIR=$(dirname $0)
 ABSOLUTE_BASEDIR="$(cd ${BASEDIR} && pwd)"
 
-source ${ABSOLUTE_BASEDIR}/utils.sh
+# Allow for running this script directly via curl without redundant code 
+if [[ -f ${ABSOLUTE_BASEDIR}/utils.sh ]]; then
+  source ${ABSOLUTE_BASEDIR}/utils.sh
+else
+  source <(curl -s https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/utils.sh)
+fi
 
 function removeFluxv1() {
   helm delete flux-operator -n fluxv1 || true

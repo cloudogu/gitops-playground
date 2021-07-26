@@ -8,6 +8,19 @@ and operating the [myCloudogu platform](https://my.cloudogu.com/).
 We are working on distilling the logic used in the example application pipelines into a reusable library for Jenkins:
 [cloudogu/gitops-build-lib](https://github.com/cloudogu/gitops-build-lib).
 
+
+TLDR; You can run a local k8s cluster with the GitOps playground installed with only one command (on Linux)
+
+```shell
+bash <(curl -s \
+  https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh) \
+&& docker run --rm -it -v ~/.k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
+  --net=host \
+  ghcr.io/cloudogu/gitops-playground
+```
+
+This command will also print URLs of the [applications](#applications) inside the cluster to get you started. 
+
 # Table of contents
 
 <!-- Update with `doctoc --notitle README.md --maxlevel 5`. See https://github.com/thlorenz/doctoc -->
@@ -46,8 +59,8 @@ We are working on distilling the logic used in the example application pipelines
 ## What is the GitOps Playground?
 
 The GitOps Playground provides an reproducible environment for trying out GitOps. Is consists of Infra As Code and 
-scripts for automatically setting up a Kubernetes Cluster CI-server (Jenkins), source code management (SCM-Manager) 
-and several GitOps operators (Flux V1, Flux V2, ArgoCD). 
+scripts for automatically setting up a Kubernetes Cluster including CI-server (Jenkins), source code management 
+(SCM-Manager) and several GitOps operators (Flux V1, Flux V2, ArgoCD). 
 CI-Server, SCM and operators are pre-configured with a number of [demo applications](#demo-applications).
 
 The GitOps Playground lowers the barriers for getting your hands on GitOps. No need to read lots of books and operator
@@ -81,8 +94,11 @@ Jenkins build agents spawned in the cloud.
 
 If you don't have a demo cluster at hand we provide scripts to create either 
 
-* a local k3d cluster ([see docs](docs/k3d.md)) or
-* a remote k8s cluster on Google Kubernetes Engine via terraform ([see docs](docs/gke.md)).
+* a local k3d cluster (see [docs](docs/k3d.md) for more details):
+  ```shell
+  bash <(curl -s https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh)
+  ```
+* a remote k8s cluster on Google Kubernetes Engine via terraform (see [docs](docs/gke.md)).
 * But most k8s cluster should work (tested with k8s 1.18+).  
   Note that if you want to deploy Jenkins inside the cluster, Docker is required as container runtime.
 
@@ -100,7 +116,7 @@ Note that the container prints a little intro on how to get started with the Git
 
 The following describes the most common parameters. Use `docker run --rm ghcr.io/cloudogu/gitops-playground --help` to get a list of all options.
 
-* Start on [local k3d cluster]((docs/k3d.md): No parameters needed 
+* Start on [local k3d cluster](docs/k3d.md): No parameters needed 
 * Deploying specific GitOps operators only:
    * `--argocd` - deploy only argoCD GitOps operator
    * `--fluxv1` - deploy only Flux v1 GitOps operator
@@ -126,7 +142,8 @@ The following describes the most common parameters. Use `docker run --rm ghcr.io
 * Start with productive Cloudogu Ecosystem and Google Container Registry.  
   Note that you can get a free CES demo instance set up with a Kubernetes Cluster as GitOps Playground [here](https://cloudogu.com/en/ecosystem/demo-appointment/?mtm_campaign=gitops-playground&mtm_kwd=ces&mtm_source=github&mtm_medium=link).
 ```shell
-# Note that in this case --password only sets the argocd admin password (Jenkins and SCMM are external) 
+# Note:
+# In this case --password only sets the argocd admin password (Jenkins and SCMM are external) 
 --jenkins-url=https://your-ecosystem.cloudogu.net/jenkins \ 
 --scmm-url=https://your-ecosystem.cloudogu.net/scm \
 --jenkins-username=admin \
@@ -142,28 +159,19 @@ The following describes the most common parameters. Use `docker run --rm ghcr.io
 
 #### Apply via kubectl
 
-First, creat a `ServiceAccount` with the role `cluster-admin`. This is needed to install CRDs, etc. It can be removed,
-once the cluster is up.
-
 ```shell
+# Create a temporary ServiceAccount and authorize via RBAC. This is needed to install CRDs, etc.
 kubectl create serviceaccount gitops-playground-job-executer -n default
-
 kubectl create clusterrolebinding gitops-playground-job-executer \
   --clusterrole=cluster-admin \
   --serviceaccount=default:gitops-playground-job-executer
-```
 
-Then start apply the playground with the following command:
-
-```shell
+# Then start apply the playground with the following command
 kubectl run gitops-playground --rm -i --tty \
   --image ghcr.io/cloudogu/gitops-playground --serviceaccount gitops-playground-job-executer \
   -- --yes
-```
 
-Finally, you can remove the RBAC settings:
-
-```shell
+# Finally, remove the temporary RBAC objects
 kubectl remove clusterrolebinding  gitops-playground-job-executer  
 kubectl remove sa gitops-playground-job-executer -n default
 ```
@@ -186,21 +194,23 @@ Alternatively you can run the container in the network of the k3d cluster:
 but you'll have to replace `0.0.0.0:PORT` in `~/.k3d/kubeconfig-gitops-playground.yaml` by the actual IP address of the 
 k3d API server and port 6443:   
 
-```shell 
-IP_ADDRESS="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' k3d-gitops-playground-server-0)"
+```shell
+IP_ADDRESS="$(docker inspect -f \
+  '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' k3d-gitops-playground-server-0)"
 sed -i -r \
   "s/0.0.0.0([^0-9]+[0-9]*|$)/${IP_ADDRESS}:6443/g" \
   ~/.k3d/kubeconfig-gitops-playground.yaml
 ``` 
 
-When your k3d cluster is not bound to localhost (`init-cluster.sh --bind-localhost=false`) pass your API Server:
+When your k3d cluster is not bound to localhost (`init-cluster.sh --bind-localhost=false`, see [k3d docs](docs/k3d.md)) pass your API Server:
 
 ```shell
 CLUSTER_NAME=gitops-playground
 docker run --rm -it -v ~/.k3d/kubeconfig-${CLUSTER_NAME}.yaml:/home/.kube/config \
   --net=host \
   ghcr.io/cloudogu/gitops-playground \
-  --cluster-bind-address=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' k3d-${CLUSTER_NAME}-server-0)
+  --cluster-bind-address=$(docker inspect -f \
+    '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' k3d-${CLUSTER_NAME}-server-0)
 ```
 
 #### Apply via script
@@ -247,7 +257,8 @@ For k3d, you can just `k3d cluster delete gitops-playground`.
 On remote clusters there is a script inside this repo:
 
 ```shell
-./scripts/destroy.sh
+bash <(curl -s \
+  https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/destroy.sh) 
 ```
 
 ## Applications
@@ -272,11 +283,15 @@ kubectl -n "${namespace}" get svc "${serviceName}" \
 ```
 
 There is also a convenience script `scripts/get-remote-url`. The script waits, if externalIP is not present, yet.
+You could use this conveniently like so:
+```shell
+bash <(curl -s https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/get-remote-url) jenkins default
+```
 
 You can open the application in the browser right away, like so for example:
 
 ```shell
-xdg-open $(scripts/get-remote-url default jenkins)
+xdg-open $(bash <(curl -s https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/get-remote-url) jenkins default)
 ```
 ### Credentials
 

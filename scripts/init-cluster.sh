@@ -10,11 +10,17 @@ BIND_LOCALHOST=true
 
 BASEDIR=$(dirname $0)
 ABSOLUTE_BASEDIR="$(cd ${BASEDIR} && pwd)"
-source ${ABSOLUTE_BASEDIR}/utils.sh
 
 if [[ -n "${DEBUG}" ]]; then set -x; fi
 
 set -o errexit -o nounset -o pipefail
+
+# Allow for running this script directly via curl without redundant code 
+if [[ -f ${ABSOLUTE_BASEDIR}/utils.sh ]]; then
+  source ${ABSOLUTE_BASEDIR}/utils.sh
+else
+  source <(curl -s https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/utils.sh)
+fi
 
 function main() {
   CLUSTER_NAME="$1"
@@ -45,7 +51,8 @@ function createCluster() {
       k3d cluster delete ${CLUSTER_NAME}
     else
       echo "Not recreated."
-      exit 0
+      # Return error here to avoid possible subsequent commands to be executed
+      exit 1
     fi
   fi
 
