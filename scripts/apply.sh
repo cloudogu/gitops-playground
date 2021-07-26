@@ -592,10 +592,24 @@ function createUrl() {
 
 function printWelcomeScreen() {
 
+  if [[ $RUNNING_INSIDE_K8S == true ]]; then
+    # Internal service IPs have been set above.
+    # * Local k3d: Replace them by k3d container IP. 
+    # * Remote cluster: Overwrite with setExternalHostnameIfNecessary() if necessary 
+    
+    local scmmPortFromValuesYaml="$(grep 'nodePort:' "${PLAYGROUND_DIR}"/scm-manager/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')"
+    SCMM_URL="$(createUrl "${CLUSTER_BIND_ADDRESS}" "${scmmPortFromValuesYaml}")/scm"
+    setExternalHostnameIfNecessary 'SCMM' 'scmm-scm-manager' 'default'
+    
+    local jenkinsPortFromValuesYaml="$(grep 'nodePort:' "${PLAYGROUND_DIR}"/jenkins/values.yaml | grep nodePort | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')"
+    JENKINS_URL=$(createUrl "${CLUSTER_BIND_ADDRESS}" "${jenkinsPortFromValuesYaml}")
+    setExternalHostnameIfNecessary 'JENKINS' 'jenkins' 'default'
+  fi
+  
   if [[ -z "${JENKINS_URL}" ]]; then
     setExternalHostnameIfNecessary 'JENKINS' 'jenkins' 'default'
   fi
-
+  
   echo
   echo
   echo "|----------------------------------------------------------------------------------------------|"
