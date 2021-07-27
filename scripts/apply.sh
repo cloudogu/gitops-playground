@@ -619,7 +619,8 @@ function printWelcomeScreen() {
   echo "|                     ☁️  Welcome to the GitOps playground by Cloudogu! ☁️                       |"
   echo "|----------------------------------------------------------------------------------------------|"
   echo "|"
-  echo "| The playground features three example applications (Sprint PetClinic - one for every gitops solution) in SCM-Manager."
+  echo "| The playground features three example applications (Sprint PetClinic - one for every gitops "
+  echo "| solution) in SCM-Manager."
   echo "| See here:"
   echo "|"
 
@@ -636,7 +637,8 @@ function printWelcomeScreen() {
   echo "|"
   echo -e "| Credentials for SCM-Manager and Jenkins are: \e[31m${SET_USERNAME}/${SET_PASSWORD}\e[0m"
   echo "|"
-  echo "| Once Jenkins is up, the following jobs can be started after scanning the corresponding namespace via the jenkins UI:"
+  echo "| Once Jenkins is up, the following jobs can be started after scanning the corresponding "
+  echo "| namespace via the jenkins UI:"
   echo "|"
 
   if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV1 == true ]]; then
@@ -649,7 +651,8 @@ function printWelcomeScreen() {
     echo -e "| - \e[32m${JENKINS_URL}/job/argocd-applications/\e[0m"
   fi
   echo "|"
-  echo "| During the job, jenkins pushes into the corresponding GitOps repo and creates a pull request for production:"
+  echo "| During the job, jenkins pushes into the corresponding GitOps repo and creates a pull"
+  echo "| request for production:"
   echo "|"
 
   printWelcomeScreenFluxV1
@@ -661,7 +664,8 @@ function printWelcomeScreen() {
   echo "| After a successful Jenkins build, the staging application will be deployed into the cluster."
   echo "|"
   echo "| The production applications can be deployed by accepting Pull Requests."
-  echo "| After about 1 Minute after the PullRequest has been accepted, the GitOps operator deploys to production."
+  echo "| After about 1 Minute after the PullRequest has been accepted, the GitOps operator "
+  echo "| deploys to production."
   echo "|"
   echo "| Please see the README.md for how to find out the URLs of the individual applications."
   echo "|"
