@@ -167,13 +167,14 @@ kubectl create clusterrolebinding gitops-playground-job-executer \
   --serviceaccount=default:gitops-playground-job-executer
 
 # Then start apply the playground with the following command
-kubectl run gitops-playground --rm -i --tty \
-  --image ghcr.io/cloudogu/gitops-playground --serviceaccount gitops-playground-job-executer \
+kubectl run gitops-playground -i --tty --restart=OnFailure \
+  --overrides='{ "spec": { "serviceAccount": "gitops-playground-job-executer" } }' \
+  --image ghcr.io/cloudogu/gitops-playground \
   -- --yes
 
-# Finally, remove the temporary RBAC objects
-kubectl remove clusterrolebinding  gitops-playground-job-executer  
-kubectl remove sa gitops-playground-job-executer -n default
+# If everything succeeded, remove the objects
+kubectl delete clusterrolebinding/gitops-playground-job-executer \
+  sa/gitops-playground-job-executer pods/gitops-playground -n default  
 ```
 
 #### Apply via local container

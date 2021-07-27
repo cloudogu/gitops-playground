@@ -936,7 +936,8 @@ done
 
 if [[ $ASSUME_YES == false ]]; then
   confirm "Applying gitops playground to kubernetes cluster: '$(kubectl config current-context)'." 'Continue? y/n [n]' ||
-    exit 0
+    # Return error here to avoid get correct state when used with kubectl
+    exit 1
 fi
 
 if [[ $TRACE == true ]]; then
