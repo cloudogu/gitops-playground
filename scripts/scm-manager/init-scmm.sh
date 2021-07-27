@@ -4,7 +4,9 @@ set -o errexit -o nounset -o pipefail
 SCMM_USER=scmadmin
 SCMM_PWD=scmadmin
 SCMM_PROTOCOL=http
-SCMM_HELM_CHART_VERSION=2.13.0
+# Note that starting with 2.21.0 the default admin is no longer present, which will require some changes in this script 
+# https://scm-manager.org/docs/2.21.x/en/first-startup/
+SCMM_HELM_CHART_VERSION=2.20.0
 
 function deployLocalScmmManager() {
   REMOTE_CLUSTER=${1}
