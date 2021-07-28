@@ -1,7 +1,9 @@
 FROM alpine:3.14.0 as alpine
 
 FROM alpine as downloader
-# When updating, also update the checksum found at https://dl.k8s.io/release/v${K8S_VERSION}/bin/linux/amd64/kubectl.sha256
+# When updating, 
+# * also update the checksum found at https://dl.k8s.io/release/v${K8S_VERSION}/bin/linux/amd64/kubectl.sha256
+# * also update k8s-related versions in vars.tf and init-cluster.sh
 ARG K8S_VERSION=1.21.2
 ARG KUBECTL_CHECKSUM=55b982527d76934c2f119e70bf0d69831d3af4985f72bb87cd4924b1c7d528da
 # When updating, also update the checksum found at https://github.com/helm/helm/releases

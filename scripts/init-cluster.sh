@@ -3,6 +3,7 @@
 # See https://github.com/rancher/k3d/releases
 # This variable is also read in Jenkinsfile
 K3D_VERSION=4.4.7
+# When updating please also adapt k8s-related versions in Dockerfile and vars.tf
 K8S_VERSION=1.21.2
 K3S_VERSION="rancher/k3s:v${K8S_VERSION}-k3s1"
 
