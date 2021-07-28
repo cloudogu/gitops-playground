@@ -91,12 +91,38 @@ If not, you can create add an entry to your local `kubeconfig` like so:
 gcloud container clusters get-credentials ${cluster_name} --zone ${gce_location} --project ${gce_project}
 ```
 
+Now you're ready to apply the apps to the cluster.
+
 Note that you need to pass the `--remote` flag when applying the playground.
 
-##### Delete Cluster
+##### Clean up
 
-Once you're done you can destroy the cluster using
+Once you're done with the playground, you can destroy the cluster using
 
 ```shell
 terraform destroy -var gce_project=${PROJECT_ID}
+```
+
+In addition you might want to delete
+* The service account or key and
+* the state bucket (if created)
+
+You either delete the key or the whole service account:
+
+Key: 
+```shell
+gcloud iam service-accounts keys delete $(cat account.json | grep private_key_id  | sed 's/".*: "\(.*\)".*/\1/') \
+    --iam-account terraform-cluster@${PROJECT_ID}.iam.gserviceaccount.com
+```
+
+Service Account:
+```shell
+gcloud iam service-accounts delete terraform-cluster@${PROJECT_ID}.iam.gserviceaccount.com \
+  --project ${PROJECT_ID}
+```
+
+Bucket:
+
+```shell
+gsutil rm -r  gs://${BUCKET_NAME}
 ```
