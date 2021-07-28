@@ -16,6 +16,12 @@ function main() {
   
   confirm "Removing gitops playground from kubernetes cluster: '$(kubectl config current-context)'." 'Continue? y/n [n]' ||
     exit 0
+    
+  if [[ $TRACE == true ]]; then
+    set -x
+    # Trace without debug does not make to much sense, as the spinner spams the output
+    DEBUG=true
+  fi
   
   if [[ $DEBUG = true ]]; then
     removeFluxv1
@@ -121,7 +127,7 @@ function printParameters() {
 
 readParameters() {
   COMMANDS=$(getopt \
-                  -o hd \
+                  -o hdx \
                   --long help,debug,trace \
                   -- "$@")
   
@@ -130,10 +136,12 @@ readParameters() {
   eval set -- "$COMMANDS"
   
   DEBUG=false
+  TRACE=false
   while true; do
     case "$1" in
       -h | --help     ) printUsage; exit 0 ;;
-      -d | --debug    ) DEBUG=true; shift ;;
+      -d | --debug         ) DEBUG=true; shift ;;
+      -x | --trace         ) TRACE=true; shift ;;
       --              ) shift; break ;;
       *               ) break ;;
     esac

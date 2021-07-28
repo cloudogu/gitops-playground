@@ -6,12 +6,12 @@ K3D_VERSION=4.4.7
 K8S_VERSION=1.21.2
 K3S_VERSION="rancher/k3s:v${K8S_VERSION}-k3s1"
 
-if [[ -n "${DEBUG}" ]]; then set -x; fi
-
 set -o errexit -o nounset -o pipefail
 
 function main() {
   readParameters "$@"
+  
+  [[ $TRACE == true ]] && set -x;
   
   # Install k3d if necessary
   if ! command -v k3d >/dev/null 2>&1; then
@@ -95,20 +95,22 @@ function confirm() {
 
 readParameters() {
   COMMANDS=$(getopt \
-    -o h \
-    --long help,cluster-name:,bind-localhost: \
+    -o hx \
+    --long help,cluster-name:,bind-localhost:,trace \
     -- "$@")
   
   eval set -- "$COMMANDS"
   
   CLUSTER_NAME=gitops-playground
   BIND_LOCALHOST=true
+  TRACE=false
 
   while true; do
     case "$1" in
       -h | --help   )   printParameters; exit 0 ;;
       --cluster-name)   CLUSTER_NAME="$2"; shift 2 ;;
       --bind-localhost) BIND_LOCALHOST="$2"; shift 2 ;;
+      -x | --trace    ) TRACE=true; shift ;;
       --) shift; break ;;
     *) break ;;
     esac
