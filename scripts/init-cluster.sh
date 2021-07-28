@@ -5,17 +5,14 @@
 K3D_VERSION=4.4.7
 K8S_VERSION=1.21.2
 K3S_VERSION="rancher/k3s:v${K8S_VERSION}-k3s1"
-CLUSTER_NAME=gitops-playground
-BIND_LOCALHOST=true
 
 if [[ -n "${DEBUG}" ]]; then set -x; fi
 
 set -o errexit -o nounset -o pipefail
 
 function main() {
-  CLUSTER_NAME="$1"
-  BIND_LOCALHOST="$2"
-
+  readParameters "$@"
+  
   # Install k3d if necessary
   if ! command -v k3d >/dev/null 2>&1; then
     installK3d
@@ -96,21 +93,26 @@ function confirm() {
   esac
 }
 
-COMMANDS=$(getopt \
-  -o h \
-  --long help,cluster-name:,bind-localhost: \
-  -- "$@")
+readParameters() {
+  COMMANDS=$(getopt \
+    -o h \
+    --long help,cluster-name:,bind-localhost: \
+    -- "$@")
+  
+  eval set -- "$COMMANDS"
+  
+  CLUSTER_NAME=gitops-playground
+  BIND_LOCALHOST=true
 
-eval set -- "$COMMANDS"
+  while true; do
+    case "$1" in
+      -h | --help   )   printParameters; exit 0 ;;
+      --cluster-name)   CLUSTER_NAME="$2"; shift 2 ;;
+      --bind-localhost) BIND_LOCALHOST="$2"; shift 2 ;;
+      --) shift; break ;;
+    *) break ;;
+    esac
+  done
+}
 
-while true; do
-  case "$1" in
-    -h | --help   )   printParameters; exit 0 ;;
-    --cluster-name)   CLUSTER_NAME="$2"; shift 2 ;;
-    --bind-localhost) BIND_LOCALHOST="$2"; shift 2 ;;
-    --) shift; break ;;
-  *) break ;;
-  esac
-done
-
-main "$CLUSTER_NAME" "$BIND_LOCALHOST"
+main "$@"

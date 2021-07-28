@@ -35,33 +35,20 @@ GITOPS_BUILD_LIB_REPO=${GITOPS_BUILD_LIB_REPO:-'https://github.com/cloudogu/gito
 CES_BUILD_LIB_REPO=${CES_BUILD_LIB_REPO:-'https://github.com/cloudogu/ces-build-lib.git'}
 
 function main() {
-  DEBUG="${1}"
-  INSTALL_ALL_MODULES="${2}"
-  INSTALL_FLUXV1="${3}"
-  INSTALL_FLUXV2="${4}"
-  INSTALL_ARGOCD="${5}"
-  REMOTE_CLUSTER="${6}"
-  SET_USERNAME="${7}"
-  SET_PASSWORD="${8}"
-  JENKINS_URL="${9}"
-  JENKINS_USERNAME="${10}"
-  JENKINS_PASSWORD="${11}"
-  REGISTRY_URL="${12}"
-  REGISTRY_PATH="${13}"
-  REGISTRY_USERNAME="${14}"
-  REGISTRY_PASSWORD="${15}"
-  SCMM_URL="${16}"
-  SCMM_USERNAME="${17}"
-  SCMM_PASSWORD="${18}"
-  INSECURE="${19}"
-  TRACE="${20}"
-  KUBECTL_IMAGE="${21}"
-  HELM_IMAGE="${22}"
-  KUBEVAL_IMAGE="${23}"
-  HELMKUBEVAL_IMAGE="${24}"
-  YAMLLINT_IMAGE="${25}"
-  SKIP_HELM_UPDATE="${26}"
-  ARGOCD_CONFIG_ONLY="${27}"
+  
+  readParameters "$@"
+  
+  if [[ $ASSUME_YES == false ]]; then
+    confirm "Applying gitops playground to kubernetes cluster: '$(kubectl config current-context)'." 'Continue? y/n [n]' ||
+      # Return error here to avoid get correct state when used with kubectl
+      exit 1
+  fi
+  
+  if [[ $TRACE == true ]]; then
+    set -x
+    # Trace without debug does not make to much sense, as the spinner spams the output
+    DEBUG=true
+  fi
 
   # The - avoids "unbound variable", because it expands to empty string if unset
   if [[ -n "${KUBERNETES_SERVICE_HOST-}" ]]; then
@@ -764,185 +751,83 @@ function printParameters() {
   echo " -y | --yes           >> Skip kubecontext confirmation"
 }
 
-COMMANDS=$(getopt \
-  -o hwdxyc \
-  --long help,fluxv1,fluxv2,argocd,welcome,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,trace,insecure,yes,skip-helm-update,argocd-config-only: \
-  -- "$@")
-
-if [ $? != 0 ]; then
-  echo "Terminating..." >&2
-  exit 1
-fi
-
-eval set -- "$COMMANDS"
-
-DEBUG=false
-INSTALL_ALL_MODULES=true
-INSTALL_FLUXV1=false
-INSTALL_FLUXV2=false
-INSTALL_ARGOCD=false
-REMOTE_CLUSTER=false
-SET_USERNAME="admin"
-SET_PASSWORD="admin"
-JENKINS_URL=""
-JENKINS_USERNAME=""
-JENKINS_PASSWORD=""
-REGISTRY_URL=""
-REGISTRY_PATH=""
-REGISTRY_USERNAME=""
-REGISTRY_PASSWORD=""
-SCMM_URL=""
-SCMM_USERNAME=""
-SCMM_PASSWORD=""
-KUBECTL_IMAGE=""
-HELM_IMAGE=""
-KUBEVAL_IMAGE=""
-HELMKUBEVAL_IMAGE=""
-YAMLLINT_IMAGE=""
-INSECURE=false
-TRACE=false
-ASSUME_YES=false
-SKIP_HELM_UPDATE=false
-ARGOCD_CONFIG_ONLY=false
-
-while true; do
-  case "$1" in
-  -h | --help)
-    printUsage
-    exit 0
-    ;;
-  --fluxv1)
-    INSTALL_FLUXV1=true
-    INSTALL_ALL_MODULES=false
-    shift
-    ;;
-  --fluxv2)
-    INSTALL_FLUXV2=true
-    INSTALL_ALL_MODULES=false
-    shift
-    ;;
-  --argocd)
-    INSTALL_ARGOCD=true
-    INSTALL_ALL_MODULES=false
-    shift
-    ;;
-  --remote)
-    REMOTE_CLUSTER=true
-    shift
-    ;;
-  --jenkins-url)
-    JENKINS_URL="$2"
-    shift 2
-    ;;
-  --jenkins-username)
-    JENKINS_USERNAME="$2"
-    shift 2
-    ;;
-  --jenkins-password)
-    JENKINS_PASSWORD="$2"
-    shift 2
-    ;;
-  --registry-url)
-    REGISTRY_URL="$2"
-    shift 2
-    ;;
-  --registry-path)
-    REGISTRY_PATH="$2"
-    shift 2
-    ;;
-  --registry-username)
-    REGISTRY_USERNAME="$2"
-    shift 2
-    ;;
-  --registry-password)
-    REGISTRY_PASSWORD="$2"
-    shift 2
-    ;;
-  --scmm-url)
-    SCMM_URL="$2"
-    shift 2
-    ;;
-  --scmm-username)
-    SCMM_USERNAME="$2"
-    shift 2
-    ;;
-  --scmm-password)
-    SCMM_PASSWORD="$2"
-    shift 2
-    ;;
-  --kubectl-image)
-    KUBECTL_IMAGE="$2"
-    shift 2
-    ;;
-  --helm-image)
-    HELM_IMAGE="$2"
-    shift 2
-    ;;
-  --kubeval-image)
-    KUBEVAL_IMAGE="$2"
-    shift 2
-    ;;
-  --helmkubeval-image)
-    HELMKUBEVAL_IMAGE="$2"
-    shift 2
-    ;;
-  --yamllint-image)
-    YAMLLINT_IMAGE="$2"
-    shift 2
-    ;;
-  --insecure)
-    INSECURE=true
-    shift
-    ;;
-  --username)
-    SET_USERNAME="$2"
-    shift 2
-    ;;
-  --password)
-    SET_PASSWORD="$2"
-    shift 2
-    ;;
-  -w | --welcome)
-    printWelcomeScreen
-    exit 0
-    ;;
-  -d | --debug)
-    DEBUG=true
-    shift
-    ;;
-  -x | --trace)
-    TRACE=true
-    shift
-    ;;
-  -y | --yes)
-    ASSUME_YES=true
-    shift
-    ;;
-  --skip-helm-update)
-    SKIP_HELM_UPDATE=true
-    shift
-    ;;
-  --argocd-config-only)
-    ARGOCD_CONFIG_ONLY=true
-    shift
-    ;;
-  --)
-    shift
-    break
-    ;;
-  *) break ;;
-  esac
-done
-
-if [[ $ASSUME_YES == false ]]; then
-  confirm "Applying gitops playground to kubernetes cluster: '$(kubectl config current-context)'." 'Continue? y/n [n]' ||
-    # Return error here to avoid get correct state when used with kubectl
+readParameters() {
+  COMMANDS=$(getopt \
+    -o hwdxyc \
+    --long help,fluxv1,fluxv2,argocd,welcome,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,trace,insecure,yes,skip-helm-update,argocd-config-only: \
+    -- "$@")
+  
+  if [ $? != 0 ]; then
+    echo "Terminating..." >&2
     exit 1
-fi
+  fi
+  
+  eval set -- "$COMMANDS"
+  
+  DEBUG=false
+  INSTALL_ALL_MODULES=true
+  INSTALL_FLUXV1=false
+  INSTALL_FLUXV2=false
+  INSTALL_ARGOCD=false
+  REMOTE_CLUSTER=false
+  SET_USERNAME="admin"
+  SET_PASSWORD="admin"
+  JENKINS_URL=""
+  JENKINS_USERNAME=""
+  JENKINS_PASSWORD=""
+  REGISTRY_URL=""
+  REGISTRY_PATH=""
+  REGISTRY_USERNAME=""
+  REGISTRY_PASSWORD=""
+  SCMM_URL=""
+  SCMM_USERNAME=""
+  SCMM_PASSWORD=""
+  KUBECTL_IMAGE=""
+  HELM_IMAGE=""
+  KUBEVAL_IMAGE=""
+  HELMKUBEVAL_IMAGE=""
+  YAMLLINT_IMAGE=""
+  INSECURE=false
+  TRACE=false
+  ASSUME_YES=false
+  SKIP_HELM_UPDATE=false
+  ARGOCD_CONFIG_ONLY=false
+  
+  while true; do
+    case "$1" in
+      -h | --help          ) printUsage; exit 0 ;;
+      --fluxv1             ) INSTALL_FLUXV1=true; INSTALL_ALL_MODULES=false; shift ;;
+      --fluxv2             ) INSTALL_FLUXV2=true; INSTALL_ALL_MODULES=false; shift ;;
+      --argocd             ) INSTALL_ARGOCD=true; INSTALL_ALL_MODULES=false; shift ;;
+      --remote             ) REMOTE_CLUSTER=true; shift ;;
+      --jenkins-url        ) JENKINS_URL="$2"; shift 2 ;;
+      --jenkins-username   ) JENKINS_USERNAME="$2"; shift 2 ;;
+      --jenkins-password   ) JENKINS_PASSWORD="$2"; shift 2 ;;
+      --registry-url       ) REGISTRY_URL="$2"; shift 2 ;;
+      --registry-path      ) REGISTRY_PATH="$2"; shift 2 ;;
+      --registry-username  ) REGISTRY_USERNAME="$2"; shift 2 ;;
+      --registry-password  ) REGISTRY_PASSWORD="$2"; shift 2 ;;
+      --scmm-url           ) SCMM_URL="$2"; shift 2 ;;
+      --scmm-username      ) SCMM_USERNAME="$2"; shift 2 ;;
+      --scmm-password      ) SCMM_PASSWORD="$2"; shift 2 ;;
+      --kubectl-image      ) KUBECTL_IMAGE="$2"; shift 2 ;;
+      --helm-image         ) HELM_IMAGE="$2"; shift 2 ;;
+      --kubeval-image      ) KUBEVAL_IMAGE="$2"; shift 2 ;;
+      --helmkubeval-image  ) HELMKUBEVAL_IMAGE="$2"; shift 2 ;;
+      --yamllint-image     ) YAMLLINT_IMAGE="$2"; shift 2 ;;
+      --insecure           ) INSECURE=true; shift ;;
+      --username           ) SET_USERNAME="$2"; shift 2 ;;
+      --password           ) SET_PASSWORD="$2"; shift 2 ;;
+      -w | --welcome       ) printWelcomeScreen; exit 0 ;;
+      -d | --debug         ) DEBUG=true; shift ;;
+      -x | --trace         ) TRACE=true; shift ;;
+      -y | --yes           ) ASSUME_YES=true; shift ;;
+      --skip-helm-update   ) SKIP_HELM_UPDATE=true; shift ;;
+      --argocd-config-only ) ARGOCD_CONFIG_ONLY=true; shift ;;
+      --                   ) shift; break ;;
+    *) break ;;
+    esac
+  done
+}
 
-if [[ $TRACE == true ]]; then
-  set -x
-  # Trace without debug does not make to much sense, as the spinner spams the output
-  DEBUG=true
-fi
-main "$DEBUG" "$INSTALL_ALL_MODULES" "$INSTALL_FLUXV1" "$INSTALL_FLUXV2" "$INSTALL_ARGOCD" "$REMOTE_CLUSTER" "$SET_USERNAME" "$SET_PASSWORD" "$JENKINS_URL" "$JENKINS_USERNAME" "$JENKINS_PASSWORD" "$REGISTRY_URL" "$REGISTRY_PATH" "$REGISTRY_USERNAME" "$REGISTRY_PASSWORD" "$SCMM_URL" "$SCMM_USERNAME" "$SCMM_PASSWORD" "$INSECURE" "$TRACE" "$KUBECTL_IMAGE" "$HELM_IMAGE" "$KUBEVAL_IMAGE" "$HELMKUBEVAL_IMAGE" "$YAMLLINT_IMAGE" "$SKIP_HELM_UPDATE" "$ARGOCD_CONFIG_ONLY"
+main "$@"
