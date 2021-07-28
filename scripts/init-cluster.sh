@@ -8,19 +8,9 @@ K3S_VERSION="rancher/k3s:v${K8S_VERSION}-k3s1"
 CLUSTER_NAME=gitops-playground
 BIND_LOCALHOST=true
 
-BASEDIR=$(dirname $0)
-ABSOLUTE_BASEDIR="$(cd ${BASEDIR} && pwd)"
-
 if [[ -n "${DEBUG}" ]]; then set -x; fi
 
 set -o errexit -o nounset -o pipefail
-
-# Allow for running this script directly via curl without redundant code 
-if [[ -f ${ABSOLUTE_BASEDIR}/utils.sh ]]; then
-  source ${ABSOLUTE_BASEDIR}/utils.sh
-else
-  source <(curl -s https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/utils.sh)
-fi
 
 function main() {
   CLUSTER_NAME="$1"
@@ -88,6 +78,22 @@ function printParameters() {
   echo
   echo "Set your prefered cluster name to install k3d. Defaults to 'gitops-playground'."
   echo "    | --cluster-name=VALUE   >> Sets the cluster name."
+}
+
+function confirm() {
+  # shellcheck disable=SC2145
+  # - the line break between args is intended here!
+  printf "%s\n" "${@:-Are you sure? [y/N]} "
+  
+  read -r response
+  case "$response" in
+  [yY][eE][sS] | [yY])
+    true
+    ;;
+  *)
+    false
+    ;;
+  esac
 }
 
 COMMANDS=$(getopt \
