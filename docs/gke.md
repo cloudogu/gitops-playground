@@ -29,8 +29,8 @@ gcloud iam service-accounts create terraform-cluster \
 Authorize Service Account
 
 ```shell
-gcloud projects add-iam-policy-binding ${PROJECT} \
-    --member terraform-cluster@${PROJECT_ID}.iam.gserviceaccount.com --role=roles/editor
+gcloud projects add-iam-policy-binding ${PROJECT_ID} \
+    --member serviceAccount:terraform-cluster@${PROJECT_ID}.iam.gserviceaccount.com --role=roles/editor
 ```
 
 Create an account.json file, which contains the keys for the service account.

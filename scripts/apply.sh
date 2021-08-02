@@ -744,8 +744,6 @@ function printParameters() {
   echo "    | --skip-helm-update    >> Skips adding and updating helm repos"
   echo "    | --argocd-config-only  >> Skips installing argo-cd. Applies ConfigMap and Application manifests to bootstrap existing argo-cd"
   echo
-  echo " -w | --welcome  >> Welcome screen"
-  echo
   echo " -d | --debug         >> Debug output"
   echo " -x | --trace         >> Debug + Show each command executed (set -x)"
   echo " -y | --yes           >> Skip kubecontext confirmation"
@@ -753,8 +751,8 @@ function printParameters() {
 
 readParameters() {
   COMMANDS=$(getopt \
-    -o hwdxyc \
-    --long help,fluxv1,fluxv2,argocd,welcome,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,trace,insecure,yes,skip-helm-update,argocd-config-only: \
+    -o hdxyc \
+    --long help,fluxv1,fluxv2,argocd,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,trace,insecure,yes,skip-helm-update,argocd-config-only: \
     -- "$@")
   
   if [ $? != 0 ]; then
@@ -818,7 +816,6 @@ readParameters() {
       --insecure           ) INSECURE=true; shift ;;
       --username           ) SET_USERNAME="$2"; shift 2 ;;
       --password           ) SET_PASSWORD="$2"; shift 2 ;;
-      -w | --welcome       ) printWelcomeScreen; exit 0 ;;
       -d | --debug         ) DEBUG=true; shift ;;
       -x | --trace         ) TRACE=true; shift ;;
       -y | --yes           ) ASSUME_YES=true; shift ;;

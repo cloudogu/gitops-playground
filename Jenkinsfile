@@ -33,8 +33,7 @@ node('docker') {
         }
 
         stage('Build image') {
-            String imageTag = git.commitHashShort
-            imageName = "${dockerRegistryBaseUrl}/${dockerImageName}:${imageTag}"
+            imageName = createImageName(git.commitHashShort)
             String rfcDate = sh(returnStdout: true, script: 'date --rfc-3339 ns').trim()
             image = docker.build(imageName,
                     "--build-arg BUILD_DATE='${rfcDate}' " +
@@ -72,11 +71,14 @@ node('docker') {
                     if (git.isTag()) {
                         image.push()
                         image.push(git.tag)
-                        currentBuild.description = "${dockerRegistryBaseUrl}/${dockerImageName}:${git.tag}\n${imageName}"
+                        currentBuild.description = createImageName(git.tag)
+                        currentBuild.description += "\n${imageName}"
+
                     } else if (env.BRANCH_NAME == 'main') {
                         image.push()
                         image.push("latest")
-                        currentBuild.description = "${dockerRegistryBaseUrl}/${dockerImageName}:latest\n${imageName}"
+                        currentBuild.description = createImageName("latest")
+                        currentBuild.description += "\n${imageName}"
                     } else if (params.forcePushImage) {
                         image.push()
                         currentBuild.description = imageName
@@ -141,6 +143,10 @@ String createClusterName() {
     String[] randomUUIDs = UUID.randomUUID().toString().split("-")
     String uuid = randomUUIDs[randomUUIDs.length-1]
     return "citest-" + uuid
+}
+
+String createImageName(String tag) {
+    return "${dockerRegistryBaseUrl}/${dockerImageName}:${tag}"
 }
 
 def image
