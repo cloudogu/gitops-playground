@@ -1,35 +1,26 @@
 #!/usr/bin/env bash
 
-# set -o errexit -o nounset -o pipefail
-# set -x
-
 # See https://github.com/rancher/k3d/releases
 # This variable is also read in Jenkinsfile
-K3D_VERSION=4.4.4
-K3D_CLUSTER_NAME=gitops-playground
-CLUSTER_NAME=${K3D_CLUSTER_NAME}
+K3D_VERSION=4.4.7
+# When updating please also adapt k8s-related versions in Dockerfile and vars.tf
+K8S_VERSION=1.21.2
+K3S_VERSION="rancher/k3s:v${K8S_VERSION}-k3s1"
 
-BIND_LOCALHOST=true
-
-BASEDIR=$(dirname $0)
-ABSOLUTE_BASEDIR="$(cd ${BASEDIR} && pwd)"
-source ${ABSOLUTE_BASEDIR}/utils.sh
+set -o errexit -o nounset -o pipefail
 
 function main() {
-  CLUSTER_NAME="$1"
-  BIND_LOCALHOST="$2"
-  SKIP_KUBECTL="$3"
-
+  readParameters "$@"
+  
+  [[ $TRACE == true ]] && set -x;
+  
   # Install k3d if necessary
   if ! command -v k3d >/dev/null 2>&1; then
     installK3d
   else
     ACTUAL_K3D_VERSION="$(k3d --version | grep k3d | sed 's/k3d version v\(.*\)/\1/')"
-    echo "k3d ${ACTUAL_K3D_VERSION} already installed"
     if [[ "${K3D_VERSION}" != "${ACTUAL_K3D_VERSION}" ]]; then
-      msg="Up-/downgrade from ${ACTUAL_K3D_VERSION} to ${K3D_VERSION}?"
-      confirm "$msg" ' [y/n]' &&
-        installK3d
+      msg="WARN: GitOps playground was tested with ${K3D_VERSION}. You are running k3d ${ACTUAL_K3D_VERSION}."
     fi
   fi
 
@@ -41,23 +32,29 @@ function installK3d() {
 }
 
 function createCluster() {
+  echo "Initializing k3d-cluster '${CLUSTER_NAME}'"
+
   if k3d cluster list ${CLUSTER_NAME} >/dev/null 2>&1; then
-    if confirm "Cluster '${CLUSTER_NAME}' already exists. Do you want to delete the cluster?" ' [y/N]'; then
+    if confirm "Cluster '${CLUSTER_NAME}' already exists. Do you want to recreate the cluster?" ' [y/N]'; then
       k3d cluster delete ${CLUSTER_NAME}
     else
-      echo "Not reinstalled."
-      exit 0
+      echo "Not recreated."
+      # Return error here to avoid possible subsequent commands to be executed
+      exit 1
     fi
   fi
 
-  # if local setup is not disabled via env_var it is set to bind to localhost
   K3D_ARGS=(
+    # Allow services to bind to ports < 30000
     '--k3s-server-arg=--kube-apiserver-arg=service-node-port-range=8010-32767'
     # Used by Jenkins Agents pods
-    '-v /var/run/docker.sock:/var/run/docker.sock'
-    '-v /tmp:/tmp'
-    '--k3s-server-arg=--no-deploy=metrics-server'
-    '--k3s-server-arg=--no-deploy=traefik'
+    '-v /var/run/docker.sock:/var/run/docker.sock@server[0]'
+    # Allows for finding out the GID of the docker group in order to allow the Jenkins agents pod to access docker socket
+    '-v /etc/group:/etc/group@server[0]'
+    # Persists the cache of Jenkins agents pods for faster builds
+    '-v /tmp:/tmp@server[0]'
+    # Pin k8s version via k3s image
+    "--image=$K3S_VERSION" 
   )
 
   if [[ ${BIND_LOCALHOST} == 'true' ]]; then
@@ -77,28 +74,48 @@ function printParameters() {
   echo
   echo " -h | --help     >> Help screen"
   echo
-  echo "Set your prefered cluster name to install k3d. Defaults to 'k8s-gitops-playground'."
+  echo "Set your prefered cluster name to install k3d. Defaults to 'gitops-playground'."
   echo "    | --cluster-name=VALUE   >> Sets the cluster name."
 }
 
-COMMANDS=$(getopt \
-  -o h \
-  --long help,cluster-name:,bind-localhost: \
-  -- "$@")
-
-eval set -- "$COMMANDS"
-
-while true; do
-  case "$1" in
-    -h | --help   )   printParameters; exit 0 ;;
-    --cluster-name)   CLUSTER_NAME="$2"; shift 2 ;;
-    --bind-localhost) BIND_LOCALHOST="$2"; shift 2 ;;
-    --) shift; break ;;
-  *) break ;;
+function confirm() {
+  # shellcheck disable=SC2145
+  # - the line break between args is intended here!
+  printf "%s\n" "${@:-Are you sure? [y/N]} "
+  
+  read -r response
+  case "$response" in
+  [yY][eE][sS] | [yY])
+    true
+    ;;
+  *)
+    false
+    ;;
   esac
-done
+}
 
-confirm "Run k3d-cluster initialization for cluster-name: '${CLUSTER_NAME}'." 'Continue? y/n [n]' ||
-  exit 0
+readParameters() {
+  COMMANDS=$(getopt \
+    -o hx \
+    --long help,cluster-name:,bind-localhost:,trace \
+    -- "$@")
+  
+  eval set -- "$COMMANDS"
+  
+  CLUSTER_NAME=gitops-playground
+  BIND_LOCALHOST=true
+  TRACE=false
 
-main "$CLUSTER_NAME" "$BIND_LOCALHOST" "$SKIP_KUBECTL"
+  while true; do
+    case "$1" in
+      -h | --help   )   printParameters; exit 0 ;;
+      --cluster-name)   CLUSTER_NAME="$2"; shift 2 ;;
+      --bind-localhost) BIND_LOCALHOST="$2"; shift 2 ;;
+      -x | --trace    ) TRACE=true; shift ;;
+      --) shift; break ;;
+    *) break ;;
+    esac
+  done
+}
+
+main "$@"

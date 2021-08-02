@@ -72,9 +72,9 @@ controller:
         - set -x -o nounset -o pipefail -o errexit;
 
           id;
-          if [[ ! -d /host-tmp/k8s-gitops-playground-jenkins-agent ]]; then
-          echo creating /tmp/k8s-gitops-playground-jenkins-agent on host and chowning to UID 1000;
-          mkdir /host-tmp/k8s-gitops-playground-jenkins-agent;
+          if [[ ! -d /host-tmp/gitops-playground-jenkins-agent ]]; then
+          echo creating /tmp/gitops-playground-jenkins-agent on host and chowning to UID 1000;
+          mkdir /host-tmp/gitops-playground-jenkins-agent;
           fi;
 
           if [[ -f /host-tmp/docker/docker ]]; then echo 'Docker already installed'; exit 0; fi;
@@ -111,11 +111,11 @@ agent:
   # One disadvantage is, that /tmp is deleted when the host shuts down. Which might slow down builds
   # A different option would be to link the workspace into this repo.
   # If we should ever want to implement this, the logic can be reused from Git History:
-  # https://github.com/cloudogu/k8s-gitops-playground/blob/61e033/scripts/apply.sh#L211-L235
+  # https://github.com/cloudogu/gitops-playground/blob/61e033/scripts/apply.sh#L211-L235
   # We mount the same PATH as a hostPath. See below.
   # On Multi Node Clusters this leads to the requirement that Jenkins controller and agents run on the same host
   # We realize this using nodeSelectors 
-  workingDir: "/tmp/k8s-gitops-playground-jenkins-agent"
+  workingDir: "/tmp/gitops-playground-jenkins-agent"
   runAsUser: 1000
   runAsGroup: 133
   nodeSelector:
@@ -134,12 +134,12 @@ agent:
   volumes:
     - type: HostPath
       # See workingDir
-      hostPath: /tmp/k8s-gitops-playground-jenkins-agent
-      mountPath: /tmp/k8s-gitops-playground-jenkins-agent
+      hostPath: /tmp/gitops-playground-jenkins-agent
+      mountPath: /tmp/gitops-playground-jenkins-agent
     - type: HostPath
       # Persist Jenkins-home on build-agents, e.g. for maven repos
       # That is, muuuch faster builds after the first one
-      hostPath: /tmp/k8s-gitops-playground-jenkins-agent
+      hostPath: /tmp/gitops-playground-jenkins-agent
       mountPath: /home/jenkins
     - type: HostPath
       # For this demo, allow jenkins controller to access docker client

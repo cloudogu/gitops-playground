@@ -1,4 +1,4 @@
-# k8s-gitops-playground
+# gitops-playground
 [![Build Status](https://oss.cloudogu.com/jenkins/buildStatus/icon?job=cloudogu-github/gitops-playground/main)](https://oss.cloudogu.com/jenkins/blue/organizations/jenkins/cloudogu-github%2Fgitops-playground/)
 
 Reproducible infrastructure to showcase GitOps workflows with Kubernetes.  
@@ -7,6 +7,19 @@ and operating the [myCloudogu platform](https://my.cloudogu.com/).
 
 We are working on distilling the logic used in the example application pipelines into a reusable library for Jenkins:
 [cloudogu/gitops-build-lib](https://github.com/cloudogu/gitops-build-lib).
+
+
+TLDR; You can run a local k8s cluster with the GitOps playground installed with only one command (on Linux)
+
+```shell
+bash <(curl -s \
+  https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh) \
+&& docker run --rm -it -v ~/.k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
+  --net=host \
+  ghcr.io/cloudogu/gitops-playground
+```
+
+This command will also print URLs of the [applications](#applications) inside the cluster to get you started. 
 
 # Table of contents
 
@@ -18,6 +31,11 @@ We are working on distilling the logic used in the example application pipelines
 - [Installation](#installation)
   - [Create Cluster](#create-cluster)
   - [Apply apps to cluster](#apply-apps-to-cluster)
+    - [Apply via kubectl](#apply-via-kubectl)
+    - [Apply via local container](#apply-via-local-container)
+    - [Apply via script](#apply-via-script)
+    - [Parameters](#parameters)
+    - [Override default images used in the gitops-build-lib](#override-default-images-used-in-the-gitops-build-lib)
   - [Remove apps from cluster](#remove-apps-from-cluster)
 - [Applications](#applications)
   - [Credentials](#credentials)
@@ -41,8 +59,8 @@ We are working on distilling the logic used in the example application pipelines
 ## What is the GitOps Playground?
 
 The GitOps Playground provides an reproducible environment for trying out GitOps. Is consists of Infra As Code and 
-scripts for automatically setting up a Kubernetes Cluster CI-server (Jenkins), source code management (SCM-Manager) 
-and several GitOps operators (Flux V1, Flux V2, ArgoCD). 
+scripts for automatically setting up a Kubernetes Cluster including CI-server (Jenkins), source code management 
+(SCM-Manager) and several GitOps operators (Flux V1, Flux V2, ArgoCD). 
 CI-Server, SCM and operators are pre-configured with a number of [demo applications](#demo-applications).
 
 The GitOps Playground lowers the barriers for getting your hands on GitOps. No need to read lots of books and operator
@@ -53,8 +71,11 @@ The GitOps Playground is a pre-configured environment to see GitOps in motion.
 
 There a several options for running the GitOps playground
 
-* on a local k3d cluster
-  * __NOTE: Currently runs only on linux!__
+* on a local k3d cluster  
+  __NOTE: Currently runs only on linux!__  
+  Running on Windows or Mac is possible in general, but we would need to bind all needed ports to k3d container.  
+  See our [POC](https://github.com/cloudogu/gitops-playground/commit/d11f1cf77cc58fdc2b768202f9447eab31770f75). 
+  Let us know if this feature is of interest to you.
 * on a remote k8s cluster
 * each with the option 
   * to use an external Jenkins, SCM-Manager and registry 
@@ -69,21 +90,91 @@ Jenkins build agents spawned in the cloud.
 
 | Demo on local machine | Demo on remote cluster | Production environment with CES |
 |--------------------|--------------------|--------------------|
-|![Playground on local machine](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/k8s-gitops-playground/main/docs/gitops-playground.puml&fmt=svg) | ![Playground on remote cluster](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/k8s-gitops-playground/main/docs/gitops-playground-remote.puml&fmt=svg)  | ![A possible production environment](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/k8s-gitops-playground/main/docs/production-setting.puml&fmt=svg) |
+|![Playground on local machine](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/gitops-playground.puml&fmt=svg) | ![Playground on remote cluster](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/gitops-playground-remote.puml&fmt=svg)  | ![A possible production environment](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/production-setting.puml&fmt=svg) |
 
 ### Create Cluster
 
 If you don't have a demo cluster at hand we provide scripts to create either 
 
-* a local k3d cluster ([see docs](docs/k3d.md)) or
-* a remote k8s cluster on Google Kubernetes Engine via terraform ([see docs](docs/gke.md)).
-* But most k8s cluster should work (tested with k8s 1.18+).  
+* a local k3d cluster (see [docs](docs/k3d.md) or [script](scripts/init-cluster.sh) for more details):
+  ```shell
+  bash <(curl -s \
+    https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh)
+  ```
+* a remote k8s cluster on Google Kubernetes Engine (e.g. via Terraform, see our [docs](docs/gke.md)),
+* or almost any k8s cluster.  
   Note that if you want to deploy Jenkins inside the cluster, Docker is required as container runtime.
 
 ### Apply apps to cluster
 
-The GitOps Playground can be deployed to the currently active kube context via `scripts/apply.sh`.
-So clone the repo and execute the script on your local linux computer or VM.
+You can apply the playground to your cluster using our container image `ghcr.io/cloudogu/gitops-playground`.  
+On success, the container prints a little intro on how to get started with the GitOps playground.
+
+There are several options for running the container: 
+
+* The most convenient way is to run the image inside a pod of the target cluster via `kubectl`. 
+* For some setups, like a local k3d cluster running the image as a local container is als possible. 
+* Another (discouraged) option would be to clone this repo and run the scripts locally. 
+
+All options offer the same parameters, see [bellow](#parameters).
+
+#### Apply via kubectl
+
+```shell
+# Create a temporary ServiceAccount and authorize via RBAC. This is needed to install CRDs, etc.
+kubectl create serviceaccount gitops-playground-job-executer -n default
+kubectl create clusterrolebinding gitops-playground-job-executer \
+  --clusterrole=cluster-admin \
+  --serviceaccount=default:gitops-playground-job-executer
+
+# Then start apply the playground with the following command
+kubectl run gitops-playground -i --tty --restart=OnFailure \
+  --overrides='{ "spec": { "serviceAccount": "gitops-playground-job-executer" } }' \
+  --image ghcr.io/cloudogu/gitops-playground \
+  -- --yes # additional parameters go here
+
+# If everything succeeded, remove the objects
+kubectl delete clusterrolebinding/gitops-playground-job-executer \
+  sa/gitops-playground-job-executer pods/gitops-playground -n default  
+```
+
+#### Apply via local container
+
+You could also apply the playground to kubernetes from a local container.
+
+When connecting to k3d it's easiest to run the container in the host network:
+
+```shell
+CLUSTER_NAME=gitops-playground
+docker run --rm -it -v ~/.k3d/kubeconfig-${CLUSTER_NAME}.yaml:/home/.kube/config \
+  --net=host \
+  ghcr.io/cloudogu/gitops-playground # additional parameters go here
+``` 
+
+Alternatively, you can run the container in the network of the k3d cluster:
+`--network=k3d-gitops-playground`,  
+but you'll have to replace `0.0.0.0:PORT` in `~/.k3d/kubeconfig-gitops-playground.yaml` by the actual IP address of the 
+k3d API server and port 6443:   
+
+```shell
+CLUSTER_NAME=gitops-playground
+IP_ADDRESS="$(docker inspect -f \
+  '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' k3d-${CLUSTER_NAME}-server-0)"
+sed -i -r \
+  "s/0.0.0.0([^0-9]+[0-9]*|$)/${IP_ADDRESS}:6443/g" \
+  ~/.k3d/kubeconfig-gitops-playground.yaml
+```
+
+#### Apply via script
+
+For now, the playground can also be applied to the currently active kube context by executing the script from the repo 
+directly. This option might be removed in the future. 
+
+```shell
+scripts/apply.sh # additional parameters go here
+```
+
+To do so, clone the repo and execute the script on your local linux computer or VM.
 It requires the following binaries:
 * curl,
 * jq,
@@ -92,24 +183,30 @@ It requires the following binaries:
 * kubectl,
 * helm.
 
-The scripts also prints a little intro on how to get started with a GitOps deployment.
+#### Parameters
 
-The scripts provides a number of options: See `./scripts/apply.sh --help` for more information.
+The following describes the most common parameters.
 
-Examples:
-* Start on local k3d cluster
+The following command returns a list of all options:
+
 ```shell
-scripts/apply.sh
+docker run --rm ghcr.io/cloudogu/gitops-playground --help
 ```
-* Start on a remote k8s cluster
-```shell
-scripts/apply.sh --remote
-```
+
+* Start on [local k3d cluster](docs/k3d.md): No parameters needed
+* Deploying specific GitOps operators only:
+  * `--argocd` - deploy only argoCD GitOps operator
+  * `--fluxv1` - deploy only Flux v1 GitOps operator
+  * `--fluxv2` - deploy only Flux v2 GitOps operator
+* Start on a remote k8s cluster: `--remote`.
+  This exposes Jenkins, SCMM and argo on well-known ports for example, so you don't have to remember the ports.
 * Start with local Cloudogu Ecosystem.  
-  See our [Quickstart Guide](https://cloudogu.com/en/ecosystem/quick-start-guide/?mtm_campaign=gitops-playground&mtm_kwd=ces&mtm_source=github&mtm_medium=link) on how to set up the instance.
+  See our [Quickstart Guide](https://cloudogu.com/en/ecosystem/quick-start-guide/?mtm_campaign=gitops-playground&mtm_kwd=ces&mtm_source=github&mtm_medium=link) on how to set up the instance.  
+  Then set the following parameters.
 ```shell
-# In this case --password only sets the argocd admin password (Jenkins and SCMM are external) 
-/scripts/apply.sh \
+# Note: 
+# * In this case --password only sets the argocd admin password (Jenkins and SCMM are external)
+# * Insecure is needed, because the local instance will not have a valid cert
 --jenkins-url=https://192.168.56.2/jenkins \ 
 --scmm-url=https://192.168.56.2/scm \
 --jenkins-username=admin \
@@ -120,10 +217,10 @@ scripts/apply.sh --remote
 --insecure
 ```
 * Start with productive Cloudogu Ecosystem and Google Container Registry.  
-  Note that you can get a free CES demo instance set up with a Kubernetes Cluster as GitOps Playground [here](https://cloudogu.com/en/ecosystem/demo-appointment/?mtm_campaign=gitops-playground&mtm_kwd=ces&mtm_source=github&mtm_medium=link).   
+  Note that you can get a free CES demo instance set up with a Kubernetes Cluster as GitOps Playground [here](https://cloudogu.com/en/ecosystem/demo-appointment/?mtm_campaign=gitops-playground&mtm_kwd=ces&mtm_source=github&mtm_medium=link).
 ```shell
+# Note:
 # In this case --password only sets the argocd admin password (Jenkins and SCMM are external) 
-/scripts/apply.sh \
 --jenkins-url=https://your-ecosystem.cloudogu.net/jenkins \ 
 --scmm-url=https://your-ecosystem.cloudogu.net/scm \
 --jenkins-username=admin \
@@ -135,68 +232,6 @@ scripts/apply.sh --remote
 --registry-path=yourproject \
 --registry-username=_json_key \ 
 --registry-password="$( cat account.json | sed 's/"/\\"/g' )" 
-```
-
-Some more options:
-* `--argocd` - deploy only argoCD GitOps operator 
-* `--fluxv1` - deploy only Flux v1 GitOps operator
-* `--fluxv2` - deploy only Flux v2 GitOps operator
-
-#### Run apply.sh inside Docker container
-
-Alternatively you can apply the playground through running the apply.sh in a container.
-
-##### Running as pod
-
-First, creat a `ServiceAccount` with the role `cluster-admin`:
-
-```shell
-kubectl create serviceaccount gitops-playground-job-executer -n default
-
-kubectl create clusterrolebinding gitops-playground-job-executer \
-  --clusterrole=cluster-admin \
-  --serviceaccount=default:gitops-playground-job-executer
-```
-
-Finally, you can start the job with the following command:
-
-```shell
-kubectl run gitops-playground --rm -i --tty \
-  --image ghcr.io/cloudogu/gitops-playground --serviceaccount gitops-playground-job-executer -- \
-  --containered --yes
-```
-
-##### Run as local container
-
-You could also install the playground to kubernetes from a local container.
-
-When connecting to k3d it's easiest to run the container in the host network:
-
-```shell
-docker run --rm -it -v ~/.k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
-  --net=host \
-  ghcr.io/cloudogu/gitops-playground
-``` 
-
-Alternatively you can run the container in the network of the k3d cluster:
-`--network=k3d-gitops-playground`,  
-but you'll have to replace `0.0.0.0:PORT` in `~/.k3d/kubeconfig-gitops-playground.yaml` by the actual IP address of the 
-k3d API server and port 6443:   
-
-```shell 
-IP_ADDRESS="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' k3d-gitops-playground-server-0)"
-sed -i -r \
-  "s/0.0.0.0([^0-9]+[0-9]*|$)/${IP_ADDRESS}:6443/g" \
-  ~/.k3d/kubeconfig-gitops-playground.yaml
-``` 
-
-When your k3d cluster is not bound to localhost (`init-cluster.sh --bind-localhost=false`) pass your API Server
-
-```shell
-docker run --rm -it -v ~/.k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
-  --net=host \
-  ghcr.io/cloudogu/gitops-playground \
-  --cluster-bind-address=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' k3d-gitops-playground-server-0)
 ```
 
 #### Override default images used in the gitops-build-lib
@@ -222,8 +257,13 @@ To override each image in all the applications you can use following parameters:
 
 ### Remove apps from cluster
 
+For k3d, you can just `k3d cluster delete gitops-playground`.
+
+On remote clusters there is a [script](scripts/destroy.sh) inside this repo:
+
 ```shell
-./scripts/destroy.sh
+bash <(curl -s \
+  https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/destroy.sh) 
 ```
 
 ## Applications
@@ -248,11 +288,17 @@ kubectl -n "${namespace}" get svc "${serviceName}" \
 ```
 
 There is also a convenience script `scripts/get-remote-url`. The script waits, if externalIP is not present, yet.
+You could use this conveniently like so:
+```shell
+bash <(curl -s \
+  https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/get-remote-url) jenkins default
+```
 
 You can open the application in the browser right away, like so for example:
 
 ```shell
-xdg-open $(scripts/get-remote-url default jenkins)
+xdg-open $(bash <(curl -s \
+  https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/get-remote-url) jenkins default)
 ```
 ### Credentials
 
@@ -275,10 +321,14 @@ Note: You can enable browser notifications about build results via a button in t
 
 ###### External Jenkins
 
-You can set external jenkins server through this arguments when calling `apply.sh`:  
-`jenkins-url`, `jenkins-username`, `jenkins-password`
+You can set an external jenkins server via the following parameters when applying the playground.
+See [Parameters](#parameters) for examples.
 
-Note that the [demo applications](#demo-applications) Pipelines will only run on a Jenkins that uses agents that provide
+* `--jenkins-url`, 
+* `--jenkins-username`, 
+* `--jenkins-password`
+
+Note that the [demo applications](#demo-applications) pipelines will only run on a Jenkins that uses agents that provide
 a docker host. That is, Jenkins must be able to run e.g. `docker ps` successfully on the agent. 
 
 The user has to have the following privileges: 
@@ -296,8 +346,12 @@ SCM-Manager is available at
 
 ###### External SCM-Manager
 
-You can set external SCM-Manager server through this arguments when calling `apply.sh`:  
-`scmm-url`, `scmm-username`, `scmm-password`
+You can set an external SCM-Manager via the following parameters when applying the playground. 
+See [Parameters](#parameters) for examples.
+
+* `--scmm-url`,
+* `--scmm-username`,
+* `--scmm-password`
 
 The user on the scm has to have privileges to:
 * add / edit users
@@ -327,16 +381,16 @@ All applications are deployed via separated application and GitOps repos:
 
 The applications implement a simple staging mechanism:
 
-* After a successful Jenkins build, the staging application will be deployed into the cluster.
-* The production applications can be deployed by accepting Pull Requests.
+* After a successful Jenkins build, the staging application will be deployed into the cluster by the GitOps operator.
+* Deployment of production applications can be triggered by accepting pull requests.
 
 Note that we are working on moving the GitOps-related logic into a
 [gitops-build-lib](https://github.com/cloudogu/gitops-build-lib) for Jenkins. See the README there for more options like
 * staging,
 * resource creation,
-* validation (fail early).
+* validation (fail early / shift left).
 
-Please note that it might take about 1 Minute after the PullRequest has been accepted for the GitOps operator to start
+Please note that it might take about a minute after the pull request has been accepted for the GitOps operator to start
 deploying.
 Alternatively you can trigger the deployment via the respective GitOps operator's CLI (flux) or UI (argo CD)
 
