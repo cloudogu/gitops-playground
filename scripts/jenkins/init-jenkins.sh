@@ -51,19 +51,15 @@ function jenkinsHelmSettingsForLocalCluster() {
 
 # using local cluster on k3d we grep local host gid for docker
 function queryDockerGroupOfJenkinsNode() {
-  if [[ $REMOTE_CLUSTER != true ]]; then
-    cat /etc/group | grep docker | cut -d: -f3
-  else
-    kubectl apply -f jenkins/tmp-docker-gid-grepper.yaml >/dev/null
-    until kubectl get po --field-selector=status.phase=Running | grep tmp-docker-gid-grepper >/dev/null; do
-      sleep 1
-    done
+  kubectl apply -f jenkins/tmp-docker-gid-grepper.yaml >/dev/null
+  until kubectl get po --field-selector=status.phase=Running | grep tmp-docker-gid-grepper >/dev/null; do
+    sleep 1
+  done
 
-    kubectl exec tmp-docker-gid-grepper -- cat /etc/group | grep docker | cut -d: -f3
+  kubectl exec tmp-docker-gid-grepper -- cat /etc/group | grep docker | cut -d: -f3
 
-    # This call might block some (unnecessary) seconds so move to background
-    kubectl delete -f jenkins/tmp-docker-gid-grepper.yaml >/dev/null &
-  fi
+  # This call might block some (unnecessary) seconds so move to background
+  kubectl delete -f jenkins/tmp-docker-gid-grepper.yaml >/dev/null &
 }
 
 function waitForJenkins() {
@@ -84,12 +80,16 @@ function configureJenkins() {
   export JENKINS_USERNAME
   JENKINS_PASSWORD="${3}"
   export JENKINS_PASSWORD
-  SCMM_URL="${4}"
+  local SCMM_URL="${4}"
   SCMM_PASSWORD="${5}"
   REGISTRY_URL="${6}"
   REGISTRY_PATH="${7}"
   REGISTRY_USERNAME="${8}"
   REGISTRY_PASSWORD="${9}"
+  INSTALL_ALL_MODULES="${10}"
+  INSTALL_FLUXV1="${11}"
+  INSTALL_FLUXV2="${12}"
+  INSTALL_ARGOCD="${13}"
 
   waitForJenkins
 
@@ -110,7 +110,14 @@ function configureJenkins() {
   createCredentials "scmm-user" "gitops" "${SCMM_PASSWORD}" "credentials for accessing scm-manager"
   createCredentials "registry-user" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}" "credentials for accessing the docker-registry"
 
-  createJob "fluxv1-applications" "${SCMM_URL}" "fluxv1" "scmm-user"
-  createJob "fluxv2-applications" "${SCMM_URL}" "fluxv2" "scmm-user"
-  createJob "argocd-applications" "${SCMM_URL}" "argocd" "scmm-user"
+
+  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV1 == true ]]; then
+    createJob "fluxv1-applications" "${SCMM_URL}" "fluxv1" "scmm-user"
+  fi
+  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV2 == true ]]; then
+    createJob "fluxv2-applications" "${SCMM_URL}" "fluxv2" "scmm-user"
+  fi
+  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_ARGOCD == true ]]; then
+    createJob "argocd-applications" "${SCMM_URL}" "argocd" "scmm-user"
+  fi
 }
