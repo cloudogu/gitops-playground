@@ -55,11 +55,16 @@ node('docker') {
                         clusterName = createClusterName()
                         startK3d(clusterName)
 
+                        String registryPort = sh(
+                                script: 'docker inspect ' +
+                                        '--format=\'{{ with (index .NetworkSettings.Ports "30000/tcp") }}{{ (index . 0).HostPort }}{{ end }}\' ' +
+                                        " k3d-${clusterName}-server-0",
+                                returnStdout: true
+                        ).trim()
                         docker.image(imageName)
                                 .inside("-e KUBECONFIG=${env.WORKSPACE}/.kube/config " +
                                         " --network=host --entrypoint=''" ) {
-                                    
-                                    sh "./scripts/apply.sh --yes --debug --trace --argocd" 
+                                    sh "./scripts/apply.sh --yes --trace --internal-registry-port=${registryPort} --argocd" 
                                 }
                     }
                 }

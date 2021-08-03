@@ -90,7 +90,17 @@ function main() {
   fi
 
   if [[ -z "${REGISTRY_URL}" ]]; then
-    REGISTRY_URL="${CLUSTER_BIND_ADDRESS}:30000"
+    local registryPort
+    registryPort='30000'
+    if [[ -n "${INTERNAL_REGISTRY_PORT}" ]]; then
+      registryPort="${INTERNAL_REGISTRY_PORT}"
+    fi
+    # Internal Docker registry must be on localhost. Otherwise docker will use HTTPS, leading to errors on docker push 
+    # in the example application's Jenkins Jobs.
+    # Both setting up HTTPS or allowing insecure registry via daemon.json makes the playground difficult to use. 
+    # So, always use localhost.
+    # Allow overriding the port, in case multiple playground instance run on a single host in different k3d clusters.
+    REGISTRY_URL="localhost:${registryPort}"
     REGISTRY_PATH=""
   else
     INTERNAL_REGISTRY=false
@@ -732,6 +742,7 @@ function printParameters() {
   echo "    | --registry-path=public          >> Optional when --registry-url is set"
   echo "    | --registry-username=myUsername  >> Optional when --registry-url is set"
   echo "    | --registry-password=myPassword  >> Optional when --registry-url is set"
+  echo "    | --internal-registry-port         >> Port of registry registry. Ignored when registry-url is set."
   echo
   echo "Configure images used by the gitops-build-lib in the application examples"
   echo "    | --kubectl-image      >> Sets image for kubectl"
@@ -752,7 +763,7 @@ function printParameters() {
 readParameters() {
   COMMANDS=$(getopt \
     -o hdxyc \
-    --long help,fluxv1,fluxv2,argocd,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,trace,insecure,yes,skip-helm-update,argocd-config-only: \
+    --long help,fluxv1,fluxv2,argocd,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,trace,insecure,yes,skip-helm-update,argocd-config-only: \
     -- "$@")
   
   if [ $? != 0 ]; then
@@ -777,6 +788,7 @@ readParameters() {
   REGISTRY_PATH=""
   REGISTRY_USERNAME=""
   REGISTRY_PASSWORD=""
+  INTERNAL_REGISTRY_PORT=""
   SCMM_URL=""
   SCMM_USERNAME=""
   SCMM_PASSWORD=""
@@ -805,6 +817,7 @@ readParameters() {
       --registry-path      ) REGISTRY_PATH="$2"; shift 2 ;;
       --registry-username  ) REGISTRY_USERNAME="$2"; shift 2 ;;
       --registry-password  ) REGISTRY_PASSWORD="$2"; shift 2 ;;
+      --internal-registry-port ) INTERNAL_REGISTRY_PORT="$2"; shift 2 ;;
       --scmm-url           ) SCMM_URL="$2"; shift 2 ;;
       --scmm-username      ) SCMM_USERNAME="$2"; shift 2 ;;
       --scmm-password      ) SCMM_PASSWORD="$2"; shift 2 ;;
