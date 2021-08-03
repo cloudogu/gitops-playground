@@ -66,7 +66,7 @@ function createCluster() {
     # Internal Docker registry must be on localhost. Otherwise docker will use HTTPS, leading to errors on docker push 
     # in the example application's Jenkins Jobs.
     # If available, use default port for playground registry, because no parameter is required when applying
-    if ! netstat -an | grep 30000 | grep LISTEN >/dev/null 2>&1; then
+    if command -v netstat >/dev/null 2>&1 && ! netstat -an | grep 30000 | grep LISTEN >/dev/null 2>&1; then
       K3D_ARGS+=(
        '-p 30000:30000@server[0]'
       )
