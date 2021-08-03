@@ -313,7 +313,9 @@ Jenkins is available at
 * http://localhost:9090 (k3d)
 * `scripts/get-remote-url jenkins default` (remote k8s) 
 
-Note: You can enable browser notifications about build results via a button in the lower right corner of Jenkins Web UI.
+You can enable browser notifications about build results via a button in the lower right corner of Jenkins Web UI.
+
+Note that this only works when using `localhost` or `https://`. 
 
 ![Enable Jenkins Notifications](docs/jenkins-enable-notifications.png)
 
