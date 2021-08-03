@@ -23,11 +23,13 @@ INTERNAL_REGISTRY=true
 JENKINS_URL_FOR_SCMM="http://jenkins"
 SCMM_URL_FOR_JENKINS="http://scmm-scm-manager.default.svc.cluster.local/scm"
 
-HELM_DEFAULT_IMAGE='ghcr.io/cloudogu/helm:3.5.4-1'
-KUBECTL_DEFAULT_IMAGE='lachlanevenson/k8s-kubectl:v1.19.3'
-KUBEVAL_DEFAULT_IMAGE='ghcr.io/cloudogu/helm:3.5.4-1'
-HELMKUBEVAL_DEFAULT_IMAGE='ghcr.io/cloudogu/helm:3.5.4-1'
+# When updating please also adapt k8s-related versions in Dockerfile, init-cluster.sh and vars.tf
+KUBECTL_DEFAULT_IMAGE='lachlanevenson/k8s-kubectl:v1.21.2'
 YAMLLINT_DEFAULT_IMAGE='cytopia/yamllint:1.25-0.7'
+HELM_DEFAULT_IMAGE='ghcr.io/cloudogu/helm:3.5.4-1'
+# cloudogu/helm also contains kubeval and helm kubeval plugin. Using the same image makes builds faster
+KUBEVAL_DEFAULT_IMAGE=${HELM_DEFAULT_IMAGE}
+HELMKUBEVAL_DEFAULT_IMAGE=${HELM_DEFAULT_IMAGE}
 
 SPRING_BOOT_HELM_CHART_REPO=${SPRING_BOOT_HELM_CHART_REPO:-'https://github.com/cloudogu/spring-boot-helm-chart.git'}
 SPRING_PETCLINIC_REPO=${SPRING_PETCLINIC_REPO:-'https://github.com/cloudogu/spring-petclinic.git'}
