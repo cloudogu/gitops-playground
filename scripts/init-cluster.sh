@@ -3,7 +3,7 @@
 # See https://github.com/rancher/k3d/releases
 # This variable is also read in Jenkinsfile
 K3D_VERSION=4.4.7
-# When updating please also adapt k8s-related versions in Dockerfile and vars.tf
+# When updating please also adapt k8s-related versions in Dockerfile, vars.tf and apply.sh
 K8S_VERSION=1.21.2
 K3S_VERSION="rancher/k3s:v${K8S_VERSION}-k3s1"
 
@@ -57,13 +57,39 @@ function createCluster() {
     "--image=$K3S_VERSION" 
   )
 
+  local isUsingArbitraryRegistryPort=false
   if [[ ${BIND_LOCALHOST} == 'true' ]]; then
     K3D_ARGS+=(
       '--network=host'
     )
+  else
+    # Internal Docker registry must be on localhost. Otherwise docker will use HTTPS, leading to errors on docker push 
+    # in the example application's Jenkins Jobs.
+    # If available, use default port for playground registry, because no parameter is required when applying
+    if command -v netstat >/dev/null 2>&1 && ! netstat -an | grep 30000 | grep LISTEN >/dev/null 2>&1; then
+      K3D_ARGS+=(
+       '-p 30000:30000@server[0]'
+      )
+    else
+      # If default port is in use, choose an arbitrary port.
+      # The port must then be passed when applying the playground as --internal-registry-port (printed after creation)
+      isUsingArbitraryRegistryPort=true
+      K3D_ARGS+=(
+       '-p 30000@server[0]'
+      )
+    fi
   fi
 
   k3d cluster create ${CLUSTER_NAME} ${K3D_ARGS[*]}
+  
+  if [[ ${isUsingArbitraryRegistryPort} == 'true' ]]; then
+    local registryPort
+    registryPort=$(docker inspect \
+      --format='{{ with (index .NetworkSettings.Ports "30000/tcp") }}{{ (index . 0).HostPort }}{{ end }}' \
+       k3d-${CLUSTER_NAME}-server-0)
+    echo "Bound internal registry port 30000 to free localhost port ${registryPort}."
+    echo "Make sure to pass --internal-registry-port=${registryPort} when applying the playground."
+  fi
 
   echo "Adding k3d cluster to ~/.kube/config"
   k3d kubeconfig merge ${CLUSTER_NAME} --kubeconfig-switch-context > /dev/null

@@ -34,6 +34,6 @@ variable "k8s_version_prefix" {
   # So we use a version prefix hoping that the stable patch versions won't do unexpected things (which is unlikely!) 
   description = "Master and Node version prefix to setup"
   
-  # When updating please also adapt k8s-related versions in Dockerfile and init-cluster.sh
+  # When updating please also adapt k8s-related versions in Dockerfile, init-cluster.sh and apply.sh
   default = "1.21."
 }

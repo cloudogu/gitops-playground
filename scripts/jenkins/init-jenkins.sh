@@ -11,7 +11,7 @@ fi
 # Check for "Failed to load" in the Jenkins log and add or upgrade the plugins mentioned there appropriately.
 # In addition, check if the new helm chart version uses a newer agent.tag.
 # Note that we need JDK11 on the agents, whereas the helm chart uses JDK8 by default.
-JENKINS_HELM_CHART_VERSION=3.3.23
+JENKINS_HELM_CHART_VERSION=3.5.9
 
 SET_USERNAME="admin"
 SET_PASSWORD="admin"
@@ -40,10 +40,7 @@ function deployLocalJenkins() {
 
 function jenkinsHelmSettingsForLocalCluster() {
   if [[ $REMOTE_CLUSTER != true ]]; then
-    # Run Jenkins and Agent pods as the current user.
-    # Avoids file permission problems when accessing files on the host that were written from the pods
-
-    # We also need a host port, so jenkins can be reached via localhost:9090
+    # We need a host port, so jenkins can be reached via localhost:9090
     # But: This helm charts only uses the nodePort value, if the type is "NodePort". So change it for local cluster.
     echo "--set controller.serviceType=NodePort"
   fi
@@ -93,11 +90,11 @@ function configureJenkins() {
 
   waitForJenkins
 
-  installPlugin "docker-workflow" "1.25"
-  installPlugin "docker-plugin" "1.2.1"
-  installPlugin "pipeline-utility-steps" "2.6.1"
-  installPlugin "junit" "1.48"
-  installPlugin "scm-manager" "1.7.3"
+  installPlugin "docker-workflow" "1.26"
+  installPlugin "docker-plugin" "1.2.2"
+  installPlugin "pipeline-utility-steps" "2.8.0"
+  installPlugin "junit" "1.51"
+  installPlugin "scm-manager" "1.7.5"
   installPlugin "html5-notifier-plugin" "1.5"
 
   safeRestart

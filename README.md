@@ -14,29 +14,27 @@ TLDR; You can run a local k8s cluster with the GitOps playground installed with 
 ```shell
 bash <(curl -s \
   https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh) \
-&& docker run --rm -it -v ~/.k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
-  --net=host \
-  ghcr.io/cloudogu/gitops-playground
+  && docker run --rm -it -v ~/.k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
+    --net=host \
+    ghcr.io/cloudogu/gitops-playground --yes
 ```
 
 This command will also print URLs of the [applications](#applications) inside the cluster to get you started. 
 
 # Table of contents
 
-<!-- Update with `doctoc --notitle README.md --maxlevel 5`. See https://github.com/thlorenz/doctoc -->
+<!-- Update with `doctoc --notitle README.md --maxlevel 4`. See https://github.com/thlorenz/doctoc -->
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 - [What is the GitOps Playground?](#what-is-the-gitops-playground)
 - [Installation](#installation)
   - [Create Cluster](#create-cluster)
-  - [Apply apps to cluster](#apply-apps-to-cluster)
-    - [Apply via kubectl](#apply-via-kubectl)
-    - [Apply via local container](#apply-via-local-container)
-    - [Apply via script](#apply-via-script)
-    - [Parameters](#parameters)
-    - [Override default images used in the gitops-build-lib](#override-default-images-used-in-the-gitops-build-lib)
-  - [Remove apps from cluster](#remove-apps-from-cluster)
+  - [Apply playground](#apply-playground)
+    - [Apply via Docker (local cluster)](#apply-via-docker-local-cluster)
+    - [Apply via kubectl (remote cluster)](#apply-via-kubectl-remote-cluster)
+    - [Additional parameters](#additional-parameters)
+  - [Remove playground](#remove-playground)
 - [Applications](#applications)
   - [Credentials](#credentials)
   - [Jenkins](#jenkins)
@@ -44,15 +42,8 @@ This command will also print URLs of the [applications](#applications) inside th
   - [ArgoCD UI](#argocd-ui)
   - [Demo applications](#demo-applications)
     - [Flux V1](#flux-v1)
-      - [PetClinic with plain k8s resources](#petclinic-with-plain-k8s-resources)
-      - [PetClinic with helm](#petclinic-with-helm)
-      - [3rd Party app (NGINX) with helm](#3rd-party-app-nginx-with-helm)
     - [Flux V2](#flux-v2)
-      - [PetClinic with plain k8s resources](#petclinic-with-plain-k8s-resources-1)
     - [ArgoCD](#argocd)
-      - [PetClinic with plain k8s resources](#petclinic-with-plain-k8s-resources-2)
-      - [PetClinic with helm](#petclinic-with-helm-1)
-      - [3rd Party app (NGINX) with helm](#3rd-party-app-nginx-with-helm-1)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -105,20 +96,36 @@ If you don't have a demo cluster at hand we provide scripts to create either
 * or almost any k8s cluster.  
   Note that if you want to deploy Jenkins inside the cluster, Docker is required as container runtime.
 
-### Apply apps to cluster
+### Apply playground
 
 You can apply the playground to your cluster using our container image `ghcr.io/cloudogu/gitops-playground`.  
 On success, the container prints a little intro on how to get started with the GitOps playground.
 
 There are several options for running the container: 
 
-* The most convenient way is to run the image inside a pod of the target cluster via `kubectl`. 
-* For some setups, like a local k3d cluster running the image as a local container is als possible. 
-* Another (discouraged) option would be to clone this repo and run the scripts locally. 
+* For local k3d cluster, we recommend running the image as a local container via `docker`  
+* For remote clusters (e.g. on GKE) you can run the image inside a pod of the target cluster via `kubectl`. 
 
-All options offer the same parameters, see [bellow](#parameters).
+All options offer the same parameters, see [bellow](#additional-parameters).
 
-#### Apply via kubectl
+#### Apply via Docker (local cluster)
+
+When connecting to k3d it is easiest to apply the playground via a local container in the host network and pass
+k3d's kubeconfig.
+
+```shell
+CLUSTER_NAME=gitops-playground
+docker run --rm -it -v ~/.k3d/kubeconfig-${CLUSTER_NAME}.yaml:/home/.kube/config \
+  --net=host \
+  ghcr.io/cloudogu/gitops-playground # additional parameters go here
+``` 
+
+Using the host network makes it possible to determine `localhost` and to use k3d's kubeconfig without altering, as it 
+access the API server via a port bound to localhost.
+
+#### Apply via kubectl (remote cluster)
+
+For remote clusters it is easiest to apply the playground via kubectl.
 
 ```shell
 # Create a temporary ServiceAccount and authorize via RBAC. This is needed to install CRDs, etc.
@@ -128,81 +135,42 @@ kubectl create clusterrolebinding gitops-playground-job-executer \
   --serviceaccount=default:gitops-playground-job-executer
 
 # Then start apply the playground with the following command
+# The --remote parameter exposes Jenkins, SCMM and argo on well-known ports for example, 
+# so you don't have to remember the individual ports
 kubectl run gitops-playground -i --tty --restart=OnFailure \
   --overrides='{ "spec": { "serviceAccount": "gitops-playground-job-executer" } }' \
   --image ghcr.io/cloudogu/gitops-playground \
-  -- --yes # additional parameters go here
+  -- --yes --remote # additional parameters go here
 
 # If everything succeeded, remove the objects
 kubectl delete clusterrolebinding/gitops-playground-job-executer \
   sa/gitops-playground-job-executer pods/gitops-playground -n default  
 ```
 
-#### Apply via local container
+In general `docker run` should work here as well. But GKE, for example, uses gcloud and python in their kubeconfig.
+Running inside the cluster avoids these kinds of issues.
 
-You could also apply the playground to kubernetes from a local container.
+#### Additional parameters
 
-When connecting to k3d it's easiest to run the container in the host network:
+The following describes more parameters and use cases.
 
-```shell
-CLUSTER_NAME=gitops-playground
-docker run --rm -it -v ~/.k3d/kubeconfig-${CLUSTER_NAME}.yaml:/home/.kube/config \
-  --net=host \
-  ghcr.io/cloudogu/gitops-playground # additional parameters go here
-``` 
-
-Alternatively, you can run the container in the network of the k3d cluster:
-`--network=k3d-gitops-playground`,  
-but you'll have to replace `0.0.0.0:PORT` in `~/.k3d/kubeconfig-gitops-playground.yaml` by the actual IP address of the 
-k3d API server and port 6443:   
-
-```shell
-CLUSTER_NAME=gitops-playground
-IP_ADDRESS="$(docker inspect -f \
-  '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' k3d-${CLUSTER_NAME}-server-0)"
-sed -i -r \
-  "s/0.0.0.0([^0-9]+[0-9]*|$)/${IP_ADDRESS}:6443/g" \
-  ~/.k3d/kubeconfig-gitops-playground.yaml
-```
-
-#### Apply via script
-
-For now, the playground can also be applied to the currently active kube context by executing the script from the repo 
-directly. This option might be removed in the future. 
-
-```shell
-scripts/apply.sh # additional parameters go here
-```
-
-To do so, clone the repo and execute the script on your local linux computer or VM.
-It requires the following binaries:
-* curl,
-* jq,
-* htpasswd,
-* envsubst,
-* kubectl,
-* helm.
-
-#### Parameters
-
-The following describes the most common parameters.
-
-The following command returns a list of all options:
+You can get a full list of all options like so:
 
 ```shell
 docker run --rm ghcr.io/cloudogu/gitops-playground --help
 ```
 
-* Start on [local k3d cluster](docs/k3d.md): No parameters needed
-* Deploying specific GitOps operators only:
-  * `--argocd` - deploy only argoCD GitOps operator
-  * `--fluxv1` - deploy only Flux v1 GitOps operator
-  * `--fluxv2` - deploy only Flux v2 GitOps operator
-* Start on a remote k8s cluster: `--remote`.
-  This exposes Jenkins, SCMM and argo on well-known ports for example, so you don't have to remember the ports.
-* Start with local Cloudogu Ecosystem.  
-  See our [Quickstart Guide](https://cloudogu.com/en/ecosystem/quick-start-guide/?mtm_campaign=gitops-playground&mtm_kwd=ces&mtm_source=github&mtm_medium=link) on how to set up the instance.  
-  Then set the following parameters.
+##### Deploy specific GitOps operators only
+
+* `--argocd` - deploy only argoCD GitOps operator
+* `--fluxv1` - deploy only Flux v1 GitOps operator
+* `--fluxv2` - deploy only Flux v2 GitOps operator
+
+##### Deploy with local Cloudogu Ecosystem
+
+See our [Quickstart Guide](https://cloudogu.com/en/ecosystem/quick-start-guide/?mtm_campaign=gitops-playground&mtm_kwd=ces&mtm_source=github&mtm_medium=link) on how to set up the instance.  
+Then set the following parameters.
+
 ```shell
 # Note: 
 # * In this case --password only sets the argocd admin password (Jenkins and SCMM are external)
@@ -216,8 +184,15 @@ docker run --rm ghcr.io/cloudogu/gitops-playground --help
 --password=yourpassword \
 --insecure
 ```
-* Start with productive Cloudogu Ecosystem and Google Container Registry.  
-  Note that you can get a free CES demo instance set up with a Kubernetes Cluster as GitOps Playground [here](https://cloudogu.com/en/ecosystem/demo-appointment/?mtm_campaign=gitops-playground&mtm_kwd=ces&mtm_source=github&mtm_medium=link).
+
+##### Deploy with productive Cloudogu Ecosystem and GCR
+
+Using Google Container Registry (GCR) fits well with our cluster creation example via Terraform on Google Kubernetes Engine 
+(GKE), see our [docs](docs/gke.md).
+
+Note that you can get a free CES demo instance set up with a Kubernetes Cluster as GitOps Playground 
+[here](https://cloudogu.com/en/ecosystem/demo-appointment/?mtm_campaign=gitops-playground&mtm_kwd=ces&mtm_source=github&mtm_medium=link).
+
 ```shell
 # Note:
 # In this case --password only sets the argocd admin password (Jenkins and SCMM are external) 
@@ -234,9 +209,10 @@ docker run --rm ghcr.io/cloudogu/gitops-playground --help
 --registry-password="$( cat account.json | sed 's/"/\\"/g' )" 
 ```
 
-#### Override default images used in the gitops-build-lib
+##### Override default images used in the gitops-build-lib
 
 Images used by the gitops-build-lib are set in the `gitopsConfig` in each `Jenkinsfile` of an application like that:
+
 ```
 def gitopsConfig = [
     ...
@@ -248,14 +224,16 @@ def gitopsConfig = [
             yamllint: 'cytopia/yamllint:1.25-0.7'
     ],...
 ```
+
 To override each image in all the applications you can use following parameters:
+
 * `--kubectl-image someRegistry/someImage:1.0.0`
 * `--helm-image someRegistry/someImage:1.0.0`
 * `--kubeval-image someRegistry/someImage:1.0.0`
 * `--helmkubeval-image someRegistry/someImage:1.0.0`
 * `--yamllint-image someRegistry/someImage:1.0.0`
 
-### Remove apps from cluster
+### Remove playground
 
 For k3d, you can just `k3d cluster delete gitops-playground`.
 
@@ -291,14 +269,16 @@ There is also a convenience script `scripts/get-remote-url`. The script waits, i
 You could use this conveniently like so:
 ```shell
 bash <(curl -s \
-  https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/get-remote-url) jenkins default
+  https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/get-remote-url) \
+  jenkins default
 ```
 
 You can open the application in the browser right away, like so for example:
 
 ```shell
 xdg-open $(bash <(curl -s \
-  https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/get-remote-url) jenkins default)
+  https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/get-remote-url) \
+   jenkins default)
 ```
 ### Credentials
 
@@ -313,7 +293,9 @@ Jenkins is available at
 * http://localhost:9090 (k3d)
 * `scripts/get-remote-url jenkins default` (remote k8s) 
 
-Note: You can enable browser notifications about build results via a button in the lower right corner of Jenkins Web UI.
+You can enable browser notifications about build results via a button in the lower right corner of Jenkins Web UI.
+
+Note that this only works when using `localhost` or `https://`. 
 
 ![Enable Jenkins Notifications](docs/jenkins-enable-notifications.png)
 
@@ -322,7 +304,7 @@ Note: You can enable browser notifications about build results via a button in t
 ###### External Jenkins
 
 You can set an external jenkins server via the following parameters when applying the playground.
-See [Parameters](#parameters) for examples.
+See [Parameters](#additional-parameters) for examples.
 
 * `--jenkins-url`, 
 * `--jenkins-username`, 
@@ -347,7 +329,7 @@ SCM-Manager is available at
 ###### External SCM-Manager
 
 You can set an external SCM-Manager via the following parameters when applying the playground. 
-See [Parameters](#parameters) for examples.
+See [Parameters](#additional-parameters) for examples.
 
 * `--scmm-url`,
 * `--scmm-username`,

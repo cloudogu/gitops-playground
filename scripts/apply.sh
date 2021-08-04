@@ -10,6 +10,7 @@ export PLAYGROUND_DIR
 
 PETCLINIC_COMMIT=949c5af
 SPRING_BOOT_HELM_CHART_COMMIT=0.2.1
+ARGO_HELM_CHART_VERSION=2.17.5 # Last version with argo 1.x
 
 source ${ABSOLUTE_BASEDIR}/utils.sh
 source ${ABSOLUTE_BASEDIR}/jenkins/init-jenkins.sh
@@ -23,11 +24,13 @@ INTERNAL_REGISTRY=true
 JENKINS_URL_FOR_SCMM="http://jenkins"
 SCMM_URL_FOR_JENKINS="http://scmm-scm-manager.default.svc.cluster.local/scm"
 
-HELM_DEFAULT_IMAGE='ghcr.io/cloudogu/helm:3.5.4-1'
-KUBECTL_DEFAULT_IMAGE='lachlanevenson/k8s-kubectl:v1.19.3'
-KUBEVAL_DEFAULT_IMAGE='ghcr.io/cloudogu/helm:3.5.4-1'
-HELMKUBEVAL_DEFAULT_IMAGE='ghcr.io/cloudogu/helm:3.5.4-1'
+# When updating please also adapt k8s-related versions in Dockerfile, init-cluster.sh and vars.tf
+KUBECTL_DEFAULT_IMAGE='lachlanevenson/k8s-kubectl:v1.21.2'
 YAMLLINT_DEFAULT_IMAGE='cytopia/yamllint:1.25-0.7'
+HELM_DEFAULT_IMAGE='ghcr.io/cloudogu/helm:3.5.4-1'
+# cloudogu/helm also contains kubeval and helm kubeval plugin. Using the same image makes builds faster
+KUBEVAL_DEFAULT_IMAGE=${HELM_DEFAULT_IMAGE}
+HELMKUBEVAL_DEFAULT_IMAGE=${HELM_DEFAULT_IMAGE}
 
 SPRING_BOOT_HELM_CHART_REPO=${SPRING_BOOT_HELM_CHART_REPO:-'https://github.com/cloudogu/spring-boot-helm-chart.git'}
 SPRING_PETCLINIC_REPO=${SPRING_PETCLINIC_REPO:-'https://github.com/cloudogu/spring-petclinic.git'}
@@ -56,10 +59,8 @@ function main() {
   else
     RUNNING_INSIDE_K8S=false
   fi
-  # Use an internal IP to contact Jenkins and SCMM
-  # For k3d this is either the host's IP or the IP address of the k3d API server's container IP (when --bind-localhost=false)
-  CLUSTER_BIND_ADDRESS=$(kubectl get "$(kubectl get node -oname | head -n1)" \
-    --template='{{range .status.addresses}}{{ if eq .type "InternalIP"}}{{.address}}{{end}}{{end}}')
+  
+  CLUSTER_BIND_ADDRESS=$(findClusterBindAddress)
 
   if [[ $INSECURE == true ]]; then
     CURL_HOME="${PLAYGROUND_DIR}"
@@ -90,7 +91,17 @@ function main() {
   fi
 
   if [[ -z "${REGISTRY_URL}" ]]; then
-    REGISTRY_URL="${CLUSTER_BIND_ADDRESS}:30000"
+    local registryPort
+    registryPort='30000'
+    if [[ -n "${INTERNAL_REGISTRY_PORT}" ]]; then
+      registryPort="${INTERNAL_REGISTRY_PORT}"
+    fi
+    # Internal Docker registry must be on localhost. Otherwise docker will use HTTPS, leading to errors on docker push 
+    # in the example application's Jenkins Jobs.
+    # Both setting up HTTPS or allowing insecure registry via daemon.json makes the playground difficult to use. 
+    # So, always use localhost.
+    # Allow overriding the port, in case multiple playground instance run on a single host in different k3d clusters.
+    REGISTRY_URL="localhost:${registryPort}"
     REGISTRY_PATH=""
   else
     INTERNAL_REGISTRY=false
@@ -124,6 +135,41 @@ function main() {
     set +x
   fi
   printWelcomeScreen
+}
+
+function findClusterBindAddress() {
+  local potentialClusterBindAddress
+  local localAddress
+  
+  # Use an internal IP to contact Jenkins and SCMM
+  # For k3d this is either the host's IP or the IP address of the k3d API server's container IP (when --bind-localhost=false)
+  potentialClusterBindAddress="$(kubectl get "$(waitForNode)" \
+          --template='{{range .status.addresses}}{{ if eq .type "InternalIP" }}{{.address}}{{end}}{{end}}')"
+
+  localAddress="$(ip route get 1 | sed -n 's/^.*src \([0-9.]*\) .*$/\1/p')"
+
+  # Check if we can use localhost instead of the external address
+  # This address is later printed on the welcome screen, where localhost is much more constant and intuitive as the 
+  # the external address. Also Jenkins notifications only work on localhost, not external addresses.
+  # Note that this will only work when executed as a script locally, or in a container with --net=host.
+  # When executing via kubectl run, this will still output the potentialClusterBindAddress.
+  if [[ "${localAddress}" == "${potentialClusterBindAddress}" ]]; then 
+    echo "localhost" 
+  else 
+    echo "${potentialClusterBindAddress}"
+  fi
+}
+
+function waitForNode() {
+  # With TLDR command from readme "kubectl get node" might be executed right after cluster start, where no nodes are 
+  # returned, resulting in 'error: the server doesn't have a resource type ""'
+  local nodes=""
+  while [ -z ${nodes} ]; do
+    nodes=$(kubectl get node -oname)
+    [ -z "${nodes}" ] && sleep 1
+  done
+  # Return first node
+  kubectl get node -oname | head -n1
 }
 
 function evalWithSpinner() {
@@ -289,8 +335,9 @@ function initArgo() {
   fi
 
   if [[ ${ARGOCD_CONFIG_ONLY} == false ]]; then
+    
     helm upgrade -i argocd --values "${VALUES_YAML_PATH}" \
-      $(argoHelmSettingsForRemoteCluster) --version 2.9.5 argo/argo-cd -n argocd
+      $(argoHelmSettingsForLocalCluster) --version ${ARGO_HELM_CHART_VERSION} argo/argo-cd -n argocd
 
     BCRYPT_PW=$(bcryptPassword "${SET_PASSWORD}")
     # set argocd admin password to 'admin' here, because it does not work through the helm chart
@@ -357,10 +404,11 @@ function replaceImageIfSet() {
   fi
 }
 
-function argoHelmSettingsForRemoteCluster() {
-  if [[ $REMOTE_CLUSTER == true ]]; then
-    # Can't set service nodePort for argo, so use normal service ports for both local and remote
-    echo '--set server.service.servicePortHttp=80 --set server.service.servicePortHttps=443'
+function argoHelmSettingsForLocalCluster() {
+  if [[ $REMOTE_CLUSTER != true ]]; then
+    # We need a host port, so argo can be reached via localhost:9092
+    # But: This helm charts only uses the nodePort value, if the type is "NodePort". So change it for local cluster.
+    echo '--set server.service.type=NodePort'
   fi
 }
 
@@ -681,7 +729,8 @@ function printWelcomeScreenFluxV2() {
 
 function printWelcomeScreenArgocd() {
 
-  ARGOCD_URL="$(createUrl "${CLUSTER_BIND_ADDRESS}" "$(grep 'servicePortHttp:' "${PLAYGROUND_DIR}"/argocd/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')")"
+
+  ARGOCD_URL="$(createUrl "${CLUSTER_BIND_ADDRESS}" "$(grep 'nodePortHttp:' "${PLAYGROUND_DIR}"/argocd/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')")"
   setExternalHostnameIfNecessary 'ARGOCD' 'argocd-server' 'argocd'
 
   if [[ $INSTALL_ALL_MODULES == true || $INSTALL_ARGOCD == true ]]; then
@@ -732,6 +781,7 @@ function printParameters() {
   echo "    | --registry-path=public          >> Optional when --registry-url is set"
   echo "    | --registry-username=myUsername  >> Optional when --registry-url is set"
   echo "    | --registry-password=myPassword  >> Optional when --registry-url is set"
+  echo "    | --internal-registry-port         >> Port of registry registry. Ignored when registry-url is set."
   echo
   echo "Configure images used by the gitops-build-lib in the application examples"
   echo "    | --kubectl-image      >> Sets image for kubectl"
@@ -752,7 +802,7 @@ function printParameters() {
 readParameters() {
   COMMANDS=$(getopt \
     -o hdxyc \
-    --long help,fluxv1,fluxv2,argocd,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,trace,insecure,yes,skip-helm-update,argocd-config-only: \
+    --long help,fluxv1,fluxv2,argocd,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,trace,insecure,yes,skip-helm-update,argocd-config-only: \
     -- "$@")
   
   if [ $? != 0 ]; then
@@ -777,6 +827,7 @@ readParameters() {
   REGISTRY_PATH=""
   REGISTRY_USERNAME=""
   REGISTRY_PASSWORD=""
+  INTERNAL_REGISTRY_PORT=""
   SCMM_URL=""
   SCMM_USERNAME=""
   SCMM_PASSWORD=""
@@ -805,6 +856,7 @@ readParameters() {
       --registry-path      ) REGISTRY_PATH="$2"; shift 2 ;;
       --registry-username  ) REGISTRY_USERNAME="$2"; shift 2 ;;
       --registry-password  ) REGISTRY_PASSWORD="$2"; shift 2 ;;
+      --internal-registry-port ) INTERNAL_REGISTRY_PORT="$2"; shift 2 ;;
       --scmm-url           ) SCMM_URL="$2"; shift 2 ;;
       --scmm-username      ) SCMM_USERNAME="$2"; shift 2 ;;
       --scmm-password      ) SCMM_PASSWORD="$2"; shift 2 ;;
