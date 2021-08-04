@@ -58,10 +58,8 @@ function main() {
   else
     RUNNING_INSIDE_K8S=false
   fi
-  # Use an internal IP to contact Jenkins and SCMM
-  # For k3d this is either the host's IP or the IP address of the k3d API server's container IP (when --bind-localhost=false)
-  CLUSTER_BIND_ADDRESS=$(kubectl get "$(kubectl get node -oname | head -n1)" \
-    --template='{{range .status.addresses}}{{ if eq .type "InternalIP"}}{{.address}}{{end}}{{end}}')
+  
+  CLUSTER_BIND_ADDRESS=$(findClusterBindAddress)
 
   if [[ $INSECURE == true ]]; then
     CURL_HOME="${PLAYGROUND_DIR}"
@@ -136,6 +134,29 @@ function main() {
     set +x
   fi
   printWelcomeScreen
+}
+
+function findClusterBindAddress() {
+  local potentialClusterBindAddress
+  local localAddress
+  
+  # Use an internal IP to contact Jenkins and SCMM
+  # For k3d this is either the host's IP or the IP address of the k3d API server's container IP (when --bind-localhost=false)
+  potentialClusterBindAddress="$(kubectl get "$(kubectl get node -oname | head -n1)" \
+          --template='{{range .status.addresses}}{{ if eq .type "InternalIP" }}{{.address}}{{end}}{{end}}')"
+
+  localAddress="$(ip route get 1 | sed -n 's/^.*src \([0-9.]*\) .*$/\1/p')"
+
+  # Check if we can use localhost instead of the external address
+  # This address is later printed on the welcome screen, where localhost is much more constant and intuitive as the 
+  # the external address. Also Jenkins notifications only work on localhost, not external addresses.
+  # Note that this will only work when executed as a script locally, or in a container with --net=host.
+  # When executing via kubectl run, this will still output the potentialClusterBindAddress.
+  if [[ "${localAddress}" == "${potentialClusterBindAddress}" ]]; then 
+    echo "localhost" 
+  else 
+    echo "${potentialClusterBindAddress}"
+  fi
 }
 
 function evalWithSpinner() {
