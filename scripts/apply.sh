@@ -143,7 +143,7 @@ function findClusterBindAddress() {
   
   # Use an internal IP to contact Jenkins and SCMM
   # For k3d this is either the host's IP or the IP address of the k3d API server's container IP (when --bind-localhost=false)
-  potentialClusterBindAddress="$(kubectl get "$(kubectl get node -oname | head -n1)" \
+  potentialClusterBindAddress="$(kubectl get "$(waitForNode)" \
           --template='{{range .status.addresses}}{{ if eq .type "InternalIP" }}{{.address}}{{end}}{{end}}')"
 
   localAddress="$(ip route get 1 | sed -n 's/^.*src \([0-9.]*\) .*$/\1/p')"
@@ -158,6 +158,18 @@ function findClusterBindAddress() {
   else 
     echo "${potentialClusterBindAddress}"
   fi
+}
+
+function waitForNode() {
+  # With TLDR command from readme "kubectl get node" might be executed right after cluster start, where no nodes are 
+  # returned, resulting in 'error: the server doesn't have a resource type ""'
+  local nodes=""
+  while [ -z ${nodes} ]; do
+    nodes=$(kubectl get node -oname)
+    [ -z "${nodes}" ] && sleep 1
+  done
+  # Return first node
+  kubectl get node -oname | head -n1
 }
 
 function evalWithSpinner() {
