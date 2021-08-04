@@ -10,6 +10,7 @@ export PLAYGROUND_DIR
 
 PETCLINIC_COMMIT=949c5af
 SPRING_BOOT_HELM_CHART_COMMIT=0.2.1
+ARGO_HELM_CHART_VERSION=2.17.5 # Last version with argo 1.x
 
 source ${ABSOLUTE_BASEDIR}/utils.sh
 source ${ABSOLUTE_BASEDIR}/jenkins/init-jenkins.sh
@@ -322,8 +323,9 @@ function initArgo() {
   fi
 
   if [[ ${ARGOCD_CONFIG_ONLY} == false ]]; then
+    
     helm upgrade -i argocd --values "${VALUES_YAML_PATH}" \
-      $(argoHelmSettingsForRemoteCluster) --version 2.9.5 argo/argo-cd -n argocd
+      $(argoHelmSettingsForLocalCluster) --version ${ARGO_HELM_CHART_VERSION} argo/argo-cd -n argocd
 
     BCRYPT_PW=$(bcryptPassword "${SET_PASSWORD}")
     # set argocd admin password to 'admin' here, because it does not work through the helm chart
@@ -390,10 +392,11 @@ function replaceImageIfSet() {
   fi
 }
 
-function argoHelmSettingsForRemoteCluster() {
-  if [[ $REMOTE_CLUSTER == true ]]; then
-    # Can't set service nodePort for argo, so use normal service ports for both local and remote
-    echo '--set server.service.servicePortHttp=80 --set server.service.servicePortHttps=443'
+function argoHelmSettingsForLocalCluster() {
+  if [[ $REMOTE_CLUSTER != true ]]; then
+    # We need a host port, so argo can be reached via localhost:9092
+    # But: This helm charts only uses the nodePort value, if the type is "NodePort". So change it for local cluster.
+    echo '--set server.service.type=NodePort'
   fi
 }
 
@@ -714,7 +717,8 @@ function printWelcomeScreenFluxV2() {
 
 function printWelcomeScreenArgocd() {
 
-  ARGOCD_URL="$(createUrl "${CLUSTER_BIND_ADDRESS}" "$(grep 'servicePortHttp:' "${PLAYGROUND_DIR}"/argocd/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')")"
+
+  ARGOCD_URL="$(createUrl "${CLUSTER_BIND_ADDRESS}" "$(grep 'nodePortHttp:' "${PLAYGROUND_DIR}"/argocd/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')")"
   setExternalHostnameIfNecessary 'ARGOCD' 'argocd-server' 'argocd'
 
   if [[ $INSTALL_ALL_MODULES == true || $INSTALL_ARGOCD == true ]]; then

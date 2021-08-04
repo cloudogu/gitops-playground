@@ -40,10 +40,7 @@ function deployLocalJenkins() {
 
 function jenkinsHelmSettingsForLocalCluster() {
   if [[ $REMOTE_CLUSTER != true ]]; then
-    # Run Jenkins and Agent pods as the current user.
-    # Avoids file permission problems when accessing files on the host that were written from the pods
-
-    # We also need a host port, so jenkins can be reached via localhost:9090
+    # We need a host port, so jenkins can be reached via localhost:9090
     # But: This helm charts only uses the nodePort value, if the type is "NodePort". So change it for local cluster.
     echo "--set controller.serviceType=NodePort"
   fi
