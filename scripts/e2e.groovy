@@ -19,6 +19,12 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 
+/**
+ * Usage: `groovy e2e.groovy --url http://localhost:9090 --user admin --password admin
+ *
+ * Use --help for help
+ * Optional parameters for wait interval and abort on failure. 
+ */
 class E2E {
     static void main(args) {
         Configuration configuration = CommandLineInterface.INSTANCE.parse(args)
