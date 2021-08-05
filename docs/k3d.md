@@ -9,13 +9,25 @@ The k3d cluster is started like so:
 ```shell
 bash <(curl -s https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh)
 ```
+
 ## Parameters
 
 * `--cluster-name` - default: `gitops-playground`
 * `--bind-localhost=false` - does not bind to localhost. That is, the URLs of the application will not be reachable via
-  localhost but via the IP address of the k3d docker container. Avoids port conflicts but is less convenient.
-  Note that right now, builds inside the playground using `docker push` are failing, when started with this parameter. 
-  See [#53](https://github.com/cloudogu/gitops-playground/issues/53).  
+  localhost but via the IP address of the k3d docker container. Avoids port conflicts but is less convenient. 
+  Only exception is the registry port, it must be bound to localhost, otherwise docker will use HTTPS, leading to errors
+  on `docker push` in the example application's Jenkins Jobs.   
+  Note that if you use this option and the registry's default port 30000 is already bound on localhost (e.g. when  
+  starting more than one instance of the playground) the registry port will be bound to an arbitrary free port on 
+  localhost.In this case, the port will be printed by the `init-cluster.sh` script but can also be queried via 
+  `docker inspect`(see bellow).  
+  This port has to be passed on when creating the playground via the `--internal-registry-port` parameter. For example: 
+
+```shell
+--internal-registry-port=$(docker inspect \
+  --format='{{ with (index .NetworkSettings.Ports "30000/tcp") }}{{ (index . 0).HostPort }}{{ end }}' \
+  k3d-${CLUSTER_NAME}-server-0)
+```
 
 ## Implementation details
 
