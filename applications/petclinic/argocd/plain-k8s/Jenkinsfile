@@ -98,6 +98,14 @@ node {
                                ]
                             ]
                         ],
+                        fileConfigmaps: [
+                                // Showcase for gitops-build-lib: Convert file into a config map
+                                [
+                                        name : 'messages',
+                                        sourceFilePath : '../src/main/resources/messages/messages.properties', 
+                                        stage: ['staging', 'production'] 
+                                ]
+                        ],
                         stages: [
                                 staging: [
                                         namespace: 'argocd-staging',
