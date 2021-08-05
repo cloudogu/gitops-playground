@@ -23,6 +23,7 @@ function deployLocalJenkins() {
   SET_USERNAME=${1}
   SET_PASSWORD=${2}
   REMOTE_CLUSTER=${3}
+  JENKINS_URL=${4}
 
   # Mark the first node for Jenkins and agents. See jenkins/values.yamls "agent.workingDir" for details.
   # Remove first (in case new nodes were added)
@@ -35,6 +36,7 @@ function deployLocalJenkins() {
 
   helm upgrade -i jenkins --values jenkins/values.yaml \
     $(jenkinsHelmSettingsForLocalCluster) --set agent.runAsGroup=$(queryDockerGroupOfJenkinsNode) \
+    --set controller.jenkinsUrl=$JENKINS_URL \
     --version ${JENKINS_HELM_CHART_VERSION} jenkins/jenkins -n default
 }
 

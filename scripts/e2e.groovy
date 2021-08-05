@@ -23,14 +23,13 @@ class E2E {
     static void main(args) {
         Configuration configuration = CommandLineInterface.INSTANCE.parse(args)
         PipelineExecutor executor = new PipelineExecutor(configuration)
-
+        List<Future<PipelineResult>> buildFutures = new ArrayList<Future<PipelineResult>>()
 
         try {
             JenkinsHandler js = new JenkinsHandler(configuration)
 
             List<JobWithDetails> jobs = js.buildJobList()
 
-            List<Future<PipelineResult>> buildFutures = new ArrayList<Future<PipelineResult>>()
             jobs.each { JobWithDetails job ->
                 buildFutures.add(executor.run(js.get(), job))
             }
@@ -40,21 +39,23 @@ class E2E {
                     result.isDone() && result.get().getBuild().getResult().name() == "FAILURE"
                 }) {
                     println "A BUILD FAILED. ABORTING"
-                    buildFutures.find {it.isDone()}.get().prettyPrint(true)
+                    buildFutures.find { it.isDone() }.get().prettyPrint(true)
                     System.exit 1
                 }
 
                 Thread.sleep(configuration.sleepInterval)
             }
         } catch (Exception err) {
-            //System.err << "Oh seems like something went wrong:\n"
-            //System.err << "${err.getStackTrace()}"
-            //System.exit 1
-            throw err
+            System.err << "Oh seems like something went wrong:\n"
+            System.err << "${err.getStackTrace()}"
+            System.exit 1
         }
 
-        println "Successfully built all pipelines."
-        System.exit 0
+        buildFutures.each {
+            it.get().prettyPrint(false)
+        }
+        int status = buildFutures.any { it.get().getBuild().getResult().name() == "FAILURE" } ? 1 : 0
+        System.exit status
     }
 }
 
@@ -70,7 +71,10 @@ class JenkinsHandler {
 
     JenkinsServer get() { return this.js }
 
-    // TODO: We should check if its really a folder job. Currently we just assume it which is stupid
+    // TODO: We should check if its really a folder job. Currently we just assume it which is stupid - but _works_
+    // Due to missing support of multibranch-pipelines in the java-jenkins-client we need to build up the jobs ourselves.
+    // Querying the root folder and starting builds leads to a namespace scan.
+    // After that we need to iterate through every job folder
     List<JobWithDetails> buildJobList() {
         List<JobWithDetails> jobs = new ArrayList<>()
         js.getJobs().each { Map.Entry<String, Job> job ->
@@ -91,7 +95,6 @@ class JenkinsHandler {
 }
 
 class Configuration {
-
     private String url
     private String username
     private String password
@@ -129,6 +132,12 @@ class Configuration {
     }
 }
 
+/**
+ * Executor
+ *
+ * Handles the parallel execution of the builds and observes them.
+ * Returns a future holding the result and build information.
+ */
 @Slf4j
 class PipelineExecutor {
     private ExecutorService executor = Executors.newFixedThreadPool((int) (Runtime.getRuntime().availableProcessors() / 2))
@@ -166,40 +175,10 @@ class PipelineExecutor {
     }
 }
 
-class StringUtils {
-
-    static String reduceToName(String input) {
-        return input.substring(
-                input.findIndexValues(0, { it -> it == "/" }).get(3).toInteger() + 1,
-                input.length() - 1)
-                .replaceAll("job", "").replaceAll("//", " » ").trim()
-    }
-}
-
 class PipelineResult {
-    private final String defaultColor = ""
     private String executorId
     private JobWithDetails job
     private BuildWithDetails build
-
-    private String fullDisplayName
-    private String url
-    private int result
-    private String resultName
-    private String duration
-    private String consoleOutputText
-    private String color
-
-    /*
-    FAILURE, UNSTABLE, REBUILDING, BUILDING,
-
-    This means a job was already running and has been aborted.
-
-    ABORTED,
-
-    SUCCESS,
-     */
-
 
     PipelineResult(String id, JobWithDetails job, BuildWithDetails build) {
         this.executorId = id
@@ -230,23 +209,26 @@ class PipelineResult {
     void setBuild(BuildWithDetails build) {
         this.build = build
     }
+    private Color getPrintColor() {
+        return List.of("FAILURE", "ABORTED").contains(build.getResult().name()) ? Color.RED_BOLD : Color.GREEN_BOLD
+    }
 
     void prettyPrint(boolean minify = true) {
-        String out = ""
         if (minify)
-            out = "[${this.getExecutorId()}] ${this.getBuild().fullDisplayName} | ${this.getBuild().getResult().name()} | ${DateUtils.formatElapsedTime(this.getBuild().duration)}"
-
+            println "${getPrintColor()}[${this.getExecutorId()}] ${this.getBuild().fullDisplayName} | ${this.getBuild().getResult().name()} | ${DateUtils.formatElapsedTime(this.getBuild().duration)}${Color.RESET}"
         else {
-            out = """
-                [${this.getExecutorId()}] 
+            println """
+                ${getPrintColor()}[${this.getExecutorId()}] 
                 ${this.getBuild().fullDisplayName}
-                Build has finished: ${this.getBuild().getResult().name()} in ${DateUtils.formatElapsedTime(this.getBuild().duration)}.
+                Build has finished: ${this.getBuild().getResult().name()} in ${DateUtils.formatElapsedTime(this.getBuild().duration)}.${Color.RESET}
             """
         }
-        println out
     }
 }
 
+/**
+ * CLI-args definition and handling.
+ */
 enum CommandLineInterface {
     INSTANCE
 
@@ -308,5 +290,41 @@ enum CommandLineInterface {
         }
 
         return config
+    }
+}
+
+/**
+ * Color palette for CLI colorization.
+ */
+enum Color {
+    RESET("\033[0m"),
+    BLACK_BOLD("\033[1;30m"),
+    RED_BOLD("\033[1;31m"),
+    GREEN_BOLD("\033[1;32m"),
+    YELLOW_BOLD("\033[1;33m"),
+    BLUE_BOLD("\033[1;34m"),
+    MAGENTA_BOLD("\033[1;35m"),
+    CYAN_BOLD("\033[1;36m"),
+    WHITE_BOLD("\033[1;37m"),
+
+    private final String code
+
+    Color(String code) {
+        this.code = code
+    }
+
+    @Override
+    String toString() {
+        return code
+    }
+}
+
+class StringUtils {
+
+    static String reduceToName(String input) {
+        return input.substring(
+                input.findIndexValues(0, { it -> it == "/" }).get(3).toInteger() + 1,
+                input.length() - 1)
+                .replaceAll("job", "").replaceAll("//", " » ").trim()
     }
 }

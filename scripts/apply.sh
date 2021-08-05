@@ -230,7 +230,7 @@ function initRegistry() {
 
 function initJenkins() {
   if [[ ${INTERNAL_JENKINS} == true ]]; then
-    deployJenkinsCommand=(deployLocalJenkins "${SET_USERNAME}" "${SET_PASSWORD}" "${REMOTE_CLUSTER}")
+    deployJenkinsCommand=(deployLocalJenkins "${SET_USERNAME}" "${SET_PASSWORD}" "${REMOTE_CLUSTER}" "${JENKINS_URL}")
     evalWithSpinner "Deploying Jenkins..." "${deployJenkinsCommand[@]}"
 
     setExternalHostnameIfNecessary "JENKINS" "jenkins" "default"
