@@ -3,9 +3,8 @@
 @Grapes([
         @Grab('org.slf4j:slf4j-api:1.7.32'),
         @Grab('org.slf4j:slf4j-simple:1.7.32'),
-        //@Grab('ch.qos.logback:logback-classic:1.2.5'),
         @Grab('com.offbytwo.jenkins:jenkins-client:0.3.8'),
-        @Grab('org.apache.httpcomponents:httpclient:4.5.13')
+        @Grab('org.apache.httpcomponents:httpclient:4.5.13'),
 ])
 
 import com.offbytwo.jenkins.JenkinsServer
@@ -13,82 +12,81 @@ import com.offbytwo.jenkins.model.*
 import groovy.cli.commons.CliBuilder
 import groovy.cli.commons.OptionAccessor
 import groovy.util.logging.Slf4j
+import org.apache.tools.ant.util.DateUtils
+
 import java.util.concurrent.Callable
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
-import org.apache.http.client.utils.URIBuilder
 
-
-@Slf4j
 class E2E {
-    private static JenkinsServer jenkins
-    private static Configuration config
-
     static void main(args) {
-        config = CommandLineInterface.INSTANCE.parse(args)
-        PipelineExecutor executor = new PipelineExecutor(config)
+        Configuration configuration = CommandLineInterface.INSTANCE.parse(args)
+        PipelineExecutor executor = new PipelineExecutor(configuration)
+
 
         try {
-            jenkins = new JenkinsServer(new URI(config.url), config.username, config.password)
-            List<Job> singleJobs = new ArrayList()
-            List<JobWithDetails> detailedJobs = new ArrayList()
+            JenkinsHandler js = new JenkinsHandler(configuration)
 
-            // call build on the jobs hoping it will trigger the scan.
-            // job -> job -> job
-            jenkins.getJobs().each { Map.Entry<String, Job> job ->
-                job.value.url = "${config.getUrl()}/job/${job.value.name}/"
-                job.value.build(true)
+            List<JobWithDetails> jobs = js.buildJobList()
 
-
-                // check if it is folder job (OK we currently assume it is.. could be BOOM
-                jenkins.getFolderJob(job.value).get().getJobs().each { Map.Entry<String, Job> j ->
-                    j.value.url = "${job.value.url}job/${j.value.name}/"
-
-                    jenkins.getFolderJob(j.value).get().getJobs().each { Map.Entry<String, Job> i ->
-                        i.value.url = "${j.value.url}job/${i.value.name}/"
-                        JobWithDetails detailed = i.value.details()
-                        detailedJobs.add(detailed)
-                        singleJobs.add(i.value)
-                    }
-                }
-
+            List<Future<PipelineResult>> buildFutures = new ArrayList<Future<PipelineResult>>()
+            jobs.each { JobWithDetails job ->
+                buildFutures.add(executor.run(js.get(), job))
             }
 
-            // this one is tricky if not known - executable status ref can be null
-            // if it is null it will fail.. this means we need to keep querying the item on ref until it is present
-
-            List<Future<Map<String, BuildResult>>> buildFutures = new ArrayList<Future<Map<String, BuildResult>>>()
-            singleJobs.each { job ->
-                buildFutures.add(executor.run(jenkins, job))
-            }
-
-            buildFutures.each { Future<Map<String, BuildResult>> build ->
-                while (!build.isDone()) {
-                    Thread.sleep(config.sleepInterval)
+            while (buildFutures.any { !it.isDone() }) {
+                if (configuration.abortOnFail && buildFutures.any { result ->
+                    result.isDone() && result.get().getBuild().getResult().name() == "FAILURE"
+                }) {
+                    println "A BUILD FAILED. ABORTING"
+                    buildFutures.find {it.isDone()}.get().prettyPrint(true)
+                    System.exit 1
                 }
 
-                build.get().each { Map.Entry<String, BuildResult> b ->
-                    log.info("[${b.key}] ${b.value.name()}")
-                }
+                Thread.sleep(configuration.sleepInterval)
             }
-
         } catch (Exception err) {
-            /*System.err << "Oh seems like something went wrong:\n"
-            System.err << "${err.getStackTrace()}"
-            System.exit 1 */
+            //System.err << "Oh seems like something went wrong:\n"
+            //System.err << "${err.getStackTrace()}"
+            //System.exit 1
             throw err
         }
+
+        println "Successfully built all pipelines."
+        System.exit 0
+    }
+}
+
+@Slf4j
+class JenkinsHandler {
+    private JenkinsServer js
+    private Configuration configuration
+
+    JenkinsHandler(Configuration configuration) {
+        this.configuration = configuration
+        this.js = new JenkinsServer(new URI(configuration.url), configuration.username, configuration.password)
     }
 
-    private static BuildWithDetails patchUrl(BuildWithDetails build, String url) {
-        // TODO: implement a function to patch the url in details POJOs
-        return null
-    }
+    JenkinsServer get() { return this.js }
 
-    private static String replaceHost(String host) {
-        URI validUri = new URI(config.url)
-        return new URIBuilder(URI.create(host)).setScheme(validUri.scheme).setHost(validUri.host).setPort(validUri.port).build().toString()
+    // TODO: We should check if its really a folder job. Currently we just assume it which is stupid
+    List<JobWithDetails> buildJobList() {
+        List<JobWithDetails> jobs = new ArrayList<>()
+        js.getJobs().each { Map.Entry<String, Job> job ->
+            job.value.url = "${configuration.getUrl()}/job/${job.value.name}/"
+            job.value.build(true)
+
+            js.getFolderJob(job.value).get().getJobs().each { Map.Entry<String, Job> j ->
+                j.value.url = "${job.value.url}job/${j.value.name}/"
+
+                js.getFolderJob(j.value).get().getJobs().each { Map.Entry<String, Job> i ->
+                    i.value.url = "${j.value.url}job/${i.value.name}/"
+                    jobs.add(i.value.details())
+                }
+            }
+        }
+        return jobs
     }
 }
 
@@ -97,7 +95,8 @@ class Configuration {
     private String url
     private String username
     private String password
-    private int sleepInterval = 5000
+    private int sleepInterval = 2000
+    private boolean abortOnFail = false
 
     Configuration() {}
 
@@ -109,6 +108,8 @@ class Configuration {
 
     int getSleepInterval() { return this.sleepInterval }
 
+    boolean getAbortOnFail() { return this.abortOnFail }
+
     void setUrl(String url) { this.url = url }
 
     void setUsername(String username) { this.username = username }
@@ -116,6 +117,9 @@ class Configuration {
     void setPassword(String password) { this.password = password }
 
     void setSleepInterval(int interval) { this.sleepInterval = interval }
+
+    void setAbortOnFail(boolean fail) { this.abortOnFail = fail }
+
 
     boolean isValid() {
         return (
@@ -134,25 +138,23 @@ class PipelineExecutor {
         this.configuration = configuration
     }
 
-    Future<Map<String, BuildResult>> run(JenkinsServer js, Job job) {
+    Future<PipelineResult> run(JenkinsServer js, JobWithDetails job) {
         String executorId = new Random().with { (1..3).collect { (('a'..'z')).join()[nextInt((('a'..'z')).join().length())] }.join() }
         return executor.submit(() -> {
-            log.info("[$executorId] Started by task executor.")
-            log.debug("[$executorId] ${job.url}")
+            println "[$executorId] ${StringUtils.reduceToName(job.url)} started.."
             QueueReference ref = job.build(true)
-            BuildResult result = checkBuildResult(js, getQueueItemFromRef(js, ref, executorId), executorId)
-            log.debug("[$executorId] Result: ${result.name()}")
-            return Map.of(executorId, result)
-        } as Callable) as Future<BuildResult>
+            BuildWithDetails details = waitForBuild(js, getQueueItemFromRef(js, ref, executorId), executorId)
+            return new PipelineResult(executorId, job, details)
+        } as Callable) as Future<PipelineResult>
     }
 
-    private BuildResult checkBuildResult(JenkinsServer js, QueueItem item, String executorId) {
+    private BuildWithDetails waitForBuild(JenkinsServer js, QueueItem item, String executorId) {
         while (js.getBuild(item).details().isBuilding()) {
             log.debug("[$executorId] Building..")
             Thread.sleep(configuration.sleepInterval)
         }
 
-        return js.getBuild(item).details().getResult()
+        return js.getBuild(item).details()
     }
 
     private QueueItem getQueueItemFromRef(JenkinsServer js, QueueReference ref, String executorId) {
@@ -161,6 +163,87 @@ class PipelineExecutor {
             Thread.sleep(configuration.sleepInterval)
         }
         return js.getQueueItem(ref)
+    }
+}
+
+class StringUtils {
+
+    static String reduceToName(String input) {
+        return input.substring(
+                input.findIndexValues(0, { it -> it == "/" }).get(3).toInteger() + 1,
+                input.length() - 1)
+                .replaceAll("job", "").replaceAll("//", " » ").trim()
+    }
+}
+
+class PipelineResult {
+    private final String defaultColor = ""
+    private String executorId
+    private JobWithDetails job
+    private BuildWithDetails build
+
+    private String fullDisplayName
+    private String url
+    private int result
+    private String resultName
+    private String duration
+    private String consoleOutputText
+    private String color
+
+    /*
+    FAILURE, UNSTABLE, REBUILDING, BUILDING,
+
+    This means a job was already running and has been aborted.
+
+    ABORTED,
+
+    SUCCESS,
+     */
+
+
+    PipelineResult(String id, JobWithDetails job, BuildWithDetails build) {
+        this.executorId = id
+        this.job = job
+        this.build = build
+    }
+
+    String getExecutorId() {
+        return executorId
+    }
+
+    void setExecutorId(String executorId) {
+        this.executorId = executorId
+    }
+
+    JobWithDetails getJob() {
+        return job
+    }
+
+    void setJob(JobWithDetails job) {
+        this.job = job
+    }
+
+    BuildWithDetails getBuild() {
+        return build
+    }
+
+    void setBuild(BuildWithDetails build) {
+        this.build = build
+    }
+
+    void prettyPrint(boolean minify = true) {
+        String out = ""
+        if (minify)
+            out = "[${this.getExecutorId()}] ${this.getBuild().fullDisplayName} | ${this.getBuild().getResult().name()} | ${DateUtils.formatElapsedTime(this.getBuild().duration)}"
+
+        else {
+            out = """
+                [${this.getExecutorId()}] 
+                ${this.getBuild().fullDisplayName}
+                Build has finished: ${this.getBuild().getResult().name()} in ${DateUtils.formatElapsedTime(this.getBuild().duration)}.
+            """
+        }
+        println out
     }
 }
 
@@ -182,8 +265,9 @@ enum CommandLineInterface {
             _(longOpt: 'url', args: 1, argName: 'URL', 'Jenkins-URL')
             _(longOpt: 'user', args: 1, argName: 'User', 'Jenkins-User')
             _(longOpt: 'password', args: 1, argName: 'Password', 'Jenkins-Password')
+            _(longOpt: 'fail', argName: 'fail', 'Exit on first build failure')
             _(longOpt: 'interval', args: 1, argName: 'Interval', 'Interval for waits')
-            _(longOpt: 'debug', args: 0, argName: 'debug', 'debug')
+            _(longOpt: 'debug', argName: 'debug', 'Set log level to debug')
         }
     }
 
@@ -200,21 +284,23 @@ enum CommandLineInterface {
             cliBuilder.usage()
             System.exit 0
         }
-        if (options.url) {
-            config.url = options.url
-        }
-        if (options.user) {
-            config.username = options.user
-        }
-        if (options.password) {
-            config.password = options.password
-        }
-        if (options.interval) {
-            config.sleepInterval = options.interval
-        }
 
-        String level = options.debug ? "DEBUG" : "INFO"
+        if (options.url)
+            config.url = options.url
+
+        if (options.user)
+            config.username = options.user
+
+        if (options.password)
+            config.password = options.password
+
+        if (options.interval)
+            config.sleepInterval = options.interval
+
+        String level = options.debug ? "debug" : "info"
         System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", level)
+
+        config.abortOnFail = options.fail ? true : false
 
         if (!config.isValid()) {
             System.err << "Config given is invalid. Seems like you are missing one of the parameters. Use -h flag for help.\n"
@@ -223,6 +309,4 @@ enum CommandLineInterface {
 
         return config
     }
-
-
 }
