@@ -18,7 +18,6 @@ gcloud auth login
 Select the project, where you want to deploy the cluster:
 ```shell
 PROJECT_ID=<your project ID goes here>
-gcloud config set project ${PROJECT_ID}
 ```
 
 Create a service account:
@@ -27,15 +26,16 @@ gcloud iam service-accounts create terraform-cluster \
   --display-name terraform-cluster --project ${PROJECT_ID}
 ```
 
-Authorize Service Accout
+Authorize Service Account
 
 ```shell
-gcloud projects add-iam-policy-binding ${PROJECT} \
-    --member terraform-cluster@${PROJECT_ID}.iam.gserviceaccount.com --role=roles/editor
+gcloud projects add-iam-policy-binding ${PROJECT_ID} \
+    --member serviceAccount:terraform-cluster@${PROJECT_ID}.iam.gserviceaccount.com --role=roles/editor
 ```
 
 Create an account.json file, which contains the keys for the service account.
 You will need this file to apply the infrastructure:
+
 ```shell
 gcloud iam service-accounts keys create \
   --iam-account terraform-cluster@${PROJECT_ID}.iam.gserviceaccount.com \
@@ -43,6 +43,7 @@ gcloud iam service-accounts keys create \
 ```
 
 ##### State
+
 
 You can either use a remote state (default, described bellow) or use a local state by changing the following in `main.tf`:
 ```
@@ -67,10 +68,8 @@ gsutil iam ch \
 
 ##### Create cluster
 
-Before continuing with the terraform steps, you have to open the `terraform.tfvars` file
-and edit the `gce_project` value to your specific ID.
-
 For local state `terraform init` suffices.
+
 ```shell
 cd terraform
 terraform init  \
@@ -80,7 +79,7 @@ terraform init  \
 
 Apply infra:
 ```shell
-terraform apply
+terraform apply -var gce_project=${PROJECT_ID}
 ```
 
 terraform apply already adds an entry to your local `kubeconfig` and activate the context. That is calling
@@ -92,10 +91,38 @@ If not, you can create add an entry to your local `kubeconfig` like so:
 gcloud container clusters get-credentials ${cluster_name} --zone ${gce_location} --project ${gce_project}
 ```
 
-##### Delete Cluster
+Now you're ready to apply the apps to the cluster.
 
-Once you're done you can destroy the cluster using
+Note that you need to pass the `--remote` flag when applying the playground.
+
+##### Clean up
+
+Once you're done with the playground, you can destroy the cluster using
 
 ```shell
-terraform destroy -var-file values.tfvars
+terraform destroy -var gce_project=${PROJECT_ID}
+```
+
+In addition you might want to delete
+* The service account or key and
+* the state bucket (if created)
+
+You either delete the key or the whole service account:
+
+Key: 
+```shell
+gcloud iam service-accounts keys delete $(cat account.json | grep private_key_id  | sed 's/".*: "\(.*\)".*/\1/') \
+    --iam-account terraform-cluster@${PROJECT_ID}.iam.gserviceaccount.com
+```
+
+Service Account:
+```shell
+gcloud iam service-accounts delete terraform-cluster@${PROJECT_ID}.iam.gserviceaccount.com \
+  --project ${PROJECT_ID}
+```
+
+Bucket:
+
+```shell
+gsutil rm -r  gs://${BUCKET_NAME}
 ```

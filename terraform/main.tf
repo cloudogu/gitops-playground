@@ -24,6 +24,20 @@ resource "google_container_cluster" "cluster" {
   initial_node_count       = 1
   remove_default_node_pool = true
 
+  release_channel {
+    channel = "RAPID"
+  }
+
+  # Try to avoid upgrade during demos
+  # Maintenance Window weekly from 22:00 to 06:00 Uhr CET
+  maintenance_policy {
+    recurring_window {
+      start_time = "2021-06-09T20:00:00Z"
+      end_time = "2021-06-10T04:00:00Z"
+      recurrence = "FREQ=WEEKLY;BYDAY=WE,TH"
+    }
+  }
+  
   # Add entry to local kubeconfig automatically
   provisioner "local-exec" {
     command = "if ! command -v gcloud >/dev/null 2>&1; then echo WARNING: gcloud not installed. Cannot add cluster to local kubeconfig; else gcloud container clusters get-credentials ${var.cluster_name} --zone ${var.gce_location} --project ${var.gce_project}; fi"
@@ -38,11 +52,6 @@ resource "google_container_node_pool" "node_pool" {
   version    = data.google_container_engine_versions.k8s-versions.latest_node_version
   cluster    = google_container_cluster.cluster.name
   node_count = var.node_pool_node_count
-
-  management {
-    # Avoid upgrade during demos
-    auto_upgrade = false
-  }
 
   node_config {
     # We use ubuntu, because Container-optimized OS has /tmp mounted with noexec.

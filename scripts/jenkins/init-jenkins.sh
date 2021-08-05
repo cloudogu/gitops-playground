@@ -11,7 +11,7 @@ fi
 # Check for "Failed to load" in the Jenkins log and add or upgrade the plugins mentioned there appropriately.
 # In addition, check if the new helm chart version uses a newer agent.tag.
 # Note that we need JDK11 on the agents, whereas the helm chart uses JDK8 by default.
-JENKINS_HELM_CHART_VERSION=3.3.23
+JENKINS_HELM_CHART_VERSION=3.5.9
 
 SET_USERNAME="admin"
 SET_PASSWORD="admin"
@@ -40,10 +40,7 @@ function deployLocalJenkins() {
 
 function jenkinsHelmSettingsForLocalCluster() {
   if [[ $REMOTE_CLUSTER != true ]]; then
-    # Run Jenkins and Agent pods as the current user.
-    # Avoids file permission problems when accessing files on the host that were written from the pods
-
-    # We also need a host port, so jenkins can be reached via localhost:9090
+    # We need a host port, so jenkins can be reached via localhost:9090
     # But: This helm charts only uses the nodePort value, if the type is "NodePort". So change it for local cluster.
     echo "--set controller.serviceType=NodePort"
   fi
@@ -51,19 +48,15 @@ function jenkinsHelmSettingsForLocalCluster() {
 
 # using local cluster on k3d we grep local host gid for docker
 function queryDockerGroupOfJenkinsNode() {
-  if [[ $REMOTE_CLUSTER != true ]]; then
-    cat /etc/group | grep docker | cut -d: -f3
-  else
-    kubectl apply -f jenkins/tmp-docker-gid-grepper.yaml >/dev/null
-    until kubectl get po --field-selector=status.phase=Running | grep tmp-docker-gid-grepper >/dev/null; do
-      sleep 1
-    done
+  kubectl apply -f jenkins/tmp-docker-gid-grepper.yaml >/dev/null
+  until kubectl get po --field-selector=status.phase=Running | grep tmp-docker-gid-grepper >/dev/null; do
+    sleep 1
+  done
 
-    kubectl exec tmp-docker-gid-grepper -- cat /etc/group | grep docker | cut -d: -f3
+  kubectl exec tmp-docker-gid-grepper -- cat /etc/group | grep docker | cut -d: -f3
 
-    # This call might block some (unnecessary) seconds so move to background
-    kubectl delete -f jenkins/tmp-docker-gid-grepper.yaml >/dev/null &
-  fi
+  # This call might block some (unnecessary) seconds so move to background
+  kubectl delete -f jenkins/tmp-docker-gid-grepper.yaml >/dev/null &
 }
 
 function waitForJenkins() {
@@ -84,20 +77,24 @@ function configureJenkins() {
   export JENKINS_USERNAME
   JENKINS_PASSWORD="${3}"
   export JENKINS_PASSWORD
-  SCMM_URL="${4}"
+  local SCMM_URL="${4}"
   SCMM_PASSWORD="${5}"
   REGISTRY_URL="${6}"
   REGISTRY_PATH="${7}"
   REGISTRY_USERNAME="${8}"
   REGISTRY_PASSWORD="${9}"
+  INSTALL_ALL_MODULES="${10}"
+  INSTALL_FLUXV1="${11}"
+  INSTALL_FLUXV2="${12}"
+  INSTALL_ARGOCD="${13}"
 
   waitForJenkins
 
-  installPlugin "docker-workflow" "1.25"
-  installPlugin "docker-plugin" "1.2.1"
-  installPlugin "pipeline-utility-steps" "2.6.1"
-  installPlugin "junit" "1.48"
-  installPlugin "scm-manager" "1.7.3"
+  installPlugin "docker-workflow" "1.26"
+  installPlugin "docker-plugin" "1.2.2"
+  installPlugin "pipeline-utility-steps" "2.8.0"
+  installPlugin "junit" "1.51"
+  installPlugin "scm-manager" "1.7.5"
   installPlugin "html5-notifier-plugin" "1.5"
 
   safeRestart
@@ -110,7 +107,14 @@ function configureJenkins() {
   createCredentials "scmm-user" "gitops" "${SCMM_PASSWORD}" "credentials for accessing scm-manager"
   createCredentials "registry-user" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}" "credentials for accessing the docker-registry"
 
-  createJob "fluxv1-applications" "${SCMM_URL}" "fluxv1" "scmm-user"
-  createJob "fluxv2-applications" "${SCMM_URL}" "fluxv2" "scmm-user"
-  createJob "argocd-applications" "${SCMM_URL}" "argocd" "scmm-user"
+
+  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV1 == true ]]; then
+    createJob "fluxv1-applications" "${SCMM_URL}" "fluxv1" "scmm-user"
+  fi
+  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV2 == true ]]; then
+    createJob "fluxv2-applications" "${SCMM_URL}" "fluxv2" "scmm-user"
+  fi
+  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_ARGOCD == true ]]; then
+    createJob "argocd-applications" "${SCMM_URL}" "argocd" "scmm-user"
+  fi
 }

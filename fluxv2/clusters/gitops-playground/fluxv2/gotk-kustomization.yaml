@@ -7,7 +7,7 @@ metadata:
   namespace: fluxv2
 spec:
   interval: 10m0s
-  path: ./clusters/k8s-gitops-playground
+  path: ./clusters/gitops-playground
   prune: true
   sourceRef:
     kind: GitRepository

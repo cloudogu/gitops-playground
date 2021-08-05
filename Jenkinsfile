@@ -12,7 +12,11 @@ properties([
 
     // For now allow concurrent builds.
     // This is a slight risk of failing builds if two Jobs of the same branch install k3d (workspace-local) at the same time.
-    // If this happens to occurr often, add the following here: disableConcurrentBuilds(),
+    // If this happens to occur often, add the following here: disableConcurrentBuilds(),
+
+    parameters([
+        booleanParam(defaultValue: false, name: 'forcePushImage', description: 'Pushes the image with the current git commit as tag, even when it is on a branch')
+    ])
 ])
 
 node('docker') {
@@ -29,8 +33,7 @@ node('docker') {
         }
 
         stage('Build image') {
-            String imageTag = git.commitHashShort
-            imageName = "${dockerRegistryBaseUrl}/${dockerImageName}:${imageTag}"
+            imageName = createImageName(git.commitHashShort)
             String rfcDate = sh(returnStdout: true, script: 'date --rfc-3339 ns').trim()
             image = docker.build(imageName,
                     "--build-arg BUILD_DATE='${rfcDate}' " +
@@ -52,13 +55,16 @@ node('docker') {
                         clusterName = createClusterName()
                         startK3d(clusterName)
 
-                        String ipV4 = setKubeConfigToK3dIp(clusterName)
-
+                        String registryPort = sh(
+                                script: 'docker inspect ' +
+                                        '--format=\'{{ with (index .NetworkSettings.Ports "30000/tcp") }}{{ (index . 0).HostPort }}{{ end }}\' ' +
+                                        " k3d-${clusterName}-server-0",
+                                returnStdout: true
+                        ).trim()
                         docker.image(imageName)
                                 .inside("-e KUBECONFIG=${env.WORKSPACE}/.kube/config " +
-                                        " --network=k3d-${clusterName} --entrypoint=''" ) {
-                                    
-                                    sh "./scripts/apply.sh --yes --debug --trace --argocd --cluster-bind-address=${ipV4}"
+                                        " --network=host --entrypoint=''" ) {
+                                    sh "./scripts/apply.sh --yes --trace --internal-registry-port=${registryPort} --argocd" 
                                 }
                     }
                 }
@@ -68,10 +74,19 @@ node('docker') {
             if (isBuildSuccessful()) {
                 docker.withRegistry("https://${dockerRegistryBaseUrl}", 'cesmarvin-github') {
                     if (git.isTag()) {
+                        image.push()
                         image.push(git.tag)
+                        currentBuild.description = createImageName(git.tag)
+                        currentBuild.description += "\n${imageName}"
+
                     } else if (env.BRANCH_NAME == 'main') {
                         image.push()
                         image.push("latest")
+                        currentBuild.description = createImageName("latest")
+                        currentBuild.description += "\n${imageName}"
+                    } else if (params.forcePushImage) {
+                        image.push()
+                        currentBuild.description = imageName
                     } else {
                         echo "Skipping deployment to github container registry because not a tag and not main branch."
                     }
@@ -122,30 +137,21 @@ def startK3d(clusterName) {
         // Install k3d binary to workspace in order to avoid concurrency issues
         sh "if ! command -v k3d >/dev/null 2>&1; then " +
                 "curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh |" +
-                  'TAG=v$(sed -n "s/^K3D_VERSION=//p" scripts/init-cluster.sh)' +
-                  "K3D_INSTALL_DIR=${WORKSPACE}/.kd3/bin" +
+                  'TAG=v$(sed -n "s/^K3D_VERSION=//p" scripts/init-cluster.sh) ' +
+                  "K3D_INSTALL_DIR=${WORKSPACE}/.kd3/bin " +
                      'bash -s -- --no-sudo; fi'
         sh "yes | ./scripts/init-cluster.sh --cluster-name=${clusterName} --bind-localhost=false"
     }
-}
-
-def setKubeConfigToK3dIp(clusterName) {
-    // As we're will run the playground from another container, we need to use the IP of the k3d container in kubeconfig
-
-    String ipV4 = sh(
-            script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' k3d-${clusterName}-server-0",
-            returnStdout: true
-    ).trim()
-
-    sh "sed -i -r 's/0.0.0.0([^0-9]+[0-9]*|\$)/${ipV4}:6443/g' ${env.WORKSPACE}/.kube/config"
-
-    return ipV4
 }
 
 String createClusterName() {
     String[] randomUUIDs = UUID.randomUUID().toString().split("-")
     String uuid = randomUUIDs[randomUUIDs.length-1]
     return "citest-" + uuid
+}
+
+String createImageName(String tag) {
+    return "${dockerRegistryBaseUrl}/${dockerImageName}:${tag}"
 }
 
 def image

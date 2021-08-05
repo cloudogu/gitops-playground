@@ -1,7 +1,9 @@
 FROM alpine:3.14.0 as alpine
 
 FROM alpine as downloader
-# When updating, also update the checksum found at https://dl.k8s.io/release/v${K8S_VERSION}/bin/linux/amd64/kubectl.sha256
+# When updating, 
+# * also update the checksum found at https://dl.k8s.io/release/v${K8S_VERSION}/bin/linux/amd64/kubectl.sha256
+# * also update k8s-related versions in vars.tf, init-cluster.sh and apply.sh
 ARG K8S_VERSION=1.21.2
 ARG KUBECTL_CHECKSUM=55b982527d76934c2f119e70bf0d69831d3af4985f72bb87cd4924b1c7d528da
 # When updating, also update the checksum found at https://github.com/helm/helm/releases
@@ -9,9 +11,13 @@ ARG HELM_VERSION=3.6.2
 ARG HELM_CHECKSUM=f3a4be96b8a3b61b14eec1a35072e1d6e695352e7a08751775abf77861a0bf54
 RUN apk add --no-cache \
       gnupg \
-      outils-sha256
+      outils-sha256 \
+      git
 
 RUN mkdir -p /dist/usr/local/bin
+ENV HOME=/dist/home
+RUN mkdir -p /dist/home
+RUN chmod a=rwx -R ${HOME}
 
 WORKDIR /tmp
 
@@ -33,9 +39,39 @@ RUN echo "${KUBECTL_CHECKSUM}  kubectl" | sha256sum -c
 RUN chmod +x /tmp/kubectl
 RUN mv /tmp/kubectl /dist/usr/local/bin/kubectl
 
+# External Repos used in GOP
+WORKDIR /dist/gop/repos
+RUN git clone --bare https://github.com/cloudogu/spring-petclinic.git 
+RUN git clone --bare https://github.com/cloudogu/spring-boot-helm-chart.git
+RUN git clone --bare https://github.com/cloudogu/gitops-build-lib.git
+RUN git clone --bare https://github.com/cloudogu/ces-build-lib.git
+
+# Creates /dist/home/.gitconfig
+RUN git config --global user.email "hello@cloudogu.com" && \
+    git config --global user.name "Cloudogu"
+
+
 FROM alpine
-RUN apk update && \
-   apk add --no-cache \
+
+ENV HOME=/home \
+    HELM_CACHE_HOME=/home/.cache/helm \
+    HELM_CONFIG_HOME=/home/.config/helm \
+    HELM_DATA_HOME=/home/.local/share/helm \
+    HELM_PLUGINS=/home/.local/share/helm/plugins \
+    HELM_REGISTRY_CONFIG=/home/.config/helm/registry.json \
+    HELM_REPOSITORY_CACHE=/home/.cache/helm/repository \
+    HELM_REPOSITORY_CONFIG=/home/.config/helm/repositories.yaml \
+    SPRING_BOOT_HELM_CHART_REPO=/gop/repos/spring-boot-helm-chart.git \
+    SPRING_PETCLINIC_REPO=/gop/repos/spring-petclinic.git \
+    GITOPS_BUILD_LIB_REPO=/gop/repos/gitops-build-lib.git \
+    CES_BUILD_LIB_REPO=/gop/repos/ces-build-lib.git
+
+WORKDIR /app
+
+ENTRYPOINT ["scripts/apply.sh"]
+
+RUN apk update && apk upgrade && \
+    apk add --no-cache \
      bash \
      curl \
      apache2-utils \
@@ -43,38 +79,11 @@ RUN apk update && \
      jq \
      git
 
-ENV HOME=/home
-RUN chmod a=rwx -R ${HOME}
-
-RUN git config --global user.email "hello@cloudogu.com" && \
-    git config --global user.name "Cloudogu"
+USER 1000
 
 COPY --from=downloader /dist /
 
-WORKDIR /app/repos
-RUN git clone --bare https://github.com/cloudogu/spring-boot-helm-chart.git && \
-    git clone --bare https://github.com/cloudogu/spring-petclinic.git && \
-    git clone --bare https://github.com/cloudogu/gitops-build-lib.git && \
-    git clone --bare https://github.com/cloudogu/ces-build-lib.git
-ENV SPRING_BOOT_HELN_CHART_REPO /app/repos/spring-boot-helm-chart.git
-ENV SPRING_PETCLINIC_REPO /app/repos/spring-petclinic.git
-ENV GITOPS_BUILD_LIB_REPO /app/repos/gitops-build-lib.git
-ENV CES_BUILD_LIB_REPO /app/repos/ces-build-lib.git
-
-ENV HELM_CACHE_HOME="/home/.cache/helm" \
-    HELM_CONFIG_HOME="/home/.config/helm" \
-    HELM_DATA_HOME="/home/.local/share/helm" \
-    HELM_PLUGINS="/home/.local/share/helm/plugins" \
-    HELM_REGISTRY_CONFIG="/home/.config/helm/registry.json" \
-    HELM_REPOSITORY_CACHE="/home/.cache/helm/repository" \
-    HELM_REPOSITORY_CONFIG="/home/.config/helm/repositories.yaml"
-
-WORKDIR /app
 COPY . /app/
-
-USER 1000
-
-ENTRYPOINT ["scripts/apply.sh"]
 
 ARG VCS_REF
 ARG BUILD_DATE
