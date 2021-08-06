@@ -18,7 +18,6 @@ import java.util.concurrent.Callable
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
-
 /**
  * Usage: `groovy e2e.groovy --url http://localhost:9090 --user admin --password admin
  *
@@ -37,7 +36,7 @@ class E2E {
             List<JobWithDetails> jobs = js.buildJobList()
 
             jobs.each { JobWithDetails job ->
-                buildFutures.add(executor.run(js.get(), job))
+                buildFutures.add(executor.run(js, job))
             }
 
             while (buildFutures.any { !it.isDone() }) {
@@ -76,8 +75,6 @@ class JenkinsHandler {
         this.js = new JenkinsServer(new URI(configuration.url), configuration.username, configuration.password)
     }
 
-    JenkinsServer get() { return this.js }
-
     // TODO: We should check if its really a folder job. Currently we just assume it which is stupid - but _works_
     // Due to missing support of multibranch-pipelines in the java-jenkins-client we need to build up the jobs ourselves.
     // Querying the root folder and starting builds leads to a namespace scan.
@@ -85,19 +82,35 @@ class JenkinsHandler {
     List<JobWithDetails> buildJobList() {
         List<JobWithDetails> jobs = new ArrayList<>()
         js.getJobs().each { Map.Entry<String, Job> job ->
-            job.value.url = "${configuration.getUrl()}/job/${job.value.name}/"
+            // since there is no support for namespace scan; we call built on root folder and wait to discover branches.
             job.value.build(true)
+            Thread.sleep(3000)
 
             js.getFolderJob(job.value).get().getJobs().each { Map.Entry<String, Job> j ->
-                j.value.url = "${job.value.url}job/${j.value.name}/"
-
                 js.getFolderJob(j.value).get().getJobs().each { Map.Entry<String, Job> i ->
-                    i.value.url = "${j.value.url}job/${i.value.name}/"
                     jobs.add(i.value.details())
                 }
             }
         }
         return jobs
+    }
+
+    BuildWithDetails waitForBuild(QueueItem item, String executorId) {
+        while (js.getBuild(item).details().isBuilding()) {
+            log.debug("[$executorId] Building..")
+            Thread.sleep(configuration.sleepInterval)
+        }
+
+        return js.getBuild(item).details()
+    }
+
+    QueueItem getQueueItemFromRef(QueueReference ref, String executorId) {
+        while (js.getQueueItem(ref).getExecutable() == null) {
+            log.debug("[$executorId] Build has not yet started..")
+            Thread.sleep(configuration.sleepInterval)
+        }
+        return js.getQueueItem(ref)
+
     }
 }
 
@@ -154,32 +167,17 @@ class PipelineExecutor {
         this.configuration = configuration
     }
 
-    Future<PipelineResult> run(JenkinsServer js, JobWithDetails job) {
+    Future<PipelineResult> run(JenkinsHandler js, JobWithDetails job) {
         String executorId = new Random().with { (1..3).collect { (('a'..'z')).join()[nextInt((('a'..'z')).join().length())] }.join() }
         return executor.submit(() -> {
             println "[$executorId] ${StringUtils.reduceToName(job.url)} started.."
             QueueReference ref = job.build(true)
-            BuildWithDetails details = waitForBuild(js, getQueueItemFromRef(js, ref, executorId), executorId)
+            BuildWithDetails details = js.waitForBuild(js.getQueueItemFromRef(ref, executorId), executorId)
             return new PipelineResult(executorId, job, details)
         } as Callable) as Future<PipelineResult>
     }
 
-    private BuildWithDetails waitForBuild(JenkinsServer js, QueueItem item, String executorId) {
-        while (js.getBuild(item).details().isBuilding()) {
-            log.debug("[$executorId] Building..")
-            Thread.sleep(configuration.sleepInterval)
-        }
 
-        return js.getBuild(item).details()
-    }
-
-    private QueueItem getQueueItemFromRef(JenkinsServer js, QueueReference ref, String executorId) {
-        while (js.getQueueItem(ref).getExecutable() == null) {
-            log.debug("[$executorId] Build has not yet started..")
-            Thread.sleep(configuration.sleepInterval)
-        }
-        return js.getQueueItem(ref)
-    }
 }
 
 class PipelineResult {
