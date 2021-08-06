@@ -23,7 +23,7 @@ import java.util.concurrent.Future
  * Usage: `groovy e2e.groovy --url http://localhost:9090 --user admin --password admin
  *
  * Use --help for help
- * Optional parameters for wait interval and abort on failure. 
+ * Optional parameters for wait interval and abort on failure.
  */
 class E2E {
     static void main(args) {
@@ -51,17 +51,18 @@ class E2E {
 
                 Thread.sleep(configuration.sleepInterval)
             }
+
+            buildFutures.each {
+                it.get().prettyPrint(false)
+            }
+            int status = buildFutures.any { it.get().getBuild().getResult().name() == "FAILURE" } ? 1 : 0
+            System.exit status
+
         } catch (Exception err) {
             System.err << "Oh seems like something went wrong:\n"
             System.err << "${err.getStackTrace()}"
             System.exit 1
         }
-
-        buildFutures.each {
-            it.get().prettyPrint(false)
-        }
-        int status = buildFutures.any { it.get().getBuild().getResult().name() == "FAILURE" } ? 1 : 0
-        System.exit status
     }
 }
 
@@ -215,6 +216,7 @@ class PipelineResult {
     void setBuild(BuildWithDetails build) {
         this.build = build
     }
+
     private Color getPrintColor() {
         return List.of("FAILURE", "ABORTED").contains(build.getResult().name()) ? Color.RED_BOLD : Color.GREEN_BOLD
     }
