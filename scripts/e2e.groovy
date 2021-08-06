@@ -75,7 +75,10 @@ class JenkinsHandler {
         this.js = new JenkinsServer(new URI(configuration.url), configuration.username, configuration.password)
     }
 
-    // TODO: We should check if its really a folder job. Currently we just assume it which is stupid - but _works_
+
+    JenkinsServer get() { return this.js }
+
+    // TODO: We should check if it's really a folder job. Currently we just assume it which is stupid - but _works_
     // Due to missing support of multibranch-pipelines in the java-jenkins-client we need to build up the jobs ourselves.
     // Querying the root folder and starting builds leads to a namespace scan.
     // After that we need to iterate through every job folder
