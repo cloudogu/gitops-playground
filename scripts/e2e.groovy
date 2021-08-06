@@ -86,9 +86,9 @@ class JenkinsHandler {
         List<JobWithDetails> jobs = new ArrayList<>()
         js.getJobs().each { Map.Entry<String, Job> job ->
 
-            job.value.build(true)
-            // since there is no support for namespace scan; we call built on root folder and wait to discover branches.
             job.value.url = "${configuration.getUrl()}/job/${job.value.name}/"
+            // since there is no support for namespace scan; we call built on root folder and wait to discover branches.
+            job.value.build(true)
             Thread.sleep(3000)
 
             js.getFolderJob(job.value).get().getJobs().each { Map.Entry<String, Job> j ->
