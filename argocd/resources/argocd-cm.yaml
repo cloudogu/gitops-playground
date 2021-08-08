@@ -9,7 +9,6 @@ metadata:
 data:
   repositories: |
     - url: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/control-app
-      insecure: true
       passwordSecret:
         name: gitops-scmm
         key: PASSWORD

@@ -8,7 +8,7 @@ export ABSOLUTE_BASEDIR
 PLAYGROUND_DIR="$(cd ${BASEDIR} && cd .. && pwd)"
 export PLAYGROUND_DIR
 
-PETCLINIC_COMMIT=949c5af
+PETCLINIC_COMMIT=54c506a
 SPRING_BOOT_HELM_CHART_COMMIT=0.2.1
 ARGO_HELM_CHART_VERSION=2.17.5 # Last version with argo 1.x
 
@@ -22,7 +22,7 @@ INTERNAL_REGISTRY=true
 # When running in k3d, connection between SCMM <-> Jenkins must be via k8s services, because external "localhost"
 # addresses will not work
 JENKINS_URL_FOR_SCMM="http://jenkins"
-SCMM_URL_FOR_JENKINS="http://scmm-scm-manager.default.svc.cluster.local/scm"
+SCMM_URL_FOR_JENKINS="http://scmm-scm-manager/scm"
 
 # When updating please also adapt k8s-related versions in Dockerfile, init-cluster.sh and vars.tf
 KUBECTL_DEFAULT_IMAGE='lachlanevenson/k8s-kubectl:v1.21.2'
@@ -266,7 +266,11 @@ function initSCMM() {
   setExternalHostnameIfNecessary 'SCMM' 'scmm-scm-manager' 'default'
   [[ "${SCMM_URL}" != *scm ]] && SCMM_URL=${SCMM_URL}/scm
 
-  configureScmmManager "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "${SCMM_URL}" "${JENKINS_URL_FOR_SCMM}" "${SCMM_URL}" "${INTERNAL_SCMM}"
+  # When running in k3d, BASE_URL must be the internal URL. Otherwise webhooks from SCMM->Jenkins will fail, as
+  # They contain Repository URLs create with BASE_URL. Jenkins uses the internal URL for repos. So match is only
+  # successful, when SCM also sends the Repo URLs using the internal URL
+  configureScmmManager "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "${SCMM_URL}" "${JENKINS_URL_FOR_SCMM}" \
+    "${SCMM_URL_FOR_JENKINS}" "${INTERNAL_SCMM}"
 
   pushHelmChartRepo 'common/spring-boot-helm-chart'
   pushHelmChartRepoWithDependency 'common/spring-boot-helm-chart-with-dependency'
