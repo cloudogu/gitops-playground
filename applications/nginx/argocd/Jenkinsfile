@@ -30,70 +30,67 @@ node('docker') {
 
     def git = cesBuildLib.Git.new(this)
 
-    timeout(activity: true, time: 30, unit: 'MINUTES') {
-        
-        catchError {
-            
-            stage('Checkout') {
-                checkout scm
-                git.clean('')
-            }
+    catchError {
 
-            stage('Deploy') {
-                if (env.BRANCH_NAME in [mainBranch]) {
-                    def gitopsConfig = [
-                        scm                     : [
-                                provider     : 'SCMManager',
-                                credentialsId: scmManagerCredentials,
-                                baseUrl      : configRepositoryPRBaseUrl,
-                                repositoryUrl   : configRepositoryPRRepo,
-                        ],
-                        cesBuildLibRepo: cesBuildLibRepo,
-                        cesBuildLibVersion: cesBuildLibVersion,
-                        cesBuildLibCredentialsId: scmManagerCredentials,
-                        application: application,
-                        mainBranch: mainBranch,
-                        gitopsTool: 'ARGO',
-                        buildImages          : [
-                                helm: 'ghcr.io/cloudogu/helm:3.5.4-1',
-                                kubectl: 'lachlanevenson/k8s-kubectl:v1.19.3',
-                                kubeval: 'ghcr.io/cloudogu/helm:3.5.4-1',
-                                helmKubeval: 'ghcr.io/cloudogu/helm:3.5.4-1',
-                                yamllint: 'cytopia/yamllint:1.25-0.7'
-                        ],
-                        deployments: [
-                            sourcePath: 'k8s',
-                            helm : [
-                                repoType : 'HELM',
-                                repoUrl  : helmChartRepository,
-                                chartName: helmChartName,
-                                version  : helmChartVersion,
-                            ]
-                        ],
-                        stages: [
-                                staging: [ 
-                                    namespace: 'argocd-staging',
-                                    deployDirectly: true 
-                                    ],
-                                production: [ 
-                                    namespace: 'argocd-production',
-                                    deployDirectly: false 
-                                    ],
-                        ],
-                        fileConfigmaps: [ 
-                                [
-                                    name : "index-nginx",
-                                    sourceFilePath : "../index.html",
-                                    stage: ["staging", "production"]
-                                ]
+        stage('Checkout') {
+            checkout scm
+            git.clean('')
+        }
+
+        stage('Deploy') {
+            if (env.BRANCH_NAME in [mainBranch]) {
+                def gitopsConfig = [
+                    scm                     : [
+                            provider     : 'SCMManager',
+                            credentialsId: scmManagerCredentials,
+                            baseUrl      : configRepositoryPRBaseUrl,
+                            repositoryUrl   : configRepositoryPRRepo,
+                    ],
+                    cesBuildLibRepo: cesBuildLibRepo,
+                    cesBuildLibVersion: cesBuildLibVersion,
+                    cesBuildLibCredentialsId: scmManagerCredentials,
+                    application: application,
+                    mainBranch: mainBranch,
+                    gitopsTool: 'ARGO',
+                    buildImages          : [
+                            helm: 'ghcr.io/cloudogu/helm:3.5.4-1',
+                            kubectl: 'lachlanevenson/k8s-kubectl:v1.19.3',
+                            kubeval: 'ghcr.io/cloudogu/helm:3.5.4-1',
+                            helmKubeval: 'ghcr.io/cloudogu/helm:3.5.4-1',
+                            yamllint: 'cytopia/yamllint:1.25-0.7'
+                    ],
+                    deployments: [
+                        sourcePath: 'k8s',
+                        helm : [
+                            repoType : 'HELM',
+                            repoUrl  : helmChartRepository,
+                            chartName: helmChartName,
+                            version  : helmChartVersion,
                         ]
+                    ],
+                    stages: [
+                            staging: [
+                                namespace: 'argocd-staging',
+                                deployDirectly: true
+                                ],
+                            production: [
+                                namespace: 'argocd-production',
+                                deployDirectly: false
+                                ],
+                    ],
+                    fileConfigmaps: [
+                            [
+                                name : "index-nginx",
+                                sourceFilePath : "../index.html",
+                                stage: ["staging", "production"]
+                            ]
                     ]
+                ]
 
-                deployViaGitops(gitopsConfig)
-                } else {
-                    echo 'Skipping deploy, because build not successful or not on main branch'
+            deployViaGitops(gitopsConfig)
+            } else {
+                echo 'Skipping deploy, because build not successful or not on main branch'
 
-                }
             }
         }
     }
