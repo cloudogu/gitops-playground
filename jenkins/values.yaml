@@ -119,7 +119,7 @@ agent:
   nodeSelector:
     node: jenkins
   # Number of concurrent builds. Keep it low to avoid high CPU load.
-  containerCap: 1
+  containerCap: 2
   customJenkinsLabels: [ 'docker' ]
   resources:
     limits:
