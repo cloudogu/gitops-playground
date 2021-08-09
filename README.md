@@ -44,6 +44,7 @@ This command will also print URLs of the [applications](#applications) inside th
     - [Flux V1](#flux-v1)
     - [Flux V2](#flux-v2)
     - [ArgoCD](#argocd)
+- [Testing](#testing)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -461,3 +462,21 @@ Alternatively you can trigger the deployment via the respective GitOps operator'
 * Production
   * local: [localhost:30007](http://localhost:30025)
   * remote: `scripts/get-remote-url nginx fluxv1-production`
+
+### Testing
+
+There is an end to end testing script inside the `./scripts` folder. It scans for builds and starts them, waits until their finished or fail and returns the result.
+
+#### Usage
+
+You can use it by executing `groovy ./scripts/e2e.groovy --url http://localhost:9090 --user admin --password admin`
+
+#### Options
+
+- `help` - Print this help text and exit  
+- `url` - The Jenkins-URL to connect to  
+- `user`- The Jenkins-User for login  
+- `password` - Jenkins-Password for login  
+- `fail` - Exit on first build failure  
+- `interval` - Interval for waits while scanning for builds  
+- `debug` - Set log level to debug  
