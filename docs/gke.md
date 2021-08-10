@@ -45,7 +45,7 @@ gcloud iam service-accounts keys create \
 ##### State
 
 
-You can either use a remote state (default, described bellow) or use a local state by changing the following in `main.tf`:
+You can either use a remote state (default, described bellow) or use a local state by changing the following in `versions.tf`:
 ```
 -  backend "gcs" {}
 +  backend "local" {}
