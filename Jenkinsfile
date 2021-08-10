@@ -5,6 +5,7 @@ import com.cloudogu.ces.cesbuildlib.*
 String getDockerRegistryBaseUrl() { 'ghcr.io' }
 String getDockerImageName() { 'cloudogu/gitops-playground' }
 String getTrivyVersion() { '0.18.3' }
+String groovyImage() { 'groovy:jre16' }
 
 properties([
     // Dont keep builds forever to preserve space
@@ -69,6 +70,21 @@ node('docker') {
                     }
                 }
         )
+
+        stage('Integration test') {
+            // get the cluster address
+            // mount the groovy script
+            // run
+
+            sh "pwd"
+            sh "ls -la"
+
+            docker.image(groovyImage)
+                .inside("") {
+                    sh "groovy ./scripts/e2e.groovy --url http://localhost:9090 --user admin --password admin"
+                }
+            }
+        }
 
         stage('Push image') {
             if (isBuildSuccessful()) {
