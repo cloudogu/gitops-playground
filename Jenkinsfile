@@ -82,9 +82,9 @@ node('docker') {
             docker.image(groovyImage)
                 .inside("") {
                     sh "groovy ./scripts/e2e.groovy --url http://localhost:9090 --user admin --password admin"
-                }
             }
         }
+
 
         stage('Push image') {
             if (isBuildSuccessful()) {
