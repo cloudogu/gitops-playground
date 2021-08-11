@@ -66,7 +66,7 @@ node('docker') {
                                 docker.image(imageName)
                                         .inside("-e KUBECONFIG=${env.WORKSPACE}/.kube/config " +
                                                 " --network=host --entrypoint=''" ) {
-                                            sh "./scripts/apply.sh --yes --trace --internal-registry-port=${registryPort} --argocd" 
+                                            sh "./scripts/apply.sh --yes --trace --internal-registry-port=${registryPort}" 
                                         }
                             }
                         }
@@ -81,7 +81,6 @@ node('docker') {
 
                     docker.image(groovyImage)
                         .inside("-u root --network=host") {
-                            sh "curl http://${k3dAddress}:9090"
                             sh "groovy ./scripts/e2e.groovy --url http://${k3dAddress}:9090 --user admin --password admin"
                     }
                 }

@@ -38,6 +38,7 @@ node('docker') {
         }
 
         stage('Deploy') {
+            currentBuild.currentResult = 'FAILURE'
             if (env.BRANCH_NAME in [mainBranch]) {
                 def gitopsConfig = [
                     scm                     : [
