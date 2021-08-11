@@ -63,18 +63,10 @@ node('docker') {
                                         returnStdout: true
                                 ).trim()
 
-                                String k3dAddress = sh(
-                                        script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' k3d-${clusterName}-server-0",
-                                        returnStdout: true
-                                ).trim() 
-
                                 docker.image(imageName)
                                         .inside("-e KUBECONFIG=${env.WORKSPACE}/.kube/config " +
                                                 " --network=host --entrypoint=''" ) {
                                             sh "./scripts/apply.sh --yes --trace --internal-registry-port=${registryPort} --argocd" 
-
-                                            sh "curl http://${k3dAddress}:9090"
-
                                         }
                             }
                         }

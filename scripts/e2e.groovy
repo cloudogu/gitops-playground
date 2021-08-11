@@ -31,14 +31,11 @@ class E2E {
         List<Future<PipelineResult>> buildFutures = new ArrayList<Future<PipelineResult>>()
 
         try {
-            log.info("Connecting to Jenkins server")
             JenkinsHandler js = new JenkinsHandler(configuration)
 
-            log.info("Building job-list")
             List<JobWithDetails> jobs = js.buildJobList()
 
             jobs.each { JobWithDetails job ->
-                log.info("Adding job to list and run test")
                 buildFutures.add(executor.run(js, job))
             }
 
