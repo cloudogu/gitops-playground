@@ -88,9 +88,9 @@ node('docker') {
                     ).trim()    
 
                     docker.image(groovyImage)
-                        .inside("-u root") {
+                        .inside("-u root --network=host") {
                             sh "curl http://${k3dAddress}:9090"
-                            // sh "groovy ./scripts/e2e.groovy --url http://${k3dAddress}:9090 --user admin --password admin"
+                            sh "groovy ./scripts/e2e.groovy --url http://${k3dAddress}:9090 --user admin --password admin"
                     }
                 }
 
