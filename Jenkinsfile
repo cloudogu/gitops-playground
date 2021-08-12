@@ -5,6 +5,7 @@ import com.cloudogu.ces.cesbuildlib.*
 String getDockerRegistryBaseUrl() { 'ghcr.io' }
 String getDockerImageName() { 'cloudogu/gitops-playground' }
 String getTrivyVersion() { '0.18.3' }
+String getGroovyImage() { 'groovy:jdk11' }
 
 properties([
     // Dont keep builds forever to preserve space
@@ -24,86 +25,105 @@ node('docker') {
     def git = new Git(this)
 
     timestamps {
-    catchError {
-    timeout(activity: true, time: 30, unit: 'MINUTES') {
+        catchError {
+            timeout(activity: true, time: 30, unit: 'MINUTES') {
 
-        stage('Checkout') {
-            checkout scm
-            git.clean('')
-        }
+                stage('Checkout') {
+                    checkout scm
+                    git.clean('')
+                }
 
-        stage('Build image') {
-            imageName = createImageName(git.commitHashShort)
-            String rfcDate = sh(returnStdout: true, script: 'date --rfc-3339 ns').trim()
-            image = docker.build(imageName,
-                    "--build-arg BUILD_DATE='${rfcDate}' " +
-                    "--build-arg VCS_REF='${git.commitHash}' " +
-                    // if using optional parameters you need to add the '.' argument at the end for docker to build the image
-                    ".")
-        }
+                stage('Build image') {
+                    imageName = createImageName(git.commitHashShort)
+                    String rfcDate = sh(returnStdout: true, script: 'date --rfc-3339 ns').trim()
+                    image = docker.build(imageName,
+                            "--build-arg BUILD_DATE='${rfcDate}' " +
+                            "--build-arg VCS_REF='${git.commitHash}' " +
+                            // if using optional parameters you need to add the '.' argument at the end for docker to build the image
+                            ".")
+                }
 
-        parallel(
-                'Scan image': {
-                    stage('Scan image') {
-                        scanImage(imageName)
-                        saveScanResultsOnVulenrabilities()
-                    }
-                },
+                parallel(
+                        'Scan image': {
+                            stage('Scan image') {
+                                scanImage(imageName)
+                                saveScanResultsOnVulenrabilities()
+                            }
+                        },
 
-                'Start gitops playground': {
-                    stage('start gitops playground') {
-                        clusterName = createClusterName()
-                        startK3d(clusterName)
+                        'Start gitops playground': {
+                            stage('start gitops playground') {
+                                clusterName = createClusterName()
+                                startK3d(clusterName)
 
-                        String registryPort = sh(
-                                script: 'docker inspect ' +
-                                        '--format=\'{{ with (index .NetworkSettings.Ports "30000/tcp") }}{{ (index . 0).HostPort }}{{ end }}\' ' +
-                                        " k3d-${clusterName}-server-0",
-                                returnStdout: true
-                        ).trim()
-                        docker.image(imageName)
-                                .inside("-e KUBECONFIG=${env.WORKSPACE}/.kube/config " +
-                                        " --network=host --entrypoint=''" ) {
-                                    sh "./scripts/apply.sh --yes --trace --internal-registry-port=${registryPort} --argocd" 
-                                }
+                                String registryPort = sh(
+                                        script: 'docker inspect ' +
+                                                '--format=\'{{ with (index .NetworkSettings.Ports "30000/tcp") }}{{ (index . 0).HostPort }}{{ end }}\' ' +
+                                                " k3d-${clusterName}-server-0",
+                                        returnStdout: true
+                                ).trim()
+
+                                docker.image(imageName)
+                                        .inside("-e KUBECONFIG=${env.WORKSPACE}/.kube/config " +
+                                                " --network=host --entrypoint=''" ) {
+                                            sh "./scripts/apply.sh --yes --trace --internal-registry-port=${registryPort} --argocd" 
+                                        }
+                            }
+                        }
+                )
+
+                stage('Integration test') {
+
+                    String k3dAddress = sh(
+                            script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' k3d-${clusterName}-server-0",
+                            returnStdout: true
+                    ).trim()    
+
+                    docker.image(groovyImage)
+                        .inside("-u root --network=host") {
+                            sh "groovy ./scripts/e2e.groovy --url http://${k3dAddress}:9090 --user admin --password admin"
                     }
                 }
-        )
 
-        stage('Push image') {
-            if (isBuildSuccessful()) {
-                docker.withRegistry("https://${dockerRegistryBaseUrl}", 'cesmarvin-github') {
-                    if (git.isTag()) {
-                        image.push()
-                        image.push(git.tag)
-                        currentBuild.description = createImageName(git.tag)
-                        currentBuild.description += "\n${imageName}"
 
-                    } else if (env.BRANCH_NAME == 'main') {
-                        image.push()
-                        image.push("latest")
-                        currentBuild.description = createImageName("latest")
-                        currentBuild.description += "\n${imageName}"
-                    } else if (params.forcePushImage) {
-                        image.push()
-                        currentBuild.description = imageName
-                    } else {
-                        echo "Skipping deployment to github container registry because not a tag and not main branch."
+                stage('Push image') {
+                    if (isBuildSuccessful()) {
+                        docker.withRegistry("https://${dockerRegistryBaseUrl}", 'cesmarvin-github') {
+                            if (git.isTag()) {
+                                image.push()
+                                image.push(git.tag)
+                                currentBuild.description = createImageName(git.tag)
+                                currentBuild.description += "\n${imageName}"
+
+                            } else if (env.BRANCH_NAME == 'main') {
+                                image.push()
+                                image.push("latest")
+                                currentBuild.description = createImageName("latest")
+                                currentBuild.description += "\n${imageName}"
+                            } else if (params.forcePushImage) {
+                                image.push()
+                                currentBuild.description = imageName
+                            } else {
+                                echo "Skipping deployment to github container registry because not a tag and not main branch."
+                            }
+                        }
                     }
                 }
             }
         }
-    }}
 
-    stage('Stop k3d') {
-        if (clusterName) {
-            // Don't fail build if cleaning up fails
-            sh "k3d cluster delete ${clusterName} || true"
+        stage('Stop k3d') {
+            if (clusterName) {
+                // Don't fail build if cleaning up fails
+                withEnv(["PATH=${WORKSPACE}/.kd3/bin:${PATH}"]) {
+                    sh "k3d cluster delete ${clusterName} || true"
+                }
+            }
         }
-    }
 
-    mailIfStatusChanged(git.commitAuthorEmail)
-}}
+        mailIfStatusChanged(git.commitAuthorEmail)
+    }
+}
 
 def scanImage(imageName) {
     trivy('.trivy/trivyOutput-unfixable.txt', '--severity=CRITICAL --ignore-unfixed', imageName)
