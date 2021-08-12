@@ -115,7 +115,9 @@ node('docker') {
         stage('Stop k3d') {
             if (clusterName) {
                 // Don't fail build if cleaning up fails
-                sh "k3d cluster delete ${clusterName} || true"
+                withEnv(["HOME=${WORKSPACE}", "PATH=${WORKSPACE}/.kd3/bin:${PATH}", "K3D_INSTALL_DIR=${WORKSPACE}/.kd3/bin"]) {
+                    sh "k3d cluster delete ${clusterName} || true"
+                }
             }
         }
 
