@@ -1,7 +1,3 @@
-# Community
-If you have any questions, remarks or ideas regarding the `gitops-playground`, feel free to visit our [community](https://community.cloudogu.com/t/introducing-the-gitops-playground/107).  
-Or if you want to chat with us about gitops in general, visit us [here](https://community.cloudogu.com/c/gitops-by-cloudogu/23)
-
 # gitops-playground
 [![Build Status](https://oss.cloudogu.com/jenkins/buildStatus/icon?job=cloudogu-github/gitops-playground/main)](https://oss.cloudogu.com/jenkins/blue/organizations/jenkins/cloudogu-github%2Fgitops-playground/)
 
@@ -12,6 +8,8 @@ and operating the [myCloudogu platform](https://my.cloudogu.com/).
 We are working on distilling the logic used in the example application pipelines into a reusable library for Jenkins:
 [cloudogu/gitops-build-lib](https://github.com/cloudogu/gitops-build-lib).
 
+If you have any questions, remarks or ideas regarding the `gitops-playground`, feel free to visit our [community](https://community.cloudogu.com/t/introducing-the-gitops-playground/107).  
+Or if you want to chat with us about gitops in general, visit us [here](https://community.cloudogu.com/c/gitops-by-cloudogu/23).
 
 TLDR; You can run a local k8s cluster with the GitOps playground installed with only one command (on Linux)
 
