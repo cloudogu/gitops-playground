@@ -5,7 +5,7 @@ import com.cloudogu.ces.cesbuildlib.*
 String getDockerRegistryBaseUrl() { 'ghcr.io' }
 String getDockerImageName() { 'cloudogu/gitops-playground' }
 String getTrivyVersion() { '0.18.3' }
-String getGroovyImage() { 'groovy:jdk11' }
+String getGroovyImage() { 'groovy:3.0.8-jre11' }
 
 properties([
     // Dont keep builds forever to preserve space
@@ -115,7 +115,7 @@ node('docker') {
         stage('Stop k3d') {
             if (clusterName) {
                 // Don't fail build if cleaning up fails
-                withEnv(["PATH=${WORKSPACE}/.kd3/bin:${PATH}"]) {
+                withEnv(["PATH=${WORKSPACE}/.k3d/bin:${PATH}"]) {
                     sh "k3d cluster delete ${clusterName} || true"
                 }
             }
@@ -151,14 +151,14 @@ def saveScanResultsOnVulenrabilities() {
 }
 
 def startK3d(clusterName) {
-    sh "mkdir -p ${WORKSPACE}/.kd3/bin"
+    sh "mkdir -p ${WORKSPACE}/.k3d/bin"
     
-    withEnv(["HOME=${WORKSPACE}", "PATH=${WORKSPACE}/.kd3/bin:${PATH}"]) { // Make k3d write kubeconfig to WORKSPACE
+    withEnv(["HOME=${WORKSPACE}", "PATH=${WORKSPACE}/.k3d/bin:${PATH}"]) { // Make k3d write kubeconfig to WORKSPACE
         // Install k3d binary to workspace in order to avoid concurrency issues
         sh "if ! command -v k3d >/dev/null 2>&1; then " +
                 "curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh |" +
                   'TAG=v$(sed -n "s/^K3D_VERSION=//p" scripts/init-cluster.sh) ' +
-                  "K3D_INSTALL_DIR=${WORKSPACE}/.kd3/bin " +
+                  "K3D_INSTALL_DIR=${WORKSPACE}/.k3d/bin " +
                      'bash -s -- --no-sudo; fi'
         sh "yes | ./scripts/init-cluster.sh --cluster-name=${clusterName} --bind-localhost=false"
     }
