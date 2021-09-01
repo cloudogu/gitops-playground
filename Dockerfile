@@ -70,6 +70,7 @@ WORKDIR /app
 
 ENTRYPOINT ["scripts/apply.sh"]
 
+# Unzip is needed for downloading docker plugins (install-plugins.sh)
 RUN apk update && apk upgrade && \
     apk add --no-cache \
      bash \
@@ -77,7 +78,8 @@ RUN apk update && apk upgrade && \
      apache2-utils \
      gettext \
      jq \
-     git
+     git \
+    unzip
 
 USER 1000
 

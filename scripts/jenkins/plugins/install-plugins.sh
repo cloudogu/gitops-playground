@@ -20,11 +20,13 @@
 
 set -o pipefail
 
+ABSOLUTE_BASEDIR="$(cd "$(dirname $0)" && pwd)"
+
 echo "WARN: install-plugins.sh is deprecated, please switch to jenkins-plugin-cli"
 
 JENKINS_WAR=${JENKINS_WAR:-/usr/share/jenkins/jenkins.war}
 
-. /usr/local/bin/jenkins-support
+. ${ABSOLUTE_BASEDIR}/jenkins-support
 
 REF_DIR="${REF}/plugins"
 FAILED="$REF_DIR/failed-plugins.txt"

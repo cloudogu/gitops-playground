@@ -70,30 +70,23 @@ function crumb() {
 }
 
 function installPlugin() {
-  PLUGIN_NAME=${1}
-  PLUGIN_VERSION=${2}
+  PLUGIN_PATH=${1}
+  PLUGIN_FILENAME="${PLUGIN_PATH##*/}"
+  PLUGIN_NAME="${PLUGIN_FILENAME%.*}"
+  
+  printf 'Installing plugin %s from %s ...' "${PLUGIN_NAME}" "${PLUGIN_PATH}"
 
-  printf 'Installing plugin %s v%s ...' "${PLUGIN_NAME}" "${PLUGIN_VERSION}"
-
-  STATUS=$(postPlugin "${PLUGIN_NAME}" "${PLUGIN_VERSION}")
-  waitForPluginInstallation "${PLUGIN_NAME}" && PLUGIN_INSTALLED=$? || PLUGIN_INSTALLED=$?
-
-  until [[ $PLUGIN_INSTALLED = 0 ]]; do
-    STATUS=$(postPlugin "${PLUGIN_NAME}" "${PLUGIN_VERSION}")
-    waitForPluginInstallation "${PLUGIN_NAME}" && PLUGIN_INSTALLED=$? || PLUGIN_INSTALLED=$?
-  done
+  STATUS=$(postPlugin "${PLUGIN_PATH}")
 
   printStatus "${STATUS}"
 }
 
 function postPlugin() {
-  PLUGIN_NAME=${1}
-  PLUGIN_VERSION=${2}
+  PLUGIN_PATH=${1}
 
   STATUS=$(curlJenkins --fail -L -o /dev/null --write-out '%{http_code}' \
-          -X POST "${JENKINS_URL}/pluginManager/installNecessaryPlugins" \
-          -d '<jenkins><install plugin="'"${PLUGIN_NAME}"'@'"${PLUGIN_VERSION}"'"/></jenkins>' \
-          -H 'Content-Type: text/xml') && EXIT_STATUS=$? || EXIT_STATUS=$?
+          "-F file=@${PLUGIN_PATH}" \
+          "${JENKINS_URL}/pluginManager/uploadPlugin") && EXIT_STATUS=$? || EXIT_STATUS=$?
   if [ $EXIT_STATUS != 0 ]
     then
       echo "Installing Plugin failed with exit code: curl: ${EXIT_STATUS}, ${STATUS}"
@@ -101,27 +94,6 @@ function postPlugin() {
   fi
 
   echo "${STATUS}"
-}
-
-function waitForPluginInstallation() {
-  PLUGIN_NAME=${1}
-  ITERATIONS=0
-  while [[ $(curlJenkins --fail -L \
-            "${JENKINS_URL}/pluginManager/api/json?depth=1" \
-            | jq '.plugins[]|{shortName}' -c \
-            | grep "${PLUGIN_NAME}" >/dev/null; echo $?) \
-            -ne "0" ]]; do
-
-    if [[ "$ITERATIONS" -gt "4" ]]; then
-      return 1
-    fi
-
-    echo -n .
-    sleep 2
-    ((ITERATIONS++))
-  done
-
-  return 0
 }
 
 function safeRestart() {
