@@ -58,8 +58,8 @@ class E2E {
             System.exit status
 
         } catch (Exception err) {
-            System.err << "Oh seems like something went wrong:\n"
-            System.err << "${err.getStackTrace()}"
+            System.err << "Unexpected error during execution of gitops playground e2e:\n"
+            err.printStackTrace(System.err);
             System.exit 1
         }
     }
