@@ -77,16 +77,21 @@ node('docker') {
                     String k3dAddress = sh(
                             script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' k3d-${clusterName}-server-0",
                             returnStdout: true
-                    ).trim()    
+                    ).trim()
 
-                    docker.image(groovyImage)
-                        .inside("-u root --network=host") {
+                    String k3dNetwork = sh(
+                            script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.NetworkID}}{{end}}' k3d-${clusterName}-server-0",
+                            returnStdout: true
+                    ).trim()
+
+                    new Docker(this).image(groovyImage)
+                            // Avoids errors ("unable to resolve class") probably due to missing HOME for container in JVM.
+                            .mountJenkinsUser() 
+                            .inside("--network=${k3dNetwork}") {
                             sh "groovy ./scripts/e2e.groovy --url http://${k3dAddress}:9090 --user admin --password admin"
                     }
                 }
-
-
-                stage('Push image') {
+               stage('Push image') {
                     if (isBuildSuccessful()) {
                         docker.withRegistry("https://${dockerRegistryBaseUrl}", 'cesmarvin-github') {
                             if (git.isTag()) {
