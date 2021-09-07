@@ -164,7 +164,7 @@ function waitForNode() {
   # With TLDR command from readme "kubectl get node" might be executed right after cluster start, where no nodes are 
   # returned, resulting in 'error: the server doesn't have a resource type ""'
   local nodes=""
-  while [ -z ${nodes} ]; do
+  while [ -z "${nodes}" ]; do
     nodes=$(kubectl get node -oname)
     [ -z "${nodes}" ] && sleep 1
   done
