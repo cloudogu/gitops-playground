@@ -78,7 +78,6 @@ class JenkinsHandler {
 
     JenkinsServer get() { return this.js }
 
-    // TODO: We should check if it's really a folder job. Currently we just assume it which is stupid - but _works_
     // Due to missing support of multibranch-pipelines in the java-jenkins-client we need to build up the jobs ourselves.
     // Querying the root folder and starting builds leads to a namespace scan.
     // After that we need to iterate through every job folder
@@ -90,8 +89,14 @@ class JenkinsHandler {
             // since there is no support for namespace scan; we call built on root folder and wait to discover branches.
             job.value.build(true)
             Thread.sleep(3000)
-
-            js.getFolderJob(job.value).get().getJobs().each { Map.Entry<String, Job> j ->
+            
+            def folderJob = js.getFolderJob(job.value)
+            if (!folderJob.isPresent()) {
+                println "Job ${job.value.name} seems not to be a folder job. Skipping."
+                return
+            }
+            
+            folderJob.get().getJobs().each { Map.Entry<String, Job> j ->
                 js.getFolderJob(j.value).get().getJobs().each { Map.Entry<String, Job> i ->
                     jobs.add(i.value.details())
                 }
