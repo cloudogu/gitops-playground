@@ -67,37 +67,37 @@ class E2E {
 
 @Slf4j
 class JenkinsHandler {
-    private JenkinsServer js
+    private JenkinsServer jenkins
     private Configuration configuration
 
     JenkinsHandler(Configuration configuration) {
         this.configuration = configuration
-        this.js = new JenkinsServer(new URI(configuration.url), configuration.username, configuration.password)
+        this.jenkins = new JenkinsServer(new URI(configuration.url), configuration.username, configuration.password)
     }
 
 
-    JenkinsServer get() { return this.js }
+    JenkinsServer get() { return this.jenkins }
 
     // Due to missing support of multibranch-pipelines in the java-jenkins-client we need to build up the jobs ourselves.
     // Querying the root folder and starting builds leads to a namespace scan.
     // After that we need to iterate through every job folder
     List<JobWithDetails> buildJobList() {
         List<JobWithDetails> jobs = new ArrayList<>()
-        js.getJobs().each { Map.Entry<String, Job> job ->
+        jenkins.getJobs().each { Map.Entry<String, Job> job ->
 
             job.value.url = "${configuration.getUrl()}/job/${job.value.name}/"
-            // since there is no support for namespace scan; we call built on root folder and wait to discover branches.
-            job.value.build(true)
-            Thread.sleep(3000)
-            
-            def folderJob = js.getFolderJob(job.value)
-            if (!folderJob.isPresent()) {
+            if (!jenkins.getFolderJob(job.value).isPresent()) {
                 println "Job ${job.value.name} seems not to be a folder job. Skipping."
                 return
             }
             
-            folderJob.get().getJobs().each { Map.Entry<String, Job> j ->
-                js.getFolderJob(j.value).get().getJobs().each { Map.Entry<String, Job> i ->
+            // since there is no support for namespace scan; we call built on root folder and wait to discover branches.
+            job.value.build(true)
+            
+            waitForFolderJob(jenkins, job.value)
+
+            jenkins.getFolderJob(job.value).get().getJobs().each { Map.Entry<String, Job> j ->
+                jenkins.getFolderJob(j.value).get().getJobs().each { Map.Entry<String, Job> i ->
                     jobs.add(i.value.details())
                 }
             }
@@ -106,21 +106,42 @@ class JenkinsHandler {
     }
 
     BuildWithDetails waitForBuild(QueueItem item, String executorId) {
-        while (js.getBuild(item).details().isBuilding()) {
+        while (jenkins.getBuild(item).details().isBuilding()) {
             log.debug("[$executorId] Building..")
             Thread.sleep(configuration.sleepInterval)
         }
 
-        return js.getBuild(item).details()
+        return jenkins.getBuild(item).details()
     }
 
     QueueItem getQueueItemFromRef(QueueReference ref, String executorId) {
-        while (js.getQueueItem(ref).getExecutable() == null) {
+        while (jenkins.getQueueItem(ref).getExecutable() == null) {
             log.debug("[$executorId] Build has not yet started..")
             Thread.sleep(configuration.sleepInterval)
         }
-        return js.getQueueItem(ref)
+        return jenkins.getQueueItem(ref)
 
+    }
+
+    void waitForFolderJob(JenkinsServer server, Job job) {
+        // Scanning namespace takes several seconds to complete. Example:
+        // [Wed Sep 08 13:52:35 CEST 2021] Finished organization scan. Scan took 13 sec
+        int count = 0;
+        int maxTries = 20;
+        FolderJob folderJob = server.getFolderJob(job).get()
+        while (folderJob.getJobs().size() == 0) {
+            println "Folder ${job.name} does not contain jobs. Waiting ${count+1} / ${maxTries}..."
+            Thread.sleep(3000)
+            
+            // Refresh value
+            folderJob = server.getFolderJob(job).get()
+            if (++count == maxTries) {
+                break
+            }
+        }
+        if (folderJob.getJobs().size() == 0) {
+            println "WARNING: Job ${job.name} is a folder but does not include jobs."
+        }
     }
 }
 
