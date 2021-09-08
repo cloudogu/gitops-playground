@@ -37,6 +37,8 @@ SPRING_PETCLINIC_REPO=${SPRING_PETCLINIC_REPO:-'https://github.com/cloudogu/spri
 GITOPS_BUILD_LIB_REPO=${GITOPS_BUILD_LIB_REPO:-'https://github.com/cloudogu/gitops-build-lib.git'}
 CES_BUILD_LIB_REPO=${CES_BUILD_LIB_REPO:-'https://github.com/cloudogu/ces-build-lib.git'}
 
+JENKINS_PLUGIN_FOLDER=${JENKINS_PLUGIN_FOLDER:-''}
+
 function main() {
   
   readParameters "$@"
