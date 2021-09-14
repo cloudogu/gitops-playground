@@ -108,7 +108,16 @@ function configureJenkins() {
   for pluginFile in "${pluginFolder}/plugins"/*; do 
      installPlugin "${pluginFile}"
   done
- 
+
+  echo "Waiting for plugin installation.."
+  PLUGIN_STATUS=($(checkPluginStatus $(cat "${PLAYGROUND_DIR}"/scripts/jenkins/plugins/plugins.txt | tr '\n' ',')))
+  while [[ ${#PLUGIN_STATUS[@]} -gt 0 ]]; do
+    PLUGIN_STATUS=($(checkPluginStatus $(cat "${PLAYGROUND_DIR}"/scripts/jenkins/plugins/plugins.txt | tr '\n' ',')))
+    echo "Processing: ${PLUGIN_STATUS[*]}"
+    sleep 5
+  done
+  echo ""
+
   safeRestart
   waitForJenkins
 

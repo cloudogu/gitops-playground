@@ -107,6 +107,20 @@ function safeRestart() {
   fi
 }
 
+function checkPluginStatus() {
+  # shellcheck disable=SC2016
+  # we don't want to expand these variables in single quotes
+  GROOVY_SCRIPT=$(env -i PLUGIN_LIST="${1}" \
+                 envsubst '${PLUGIN_LIST}' \
+                 < scripts/jenkins/pluginCheck.groovy)
+
+  STATUS=$(curlJenkins --fail -L /dev/null \
+           -d "script=${GROOVY_SCRIPT}" --user "${JENKINS_USERNAME}:${JENKINS_PASSWORD}" \
+           "${JENKINS_URL}/scriptText")
+
+  echo -e "${STATUS#*: }" | sed 's/^.//;s/.$//'
+}
+
 function setGlobalProperty() {
   printf 'Setting Global Property %s:%s ...' "${1}" "${2}"
 

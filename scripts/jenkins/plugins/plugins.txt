@@ -4,7 +4,6 @@ pipeline-utility-steps:2.8.0
 junit:1.51
 scm-manager:1.7.5
 html5-notifier-plugin:1.5
-
 pipeline-model-definition:1.9.1
 git-client:3.9.0
 lockable-resources:2.11
