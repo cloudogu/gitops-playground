@@ -73,13 +73,15 @@ function waitForJenkins() {
 }
 
 function configureJenkins() {
+  local SCMM_URL pluginFolder
+  
   JENKINS_URL="${1}"
   export JENKINS_URL
   JENKINS_USERNAME="${2}"
   export JENKINS_USERNAME
   JENKINS_PASSWORD="${3}"
   export JENKINS_PASSWORD
-  local SCMM_URL="${4}"
+  SCMM_URL="${4}"
   SCMM_PASSWORD="${5}"
   REGISTRY_URL="${6}"
   REGISTRY_PATH="${7}"
@@ -89,15 +91,32 @@ function configureJenkins() {
   INSTALL_FLUXV1="${11}"
   INSTALL_FLUXV2="${12}"
   INSTALL_ARGOCD="${13}"
-
+  
+  
   waitForJenkins
 
-  installPlugin "docker-workflow" "1.26"
-  installPlugin "docker-plugin" "1.2.2"
-  installPlugin "pipeline-utility-steps" "2.8.0"
-  installPlugin "junit" "1.51"
-  installPlugin "scm-manager" "1.7.5"
-  installPlugin "html5-notifier-plugin" "1.5"
+  if [[ -z "${JENKINS_PLUGIN_FOLDER}" ]]; then
+    pluginFolder=$(mktemp -d)
+    echo "Downloading jenkins plugins to ${pluginFolder}"
+    "${PLAYGROUND_DIR}"/scripts/jenkins/plugins/download-plugins.sh "${pluginFolder}"
+  else
+    echo "Jenkins plugins folder present, skipping plugin download"
+    pluginFolder="${JENKINS_PLUGIN_FOLDER}"
+  fi 
+
+  echo "Installing Jenkins Plugins from ${pluginFolder}"
+  for pluginFile in "${pluginFolder}/plugins"/*; do 
+     installPlugin "${pluginFile}"
+  done
+
+  echo "Waiting for plugin installation.."
+  PLUGIN_STATUS=($(checkPluginStatus $(cat "${PLAYGROUND_DIR}"/scripts/jenkins/plugins/plugins.txt | tr '\n' ',')))
+  while [[ ${#PLUGIN_STATUS[@]} -gt 0 ]]; do
+    PLUGIN_STATUS=($(checkPluginStatus $(cat "${PLAYGROUND_DIR}"/scripts/jenkins/plugins/plugins.txt | tr '\n' ',')))
+    echo "Processing: ${PLUGIN_STATUS[*]}"
+    sleep 5
+  done
+  echo ""
 
   safeRestart
   waitForJenkins

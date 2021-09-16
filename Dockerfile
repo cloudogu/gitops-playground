@@ -9,10 +9,12 @@ ARG KUBECTL_CHECKSUM=55b982527d76934c2f119e70bf0d69831d3af4985f72bb87cd4924b1c7d
 # When updating, also update the checksum found at https://github.com/helm/helm/releases
 ARG HELM_VERSION=3.6.2
 ARG HELM_CHECKSUM=f3a4be96b8a3b61b14eec1a35072e1d6e695352e7a08751775abf77861a0bf54
+# bash curl unzip required for Jenkins downloader
 RUN apk add --no-cache \
       gnupg \
       outils-sha256 \
-      git
+      git \
+      bash curl unzip 
 
 RUN mkdir -p /dist/usr/local/bin
 ENV HOME=/dist/home
@@ -50,6 +52,9 @@ RUN git clone --bare https://github.com/cloudogu/ces-build-lib.git
 RUN git config --global user.email "hello@cloudogu.com" && \
     git config --global user.name "Cloudogu"
 
+# Download Jenkins Plugin
+COPY scripts/jenkins /jenkins
+RUN  /jenkins/plugins/download-plugins.sh /dist/gop/jenkins-plugins
 
 FROM alpine
 
@@ -64,12 +69,14 @@ ENV HOME=/home \
     SPRING_BOOT_HELM_CHART_REPO=/gop/repos/spring-boot-helm-chart.git \
     SPRING_PETCLINIC_REPO=/gop/repos/spring-petclinic.git \
     GITOPS_BUILD_LIB_REPO=/gop/repos/gitops-build-lib.git \
-    CES_BUILD_LIB_REPO=/gop/repos/ces-build-lib.git
+    CES_BUILD_LIB_REPO=/gop/repos/ces-build-lib.git \
+    JENKINS_PLUGIN_FOLDER=/gop/jenkins-plugins/
 
 WORKDIR /app
 
 ENTRYPOINT ["scripts/apply.sh"]
 
+# Unzip is needed for downloading docker plugins (install-plugins.sh)
 RUN apk update && apk upgrade && \
     apk add --no-cache \
      bash \
@@ -77,7 +84,8 @@ RUN apk update && apk upgrade && \
      apache2-utils \
      gettext \
      jq \
-     git
+     git \
+    unzip
 
 USER 1000
 

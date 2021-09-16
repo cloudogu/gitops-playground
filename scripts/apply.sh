@@ -37,6 +37,8 @@ SPRING_PETCLINIC_REPO=${SPRING_PETCLINIC_REPO:-'https://github.com/cloudogu/spri
 GITOPS_BUILD_LIB_REPO=${GITOPS_BUILD_LIB_REPO:-'https://github.com/cloudogu/gitops-build-lib.git'}
 CES_BUILD_LIB_REPO=${CES_BUILD_LIB_REPO:-'https://github.com/cloudogu/ces-build-lib.git'}
 
+JENKINS_PLUGIN_FOLDER=${JENKINS_PLUGIN_FOLDER:-''}
+
 function main() {
   
   readParameters "$@"
@@ -164,7 +166,7 @@ function waitForNode() {
   # With TLDR command from readme "kubectl get node" might be executed right after cluster start, where no nodes are 
   # returned, resulting in 'error: the server doesn't have a resource type ""'
   local nodes=""
-  while [ -z ${nodes} ]; do
+  while [ -z "${nodes}" ]; do
     nodes=$(kubectl get node -oname)
     [ -z "${nodes}" ] && sleep 1
   done

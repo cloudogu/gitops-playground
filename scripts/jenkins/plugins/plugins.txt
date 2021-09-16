@@ -1,0 +1,14 @@
+docker-workflow:1.26
+docker-plugin:1.2.3
+pipeline-utility-steps:2.8.0
+junit:1.51
+scm-manager:1.7.5
+html5-notifier-plugin:1.5
+pipeline-model-definition:1.9.1
+git-client:3.9.0
+lockable-resources:2.11
+antisamy-markup-formatter:2.1
+workflow-basic-steps:2.24
+pipeline-rest-api:2.19
+pipeline-stage-view:2.19
+workflow-step-api:2.24
