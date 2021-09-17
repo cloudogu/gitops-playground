@@ -98,9 +98,9 @@ class JenkinsHandler {
             waitForFolderJob(jenkins, potentialNamespaceJob.value)
 
             jenkins.getFolderJob(potentialNamespaceJob.value).get().getJobs().each { Map.Entry<String, Job> repoJob ->
-                println("Key: ${repoJob.getKey()} - Value: ${repoJob.getValue()}")
+                println("Key: ${repoJob.getKey()} - Value: ${repoJob.getValue().details()}")
                 jenkins.getFolderJob(repoJob.value).get().getJobs().each { Map.Entry<String, Job> branchJob ->
-                    println("Key: ${branchJob.getKey()} - Value: ${branchJob.getValue()}")
+                    println("Key: ${branchJob.getKey()} - Value: ${branchJob.getValue().details()}")
                     jobs.add(branchJob.value.details())
                 }
             }
