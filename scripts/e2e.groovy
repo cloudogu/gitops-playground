@@ -146,7 +146,7 @@ class JenkinsHandler {
             println "WARNING: Job ${job.name} is a folder but does not include jobs."
         } else {
             println "There are ${folderJob.getJobs().size()} jobs. These are:"
-            folderJob.getJobs().each { Map.Entry<String, Job> repoJob -> println "Key: ${repoJob.getKey()} - Value: ${repoJob.getValue().details()}" }
+            folderJob.getJobs().each { Map.Entry<String, Job> repoJob -> println "${repoJob.getKey()}" }
         }
         return folderJob
     }
