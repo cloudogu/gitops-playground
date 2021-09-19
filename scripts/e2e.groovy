@@ -146,7 +146,7 @@ class JenkinsHandler {
             println "WARNING: Job ${job.name} is a folder but does not include jobs."
         } else {
             println "Found repositories. Waiting a little more so that all repositories have been discovered"
-            Thread.sleep(10000)
+            Thread.sleep(30000)
             folderJob = server.getFolderJob(job).get()
             println "There are ${folderJob.getJobs().size()} jobs. These are:"
             folderJob.getJobs().each { Map.Entry<String, Job> repoJob -> println "${repoJob.getKey()}" }
