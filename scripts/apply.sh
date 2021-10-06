@@ -358,6 +358,10 @@ function initArgo() {
   initRepo 'argocd/gitops'
   initRepoWithSource 'applications/nginx/argocd' 'argocd/nginx-helm'
   initRepoWithSource 'argocd/control-app' 'argocd/control-app'
+
+  # init exercise
+  pushPetclinicRepo 'exercises/petclinic-helm' 'exercises/petclinic-helm'
+  initRepoWithSource 'exercises/nginx-validation' 'exercises/nginx-validation'
 }
 
 function replaceAllScmmUrlsInFolder() {
