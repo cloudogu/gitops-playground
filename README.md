@@ -16,7 +16,7 @@ TLDR; You can run a local k8s cluster with the GitOps playground installed with 
 ```shell
 bash <(curl -s \
   https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh) \
-  && sleep 2 && docker run --rm -it -v ~/.k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
+  && sleep 2 && docker run --rm -it -u $(id -u) -v ~/.k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     --net=host \
     ghcr.io/cloudogu/gitops-playground --yes
 ```
@@ -118,13 +118,22 @@ k3d's kubeconfig.
 
 ```shell
 CLUSTER_NAME=gitops-playground
-docker run --rm -it -v ~/.k3d/kubeconfig-${CLUSTER_NAME}.yaml:/home/.kube/config \
+docker run --rm -it -u $(id -u)  -v ~/.k3d/kubeconfig-${CLUSTER_NAME}.yaml:/home/.kube/config \
   --net=host \
   ghcr.io/cloudogu/gitops-playground # additional parameters go here
 ``` 
 
-Using the host network makes it possible to determine `localhost` and to use k3d's kubeconfig without altering, as it 
+Note: 
+* Using the host network makes it possible to determine `localhost` and to use k3d's kubeconfig without altering, as it 
 access the API server via a port bound to localhost.
+* We run as the local user in order to avoid file permission issues with the `kubeconfig-${CLUSTER_NAME}.yaml.`
+* If you experience issues and want to access the full log files, use the following command while the container is running:
+
+```bash
+docker exec -it \
+  $(docker ps -q  --filter ancestor=ghcr.io/cloudogu/gitops-playground) \
+  bash -c -- 'tail -f  -n +1 /tmp/playground-log-*'
+```
 
 #### Apply via kubectl (remote cluster)
 
