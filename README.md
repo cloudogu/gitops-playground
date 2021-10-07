@@ -23,6 +23,8 @@ bash <(curl -s \
 
 This command will also print URLs of the [applications](#applications) inside the cluster to get you started. 
 
+We recommend running this command as an unprivileged user, that is inside the [docker group](https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user). 
+
 # Table of contents
 
 <!-- Update with `doctoc --notitle README.md --maxlevel 4`. See https://github.com/thlorenz/doctoc -->
@@ -138,6 +140,7 @@ docker exec -it \
 #### Apply via kubectl (remote cluster)
 
 For remote clusters it is easiest to apply the playground via kubectl.
+You can find info on how to install kubectl [here](https://v1-21.docs.kubernetes.io/docs/tasks/tools/#kubectl).
 
 ```shell
 # Create a temporary ServiceAccount and authorize via RBAC. This is needed to install CRDs, etc.
