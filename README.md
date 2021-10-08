@@ -78,7 +78,7 @@ There a several options for running the GitOps playground
     (this can be run in production, e.g. with a [Cloudogu Ecosystem](https://cloudogu.com/en/ecosystem/?mtm_campaign=gitops-playground&mtm_kwd=ces&mtm_source=github&mtm_medium=link)) or  
   * to run everything inside the cluster (for demo only)  
 
-The diagrams bellow show an overview of the playground's architecture and three scenarios for running the playground. 
+The diagrams below show an overview of the playground's architecture and three scenarios for running the playground. 
 
 Note that running Jenkins inside the cluster is meant for demo purposes only. The third graphic shows our production 
 scenario with the Cloudogu EcoSystem (CES). Here better security and build performance is achieved using ephemeral 
@@ -111,7 +111,7 @@ There are several options for running the container:
 * For local k3d cluster, we recommend running the image as a local container via `docker`  
 * For remote clusters (e.g. on GKE) you can run the image inside a pod of the target cluster via `kubectl`. 
 
-All options offer the same parameters, see [bellow](#additional-parameters).
+All options offer the same parameters, see [below](#additional-parameters).
 
 #### Apply via Docker (local cluster)
 
