@@ -10,6 +10,9 @@ The k3d cluster is started like so:
 bash <(curl -s https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh)
 ```
 
+If you plan to interact with your cluster directly (not only via GitOps), we recommend
+installing `kubectl` (see [here](https://v1-21.docs.kubernetes.io/docs/tasks/tools/#kubectl)). 
+
 ## Parameters
 
 * `--cluster-name` - default: `gitops-playground`
