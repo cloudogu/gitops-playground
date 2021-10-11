@@ -1,4 +1,4 @@
-#namespace: argocd-staging
+namespace: argocd-staging
 service:
   port: 80
   nodePorts:

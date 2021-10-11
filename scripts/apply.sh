@@ -360,7 +360,7 @@ function initArgo() {
   initRepoWithSource 'argocd/control-app' 'argocd/control-app'
 
   # init exercise
-  pushPetclinicRepo 'exercises/petclinic-helm' 'exercises/petclinic-helm'
+  pushPetClinicRepo 'exercises/petclinic-helm' 'exercises/petclinic-helm'
   initRepoWithSource 'exercises/nginx-validation' 'exercises/nginx-validation'
 }
 

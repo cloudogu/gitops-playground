@@ -1,1 +1,2 @@
 staticSiteConfigmap: index-nginx
+# TODO: create bigger config file and implement two different errors
