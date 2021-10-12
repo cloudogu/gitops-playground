@@ -300,7 +300,9 @@ function initFluxV1() {
   initRepo 'fluxv1/gitops'
   pushPetClinicRepo 'applications/petclinic/fluxv1/plain-k8s' 'fluxv1/petclinic-plain'
   pushPetClinicRepo 'applications/petclinic/fluxv1/helm' 'fluxv1/petclinic-helm'
-  initRepoWithSource 'applications/nginx/fluxv1' 'fluxv1/nginx-helm'
+  # Set NodePort service, to avoid "Pending" services on local cluster
+  initRepoWithSource 'applications/nginx/fluxv1' 'fluxv1/nginx-helm' \
+      "[[ $REMOTE_CLUSTER != true ]] && find . -name values-shared.yaml -exec bash -c '(echo && echo service.type: NodePort && echo) >> {}' \; "
 
   SET_GIT_URL=""
   if [[ ${INTERNAL_SCMM} == false ]]; then
@@ -356,8 +358,10 @@ function initArgo() {
   pushPetClinicRepo 'applications/petclinic/argocd/plain-k8s' 'argocd/petclinic-plain'
   pushPetClinicRepo 'applications/petclinic/argocd/helm' 'argocd/petclinic-helm'
   initRepo 'argocd/gitops'
-  initRepoWithSource 'applications/nginx/argocd' 'argocd/nginx-helm'
   initRepoWithSource 'argocd/control-app' 'argocd/control-app'
+  # Set NodePort service, to avoid "Pending" services and "Processing" state in argo on local cluster
+  initRepoWithSource 'applications/nginx/argocd' 'argocd/nginx-helm' \
+    "[[ $REMOTE_CLUSTER != true ]] && find . -name values-shared.yaml -exec bash -c '(echo && echo service: && echo \"  type: NodePort\" ) >> {}' \;"
 }
 
 function replaceAllScmmUrlsInFolder() {
@@ -469,6 +473,11 @@ function pushPetClinicRepo() {
 
     replaceAllImagesInJenkinsfile "${TMP_REPO}/Jenkinsfile"
 
+    if [[ $REMOTE_CLUSTER != true ]]; then
+      # Set NodePort service, to avoid "Pending" services and "Processing" state in argo
+      find . \( -name service.yaml -o -name values-shared.yaml \) -exec sed -i "s/LoadBalancer/NodePort/" {} \;
+    fi
+    
     git checkout -b main --quiet
     git add .
     git commit -m 'Add GitOps Pipeline and K8s resources' --quiet
@@ -585,6 +594,7 @@ function initRepoWithSource() {
   echo "initiating repo $1 with source $2"
   SOURCE_REPO="$1"
   TARGET_REPO_SCMM="$2"
+  EVAL_IN_REPO="${3-}"
 
   TMP_REPO=$(mktemp -d)
 
@@ -595,6 +605,11 @@ function initRepoWithSource() {
     if [[ ${INTERNAL_SCMM} == false ]]; then
       replaceAllScmmUrlsInFolder "${TMP_REPO}"
     fi
+    
+    if [[ -n "${EVAL_IN_REPO}" ]]; then
+      eval "${EVAL_IN_REPO}"
+    fi
+    
     git checkout main --quiet || git checkout -b main --quiet
     git add .
     git commit -m "Init ${TARGET_REPO_SCMM}" --quiet || true
