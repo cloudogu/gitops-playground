@@ -23,7 +23,7 @@ bash <(curl -s \
 ```
 
 This command will also print URLs of the [applications](#applications) inside the cluster to get you started.  
-Note that you can append `--argocd`, `fluxv1` and `--fluxv2` to select specific operators. This will also speed up the 
+Note that you can append `--argocd`, `--fluxv1` and `--fluxv2` to select specific operators. This will also speed up the 
 progress.
 
 We recommend running this command as an unprivileged user, that is inside the [docker group](https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user). 
