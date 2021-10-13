@@ -14,6 +14,7 @@ Or if you want to chat with us about gitops in general, visit us [here](https://
 TLDR; You can run a local k8s cluster with the GitOps playground installed with only one command (on Linux)
 
 ```shell
+docker pull ghcr.io/cloudogu/gitops-playground && \ 
 bash <(curl -s \
   https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh) \
   && sleep 2 && docker run --rm -it -u $(id -u) -v ~/.k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
@@ -122,12 +123,15 @@ k3d's kubeconfig.
 
 ```shell
 CLUSTER_NAME=gitops-playground
+docker pull ghcr.io/cloudogu/gitops-playground
 docker run --rm -it -u $(id -u)  -v ~/.k3d/kubeconfig-${CLUSTER_NAME}.yaml:/home/.kube/config \
   --net=host \
   ghcr.io/cloudogu/gitops-playground # additional parameters go here
 ``` 
 
 Note: 
+* `docker pull` in advance makes sure you have the newest image, even if you ran this command before.  
+  Of course, you could also specify a specific [version of the image](https://github.com/cloudogu/gitops-playground/pkgs/container/gitops-playground/versions).
 * Using the host network makes it possible to determine `localhost` and to use k3d's kubeconfig without altering, as it 
 access the API server via a port bound to localhost.
 * We run as the local user in order to avoid file permission issues with the `kubeconfig-${CLUSTER_NAME}.yaml.`
