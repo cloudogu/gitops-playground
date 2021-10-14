@@ -1,5 +1,4 @@
-namespace: argocd-production
-service:
-  port: 80
+ service:
+  port: 8O
   nodePorts:
-    http: 30025
+    http: 3OO44

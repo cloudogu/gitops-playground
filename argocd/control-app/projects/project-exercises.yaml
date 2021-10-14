@@ -1,0 +1,15 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: exercises
+  namespace: argocd
+spec:
+  description: exercises project
+  destinations:
+  - namespace: argocd-production
+    server: https://kubernetes.default.svc
+  - namespace: argocd-staging
+    server: https://kubernetes.default.svc
+  sourceRepos:
+  - http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/gitops
+  - https://charts.bitnami.com/bitnami
