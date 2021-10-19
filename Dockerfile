@@ -53,8 +53,8 @@ RUN git config --global user.email "hello@cloudogu.com" && \
     git config --global user.name "Cloudogu"
 
 # Download Jenkins Plugin
-COPY scripts/jenkins /jenkins
-RUN  /jenkins/plugins/download-plugins.sh /dist/gop/jenkins-plugins
+COPY scripts/jenkins/plugins /jenkins
+RUN /jenkins/download-plugins.sh /dist/gop/jenkins-plugins
 
 FROM alpine
 
