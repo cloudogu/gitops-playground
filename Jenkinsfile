@@ -91,7 +91,9 @@ node('docker') {
                             sh "groovy ./scripts/e2e.groovy --url http://${k3dAddress}:9090 --user admin --password admin --writeFailedLog --fail"
                     }
 
-                    if (fileExists('playground-logs-of-failed-jobs/')) {
+                    sh "echo 'check if folder exists'"
+                    if (fileExists('playground-logs-of-failed-jobs')) {
+                        sh "echo 'folder exists'"
                         archiveArtifacts artifacts: 'playground-logs-of-failed-jobs/*.log'
                     }
                 }
