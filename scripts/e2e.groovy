@@ -71,7 +71,7 @@ class E2E {
     }
 
     static void writeBuildLogToFile(BuildWithDetails buildDetails) {
-        String directoryName = "../playground-logs-of-failed-jobs/"
+        String directoryName = "playground-logs-of-failed-jobs/"
 
         File directory = new File(directoryName);
         if (! directory.exists()){
@@ -312,7 +312,7 @@ enum CommandLineInterface {
             _(longOpt: 'user', args: 1, argName: 'User', 'Jenkins-User')
             _(longOpt: 'password', args: 1, argName: 'Password', 'Jenkins-Password')
             _(longOpt: 'fail', argName: 'fail', 'Exit on first build failure')
-            _(longOpt: 'writeFailedLog', argName: 'writeFailedLog', 'Writes a log file for each failed build to the parent folder playground-logs-of-failed-jobs/')
+            _(longOpt: 'writeFailedLog', argName: 'writeFailedLog', 'Writes a log file for each failed build to the folder playground-logs-of-failed-jobs/')
             _(longOpt: 'interval', args: 1, argName: 'Interval', 'Interval for waits')
             _(longOpt: 'debug', argName: 'debug', 'Set log level to debug')
         }
