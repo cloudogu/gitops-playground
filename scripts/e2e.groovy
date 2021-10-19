@@ -45,15 +45,21 @@ class E2E {
                 }) {
                     println "A BUILD FAILED. ABORTING"
                     buildFutures.find { it.isDone() }.get().prettyPrint(true)
+                    if(configuration.writeFailedLog) {
+                        writeBuildLogToFile(buildFutures.find { it.isDone() }.get().getBuild())
+                    }
                     System.exit 1
                 }
-
                 Thread.sleep(configuration.sleepInterval)
             }
 
             buildFutures.each {
                 it.get().prettyPrint(false)
+                if(configuration.writeFailedLog && it.get().getBuild().getResult().name() == "FAILURE") {
+                    writeBuildLogToFile(it.get().getBuild())
+                }
             }
+
             int status = buildFutures.any { it.get().getBuild().getResult().name() == "FAILURE" } ? 1 : 0
             System.exit status
 
@@ -62,6 +68,22 @@ class E2E {
             err.printStackTrace(System.err);
             System.exit 1
         }
+    }
+
+    static void writeBuildLogToFile(BuildWithDetails buildDetails) {
+        String directoryName = "../playground-logs-of-failed-jobs/"
+
+        File directory = new File(directoryName);
+        if (! directory.exists()){
+            directory.mkdir();
+        }
+
+        File f = new File(directoryName + buildDetails.getFullDisplayName() + ".txt")
+        f.withWriter("utf-8") {writer ->
+            writer.write(buildDetails.getConsoleOutputText())
+        }
+
+        println("written log file of failed job to: " + f.getAbsolutePath())
     }
 }
 
@@ -151,6 +173,7 @@ class Configuration {
     private String password
     private int sleepInterval = 2000
     private boolean abortOnFail = false
+    private boolean writeFailedLog = false
 
     Configuration() {}
 
@@ -164,6 +187,8 @@ class Configuration {
 
     boolean getAbortOnFail() { return this.abortOnFail }
 
+    boolean getWriteFailedLog() { return this.writeFailedLog }
+
     void setUrl(String url) { this.url = url }
 
     void setUsername(String username) { this.username = username }
@@ -173,6 +198,8 @@ class Configuration {
     void setSleepInterval(int interval) { this.sleepInterval = interval }
 
     void setAbortOnFail(boolean fail) { this.abortOnFail = fail }
+
+    void setWriteFailedLog(boolean writeFailedLog) { this.writeFailedLog = writeFailedLog }
 
 
     boolean isValid() {
@@ -285,6 +312,7 @@ enum CommandLineInterface {
             _(longOpt: 'user', args: 1, argName: 'User', 'Jenkins-User')
             _(longOpt: 'password', args: 1, argName: 'Password', 'Jenkins-Password')
             _(longOpt: 'fail', argName: 'fail', 'Exit on first build failure')
+            _(longOpt: 'writeFailedLog', argName: 'writeFailedLog', 'Writes a log file for each failed build to the parent folder playground-logs-of-failed-jobs/')
             _(longOpt: 'interval', args: 1, argName: 'Interval', 'Interval for waits')
             _(longOpt: 'debug', argName: 'debug', 'Set log level to debug')
         }
@@ -320,6 +348,8 @@ enum CommandLineInterface {
         System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", level)
 
         config.abortOnFail = options.fail ? true : false
+
+        config.writeFailedLog = options.writeFailedLog ? true : false
 
         if (!config.isValid()) {
             System.err << "Config given is invalid. Seems like you are missing one of the parameters. Use -h flag for help.\n"
