@@ -83,15 +83,16 @@ node('docker') {
                             script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.NetworkID}}{{end}}' k3d-${clusterName}-server-0",
                             returnStdout: true
                     ).trim()
-                    sh "echo 'außerhalb des containers'"
-                    sh "pwd"
+
                     new Docker(this).image(groovyImage)
                             // Avoids errors ("unable to resolve class") probably due to missing HOME for container in JVM.
                             .mountJenkinsUser() 
                             .inside("--network=${k3dNetwork}") {
-                            sh "echo 'innerhalb des containers'"
-                            sh "pwd"
                             sh "groovy ./scripts/e2e.groovy --url http://${k3dAddress}:9090 --user admin --password admin --writeFailedLog --fail"
+                    }
+
+                    if (fileExists('playground-logs-of-failed-jobs/')) {
+                        archiveArtifacts artifacts: 'playground-logs-of-failed-jobs/**/*.*'
                     }
                 }
                stage('Push image') {
