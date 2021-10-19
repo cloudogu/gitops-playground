@@ -90,12 +90,6 @@ node('docker') {
                             .inside("--network=${k3dNetwork}") {
                             sh "groovy ./scripts/e2e.groovy --url http://${k3dAddress}:9090 --user admin --password admin --writeFailedLog --fail"
                     }
-
-                    sh "echo 'check if folder exists'"
-                    if (fileExists('playground-logs-of-failed-jobs')) {
-                        sh "echo 'folder exists'"
-                        archiveArtifacts artifacts: 'playground-logs-of-failed-jobs/*.log'
-                    }
                 }
                stage('Push image') {
                     if (isBuildSuccessful()) {
@@ -124,6 +118,13 @@ node('docker') {
         }
 
         stage('Stop k3d') {
+            sh "echo 'check if folder exists'"
+            // saving log artifacts is handled here since the failure of the integration test step leads directly here.
+            if (fileExists('playground-logs-of-failed-jobs')) {
+                sh "echo 'folder exists'"
+                archiveArtifacts artifacts: 'playground-logs-of-failed-jobs/*.log'
+            }
+
             if (clusterName) {
                 // Don't fail build if cleaning up fails
                 withEnv(["PATH=${WORKSPACE}/.k3d/bin:${PATH}"]) {
