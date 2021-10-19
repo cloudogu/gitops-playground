@@ -92,7 +92,7 @@ node('docker') {
                     }
 
                     if (fileExists('playground-logs-of-failed-jobs/')) {
-                        archiveArtifacts artifacts: 'playground-logs-of-failed-jobs/**/*.*'
+                        archiveArtifacts artifacts: 'playground-logs-of-failed-jobs/*.log'
                     }
                 }
                stage('Push image') {

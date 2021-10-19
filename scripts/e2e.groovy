@@ -78,7 +78,7 @@ class E2E {
             directory.mkdir();
         }
 
-        File f = new File(directoryName + buildDetails.getFullDisplayName() + ".txt")
+        File f = new File(directoryName + buildDetails.getFullDisplayName() + ".log")
         f.withWriter("utf-8") {writer ->
             writer.write(buildDetails.getConsoleOutputText())
         }
