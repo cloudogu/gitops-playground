@@ -13,9 +13,7 @@ if ( envVarsNodePropertyList == null || envVarsNodePropertyList.size() == 0 ) {
     envVars = envVarsNodePropertyList.get(0).getEnvVars()
 
 }
-println "now printing envVars:"
-println(envVars)
-println("key: ${KEY} / value: ${VALUE}")
+
 envVars.put("${KEY}", "${VALUE}")
 
 instance.save()

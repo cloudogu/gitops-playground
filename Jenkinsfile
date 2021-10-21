@@ -118,10 +118,8 @@ node('docker') {
         }
 
         stage('Stop k3d') {
-            sh "echo 'check if folder exists'"
             // saving log artifacts is handled here since the failure of the integration test step leads directly here.
             if (fileExists('playground-logs-of-failed-jobs')) {
-                sh "echo 'folder exists'"
                 archiveArtifacts artifacts: 'playground-logs-of-failed-jobs/*.log'
             }
 

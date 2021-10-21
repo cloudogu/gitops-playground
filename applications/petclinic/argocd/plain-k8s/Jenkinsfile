@@ -39,7 +39,6 @@ node {
         }
 
         stage('Build') {
-            error("forced")
             mvn 'clean package -DskipTests'
             archiveArtifacts artifacts: '**/target/*.jar'
         }
