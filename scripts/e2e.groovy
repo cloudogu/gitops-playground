@@ -18,6 +18,7 @@ import java.util.concurrent.Callable
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
+
 /**
  * Usage: `groovy e2e.groovy --url http://localhost:9090 --user admin --password admin
  *
@@ -36,24 +37,45 @@ class E2E {
             List<JobWithDetails> jobs = js.buildJobList()
 
             jobs.each { JobWithDetails job ->
-                buildFutures.add(executor.run(js, job))
+                buildFutures.add(executor.run(js, job, configuration.retry))
             }
 
+            // if any build is still running
             while (buildFutures.any { !it.isDone() }) {
-                if (configuration.abortOnFail && buildFutures.any { result ->
-                    result.isDone() && result.get().getBuild().getResult().name() == "FAILURE"
-                }) {
-                    println "A BUILD FAILED. ABORTING"
-                    buildFutures.find { it.isDone() }.get().prettyPrint(true)
-                    System.exit 1
+                // check if there is a build which is done and has failed status
+                Future<PipelineResult> resultFuture = buildFutures.find { it.isDone() && it.get().getBuild().getResult().name() == "FAILURE" }
+                if (resultFuture != null){
+                    //if retries are set, start the failed build new and delete the old one
+                    if (resultFuture.get().retry > 0) {
+                        //write log of failed build to fs
+                        if (configuration.writeFailedLog) {
+                            writeBuildLogToFile(resultFuture.get().getBuild())
+                        }
+                        int newRetry = resultFuture.get().retry - 1
+                        buildFutures.add(executor.run(js, resultFuture.get().getJob(), newRetry))
+                        buildFutures.remove(resultFuture)
+                      // if abortonfail is true and no more retries left then kill the process
+                    } else if (configuration.abortOnFail) {
+                        //write log of failed build to fs
+                        if (configuration.writeFailedLog) {
+                            writeBuildLogToFile(resultFuture.get().getBuild())
+                        }
+                        println "A BUILD FAILED. ABORTING"
+                        resultFuture.get().prettyPrint(true)
+                        System.exit 1
+                    }
                 }
-
                 Thread.sleep(configuration.sleepInterval)
             }
 
             buildFutures.each {
                 it.get().prettyPrint(false)
+                if (configuration.writeFailedLog && it.get().getBuild().getResult().name() == "FAILURE") {
+                    writeBuildLogToFile(it.get().getBuild())
+                }
             }
+
+
             int status = buildFutures.any { it.get().getBuild().getResult().name() == "FAILURE" } ? 1 : 0
             System.exit status
 
@@ -62,6 +84,22 @@ class E2E {
             err.printStackTrace(System.err);
             System.exit 1
         }
+    }
+
+    static void writeBuildLogToFile(BuildWithDetails buildDetails) {
+        String directoryName = "playground-logs-of-failed-jobs/"
+
+        File directory = new File(directoryName);
+        if (!directory.exists()) {
+            directory.mkdir();
+        }
+
+        File f = new File(directoryName + buildDetails.getFullDisplayName() + ".log")
+        f.withWriter("utf-8") { writer ->
+            writer.write(buildDetails.getConsoleOutputText())
+        }
+
+        println("written log file of failed job to: " + f.getAbsolutePath())
     }
 }
 
@@ -90,10 +128,10 @@ class JenkinsHandler {
                 println "Job ${job.value.name} seems not to be a folder job. Skipping."
                 return
             }
-            
+
             // since there is no support for namespace scan; we call built on root folder and wait to discover branches.
             job.value.build(true)
-            
+
             waitForFolderJob(jenkins, job.value)
 
             jenkins.getFolderJob(job.value).get().getJobs().each { Map.Entry<String, Job> j ->
@@ -130,9 +168,9 @@ class JenkinsHandler {
         int maxTries = 20;
         FolderJob folderJob = server.getFolderJob(job).get()
         while (folderJob.getJobs().size() == 0) {
-            println "Folder ${job.name} does not contain jobs. Waiting ${count+1} / ${maxTries}..."
+            println "Folder ${job.name} does not contain jobs. Waiting ${count + 1} / ${maxTries}..."
             Thread.sleep(3000)
-            
+
             // Refresh value
             folderJob = server.getFolderJob(job).get()
             if (++count == maxTries) {
@@ -151,6 +189,8 @@ class Configuration {
     private String password
     private int sleepInterval = 2000
     private boolean abortOnFail = false
+    private boolean writeFailedLog = false
+    private int retry = 0
 
     Configuration() {}
 
@@ -164,6 +204,10 @@ class Configuration {
 
     boolean getAbortOnFail() { return this.abortOnFail }
 
+    boolean getWriteFailedLog() { return this.writeFailedLog }
+
+    int getRetry() { return this.retry }
+
     void setUrl(String url) { this.url = url }
 
     void setUsername(String username) { this.username = username }
@@ -173,6 +217,10 @@ class Configuration {
     void setSleepInterval(int interval) { this.sleepInterval = interval }
 
     void setAbortOnFail(boolean fail) { this.abortOnFail = fail }
+
+    void setWriteFailedLog(boolean writeFailedLog) { this.writeFailedLog = writeFailedLog }
+
+    void setRetry(int retry) { this.retry = retry }
 
 
     boolean isValid() {
@@ -198,28 +246,28 @@ class PipelineExecutor {
         this.configuration = configuration
     }
 
-    Future<PipelineResult> run(JenkinsHandler js, JobWithDetails job) {
+    Future<PipelineResult> run(JenkinsHandler js, JobWithDetails job, int retry) {
         String executorId = new Random().with { (1..3).collect { (('a'..'z')).join()[nextInt((('a'..'z')).join().length())] }.join() }
         return executor.submit(() -> {
             println "[$executorId] ${StringUtils.reduceToName(job.url)} started.."
             QueueReference ref = job.build(true)
             BuildWithDetails details = js.waitForBuild(js.getQueueItemFromRef(ref, executorId), executorId)
-            return new PipelineResult(executorId, job, details)
+            return new PipelineResult(executorId, job, details, retry)
         } as Callable) as Future<PipelineResult>
     }
-
-
 }
 
 class PipelineResult {
     private String executorId
     private JobWithDetails job
     private BuildWithDetails build
+    private int retry
 
-    PipelineResult(String id, JobWithDetails job, BuildWithDetails build) {
+    PipelineResult(String id, JobWithDetails job, BuildWithDetails build, int retry) {
         this.executorId = id
         this.job = job
         this.build = build
+        this.retry = retry
     }
 
     String getExecutorId() {
@@ -244,6 +292,14 @@ class PipelineResult {
 
     void setBuild(BuildWithDetails build) {
         this.build = build
+    }
+
+    void setRetry(int retry) {
+        this.retry = retry
+    }
+
+    int getRetry() {
+        return retry
     }
 
     private Color getPrintColor() {
@@ -285,6 +341,8 @@ enum CommandLineInterface {
             _(longOpt: 'user', args: 1, argName: 'User', 'Jenkins-User')
             _(longOpt: 'password', args: 1, argName: 'Password', 'Jenkins-Password')
             _(longOpt: 'fail', argName: 'fail', 'Exit on first build failure')
+            _(longOpt: 'writeFailedLog', argName: 'writeFailedLog', 'Writes a log file for each failed build to the folder playground-logs-of-failed-jobs/')
+            _(longOpt: 'retry', args: 1, argName: 'retry', 'Retries failed builds x time')
             _(longOpt: 'interval', args: 1, argName: 'Interval', 'Interval for waits')
             _(longOpt: 'debug', argName: 'debug', 'Set log level to debug')
         }
@@ -316,10 +374,15 @@ enum CommandLineInterface {
         if (options.interval)
             config.sleepInterval = options.interval
 
+        if (options.retry)
+            config.retry = Integer.parseInt(options.retry)
+
         String level = options.debug ? "debug" : "info"
         System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", level)
 
         config.abortOnFail = options.fail ? true : false
+
+        config.writeFailedLog = options.writeFailedLog ? true : false
 
         if (!config.isValid()) {
             System.err << "Config given is invalid. Seems like you are missing one of the parameters. Use -h flag for help.\n"
