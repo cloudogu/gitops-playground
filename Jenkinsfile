@@ -88,7 +88,7 @@ node('docker') {
                             // Avoids errors ("unable to resolve class") probably due to missing HOME for container in JVM.
                             .mountJenkinsUser() 
                             .inside("--network=${k3dNetwork}") {
-                            sh "groovy ./scripts/e2e.groovy --url http://${k3dAddress}:9090 --user admin --password admin --writeFailedLog --fail"
+                            sh "groovy ./scripts/e2e.groovy --url http://${k3dAddress}:9090 --user admin --password admin --writeFailedLog --fail --retry 2"
                     }
                 }
                stage('Push image') {
