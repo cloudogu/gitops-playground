@@ -256,7 +256,8 @@ To override each image in all the applications you can use following parameters:
 
 ### Remove playground
 
-For k3d, you can just `k3d cluster delete gitops-playground`.
+For k3d, you can just `k3d cluster delete gitops-playground`. This will delete the whole cluster. If you just want to 
+remove the playground from the cluster, use this [script](scripts/destroy.sh): './scripts/destroy.sh'
 
 On remote clusters there is a [script](scripts/destroy.sh) inside this repo:
 

@@ -1,0 +1,13 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: monitoring
+  namespace: argocd
+spec:
+  description: monitoring stack including prometheus + grafana
+  destinations:
+    - namespace: monitoring
+      server: https://kubernetes.default.svc
+  sourceRepos:
+    - https://prometheus-community.github.io/helm-charts
+    - https://codecentric.github.io/helm-charts

@@ -116,6 +116,8 @@ function main() {
     echo "Full log output is appended to ${backgroundLogFile}"
   fi
 
+  configureMetrics
+
   evalWithSpinner "Basic setup & configuring registry..." applyBasicK8sResources
 
   initSCMMVars
@@ -136,6 +138,8 @@ function main() {
   if [[ $TRACE == true ]]; then
     set +x
   fi
+
+  resetGrafanaCredentials
   printWelcomeScreen
 }
 
@@ -204,6 +208,42 @@ function checkPrerequisites() {
       exit 1
     fi
   fi
+}
+
+function configureMetrics() {
+  ARGOCD_APP_PROMETHEUS_STACK='argocd/control-app/applications/application-kube-prometheus-stack-helm.yaml'
+
+  kubectl apply -f metrics/dashboards || true
+
+  setGrafanaCredentials
+}
+
+function setGrafanaCredentials() {
+  if [[ ${SET_USERNAME} != "admin" ]]; then
+    FROM_USERNAME_STRING='adminUser: admin'
+    TO_USERNAME_STRING="adminUser: ${SET_USERNAME}"
+    sed -i -e "s%${FROM_USERNAME_STRING}%${TO_USERNAME_STRING}%g" "${ARGOCD_APP_PROMETHEUS_STACK}"
+  fi
+
+  if [[ ${SET_PASSWORD} != "admin" ]]; then
+    FROM_PASSWORD_STRING='adminPassword: admin'
+    TO_PASSWORD_STRING="adminPassword: ${SET_PASSWORD}"
+    sed -i -e "s%${FROM_PASSWORD_STRING}%${TO_PASSWORD_STRING}%g" "${ARGOCD_APP_PROMETHEUS_STACK}"
+  fi
+}
+
+function resetGrafanaCredentials() {
+    if [[ ${SET_USERNAME} != "admin" ]]; then
+      FROM_USERNAME_STRING="adminUser: ${SET_USERNAME}"
+      TO_USERNAME_STRING='adminUser: admin'
+      sed -i -e "s%${FROM_USERNAME_STRING}%${TO_USERNAME_STRING}%g" "${ARGOCD_APP_PROMETHEUS_STACK}"
+    fi
+
+    if [[ ${SET_PASSWORD} != "admin" ]]; then
+      FROM_PASSWORD_STRING="adminPassword: ${SET_PASSWORD}"
+      TO_PASSWORD_STRING='adminPassword: admin'
+      sed -i -e "s%${FROM_PASSWORD_STRING}%${TO_PASSWORD_STRING}%g" "${ARGOCD_APP_PROMETHEUS_STACK}"
+    fi
 }
 
 function applyBasicK8sResources() {
