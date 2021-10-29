@@ -10,6 +10,7 @@ server:
     enabled: true
     serviceMonitor:
       enabled: true
+      namespace: monitoring
       selector:
         release: kube-prometheus-stack
 
@@ -18,6 +19,7 @@ controller:
     enabled: true
     serviceMonitor:
       enabled: true
+      namespace: monitoring
       selector:
         release: kube-prometheus-stack
 
@@ -26,6 +28,7 @@ repoServer:
     enabled: true
     serviceMonitor:
       enabled: true
+      namespace: monitoring
       selector:
         release: kube-prometheus-stack
   

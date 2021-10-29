@@ -35,7 +35,7 @@ data:
               {
                 "evaluator": {
                   "params": [
-                    0
+                    9
                   ],
                   "type": "lt"
                 },
@@ -51,7 +51,7 @@ data:
                 },
                 "reducer": {
                   "params": [],
-                  "type": "diff_abs"
+                  "type": "min"
                 },
                 "type": "query"
               }
@@ -60,7 +60,7 @@ data:
             "for": "1m",
             "frequency": "10s",
             "handler": 1,
-            "message": "An Applications status is not healthy {{value}}",
+            "message": "An Applications status is not healthy {{name}}",
             "name": "Health Status Alert",
             "noDataState": "no_data",
             "notifications": []
@@ -123,7 +123,7 @@ data:
               "fill": true,
               "line": true,
               "op": "lt",
-              "value": 0,
+              "value": 9,
               "visible": true
             }
           ],

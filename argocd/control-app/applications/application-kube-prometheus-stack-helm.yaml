@@ -61,8 +61,8 @@ spec:
         kubeProxy:
           enabled: false
         grafana:
-          adminUser: admin111
-          adminPassword: admin111
+          adminUser: admin
+          adminPassword: admin
           sidecar:
             dashboards:
               #this needs to be added so that the label will become 'label: grafana_dashboards: "1"'
@@ -77,6 +77,7 @@ spec:
                 is_default: true
                 settings:
                   addresses: alerts@cloudogu.com
+                  uploadImage: false
           env:
             GF_SMTP_ENABLED: true
             GF_SMTP_FROM_ADDRESS: grafana-alerts@cloudogu.com

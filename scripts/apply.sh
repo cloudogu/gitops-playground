@@ -116,9 +116,9 @@ function main() {
     echo "Full log output is appended to ${backgroundLogFile}"
   fi
 
-  configureMetrics
 
   evalWithSpinner "Basic setup & configuring registry..." applyBasicK8sResources
+  configureMetrics
 
   initSCMMVars
   evalWithSpinner "Starting SCM-Manager..." initSCMM
@@ -139,7 +139,6 @@ function main() {
     set +x
   fi
 
-  resetGrafanaCredentials
   printWelcomeScreen
 }
 
@@ -211,25 +210,8 @@ function checkPrerequisites() {
 }
 
 function configureMetrics() {
-  ARGOCD_APP_PROMETHEUS_STACK='argocd/control-app/applications/application-kube-prometheus-stack-helm.yaml'
-
+  kubectl apply -f https://raw.githubusercontent.com/prometheus-operator/kube-prometheus/v0.9.0/manifests/setup/prometheus-operator-0servicemonitorCustomResourceDefinition.yaml
   kubectl apply -f metrics/dashboards || true
-
-  setGrafanaCredentials
-}
-
-function setGrafanaCredentials() {
-  if [[ ${SET_USERNAME} != "admin" ]]; then
-    FROM_USERNAME_STRING='adminUser: admin'
-    TO_USERNAME_STRING="adminUser: ${SET_USERNAME}"
-    sed -i -e "s%${FROM_USERNAME_STRING}%${TO_USERNAME_STRING}%g" "${ARGOCD_APP_PROMETHEUS_STACK}"
-  fi
-
-  if [[ ${SET_PASSWORD} != "admin" ]]; then
-    FROM_PASSWORD_STRING='adminPassword: admin'
-    TO_PASSWORD_STRING="adminPassword: ${SET_PASSWORD}"
-    sed -i -e "s%${FROM_PASSWORD_STRING}%${TO_PASSWORD_STRING}%g" "${ARGOCD_APP_PROMETHEUS_STACK}"
-  fi
 }
 
 function resetGrafanaCredentials() {
@@ -383,7 +365,7 @@ function initArgo() {
   fi
 
   if [[ ${ARGOCD_CONFIG_ONLY} == false ]]; then
-    
+
     helm upgrade -i argocd --values "${VALUES_YAML_PATH}" \
       $(argoHelmSettingsForLocalCluster) --version ${ARGO_HELM_CHART_VERSION} argo/argo-cd -n argocd
 
@@ -398,7 +380,7 @@ function initArgo() {
   pushPetClinicRepo 'applications/petclinic/argocd/plain-k8s' 'argocd/petclinic-plain'
   pushPetClinicRepo 'applications/petclinic/argocd/helm' 'argocd/petclinic-helm'
   initRepo 'argocd/gitops'
-  initRepoWithSource 'argocd/control-app' 'argocd/control-app'
+  initRepoWithSource 'argocd/control-app' 'argocd/control-app' setGrafanaCredentials
   # Set NodePort service, to avoid "Pending" services and "Processing" state in argo on local cluster
   initRepoWithSource 'applications/nginx/argocd' 'argocd/nginx-helm' \
     "[[ $REMOTE_CLUSTER != true ]] && find . -name values-shared.yaml -exec bash -c '(echo && echo service: && echo \"  type: NodePort\" ) >> {}' \;"
@@ -638,6 +620,8 @@ function initRepoWithSource() {
 
   TMP_REPO=$(mktemp -d)
 
+  echo $TMP_REPO
+
   git clone "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}"
   (
     cd "${TMP_REPO}"
@@ -660,6 +644,22 @@ function initRepoWithSource() {
   rm -rf "${TMP_REPO}"
 
   setDefaultBranch "${TARGET_REPO_SCMM}"
+}
+
+function setGrafanaCredentials() {
+  ARGOCD_APP_PROMETHEUS_STACK="applications/application-kube-prometheus-stack-helm.yaml"
+
+  if [[ ${SET_USERNAME} != "admin" ]]; then
+    FROM_USERNAME_STRING='adminUser: admin'
+    TO_USERNAME_STRING="adminUser: ${SET_USERNAME}"
+    sed -i -e "s%${FROM_USERNAME_STRING}%${TO_USERNAME_STRING}%g" "${ARGOCD_APP_PROMETHEUS_STACK}"
+  fi
+
+  if [[ ${SET_PASSWORD} != "admin" ]]; then
+    FROM_PASSWORD_STRING='adminPassword: admin'
+    TO_PASSWORD_STRING="adminPassword: ${SET_PASSWORD}"
+    sed -i -e "s%${FROM_PASSWORD_STRING}%${TO_PASSWORD_STRING}%g" "${ARGOCD_APP_PROMETHEUS_STACK}"
+  fi
 }
 
 function setDefaultBranch() {
