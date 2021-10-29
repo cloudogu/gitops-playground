@@ -214,20 +214,6 @@ function configureMetrics() {
   kubectl apply -f metrics/dashboards || true
 }
 
-function resetGrafanaCredentials() {
-    if [[ ${SET_USERNAME} != "admin" ]]; then
-      FROM_USERNAME_STRING="adminUser: ${SET_USERNAME}"
-      TO_USERNAME_STRING='adminUser: admin'
-      sed -i -e "s%${FROM_USERNAME_STRING}%${TO_USERNAME_STRING}%g" "${ARGOCD_APP_PROMETHEUS_STACK}"
-    fi
-
-    if [[ ${SET_PASSWORD} != "admin" ]]; then
-      FROM_PASSWORD_STRING="adminPassword: ${SET_PASSWORD}"
-      TO_PASSWORD_STRING='adminPassword: admin'
-      sed -i -e "s%${FROM_PASSWORD_STRING}%${TO_PASSWORD_STRING}%g" "${ARGOCD_APP_PROMETHEUS_STACK}"
-    fi
-}
-
 function applyBasicK8sResources() {
   kubectl apply -f k8s-namespaces || true
 
@@ -619,8 +605,6 @@ function initRepoWithSource() {
   EVAL_IN_REPO="${3-}"
 
   TMP_REPO=$(mktemp -d)
-
-  echo $TMP_REPO
 
   git clone "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}"
   (
