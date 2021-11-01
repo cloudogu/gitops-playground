@@ -88,7 +88,7 @@ node('docker') {
                             // Avoids errors ("unable to resolve class") probably due to missing HOME for container in JVM.
                             .mountJenkinsUser() 
                             .inside("--network=${k3dNetwork}") {
-                            sh "groovy ./scripts/e2e.groovy --url http://${k3dAddress}:9090 --user admin --password admin"
+                            sh "groovy ./scripts/e2e.groovy --url http://${k3dAddress}:9090 --user admin --password admin --writeFailedLog --fail --retry 2"
                     }
                 }
                stage('Push image') {
@@ -118,6 +118,11 @@ node('docker') {
         }
 
         stage('Stop k3d') {
+            // saving log artifacts is handled here since the failure of the integration test step leads directly here.
+            if (fileExists('playground-logs-of-failed-jobs')) {
+                archiveArtifacts artifacts: 'playground-logs-of-failed-jobs/*.log'
+            }
+
             if (clusterName) {
                 // Don't fail build if cleaning up fails
                 withEnv(["PATH=${WORKSPACE}/.k3d/bin:${PATH}"]) {
