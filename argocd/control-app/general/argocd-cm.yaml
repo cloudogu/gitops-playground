@@ -38,3 +38,4 @@ data:
     - type: helm
       url: https://codecentric.github.io/helm-charts
       name: codecentric
+    - url: https://github.com/argoproj/argo-helm/

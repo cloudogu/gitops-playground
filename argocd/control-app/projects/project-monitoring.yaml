@@ -3,11 +3,19 @@ kind: AppProject
 metadata:
   name: monitoring
   namespace: argocd
+#  annotations:
+##  every application in this project is going to be notified about when one of these three events trigger
+#    notifications.argoproj.io/subscribe.on-health-degraded.email: argocd@testeroony.de
+#    notifications.argoproj.io/subscribe.on-sync-status-unknown.email: argocd@testeroony.de
+#    notifications.argoproj.io/subscribe.on-sync-failed.email: argocd@testeroony.de
 spec:
-  description: monitoring stack including prometheus + grafana
+  description: monitoring and alerting stack including prometheus + grafana + argocd notifications
   destinations:
     - namespace: monitoring
+      server: https://kubernetes.default.svc
+    - namespace: argocd
       server: https://kubernetes.default.svc
   sourceRepos:
     - https://prometheus-community.github.io/helm-charts
     - https://codecentric.github.io/helm-charts
+    - https://github.com/argoproj/argo-helm/
