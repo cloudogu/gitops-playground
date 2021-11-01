@@ -122,7 +122,7 @@ function configureJenkins() {
   waitForJenkins
 
   # we add a sleep here since there are issues directly after jenkins is available and getting 403 when curling jenkins script executor. We think this might be a timing issue so we are waiting.
-  sleep 5
+  sleep 20
   setGlobalProperty "SCMM_URL" "${SCMM_URL}"
   setGlobalProperty "REGISTRY_URL" "${REGISTRY_URL}"
   setGlobalProperty "REGISTRY_PATH" "${REGISTRY_PATH}"
