@@ -27,6 +27,9 @@ function configureScmmManager() {
   # successful, when SCM also sends the Repo URLs using the internal URL
   BASE_URL=${5}
   IS_LOCAL=${6}
+  INSTALL_FLUXV1="${7}"
+  INSTALL_FLUXV2="${8}"
+  INSTALL_ARGOCD="${9}"
 
   GITOPS_USERNAME="gitops"
   GITOPS_PASSWORD=${ADMIN_PASSWORD}
@@ -50,39 +53,45 @@ function configureScmmManager() {
   addUser "${GITOPS_USERNAME}" "${GITOPS_PASSWORD}" "gitops@mail.de"
 
   ### FluxV1 Repos
-  addRepo "fluxv1" "gitops"
-  setPermission "fluxv1" "gitops" "${GITOPS_USERNAME}" "WRITE"
-
-  addRepo "fluxv1" "petclinic-plain"
-  setPermission "fluxv1" "petclinic-plain" "${GITOPS_USERNAME}" "WRITE"
-  addRepo "fluxv1" "petclinic-helm"
-  setPermission "fluxv1" "petclinic-helm" "${GITOPS_USERNAME}" "WRITE"
-
-  addRepo "fluxv1" "nginx-helm"
-  setPermission "fluxv1" "nginx-helm" "${GITOPS_USERNAME}" "WRITE"
-
+  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV1 == true ]]; then
+    addRepo "fluxv1" "gitops"
+    setPermission "fluxv1" "gitops" "${GITOPS_USERNAME}" "WRITE"
+  
+    addRepo "fluxv1" "petclinic-plain"
+    setPermission "fluxv1" "petclinic-plain" "${GITOPS_USERNAME}" "WRITE"
+    addRepo "fluxv1" "petclinic-helm"
+    setPermission "fluxv1" "petclinic-helm" "${GITOPS_USERNAME}" "WRITE"
+  
+    addRepo "fluxv1" "nginx-helm"
+    setPermission "fluxv1" "nginx-helm" "${GITOPS_USERNAME}" "WRITE"
+  fi
+  
   ### FluxV2 Repos
-  addRepo "fluxv2" "gitops"
-  setPermission "fluxv2" "gitops" "${GITOPS_USERNAME}" "WRITE"
-
-  addRepo "fluxv2" "petclinic-plain"
-  setPermission "fluxv2" "petclinic-plain" "${GITOPS_USERNAME}" "WRITE"
+  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV2 == true ]]; then
+    addRepo "fluxv2" "gitops"
+    setPermission "fluxv2" "gitops" "${GITOPS_USERNAME}" "WRITE"
+  
+    addRepo "fluxv2" "petclinic-plain"
+    setPermission "fluxv2" "petclinic-plain" "${GITOPS_USERNAME}" "WRITE"
+  fi
 
   ### ArgoCD Repos
-  addRepo "argocd" "nginx-helm"
-  setPermission "argocd" "nginx-helm" "${GITOPS_USERNAME}" "WRITE"
-
-  addRepo "argocd" "petclinic-plain"
-  setPermission "argocd" "petclinic-plain" "${GITOPS_USERNAME}" "WRITE"
-
-  addRepo "argocd" "petclinic-helm"
-  setPermission "argocd" "petclinic-helm" "${GITOPS_USERNAME}" "WRITE"
-
-  addRepo "argocd" "control-app"
-  setPermission "argocd" "control-app" "${GITOPS_USERNAME}" "WRITE"
-
-  addRepo "argocd" "gitops"
-  setPermission "argocd" "gitops" "${GITOPS_USERNAME}" "WRITE"
+  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_ARGOCD == true ]]; then
+    addRepo "argocd" "nginx-helm"
+    setPermission "argocd" "nginx-helm" "${GITOPS_USERNAME}" "WRITE"
+  
+    addRepo "argocd" "petclinic-plain"
+    setPermission "argocd" "petclinic-plain" "${GITOPS_USERNAME}" "WRITE"
+  
+    addRepo "argocd" "petclinic-helm"
+    setPermission "argocd" "petclinic-helm" "${GITOPS_USERNAME}" "WRITE"
+  
+    addRepo "argocd" "control-app"
+    setPermission "argocd" "control-app" "${GITOPS_USERNAME}" "WRITE"
+  
+    addRepo "argocd" "gitops"
+    setPermission "argocd" "gitops" "${GITOPS_USERNAME}" "WRITE"
+  fi
 
   ### Common Repos
   addRepo "common" "spring-boot-helm-chart"
@@ -96,6 +105,12 @@ function configureScmmManager() {
 
   addRepo "common" "ces-build-lib"
   setPermission "common" "ces-build-lib" "${GITOPS_USERNAME}" "WRITE"
+
+  addRepo "exercises" "petclinic-helm"
+  setPermission "exercises" "petclinic-helm" "${GITOPS_USERNAME}" "WRITE"
+
+  addRepo "exercises" "nginx-validation"
+  setPermission "exercises" "nginx-validation" "${GITOPS_USERNAME}" "WRITE"
 
   # Install necessary plugins
   installScmmPlugin "scm-mail-plugin" "false"
