@@ -118,7 +118,6 @@ function main() {
 
 
   evalWithSpinner "Basic setup & configuring registry..." applyBasicK8sResources
-  configureMetrics
 
   initSCMMVars
   evalWithSpinner "Starting SCM-Manager..." initSCMM
@@ -209,11 +208,6 @@ function checkPrerequisites() {
   fi
 }
 
-function configureMetrics() {
-  kubectl apply -f https://raw.githubusercontent.com/prometheus-operator/kube-prometheus/v0.9.0/manifests/setup/prometheus-operator-0servicemonitorCustomResourceDefinition.yaml
-  kubectl apply -f metrics/dashboards || true
-}
-
 function applyBasicK8sResources() {
   kubectl apply -f k8s-namespaces || true
 
@@ -228,6 +222,9 @@ function applyBasicK8sResources() {
     helm repo add jenkins https://charts.jenkins.io
     helm repo update
   fi
+
+  # crd for servicemonitor. a prometheus operator specific resource
+  kubectl apply -f https://raw.githubusercontent.com/prometheus-operator/kube-prometheus/v0.9.0/manifests/setup/prometheus-operator-0servicemonitorCustomResourceDefinition.yaml
 
   initRegistry
 }
@@ -366,7 +363,8 @@ function initArgo() {
   pushPetClinicRepo 'applications/petclinic/argocd/plain-k8s' 'argocd/petclinic-plain'
   pushPetClinicRepo 'applications/petclinic/argocd/helm' 'argocd/petclinic-helm'
   initRepo 'argocd/gitops'
-  initRepoWithSource 'argocd/control-app' 'argocd/control-app' setGrafanaCredentials
+  initRepoWithSource 'argocd/control-app' 'argocd/control-app' metricsConfiguration
+
   # Set NodePort service, to avoid "Pending" services and "Processing" state in argo on local cluster
   initRepoWithSource 'applications/nginx/argocd' 'argocd/nginx-helm' \
     "[[ $REMOTE_CLUSTER != true ]] && find . -name values-shared.yaml -exec bash -c '(echo && echo service: && echo \"  type: NodePort\" ) >> {}' \;"
@@ -374,6 +372,7 @@ function initArgo() {
   # init exercise
   pushPetClinicRepo 'exercises/petclinic-helm' 'exercises/petclinic-helm'
   initRepoWithSource 'exercises/nginx-validation' 'exercises/nginx-validation'
+  pushPetClinicRepo 'exercises/petclinic-plain-argo-alerts' 'exercises/petclinic-plain-argo-alerts'
 }
 
 function replaceAllScmmUrlsInFolder() {
@@ -634,19 +633,26 @@ function initRepoWithSource() {
   setDefaultBranch "${TARGET_REPO_SCMM}"
 }
 
-function setGrafanaCredentials() {
-  ARGOCD_APP_PROMETHEUS_STACK="applications/application-kube-prometheus-stack-helm.yaml"
+function metricsConfiguration() {
+  if [[ $DEPLOY_METRICS == true ]]; then
 
-  if [[ ${SET_USERNAME} != "admin" ]]; then
-    FROM_USERNAME_STRING='adminUser: admin'
-    TO_USERNAME_STRING="adminUser: ${SET_USERNAME}"
-    sed -i -e "s%${FROM_USERNAME_STRING}%${TO_USERNAME_STRING}%g" "${ARGOCD_APP_PROMETHEUS_STACK}"
-  fi
+    kubectl apply -f "${PLAYGROUND_DIR}/metrics/dashboards" || true
 
-  if [[ ${SET_PASSWORD} != "admin" ]]; then
-    FROM_PASSWORD_STRING='adminPassword: admin'
-    TO_PASSWORD_STRING="adminPassword: ${SET_PASSWORD}"
-    sed -i -e "s%${FROM_PASSWORD_STRING}%${TO_PASSWORD_STRING}%g" "${ARGOCD_APP_PROMETHEUS_STACK}"
+    ARGOCD_APP_PROMETHEUS_STACK="applications/application-kube-prometheus-stack-helm.yaml"
+
+    if [[ ${SET_USERNAME} != "admin" ]]; then
+      FROM_USERNAME_STRING='adminUser: admin'
+      TO_USERNAME_STRING="adminUser: ${SET_USERNAME}"
+      sed -i -e "s%${FROM_USERNAME_STRING}%${TO_USERNAME_STRING}%g" "${ARGOCD_APP_PROMETHEUS_STACK}"
+    fi
+
+    if [[ ${SET_PASSWORD} != "admin" ]]; then
+      FROM_PASSWORD_STRING='adminPassword: admin'
+      TO_PASSWORD_STRING="adminPassword: ${SET_PASSWORD}"
+      sed -i -e "s%${FROM_PASSWORD_STRING}%${TO_PASSWORD_STRING}%g" "${ARGOCD_APP_PROMETHEUS_STACK}"
+    fi
+  else
+      rm -f "applications/application-kube-prometheus-stack-helm.yaml"
   fi
 }
 
@@ -842,6 +848,9 @@ function printParameters() {
   echo "    | --skip-helm-update    >> Skips adding and updating helm repos"
   echo "    | --argocd-config-only  >> Skips installing argo-cd. Applies ConfigMap and Application manifests to bootstrap existing argo-cd"
   echo
+  echo "Configure additional modules"
+  echo "    | --metrics       >> Installs the Kube-Prometheus-Stack for ArgoCD. This includes Prometheus, the Prometheus operator, Grafana and some extra resources"
+  echo
   echo " -d | --debug         >> Debug output"
   echo " -x | --trace         >> Debug + Show each command executed (set -x)"
   echo " -y | --yes           >> Skip kubecontext confirmation"
@@ -850,7 +859,7 @@ function printParameters() {
 readParameters() {
   COMMANDS=$(getopt \
     -o hdxyc \
-    --long help,fluxv1,fluxv2,argocd,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,trace,insecure,yes,skip-helm-update,argocd-config-only: \
+    --long help,fluxv1,fluxv2,argocd,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,trace,insecure,yes,skip-helm-update,argocd-config-only,metrics: \
     -- "$@")
   
   if [ $? != 0 ]; then
@@ -889,6 +898,7 @@ readParameters() {
   ASSUME_YES=false
   SKIP_HELM_UPDATE=false
   ARGOCD_CONFIG_ONLY=false
+  DEPLOY_METRICS=false
   
   while true; do
     case "$1" in
@@ -921,6 +931,7 @@ readParameters() {
       -y | --yes           ) ASSUME_YES=true; shift ;;
       --skip-helm-update   ) SKIP_HELM_UPDATE=true; shift ;;
       --argocd-config-only ) ARGOCD_CONFIG_ONLY=true; shift ;;
+      --metrics            ) DEPLOY_METRICS=true; shift;;
       --                   ) shift; break ;;
     *) break ;;
     esac

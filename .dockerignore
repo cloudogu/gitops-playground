@@ -5,10 +5,12 @@
 !applications/
 !argocd/
 !docker-registry/
+!exercises/
 !fluxv1/
 !fluxv2/
 !jenkins/
 !k8s-namespaces/
+!metrics/
 !scm-manager/
 !scripts/jenkins/
 !scripts/scm-manager/

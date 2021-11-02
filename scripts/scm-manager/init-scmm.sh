@@ -112,6 +112,9 @@ function configureScmmManager() {
   addRepo "exercises" "nginx-validation"
   setPermission "exercises" "nginx-validation" "${GITOPS_USERNAME}" "WRITE"
 
+  addRepo "exercises" "petclinic-plain-argo-alerts"
+  setPermission "exercises" "petclinic-plain-argo-alerts" "${GITOPS_USERNAME}" "WRITE"
+
   # Install necessary plugins
   installScmmPlugin "scm-mail-plugin" "false"
   installScmmPlugin "scm-review-plugin" "false"

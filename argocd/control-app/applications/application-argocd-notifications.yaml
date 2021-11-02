@@ -19,13 +19,12 @@ spec:
           service.email: |
             host: mailhog.monitoring.svc.cluster.local
             port: 1025
-            from: grafana-alerts@cloudogu.com
+            from: argocd-alerts@cloudogu.com
         subscriptions: # this subscription block handles GLOBAL notifications. every application in every project is going to be notified about the set triggers
           - recipients:
             - email:alerts@cloudogu.com
             triggers: # these correspond to the triggers which you can find at the end of this file
             - on-health-degraded
-            - on-sync-status-unknown
             - on-sync-failed
         templates:
           template.app-deployed: |
