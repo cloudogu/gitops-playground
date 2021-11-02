@@ -1,3 +1,4 @@
+credentials:2.6.1
 docker-workflow:1.26
 docker-plugin:1.2.3
 pipeline-utility-steps:2.8.0

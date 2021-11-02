@@ -1,0 +1,12 @@
+staticSiteConfigmap: exercise-index-nginx
+
+extraEnvVars:
+  - name: LOG_LEVEL
+      value: debug
+serverBlock: |-
+  server {
+    listen 0.0.0.0:8080;
+    location /hi {
+      return 200 "hello!";
+    }
+  }

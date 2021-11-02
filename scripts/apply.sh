@@ -272,7 +272,7 @@ function initSCMM() {
   # They contain Repository URLs create with BASE_URL. Jenkins uses the internal URL for repos. So match is only
   # successful, when SCM also sends the Repo URLs using the internal URL
   configureScmmManager "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "${SCMM_URL}" "${JENKINS_URL_FOR_SCMM}" \
-    "${SCMM_URL_FOR_JENKINS}" "${INTERNAL_SCMM}"
+    "${SCMM_URL_FOR_JENKINS}" "${INTERNAL_SCMM}" "${INSTALL_FLUXV1}" "${INSTALL_FLUXV2}" "${INSTALL_ARGOCD}"
 
   pushHelmChartRepo 'common/spring-boot-helm-chart'
   pushHelmChartRepoWithDependency 'common/spring-boot-helm-chart-with-dependency'
@@ -362,6 +362,10 @@ function initArgo() {
   # Set NodePort service, to avoid "Pending" services and "Processing" state in argo on local cluster
   initRepoWithSource 'applications/nginx/argocd' 'argocd/nginx-helm' \
     "[[ $REMOTE_CLUSTER != true ]] && find . -name values-shared.yaml -exec bash -c '(echo && echo service: && echo \"  type: NodePort\" ) >> {}' \;"
+
+  # init exercise
+  pushPetClinicRepo 'exercises/petclinic-helm' 'exercises/petclinic-helm'
+  initRepoWithSource 'exercises/nginx-validation' 'exercises/nginx-validation'
 }
 
 function replaceAllScmmUrlsInFolder() {
@@ -477,7 +481,7 @@ function pushPetClinicRepo() {
       # Set NodePort service, to avoid "Pending" services and "Processing" state in argo
       find . \( -name service.yaml -o -name values-shared.yaml \) -exec sed -i "s/LoadBalancer/NodePort/" {} \;
     fi
-    
+
     git checkout -b main --quiet
     git add .
     git commit -m 'Add GitOps Pipeline and K8s resources' --quiet
@@ -605,11 +609,11 @@ function initRepoWithSource() {
     if [[ ${INTERNAL_SCMM} == false ]]; then
       replaceAllScmmUrlsInFolder "${TMP_REPO}"
     fi
-    
+
     if [[ -n "${EVAL_IN_REPO}" ]]; then
       eval "${EVAL_IN_REPO}"
     fi
-    
+
     git checkout main --quiet || git checkout -b main --quiet
     git add .
     git commit -m "Init ${TARGET_REPO_SCMM}" --quiet || true

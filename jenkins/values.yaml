@@ -58,7 +58,7 @@ controller:
       value: /opt/java/openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/tmp/docker
 
   customInitContainers:
-    # Create Jenkins agent working dir explicitly. Otherwise it seems to be owned by root
+    # Create Jenkins agent working dir explicitly. Otherwise, it seems to be owned by root
     # The does not need this folder, but creating it in a defined way and ownership on startup is better than to run an
     # InitContainer on each agent startup
     - name: create-agent-working-dir
