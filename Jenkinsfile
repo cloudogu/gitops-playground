@@ -26,7 +26,7 @@ node('docker') {
 
     timestamps {
         catchError {
-            timeout(activity: true, time: 30, unit: 'MINUTES') {
+            timeout(activity: false, time: 60, unit: 'MINUTES') {
 
                 stage('Checkout') {
                     checkout scm
