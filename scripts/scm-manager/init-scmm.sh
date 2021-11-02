@@ -29,7 +29,7 @@ function configureScmmManager() {
   IS_LOCAL=${6}
   INSTALL_FLUXV1="${7}"
   INSTALL_FLUXV2="${8}"
-  INSTALL_ARGOCD="${8}"
+  INSTALL_ARGOCD="${9}"
 
   GITOPS_USERNAME="gitops"
   GITOPS_PASSWORD=${ADMIN_PASSWORD}
