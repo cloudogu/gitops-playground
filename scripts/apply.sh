@@ -302,7 +302,7 @@ function initFluxV1() {
   pushPetClinicRepo 'applications/petclinic/fluxv1/helm' 'fluxv1/petclinic-helm'
   # Set NodePort service, to avoid "Pending" services on local cluster
   initRepoWithSource 'applications/nginx/fluxv1' 'fluxv1/nginx-helm' \
-      "[[ $REMOTE_CLUSTER != true ]] && find . -name values-shared.yaml -exec bash -c '(echo && echo service.type: NodePort && echo) >> {}' \; "
+      "if [[ $REMOTE_CLUSTER != true ]]; then find . -name values-shared.yaml -exec bash -c '(echo && echo service.type: NodePort && echo) >> {}' \; ; fi"
 
   SET_GIT_URL=""
   if [[ ${INTERNAL_SCMM} == false ]]; then
@@ -361,7 +361,7 @@ function initArgo() {
   initRepoWithSource 'argocd/control-app' 'argocd/control-app'
   # Set NodePort service, to avoid "Pending" services and "Processing" state in argo on local cluster
   initRepoWithSource 'applications/nginx/argocd' 'argocd/nginx-helm' \
-    "[[ $REMOTE_CLUSTER != true ]] && find . -name values-shared.yaml -exec bash -c '(echo && echo service: && echo \"  type: NodePort\" ) >> {}' \;"
+    "if [[ $REMOTE_CLUSTER != true ]]; then find . -name values-shared.yaml -exec bash -c '(echo && echo service: && echo \"  type: NodePort\" ) >> {}' \; ; fi"
 
   # init exercise
   pushPetClinicRepo 'exercises/petclinic-helm' 'exercises/petclinic-helm'
