@@ -372,7 +372,7 @@ function initArgo() {
   # init exercise
   pushPetClinicRepo 'exercises/petclinic-helm' 'exercises/petclinic-helm'
   initRepoWithSource 'exercises/nginx-validation' 'exercises/nginx-validation'
-  pushPetClinicRepo 'exercises/petclinic-plain-argo-alerts' 'exercises/petclinic-plain-argo-alerts'
+  pushPetClinicRepo 'exercises/broken-application' 'exercises/broken-application'
 }
 
 function replaceAllScmmUrlsInFolder() {
@@ -640,6 +640,10 @@ function metricsConfiguration() {
       sed -i "s/LoadBalancer/NodePort/" "applications/application-mailhog-helm.yaml"
   fi
 
+  if [[ $ARGOCD_URL != "" ]]; then
+      sed -i "s,argocdUrl: http://localhost:9092,argocdUrl: $ARGOCD_URL" "applications/application-argocd-notifications.yaml"
+  fi
+
   if [[ $DEPLOY_METRICS == true ]]; then
 
     kubectl apply -f "${PLAYGROUND_DIR}/metrics/dashboards" || true
@@ -843,6 +847,9 @@ function printParameters() {
   echo "    | --registry-password=myPassword  >> Optional when --registry-url is set"
   echo "    | --internal-registry-port         >> Port of registry registry. Ignored when registry-url is set."
   echo
+  echo "Configure ArgoCD."
+  echo "    | --argocd-url=http://argocd    >> The URL where argocd is accessible"
+  echo
   echo "Configure images used by the gitops-build-lib in the application examples"
   echo "    | --kubectl-image      >> Sets image for kubectl"
   echo "    | --helm-image         >> Sets image for helm"
@@ -865,7 +872,7 @@ function printParameters() {
 readParameters() {
   COMMANDS=$(getopt \
     -o hdxyc \
-    --long help,fluxv1,fluxv2,argocd,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,trace,insecure,yes,skip-helm-update,argocd-config-only,metrics: \
+    --long help,fluxv1,fluxv2,argocd,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,trace,insecure,yes,skip-helm-update,argocd-config-only,metrics,argocd-url: \
     -- "$@")
   
   if [ $? != 0 ]; then
@@ -905,6 +912,7 @@ readParameters() {
   SKIP_HELM_UPDATE=false
   ARGOCD_CONFIG_ONLY=false
   DEPLOY_METRICS=false
+  ARGOCD_URL=""
   
   while true; do
     case "$1" in
@@ -938,6 +946,7 @@ readParameters() {
       --skip-helm-update   ) SKIP_HELM_UPDATE=true; shift ;;
       --argocd-config-only ) ARGOCD_CONFIG_ONLY=true; shift ;;
       --metrics            ) DEPLOY_METRICS=true; shift;;
+      --argocd-url         ) ARGOCD_URL="$2"; shift 2 ;;
       --                   ) shift; break ;;
     *) break ;;
     esac
