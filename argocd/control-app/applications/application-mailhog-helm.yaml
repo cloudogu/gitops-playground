@@ -12,5 +12,11 @@ spec:
     chart: mailhog
     repoURL: https://codecentric.github.io/helm-charts
     targetRevision: 5.0.1
+    helm:
+      values: |
+        service:
+          type: LoadBalancer
+          nodePort:
+            http: "9094"
   syncPolicy:
     automated: {}

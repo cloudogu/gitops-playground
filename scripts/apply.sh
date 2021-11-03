@@ -634,6 +634,12 @@ function initRepoWithSource() {
 }
 
 function metricsConfiguration() {
+
+  if [[ $REMOTE_CLUSTER != true ]]; then
+      # Set NodePort service, to avoid "Pending" services and "Processing" state in argo
+      sed -i "s/LoadBalancer/NodePort/" "applications/application-mailhog-helm.yaml"
+  fi
+
   if [[ $DEPLOY_METRICS == true ]]; then
 
     kubectl apply -f "${PLAYGROUND_DIR}/metrics/dashboards" || true
