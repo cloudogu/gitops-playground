@@ -158,7 +158,7 @@ kubectl create clusterrolebinding gitops-playground-job-executer \
 # Then start apply the playground with the following command
 # The --remote parameter exposes Jenkins, SCMM and argo on well-known ports for example, 
 # so you don't have to remember the individual ports
-kubectl run gitops-playground -i --tty --restart=OnFailure \
+kubectl run gitops-playground -i --tty --restart=Never \
   --overrides='{ "spec": { "serviceAccount": "gitops-playground-job-executer" } }' \
   --image ghcr.io/cloudogu/gitops-playground \
   -- --yes --remote # additional parameters go here
