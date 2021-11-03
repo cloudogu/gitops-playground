@@ -3,8 +3,8 @@ kind: AppProject
 metadata:
   name: nginx
   namespace: argocd
-#  every application in this project is going to be notified about when one of these three events trigger
   annotations:
+##  every application in this project is going to be notified about when one of these three events trigger
     notifications.argoproj.io/subscribe.on-sync-status-longer-10s.email: argocd@testeroony.de
 #    notifications.argoproj.io/subscribe.on-health-degraded.email: argocd@testeroony.de
 #    notifications.argoproj.io/subscribe.on-sync-status-unknown.email: argocd@testeroony.de

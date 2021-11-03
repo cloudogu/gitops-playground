@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: spring-petclinic-plain
+  name: exercise-spring-petclinic-plain-argo-alerts
   namespace: argocd-production
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: spring-petclinic-plain
+      app: exercise-spring-petclinic-plain-argo-alerts
   template:
     metadata:
       labels:
-        app: spring-petclinic-plain
+        app: exercise-spring-petclinic-plain-argo-alerts
     spec:
       containers:
-        - name: spring-petclinic-plain
+        - name: exercise-spring-petclinic-plain-argo-alerts
           image: localhost:30000/petclinic-plain:1
           ports:
             - containerPort: 8080
@@ -38,4 +38,4 @@ spec:
       volumes:
         - name: messages
           configMap:
-            name: messages
+            name: messages-for-argo-alerts

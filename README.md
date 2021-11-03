@@ -501,3 +501,4 @@ You can use it by executing `groovy ./scripts/e2e.groovy --url http://localhost:
 - `fail` - Exit on first build failure  
 - `interval` - Interval for waits while scanning for builds  
 - `debug` - Set log level to debug  
+- `metrics` - Installs the kube-prometheus-stack for argocd as an argocd application.

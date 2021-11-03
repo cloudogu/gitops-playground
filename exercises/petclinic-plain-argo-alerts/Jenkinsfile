@@ -100,10 +100,18 @@ node {
                                ]
                             ]
                         ],
+                        validators: [
+                                kubeval: [
+                                        enabled: false
+                                ],
+                                yamllint: [
+                                        enabled: false
+                                ]
+                        ],
                         fileConfigmaps: [
                                 // Showcase for gitops-build-lib: Convert file into a config map
                                 [
-                                        name : 'messages',
+                                        name : 'messages-for-argo-alerts',
                                         sourceFilePath : '../src/main/resources/messages/messages.properties',
                                         stage: ['staging', 'production']
                                 ]
