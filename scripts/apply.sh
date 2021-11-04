@@ -372,7 +372,7 @@ function initArgo() {
   # init exercise
   pushPetClinicRepo 'exercises/petclinic-helm' 'exercises/petclinic-helm'
   initRepoWithSource 'exercises/nginx-validation' 'exercises/nginx-validation'
-  pushPetClinicRepo 'exercises/broken-application' 'exercises/broken-application'
+  initRepoWithSource 'exercises/broken-application' 'exercises/broken-application'
 }
 
 function replaceAllScmmUrlsInFolder() {
