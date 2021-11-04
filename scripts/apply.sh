@@ -641,7 +641,7 @@ function metricsConfiguration() {
   fi
 
   if [[ $ARGOCD_URL != "" ]]; then
-      sed -i "s,argocdUrl: http://localhost:9092,argocdUrl: $ARGOCD_URL" "applications/application-argocd-notifications.yaml"
+      sed -i "s|argocdUrl: http://localhost:9092|argocdUrl: $ARGOCD_URL|g" "applications/application-argocd-notifications.yaml"
   fi
 
   if [[ $DEPLOY_METRICS == true ]]; then
@@ -848,7 +848,7 @@ function printParameters() {
   echo "    | --internal-registry-port         >> Port of registry registry. Ignored when registry-url is set."
   echo
   echo "Configure ArgoCD."
-  echo "    | --argocd-url=http://argocd    >> The URL where argocd is accessible"
+  echo "    | --argocd-url=http://my-argo.com    >> The URL where argocd is accessible. It has to be the full URL with http:// or https://"
   echo
   echo "Configure images used by the gitops-build-lib in the application examples"
   echo "    | --kubectl-image      >> Sets image for kubectl"

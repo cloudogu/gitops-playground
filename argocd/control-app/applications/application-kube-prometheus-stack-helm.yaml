@@ -60,6 +60,8 @@ spec:
           enabled: false
         kubeProxy:
           enabled: false
+        alertmanager:
+          enabled: false
         grafana:
           adminUser: admin
           adminPassword: admin
