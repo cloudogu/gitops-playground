@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mailhog
+  namespace: argocd
+spec:
+  destination:
+    namespace: monitoring
+    server: https://kubernetes.default.svc
+  project: monitoring
+  source:
+    chart: mailhog
+    repoURL: https://codecentric.github.io/helm-charts
+    targetRevision: 5.0.1
+    helm:
+      values: |
+        service:
+          type: LoadBalancer
+          port:
+            http: 80
+          nodePort:
+            http: "9094"
+  syncPolicy:
+    automated: {}

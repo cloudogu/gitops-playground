@@ -6,3 +6,29 @@ server:
     # Is ignored when type is LoadBalancer. For local cluster we change the service type to NodePort
     nodePortHttp: 9092
     nodePortHttps: 9093
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      namespace: monitoring
+      selector:
+        release: kube-prometheus-stack
+
+controller:
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      namespace: monitoring
+      selector:
+        release: kube-prometheus-stack
+
+repoServer:
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      namespace: monitoring
+      selector:
+        release: kube-prometheus-stack
+  

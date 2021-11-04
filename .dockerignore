@@ -10,6 +10,7 @@
 !fluxv2/
 !jenkins/
 !k8s-namespaces/
+!metrics/
 !scm-manager/
 !scripts/jenkins/
 !scripts/scm-manager/

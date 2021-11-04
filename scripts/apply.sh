@@ -116,6 +116,7 @@ function main() {
     echo "Full log output is appended to ${backgroundLogFile}"
   fi
 
+
   evalWithSpinner "Basic setup & configuring registry..." applyBasicK8sResources
 
   initSCMMVars
@@ -136,6 +137,7 @@ function main() {
   if [[ $TRACE == true ]]; then
     set +x
   fi
+
   printWelcomeScreen
 }
 
@@ -220,6 +222,9 @@ function applyBasicK8sResources() {
     helm repo add jenkins https://charts.jenkins.io
     helm repo update
   fi
+
+  # crd for servicemonitor. a prometheus operator specific resource
+  kubectl apply -f https://raw.githubusercontent.com/prometheus-operator/kube-prometheus/v0.9.0/manifests/setup/prometheus-operator-0servicemonitorCustomResourceDefinition.yaml
 
   initRegistry
 }
@@ -343,7 +348,7 @@ function initArgo() {
   fi
 
   if [[ ${ARGOCD_CONFIG_ONLY} == false ]]; then
-    
+
     helm upgrade -i argocd --values "${VALUES_YAML_PATH}" \
       $(argoHelmSettingsForLocalCluster) --version ${ARGO_HELM_CHART_VERSION} argo/argo-cd -n argocd
 
@@ -358,7 +363,8 @@ function initArgo() {
   pushPetClinicRepo 'applications/petclinic/argocd/plain-k8s' 'argocd/petclinic-plain'
   pushPetClinicRepo 'applications/petclinic/argocd/helm' 'argocd/petclinic-helm'
   initRepo 'argocd/gitops'
-  initRepoWithSource 'argocd/control-app' 'argocd/control-app'
+  initRepoWithSource 'argocd/control-app' 'argocd/control-app' metricsConfiguration
+
   # Set NodePort service, to avoid "Pending" services and "Processing" state in argo on local cluster
   initRepoWithSource 'applications/nginx/argocd' 'argocd/nginx-helm' \
     "if [[ $REMOTE_CLUSTER != true ]]; then find . -name values-shared.yaml -exec bash -c '(echo && echo service: && echo \"  type: NodePort\" ) >> {}' \; ; fi"
@@ -366,6 +372,7 @@ function initArgo() {
   # init exercise
   pushPetClinicRepo 'exercises/petclinic-helm' 'exercises/petclinic-helm'
   initRepoWithSource 'exercises/nginx-validation' 'exercises/nginx-validation'
+  initRepoWithSource 'exercises/broken-application' 'exercises/broken-application'
 }
 
 function replaceAllScmmUrlsInFolder() {
@@ -626,6 +633,39 @@ function initRepoWithSource() {
   setDefaultBranch "${TARGET_REPO_SCMM}"
 }
 
+function metricsConfiguration() {
+
+  if [[ $REMOTE_CLUSTER != true ]]; then
+      # Set NodePort service, to avoid "Pending" services and "Processing" state in argo
+      sed -i "s/LoadBalancer/NodePort/" "applications/application-mailhog-helm.yaml"
+  fi
+
+  if [[ $ARGOCD_URL != "" ]]; then
+      sed -i "s|argocdUrl: http://localhost:9092|argocdUrl: $ARGOCD_URL|g" "applications/application-argocd-notifications.yaml"
+  fi
+
+  if [[ $DEPLOY_METRICS == true ]]; then
+
+    kubectl apply -f "${PLAYGROUND_DIR}/metrics/dashboards" || true
+
+    ARGOCD_APP_PROMETHEUS_STACK="applications/application-kube-prometheus-stack-helm.yaml"
+
+    if [[ ${SET_USERNAME} != "admin" ]]; then
+      FROM_USERNAME_STRING='adminUser: admin'
+      TO_USERNAME_STRING="adminUser: ${SET_USERNAME}"
+      sed -i -e "s%${FROM_USERNAME_STRING}%${TO_USERNAME_STRING}%g" "${ARGOCD_APP_PROMETHEUS_STACK}"
+    fi
+
+    if [[ ${SET_PASSWORD} != "admin" ]]; then
+      FROM_PASSWORD_STRING='adminPassword: admin'
+      TO_PASSWORD_STRING="adminPassword: ${SET_PASSWORD}"
+      sed -i -e "s%${FROM_PASSWORD_STRING}%${TO_PASSWORD_STRING}%g" "${ARGOCD_APP_PROMETHEUS_STACK}"
+    fi
+  else
+      rm -f "applications/application-kube-prometheus-stack-helm.yaml"
+  fi
+}
+
 function setDefaultBranch() {
   TARGET_REPO_SCMM="$1"
   DEFAULT_BRANCH="${2:-main}"
@@ -807,6 +847,9 @@ function printParameters() {
   echo "    | --registry-password=myPassword  >> Optional when --registry-url is set"
   echo "    | --internal-registry-port         >> Port of registry registry. Ignored when registry-url is set."
   echo
+  echo "Configure ArgoCD."
+  echo "    | --argocd-url=http://my-argo.com    >> The URL where argocd is accessible. It has to be the full URL with http:// or https://"
+  echo
   echo "Configure images used by the gitops-build-lib in the application examples"
   echo "    | --kubectl-image      >> Sets image for kubectl"
   echo "    | --helm-image         >> Sets image for helm"
@@ -818,6 +861,9 @@ function printParameters() {
   echo "    | --skip-helm-update    >> Skips adding and updating helm repos"
   echo "    | --argocd-config-only  >> Skips installing argo-cd. Applies ConfigMap and Application manifests to bootstrap existing argo-cd"
   echo
+  echo "Configure additional modules"
+  echo "    | --metrics       >> Installs the Kube-Prometheus-Stack for ArgoCD. This includes Prometheus, the Prometheus operator, Grafana and some extra resources"
+  echo
   echo " -d | --debug         >> Debug output"
   echo " -x | --trace         >> Debug + Show each command executed (set -x)"
   echo " -y | --yes           >> Skip kubecontext confirmation"
@@ -826,7 +872,7 @@ function printParameters() {
 readParameters() {
   COMMANDS=$(getopt \
     -o hdxyc \
-    --long help,fluxv1,fluxv2,argocd,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,trace,insecure,yes,skip-helm-update,argocd-config-only: \
+    --long help,fluxv1,fluxv2,argocd,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,trace,insecure,yes,skip-helm-update,argocd-config-only,metrics,argocd-url: \
     -- "$@")
   
   if [ $? != 0 ]; then
@@ -865,6 +911,8 @@ readParameters() {
   ASSUME_YES=false
   SKIP_HELM_UPDATE=false
   ARGOCD_CONFIG_ONLY=false
+  DEPLOY_METRICS=false
+  ARGOCD_URL=""
   
   while true; do
     case "$1" in
@@ -897,6 +945,8 @@ readParameters() {
       -y | --yes           ) ASSUME_YES=true; shift ;;
       --skip-helm-update   ) SKIP_HELM_UPDATE=true; shift ;;
       --argocd-config-only ) ARGOCD_CONFIG_ONLY=true; shift ;;
+      --metrics            ) DEPLOY_METRICS=true; shift;;
+      --argocd-url         ) ARGOCD_URL="$2"; shift 2 ;;
       --                   ) shift; break ;;
     *) break ;;
     esac

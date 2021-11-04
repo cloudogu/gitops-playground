@@ -1,21 +1,21 @@
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
-  name: nginx
+  name: monitoring
   namespace: argocd
-  annotations:
+#  annotations:
 ##  every application in this project is going to be notified about when one of these three events trigger
-#    notifications.argoproj.io/subscribe.on-sync-status-longer-10s.email: argocd@testeroony.de
 #    notifications.argoproj.io/subscribe.on-health-degraded.email: argocd@testeroony.de
 #    notifications.argoproj.io/subscribe.on-sync-status-unknown.email: argocd@testeroony.de
 #    notifications.argoproj.io/subscribe.on-sync-failed.email: argocd@testeroony.de
 spec:
-  description: nginx project
+  description: monitoring and alerting stack including prometheus + grafana + argocd notifications
   destinations:
-  - namespace: argocd-production
-    server: https://kubernetes.default.svc
-  - namespace: argocd-staging
-    server: https://kubernetes.default.svc
+    - namespace: monitoring
+      server: https://kubernetes.default.svc
+    - namespace: argocd
+      server: https://kubernetes.default.svc
   sourceRepos:
-  - http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/gitops
-  - https://charts.bitnami.com/bitnami
+    - https://prometheus-community.github.io/helm-charts
+    - https://codecentric.github.io/helm-charts
+    - https://github.com/argoproj/argo-helm/

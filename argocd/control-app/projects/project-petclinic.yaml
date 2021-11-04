@@ -3,6 +3,12 @@ kind: AppProject
 metadata:
   name: petclinic
   namespace: argocd
+  annotations:
+##  every application in this project is going to be notified about when one of these three events trigger
+#    notifications.argoproj.io/subscribe.on-sync-status-longer-10s.email: argocd@testeroony.de
+#    notifications.argoproj.io/subscribe.on-health-degraded.email: argocd@testeroony.de
+#    notifications.argoproj.io/subscribe.on-sync-status-unknown.email: argocd@testeroony.de
+#    notifications.argoproj.io/subscribe.on-sync-failed.email: argocd@testeroony.de
 spec:
   description: petclinic project
   destinations:

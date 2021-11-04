@@ -32,3 +32,10 @@ data:
     - type: helm
       url: https://charts.bitnami.com/bitnami
       name: bitnami
+    - type: helm
+      url: https://prometheus-community.github.io/helm-charts
+      name: prometheus-community
+    - type: helm
+      url: https://codecentric.github.io/helm-charts
+      name: codecentric
+    - url: https://github.com/argoproj/argo-helm/

@@ -30,7 +30,7 @@ We recommend running this command as an unprivileged user, that is inside the [d
 
 # Table of contents
 
-<!-- Update with `doctoc --notitle README.md --maxlevel 4`. See https://github.com/thlorenz/doctoc -->
+<!-- Update with `doctoc --notitle README.md.md --maxlevel 4`. See https://github.com/thlorenz/doctoc -->
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
@@ -256,7 +256,8 @@ To override each image in all the applications you can use following parameters:
 
 ### Remove playground
 
-For k3d, you can just `k3d cluster delete gitops-playground`.
+For k3d, you can just `k3d cluster delete gitops-playground`. This will delete the whole cluster. If you just want to 
+remove the playground from the cluster, use this [script](scripts/destroy.sh): './scripts/destroy.sh'
 
 On remote clusters there is a [script](scripts/destroy.sh) inside this repo:
 
@@ -500,3 +501,4 @@ You can use it by executing `groovy ./scripts/e2e.groovy --url http://localhost:
 - `fail` - Exit on first build failure  
 - `interval` - Interval for waits while scanning for builds  
 - `debug` - Set log level to debug  
+- `metrics` - Installs the kube-prometheus-stack for argocd as an argocd application.
