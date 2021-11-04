@@ -16,6 +16,8 @@ spec:
       values: |
         service:
           type: LoadBalancer
+          port:
+            http: 80
           nodePort:
             http: "9094"
   syncPolicy:
