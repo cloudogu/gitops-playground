@@ -256,7 +256,7 @@ To override each image in all the applications you can use following parameters:
 
 #### ArgoCD-Notifications
 
-* If you are using a remote cluster you can set the `--argocd-url` parameter so that argocd-notification messages have a link to the corresponding application.
+If you are using a remote cluster you can set the `--argocd-url` parameter so that argocd-notification messages have a link to the corresponding application.
 
 #### Metrics
 
