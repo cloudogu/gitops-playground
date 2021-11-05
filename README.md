@@ -254,11 +254,11 @@ To override each image in all the applications you can use following parameters:
 * `--helmkubeval-image someRegistry/someImage:1.0.0`
 * `--yamllint-image someRegistry/someImage:1.0.0`
 
-#### ArgoCD-Notifications
+##### ArgoCD-Notifications
 
 If you are using a remote cluster you can set the `--argocd-url` parameter so that argocd-notification messages have a link to the corresponding application.
 
-#### Metrics
+##### Metrics
 
 Set the parameter `--metrics` so the [kube-prometheus-stack](https://github.com/prometheus-operator/kube-prometheus) via its [helm-chart](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack) is being deployed including argocd dashboards.
 
