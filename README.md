@@ -254,6 +254,20 @@ To override each image in all the applications you can use following parameters:
 * `--helmkubeval-image someRegistry/someImage:1.0.0`
 * `--yamllint-image someRegistry/someImage:1.0.0`
 
+#### ArgoCD-Notifications
+
+* If you are using a remote cluster you can set the `--argocd-url` parameter so that argocd-notification messages have a link to the corresponding application.
+
+#### Metrics
+
+Set the parameter `--metrics` so the [kube-prometheus-stack](https://github.com/prometheus-operator/kube-prometheus) via its [helm-chart](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack) is being deployed including argocd dashboards.
+
+### Mailhog and alerts
+
+Mailhog is being deployed with argocd-notifications and some default triggers.
+The mailhog is available at http://localhost:9094. 
+Applications deployed with argocd now will alert via email to mailhog if for example the sync status failed.
+
 ### Remove playground
 
 For k3d, you can just `k3d cluster delete gitops-playground`. This will delete the whole cluster. If you just want to 
@@ -370,18 +384,6 @@ ArgoCD's web UI is available at
 
 * http://localhost:9092 (k3d)
 * `scripts/get-remote-url argocd-server argocd` (remote k8s)
-
-If you are using a remote cluster you can set the --argocd-url parameter so that argocd-notification messages have a link to the corresponding application.
-
-### Metrics
-
-Set the parameter --metrics so the [kube-prometheus-stack](https://github.com/prometheus-operator/kube-prometheus) via its [helm-chart](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack) is being deployed including argocd dashboards.
-
-### Mailhog and alerts
-
-Mailhog is being deployed with argocd-notifications and some default triggers.
-The mailhog is available at http://localhost:9094. 
-Applications deployed with argocd now will alert via email to mailhog if for example the sync status failed.
 
 ### Demo applications
 
