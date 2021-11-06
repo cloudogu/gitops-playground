@@ -95,7 +95,7 @@ class JenkinsHandler {
             // since there is no support for namespace scan; we call built on root folder and wait to discover branches.
             potentialNamespaceJob.value.build(true)
 
-            var namespaceJob = waitForFolderJob(jenkins, potentialNamespaceJob.value)
+            var namespaceJob = waitForNamespaceJob(jenkins, potentialNamespaceJob.value)
 
             namespaceJob.getJobs().each { Map.Entry<String, Job> repoJob ->
                 println("Checking the repo ${repoJob.getKey()}")
@@ -126,7 +126,7 @@ class JenkinsHandler {
 
     }
 
-    FolderJob waitForFolderJob(JenkinsServer server, Job job) {
+    FolderJob waitForNamespaceJob(JenkinsServer server, Job job) {
         // Scanning namespace takes several seconds to complete. Example:
         // [Wed Sep 08 13:52:35 CEST 2021] Finished organization scan. Scan took 13 sec
         int count = 0;
