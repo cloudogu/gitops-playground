@@ -14,14 +14,19 @@ Or if you want to chat with us about gitops in general, visit us [here](https://
 TLDR; You can run a local k8s cluster with the GitOps playground installed with only one command (on Linux)
 
 ```shell
+docker pull ghcr.io/cloudogu/gitops-playground && \ 
 bash <(curl -s \
   https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh) \
-  && sleep 2 && docker run --rm -it -v ~/.k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
+  && sleep 2 && docker run --rm -it -u $(id -u) -v ~/.k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     --net=host \
     ghcr.io/cloudogu/gitops-playground --yes
 ```
 
-This command will also print URLs of the [applications](#applications) inside the cluster to get you started. 
+This command will also print URLs of the [applications](#applications) inside the cluster to get you started.  
+Note that you can append `--argocd`, `--fluxv1` and `--fluxv2` to select specific operators. This will also speed up the 
+progress.
+
+We recommend running this command as an unprivileged user, that is inside the [docker group](https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user). 
 
 # Table of contents
 
@@ -76,7 +81,7 @@ There a several options for running the GitOps playground
     (this can be run in production, e.g. with a [Cloudogu Ecosystem](https://cloudogu.com/en/ecosystem/?mtm_campaign=gitops-playground&mtm_kwd=ces&mtm_source=github&mtm_medium=link)) or  
   * to run everything inside the cluster (for demo only)  
 
-The diagrams bellow show an overview of the playground's architecture and three scenarios for running the playground. 
+The diagrams below show an overview of the playground's architecture and three scenarios for running the playground. 
 
 Note that running Jenkins inside the cluster is meant for demo purposes only. The third graphic shows our production 
 scenario with the Cloudogu EcoSystem (CES). Here better security and build performance is achieved using ephemeral 
@@ -109,7 +114,7 @@ There are several options for running the container:
 * For local k3d cluster, we recommend running the image as a local container via `docker`  
 * For remote clusters (e.g. on GKE) you can run the image inside a pod of the target cluster via `kubectl`. 
 
-All options offer the same parameters, see [bellow](#additional-parameters).
+All options offer the same parameters, see [below](#additional-parameters).
 
 #### Apply via Docker (local cluster)
 
@@ -118,17 +123,30 @@ k3d's kubeconfig.
 
 ```shell
 CLUSTER_NAME=gitops-playground
-docker run --rm -it -v ~/.k3d/kubeconfig-${CLUSTER_NAME}.yaml:/home/.kube/config \
+docker pull ghcr.io/cloudogu/gitops-playground
+docker run --rm -it -u $(id -u)  -v ~/.k3d/kubeconfig-${CLUSTER_NAME}.yaml:/home/.kube/config \
   --net=host \
   ghcr.io/cloudogu/gitops-playground # additional parameters go here
 ``` 
 
-Using the host network makes it possible to determine `localhost` and to use k3d's kubeconfig without altering, as it 
+Note: 
+* `docker pull` in advance makes sure you have the newest image, even if you ran this command before.  
+  Of course, you could also specify a specific [version of the image](https://github.com/cloudogu/gitops-playground/pkgs/container/gitops-playground/versions).
+* Using the host network makes it possible to determine `localhost` and to use k3d's kubeconfig without altering, as it 
 access the API server via a port bound to localhost.
+* We run as the local user in order to avoid file permission issues with the `kubeconfig-${CLUSTER_NAME}.yaml.`
+* If you experience issues and want to access the full log files, use the following command while the container is running:
+
+```bash
+docker exec -it \
+  $(docker ps -q  --filter ancestor=ghcr.io/cloudogu/gitops-playground) \
+  bash -c -- 'tail -f  -n +1 /tmp/playground-log-*'
+```
 
 #### Apply via kubectl (remote cluster)
 
 For remote clusters it is easiest to apply the playground via kubectl.
+You can find info on how to install kubectl [here](https://v1-21.docs.kubernetes.io/docs/tasks/tools/#kubectl).
 
 ```shell
 # Create a temporary ServiceAccount and authorize via RBAC. This is needed to install CRDs, etc.

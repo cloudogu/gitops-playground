@@ -36,7 +36,8 @@ function createCluster() {
 
   if k3d cluster list ${CLUSTER_NAME} >/dev/null 2>&1; then
     if confirm "Cluster '${CLUSTER_NAME}' already exists. Do you want to recreate the cluster?" ' [y/N]'; then
-      k3d cluster delete ${CLUSTER_NAME}
+      echo "Deleting cluster ${CLUSTER_NAME}"
+      k3d cluster delete ${CLUSTER_NAME} >/dev/null 2>&1;
     else
       echo "Not recreated."
       # Return error here to avoid possible subsequent commands to be executed
@@ -53,6 +54,10 @@ function createCluster() {
     '-v /etc/group:/etc/group@server[0]'
     # Persists the cache of Jenkins agents pods for faster builds
     '-v /tmp:/tmp@server[0]'
+    # Disable traefik (no ingresses used so far)
+    '--k3s-server-arg=--disable=traefik' 
+    # Disable servicelb (avoids "Pending" svclb pods and we use nodePorts right now anyway)
+    '--k3s-server-arg=--disable=servicelb' 
     # Pin k8s version via k3s image
     "--image=$K3S_VERSION" 
   )
@@ -80,7 +85,8 @@ function createCluster() {
     fi
   fi
 
-  k3d cluster create ${CLUSTER_NAME} ${K3D_ARGS[*]}
+  echo "Creating cluster ${CLUSTER_NAME}"
+  k3d cluster create ${CLUSTER_NAME} ${K3D_ARGS[*]} >/dev/null 2>&1;
   
   if [[ ${isUsingArbitraryRegistryPort} == 'true' ]]; then
     local registryPort

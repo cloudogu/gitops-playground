@@ -1,6 +1,7 @@
 extraEnv: |
   - name: TZ
     value: Europe/Berlin
+
 service:
   type: LoadBalancer
 

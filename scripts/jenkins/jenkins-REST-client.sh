@@ -6,6 +6,7 @@ function curlJenkins() {
     -u "${JENKINS_USERNAME}:${JENKINS_PASSWORD}" \
     "$@"
 }
+
 function createJob() {
   JOB_NAME=${1}
 
@@ -31,6 +32,14 @@ function createJob() {
     then
       echo "Creating Job failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
       exit $EXIT_STATUS
+  fi
+  
+  # Call "Scan now", triggering initialization of Job folder from SCMM Namespace
+  SCAN_STATUS=$(curlJenkins --fail -L -o /dev/null --write-out '%{http_code}' \
+        -X POST "${JENKINS_URL}/job/${JOB_NAME}/build?delay=0") && EXIT_STATUS=$? || EXIT_STATUS=$?
+  if [ $EXIT_STATUS != 0 ]
+    then
+      echo "WARNING: Initializing Jenkins Jobs failed with status code ${SCAN_STATUS}. Job folders might be empty."
   fi
 
   printStatus "${STATUS}"
@@ -64,9 +73,20 @@ function createCredentials() {
 }
 
 function crumb() {
-  curl -s --cookie-jar /tmp/cookies \
-    -u "${JENKINS_USERNAME}:${JENKINS_PASSWORD}" \
-    "${JENKINS_URL}/crumbIssuer/api/json" | jq -r '.crumb'
+    
+  RESPONSE=$(curl -s --cookie-jar /tmp/cookies \
+       --retry 3 --retry-delay 1 \
+       -u "${JENKINS_USERNAME}:${JENKINS_PASSWORD}" --write-out '%{json}' "${JENKINS_URL}/crumbIssuer/api/json" \
+       | jq -rsc '(.[1] | .http_code|tostring), (.[0] | .crumb)') && EXIT_STATUS=$? || EXIT_STATUS=$?
+  
+  # Convert to array
+  mapfile -t RESPONSE <<< ${RESPONSE}
+  if [ $EXIT_STATUS != 0 ]
+    then
+      echo "Creating Credentials failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${RESPONSE[0]}"
+      exit $EXIT_STATUS
+  fi
+  echo ${RESPONSE[1]}
 }
 
 function installPlugin() {

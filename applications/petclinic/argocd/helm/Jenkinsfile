@@ -9,7 +9,7 @@ String getDockerRegistryBaseUrl() { "${env.REGISTRY_URL}" }
 String getDockerRegistryPath() { "${env.REGISTRY_PATH}" }
 String getDockerRegistryCredentials() { 'registry-user' }
 String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/common/ces-build-lib/" }
-String getCesBuildLibVersion() { '1.46.1' }
+String getCesBuildLibVersion() { '1.48.0' }
 String getGitOpsBuildLibRepo() { "${env.SCMM_URL}/repo/common/gitops-build-lib" }
 String getGitOpsBuildLibVersion() { '0.1.3'}
 String getHelmChartRepository() { "${env.SCMM_URL}/repo/common/spring-boot-helm-chart-with-dependency" }
@@ -52,7 +52,9 @@ node {
             String imageTag = createImageTag()
             String pathPrefix = !dockerRegistryPath?.trim() ? "" : "${dockerRegistryPath}/"
             imageName = "${dockerRegistryBaseUrl}/${pathPrefix}${application}:${imageTag}"
-            mvn "spring-boot:build-image -DskipTests -Dcheckstyle.skip -Dspring-boot.build-image.imageName=${imageName}"
+            mvn "spring-boot:build-image -DskipTests -Dcheckstyle.skip -Dspring-boot.build-image.imageName=${imageName} " +
+                    // Pin builder image for reproducible builds. Update here to get newer JDK minor versions. 
+                    "-Dspring-boot.build-image.builder=paketobuildpacks/builder:0.1.185-base "
 
             if (isBuildSuccessful()) {
                 def docker = cesBuildLib.Docker.new(this)
