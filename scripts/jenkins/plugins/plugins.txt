@@ -1,3 +1,4 @@
+workflow-cps-global-lib:2.21
 credentials:2.6.1
 docker-workflow:1.26
 docker-plugin:1.2.3
