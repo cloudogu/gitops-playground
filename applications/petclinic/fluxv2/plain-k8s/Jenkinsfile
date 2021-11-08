@@ -6,8 +6,8 @@ String getScmManagerCredentials() { 'scmm-user' }
 String getConfigRepositoryUrl() { "${env.SCMM_URL}/repo/fluxv2/gitops" }
 String getConfigRepositoryPRUrl() { "${env.SCMM_URL}/api/v2/pull-requests/fluxv2/gitops" }
 // The docker daemon cant use the k8s service name, because it is not running inside the cluster
-String getDockerRegistryBaseUrl() { "${env.REGISTRY_URL}" }
-String getDockerRegistryPath() { "${env.REGISTRY_PATH}" }
+String getDockerRegistryBaseUrl() { env.REGISTRY_URL }
+String getDockerRegistryPath() { env.REGISTRY_PATH }
 String getDockerRegistryCredentials() { 'registry-user' }
 String getCesBuildLibVersion() { '1.44.3' }
 String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/common/ces-build-lib/" }
