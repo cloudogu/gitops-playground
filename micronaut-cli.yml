@@ -1,0 +1,6 @@
+applicationType: cli
+defaultPackage: groovy.cli.graal.nativeimage.micronaut.example
+testFramework: junit
+sourceLanguage: groovy
+buildTool: maven
+features: [app-name, groovy, junit, logback, maven, picocli, picocli-groovy-application, picocli-junit, readme, shade, yaml]
