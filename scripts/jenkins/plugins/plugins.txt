@@ -1,3 +1,4 @@
+workflow-durable-task-step:2.40
 workflow-cps-global-lib:2.21
 credentials:2.6.1
 docker-workflow:1.26
