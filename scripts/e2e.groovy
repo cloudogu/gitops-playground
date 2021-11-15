@@ -121,22 +121,25 @@ class JenkinsHandler {
     // After that we need to iterate through every job folder
     List<JobWithDetails> buildJobList() {
         List<JobWithDetails> jobs = new ArrayList<>()
-        jenkins.getJobs().each { Map.Entry<String, Job> job ->
+        jenkins.getJobs().each { Map.Entry<String, Job> potentialNamespaceJob ->
 
-            job.value.url = "${configuration.getUrl()}/job/${job.value.name}/"
-            if (!jenkins.getFolderJob(job.value).isPresent()) {
-                println "Job ${job.value.name} seems not to be a folder job. Skipping."
+            potentialNamespaceJob.value.url = "${configuration.getUrl()}/job/${potentialNamespaceJob.value.name}/"
+            println "Trying to build job list for ${potentialNamespaceJob.value.name}"
+            if (!jenkins.getFolderJob(potentialNamespaceJob.value).isPresent()) {
+                println "Job ${potentialNamespaceJob.value.name} seems not to be a folder job. Skipping."
                 return
             }
 
             // since there is no support for namespace scan; we call built on root folder and wait to discover branches.
-            job.value.build(true)
+            potentialNamespaceJob.value.build(true)
 
-            waitForFolderJob(jenkins, job.value)
+            var namespaceJob = waitForNamespaceJob(jenkins, potentialNamespaceJob.value)
 
-            jenkins.getFolderJob(job.value).get().getJobs().each { Map.Entry<String, Job> j ->
-                jenkins.getFolderJob(j.value).get().getJobs().each { Map.Entry<String, Job> i ->
-                    jobs.add(i.value.details())
+            namespaceJob.getJobs().each { Map.Entry<String, Job> repoJob ->
+                println("Checking the repo ${repoJob.getKey()}")
+                jenkins.getFolderJob(repoJob.value).get().getJobs().each { Map.Entry<String, Job> branchJob ->
+                    println("Checking the branch ${branchJob.getKey()}")
+                    jobs.add(branchJob.value.details())
                 }
             }
         }
@@ -161,7 +164,7 @@ class JenkinsHandler {
 
     }
 
-    void waitForFolderJob(JenkinsServer server, Job job) {
+    FolderJob waitForNamespaceJob(JenkinsServer server, Job job) {
         // Scanning namespace takes several seconds to complete. Example:
         // [Wed Sep 08 13:52:35 CEST 2021] Finished organization scan. Scan took 13 sec
         int count = 0;
@@ -179,7 +182,14 @@ class JenkinsHandler {
         }
         if (folderJob.getJobs().size() == 0) {
             println "WARNING: Job ${job.name} is a folder but does not include jobs."
+        } else {
+            println "Found repositories. Waiting a little more so that all repositories have been discovered"
+            Thread.sleep(30000)
+            folderJob = server.getFolderJob(job).get()
+            println "There are ${folderJob.getJobs().size()} jobs. These are:"
+            folderJob.getJobs().each { Map.Entry<String, Job> repoJob -> println "${repoJob.getKey()}" }
         }
+        return folderJob
     }
 }
 
