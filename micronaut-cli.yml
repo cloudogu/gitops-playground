@@ -1,5 +1,5 @@
 applicationType: cli
-defaultPackage: groovy.cli.graal.nativeimage.micronaut.example
+defaultPackage: com.cloudogu.gop.cli
 testFramework: junit
 sourceLanguage: groovy
 buildTool: maven

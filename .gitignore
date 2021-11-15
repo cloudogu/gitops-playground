@@ -1,4 +1,5 @@
 .idea
+*.iml
 
 # do not check in the workspace
 workspace/

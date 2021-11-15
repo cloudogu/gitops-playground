@@ -19,9 +19,9 @@
     <maven.compiler.target>11</maven.compiler.target>
     <!-- If you are building with JDK 9 or higher, you can uncomment the lines below to set the release version -->
     <!-- <release.version>8</release.version> -->
-    <micronaut.version>2.5.0</micronaut.version>
+    <micronaut.version>3.1.4</micronaut.version>
     <exec.mainClass>com.cloudogu.gop.cli.GitopsPlaygroundCli</exec.mainClass>
-    <groovyVersion>3.0.7</groovyVersion>
+    <groovyVersion>3.0.9</groovyVersion>
   </properties>
 
   <repositories>
@@ -41,6 +41,21 @@
       <groupId>org.codehaus.groovy</groupId>
       <artifactId>groovy</artifactId>
       <version>${groovyVersion}</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>info.picocli</groupId>
+      <artifactId>picocli</artifactId>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.micronaut.groovy</groupId>
+      <artifactId>micronaut-runtime-groovy</artifactId>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.micronaut.picocli</groupId>
+      <artifactId>micronaut-picocli</artifactId>
       <scope>compile</scope>
     </dependency>
     <dependency>
@@ -84,18 +99,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>info.picocli</groupId>
-      <artifactId>picocli</artifactId>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
       <groupId>io.micronaut.groovy</groupId>
       <artifactId>micronaut-runtime-groovy</artifactId>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.micronaut.picocli</groupId>
-      <artifactId>micronaut-picocli</artifactId>
       <scope>compile</scope>
     </dependency>
   </dependencies>
