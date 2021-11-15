@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: com.cloudogu.gop.cli.GitopsPlaygroundCliTest
--------------------------------------------------------------------------------
-Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.167 s - in com.cloudogu.gop.cli.GitopsPlaygroundCliTest
