@@ -7,7 +7,6 @@ ABSOLUTE_BASEDIR="$(cd ${BASEDIR} && pwd)"
 export ABSOLUTE_BASEDIR
 PLAYGROUND_DIR="$(cd ${BASEDIR} && cd .. && pwd)"
 export PLAYGROUND_DIR
-APPLY_NG_PATH="${ABSOLUTE_BASEDIR}/apply-ng"
 
 PETCLINIC_COMMIT=1e95138
 SPRING_BOOT_HELM_CHART_COMMIT=0.3.0
@@ -45,7 +44,7 @@ function main() {
   readParameters "$@"
 
   # call our groovy cli and pass in all params
-  $APPLY_NG_PATH "$@"
+  ./scripts/apply-ng "$@"
   
   if [[ $ASSUME_YES == false ]]; then
     confirm "Applying gitops playground to kubernetes cluster: '$(kubectl config current-context)'." 'Continue? y/n [n]' ||
