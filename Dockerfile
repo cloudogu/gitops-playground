@@ -116,7 +116,7 @@ ENV HOME=/home \
 WORKDIR /app
 
 # copy groovy cli binary from native-image stage
-COPY --from=native-image /app/apply-ng /app/apply-ng
+COPY --from=native-image /app/apply-ng /app/scripts/apply-ng
 
 ENTRYPOINT ["scripts/apply.sh"]
 
