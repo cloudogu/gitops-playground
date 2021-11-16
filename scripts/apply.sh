@@ -42,7 +42,7 @@ JENKINS_PLUGIN_FOLDER=${JENKINS_PLUGIN_FOLDER:-''}
 function main() {
   
   readParameters "$@"
-  ls -la
+
   # call our groovy cli and pass in all params
   "$PLAYGROUND_DIR"/apply-ng "$@"
   
