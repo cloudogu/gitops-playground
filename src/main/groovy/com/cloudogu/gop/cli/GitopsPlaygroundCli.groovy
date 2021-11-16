@@ -103,6 +103,10 @@ class GitopsPlaygroundCli implements Runnable {
     @Override
     void run() {
         println this.toString()
+        println "-----------------------------------------------"
+        // TODO: executing commands should be done using picocli commandline interface
+        // @see: https://picocli.info/#execute
+        println "helm version".execute().text
     }
 
     @Override

@@ -43,13 +43,8 @@ function main() {
   
   readParameters "$@"
 
-  ls -la
-  ls -la $BASEDIR
-  ls -la $ABSOLUTE_BASEDIR
-  ls -la $PLAYGROUND_DIR
-
   # call our groovy cli and pass in all params
-  ./"$BASEDIR"/apply-ng "$@"
+  "$ABSOLUTE_BASEDIR"/apply-ng "$@"
   
   if [[ $ASSUME_YES == false ]]; then
     confirm "Applying gitops playground to kubernetes cluster: '$(kubectl config current-context)'." 'Continue? y/n [n]' ||
