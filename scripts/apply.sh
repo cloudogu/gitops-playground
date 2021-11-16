@@ -42,9 +42,9 @@ JENKINS_PLUGIN_FOLDER=${JENKINS_PLUGIN_FOLDER:-''}
 function main() {
   
   readParameters "$@"
-
+  ls -la
   # call our groovy cli and pass in all params
-  "$ABSOLUTE_BASEDIR"/apply-ng "$@"
+  "$PLAYGROUND_DIR"/apply-ng "$@"
   
   if [[ $ASSUME_YES == false ]]; then
     confirm "Applying gitops playground to kubernetes cluster: '$(kubectl config current-context)'." 'Continue? y/n [n]' ||
