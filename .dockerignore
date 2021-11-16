@@ -21,6 +21,7 @@
 !LICENSE
 
 # groovy cli
+!apply-ng
 !src
 !pom.xml
 !mvnw
