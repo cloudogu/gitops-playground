@@ -44,6 +44,7 @@ node('docker') {
                 }
 
                 stage('Test') {
+                    Maven mvn = new MavenWrapperInDocker(this, 'azul/zulu-openjdk-alpine:11.0.10')
                     mvn 'test -Dmaven.test.failure.ignore=true'
                     // Archive test results. Makes build unstable on failed tests.
                     junit testResults: '**/target/surefire-reports/TEST-*.xml'
