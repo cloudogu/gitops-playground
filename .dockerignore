@@ -19,12 +19,3 @@
 !scripts/utils.sh
 !.curlrc
 !LICENSE
-
-# groovy cli
-!apply-ng
-!src
-!pom.xml
-!mvnw
-!.mvn
-!compiler.groovy
-!micronaut-cli.yml
