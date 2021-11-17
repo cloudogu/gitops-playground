@@ -43,6 +43,12 @@ node('docker') {
                             ".")
                 }
 
+                stage('Test') {
+                    mvn 'test -Dmaven.test.failure.ignore=true'
+                    // Archive test results. Makes build unstable on failed tests.
+                    junit testResults: '**/target/surefire-reports/TEST-*.xml'
+                }
+
                 parallel(
                         'Scan image': {
                             stage('Scan image') {
