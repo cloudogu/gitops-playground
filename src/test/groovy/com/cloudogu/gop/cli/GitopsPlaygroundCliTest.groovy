@@ -14,12 +14,11 @@ class GitopsPlaygroundCliTest {
         ByteArrayOutputStream baos = new ByteArrayOutputStream()
         System.out = new PrintStream(baos)
         ApplicationContext ctx = ApplicationContext.run(Environment.CLI, Environment.TEST)
-
-        String[] args = ["-v"] as String[]
+        String[] args = ["--argocd"] as String[]
         PicocliRunner.run(GitopsPlaygroundCli, ctx, args)
 
         // groovy-cli-graal-nativeimage-micronaut-example
-        assertTrue(baos.toString().contains("Hi!"))
+        assertTrue(baos.toString().contains("argocd=true"))
 
         ctx.close()
     }

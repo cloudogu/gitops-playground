@@ -26,4 +26,3 @@
 !mvnw
 !.mvn
 !compiler.groovy
-!micronaut-cli.yml
