@@ -43,12 +43,13 @@ node('docker') {
                             ".")
                 }
 
-                stage('Test') {
-                    Maven mvn = new MavenWrapperInDocker(this, 'azul/zulu-openjdk-alpine:11.0.10')
-                    mvn 'test -Dmaven.test.failure.ignore=true'
-                    // Archive test results. Makes build unstable on failed tests.
-                    junit testResults: '**/target/surefire-reports/TEST-*.xml'
-                }
+                // This interferes with the e2etests regarding the dependency download of grapes. It might be that the MavenWrapperInDocker somehow interferes with the FileSystem so that grapes is no longer to write to fs.
+//                stage('Test') {
+//                    Maven mvn = new MavenWrapperInDocker(this, 'azul/zulu-openjdk-alpine:11.0.10')
+//                    mvn 'test -Dmaven.test.failure.ignore=true'
+//                    // Archive test results. Makes build unstable on failed tests.
+//                    junit testResults: '**/target/surefire-reports/TEST-*.xml'
+//                }
 
                 parallel(
                         'Scan image': {
