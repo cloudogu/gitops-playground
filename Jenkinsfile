@@ -43,6 +43,13 @@ node('docker') {
                             ".")
                 }
 
+                stage('Test') {
+                    Maven mvn = new MavenWrapperInDocker(this, 'azul/zulu-openjdk-alpine:11.0.10')
+                    mvn 'test -Dmaven.test.failure.ignore=true'
+                    // Archive test results. Makes build unstable on failed tests.
+                    junit testResults: '**/target/surefire-reports/TEST-*.xml'
+                }
+
                 parallel(
                         'Scan image': {
                             stage('Scan image') {
@@ -66,7 +73,7 @@ node('docker') {
                                 docker.image(imageName)
                                         .inside("-e KUBECONFIG=${env.WORKSPACE}/.kube/config " +
                                                 " --network=host --entrypoint=''" ) {
-                                            sh "./scripts/apply.sh --yes --trace --internal-registry-port=${registryPort} --argocd" 
+                                            sh "/app/scripts/apply.sh --yes --trace --internal-registry-port=${registryPort} --argocd"
                                         }
                             }
                         }
