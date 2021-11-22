@@ -1,5 +1,5 @@
 #!groovy
-@Library('github.com/cloudogu/ces-build-lib@1.47.1')
+@Library('github.com/cloudogu/ces-build-lib@1.48.0')
 import com.cloudogu.ces.cesbuildlib.*
 
 String getDockerRegistryBaseUrl() { 'ghcr.io' }
@@ -23,6 +23,7 @@ properties([
 node('docker') {
 
     def git = new Git(this)
+    def mvn = new MavenWrapperInDocker(this, 'azul/zulu-openjdk-alpine:11.0.10')
 
     timestamps {
         catchError {
@@ -31,6 +32,17 @@ node('docker') {
                 stage('Checkout') {
                     checkout scm
                     git.clean('')
+                }
+
+                stage('Build cli') {
+                    mvn 'clean install -DskipTests'
+                }
+
+                // This interferes with the e2etests regarding the dependency download of grapes. It might be that the MavenWrapperInDocker somehow interferes with the FileSystem so that grapes is no longer to write to fs.
+                stage('Test cli') {
+                    mvn 'test -Dmaven.test.failure.ignore=true'
+                    // Archive test results. Makes build unstable on failed tests.
+                    junit testResults: '**/target/surefire-reports/TEST-*.xml'
                 }
 
                 stage('Build image') {
@@ -42,14 +54,6 @@ node('docker') {
                             // if using optional parameters you need to add the '.' argument at the end for docker to build the image
                             ".")
                 }
-
-                // This interferes with the e2etests regarding the dependency download of grapes. It might be that the MavenWrapperInDocker somehow interferes with the FileSystem so that grapes is no longer to write to fs.
-//                stage('Test') {
-//                    Maven mvn = new MavenWrapperInDocker(this, 'azul/zulu-openjdk-alpine:11.0.10')
-//                    mvn 'test -Dmaven.test.failure.ignore=true'
-//                    // Archive test results. Makes build unstable on failed tests.
-//                    junit testResults: '**/target/surefire-reports/TEST-*.xml'
-//                }
 
                 parallel(
                         'Scan image': {
