@@ -98,11 +98,6 @@
       <artifactId>micronaut-test-junit5</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>io.micronaut.groovy</groupId>
-      <artifactId>micronaut-runtime-groovy</artifactId>
-      <scope>compile</scope>
-    </dependency>
   </dependencies>
 
   <build>
