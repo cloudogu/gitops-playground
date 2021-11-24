@@ -100,7 +100,10 @@ node('docker') {
                             // Avoids errors ("unable to resolve class") probably due to missing HOME for container in JVM.
                             .mountJenkinsUser() 
                             .inside("--network=${k3dNetwork}") {
-                            sh "groovy ./scripts/e2e.groovy --url http://${k3dAddress}:9090 --user admin --password admin --writeFailedLog --fail --retry 2"
+                                // removing m2 and grapes avoids issues where grapes primarily resolves local m2 and fails on missing versions
+                                sh "rm -rf .m2/"
+                                sh "rm -rf .groovy/grapes"
+                                sh "groovy ./scripts/e2e.groovy --url http://${k3dAddress}:9090 --user admin --password admin --writeFailedLog --fail --retry 2"
                     }
                 }
                stage('Push image') {
