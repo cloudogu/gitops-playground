@@ -113,7 +113,6 @@ class GitopsPlaygroundCli implements Runnable {
         // TODO: executing commands should be done using picocli commandline interface
         // @see: https://picocli.info/#execute
         println this.toString()
-        println "helm version".execute().text
     }
 
     @Override
