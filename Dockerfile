@@ -16,8 +16,12 @@ RUN gu install native-image
 
 COPY --from=maven-cache /mvn/ /mvn/
 COPY --from=maven-cache /app/ /app
+
+# copy only resources that we need to compile the binary
+COPY src /app/src/
+COPY compiler.groovy /app
+
 WORKDIR /app
-COPY . /app
 
 # Build native image micronaut
 #  ./mvnw package -Dpackaging=native-image
@@ -135,7 +139,20 @@ USER 1000
 
 COPY --from=downloader /dist /
 
-COPY . /app/
+# specify exactly what to copy
+COPY applications /app/applications/
+COPY argocd /app/argocd/
+COPY docker-registry /app/docker-registry/
+COPY exercises /app/exercises/
+COPY fluxv1 /app/fluxv1/
+COPY fluxv2 /app/fluxv2/
+COPY jenkins /app/jenkins/
+COPY k8s-namespaces /app/k8s-namespaces/
+COPY metrics /app/metrics/
+COPY scm-manager /app/scm-manager/
+COPY scripts /app/scripts/
+COPY .curlrc /app
+COPY LICENSE /app
 
 ARG VCS_REF
 ARG BUILD_DATE

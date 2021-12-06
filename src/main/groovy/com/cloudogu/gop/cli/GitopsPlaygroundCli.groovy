@@ -4,9 +4,10 @@ import io.micronaut.configuration.picocli.PicocliRunner
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 
-@Command(name = 'gitops-playground-cli', description = 'CLI to create gop',
+@Command(name = 'gitops-playground-cli', description = 'CLI-tool to deploy gitops-playground.',
         mixinStandardHelpOptions = true)
 class GitopsPlaygroundCli implements Runnable {
+
     // args group registry
     @Option(names = ['--registry-url'], description = 'The url of your external registry')
     private String registryUrl
@@ -47,6 +48,7 @@ class GitopsPlaygroundCli implements Runnable {
     @Option(names = ['--remote'], description = 'Install on remote Cluster e.g. gcp')
     private boolean remote
 
+    @Option(names = ['--insecure'], description = 'Sets insecure-mode in cURL which skips cert validation')
     private boolean insecure
 
     // args group tool configuration
@@ -97,16 +99,20 @@ class GitopsPlaygroundCli implements Runnable {
     private String argocdUrl
 
     static void main(String[] args) throws Exception {
+        // log levels can be set via picocli.trace sys env - defaults to 'WARN'
+        if (args.contains("--trace"))
+            System.setProperty("picocli.trace", "DEBUG")
+        else if (args.contains("--debug"))
+            System.setProperty("picocli.trace", "INFO")
+
         PicocliRunner.run(GitopsPlaygroundCli.class, args)
     }
 
     @Override
     void run() {
-        println this.toString()
-        println "-----------------------------------------------"
         // TODO: executing commands should be done using picocli commandline interface
         // @see: https://picocli.info/#execute
-        println "helm version".execute().text
+        println this.toString()
     }
 
     @Override
