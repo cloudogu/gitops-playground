@@ -24,10 +24,6 @@ resource "google_container_cluster" "cluster" {
   initial_node_count       = 1
   remove_default_node_pool = true
 
-  release_channel {
-    channel = "RAPID"
-  }
-
   # Try to avoid upgrade during demos
   # Maintenance Window weekly from 22:00 to 06:00 Uhr CET
   maintenance_policy {
