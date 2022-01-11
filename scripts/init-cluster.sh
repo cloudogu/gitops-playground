@@ -20,7 +20,7 @@ function main() {
   else
     ACTUAL_K3D_VERSION="$(k3d --version | grep k3d | sed 's/k3d version v\(.*\)/\1/')"
     if [[ "${K3D_VERSION}" != "${ACTUAL_K3D_VERSION}" ]]; then
-      msg="WARN: GitOps playground was tested with ${K3D_VERSION}. You are running k3d ${ACTUAL_K3D_VERSION}."
+      echo "WARN: GitOps playground was tested with ${K3D_VERSION}. You are running k3d ${ACTUAL_K3D_VERSION}."
     fi
   fi
 
@@ -86,7 +86,7 @@ function createCluster() {
   fi
 
   echo "Creating cluster ${CLUSTER_NAME}"
-  k3d cluster create ${CLUSTER_NAME} ${K3D_ARGS[*]} >/dev/null 2>&1;
+  k3d cluster create ${CLUSTER_NAME} ${K3D_ARGS[*]} >/dev/null
   
   if [[ ${isUsingArbitraryRegistryPort} == 'true' ]]; then
     local registryPort
