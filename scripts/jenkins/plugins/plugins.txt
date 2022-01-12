@@ -1,9 +1,9 @@
 workflow-job:2.42
 workflow-aggregator:2.6
-font-awesome-api:5.15.4-3
+font-awesome-api:5.15.4-5
 pipeline-utility-steps:2.8.0
 jackson2-api:2.13.0-230.v59243c64b0a5
-bootstrap5-api:5.1.3-3
+bootstrap5-api:5.1.3-4
 command-launcher:1.2
 sshd:3.1.0
 momentjs:1.1.1
@@ -11,7 +11,7 @@ display-url-api:2.3.5
 workflow-step-api:2.24
 structs:308.v852b473a2b8c
 pipeline-milestone-step:1.3.1
-popper2-api:2.10.2-1
+popper2-api:2.11.0-1
 external-monitor-job:1.4
 scm-api:2.6.5
 pipeline-model-definition:1.9.1
@@ -22,7 +22,7 @@ docker-plugin:1.2.3
 jdk-tool:1.0
 plain-credentials:1.7
 pipeline-build-step:2.7
-echarts-api:5.2.2-1
+echarts-api:5.2.2-2
 authentication-tokens:1.4
 cloudbees-folder:6.16
 kubernetes:1.29.4
@@ -52,13 +52,13 @@ pipeline-input-step:2.12
 pipeline-stage-view:2.19
 mailer:1.34
 trilead-api:1.0.13
-junit:1.51
+junit:1.53
 durable-task:493.v195aefbb0ff2
 pipeline-stage-step:2.5
 workflow-support:3.8
 ssh-credentials:1.19
 kubernetes-credentials:0.8.0
-plugin-util-api:2.5.1
+plugin-util-api:2.12.0
 jaxb:2.3.0
 handlebars:3.0.8
 pipeline-rest-api:2.19
