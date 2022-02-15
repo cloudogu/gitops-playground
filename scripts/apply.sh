@@ -41,107 +41,107 @@ JENKINS_PLUGIN_FOLDER=${JENKINS_PLUGIN_FOLDER:-''}
 
 function main() {
   
-  readParameters "$@"
+#  readParameters "$@"
 
   # call our groovy cli and pass in all params
   "$PLAYGROUND_DIR"/apply-ng "$@"
   
-  if [[ $ASSUME_YES == false ]]; then
-    confirm "Applying gitops playground to kubernetes cluster: '$(kubectl config current-context)'." 'Continue? y/n [n]' ||
-      # Return error here to avoid get correct state when used with kubectl
-      exit 1
-  fi
-  
-  if [[ $TRACE == true ]]; then
-    set -x
-    # Trace without debug does not make to much sense, as the spinner spams the output
-    DEBUG=true
-  fi
-
-  # The - avoids "unbound variable", because it expands to empty string if unset
-  if [[ -n "${KUBERNETES_SERVICE_HOST-}" ]]; then
-    RUNNING_INSIDE_K8S=true
-  else
-    RUNNING_INSIDE_K8S=false
-  fi
-  
-  CLUSTER_BIND_ADDRESS=$(findClusterBindAddress)
-
-  if [[ $INSECURE == true ]]; then
-    CURL_HOME="${PLAYGROUND_DIR}"
-    export CURL_HOME
-    export GIT_SSL_NO_VERIFY=1
-  fi
-
-  if [[ -n "${SCMM_URL}" ]]; then
-    INTERNAL_SCMM=false
-    # We can't use internal kubernetes services in this scenario
-    SCMM_URL_FOR_JENKINS=${SCMM_URL}
-  elif [[ $RUNNING_INSIDE_K8S == true ]]; then
-    SCMM_URL="$(createUrl "scmm-scm-manager.default.svc.cluster.local" "80")/scm"
-  else
-    local scmmPortFromValuesYaml="$(grep 'nodePort:' "${PLAYGROUND_DIR}"/scm-manager/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')"
-    SCMM_URL="$(createUrl "${CLUSTER_BIND_ADDRESS}" "${scmmPortFromValuesYaml}")/scm"
-  fi
-
-  if [[ -n "${JENKINS_URL}" ]]; then
-    INTERNAL_JENKINS=false
-    # We can't use internal kubernetes services in this scenario
-    JENKINS_URL_FOR_SCMM=${JENKINS_URL}
-  elif [[ $RUNNING_INSIDE_K8S == true ]]; then
-    JENKINS_URL=$(createUrl "jenkins.default.svc.cluster.local" "80")
-  else
-    local jenkinsPortFromValuesYaml="$(grep 'nodePort:' "${PLAYGROUND_DIR}"/jenkins/values.yaml | grep nodePort | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')"
-    JENKINS_URL=$(createUrl "${CLUSTER_BIND_ADDRESS}" "${jenkinsPortFromValuesYaml}")
-  fi
-
-  if [[ -z "${REGISTRY_URL}" ]]; then
-    local registryPort
-    registryPort='30000'
-    if [[ -n "${INTERNAL_REGISTRY_PORT}" ]]; then
-      registryPort="${INTERNAL_REGISTRY_PORT}"
-    fi
-    # Internal Docker registry must be on localhost. Otherwise docker will use HTTPS, leading to errors on docker push 
-    # in the example application's Jenkins Jobs.
-    # Both setting up HTTPS or allowing insecure registry via daemon.json makes the playground difficult to use. 
-    # So, always use localhost.
-    # Allow overriding the port, in case multiple playground instance run on a single host in different k3d clusters.
-    REGISTRY_URL="localhost:${registryPort}"
-    REGISTRY_PATH=""
-  else
-    INTERNAL_REGISTRY=false
-  fi
-
-  checkPrerequisites
-
-  if [[ $DEBUG != true ]]; then
-    backgroundLogFile=$(mktemp /tmp/playground-log-XXXXXXXXX)
-    echo "Full log output is appended to ${backgroundLogFile}"
-  fi
-
-
-  evalWithSpinner "Basic setup & configuring registry..." applyBasicK8sResources
-
-  initSCMMVars
-  evalWithSpinner "Starting SCM-Manager..." initSCMM
-
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV1 == true ]]; then
-    evalWithSpinner "Starting Flux V1..." initFluxV1
-  fi
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV2 == true ]]; then
-    evalWithSpinner "Starting Flux V2..." initFluxV2
-  fi
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_ARGOCD == true ]]; then
-    evalWithSpinner "Starting ArgoCD..." initArgo
-  fi
-
-  initJenkins
-
-  if [[ $TRACE == true ]]; then
-    set +x
-  fi
-
-  printWelcomeScreen
+#  if [[ $ASSUME_YES == false ]]; then
+#    confirm "Applying gitops playground to kubernetes cluster: '$(kubectl config current-context)'." 'Continue? y/n [n]' ||
+#      # Return error here to avoid get correct state when used with kubectl
+#      exit 1
+#  fi
+#
+#  if [[ $TRACE == true ]]; then
+#    set -x
+#    # Trace without debug does not make to much sense, as the spinner spams the output
+#    DEBUG=true
+#  fi
+#
+#  # The - avoids "unbound variable", because it expands to empty string if unset
+#  if [[ -n "${KUBERNETES_SERVICE_HOST-}" ]]; then
+#    RUNNING_INSIDE_K8S=true
+#  else
+#    RUNNING_INSIDE_K8S=false
+#  fi
+#
+#  CLUSTER_BIND_ADDRESS=$(findClusterBindAddress)
+#
+#  if [[ $INSECURE == true ]]; then
+#    CURL_HOME="${PLAYGROUND_DIR}"
+#    export CURL_HOME
+#    export GIT_SSL_NO_VERIFY=1
+#  fi
+#
+#  if [[ -n "${SCMM_URL}" ]]; then
+#    INTERNAL_SCMM=false
+#    # We can't use internal kubernetes services in this scenario
+#    SCMM_URL_FOR_JENKINS=${SCMM_URL}
+#  elif [[ $RUNNING_INSIDE_K8S == true ]]; then
+#    SCMM_URL="$(createUrl "scmm-scm-manager.default.svc.cluster.local" "80")/scm"
+#  else
+#    local scmmPortFromValuesYaml="$(grep 'nodePort:' "${PLAYGROUND_DIR}"/scm-manager/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')"
+#    SCMM_URL="$(createUrl "${CLUSTER_BIND_ADDRESS}" "${scmmPortFromValuesYaml}")/scm"
+#  fi
+#
+#  if [[ -n "${JENKINS_URL}" ]]; then
+#    INTERNAL_JENKINS=false
+#    # We can't use internal kubernetes services in this scenario
+#    JENKINS_URL_FOR_SCMM=${JENKINS_URL}
+#  elif [[ $RUNNING_INSIDE_K8S == true ]]; then
+#    JENKINS_URL=$(createUrl "jenkins.default.svc.cluster.local" "80")
+#  else
+#    local jenkinsPortFromValuesYaml="$(grep 'nodePort:' "${PLAYGROUND_DIR}"/jenkins/values.yaml | grep nodePort | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')"
+#    JENKINS_URL=$(createUrl "${CLUSTER_BIND_ADDRESS}" "${jenkinsPortFromValuesYaml}")
+#  fi
+#
+#  if [[ -z "${REGISTRY_URL}" ]]; then
+#    local registryPort
+#    registryPort='30000'
+#    if [[ -n "${INTERNAL_REGISTRY_PORT}" ]]; then
+#      registryPort="${INTERNAL_REGISTRY_PORT}"
+#    fi
+#    # Internal Docker registry must be on localhost. Otherwise docker will use HTTPS, leading to errors on docker push
+#    # in the example application's Jenkins Jobs.
+#    # Both setting up HTTPS or allowing insecure registry via daemon.json makes the playground difficult to use.
+#    # So, always use localhost.
+#    # Allow overriding the port, in case multiple playground instance run on a single host in different k3d clusters.
+#    REGISTRY_URL="localhost:${registryPort}"
+#    REGISTRY_PATH=""
+#  else
+#    INTERNAL_REGISTRY=false
+#  fi
+#
+#  checkPrerequisites
+#
+#  if [[ $DEBUG != true ]]; then
+#    backgroundLogFile=$(mktemp /tmp/playground-log-XXXXXXXXX)
+#    echo "Full log output is appended to ${backgroundLogFile}"
+#  fi
+#
+#
+#  evalWithSpinner "Basic setup & configuring registry..." applyBasicK8sResources
+#
+#  initSCMMVars
+#  evalWithSpinner "Starting SCM-Manager..." initSCMM
+#
+#  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV1 == true ]]; then
+#    evalWithSpinner "Starting Flux V1..." initFluxV1
+#  fi
+#  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV2 == true ]]; then
+#    evalWithSpinner "Starting Flux V2..." initFluxV2
+#  fi
+#  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_ARGOCD == true ]]; then
+#    evalWithSpinner "Starting ArgoCD..." initArgo
+#  fi
+#
+#  initJenkins
+#
+#  if [[ $TRACE == true ]]; then
+#    set +x
+#  fi
+#
+#  printWelcomeScreen
 }
 
 function findClusterBindAddress() {

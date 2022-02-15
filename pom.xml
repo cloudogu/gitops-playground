@@ -20,7 +20,9 @@
     <!-- If you are building with JDK 9 or higher, you can uncomment the lines below to set the release version -->
     <!-- <release.version>8</release.version> -->
     <micronaut.version>3.1.4</micronaut.version>
-    <exec.mainClass>com.cloudogu.gop.cli.GitopsPlaygroundCli</exec.mainClass>
+<!--    <exec.mainClass>com.cloudogu.gop.cli.GitopsPlaygroundCli</exec.mainClass>-->
+    <exec.mainClass>com.cloudogu.gop.GopApplication</exec.mainClass>
+<!--        <exec.mainClass>com.cloudogu.gop.App</exec.mainClass>-->
     <groovyVersion>3.0.9</groovyVersion>
   </properties>
 
@@ -37,11 +39,12 @@
       <artifactId>micronaut-inject-groovy</artifactId>
       <scope>provided</scope>
     </dependency>
+    <!-- https://mvnrepository.com/artifact/org.codehaus.groovy/groovy-all -->
     <dependency>
       <groupId>org.codehaus.groovy</groupId>
-      <artifactId>groovy</artifactId>
+      <artifactId>groovy-all</artifactId>
       <version>${groovyVersion}</version>
-      <scope>compile</scope>
+      <type>pom</type>
     </dependency>
     <dependency>
       <groupId>info.picocli</groupId>
@@ -106,14 +109,14 @@
         <groupId>io.micronaut.build</groupId>
         <artifactId>micronaut-maven-plugin</artifactId>
       </plugin>
-      
+
       <plugin>
         <groupId>org.codehaus.gmavenplus</groupId>
         <artifactId>gmavenplus-plugin</artifactId>
         <version>1.9.0</version>
-        <configuration>
-          <configScript>compiler.groovy</configScript>
-        </configuration>
+<!--        <configuration>-->
+<!--          <configScript>compiler.groovy</configScript>-->
+<!--        </configuration>-->
         <executions>
           <execution>
             <goals>
