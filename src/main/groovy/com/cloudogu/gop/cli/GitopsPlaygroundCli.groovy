@@ -2,6 +2,7 @@ package com.cloudogu.gop.cli
 
 
 import com.cloudogu.gop.modules.metrics.MetricsModule
+import io.micronaut.configuration.picocli.PicocliRunner
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import picocli.CommandLine
@@ -108,9 +109,11 @@ class GitopsPlaygroundCli implements Runnable {
             System.setProperty("picocli.trace", "INFO")
 
 
-        CommandLine cmd = new CommandLine(new GitopsPlaygroundCli()).addSubcommand("metrics", new MetricsModule())
-        cmd.setExecutionStrategy(new CommandLine.RunAll())
-        int exitCode = cmd.execute(args)
+        PicocliRunner.run(GitopsPlaygroundCli.class, args)
+
+//        CommandLine cmd = new CommandLine(new GitopsPlaygroundCli()).addSubcommand("metrics", new MetricsModule())
+//        cmd.setExecutionStrategy(new CommandLine.RunAll())
+//        int exitCode = cmd.execute(args)
 
 //        int exitCode = new picocli.CommandLine(new GitopsPlaygroundCli()).addSubcommand(new MetricsModule()).execute(args)
 
