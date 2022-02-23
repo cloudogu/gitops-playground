@@ -1,11 +1,9 @@
 package com.cloudogu.gop.cli
 
-
-import com.cloudogu.gop.modules.metrics.MetricsModule
+import com.cloudogu.gop.application.GopApplication
 import io.micronaut.configuration.picocli.PicocliRunner
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
-import picocli.CommandLine
 
 @Command(name = 'gitops-playground-cli', description = 'CLI-tool to deploy gitops-playground.',
         mixinStandardHelpOptions = true)
@@ -44,7 +42,7 @@ class GitopsPlaygroundCli implements Runnable {
     @Option(names = ['--scmm-username'], description = 'Mandatory when --scmm-url is set')
     private String scmmUsername
 
-    @Option(names = ['scmm-password'], description = 'Mandatory when --scmm-url is set')
+    @Option(names = ['--scmm-password'], description = 'Mandatory when --scmm-url is set')
     private String scmmPassword
 
     // args group remote
@@ -108,18 +106,7 @@ class GitopsPlaygroundCli implements Runnable {
         else if (args.contains("--debug"))
             System.setProperty("picocli.trace", "INFO")
 
-
         PicocliRunner.run(GitopsPlaygroundCli.class, args)
-
-//        CommandLine cmd = new CommandLine(new GitopsPlaygroundCli()).addSubcommand("metrics", new MetricsModule())
-//        cmd.setExecutionStrategy(new CommandLine.RunAll())
-//        int exitCode = cmd.execute(args)
-
-//        int exitCode = new picocli.CommandLine(new GitopsPlaygroundCli()).addSubcommand(new MetricsModule()).execute(args)
-
-//        ModuleRepository moduleDiscovery = new ModuleRepository(args)
-//        moduleDiscovery.register(new MetricsModule())
-//        moduleDiscovery.execute()
     }
 
     @Override
@@ -127,43 +114,95 @@ class GitopsPlaygroundCli implements Runnable {
         // TODO: executing commands should be done using picocli commandline interface
         // @see: https://picocli.info/#execute
 
-        println this.toString()
+        Map config = parseConfig()
+
+        GopApplication app = new GopApplication(config)
+        app.start()
     }
 
-    @Override
-    String toString() {
-        return "GitopsPlaygroundCli {" +
-                "\n registryUrl='" + registryUrl + '\'' +
-                ",\n registryPath='" + registryPath + '\'' +
-                ",\n registryUsername='" + registryUsername + '\'' +
-                ",\n registryPassword='" + registryPassword + '\'' +
-                ",\n internalRegistryPort=" + internalRegistryPort +
-                ",\n jenkinsUrl='" + jenkinsUrl + '\'' +
-                ",\n jenkinsUsername='" + jenkinsUsername + '\'' +
-                ",\n jenkinsPassword='" + jenkinsPassword + '\'' +
-                ",\n scmmUrl='" + scmmUrl + '\'' +
-                ",\n scmmUsername='" + scmmUsername + '\'' +
-                ",\n scmmPassword='" + scmmPassword + '\'' +
-                ",\n remote=" + remote +
-                ",\n insecure=" + insecure +
-                ",\n kubectlImage='" + kubectlImage + '\'' +
-                ",\n helmImage='" + helmImage + '\'' +
-                ",\n kubevalImage='" + kubevalImage + '\'' +
-                ",\n helmKubevalImage='" + helmKubevalImage + '\'' +
-                ",\n yamllintImage='" + yamllintImage + '\'' +
-                ",\n skipHelmUpdate=" + skipHelmUpdate +
-                ",\n argocdConfigOnly=" + argocdConfigOnly +
-                ",\n debug=" + debug +
-                ",\n trace=" + trace +
-                ",\n username='" + username + '\'' +
-                ",\n password='" + password + '\'' +
-                ",\n pipeYes=" + pipeYes +
-                ",\n fluxv1=" + fluxv1 +
-                ",\n fluxv2=" + fluxv2 +
-                ",\n argocd=" + argocd +
-                ",\n argocdUrl='" + argocdUrl + '\'' +
-                ",\n metrics='" + metrics + '\'' +
-                '\n}';
+    private Map parseConfig() {
+        return [
+                registry   : [
+                        url         : registryUrl,
+                        path        : registryPath,
+                        username    : registryUsername,
+                        password    : registryPassword,
+                        internalPort: internalRegistryPort
+                ],
+                jenkins    : [
+                        url     : jenkinsUrl,
+                        username: jenkinsUsername,
+                        password: jenkinsPassword
+                ],
+                scmm       : [
+                        url     : scmmUrl,
+                        username: scmmUsername,
+                        password: scmmPassword
+                ],
+                application: [
+                        remote        : remote,
+                        insecure      : insecure,
+                        skipHelmUpdate: skipHelmUpdate,
+                        debug         : debug,
+                        trace         : trace,
+                        username      : username,
+                        password      : password,
+                        pipeYes       : pipeYes,
+                ],
+                images     : [
+                        kubectl    : kubectlImage,
+                        helm       : helmImage,
+                        kubeval    : kubevalImage,
+                        helmKubeval: helmKubevalImage,
+                        yamllint   : yamllintImage
+                ],
+                modules    : [
+                        fluxv1 : fluxv1,
+                        fluxv2 : fluxv2,
+                        argocd : [
+                                active    : argocd,
+                                configOnly: argocdConfigOnly,
+                                url       : argocdUrl
+                        ],
+                        metrics: metrics
+                ]
+        ]
     }
+
+//    @Override
+//    String toString() {
+//        return "GitopsPlaygroundCli {" +
+//                "\n registryUrl='" + registryUrl + '\'' +
+//                ",\n registryPath='" + registryPath + '\'' +
+//                ",\n registryUsername='" + registryUsername + '\'' +
+//                ",\n registryPassword='" + registryPassword + '\'' +
+//                ",\n internalRegistryPort=" + internalRegistryPort +
+//                ",\n jenkinsUrl='" + jenkinsUrl + '\'' +
+//                ",\n jenkinsUsername='" + jenkinsUsername + '\'' +
+//                ",\n jenkinsPassword='" + jenkinsPassword + '\'' +
+//                ",\n scmmUrl='" + scmmUrl + '\'' +
+//                ",\n scmmUsername='" + scmmUsername + '\'' +
+//                ",\n scmmPassword='" + scmmPassword + '\'' +
+//                ",\n remote=" + remote +
+//                ",\n insecure=" + insecure +
+//                ",\n kubectlImage='" + kubectlImage + '\'' +
+//                ",\n helmImage='" + helmImage + '\'' +
+//                ",\n kubevalImage='" + kubevalImage + '\'' +
+//                ",\n helmKubevalImage='" + helmKubevalImage + '\'' +
+//                ",\n yamllintImage='" + yamllintImage + '\'' +
+//                ",\n skipHelmUpdate=" + skipHelmUpdate +
+//                ",\n argocdConfigOnly=" + argocdConfigOnly +
+//                ",\n debug=" + debug +
+//                ",\n trace=" + trace +
+//                ",\n username='" + username + '\'' +
+//                ",\n password='" + password + '\'' +
+//                ",\n pipeYes=" + pipeYes +
+//                ",\n fluxv1=" + fluxv1 +
+//                ",\n fluxv2=" + fluxv2 +
+//                ",\n argocd=" + argocd +
+//                ",\n argocdUrl='" + argocdUrl + '\'' +
+//                ",\n metrics='" + metrics + '\'' +
+//                '\n}';
+//    }
 }
 

@@ -21,8 +21,6 @@
     <!-- <release.version>8</release.version> -->
     <micronaut.version>3.1.4</micronaut.version>
     <exec.mainClass>com.cloudogu.gop.cli.GitopsPlaygroundCli</exec.mainClass>
-<!--    <exec.mainClass>com.cloudogu.gop.GopApplication</exec.mainClass>-->
-<!--        <exec.mainClass>com.cloudogu.gop.App</exec.mainClass>-->
     <groovyVersion>3.0.9</groovyVersion>
   </properties>
 
@@ -101,6 +99,17 @@
       <artifactId>micronaut-test-junit5</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.fabric8</groupId>
+      <artifactId>kubernetes-client</artifactId>
+      <version>5.12.1</version>
+    </dependency>
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.11.0</version>
+    </dependency>
+
   </dependencies>
 
   <build>
