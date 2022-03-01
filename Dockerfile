@@ -1,6 +1,6 @@
 FROM alpine:3.14.0 as alpine
 
-FROM ghcr.io/graalvm/graalvm-ce:21.1.0 AS graal
+FROM ghcr.io/graalvm/graalvm-ce:22.0.0.2 AS graal
 
 FROM graal as maven-cache
 ENV MAVEN_OPTS=-Dmaven.repo.local=/mvn
@@ -38,7 +38,8 @@ RUN native-image -Dgroovy.grape.enable=false \
     --static \
     --allow-incomplete-classpath   \
     --report-unsupported-elements-at-runtime \
-    --initialize-at-run-time=org.codehaus.groovy.control.XStreamUtils,groovy.grape.GrapeIvy \
+    --diagnostics-mode \
+    --initialize-at-run-time=org.codehaus.groovy.control.XStreamUtils,groovy.grape.GrapeIvy,io.kubernetes.client.openapi.Configuration,org.codehaus.groovy.vmplugin.v8.Java8\$LookupHolder \
     --initialize-at-build-time \
     --no-fallback \
     --no-server \

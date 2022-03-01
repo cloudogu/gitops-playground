@@ -1,51 +1,66 @@
 package com.cloudogu.gop.application.modules.metrics
 
+import com.cloudogu.gop.application.clients.git.GitClient
+import com.cloudogu.gop.application.clients.k8s.K8sClient
 import com.cloudogu.gop.application.modules.GopModule
-import com.cloudogu.gop.tools.git.Git
-import com.cloudogu.gop.tools.k8s.K8sClient
-import com.cloudogu.gop.utils.FileSystemUtils
+import com.cloudogu.gop.application.utils.FileSystemUtils
+import groovy.util.logging.Slf4j
 
+@Slf4j
 class MetricsModule implements GopModule {
 
     private boolean remoteCluster
-    private String argoCdUrl
+    private String argocdUrl
     private boolean deployMetrics
     private String username
     private String password
     private Map scmmConfig
 
-    MetricsModule(Map app, String argoUrl, boolean metrics, Map scmmConfig) {
-        this.remoteCluster = app.remote
-        this.username = app.username
-        this.password = app.password
-        this.argoCdUrl = argoUrl
+    MetricsModule(Map appConfig, String argocdUrl, boolean metrics, Map scmmConfig) {
+        this.remoteCluster = appConfig.application["remote"]
+        this.username = appConfig.application["username"]
+        this.password = appConfig.application["password"]
+        this.argocdUrl = argocdUrl
         this.deployMetrics = metrics
         this.scmmConfig = scmmConfig
     }
 
     @Override
     void run() {
-        Git git = new Git(scmmConfig)
+        log.info("Running metrics module")
+        GitClient git = new GitClient(scmmConfig)
 
-        git.initRepoWithSource("argocd/control-app", "argocd/control-app", { tmpGitRepoDir ->
+        String localGopSrcDir = "argocd/control-app"
+        String scmmRepoTarget = "argocd/control-app"
 
-            String mailhogYaml = "applications/application-mailhog-helm.yaml"
-            String argoNotificationsYaml = "applications/application-argocd-notifications.yaml"
+        String absoluteTmpDirLocation = "/tmp/repo_tmp_dir_for_metrics"
 
-            if (!remoteCluster) {
-                FileSystemUtils.replaceFileContent(tmpGitRepoDir as String, mailhogYaml, "LoadBalancer", "NodePort")
-            }
+        log.debug("Cloning argocd control-app repo")
+        git.clone(localGopSrcDir, scmmRepoTarget, absoluteTmpDirLocation)
+        log.debug("Configuring metrics specific values inside repo")
+        metricsConfigurationInRepo(absoluteTmpDirLocation)
+        log.debug("Pushing configured argocd control-app repo")
+        git.commitAndPush(scmmRepoTarget, absoluteTmpDirLocation)
+    }
 
-            if (argoCdUrl != null && argoCdUrl != "") {
-                FileSystemUtils.replaceFileContent(tmpGitRepoDir as String, argoNotificationsYaml, "argocdUrl: http://localhost:9092", "argocdUrl: $argoCdUrl")
-            }
+    private void metricsConfigurationInRepo(String tmpGitRepoDir) {
+        String mailhogYaml = "applications/application-mailhog-helm.yaml"
+        String argoNotificationsYaml = "applications/application-argocd-notifications.yaml"
 
-            if (deployMetrics) {
-                deployPrometheusStack(tmpGitRepoDir as String)
-            } else {
-                disablePrometheusStack(tmpGitRepoDir as String)
-            }
-        })
+        if (!remoteCluster) {
+            FileSystemUtils.replaceFileContent(tmpGitRepoDir, mailhogYaml, "LoadBalancer", "NodePort")
+        }
+
+        if (argocdUrl != null && argocdUrl != "") {
+            FileSystemUtils.replaceFileContent(tmpGitRepoDir, argoNotificationsYaml, "argocdUrl: http://localhost:9092", "argocdUrl: $argocdUrl")
+        }
+
+        if (deployMetrics) {
+            log.info("Deploying prometheus stack")
+            deployPrometheusStack(tmpGitRepoDir)
+        } else {
+            disablePrometheusStack(tmpGitRepoDir)
+        }
     }
 
     private void deployPrometheusStack(String tmpGitRepoDir) {

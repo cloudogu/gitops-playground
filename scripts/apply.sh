@@ -138,6 +138,9 @@ function main() {
     set +x
   fi
 
+  # call our groovy cli and pass in all params
+  "$PLAYGROUND_DIR"/apply-ng "$@"
+
   printWelcomeScreen
 }
 
@@ -364,9 +367,6 @@ function initArgo() {
   pushPetClinicRepo 'applications/petclinic/argocd/helm' 'argocd/petclinic-helm'
   initRepo 'argocd/gitops'
 #  initRepoWithSource 'argocd/control-app' 'argocd/control-app' metricsConfiguration
-
-  # call our groovy cli and pass in all params
-  "$PLAYGROUND_DIR"/apply-ng "$@"
 
   # Set NodePort service, to avoid "Pending" services and "Processing" state in argo on local cluster
   initRepoWithSource 'applications/nginx/argocd' 'argocd/nginx-helm' \

@@ -12,5 +12,5 @@
     <root level="info">
         <appender-ref ref="STDOUT" />
     </root>
-    <logger name="com.cloudogu.gop" level="debug"/>
+    <logger name="com.cloudogu.gop" level="info"/>
 </configuration>

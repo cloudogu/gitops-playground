@@ -1,8 +1,9 @@
 package com.cloudogu.gop.application.modules
 
 import com.cloudogu.gop.application.modules.metrics.MetricsModule
+import groovy.util.logging.Slf4j
 
-
+@Slf4j
 class ModuleRepository {
 
     private Map<String, String> config
@@ -15,13 +16,27 @@ class ModuleRepository {
     }
 
     // Registered modules are chronologically sensitive. This means, that the first registered module will be first to run and the last module registered will be the last to run
-    def registerAllModules() {
-        allModules.add(new MetricsModule(config.application as Map, config.modules["argocd"]["url"] as String, config.modules["metrics"] as boolean, config.scmm as Map))
+    void registerAllModules() {
+        log.debug("Registering gop modules")
+
+        allModules.add(getMetricsModule())
     }
 
-    def execute() {
+    void execute() {
+        log.info("Starting to execute all gop modules")
         allModules.forEach(module -> {
             module.run()
         })
+        log.info("Finished running all gop modules")
+    }
+
+    private MetricsModule getMetricsModule() {
+        log.debug("Configuring metrics module")
+        Map applicationConfig = config.subMap(["application"])
+        String argocdUrl = config.modules["argocd"]["url"]
+        boolean metrics = config.modules["metrics"]
+        Map scmmConfig = config.subMap(["scmm"])
+
+        return new MetricsModule(applicationConfig, argocdUrl, metrics, scmmConfig)
     }
 }

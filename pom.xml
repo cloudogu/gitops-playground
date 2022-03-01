@@ -10,16 +10,17 @@
   <parent>
     <groupId>io.micronaut</groupId>
     <artifactId>micronaut-parent</artifactId>
-    <version>2.5.0</version>
+    <version>3.3.3</version>
   </parent>
 
   <properties>
     <packaging>jar</packaging>
-    <maven.compiler.source>11</maven.compiler.source>
-    <maven.compiler.target>11</maven.compiler.target>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
     <!-- If you are building with JDK 9 or higher, you can uncomment the lines below to set the release version -->
     <!-- <release.version>8</release.version> -->
-    <micronaut.version>3.1.4</micronaut.version>
+<!--    <micronaut.version>3.1.4</micronaut.version>-->
+    <micronaut.version>3.3.3</micronaut.version>
     <exec.mainClass>com.cloudogu.gop.cli.GitopsPlaygroundCli</exec.mainClass>
     <groovyVersion>3.0.9</groovyVersion>
   </properties>
@@ -77,8 +78,14 @@
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <scope>runtime</scope>
     </dependency>
+    <!-- https://mvnrepository.com/artifact/ch.qos.logback/logback-core -->
+<!--    <dependency>-->
+<!--      <groupId>ch.qos.logback</groupId>-->
+<!--      <artifactId>logback-core</artifactId>-->
+<!--      <version>1.2.10</version>-->
+<!--    </dependency>-->
+
     <dependency>
       <groupId>io.micronaut</groupId>
       <artifactId>micronaut-http-client</artifactId>
@@ -100,21 +107,21 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.fabric8</groupId>
-      <artifactId>kubernetes-client</artifactId>
-      <version>5.12.1</version>
-    </dependency>
-    <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
       <version>2.11.0</version>
+    </dependency>
+    <dependency>
+      <groupId>com.squareup.okhttp3</groupId>
+      <artifactId>okhttp</artifactId>
+      <version>4.9.3</version>
     </dependency>
 
   </dependencies>
 
   <build>
     <plugins>
-      <plugin>
+       <plugin>
         <groupId>io.micronaut.build</groupId>
         <artifactId>micronaut-maven-plugin</artifactId>
       </plugin>
@@ -122,9 +129,10 @@
       <plugin>
         <groupId>org.codehaus.gmavenplus</groupId>
         <artifactId>gmavenplus-plugin</artifactId>
-        <version>1.9.0</version>
+        <version>1.13.1</version>
         <configuration>
           <configScript>compiler.groovy</configScript>
+          <targetBytecode>17</targetBytecode>
         </configuration>
         <executions>
           <execution>
@@ -141,9 +149,38 @@
           </execution>
         </executions>
       </plugin>
+
+      <!--  Since some dependencies are signed, and we have an uber jar, there will be some security conflicts.
+            So we delete the responsible files -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>truezip-maven-plugin</artifactId>
+        <version>1.1</version>
+        <executions>
+          <execution>
+            <id>remove-a-file-in-sub-archive</id>
+            <goals>
+              <goal>remove</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <fileset>
+                <directory>${project.build.directory}/${project.artifactId}-${project.version}.jar/META-INF/</directory>
+                <includes>
+                  <include>*.DSA</include>
+                  <include>*.RSA</include>
+                  <include>*.SF</include>
+                </includes>
+              </fileset>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
       </plugin>
+
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>properties-maven-plugin</artifactId>

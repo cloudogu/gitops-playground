@@ -1,12 +1,11 @@
 package com.cloudogu.gop.application
 
-import com.cloudogu.gop.tools.k8s.K8sClient
-import com.cloudogu.gop.utils.CommandExecutor
-import com.cloudogu.gop.utils.FileSystemUtils
+import ch.qos.logback.classic.Level
+import com.cloudogu.gop.application.utils.FileSystemUtils
+import com.cloudogu.gop.application.utils.NetworkingUtils
 import groovy.util.logging.Slf4j
-
-import java.util.regex.Matcher
-import java.util.regex.Pattern
+import ch.qos.logback.classic.Logger
+import org.slf4j.LoggerFactory
 
 import static groovy.json.JsonOutput.prettyPrint
 import static groovy.json.JsonOutput.toJson
@@ -17,6 +16,9 @@ class ApplicationConfigurator {
     static void populateConfig(Map config) {
         // TODO currently only variables were set which are at the beginning of the apply.sh.
         // There are still more to check and implement in the main function and elsewhere
+
+        log.info("Populating application config with derived options from existing configuration")
+        setLogLevel(config)
         addInternalStatus(config)
         addAdditionalApplicationConfig(config)
         setScmmConfig(config)
@@ -33,42 +35,58 @@ class ApplicationConfigurator {
     }
 
     private static void addAdditionalApplicationConfig(Map config) {
+        String appUsername = config.application["username"]
+        String appPassword = config.application["password"]
+
+        if (appUsername == null) {
+            config.application["username"] = "admin"
+        }
+        if (appPassword == null) {
+            config.application["password"] = "admin"
+        }
+
         if (System.getenv("KUBERNETES_SERVICE_HOST")) {
             config.application["runningInsideK8s"] = true
         } else {
             config.application["runningInsideK8s"] = false
         }
-        config.application["clusterBindAddress"] = findClusterBindAddress()
+        config.application["clusterBindAddress"] = NetworkingUtils.findClusterBindAddress()
     }
 
     private static void setScmmConfig(Map config) {
+        log.debug("Adding additional config for SCM-Manager")
         config.scmm["internal"] = true
         config.scmm["urlForJenkins"] = "http://scmm-scm-manager/scm"
 
         if (config.scmm["url"] != null && !(config.scmm["url"] as String).empty) {
+            log.debug("Setting external scmm config")
             config.scmm["internal"] = false
             config.scmm["urlForJenkins"] = config.scmm["url"]
         } else if (config.application["runningInsideK8s"]) {
-            config.scmm["url"] = createUrl("scmm-scm-manager.default.svc.cluster.local", "80", "/scm")
+            log.debug("Setting scmm url to k8s service, since installation is running inside k8s")
+            config.scmm["url"] = NetworkingUtils.createUrl("scmm-scm-manager.default.svc.cluster.local", "80", "/scm")
         } else {
             def port = FileSystemUtils.getLineFromFile(FileSystemUtils.getGopRoot() + "/scm-manager/values.yaml", "nodePort:").findAll(/\d+/)*.toString().get(0)
-            config.scmm["url"] = createUrl(config.application["clusterBindAddress"] as String, port, "/scm")
+            String cba = config.application["clusterBindAddress"]
+            config.scmm["url"] = NetworkingUtils.createUrl(cba, port, "/scm")
         }
 
         if (config.scmm["internal"]) {
-            config.scmm["username"] = config.application["username"]
-            config.scmm["password"] = config.application["password"]
+            if (config.scmm["username"] == null) config.scmm["username"] = config.application["username"]
+            if (config.scmm["password"] == null) config.scmm["password"] = config.application["password"]
         }
-
-        config.scmm["host"] = getHost(config.scmm["url"] as String)
-        config.scmm["protocol"] = getProtocol(config.scmm["url"] as String)
+        String scmmUrl = config.scmm["url"]
+        config.scmm["host"] = NetworkingUtils.getHost(scmmUrl)
+        config.scmm["protocol"] = NetworkingUtils.getProtocol(scmmUrl)
     }
 
     private static void addServiceUrls(Map config) {
+        log.debug("Adding additional config for Jenkins")
         config.jenkins["urlForScmm"] = "http://jenkins"
     }
 
     private static void setDefaultImagesIfNotConfigured(Map config) {
+        log.debug("Adding additional config for images")
         if (config.images["kubectl"] == null) config.images["kubectl"] = "lachlanevenson/k8s-kubectl:v1.21.2"
         if (config.images["helm"] == null) config.images["helm"] = "ghcr.io/cloudogu/helm:3.5.4-1"
         if (config.images["kubeval"] == null) config.images["kubeval"] = config.images["helm"]
@@ -77,6 +95,8 @@ class ApplicationConfigurator {
     }
 
     private static void addRepos(Map config) {
+        log.debug("Adding additional config for repos")
+
         config.repositories = [
                 springBootHelmChart: "https://github.com/cloudogu/spring-boot-helm-chart.git",
                 springPetclinic    : "https://github.com/cloudogu/spring-petclinic.git",
@@ -85,49 +105,18 @@ class ApplicationConfigurator {
         ]
     }
 
-    private static String createUrl(String hostname, String port, String postfix = "") {
-        // argo forwards to HTTPS so symply us HTTP here
-        return "http://" + hostname + ":" + port + postfix
-    }
-
-    private static String findClusterBindAddress() {
-        String potentialClusterBindAddress = new K8sClient().getInternalNodeIp()
-
-        String ipConfig = CommandExecutor.execute("ip route get 1")
-        String substringWithSrcIp = ipConfig.substring(ipConfig.indexOf("src"))
-        String localAddress = getIPFromString(substringWithSrcIp)
-
-        if (localAddress.equals(potentialClusterBindAddress)) {
-            return "localhost"
+    private static void setLogLevel(Map config) {
+        boolean trace = config.application["trace"]
+        boolean debug = config.application["debug"]
+        Logger root = (Logger) LoggerFactory.getLogger("com.cloudogu.gop");
+        if (trace) {
+            log.info("Setting loglevel to trace")
+            root.setLevel(Level.TRACE)
+        } else if(debug) {
+            log.info("Setting loglevel to debug")
+            root.setLevel(Level.DEBUG);
         } else {
-            return potentialClusterBindAddress
-        }
-    }
-
-    private static String getHost(String url) {
-        if (url.contains("https://"))
-            return url.substring(8)
-        if (url.contains("http://"))
-            return url.substring(7)
-    }
-
-    private static String getProtocol(String url) {
-        if (url.contains("https://"))
-            return "https"
-        if (url.contains("http://"))
-            return "http"
-    }
-
-    private static String getIPFromString(String ipString) {
-        String IPADDRESS_PATTERN =
-                "(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)"
-
-        Pattern pattern = Pattern.compile(IPADDRESS_PATTERN);
-        Matcher matcher = pattern.matcher(ipString);
-        if (matcher.find()) {
-            return matcher.group()
-        } else {
-            return "0.0.0.0"
+            root.setLevel(Level.INFO)
         }
     }
 }

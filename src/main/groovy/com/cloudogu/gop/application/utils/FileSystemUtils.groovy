@@ -1,4 +1,4 @@
-package com.cloudogu.gop.utils
+package com.cloudogu.gop.application.utils
 
 import groovy.io.FileType
 import groovy.util.logging.Slf4j
@@ -10,14 +10,14 @@ class FileSystemUtils {
     static File replaceFileContent(String folder, String fileToChange, String from, String to) {
         File file = new File(folder + "/" + fileToChange)
         String newConfig = file.text.replace(from, to)
-        file.text = newConfig
+        file.setText(newConfig)
         return file
     }
 
     static String replaceFileContent(String fileToChange, String from, String to) {
         File file = new File(fileToChange)
         String newConfig = file.text.replace(from, to)
-        file.text = newConfig
+        file.setText(newConfig)
         return file
     }
 
@@ -46,11 +46,13 @@ class FileSystemUtils {
     static String getLineFromFile(String fileLocation, CharSequence pattern) {
         File file = new File(fileLocation)
         String found = ""
-        file.readLines().forEach(line -> {
-            if (line.contains(pattern)) {
-                found = line
+        String fileText = file.getText()
+        String[] lines = fileText.split("\n")
+        for (int i = 0; i < lines.size(); i++) {
+            if (lines[i].contains(pattern)) {
+                found = lines[i]
             }
-        })
+        }
         return found
     }
 
@@ -103,7 +105,7 @@ class FileSystemUtils {
     }
 
     static void copyDirectory(String source, String destination) {
-
+        log.debug("Copying directory " + source + " to " + destination)
         File sourceDir = new File(source)
         File destinationDir = new File(destination)
 
@@ -112,12 +114,10 @@ class FileSystemUtils {
         } catch (IOException e) {
             log.error("An error occured while copying directories: ", e)
         }
+    }
 
-
-//        AntBuilder ab = new AntBuilder()
-//        ab
-//        new AntBuilder().copy(todir: destination) {
-//            fileset(dir: source)
-//        }
+    static void createDirectory(String directory) {
+        log.debug("Creating folder: " + directory)
+        new File(directory).mkdirs()
     }
 }
