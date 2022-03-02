@@ -8,7 +8,7 @@ class GopApplication {
 
     private Map config
 
-    GopApplication(Map config) {
+    GopApplication(Map<String, Serializable> config) {
         this.config = config
     }
 

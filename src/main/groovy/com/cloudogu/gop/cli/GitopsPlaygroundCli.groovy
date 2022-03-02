@@ -12,43 +12,34 @@ class GitopsPlaygroundCli implements Runnable {
     // args group registry
     @Option(names = ['--registry-url'], description = 'The url of your external registry')
     private String registryUrl
-
     @Option(names = ['--registry-path'], description = 'Optional when --registry-url is set')
     private String registryPath
-
     @Option(names = ['--registry-username'], description = 'Optional when --registry-url is set')
     private String registryUsername
-
     @Option(names = ['--registry-password'], description = 'Optional when --registry-url is set')
     private String registryPassword
-
     @Option(names = ['--internal-registry-port'], description = 'Port of registry registry. Ignored when registry-url is set')
     private int internalRegistryPort
 
     // args group jenkins
     @Option(names = ['--jenkins-url'], description = 'The url of your external jenkins')
     private String jenkinsUrl
-
     @Option(names = ['--jenkins-username'], description = 'Mandatory when --jenkins-url is set')
     private String jenkinsUsername
-
     @Option(names = ['--jenkins-password'], description = 'Mandatory when --jenkins-url is set')
     private String jenkinsPassword
 
     // args group scm
     @Option(names = ['--scmm-url'], description = 'The host of your external scm-manager')
     private String scmmUrl
-
     @Option(names = ['--scmm-username'], description = 'Mandatory when --scmm-url is set')
     private String scmmUsername
-
     @Option(names = ['--scmm-password'], description = 'Mandatory when --scmm-url is set')
     private String scmmPassword
 
     // args group remote
     @Option(names = ['--remote'], description = 'Install on remote Cluster e.g. gcp')
     private boolean remote
-
     @Option(names = ['--insecure'], description = 'Sets insecure-mode in cURL which skips cert validation')
     private boolean insecure
 
@@ -71,6 +62,10 @@ class GitopsPlaygroundCli implements Runnable {
     // args group metrics
     @Option(names = ['--metrics'], description = 'Installs the Kube-Prometheus-Stack for ArgoCD. This includes Prometheus, the Prometheus operator, Grafana and some extra resources')
     private boolean metrics
+    @Option(names = ['--mailhog-username'], description = 'Sets the username for mailhogs web ui.')
+    private String mailhogUsername
+    @Option(names = ['--mailhog-password'], description = 'Sets the password for mailhogs web ui.')
+    private String mailhogPassword
 
     // args group debug
     @Option(names = ['-d', '--debug'], description = 'Debug output')
@@ -89,13 +84,10 @@ class GitopsPlaygroundCli implements Runnable {
     // args group operator
     @Option(names = ['--fluxv1'], description = 'Install the Flux V1 module')
     private boolean fluxv1
-
     @Option(names = ['--fluxv2'], description = 'Install the Flux V2 module')
     private boolean fluxv2
-
     @Option(names = ['--argocd'], description = 'Install the ArgoCD module')
     private boolean argocd
-
     @Option(names = ['--argocd-url'], description = 'The URL where argocd is accessible. It has to be the full URL with http:// or https://')
     private String argocdUrl
 
@@ -165,6 +157,10 @@ class GitopsPlaygroundCli implements Runnable {
                                 url       : argocdUrl
                         ],
                         metrics: metrics
+                ],
+                mailhog: [
+                        username: mailhogUsername,
+                        password: mailhogPassword
                 ]
         ]
     }

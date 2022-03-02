@@ -22,6 +22,7 @@ class ApplicationConfigurator {
         addInternalStatus(config)
         addAdditionalApplicationConfig(config)
         setScmmConfig(config)
+        setMailhogConfig(config)
         addServiceUrls(config)
         setDefaultImagesIfNotConfigured(config)
         addRepos(config)
@@ -118,5 +119,10 @@ class ApplicationConfigurator {
         } else {
             root.setLevel(Level.INFO)
         }
+    }
+
+    static void setMailhogConfig(Map config) {
+        if (config.mailhog["username"] == null) config.mailhog["username"] = config.application["username"]
+        if (config.mailhog["password"] == null) config.mailhog["password"] = config.application["password"]
     }
 }

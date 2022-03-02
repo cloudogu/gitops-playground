@@ -15,14 +15,14 @@ class GitClient {
     private String username
     private String password
 
-    GitClient(Map scmmConfig) {
-        String scmmProtocol = scmmConfig.scmm["protocol"]
-        String scmmHost = scmmConfig.scmm["host"]
-        username = scmmConfig.scmm["username"]
-        password = scmmConfig.scmm["password"]
+    GitClient(Map config) {
+        String scmmProtocol = config.scmm["protocol"]
+        String scmmHost = config.scmm["host"]
+        username = config.scmm["username"]
+        password = config.scmm["password"]
         scmmUrl = scmmProtocol + "://" + scmmHost
         scmmUrlWithCredentials = scmmProtocol + "://" + username + ":" + password + "@" + scmmHost
-        scmmInternal = scmmConfig.scmm["internal"]
+        scmmInternal = config.scmm["internal"]
     }
 
     void clone(String localGopSrcDir, String scmmRepoTarget, String absoluteLocalRepoTmpDir) {
