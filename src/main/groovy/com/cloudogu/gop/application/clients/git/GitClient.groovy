@@ -14,61 +14,68 @@ class GitClient {
     private String scmmUrl
     private String username
     private String password
+    private FileSystemUtils fileSystemUtils
+    private CommandExecutor commandExecutor
 
-    GitClient(Map config) {
+    GitClient(Map config, FileSystemUtils fileSystemUtils = new FileSystemUtils(), CommandExecutor commandExecutor = new CommandExecutor()) {
         String scmmProtocol = config.scmm["protocol"]
         String scmmHost = config.scmm["host"]
-        username = config.scmm["username"]
-        password = config.scmm["password"]
-        scmmUrl = scmmProtocol + "://" + scmmHost
-        scmmUrlWithCredentials = scmmProtocol + "://" + username + ":" + password + "@" + scmmHost
-        scmmInternal = config.scmm["internal"]
+        this.username = config.scmm["username"]
+        this.password = config.scmm["password"]
+        this.scmmUrl = scmmProtocol + "://" + scmmHost
+        this.scmmUrlWithCredentials = scmmProtocol + "://" + username + ":" + password + "@" + scmmHost
+        this.scmmInternal = config.scmm["internal"]
+        this.fileSystemUtils = fileSystemUtils
+        this.commandExecutor = commandExecutor
     }
 
     void clone(String localGopSrcDir, String scmmRepoTarget, String absoluteLocalRepoTmpDir) {
-        String repoUrl = scmmUrlWithCredentials + "/repo/" + scmmRepoTarget
-        String absoluteSrcDirLocation = FileSystemUtils.getGopRoot() + "/" + localGopSrcDir
 
-        gitInit(absoluteLocalRepoTmpDir)
+        String repoUrl = scmmUrlWithCredentials + "/repo/" + scmmRepoTarget
+        String absoluteSrcDirLocation = fileSystemUtils.getGopRoot() + "/" + localGopSrcDir
+
+        gitRepoCommandInit(absoluteLocalRepoTmpDir)
 
         log.debug("Creating temporary git repo folder")
-        FileSystemUtils.createDirectory(absoluteLocalRepoTmpDir)
+        fileSystemUtils.createDirectory(absoluteLocalRepoTmpDir)
 
-        CommandExecutor.execute("git clone ${repoUrl} ${absoluteLocalRepoTmpDir}")
-        FileSystemUtils.copyDirectory(absoluteSrcDirLocation, absoluteLocalRepoTmpDir)
+        log.debug("Cloning $scmmRepoTarget repo")
+        commandExecutor.execute("git clone ${repoUrl} ${absoluteLocalRepoTmpDir}")
+        fileSystemUtils.copyDirectory(absoluteSrcDirLocation, absoluteLocalRepoTmpDir)
 
         if (!scmmInternal) {
             log.debug("Configuring all yaml files to use the external scmm url")
-            FileSystemUtils.getAllFilesFromDirectoryWithEnding(absoluteLocalRepoTmpDir, ".yaml").forEach(file -> {
-                FileSystemUtils.replaceFileContent(file.absolutePath, "http://scmm-scm-manager.default.svc.cluster.local/scm", "$scmmUrl")
+            fileSystemUtils.getAllFilesFromDirectoryWithEnding(absoluteLocalRepoTmpDir, ".yaml").forEach(file -> {
+                fileSystemUtils.replaceFileContent(file.absolutePath, "http://scmm-scm-manager.default.svc.cluster.local/scm", "$scmmUrl")
             })
         }
     }
 
-    void commitAndPush(String target, String absoluteLocalRepoTmpDir) {
+    void commitAndPush(String scmmRepoTarget, String absoluteLocalRepoTmpDir) {
+        log.debug("Pushing configured $scmmRepoTarget repo")
         git("checkout -b main --quiet")
         git("add .")
         String[] commitCommand = ["commit", "-m", "\"Initial commit\"", "--quiet"]
         git(commitCommand)
-        git("push -u $scmmUrlWithCredentials/repo/$target HEAD:main --force")
+        git("push -u $scmmUrlWithCredentials/repo/$scmmRepoTarget HEAD:main --force")
 
         cleanup(absoluteLocalRepoTmpDir)
 
-        setDefaultBranchForRepo(target)
+        setDefaultBranchForRepo(scmmRepoTarget)
     }
 
-    private void gitInit(String absoluteLocalRepoTmpDir) {
+    private void gitRepoCommandInit(String absoluteLocalRepoTmpDir) {
         gitRepoCommand = "git --git-dir=$absoluteLocalRepoTmpDir/.git/ --work-tree=$absoluteLocalRepoTmpDir"
     }
 
     private void git(String command) {
         String gitCommand = gitRepoCommand + " " + command
-        CommandExecutor.executeAsList(gitCommand)
+        commandExecutor.executeAsList(gitCommand)
     }
 
     private void git(String[] command) {
         String[] gitCommand = gitRepoCommand.split(" ") + command
-        CommandExecutor.execute(gitCommand)
+        commandExecutor.execute(gitCommand)
     }
 
     private void cleanup(String dir) {
@@ -81,7 +88,7 @@ class GitClient {
         def json = "{\"defaultBranch\":\"$defaultBranch\"}"
 
         OkHttpClient client = new OkHttpClient()
-        RequestBody body = RequestBody.create(MediaType.parse(contentType), json)
+        RequestBody body = RequestBody.create(json, MediaType.parse(contentType))
         String postUrl = scmmUrl + "/api/v2/config/git/" + scmmRepoTarget
         Request request = new Request.Builder()
                 .header("Authorization", Credentials.basic(username, password))

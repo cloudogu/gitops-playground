@@ -6,17 +6,14 @@ import groovy.util.logging.Slf4j
 @Slf4j
 class GopApplication {
 
-    private Map config
+    private ModuleRepository moduleRepository
 
-    GopApplication(Map<String, Serializable> config) {
-        this.config = config
+    GopApplication(ModuleRepository moduleRepository) {
+        this.moduleRepository = moduleRepository
     }
 
     def start() {
         log.info("Starting Gop Application")
-        ApplicationConfigurator.populateConfig(config)
-
-        def moduleRepository = new ModuleRepository(config)
         moduleRepository.execute()
         log.info("Gop Application installed")
     }

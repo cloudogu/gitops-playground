@@ -7,21 +7,21 @@ import org.apache.commons.io.FileUtils
 @Slf4j
 class FileSystemUtils {
 
-    static File replaceFileContent(String folder, String fileToChange, String from, String to) {
+    File replaceFileContent(String folder, String fileToChange, String from, String to) {
         File file = new File(folder + "/" + fileToChange)
         String newConfig = file.text.replace(from, to)
         file.setText(newConfig)
         return file
     }
 
-    static String replaceFileContent(String fileToChange, String from, String to) {
+    String replaceFileContent(String fileToChange, String from, String to) {
         File file = new File(fileToChange)
         String newConfig = file.text.replace(from, to)
         file.setText(newConfig)
         return file
     }
 
-    static String getSubstringOfFile(String fileLocation, CharSequence pattern, int from, int to) {
+    String getSubstringOfFile(String fileLocation, CharSequence pattern, int from, int to) {
         File file = new File(fileLocation)
         String found = ""
         file.readLines().forEach(line -> {
@@ -32,7 +32,7 @@ class FileSystemUtils {
         return found
     }
 
-    static String getSubstringOfFile(String fileLocation, CharSequence pattern, int from) {
+    String getSubstringOfFile(String fileLocation, CharSequence pattern, int from) {
         File file = new File(fileLocation)
         String found = ""
         file.readLines().forEach(line -> {
@@ -43,7 +43,7 @@ class FileSystemUtils {
         return found
     }
 
-    static String getLineFromFile(String fileLocation, CharSequence pattern) {
+    String getLineFromFile(String fileLocation, CharSequence pattern) {
         File file = new File(fileLocation)
         String found = ""
         String fileText = file.getText()
@@ -56,7 +56,7 @@ class FileSystemUtils {
         return found
     }
 
-    static List<String> getAllLinesFromFile(String fileLocation, CharSequence pattern) {
+    List<String> getAllLinesFromFile(String fileLocation, CharSequence pattern) {
         File file = new File(fileLocation)
         List<String> foundLines = new ArrayList<>()
         file.readLines().forEach(line -> {
@@ -67,11 +67,11 @@ class FileSystemUtils {
         return foundLines
     }
 
-    static String goBackToDir(String filePath, String directory) {
+    String goBackToDir(String filePath, String directory) {
         return filePath.substring(0, filePath.indexOf(directory) + directory.length())
     }
 
-    static String getGopRoot() {
+    String getGopRoot() {
         String userDir = System.getProperty("user.dir")
         String localGop = "k8s-gitops-playground"
         String dockerGop = "app"
@@ -82,7 +82,7 @@ class FileSystemUtils {
         }
     }
 
-    static List<File> getAllFilesFromDirectoryWithEnding(String directory, String ending) {
+    List<File> getAllFilesFromDirectoryWithEnding(String directory, String ending) {
         List<File> foundFiles = new ArrayList<>()
         new File(directory).eachFileRecurse(FileType.FILES) {
             if (it.name.endsWith(ending)) {
@@ -92,7 +92,7 @@ class FileSystemUtils {
         return foundFiles
     }
 
-    static void listDirectories(String parentDir) {
+    void listDirectories(String parentDir) {
         List<File> list = []
 
         File dir = new File(parentDir)
@@ -104,7 +104,7 @@ class FileSystemUtils {
         }
     }
 
-    static void copyDirectory(String source, String destination) {
+    void copyDirectory(String source, String destination) {
         log.debug("Copying directory " + source + " to " + destination)
         File sourceDir = new File(source)
         File destinationDir = new File(destination)
@@ -116,7 +116,7 @@ class FileSystemUtils {
         }
     }
 
-    static void createDirectory(String directory) {
+    void createDirectory(String directory) {
         log.debug("Creating folder: " + directory)
         new File(directory).mkdirs()
     }
