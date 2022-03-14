@@ -1,7 +1,7 @@
 package com.cloudogu.gop.application.modules
 
 import com.cloudogu.gop.application.clients.git.GitClient
-import com.cloudogu.gop.application.modules.argocd.ArgoCDModule
+import com.cloudogu.gop.application.modules.metrics.MetricsModule
 import groovy.util.logging.Slf4j
 
 @Slf4j
@@ -29,6 +29,6 @@ class ModuleRepository {
         log.debug("Registering gop modules")
         GitClient gitClient = new GitClient(config)
 
-        allModules.add(new ArgoCDModule(config, gitClient))
+        allModules.add(new MetricsModule(config, gitClient))
     }
 }
