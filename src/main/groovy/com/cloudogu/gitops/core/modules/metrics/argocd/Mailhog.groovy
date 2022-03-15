@@ -1,6 +1,6 @@
 package com.cloudogu.gitops.core.modules.metrics.argocd
 
-
+import com.cloudogu.gitops.core.utils.FileSystemUtils
 import groovy.util.logging.Slf4j
 import org.springframework.security.crypto.bcrypt.BCrypt
 
@@ -13,10 +13,9 @@ class Mailhog {
     private String mailhogUsername
     private String mailhogPassword
     private String tmpGitRepoDir
-    private com.cloudogu.gitops.core.utils.FileSystemUtils fileSystemUtils
+    private FileSystemUtils fileSystemUtils
 
-
-    Mailhog(Map config, String tmpGitRepoDir, com.cloudogu.gitops.core.utils.FileSystemUtils fileSystemUtils = new com.cloudogu.gitops.core.utils.FileSystemUtils()) {
+    Mailhog(Map config, String tmpGitRepoDir, FileSystemUtils fileSystemUtils = new FileSystemUtils()) {
         this.remoteCluster = config.application["remote"]
         this.username = config.application["username"]
         this.password = config.application["password"]

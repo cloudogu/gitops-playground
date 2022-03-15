@@ -65,6 +65,9 @@ spec:
         grafana:
           adminUser: admin
           adminPassword: admin
+          service:
+            type: NodePort
+            nodePort: "9095"
           sidecar:
             dashboards:
               #this needs to be added so that the label will become 'label: grafana_dashboards: "1"'

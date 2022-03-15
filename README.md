@@ -3,15 +3,16 @@
 
 Reproducible infrastructure to showcase GitOps workflows with Kubernetes.  
 Derived from our experiences in [consulting](https://cloudogu.com/en/consulting/?mtm_campaign=gitops-playground&mtm_kwd=consulting&mtm_source=github&mtm_medium=link) 
-and operating the [myCloudogu platform](https://my.cloudogu.com/).
+and operating the [myCloudogu platform](https://my.cloudogu.com/).  
+The example application pipelines use our GitOps library for Jenkins: [cloudogu/gitops-build-lib](https://github.com/cloudogu/gitops-build-lib).
 
-We are working on distilling the logic used in the example application pipelines into a reusable library for Jenkins:
-[cloudogu/gitops-build-lib](https://github.com/cloudogu/gitops-build-lib).
+For questions or suggestions you are welcome to join us at our myCloudogu [community forum](https://community.cloudogu.com/t/introducing-the-gitops-playground/107).
 
-If you have any questions, remarks or ideas regarding the `gitops-playground`, feel free to visit our [community](https://community.cloudogu.com/t/introducing-the-gitops-playground/107).  
-Or if you want to chat with us about gitops in general, visit us [here](https://community.cloudogu.com/c/gitops-by-cloudogu/23).
+[![Discuss it on myCloudogu](https://static.cloudogu.com/static/images/discuss-it.png)](https://community.cloudogu.com/t/introducing-the-gitops-playground/107)
 
-TLDR; You can run a local k8s cluster with the GitOps playground installed with only one command (on Linux)
+# TLDR;
+
+You can run a local k8s cluster with the GitOps playground installed with only one command (on Linux)
 
 ```shell
 docker pull ghcr.io/cloudogu/gitops-playground && \ 
@@ -46,12 +47,15 @@ We recommend running this command as an unprivileged user, that is inside the [d
   - [Credentials](#credentials)
   - [Jenkins](#jenkins)
   - [SCM-Manager](#scm-manager)
+  - [Monitoring tools](#monitoring-tools)
   - [ArgoCD UI](#argocd-ui)
   - [Demo applications](#demo-applications)
     - [Flux V1](#flux-v1)
     - [Flux V2](#flux-v2)
     - [ArgoCD](#argocd)
-- [Testing](#testing)
+  - [Testing](#testing)
+    - [Usage](#usage)
+    - [Options](#options)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -260,13 +264,9 @@ If you are using a remote cluster you can set the `--argocd-url` parameter so th
 
 ##### Metrics
 
-Set the parameter `--metrics` so the [kube-prometheus-stack](https://github.com/prometheus-operator/kube-prometheus) via its [helm-chart](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack) is being deployed including argocd dashboards.
-
-### Mailhog and alerts
-
-Mailhog is being deployed with argocd-notifications and some default triggers.
-The mailhog is available at http://localhost:9094. 
-Applications deployed with argocd now will alert via email to mailhog if for example the sync status failed.
+Set the parameter `--metrics` so the [kube-prometheus-stack](https://github.com/prometheus-operator/kube-prometheus) via its [helm-chart](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack) 
+is being deployed including argocd dashboards.
+This leads to mailhog and grafana being exposed.
 
 ### Remove playground
 
@@ -288,6 +288,9 @@ them can be accessed via web.
 * SCM-Manager
 * ArgoCD
 * Demo applications for each GitOps operator, each with staging and production instance.
+
+We distilled the logic used in the example application pipelines into a reusable library for Jenkins:
+[cloudogu/gitops-build-lib](https://github.com/cloudogu/gitops-build-lib).
 
 The URLs of the applications depend on the environment the playground is deployed to.
 The following lists all application and how to find out their respective URLs for a GitOps playground being deployed to
@@ -377,6 +380,21 @@ The user on the scm has to have privileges to:
 * add / edit repositories
 * add / edit proxy
 * install plugins
+
+### Monitoring tools
+
+When run with argocd and `--metrics`, the following tools are exposed
+
+* Mailhog
+  * http://localhost:9094 (k3d)
+  * `scripts/get-remote-url mailhog monitoring` (remote k8s)
+* Grafana 
+  * http://localhost:9095 (k3d)
+  * `scripts/get-remote-url kube-prometheus-stack-grafana monitoring` (remote k8s)
+
+Applications deployed with argocd now will alert via email to mailhog if for example the sync status failed.
+Grafana can be used to query and visualize metrics via prometheus.
+Prometheus is not exposed by default.
 
 ### ArgoCD UI
 

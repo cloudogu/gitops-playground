@@ -7,6 +7,8 @@ import org.apache.commons.io.FileUtils
 @Slf4j
 class FileSystemUtils {
 
+    @Deprecated
+    // TODO replace this by proper YAML editing?
     File replaceFileContent(String folder, String fileToChange, String from, String to) {
         File file = new File(folder + "/" + fileToChange)
         String newConfig = file.text.replace(from, to)
