@@ -1,14 +1,14 @@
-package com.cloudogu.gop.application
+package com.cloudogu.gitops.core
 
-import com.cloudogu.gop.application.modules.ModuleRepository
+import com.cloudogu.gitops.core.modules.ModuleRepository
 import groovy.util.logging.Slf4j
 
 @Slf4j
-class GopApplication {
+class Application {
 
     private ModuleRepository moduleRepository
 
-    GopApplication(ModuleRepository moduleRepository) {
+    Application(ModuleRepository moduleRepository) {
         this.moduleRepository = moduleRepository
     }
 

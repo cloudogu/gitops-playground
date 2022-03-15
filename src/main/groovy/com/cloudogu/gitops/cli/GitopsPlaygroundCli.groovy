@@ -1,14 +1,11 @@
-package com.cloudogu.gop.cli
+package com.cloudogu.gitops.cli
 
-import com.cloudogu.gop.application.ApplicationConfigurator
-import com.cloudogu.gop.application.GopApplication
-import com.cloudogu.gop.application.modules.ModuleRepository
+import com.cloudogu.gitops.core.ApplicationConfigurator
+import com.cloudogu.gitops.core.Application
+import com.cloudogu.gitops.core.modules.ModuleRepository
 import io.micronaut.configuration.picocli.PicocliRunner
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
-
-import static groovy.json.JsonOutput.prettyPrint
-import static groovy.json.JsonOutput.toJson
 
 @Command(name = 'gitops-playground-cli', description = 'CLI-tool to deploy gitops-playground.',
         mixinStandardHelpOptions = true)
@@ -114,7 +111,7 @@ class GitopsPlaygroundCli implements Runnable {
         ApplicationConfigurator applicationConfigurator = new ApplicationConfigurator(parseConfig())
         Map config = applicationConfigurator.populateConfig()
 
-        GopApplication app = new GopApplication(new ModuleRepository(config))
+        Application app = new Application(new ModuleRepository(config))
         app.start()
     }
 

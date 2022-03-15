@@ -1,7 +1,7 @@
-package com.cloudogu.gop.application.utils
+package com.cloudogu.gitops.core.utils
 
-import com.cloudogu.gop.application.clients.k8s.K8sClient
-import com.cloudogu.gop.application.exceptions.CouldNotConnectToKubernetesCluster
+import com.cloudogu.gitops.core.clients.k8s.K8sClient
+import com.cloudogu.gitops.core.exceptions.CouldNotConnectToKubernetesCluster
 import groovy.util.logging.Slf4j
 
 import java.util.regex.Matcher

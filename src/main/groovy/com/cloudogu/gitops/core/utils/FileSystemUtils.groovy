@@ -1,4 +1,4 @@
-package com.cloudogu.gop.application.utils
+package com.cloudogu.gitops.core.utils
 
 import groovy.io.FileType
 import groovy.util.logging.Slf4j

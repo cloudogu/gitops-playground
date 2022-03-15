@@ -1,7 +1,6 @@
-package com.cloudogu.gop.application.modules.metrics.prometheusstack
+package com.cloudogu.gitops.core.modules.metrics.argocd
 
-import com.cloudogu.gop.application.clients.k8s.K8sClient
-import com.cloudogu.gop.application.utils.FileSystemUtils
+
 import groovy.util.logging.Slf4j
 
 @Slf4j
@@ -11,10 +10,10 @@ class PrometheusStack {
     private String username
     private String password
     private String tmpGitRepoDir
-    private FileSystemUtils fileSystemUtils
-    private K8sClient k8sClient
+    private com.cloudogu.gitops.core.utils.FileSystemUtils fileSystemUtils
+    private com.cloudogu.gitops.core.clients.k8s.K8sClient k8sClient
 
-    PrometheusStack(Map config, String tmpGitRepoDir, FileSystemUtils fileSystemUtils = new FileSystemUtils(), K8sClient k8sClient = new K8sClient()) {
+    PrometheusStack(Map config, String tmpGitRepoDir, com.cloudogu.gitops.core.utils.FileSystemUtils fileSystemUtils = new com.cloudogu.gitops.core.utils.FileSystemUtils(), com.cloudogu.gitops.core.clients.k8s.K8sClient k8sClient = new com.cloudogu.gitops.core.clients.k8s.K8sClient()) {
         this.username = config.application["username"]
         this.password = config.application["password"]
         this.deployMetrics = config.modules["metrics"]

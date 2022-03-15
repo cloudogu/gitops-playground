@@ -1,4 +1,4 @@
-package com.cloudogu.gop.application.exceptions
+package com.cloudogu.gitops.core.exceptions
 
 class CouldNotConnectToKubernetesCluster extends Exception {
 }

@@ -1,7 +1,8 @@
 package com.cloudogu.gop.application
 
 import ch.qos.logback.classic.Level
-import com.cloudogu.gop.application.modules.ModuleRepository
+import com.cloudogu.gitops.core.Application
+import com.cloudogu.gitops.core.modules.ModuleRepository
 import com.cloudogu.gop.utils.TestLogger
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -11,16 +12,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue
 import static org.mockito.Mockito.mock
 import static org.mockito.Mockito.verify
 
-class GopApplicationTest {
+class ApplicationTest {
 
-    private GopApplication gop
+    private Application gop
     private ModuleRepository moduleRepository
     private TestLogger testLogger
 
     @BeforeEach
     void setup() {
         moduleRepository = mock(ModuleRepository.class)
-        gop = new GopApplication(moduleRepository)
+        gop = new Application(moduleRepository)
         testLogger = new TestLogger(gop.getClass())
     }
 

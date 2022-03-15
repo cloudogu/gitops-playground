@@ -21,7 +21,7 @@
     <!-- <release.version>8</release.version> -->
 <!--    <micronaut.version>3.1.4</micronaut.version>-->
     <micronaut.version>3.3.3</micronaut.version>
-    <exec.mainClass>com.cloudogu.gop.cli.GitopsPlaygroundCli</exec.mainClass>
+    <exec.mainClass>com.cloudogu.gitops.cli.GitopsPlaygroundCli</exec.mainClass>
     <groovyVersion>3.0.9</groovyVersion>
   </properties>
 

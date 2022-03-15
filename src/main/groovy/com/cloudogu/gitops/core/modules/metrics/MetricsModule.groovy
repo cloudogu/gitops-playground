@@ -1,10 +1,10 @@
-package com.cloudogu.gop.application.modules.metrics
+package com.cloudogu.gitops.core.modules.metrics
 
-import com.cloudogu.gop.application.clients.git.GitClient
-import com.cloudogu.gop.application.modules.GopModule
-import com.cloudogu.gop.application.modules.metrics.argocdnotifications.ArgoCDNotifications
-import com.cloudogu.gop.application.modules.metrics.mailhog.Mailhog
-import com.cloudogu.gop.application.modules.metrics.prometheusstack.PrometheusStack
+import com.cloudogu.gitops.core.clients.git.GitClient
+import com.cloudogu.gitops.core.modules.GopModule
+import com.cloudogu.gitops.core.modules.metrics.argocd.ArgoCDNotifications
+import com.cloudogu.gitops.core.modules.metrics.argocd.Mailhog
+import com.cloudogu.gitops.core.modules.metrics.argocd.PrometheusStack
 import groovy.util.logging.Slf4j
 
 @Slf4j

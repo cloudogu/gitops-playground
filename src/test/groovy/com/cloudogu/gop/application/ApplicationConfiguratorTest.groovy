@@ -1,9 +1,9 @@
 package com.cloudogu.gop.application
 
-import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.spi.ILoggingEvent
-import com.cloudogu.gop.application.utils.FileSystemUtils
-import com.cloudogu.gop.application.utils.NetworkingUtils
+import com.cloudogu.gitops.core.ApplicationConfigurator
+import com.cloudogu.gitops.core.utils.FileSystemUtils
+import com.cloudogu.gitops.core.utils.NetworkingUtils
 import com.cloudogu.gop.utils.GopTestConfig
 import com.cloudogu.gop.utils.TestLogger
 import org.junit.jupiter.api.BeforeEach
@@ -11,8 +11,6 @@ import org.junit.jupiter.api.Test
 
 import static org.mockito.Mockito.*
 import static org.junit.jupiter.api.Assertions.*
-import static groovy.json.JsonOutput.prettyPrint
-import static groovy.json.JsonOutput.toJson
 
 class ApplicationConfiguratorTest {
 

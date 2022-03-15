@@ -1,7 +1,6 @@
-package com.cloudogu.gop.application.modules.metrics.argocdnotifications
+package com.cloudogu.gitops.core.modules.metrics.argocd
 
 
-import com.cloudogu.gop.application.utils.FileSystemUtils
 import groovy.util.logging.Slf4j
 
 @Slf4j
@@ -9,9 +8,9 @@ class ArgoCDNotifications {
 
     private String argocdUrl
     private String tmpGitRepoDir
-    private FileSystemUtils fileSystemUtils
+    private com.cloudogu.gitops.core.utils.FileSystemUtils fileSystemUtils
 
-    ArgoCDNotifications(Map config, String tmpGitRepoDir, FileSystemUtils fileSystemUtils = new FileSystemUtils()) {
+    ArgoCDNotifications(Map config, String tmpGitRepoDir, com.cloudogu.gitops.core.utils.FileSystemUtils fileSystemUtils = new com.cloudogu.gitops.core.utils.FileSystemUtils()) {
         this.argocdUrl = config.modules["argocd"]["url"]
         this.tmpGitRepoDir = tmpGitRepoDir
         this.fileSystemUtils = fileSystemUtils
