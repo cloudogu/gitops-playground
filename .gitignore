@@ -11,3 +11,4 @@ terraform/plan
 terraform/account.json
 *.lock.hcl
 **/.terraform/*
+/.mvn/wrapper/maven-wrapper.jar
