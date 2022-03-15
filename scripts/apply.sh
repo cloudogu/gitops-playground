@@ -209,6 +209,13 @@ function checkPrerequisites() {
       exit 1
     fi
   fi
+
+  if [[ $INSTALL_ALL_MODULES == false && $INSTALL_ARGOCD == false ]]; then
+    if [[ ${DEPLOY_METRICS} == true ]]; then
+      error "Metrics module only available in conjunction with ArgoCD"
+      exit 1
+    fi
+  fi
 }
 
 function applyBasicK8sResources() {
