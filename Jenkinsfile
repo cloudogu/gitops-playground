@@ -23,7 +23,7 @@ properties([
 node('docker') {
 
     def git = new Git(this)
-    def mvn = new MavenWrapperInDocker(this, 'azul/zulu-openjdk-alpine:11.0.10')
+    def mvn = new MavenWrapperInDocker(this, 'azul/zulu-openjdk-alpine:17.0.2')
 
     timestamps {
         catchError {
