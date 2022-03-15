@@ -1,5 +1,7 @@
 package com.cloudogu.gitops.core.modules.metrics.argocd
 
+import com.cloudogu.gitops.core.clients.k8s.K8sClient
+import com.cloudogu.gitops.core.utils.FileSystemUtils
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -8,13 +10,17 @@ import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
+
 import static org.assertj.core.api.Assertions.assertThat
+import static org.mockito.Mockito.mock
 
 class PrometheusStackTest {
 
     public @TempDir
     Path tempDir
     File temporaryStackYamlFile
+    private K8sClient k8sClient = mock(K8sClient.class)
+    
     Map config = [
             application: [
                     username: 'abc',
@@ -51,7 +57,8 @@ class PrometheusStackTest {
     }
 
     private PrometheusStack createStack() {
-        new PrometheusStack(config, tempDir.toString())
+        // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
+        new PrometheusStack(config, tempDir.toString(), new FileSystemUtils(), k8sClient)
     }
     
     private parseActualStackYaml() {
