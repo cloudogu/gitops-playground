@@ -2,6 +2,7 @@ package com.cloudogu.gitops.core
 
 import ch.qos.logback.classic.Level
 import com.cloudogu.gitops.core.utils.FileSystemUtils
+import com.cloudogu.gitops.core.utils.NetworkingUtils
 import groovy.util.logging.Slf4j
 import ch.qos.logback.classic.Logger
 import org.slf4j.LoggerFactory
@@ -13,10 +14,10 @@ import static groovy.json.JsonOutput.toJson
 class ApplicationConfigurator {
 
     private Map config
-    private com.cloudogu.gitops.core.utils.NetworkingUtils networkingUtils
+    private NetworkingUtils networkingUtils
     private FileSystemUtils fileSystemUtils
 
-    ApplicationConfigurator(Map config, com.cloudogu.gitops.core.utils.NetworkingUtils networkingUtils = new com.cloudogu.gitops.core.utils.NetworkingUtils(), FileSystemUtils fileSystemUtils = new FileSystemUtils()) {
+    ApplicationConfigurator(Map config, NetworkingUtils networkingUtils = new NetworkingUtils(), FileSystemUtils fileSystemUtils = new FileSystemUtils()) {
         this.config = config
         this.networkingUtils = networkingUtils
         this.fileSystemUtils = fileSystemUtils

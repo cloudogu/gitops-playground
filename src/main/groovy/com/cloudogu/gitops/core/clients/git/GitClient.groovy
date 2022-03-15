@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.core.clients.git
 
-
+import com.cloudogu.gitops.core.utils.CommandExecutor
+import com.cloudogu.gitops.core.utils.FileSystemUtils
 import groovy.util.logging.Slf4j
 import okhttp3.*
 
@@ -13,10 +14,10 @@ class GitClient {
     private String scmmUrl
     private String username
     private String password
-    private com.cloudogu.gitops.core.utils.FileSystemUtils fileSystemUtils
-    private com.cloudogu.gitops.core.utils.CommandExecutor commandExecutor
+    private FileSystemUtils fileSystemUtils
+    private CommandExecutor commandExecutor
 
-    GitClient(Map config, com.cloudogu.gitops.core.utils.FileSystemUtils fileSystemUtils = new com.cloudogu.gitops.core.utils.FileSystemUtils(), com.cloudogu.gitops.core.utils.CommandExecutor commandExecutor = new com.cloudogu.gitops.core.utils.CommandExecutor()) {
+    GitClient(Map config, FileSystemUtils fileSystemUtils = new FileSystemUtils(), CommandExecutor commandExecutor = new CommandExecutor()) {
         String scmmProtocol = config.scmm["protocol"]
         String scmmHost = config.scmm["host"]
         this.username = config.scmm["username"]

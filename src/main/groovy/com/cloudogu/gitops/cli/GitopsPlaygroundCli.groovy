@@ -168,40 +168,5 @@ class GitopsPlaygroundCli implements Runnable {
         ]
     }
 
-//    @Override
-//    String toString() {
-//        return "GitopsPlaygroundCli {" +
-//                "\n registryUrl='" + registryUrl + '\'' +
-//                ",\n registryPath='" + registryPath + '\'' +
-//                ",\n registryUsername='" + registryUsername + '\'' +
-//                ",\n registryPassword='" + registryPassword + '\'' +
-//                ",\n internalRegistryPort=" + internalRegistryPort +
-//                ",\n jenkinsUrl='" + jenkinsUrl + '\'' +
-//                ",\n jenkinsUsername='" + jenkinsUsername + '\'' +
-//                ",\n jenkinsPassword='" + jenkinsPassword + '\'' +
-//                ",\n scmmUrl='" + scmmUrl + '\'' +
-//                ",\n scmmUsername='" + scmmUsername + '\'' +
-//                ",\n scmmPassword='" + scmmPassword + '\'' +
-//                ",\n remote=" + remote +
-//                ",\n insecure=" + insecure +
-//                ",\n kubectlImage='" + kubectlImage + '\'' +
-//                ",\n helmImage='" + helmImage + '\'' +
-//                ",\n kubevalImage='" + kubevalImage + '\'' +
-//                ",\n helmKubevalImage='" + helmKubevalImage + '\'' +
-//                ",\n yamllintImage='" + yamllintImage + '\'' +
-//                ",\n skipHelmUpdate=" + skipHelmUpdate +
-//                ",\n argocdConfigOnly=" + argocdConfigOnly +
-//                ",\n debug=" + debug +
-//                ",\n trace=" + trace +
-//                ",\n username='" + username + '\'' +
-//                ",\n password='" + password + '\'' +
-//                ",\n pipeYes=" + pipeYes +
-//                ",\n fluxv1=" + fluxv1 +
-//                ",\n fluxv2=" + fluxv2 +
-//                ",\n argocd=" + argocd +
-//                ",\n argocdUrl='" + argocdUrl + '\'' +
-//                ",\n metrics='" + metrics + '\'' +
-//                '\n}';
-//    }
 }
 

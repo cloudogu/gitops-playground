@@ -1,14 +1,14 @@
 package com.cloudogu.gitops.core.clients.k8s
 
-
+import com.cloudogu.gitops.core.utils.CommandExecutor
 import groovy.util.logging.Slf4j
 
 @Slf4j
 class K8sClient {
 
-    private com.cloudogu.gitops.core.utils.CommandExecutor commandExecutor
+    private CommandExecutor commandExecutor
 
-    K8sClient(com.cloudogu.gitops.core.utils.CommandExecutor commandExecutor = new com.cloudogu.gitops.core.utils.CommandExecutor()) {
+    K8sClient(CommandExecutor commandExecutor = new CommandExecutor()) {
         this.commandExecutor = commandExecutor
     }
 
