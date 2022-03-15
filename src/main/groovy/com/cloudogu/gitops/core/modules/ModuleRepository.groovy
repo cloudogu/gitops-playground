@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.core.modules
 
-
+import com.cloudogu.gitops.core.clients.git.GitClient
+import com.cloudogu.gitops.core.modules.metrics.MetricsModule
 import groovy.util.logging.Slf4j
 
 @Slf4j
@@ -23,11 +24,12 @@ class ModuleRepository {
         log.info("Finished running all gop modules")
     }
 
-    // Registered modules are chronologically sensitive. This means, that the first registered module will be first to run and the last module registered will be the last to run
+    // Registered modules are chronologically sensitive. 
+    // This means, that the first registered module will be first and the last module registered will be the last to run
     private void registerAllModules() {
         log.debug("Registering gop modules")
-        com.cloudogu.gitops.core.clients.git.GitClient gitClient = new com.cloudogu.gitops.core.clients.git.GitClient(config)
+        GitClient gitClient = new GitClient(config)
 
-        allModules.add(new com.cloudogu.gitops.core.modules.metrics.MetricsModule(config, gitClient))
+        allModules.add(new MetricsModule(config, gitClient))
     }
 }

@@ -39,7 +39,7 @@ RUN native-image -Dgroovy.grape.enable=false \
     --allow-incomplete-classpath   \
     --report-unsupported-elements-at-runtime \
     --diagnostics-mode \
-    --initialize-at-run-time=org.codehaus.groovy.control.XStreamUtils,groovy.grape.GrapeIvy,io.kubernetes.client.openapi.Configuration,org.codehaus.groovy.vmplugin.v8.Java8\$LookupHolder \
+    --initialize-at-run-time=org.codehaus.groovy.control.XStreamUtils,groovy.grape.GrapeIvy,org.codehaus.groovy.vmplugin.v8.Java8\$LookupHolder \
     --initialize-at-build-time \
     --no-fallback \
     --no-server \
