@@ -4,7 +4,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent
 import com.cloudogu.gitops.core.ApplicationConfigurator
 import com.cloudogu.gitops.core.utils.FileSystemUtils
 import com.cloudogu.gitops.core.utils.NetworkingUtils
-import com.cloudogu.gop.utils.GopTestConfig
+import com.cloudogu.gop.utils.TestConfig
 import com.cloudogu.gop.utils.TestLogger
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -23,7 +23,7 @@ class ApplicationConfiguratorTest {
     void setup() {
         networkingUtils = mock(NetworkingUtils.class)
         fileSystemUtils = mock(FileSystemUtils.class)
-        applicationConfigurator = new ApplicationConfigurator(GopTestConfig.get(), networkingUtils, fileSystemUtils)
+        applicationConfigurator = new ApplicationConfigurator(TestConfig.get(), networkingUtils, fileSystemUtils)
         testLogger = new TestLogger(applicationConfigurator.getClass())
         when(fileSystemUtils.getGopRoot()).thenReturn("/test")
         when(fileSystemUtils.getLineFromFile("/test/scm-manager/values.yaml", "nodePort:")).thenReturn("nodePort: 9091")

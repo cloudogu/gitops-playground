@@ -1,6 +1,6 @@
 package com.cloudogu.gop.utils
 
-class GopTestConfig {
+class TestConfig {
     static Map get() {
         return [
                 registry   : [

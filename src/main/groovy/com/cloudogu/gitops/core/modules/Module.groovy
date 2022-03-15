@@ -1,6 +1,6 @@
 package com.cloudogu.gitops.core.modules
 
-interface GopModule {
+interface Module {
 
     void run()
 }

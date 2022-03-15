@@ -7,7 +7,7 @@ import groovy.util.logging.Slf4j
 class ModuleRepository {
 
     private Map config
-    private List<GopModule> allModules
+    private List<Module> allModules
 
     ModuleRepository(Map config) {
         this.config = config

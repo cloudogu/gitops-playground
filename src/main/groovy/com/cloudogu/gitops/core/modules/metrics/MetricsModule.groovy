@@ -1,14 +1,14 @@
 package com.cloudogu.gitops.core.modules.metrics
 
 import com.cloudogu.gitops.core.clients.git.GitClient
-import com.cloudogu.gitops.core.modules.GopModule
+import com.cloudogu.gitops.core.modules.Module
 import com.cloudogu.gitops.core.modules.metrics.argocd.ArgoCDNotifications
 import com.cloudogu.gitops.core.modules.metrics.argocd.Mailhog
 import com.cloudogu.gitops.core.modules.metrics.argocd.PrometheusStack
 import groovy.util.logging.Slf4j
 
 @Slf4j
-class MetricsModule implements GopModule {
+class MetricsModule implements Module {
 
     private Map config
     private GitClient git
