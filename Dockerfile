@@ -71,11 +71,13 @@ FROM graal as native-image
 ENV MAVEN_OPTS=-Dmaven.repo.local=/mvn
 RUN gu install native-image
 
-COPY --from=maven-cache /mvn/ /mvn/
-COPY --from=maven-cache /app/ /app
 # Provide binaries used by apply-ng, so our runs with native-image-agent dont fail 
 # with "java.io.IOException: Cannot run program "kubectl"..." etc.
+RUN microdnf install iproute
 COPY --from=downloader /dist /
+
+COPY --from=maven-cache /mvn/ /mvn/
+COPY --from=maven-cache /app/ /app
 
 # copy only resources that we need to compile the binary
 COPY src /app/src/

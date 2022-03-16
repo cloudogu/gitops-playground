@@ -76,7 +76,7 @@ class ApplicationConfigurator {
         config.scmm["internal"] = true
         config.scmm["urlForJenkins"] = "http://scmm-scm-manager/scm"
 
-        if (config.scmm["url"] != null && !(config.scmm["url"] as String).empty) {
+        if (config.scmm["url"]) {
             log.debug("Setting external scmm config")
             config.scmm["internal"] = false
             config.scmm["urlForJenkins"] = config.scmm["url"]
