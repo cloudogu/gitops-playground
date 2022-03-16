@@ -14,7 +14,14 @@ class Application {
 
     def start() {
         log.info("Starting Application")
-        moduleRepository.execute()
-        log.info("Application installed")
+        try {
+            moduleRepository.execute()
+        } catch (Throwable throwable) {
+            // Exception with stacktrace is already logged.
+            log.error("Application failed: ${throwable.getMessage()}")
+            // Make sure to exit with error. Otherwise 0 seems to be returned.
+            System.exit(1)
+        }
+        log.info("Application finished")
     }
 }
