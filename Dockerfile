@@ -10,42 +10,6 @@ COPY mvnw /app/
 COPY pom.xml /app/
 RUN ./mvnw dependency:go-offline
 
-FROM graal as native-image
-ENV MAVEN_OPTS=-Dmaven.repo.local=/mvn
-RUN gu install native-image
-
-COPY --from=maven-cache /mvn/ /mvn/
-COPY --from=maven-cache /app/ /app
-
-# copy only resources that we need to compile the binary
-COPY src /app/src/
-COPY compiler.groovy /app
-
-WORKDIR /app
-
-# Build native image micronaut
-#  ./mvnw package -Dpackaging=native-image
-
-# Build native image without micronaut
-RUN ./mvnw package -DskipTests
-
-# Create Graal native image config for largest jar file
-RUN java -agentlib:native-image-agent=config-output-dir=conf/ -jar $(ls -S target/*.jar | head -n 1)
-
-RUN native-image -Dgroovy.grape.enable=false \
-    -H:+ReportExceptionStackTraces \
-    -H:ConfigurationFileDirectories=conf/ \
-    --static \
-    --allow-incomplete-classpath   \
-    --report-unsupported-elements-at-runtime \
-    --diagnostics-mode \
-    --initialize-at-run-time=org.codehaus.groovy.control.XStreamUtils,groovy.grape.GrapeIvy,org.codehaus.groovy.vmplugin.v8.Java8\$LookupHolder \
-    --initialize-at-build-time \
-    --no-fallback \
-    --no-server \
-    -jar $(ls -S target/*.jar | head -n 1) \
-    apply-ng
-
 FROM alpine as downloader
 # When updating, 
 # * also update the checksum found at https://dl.k8s.io/release/v${K8S_VERSION}/bin/linux/amd64/kubectl.sha256
@@ -101,6 +65,51 @@ RUN git config --global user.email "hello@cloudogu.com" && \
 # Download Jenkins Plugin
 COPY scripts/jenkins/plugins /jenkins
 RUN /jenkins/download-plugins.sh /dist/gop/jenkins-plugins
+
+
+FROM graal as native-image
+ENV MAVEN_OPTS=-Dmaven.repo.local=/mvn
+RUN gu install native-image
+
+COPY --from=maven-cache /mvn/ /mvn/
+COPY --from=maven-cache /app/ /app
+# Provide binaries used by apply-ng, so our runs with native-image-agent dont fail 
+# with "java.io.IOException: Cannot run program "kubectl"..." etc.
+COPY --from=downloader /dist /
+
+# copy only resources that we need to compile the binary
+COPY src /app/src/
+COPY compiler.groovy /app
+
+WORKDIR /app
+
+# Build native image micronaut
+#  ./mvnw package -Dpackaging=native-image
+
+# Build native image without micronaut
+RUN ./mvnw package -DskipTests
+
+# Create Graal native image config for largest jar file
+RUN java -agentlib:native-image-agent=config-output-dir=conf/ -jar $(ls -S target/*.jar | head -n 1)
+# Run again with different params in order to avoid further ClassNotFoundExceptions
+RUN java -agentlib:native-image-agent=config-merge-dir=conf/ -jar $(ls -S target/*.jar | head -n 1) \
+      --yes --jenkins-url=a --scmm-url=a \
+      --jenkins-username=a --jenkins-password=a --scmm-username=a--scmm-password=a --password=a \
+      --registry-url=a --registry-path=a --remote --argocd --debug --trace
+
+RUN native-image -Dgroovy.grape.enable=false \
+    -H:+ReportExceptionStackTraces \
+    -H:ConfigurationFileDirectories=conf/ \
+    --static \
+    --allow-incomplete-classpath   \
+    --report-unsupported-elements-at-runtime \
+    --diagnostics-mode \
+    --initialize-at-run-time=org.codehaus.groovy.control.XStreamUtils,groovy.grape.GrapeIvy,org.codehaus.groovy.vmplugin.v8.Java8\$LookupHolder \
+    --initialize-at-build-time \
+    --no-fallback \
+    --no-server \
+    -jar $(ls -S target/*.jar | head -n 1) \
+    apply-ng
 
 FROM alpine
 
