@@ -1,4 +1,4 @@
-package com.cloudogu.gop.utils
+package com.cloudogu.gitops.utils
 
 class TestConfig {
     static Map get() {

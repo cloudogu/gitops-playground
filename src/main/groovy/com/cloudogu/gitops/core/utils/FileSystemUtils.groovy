@@ -73,14 +73,14 @@ class FileSystemUtils {
         return filePath.substring(0, filePath.indexOf(directory) + directory.length())
     }
 
-    String getGopRoot() {
+    String getRootDir() {
         String userDir = System.getProperty("user.dir")
-        String localGop = "k8s-gitops-playground"
-        String dockerGop = "app"
-        if (userDir.contains(localGop)) {
-            return goBackToDir(userDir, localGop)
-        } else if (userDir.contains(dockerGop)) {
-            return goBackToDir(userDir, dockerGop)
+        String rootDirLocal = "k8s-gitops-playground"
+        String rootDirContainer = "app"
+        if (userDir.contains(rootDirLocal)) {
+            return goBackToDir(userDir, rootDirLocal)
+        } else if (userDir.contains(rootDirContainer)) {
+            return goBackToDir(userDir, rootDirContainer)
         }
     }
 

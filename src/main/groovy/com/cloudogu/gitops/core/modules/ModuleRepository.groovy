@@ -17,17 +17,17 @@ class ModuleRepository {
     }
 
     void execute() {
-        log.info("Starting to execute all gop modules")
+        log.info("Starting to execute all modules")
         allModules.forEach(module -> {
             module.run()
         })
-        log.info("Finished running all gop modules")
+        log.info("Finished running all modules")
     }
 
     // Registered modules are chronologically sensitive. 
     // This means, that the first registered module will be first and the last module registered will be the last to run
     private void registerAllModules() {
-        log.debug("Registering gop modules")
+        log.debug("Registering modules")
         GitClient gitClient = new GitClient(config)
 
         allModules.add(new MetricsModule(config, gitClient))

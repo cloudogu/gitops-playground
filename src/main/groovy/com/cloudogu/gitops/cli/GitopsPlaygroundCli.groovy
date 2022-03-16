@@ -75,7 +75,7 @@ class GitopsPlaygroundCli implements Runnable {
     @Option(names = ['-x', '--trace'], description = 'Debug + Show each command executed (set -x)')
     private boolean trace
 
-    // args group gop-configuration
+    // args group configuration
     @Option(names = ['--username'], description = 'Set initial admin username')
     private String username
     @Option(names = ['--password'], description = 'Set initial admin passwords')

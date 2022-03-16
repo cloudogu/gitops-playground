@@ -29,10 +29,10 @@ class GitClient {
         this.commandExecutor = commandExecutor
     }
 
-    void clone(String localGopSrcDir, String scmmRepoTarget, String absoluteLocalRepoTmpDir) {
+    void clone(String localSrcDir, String scmmRepoTarget, String absoluteLocalRepoTmpDir) {
 
         String repoUrl = scmmUrlWithCredentials + "/repo/" + scmmRepoTarget
-        String absoluteSrcDirLocation = fileSystemUtils.getGopRoot() + "/" + localGopSrcDir
+        String absoluteSrcDirLocation = fileSystemUtils.getRootDir() + "/" + localSrcDir
 
         gitRepoCommandInit(absoluteLocalRepoTmpDir)
 

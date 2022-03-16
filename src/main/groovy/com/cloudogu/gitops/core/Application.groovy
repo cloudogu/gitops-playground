@@ -13,8 +13,8 @@ class Application {
     }
 
     def start() {
-        log.info("Starting Gop Application")
+        log.info("Starting Application")
         moduleRepository.execute()
-        log.info("Gop Application installed")
+        log.info("Application installed")
     }
 }

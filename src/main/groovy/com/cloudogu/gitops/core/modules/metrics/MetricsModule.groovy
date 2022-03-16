@@ -29,7 +29,7 @@ class MetricsModule implements Module {
 
     private void configureArgocdMetrics() {
         String absoluteControlAppTmpDir = "/tmp/repo_tmp_dir_for_control_app"
-        String localGopSrcDir = "argocd/control-app"
+        String localSrcDir = "argocd/control-app"
         String scmmRepoTarget = "argocd/control-app"
 
         // todo refactor this to be better testable
@@ -37,7 +37,7 @@ class MetricsModule implements Module {
         Mailhog mailhog = new Mailhog(config, absoluteControlAppTmpDir)
         PrometheusStack prometheus = new PrometheusStack(config, absoluteControlAppTmpDir)
 
-        git.clone(localGopSrcDir, scmmRepoTarget, absoluteControlAppTmpDir)
+        git.clone(localSrcDir, scmmRepoTarget, absoluteControlAppTmpDir)
         notifications.configure()
         mailhog.configure()
         prometheus.configure()

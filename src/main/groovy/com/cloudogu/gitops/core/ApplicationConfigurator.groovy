@@ -60,10 +60,10 @@ class ApplicationConfigurator {
             config.application["password"] = "admin"
         }
         if (System.getenv("KUBERNETES_SERVICE_HOST")) {
-            log.debug("Gop installation is running in kubernetes.")
+            log.debug("installation is running in kubernetes.")
             config.application["runningInsideK8s"] = true
         } else {
-            log.debug("Gop installation is not running in kubernetes")
+            log.debug("installation is not running in kubernetes")
             config.application["runningInsideK8s"] = false
         }
         String clusterBindAddress = networkingUtils.findClusterBindAddress()
@@ -85,7 +85,7 @@ class ApplicationConfigurator {
             config.scmm["url"] = networkingUtils.createUrl("scmm-scm-manager.default.svc.cluster.local", "80", "/scm")
         } else {
             log.debug("Setting internal scmm configs")
-            def port = fileSystemUtils.getLineFromFile(fileSystemUtils.getGopRoot() + "/scm-manager/values.yaml", "nodePort:").findAll(/\d+/)*.toString().get(0)
+            def port = fileSystemUtils.getLineFromFile(fileSystemUtils.getRootDir() + "/scm-manager/values.yaml", "nodePort:").findAll(/\d+/)*.toString().get(0)
             String cba = config.application["clusterBindAddress"]
             config.scmm["url"] = networkingUtils.createUrl(cba, port, "/scm")
         }
@@ -134,15 +134,15 @@ class ApplicationConfigurator {
     private void setLogLevel() {
         boolean trace = config.application["trace"]
         boolean debug = config.application["debug"]
-        Logger gopLogger = (Logger) LoggerFactory.getLogger("com.cloudogu.gop");
+        Logger logger = (Logger) LoggerFactory.getLogger("com.cloudogu.gitops");
         if (trace) {
             log.info("Setting loglevel to trace")
-            gopLogger.setLevel(Level.TRACE)
+            logger.setLevel(Level.TRACE)
         } else if(debug) {
             log.info("Setting loglevel to debug")
-            gopLogger.setLevel(Level.DEBUG);
+            logger.setLevel(Level.DEBUG);
         } else {
-            gopLogger.setLevel(Level.INFO)
+            logger.setLevel(Level.INFO)
         }
     }
 }

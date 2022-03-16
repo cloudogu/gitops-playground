@@ -1,4 +1,4 @@
-package com.cloudogu.gop.utils
+package com.cloudogu.gitops.utils
 
 import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Logger

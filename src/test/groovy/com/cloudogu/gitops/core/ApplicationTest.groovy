@@ -1,9 +1,8 @@
-package com.cloudogu.gop.application
+package com.cloudogu.gitops.core
 
 import ch.qos.logback.classic.Level
-import com.cloudogu.gitops.core.Application
 import com.cloudogu.gitops.core.modules.ModuleRepository
-import com.cloudogu.gop.utils.TestLogger
+import com.cloudogu.gitops.utils.TestLogger
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -14,24 +13,24 @@ import static org.mockito.Mockito.verify
 
 class ApplicationTest {
 
-    private Application gop
+    private Application application
     private ModuleRepository moduleRepository
     private TestLogger testLogger
 
     @BeforeEach
     void setup() {
         moduleRepository = mock(ModuleRepository.class)
-        gop = new Application(moduleRepository)
-        testLogger = new TestLogger(gop.getClass())
+        application = new Application(moduleRepository)
+        testLogger = new TestLogger(application.getClass())
     }
 
     @Test
-    void testSucessfulGopInstallation() {
-        gop.start()
+    void testSucessfulInstallation() {
+        application.start()
 
         verify(moduleRepository).execute()
         assertEquals(testLogger.getLogs().size, 2)
-        assertTrue(testLogger.getLogs().contains("Starting Gop Application", Level.INFO))
-        assertTrue(testLogger.getLogs().contains("Gop Application installed", Level.INFO))
+        assertTrue(testLogger.getLogs().contains("Starting Application", Level.INFO))
+        assertTrue(testLogger.getLogs().contains("Application installed", Level.INFO))
     }
 }
