@@ -39,6 +39,17 @@ class PrometheusStackTest {
     }
 
     @Test
+    void "ignore remote flag when metrics off"() {
+        config['application']['remote'] = true
+        config['modules'] = [metrics: false]
+        PrometheusStack prometheusStack = createStack()
+        prometheusStack.configure()
+        
+        // No exception means success
+        // Otherwise: java.io.FileNotFoundException: /tmp/.../applications/application-kube-prometheus-stack-helm.yaml (No such file or directory)
+    }
+    
+    @Test
     void "service type LoadBalancer when run remotely"() {
         config['application']['remote'] = true
         PrometheusStack prometheusStack = createStack()

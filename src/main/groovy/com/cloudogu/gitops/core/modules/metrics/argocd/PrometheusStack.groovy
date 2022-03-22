@@ -30,14 +30,15 @@ class PrometheusStack {
 
     void configure() {
         if (deployMetrics) {
+            
+            if (remoteCluster) {
+                log.debug("Setting grafana service.type to LoadBalancer since it is running in a remote cluster")
+                fileSystemUtils.replaceFileContent(tmpGitRepoDir, STACK_YAML_PATH, "NodePort", "LoadBalancer")
+            }
+            
             deploy()
         } else {
             disable()
-        }
-
-        if (remoteCluster) {
-            log.debug("Setting grafana service.type to LoadBalancer since it is running in a remote cluster")
-            fileSystemUtils.replaceFileContent(tmpGitRepoDir, STACK_YAML_PATH, "NodePort", "LoadBalancer")
         }
     }
 
