@@ -17,8 +17,7 @@ class Application {
         try {
             moduleRepository.execute()
         } catch (Throwable throwable) {
-            // Exception with stacktrace is already logged.
-            log.error("Application failed: ${throwable.getMessage()}")
+            log.error("Application failed", throwable)
             // Make sure to exit with error. Otherwise 0 seems to be returned.
             System.exit(1)
         }

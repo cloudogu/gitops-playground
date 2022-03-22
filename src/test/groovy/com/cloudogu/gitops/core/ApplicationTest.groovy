@@ -41,10 +41,10 @@ class ApplicationTest {
 
         int status = SystemLambda.catchSystemExit(() -> {
             application.start()
-        });
+        })
 
         assertEquals(1, status);
 
-        assertTrue(testLogger.getLogs().contains("Application failed: Mocked", Level.ERROR))
+        assertTrue(testLogger.getLogs().contains("Application failed", Level.ERROR))
     }
 }
