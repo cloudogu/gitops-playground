@@ -170,6 +170,18 @@
       <scope>test</scope>
     </dependency>
     
+    <!-- GraalVM only -->
+    <dependency>
+      <groupId>org.graalvm.nativeimage</groupId>
+      <artifactId>svm</artifactId>
+      <version>22.0.0.2</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.github.classgraph</groupId>
+      <artifactId>classgraph</artifactId>
+      <version>4.8.141</version>
+    </dependency>
   </dependencies>
 
   <build>
