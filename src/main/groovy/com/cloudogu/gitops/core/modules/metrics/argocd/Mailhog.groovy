@@ -10,8 +10,6 @@ class Mailhog {
     private boolean remoteCluster
     private String username
     private String password
-    private String mailhogUsername
-    private String mailhogPassword
     private String tmpGitRepoDir
     private FileSystemUtils fileSystemUtils
 
@@ -19,8 +17,6 @@ class Mailhog {
         this.remoteCluster = config.application["remote"]
         this.username = config.application["username"]
         this.password = config.application["password"]
-        this.mailhogUsername = config.mailhog["username"]
-        this.mailhogPassword = config.mailhog["password"]
         this.tmpGitRepoDir = tmpGitRepoDir
         this.fileSystemUtils = fileSystemUtils
 
@@ -35,14 +31,10 @@ class Mailhog {
             fileSystemUtils.replaceFileContent(tmpGitRepoDir, mailhogYaml, "LoadBalancer", "NodePort")
         }
 
-        if (username != mailhogUsername || password != mailhogPassword) {
-            log.debug("Setting new mailhog credentials")
-            String bcryptMailhogPassword = BCrypt.hashpw(mailhogPassword, BCrypt.gensalt(4))
-            String from = "fileContents: \"admin:\$2a\$04\$bM4G0jXB7m7mSv4UT8IuIe3.Bj6i6e2A13ryA0ln.hpyX7NeGQyG.\""
-            String to = "fileContents: \"$mailhogUsername:$bcryptMailhogPassword\""
-            fileSystemUtils.replaceFileContent(tmpGitRepoDir, mailhogYaml, from, to)
-        } else {
-            log.debug("Not setting mailhog credentials since none were set. Using default application credentials")
-        }
+        log.debug("Setting new mailhog credentials")
+        String bcryptMailhogPassword = BCrypt.hashpw(password, BCrypt.gensalt(4))
+        String from = "fileContents: \"admin:\$2a\$04\$bM4G0jXB7m7mSv4UT8IuIe3.Bj6i6e2A13ryA0ln.hpyX7NeGQyG.\""
+        String to = "fileContents: \"$username:$bcryptMailhogPassword\""
+        fileSystemUtils.replaceFileContent(tmpGitRepoDir, mailhogYaml, from, to)
     }
 }

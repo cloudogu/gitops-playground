@@ -65,10 +65,6 @@ class GitopsPlaygroundCli implements Runnable {
     // args group metrics
     @Option(names = ['--metrics'], description = 'Installs the Kube-Prometheus-Stack for ArgoCD. This includes Prometheus, the Prometheus operator, Grafana and some extra resources')
     private boolean metrics
-    @Option(names = ['--mailhog-username'], description = 'Sets the username for mailhogs web ui.')
-    private String mailhogUsername
-    @Option(names = ['--mailhog-password'], description = 'Sets the password for mailhogs web ui.')
-    private String mailhogPassword
 
     // args group debug
     @Option(names = ['-d', '--debug'], description = 'Debug output')
@@ -148,10 +144,6 @@ class GitopsPlaygroundCli implements Runnable {
                                 url       : argocdUrl
                         ],
                         metrics: metrics
-                ],
-                mailhog: [
-                        username: mailhogUsername,
-                        password: mailhogPassword
                 ]
         ]
     }

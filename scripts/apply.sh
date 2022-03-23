@@ -882,7 +882,7 @@ function printParameters() {
 readParameters() {
   COMMANDS=$(getopt \
     -o hdxyc \
-    --long help,fluxv1,fluxv2,argocd,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,trace,insecure,yes,skip-helm-update,argocd-config-only,metrics,mailhog-username,mailhog-password,argocd-url: \
+    --long help,fluxv1,fluxv2,argocd,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,trace,insecure,yes,skip-helm-update,argocd-config-only,metrics,argocd-url: \
     -- "$@")
   
   if [ $? != 0 ]; then
@@ -956,8 +956,6 @@ readParameters() {
       --skip-helm-update   ) SKIP_HELM_UPDATE=true; shift ;;
       --argocd-config-only ) ARGOCD_CONFIG_ONLY=true; shift ;;
       --metrics            ) DEPLOY_METRICS=true; shift;;
-      --mailhog-username   ) MAILHOG_USERNAME="$2"; shift 2 ;;
-      --mailhog-password   ) MAILHOG_PASSWORD="$2"; shift 2 ;;
       --argocd-url         ) ARGOCD_URL="$2"; shift 2 ;;
       --                   ) shift; break ;;
     *) break ;;
