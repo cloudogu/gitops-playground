@@ -106,12 +106,13 @@ WORKDIR /app
 RUN ./mvnw package -DskipTests
 
 # Create Graal native image config for largest jar file
-RUN java -agentlib:native-image-agent=config-output-dir=conf/ -jar $(ls -S target/*.jar | head -n 1)
+RUN java -agentlib:native-image-agent=config-output-dir=conf/ -jar $(ls -S target/*.jar | head -n 1) || true
 # Run again with different params in order to avoid further ClassNotFoundExceptions
 RUN java -agentlib:native-image-agent=config-merge-dir=conf/ -jar $(ls -S target/*.jar | head -n 1) \
       --yes --jenkins-url=a --scmm-url=a \
       --jenkins-username=a --jenkins-password=a --scmm-username=a--scmm-password=a --password=a \
-      --registry-url=a --registry-path=a --remote --argocd --debug --trace
+      --registry-url=a --registry-path=a --remote --argocd --debug --trace \
+    || true
 
 RUN native-image -Dgroovy.grape.enable=false \
     -H:+ReportExceptionStackTraces \

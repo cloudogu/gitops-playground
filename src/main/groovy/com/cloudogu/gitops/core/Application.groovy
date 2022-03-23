@@ -14,13 +14,7 @@ class Application {
 
     def start() {
         log.info("Starting Application")
-        try {
-            moduleRepository.execute()
-        } catch (Throwable throwable) {
-            log.error("Application failed", throwable)
-            // Make sure to exit with error. Otherwise 0 seems to be returned.
-            System.exit(1)
-        }
+        moduleRepository.execute()
         log.info("Application finished")
     }
 }

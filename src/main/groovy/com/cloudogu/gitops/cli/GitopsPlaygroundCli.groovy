@@ -1,14 +1,15 @@
 package com.cloudogu.gitops.cli
 
-import com.cloudogu.gitops.core.ApplicationConfigurator
 import com.cloudogu.gitops.core.Application
+import com.cloudogu.gitops.core.ApplicationConfigurator
 import com.cloudogu.gitops.core.modules.ModuleRepository
-import io.micronaut.configuration.picocli.PicocliRunner
+import groovy.util.logging.Slf4j
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 
 @Command(name = 'gitops-playground-cli', description = 'CLI-tool to deploy gitops-playground.',
         mixinStandardHelpOptions = true)
+@Slf4j
 class GitopsPlaygroundCli implements Runnable {
 
     // args group registry
@@ -93,21 +94,8 @@ class GitopsPlaygroundCli implements Runnable {
     @Option(names = ['--argocd-url'], description = 'The URL where argocd is accessible. It has to be the full URL with http:// or https://')
     private String argocdUrl
 
-    static void main(String[] args) throws Exception {
-        // log levels can be set via picocli.trace sys env - defaults to 'WARN'
-        if (args.contains("--trace"))
-            System.setProperty("picocli.trace", "DEBUG")
-        else if (args.contains("--debug"))
-            System.setProperty("picocli.trace", "INFO")
-
-        PicocliRunner.run(GitopsPlaygroundCli.class, args)
-    }
-
     @Override
     void run() {
-        // TODO: executing commands should be done using picocli commandline interface
-        // @see: https://picocli.info/#execute
-
         ApplicationConfigurator applicationConfigurator = new ApplicationConfigurator(parseConfig())
         Map config = applicationConfigurator.populateConfig()
 
