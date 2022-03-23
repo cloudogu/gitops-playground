@@ -10,7 +10,7 @@
   <parent>
     <groupId>io.micronaut</groupId>
     <artifactId>micronaut-parent</artifactId>
-    <version>3.3.3</version>
+    <version>3.4.0</version>
   </parent>
 
   <properties>
@@ -18,7 +18,7 @@
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
     <!-- This version seems to depend on the one used by micronaut-inject-groovy! -->
-    <groovyVersion>3.0.9</groovyVersion>
+    <groovyVersion>3.0.10</groovyVersion>
     <exec.mainClass>com.cloudogu.gitops.cli.GitopsPlaygroundCli</exec.mainClass>
   </properties>
 
