@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-kube-stack-webconfig
+  namespace: default
+data:
+  config.yaml: |
+    namespaces:
+      - default
+    labels:
+      - "app"
+      - "owner"    

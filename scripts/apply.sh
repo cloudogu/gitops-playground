@@ -43,15 +43,12 @@ function main() {
   
   readParameters "$@"
 
-  # call our groovy cli and pass in all params
-  "$PLAYGROUND_DIR"/apply-ng "$@"
-  
   if [[ $ASSUME_YES == false ]]; then
     confirm "Applying gitops playground to kubernetes cluster: '$(kubectl config current-context)'." 'Continue? y/n [n]' ||
       # Return error here to avoid get correct state when used with kubectl
       exit 1
   fi
-  
+
   if [[ $TRACE == true ]]; then
     set -x
     # Trace without debug does not make to much sense, as the spinner spams the output
@@ -64,7 +61,7 @@ function main() {
   else
     RUNNING_INSIDE_K8S=false
   fi
-  
+
   CLUSTER_BIND_ADDRESS=$(findClusterBindAddress)
 
   if [[ $INSECURE == true ]]; then
@@ -101,9 +98,9 @@ function main() {
     if [[ -n "${INTERNAL_REGISTRY_PORT}" ]]; then
       registryPort="${INTERNAL_REGISTRY_PORT}"
     fi
-    # Internal Docker registry must be on localhost. Otherwise docker will use HTTPS, leading to errors on docker push 
+    # Internal Docker registry must be on localhost. Otherwise docker will use HTTPS, leading to errors on docker push
     # in the example application's Jenkins Jobs.
-    # Both setting up HTTPS or allowing insecure registry via daemon.json makes the playground difficult to use. 
+    # Both setting up HTTPS or allowing insecure registry via daemon.json makes the playground difficult to use.
     # So, always use localhost.
     # Allow overriding the port, in case multiple playground instance run on a single host in different k3d clusters.
     REGISTRY_URL="localhost:${registryPort}"
@@ -140,6 +137,9 @@ function main() {
   if [[ $TRACE == true ]]; then
     set +x
   fi
+
+  # call our groovy cli and pass in all params
+  "$PLAYGROUND_DIR"/apply-ng "$@"
 
   printWelcomeScreen
 }
@@ -206,6 +206,13 @@ function checkPrerequisites() {
   if [[ ${INTERNAL_SCMM} == false || ${INTERNAL_JENKINS} == false ]]; then
     if [[ ${INTERNAL_SCMM} == true || ${INTERNAL_JENKINS} == true ]]; then
       error "When setting JENKINS_URL, SCMM_URL must also be set and the other way round."
+      exit 1
+    fi
+  fi
+
+  if [[ $INSTALL_ALL_MODULES == false && $INSTALL_ARGOCD == false ]]; then
+    if [[ ${DEPLOY_METRICS} == true ]]; then
+      error "Metrics module only available in conjunction with ArgoCD"
       exit 1
     fi
   fi
@@ -366,7 +373,7 @@ function initArgo() {
   pushPetClinicRepo 'applications/petclinic/argocd/plain-k8s' 'argocd/petclinic-plain'
   pushPetClinicRepo 'applications/petclinic/argocd/helm' 'argocd/petclinic-helm'
   initRepo 'argocd/gitops'
-  initRepoWithSource 'argocd/control-app' 'argocd/control-app' metricsConfiguration
+#  initRepoWithSource 'argocd/control-app' 'argocd/control-app' metricsConfiguration
 
   # Set NodePort service, to avoid "Pending" services and "Processing" state in argo on local cluster
   initRepoWithSource 'applications/nginx/argocd' 'argocd/nginx-helm' \
@@ -636,38 +643,38 @@ function initRepoWithSource() {
   setDefaultBranch "${TARGET_REPO_SCMM}"
 }
 
-function metricsConfiguration() {
-
-  if [[ $REMOTE_CLUSTER != true ]]; then
-      # Set NodePort service, to avoid "Pending" services and "Processing" state in argo
-      sed -i "s/LoadBalancer/NodePort/" "applications/application-mailhog-helm.yaml"
-  fi
-
-  if [[ $ARGOCD_URL != "" ]]; then
-      sed -i "s|argocdUrl: http://localhost:9092|argocdUrl: $ARGOCD_URL|g" "applications/application-argocd-notifications.yaml"
-  fi
-
-  if [[ $DEPLOY_METRICS == true ]]; then
-
-    kubectl apply -f "${PLAYGROUND_DIR}/metrics/dashboards" || true
-
-    ARGOCD_APP_PROMETHEUS_STACK="applications/application-kube-prometheus-stack-helm.yaml"
-
-    if [[ ${SET_USERNAME} != "admin" ]]; then
-      FROM_USERNAME_STRING='adminUser: admin'
-      TO_USERNAME_STRING="adminUser: ${SET_USERNAME}"
-      sed -i -e "s%${FROM_USERNAME_STRING}%${TO_USERNAME_STRING}%g" "${ARGOCD_APP_PROMETHEUS_STACK}"
-    fi
-
-    if [[ ${SET_PASSWORD} != "admin" ]]; then
-      FROM_PASSWORD_STRING='adminPassword: admin'
-      TO_PASSWORD_STRING="adminPassword: ${SET_PASSWORD}"
-      sed -i -e "s%${FROM_PASSWORD_STRING}%${TO_PASSWORD_STRING}%g" "${ARGOCD_APP_PROMETHEUS_STACK}"
-    fi
-  else
-      rm -f "applications/application-kube-prometheus-stack-helm.yaml"
-  fi
-}
+#function metricsConfiguration() {
+#
+#  if [[ $REMOTE_CLUSTER != true ]]; then
+#      # Set NodePort service, to avoid "Pending" services and "Processing" state in argo
+#      sed -i "s/LoadBalancer/NodePort/" "applications/application-mailhog-helm.yaml"
+#  fi
+#
+#  if [[ $ARGOCD_URL != "" ]]; then
+#      sed -i "s|argocdUrl: http://localhost:9092|argocdUrl: $ARGOCD_URL|g" "applications/application-argocd-notifications.yaml"
+#  fi
+#
+#  if [[ $DEPLOY_METRICS == true ]]; then
+#
+#    kubectl apply -f "${PLAYGROUND_DIR}/metrics/grafana/dashboards" || true
+#
+#    ARGOCD_APP_PROMETHEUS_STACK="applications/application-kube-prometheus-stack-helm.yaml"
+#
+#    if [[ ${SET_USERNAME} != "admin" ]]; then
+#      FROM_USERNAME_STRING='adminUser: admin'
+#      TO_USERNAME_STRING="adminUser: ${SET_USERNAME}"
+#      sed -i -e "s%${FROM_USERNAME_STRING}%${TO_USERNAME_STRING}%g" "${ARGOCD_APP_PROMETHEUS_STACK}"
+#    fi
+#
+#    if [[ ${SET_PASSWORD} != "admin" ]]; then
+#      FROM_PASSWORD_STRING='adminPassword: admin'
+#      TO_PASSWORD_STRING="adminPassword: ${SET_PASSWORD}"
+#      sed -i -e "s%${FROM_PASSWORD_STRING}%${TO_PASSWORD_STRING}%g" "${ARGOCD_APP_PROMETHEUS_STACK}"
+#    fi
+#  else
+#      rm -f "applications/application-kube-prometheus-stack-helm.yaml"
+#  fi
+#}
 
 function setDefaultBranch() {
   TARGET_REPO_SCMM="$1"

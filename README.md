@@ -1,17 +1,23 @@
 # gitops-playground
 [![Build Status](https://oss.cloudogu.com/jenkins/buildStatus/icon?job=cloudogu-github/gitops-playground/main)](https://oss.cloudogu.com/jenkins/blue/organizations/jenkins/cloudogu-github%2Fgitops-playground/)
 
-Reproducible infrastructure to showcase GitOps workflows with Kubernetes.  
-Derived from our experiences in [consulting](https://cloudogu.com/en/consulting/?mtm_campaign=gitops-playground&mtm_kwd=consulting&mtm_source=github&mtm_medium=link) 
-and operating the [myCloudogu platform](https://my.cloudogu.com/).
+Reproducible infrastructure to showcase GitOps workflows with Kubernetes.
 
-We are working on distilling the logic used in the example application pipelines into a reusable library for Jenkins:
-[cloudogu/gitops-build-lib](https://github.com/cloudogu/gitops-build-lib).
+In fact, this rolls out a complete DevOps stack with different features including 
+* GitOps (with different controllers to choose from: Argo CD, Flux v1 and v2),
+* Monitoring (using Prometheus and Grafana),
+* example applications and CI-pipelines (using Jenkins and our [GitOps library](https://github.com/cloudogu/gitops-build-lib)) and
+* soon Secrets management (using Vault).
 
-If you have any questions, remarks or ideas regarding the `gitops-playground`, feel free to visit our [community](https://community.cloudogu.com/t/introducing-the-gitops-playground/107).  
-Or if you want to chat with us about gitops in general, visit us [here](https://community.cloudogu.com/c/gitops-by-cloudogu/23).
+The gitops-playground is derived from our experiences in [consulting](https://cloudogu.com/en/consulting/?mtm_campaign=gitops-playground&mtm_kwd=consulting&mtm_source=github&mtm_medium=link) 
+and operating the [myCloudogu platform](https://my.cloudogu.com/).  
+For questions or suggestions you are welcome to join us at our myCloudogu [community forum](https://community.cloudogu.com/t/introducing-the-gitops-playground/107).
 
-TLDR; You can run a local k8s cluster with the GitOps playground installed with only one command (on Linux)
+[![Discuss it on myCloudogu](https://static.cloudogu.com/static/images/discuss-it.png)](https://community.cloudogu.com/t/introducing-the-gitops-playground/107)
+
+# TLDR;
+
+You can run a local k8s cluster with the GitOps playground installed with only one command (on Linux)
 
 ```shell
 docker pull ghcr.io/cloudogu/gitops-playground && \ 
@@ -46,12 +52,13 @@ We recommend running this command as an unprivileged user, that is inside the [d
   - [Credentials](#credentials)
   - [Jenkins](#jenkins)
   - [SCM-Manager](#scm-manager)
-  - [ArgoCD UI](#argocd-ui)
+  - [Monitoring tools](#monitoring-tools)
+  - [Argo CD UI](#argo-cd-ui)
   - [Demo applications](#demo-applications)
     - [Flux V1](#flux-v1)
     - [Flux V2](#flux-v2)
-    - [ArgoCD](#argocd)
-- [Testing](#testing)
+    - [Argo CD](#argo-cd)
+- [Development](#development)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -59,12 +66,13 @@ We recommend running this command as an unprivileged user, that is inside the [d
 
 The GitOps Playground provides an reproducible environment for trying out GitOps. Is consists of Infra As Code and 
 scripts for automatically setting up a Kubernetes Cluster including CI-server (Jenkins), source code management 
-(SCM-Manager) and several GitOps operators (Flux V1, Flux V2, ArgoCD). 
+(SCM-Manager) and several GitOps operators (Flux V1, Flux V2, Argo CD). 
 CI-Server, SCM and operators are pre-configured with a number of [demo applications](#demo-applications).
 
 The GitOps Playground lowers the barriers for getting your hands on GitOps. No need to read lots of books and operator
 docs, getting familiar with CLIs, ponder about GitOps Repository folder structures and staging, etc.
-The GitOps Playground is a pre-configured environment to see GitOps in motion.  
+The GitOps Playground is a pre-configured environment to see GitOps in motion, including more advanced use cases like 
+notifications and monitoring.
 
 ## Installation
 
@@ -183,7 +191,7 @@ docker run --rm ghcr.io/cloudogu/gitops-playground --help
 
 ##### Deploy specific GitOps operators only
 
-* `--argocd` - deploy only argoCD GitOps operator
+* `--argocd` - deploy only Argo CD GitOps operator
 * `--fluxv1` - deploy only Flux v1 GitOps operator
 * `--fluxv2` - deploy only Flux v2 GitOps operator
 
@@ -194,7 +202,7 @@ Then set the following parameters.
 
 ```shell
 # Note: 
-# * In this case --password only sets the argocd admin password (Jenkins and SCMM are external)
+# * In this case --password only sets the Argo CD admin password (Jenkins and SCMM are external)
 # * Insecure is needed, because the local instance will not have a valid cert
 --jenkins-url=https://192.168.56.2/jenkins \ 
 --scmm-url=https://192.168.56.2/scm \
@@ -216,7 +224,7 @@ Note that you can get a free CES demo instance set up with a Kubernetes Cluster 
 
 ```shell
 # Note:
-# In this case --password only sets the argocd admin password (Jenkins and SCMM are external) 
+# In this case --password only sets the Argo CD admin password (Jenkins and SCMM are external) 
 --jenkins-url=https://your-ecosystem.cloudogu.net/jenkins \ 
 --scmm-url=https://your-ecosystem.cloudogu.net/scm \
 --jenkins-username=admin \
@@ -254,19 +262,20 @@ To override each image in all the applications you can use following parameters:
 * `--helmkubeval-image someRegistry/someImage:1.0.0`
 * `--yamllint-image someRegistry/someImage:1.0.0`
 
-##### ArgoCD-Notifications
+##### Argo CD-Notifications
 
-If you are using a remote cluster you can set the `--argocd-url` parameter so that argocd-notification messages have a link to the corresponding application.
+If you are using a remote cluster you can set the `--argocd-url` parameter so that argocd-notification messages have a
+link to the corresponding application.
 
 ##### Metrics
 
-Set the parameter `--metrics` so the [kube-prometheus-stack](https://github.com/prometheus-operator/kube-prometheus) via its [helm-chart](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack) is being deployed including argocd dashboards.
+Set the parameter `--metrics` so the [kube-prometheus-stack](https://github.com/prometheus-operator/kube-prometheus) 
+via its [helm-chart](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack) 
+is being deployed including Argo CD dashboards.
 
-### Mailhog and alerts
+This leads to mailhog and grafana being exposed.
 
-Mailhog is being deployed with argocd-notifications and some default triggers.
-The mailhog is available at http://localhost:9094. 
-Applications deployed with argocd now will alert via email to mailhog if for example the sync status failed.
+**Note that this only works with Argo CD so far**
 
 ### Remove playground
 
@@ -286,8 +295,11 @@ As described [above](#what-is-the-gitops-playground) the GitOps playground comes
 them can be accessed via web.
 * Jenkins
 * SCM-Manager
-* ArgoCD
+* Argo CD
 * Demo applications for each GitOps operator, each with staging and production instance.
+
+We distilled the logic used in the example application pipelines into a reusable library for Jenkins:
+[cloudogu/gitops-build-lib](https://github.com/cloudogu/gitops-build-lib).
 
 The URLs of the applications depend on the environment the playground is deployed to.
 The following lists all application and how to find out their respective URLs for a GitOps playground being deployed to
@@ -318,9 +330,10 @@ xdg-open $(bash <(curl -s \
 ```
 ### Credentials
 
-If deployed within the cluster Jenkins, SCM-Manager and ArgoCD can be accessed via: `admin/admin`
+If deployed within the cluster, Jenkins, SCM-Manager, Argo CD and others can be accessed via: `admin/admin`
 
-Note that you can change (an should for a remote cluster!) the password with `apply.sh`'s `--password` argument.
+Note that you can change (an should for a remote cluster!) the password with the `--password` argument.
+There also is a `--username` parameter, which is ignored for argocd. That is, for now argos username ist always `admin`.
 
 ### Jenkins
 
@@ -378,9 +391,24 @@ The user on the scm has to have privileges to:
 * add / edit proxy
 * install plugins
 
-### ArgoCD UI
+### Monitoring tools
 
-ArgoCD's web UI is available at
+When run with Argo CD and `--metrics`, the following tools are exposed
+
+* Mailhog
+  * http://localhost:9094 (k3d)
+  * `scripts/get-remote-url mailhog monitoring` (remote k8s)
+* Grafana 
+  * http://localhost:9095 (k3d)
+  * `scripts/get-remote-url kube-prometheus-stack-grafana monitoring` (remote k8s)
+
+Applications deployed with Argo CD now will alert via email to mailhog if for example the sync status failed.
+Grafana can be used to query and visualize metrics via prometheus.
+Prometheus is not exposed by default.
+
+### Argo CD UI
+
+Argo CD's web UI is available at
 
 * http://localhost:9092 (k3d)
 * `scripts/get-remote-url argocd-server argocd` (remote k8s)
@@ -410,7 +438,7 @@ Note that we are working on moving the GitOps-related logic into a
 
 Please note that it might take about a minute after the pull request has been accepted for the GitOps operator to start
 deploying.
-Alternatively you can trigger the deployment via the respective GitOps operator's CLI (flux) or UI (argo CD)
+Alternatively you can trigger the deployment via the respective GitOps operator's CLI (flux) or UI (Argo CD)
 
 #### Flux V1
 
@@ -463,7 +491,7 @@ Alternatively you can trigger the deployment via the respective GitOps operator'
   * local: [localhost:30011](http://localhost:30011) 
   * remote: `scripts/get-remote-url spring-petclinic-plain fluxv2-production`
 
-#### ArgoCD
+#### Argo CD
 
 ##### PetClinic with plain k8s resources
 
@@ -498,20 +526,8 @@ Alternatively you can trigger the deployment via the respective GitOps operator'
   * local: [localhost:30007](http://localhost:30025)
   * remote: `scripts/get-remote-url nginx fluxv1-production`
 
-### Testing
+See [credentials](#credentials) for admin credentials.
 
-There is an end to end testing script inside the `./scripts` folder. It scans for builds and starts them, waits until their finished or fail and returns the result.
+## Development
 
-#### Usage
-
-You can use it by executing `groovy ./scripts/e2e.groovy --url http://localhost:9090 --user admin --password admin`
-
-#### Options
-
-- `help` - Print this help text and exit  
-- `url` - The Jenkins-URL to connect to  
-- `user`- The Jenkins-User for login  
-- `password` - Jenkins-Password for login  
-- `fail` - Exit on first build failure  
-- `interval` - Interval for waits while scanning for builds  
-- `debug` - Set log level to debug  
+See [docs/developers.md](docs/developers.md)
