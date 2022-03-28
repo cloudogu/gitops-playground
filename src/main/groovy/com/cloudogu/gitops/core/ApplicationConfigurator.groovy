@@ -32,7 +32,7 @@ class ApplicationConfigurator {
         addInternalStatus()
         addAdditionalApplicationConfig()
         setScmmConfig()
-        setMailhogConfig()
+//        setMailhogConfig()
         addServiceUrls()
         setDefaultImagesIfNotConfigured()
         addRepos()
@@ -101,10 +101,11 @@ class ApplicationConfigurator {
         config.scmm["protocol"] = networkingUtils.getProtocol(scmmUrl)
     }
 
-    private void setMailhogConfig() {
-        if (config.mailhog["username"] == null) config.mailhog["username"] = config.application["username"]
-        if (config.mailhog["password"] == null) config.mailhog["password"] = config.application["password"]
-    }
+    //TODO remove?
+//    private void setMailhogConfig() {
+//        if (config.mailhog["username"] == null) config.mailhog["username"] = config.application["username"]
+//        if (config.mailhog["password"] == null) config.mailhog["password"] = config.application["password"]
+//    }
 
     private void addServiceUrls() {
         log.debug("Adding additional config for Jenkins")
