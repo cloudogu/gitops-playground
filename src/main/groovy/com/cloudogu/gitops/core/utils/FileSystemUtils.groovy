@@ -74,14 +74,7 @@ class FileSystemUtils {
     }
 
     String getRootDir() {
-        String userDir = System.getProperty("user.dir")
-        String rootDirLocal = "k8s-gitops-playground"
-        String rootDirContainer = "app"
-        if (userDir.contains(rootDirLocal)) {
-            return goBackToDir(userDir, rootDirLocal)
-        } else if (userDir.contains(rootDirContainer)) {
-            return goBackToDir(userDir, rootDirContainer)
-        }
+        return System.getProperty("user.dir")
     }
 
     List<File> getAllFilesFromDirectoryWithEnding(String directory, String ending) {
