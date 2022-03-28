@@ -18,7 +18,7 @@
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
     <!-- This version seems to depend on the one used by micronaut-inject-groovy! -->
-    <groovyVersion>3.0.10</groovyVersion>
+    <groovyVersion>3.0.9</groovyVersion>
     <exec.mainClass>com.cloudogu.gitops.cli.GitopsPlaygroundCliMain</exec.mainClass>
   </properties>
 
@@ -108,6 +108,14 @@
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-crypto</artifactId>
       <version>5.6.2</version>
+    </dependency>
+    <dependency>
+      <!-- Avoids java.lang.NoClassDefFoundError: org/apache/commons/logging/Log-->
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-jcl</artifactId>
+      <version>5.3.9</version>
+      <!-- Right now only needed in new BCryptPasswordEncoder() used in tests -->
+      <scope>test</scope>
     </dependency>
     
     <dependency>

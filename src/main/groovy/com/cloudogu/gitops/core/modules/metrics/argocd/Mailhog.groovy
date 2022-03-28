@@ -7,6 +7,8 @@ import org.springframework.security.crypto.bcrypt.BCrypt
 @Slf4j
 class Mailhog {
 
+    static final String MAILHOG_YAML_PATH = "applications/application-mailhog-helm.yaml"
+
     private boolean remoteCluster
     private String username
     private String password
@@ -24,17 +26,16 @@ class Mailhog {
 
     void configure() {
         log.debug("Configuring mailhog")
-        String mailhogYaml = "applications/application-mailhog-helm.yaml"
 
         if (!remoteCluster) {
             log.debug("Setting mailhog service.type to NodePort since it is not running in a remote cluster")
-            fileSystemUtils.replaceFileContent(tmpGitRepoDir, mailhogYaml, "LoadBalancer", "NodePort")
+            fileSystemUtils.replaceFileContent(tmpGitRepoDir, MAILHOG_YAML_PATH, "LoadBalancer", "NodePort")
         }
 
         log.debug("Setting new mailhog credentials")
         String bcryptMailhogPassword = BCrypt.hashpw(password, BCrypt.gensalt(4))
         String from = "fileContents: \"admin:\$2a\$04\$bM4G0jXB7m7mSv4UT8IuIe3.Bj6i6e2A13ryA0ln.hpyX7NeGQyG.\""
         String to = "fileContents: \"$username:$bcryptMailhogPassword\""
-        fileSystemUtils.replaceFileContent(tmpGitRepoDir, mailhogYaml, from, to)
+        fileSystemUtils.replaceFileContent(tmpGitRepoDir, MAILHOG_YAML_PATH, from, to)
     }
 }

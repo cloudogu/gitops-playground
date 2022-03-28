@@ -37,7 +37,8 @@ class PrometheusStackTest {
         temporaryStackYamlFile.mkdirs()
         Files.copy(originalStackYamlFile.toPath(), temporaryStackYamlFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
     }
-
+    
+    
     @Test
     void "ignore remote flag when metrics off"() {
         config['application']['remote'] = true
@@ -52,19 +53,17 @@ class PrometheusStackTest {
     @Test
     void "service type LoadBalancer when run remotely"() {
         config['application']['remote'] = true
-        PrometheusStack prometheusStack = createStack()
-        prometheusStack.configure()
+        createStack().configure()
 
-        assertThat(parseActualStackYaml()['grafana']['service']['type']).isEqualTo('LoadBalancer');
+        assertThat(parseActualStackYaml()['grafana']['service']['type']).isEqualTo('LoadBalancer')
     }
     
     @Test
-    void "service type NodePort when not run remotely"() {
+    void 'service type NodePort when not run remotely'() {
         config['application']['remote'] = false
-        PrometheusStack prometheusStack = createStack()
-        prometheusStack.configure()
+        createStack().configure()
 
-        assertThat(parseActualStackYaml()['grafana']['service']['type']).isEqualTo('NodePort');
+        assertThat(parseActualStackYaml()['grafana']['service']['type']).isEqualTo('NodePort')
     }
 
     private PrometheusStack createStack() {
