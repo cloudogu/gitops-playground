@@ -269,13 +269,9 @@ link to the corresponding application.
 
 ##### Metrics
 
-Set the parameter `--metrics` so the [kube-prometheus-stack](https://github.com/prometheus-operator/kube-prometheus) 
-via its [helm-chart](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack) 
-is being deployed including Argo CD dashboards.
+Set the parameter `--metrics` to enable deployment of monitoring and alerting tools like prometheus, grafana and mailhog.
 
-This leads to mailhog and grafana being exposed.
-
-**Note that this only works with Argo CD so far**
+See [Monitoring tools](#monitoring-tools) for details.
 
 ### Remove playground
 
@@ -393,7 +389,11 @@ The user on the scm has to have privileges to:
 
 ### Monitoring tools
 
-When run with Argo CD and `--metrics`, the following tools are exposed
+Set the parameter `--metrics` so the [kube-prometheus-stack](https://github.com/prometheus-operator/kube-prometheus)
+via its [helm-chart](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack)
+is being deployed including Argo CD dashboards. 
+
+This leads to the following tools to be exposed:
 
 * Mailhog
   * http://localhost:9094 (k3d)
@@ -402,9 +402,13 @@ When run with Argo CD and `--metrics`, the following tools are exposed
   * http://localhost:9095 (k3d)
   * `scripts/get-remote-url kube-prometheus-stack-grafana monitoring` (remote k8s)
 
-Applications deployed with Argo CD now will alert via email to mailhog if for example the sync status failed.
 Grafana can be used to query and visualize metrics via prometheus.
 Prometheus is not exposed by default.
+
+In addition, argocd-notifications is set up. Applications deployed with Argo CD now will alert via email to mailhog 
+the sync status failed, for example.
+
+**Note that this only works with Argo CD so far**
 
 ### Argo CD UI
 
@@ -525,8 +529,6 @@ Alternatively you can trigger the deployment via the respective GitOps operator'
 * Production
   * local: [localhost:30007](http://localhost:30025)
   * remote: `scripts/get-remote-url nginx fluxv1-production`
-
-See [credentials](#credentials) for admin credentials.
 
 ## Development
 
