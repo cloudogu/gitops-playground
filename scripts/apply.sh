@@ -10,7 +10,7 @@ export PLAYGROUND_DIR
 
 PETCLINIC_COMMIT=32c8653
 SPRING_BOOT_HELM_CHART_COMMIT=0.3.0
-ARGO_HELM_CHART_VERSION=2.17.5 # Last version with argo 1.x
+ARGO_HELM_CHART_VERSION=3.35.4 # Last version with argo 1.x
 
 source ${ABSOLUTE_BASEDIR}/utils.sh
 source ${ABSOLUTE_BASEDIR}/jenkins/init-jenkins.sh
