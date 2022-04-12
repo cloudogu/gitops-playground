@@ -12,3 +12,9 @@ ingress:
 podinfo:
   ui:
     color: '#456456'
+
+resources:
+  limits:
+    memory: 750Mi
+  requests:
+    memory: 750Mi
