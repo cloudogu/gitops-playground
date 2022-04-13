@@ -23,7 +23,14 @@ data:
       usernameSecret:
         name: gitops-scmm
         key: USERNAME
-    - url: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/nginx-helm
+    - url: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/nginx-helm-jenkins
+      passwordSecret:
+        name: gitops-scmm
+        key: PASSWORD
+      usernameSecret:
+        name: gitops-scmm
+        key: USERNAME
+    - url: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/nginx-helm-dependency
       passwordSecret:
         name: gitops-scmm
         key: PASSWORD
