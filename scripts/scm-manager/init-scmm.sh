@@ -77,19 +77,19 @@ function configureScmmManager() {
 
   ### ArgoCD Repos
   if [[ $INSTALL_ALL_MODULES == true || $INSTALL_ARGOCD == true ]]; then
-    addRepo "argocd" "nginx-helm"
+    addRepo "argocd" "nginx-helm" "NGINX via helm chart templated in Jenkins (gitops-build-lib)"
     setPermission "argocd" "nginx-helm" "${GITOPS_USERNAME}" "WRITE"
-  
-    addRepo "argocd" "petclinic-plain"
+
+    addRepo "argocd" "petclinic-plain" "Java app with plain k8s resources"
     setPermission "argocd" "petclinic-plain" "${GITOPS_USERNAME}" "WRITE"
   
-    addRepo "argocd" "petclinic-helm"
+    addRepo "argocd" "petclinic-helm" "Java app with custom helm chart"
     setPermission "argocd" "petclinic-helm" "${GITOPS_USERNAME}" "WRITE"
   
-    addRepo "argocd" "control-app"
+    addRepo "argocd" "control-app" "Administration of ArgoCD (app of apps)"
     setPermission "argocd" "control-app" "${GITOPS_USERNAME}" "WRITE"
   
-    addRepo "argocd" "gitops"
+    addRepo "argocd" "gitops" "The desired state of the apps deployed to k8s"
     setPermission "argocd" "gitops" "${GITOPS_USERNAME}" "WRITE"
   fi
 
@@ -100,10 +100,10 @@ function configureScmmManager() {
   addRepo "common" "spring-boot-helm-chart-with-dependency"
   setPermission "common" "spring-boot-helm-chart-with-dependency" "${GITOPS_USERNAME}" "WRITE"
 
-  addRepo "common" "gitops-build-lib"
+  addRepo "common" "gitops-build-lib" "Jenkins pipeline shared library for automating deployments via GitOps "
   setPermission "common" "gitops-build-lib" "${GITOPS_USERNAME}" "WRITE"
 
-  addRepo "common" "ces-build-lib"
+  addRepo "common" "ces-build-lib" "Jenkins pipeline shared library adding features for Maven, Gradle, Docker, SonarQube, Git and others"
   setPermission "common" "ces-build-lib" "${GITOPS_USERNAME}" "WRITE"
 
   addRepo "exercises" "petclinic-helm"
@@ -135,10 +135,14 @@ function configureScmmManager() {
 }
 
 function addRepo() {
+  NAMESPACE="${1}"
+  NAME="${2}"
+  DESCRIPTION="${3:-}"
+  
   printf 'Adding Repo %s/%s ... ' "${1}" "${2}"
 
   STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X POST -H "Content-Type: application/vnd.scmm-repository+json;v=2" \
-    --data "{\"name\":\"${2}\",\"namespace\":\"${1}\",\"type\":\"git\",\"contact\":\"admin@mail.de\",\"description\":\"description\",\"contextEntries\":{},\"_links\":{}}" \
+    --data "{\"name\":\"${NAME}\",\"namespace\":\"${NAMESPACE}\",\"type\":\"git\",\"contact\":\"admin@mail.de\",\"description\":\"${DESCRIPTION}\",\"contextEntries\":{},\"_links\":{}}" \
     "${SCMM_PROTOCOL}://${SCMM_USER}:${SCMM_PWD}@${SCMM_HOST}/api/v2/repositories/") && EXIT_STATUS=$? || EXIT_STATUS=$?
   if [ $EXIT_STATUS != 0 ]; then
     echo "Adding Repo failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
