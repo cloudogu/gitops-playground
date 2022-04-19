@@ -7,8 +7,16 @@ if [[ -z ${PLAYGROUND_DIR+x} ]]; then
   PLAYGROUND_DIR="$(cd "${BASEDIR}" && cd .. && cd .. && pwd)"
 fi
 
-# When Upgrading helm chart, upgrade plugins. See docs/developers.md
-JENKINS_HELM_CHART_VERSION=3.11.10
+# !!!
+# When upgrading to Jenkins 2.332.x (helm chart > 3.11.5), beware of #86 !!! 
+# If its fixed in newer Jenkins version, please close the bug. 
+# !!!
+#
+# When Upgrading helm chart, also upgrade additionalPlugins in jenkins/values.yaml
+# Check for "Failed to load" in the Jenkins log and add or upgrade the plugins mentioned there appropriately.
+# In addition, check if the new helm chart version uses a newer agent.tag.
+# Note that we need JDK11 on the agents, whereas the helm chart uses JDK8 by default.
+JENKINS_HELM_CHART_VERSION=3.5.9
 
 SET_USERNAME="admin"
 SET_PASSWORD="admin"
