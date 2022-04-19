@@ -7,6 +7,11 @@ if [[ -z ${PLAYGROUND_DIR+x} ]]; then
   PLAYGROUND_DIR="$(cd "${BASEDIR}" && cd .. && cd .. && pwd)"
 fi
 
+# !!!
+# When upgrading to Jenkins 2.332.x (helm chart > 3.11.5), beware of #86 !!! 
+# If its fixed in newer Jenkins version, please close the bug. 
+# !!!
+#
 # When Upgrading helm chart, also upgrade additionalPlugins in jenkins/values.yaml
 # Check for "Failed to load" in the Jenkins log and add or upgrade the plugins mentioned there appropriately.
 # In addition, check if the new helm chart version uses a newer agent.tag.

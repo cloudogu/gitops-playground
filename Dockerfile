@@ -91,7 +91,8 @@ ENV PATH="$PATH:/musl/bin"
 # Provide binaries used by apply-ng, so our runs with native-image-agent dont fail 
 # with "java.io.IOException: Cannot run program "kubectl"..." etc.
 RUN microdnf install iproute
-COPY --from=downloader /dist /
+# Copy only binaries, not jenkins plugins. Avoids having to rebuild native image only plugin changes
+COPY --from=downloader /dist/usr/ /usr/
 
 COPY --from=maven-cache /mvn/ /mvn/
 COPY --from=maven-cache /app/ /app
