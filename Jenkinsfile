@@ -24,7 +24,9 @@ node('docker') {
 
     def git = new Git(this)
     def mvn = new MavenWrapperInDocker(this, 'azul/zulu-openjdk-alpine:17.0.2')
-
+    // Avoid 'No such property: clusterName' error in 'Stop k3d' stage in builds that have failed in an early stage
+    clusterName = ''
+    
     timestamps {
         catchError {
             timeout(activity: false, time: 60, unit: 'MINUTES') {
