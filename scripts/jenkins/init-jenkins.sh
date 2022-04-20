@@ -14,9 +14,7 @@ fi
 #
 # When Upgrading helm chart, also upgrade additionalPlugins in jenkins/values.yaml
 # Check for "Failed to load" in the Jenkins log and add or upgrade the plugins mentioned there appropriately.
-# Also remove "installPlugins" when kubernetes plugin version used in helm chart is >= kubernetes:1.30.11
-# Otherwise upgrade other plugins in "installPlugins" list in values.yaml 
-
+#
 # In addition:
 # - Upgrade agent.tag to use JDK11 (or remove as soon as we have reached a Jenkins 11
 # - Upgrade bash image in values.yaml.

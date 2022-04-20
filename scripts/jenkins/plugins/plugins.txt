@@ -1,5 +1,5 @@
 ace-editor:1.1
-antisamy-markup-formatter:1.1
+antisamy-markup-formatter:2.7
 apache-httpcomponents-client-4-api:4.5.13-1.0
 async-http-client:1.9.40.0
 authentication-tokens:1.4
@@ -18,7 +18,7 @@ display-url-api:2.3.5
 docker-commons:1.19
 docker-java-api:3.2.13-37.vf3411c9828b9
 docker-plugin:1.2.8
-docker-workflow:1.14
+docker-workflow:1.28
 durable-task:495.v29cd95ec10f2
 echarts-api:5.3.2-1
 external-monitor-job:191.v363d0d1efdf8
@@ -38,15 +38,15 @@ jquery-detached:1.2.1
 jquery3-api:3.6.0-2
 jsch:0.1.55.2
 junit:1.53
-kubernetes:1.29.4
+kubernetes:1.30.11
 kubernetes-client-api:5.12.1-187.v577c3e368fb_6
 kubernetes-credentials:0.9.0
 ldap:2.8
 lockable-resources:2.14
 mailer:408.vd726a_1130320
-matrix-auth:2.6.6
+matrix-auth:3.1
 matrix-project:758.v7a_ea_491852f3
-metrics:4.0.2.6
+metrics:4.0.2.8.1
 momentjs:1.1.1
 pam-auth:1.6.1
 pipeline-build-step:2.17
@@ -55,7 +55,7 @@ pipeline-input-step:447.v95e5a_6e3502a_
 pipeline-milestone-step:100.v60a_03cd446e1
 pipeline-model-api:1.9.3
 pipeline-model-declarative-agent:1.1.1
-pipeline-model-definition:1.3.2
+pipeline-model-definition:1.9.3
 pipeline-model-extensions:1.9.3
 pipeline-rest-api:2.23
 pipeline-stage-step:291.vf0a8a7aeeb50
@@ -80,10 +80,10 @@ variant:1.4
 windows-slaves:1.8
 workflow-aggregator:2.7
 workflow-api:1143.v2d42f1e9dea_5
-workflow-basic-steps:2.11
+workflow-basic-steps:2.24
 workflow-cps:2660.vb_c0412dc4e6d
 workflow-cps-global-lib:2.21.3
-workflow-durable-task-step:2.22
+workflow-durable-task-step:2.40
 workflow-job:1145.v7f2433caa07f
 workflow-multibranch:711.vdfef37cda_816
 workflow-scm-step:2.13
