@@ -1,4 +1,3 @@
-# For updating, delete pvc jenkins-docker-client
 dockerClientVersion: 20.10.2
 
 controller:
