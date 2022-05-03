@@ -1,19 +1,18 @@
 #!/usr/bin/env bash
 set -o errexit -o nounset -o pipefail
 
-SCMM_USER=scmadmin
-SCMM_PWD=scmadmin
 SCMM_PROTOCOL=http
-# Note that starting with 2.21.0 the default admin is no longer present, which will require some changes in this script 
-# https://scm-manager.org/docs/2.21.x/en/first-startup/
-SCMM_HELM_CHART_VERSION=2.20.0
+SCMM_HELM_CHART_VERSION=2.33.0
 
 function deployLocalScmmManager() {
-  REMOTE_CLUSTER=${1}
+  local REMOTE_CLUSTER=${1}
+  local SET_USERNAME=${2}
+  local SET_PASSWORD=${3}
 
   helm upgrade -i scmm --values scm-manager/values.yaml \
     $(scmmHelmSettingsForRemoteCluster) \
-    --version ${SCMM_HELM_CHART_VERSION} scm-manager/scm-manager -n default
+    --version ${SCMM_HELM_CHART_VERSION} scm-manager/scm-manager -n default \
+    --set extraArgs="{-Dscm.initialPassword=${SET_PASSWORD},-Dscm.initialUser=${SET_USERNAME}}"
 }
 
 function configureScmmManager() {
@@ -35,15 +34,6 @@ function configureScmmManager() {
   GITOPS_PASSWORD=${ADMIN_PASSWORD}
 
   waitForScmManager
-
-  # We can not set the initial user through SCM-Manager configuration (as of SCMM 2.12.0), so we set the user via REST API
-  if [[ $IS_LOCAL == true ]]; then
-    # TODO this is not idempotent - on the second call the admin is aleady gone and this yield 401
-    # Unfortunately we just ignore all HTTP errors. Just calling printStatus() whose result is only printed if --debug is used.
-    addUser "${ADMIN_USERNAME}" "${ADMIN_PASSWORD}" "admin@mail.de"
-    setAdmin "${ADMIN_USERNAME}"
-    deleteUser "${SCMM_USER}" "${ADMIN_USERNAME}" "${ADMIN_PASSWORD}"
-  fi
 
   SCMM_USER=${ADMIN_USERNAME}
   SCMM_PWD=${ADMIN_PASSWORD}

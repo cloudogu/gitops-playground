@@ -277,7 +277,7 @@ function initSCMMVars() {
 
 function initSCMM() {
   if [[ ${INTERNAL_SCMM} == true ]]; then
-    deployLocalScmmManager "${REMOTE_CLUSTER}"
+    deployLocalScmmManager "${REMOTE_CLUSTER}" "${SET_USERNAME}" "${SET_PASSWORD}"
   fi
 
   setExternalHostnameIfNecessary 'SCMM' 'scmm-scm-manager' 'default'
@@ -444,8 +444,6 @@ function argoHelmSettingsForLocalCluster() {
 }
 
 function createSecrets() {
-  createSecret scmm-credentials --from-literal=USERNAME=$SET_USERNAME --from-literal=PASSWORD=$SET_PASSWORD -n default
-
   createSecret gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=$SET_PASSWORD -n default
   createSecret gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=$SET_PASSWORD -n argocd
   # flux needs lowercase fieldnames
