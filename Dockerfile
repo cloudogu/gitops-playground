@@ -1,6 +1,6 @@
-FROM alpine:3.15.1 as alpine
+FROM alpine:3.15.4 as alpine
 
-FROM ghcr.io/graalvm/graalvm-ce:22.0.0.2 AS graal
+FROM ghcr.io/graalvm/graalvm-ce:ol8-java17-22.1.0 AS graal
 
 FROM graal as maven-cache
 ENV MAVEN_OPTS=-Dmaven.repo.local=/mvn
@@ -17,8 +17,8 @@ FROM alpine as downloader
 ARG K8S_VERSION=1.21.2
 ARG KUBECTL_CHECKSUM=55b982527d76934c2f119e70bf0d69831d3af4985f72bb87cd4924b1c7d528da
 # When updating, also update the checksum found at https://github.com/helm/helm/releases
-ARG HELM_VERSION=3.6.2
-ARG HELM_CHECKSUM=f3a4be96b8a3b61b14eec1a35072e1d6e695352e7a08751775abf77861a0bf54
+ARG HELM_VERSION=3.8.2
+ARG HELM_CHECKSUM=6cb9a48f72ab9ddfecab88d264c2f6508ab3cd42d9c09666be16a7bf006bed7b
 # bash curl unzip required for Jenkins downloader
 RUN apk add --no-cache \
       gnupg \
