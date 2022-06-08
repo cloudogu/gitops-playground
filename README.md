@@ -519,16 +519,21 @@ Alternatively you can trigger the deployment via the respective GitOps operator'
   * local [localhost:30023](http://localhost:30023)
   * remote: `scripts/get-remote-url spring-petclinic-helm argocd-production`
 
-##### 3rd Party app (NGINX) with helm
+##### 3rd Party app (NGINX) with helm, templated in Jenkins
 
-[Jenkinsfile](applications/nginx/argocd/Jenkinsfile)
+[Jenkinsfile](applications/nginx/argocd/helm-jenkins/Jenkinsfile)
 
 * Staging
-  * local: [localhost:30006](http://localhost:30024)
-  * remote: `scripts/get-remote-url nginx fluxv1-staging`
+  * local: [localhost:30024](http://localhost:30024)
+  * remote: `scripts/get-remote-url nginx argocd-staging`
 * Production
-  * local: [localhost:30007](http://localhost:30025)
-  * remote: `scripts/get-remote-url nginx fluxv1-production`
+  * local: [localhost:30025](http://localhost:30025)
+  * remote: `scripts/get-remote-url nginx argocd-production`
+
+##### 3rd Party app (NGINX) with helm, using Helm dependency mechanism
+
+* local: [localhost:30026](http://localhost:30026)
+* remote: `scripts/get-remote-url nginx argocd-staging`
 
 ## Development
 

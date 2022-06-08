@@ -19,3 +19,4 @@ spec:
   sourceRepos:
   - http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/gitops
   - https://charts.bitnami.com/bitnami
+  - http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/nginx-helm-dependency
