@@ -1,4 +1,4 @@
-FROM alpine:3.15.4 as alpine
+FROM alpine:3.16.0 as alpine
 
 FROM ghcr.io/graalvm/graalvm-ce:ol8-java17-22.1.0 AS graal
 
