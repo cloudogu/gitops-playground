@@ -80,6 +80,8 @@ persistence:
         path: /tmp
 
 agent:
+  # We need JDK11 and curl (removed in 4.10.x!) for our PetClinic example
+  tag: "4.9-1-jdk11"
   # In our local playground infrastructure builds are run in agent containers (pods). During the builds, more
   # containers are started via the Jenkins Docker Plugin (on the same docker host).
   # This leads to a scenario where the agent container tries to mount its filesystem into another container.
