@@ -106,7 +106,10 @@ function postPlugin() {
 
   STATUS=$(curlJenkins --fail -L -o /dev/null --write-out '%{http_code}' \
           "-F file=@${PLUGIN_PATH}" \
+          -F 'a=' \
           "${JENKINS_URL}/pluginManager/uploadPlugin") && EXIT_STATUS=$? || EXIT_STATUS=$?
+  # Why -F 'a='? See https://github.com/cloudogu/gitops-playground/issues/86
+  
   if [ $EXIT_STATUS != 0 ]
     then
       echo "Installing Plugin failed with exit code: curl: ${EXIT_STATUS}, ${STATUS}"
