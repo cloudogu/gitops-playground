@@ -729,8 +729,7 @@ function printWelcomeScreen() {
   echo "|                     ☁️  Welcome to the GitOps playground by Cloudogu! ☁️                       |"
   echo "|----------------------------------------------------------------------------------------------|"
   echo "|"
-  echo "| The playground features three example applications (Sprint PetClinic - one for every gitops "
-  echo "| solution) in SCM-Manager."
+  echo "| The playground features example applications for different GitOps operators in SCM-Manager."
   echo "| See here:"
   echo "|"
 
@@ -774,7 +773,7 @@ function printWelcomeScreen() {
   echo "| After a successful Jenkins build, the staging application will be deployed into the cluster."
   echo "|"
   echo "| The production applications can be deployed by accepting Pull Requests."
-  echo "| After about 1 Minute after the PullRequest has been accepted, the GitOps operator "
+  echo "| Shortly after the PullRequest has been accepted, the GitOps operator "
   echo "| deploys to production."
   echo "|"
   echo "| Please see the README.md for how to find out the URLs of the individual applications."

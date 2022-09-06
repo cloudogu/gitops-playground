@@ -1,3 +1,4 @@
+# For updating, delete pvc jenkins-docker-client
 dockerClientVersion: 20.10.2
 
 controller:
@@ -8,23 +9,6 @@ controller:
   servicePort: 80
   # Is ignored when type is LoadBalancer. For local cluster we change the service type to NodePort
   nodePort: 9090
-
-  # It seems that jenkins-plugin-cli 2.9.0 does not install plugin dependencies properly.
-  # So we add them explicitly here, to avoid exception such as 
-  #  Failed to load: Matrix Project Plugin (1.18)
-  # Background: When debugging, the following command
-  #  jenkins-plugin-cli --war "/usr/share/jenkins/jenkins.war" --plugins matrix-project:1.18 --verbose
-  # returns: matrix-project has no dependencies
-  # But the following command: 
-  # jenkins-plugin-cli --war "/usr/share/jenkins/jenkins.war" --plugins matrix-project:1.18 --verbose
-  # Returns: matrix-project depends on: junit 1.50 script-security 1.77
-  # Workaround: Install the plugins that cause these problems explicitly
-  additionalPlugins:
-    - matrix-project:1.19
-    - workflow-cps:2.93
-    - pipeline-model-api:1.9.1
-    - workflow-job:2.41
-    - credentials-binding:1.27
 
   # Don't use controller for builds
   numExecutors: 0
@@ -96,8 +80,8 @@ persistence:
         path: /tmp
 
 agent:
-  # We need JDK11 for our PetClinic example
-  tag: "4.6-1-jdk11"
+  # We need JDK11 and curl (removed in 4.10.x!) for our PetClinic example
+  tag: "4.9-1-jdk11"
   # In our local playground infrastructure builds are run in agent containers (pods). During the builds, more
   # containers are started via the Jenkins Docker Plugin (on the same docker host).
   # This leads to a scenario where the agent container tries to mount its filesystem into another container.
