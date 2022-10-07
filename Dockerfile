@@ -1,6 +1,11 @@
-FROM alpine:3.16.0 as alpine
+ARG ENV=prod
 
-FROM ghcr.io/graalvm/graalvm-ce:ol8-java17-22.1.0 AS graal
+ARG JDK_VERSION='17'
+ARG GROOVY_VERSION='3.0.13'
+
+FROM alpine:3.16.2 as alpine
+
+FROM ghcr.io/graalvm/graalvm-ce:ol8-java${JDK_VERSION}-22.1.0 AS graal
 
 FROM graal as maven-cache
 ENV MAVEN_OPTS=-Dmaven.repo.local=/mvn
@@ -129,8 +134,19 @@ RUN native-image -Dgroovy.grape.enable=false \
     -jar $(ls -S target/*.jar | head -n 1) \
     apply-ng
 
-FROM alpine
+FROM alpine as prod
+# copy groovy cli binary from native-image stage
+COPY --from=native-image /app/apply-ng app/apply-ng
 
+
+FROM groovy:${GROOVY_VERSION}-jdk${JDK_VERSION}-alpine as dev
+# Allow initialization in final FROM ${ENV} stage
+USER 0
+
+
+
+# Pick final image according to build-arg
+FROM ${ENV}
 ENV HOME=/home \
     HELM_CACHE_HOME=/home/.cache/helm \
     HELM_CONFIG_HOME=/home/.config/helm \
@@ -147,14 +163,11 @@ ENV HOME=/home \
 
 WORKDIR /app
 
-# copy groovy cli binary from native-image stage
-COPY --from=native-image /app/apply-ng ./apply-ng
-
 ENTRYPOINT ["scripts/apply.sh"]
 
 # Unzip is needed for downloading docker plugins (install-plugins.sh)
-RUN apk update && apk upgrade && \
-    apk add --no-cache \
+RUN apk update --no-cache && apk upgrade --no-cache && \
+  apk add --no-cache \
      bash \
      curl \
      apache2-utils \
