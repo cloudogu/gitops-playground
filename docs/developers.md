@@ -62,3 +62,25 @@ Jenkins.instance.pluginManager.plugins.collect().sort().each {
 * Share and publish your plugin updates
   * Make sure you have updated `plugins.txt` with working versions of the plugins
   * commit and push changes to your feature-branch and submit a pr
+
+
+## Development image
+
+An image containing groovy and the JDK for developing inside a container or cluster is provided for all image version
+with a `-dev` suffix.
+
+e.g.
+* ghcr.io/cloudogu/gitops-playground:dev
+* ghcr.io/cloudogu/gitops-playground:latest-dev
+* ghcr.io/cloudogu/gitops-playground:d67ec33-dev
+
+It can be built like so:
+
+```shell
+docker buildx build -t gitops-playground:dev --build-arg ENV=dev  --progress=plain  .  
+```
+Hint: uses buildkit for much faster builds, skipping the static image stuff not needed for dev.
+
+TODO: Copy a script `apply-ng` into the dev image that calls `groovy GitopsPlaygroundCliMain?! args`.
+Then, we can use the dev image to try out if the playground image works without having to wait for the static image to 
+be built.
