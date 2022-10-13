@@ -4,7 +4,7 @@ metadata:
   name: exercises
   namespace: argocd
 #  annotations:
-#    notifications.argoproj.io/subscribe.on-sync-status-longer-10s.email: argocd@testeroony.de
+#    notifications.argoproj.io/subscribe.on-sync-status-longer-10s.email: hello@cloudogu.com
 spec:
   description: exercises project
   destinations:

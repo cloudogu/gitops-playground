@@ -5,10 +5,10 @@ metadata:
   namespace: argocd
   annotations:
 ##  every application in this project is going to be notified about when one of these three events trigger
-#    notifications.argoproj.io/subscribe.on-sync-status-longer-10s.email: argocd@testeroony.de
-#    notifications.argoproj.io/subscribe.on-health-degraded.email: argocd@testeroony.de
-#    notifications.argoproj.io/subscribe.on-sync-status-unknown.email: argocd@testeroony.de
-#    notifications.argoproj.io/subscribe.on-sync-failed.email: argocd@testeroony.de
+#    notifications.argoproj.io/subscribe.on-sync-status-longer-10s.email: hello@cloudogu.com
+#    notifications.argoproj.io/subscribe.on-health-degraded.email: hello@cloudogu.com
+#    notifications.argoproj.io/subscribe.on-sync-status-unknown.email: hello@cloudogu.com
+#    notifications.argoproj.io/subscribe.on-sync-failed.email: hello@cloudogu.com
 spec:
   description: nginx project
   destinations:

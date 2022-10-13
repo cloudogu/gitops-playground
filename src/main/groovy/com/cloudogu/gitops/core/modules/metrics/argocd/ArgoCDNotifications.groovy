@@ -19,7 +19,7 @@ class ArgoCDNotifications {
     void configure() {
         String argoNotificationsYaml = "applications/application-argocd-notifications.yaml"
 
-        if (!argocdUrl) {
+        if (argocdUrl) {
             log.debug("Setting argocd url")
             fileSystemUtils.replaceFileContent(tmpGitRepoDir, argoNotificationsYaml, 
                     "argocdUrl: http://localhost:9092", "argocdUrl: $argocdUrl")

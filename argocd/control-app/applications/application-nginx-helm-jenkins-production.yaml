@@ -5,7 +5,7 @@ metadata:
   namespace: argocd
 #  annotations:
 ##  only this application in this project is going to be notified about when this events triggers
-#    notifications.argoproj.io/subscribe.on-health-degraded.email: argocd@testeroony.de
+#    notifications.argoproj.io/subscribe.on-health-degraded.email: hello@cloudogu.com
 spec:
   destination:
     namespace: argocd-production

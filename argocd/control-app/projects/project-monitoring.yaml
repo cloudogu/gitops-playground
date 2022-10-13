@@ -3,11 +3,6 @@ kind: AppProject
 metadata:
   name: monitoring
   namespace: argocd
-#  annotations:
-##  every application in this project is going to be notified about when one of these three events trigger
-#    notifications.argoproj.io/subscribe.on-health-degraded.email: argocd@testeroony.de
-#    notifications.argoproj.io/subscribe.on-sync-status-unknown.email: argocd@testeroony.de
-#    notifications.argoproj.io/subscribe.on-sync-failed.email: argocd@testeroony.de
 spec:
   description: monitoring and alerting stack including prometheus + grafana + argocd notifications
   destinations:
@@ -15,6 +10,19 @@ spec:
       server: https://kubernetes.default.svc
     - namespace: argocd
       server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: policy
+      kind: PodSecurityPolicy
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
   sourceRepos:
     - https://prometheus-community.github.io/helm-charts
     - https://codecentric.github.io/helm-charts
