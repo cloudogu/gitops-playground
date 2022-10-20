@@ -1,11 +1,14 @@
 ARG ENV=prod
 
+# Keep all of them in sync with the versions in pom.xml
 ARG JDK_VERSION='17'
 ARG GROOVY_VERSION='3.0.13'
+ARG GRAAL_VERSION='22.1.0'
 
 FROM alpine:3.16.2 as alpine
 
-FROM ghcr.io/graalvm/graalvm-ce:ol8-java${JDK_VERSION}-22.1.0 AS graal
+# Keep in sync with the version in pom.xml
+FROM ghcr.io/graalvm/graalvm-ce:ol8-java${JDK_VERSION}-${GRAAL_VERSION} AS graal
 
 FROM graal as maven-cache
 ENV MAVEN_OPTS=-Dmaven.repo.local=/mvn

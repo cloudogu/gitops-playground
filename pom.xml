@@ -10,7 +10,8 @@
   <parent>
     <groupId>io.micronaut</groupId>
     <artifactId>micronaut-parent</artifactId>
-    <version>3.4.0</version>
+    <!-- When updating, also update groovyVersion -->
+    <version>3.7.2</version>
   </parent>
 
   <properties>
@@ -18,7 +19,9 @@
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
     <!-- This version seems to depend on the one used by micronaut-inject-groovy! -->
-    <groovyVersion>3.0.9</groovyVersion>
+    <!-- Keep in sync with the version in Dockerfile -->
+    <groovyVersion>3.0.13</groovyVersion>
+    <mockitoVersion>4.8.0</mockitoVersion>
     <exec.mainClass>com.cloudogu.gitops.cli.GitopsPlaygroundCliMain</exec.mainClass>
   </properties>
 
@@ -107,7 +110,7 @@
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-crypto</artifactId>
-      <version>5.6.2</version>
+      <version>5.7.3</version>
     </dependency>
     <dependency>
       <!-- Avoids java.lang.NoClassDefFoundError: org/apache/commons/logging/Log-->
@@ -139,35 +142,35 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <version>4.3.1</version>
+      <version>${mockitoVersion}</version>
       <scope>test</scope>
     </dependency>
     
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-junit-jupiter</artifactId>
-      <version>4.3.1</version>
+      <version>${mockitoVersion}</version>
       <scope>test</scope>
     </dependency>
     
     <dependency>
       <groupId>org.codehaus.groovy</groupId>
       <artifactId>groovy-yaml</artifactId>
-      <version>3.0.10</version>
+      <version>${groovyVersion}</version>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
-      <version>3.22.0</version>
+      <version>3.23.1</version>
       <scope>test</scope>
     </dependency>
     
     <dependency>
       <groupId>com.fasterxml.jackson.dataformat</groupId>
       <artifactId>jackson-dataformat-yaml</artifactId>
-      <version>2.10.3</version>
+      <version>2.13.4</version>
       <scope>test</scope>
     </dependency>
 
@@ -182,7 +185,8 @@
     <dependency>
       <groupId>org.graalvm.nativeimage</groupId>
       <artifactId>svm</artifactId>
-      <version>22.0.0.2</version>
+      <!-- Keep in sync with version in Dockerfile-->
+      <version>22.1.0</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
