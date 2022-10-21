@@ -12,7 +12,7 @@ FROM alpine:3.16.2 as alpine
 FROM ghcr.io/graalvm/graalvm-ce:ol8-java${JDK_VERSION}-${GRAAL_VERSION} AS graal
 
 FROM graal as maven-cache
-ENV MAVEN_OPTS=-Dmaven.repo.local=/mvn
+ENV MAVEN_OPTS='-Dmaven.repo.local=/mvn'
 WORKDIR /app
 COPY .mvn/ /app/.mvn/
 COPY mvnw /app/
@@ -69,7 +69,7 @@ RUN chmod +x /tmp/kubectl
 RUN mv /tmp/kubectl /dist/usr/local/bin/kubectl
 
 # External Repos used in GOP
-WORKDIR /dist/gop/repos
+WORKDIR /dist/gitops/repos
 RUN git clone --bare https://github.com/cloudogu/spring-petclinic.git 
 RUN git clone --bare https://github.com/cloudogu/spring-boot-helm-chart.git
 RUN git clone --bare https://github.com/cloudogu/gitops-build-lib.git
@@ -81,7 +81,7 @@ RUN git config --global user.email "hello@cloudogu.com" && \
 
 # Download Jenkins Plugin
 COPY scripts/jenkins/plugins /jenkins
-RUN /jenkins/download-plugins.sh /dist/gop/jenkins-plugins
+RUN /jenkins/download-plugins.sh /dist/gitops/jenkins-plugins
 
 # Prepare local files for later stages
 COPY . /dist/app
@@ -93,13 +93,13 @@ RUN rm /dist/app/pom.xml
 RUN rm /dist/app/compiler.groovy
 
 FROM graal as native-image
-ENV MAVEN_OPTS=-Dmaven.repo.local=/mvn
+ENV MAVEN_OPTS='-Dmaven.repo.local=/mvn'
 RUN gu install native-image
 
 # Set up musl, in order to produce a static image compatible to alpine
 # See 
 # https://github.com/oracle/graal/issues/2824 and 
-# https://github.com/oracle/graal/blob/vm-ce-22.0.0.2/docs/reference-manual/native-image/StaticImages.md
+# https://github.com/oracle/graal/blob/vm-ce-22.2.0.1/docs/reference-manual/native-image/guides/build-static-and-mostly-static-executable.md
 ARG RESULT_LIB="/musl"
 RUN mkdir ${RESULT_LIB} && \
     curl -L -o musl.tar.gz https://more.musl.cc/10.2.1/x86_64-linux-musl/x86_64-linux-musl-native.tgz && \
@@ -153,6 +153,7 @@ COPY --from=native-image /app/apply-ng app/apply-ng
 
 
 FROM groovy:${GROOVY_VERSION}-jdk${JDK_VERSION}-alpine as dev
+COPY scripts/apply-ng.sh /app/scripts/
 # Copy gitops-playground.jar where groovy can find it (see apply-ng.sh)
 # HOME might be /home, but for the JVM /etc/passwd counts, where the user groovy has /home/groovy as home
 COPY --from=maven-build /app/gitops-playground.jar /home/groovy/.groovy/lib/
@@ -172,11 +173,11 @@ ENV HOME=/home \
     HELM_REGISTRY_CONFIG=/home/.config/helm/registry.json \
     HELM_REPOSITORY_CACHE=/home/.cache/helm/repository \
     HELM_REPOSITORY_CONFIG=/home/.config/helm/repositories.yaml \
-    SPRING_BOOT_HELM_CHART_REPO=/gop/repos/spring-boot-helm-chart.git \
-    SPRING_PETCLINIC_REPO=/gop/repos/spring-petclinic.git \
-    GITOPS_BUILD_LIB_REPO=/gop/repos/gitops-build-lib.git \
-    CES_BUILD_LIB_REPO=/gop/repos/ces-build-lib.git \
-    JENKINS_PLUGIN_FOLDER=/gop/jenkins-plugins/
+    SPRING_BOOT_HELM_CHART_REPO=/gitops/repos/spring-boot-helm-chart.git \
+    SPRING_PETCLINIC_REPO=/gitops/repos/spring-petclinic.git \
+    GITOPS_BUILD_LIB_REPO=/gitops/repos/gitops-build-lib.git \
+    CES_BUILD_LIB_REPO=/gitops/repos/ces-build-lib.git \
+    JENKINS_PLUGIN_FOLDER=/gitops/jenkins-plugins/
 
 WORKDIR /app
 
