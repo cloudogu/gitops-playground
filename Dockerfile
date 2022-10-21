@@ -1,9 +1,10 @@
 ARG ENV=prod
 
-# Keep all of them in sync with the versions in pom.xml
+# Keep in sync with the versions in pom.xml
 ARG JDK_VERSION='17'
+# Those are set by the micronaut BOM, see pom.xml
 ARG GROOVY_VERSION='3.0.13'
-ARG GRAAL_VERSION='22.1.0'
+ARG GRAAL_VERSION='22.2.0'
 
 FROM alpine:3.16.2 as alpine
 
@@ -17,6 +18,14 @@ COPY .mvn/ /app/.mvn/
 COPY mvnw /app/
 COPY pom.xml /app/
 RUN ./mvnw dependency:go-offline
+
+FROM maven-cache as maven-build
+COPY src /app/src/
+COPY compiler.groovy .
+RUN ./mvnw package -DskipTests
+# Use simple name for largest jar file -> Easier reuse in later stages
+RUN mv $(ls -S target/*.jar | head -n 1) /app/gitops-playground.jar
+
 
 FROM alpine as downloader
 # When updating, 
@@ -74,6 +83,14 @@ RUN git config --global user.email "hello@cloudogu.com" && \
 COPY scripts/jenkins/plugins /jenkins
 RUN /jenkins/download-plugins.sh /dist/gop/jenkins-plugins
 
+# Prepare local files for later stages
+COPY . /dist/app
+# Remove dev stuff
+RUN rm -r /dist/app/src
+RUN rm -r /dist/app/.mvn
+RUN rm /dist/app/mvnw
+RUN rm /dist/app/pom.xml
+RUN rm /dist/app/compiler.groovy
 
 FROM graal as native-image
 ENV MAVEN_OPTS=-Dmaven.repo.local=/mvn
@@ -102,22 +119,15 @@ RUN microdnf install iproute
 # Copy only binaries, not jenkins plugins. Avoids having to rebuild native image only plugin changes
 COPY --from=downloader /dist/usr/ /usr/
 
-COPY --from=maven-cache /mvn/ /mvn/
-COPY --from=maven-cache /app/ /app
-
 # copy only resources that we need to compile the binary
-COPY src /app/src/
-COPY compiler.groovy /app
+COPY --from=maven-build /app/gitops-playground.jar /app/
 
 WORKDIR /app
 
-# Build native image without micronaut
-RUN ./mvnw package -DskipTests
-
-# Create Graal native image config for largest jar file
-RUN java -agentlib:native-image-agent=config-output-dir=conf/ -jar $(ls -S target/*.jar | head -n 1) || true
+# Create Graal native image config
+RUN java -agentlib:native-image-agent=config-output-dir=conf/ -jar gitops-playground.jar || true
 # Run again with different params in order to avoid further ClassNotFoundExceptions
-RUN java -agentlib:native-image-agent=config-merge-dir=conf/ -jar $(ls -S target/*.jar | head -n 1) \
+RUN java -agentlib:native-image-agent=config-merge-dir=conf/ -jar gitops-playground.jar \
       --yes --jenkins-url=a --scmm-url=a \
       --jenkins-username=a --jenkins-password=a --scmm-username=a--scmm-password=a --password=a \
       --registry-url=a --registry-path=a --remote --argocd --debug --trace \
@@ -134,7 +144,7 @@ RUN native-image -Dgroovy.grape.enable=false \
     --initialize-at-build-time \
     --no-fallback \
     --libc=musl \
-    -jar $(ls -S target/*.jar | head -n 1) \
+    -jar gitops-playground.jar \
     apply-ng
 
 FROM alpine as prod
@@ -143,6 +153,10 @@ COPY --from=native-image /app/apply-ng app/apply-ng
 
 
 FROM groovy:${GROOVY_VERSION}-jdk${JDK_VERSION}-alpine as dev
+# Copy gitops-playground.jar where groovy can find it (see apply-ng.sh)
+# HOME might be /home, but for the JVM /etc/passwd counts, where the user groovy has /home/groovy as home
+COPY --from=maven-build /app/gitops-playground.jar /home/groovy/.groovy/lib/
+COPY src /app/src
 # Allow initialization in final FROM ${ENV} stage
 USER 0
 
@@ -183,21 +197,6 @@ USER 1000
 
 COPY --from=downloader /dist /
 
-# specify exactly what to copy
-COPY applications /app/applications/
-COPY argocd /app/argocd/
-COPY docker-registry /app/docker-registry/
-COPY exercises /app/exercises/
-COPY fluxv1 /app/fluxv1/
-COPY fluxv2 /app/fluxv2/
-COPY jenkins /app/jenkins/
-COPY k8s-namespaces /app/k8s-namespaces/
-COPY metrics /app/metrics/
-COPY scm-manager /app/scm-manager/
-COPY scripts /app/scripts/
-COPY .curlrc /app
-COPY LICENSE /app
-
 ARG VCS_REF
 ARG BUILD_DATE
 LABEL org.opencontainers.image.title="gitops-playground" \
@@ -206,7 +205,7 @@ LABEL org.opencontainers.image.title="gitops-playground" \
       org.opencontainers.image.documentation="https://github.com/cloudogu/gitops-playground" \
       org.opencontainers.image.vendor="cloudogu" \
       org.opencontainers.image.licenses="MIT" \
-      org.opencontainers.image.description="Reproducible infrastructure to showcase GitOps workflows and evaluate different GitOps Operators" \ 
+      org.opencontainers.image.description="Reproducible infrastructure to showcase GitOps workflows and evaluate different GitOps Operators" \
       org.opencontainers.image.version="${VCS_REF}" \
       org.opencontainers.image.created="${BUILD_DATE}" \
       org.opencontainers.image.ref.name="${VCS_REF}" \

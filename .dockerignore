@@ -15,6 +15,7 @@
 !scripts/jenkins/
 !scripts/scm-manager/
 !scripts/apply.sh
+!scripts/apply-ng.sh
 !scripts/get-remote-url
 !scripts/utils.sh
 !.curlrc

@@ -10,7 +10,8 @@
   <parent>
     <groupId>io.micronaut</groupId>
     <artifactId>micronaut-parent</artifactId>
-    <!-- When updating, also update groovyVersion -->
+    <!-- When updating, also update groovy and graal version in dockerfile -->
+    <!-- See e.g. here for versions: https://search.maven.org/artifact/io.micronaut/micronaut-bom/3.7.2/pom -->
     <version>3.7.2</version>
   </parent>
 
@@ -18,9 +19,6 @@
     <packaging>jar</packaging>
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
-    <!-- This version seems to depend on the one used by micronaut-inject-groovy! -->
-    <!-- Keep in sync with the version in Dockerfile -->
-    <groovyVersion>3.0.13</groovyVersion>
     <mockitoVersion>4.8.0</mockitoVersion>
     <exec.mainClass>com.cloudogu.gitops.cli.GitopsPlaygroundCliMain</exec.mainClass>
   </properties>
@@ -35,7 +33,7 @@
     <dependency>
       <groupId>org.codehaus.groovy</groupId>
       <artifactId>groovy-all</artifactId>
-      <version>${groovyVersion}</version>
+      <version>${groovy.version}</version>
       <type>pom</type>
       <exclusions>
         <exclusion>
@@ -56,7 +54,7 @@
     <dependency>
       <groupId>org.codehaus.groovy</groupId>
       <artifactId>groovy-yaml</artifactId>
-      <version>${groovyVersion}</version>
+      <version>${groovy.version}</version>
     </dependency>
     
     <dependency>
@@ -181,8 +179,7 @@
     <dependency>
       <groupId>org.graalvm.nativeimage</groupId>
       <artifactId>svm</artifactId>
-      <!-- Keep in sync with version in Dockerfile-->
-      <version>22.1.0</version>
+      <!-- Version set by micronaut -->
       <scope>provided</scope>
     </dependency>
     <dependency>
