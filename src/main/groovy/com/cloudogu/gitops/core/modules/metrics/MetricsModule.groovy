@@ -20,9 +20,14 @@ class MetricsModule implements Module {
 
     @Override
     void run() {
+        /* Why is this module not disabled when --metrics not set?
+         Because we always want to deploy notifications and mailhog
+        TODO move mailhog and notifications to a different module
+        if(!config.modules["metrics"]) {
+            return
+        }*/
         if(config.modules["argocd"]["active"]) {
             log.info("Running metrics module")
-
             configureArgocdMetrics()
         }
     }

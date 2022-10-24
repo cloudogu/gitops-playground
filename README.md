@@ -5,9 +5,11 @@ Reproducible infrastructure to showcase GitOps workflows with Kubernetes.
 
 In fact, this rolls out a complete DevOps stack with different features including 
 * GitOps (with different controllers to choose from: Argo CD, Flux v1 and v2),
-* Monitoring (using Prometheus and Grafana),
-* example applications and CI-pipelines (using Jenkins and our [GitOps library](https://github.com/cloudogu/gitops-build-lib)) and
-* soon Secrets management (using Vault).
+* example applications and CI-pipelines (using Jenkins and our [GitOps library](https://github.com/cloudogu/gitops-build-lib)),
+* ArgoCD-only
+  * Notifications (using Mailhog for Demo purposes)
+  * Monitoring (using Prometheus and Grafana),
+  * soon Secrets management (using Vault).
 
 The gitops-playground is derived from our experiences in [consulting](https://cloudogu.com/en/consulting/?mtm_campaign=gitops-playground&mtm_kwd=consulting&mtm_source=github&mtm_medium=link) 
 and operating the [myCloudogu platform](https://my.cloudogu.com/).  
