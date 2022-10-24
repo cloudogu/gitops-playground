@@ -65,7 +65,12 @@ class GitopsPlaygroundCli implements Runnable {
     // args group metrics
     @Option(names = ['--metrics'], description = 'Installs the Kube-Prometheus-Stack for ArgoCD. This includes Prometheus, the Prometheus operator, Grafana and some extra resources')
     private boolean metrics
-
+    
+    // args group metrics
+    @Option(names = ['--vault'], description = 'Installs Hashicorp vault and the external secrets operator. Possible values: ${COMPLETION-CANDIDATES}')
+    private VaultModes vault
+    enum VaultModes { dev, prod }
+    
     // args group debug
     @Option(names = ['-d', '--debug'], description = 'Debug output')
     private boolean debug
@@ -143,7 +148,8 @@ class GitopsPlaygroundCli implements Runnable {
                                 configOnly: argocdConfigOnly,
                                 url       : argocdUrl
                         ],
-                        metrics: metrics
+                        metrics: metrics,
+                        vault: vault
                 ]
         ]
     }

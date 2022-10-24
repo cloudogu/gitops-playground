@@ -882,7 +882,7 @@ function printParameters() {
 readParameters() {
   COMMANDS=$(getopt \
     -o hdxyc \
-    --long help,fluxv1,fluxv2,argocd,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,trace,insecure,yes,skip-helm-update,argocd-config-only,metrics,argocd-url: \
+    --long help,fluxv1,fluxv2,argocd,argocd-url:,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,trace,insecure,yes,skip-helm-update,argocd-config-only,metrics,vault: \
     -- "$@")
   
   if [ $? != 0 ]; then
@@ -930,6 +930,7 @@ readParameters() {
       --fluxv1             ) INSTALL_FLUXV1=true; INSTALL_ALL_MODULES=false; shift ;;
       --fluxv2             ) INSTALL_FLUXV2=true; INSTALL_ALL_MODULES=false; shift ;;
       --argocd             ) INSTALL_ARGOCD=true; INSTALL_ALL_MODULES=false; shift ;;
+      --argocd-url         ) ARGOCD_URL="$2"; shift 2 ;;
       --remote             ) REMOTE_CLUSTER=true; shift ;;
       --jenkins-url        ) JENKINS_URL="$2"; shift 2 ;;
       --jenkins-username   ) JENKINS_USERNAME="$2"; shift 2 ;;
@@ -956,7 +957,7 @@ readParameters() {
       --skip-helm-update   ) SKIP_HELM_UPDATE=true; shift ;;
       --argocd-config-only ) ARGOCD_CONFIG_ONLY=true; shift ;;
       --metrics            ) DEPLOY_METRICS=true; shift;;
-      --argocd-url         ) ARGOCD_URL="$2"; shift 2 ;;
+      --vault              ) shift 2;; # Ignore, used in groovy only
       --                   ) shift; break ;;
     *) break ;;
     esac
