@@ -17,7 +17,7 @@ class ArgoCDNotifications {
     }
 
     void configure() {
-        String argoNotificationsYaml = "applications/application-argocd-notifications.yaml"
+        String argoNotificationsYaml = "applications/system/application-argocd-notifications.yaml"
 
         if (argocdUrl) {
             log.debug("Setting argocd url")

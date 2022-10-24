@@ -644,39 +644,6 @@ function initRepoWithSource() {
   setDefaultBranch "${TARGET_REPO_SCMM}"
 }
 
-#function metricsConfiguration() {
-#
-#  if [[ $REMOTE_CLUSTER != true ]]; then
-#      # Set NodePort service, to avoid "Pending" services and "Processing" state in argo
-#      sed -i "s/LoadBalancer/NodePort/" "applications/application-mailhog-helm.yaml"
-#  fi
-#
-#  if [[ $ARGOCD_URL != "" ]]; then
-#      sed -i "s|argocdUrl: http://localhost:9092|argocdUrl: $ARGOCD_URL|g" "applications/application-argocd-notifications.yaml"
-#  fi
-#
-#  if [[ $DEPLOY_METRICS == true ]]; then
-#
-#    kubectl apply -f "${PLAYGROUND_DIR}/metrics/grafana/dashboards" || true
-#
-#    ARGOCD_APP_PROMETHEUS_STACK="applications/application-kube-prometheus-stack-helm.yaml"
-#
-#    if [[ ${SET_USERNAME} != "admin" ]]; then
-#      FROM_USERNAME_STRING='adminUser: admin'
-#      TO_USERNAME_STRING="adminUser: ${SET_USERNAME}"
-#      sed -i -e "s%${FROM_USERNAME_STRING}%${TO_USERNAME_STRING}%g" "${ARGOCD_APP_PROMETHEUS_STACK}"
-#    fi
-#
-#    if [[ ${SET_PASSWORD} != "admin" ]]; then
-#      FROM_PASSWORD_STRING='adminPassword: admin'
-#      TO_PASSWORD_STRING="adminPassword: ${SET_PASSWORD}"
-#      sed -i -e "s%${FROM_PASSWORD_STRING}%${TO_PASSWORD_STRING}%g" "${ARGOCD_APP_PROMETHEUS_STACK}"
-#    fi
-#  else
-#      rm -f "applications/application-kube-prometheus-stack-helm.yaml"
-#  fi
-#}
-
 function setDefaultBranch() {
   TARGET_REPO_SCMM="$1"
   DEFAULT_BRANCH="${2:-main}"

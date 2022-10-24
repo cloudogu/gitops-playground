@@ -7,7 +7,7 @@ spec:
   destination:
     namespace: argocd
     server: https://kubernetes.default.svc
-  project: monitoring
+  project: system
   source:
     path: charts/argocd-notifications
     repoURL: https://github.com/argoproj/argo-helm/

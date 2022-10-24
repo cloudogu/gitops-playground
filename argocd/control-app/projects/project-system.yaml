@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
-  name: monitoring
+  name: system
   namespace: argocd
 spec:
   description: monitoring and alerting stack including prometheus + grafana + argocd notifications

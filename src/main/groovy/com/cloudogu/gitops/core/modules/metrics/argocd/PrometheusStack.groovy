@@ -7,7 +7,7 @@ import groovy.util.logging.Slf4j
 @Slf4j
 class PrometheusStack {
 
-    static final String STACK_YAML_PATH = "applications/application-kube-prometheus-stack-helm.yaml"
+    static final String STACK_YAML_PATH = "applications/system/application-kube-prometheus-stack-helm.yaml"
     
     private boolean deployMetrics
     private boolean remoteCluster
@@ -61,7 +61,7 @@ class PrometheusStack {
 
     private void disable() {
         log.info("Disabling prometheus stack")
-        String prometheusStack = tmpGitRepoDir + "/applications/application-kube-prometheus-stack-helm.yaml"
+        String prometheusStack = tmpGitRepoDir + '/' + STACK_YAML_PATH
         new File(prometheusStack).delete()
     }
 }

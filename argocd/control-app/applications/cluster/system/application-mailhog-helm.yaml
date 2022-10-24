@@ -7,7 +7,7 @@ spec:
   destination:
     namespace: monitoring
     server: https://kubernetes.default.svc
-  project: monitoring
+  project: system
   source:
     chart: mailhog
     repoURL: https://codecentric.github.io/helm-charts
