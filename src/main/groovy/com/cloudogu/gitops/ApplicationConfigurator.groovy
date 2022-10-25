@@ -1,8 +1,8 @@
-package com.cloudogu.gitops.core
+package com.cloudogu.gitops
 
 import ch.qos.logback.classic.Level
-import com.cloudogu.gitops.core.utils.FileSystemUtils
-import com.cloudogu.gitops.core.utils.NetworkingUtils
+import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.utils.NetworkingUtils
 import groovy.util.logging.Slf4j
 import ch.qos.logback.classic.Logger
 import org.slf4j.LoggerFactory

@@ -1,6 +1,7 @@
-package com.cloudogu.gitops.core.modules.metrics.argocd
+package com.cloudogu.gitops.argocd
 
-import com.cloudogu.gitops.core.utils.FileSystemUtils
+
+import com.cloudogu.gitops.utils.FileSystemUtils
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -24,7 +25,7 @@ class MailhogTest {
                     password: '123',
                     remote  : false
             ],
-            modules    : [metrics: true]
+            features    : [argocd: [ active : true]]
     ]
 
     @BeforeEach
@@ -38,7 +39,7 @@ class MailhogTest {
     @Test
     void 'service type LoadBalancer when run remotely'() {
         config['application']['remote'] = true
-        createMailhog().configure()
+        createMailhog().install()
 
         assertThat(parseActualYaml()['service']['type']).isEqualTo('LoadBalancer')
     }
@@ -46,7 +47,7 @@ class MailhogTest {
     @Test
     void 'service type NodePort when not run remotely'() {
         config['application']['remote'] = false
-        createMailhog().configure()
+        createMailhog().install()
 
         assertThat(parseActualYaml()['service']['type']).isEqualTo('NodePort')
     }
@@ -57,7 +58,7 @@ class MailhogTest {
         String expectedPassword = '12345'
         config['application']['username'] = expectedUsername
         config['application']['password'] = expectedPassword
-        createMailhog().configure()
+        createMailhog().install()
         
         String fileContents = parseActualYaml()['auth']['fileContents']
         String actualPasswordBcrypted = ((fileContents =~ /^[^:]*:(.*)$/)[0] as List)[1]

@@ -1,6 +1,6 @@
-package com.cloudogu.gitops.core.clients.k8s
+package com.cloudogu.gitops.utils
 
-import com.cloudogu.gitops.core.utils.CommandExecutor
+
 import groovy.util.logging.Slf4j
 
 @Slf4j

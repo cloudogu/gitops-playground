@@ -1,22 +1,31 @@
-package com.cloudogu.gitops.core.modules.metrics.argocd
+package com.cloudogu.gitops.argocd
 
-import com.cloudogu.gitops.core.utils.FileSystemUtils
+import com.cloudogu.gitops.Feature
+import com.cloudogu.gitops.utils.FileSystemUtils
 import groovy.util.logging.Slf4j
 
 @Slf4j
-class ArgoCDNotifications {
+class ArgoCDNotifications extends Feature {
 
+    private Map config
     private String argocdUrl
     private String tmpGitRepoDir
     private FileSystemUtils fileSystemUtils
 
     ArgoCDNotifications(Map config, String tmpGitRepoDir, FileSystemUtils fileSystemUtils = new FileSystemUtils()) {
-        this.argocdUrl = config.modules["argocd"]["url"]
+        this.config = config
+        this.argocdUrl = config.features["argocd"]["url"]
         this.tmpGitRepoDir = tmpGitRepoDir
         this.fileSystemUtils = fileSystemUtils
     }
 
-    void configure() {
+    @Override
+    boolean isEnabled() {
+        config.features["argocd"]["active"]
+    }
+    
+    @Override
+    void enable() {
         String argoNotificationsYaml = "applications/system/application-argocd-notifications.yaml"
 
         if (argocdUrl) {
@@ -25,4 +34,5 @@ class ArgoCDNotifications {
                     "argocdUrl: http://localhost:9092", "argocdUrl: $argocdUrl")
         }
     }
+
 }

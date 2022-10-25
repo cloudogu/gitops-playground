@@ -1,8 +1,7 @@
 package com.cloudogu.gitops.cli
 
-import com.cloudogu.gitops.core.Application
-import com.cloudogu.gitops.core.ApplicationConfigurator
-import com.cloudogu.gitops.core.modules.ModuleRepository
+import com.cloudogu.gitops.Application
+import com.cloudogu.gitops.ApplicationConfigurator
 import groovy.util.logging.Slf4j
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
@@ -100,7 +99,7 @@ class GitopsPlaygroundCli implements Runnable {
         ApplicationConfigurator applicationConfigurator = new ApplicationConfigurator(parseConfig())
         Map config = applicationConfigurator.populateConfig()
 
-        Application app = new Application(new ModuleRepository(config))
+        Application app = new Application(config)
         app.start()
     }
 
@@ -140,7 +139,7 @@ class GitopsPlaygroundCli implements Runnable {
                         helmKubeval: helmKubevalImage,
                         yamllint   : yamllintImage
                 ],
-                modules    : [
+                features    : [
                         fluxv1 : fluxv1,
                         fluxv2 : fluxv2,
                         argocd : [

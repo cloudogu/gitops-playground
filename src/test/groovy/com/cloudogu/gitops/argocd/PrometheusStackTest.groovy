@@ -1,7 +1,8 @@
-package com.cloudogu.gitops.core.modules.metrics.argocd
+package com.cloudogu.gitops.argocd
 
-import com.cloudogu.gitops.core.clients.k8s.K8sClient
-import com.cloudogu.gitops.core.utils.FileSystemUtils
+
+import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.utils.K8sClient
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -27,7 +28,8 @@ class PrometheusStackTest {
                     password: '123',
                     remote  : false
             ],
-            modules    : [metrics: true]
+            features    : [metrics: true,
+                           argocd: [ active : true]]
     ]
 
     @BeforeEach
@@ -38,13 +40,12 @@ class PrometheusStackTest {
         Files.copy(originalStackYamlFile.toPath(), temporaryStackYamlFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
     }
     
-    
     @Test
     void "ignore remote flag when metrics off"() {
         config['application']['remote'] = true
-        config['modules'] = [metrics: false]
+        config['features'] = [metrics: false]
         PrometheusStack prometheusStack = createStack()
-        prometheusStack.configure()
+        prometheusStack.enable()
         
         // No exception means success
         // Otherwise: java.io.FileNotFoundException: /tmp/.../applications/application-kube-prometheus-stack-helm.yaml (No such file or directory)
@@ -53,7 +54,7 @@ class PrometheusStackTest {
     @Test
     void "service type LoadBalancer when run remotely"() {
         config['application']['remote'] = true
-        createStack().configure()
+        createStack().enable()
 
         assertThat(parseActualStackYaml()['grafana']['service']['type']).isEqualTo('LoadBalancer')
     }
@@ -61,7 +62,7 @@ class PrometheusStackTest {
     @Test
     void 'service type NodePort when not run remotely'() {
         config['application']['remote'] = false
-        createStack().configure()
+        createStack().enable()
 
         assertThat(parseActualStackYaml()['grafana']['service']['type']).isEqualTo('NodePort')
     }

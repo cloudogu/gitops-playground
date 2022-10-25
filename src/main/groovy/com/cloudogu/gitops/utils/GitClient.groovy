@@ -1,7 +1,6 @@
-package com.cloudogu.gitops.core.clients.git
+package com.cloudogu.gitops.utils
 
-import com.cloudogu.gitops.core.utils.CommandExecutor
-import com.cloudogu.gitops.core.utils.FileSystemUtils
+
 import groovy.util.logging.Slf4j
 import okhttp3.*
 

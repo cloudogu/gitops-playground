@@ -1,7 +1,6 @@
-package com.cloudogu.gitops.core.utils
+package com.cloudogu.gitops.utils
 
-import com.cloudogu.gitops.core.clients.k8s.K8sClient
-import com.cloudogu.gitops.core.exceptions.CouldNotConnectToKubernetesCluster
+
 import groovy.util.logging.Slf4j
 
 import java.util.regex.Matcher
@@ -38,7 +37,7 @@ class NetworkingUtils {
         log.debug("Cluster address: " + potentialClusterBindAddress)
 
         if(potentialClusterBindAddress == null || potentialClusterBindAddress.isEmpty()) {
-            throw new CouldNotConnectToKubernetesCluster()
+            throw new RuntimeException("Could not connect to kubernetes cluster: no cluster bind address")
         }
 
         if (localAddress == potentialClusterBindAddress) {

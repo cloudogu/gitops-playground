@@ -37,7 +37,7 @@ class TestConfig {
                         helmKubeval: null,
                         yamllint   : null
                 ],
-                modules    : [
+                features    : [
                         fluxv1 : false,
                         fluxv2 : false,
                         argocd : [
@@ -45,11 +45,8 @@ class TestConfig {
                                 configOnly: false,
                                 url       : null
                         ],
-                        metrics: false
-                ],
-                mailhog: [
-                        username: null,
-                        password: null
+                        metrics: false,
+                        vault: false
                 ]
         ]
     }

@@ -373,7 +373,6 @@ function initArgo() {
   pushPetClinicRepo 'applications/petclinic/argocd/plain-k8s' 'argocd/petclinic-plain'
   pushPetClinicRepo 'applications/petclinic/argocd/helm' 'argocd/petclinic-helm'
   initRepo 'argocd/gitops'
-#  initRepoWithSource 'argocd/control-app' 'argocd/control-app' metricsConfiguration
 
   # Set NodePort service, to avoid "Pending" services and "Processing" state in argo on local cluster
   initRepoWithSource 'applications/nginx/argocd/helm-jenkins' 'argocd/nginx-helm-jenkins' \

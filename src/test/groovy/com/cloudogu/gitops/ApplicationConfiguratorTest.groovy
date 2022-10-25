@@ -1,8 +1,8 @@
-package com.cloudogu.gitops.core
+package com.cloudogu.gitops
 
 import ch.qos.logback.classic.spi.ILoggingEvent
-import com.cloudogu.gitops.core.utils.FileSystemUtils
-import com.cloudogu.gitops.core.utils.NetworkingUtils
+import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.utils.NetworkingUtils
 import com.cloudogu.gitops.utils.TestConfig
 import com.cloudogu.gitops.utils.TestLogger
 import org.junit.jupiter.api.BeforeEach
