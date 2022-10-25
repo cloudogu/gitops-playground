@@ -7,7 +7,7 @@ import org.springframework.security.crypto.bcrypt.BCrypt
 @Slf4j
 class Mailhog {
 
-    static final String MAILHOG_YAML_PATH = "applications/application-mailhog-helm.yaml"
+    static final String MAILHOG_YAML_PATH = "applications/system/application-mailhog-helm.yaml"
 
     private boolean remoteCluster
     private String username

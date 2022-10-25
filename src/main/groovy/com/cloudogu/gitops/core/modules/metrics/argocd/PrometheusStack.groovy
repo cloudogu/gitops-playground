@@ -45,7 +45,7 @@ class PrometheusStack {
     private void deploy() {
         log.info("Deploying prometheus stack")
 
-        k8sClient.applyYaml(fileSystemUtils.rootDir + "/metrics/grafana/dashboards/")
+        k8sClient.applyYaml(fileSystemUtils.rootDir + "/system/metrics/grafana/dashboards/")
 
         if (username != null && username != "admin") {
             log.debug("Setting grafana username")
