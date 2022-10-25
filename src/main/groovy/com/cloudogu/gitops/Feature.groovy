@@ -18,6 +18,10 @@ abstract class Feature {
     }
     
     abstract boolean isEnabled()
-    abstract void enable()
+    
+    /*
+     *  Hooks for enabling or disabling a feature. Both optional, because not always needed.
+     */
+    void enable() {}
     void disable() {}
 }

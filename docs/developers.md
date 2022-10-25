@@ -67,6 +67,8 @@ Jenkins.instance.pluginManager.plugins.collect().sort().each {
 
 * Run only groovy scripts - allows for simple debugging
   * Run from IDE, works e.g. with IntelliJ IDEA 
+    Note: If you encounter `error=2, No such file or directory`,
+    it might be necessary to explicitly set your `PATH` in Run Configuration's Environment Section.
   * From shell:
     * [Provide dependencies](#providing-dependencies)
     * Run

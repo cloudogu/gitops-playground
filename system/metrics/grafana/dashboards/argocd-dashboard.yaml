@@ -1,4 +1,10 @@
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kube-prometheus-stack-argocd-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
 data:
   argocd-dashboard.json: |-
     {
@@ -3845,9 +3851,3 @@ data:
         "uid": "LCAgc9rWz",
         "version": 1
     }
-kind: ConfigMap
-metadata:
-  name: kube-prometheus-stack-argocd-dashboard
-  namespace: monitoring
-  labels: 
-    grafana_dashboard: "1"

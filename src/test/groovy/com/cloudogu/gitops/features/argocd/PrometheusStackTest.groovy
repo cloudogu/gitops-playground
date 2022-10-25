@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.argocd
+package com.cloudogu.gitops.features.argocd
 
 
 import com.cloudogu.gitops.utils.FileSystemUtils

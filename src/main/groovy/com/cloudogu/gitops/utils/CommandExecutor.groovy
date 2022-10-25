@@ -33,6 +33,12 @@ class CommandExecutor {
         // err must be defined first because calling proc.text closes the output stream
         String err = proc.err.text
         String out = proc.text
+        if (proc.exitValue() > 0) {
+            log.error("Executing command failed: ${command}")
+            log.error("Stderr: ${err.toString().trim()}")
+            log.error("StdOut: ${out.toString().trim()}")
+            System.exit(1)
+        }
         if (!out.toString().empty) {
             log.debug(command + "\n Success: -> " + out.toString().trim() + "\n")
         }

@@ -8,6 +8,8 @@ spec:
   destinations:
     - namespace: monitoring
       server: https://kubernetes.default.svc
+    - namespace: secrets
+      server: https://kubernetes.default.svc
     - namespace: argocd
       server: https://kubernetes.default.svc
   clusterResourceWhitelist:
