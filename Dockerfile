@@ -86,7 +86,7 @@ RUN mkdir ${RESULT_LIB} && \
     tar -xvzf musl.tar.gz -C ${RESULT_LIB} --strip-components 1 && \
     cp /usr/lib/gcc/x86_64-redhat-linux/8/libstdc++.a ${RESULT_LIB}/lib/
 ENV CC=/musl/bin/gcc
-RUN curl -L -o zlib.tar.gz https://zlib.net/zlib-1.2.12.tar.gz && \
+RUN curl -L -o zlib.tar.gz https://zlib.net/zlib-1.2.13.tar.gz && \
     mkdir zlib && tar -xvzf zlib.tar.gz -C zlib --strip-components 1 && \
     cd zlib && ./configure --static --prefix=/musl && \
     make && make install && \
