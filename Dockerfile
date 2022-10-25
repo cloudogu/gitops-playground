@@ -17,11 +17,18 @@ WORKDIR /app
 COPY .mvn/ /app/.mvn/
 COPY mvnw /app/
 COPY pom.xml /app/
-RUN ./mvnw dependency:go-offline
+RUN ./mvnw dependency:resolve-plugins dependency:go-offline -B 
 
-FROM maven-cache as maven-build
-COPY src /app/src/
-COPY compiler.groovy .
+FROM graal as maven-build
+ENV MAVEN_OPTS='-Dmaven.repo.local=/mvn'
+COPY --from=maven-cache /mvn/ /mvn/
+COPY --from=maven-cache /app/ /app
+# Speed up build by not compiling tests
+COPY src/main /app/src/main
+COPY compiler.groovy /app
+
+WORKDIR /app
+# Build native image without micronaut
 RUN ./mvnw package -DskipTests
 # Use simple name for largest jar file -> Easier reuse in later stages
 RUN mv $(ls -S target/*.jar | head -n 1) /app/gitops-playground.jar
