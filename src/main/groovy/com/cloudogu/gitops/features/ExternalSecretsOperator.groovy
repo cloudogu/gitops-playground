@@ -32,7 +32,5 @@ class ExternalSecretsOperator extends Feature {
         helmClient.upgrade('external-secrets', 'external-secrets/external-secrets', '0.6.0', 
                 [namespace: 'secrets', 
                  values: "${fileSystemUtils.rootDir}/system/secrets/external-secrets/values.yaml"])
-        // TODO when do we apply those? With an example project or cluster wide?
-        //k8sClient.applyYaml(fileSystemUtils.rootDir + "/system/secrets/external-secrets/secret-store.yaml")
     }
 }

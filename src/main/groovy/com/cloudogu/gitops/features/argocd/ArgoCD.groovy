@@ -37,6 +37,9 @@ class ArgoCD extends Feature {
         for (subFeature in subFeatures) {
             subFeature.install()
         }
+        if (!config.features["vault"]) {
+            new File(controlAppTmpDir.absolutePath + '/' +  "applications/secrets").delete()
+        }
         git.commitAndPush(scmmRepoTarget, controlAppTmpDir.absolutePath)
     }
 

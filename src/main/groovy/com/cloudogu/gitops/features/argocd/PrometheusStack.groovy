@@ -57,7 +57,6 @@ class PrometheusStack extends Feature {
 
     @Override
     void disable() {
-        log.info("Disabling prometheus stack")
         String prometheusStack = tmpGitRepoDir + '/' + STACK_YAML_PATH
         new File(prometheusStack).delete()
     }
