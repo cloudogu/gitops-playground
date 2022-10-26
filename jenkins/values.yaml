@@ -47,7 +47,8 @@ controller:
     - name: create-agent-working-dir
       securityContext:
         runAsUser: 1000
-      image: bash:5.1.16-alpine3.15
+      # Note: When upgrading, use same image as in gid-grepper for performance reasons
+      image: bash:5.2.2-alpine3.15
       imagePullPolicy: "{{ .Values.controller.imagePullPolicy }}"
       command: [ "/usr/local/bin/bash", "-c" ]
       args:

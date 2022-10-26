@@ -11,9 +11,9 @@ fi
 # Check for "Failed to load" in the Jenkins log and add or upgrade the plugins mentioned there appropriately.
 #
 # In addition:
-# - Upgrade bash image in values.yaml.
+# - Upgrade bash image in values.yaml and gid-grepper
 # - Also upgrade plugins. See docs/developers.md
-JENKINS_HELM_CHART_VERSION=3.12.2
+JENKINS_HELM_CHART_VERSION=4.2.9
 
 SET_USERNAME="admin"
 SET_PASSWORD="admin"

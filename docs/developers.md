@@ -63,6 +63,44 @@ Jenkins.instance.pluginManager.plugins.collect().sort().each {
   * Make sure you have updated `plugins.txt` with working versions of the plugins
   * commit and push changes to your feature-branch and submit a pr
 
+## Local development
+
+* Run only groovy scripts - allows for simple debugging
+  * Run from IDE, works e.g. with IntelliJ IDEA 
+  * From shell:
+    * [Provide dependencies](#providing-dependencies)
+    * Run
+      ```shell
+       groovy  -classpath src/main/groovy src/main/groovy/com/cloudogu/gitops/cli/GitopsPlaygroundCliMain.groovy
+       ```
+* Running the whole `apply.sh` (which in turn calls groovy)
+  * Build and run dev Container:
+    ```shell
+    docker buildx build -t gitops-playground:dev --build-arg ENV=dev  --progress=plain .
+    docker run --rm -it -u $(id -u) -v ~/.k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
+      --net=host gitops-playground:dev <params>
+     ```
+  * Locally:
+    * [Provide dependencies](#providing-dependencies)
+    * Just run `scripts/apply.sh <params>`
+
+### Providing dependencies
+
+It seems like `groovy --classpath gitops-playground-cli-*.jar` [does not load jars]( https://stackoverflow.com/questions/10585808/groovy-script-classpath),
+Workaround:
+
+* Run
+  ```shell
+  mvn package -DskipTests
+  ```
+* Copy `target/gitops-playground-cli-*.jar` to `~/.groovy/lib`
+* Make sure to use the exact same groovy version as in pom.xml
+  To avoid
+  ```
+  Caused by: groovy.lang.GroovyRuntimeException: Conflicting module versions. Module [groovy-datetime is loaded in version 3.0.8 and you are trying to load version 3.0.13
+  ```
+  Solution might be to remove groovy from `gitops-playground-cli-*.jar`
+
 
 ## Development image
 
@@ -82,5 +120,5 @@ docker buildx build -t gitops-playground:dev --build-arg ENV=dev  --progress=pla
 Hint: uses buildkit for much faster builds, skipping the static image stuff not needed for dev.
 
 TODO: Copy a script `apply-ng` into the dev image that calls `groovy GitopsPlaygroundCliMain?! args`.
-Then, we can use the dev image to try out if the playground image works without having to wait for the static image to 
+Then, we can use the dev image to try out if the playground image works without having to wait for the static image to
 be built.

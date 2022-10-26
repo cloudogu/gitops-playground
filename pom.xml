@@ -10,18 +10,18 @@
   <parent>
     <groupId>io.micronaut</groupId>
     <artifactId>micronaut-parent</artifactId>
-    <version>3.4.0</version>
+    <!-- When updating, also update groovy and graal version in dockerfile -->
+    <!-- See e.g. here for versions: https://search.maven.org/artifact/io.micronaut/micronaut-bom/3.7.2/pom -->
+    <version>3.7.2</version>
   </parent>
 
   <properties>
     <packaging>jar</packaging>
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
-    <!-- This version seems to depend on the one used by micronaut-inject-groovy! -->
-    <groovyVersion>3.0.9</groovyVersion>
+    <mockitoVersion>4.8.0</mockitoVersion>
     <exec.mainClass>com.cloudogu.gitops.cli.GitopsPlaygroundCliMain</exec.mainClass>
   </properties>
-
 
   <dependencies>
     <dependency>
@@ -33,7 +33,7 @@
     <dependency>
       <groupId>org.codehaus.groovy</groupId>
       <artifactId>groovy-all</artifactId>
-      <version>${groovyVersion}</version>
+      <version>${groovy.version}</version>
       <type>pom</type>
       <exclusions>
         <exclusion>
@@ -49,6 +49,12 @@
           <artifactId>groovy-test</artifactId>
         </exclusion>
       </exclusions>
+    </dependency>
+    
+    <dependency>
+      <groupId>org.codehaus.groovy</groupId>
+      <artifactId>groovy-yaml</artifactId>
+      <version>${groovy.version}</version>
     </dependency>
     
     <dependency>
@@ -90,25 +96,30 @@
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
+      <scope>compile</scope>
     </dependency>
     
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
       <version>2.11.0</version>
+      <scope>compile</scope>
     </dependency>
     
     <dependency>
       <groupId>com.squareup.okhttp3</groupId>
       <artifactId>okhttp</artifactId>
       <version>4.9.3</version>
+      <scope>compile</scope>
     </dependency>
     
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-crypto</artifactId>
-      <version>5.6.2</version>
+      <version>5.7.3</version>
+      <scope>compile</scope>
     </dependency>
+    
     <dependency>
       <!-- Avoids java.lang.NoClassDefFoundError: org/apache/commons/logging/Log-->
       <groupId>org.springframework</groupId>
@@ -139,38 +150,24 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <version>4.3.1</version>
+      <version>${mockitoVersion}</version>
       <scope>test</scope>
     </dependency>
     
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-junit-jupiter</artifactId>
-      <version>4.3.1</version>
+      <version>${mockitoVersion}</version>
       <scope>test</scope>
     </dependency>
     
-    <dependency>
-      <groupId>org.codehaus.groovy</groupId>
-      <artifactId>groovy-yaml</artifactId>
-      <version>3.0.10</version>
-      <scope>test</scope>
-    </dependency>
-
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
-      <version>3.22.0</version>
+      <version>3.23.1</version>
       <scope>test</scope>
     </dependency>
     
-    <dependency>
-      <groupId>com.fasterxml.jackson.dataformat</groupId>
-      <artifactId>jackson-dataformat-yaml</artifactId>
-      <version>2.10.3</version>
-      <scope>test</scope>
-    </dependency>
-
     <dependency>
       <groupId>com.github.stefanbirkner</groupId>
       <artifactId>system-lambda</artifactId>
@@ -182,7 +179,7 @@
     <dependency>
       <groupId>org.graalvm.nativeimage</groupId>
       <artifactId>svm</artifactId>
-      <version>22.0.0.2</version>
+      <!-- Version set by micronaut -->
       <scope>provided</scope>
     </dependency>
     <dependency>

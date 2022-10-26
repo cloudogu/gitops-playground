@@ -7,7 +7,8 @@ spec:
     - args:
         - sleep
         - "10000"
-      image: bash:5.1.4
+      # Note: When upgrading, use same image as in initContainer create-agent-working-dir (values.yaml) for performance reasons
+      image: bash:5.2.2-alpine3.15
       name: tmp-docker-gid-grepper
       volumeMounts:
         - name: group
