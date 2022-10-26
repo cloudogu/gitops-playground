@@ -40,6 +40,9 @@ class ArgoCD extends Feature {
         if (!config.features["vault"]) {
             new File(controlAppTmpDir.absolutePath + '/' +  "applications/secrets").delete()
         }
+        if (!config.features["metrics"]) {
+            new File(controlAppTmpDir.absolutePath + '/' +  "applications/monitoring").delete()
+        }
         git.commitAndPush(scmmRepoTarget, controlAppTmpDir.absolutePath)
     }
 
