@@ -52,7 +52,7 @@ class GitClient {
 
     void commitAndPush(String scmmRepoTarget, String absoluteLocalRepoTmpDir) {
         log.debug("Pushing configured $scmmRepoTarget repo")
-        git("checkout -b main --quiet")
+        checkoutOrCreateBranch('main')
         git("add .")
         String[] commitCommand = ["commit", "-m", "\"Initial commit\"", "--quiet"]
         git(commitCommand)
@@ -67,12 +67,12 @@ class GitClient {
         gitRepoCommand = "git --git-dir=$absoluteLocalRepoTmpDir/.git/ --work-tree=$absoluteLocalRepoTmpDir"
     }
 
-    private void git(String command) {
+    String git(String command) {
         String gitCommand = gitRepoCommand + " " + command
         commandExecutor.executeAsList(gitCommand)
     }
 
-    private void git(String[] command) {
+    String git(String[] command) {
         String[] gitCommand = gitRepoCommand.split(" ") + command
         commandExecutor.execute(gitCommand)
     }
@@ -97,5 +97,17 @@ class GitClient {
         try (Response response = client.newCall(request).execute()) {
             log.debug("Setting default branch to $defaultBranch for repository $scmmRepoTarget yields -> " + response.code() + ": " + response.message())
         }
+    }
+
+    void checkoutOrCreateBranch(String branch) {
+        if (branchExists(branch)) {
+            git("checkout ${branch}")
+        } else {
+            git("checkout -b ${branch}")
+        }
+    }
+
+    private boolean branchExists(String branch) {
+        git('branch').split(" ").contains(branch)
     }
 }
