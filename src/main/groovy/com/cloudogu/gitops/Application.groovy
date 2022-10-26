@@ -1,6 +1,8 @@
 package com.cloudogu.gitops
 
 import com.cloudogu.gitops.features.ExternalSecretsOperator
+import com.cloudogu.gitops.features.Mailhog
+import com.cloudogu.gitops.features.PrometheusStack
 import com.cloudogu.gitops.features.argocd.ArgoCD
 import groovy.util.logging.Slf4j
 
@@ -28,6 +30,8 @@ class Application {
     private List<Feature> registerFeatures() {
         List<Feature> features = []
         features.add(new ArgoCD(config))
+        features.add(new Mailhog(config))
+        features.add(new PrometheusStack(config))
         features.add(new ExternalSecretsOperator(config))
         return features
     }

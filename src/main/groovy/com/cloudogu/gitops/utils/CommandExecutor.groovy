@@ -29,7 +29,7 @@ class CommandExecutor {
     }
 
     private String getOutput(Process proc, String command) {
-        proc.waitForOrKill(10000)
+        proc.waitForOrKill(60000)
         // err must be defined first because calling proc.text closes the output stream
         String err = proc.err.text
         String out = proc.text

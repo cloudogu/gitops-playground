@@ -1,47 +1,60 @@
-package com.cloudogu.gitops.features.argocd
+package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.utils.HelmClient
 import groovy.util.logging.Slf4j
 import org.springframework.security.crypto.bcrypt.BCrypt
 
 @Slf4j
 class Mailhog extends Feature {
 
-    static final String MAILHOG_YAML_PATH = "applications/system/application-mailhog-helm.yaml"
+    static final String HELM_VALUES_PATH = "system/mailhog-helm-values.yaml"
     
     private Map config
     private boolean remoteCluster
     private String username
     private String password
-    private String tmpGitRepoDir
     private FileSystemUtils fileSystemUtils
+    HelmClient helmClient
 
-    Mailhog(Map config, String tmpGitRepoDir, FileSystemUtils fileSystemUtils = new FileSystemUtils()) {
+    Mailhog(Map config, FileSystemUtils fileSystemUtils = new FileSystemUtils(),
+            HelmClient helmClient = new HelmClient()) {
         this.config = config
         this.remoteCluster = config.application["remote"]
         this.username = config.application["username"]
         this.password = config.application["password"]
-        this.tmpGitRepoDir = tmpGitRepoDir
         this.fileSystemUtils = fileSystemUtils
+        this.helmClient = helmClient
     }
 
     @Override
     boolean isEnabled() {
-        config.features["argocd"]["active"]
+        true
     }
 
     @Override
     void enable() {
+        def tmpHelmValues = fileSystemUtils.copyToTempDir(HELM_VALUES_PATH)
+        def tmpHelmValuesFolder = tmpHelmValues.parent.toString()
+        def tmpHelmValuesFile = tmpHelmValues.fileName.toString()
+
         if (!remoteCluster) {
             log.debug("Setting mailhog service.type to NodePort since it is not running in a remote cluster")
-            fileSystemUtils.replaceFileContent(tmpGitRepoDir, MAILHOG_YAML_PATH, "LoadBalancer", "NodePort")
+            fileSystemUtils.replaceFileContent(tmpHelmValuesFolder, tmpHelmValuesFile, 
+                    "LoadBalancer", "NodePort")
         }
 
         log.debug("Setting new mailhog credentials")
         String bcryptMailhogPassword = BCrypt.hashpw(password, BCrypt.gensalt(4))
         String from = "fileContents: \"admin:\$2a\$04\$bM4G0jXB7m7mSv4UT8IuIe3.Bj6i6e2A13ryA0ln.hpyX7NeGQyG.\""
         String to = "fileContents: \"$username:$bcryptMailhogPassword\""
-        fileSystemUtils.replaceFileContent(tmpGitRepoDir, MAILHOG_YAML_PATH, from, to)
+
+        fileSystemUtils.replaceFileContent(tmpHelmValuesFolder, tmpHelmValuesFile, from, to)
+
+        helmClient.addRepo('codecentric', 'https://codecentric.github.io/helm-charts')
+        helmClient.upgrade('mailhog', 'codecentric/mailhog', '5.0.1',
+                [namespace: 'monitoring',
+                 values: "${tmpHelmValues.toString()}"])
     }
 }

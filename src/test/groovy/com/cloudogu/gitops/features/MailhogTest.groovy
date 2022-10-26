@@ -1,40 +1,26 @@
-package com.cloudogu.gitops.features.argocd
-
+package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.utils.HelmClient
 import groovy.yaml.YamlSlurper
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.io.TempDir
+import org.mockito.Mockito
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 
-import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.StandardCopyOption
 
 import static org.assertj.core.api.Assertions.assertThat 
 
 class MailhogTest {
-    public @TempDir
-    Path tempDir
-    File temporaryYamlFile
 
     Map config = [
             application: [
                     username: 'abc',
                     password: '123',
                     remote  : false
-            ],
-            features    : [argocd: [ active : true]]
-    ]
-
-    @BeforeEach
-    void setup() {
-        File originalStackYamlFile = new File("${System.properties['user.dir']}/argocd/control-app/${Mailhog.MAILHOG_YAML_PATH}")
-        temporaryYamlFile = new File("${tempDir.toString()}/${Mailhog.MAILHOG_YAML_PATH}")
-        temporaryYamlFile.mkdirs()
-        Files.copy(originalStackYamlFile.toPath(), temporaryYamlFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
-    }
+            ]]
+    HelmClient helmClient = Mockito.mock(HelmClient.class)
+    Path temporaryYamlFile
 
     @Test
     void 'service type LoadBalancer when run remotely'() {
@@ -69,11 +55,18 @@ class MailhogTest {
     
     private Mailhog createMailhog() {
         // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
-        new Mailhog(config, tempDir.toString(), new FileSystemUtils())
+        
+        new Mailhog(config, new FileSystemUtils() {
+            @Override
+            Path copyToTempDir(String filePath) {
+                temporaryYamlFile = super.copyToTempDir(filePath)
+                return temporaryYamlFile
+            } 
+        }, helmClient)
     }
 
     private parseActualYaml() {
         def ys = new YamlSlurper()
-        return ys.parseText(ys.parse(temporaryYamlFile)['spec']['source']['helm']['values'].toString())
+        return ys.parse(temporaryYamlFile)
     }
 }

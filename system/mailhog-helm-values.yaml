@@ -1,0 +1,10 @@
+service:
+  type: LoadBalancer
+  port:
+    http: 80
+  nodePort:
+    http: "9094"
+auth:
+  enabled: true
+  fileName: auth.txt
+  fileContents: "admin:$2a$04$bM4G0jXB7m7mSv4UT8IuIe3.Bj6i6e2A13ryA0ln.hpyX7NeGQyG."

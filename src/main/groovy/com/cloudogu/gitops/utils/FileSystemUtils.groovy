@@ -1,8 +1,12 @@
+//file:noinspection GrMethodMayBeStatic - it's not static to be able to hook in for testing
 package com.cloudogu.gitops.utils
 
 import groovy.io.FileType
 import groovy.util.logging.Slf4j
 import org.apache.commons.io.FileUtils
+
+import java.nio.file.Files
+import java.nio.file.Path
 
 @Slf4j
 class FileSystemUtils {
@@ -112,7 +116,14 @@ class FileSystemUtils {
     }
 
     void createDirectory(String directory) {
-        log.debug("Creating folder: " + directory)
+        log.trace("Creating folder: " + directory)
         new File(directory).mkdirs()
+    }
+
+    Path copyToTempDir(String filePath) {
+        def sourcePath = Path.of(filePath)
+        def destDir = File.createTempDir("gitops-playground-").toPath()
+        def destPath = destDir.resolve(sourcePath.fileName)
+        return Files.copy(sourcePath, destPath)
     }
 }
