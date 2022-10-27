@@ -18,8 +18,12 @@ class CommandExecutor {
     }
 
     String execute(String command) {
-        Process proc = command.execute()
+        Process proc = doExecute(command)
         return getOutput(proc, command)
+    }
+
+    protected Process doExecute(String command) {
+        command.execute()
     }
 
     String execute(String command1, String command2) {
@@ -28,7 +32,7 @@ class CommandExecutor {
         return getOutput(proc, command)
     }
 
-    private String getOutput(Process proc, String command) {
+    protected String getOutput(Process proc, String command) {
         proc.waitForOrKill(60000)
         // err must be defined first because calling proc.text closes the output stream
         String err = proc.err.text

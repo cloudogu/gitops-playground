@@ -1,15 +1,15 @@
 package com.cloudogu.gitops.features
 
+import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.HelmClient
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 
 import java.nio.file.Path
 
-import static org.assertj.core.api.Assertions.assertThat 
+import static org.assertj.core.api.Assertions.assertThat
 
 class MailhogTest {
 
@@ -18,9 +18,29 @@ class MailhogTest {
                     username: 'abc',
                     password: '123',
                     remote  : false
-            ]]
-    HelmClient helmClient = Mockito.mock(HelmClient.class)
+
+            ],
+            features    : [
+                    mail: [
+                            active: true,
+                            helm  : [
+                                    chart  : 'mailhog',
+                                    repoURL: 'https://codecentric.github.io/helm-charts',
+                                    version: '5.0.1'
+                            ]
+                    ]
+            ],
+    ]
+    CommandExecutorForTest commandExecutor = new CommandExecutorForTest()
+    HelmClient helmClient = new HelmClient(commandExecutor)
     Path temporaryYamlFile
+
+    @Test
+    void "is disabled via active flag"() {
+        config['features']['mail']['active'] = false
+        createMailhog().install()
+        assertThat(temporaryYamlFile).isNull()
+    }
 
     @Test
     void 'service type LoadBalancer when run remotely'() {
@@ -45,23 +65,34 @@ class MailhogTest {
         config['application']['username'] = expectedUsername
         config['application']['password'] = expectedPassword
         createMailhog().install()
-        
+
         String fileContents = parseActualYaml()['auth']['fileContents']
         String actualPasswordBcrypted = ((fileContents =~ /^[^:]*:(.*)$/)[0] as List)[1]
         new BCryptPasswordEncoder().matches(expectedPassword, actualPasswordBcrypted)
         assertThat(new BCryptPasswordEncoder().matches(expectedPassword, actualPasswordBcrypted)).isTrue()
                 .withFailMessage("Expected password does not match actual hash")
     }
-    
+
+    @Test
+    void 'helm release is installed'() {
+        createMailhog().install()
+
+        assertThat(commandExecutor.actualCommands[0].trim()).isEqualTo(
+                'helm repo add Mailhog https://codecentric.github.io/helm-charts')
+        assertThat(commandExecutor.actualCommands[1].trim()).isEqualTo(
+                'helm upgrade -i mailhog Mailhog/mailhog --version=5.0.1' +
+                        " --values ${temporaryYamlFile} --namespace monitoring")
+    }
+
     private Mailhog createMailhog() {
         // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
-        
+
         new Mailhog(config, new FileSystemUtils() {
             @Override
             Path copyToTempDir(String filePath) {
                 temporaryYamlFile = super.copyToTempDir(filePath)
                 return temporaryYamlFile
-            } 
+            }
         }, helmClient)
     }
 

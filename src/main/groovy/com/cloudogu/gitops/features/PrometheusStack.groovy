@@ -32,7 +32,7 @@ class PrometheusStack extends Feature {
 
     @Override
     boolean isEnabled() {
-        return config.features["metrics"]
+        return config.features['monitoring']['active']
     }
 
     @Override
@@ -57,8 +57,10 @@ class PrometheusStack extends Feature {
                     "adminPassword: admin", "adminPassword: $password")
         }
 
-        helmClient.addRepo('prometheus-community', 'https://prometheus-community.github.io/helm-charts')
-        helmClient.upgrade('kube-prometheus-stack', 'prometheus-community/kube-prometheus-stack', '19.2.2',
+        def helmConfig = config['features']['monitoring']['helm']
+        helmClient.addRepo(getClass().simpleName, helmConfig['repoURL'] as String)
+        helmClient.upgrade('kube-prometheus-stack', "${getClass().simpleName}/${helmConfig['chart']}",
+                helmConfig['version'] as String,
                 [namespace: 'monitoring',
                  values: "${tmpHelmValues.toString()}"])
     }

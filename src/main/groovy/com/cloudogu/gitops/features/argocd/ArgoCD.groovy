@@ -34,10 +34,10 @@ class ArgoCD extends Feature {
 
         new ArgoCDNotifications(config, controlAppTmpDir.absolutePath).install()
 
-        if (!config.features["vault"]) {
+        if (!config.features['secrets']['active']) {
             new File(controlAppTmpDir.absolutePath + '/' +  "applications/secrets").delete()
         }
-        if (!config.features["metrics"]) {
+        if (!config.features['monitoring']['active']) {
             new File(controlAppTmpDir.absolutePath + '/' +  "applications/monitoring").delete()
         }
 

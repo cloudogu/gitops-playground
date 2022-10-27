@@ -838,7 +838,7 @@ function printParameters() {
   echo "    | --argocd-config-only  >> Skips installing argo-cd. Applies ConfigMap and Application manifests to bootstrap existing argo-cd"
   echo
   echo "Configure additional modules"
-  echo "    | --metrics       >> Installs the Kube-Prometheus-Stack for ArgoCD. This includes Prometheus, the Prometheus operator, Grafana and some extra resources"
+  echo "    | --monitoring, --metrics        >> Installs the Kube-Prometheus-Stack for ArgoCD. This includes Prometheus, the Prometheus operator, Grafana and some extra resources"
   echo
   echo " -d | --debug         >> Debug output"
   echo " -x | --trace         >> Debug + Show each command executed (set -x)"
@@ -848,7 +848,7 @@ function printParameters() {
 readParameters() {
   COMMANDS=$(getopt \
     -o hdxyc \
-    --long help,fluxv1,fluxv2,argocd,argocd-url:,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,trace,insecure,yes,skip-helm-update,argocd-config-only,metrics,vault: \
+    --long help,fluxv1,fluxv2,argocd,argocd-url:,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,trace,insecure,yes,skip-helm-update,argocd-config-only,metrics,monitoring,vault: \
     -- "$@")
   
   if [ $? != 0 ]; then
@@ -922,7 +922,7 @@ readParameters() {
       -y | --yes           ) ASSUME_YES=true; shift ;;
       --skip-helm-update   ) SKIP_HELM_UPDATE=true; shift ;;
       --argocd-config-only ) ARGOCD_CONFIG_ONLY=true; shift ;;
-      --metrics            ) DEPLOY_METRICS=true; shift;;
+      --metrics | --monitoring ) DEPLOY_METRICS=true; shift;;
       --vault              ) shift 2;; # Ignore, used in groovy only
       --                   ) shift; break ;;
     *) break ;;

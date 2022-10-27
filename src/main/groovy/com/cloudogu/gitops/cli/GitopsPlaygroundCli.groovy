@@ -62,8 +62,8 @@ class GitopsPlaygroundCli implements Runnable {
     private boolean argocdConfigOnly
 
     // args group metrics
-    @Option(names = ['--metrics'], description = 'Installs the Kube-Prometheus-Stack for ArgoCD. This includes Prometheus, the Prometheus operator, Grafana and some extra resources')
-    private boolean metrics
+    @Option(names = ['--metrics', '--monitoring'], description = 'Installs the Kube-Prometheus-Stack. This includes Prometheus, the Prometheus operator, Grafana and some extra resources')
+    private boolean monitoring
     
     // args group metrics
     @Option(names = ['--vault'], description = 'Installs Hashicorp vault and the external secrets operator. Possible values: ${COMPLETION-CANDIDATES}')
@@ -96,14 +96,17 @@ class GitopsPlaygroundCli implements Runnable {
 
     @Override
     void run() {
-        ApplicationConfigurator applicationConfigurator = new ApplicationConfigurator(parseConfig())
-        Map config = applicationConfigurator.populateConfig()
-
+        ApplicationConfigurator applicationConfigurator = new ApplicationConfigurator()
+        Map config = applicationConfigurator
+                // Here we could implement loading from a config file, giving CLI params precedence
+                //.setConfig(configFile.toFile().getText())
+                .setConfig(parseOptionsIntoConfig())
+                
         Application app = new Application(config)
         app.start()
     }
-
-    private Map parseConfig() {
+    
+    private Map parseOptionsIntoConfig() {
         return [
                 registry   : [
                         url         : registryUrl,
@@ -147,8 +150,14 @@ class GitopsPlaygroundCli implements Runnable {
                                 configOnly: argocdConfigOnly,
                                 url       : argocdUrl
                         ],
-                        metrics: metrics,
-                        vault: vault
+                        monitoring : [
+                                active    : monitoring
+                        ],
+                        secrets : [
+                                vault : [
+                                        mode : vault
+                                ]
+                        ],
                 ]
         ]
     }

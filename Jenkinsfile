@@ -88,7 +88,7 @@ node('docker') {
                                 docker.image(imageNames[0])
                                         .inside("-e KUBECONFIG=${env.WORKSPACE}/.kube/config " +
                                                 " --network=host --entrypoint=''" ) {
-                                            sh "/app/scripts/apply.sh --yes --trace --internal-registry-port=${registryPort} --argocd --metrics --vault=dev"
+                                            sh "/app/scripts/apply.sh --yes --trace --internal-registry-port=${registryPort} --argocd --monitoring --vault=dev"
                                         }
                             }
                         }

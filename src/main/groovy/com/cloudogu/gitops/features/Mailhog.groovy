@@ -30,7 +30,7 @@ class Mailhog extends Feature {
 
     @Override
     boolean isEnabled() {
-        true
+        return config.features['mail']['active']
     }
 
     @Override
@@ -52,8 +52,10 @@ class Mailhog extends Feature {
 
         fileSystemUtils.replaceFileContent(tmpHelmValuesFolder, tmpHelmValuesFile, from, to)
 
-        helmClient.addRepo('codecentric', 'https://codecentric.github.io/helm-charts')
-        helmClient.upgrade('mailhog', 'codecentric/mailhog', '5.0.1',
+        def helmConfig = config['features']['mail']['helm']
+        helmClient.addRepo(getClass().simpleName, helmConfig['repoURL'] as String)
+        helmClient.upgrade('mailhog', "${getClass().simpleName}/${helmConfig['chart']}",
+                helmConfig['version'] as String,
                 [namespace: 'monitoring',
                  values: "${tmpHelmValues.toString()}"])
     }

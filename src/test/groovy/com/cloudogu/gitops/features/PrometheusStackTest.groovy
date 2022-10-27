@@ -1,5 +1,7 @@
 package com.cloudogu.gitops.features
 
+
+import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.HelmClient
 import com.cloudogu.gitops.utils.K8sClient
@@ -9,26 +11,35 @@ import org.junit.jupiter.api.Test
 import java.nio.file.Path
 
 import static org.assertj.core.api.Assertions.assertThat
-import static org.mockito.Mockito.mock 
+import static org.mockito.Mockito.mock
 
 class PrometheusStackTest {
 
-    
     Map config = [
             application: [
                     username: 'abc',
                     password: '123',
                     remote  : false
             ],
-            features    : [metrics: true]
+            features   : [
+                    monitoring: [
+                            active: true,
+                            helm  : [
+                                    chart  : 'kube-prometheus-stack',
+                                    repoURL: 'https://prom',
+                                    version: '19.2.2'
+                            ]
+                    ]
+            ],
     ]
     K8sClient k8sClient = mock(K8sClient.class)
-    HelmClient helmClient = mock(HelmClient.class)
+    CommandExecutorForTest commandExecutor = new CommandExecutorForTest()
+    HelmClient helmClient = new HelmClient(commandExecutor)
     Path temporaryYamlFile = null
 
     @Test
-    void "is disabled via metrics flag"() {
-        config['features']['metrics'] = false
+    void "is disabled via active flag"() {
+        config['features']['monitoring']['active'] = false
         createStack().install()
         assertThat(temporaryYamlFile).isNull()
     }
@@ -40,13 +51,24 @@ class PrometheusStackTest {
 
         assertThat(parseActualStackYaml()['grafana']['service']['type']).isEqualTo('LoadBalancer')
     }
-    
+
     @Test
     void 'service type NodePort when not run remotely'() {
         config['application']['remote'] = false
         createStack().install()
 
         assertThat(parseActualStackYaml()['grafana']['service']['type']).isEqualTo('NodePort')
+    }
+
+    @Test
+    void 'helm release is installed'() {
+        createStack().install()
+     
+        assertThat(commandExecutor.actualCommands[0].trim()).isEqualTo(
+                'helm repo add PrometheusStack https://prom')
+        assertThat(commandExecutor.actualCommands[1].trim()).isEqualTo(
+                'helm upgrade -i kube-prometheus-stack PrometheusStack/kube-prometheus-stack --version=19.2.2' +
+                        " --values ${temporaryYamlFile} --namespace monitoring")
     }
 
     private PrometheusStack createStack() {
@@ -59,7 +81,7 @@ class PrometheusStackTest {
             }
         }, k8sClient, helmClient)
     }
-    
+
     private parseActualStackYaml() {
         def ys = new YamlSlurper()
         return ys.parse(temporaryYamlFile)

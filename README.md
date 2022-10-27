@@ -269,9 +269,9 @@ To override each image in all the applications you can use following parameters:
 If you are using a remote cluster you can set the `--argocd-url` parameter so that argocd-notification messages have a
 link to the corresponding application.
 
-##### Metrics
+##### Monitoring
 
-Set the parameter `--metrics` to enable deployment of monitoring and alerting tools like prometheus, grafana and mailhog.
+Set the parameter `--monitoring` to enable deployment of monitoring and alerting tools like prometheus, grafana and mailhog.
 
 See [Monitoring tools](#monitoring-tools) for details.
 
@@ -391,7 +391,7 @@ The user on the scm has to have privileges to:
 
 ### Monitoring tools
 
-Set the parameter `--metrics` so the [kube-prometheus-stack](https://github.com/prometheus-operator/kube-prometheus)
+Set the parameter `--monitoring` so the [kube-prometheus-stack](https://github.com/prometheus-operator/kube-prometheus)
 via its [helm-chart](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack)
 is being deployed including Argo CD dashboards. 
 
