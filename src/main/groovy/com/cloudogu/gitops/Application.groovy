@@ -3,6 +3,7 @@ package com.cloudogu.gitops
 import com.cloudogu.gitops.features.ExternalSecretsOperator
 import com.cloudogu.gitops.features.Mailhog
 import com.cloudogu.gitops.features.PrometheusStack
+import com.cloudogu.gitops.features.Vault
 import com.cloudogu.gitops.features.argocd.ArgoCD
 import groovy.util.logging.Slf4j
 
@@ -33,6 +34,7 @@ class Application {
         features.add(new Mailhog(config))
         features.add(new PrometheusStack(config))
         features.add(new ExternalSecretsOperator(config))
+        features.add(new Vault(config))
         return features
     }
 }

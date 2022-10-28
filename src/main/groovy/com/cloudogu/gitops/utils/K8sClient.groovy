@@ -27,4 +27,14 @@ class K8sClient {
     String applyYaml(String yamlLocation) {
         commandExecutor.execute("kubectl apply -f $yamlLocation").stdOut
     }
+
+    void createSecret(String type, String name, String namespace = '', Tuple2... literals) {
+        if (!literals) {
+            throw new RuntimeException("Missing literals")
+        }
+        String command =
+                "kubectl create secret ${type} ${name}${namespace ? " -n ${namespace}" : ''} " +
+                        literals.collect { "--from-literal=${it.v1}=${it.v2}"}.join(" ")
+        commandExecutor.execute(command).stdOut
+    }
 }

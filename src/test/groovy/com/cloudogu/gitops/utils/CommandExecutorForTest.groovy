@@ -7,7 +7,7 @@ class CommandExecutorForTest extends CommandExecutor {
     @Override
     protected Output getOutput(Process proc, String command, boolean failOnError) {
         actualCommands += command
-        return new Output()
+        return new Output('', '', 0)
     }
 
     @Override

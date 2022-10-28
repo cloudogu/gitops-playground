@@ -1,17 +1,14 @@
 package com.cloudogu.gitops.features
 
-
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.HelmClient
-import com.cloudogu.gitops.utils.K8sClient
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 
 import java.nio.file.Path
 
-import static org.assertj.core.api.Assertions.assertThat
-import static org.mockito.Mockito.mock
+import static org.assertj.core.api.Assertions.assertThat 
 
 class PrometheusStackTest {
 
@@ -32,7 +29,6 @@ class PrometheusStackTest {
                     ]
             ],
     ]
-    K8sClient k8sClient = mock(K8sClient.class)
     CommandExecutorForTest commandExecutor = new CommandExecutorForTest()
     HelmClient helmClient = new HelmClient(commandExecutor)
     Path temporaryYamlFile = null
@@ -79,7 +75,7 @@ class PrometheusStackTest {
                 temporaryYamlFile = super.copyToTempDir(filePath)
                 return temporaryYamlFile
             }
-        }, k8sClient, helmClient)
+        }, helmClient)
     }
 
     private parseActualStackYaml() {

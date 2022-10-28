@@ -2,7 +2,6 @@ package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.utils.HelmClient
-import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.FileSystemUtils
 import groovy.util.logging.Slf4j
 
@@ -16,17 +15,15 @@ class PrometheusStack extends Feature {
     private String username
     private String password
     private FileSystemUtils fileSystemUtils
-    private K8sClient k8sClient
     HelmClient helmClient
 
-    PrometheusStack(Map config, FileSystemUtils fileSystemUtils = new FileSystemUtils(),
-                    K8sClient k8sClient = new K8sClient(), HelmClient helmClient = new HelmClient()) {
+    PrometheusStack(Map config, FileSystemUtils fileSystemUtils = new FileSystemUtils(), 
+                    HelmClient helmClient = new HelmClient()) {
         this.config = config
         this.username = config.application["username"]
         this.password = config.application["password"]
         this.remoteCluster = config.application["remote"]
         this.fileSystemUtils = fileSystemUtils
-        this.k8sClient = k8sClient
         this.helmClient = helmClient
     }
 
@@ -37,6 +34,8 @@ class PrometheusStack extends Feature {
 
     @Override
     void enable() {
+        // Note that some specific configuration steps are implemented in ArgoCD
+        
         def tmpHelmValues = fileSystemUtils.copyToTempDir(HELM_VALUES_PATH)
         def tmpHelmValuesFolder = tmpHelmValues.parent.toString()
         def tmpHelmValuesFile = tmpHelmValues.fileName.toString()

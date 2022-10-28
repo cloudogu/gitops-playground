@@ -55,6 +55,7 @@ We recommend running this command as an unprivileged user, that is inside the [d
   - [Jenkins](#jenkins)
   - [SCM-Manager](#scm-manager)
   - [Monitoring tools](#monitoring-tools)
+  - [Secrets Management Tools](#secrets-management-tools)
   - [Argo CD UI](#argo-cd-ui)
   - [Demo applications](#demo-applications)
     - [Flux V1](#flux-v1)
@@ -275,6 +276,12 @@ Set the parameter `--monitoring` to enable deployment of monitoring and alerting
 
 See [Monitoring tools](#monitoring-tools) for details.
 
+##### Secrets Management
+
+Set the parameter `--vault=[dev|prod]` to enable deployment of secret management tools hashicorp vault and external 
+secrets operator.
+See [Secrets management tools](#secrets-managment-tools) for details.
+
 ### Remove playground
 
 For k3d, you can just `k3d cluster delete gitops-playground`. This will delete the whole cluster. If you just want to 
@@ -411,6 +418,16 @@ In addition, argocd-notifications is set up. Applications deployed with Argo CD 
 the sync status failed, for example.
 
 **Note that this only works with Argo CD so far**
+
+### Secrets Management Tools
+
+For testing you can set the parameter `--vault=dev` to deploy vault in development mode. This will lead to 
+* vault being initialized with fixed keys, tokens and secrets. But also to
+* vault being transient, i.e. all changes during runtime are not persisted. Meaning a restart will reset to default.
+
+When using `vault=prod` you'll have to initialize vault manually but on the other hand it will persist changes.
+If you want the applications to work, you'll have to create tokens and edit the `vault-token` secrets in 
+`argocd-production` and `argocd-staging`. These are picked up by the `vault` `SecretStore` in the individual namespaces. 
 
 ### Argo CD UI
 

@@ -3,6 +3,8 @@ package com.cloudogu.gitops.utils
 
 import groovy.io.FileType
 import groovy.util.logging.Slf4j
+import groovy.yaml.YamlBuilder
+import groovy.yaml.YamlSlurper
 import org.apache.commons.io.FileUtils
 
 import java.nio.file.Files
@@ -125,5 +127,20 @@ class FileSystemUtils {
         def destDir = File.createTempDir("gitops-playground-").toPath()
         def destPath = destDir.resolve(sourcePath.fileName)
         return Files.copy(sourcePath, destPath)
+    }
+    
+    Path createTempDir() {
+        File.createTempDir("gitops-playground-").toPath()
+    }
+
+    Map readYaml(Path path) {
+        def ys = new YamlSlurper()
+        return (ys.parse path) as Map
+    }
+
+    void writeYaml(Map yaml, File file) {
+        def builder = new YamlBuilder()
+        builder yaml
+        file.setText(builder.toString())
     }
 }

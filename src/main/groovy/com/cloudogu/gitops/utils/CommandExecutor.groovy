@@ -56,8 +56,6 @@ class CommandExecutor {
         String stdOut
         int exitCode
         
-        Output() {}
-        
         Output(String stdErr, String stdOut, int exitCode) {
             this.stdErr = stdErr
             this.stdOut = stdOut

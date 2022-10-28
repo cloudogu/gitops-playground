@@ -4,11 +4,11 @@ import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Logger
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
-import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
 import org.slf4j.LoggerFactory
 
 import static groovy.json.JsonOutput.prettyPrint
+import static com.cloudogu.gitops.utils.MapUtils.*
 import static groovy.json.JsonOutput.toJson
 
 @Slf4j
@@ -101,7 +101,12 @@ class ApplicationConfigurator {
                                     ]
                             ],
                             vault          : [
-                                    mode: ''
+                                    mode: '',
+                                    helm: [
+                                            chart  : 'vault',
+                                            repoURL: 'https://helm.releases.hashicorp.com',
+                                            version: '0.22.1'
+                                    ]
                             ]
                     ],
             ]
@@ -194,36 +199,5 @@ class ApplicationConfigurator {
         } else {
             logger.setLevel(Level.INFO)
         }
-    }
-
-    Map deepCopy(Map input) {
-        // Lazy mans deep map copy 😬
-        String json = toJson(input)
-        return (Map) new JsonSlurper().parseText(json)
-    }
-
-    Map deepMerge(Map src, Map target) {
-        src.forEach(
-                (key, value) -> { if (value != null) target.merge(key, value, (oldVal, newVal) -> {
-                        if (oldVal instanceof Map) {
-                            if (!newVal instanceof Map) {
-                                throw new RuntimeException("Can't merge config, different types, map vs other: Map ${oldVal}; Other ${newVal}")
-                            }
-                            return deepMerge(newVal as Map, oldVal)
-                        } else {
-                            return newVal
-                        }
-                    })
-                })
-        return target
-    }
-
-    static Map makeDeeplyImmutable(Map map) {
-        map.forEach((key, value) -> {
-            if (value instanceof Map) {
-                map[key] = Collections.unmodifiableMap(value)
-            }
-        })
-        return Collections.unmodifiableMap(map)
     }
 }
