@@ -29,7 +29,7 @@ class NetworkingUtils {
 
         String potentialClusterBindAddress = k8sClient.getInternalNodeIp()
         potentialClusterBindAddress = potentialClusterBindAddress.replaceAll("'", "")
-        String ipConfig = commandExecutor.execute("ip route get 1")
+        String ipConfig = commandExecutor.execute("ip route get 1").stdOut
         String substringWithSrcIp = ipConfig.substring(ipConfig.indexOf("src"))
         String localAddress = getIpFromString(substringWithSrcIp)
 

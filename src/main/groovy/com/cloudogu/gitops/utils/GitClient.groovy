@@ -51,30 +51,40 @@ class GitClient {
     }
 
     void commitAndPush(String scmmRepoTarget, String absoluteLocalRepoTmpDir) {
-        log.debug("Pushing configured $scmmRepoTarget repo")
+        log.debug("Checking out main, adding files for repo: ${scmmRepoTarget}")
         checkoutOrCreateBranch('main')
         git("add .")
-        String[] commitCommand = ["commit", "-m", "\"Initial commit\"", "--quiet"]
-        git(commitCommand)
-        git("push -u $scmmUrlWithCredentials/repo/$scmmRepoTarget HEAD:main --force")
-
+        // "git commit" fails if no changes
+        if (areChangesStagedForCommit()) {
+            log.debug("Pushing repo: ${scmmRepoTarget}")
+            // Passing this as a single string leads to failing command
+            git(["commit", "-m", "\"Initial commit\""] as String[])
+            git("push -u $scmmUrlWithCredentials/repo/$scmmRepoTarget HEAD:main --force")
+        }
         cleanup(absoluteLocalRepoTmpDir)
 
         setDefaultBranchForRepo(scmmRepoTarget)
     }
 
+    boolean areChangesStagedForCommit() {
+        // See https://stackoverflow.com/a/5139346/
+        boolean changesStageForCommit = !git('status --porcelain').isEmpty()
+        log.debug("Stages changed for commit: ${changesStageForCommit}")
+        return changesStageForCommit
+    }
+    
     private void gitRepoCommandInit(String absoluteLocalRepoTmpDir) {
         gitRepoCommand = "git --git-dir=$absoluteLocalRepoTmpDir/.git/ --work-tree=$absoluteLocalRepoTmpDir"
     }
 
     String git(String command) {
         String gitCommand = gitRepoCommand + " " + command
-        commandExecutor.executeAsList(gitCommand)
+        commandExecutor.execute(gitCommand).stdOut
     }
 
     String git(String[] command) {
         String[] gitCommand = gitRepoCommand.split(" ") + command
-        commandExecutor.execute(gitCommand)
+        commandExecutor.execute(gitCommand).stdOut
     }
 
     private void cleanup(String dir) {

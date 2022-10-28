@@ -161,6 +161,5 @@ class GitopsPlaygroundCli implements Runnable {
                 ]
         ]
     }
-
 }
 

@@ -16,15 +16,15 @@ class K8sClient {
         String foundNodeIp = "0.0.0.0"
         String node = waitForNode()
         String[] command = ["kubectl", "get", "$node", "--template='{{range .status.addresses}}{{ if eq .type \"InternalIP\" }}{{.address}}{{end}}{{end}}'"]
-        foundNodeIp = commandExecutor.execute(command)
+        foundNodeIp = commandExecutor.execute(command).stdOut
         return foundNodeIp
     }
 
     private String waitForNode() {
-        return commandExecutor.execute("kubectl get node -oname", "head -n1")
+        return commandExecutor.execute("kubectl get node -oname", "head -n1").stdOut
     }
 
-    void applyYaml(String yamlLocation) {
-        commandExecutor.execute("kubectl apply -f $yamlLocation")
+    String applyYaml(String yamlLocation) {
+        commandExecutor.execute("kubectl apply -f $yamlLocation").stdOut
     }
 }

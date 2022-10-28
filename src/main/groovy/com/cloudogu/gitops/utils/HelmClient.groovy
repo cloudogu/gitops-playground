@@ -13,12 +13,12 @@ class HelmClient {
     }
 
     String addRepo(String repoName, String url) {
-        commandExecutor.execute("helm repo add ${repoName} ${url}")
+        commandExecutor.execute("helm repo add ${repoName} ${url}").stdOut
     }
     String upgrade(String release, String chart, String version, Map args) {
         String command =  "helm upgrade -i ${release} ${chart} --version=${version} " +
                 "${args.values? "--values ${args.values} " : ''}" +
                 "${args.namespace? "--namespace ${args.namespace} " : ''}"
-        commandExecutor.execute(command)
+        commandExecutor.execute(command).stdOut
     }
 }

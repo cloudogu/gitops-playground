@@ -16,9 +16,9 @@ class GitopsPlaygroundCliMain {
     @SuppressWarnings('GrMethodMayBeStatic') // Non-static for easier testing
     void exec(String[] args) {
         // log levels can be set via picocli.trace sys env - defaults to 'WARN'
-        if (args.contains("--trace"))
+        if (args.contains('--trace') || args.contains('-x'))
             System.setProperty("picocli.trace", "DEBUG")
-        else if (args.contains("--debug"))
+        else if (args.contains('--debug') || args.contains('-d'))
             System.setProperty("picocli.trace", "INFO")
 
         int exitCode = PicocliRunner.execute(commandClass, args)

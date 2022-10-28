@@ -5,8 +5,9 @@ class CommandExecutorForTest extends CommandExecutor {
     List<String> actualCommands = []
     
     @Override
-    protected String getOutput(Process proc, String command) {
+    protected Output getOutput(Process proc, String command, boolean failOnError) {
         actualCommands += command
+        return new Output()
     }
 
     @Override
