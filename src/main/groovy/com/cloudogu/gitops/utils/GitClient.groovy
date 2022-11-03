@@ -16,7 +16,8 @@ class GitClient {
     private FileSystemUtils fileSystemUtils
     private CommandExecutor commandExecutor
 
-    GitClient(Map config, FileSystemUtils fileSystemUtils = new FileSystemUtils(), CommandExecutor commandExecutor = new CommandExecutor()) {
+    GitClient(Map config, FileSystemUtils fileSystemUtils = new FileSystemUtils(), 
+              CommandExecutor commandExecutor = new CommandExecutor()) {
         String scmmProtocol = config.scmm["protocol"]
         String scmmHost = config.scmm["host"]
         this.username = config.scmm["username"]
@@ -35,9 +36,6 @@ class GitClient {
 
         gitRepoCommandInit(absoluteLocalRepoTmpDir)
 
-        log.debug("Creating temporary git repo folder")
-        fileSystemUtils.createDirectory(absoluteLocalRepoTmpDir)
-
         log.debug("Cloning $scmmRepoTarget repo")
         commandExecutor.execute("git clone ${repoUrl} ${absoluteLocalRepoTmpDir}")
         fileSystemUtils.copyDirectory(absoluteSrcDirLocation, absoluteLocalRepoTmpDir)
@@ -50,7 +48,7 @@ class GitClient {
         }
     }
 
-    void commitAndPush(String scmmRepoTarget, String absoluteLocalRepoTmpDir) {
+    void commitAndPush(String scmmRepoTarget) {
         log.debug("Checking out main, adding files for repo: ${scmmRepoTarget}")
         checkoutOrCreateBranch('main')
         git("add .")
@@ -61,7 +59,6 @@ class GitClient {
             git(["commit", "-m", "\"Initial commit\""] as String[])
             git("push -u $scmmUrlWithCredentials/repo/$scmmRepoTarget HEAD:main --force")
         }
-        cleanup(absoluteLocalRepoTmpDir)
 
         setDefaultBranchForRepo(scmmRepoTarget)
     }
@@ -87,28 +84,34 @@ class GitClient {
         commandExecutor.execute(gitCommand).stdOut
     }
 
-    private void cleanup(String dir) {
-        new File(dir).deleteDir()
-    }
-
     private void setDefaultBranchForRepo(String scmmRepoTarget) {
         def defaultBranch = "main"
         def contentType = "application/vnd.scmm-gitConfig+json"
         def json = "{\"defaultBranch\":\"$defaultBranch\"}"
 
-        OkHttpClient client = new OkHttpClient()
         RequestBody body = RequestBody.create(json, MediaType.parse(contentType))
         String postUrl = scmmUrl + "/api/v2/config/git/" + scmmRepoTarget
-        Request request = new Request.Builder()
+        Request request = createRequest()
                 .header("Authorization", Credentials.basic(username, password))
                 .url(postUrl)
                 .put(body)
                 .build()
-        try (Response response = client.newCall(request).execute()) {
+        try (Response response = newHttpClient().newCall(request).execute()) {
             log.debug("Setting default branch to $defaultBranch for repository $scmmRepoTarget yields -> " + response.code() + ": " + response.message())
         }
     }
 
+    /**
+     * Overridable for testing
+     */
+    protected Request.Builder createRequest() {
+        new Request.Builder()
+    }
+
+    protected OkHttpClient newHttpClient() {
+        new OkHttpClient()
+    }
+    
     void checkoutOrCreateBranch(String branch) {
         if (branchExists(branch)) {
             git("checkout ${branch}")
@@ -120,4 +123,5 @@ class GitClient {
     private boolean branchExists(String branch) {
         git('branch').split(" ").contains(branch)
     }
+
 }

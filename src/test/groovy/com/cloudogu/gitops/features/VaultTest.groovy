@@ -36,7 +36,7 @@ class VaultTest {
     File temporaryYamlFile
     
     @Test
-    void "is disabled via active flag"() {
+    void 'is disabled via active flag'() {
         config['features']['secrets']['active'] = false
         createVault().install()
         assertThat(commandExecutor.actualCommands).isEmpty()
@@ -51,11 +51,20 @@ class VaultTest {
     }
     
     @Test
-    void 'Dev mode can be enabled via config'() {
+    void 'Dev mode can be enabled via config:  set root token and startUp hook'() {
         config['features']['secrets']['vault']['mode'] = 'dev'
         createVault().install()
 
-        assertThat(parseActualYaml()['server']['dev']['enabled']).isEqualTo(true)
+
+        def actualYaml = parseActualYaml()
+        assertThat(actualYaml['server']['dev']['enabled']).isEqualTo(true)
+        
+        assertThat(actualYaml['server']['dev']['devRootToken']).isEqualTo('123')
+
+        List actualPostStart = (List) actualYaml['server']['postStart']
+        assertThat(actualPostStart[0]).isEqualTo('/bin/sh')
+        assertThat(actualPostStart[1]).isEqualTo('-c')
+        assertThat(actualPostStart[2]).isEqualTo('vault kv put secret/staging nginx-secret=staging-secret && vault kv put secret/production nginx-secret=production-secret')
     }
 
     @Test

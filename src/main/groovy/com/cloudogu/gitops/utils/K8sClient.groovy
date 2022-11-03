@@ -28,13 +28,17 @@ class K8sClient {
         commandExecutor.execute("kubectl apply -f $yamlLocation").stdOut
     }
 
+    /**
+     * Idempotent create, i.e. overwrites if exists.
+     */
     void createSecret(String type, String name, String namespace = '', Tuple2... literals) {
         if (!literals) {
             throw new RuntimeException("Missing literals")
         }
         String command =
                 "kubectl create secret ${type} ${name}${namespace ? " -n ${namespace}" : ''} " +
-                        literals.collect { "--from-literal=${it.v1}=${it.v2}"}.join(" ")
-        commandExecutor.execute(command).stdOut
+                        literals.collect { "--from-literal=${it.v1}=${it.v2}"}.join(' ') +
+                        ' --dry-run=client -oyaml'
+        commandExecutor.execute(command, 'kubectl apply -f-').stdOut
     }
 }

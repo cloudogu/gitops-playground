@@ -6,6 +6,9 @@ import groovy.util.logging.Slf4j
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 
+import static groovy.json.JsonOutput.prettyPrint
+import static groovy.json.JsonOutput.toJson
+
 @Command(name = 'gitops-playground-cli', description = 'CLI-tool to deploy gitops-playground.',
         mixinStandardHelpOptions = true)
 @Slf4j
@@ -101,7 +104,9 @@ class GitopsPlaygroundCli implements Runnable {
                 // Here we could implement loading from a config file, giving CLI params precedence
                 //.setConfig(configFile.toFile().getText())
                 .setConfig(parseOptionsIntoConfig())
-                
+        
+        log.debug("Actual config: ${prettyPrint(toJson(config))}")
+        
         Application app = new Application(config)
         app.start()
     }

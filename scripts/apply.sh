@@ -375,9 +375,6 @@ function initArgo() {
   initRepo 'argocd/gitops'
 
   # Set NodePort service, to avoid "Pending" services and "Processing" state in argo on local cluster
-  initRepoWithSource 'applications/nginx/argocd/helm-jenkins' 'argocd/nginx-helm-jenkins' \
-    "if [[ $REMOTE_CLUSTER != true ]]; then find . -name values-shared.yaml -exec bash -c '(echo && echo service: && echo \"  type: NodePort\" ) >> {}' \; ; fi"
-  
   initRepoWithSource 'applications/nginx/argocd/helm-dependency' 'argocd/nginx-helm-dependency' \
     "if [[ $REMOTE_CLUSTER != true ]]; then find . -name values.yaml -exec bash -c '(echo && \"    type: NodePort\" ) >> {}' \; ; fi"
 

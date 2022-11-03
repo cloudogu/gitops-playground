@@ -56,6 +56,7 @@ We recommend running this command as an unprivileged user, that is inside the [d
   - [SCM-Manager](#scm-manager)
   - [Monitoring tools](#monitoring-tools)
   - [Secrets Management Tools](#secrets-management-tools)
+    - [Example app](#example-app)
   - [Argo CD UI](#argo-cd-ui)
   - [Demo applications](#demo-applications)
     - [Flux V1](#flux-v1)
@@ -421,13 +422,28 @@ the sync status failed, for example.
 
 ### Secrets Management Tools
 
+Via the `vault` parameter, you can deploy Hashicorp Vault and the External Secrets Operator into your GitOps playground.
+
 For testing you can set the parameter `--vault=dev` to deploy vault in development mode. This will lead to 
 * vault being initialized with fixed keys, tokens and secrets. But also to
 * vault being transient, i.e. all changes during runtime are not persisted. Meaning a restart will reset to default.
+* Vault is initialized with some fixed secrets that are used in the example app, see bellow.
 
 When using `vault=prod` you'll have to initialize vault manually but on the other hand it will persist changes.
 If you want the applications to work, you'll have to create tokens and edit the `vault-token` secrets in 
-`argocd-production` and `argocd-staging`. These are picked up by the `vault` `SecretStore` in the individual namespaces. 
+`argocd-production` and `argocd-staging`. These are picked up by the `vault` `SecretStore` (connects External Secrets 
+Operator with Vault) in the individual namespaces.
+
+You can reach the vault UI on
+  * http://localhost:8200 (k3d)
+  * `scripts/get-remote-url vault-ui secrets` (remote k8s)
+  * Token for login is `admin` or the value configured via `--password`
+
+#### Example app
+When deploying in dev mode the demo app `applications/nginx/argocd/helm-jenkins/` will be deployed in a way that exposes
+the vault secrets `secret/<stage>/nginx-secret` on the path `/secret` on NGINX, for example 
+`http://localhost:30024/secret`. While exposing secrets on the web is a very bad practices, it's very good for demoing 
+auto reload of a secret changed in vault.
 
 ### Argo CD UI
 

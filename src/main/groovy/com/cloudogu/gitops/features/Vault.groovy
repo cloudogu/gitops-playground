@@ -41,25 +41,28 @@ class Vault extends Feature {
         if (!config.application['remote']) {
             log.debug("Setting Vault service.type to NodePort since it is not running in a remote cluster")
             yaml['ui']['serviceType'] = 'NodePort'
-
         }
 
         String vaultMode = config['features']['secrets']['vault']['mode']
         if (vaultMode == 'dev') {
-            log.debug("!! Enabling vault dev mode. ONLY FOR TESTING !!")
+            log.debug("WARNING! Vault dev mode is enabled! In this mode, Vault runs entirely in-memory\n" +
+                    "and starts unsealed with a single unseal key. The root token is already\n" +
+                    "authenticated to the CLI, so you can immediately begin using Vault.")
             MapUtils.deepMerge(
                     [
                             server: [
                                     dev: [
-                                            enabled: true
+                                            enabled: true,
+                                            devRootToken: config['application']['password']
+                                    ],
+                                    postStart: [
+                                            '/bin/sh',
+                                            '-c',
+                                              'vault kv put secret/staging nginx-secret=staging-secret && ' +
+                                              'vault kv put secret/production nginx-secret=production-secret'
                                     ]
                             ]
                     ], yaml)
-            // Create the secrets referenced by SecretStores in ArgoCD control-app
-            // TODO set server.dev.devRootToken to configured password
-            
-            // TODO build webhook that creates secret for example app
-            // kubectl exec vault-0 -it -- vault kv put secret/mysecret mykey=mypass
         }
 
         log.trace("Helm yaml to be applied: ${yaml}")

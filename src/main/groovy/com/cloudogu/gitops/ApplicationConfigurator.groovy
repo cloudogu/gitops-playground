@@ -7,9 +7,7 @@ import com.cloudogu.gitops.utils.NetworkingUtils
 import groovy.util.logging.Slf4j
 import org.slf4j.LoggerFactory
 
-import static groovy.json.JsonOutput.prettyPrint
 import static com.cloudogu.gitops.utils.MapUtils.*
-import static groovy.json.JsonOutput.toJson
 
 @Slf4j
 class ApplicationConfigurator {
@@ -138,7 +136,6 @@ class ApplicationConfigurator {
         if (newConfig['features']['secrets']['vault']['mode'])
             newConfig['features']['secrets']['active'] = true
         
-        log.debug(prettyPrint(toJson(config)))
         config = makeDeeplyImmutable(newConfig)
         return config
     }

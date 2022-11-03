@@ -17,7 +17,8 @@ class K8sClientTest {
                 new Tuple2('key1', 'value1'), new Tuple2('key2', 'value2'))
 
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
-                "kubectl create secret generic my-secret -n my-ns --from-literal=key1=value1 --from-literal=key2=value2")
+                "kubectl create secret generic my-secret -n my-ns --from-literal=key1=value1 --from-literal=key2=value2" +
+                        " --dry-run=client -oyaml | kubectl apply -f-")
     }
     
     @Test
@@ -25,7 +26,8 @@ class K8sClientTest {
         k8sClient.createSecret('generic', 'my-secret', new Tuple2('key1', 'value1'))
 
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
-                "kubectl create secret generic my-secret --from-literal=key1=value1")
+                "kubectl create secret generic my-secret --from-literal=key1=value1 --dry-run=client -oyaml" +
+                        " | kubectl apply -f-")
     }
     
     @Test
