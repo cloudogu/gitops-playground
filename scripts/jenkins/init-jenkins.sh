@@ -13,7 +13,7 @@ fi
 # In addition:
 # - Upgrade bash image in values.yaml and gid-grepper
 # - Also upgrade plugins. See docs/developers.md
-JENKINS_HELM_CHART_VERSION=4.2.9
+JENKINS_HELM_CHART_VERSION=4.2.12
 
 SET_USERNAME="admin"
 SET_PASSWORD="admin"
@@ -100,7 +100,7 @@ function configureJenkins() {
   if [[ -z "${JENKINS_PLUGIN_FOLDER}" ]]; then
     pluginFolder=$(mktemp -d)
     echo "Downloading jenkins plugins to ${pluginFolder}"
-    "${PLAYGROUND_DIR}"/scripts/jenkins/plugins/download-plugins.sh "${pluginFolder}"
+    #"${PLAYGROUND_DIR}"/scripts/jenkins/plugins/download-plugins.sh "${pluginFolder}"
   else
     echo "Jenkins plugins folder present, skipping plugin download"
     pluginFolder="${JENKINS_PLUGIN_FOLDER}"
