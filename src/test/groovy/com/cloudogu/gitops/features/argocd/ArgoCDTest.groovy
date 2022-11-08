@@ -1,12 +1,9 @@
 package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.utils.CommandExecutorForTest
-import com.cloudogu.gitops.utils.ScmmRepo
 import com.cloudogu.gitops.utils.K8sClient
-import okhttp3.OkHttpClient
-import okhttp3.Request
+import com.cloudogu.gitops.utils.ScmmRepo
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito
 
 import static org.assertj.core.api.Assertions.assertThat 
 
@@ -116,17 +113,7 @@ class ArgoCDTest {
             // Actually copy files so we can assert but don't execute git clone, push, etc.
             Map gitConfig = [scmm: [protocol: 'https', host: 'abc', username: '', password: '', internal: true]]
             
-            ScmmRepo repo = new ScmmRepo(gitConfig, localSrcDir, scmmRepoTarget, absoluteLocalRepoTmpDir.absolutePath) {
-                @Override
-                protected Request.Builder createRequest() {
-                    return Mockito.mock(Request.Builder, Mockito.RETURNS_DEEP_STUBS)
-                }
-
-                @Override
-                protected OkHttpClient newHttpClient() {
-                    return Mockito.mock(OkHttpClient.class, Mockito.RETURNS_DEEP_STUBS)
-                }
-            }
+            ScmmRepo repo = new ScmmRepo(gitConfig, localSrcDir, scmmRepoTarget, absoluteLocalRepoTmpDir.absolutePath)
             repo.commandExecutor = gitCommands
             // We could add absoluteLocalRepoTmpDir here for assertion later 
             return repo

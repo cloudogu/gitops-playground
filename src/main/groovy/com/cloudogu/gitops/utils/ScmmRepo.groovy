@@ -1,8 +1,6 @@
 package com.cloudogu.gitops.utils
 
-
 import groovy.util.logging.Slf4j
-import okhttp3.*
 
 @Slf4j
 class ScmmRepo {
@@ -54,9 +52,6 @@ class ScmmRepo {
             git(["commit", "-m", "\"Initial commit\""] as String[])
             git("push -u $scmmUrlWithCredentials/repo/$scmmRepoTarget HEAD:main --force")
         }
-
-        // TODO do we still need this?
-        setDefaultBranchForRepo(scmmRepoTarget)
     }
 
     boolean areChangesStagedForCommit() {
@@ -80,34 +75,6 @@ class ScmmRepo {
         commandExecutor.execute(gitCommand).stdOut
     }
 
-    private void setDefaultBranchForRepo(String scmmRepoTarget) {
-        def defaultBranch = "main"
-        def contentType = "application/vnd.scmm-gitConfig+json"
-        def json = "{\"defaultBranch\":\"$defaultBranch\"}"
-
-        RequestBody body = RequestBody.create(json, MediaType.parse(contentType))
-        String postUrl = scmmUrl + "/api/v2/config/git/" + scmmRepoTarget
-        Request request = createRequest()
-                .header("Authorization", Credentials.basic(username, password))
-                .url(postUrl)
-                .put(body)
-                .build()
-        try (Response response = newHttpClient().newCall(request).execute()) {
-            log.debug("Setting default branch to $defaultBranch for repository $scmmRepoTarget yields -> " + response.code() + ": " + response.message())
-        }
-    }
-
-    /**
-     * Overridable for testing
-     */
-    protected Request.Builder createRequest() {
-        new Request.Builder()
-    }
-
-    protected OkHttpClient newHttpClient() {
-        new OkHttpClient()
-    }
-    
     void checkoutOrCreateBranch(String branch) {
         if (branchExists(branch)) {
             git("checkout ${branch}")
