@@ -7,48 +7,43 @@ import okhttp3.*
 @Slf4j
 class GitClient {
 
-    private String scmmUrlWithCredentials
-    private boolean scmmInternal
     private String gitRepoCommand
-    private String scmmUrl
+    private String scmmRepoTarget
     private String username
     private String password
-    private FileSystemUtils fileSystemUtils
-    private CommandExecutor commandExecutor
+    private String scmmUrl
+    private String scmmUrlWithCredentials
+    private String localSrcDir
+    private String absoluteLocalRepoTmpDir
+    protected FileSystemUtils fileSystemUtils = new FileSystemUtils()
+    protected CommandExecutor commandExecutor = new CommandExecutor()
 
-    GitClient(Map config, FileSystemUtils fileSystemUtils = new FileSystemUtils(), 
-              CommandExecutor commandExecutor = new CommandExecutor()) {
-        String scmmProtocol = config.scmm["protocol"]
-        String scmmHost = config.scmm["host"]
+    GitClient(Map config, String localSrcDir, String scmmRepoTarget, String absoluteLocalRepoTmpDir) {
         this.username = config.scmm["username"]
         this.password = config.scmm["password"]
-        this.scmmUrl = scmmProtocol + "://" + scmmHost
-        this.scmmUrlWithCredentials = scmmProtocol + "://" + username + ":" + password + "@" + scmmHost
-        this.scmmInternal = config.scmm["internal"]
-        this.fileSystemUtils = fileSystemUtils
-        this.commandExecutor = commandExecutor
+        this.scmmUrl = createScmmUrl(config)
+        this.scmmUrlWithCredentials = "${config.scmm["protocol"]}://${username}:${password}@${config.scmm["host"]}"
+        this.scmmRepoTarget = scmmRepoTarget
+        this.localSrcDir = localSrcDir
+        this.scmmRepoTarget = scmmRepoTarget
+        this.absoluteLocalRepoTmpDir = absoluteLocalRepoTmpDir
+        gitRepoCommandInit(absoluteLocalRepoTmpDir)
     }
 
-    void clone(String localSrcDir, String scmmRepoTarget, String absoluteLocalRepoTmpDir) {
+    static String createScmmUrl(Map config) {
+        return "${config.scmm["protocol"]}://${config.scmm["host"]}"
+    }
 
+    void cloneRepo() {
         String repoUrl = scmmUrlWithCredentials + "/repo/" + scmmRepoTarget
         String absoluteSrcDirLocation = fileSystemUtils.getRootDir() + "/" + localSrcDir
-
-        gitRepoCommandInit(absoluteLocalRepoTmpDir)
 
         log.debug("Cloning $scmmRepoTarget repo")
         commandExecutor.execute("git clone ${repoUrl} ${absoluteLocalRepoTmpDir}")
         fileSystemUtils.copyDirectory(absoluteSrcDirLocation, absoluteLocalRepoTmpDir)
-
-        if (!scmmInternal) {
-            log.debug("Configuring all yaml files to use the external scmm url")
-            fileSystemUtils.getAllFilesFromDirectoryWithEnding(absoluteLocalRepoTmpDir, ".yaml").forEach(file -> {
-                fileSystemUtils.replaceFileContent(file.absolutePath, "http://scmm-scm-manager.default.svc.cluster.local/scm", "$scmmUrl")
-            })
-        }
     }
 
-    void commitAndPush(String scmmRepoTarget) {
+    void commitAndPush() {
         log.debug("Checking out main, adding files for repo: ${scmmRepoTarget}")
         checkoutOrCreateBranch('main')
         git("add .")
@@ -60,6 +55,7 @@ class GitClient {
             git("push -u $scmmUrlWithCredentials/repo/$scmmRepoTarget HEAD:main --force")
         }
 
+        // TODO do we still need this?
         setDefaultBranchForRepo(scmmRepoTarget)
     }
 

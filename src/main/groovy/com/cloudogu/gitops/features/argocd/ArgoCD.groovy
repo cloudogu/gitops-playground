@@ -15,24 +15,24 @@ class ArgoCD extends Feature {
     private static final String NGINX_HELM_JENKINS_VALUES_PATH = 'k8s/values-shared.yaml'
     
     private Map config
-    private GitClient git
+    private List<GitClient> gitRepos = []
 
-    private File controlAppTmpDir
+    protected File controlAppTmpDir
     private File nginxHelmJenkinsTmpDir
-    private K8sClient k8sClient
-    private FileSystemUtils fileSystemUtils
+    protected K8sClient k8sClient = new K8sClient()
+    private FileSystemUtils fileSystemUtils = new FileSystemUtils()
 
-    ArgoCD(Map config, GitClient gitClient = new GitClient(config), FileSystemUtils fileSystemUtils = new FileSystemUtils(),
-           K8sClient k8sClient = new K8sClient()) {
+    ArgoCD(Map config) {
         this.config = config
-        this.git = gitClient
-        this.fileSystemUtils = fileSystemUtils
-        this.k8sClient = k8sClient
 
         controlAppTmpDir = File.createTempDir('gitops-playground-control-app')
         controlAppTmpDir.deleteOnExit()
+        gitRepos += createRepo('argocd/control-app', 'argocd/control-app', controlAppTmpDir)
+        
         nginxHelmJenkinsTmpDir = File.createTempDir('gitops-playground-nginx-helm-jenkins')
         nginxHelmJenkinsTmpDir.deleteOnExit()
+        gitRepos += createRepo('applications/nginx/argocd/helm-jenkins', 'argocd/nginx-helm-jenkins',
+                nginxHelmJenkinsTmpDir)
     }
 
     @Override
@@ -42,10 +42,10 @@ class ArgoCD extends Feature {
 
     @Override
     void enable() {
-        git.clone('argocd/control-app', 'argocd/control-app', controlAppTmpDir.absolutePath)
-        git.clone('applications/nginx/argocd/helm-jenkins', 'argocd/nginx-helm-jenkins', 
-                nginxHelmJenkinsTmpDir.absolutePath)
-
+        gitRepos.forEach( repo -> {
+            repo.cloneRepo()
+        })
+        
         def nginxHelmJenkinsValuesTmpFile = Path.of nginxHelmJenkinsTmpDir.absolutePath, NGINX_HELM_JENKINS_VALUES_PATH
         Map nginxHelmJenkinsValuesYaml = fileSystemUtils.readYaml(nginxHelmJenkinsValuesTmpFile)
 
@@ -79,12 +79,25 @@ class ArgoCD extends Feature {
                             ]
                     ],nginxHelmJenkinsValuesYaml)
         }
-        
-        // TODO git client has local folder stored in state API needs to change :(
-        git.commitAndPush('argocd/control-app')
+
+        if (!config.scmm["internal"]) {
+            String externalScmmUrl = GitClient.createScmmUrl(config)
+            log.debug("Configuring all yaml files in control app to use the external scmm url: ${externalScmmUrl}")
+            fileSystemUtils.getAllFilesFromDirectoryWithEnding(controlAppTmpDir.absolutePath, ".yaml").forEach(file -> {
+                fileSystemUtils.replaceFileContent(file.absolutePath, 
+                        "http://scmm-scm-manager.default.svc.cluster.local/scm", externalScmmUrl)
+            })
+        }
 
         log.trace("nginx-helm-jenkins values yaml: ${nginxHelmJenkinsValuesYaml}")
         fileSystemUtils.writeYaml(nginxHelmJenkinsValuesYaml, nginxHelmJenkinsValuesTmpFile.toFile())
-        git.commitAndPush('argocd/nginx-helm-jenkins')
+        
+        gitRepos.forEach( repo -> {
+            repo.commitAndPush()
+        })
+    }
+
+    protected GitClient createRepo(String localSrcDir, String scmmRepoTarget, File absoluteLocalRepoTmpDir) {
+        new GitClient(config, localSrcDir, scmmRepoTarget, absoluteLocalRepoTmpDir.absolutePath)
     }
 }

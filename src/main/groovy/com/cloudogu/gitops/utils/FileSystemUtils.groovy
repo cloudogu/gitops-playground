@@ -13,8 +13,11 @@ import java.nio.file.Path
 @Slf4j
 class FileSystemUtils {
 
-    @Deprecated
-    // TODO replace this by proper YAML editing? - YamlSlurper
+    /**
+     * Replaces text in files. If you want to change a YAML field, better use 
+     * {@link #readYaml(java.nio.file.Path)} and
+     * {@link #writeYaml(java.util.Map, java.io.File)} 
+     */
     File replaceFileContent(String folder, String fileToChange, String from, String to) {
         File file = new File(folder + "/" + fileToChange)
         String newConfig = file.text.replace(from, to)
