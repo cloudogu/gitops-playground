@@ -5,7 +5,7 @@ import groovy.util.logging.Slf4j
 import okhttp3.*
 
 @Slf4j
-class GitClient {
+class ScmmRepo {
 
     private String gitRepoCommand
     private String scmmRepoTarget
@@ -18,7 +18,7 @@ class GitClient {
     protected FileSystemUtils fileSystemUtils = new FileSystemUtils()
     protected CommandExecutor commandExecutor = new CommandExecutor()
 
-    GitClient(Map config, String localSrcDir, String scmmRepoTarget, String absoluteLocalRepoTmpDir) {
+    ScmmRepo(Map config, String localSrcDir, String scmmRepoTarget, String absoluteLocalRepoTmpDir) {
         this.username = config.scmm["username"]
         this.password = config.scmm["password"]
         this.scmmUrl = createScmmUrl(config)

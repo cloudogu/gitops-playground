@@ -2,7 +2,7 @@ package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.GitClient
+import com.cloudogu.gitops.utils.ScmmRepo
 import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.MapUtils
 import groovy.util.logging.Slf4j
@@ -15,7 +15,7 @@ class ArgoCD extends Feature {
     private static final String NGINX_HELM_JENKINS_VALUES_PATH = 'k8s/values-shared.yaml'
     
     private Map config
-    private List<GitClient> gitRepos = []
+    private List<ScmmRepo> gitRepos = []
 
     protected File controlAppTmpDir
     private File nginxHelmJenkinsTmpDir
@@ -81,7 +81,7 @@ class ArgoCD extends Feature {
         }
 
         if (!config.scmm["internal"]) {
-            String externalScmmUrl = GitClient.createScmmUrl(config)
+            String externalScmmUrl = ScmmRepo.createScmmUrl(config)
             log.debug("Configuring all yaml files in control app to use the external scmm url: ${externalScmmUrl}")
             fileSystemUtils.getAllFilesFromDirectoryWithEnding(controlAppTmpDir.absolutePath, ".yaml").forEach(file -> {
                 fileSystemUtils.replaceFileContent(file.absolutePath, 
@@ -97,7 +97,7 @@ class ArgoCD extends Feature {
         })
     }
 
-    protected GitClient createRepo(String localSrcDir, String scmmRepoTarget, File absoluteLocalRepoTmpDir) {
-        new GitClient(config, localSrcDir, scmmRepoTarget, absoluteLocalRepoTmpDir.absolutePath)
+    protected ScmmRepo createRepo(String localSrcDir, String scmmRepoTarget, File absoluteLocalRepoTmpDir) {
+        new ScmmRepo(config, localSrcDir, scmmRepoTarget, absoluteLocalRepoTmpDir.absolutePath)
     }
 }

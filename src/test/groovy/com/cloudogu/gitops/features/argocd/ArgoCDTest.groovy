@@ -1,7 +1,7 @@
 package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.utils.CommandExecutorForTest
-import com.cloudogu.gitops.utils.GitClient
+import com.cloudogu.gitops.utils.ScmmRepo
 import com.cloudogu.gitops.utils.K8sClient
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -112,11 +112,11 @@ class ArgoCDTest {
         }
         
         @Override
-        protected GitClient createRepo(String localSrcDir, String scmmRepoTarget, File absoluteLocalRepoTmpDir) {
+        protected ScmmRepo createRepo(String localSrcDir, String scmmRepoTarget, File absoluteLocalRepoTmpDir) {
             // Actually copy files so we can assert but don't execute git clone, push, etc.
             Map gitConfig = [scmm: [protocol: 'https', host: 'abc', username: '', password: '', internal: true]]
             
-            GitClient repo = new GitClient(gitConfig, localSrcDir, scmmRepoTarget, absoluteLocalRepoTmpDir.absolutePath) {
+            ScmmRepo repo = new ScmmRepo(gitConfig, localSrcDir, scmmRepoTarget, absoluteLocalRepoTmpDir.absolutePath) {
                 @Override
                 protected Request.Builder createRequest() {
                     return Mockito.mock(Request.Builder, Mockito.RETURNS_DEEP_STUBS)
