@@ -12,13 +12,13 @@ import java.nio.file.Path
 @Slf4j
 class ArgoCD extends Feature {
 
-    private static final String NGINX_HELM_JENKINS_VALUES_PATH = 'k8s/values-shared.yaml'
+   static final String NGINX_HELM_JENKINS_VALUES_PATH = 'k8s/values-shared.yaml'
     
     private Map config
     private List<ScmmRepo> gitRepos = []
 
     protected File controlAppTmpDir
-    private File nginxHelmJenkinsTmpDir
+    protected File nginxHelmJenkinsTmpDir
     protected K8sClient k8sClient = new K8sClient()
     private FileSystemUtils fileSystemUtils = new FileSystemUtils()
 
@@ -57,18 +57,20 @@ class ArgoCD extends Feature {
             k8sClient.createSecret('generic', 'vault-token', 'argocd-staging', 
                     new Tuple2('token', config['application']['username']))
         } else {
-            //TODO remove secret from nginx-helm-jenkins example app values.nginxHelmJenkinsValuesYaml
-            // nginxHelmJenkinsValuesYaml['extraVolumes']
-            
-            // TODO remove external-secrets from /helm-jenkins
+            removeObjectFromList(nginxHelmJenkinsValuesYaml['extraVolumes'], 'name', 'secret')
+            removeObjectFromList(nginxHelmJenkinsValuesYaml['extraVolumeMounts'], 'name', 'secret')
+
+            // External Secrets are not needed in example 
+            deleteFile nginxHelmJenkinsTmpDir.absolutePath + '/k8s/staging/external-secret.yaml'
+            deleteFile nginxHelmJenkinsTmpDir.absolutePath + '/k8s/production/external-secret.yaml'
             
             // Secrets folder in controlApp is not needed
-            new File(controlAppTmpDir.absolutePath + '/' + 'secrets').deleteDir()
+            deleteDir controlAppTmpDir.absolutePath + '/secrets'
         }
         
         if (!config.features['monitoring']['active']) {
             // Monitoring folder in controlApp is not needed
-            new File(controlAppTmpDir.absolutePath + '/' + 'monitoring').deleteDir()
+            new File(controlAppTmpDir.absolutePath + '/monitoring').deleteDir()
         }
         
         if (!config.application['remote']) {
@@ -95,6 +97,27 @@ class ArgoCD extends Feature {
         gitRepos.forEach( repo -> {
             repo.commitAndPush()
         })
+    }
+
+    private void removeObjectFromList(Object list, String key, String value) {
+        boolean successfullyRemoved = (list as List).removeAll { (it[key] == value) }
+        if (! successfullyRemoved) {
+            log.warn("Faild to remove object from list. No object found that has property '${key}: ${value}'. List ${list}")
+        }
+    }
+
+    private void deleteFile(String path) {
+        boolean successfullyDeleted = new File(path).delete()
+        if (!successfullyDeleted) {
+            log.warn("Faild to delete file ${path}")
+        }
+    }
+
+    private void deleteDir(String path) {
+        boolean successfullyDeleted = new File(path).deleteDir()
+        if (!successfullyDeleted) {
+            log.warn("Faild to delete dir ${path}")
+        }
     }
 
     protected ScmmRepo createRepo(String localSrcDir, String scmmRepoTarget, File absoluteLocalRepoTmpDir) {
