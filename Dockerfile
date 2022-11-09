@@ -167,6 +167,8 @@ COPY --from=maven-build /app/gitops-playground.jar /home/groovy/.groovy/lib/
 COPY src /app/src
 # Allow initialization in final FROM ${ENV} stage
 USER 0
+# Avoid criticla CVE in ivy, which is not fixed in groovy 3 right now. We don't use trivy anyway, so delete it.
+RUN rm /opt/groovy/lib/ivy-2.5.0.jar
 
 
 
