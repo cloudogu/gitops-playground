@@ -2,9 +2,9 @@ package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.ScmmRepo
 import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.MapUtils
+import com.cloudogu.gitops.utils.ScmmRepo
 import groovy.util.logging.Slf4j
 
 import java.nio.file.Path
@@ -46,57 +46,71 @@ class ArgoCD extends Feature {
             repo.cloneRepo()
         })
         
-        def nginxHelmJenkinsValuesTmpFile = Path.of nginxHelmJenkinsTmpDir.absolutePath, NGINX_HELM_JENKINS_VALUES_PATH
-        Map nginxHelmJenkinsValuesYaml = fileSystemUtils.readYaml(nginxHelmJenkinsValuesTmpFile)
-
-        new ArgoCDNotifications(config, controlAppTmpDir.absolutePath).install()
+        prepareControlApp()
+        
+        prepareApplicationNginxHelmJenkins()
 
         if (config.features['secrets']['active']) {
             k8sClient.createSecret('generic', 'vault-token', 'argocd-production', 
                     new Tuple2('token', config['application']['username']))
             k8sClient.createSecret('generic', 'vault-token', 'argocd-staging', 
                     new Tuple2('token', config['application']['username']))
-        } else {
-            removeObjectFromList(nginxHelmJenkinsValuesYaml['extraVolumes'], 'name', 'secret')
-            removeObjectFromList(nginxHelmJenkinsValuesYaml['extraVolumeMounts'], 'name', 'secret')
+        } 
+        
+        gitRepos.forEach( repo -> {
+            repo.commitAndPush()
+        })
+    }
 
-            // External Secrets are not needed in example 
-            deleteFile nginxHelmJenkinsTmpDir.absolutePath + '/k8s/staging/external-secret.yaml'
-            deleteFile nginxHelmJenkinsTmpDir.absolutePath + '/k8s/production/external-secret.yaml'
-            
+    private void prepareControlApp() {
+
+        new ArgoCDNotifications(config, controlAppTmpDir.absolutePath).install()
+
+        if (!config.features['secrets']['active']) {
             // Secrets folder in controlApp is not needed
             deleteDir controlAppTmpDir.absolutePath + '/secrets'
         }
-        
+
         if (!config.features['monitoring']['active']) {
             // Monitoring folder in controlApp is not needed
-            new File(controlAppTmpDir.absolutePath + '/monitoring').deleteDir()
-        }
-        
-        if (!config.application['remote']) {
-            log.debug("Setting service.type to NodePort since it is not running in a remote cluster for nginx-helm-jenkins")
-            MapUtils.deepMerge(
-                    [ service: [
-                            type: 'NodePort'
-                            ]
-                    ],nginxHelmJenkinsValuesYaml)
+            deleteDir controlAppTmpDir.absolutePath + '/monitoring'
         }
 
         if (!config.scmm["internal"]) {
             String externalScmmUrl = ScmmRepo.createScmmUrl(config)
             log.debug("Configuring all yaml files in control app to use the external scmm url: ${externalScmmUrl}")
             fileSystemUtils.getAllFilesFromDirectoryWithEnding(controlAppTmpDir.absolutePath, ".yaml").forEach(file -> {
-                fileSystemUtils.replaceFileContent(file.absolutePath, 
+                fileSystemUtils.replaceFileContent(file.absolutePath,
                         "http://scmm-scm-manager.default.svc.cluster.local/scm", externalScmmUrl)
             })
+        }
+    }
+
+    private void prepareApplicationNginxHelmJenkins() {
+
+        def nginxHelmJenkinsValuesTmpFile = Path.of nginxHelmJenkinsTmpDir.absolutePath, NGINX_HELM_JENKINS_VALUES_PATH
+        Map nginxHelmJenkinsValuesYaml = fileSystemUtils.readYaml(nginxHelmJenkinsValuesTmpFile)
+
+        if (!config.features['secrets']['active']) {
+            removeObjectFromList(nginxHelmJenkinsValuesYaml['extraVolumes'], 'name', 'secret')
+            removeObjectFromList(nginxHelmJenkinsValuesYaml['extraVolumeMounts'], 'name', 'secret')
+
+            // External Secrets are not needed in example 
+            deleteFile nginxHelmJenkinsTmpDir.absolutePath + '/k8s/staging/external-secret.yaml'
+            deleteFile nginxHelmJenkinsTmpDir.absolutePath + '/k8s/production/external-secret.yaml'
+        }
+
+        if (!config.application['remote']) {
+            log.debug("Setting service.type to NodePort since it is not running in a remote cluster for nginx-helm-jenkins")
+            MapUtils.deepMerge(
+                    [ service: [
+                            type: 'NodePort'
+                    ]
+                    ],nginxHelmJenkinsValuesYaml)
         }
 
         log.trace("nginx-helm-jenkins values yaml: ${nginxHelmJenkinsValuesYaml}")
         fileSystemUtils.writeYaml(nginxHelmJenkinsValuesYaml, nginxHelmJenkinsValuesTmpFile.toFile())
-        
-        gitRepos.forEach( repo -> {
-            repo.commitAndPush()
-        })
     }
 
     private void removeObjectFromList(Object list, String key, String value) {
