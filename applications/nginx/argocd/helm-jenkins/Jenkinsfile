@@ -1,6 +1,6 @@
 #!groovy
 
-String getApplication() { "nginx" }
+String getApplication() { "nginx-helm-jenkins" }
 String getScmManagerCredentials() { 'scmm-user' }
 String getConfigRepositoryPRBaseUrl() { env.SCMM_URL }
 String getConfigRepositoryPRRepo() { 'argocd/gitops' }
