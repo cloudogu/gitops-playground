@@ -41,6 +41,7 @@ class Vault extends Feature {
         if (!config.application['remote']) {
             log.debug("Setting Vault service.type to NodePort since it is not running in a remote cluster")
             yaml['ui']['serviceType'] = 'NodePort'
+            yaml['ui']['serviceNodePort'] = 8200
         }
 
         String vaultMode = config['features']['secrets']['vault']['mode']

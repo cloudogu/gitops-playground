@@ -43,11 +43,21 @@ class VaultTest {
     }
 
     @Test
-    void 'service type NodePort when not run remotely'() {
+    void 'when not run remotely, set node port'() {
         config['application']['remote'] = false
         createVault().install()
 
         assertThat(parseActualYaml()['ui']['serviceType']).isEqualTo('NodePort')
+        assertThat(parseActualYaml()['ui']['serviceNodePort']).isEqualTo(8200)
+    }
+    
+    @Test
+    void 'when run remotely, use service type loadbalancer'() {
+        config['application']['remote'] = true
+        createVault().install()
+
+        assertThat(parseActualYaml()['ui']['serviceType']).isEqualTo('LoadBalancer')
+        assertThat(parseActualYaml()['ui'] as Map).doesNotContainKey('serviceNodePort')
     }
     
     @Test
