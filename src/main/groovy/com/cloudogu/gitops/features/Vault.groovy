@@ -62,8 +62,8 @@ class Vault extends Feature {
                                               // Avoid: dial tcp 127.0.0.1:8200: connect: connection refused..
                                               // Unfortunately, busybox wget doesnt have --retry-connrefused, so use a loop
                                               'timeout 30s sh -c "until wget -O/dev/null -q http://127.0.0.1:8200/; do sleep 1; done" && ' +
-                                              'vault kv put secret/staging nginx-secret=staging-secret && ' +
-                                              'vault kv put secret/production nginx-secret=production-secret'
+                                              'vault kv put secret/staging/nginx-helm-jenkins example=staging-secret && ' +
+                                              'vault kv put secret/production/nginx-helm-jenkins example=production-secret'
                                     ]
                             ]
                     ], yaml)

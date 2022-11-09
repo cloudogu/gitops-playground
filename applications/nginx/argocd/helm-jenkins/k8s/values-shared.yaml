@@ -4,18 +4,18 @@ extraVolumes:
     configMap:
       name: index-nginx
       items:
-        - key: "index.html"
-          path: "index.html"
+        - key: index.html
+          path: index.html
   - name: secret
     secret:
-      secretName: example-secret
+      secretName: nginx-helm-jenkins
       items:
-        - key: "some-secret"
-          path: "index.html"
+        - key: some-secret
+          path: index.html
 extraVolumeMounts: 
   - name: index
-    mountPath: "/app"
+    mountPath: /app
     readOnly: true
   - name: secret
-    mountPath: "/app/secret"
+    mountPath: /app/secret
     readOnly: true

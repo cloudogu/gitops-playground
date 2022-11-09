@@ -95,7 +95,7 @@ class ApplicationConfigurator {
                                     helm: [
                                             chart  : 'external-secrets',
                                             repoURL: 'https://charts.external-secrets.io',
-                                            version: '0.6.0'
+                                            version: '0.6.1'
                                     ]
                             ],
                             vault          : [
