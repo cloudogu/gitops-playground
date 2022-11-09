@@ -64,7 +64,8 @@ class VaultTest {
         List actualPostStart = (List) actualYaml['server']['postStart']
         assertThat(actualPostStart[0]).isEqualTo('/bin/sh')
         assertThat(actualPostStart[1]).isEqualTo('-c')
-        assertThat(actualPostStart[2]).isEqualTo('vault kv put secret/staging nginx-secret=staging-secret && vault kv put secret/production nginx-secret=production-secret')
+        assertThat(actualPostStart[2]).isEqualTo(
+                'timeout 30s sh -c "until wget -O/dev/null -q http://127.0.0.1:8200/; do sleep 1; done" && vault kv put secret/staging nginx-secret=staging-secret && vault kv put secret/production nginx-secret=production-secret')
     }
 
     @Test
