@@ -6,16 +6,17 @@ Reproducible infrastructure to showcase GitOps workflows with Kubernetes.
 In fact, this rolls out a complete DevOps stack with different features including 
 * GitOps (with different controllers to choose from: Argo CD, Flux v1 and v2),
 * example applications and CI-pipelines (using Jenkins and our [GitOps library](https://github.com/cloudogu/gitops-build-lib)),
-* ArgoCD-only
-  * Notifications (using Mailhog for Demo purposes)
-  * Monitoring (using Prometheus and Grafana),
-  * soon Secrets management (using Vault).
+* Notifications/Alerts (using Mailhog for Demo purposes)
+* Monitoring (using Prometheus and Grafana),
+* Secrets management (using Vault).
 
 The gitops-playground is derived from our experiences in [consulting](https://cloudogu.com/en/consulting/?mtm_campaign=gitops-playground&mtm_kwd=consulting&mtm_source=github&mtm_medium=link) 
 and operating the [myCloudogu platform](https://my.cloudogu.com/).  
 For questions or suggestions you are welcome to join us at our myCloudogu [community forum](https://community.cloudogu.com/t/introducing-the-gitops-playground/107).
 
 [![Discuss it on myCloudogu](https://static.cloudogu.com/static/images/discuss-it.png)](https://community.cloudogu.com/t/introducing-the-gitops-playground/107)
+
+![Playground features](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml/gitops-playground-features.puml&fmt=svg) |
 
 # TLDR;
 
@@ -93,15 +94,25 @@ There a several options for running the GitOps playground
     (this can be run in production, e.g. with a [Cloudogu Ecosystem](https://cloudogu.com/en/ecosystem/?mtm_campaign=gitops-playground&mtm_kwd=ces&mtm_source=github&mtm_medium=link)) or  
   * to run everything inside the cluster (for demo only)  
 
-The diagrams below show an overview of the playground's architecture and three scenarios for running the playground. 
+The diagrams below show an overview of the playground's architecture and three scenarios for running the playground.
+For a simpler overview including all optional features such as monitoring and secrets management see intro at the very top.
 
 Note that running Jenkins inside the cluster is meant for demo purposes only. The third graphic shows our production 
 scenario with the Cloudogu EcoSystem (CES). Here better security and build performance is achieved using ephemeral 
 Jenkins build agents spawned in the cloud.
 
-| Demo on local machine | Demo on remote cluster | Production environment with CES |
-|--------------------|--------------------|--------------------|
-|![Playground on local machine](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/gitops-playground.puml&fmt=svg) | ![Playground on remote cluster](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/gitops-playground-remote.puml&fmt=svg)  | ![A possible production environment](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/production-setting.puml&fmt=svg) |
+| Demo on local machine                                                                                                                                                                      |
+|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ![Playground on local machine](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml/gitops-playground.puml&fmt=svg) |
+
+
+| Demo on remote cluster                                                                                                                                                                              | 
+|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|  ![Playground on remote cluster](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml/gitops-playground-remote.puml&fmt=svg) | 
+
+ | Production environment with CES                                                                                                                                                                   |
+|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ![A possible production environment](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml/production-setting.puml&fmt=svg) |
 
 ### Create Cluster
 
@@ -429,10 +440,12 @@ For testing you can set the parameter `--vault=dev` to deploy vault in developme
 * vault being transient, i.e. all changes during runtime are not persisted. Meaning a restart will reset to default.
 * Vault is initialized with some fixed secrets that are used in the example app, see bellow.
 
-When using `vault=prod` you'll have to initialize vault manually but on the other hand it will persist changes.
-If you want the applications to work, you'll have to create tokens and edit the `vault-token` secrets in 
-`argocd-production` and `argocd-staging`. These are picked up by the `vault` `SecretStore` (connects External Secrets 
-Operator with Vault) in the individual namespaces.
+When using `vault=prod` you'll have to initialize vault manually but on the other hand it will persist changes.  
+If you want the example app to work, you'll have to 
+* create tokens in vault and
+* add them to the `vault-token` secrets in `argocd-production` and `argocd-staging`.
+
+These are then picked up by the `vault-backend` `SecretStore`s (connects External Secrets Operator with Vault) in the individual namespaces.
 
 You can reach the vault UI on
   * http://localhost:8200 (k3d)
@@ -440,10 +453,13 @@ You can reach the vault UI on
   * Token for login is `admin` or the value configured via `--password`
 
 #### Example app
-When deploying in dev mode the demo app `applications/nginx/argocd/helm-jenkins/` will be deployed in a way that exposes
-the vault secrets `secret/<stage>/nginx-secret` on the path `/secret` on NGINX, for example 
-`http://localhost:30024/secret`. While exposing secrets on the web is a very bad practices, it's very good for demoing 
-auto reload of a secret changed in vault.
+
+With vault in `dev` mode and ArgoCD enabled, the demo app `applications/nginx/argocd/helm-jenkins/` will be deployed in 
+a way that exposes the vault secrets `secret/<stage>/nginx-secret` via HTTP on the URL `http://<host>/secret`, 
+for example `http://localhost:30024/secret`.
+
+While exposing secrets on the web is a very bad practice, it's very good for demoing auto reload of a secret changed in 
+vault.
 
 ### Argo CD UI
 

@@ -1,0 +1,144 @@
+@startuml
+
+!includeurl https://raw.githubusercontent.com/michiel/plantuml-kubernetes-sprites/master/resource/k8s-sprites-unlabeled-25pct.iuml
+
+!define ICONURL https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/v2.4.0
+!includeurl ICONURL/common.puml
+!includeurl ICONURL/devicons/docker.puml
+!includeurl ICONURL/devicons/git.puml
+!includeurl ICONURL/font-awesome-5/jenkins.puml
+!includeurl ICONURL/font-awesome-5/sync.puml
+!includeurl ICONURL/font-awesome-5/key.puml
+!includeurl ICONURL/font-awesome-5/sun.puml
+!includeurl ICONURL/font-awesome-5/fire.puml
+!includeurl ICONURL/font-awesome-5/robot.puml
+!includeurl ICONURL/font-awesome-5/envelope.puml
+!includeurl ICONURL/font-awesome-5/box.puml
+!includeurl ICONURL/material/computer.puml
+
+!define CLOUDOGUURL https://raw.githubusercontent.com/cloudogu/plantuml-cloudogu-sprites/master
+!includeurl CLOUDOGUURL/tools/k8s.puml
+!includeurl CLOUDOGUURL/dogus/scm.puml
+
+!define CLOUDOGU_BLUE #23a3dd
+
+!define COLOR_ABOVE_TRANSPARENT_BACKGROUND WHITE
+
+skinparam backgroundcolor TRANSPARENT
+skinparam actorStyle awesome
+
+
+node "Your Host" as host <<$computer>> #ffffff {
+
+    actor " " as dev
+    
+    together {
+        rectangle "<$docker>\nDocker Daemon" as docker
+        
+        rectangle "<$k8s>\nK3d Container" as k8s {
+            
+            together {
+                rectangle "<$scm>\nSCM-Manager" as scmm {
+                    collections "<$git>\nApp Repos" as appRepo
+                    collections "<$git>\nGitOps Repos" as configRepo
+                }
+                collections "<$sync>\nGitOps\nOperators" as gitops
+                'collections "<$deploy>\nStaging\n+ Production" as staging
+            }
+            rectangle "<$k8s>\nAPI-Server" as apiServer
+            
+            rectangle "<$sun>\nGrafana" as grafana
+            rectangle "<$fire>\nPrometheus" as prometheus
+            rectangle "<$robot>\nExternal\nSecrets\nOperator" as ESO
+            
+            rectangle "<$key>\nVault" as vault
+            rectangle " " <<Hidden>> as s1
+            rectangle " " <<Hidden>> as s2
+            rectangle " " <<Hidden>> as s3
+            
+            rectangle "<$envelope>\nMailhog" as mailhog
+            
+            rectangle "<$box>\nRegistry" as registry
+            rectangle "<$jenkins>\nJenkins" as jenkins
+            
+        }
+    }
+}
+
+docker -> k8s : run
+dev -[hidden]-> k8s
+dev -> grafana : view metrics
+dev -> vault : create secret
+dev -> mailhog : read mail
+dev --> appRepo #line:black;text:black : push  
+dev --> configRepo : accept PR  
+appRepo <-- jenkins : pull
+configRepo <-- jenkins : push\nIaC\n + Create PR
+jenkins -> registry : push\nimage
+
+
+configRepo <- gitops : pull
+registry -[hidden]> gitops
+vault -[hidden]> ESO
+gitops -> apiServer : deploy
+
+vault <-- ESO : read secret
+apiServer <- ESO : create secret
+mailhog <-- gitops : send alert
+grafana --> prometheus : send query
+prometheus --> s1
+prometheus --> s2 
+prometheus --> s3 : Scrape metrics
+ESO -[hidden]> prometheus 
+
+skinparam arrow {
+  Color BLACK
+}
+
+skinparam node {
+  BorderColor CLOUDOGU_BLUE
+}
+
+skinparam actor {
+  BackgroundColor #23a3dd
+  BorderColor #16688d
+  FontColor #000000
+}
+
+skinparam actor {
+    BackgroundColor CLOUDOGU_BLUE
+    BorderColor #16688d
+}
+
+skinparam rectangle {
+    BackgroundColor WHITE
+    BorderColor CLOUDOGU_BLUE
+    FontColor CLOUDOGU_BLUE
+}
+
+skinparam collections {
+    BackgroundColor WHITE
+    BorderColor CLOUDOGU_BLUE
+    FontColor CLOUDOGU_BLUE
+}
+
+skinparam interface {
+    BackgroundColor WHITE
+    BorderColor #16688d
+}
+
+skinparam note {
+    BackgroundColor WHITE
+    BorderColor #16688d
+}
+
+skinparam rectangle<<Hidden>> {
+    textColor Transparent
+    borderColor Transparent
+    backgroundColor Transparent
+    fontColor Transparent
+    stereotypeFontColor Transparent
+}
+
+
+@enduml
