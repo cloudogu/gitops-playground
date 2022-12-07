@@ -38,8 +38,8 @@ FROM alpine as downloader
 # When updating, 
 # * also update the checksum found at https://dl.k8s.io/release/v${K8S_VERSION}/bin/linux/amd64/kubectl.sha256
 # * also update k8s-related versions in vars.tf, init-cluster.sh and apply.sh
-ARG K8S_VERSION=1.21.2
-ARG KUBECTL_CHECKSUM=55b982527d76934c2f119e70bf0d69831d3af4985f72bb87cd4924b1c7d528da
+ARG K8S_VERSION=1.21.14
+ARG KUBECTL_CHECKSUM=0c1682493c2abd7bc5fe4ddcdb0b6e5d417aa7e067994ffeca964163a988c6ee
 # When updating, also update the checksum found at https://github.com/helm/helm/releases
 ARG HELM_VERSION=3.8.2
 ARG HELM_CHECKSUM=6cb9a48f72ab9ddfecab88d264c2f6508ab3cd42d9c09666be16a7bf006bed7b
@@ -68,7 +68,6 @@ RUN gpg --batch --verify helm.tar.gz.asc helm.tar.gz
 RUN mv linux-amd64/helm /dist/usr/local/bin
 
 # Kubectl
-RUN wget -q -O kubectl.sha256 https://dl.k8s.io/release/v${K8S_VERSION}/bin/linux/amd64/kubectl.sha256
 RUN wget -q -O kubectl https://dl.k8s.io/release/v${K8S_VERSION}/bin/linux/amd64/kubectl
 # kubectl binary download does not seem to offer signatures
 RUN echo "${KUBECTL_CHECKSUM}  kubectl" | sha256sum -c
