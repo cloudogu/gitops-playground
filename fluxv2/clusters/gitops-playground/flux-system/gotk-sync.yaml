@@ -3,8 +3,8 @@
 apiVersion: source.toolkit.fluxcd.io/v1beta2
 kind: GitRepository
 metadata:
-  name: fluxv2
-  namespace: fluxv2
+  name: flux-system
+  namespace: flux-system
 spec:
   interval: 10s
   ref:
@@ -16,12 +16,12 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1beta2
 kind: Kustomization
 metadata:
-  name: fluxv2
-  namespace: fluxv2
+  name: flux-system
+  namespace: flux-system
 spec:
   interval: 10s
   path: ./clusters/gitops-playground
   prune: true
   sourceRef:
     kind: GitRepository
-    name: fluxv2
+    name: flux-system

@@ -337,14 +337,14 @@ function initFluxV2() {
 
   initRepoWithSource 'fluxv2' 'fluxv2/gitops'
 
-  REPOSITORY_YAML_PATH="fluxv2/clusters/gitops-playground/fluxv2/gotk-sync.yaml"
+  REPOSITORY_YAML_PATH="fluxv2/clusters/gitops-playground/flux-system/gotk-sync.yaml"
   if [[ ${INTERNAL_SCMM} == false ]]; then
-    REPOSITORY_YAML_PATH="$(mkTmpWithReplacedScmmUrls "fluxv2/clusters/gitops-playground/fluxv2/gotk-sync.yaml")"
+    REPOSITORY_YAML_PATH="$(mkTmpWithReplacedScmmUrls "fluxv2/clusters/gitops-playground/flux-system/gotk-sync.yaml")"
   fi
 
-  kubectl apply -f fluxv2/clusters/gitops-playground/fluxv2/gotk-components.yaml || true
+  kubectl apply -f fluxv2/clusters/gitops-playground/flux-system/gotk-components.yaml || true
   kubectl apply -f "${REPOSITORY_YAML_PATH}" || true
-  kubectl apply -f fluxv2/clusters/gitops-playground/fluxv2/gotk-kustomization.yaml || true
+  kubectl apply -f fluxv2/clusters/gitops-playground/flux-system/gotk-kustomization.yaml || true
 }
 
 function initArgo() {
@@ -447,7 +447,7 @@ function createSecrets() {
   createSecret gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=$SET_PASSWORD -n argocd
   # flux needs lowercase fieldnames
   createSecret gitops-scmm --from-literal=username=gitops --from-literal=password=$SET_PASSWORD -n fluxv1
-  createSecret flux-system --from-literal=username=gitops --from-literal=password=$SET_PASSWORD -n fluxv2
+  createSecret flux-system --from-literal=username=gitops --from-literal=password=$SET_PASSWORD -n flux-system
 }
 
 function createSecret() {
