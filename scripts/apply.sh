@@ -337,9 +337,9 @@ function initFluxV2() {
 
   initRepoWithSource 'fluxv2' 'fluxv2/gitops'
 
-  REPOSITORY_YAML_PATH="fluxv2/clusters/gitops-playground/fluxv2/gotk-gitrepository.yaml"
+  REPOSITORY_YAML_PATH="fluxv2/clusters/gitops-playground/fluxv2/gotk-sync.yaml"
   if [[ ${INTERNAL_SCMM} == false ]]; then
-    REPOSITORY_YAML_PATH="$(mkTmpWithReplacedScmmUrls "fluxv2/clusters/gitops-playground/fluxv2/gotk-gitrepository.yaml")"
+    REPOSITORY_YAML_PATH="$(mkTmpWithReplacedScmmUrls "fluxv2/clusters/gitops-playground/fluxv2/gotk-sync.yaml")"
   fi
 
   kubectl apply -f fluxv2/clusters/gitops-playground/fluxv2/gotk-components.yaml || true
@@ -447,7 +447,7 @@ function createSecrets() {
   createSecret gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=$SET_PASSWORD -n argocd
   # flux needs lowercase fieldnames
   createSecret gitops-scmm --from-literal=username=gitops --from-literal=password=$SET_PASSWORD -n fluxv1
-  createSecret gitops-scmm --from-literal=username=gitops --from-literal=password=$SET_PASSWORD -n fluxv2
+  createSecret flux-system --from-literal=username=gitops --from-literal=password=$SET_PASSWORD -n fluxv2
 }
 
 function createSecret() {
