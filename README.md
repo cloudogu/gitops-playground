@@ -23,10 +23,10 @@ For questions or suggestions you are welcome to join us at our myCloudogu [commu
 You can run a local k8s cluster with the GitOps playground installed with only one command (on Linux)
 
 ```shell
-docker pull ghcr.io/cloudogu/gitops-playground && \ 
 bash <(curl -s \
   https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh) \
-  && sleep 2 && docker run --rm -it -u $(id -u) -v ~/.k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
+  && sleep 2 && docker run --rm -it --pull=always -u $(id -u) \ 
+    -v ~/.k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     --net=host \
     ghcr.io/cloudogu/gitops-playground --yes
 ```

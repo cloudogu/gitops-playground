@@ -88,7 +88,7 @@ Jenkins.instance.pluginManager.plugins.collect().sort().each {
 
 ### Providing dependencies
 
-It seems like `groovy --classpath gitops-playground-cli-*.jar` [does not not to load jars]( https://stackoverflow.com/questions/10585808/groovy-script-classpath),
+It seems like `groovy --classpath gitops-playground-cli-*.jar` [does not load jars]( https://stackoverflow.com/questions/10585808/groovy-script-classpath),
 Workaround:
 
 * Run
