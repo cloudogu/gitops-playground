@@ -1,15 +1,17 @@
 #!groovy
 
 // "Constants"
-String getApplication() {"spring-petclinic-plain" }
+String getApplication() {'spring-petclinic-plain' }
+String getConfigRepositoryPRRepo() { 'fluxv2/gitops' }
+String getBasePathInConfigRepo() { 'clusters/gitops-playground' }
 String getScmManagerCredentials() { 'scmm-user' }
-String getConfigRepositoryUrl() { "${env.SCMM_URL}/repo/fluxv2/gitops" }
-String getConfigRepositoryPRUrl() { "${env.SCMM_URL}/api/v2/pull-requests/fluxv2/gitops" }
+String getConfigRepositoryUrl() { "${env.SCMM_URL}/repo/${configRepositoryPRRepo}" }
+String getConfigRepositoryPRUrl() { "${env.SCMM_URL}/api/v2/pull-requests/${configRepositoryPRRepo}" }
 // The docker daemon cant use the k8s service name, because it is not running inside the cluster
 String getDockerRegistryBaseUrl() { env.REGISTRY_URL }
 String getDockerRegistryPath() { env.REGISTRY_PATH }
 String getDockerRegistryCredentials() { 'registry-user' }
-String getCesBuildLibVersion() { '1.44.3' }
+String getCesBuildLibVersion() { '1.48.0' }
 String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/common/ces-build-lib/" }
 
 cesBuildLib = library(identifier: "ces-build-lib@${cesBuildLibVersion}",
@@ -32,19 +34,21 @@ node {
         }
 
         stage('Build') {
-            mvn 'clean package -DskipTests'
-
-            archiveArtifacts artifacts: '**/target/*.jar'
+            // Build and tests skipped for faster demo and exercise purposes
+            //mvn 'clean package -DskipTests'
+            //archiveArtifacts artifacts: '**/target/*.jar'
         }
 
         String jacoco = "org.jacoco:jacoco-maven-plugin:0.8.5"
 
         stage('Test') {
-            mvn "${jacoco}:prepare-agent test ${jacoco}:report"
+            // Build and tests skipped for faster demo and exercise purposes
+            //mvn "${jacoco}:prepare-agent test ${jacoco}:report"
         }
 
         stage('Integration Test') {
-            mvn "${jacoco}:prepare-agent-integration failsafe:integration-test failsafe:verify ${jacoco}:report-integration"
+            // Build and tests skipped for faster demo and exercise purposes
+            //vn "${jacoco}:prepare-agent-integration failsafe:integration-test failsafe:verify ${jacoco}:report-integration"
         }
 
         String imageName = ""
@@ -144,13 +148,13 @@ String createApplicationForStageAndPushToBranch(String stage, String branch, Git
 
     String commitPrefix = stage == 'staging' ? '[S] ' : ''
 
-    sh "mkdir -p clusters/gitops-playground/fluxv2-${stage}/${application}"
+    sh "mkdir -p ${basePathInConfigRepo}/fluxv2-${stage}/${application}"
     // copy extra resources like sealed secrets
-    echo "Copying k8s payload from application repo to gitOps Repo: 'k8s/${stage}/*' to 'clusters/gitops-playground/fluxv2-${stage}/${application}'"
-    sh "cp ${env.WORKSPACE}/k8s/${stage}/* clusters/gitops-playground/fluxv2-${stage}/${application}/ || true"
+    echo "Copying k8s payload from application repo to gitOps Repo: 'k8s/${stage}/*' to '${basePathInConfigRepo}/fluxv2-${stage}/${application}'"
+    sh "cp ${env.WORKSPACE}/k8s/${stage}/* ${basePathInConfigRepo}/fluxv2-${stage}/${application}/ || true"
 
     gitopsConfig.updateImages.each {
-        updateImageVersion("clusters/gitops-playground/fluxv2-${stage}/${application}/${it['deploymentFilename']}", it['containerName'], it['imageName'])
+        updateImageVersion("${basePathInConfigRepo}/fluxv2-${stage}/${application}/${it['deploymentFilename']}", it['containerName'], it['imageName'])
     }
 
     git.add('.')

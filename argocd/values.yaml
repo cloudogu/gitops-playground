@@ -31,4 +31,7 @@ repoServer:
       namespace: monitoring
       selector:
         release: kube-prometheus-stack
-  
+
+# TODO enable once ArgoCDNotifications.groovy logic has been migrated to ArgoCD.groovy
+notifications:
+  enabled: false

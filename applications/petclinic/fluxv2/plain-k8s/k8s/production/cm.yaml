@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: messages
+  namespace: fluxv2-production
+data:
+  messages.properties: |
+    welcome=Welcome
+    required=is required
+    notFound=has not been found
+    duplicate=is already in use
+    nonNumeric=must be all numeric
+    duplicateFormSubmission=Duplicate form submission is not allowed
+    typeMismatch.date=invalid date
+    typeMismatch.birthDate=invalid date

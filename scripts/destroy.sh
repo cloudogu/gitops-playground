@@ -52,22 +52,22 @@ function removeFluxv1() {
 function removeFluxv2() {
   # The following line is needed because the cr "fluxv2-kustomizer" has a finalizer set which can lead to a deadlock while deleting
   # https://stackoverflow.com/a/52012367
-  kubectl patch kustomization fluxv2-kustomizer -p '{"metadata":{"finalizers":[]}}' --type=merge -n fluxv2 || true
-  kubectl delete -f fluxv2/clusters/gitops-playground/fluxv2/gotk-kustomization.yaml || true
+  kubectl patch kustomization fluxv2-kustomizer -p '{"metadata":{"finalizers":[]}}' --type=merge -n flux-system || true
+  kubectl delete -f fluxv2/clusters/gitops-playground/flux-system/gotk-kustomization.yaml || true
   # This seems to hang.
-  #kubectl delete -f fluxv2/clusters/gitops-playground/fluxv2/gotk-gitrepository.yaml || true
+  #kubectl delete -f fluxv2/clusters/gitops-playground/flux-system/gotk-gitrepository.yaml || true
   # Pragmatic workaround just delete whole namespace. Force call finalizer because this also hangs :/
-  kubectl delete namespace fluxv2& 
+  kubectl delete namespace flux-system& 
   finalizeFluxNamespace
   
-  kubectl delete -f fluxv2/clusters/gitops-playground/fluxv2/gotk-components.yaml || true
+  kubectl delete -f fluxv2/clusters/gitops-playground/flux-system/gotk-components.yaml || true
 }
 
 function finalizeFluxNamespace() {
   kubectl proxy&
-  (kubectl get ns fluxv2 -o json | \
+  (kubectl get ns flux-system -o json | \
     jq '.spec.finalizers=[]' | \
-    curl -X PUT http://localhost:8001/api/v1/namespaces/fluxv2/finalize -H "Content-Type: application/json" --data @-) || true
+    curl -X PUT http://localhost:8001/api/v1/namespaces/flux-system/finalize -H "Content-Type: application/json" --data @-) || true
   kill $! || true
 }
 
@@ -92,7 +92,7 @@ function removeK8sResources() {
   kubectl delete secret gitops-scmm -n default || true
   kubectl delete secret gitops-scmm -n argocd || true
   kubectl delete secret gitops-scmm -n fluxv1 || true
-  kubectl delete secret gitops-scmm -n fluxv2 || true
+  kubectl delete secret gitops-scmm -n flux-system || true
   kubectl delete customresourcedefinitions.apiextensions.k8s.io servicemonitors.monitoring.coreos.com || true
   
   (kubectl delete -f k8s-namespaces/ || true)&

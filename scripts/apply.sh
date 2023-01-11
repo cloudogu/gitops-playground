@@ -10,7 +10,7 @@ export PLAYGROUND_DIR
 
 PETCLINIC_COMMIT=32c8653
 SPRING_BOOT_HELM_CHART_COMMIT=0.3.0
-ARGO_HELM_CHART_VERSION=3.35.4 # Last version with argo 1.x
+ARGO_HELM_CHART_VERSION=5.9.1 # From 5.10.0 Helm chart requires K8s 1.22: https://github.com/argoproj/argo-helm/commit/3d9e2f35a6e6249c27fd4ccd8129622d886ef4ea#diff-16f38cd1a4674cb682ac9f015fbc1c1ff552f024a8f791c16de0de21a1f65771R3
 
 source ${ABSOLUTE_BASEDIR}/utils.sh
 source ${ABSOLUTE_BASEDIR}/jenkins/init-jenkins.sh
@@ -337,14 +337,14 @@ function initFluxV2() {
 
   initRepoWithSource 'fluxv2' 'fluxv2/gitops'
 
-  REPOSITORY_YAML_PATH="fluxv2/clusters/gitops-playground/fluxv2/gotk-gitrepository.yaml"
+  REPOSITORY_YAML_PATH="fluxv2/clusters/gitops-playground/flux-system/gotk-sync.yaml"
   if [[ ${INTERNAL_SCMM} == false ]]; then
-    REPOSITORY_YAML_PATH="$(mkTmpWithReplacedScmmUrls "fluxv2/clusters/gitops-playground/fluxv2/gotk-gitrepository.yaml")"
+    REPOSITORY_YAML_PATH="$(mkTmpWithReplacedScmmUrls "fluxv2/clusters/gitops-playground/flux-system/gotk-sync.yaml")"
   fi
 
-  kubectl apply -f fluxv2/clusters/gitops-playground/fluxv2/gotk-components.yaml || true
+  kubectl apply -f fluxv2/clusters/gitops-playground/flux-system/gotk-components.yaml || true
   kubectl apply -f "${REPOSITORY_YAML_PATH}" || true
-  kubectl apply -f fluxv2/clusters/gitops-playground/fluxv2/gotk-kustomization.yaml || true
+  kubectl apply -f fluxv2/clusters/gitops-playground/flux-system/gotk-kustomization.yaml || true
 }
 
 function initArgo() {
@@ -447,7 +447,7 @@ function createSecrets() {
   createSecret gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=$SET_PASSWORD -n argocd
   # flux needs lowercase fieldnames
   createSecret gitops-scmm --from-literal=username=gitops --from-literal=password=$SET_PASSWORD -n fluxv1
-  createSecret gitops-scmm --from-literal=username=gitops --from-literal=password=$SET_PASSWORD -n fluxv2
+  createSecret flux-system --from-literal=username=gitops --from-literal=password=$SET_PASSWORD -n flux-system
 }
 
 function createSecret() {

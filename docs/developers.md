@@ -160,3 +160,30 @@ repository so need to be upgraded regularly.
   * Groovy
   * musl & zlib
   * Packages installed using apk, gu, microdnf
+
+## Upgrade Flux
+
+```shell
+  PW=admin
+flux bootstrap git \
+  --url=http://localhost:9091/scm/repo/fluxv2/gitops \
+  --allow-insecure-http=true \
+  --branch=main \
+  --path=./clusters/gitops-playground \
+  --token-auth \
+  --username=admin \
+  --password=${PW} \
+  --interval=10s
+# Once we have webhooks setup we no longer need this short interval
+```
+
+Then 
+* replace contents in `fluxv2/clusters/gitops-playground/flux-sysmtem` by the one in http://localhost:9091/scm/repo/fluxv2/gitops
+* In `gotk-sync.yaml` 
+  * update url to http://scmm-scm-manager.default.svc.cluster.local/scm/repo/fluxv2/gitops
+  * Set `--interval=10s` in kustomization
+
+In case of error
+```shell
+flux uninstall
+```

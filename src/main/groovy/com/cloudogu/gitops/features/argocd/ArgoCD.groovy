@@ -114,9 +114,9 @@ class ArgoCD extends Feature {
     }
 
     private void removeObjectFromList(Object list, String key, String value) {
-        boolean successfullyRemoved = (list as List).removeAll { (it[key] == value) }
+        boolean successfullyRemoved = (list as List).removeIf(n -> n[key] == value)
         if (! successfullyRemoved) {
-            log.warn("Faild to remove object from list. No object found that has property '${key}: ${value}'. List ${list}")
+            log.warn("Failed to remove object from list. No object found that has property '${key}: ${value}'. List ${list}")
         }
     }
 
