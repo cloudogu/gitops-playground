@@ -83,6 +83,8 @@ class ArgoCDTest {
         config.features['secrets']['active'] = false
         createArgoCD().install()
         def valuesYaml = new YamlSlurper().parse(Path.of nginxHelmJenkinsTmpDir.absolutePath, ArgoCD.NGINX_HELM_JENKINS_VALUES_PATH)
+        assertThat((valuesYaml['extraVolumeMounts'] as List)).hasSize(1)
+        assertThat((valuesYaml['extraVolumes'] as List)).hasSize(1)
         assertThat((valuesYaml['extraVolumeMounts'] as List)[0]['name']).isEqualTo('index')
         assertThat((valuesYaml['extraVolumes'] as List)[0]['name']).isEqualTo('index')
 
