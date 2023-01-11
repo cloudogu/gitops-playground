@@ -17,8 +17,8 @@ class ScmmRepo {
     protected CommandExecutor commandExecutor = new CommandExecutor()
 
     ScmmRepo(Map config, String localSrcDir, String scmmRepoTarget, String absoluteLocalRepoTmpDir) {
-        this.username = config.scmm["username"]
-        this.password = config.scmm["password"]
+        this.username =  config.scmm["internal"] ? config.application["username"] : config.scmm["username"]
+        this.password = config.scmm["internal"] ? config.application["password"] : config.scmm["password"]
         this.scmmUrl = createScmmUrl(config)
         this.scmmUrlWithCredentials = "${config.scmm["protocol"]}://${username}:${password}@${config.scmm["host"]}"
         this.scmmRepoTarget = scmmRepoTarget
