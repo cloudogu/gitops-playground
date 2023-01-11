@@ -45,7 +45,7 @@ jquery-detached:1.2.1
 jquery3-api:3.6.1-2
 jsch:0.1.55.61.va_e9ee26616e7
 junit:1166.va_436e268e972
-kubernetes:3794.v45d9da_33d7f1
+kubernetes:3802.vb_b_600831fcb_3
 kubernetes-client-api:6.3.1-206.v76d3b_6b_14db_b
 kubernetes-credentials:0.10.0
 ldap:659.v8ca_b_a_fe79fa_d
