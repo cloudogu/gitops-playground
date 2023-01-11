@@ -4,9 +4,9 @@ ARG ENV=prod
 ARG JDK_VERSION='17'
 # Those are set by the micronaut BOM, see pom.xml
 ARG GROOVY_VERSION='3.0.13'
-ARG GRAAL_VERSION='22.2.0'
+ARG GRAAL_VERSION='22.3.0'
 
-FROM alpine:3.16.2 as alpine
+FROM alpine:3.17.1 as alpine
 
 # Keep in sync with the version in pom.xml
 FROM ghcr.io/graalvm/graalvm-ce:ol8-java${JDK_VERSION}-${GRAAL_VERSION} AS graal
