@@ -112,7 +112,7 @@ class ArgoCDTest {
         config.application['remote'] = true
         createArgoCD().install()
         Map valuesYaml = (new YamlSlurper().parse(Path.of nginxHelmJenkinsTmpDir.absolutePath, ArgoCD.NGINX_HELM_JENKINS_VALUES_PATH)) as Map
-        assertThat(valuesYaml).doesNotContainKey('service')
+        assertThat(valuesYaml.toString()).doesNotContain('NodePort')
     }
 
     @Test

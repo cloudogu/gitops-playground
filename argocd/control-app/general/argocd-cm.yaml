@@ -38,7 +38,7 @@ data:
         name: gitops-scmm
         key: USERNAME
     - type: helm
-      url: https://charts.bitnami.com/bitnami
+      url: https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami
       name: bitnami
     - type: helm
       url: https://prometheus-community.github.io/helm-charts

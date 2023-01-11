@@ -18,5 +18,5 @@ spec:
     server: https://kubernetes.default.svc
   sourceRepos:
   - http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/gitops
-  - https://charts.bitnami.com/bitnami
+  - https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami
   - http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/nginx-helm-dependency

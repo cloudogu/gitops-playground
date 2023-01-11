@@ -227,7 +227,7 @@ function applyBasicK8sResources() {
     helm repo add fluxcd https://charts.fluxcd.io
     helm repo add stable https://charts.helm.sh/stable
     helm repo add argo https://argoproj.github.io/argo-helm
-    helm repo add bitnami https://charts.bitnami.com/bitnami
+    helm repo add bitnami https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami
     helm repo add scm-manager https://packages.scm-manager.org/repository/helm-v2-releases/
     helm repo add jenkins https://charts.jenkins.io
     helm repo update
@@ -317,7 +317,7 @@ function initFluxV1() {
   pushPetClinicRepo 'applications/petclinic/fluxv1/helm' 'fluxv1/petclinic-helm'
   # Set NodePort service, to avoid "Pending" services on local cluster
   initRepoWithSource 'applications/nginx/fluxv1' 'fluxv1/nginx-helm' \
-      "if [[ $REMOTE_CLUSTER != true ]]; then find . -name values-shared.yaml -exec bash -c '(echo && echo service.type: NodePort && echo) >> {}' \; ; fi"
+      "if [[ $REMOTE_CLUSTER != true ]]; then find . -name values-shared.yaml -exec bash -c '(echo && echo \"  type: NodePort\"  && echo) >> {}' \; ; fi"
 
   SET_GIT_URL=""
   if [[ ${INTERNAL_SCMM} == false ]]; then
@@ -377,6 +377,7 @@ function initArgo() {
   # Set NodePort service, to avoid "Pending" services and "Processing" state in argo on local cluster
   initRepoWithSource 'applications/nginx/argocd/helm-dependency' 'argocd/nginx-helm-dependency' \
     "if [[ $REMOTE_CLUSTER != true ]]; then find . -name values.yaml -exec bash -c '(echo && echo \"    type: NodePort\" ) >> {}' \; ; fi"
+  # Note: "applications/nginx/argocd/helm-jenkins" already migrated to groovy
 
   # init exercise
   pushPetClinicRepo 'exercises/petclinic-helm' 'exercises/petclinic-helm'

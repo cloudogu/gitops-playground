@@ -1,5 +1,4 @@
-namespace: fluxv1-staging
+namespaceOverride: fluxv1-staging
 service:
-  port: 80
   nodePorts:
     http: 30006

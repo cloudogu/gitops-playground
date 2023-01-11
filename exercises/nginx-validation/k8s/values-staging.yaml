@@ -1,4 +1,4 @@
+namespaceOverride: argocd-staging
 service:
-  port : 8O
   nodePorts:
   - http: 3OO42

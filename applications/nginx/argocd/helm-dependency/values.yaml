@@ -1,5 +1,7 @@
 nginx:
+  namespaceeOverride: argocd-production
   service:
-    port: 80
+    ports:
+      http: 80
     nodePorts:
       http: 30026

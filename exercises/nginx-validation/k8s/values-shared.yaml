@@ -1,3 +1,7 @@
+service:
+  ports:
+    http: 80
+
 staticSiteConfigmap: exercise-index-nginx
 
 extraEnvVars:
