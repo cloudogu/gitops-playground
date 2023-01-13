@@ -3,6 +3,7 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.HelmClient
+import com.cloudogu.gitops.utils.K8sClient
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 
@@ -28,18 +29,24 @@ class VaultTest {
                                             version: '42.23.0'
                                     ]
                             ],
+                    ],
+                    argocd    : [
+                            active: true
                     ]
             ],
     ]
-    CommandExecutorForTest commandExecutor = new CommandExecutorForTest()
-    HelmClient helmClient = new HelmClient(commandExecutor)
+    CommandExecutorForTest helmCommands = new CommandExecutorForTest()
+    CommandExecutorForTest k8sCommands = new CommandExecutorForTest()
+    HelmClient helmClient = new HelmClient(helmCommands)
+    K8sClient k8sClient = new K8sClient(k8sCommands)
     File temporaryYamlFile
     
     @Test
     void 'is disabled via active flag'() {
         config['features']['secrets']['active'] = false
         createVault().install()
-        assertThat(commandExecutor.actualCommands).isEmpty()
+        assertThat(helmCommands.actualCommands).isEmpty()
+        assertThat(k8sCommands.actualCommands).isEmpty()
     }
 
     @Test
@@ -61,38 +68,77 @@ class VaultTest {
     }
     
     @Test
-    void 'Dev mode can be enabled via config:  set root token and startUp hook'() {
+    void 'Dev mode can be enabled via config'() {
         config['features']['secrets']['vault']['mode'] = 'dev'
         createVault().install()
-
 
         def actualYaml = parseActualYaml()
         assertThat(actualYaml['server']['dev']['enabled']).isEqualTo(true)
         
-        assertThat(actualYaml['server']['dev']['devRootToken']).isEqualTo('123')
+        assertThat(actualYaml['server']['dev']['devRootToken']).isNotEqualTo('root')
+        assertThat(actualYaml['server']['dev']['devRootToken']).isNotEqualTo(config['application']['password'])
 
         List actualPostStart = (List) actualYaml['server']['postStart']
         assertThat(actualPostStart[0]).isEqualTo('/bin/sh')
         assertThat(actualPostStart[1]).isEqualTo('-c')
+        
         assertThat(actualPostStart[2]).isEqualTo(
-                'timeout 30s sh -c "until wget -O/dev/null -q http://127.0.0.1:8200/; do sleep 1; done" && ' +
-                        'vault kv put secret/staging/nginx-helm-jenkins example=staging-secret && ' +
-                        'vault kv put secret/production/nginx-helm-jenkins example=production-secret')
+                'USERNAME=abc PASSWORD=123 ARGOCD=true /var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log')
+
+        List actualVolumes = actualYaml['server']['volumes'] as List
+        List actualVolumeMounts = actualYaml['server']['volumeMounts'] as List
+        assertThat(actualVolumes[0]['name']).isEqualTo(actualVolumeMounts[0]['name'])
+        assertThat(actualVolumes[0]['configMap']['defaultMode']).isEqualTo(Integer.valueOf(0774))
+        
+        assertThat(actualVolumeMounts[0]['readOnly']).is(true)
+        String scriptFileName = Vault.VAULT_START_SCRIPT_PATH.substring(Vault.VAULT_START_SCRIPT_PATH.lastIndexOf('/'))
+        assertThat(actualPostStart[2] as String).contains(actualVolumeMounts[0]['mountPath'] as String + scriptFileName)
+
+        assertThat(k8sCommands.actualCommands).hasSize(1)
+        
+        def createdConfigMapName = ((k8sCommands.actualCommands[0] =~ /kubectl create configmap (\S*) .*/)[0] as List) [1]
+        assertThat(actualVolumes[0]['configMap']['name']).isEqualTo(createdConfigMapName)
+        
+        assertThat(k8sCommands.actualCommands[0]).contains('-n secrets')
+        assertThat(k8sCommands.actualCommands[0]).contains(Vault.VAULT_START_SCRIPT_PATH)
     }
 
+    @Test
+    void 'Dev mode can be enabled via config with argoCD disabled'() {
+        config['features']['secrets']['vault']['mode'] = 'dev'
+        config['features']['argocd']['active'] = false
+        createVault().install()
+
+        def actualYaml = parseActualYaml()
+        List actualPostStart = (List) actualYaml['server']['postStart']
+        assertThat(actualPostStart[2]).isEqualTo(
+                'USERNAME=abc PASSWORD=123 ARGOCD=false /var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log')
+    }
+
+    @Test
+    void 'Prod mode can be enabled'() {
+        config['features']['secrets']['vault']['mode'] = 'prod'
+        createVault().install()
+        
+        def actualYaml = parseActualYaml()
+        assertThat(actualYaml as Map).doesNotContainKey('server')
+        
+        assertThat(k8sCommands.actualCommands).isEmpty()
+    }
+    
     @Test
     void 'helm release is installed'() {
         createVault().install()
 
-        assertThat(commandExecutor.actualCommands[0].trim()).isEqualTo(
+        assertThat(helmCommands.actualCommands[0].trim()).isEqualTo(
                 'helm repo add Vault https://vault-reg')
-        assertThat(commandExecutor.actualCommands[1].trim()).isEqualTo(
+        assertThat(helmCommands.actualCommands[1].trim()).isEqualTo(
                 'helm upgrade -i vault Vault/vault --version=42.23.0' +
                         " --values ${temporaryYamlFile} --namespace secrets")
     }
     
     private Vault createVault() {
-        Vault vault = new Vault(config, new FileSystemUtils(), helmClient)
+        Vault vault = new Vault(config, new FileSystemUtils(), k8sClient, helmClient)
         temporaryYamlFile = vault.tmpHelmValues
         return vault
     }

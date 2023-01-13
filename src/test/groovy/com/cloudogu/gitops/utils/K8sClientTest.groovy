@@ -31,9 +31,27 @@ class K8sClientTest {
     }
     
     @Test
-    void 'Creates secret no secret when literals are missing'() {
+    void 'Creates no secret when literals are missing'() {
         shouldFail(RuntimeException) {
             k8sClient.createSecret('generic', 'my-secret')
         }
+    }
+
+    @Test
+    void 'Creates configmap from file'() {
+        k8sClient.createConfigMapFromFile('my-map', 'my-ns', '/file' )
+
+        assertThat(commandExecutor.actualCommands[0]).isEqualTo(
+                "kubectl create configmap my-map -n my-ns --from-file=/file --dry-run=client -oyaml" +
+                        " | kubectl apply -f-")
+    }
+
+    @Test
+    void 'Creates configmap without namespace'() {
+        k8sClient.createConfigMapFromFile('my-map', '/file' )
+
+        assertThat(commandExecutor.actualCommands[0]).isEqualTo(
+                "kubectl create configmap my-map --from-file=/file --dry-run=client -oyaml" +
+                        " | kubectl apply -f-")
     }
 }

@@ -57,16 +57,6 @@ class ArgoCDTest {
     }
 
     @Test
-    void 'When vault enabled: Creates secrets for secretStores'() {
-        createArgoCD().install()
-        assertThat(k8sCommands.actualCommands).contains(
-                'kubectl create secret generic vault-token -n argocd-staging --from-literal=token=something --dry-run=client -oyaml | kubectl apply -f-',
-                'kubectl create secret generic vault-token -n argocd-production --from-literal=token=something --dry-run=client -oyaml | kubectl apply -f-'
-        )
-        assertThat(new File(controlAppTmpDir.absolutePath + "/secrets")).exists()
-    }
-    
-    @Test
     void 'When vault enabled: Pushes external secret, and mounts into example app'() {
         createArgoCD().install()
         def valuesYaml = new YamlSlurper().parse(Path.of nginxHelmJenkinsTmpDir.absolutePath, ArgoCD.NGINX_HELM_JENKINS_VALUES_PATH)

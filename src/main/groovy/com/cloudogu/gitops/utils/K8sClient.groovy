@@ -41,4 +41,16 @@ class K8sClient {
                         ' --dry-run=client -oyaml'
         commandExecutor.execute(command, 'kubectl apply -f-').stdOut
     }
+    
+    /**
+     * Idempotent create, i.e. overwrites if exists.
+     */
+    void createConfigMapFromFile(String name, String namespace = '', String filePath) {
+        //  kubectl create configmap dev-post-start --from-file=dev-post-start.sh
+        String command =
+                "kubectl create configmap ${name}${namespace ? " -n ${namespace}" : ''}" +
+                        " --from-file=${filePath}" +
+                        ' --dry-run=client -oyaml'
+        commandExecutor.execute(command, 'kubectl apply -f-').stdOut
+    }
 }

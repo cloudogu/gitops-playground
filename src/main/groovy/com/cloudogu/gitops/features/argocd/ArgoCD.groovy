@@ -50,13 +50,6 @@ class ArgoCD extends Feature {
         
         prepareApplicationNginxHelmJenkins()
 
-        if (config.features['secrets']['active']) {
-            k8sClient.createSecret('generic', 'vault-token', 'argocd-production', 
-                    new Tuple2('token', config['application']['username']))
-            k8sClient.createSecret('generic', 'vault-token', 'argocd-staging', 
-                    new Tuple2('token', config['application']['username']))
-        } 
-        
         gitRepos.forEach( repo -> {
             repo.commitAndPush()
         })

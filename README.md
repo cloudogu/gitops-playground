@@ -57,6 +57,8 @@ We recommend running this command as an unprivileged user, that is inside the [d
   - [SCM-Manager](#scm-manager)
   - [Monitoring tools](#monitoring-tools)
   - [Secrets Management Tools](#secrets-management-tools)
+    - [dev mode](#dev-mode)
+    - [prod mode](#prod-mode)
     - [Example app](#example-app)
   - [Argo CD UI](#argo-cd-ui)
   - [Demo applications](#demo-applications)
@@ -435,26 +437,39 @@ the sync status failed, for example.
 
 Via the `vault` parameter, you can deploy Hashicorp Vault and the External Secrets Operator into your GitOps playground.
 
+#### dev mode 
+
 For testing you can set the parameter `--vault=dev` to deploy vault in development mode. This will lead to 
-* vault being initialized with fixed keys, tokens and secrets. But also to
 * vault being transient, i.e. all changes during runtime are not persisted. Meaning a restart will reset to default.
 * Vault is initialized with some fixed secrets that are used in the example app, see bellow.
+* Vault authorization is initialized with service accounts used in example `SecretStore`s for external secrets operator
+* Vault is initialized with the usual `admin/admin` account (can be overriden with `--username` and `--password`)
 
-When using `vault=prod` you'll have to initialize vault manually but on the other hand it will persist changes.  
-If you want the example app to work, you'll have to 
-* create tokens in vault and
-* add them to the `vault-token` secrets in `argocd-production` and `argocd-staging`.
-
-These are then picked up by the `vault-backend` `SecretStore`s (connects External Secrets Operator with Vault) in the individual namespaces.
+The secrets are then picked up by the `vault-backend` `SecretStore`s (connects External Secrets Operator with Vault) in 
+the namespace `argocd-staging` and `argocd-production` namespaces
 
 You can reach the vault UI on
   * http://localhost:8200 (k3d)
   * `scripts/get-remote-url vault-ui secrets` (remote k8s)
-  * Token for login is `admin` or the value configured via `--password`
+  * You can log in vie the user account mentioned above.  
+    If necessary, the root token can be found on the log:
+    ```shell
+    kubectl logs -n secrets vault-0 | grep 'Root Token'
+    ```
+
+#### prod mode
+
+When using `vault=prod` you'll have to initialize vault manually but on the other hand it will persist changes.  
+
+If you want the example app to work, you'll have to manually 
+* set up vault, unseal it and 
+* authorize the `vault` service accounts in `argocd-production` and `argocd-staging` namspaces. See `SecretStore`s and 
+  [dev-post-start.sh](system/secrets/vault/dev-post-start.sh) for an example.
+
 
 #### Example app
 
-With vault in `dev` mode and ArgoCD enabled, the demo app `applications/nginx/argocd/helm-jenkins/` will be deployed in 
+With vault in `dev` mode and ArgoCD enabled, the demo app `applications/nginx/argocd/helm-jenkins` will be deployed in 
 a way that exposes the vault secrets `secret/<stage>/nginx-secret` via HTTP on the URL `http://<host>/secret`, 
 for example `http://localhost:30024/secret`.
 
