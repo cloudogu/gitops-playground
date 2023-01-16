@@ -437,6 +437,24 @@ the sync status failed, for example.
 
 Via the `vault` parameter, you can deploy Hashicorp Vault and the External Secrets Operator into your GitOps playground.
 
+With this, the whole flow from secret value in Vault to kubernetes `Secret` via External Secrets Operator can be seen in 
+action:
+
+![External Secret Operator <-> Vault - flow](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/feature/vault/docs/plantuml-src/External-Secret-Operator-Flow.puml&fmt=svg)
+
+For this to work, the GitOps playground configures the whole chain in Kubernetes and vault (when [dev mode](#dev-mode) is used): 
+
+![External Secret Operator Custom Resources](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/feature/vault/docs/plantuml-src/External-Secret-Operator-CRs.puml&fmt=svg)
+
+* In k8s `namespaces` `argocd-staging` and `argocd-production`:
+  * Creates `SecretStore` and `ServiceAccount` (used to authenticate with vault)
+  * Creates `ExternalSecrets`
+* In Vault:
+  * Create secrets for staging and prod
+  * Create a human user for changing the secrets
+  * Authorizes the service accounts on those secrets
+* Creates an [example app](#example-app) that uses the `secrets`
+
 #### dev mode 
 
 For testing you can set the parameter `--vault=dev` to deploy vault in development mode. This will lead to 
