@@ -16,7 +16,7 @@ For questions or suggestions you are welcome to join us at our myCloudogu [commu
 
 [![Discuss it on myCloudogu](https://static.cloudogu.com/static/images/discuss-it.png)](https://community.cloudogu.com/t/introducing-the-gitops-playground/107)
 
-![Playground features](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml/gitops-playground-features.puml&fmt=svg) |
+![Playground features](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml-src/gitops-playground-features.puml&fmt=svg) |
 
 # TLDR;
 
@@ -103,18 +103,18 @@ Note that running Jenkins inside the cluster is meant for demo purposes only. Th
 scenario with the Cloudogu EcoSystem (CES). Here better security and build performance is achieved using ephemeral 
 Jenkins build agents spawned in the cloud.
 
-| Demo on local machine                                                                                                                                                                      |
+| Demo on local machine                                                                                                                                                                                                                                                                                                                                    |
 |--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| ![Playground on local machine](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml/gitops-playground.puml&fmt=svg) |
+| ![Playground on local machine](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml-src/gitops-playground.puml&fmt=svg) |
 
 
 | Demo on remote cluster                                                                                                                                                                              | 
 |-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-|  ![Playground on remote cluster](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml/gitops-playground-remote.puml&fmt=svg) | 
+|  ![Playground on remote cluster](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml-src/gitops-playground-remote.puml&fmt=svg) | 
 
  | Production environment with CES                                                                                                                                                                   |
 |---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| ![A possible production environment](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml/production-setting.puml&fmt=svg) |
+| ![A possible production environment](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml-src/production-setting.puml&fmt=svg) |
 
 ### Create Cluster
 
@@ -476,6 +476,14 @@ for example `http://localhost:30024/secret`.
 While exposing secrets on the web is a very bad practice, it's very good for demoing auto reload of a secret changed in 
 vault.
 
+To demo this, you could
+* change the [staging secret](http://localhost:8200/ui/vault/secrets/secret/edit/staging/nginx-helm-jenkins)
+* Wait for the change to show on the web, e.g. like so
+```shell
+while ; do echo -n "$(date '+%Y-%m-%d %H:%M:%S'): " ; curl http://localhost:30024/secret/ ; echo; sleep 1; done
+```
+  This usually takes between a couple of seconds and 1-2 minutes. 
+
 ### Argo CD UI
 
 Argo CD's web UI is available at
@@ -489,7 +497,7 @@ Each GitOps operator comes with a couple of demo applications that allow for exp
 features.
 
 All applications are deployed via separated application and GitOps repos: 
-![](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/k8s-diagrams/cdd6bb77/diagrams/gitops-with-app-repo.puml&fmt=svg)
+![](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/k8s-diagrams/cdd6bb77/diagrams/gitops-with-app-repo.puml&fmt=png)
 
 * Separation of app repo and GitOps repo
 * Infrastructure as Code is maintained  in app repo,

@@ -20,25 +20,26 @@
 cloud "Your cloud provider" {
 
     rectangle "<$k8s>\nk8s Cluster" as k8s {
-        rectangle "<$sync>\nGitOps-Operator" as gitops
+        
+            
+        node "Node" as k8sNode <<$computer>> #ffffff {
+            rectangle "<$k8s>\nkubelet" as kubelet 
+            rectangle "<$docker>\nDocker Daemon" as docker
+        }
         
         together {
             rectangle "<$box>\nOCI Registry" as registry
-            
-            node "Node" as k8sNode <<$computer>> #ffffff {
-                rectangle "<$k8s>\nkubelet" as kubelet 
-                rectangle "<$docker>\nDocker Daemon" as docker
+            rectangle "<$scm>\nSCM-Manager" as scmm {
+                rectangle "<$git>\nApp Repo" as appRepo
+                rectangle "<$git>\nGitOps Repo" as configRepo
             }
-            rectangle "<$k8s>\nAPI-Server" as apiServer
-        }
-        
-        rectangle "<$scm>\nSCM-Manager" as scmm {
-            rectangle "<$git>\nApp Repo" as appRepo
-            rectangle "<$git>\nGitOps Repo" as configRepo
         }
         
         rectangle "<$jenkins>\nJenkins Controller" as jenkins
         rectangle "<$jenkins>\nAgent Pods" as jenkinsNode
+        
+        rectangle "<$sync>\nGitOps-Operator" as gitops
+        rectangle "<$k8s>\nAPI-Server" as apiServer
     }
 }
 
@@ -47,9 +48,8 @@ appRepo <-- jenkinsNode : pull
 configRepo <-- jenkinsNode : push
 registry <-- jenkinsNode : push
 
-k8sNode -[hidden]> apiServer
-kubelet -> apiServer : watch
-docker -[hidden]> apiServer
+kubelet --> apiServer : watch
+'docker -[hidden]> apiServer
 
 kubelet --> docker : run containers
 jenkins -> jenkinsNode : manage
@@ -57,7 +57,7 @@ jenkinsNode -> docker: run containers\nbuild images
 gitops --> configRepo : pull
 gitops -> apiServer : apply resources
 
-registry <- kubelet : pull
+registry <- docker : pull
 
 skinparam arrow {
   Color BLACK
