@@ -4,7 +4,8 @@ import com.cloudogu.ces.cesbuildlib.*
 
 String getDockerRegistryBaseUrl() { 'ghcr.io' }
 String getDockerImageName() { 'cloudogu/gitops-playground' }
-String getTrivyVersion() { '0.18.3' }
+// Note that from 0.30.x the resulting file will never be 0 kb in size, as checked in saveScanResultsOnVulnerabilities()
+String getTrivyVersion() { '0.29.2' }
 
 properties([
     // Dont keep builds forever to preserve space
@@ -190,7 +191,8 @@ private void trivy(output, flags, imageName) {
             .mountJenkinsUser()
             .mountDockerSocket()
             .inside("-v ${env.WORKSPACE}/.trivy/.cache:/root/.cache/") {
-                sh "trivy image -o ${output} ${flags} ${imageName}"
+                // Updating DB might take longer than the default 5 min
+                sh "trivy image --timeout 20m -o ${output} ${flags} ${imageName}"
             }
 }
 
