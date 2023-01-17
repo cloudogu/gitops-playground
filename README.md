@@ -440,11 +440,11 @@ Via the `vault` parameter, you can deploy Hashicorp Vault and the External Secre
 With this, the whole flow from secret value in Vault to kubernetes `Secret` via External Secrets Operator can be seen in 
 action:
 
-![External Secret Operator <-> Vault - flow](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/feature/vault/docs/plantuml-src/External-Secret-Operator-Flow.puml&fmt=svg)
+![External Secret Operator <-> Vault - flow](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml-src/External-Secret-Operator-Flow.puml&fmt=svg)
 
 For this to work, the GitOps playground configures the whole chain in Kubernetes and vault (when [dev mode](#dev-mode) is used): 
 
-![External Secret Operator Custom Resources](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/feature/vault/docs/plantuml-src/External-Secret-Operator-CRs.puml&fmt=svg)
+![External Secret Operator Custom Resources](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml-src/External-Secret-Operator-CRs.puml&fmt=svg)
 
 * In k8s `namespaces` `argocd-staging` and `argocd-production`:
   * Creates `SecretStore` and `ServiceAccount` (used to authenticate with vault)
@@ -500,7 +500,10 @@ To demo this, you could
 ```shell
 while ; do echo -n "$(date '+%Y-%m-%d %H:%M:%S'): " ; curl http://localhost:30024/secret/ ; echo; sleep 1; done
 ```
-  This usually takes between a couple of seconds and 1-2 minutes. 
+  This usually takes between a couple of seconds and 1-2 minutes.  
+  This time consists of `ExternalSecret`'s `refreshInterval`, as well as the [kubelet sync period](https://v1-25.docs.kubernetes.io/docs/concepts/configuration/configmap/#mounted-configmaps-are-updated-automatically)
+  (defaults to [1 Minute](https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/#kubelet-config-k8s-io-v1beta1-KubeletConfiguration)) 
+  + cache propagation delay
 
 ### Argo CD UI
 

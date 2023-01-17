@@ -30,6 +30,7 @@ class Application {
     // This means, that the first registered feature will be first and the last feature registered will be the last to run
     private List<Feature> registerFeatures() {
         List<Feature> features = []
+        // Idea for refactoring: Feature classes have different names as features in config -> Generalize!
         features.add(new ArgoCD(config))
         features.add(new Mailhog(config))
         features.add(new PrometheusStack(config))
