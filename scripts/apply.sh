@@ -24,10 +24,11 @@ INTERNAL_REGISTRY=true
 JENKINS_URL_FOR_SCMM="http://jenkins"
 SCMM_URL_FOR_JENKINS="http://scmm-scm-manager/scm"
 
-# When updating please also adapt k8s-related versions in Dockerfile, init-cluster.sh and vars.tf
-KUBECTL_DEFAULT_IMAGE='lachlanevenson/k8s-kubectl:v1.21.2'
+# When updating please also adapt in Dockerfile, vars.tf, ApplicationConfigurator.groovy and init-cluster.sh
+# Find and replace with this regex, e.g. ghcr.io/cloudogu/helm:([\d\.-]*)*
+KUBECTL_DEFAULT_IMAGE='lachlanevenson/k8s-kubectl:v1.25.4'
+HELM_DEFAULT_IMAGE='ghcr.io/cloudogu/helm:3.10.3-1'
 YAMLLINT_DEFAULT_IMAGE='cytopia/yamllint:1.25-0.7'
-HELM_DEFAULT_IMAGE='ghcr.io/cloudogu/helm:3.5.4-1'
 # cloudogu/helm also contains kubeval and helm kubeval plugin. Using the same image makes builds faster
 KUBEVAL_DEFAULT_IMAGE=${HELM_DEFAULT_IMAGE}
 HELMKUBEVAL_DEFAULT_IMAGE=${HELM_DEFAULT_IMAGE}
@@ -150,8 +151,9 @@ function findClusterBindAddress() {
   
   # Use an internal IP to contact Jenkins and SCMM
   # For k3d this is either the host's IP or the IP address of the k3d API server's container IP (when --bind-localhost=false)
+  # Note that this might return multiple InternalIP (IPV4 and IPV6) - we assume the first one is IPV4 (break after first)
   potentialClusterBindAddress="$(kubectl get "$(waitForNode)" \
-          --template='{{range .status.addresses}}{{ if eq .type "InternalIP" }}{{.address}}{{end}}{{end}}')"
+          --template='{{range .status.addresses}}{{ if eq .type "InternalIP" }}{{.address}}{{break}}{{end}}{{end}}')"
 
   localAddress="$(ip route get 1 | sed -n 's/^.*src \([0-9.]*\) .*$/\1/p')"
 

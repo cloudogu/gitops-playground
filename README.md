@@ -171,7 +171,7 @@ docker exec -it \
 #### Apply via kubectl (remote cluster)
 
 For remote clusters it is easiest to apply the playground via kubectl.
-You can find info on how to install kubectl [here](https://v1-21.docs.kubernetes.io/docs/tasks/tools/#kubectl).
+You can find info on how to install kubectl [here](https://v1-25.docs.kubernetes.io/docs/tasks/tools/#kubectl).
 
 ```shell
 # Create a temporary ServiceAccount and authorize via RBAC. This is needed to install CRDs, etc.
@@ -263,10 +263,10 @@ Images used by the gitops-build-lib are set in the `gitopsConfig` in each `Jenki
 def gitopsConfig = [
     ...
     buildImages          : [
-            helm: 'ghcr.io/cloudogu/helm:3.5.4-1',
-            kubectl: 'lachlanevenson/k8s-kubectl:v1.19.3',
-            kubeval: 'ghcr.io/cloudogu/helm:3.5.4-1',
-            helmKubeval: 'ghcr.io/cloudogu/helm:3.5.4-1',
+            helm: 'ghcr.io/cloudogu/helm:3.10.3-1',
+            kubectl: 'lachlanevenson/k8s-kubectl:v1.25.4',
+            kubeval: 'ghcr.io/cloudogu/helm:3.10.3-1',
+            helmKubeval: 'ghcr.io/cloudogu/helm:3.10.3-1',
             yamllint: 'cytopia/yamllint:1.25-0.7'
     ],...
 ```

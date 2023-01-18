@@ -12,7 +12,7 @@ import static com.cloudogu.gitops.utils.MapUtils.*
 @Slf4j
 class ApplicationConfigurator {
 
-    public static final String HELM_IMAGE = "ghcr.io/cloudogu/helm:3.5.4-1"
+    public static final String HELM_IMAGE = "ghcr.io/cloudogu/helm:3.10.3-1"
     public static final String DEFAULT_ADMIN_USER = 'admin'
     public static final String DEFAULT_ADMIN_PW = 'admin'
     private static final Map DEFAULT_VALUES = makeDeeplyImmutable([
@@ -53,7 +53,7 @@ class ApplicationConfigurator {
                     clusterBindAddress : '' // Set dynamically
             ],
             images     : [
-                    kubectl    : "lachlanevenson/k8s-kubectl:v1.21.2",
+                    kubectl    : "lachlanevenson/k8s-kubectl:v1.25.4",
                     helm       : HELM_IMAGE,
                     kubeval    : HELM_IMAGE,
                     helmKubeval: HELM_IMAGE,
