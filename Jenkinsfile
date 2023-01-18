@@ -191,8 +191,10 @@ private void trivy(output, flags, imageName) {
             .mountJenkinsUser()
             .mountDockerSocket()
             .inside("-v ${env.WORKSPACE}/.trivy/.cache:/root/.cache/") {
-                // Updating DB might take longer than the default 5 min
-                sh "trivy image --timeout 20m -o ${output} ${flags} ${imageName}"
+                // Scanning occasionally take longer than the default 5 min, increase timeout
+                // Avoid timouts with offline-scan. This does not affect updates of the trivy DB 
+                // https://github.com/aquasecurity/trivy/issues/3421
+                sh "trivy -d image --offline-scan --timeout 30m -o ${output} ${flags} ${imageName}"
             }
 }
 
