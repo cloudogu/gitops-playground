@@ -26,9 +26,8 @@ function configureScmmManager() {
   # successful, when SCM also sends the Repo URLs using the internal URL
   BASE_URL=${5}
   IS_LOCAL=${6}
-  INSTALL_FLUXV1="${7}"
-  INSTALL_FLUXV2="${8}"
-  INSTALL_ARGOCD="${9}"
+  INSTALL_FLUXV2="${7}"
+  INSTALL_ARGOCD="${8}"
 
   GITOPS_USERNAME="gitops"
   GITOPS_PASSWORD=${ADMIN_PASSWORD}
@@ -42,20 +41,6 @@ function configureScmmManager() {
 
   addUser "${GITOPS_USERNAME}" "${GITOPS_PASSWORD}" "gitops@mail.de"
 
-  ### FluxV1 Repos
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV1 == true ]]; then
-    addRepo "fluxv1" "gitops"
-    setPermission "fluxv1" "gitops" "${GITOPS_USERNAME}" "WRITE"
-  
-    addRepo "fluxv1" "petclinic-plain"
-    setPermission "fluxv1" "petclinic-plain" "${GITOPS_USERNAME}" "WRITE"
-    addRepo "fluxv1" "petclinic-helm"
-    setPermission "fluxv1" "petclinic-helm" "${GITOPS_USERNAME}" "WRITE"
-  
-    addRepo "fluxv1" "nginx-helm"
-    setPermission "fluxv1" "nginx-helm" "${GITOPS_USERNAME}" "WRITE"
-  fi
-  
   ### FluxV2 Repos
   if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV2 == true ]]; then
     addRepo "fluxv2" "gitops"

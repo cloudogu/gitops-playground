@@ -4,7 +4,7 @@
 Reproducible infrastructure to showcase GitOps workflows with Kubernetes.
 
 In fact, this rolls out a complete DevOps stack with different features including 
-* GitOps (with different controllers to choose from: Argo CD, Flux v1 and v2),
+* GitOps (with different controllers to choose from: Argo CD and Flux v2),
 * example applications and CI-pipelines (using Jenkins and our [GitOps library](https://github.com/cloudogu/gitops-build-lib)),
 * Notifications/Alerts (using Mailhog for Demo purposes)
 * Monitoring (using Prometheus and Grafana),
@@ -32,7 +32,7 @@ bash <(curl -s \
 ```
 
 This command will also print URLs of the [applications](#applications) inside the cluster to get you started.  
-Note that you can append `--argocd`, `--fluxv1` and `--fluxv2` to select specific operators. This will also speed up the 
+Note that you can append `--argocd` and `--fluxv2` to select specific operators. This will also speed up the 
 progress.
 
 We recommend running this command as an unprivileged user, that is inside the [docker group](https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user). 
@@ -62,7 +62,6 @@ We recommend running this command as an unprivileged user, that is inside the [d
     - [Example app](#example-app)
   - [Argo CD UI](#argo-cd-ui)
   - [Demo applications](#demo-applications)
-    - [Flux V1](#flux-v1)
     - [Flux V2](#flux-v2)
     - [Argo CD](#argo-cd)
 - [Development](#development)
@@ -73,7 +72,7 @@ We recommend running this command as an unprivileged user, that is inside the [d
 
 The GitOps Playground provides an reproducible environment for trying out GitOps. Is consists of Infra As Code and 
 scripts for automatically setting up a Kubernetes Cluster including CI-server (Jenkins), source code management 
-(SCM-Manager) and several GitOps operators (Flux V1, Flux V2, Argo CD). 
+(SCM-Manager) and several GitOps operators (Flux V2, Argo CD). 
 CI-Server, SCM and operators are pre-configured with a number of [demo applications](#demo-applications).
 
 The GitOps Playground lowers the barriers for getting your hands on GitOps. No need to read lots of books and operator
@@ -209,7 +208,6 @@ docker run --rm ghcr.io/cloudogu/gitops-playground --help
 ##### Deploy specific GitOps operators only
 
 * `--argocd` - deploy only Argo CD GitOps operator
-* `--fluxv1` - deploy only Flux v1 GitOps operator
 * `--fluxv2` - deploy only Flux v2 GitOps operator
 
 ##### Deploy with local Cloudogu Ecosystem
@@ -538,44 +536,6 @@ Note that we are working on moving the GitOps-related logic into a
 Please note that it might take about a minute after the pull request has been accepted for the GitOps operator to start
 deploying.
 Alternatively you can trigger the deployment via the respective GitOps operator's CLI (flux) or UI (Argo CD)
-
-#### Flux V1
-
-##### PetClinic with plain k8s resources 
-
-[Jenkinsfile](applications/petclinic/fluxv1/plain-k8s/Jenkinsfile) for plain `k8s` deployment
-
-* Staging: 
-  * local: [localhost:30001](http://localhost:30001) 
-  * remote: `scripts/get-remote-url spring-petclinic-plain fluxv1-staging`
-* Production:  
-  * local: [localhost:30002](http://localhost:30002)
-  * remote: `scripts/get-remote-url spring-petclinic-plain fluxv1-production`
-* QA (example for a 3rd stage)
-  * local: [localhost:30003](http://localhost:30003) 
-  * remote: `scripts/get-remote-url spring-petclinic-plain fluxv1-qa`
-
-##### PetClinic with helm
-
-[Jenkinsfile](applications/petclinic/fluxv1/helm/Jenkinsfile) for `helm` deployment
-
-* Staging
-  * local: [localhost:30004](http://localhost:30004)
-  * remote: `scripts/get-remote-url spring-petclinic-helm-springboot fluxv1-staging`
-* Production
-  * local: [localhost:30005](http://localhost:30005) 
-  * remote: `scripts/get-remote-url spring-petclinic-helm-springboot fluxv1-production`
-
-##### 3rd Party app (NGINX) with helm
-
-[Jenkinsfile](applications/nginx/fluxv1/Jenkinsfile)
-
-* Staging
-  * local: [localhost:30006](http://localhost:30006)
-  * remote: `scripts/get-remote-url nginx fluxv1-staging`
-* Production
-  * local: [localhost:30007](http://localhost:30007)
-  * remote: `scripts/get-remote-url nginx fluxv1-production`
 
 #### Flux V2
 

@@ -24,7 +24,6 @@ function main() {
   fi
   
   if [[ $DEBUG = true ]]; then
-    removeFluxv1
     removeFluxv2
     removeArgoCD
     removeSCMM
@@ -32,7 +31,6 @@ function main() {
     removeK8sResources
     cleanup
   else
-    removeFluxv1 > /dev/null 2>&1 & spinner "Removing Flux V1"
     removeFluxv2 > /dev/null 2>&1 & spinner "Removing Flux V2"
     removeArgoCD > /dev/null 2>&1 & spinner "Removing ArgoCD"
     removeSCMM > /dev/null 2>&1 & spinner "Removing SCM-Manager"
@@ -42,11 +40,6 @@ function main() {
   fi
 
   confirm 'Remove Jenkins agent workspace as well? (/tmp/gitops-playground-jenkins-agent)' 'y/n [n]' && rm -rf /tmp/gitops-playground-jenkins-agent
-}
-
-function removeFluxv1() {
-  helm delete flux-operator -n fluxv1 || true
-  helm delete helm-operator -n fluxv1 || true
 }
 
 function removeFluxv2() {
@@ -91,7 +84,6 @@ function removeK8sResources() {
   kubectl delete secret jenkins-credentials -n default || true
   kubectl delete secret gitops-scmm -n default || true
   kubectl delete secret gitops-scmm -n argocd || true
-  kubectl delete secret gitops-scmm -n fluxv1 || true
   kubectl delete secret gitops-scmm -n flux-system || true
   kubectl delete customresourcedefinitions.apiextensions.k8s.io servicemonitors.monitoring.coreos.com || true
   

@@ -66,7 +66,6 @@ class ApplicationConfigurator {
                     cesBuildLib        : "https://github.com/cloudogu/ces-build-lib.git"
             ],
             features   : [
-                    fluxv1    : true,
                     fluxv2    : true,
                     argocd    : [
                             active    : true,
