@@ -139,7 +139,7 @@ function main() {
   fi
 
   # call our groovy cli and pass in all params
-  "$PLAYGROUND_DIR"/scripts/apply-ng.sh "$@"
+  evalWithSpinner "Running apply-ng..." "$PLAYGROUND_DIR/scripts/apply-ng.sh" "$@"
 
   printWelcomeScreen
 }
