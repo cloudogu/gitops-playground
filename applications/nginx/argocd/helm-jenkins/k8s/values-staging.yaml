@@ -1,4 +1,3 @@
-namespaceOverride: argocd-staging
 service:
   nodePorts:
     http: 30024

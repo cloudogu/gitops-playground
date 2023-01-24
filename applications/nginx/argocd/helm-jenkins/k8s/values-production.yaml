@@ -1,4 +1,3 @@
-namespaceOverride: argocd-production
 service:
   nodePorts:
     http: 30025

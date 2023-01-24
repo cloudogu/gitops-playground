@@ -11,7 +11,6 @@ import java.nio.file.Path
 
 @Slf4j
 class Vault extends Feature {
-    static final String HELM_VALUES_PATH = "system/secrets/vault/values.yaml"
     static final String VAULT_START_SCRIPT_PATH = '/system/secrets/vault/dev-post-start.sh'
 
 
@@ -41,7 +40,16 @@ class Vault extends Feature {
     void enable() {
         // Note that some specific configuration steps are implemented in ArgoCD
 
-        Map yaml = fileSystemUtils.readYaml(Path.of fileSystemUtils.rootDir, HELM_VALUES_PATH)
+        Map yaml = [
+                ui: [
+                        enabled: true,
+                        serviceType: "LoadBalancer",
+                        externalPort: 80
+                ],
+                injector: [
+                        enabled: false
+                ]
+        ]
 
         if (!config.application['remote']) {
             log.debug("Setting Vault service.type to NodePort since it is not running in a remote cluster")
