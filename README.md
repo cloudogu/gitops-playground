@@ -16,7 +16,7 @@ For questions or suggestions you are welcome to join us at our myCloudogu [commu
 
 [![Discuss it on myCloudogu](https://static.cloudogu.com/static/images/discuss-it.png)](https://community.cloudogu.com/t/introducing-the-gitops-playground/107)
 
-![Playground features](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml-src/gitops-playground-features.puml&fmt=svg) |
+![Playground features](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml-src/gitops-playground-features.puml&fmt=svg)
 
 # TLDR;
 

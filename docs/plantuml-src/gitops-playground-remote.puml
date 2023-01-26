@@ -29,10 +29,10 @@ cloud "Your cloud provider" {
         
         together {
             rectangle "<$box>\nOCI Registry" as registry
-            rectangle "<$scm>\nSCM-Manager" as scmm {
-                rectangle "<$git>\nApp Repo" as appRepo
-                rectangle "<$git>\nGitOps Repo" as configRepo
-            }
+        }
+        rectangle "<$scm>\nSCM-Manager" as scmm {
+            rectangle "<$git>\nApp Repo" as appRepo
+            rectangle "<$git>\nGitOps Repo" as configRepo
         }
         
         rectangle "<$jenkins>\nJenkins Controller" as jenkins
