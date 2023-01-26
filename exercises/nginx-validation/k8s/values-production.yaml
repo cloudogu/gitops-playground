@@ -1,4 +1,4 @@
- service:
-  port: 8O
+namespaceOverride: argocd-production
+service:
   nodePorts:
     http: 3OO43

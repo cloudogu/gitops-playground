@@ -10,7 +10,7 @@ export PLAYGROUND_DIR
 
 PETCLINIC_COMMIT=32c8653
 SPRING_BOOT_HELM_CHART_COMMIT=0.3.0
-ARGO_HELM_CHART_VERSION=3.35.4 # Last version with argo 1.x
+ARGO_HELM_CHART_VERSION=5.9.1 # From 5.10.0 Helm chart requires K8s 1.22: https://github.com/argoproj/argo-helm/commit/3d9e2f35a6e6249c27fd4ccd8129622d886ef4ea#diff-16f38cd1a4674cb682ac9f015fbc1c1ff552f024a8f791c16de0de21a1f65771R3
 
 source ${ABSOLUTE_BASEDIR}/utils.sh
 source ${ABSOLUTE_BASEDIR}/jenkins/init-jenkins.sh
@@ -227,7 +227,7 @@ function applyBasicK8sResources() {
     helm repo add fluxcd https://charts.fluxcd.io
     helm repo add stable https://charts.helm.sh/stable
     helm repo add argo https://argoproj.github.io/argo-helm
-    helm repo add bitnami https://charts.bitnami.com/bitnami
+    helm repo add bitnami https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami
     helm repo add scm-manager https://packages.scm-manager.org/repository/helm-v2-releases/
     helm repo add jenkins https://charts.jenkins.io
     helm repo update
@@ -317,7 +317,7 @@ function initFluxV1() {
   pushPetClinicRepo 'applications/petclinic/fluxv1/helm' 'fluxv1/petclinic-helm'
   # Set NodePort service, to avoid "Pending" services on local cluster
   initRepoWithSource 'applications/nginx/fluxv1' 'fluxv1/nginx-helm' \
-      "if [[ $REMOTE_CLUSTER != true ]]; then find . -name values-shared.yaml -exec bash -c '(echo && echo service.type: NodePort && echo) >> {}' \; ; fi"
+      "if [[ $REMOTE_CLUSTER != true ]]; then find . -name values-shared.yaml -exec bash -c '(echo && echo \"  type: NodePort\"  && echo) >> {}' \; ; fi"
 
   SET_GIT_URL=""
   if [[ ${INTERNAL_SCMM} == false ]]; then
@@ -337,14 +337,14 @@ function initFluxV2() {
 
   initRepoWithSource 'fluxv2' 'fluxv2/gitops'
 
-  REPOSITORY_YAML_PATH="fluxv2/clusters/gitops-playground/fluxv2/gotk-gitrepository.yaml"
+  REPOSITORY_YAML_PATH="fluxv2/clusters/gitops-playground/flux-system/gotk-sync.yaml"
   if [[ ${INTERNAL_SCMM} == false ]]; then
-    REPOSITORY_YAML_PATH="$(mkTmpWithReplacedScmmUrls "fluxv2/clusters/gitops-playground/fluxv2/gotk-gitrepository.yaml")"
+    REPOSITORY_YAML_PATH="$(mkTmpWithReplacedScmmUrls "fluxv2/clusters/gitops-playground/flux-system/gotk-sync.yaml")"
   fi
 
-  kubectl apply -f fluxv2/clusters/gitops-playground/fluxv2/gotk-components.yaml || true
+  kubectl apply -f fluxv2/clusters/gitops-playground/flux-system/gotk-components.yaml || true
   kubectl apply -f "${REPOSITORY_YAML_PATH}" || true
-  kubectl apply -f fluxv2/clusters/gitops-playground/fluxv2/gotk-kustomization.yaml || true
+  kubectl apply -f fluxv2/clusters/gitops-playground/flux-system/gotk-kustomization.yaml || true
 }
 
 function initArgo() {
@@ -373,14 +373,11 @@ function initArgo() {
   pushPetClinicRepo 'applications/petclinic/argocd/plain-k8s' 'argocd/petclinic-plain'
   pushPetClinicRepo 'applications/petclinic/argocd/helm' 'argocd/petclinic-helm'
   initRepo 'argocd/gitops'
-#  initRepoWithSource 'argocd/control-app' 'argocd/control-app' metricsConfiguration
 
   # Set NodePort service, to avoid "Pending" services and "Processing" state in argo on local cluster
-  initRepoWithSource 'applications/nginx/argocd/helm-jenkins' 'argocd/nginx-helm-jenkins' \
-    "if [[ $REMOTE_CLUSTER != true ]]; then find . -name values-shared.yaml -exec bash -c '(echo && echo service: && echo \"  type: NodePort\" ) >> {}' \; ; fi"
-  
   initRepoWithSource 'applications/nginx/argocd/helm-dependency' 'argocd/nginx-helm-dependency' \
-    "if [[ $REMOTE_CLUSTER != true ]]; then find . -name values.yaml -exec bash -c '(echo && \"    type: NodePort\" ) >> {}' \; ; fi"
+    "if [[ $REMOTE_CLUSTER != true ]]; then find . -name values.yaml -exec bash -c '(echo && echo \"    type: NodePort\" ) >> {}' \; ; fi"
+  # Note: "applications/nginx/argocd/helm-jenkins" already migrated to groovy
 
   # init exercise
   pushPetClinicRepo 'exercises/petclinic-helm' 'exercises/petclinic-helm'
@@ -451,7 +448,7 @@ function createSecrets() {
   createSecret gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=$SET_PASSWORD -n argocd
   # flux needs lowercase fieldnames
   createSecret gitops-scmm --from-literal=username=gitops --from-literal=password=$SET_PASSWORD -n fluxv1
-  createSecret gitops-scmm --from-literal=username=gitops --from-literal=password=$SET_PASSWORD -n fluxv2
+  createSecret flux-system --from-literal=username=gitops --from-literal=password=$SET_PASSWORD -n flux-system
 }
 
 function createSecret() {
@@ -643,39 +640,6 @@ function initRepoWithSource() {
 
   setDefaultBranch "${TARGET_REPO_SCMM}"
 }
-
-#function metricsConfiguration() {
-#
-#  if [[ $REMOTE_CLUSTER != true ]]; then
-#      # Set NodePort service, to avoid "Pending" services and "Processing" state in argo
-#      sed -i "s/LoadBalancer/NodePort/" "applications/application-mailhog-helm.yaml"
-#  fi
-#
-#  if [[ $ARGOCD_URL != "" ]]; then
-#      sed -i "s|argocdUrl: http://localhost:9092|argocdUrl: $ARGOCD_URL|g" "applications/application-argocd-notifications.yaml"
-#  fi
-#
-#  if [[ $DEPLOY_METRICS == true ]]; then
-#
-#    kubectl apply -f "${PLAYGROUND_DIR}/metrics/grafana/dashboards" || true
-#
-#    ARGOCD_APP_PROMETHEUS_STACK="applications/application-kube-prometheus-stack-helm.yaml"
-#
-#    if [[ ${SET_USERNAME} != "admin" ]]; then
-#      FROM_USERNAME_STRING='adminUser: admin'
-#      TO_USERNAME_STRING="adminUser: ${SET_USERNAME}"
-#      sed -i -e "s%${FROM_USERNAME_STRING}%${TO_USERNAME_STRING}%g" "${ARGOCD_APP_PROMETHEUS_STACK}"
-#    fi
-#
-#    if [[ ${SET_PASSWORD} != "admin" ]]; then
-#      FROM_PASSWORD_STRING='adminPassword: admin'
-#      TO_PASSWORD_STRING="adminPassword: ${SET_PASSWORD}"
-#      sed -i -e "s%${FROM_PASSWORD_STRING}%${TO_PASSWORD_STRING}%g" "${ARGOCD_APP_PROMETHEUS_STACK}"
-#    fi
-#  else
-#      rm -f "applications/application-kube-prometheus-stack-helm.yaml"
-#  fi
-#}
 
 function setDefaultBranch() {
   TARGET_REPO_SCMM="$1"
@@ -872,7 +836,7 @@ function printParameters() {
   echo "    | --argocd-config-only  >> Skips installing argo-cd. Applies ConfigMap and Application manifests to bootstrap existing argo-cd"
   echo
   echo "Configure additional modules"
-  echo "    | --metrics       >> Installs the Kube-Prometheus-Stack for ArgoCD. This includes Prometheus, the Prometheus operator, Grafana and some extra resources"
+  echo "    | --monitoring, --metrics        >> Installs the Kube-Prometheus-Stack for ArgoCD. This includes Prometheus, the Prometheus operator, Grafana and some extra resources"
   echo
   echo " -d | --debug         >> Debug output"
   echo " -x | --trace         >> Debug + Show each command executed (set -x)"
@@ -882,7 +846,7 @@ function printParameters() {
 readParameters() {
   COMMANDS=$(getopt \
     -o hdxyc \
-    --long help,fluxv1,fluxv2,argocd,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,trace,insecure,yes,skip-helm-update,argocd-config-only,metrics,argocd-url: \
+    --long help,fluxv1,fluxv2,argocd,argocd-url:,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,trace,insecure,yes,skip-helm-update,argocd-config-only,metrics,monitoring,vault: \
     -- "$@")
   
   if [ $? != 0 ]; then
@@ -930,6 +894,7 @@ readParameters() {
       --fluxv1             ) INSTALL_FLUXV1=true; INSTALL_ALL_MODULES=false; shift ;;
       --fluxv2             ) INSTALL_FLUXV2=true; INSTALL_ALL_MODULES=false; shift ;;
       --argocd             ) INSTALL_ARGOCD=true; INSTALL_ALL_MODULES=false; shift ;;
+      --argocd-url         ) ARGOCD_URL="$2"; shift 2 ;;
       --remote             ) REMOTE_CLUSTER=true; shift ;;
       --jenkins-url        ) JENKINS_URL="$2"; shift 2 ;;
       --jenkins-username   ) JENKINS_USERNAME="$2"; shift 2 ;;
@@ -955,8 +920,8 @@ readParameters() {
       -y | --yes           ) ASSUME_YES=true; shift ;;
       --skip-helm-update   ) SKIP_HELM_UPDATE=true; shift ;;
       --argocd-config-only ) ARGOCD_CONFIG_ONLY=true; shift ;;
-      --metrics            ) DEPLOY_METRICS=true; shift;;
-      --argocd-url         ) ARGOCD_URL="$2"; shift 2 ;;
+      --metrics | --monitoring ) DEPLOY_METRICS=true; shift;;
+      --vault              ) shift 2;; # Ignore, used in groovy only
       --                   ) shift; break ;;
     *) break ;;
     esac

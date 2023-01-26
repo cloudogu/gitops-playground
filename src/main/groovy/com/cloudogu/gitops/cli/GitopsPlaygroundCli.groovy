@@ -1,11 +1,13 @@
 package com.cloudogu.gitops.cli
 
-import com.cloudogu.gitops.core.Application
-import com.cloudogu.gitops.core.ApplicationConfigurator
-import com.cloudogu.gitops.core.modules.ModuleRepository
+import com.cloudogu.gitops.Application
+import com.cloudogu.gitops.ApplicationConfigurator
 import groovy.util.logging.Slf4j
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
+
+import static groovy.json.JsonOutput.prettyPrint
+import static groovy.json.JsonOutput.toJson
 
 @Command(name = 'gitops-playground-cli', description = 'CLI-tool to deploy gitops-playground.',
         mixinStandardHelpOptions = true)
@@ -63,9 +65,14 @@ class GitopsPlaygroundCli implements Runnable {
     private boolean argocdConfigOnly
 
     // args group metrics
-    @Option(names = ['--metrics'], description = 'Installs the Kube-Prometheus-Stack for ArgoCD. This includes Prometheus, the Prometheus operator, Grafana and some extra resources')
-    private boolean metrics
-
+    @Option(names = ['--metrics', '--monitoring'], description = 'Installs the Kube-Prometheus-Stack. This includes Prometheus, the Prometheus operator, Grafana and some extra resources')
+    private boolean monitoring
+    
+    // args group metrics
+    @Option(names = ['--vault'], description = 'Installs Hashicorp vault and the external secrets operator. Possible values: ${COMPLETION-CANDIDATES}')
+    private VaultModes vault
+    enum VaultModes { dev, prod }
+    
     // args group debug
     @Option(names = ['-d', '--debug'], description = 'Debug output')
     private boolean debug
@@ -92,14 +99,19 @@ class GitopsPlaygroundCli implements Runnable {
 
     @Override
     void run() {
-        ApplicationConfigurator applicationConfigurator = new ApplicationConfigurator(parseConfig())
-        Map config = applicationConfigurator.populateConfig()
-
-        Application app = new Application(new ModuleRepository(config))
+        ApplicationConfigurator applicationConfigurator = new ApplicationConfigurator()
+        Map config = applicationConfigurator
+                // Here we could implement loading from a config file, giving CLI params precedence
+                //.setConfig(configFile.toFile().getText())
+                .setConfig(parseOptionsIntoConfig())
+        
+        log.debug("Actual config: ${prettyPrint(toJson(config))}")
+        
+        Application app = new Application(config)
         app.start()
     }
-
-    private Map parseConfig() {
+    
+    private Map parseOptionsIntoConfig() {
         return [
                 registry   : [
                         url         : registryUrl,
@@ -135,7 +147,7 @@ class GitopsPlaygroundCli implements Runnable {
                         helmKubeval: helmKubevalImage,
                         yamllint   : yamllintImage
                 ],
-                modules    : [
+                features    : [
                         fluxv1 : fluxv1,
                         fluxv2 : fluxv2,
                         argocd : [
@@ -143,10 +155,16 @@ class GitopsPlaygroundCli implements Runnable {
                                 configOnly: argocdConfigOnly,
                                 url       : argocdUrl
                         ],
-                        metrics: metrics
+                        monitoring : [
+                                active    : monitoring
+                        ],
+                        secrets : [
+                                vault : [
+                                        mode : vault
+                                ]
+                        ],
                 ]
         ]
     }
-
 }
 

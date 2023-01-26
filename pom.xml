@@ -29,7 +29,7 @@
       <artifactId>micronaut-inject-groovy</artifactId>
       <scope>provided</scope>
     </dependency>
-    
+
     <dependency>
       <groupId>org.codehaus.groovy</groupId>
       <artifactId>groovy-all</artifactId>
@@ -50,76 +50,69 @@
         </exclusion>
       </exclusions>
     </dependency>
-    
+
     <dependency>
       <groupId>org.codehaus.groovy</groupId>
       <artifactId>groovy-yaml</artifactId>
       <version>${groovy.version}</version>
     </dependency>
-    
+
     <dependency>
       <groupId>info.picocli</groupId>
       <artifactId>picocli</artifactId>
       <scope>compile</scope>
     </dependency>
-    
+
     <dependency>
       <groupId>io.micronaut.groovy</groupId>
       <artifactId>micronaut-runtime-groovy</artifactId>
       <scope>compile</scope>
     </dependency>
-    
+
     <dependency>
       <groupId>io.micronaut.picocli</groupId>
       <artifactId>micronaut-picocli</artifactId>
       <scope>compile</scope>
     </dependency>
-    
+
     <dependency>
       <groupId>info.picocli</groupId>
       <artifactId>picocli-codegen</artifactId>
       <scope>provided</scope>
     </dependency>
-    
+
     <dependency>
       <groupId>io.micronaut</groupId>
       <artifactId>micronaut-inject</artifactId>
       <scope>compile</scope>
     </dependency>
-    
+
     <dependency>
       <groupId>io.micronaut</groupId>
       <artifactId>micronaut-validation</artifactId>
       <scope>compile</scope>
     </dependency>
-    
+
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
       <scope>compile</scope>
     </dependency>
-    
+
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
       <version>2.11.0</version>
       <scope>compile</scope>
     </dependency>
-    
-    <dependency>
-      <groupId>com.squareup.okhttp3</groupId>
-      <artifactId>okhttp</artifactId>
-      <version>4.9.3</version>
-      <scope>compile</scope>
-    </dependency>
-    
+
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-crypto</artifactId>
       <version>5.7.3</version>
       <scope>compile</scope>
     </dependency>
-    
+
     <dependency>
       <!-- Avoids java.lang.NoClassDefFoundError: org/apache/commons/logging/Log-->
       <groupId>org.springframework</groupId>
@@ -128,43 +121,49 @@
       <!-- Right now only needed in new BCryptPasswordEncoder() used in tests -->
       <scope>test</scope>
     </dependency>
-    
+
     <dependency>
       <groupId>io.micronaut</groupId>
       <artifactId>micronaut-http-client</artifactId>
       <scope>test</scope>
     </dependency>
-    
+
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
-    
+
     <dependency>
       <groupId>io.micronaut.test</groupId>
       <artifactId>micronaut-test-junit5</artifactId>
       <scope>test</scope>
     </dependency>
-    
+
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
       <version>${mockitoVersion}</version>
       <scope>test</scope>
     </dependency>
-    
+
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-junit-jupiter</artifactId>
       <version>${mockitoVersion}</version>
       <scope>test</scope>
     </dependency>
-    
+
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
       <version>3.23.1</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.codehaus.groovy</groupId>
+      <artifactId>groovy-test</artifactId>
       <scope>test</scope>
     </dependency>
     
@@ -174,7 +173,7 @@
       <version>1.2.1</version>
       <scope>test</scope>
     </dependency>
-    
+
     <!-- GraalVM only -->
     <dependency>
       <groupId>org.graalvm.nativeimage</groupId>
@@ -201,7 +200,7 @@
         <version>3.2.0</version>
       </plugin>
 
-       <plugin>
+      <plugin>
         <groupId>io.micronaut.build</groupId>
         <artifactId>micronaut-maven-plugin</artifactId>
       </plugin>
@@ -259,6 +258,11 @@
 
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
+      </plugin>
+
+      <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <version>3.3.0</version>
       </plugin>
 
       <plugin>

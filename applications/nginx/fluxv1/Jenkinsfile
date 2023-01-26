@@ -8,7 +8,7 @@ String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/common/ces-build-lib/" }
 String getCesBuildLibVersion() { '1.48.0' }
 String getGitOpsBuildLibRepo() { "${env.SCMM_URL}/repo/common/gitops-build-lib" }
 String getGitOpsBuildLibVersion() { '0.1.3'}
-String getHelmChartRepository() { "https://charts.bitnami.com/bitnami" }
+String getHelmChartRepository() { "https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami" }
 String getHelmChartName() { "nginx" }
 String getHelmChartVersion() { "10.0.1" }
 String getMainBranch() { 'main' }

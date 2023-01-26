@@ -67,6 +67,8 @@ Jenkins.instance.pluginManager.plugins.collect().sort().each {
 
 * Run only groovy scripts - allows for simple debugging
   * Run from IDE, works e.g. with IntelliJ IDEA 
+    Note: If you encounter `error=2, No such file or directory`,
+    it might be necessary to explicitly set your `PATH` in Run Configuration's Environment Section.
   * From shell:
     * [Provide dependencies](#providing-dependencies)
     * Run
@@ -122,3 +124,66 @@ Hint: uses buildkit for much faster builds, skipping the static image stuff not 
 TODO: Copy a script `apply-ng` into the dev image that calls `groovy GitopsPlaygroundCliMain?! args`.
 Then, we can use the dev image to try out if the playground image works without having to wait for the static image to
 be built.
+
+## Implicit explicit dependencies
+
+The GitOps Playground comprises a lot of software components. The versions of some of them are pinned within this 
+repository so need to be upgraded regularly.
+
+* Kubernetes [in Terraform](../terraform/vars.tf) and locally [k3d](../scripts/init-cluster.sh),
+* [k3d](../scripts/init-cluster.sh), [Upgrade to v5 WIP](https://github.com/cloudogu/gitops-playground/tree/feature/k3d-version5) 
+* [Groovy libs](../pom.xml) + [Maven](../.mvn/wrapper/maven-wrapper.properties)
+* Installed components
+  * Jenkins 
+    * Helm Chart 
+    * Plugins
+    * Pod `tmp-docker-gid-grepper`
+    * `dockerClientVersion`
+    * Init container `create-agent-working-dir`
+    * Agent Image
+  * SCM-Manager Helm Chart + Plugins
+  * Docker Registry Helm Chart
+  * GitOps Operators
+    * ArgoCD Helm Chart
+    * Flux v1 + v2 Helm Charts
+  * Grafana + Prometheus [Helm Charts](../src/main/groovy/com/cloudogu/gitops/ApplicationConfigurator.groovy)
+  * Vault + ExternalSerets Operator [Helm Charts](../src/main/groovy/com/cloudogu/gitops/ApplicationConfigurator.groovy)
+* Applications
+  * GitOps-build-lib + `buildImages`
+  * ces-build-lib
+  * Spring PetClinic
+  * NGINX Helm Chart
+* Dockerfile
+  * Alpine
+  * GraalVM
+  * JDK
+  * Groovy
+  * musl & zlib
+  * Packages installed using apk, gu, microdnf
+
+## Upgrade Flux
+
+```shell
+  PW=admin
+flux bootstrap git \
+  --url=http://localhost:9091/scm/repo/fluxv2/gitops \
+  --allow-insecure-http=true \
+  --branch=main \
+  --path=./clusters/gitops-playground \
+  --token-auth \
+  --username=admin \
+  --password=${PW} \
+  --interval=10s
+# Once we have webhooks setup we no longer need this short interval
+```
+
+Then 
+* replace contents in `fluxv2/clusters/gitops-playground/flux-system` by the one in http://localhost:9091/scm/repo/fluxv2/gitops
+* In `gotk-sync.yaml` 
+  * update url to http://scmm-scm-manager.default.svc.cluster.local/scm/repo/fluxv2/gitops
+  * Set `--interval=10s` in kustomization
+
+In case of error
+```shell
+flux uninstall
+```

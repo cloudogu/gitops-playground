@@ -4,9 +4,9 @@ ARG ENV=prod
 ARG JDK_VERSION='17'
 # Those are set by the micronaut BOM, see pom.xml
 ARG GROOVY_VERSION='3.0.13'
-ARG GRAAL_VERSION='22.2.0'
+ARG GRAAL_VERSION='22.3.0'
 
-FROM alpine:3.16.2 as alpine
+FROM alpine:3.17.1 as alpine
 
 # Keep in sync with the version in pom.xml
 FROM ghcr.io/graalvm/graalvm-ce:ol8-java${JDK_VERSION}-${GRAAL_VERSION} AS graal
@@ -17,11 +17,18 @@ WORKDIR /app
 COPY .mvn/ /app/.mvn/
 COPY mvnw /app/
 COPY pom.xml /app/
-RUN ./mvnw dependency:go-offline
+RUN ./mvnw dependency:resolve-plugins dependency:go-offline -B 
 
-FROM maven-cache as maven-build
-COPY src /app/src/
-COPY compiler.groovy .
+FROM graal as maven-build
+ENV MAVEN_OPTS='-Dmaven.repo.local=/mvn'
+COPY --from=maven-cache /mvn/ /mvn/
+COPY --from=maven-cache /app/ /app
+# Speed up build by not compiling tests
+COPY src/main /app/src/main
+COPY compiler.groovy /app
+
+WORKDIR /app
+# Build native image without micronaut
 RUN ./mvnw package -DskipTests
 # Use simple name for largest jar file -> Easier reuse in later stages
 RUN mv $(ls -S target/*.jar | head -n 1) /app/gitops-playground.jar
@@ -31,8 +38,8 @@ FROM alpine as downloader
 # When updating, 
 # * also update the checksum found at https://dl.k8s.io/release/v${K8S_VERSION}/bin/linux/amd64/kubectl.sha256
 # * also update k8s-related versions in vars.tf, init-cluster.sh and apply.sh
-ARG K8S_VERSION=1.21.2
-ARG KUBECTL_CHECKSUM=55b982527d76934c2f119e70bf0d69831d3af4985f72bb87cd4924b1c7d528da
+ARG K8S_VERSION=1.21.14
+ARG KUBECTL_CHECKSUM=0c1682493c2abd7bc5fe4ddcdb0b6e5d417aa7e067994ffeca964163a988c6ee
 # When updating, also update the checksum found at https://github.com/helm/helm/releases
 ARG HELM_VERSION=3.8.2
 ARG HELM_CHECKSUM=6cb9a48f72ab9ddfecab88d264c2f6508ab3cd42d9c09666be16a7bf006bed7b
@@ -61,7 +68,6 @@ RUN gpg --batch --verify helm.tar.gz.asc helm.tar.gz
 RUN mv linux-amd64/helm /dist/usr/local/bin
 
 # Kubectl
-RUN wget -q -O kubectl.sha256 https://dl.k8s.io/release/v${K8S_VERSION}/bin/linux/amd64/kubectl.sha256
 RUN wget -q -O kubectl https://dl.k8s.io/release/v${K8S_VERSION}/bin/linux/amd64/kubectl
 # kubectl binary download does not seem to offer signatures
 RUN echo "${KUBECTL_CHECKSUM}  kubectl" | sha256sum -c

@@ -2,7 +2,7 @@
 set -o errexit -o nounset -o pipefail
 
 SCMM_PROTOCOL=http
-SCMM_HELM_CHART_VERSION=2.33.0
+SCMM_HELM_CHART_VERSION=2.40.0
 
 function deployLocalScmmManager() {
   local REMOTE_CLUSTER=${1}

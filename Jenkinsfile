@@ -4,7 +4,8 @@ import com.cloudogu.ces.cesbuildlib.*
 
 String getDockerRegistryBaseUrl() { 'ghcr.io' }
 String getDockerImageName() { 'cloudogu/gitops-playground' }
-String getTrivyVersion() { '0.18.3' }
+// Note that from 0.30.x the resulting file will never be 0 kb in size, as checked in saveScanResultsOnVulnerabilities()
+String getTrivyVersion() { '0.29.2' }
 
 properties([
     // Dont keep builds forever to preserve space
@@ -88,7 +89,7 @@ node('docker') {
                                 docker.image(imageNames[0])
                                         .inside("-e KUBECONFIG=${env.WORKSPACE}/.kube/config " +
                                                 " --network=host --entrypoint=''" ) {
-                                            sh "/app/scripts/apply.sh --yes --trace --internal-registry-port=${registryPort} --argocd"
+                                            sh "/app/scripts/apply.sh --yes --trace --internal-registry-port=${registryPort} --argocd --monitoring --vault=dev"
                                         }
                             }
                         }
@@ -190,7 +191,10 @@ private void trivy(output, flags, imageName) {
             .mountJenkinsUser()
             .mountDockerSocket()
             .inside("-v ${env.WORKSPACE}/.trivy/.cache:/root/.cache/") {
-                sh "trivy image -o ${output} ${flags} ${imageName}"
+                // Scanning occasionally take longer than the default 5 min, increase timeout
+                // Avoid timouts with offline-scan. This does not affect updates of the trivy DB 
+                // https://github.com/aquasecurity/trivy/issues/3421
+                sh "trivy -d image --offline-scan --timeout 30m -o ${output} ${flags} ${imageName}"
             }
 }
 
