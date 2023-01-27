@@ -36,20 +36,20 @@ node "Your Host" as host <<$computer>> #ffffff {
             rectangle "<$git>\nGitOps Repo" as configRepo
         }
         
-        rectangle "<$jenkins>\nJenkins Controller" as jenkins
         rectangle "<$jenkins>\nAgent Pods" as jenkinsNode
+        rectangle "<$jenkins>\nJenkins Controller" as jenkins
     }
 }
 
 docker -> k8s : run
+docker -[hidden]> k8s : run
 appRepo -[hidden]> configRepo
 appRepo <-- jenkinsNode : pull
 configRepo <-- jenkinsNode : push
 registry <-- jenkinsNode : push
-
 kubelet --> containerd : run containers
 jenkins -> jenkinsNode : manage
-jenkinsNode -> docker: run containers\nbuild images
+jenkinsNode -> docker: run containers,\nbuild images
 gitops --> configRepo : pull
 gitops -> apiServer : apply resources
 kubelet -> registry : pull
