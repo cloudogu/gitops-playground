@@ -16,7 +16,9 @@ For questions or suggestions you are welcome to join us at our myCloudogu [commu
 
 [![Discuss it on myCloudogu](https://static.cloudogu.com/static/images/discuss-it.png)](https://community.cloudogu.com/t/introducing-the-gitops-playground/107)
 
-![Playground features](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml-src/gitops-playground-features.puml&fmt=svg)
+| Playground features                                                                                                                                                               | Installation                                                                                                                                                              |
+|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ![Playground features](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml-src/gitops-playground-features.puml&fmt=svg) | ![Installation](https://user-images.githubusercontent.com/1824962/215206261-fbae92fc-e73c-4977-99e3-858769e73c53.png) |
 
 # TLDR;
 
@@ -45,6 +47,7 @@ We recommend running this command as an unprivileged user, that is inside the [d
 
 - [What is the GitOps Playground?](#what-is-the-gitops-playground)
 - [Installation](#installation)
+  - [Overview](#overview)
   - [Create Cluster](#create-cluster)
   - [Apply playground](#apply-playground)
     - [Apply via Docker (local cluster)](#apply-via-docker-local-cluster)
@@ -102,18 +105,10 @@ Note that running Jenkins inside the cluster is meant for demo purposes only. Th
 scenario with the Cloudogu EcoSystem (CES). Here better security and build performance is achieved using ephemeral 
 Jenkins build agents spawned in the cloud.
 
-| Demo on local machine                                                                                                                                                                                                                                                                                                                                    |
-|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| ![Playground on local machine](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml-src/gitops-playground.puml&fmt=svg) |
-
-
-| Demo on remote cluster                                                                                                                                                                              | 
-|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-|  ![Playground on remote cluster](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml-src/gitops-playground-remote.puml&fmt=svg) | 
-
- | Production environment with CES                                                                                                                                                                   |
-|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| ![A possible production environment](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml-src/production-setting.puml&fmt=svg) |
+### Overview 
+| Demo on local machine                                                                                                                                                                          | Demo on remote cluster                                                                                                                                                                                 | Production environment with CES |
+|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------|
+| ![Playground on local machine](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml-src/gitops-playground.puml&fmt=svg) | ![Playground on remote cluster](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml-src/gitops-playground-remote.puml&fmt=svg) | ![A possible production environment](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml-src/production-setting.puml&fmt=svg) |
 
 ### Create Cluster
 
@@ -498,10 +493,15 @@ To demo this, you could
 ```shell
 while ; do echo -n "$(date '+%Y-%m-%d %H:%M:%S'): " ; curl http://localhost:30024/secret/ ; echo; sleep 1; done
 ```
+
   This usually takes between a couple of seconds and 1-2 minutes.  
   This time consists of `ExternalSecret`'s `refreshInterval`, as well as the [kubelet sync period](https://v1-25.docs.kubernetes.io/docs/concepts/configuration/configmap/#mounted-configmaps-are-updated-automatically)
   (defaults to [1 Minute](https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/#kubelet-config-k8s-io-v1beta1-KubeletConfiguration)) 
   + cache propagation delay
+
+The following video shows this demo in time-lapse:
+
+[secrets-demo-video](https://user-images.githubusercontent.com/1824962/215204174-eadf180b-2a82-4273-8cbb-6e7c187267c6.mp4)
 
 ### Argo CD UI
 
@@ -516,6 +516,7 @@ Each GitOps operator comes with a couple of demo applications that allow for exp
 features.
 
 All applications are deployed via separated application and GitOps repos: 
+
 ![](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/k8s-diagrams/cdd6bb77/diagrams/gitops-with-app-repo.puml&fmt=png)
 
 * Separation of app repo and GitOps repo
