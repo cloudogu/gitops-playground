@@ -62,8 +62,9 @@ enableKubernetesAuth() {
   
   # https://developer.hashicorp.com/vault/docs/auth/kubernetes#use-local-service-account-token-as-the-reviewer-jwt
   # Makes vault access the k8s API to find a service account matching an access token
-  # Vault then checks if the SA is authorized via a role. A role brings together a SA + policy.
-  # The policy allows access to a secret
+  # Vault then checks if the k8s-SA is authorized via a vault-role. A vault-role brings together a k8s-SA + vault-policy.
+  # The vault-policy allows access to a secret
+  # vault-roles and vault-policies are created in authorizeServiceAccountsFromArgoCDExamples()
   vault write auth/kubernetes/config \
       kubernetes_host=https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT
 }
@@ -82,7 +83,7 @@ path "secret/data/${STAGE}/*" {
 EOF
   
     vault write auth/kubernetes/role/${STAGE} \
-         bound_service_account_names=vault \
+         bound_service_account_names=external-secrets-vault-reader \
          bound_service_account_namespaces=argocd-${STAGE} \
          policies=${POLICY} \
          ttl=24h

@@ -31,40 +31,39 @@ skinparam actorStyle awesome
 node "Your Host" as host <<$computer>> #ffffff {
 
     actor " " as dev
+    rectangle "<$docker>\nDocker Daemon" as docker
     
-    together {
-        rectangle "<$docker>\nDocker Daemon" as docker
+    rectangle "<$k8s>\nK3d Container" as k8s {
         
-        rectangle "<$k8s>\nK3d Container" as k8s {
-            
-            together {
-                rectangle "<$scm>\nSCM-Manager" as scmm {
-                    collections "<$git>\nApp Repos" as appRepo
-                    collections "<$git>\nGitOps Repos" as configRepo
-                }
-                collections "<$sync>\nGitOps\nOperators" as gitops
-                'collections "<$deploy>\nStaging\n+ Production" as staging
-            }
-            rectangle "<$k8s>\nAPI-Server" as apiServer
-            
-            rectangle "<$sun>\nGrafana" as grafana
-            rectangle "<$fire>\nPrometheus" as prometheus
-            rectangle "<$robot>\nExternal\nSecrets\nOperator" as ESO
-            
-            rectangle "<$key>\nVault" as vault
-            rectangle " " <<Hidden>> as s1
-            rectangle " " <<Hidden>> as s2
-            rectangle " " <<Hidden>> as s3
-            
-            rectangle "<$envelope>\nMailhog" as mailhog
-            
-            rectangle "<$box>\nRegistry" as registry
-            rectangle "<$jenkins>\nJenkins" as jenkins
-            
+        together {
+            collections "<$sync>\nGitOps\nOperators" as gitops
+            'collections "<$deploy>\nStaging\n+ Production" as staging
         }
+        rectangle "<$scm>\nSCM-Manager" as scmm {
+            collections "<$git>\nApp Repos" as appRepo
+            collections "<$git>\nGitOps Repos" as configRepo
+        }
+        rectangle "<$k8s>\nAPI-Server" as apiServer
+        
+        rectangle "<$sun>\nGrafana" as grafana
+        rectangle "<$fire>\nPrometheus" as prometheus
+        rectangle "<$robot>\nExternal\nSecrets\nOperator" as ESO
+        
+        rectangle "<$key>\nVault" as vault
+        rectangle " " <<Hidden>> as s1
+        rectangle " " <<Hidden>> as s2
+        rectangle " " <<Hidden>> as s3
+        
+        rectangle "<$envelope>\nMailhog" as mailhog
+        
+        rectangle "<$box>\nRegistry" as registry
+        rectangle "<$jenkins>\nJenkins" as jenkins
     }
 }
 
+dev -[hidden]-> docker
+'mailhog -[hidden]-> scmm
+gitops -[hidden]-> jenkins
 docker -> k8s : run
 dev -[hidden]-> k8s
 dev -> grafana : view metrics
@@ -87,8 +86,8 @@ apiServer <- ESO : create secret
 mailhog <-- gitops : send alert
 grafana --> prometheus : send query
 prometheus --> s1
-prometheus --> s2 
-prometheus --> s3 : Scrape metrics
+prometheus --> s2 : Scrape metrics 
+prometheus --> s3 
 ESO -[hidden]> prometheus 
 
 skinparam arrow {
