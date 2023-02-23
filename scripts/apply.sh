@@ -24,10 +24,11 @@ INTERNAL_REGISTRY=true
 JENKINS_URL_FOR_SCMM="http://jenkins"
 SCMM_URL_FOR_JENKINS="http://scmm-scm-manager/scm"
 
-# When updating please also adapt k8s-related versions in Dockerfile, init-cluster.sh and vars.tf
-KUBECTL_DEFAULT_IMAGE='lachlanevenson/k8s-kubectl:v1.21.2'
+# When updating please also adapt in Dockerfile, vars.tf, ApplicationConfigurator.groovy and init-cluster.sh
+# Find and replace with this regex, e.g. ghcr.io/cloudogu/helm:([\d\.-]*)*
+KUBECTL_DEFAULT_IMAGE='lachlanevenson/k8s-kubectl:v1.25.4'
+HELM_DEFAULT_IMAGE='ghcr.io/cloudogu/helm:3.10.3-1'
 YAMLLINT_DEFAULT_IMAGE='cytopia/yamllint:1.25-0.7'
-HELM_DEFAULT_IMAGE='ghcr.io/cloudogu/helm:3.5.4-1'
 # cloudogu/helm also contains kubeval and helm kubeval plugin. Using the same image makes builds faster
 KUBEVAL_DEFAULT_IMAGE=${HELM_DEFAULT_IMAGE}
 HELMKUBEVAL_DEFAULT_IMAGE=${HELM_DEFAULT_IMAGE}
@@ -122,9 +123,6 @@ function main() {
   initSCMMVars
   evalWithSpinner "Starting SCM-Manager..." initSCMM
 
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV1 == true ]]; then
-    evalWithSpinner "Starting Flux V1..." initFluxV1
-  fi
   if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV2 == true ]]; then
     evalWithSpinner "Starting Flux V2..." initFluxV2
   fi
@@ -139,7 +137,7 @@ function main() {
   fi
 
   # call our groovy cli and pass in all params
-  "$PLAYGROUND_DIR"/scripts/apply-ng.sh "$@"
+  evalWithSpinner "Running apply-ng..." "$PLAYGROUND_DIR/scripts/apply-ng.sh" "$@"
 
   printWelcomeScreen
 }
@@ -150,8 +148,9 @@ function findClusterBindAddress() {
   
   # Use an internal IP to contact Jenkins and SCMM
   # For k3d this is either the host's IP or the IP address of the k3d API server's container IP (when --bind-localhost=false)
+  # Note that this might return multiple InternalIP (IPV4 and IPV6) - we assume the first one is IPV4 (break after first)
   potentialClusterBindAddress="$(kubectl get "$(waitForNode)" \
-          --template='{{range .status.addresses}}{{ if eq .type "InternalIP" }}{{.address}}{{end}}{{end}}')"
+          --template='{{range .status.addresses}}{{ if eq .type "InternalIP" }}{{.address}}{{break}}{{end}}{{end}}')"
 
   localAddress="$(ip route get 1 | sed -n 's/^.*src \([0-9.]*\) .*$/\1/p')"
 
@@ -259,7 +258,7 @@ function initJenkins() {
   configureJenkinsCommand=(configureJenkins "${JENKINS_URL}" "${JENKINS_USERNAME}" "${JENKINS_PASSWORD}"
     "${SCMM_URL_FOR_JENKINS}" "${SCMM_PASSWORD}" "${REGISTRY_URL}"
     "${REGISTRY_PATH}" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}"
-    "${INSTALL_ALL_MODULES}" "${INSTALL_FLUXV1}" "${INSTALL_FLUXV2}" "${INSTALL_ARGOCD}")
+    "${INSTALL_ALL_MODULES}" "${INSTALL_FLUXV2}" "${INSTALL_ARGOCD}")
 
   evalWithSpinner "Configuring Jenkins..." "${configureJenkinsCommand[@]}"
 }
@@ -287,7 +286,7 @@ function initSCMM() {
   # They contain Repository URLs create with BASE_URL. Jenkins uses the internal URL for repos. So match is only
   # successful, when SCM also sends the Repo URLs using the internal URL
   configureScmmManager "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "${SCMM_URL}" "${JENKINS_URL_FOR_SCMM}" \
-    "${SCMM_URL_FOR_JENKINS}" "${INTERNAL_SCMM}" "${INSTALL_FLUXV1}" "${INSTALL_FLUXV2}" "${INSTALL_ARGOCD}"
+    "${SCMM_URL_FOR_JENKINS}" "${INTERNAL_SCMM}" "${INSTALL_FLUXV2}" "${INSTALL_ARGOCD}"
 
   pushHelmChartRepo 'common/spring-boot-helm-chart'
   pushHelmChartRepoWithDependency 'common/spring-boot-helm-chart-with-dependency'
@@ -309,27 +308,6 @@ function setExternalHostnameIfNecessary() {
     # Argo forwards to HTTPS so simply use HTTP here
     declare -g "${variablePrefix}_URL"="http://$(getExternalIP "${serviceName}" "${namespace}")"
   fi
-}
-
-function initFluxV1() {
-  initRepo 'fluxv1/gitops'
-  pushPetClinicRepo 'applications/petclinic/fluxv1/plain-k8s' 'fluxv1/petclinic-plain'
-  pushPetClinicRepo 'applications/petclinic/fluxv1/helm' 'fluxv1/petclinic-helm'
-  # Set NodePort service, to avoid "Pending" services on local cluster
-  initRepoWithSource 'applications/nginx/fluxv1' 'fluxv1/nginx-helm' \
-      "if [[ $REMOTE_CLUSTER != true ]]; then find . -name values-shared.yaml -exec bash -c '(echo && echo \"  type: NodePort\"  && echo) >> {}' \; ; fi"
-
-  SET_GIT_URL=""
-  if [[ ${INTERNAL_SCMM} == false ]]; then
-    # shellcheck disable=SC2016
-    # we don't want to expand $(username):$(password) here, it will be used inside the flux-operator
-    SET_GIT_URL='--set git.url='"${SCMM_PROTOCOL}"'://$(username):$(password)@'"${SCMM_HOST}"'/repo/fluxv1/gitops'
-  fi
-
-  helm upgrade -i flux-operator --values fluxv1/flux-operator/values.yaml \
-    ${SET_GIT_URL} \
-    --version 1.3.0 fluxcd/flux -n fluxv1
-  helm upgrade -i helm-operator --values fluxv1/helm-operator/values.yaml --version 1.2.0 fluxcd/helm-operator -n fluxv1
 }
 
 function initFluxV2() {
@@ -447,7 +425,6 @@ function createSecrets() {
   createSecret gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=$SET_PASSWORD -n default
   createSecret gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=$SET_PASSWORD -n argocd
   # flux needs lowercase fieldnames
-  createSecret gitops-scmm --from-literal=username=gitops --from-literal=password=$SET_PASSWORD -n fluxv1
   createSecret flux-system --from-literal=username=gitops --from-literal=password=$SET_PASSWORD -n flux-system
 }
 
@@ -697,9 +674,6 @@ function printWelcomeScreen() {
   echo "| See here:"
   echo "|"
 
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV1 == true ]]; then
-    echo -e "| - \e[32m${SCMM_URL}/repos/fluxv1/\e[0m"
-  fi
   if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV2 == true ]]; then
     echo -e "| - \e[32m${SCMM_URL}/repos/fluxv2/\e[0m"
   fi
@@ -714,9 +688,6 @@ function printWelcomeScreen() {
   echo "| namespace via the jenkins UI:"
   echo "|"
 
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV1 == true ]]; then
-    echo -e "| - \e[32m${JENKINS_URL}/job/fluxv1-applications/\e[0m"
-  fi
   if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV2 == true ]]; then
     echo -e "| - \e[32m${JENKINS_URL}/job/fluxv2-applications/\e[0m"
   fi
@@ -727,8 +698,6 @@ function printWelcomeScreen() {
   echo "| During the job, jenkins pushes into the corresponding GitOps repo and creates a pull"
   echo "| request for production:"
   echo "|"
-
-  printWelcomeScreenFluxV1
 
   printWelcomeScreenFluxV2
 
@@ -743,16 +712,6 @@ function printWelcomeScreen() {
   echo "| Please see the README.md for how to find out the URLs of the individual applications."
   echo "|"
   echo "|----------------------------------------------------------------------------------------------|"
-}
-
-function printWelcomeScreenFluxV1() {
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV1 == true ]]; then
-    echo "| For Flux V1:"
-    echo "|"
-    echo -e "| - GitOps repo: \e[32m${SCMM_URL}/repo/fluxv1/gitops/code/sources/main/\e[0m"
-    echo -e "| - Pull requests: \e[32m${SCMM_URL}/repo/fluxv1/gitops/pull-requests\e[0m"
-    echo "|"
-  fi
 }
 
 function printWelcomeScreenFluxV2() {
@@ -784,7 +743,7 @@ function printWelcomeScreenArgocd() {
 }
 
 function printUsage() {
-  echo "This script will install all necessary resources for Flux V1, Flux V2 and ArgoCD into your k8s-cluster."
+  echo "This script will install all necessary resources for Flux V2 and ArgoCD into your k8s-cluster."
   echo ""
   printParameters
   echo ""
@@ -795,10 +754,9 @@ function printParameters() {
   echo
   echo " -h | --help     >> Help screen"
   echo
-  echo "Install only the desired GitOps modules. Multiple selections possible."
-  echo "    | --fluxv1   >> Install the Flux V1 module"
-  echo "    | --fluxv2   >> Install the Flux V2 module"
-  echo "    | --argocd   >> Install the ArgoCD module"
+  echo "Install only the desired GitOps operators. Multiple selections possible."
+  echo "    | --fluxv2   >> Install the Flux V2"
+  echo "    | --argocd   >> Install the ArgoCD"
   echo
   echo "    | --remote   >> Install on remote Cluster e.g. gcp"
   echo
@@ -846,7 +804,7 @@ function printParameters() {
 readParameters() {
   COMMANDS=$(getopt \
     -o hdxyc \
-    --long help,fluxv1,fluxv2,argocd,argocd-url:,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,trace,insecure,yes,skip-helm-update,argocd-config-only,metrics,monitoring,vault: \
+    --long help,fluxv2,argocd,argocd-url:,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,trace,insecure,yes,skip-helm-update,argocd-config-only,metrics,monitoring,vault: \
     -- "$@")
   
   if [ $? != 0 ]; then
@@ -858,7 +816,6 @@ readParameters() {
   
   DEBUG=false
   INSTALL_ALL_MODULES=true
-  INSTALL_FLUXV1=false
   INSTALL_FLUXV2=false
   INSTALL_ARGOCD=false
   REMOTE_CLUSTER=false
@@ -891,7 +848,6 @@ readParameters() {
   while true; do
     case "$1" in
       -h | --help          ) printUsage; exit 0 ;;
-      --fluxv1             ) INSTALL_FLUXV1=true; INSTALL_ALL_MODULES=false; shift ;;
       --fluxv2             ) INSTALL_FLUXV2=true; INSTALL_ALL_MODULES=false; shift ;;
       --argocd             ) INSTALL_ARGOCD=true; INSTALL_ALL_MODULES=false; shift ;;
       --argocd-url         ) ARGOCD_URL="$2"; shift 2 ;;

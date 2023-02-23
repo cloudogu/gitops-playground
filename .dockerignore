@@ -6,7 +6,6 @@
 !exercises/
 !argocd/
 !docker-registry/
-!fluxv1/
 !fluxv2/
 !jenkins/
 !k8s-namespaces/

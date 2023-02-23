@@ -50,13 +50,6 @@ resource "google_container_node_pool" "node_pool" {
   node_count = var.node_pool_node_count
 
   node_config {
-    # We use ubuntu, because Container-optimized OS has /tmp mounted with noexec.
-    # This conflicts with the workarounds we need to take to make Jenkins Build runnable with docker inside the cluster
-    # Basically: Providing the docker binary within the agent pods, via a hostPath mount :-|
-    # On the default Container-optimized OS /tmp mounted with noexec.
-    # So we use ubuntu
-    # A more robust option would be to provide a jenkins-agent-docker image but for now this seems to much effort
-    image_type = "ubuntu"
     preemptible  = false
     machine_type = "n1-standard-2" # pricing: https://cloud.google.com/compute/vm-instance-pricing#n1_predefined
     oauth_scopes = [

@@ -129,10 +129,10 @@ void addSpecificGitOpsConfig(gitopsConfig) {
         // Those parameters overwrite the following parameters.
         // If you can access the internet, you can rely on the defaults, which load the images from public registries.
         buildImages          : [
-                helm: 'ghcr.io/cloudogu/helm:3.5.4-1',
-                kubectl: 'lachlanevenson/k8s-kubectl:v1.19.3',
-                kubeval: 'ghcr.io/cloudogu/helm:3.5.4-1',
-                helmKubeval: 'ghcr.io/cloudogu/helm:3.5.4-1',
+                helm: 'ghcr.io/cloudogu/helm:3.10.3-1',
+                kubectl: 'lachlanevenson/k8s-kubectl:v1.25.4',
+                kubeval: 'ghcr.io/cloudogu/helm:3.10.3-1',
+                helmKubeval: 'ghcr.io/cloudogu/helm:3.10.3-1',
                 yamllint: 'cytopia/yamllint:1.25-0.7'
         ]
     ]

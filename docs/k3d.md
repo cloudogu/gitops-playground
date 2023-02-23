@@ -11,7 +11,7 @@ bash <(curl -s https://raw.githubusercontent.com/cloudogu/gitops-playground/main
 ```
 
 If you plan to interact with your cluster directly (not only via GitOps), we recommend
-installing `kubectl` (see [here](https://v1-21.docs.kubernetes.io/docs/tasks/tools/#kubectl)). 
+installing `kubectl` (see [here](https://v1-25.docs.kubernetes.io/docs/tasks/tools/#kubectl)). 
 
 ## Parameters
 

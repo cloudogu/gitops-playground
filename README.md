@@ -4,7 +4,7 @@
 Reproducible infrastructure to showcase GitOps workflows with Kubernetes.
 
 In fact, this rolls out a complete DevOps stack with different features including 
-* GitOps (with different controllers to choose from: Argo CD, Flux v1 and v2),
+* GitOps (with different controllers to choose from: Argo CD and Flux v2),
 * example applications and CI-pipelines (using Jenkins and our [GitOps library](https://github.com/cloudogu/gitops-build-lib)),
 * Notifications/Alerts (using Mailhog for Demo purposes)
 * Monitoring (using Prometheus and Grafana),
@@ -16,7 +16,9 @@ For questions or suggestions you are welcome to join us at our myCloudogu [commu
 
 [![Discuss it on myCloudogu](https://static.cloudogu.com/static/images/discuss-it.png)](https://community.cloudogu.com/t/introducing-the-gitops-playground/107)
 
-![Playground features](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml-src/gitops-playground-features.puml&fmt=svg)
+| Playground features                                                                                                                                                               | Installation                                                                                                                                                              |
+|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ![Playground features](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml-src/gitops-playground-features.puml&fmt=svg) | ![Installation](https://user-images.githubusercontent.com/1824962/215206261-fbae92fc-e73c-4977-99e3-858769e73c53.png) |
 
 # TLDR;
 
@@ -32,7 +34,7 @@ bash <(curl -s \
 ```
 
 This command will also print URLs of the [applications](#applications) inside the cluster to get you started.  
-Note that you can append `--argocd`, `--fluxv1` and `--fluxv2` to select specific operators. This will also speed up the 
+Note that you can append `--argocd` and `--fluxv2` to select specific operators. This will also speed up the 
 progress.
 
 We recommend running this command as an unprivileged user, that is inside the [docker group](https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user). 
@@ -45,6 +47,7 @@ We recommend running this command as an unprivileged user, that is inside the [d
 
 - [What is the GitOps Playground?](#what-is-the-gitops-playground)
 - [Installation](#installation)
+  - [Overview](#overview)
   - [Create Cluster](#create-cluster)
   - [Apply playground](#apply-playground)
     - [Apply via Docker (local cluster)](#apply-via-docker-local-cluster)
@@ -62,7 +65,6 @@ We recommend running this command as an unprivileged user, that is inside the [d
     - [Example app](#example-app)
   - [Argo CD UI](#argo-cd-ui)
   - [Demo applications](#demo-applications)
-    - [Flux V1](#flux-v1)
     - [Flux V2](#flux-v2)
     - [Argo CD](#argo-cd)
 - [Development](#development)
@@ -73,7 +75,7 @@ We recommend running this command as an unprivileged user, that is inside the [d
 
 The GitOps Playground provides an reproducible environment for trying out GitOps. Is consists of Infra As Code and 
 scripts for automatically setting up a Kubernetes Cluster including CI-server (Jenkins), source code management 
-(SCM-Manager) and several GitOps operators (Flux V1, Flux V2, Argo CD). 
+(SCM-Manager) and several GitOps operators (Flux V2, Argo CD). 
 CI-Server, SCM and operators are pre-configured with a number of [demo applications](#demo-applications).
 
 The GitOps Playground lowers the barriers for getting your hands on GitOps. No need to read lots of books and operator
@@ -103,18 +105,10 @@ Note that running Jenkins inside the cluster is meant for demo purposes only. Th
 scenario with the Cloudogu EcoSystem (CES). Here better security and build performance is achieved using ephemeral 
 Jenkins build agents spawned in the cloud.
 
-| Demo on local machine                                                                                                                                                                                                                                                                                                                                    |
-|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| ![Playground on local machine](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml-src/gitops-playground.puml&fmt=svg) |
-
-
-| Demo on remote cluster                                                                                                                                                                              | 
-|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-|  ![Playground on remote cluster](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml-src/gitops-playground-remote.puml&fmt=svg) | 
-
- | Production environment with CES                                                                                                                                                                   |
-|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| ![A possible production environment](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml-src/production-setting.puml&fmt=svg) |
+### Overview 
+| Demo on local machine                                                                                                                                                                          | Demo on remote cluster                                                                                                                                                                                 | Production environment with CES |
+|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------|
+| ![Playground on local machine](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml-src/gitops-playground.puml&fmt=svg) | ![Playground on remote cluster](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml-src/gitops-playground-remote.puml&fmt=svg) | ![A possible production environment](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml-src/production-setting.puml&fmt=svg) |
 
 ### Create Cluster
 
@@ -171,7 +165,7 @@ docker exec -it \
 #### Apply via kubectl (remote cluster)
 
 For remote clusters it is easiest to apply the playground via kubectl.
-You can find info on how to install kubectl [here](https://v1-21.docs.kubernetes.io/docs/tasks/tools/#kubectl).
+You can find info on how to install kubectl [here](https://v1-25.docs.kubernetes.io/docs/tasks/tools/#kubectl).
 
 ```shell
 # Create a temporary ServiceAccount and authorize via RBAC. This is needed to install CRDs, etc.
@@ -209,7 +203,6 @@ docker run --rm ghcr.io/cloudogu/gitops-playground --help
 ##### Deploy specific GitOps operators only
 
 * `--argocd` - deploy only Argo CD GitOps operator
-* `--fluxv1` - deploy only Flux v1 GitOps operator
 * `--fluxv2` - deploy only Flux v2 GitOps operator
 
 ##### Deploy with local Cloudogu Ecosystem
@@ -263,10 +256,10 @@ Images used by the gitops-build-lib are set in the `gitopsConfig` in each `Jenki
 def gitopsConfig = [
     ...
     buildImages          : [
-            helm: 'ghcr.io/cloudogu/helm:3.5.4-1',
-            kubectl: 'lachlanevenson/k8s-kubectl:v1.19.3',
-            kubeval: 'ghcr.io/cloudogu/helm:3.5.4-1',
-            helmKubeval: 'ghcr.io/cloudogu/helm:3.5.4-1',
+            helm: 'ghcr.io/cloudogu/helm:3.10.3-1',
+            kubectl: 'lachlanevenson/k8s-kubectl:v1.25.4',
+            kubeval: 'ghcr.io/cloudogu/helm:3.10.3-1',
+            helmKubeval: 'ghcr.io/cloudogu/helm:3.10.3-1',
             yamllint: 'cytopia/yamllint:1.25-0.7'
     ],...
 ```
@@ -500,10 +493,15 @@ To demo this, you could
 ```shell
 while ; do echo -n "$(date '+%Y-%m-%d %H:%M:%S'): " ; curl http://localhost:30024/secret/ ; echo; sleep 1; done
 ```
+
   This usually takes between a couple of seconds and 1-2 minutes.  
   This time consists of `ExternalSecret`'s `refreshInterval`, as well as the [kubelet sync period](https://v1-25.docs.kubernetes.io/docs/concepts/configuration/configmap/#mounted-configmaps-are-updated-automatically)
   (defaults to [1 Minute](https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/#kubelet-config-k8s-io-v1beta1-KubeletConfiguration)) 
   + cache propagation delay
+
+The following video shows this demo in time-lapse:
+
+[secrets-demo-video](https://user-images.githubusercontent.com/1824962/215204174-eadf180b-2a82-4273-8cbb-6e7c187267c6.mp4)
 
 ### Argo CD UI
 
@@ -518,6 +516,7 @@ Each GitOps operator comes with a couple of demo applications that allow for exp
 features.
 
 All applications are deployed via separated application and GitOps repos: 
+
 ![](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/k8s-diagrams/cdd6bb77/diagrams/gitops-with-app-repo.puml&fmt=png)
 
 * Separation of app repo and GitOps repo
@@ -538,44 +537,6 @@ Note that we are working on moving the GitOps-related logic into a
 Please note that it might take about a minute after the pull request has been accepted for the GitOps operator to start
 deploying.
 Alternatively you can trigger the deployment via the respective GitOps operator's CLI (flux) or UI (Argo CD)
-
-#### Flux V1
-
-##### PetClinic with plain k8s resources 
-
-[Jenkinsfile](applications/petclinic/fluxv1/plain-k8s/Jenkinsfile) for plain `k8s` deployment
-
-* Staging: 
-  * local: [localhost:30001](http://localhost:30001) 
-  * remote: `scripts/get-remote-url spring-petclinic-plain fluxv1-staging`
-* Production:  
-  * local: [localhost:30002](http://localhost:30002)
-  * remote: `scripts/get-remote-url spring-petclinic-plain fluxv1-production`
-* QA (example for a 3rd stage)
-  * local: [localhost:30003](http://localhost:30003) 
-  * remote: `scripts/get-remote-url spring-petclinic-plain fluxv1-qa`
-
-##### PetClinic with helm
-
-[Jenkinsfile](applications/petclinic/fluxv1/helm/Jenkinsfile) for `helm` deployment
-
-* Staging
-  * local: [localhost:30004](http://localhost:30004)
-  * remote: `scripts/get-remote-url spring-petclinic-helm-springboot fluxv1-staging`
-* Production
-  * local: [localhost:30005](http://localhost:30005) 
-  * remote: `scripts/get-remote-url spring-petclinic-helm-springboot fluxv1-production`
-
-##### 3rd Party app (NGINX) with helm
-
-[Jenkinsfile](applications/nginx/fluxv1/Jenkinsfile)
-
-* Staging
-  * local: [localhost:30006](http://localhost:30006)
-  * remote: `scripts/get-remote-url nginx fluxv1-staging`
-* Production
-  * local: [localhost:30007](http://localhost:30007)
-  * remote: `scripts/get-remote-url nginx fluxv1-production`
 
 #### Flux V2
 

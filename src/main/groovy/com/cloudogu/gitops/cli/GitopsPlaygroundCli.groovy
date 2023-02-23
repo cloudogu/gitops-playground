@@ -88,8 +88,6 @@ class GitopsPlaygroundCli implements Runnable {
     private boolean pipeYes
 
     // args group operator
-    @Option(names = ['--fluxv1'], description = 'Install the Flux V1 module')
-    private boolean fluxv1
     @Option(names = ['--fluxv2'], description = 'Install the Flux V2 module')
     private boolean fluxv2
     @Option(names = ['--argocd'], description = 'Install the ArgoCD module')
@@ -148,7 +146,6 @@ class GitopsPlaygroundCli implements Runnable {
                         yamllint   : yamllintImage
                 ],
                 features    : [
-                        fluxv1 : fluxv1,
                         fluxv2 : fluxv2,
                         argocd : [
                                 active    : argocd,

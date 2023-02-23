@@ -20,44 +20,44 @@
 cloud "Your cloud provider" {
 
     rectangle "<$k8s>\nk8s Cluster" as k8s {
-        
             
-        node "Node" as k8sNode <<$computer>> #ffffff {
-            rectangle "<$k8s>\nkubelet" as kubelet 
-            rectangle "<$docker>\nDocker Daemon" as docker
+        together {
+            rectangle "<$k8s>\nAPI-Server" as apiServer
+            rectangle "<$k8s>\nkubelet" as kubelet
+            rectangle "<$sync>\nGitOps-Operator" as gitops
         }
         
-        together {
-            rectangle "<$box>\nOCI Registry" as registry
-        }
+        rectangle "<$jenkins>\nJenkins Controller" as jenkins
+        
+        
         rectangle "<$scm>\nSCM-Manager" as scmm {
             rectangle "<$git>\nApp Repo" as appRepo
             rectangle "<$git>\nGitOps Repo" as configRepo
         }
         
-        rectangle "<$jenkins>\nJenkins Controller" as jenkins
-        rectangle "<$jenkins>\nAgent Pods" as jenkinsNode
-        
-        rectangle "<$sync>\nGitOps-Operator" as gitops
-        rectangle "<$k8s>\nAPI-Server" as apiServer
+    }
+    rectangle "<$box>\nOCI Registry" as registry
+    
+    rectangle "<$jenkins>\nEphemeral agent VMs" as jenkinsNode {
+        rectangle "<$docker>\nDocker Daemon" as docker
     }
 }
 
-appRepo -[hidden]> configRepo
+'appRepo -[hidden]> configRepo
 appRepo <-- jenkinsNode : pull
+jenkins -[hidden]> appRepo
+registry -[hidden]> configRepo
+'scmm -> jenkins : HIDEME
 configRepo <-- jenkinsNode : push
 registry <-- jenkinsNode : push
 
-kubelet --> apiServer : watch
-'docker -[hidden]> apiServer
+apiServer <- kubelet   : watch
 
-kubelet --> docker : run containers
 jenkins -> jenkinsNode : manage
-jenkinsNode -> docker: run containers\nbuild images
 gitops --> configRepo : pull
 gitops -> apiServer : apply resources
+kubelet --> registry : pull
 
-registry <- docker : pull
 
 skinparam arrow {
   Color BLACK

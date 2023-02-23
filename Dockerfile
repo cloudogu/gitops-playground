@@ -37,12 +37,14 @@ RUN mv $(ls -S target/*.jar | head -n 1) /app/gitops-playground.jar
 FROM alpine as downloader
 # When updating, 
 # * also update the checksum found at https://dl.k8s.io/release/v${K8S_VERSION}/bin/linux/amd64/kubectl.sha256
-# * also update k8s-related versions in vars.tf, init-cluster.sh and apply.sh
-ARG K8S_VERSION=1.21.14
-ARG KUBECTL_CHECKSUM=0c1682493c2abd7bc5fe4ddcdb0b6e5d417aa7e067994ffeca964163a988c6ee
+# * also update in init-cluster.sh. vars.tf, ApplicationConfigurator.groovy and apply.sh
+# When upgrading to 1.26 we can verify the kubectl signature with cosign!
+# https://kubernetes.io/blog/2022/12/12/kubernetes-release-artifact-signing/
+ARG K8S_VERSION=1.25.5
+ARG KUBECTL_CHECKSUM=6a660cd44db3d4bfe1563f6689cbe2ffb28ee4baf3532e04fff2d7b909081c29
 # When updating, also update the checksum found at https://github.com/helm/helm/releases
-ARG HELM_VERSION=3.8.2
-ARG HELM_CHECKSUM=6cb9a48f72ab9ddfecab88d264c2f6508ab3cd42d9c09666be16a7bf006bed7b
+ARG HELM_VERSION=3.10.3
+ARG HELM_CHECKSUM=950439759ece902157cf915b209b8d694e6f675eaab5099fb7894f30eeaee9a2
 # bash curl unzip required for Jenkins downloader
 RUN apk add --no-cache \
       gnupg \
@@ -69,7 +71,6 @@ RUN mv linux-amd64/helm /dist/usr/local/bin
 
 # Kubectl
 RUN wget -q -O kubectl https://dl.k8s.io/release/v${K8S_VERSION}/bin/linux/amd64/kubectl
-# kubectl binary download does not seem to offer signatures
 RUN echo "${KUBECTL_CHECKSUM}  kubectl" | sha256sum -c
 RUN chmod +x /tmp/kubectl
 RUN mv /tmp/kubectl /dist/usr/local/bin/kubectl

@@ -145,7 +145,7 @@ repository so need to be upgraded regularly.
   * Docker Registry Helm Chart
   * GitOps Operators
     * ArgoCD Helm Chart
-    * Flux v1 + v2 Helm Charts
+    * Flux v2 Helm Charts
   * Grafana + Prometheus [Helm Charts](../src/main/groovy/com/cloudogu/gitops/ApplicationConfigurator.groovy)
   * Vault + ExternalSerets Operator [Helm Charts](../src/main/groovy/com/cloudogu/gitops/ApplicationConfigurator.groovy)
 * Applications

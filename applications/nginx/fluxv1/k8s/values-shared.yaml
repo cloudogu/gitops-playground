@@ -1,5 +1,0 @@
-staticSiteConfigmap: index-nginx
-service:
-  ports:
-    http: 80
-  type: NodePort

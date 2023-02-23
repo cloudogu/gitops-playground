@@ -1,5 +1,9 @@
 ### Google Kubernetes Engine
 
+⚠️ Note that since k8s 1.24 [GKE no longer supports nodes with docker](https://cloud.google.com/kubernetes-engine/docs/deprecations/docker-containerd).
+That is why the **Jenkins deployed on GKE can no longer successfully run builds that use the `docker` step** in K8s agent Pods.
+We recommend setting up [GCP VMs as build agents](https://cloud.google.com/architecture/using-jenkins-for-distributed-builds-on-compute-engine#configuring_jenkins_plugins).
+
 #### Prerequisites
 
 You will need the `OWNER` role fpr GKE, because `apply.sh` applies `ClusterRoles`, which is only allowed to owners.

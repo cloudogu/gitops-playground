@@ -3,9 +3,9 @@
 # See https://github.com/rancher/k3d/releases
 # This variable is also read in Jenkinsfile
 K3D_VERSION=4.4.8
-# When updating please also adapt k8s-related versions in Dockerfile, vars.tf and apply.sh
-K8S_VERSION=1.21.14
-K3S_VERSION="rancher/k3s:v${K8S_VERSION}-k3s1"
+# When updating please also adapt in Dockerfile, vars.tf, ApplicationConfigurator.groovy and apply.sh
+K8S_VERSION=1.25.5
+K3S_VERSION="rancher/k3s:v${K8S_VERSION}-k3s2"
 
 set -o errexit -o nounset -o pipefail
 

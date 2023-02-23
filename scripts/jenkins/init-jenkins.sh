@@ -90,9 +90,8 @@ function configureJenkins() {
   REGISTRY_USERNAME="${8}"
   REGISTRY_PASSWORD="${9}"
   INSTALL_ALL_MODULES="${10}"
-  INSTALL_FLUXV1="${11}"
-  INSTALL_FLUXV2="${12}"
-  INSTALL_ARGOCD="${13}"
+  INSTALL_FLUXV2="${11}"
+  INSTALL_ARGOCD="${12}"
   
   
   waitForJenkins
@@ -136,9 +135,6 @@ function configureJenkins() {
   createCredentials "registry-user" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}" "credentials for accessing the docker-registry"
 
 
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV1 == true ]]; then
-    createJob "fluxv1-applications" "${SCMM_URL}" "fluxv1" "scmm-user"
-  fi
   if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV2 == true ]]; then
     createJob "fluxv2-applications" "${SCMM_URL}" "fluxv2" "scmm-user"
   fi

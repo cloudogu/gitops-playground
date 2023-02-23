@@ -1,4 +1,0 @@
-namespaceOverride: fluxv1-production
-service:
-  nodePorts:
-    http: 30007
