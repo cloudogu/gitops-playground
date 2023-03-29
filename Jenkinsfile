@@ -139,6 +139,13 @@ node('docker') {
                                 images[0].push('latest')
                                 currentBuild.description = createImageName('latest')
                                 currentBuild.description += "\n${imageNames[0]}"
+                            } else if (env.BRANCH_NAME == 'test') {
+                                images[1].push()
+                                images[1].push('test-dev')
+                                images[0].push()
+                                images[0].push('test')
+                                currentBuild.description = createImageName('test')
+                                currentBuild.description += "\n${imageNames[0]}"
                             } else if (params.forcePushImage) {
                                 images[1].push()
                                 images[0].push()
