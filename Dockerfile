@@ -169,7 +169,8 @@ COPY src /app/src
 USER 0
 # Avoid criticla CVE in ivy, which is not fixed in groovy 3 right now. We don't use trivy anyway, so delete it.
 RUN rm /opt/groovy/lib/ivy-2.5.0.jar
-
+# Avoid criticla CVE in SnakeYAML, which is not fixed in groovy 3 right now. Our app brings its own dependency for snakeyaml
+RUN rm /opt/groovy/lib/snakeyaml-1.30.jar
 
 
 # Pick final image according to build-arg
