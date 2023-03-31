@@ -16,21 +16,8 @@ function main() {
 function groovy() {
   # We don't need the groovy "binary" (script) to start, because the gitops-playground.jar already contains groovy-all.
 
-  # Write starter-conf (required by groovy)
-  # See https://github.com/apache/groovy/blob/master/src/conf/groovy-starter.conf
-  # No write permission on $PLAYGROUND_DIR, so use /tmp
-  GROOVY_CONF=/tmp/groovy-starter.conf
-  
-cat << EOF > $GROOVY_CONF
-    # load required libraries
-    load !{groovy.home}/lib/*.jar
-
-    # load user specific libraries
-    load !{user.home}/.groovy/lib/*.jar
-
-    # tools.jar for ant tasks
-    load \${tools.jar}
-EOF
+  # Write starter-conf file (required by groovy)
+  GROOVY_CONF=$(mktemp)
   
   # Set params like startGroovy does (which is called by the "groovy" script)
   # See https://github.com/apache/groovy/blob/master/src/bin/startGroovy
