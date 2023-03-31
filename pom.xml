@@ -10,9 +10,8 @@
   <parent>
     <groupId>io.micronaut</groupId>
     <artifactId>micronaut-parent</artifactId>
-    <!-- When updating, also update groovy and graal version in dockerfile -->
-    <!-- See e.g. here for versions: https://central.sonatype.com/artifact/io.micronaut/micronaut-bom/3.8.7
-       graal.version and groovy.version -->
+    <!-- When updating, also update and graal version in dockerfile -->
+    <!-- See "graal.version" here https://central.sonatype.com/artifact/io.micronaut/micronaut-bom/3.8.7 -->
     <!-- ON NEXT GROOVY UPDATE: check if we can get rid of explicit jackson-dataformat-yaml without critical CVE -->
     <version>3.8.7</version>
   </parent>

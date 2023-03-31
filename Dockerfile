@@ -2,8 +2,7 @@ ARG ENV=prod
 
 # Keep in sync with the versions in pom.xml
 ARG JDK_VERSION='17'
-# Those are set by the micronaut BOM, see pom.xml
-ARG GROOVY_VERSION='3.0.13'
+# Set by the micronaut BOM, see pom.xml
 ARG GRAAL_VERSION='22.3.0'
 
 FROM alpine:3.17.1 as alpine
