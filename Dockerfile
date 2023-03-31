@@ -158,7 +158,7 @@ FROM alpine as prod
 COPY --from=native-image /app/apply-ng app/apply-ng
 
 
-FROM eclipse-temurin:${JDK_VERSION}-jdk-alpine as dev
+FROM eclipse-temurin:${JDK_VERSION}-jre-alpine as dev
 
 COPY scripts/apply-ng.sh /app/scripts/
 COPY --from=maven-build /app/gitops-playground.jar /app/
