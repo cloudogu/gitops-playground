@@ -159,18 +159,13 @@ FROM alpine as prod
 COPY --from=native-image /app/apply-ng app/apply-ng
 
 
-FROM groovy:${GROOVY_VERSION}-jdk${JDK_VERSION}-alpine as dev
+FROM eclipse-temurin:${JDK_VERSION}-jdk-alpine as dev
+
 COPY scripts/apply-ng.sh /app/scripts/
-# Copy gitops-playground.jar where groovy can find it (see apply-ng.sh)
-# HOME might be /home, but for the JVM /etc/passwd counts, where the user groovy has /home/groovy as home
-COPY --from=maven-build /app/gitops-playground.jar /home/groovy/.groovy/lib/
+COPY --from=maven-build /app/gitops-playground.jar /app/
 COPY src /app/src
 # Allow initialization in final FROM ${ENV} stage
 USER 0
-# Avoid criticla CVE in ivy, which is not fixed in groovy 3 right now. We don't use trivy anyway, so delete it.
-RUN rm /opt/groovy/lib/ivy-2.5.0.jar
-# Avoid criticla CVE in SnakeYAML, which is not fixed in groovy 3 right now. Our app brings its own dependency for snakeyaml
-RUN rm /opt/groovy/lib/snakeyaml-1.30.jar
 
 
 # Pick final image according to build-arg
