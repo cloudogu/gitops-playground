@@ -2,8 +2,7 @@ ARG ENV=prod
 
 # Keep in sync with the versions in pom.xml
 ARG JDK_VERSION='17'
-# Those are set by the micronaut BOM, see pom.xml
-ARG GROOVY_VERSION='3.0.13'
+# Set by the micronaut BOM, see pom.xml
 ARG GRAAL_VERSION='22.3.0'
 
 FROM alpine:3.17.1 as alpine
@@ -159,17 +158,13 @@ FROM alpine as prod
 COPY --from=native-image /app/apply-ng app/apply-ng
 
 
-FROM groovy:${GROOVY_VERSION}-jdk${JDK_VERSION}-alpine as dev
+FROM eclipse-temurin:${JDK_VERSION}-jre-alpine as dev
+
 COPY scripts/apply-ng.sh /app/scripts/
-# Copy gitops-playground.jar where groovy can find it (see apply-ng.sh)
-# HOME might be /home, but for the JVM /etc/passwd counts, where the user groovy has /home/groovy as home
-COPY --from=maven-build /app/gitops-playground.jar /home/groovy/.groovy/lib/
+COPY --from=maven-build /app/gitops-playground.jar /app/
 COPY src /app/src
 # Allow initialization in final FROM ${ENV} stage
 USER 0
-# Avoid criticla CVE in ivy, which is not fixed in groovy 3 right now. We don't use trivy anyway, so delete it.
-RUN rm /opt/groovy/lib/ivy-2.5.0.jar
-
 
 
 # Pick final image according to build-arg

@@ -38,9 +38,15 @@ node('docker') {
                 }
 
                 stage('Build cli') {
-                    // Read version from Dockerfile (DRY)
-                    String jdkVersion = sh (returnStdout: true, script: 'grep -r \'ARG JDK_VERSION\' Dockerfile | sed "s/.*JDK_VERSION=\'\\(.*\\)\'.*/\\1/" ').trim()
-                    String groovyVersion = sh (returnStdout: true, script: 'grep -r \'ARG GROOVY_VERSION\' Dockerfile | sed "s/.*GROOVY_VERSION=\'\\(.*\\)\'.*/\\1/" ').trim()
+                    // Read Java version from Dockerfile (DRY)
+                    String jdkVersion = sh (returnStdout: true, script: 
+                            'grep -r \'ARG JDK_VERSION\' Dockerfile | sed "s/.*JDK_VERSION=\'\\(.*\\)\'.*/\\1/" ').trim()
+                    // Groovy version is defined by micronaut version. Get it from there.
+                    String groovyVersion = sh (returnStdout: true, script:
+                            'MICRONAUT_VERSION=$(cat pom.xml | sed -n \'/<parent>/,/<\\/parent>/p\' | ' +
+                                    'sed -n \'s/.*<version>\\(.*\\)<\\/version>.*/\\1/p\'); ' +
+                            'curl -s https://repo1.maven.org/maven2/io/micronaut/micronaut-bom/${MICRONAUT_VERSION}/micronaut-bom-${MICRONAUT_VERSION}.pom | ' +
+                                    'sed -n \'s/.*<groovy.version>\\(.*\\)<\\/groovy.version>.*/\\1/p\'').trim()
                     groovyImage = "groovy:${groovyVersion}-jdk${jdkVersion}"
                     // Re-use groovy image here, even though we only need JDK
                     mvn = new MavenWrapperInDocker(this, groovyImage)
@@ -48,7 +54,6 @@ node('docker') {
                     mvn 'clean install -DskipTests'
                 }
 
-                // This interferes with the e2etests regarding the dependency download of grapes. It might be that the MavenWrapperInDocker somehow interferes with the FileSystem so that grapes is no longer to write to fs.
                 stage('Test cli') {
                     mvn 'test -Dmaven.test.failure.ignore=true'
                     // Archive test results. Makes build unstable on failed tests.
@@ -138,6 +143,13 @@ node('docker') {
                                 images[0].push()
                                 images[0].push('latest')
                                 currentBuild.description = createImageName('latest')
+                                currentBuild.description += "\n${imageNames[0]}"
+                            } else if (env.BRANCH_NAME == 'test') {
+                                images[1].push()
+                                images[1].push('test-dev')
+                                images[0].push()
+                                images[0].push('test')
+                                currentBuild.description = createImageName('test')
                                 currentBuild.description += "\n${imageNames[0]}"
                             } else if (params.forcePushImage) {
                                 images[1].push()

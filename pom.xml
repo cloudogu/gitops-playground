@@ -10,9 +10,10 @@
   <parent>
     <groupId>io.micronaut</groupId>
     <artifactId>micronaut-parent</artifactId>
-    <!-- When updating, also update groovy and graal version in dockerfile -->
-    <!-- See e.g. here for versions: https://search.maven.org/artifact/io.micronaut/micronaut-bom/3.7.2/pom -->
-    <version>3.7.2</version>
+    <!-- When updating, also update and graal version in dockerfile -->
+    <!-- See "graal.version" here https://central.sonatype.com/artifact/io.micronaut/micronaut-bom/3.8.7 -->
+    <!-- ON NEXT GROOVY UPDATE: check if we can get rid of explicit jackson-dataformat-yaml without critical CVE -->
+    <version>3.8.7</version>
   </parent>
 
   <properties>
@@ -57,6 +58,13 @@
       <version>${groovy.version}</version>
     </dependency>
 
+    <!-- Avoid CVE-2022-1471 in transitive dependency of groovy-yaml. -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.dataformat</groupId>
+      <artifactId>jackson-dataformat-yaml</artifactId>
+      <version>2.15.0-rc2</version>
+    </dependency>
+    
     <dependency>
       <groupId>info.picocli</groupId>
       <artifactId>picocli</artifactId>
