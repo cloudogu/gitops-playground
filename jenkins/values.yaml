@@ -2,6 +2,10 @@
 dockerClientVersion: 20.10.2
 
 controller:
+  image: "ghcr.io/cloudogu/jenkins-base"
+  tag: "latest"
+  installPlugins: false
+
   # to prevent the jenkins-ui-test pod being created
   testEnabled: false
 
