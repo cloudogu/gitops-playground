@@ -5,6 +5,7 @@ import com.cloudogu.gitops.features.Mailhog
 import com.cloudogu.gitops.features.PrometheusStack
 import com.cloudogu.gitops.features.Vault
 import com.cloudogu.gitops.features.argocd.ArgoCD
+import com.cloudogu.gitops.features.argocd.ArgoCDOperator
 import groovy.util.logging.Slf4j
 
 @Slf4j
@@ -31,11 +32,12 @@ class Application {
     private List<Feature> registerFeatures() {
         List<Feature> features = []
         // Idea for refactoring: Feature classes have different names as features in config -> Generalize!
-        features.add(new ArgoCD(config))
-        features.add(new Mailhog(config))
-        features.add(new PrometheusStack(config))
-        features.add(new ExternalSecretsOperator(config))
-        features.add(new Vault(config))
+//        features.add(new ArgoCD(config))
+//        features.add(new Mailhog(config))
+//        features.add(new PrometheusStack(config))
+//        features.add(new ExternalSecretsOperator(config))
+//        features.add(new Vault(config))
+        features.add(new ArgoCDOperator(config))
         return features
     }
 }

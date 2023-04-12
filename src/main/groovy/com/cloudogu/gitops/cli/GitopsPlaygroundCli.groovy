@@ -47,6 +47,8 @@ class GitopsPlaygroundCli implements Runnable {
     private boolean remote
     @Option(names = ['--insecure'], description = 'Sets insecure-mode in cURL which skips cert validation')
     private boolean insecure
+    @Option(names = ['--openshift'], description = 'Install with openshift compatibility')
+    private boolean openshift
 
     // args group tool configuration
     @Option(names = ['--kubectl-image'], description = 'Sets image for kubectl')
@@ -94,6 +96,10 @@ class GitopsPlaygroundCli implements Runnable {
     private boolean argocd
     @Option(names = ['--argocd-url'], description = 'The URL where argocd is accessible. It has to be the full URL with http:// or https://')
     private String argocdUrl
+    @Option(names = ['--argocd-operator'], description = 'Install ArgoCd via Operator')
+    private boolean argocdOperator
+    @Option(names = ['--argocd-namespace'], description = 'Deploy ArgoCD into specific namespace')
+    private String argocdNamespace
 
     @Override
     void run() {
@@ -129,6 +135,7 @@ class GitopsPlaygroundCli implements Runnable {
                         password: scmmPassword
                 ],
                 application: [
+                        openshift     : openshift,
                         remote        : remote,
                         insecure      : insecure,
                         skipHelmUpdate: skipHelmUpdate,
@@ -150,7 +157,9 @@ class GitopsPlaygroundCli implements Runnable {
                         argocd : [
                                 active    : argocd,
                                 configOnly: argocdConfigOnly,
-                                url       : argocdUrl
+                                url       : argocdUrl,
+                                operator  : argocdOperator,
+                                namespace : argocdNamespace
                         ],
                         monitoring : [
                                 active    : monitoring
