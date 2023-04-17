@@ -7,13 +7,12 @@ if [[ -z ${PLAYGROUND_DIR+x} ]]; then
   PLAYGROUND_DIR="$(cd "${BASEDIR}" && cd .. && cd .. && pwd)"
 fi
 
-# When Upgrading helm chart, also upgrade additionalPlugins in jenkins/values.yaml
-# Check for "Failed to load" in the Jenkins log and add or upgrade the plugins mentioned there appropriately.
+# When Upgrading helm chart, also upgrade controller.tag in jenkins/values.yaml
 #
 # In addition:
 # - Upgrade bash image in values.yaml and gid-grepper
 # - Also upgrade plugins. See docs/developers.md
-JENKINS_HELM_CHART_VERSION=4.2.19
+JENKINS_HELM_CHART_VERSION=4.3.22
 
 SET_USERNAME="admin"
 SET_PASSWORD="admin"
