@@ -4,7 +4,7 @@ dockerClientVersion: 20.10.2
 controller:
   image: "ghcr.io/cloudogu/jenkins-helm"
   # Use same version here as in jenkins/init-jenkins.sh, JENKINS_HELM_CHART_VERSION (without suffix, e.g. "-1")
-  tag: "4.3.22-1"
+  tag: "4.3.22-2"
   installPlugins: false
 
   # to prevent the jenkins-ui-test pod being created
