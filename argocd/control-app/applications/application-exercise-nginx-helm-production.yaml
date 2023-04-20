@@ -9,7 +9,7 @@ spec:
     server: https://kubernetes.default.svc
   project: exercises
   source:
-    path: production/exercise-nginx-helm
+    path: apps/exercise-nginx-helm/production
     repoURL: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/gitops
     targetRevision: main
     directory:

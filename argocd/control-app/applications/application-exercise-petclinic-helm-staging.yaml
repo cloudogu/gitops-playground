@@ -9,7 +9,7 @@ spec:
     server: https://kubernetes.default.svc
   project: exercises
   source:
-    path: staging/exercise-spring-petclinic-helm
+    path: apps/exercise-spring-petclinic-helm/staging
     repoURL: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/gitops
     targetRevision: main
     directory:

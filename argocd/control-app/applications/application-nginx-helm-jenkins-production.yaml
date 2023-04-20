@@ -12,7 +12,7 @@ spec:
     server: https://kubernetes.default.svc
   project: nginx
   source:
-    path: production/nginx-helm-jenkins
+    path: apps/nginx-helm-jenkins/production
     repoURL: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/gitops
     targetRevision: main
     directory:

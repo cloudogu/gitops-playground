@@ -11,7 +11,7 @@ String getConfigRepositoryPRUrl() { "${env.SCMM_URL}/api/v2/pull-requests/${conf
 String getDockerRegistryBaseUrl() { env.REGISTRY_URL }
 String getDockerRegistryPath() { env.REGISTRY_PATH }
 String getDockerRegistryCredentials() { 'registry-user' }
-String getCesBuildLibVersion() { '1.48.0' }
+String getCesBuildLibVersion() { '1.64.1' }
 String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/common/ces-build-lib/" }
 
 cesBuildLib = library(identifier: "ces-build-lib@${cesBuildLibVersion}",
