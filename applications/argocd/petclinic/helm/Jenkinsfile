@@ -84,6 +84,7 @@ node {
                         mainBranch: mainBranch,
                         gitopsTool: 'ARGO',
                         folderStructureStrategy: 'ENV_PER_APP',
+                        k8sVersion : "${env.K8S_VERSION}",
                         buildImages          : [
                                 helm: 'ghcr.io/cloudogu/helm:3.10.3-1',
                                 kubectl: 'lachlanevenson/k8s-kubectl:v1.25.4',

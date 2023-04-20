@@ -11,6 +11,7 @@ export PLAYGROUND_DIR
 PETCLINIC_COMMIT=32c8653
 SPRING_BOOT_HELM_CHART_COMMIT=0.3.0
 ARGO_HELM_CHART_VERSION=5.9.1 # From 5.10.0 Helm chart requires K8s 1.22: https://github.com/argoproj/argo-helm/commit/3d9e2f35a6e6249c27fd4ccd8129622d886ef4ea#diff-16f38cd1a4674cb682ac9f015fbc1c1ff552f024a8f791c16de0de21a1f65771R3
+K8S_VERSION=1.25.4
 
 source ${ABSOLUTE_BASEDIR}/utils.sh
 source ${ABSOLUTE_BASEDIR}/jenkins/init-jenkins.sh
@@ -26,7 +27,7 @@ SCMM_URL_FOR_JENKINS="http://scmm-scm-manager/scm"
 
 # When updating please also adapt in Dockerfile, vars.tf, ApplicationConfigurator.groovy and init-cluster.sh
 # Find and replace with this regex, e.g. ghcr.io/cloudogu/helm:([\d\.-]*)*
-KUBECTL_DEFAULT_IMAGE='lachlanevenson/k8s-kubectl:v1.25.4'
+KUBECTL_DEFAULT_IMAGE="lachlanevenson/k8s-kubectl:v${K8S_VERSION}"
 HELM_DEFAULT_IMAGE='ghcr.io/cloudogu/helm:3.10.3-1'
 YAMLLINT_DEFAULT_IMAGE='cytopia/yamllint:1.25-0.7'
 # cloudogu/helm also contains kubeval and helm kubeval plugin. Using the same image makes builds faster

@@ -129,6 +129,7 @@ function configureJenkins() {
   setGlobalProperty "SCMM_URL" "${SCMM_URL}"
   setGlobalProperty "REGISTRY_URL" "${REGISTRY_URL}"
   setGlobalProperty "REGISTRY_PATH" "${REGISTRY_PATH}"
+  setGlobalProperty "K8S_VERSION" "${K8S_VERSION}"
 
   createCredentials "scmm-user" "gitops" "${SCMM_PASSWORD}" "credentials for accessing scm-manager"
   createCredentials "registry-user" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}" "credentials for accessing the docker-registry"

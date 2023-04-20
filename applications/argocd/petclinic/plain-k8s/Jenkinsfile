@@ -74,6 +74,7 @@ node {
                         application: application,
                         gitopsTool: 'ARGO',
                         folderStructureStrategy: 'ENV_PER_APP',
+                        k8sVersion : "${env.K8S_VERSION}",
                         deployments: [
                                 sourcePath: 'k8s',
                                 destinationRootPath: 'apps',
