@@ -311,7 +311,7 @@ function setExternalHostnameIfNecessary() {
 }
 
 function initFluxV2() {
-  pushPetClinicRepo 'applications/petclinic/fluxv2/plain-k8s' 'fluxv2/petclinic-plain'
+  pushPetClinicRepo 'applications/fluxv2/petclinic/plain-k8s' 'fluxv2/petclinic-plain'
 
   initRepoWithSource 'fluxv2' 'fluxv2/gitops'
 
@@ -348,14 +348,14 @@ function initArgo() {
   kubectl apply -f "$ARGOCD_CM_YAML_PATH" || true
   kubectl apply -f "$CONTROL_APP_YAML_PATH" || true
 
-  pushPetClinicRepo 'applications/petclinic/argocd/plain-k8s' 'argocd/petclinic-plain'
-  pushPetClinicRepo 'applications/petclinic/argocd/helm' 'argocd/petclinic-helm'
+  pushPetClinicRepo 'applications/argocd/petclinic/plain-k8s' 'argocd/petclinic-plain'
+  pushPetClinicRepo 'applications/argocd/petclinic/helm' 'argocd/petclinic-helm'
   initRepo 'argocd/gitops'
 
   # Set NodePort service, to avoid "Pending" services and "Processing" state in argo on local cluster
-  initRepoWithSource 'applications/nginx/argocd/helm-dependency' 'argocd/nginx-helm-dependency' \
+  initRepoWithSource 'applications/argocd/nginx/helm-dependency' 'argocd/nginx-helm-dependency' \
     "if [[ $REMOTE_CLUSTER != true ]]; then find . -name values.yaml -exec bash -c '(echo && echo \"    type: NodePort\" ) >> {}' \; ; fi"
-  # Note: "applications/nginx/argocd/helm-jenkins" already migrated to groovy
+  # Note: "applications/argocd/nginx/helm-jenkins" already migrated to groovy
 
   # init exercise
   pushPetClinicRepo 'exercises/petclinic-helm' 'exercises/petclinic-helm'

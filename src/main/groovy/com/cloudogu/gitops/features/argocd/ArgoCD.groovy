@@ -31,7 +31,7 @@ class ArgoCD extends Feature {
         
         nginxHelmJenkinsTmpDir = File.createTempDir('gitops-playground-nginx-helm-jenkins')
         nginxHelmJenkinsTmpDir.deleteOnExit()
-        gitRepos += createRepo('applications/nginx/argocd/helm-jenkins', 'argocd/nginx-helm-jenkins',
+        gitRepos += createRepo('applications/argocd/nginx/helm-jenkins', 'argocd/nginx-helm-jenkins',
                 nginxHelmJenkinsTmpDir)
     }
 
