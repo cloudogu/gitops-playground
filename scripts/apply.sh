@@ -196,13 +196,6 @@ function evalWithSpinner() {
 }
 
 function checkPrerequisites() {
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_ARGOCD == true ]]; then
-    if ! command -v htpasswd &>/dev/null; then
-      error "Missing required command htpasswd"
-      exit 1
-    fi
-  fi
-
   if [[ ${INTERNAL_SCMM} == false || ${INTERNAL_JENKINS} == false ]]; then
     if [[ ${INTERNAL_SCMM} == true || ${INTERNAL_JENKINS} == true ]]; then
       error "When setting JENKINS_URL, SCMM_URL must also be set and the other way round."
@@ -223,13 +216,13 @@ function applyBasicK8sResources() {
 
   createSecrets
 
+  helm repo add fluxcd https://charts.fluxcd.io
+  helm repo add stable https://charts.helm.sh/stable
+  helm repo add bitnami https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami
+  helm repo add scm-manager https://packages.scm-manager.org/repository/helm-v2-releases/
+  helm repo add jenkins https://charts.jenkins.io
+  
   if [[ $SKIP_HELM_UPDATE == false ]]; then
-    helm repo add fluxcd https://charts.fluxcd.io
-    helm repo add stable https://charts.helm.sh/stable
-    helm repo add argo https://argoproj.github.io/argo-helm
-    helm repo add bitnami https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami
-    helm repo add scm-manager https://packages.scm-manager.org/repository/helm-v2-releases/
-    helm repo add jenkins https://charts.jenkins.io
     helm repo update
   fi
 
@@ -327,28 +320,6 @@ function initFluxV2() {
 }
 
 function initArgo() {
-  VALUES_YAML_PATH="argocd/values.yaml"
-  CONTROL_APP_YAML_PATH="argocd/resources/control-app.yaml"
-  ARGOCD_CM_YAML_PATH="argocd/resources/argocd-cm.yaml"
-  if [[ ${INTERNAL_SCMM} == false ]]; then
-    VALUES_YAML_PATH="$(mkTmpWithReplacedScmmUrls "$VALUES_YAML_PATH")"
-    CONTROL_APP_YAML_PATH="$(mkTmpWithReplacedScmmUrls "$CONTROL_APP_YAML_PATH")"
-    ARGOCD_CM_YAML_PATH="$(mkTmpWithReplacedScmmUrls "$ARGOCD_CM_YAML_PATH")"
-  fi
-
-  if [[ ${ARGOCD_CONFIG_ONLY} == false ]]; then
-
-    helm upgrade -i argocd --values "${VALUES_YAML_PATH}" \
-      $(argoHelmSettingsForLocalCluster) --version ${ARGO_HELM_CHART_VERSION} argo/argo-cd -n argocd
-
-    BCRYPT_PW=$(bcryptPassword "${SET_PASSWORD}")
-    # set argocd admin password to 'admin' here, because it does not work through the helm chart
-    kubectl patch secret -n argocd argocd-secret -p '{"stringData": { "admin.password": "'"${BCRYPT_PW}"'"}}' || true
-  fi
-
-  kubectl apply -f "$ARGOCD_CM_YAML_PATH" || true
-  kubectl apply -f "$CONTROL_APP_YAML_PATH" || true
-
   pushPetClinicRepo 'applications/argocd/petclinic/plain-k8s' 'argocd/petclinic-plain'
   pushPetClinicRepo 'applications/argocd/petclinic/helm' 'argocd/petclinic-helm'
   initRepo 'argocd/gitops'
@@ -360,8 +331,6 @@ function initArgo() {
 
   # init exercise
   pushPetClinicRepo 'exercises/petclinic-helm' 'exercises/petclinic-helm'
-  initRepoWithSource 'exercises/nginx-validation' 'exercises/nginx-validation'
-  initRepoWithSource 'exercises/broken-application' 'exercises/broken-application'
 }
 
 function replaceAllScmmUrlsInFolder() {
@@ -414,17 +383,8 @@ function replaceImageIfSet() {
   fi
 }
 
-function argoHelmSettingsForLocalCluster() {
-  if [[ $REMOTE_CLUSTER != true ]]; then
-    # We need a host port, so argo can be reached via localhost:9092
-    # But: This helm charts only uses the nodePort value, if the type is "NodePort". So change it for local cluster.
-    echo '--set server.service.type=NodePort'
-  fi
-}
-
 function createSecrets() {
   createSecret gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=$SET_PASSWORD -n default
-  createSecret gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=$SET_PASSWORD -n argocd
   # flux needs lowercase fieldnames
   createSecret flux-system --from-literal=username=gitops --from-literal=password=$SET_PASSWORD -n flux-system
 }
@@ -728,7 +688,7 @@ function printWelcomeScreenFluxV2() {
 function printWelcomeScreenArgocd() {
 
 
-  ARGOCD_URL="$(createUrl "${CLUSTER_BIND_ADDRESS}" "$(grep 'nodePortHttp:' "${PLAYGROUND_DIR}"/argocd/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')")"
+  ARGOCD_URL="$(createUrl "${CLUSTER_BIND_ADDRESS}" "$(grep 'nodePortHttp:' "${PLAYGROUND_DIR}"/argocd/argocd/argocd/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')")"
   setExternalHostnameIfNecessary 'ARGOCD' 'argocd-server' 'argocd'
 
   if [[ $INSTALL_ALL_MODULES == true || $INSTALL_ARGOCD == true ]]; then

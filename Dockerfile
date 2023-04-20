@@ -192,7 +192,6 @@ RUN apk update --no-cache && apk upgrade --no-cache && \
   apk add --no-cache \
      bash \
      curl \
-     apache2-utils \
      gettext \
      jq \
      git \

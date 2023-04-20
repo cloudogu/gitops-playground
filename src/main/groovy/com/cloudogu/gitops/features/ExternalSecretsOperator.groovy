@@ -28,8 +28,8 @@ class ExternalSecretsOperator extends Feature {
         def helmConfig = config['features']['secrets']['externalSecrets']['helm']
         helmClient.addRepo(getClass().simpleName, helmConfig['repoURL'] as String)
         helmClient.upgrade('external-secrets', "${getClass().simpleName}/${helmConfig['chart']}",
-                helmConfig['version'] as String,
-                [namespace: 'secrets', 
+                [namespace: 'secrets',
+                 version: helmConfig['version'],
                  values: "${fileSystemUtils.rootDir}/system/secrets/external-secrets/values.yaml"])
     }
 }

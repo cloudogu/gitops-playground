@@ -7,14 +7,14 @@ spec:
   destination:
     namespace: argocd
     server: https://kubernetes.default.svc
-  project: default
+  project: argo-project
   source:
     path: .
     repoURL: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/control-app
-    targetRevision: HEAD
+    targetRevision: main
     directory:
       recurse: true
   syncPolicy:
     automated:
-      prune: true
+      prune: false # is set to false to prevent projects to be deleted by accident
       selfHeal: true

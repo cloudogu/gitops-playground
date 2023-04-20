@@ -64,8 +64,11 @@ function configureScmmManager() {
     addRepo "argocd" "petclinic-helm" "Java app with custom helm chart"
     setPermission "argocd" "petclinic-helm" "${GITOPS_USERNAME}" "WRITE"
   
-    addRepo "argocd" "control-app" "Administration of ArgoCD (app of apps)"
+    addRepo "argocd" "control-app" "Basic cluster resources"
     setPermission "argocd" "control-app" "${GITOPS_USERNAME}" "WRITE"
+    
+    addRepo "argocd" "argocd" "Administration of ArgoCD"
+    setPermission "argocd" "argocd" "${GITOPS_USERNAME}" "WRITE"
   
     addRepo "argocd" "gitops" "The desired state of the apps deployed to k8s"
     setPermission "argocd" "gitops" "${GITOPS_USERNAME}" "WRITE"

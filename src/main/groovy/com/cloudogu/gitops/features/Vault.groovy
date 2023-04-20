@@ -7,8 +7,6 @@ import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.MapUtils
 import groovy.util.logging.Slf4j
 
-import java.nio.file.Path
-
 @Slf4j
 class Vault extends Feature {
     static final String VAULT_START_SCRIPT_PATH = '/system/secrets/vault/dev-post-start.sh'
@@ -27,7 +25,7 @@ class Vault extends Feature {
         this.helmClient = helmClient
         this.k8sClient = k8sClient
 
-        tmpHelmValues = File.createTempFile('gitops-playground-control-app', '')
+        tmpHelmValues = File.createTempFile('gitops-playground-vault-values', '')
         tmpHelmValues.deleteOnExit()
     }
 
@@ -117,8 +115,8 @@ class Vault extends Feature {
         def helmConfig = config['features']['secrets']['vault']['helm']
         helmClient.addRepo(getClass().simpleName, helmConfig['repoURL'] as String)
         helmClient.upgrade('vault', "${getClass().simpleName}/${helmConfig['chart']}",
-                helmConfig['version'] as String,
                 [namespace: 'secrets',
+                 version: helmConfig['version'],
                  values   : "${tmpHelmValues.toString()}"])
     }
 }

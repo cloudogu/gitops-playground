@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: argo-project
+  namespace: argocd
+spec:
+  description: AppProject for argo specific applications.
+  destinations:
+    - namespace: '*'
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  # must be able to get all repos because of the team-*-control-app Applications
+  sourceRepos:
+    - http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/argocd
+    - http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/control-app
+    - http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/gitops
+  # Allow applications from all namespaces to use this project for now.
+  sourceNamespaces:
+    - '*'

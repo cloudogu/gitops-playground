@@ -1,0 +1,11 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: default
+  namespace: argocd
+spec:
+  description: Default fallback AppProject if none other is specified. Is not allowed to do anything.
+  clusterResourceWhitelist:
+  destinations:
+  sourceRepos:
+  sourceNamespaces:
