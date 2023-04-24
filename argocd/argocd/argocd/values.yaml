@@ -33,6 +33,13 @@ argo-cd:
         selector:
           release: kube-prometheus-stack
   configs:
+
+    # needed to enable deploying the Application ressource into other namespaces than argocd
+    # Unfortunately, as of argocd 2.6 this leads to failing notifications 
+    # https://github.com/argoproj/argo-cd/issues/11252
+    params:
+      application.namespaces: "*"
+
     # Repo credential templates are created dynamically in groovy, so they are not stored in git
     #credentialTemplates:
     #  scmm:
@@ -43,12 +50,12 @@ argo-cd:
       argocd:
         name: argocd
         url: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/argocd
-      gitops:
-        name: gitops
-        url: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/gitops
-      control-app:
-        name: control-app
-        url: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/control-app
+      example-apps:
+        name: example-apps
+        url: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/example-apps
+      cluster-resources:
+        name: cluster-resources
+        url: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/cluster-resources
       nginx-helm-jenkins:
         name: nginx-helm-jenkins
         url: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/nginx-helm-jenkins
@@ -56,39 +63,33 @@ argo-cd:
         name: nginx-helm-dependency
         url: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/nginx-helm-dependency
       bitnami:
+        name: bitnami
         type: helm
         url: https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami
-        name: bitnami
       prometheus:
+        name: prometheus-community
         type: helm
         url: https://prometheus-community.github.io/helm-charts
-        name: prometheus-community
       codecentric:
+        name: codecentric
         type: helm
         url: https://codecentric.github.io/helm-charts
-        name: codecentric
       argo-helm-repo:
+        type: helm
         url: https://argoproj.github.io/argo-helm
         name: argocd
-        type: helm
 
     cm:
       timeout.reconciliation: 15s
 
   notifications:
-    enabled: false
-    argocdUrl: http://localhost:9092
+    enabled: true
+    argocdUrl: https://localhost:9092
     notifiers:
       service.email: |
         host: mailhog.monitoring.svc.cluster.local
         port: 1025
         from: argocd-alerts@cloudogu.com
-    subscriptions: # this subscription block handles GLOBAL notifications. every application in every project is going to be notified about the set triggers
-      - recipients:
-          - email:alerts@cloudogu.com
-        triggers: # these correspond to the triggers which you can find at the end of this file
-          - on-health-degraded
-          - on-sync-failed
     templates:
       template.app-deployed: |
         email:
@@ -135,6 +136,19 @@ argo-cd:
           The Application {{.app.metadata.name}} is now longer than 10 seconds in sync status. This may be because one of its resources resides in a SyncFailed status.
           Sync operation details are available at: {{.context.argocdUrl}}/applications/{{.app.metadata.name}}?operation=true .
     triggers:
+      # default triggers are mapped to AppProject with only one annotation: https://argo-cd.readthedocs.io/en/stable/operator-manual/notifications/triggers/#default-triggers
+      # It is recommended to write this annotation directly to AppProjects and not to Applications, to avoid duplicate code.
+      # We only alert on bad cases
+      defaultTriggers: |
+        - on-deleted
+        - on-health-degraded
+        - on-sync-failed
+      # - on-sync-status-unknown # Is triggered everytime SCM is down for a couple of minutes. Leads to  a lot of spam by every application.
+      # - on-sync-running
+      # - on-sync-succeeded
+      # - on-created
+      # - on-deployed
+      
       trigger.on-deployed: |
         - description: Application is synced and healthy. Triggered once per commit.
           oncePer: app.status.sync.revision

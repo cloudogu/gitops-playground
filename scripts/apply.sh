@@ -322,7 +322,6 @@ function initFluxV2() {
 function initArgo() {
   pushPetClinicRepo 'applications/argocd/petclinic/plain-k8s' 'argocd/petclinic-plain'
   pushPetClinicRepo 'applications/argocd/petclinic/helm' 'argocd/petclinic-helm'
-  initRepo 'argocd/gitops'
 
   # Set NodePort service, to avoid "Pending" services and "Processing" state in argo on local cluster
   initRepoWithSource 'applications/argocd/nginx/helm-dependency' 'argocd/nginx-helm-dependency' \
@@ -523,28 +522,6 @@ function pushRepoMirror() {
   rm -rf "${TMP_REPO}"
 
   setDefaultBranch "${TARGET_REPO_SCMM}" "${DEFAULT_BRANCH}"
-}
-
-function initRepo() {
-  TARGET_REPO_SCMM="$1"
-
-  TMP_REPO=$(mktemp -d)
-
-  git clone "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}"
-  (
-    cd "${TMP_REPO}"
-    git checkout main --quiet || git checkout -b main --quiet
-    echo $'.*\n!/.gitignore' >.gitignore
-    git add .gitignore
-    # exits with 1 if there were differences and 0 means no differences.
-    if ! git diff-index --exit-code --quiet HEAD --; then
-      git commit -m "Add readme" --quiet
-    fi
-    waitForScmManager
-    git push -u "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" HEAD:main --force
-  )
-
-  setDefaultBranch "${TARGET_REPO_SCMM}"
 }
 
 function initRepoWithSource() {

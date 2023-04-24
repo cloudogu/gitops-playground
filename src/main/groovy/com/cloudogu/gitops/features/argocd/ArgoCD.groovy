@@ -22,7 +22,8 @@ class ArgoCD extends Feature {
     
     protected File argocdRepoTmpDir
     private ScmmRepo argocdRepo
-    protected File controlAppTmpDir
+    protected File clusterResourcesTmpDir
+    protected File exampleAppsTmpDir
     protected File nginxHelmJenkinsTmpDir
     
     protected K8sClient k8sClient = new K8sClient()
@@ -39,9 +40,13 @@ class ArgoCD extends Feature {
         argocdRepoTmpDir.deleteOnExit()
         argocdRepo = createRepo('argocd/argocd', 'argocd/argocd', argocdRepoTmpDir)
         
-        controlAppTmpDir = File.createTempDir('gitops-playground-control-app')
-        controlAppTmpDir.deleteOnExit()
-        gitRepos += createRepo('argocd/control-app', 'argocd/control-app', controlAppTmpDir)
+        clusterResourcesTmpDir = File.createTempDir('gitops-playground-cluster-resources')
+        clusterResourcesTmpDir.deleteOnExit()
+        gitRepos += createRepo('argocd/cluster-resources', 'argocd/cluster-resources', clusterResourcesTmpDir)
+
+        exampleAppsTmpDir = File.createTempDir('gitops-playground-example-apps')
+        exampleAppsTmpDir.deleteOnExit()
+        gitRepos += createRepo('argocd/example-apps', 'argocd/example-apps', exampleAppsTmpDir)
         
         nginxHelmJenkinsTmpDir = File.createTempDir('gitops-playground-nginx-helm-jenkins')
         nginxHelmJenkinsTmpDir.deleteOnExit()
@@ -63,9 +68,7 @@ class ArgoCD extends Feature {
             repo.cloneRepo()
         })
         
-        prepareControlApp()
-
-        // TODO create gitops repo and init with ArgoCD Applications
+        prepareGitOpsRepos()
 
         prepareApplicationNginxHelmJenkins()
 
@@ -76,22 +79,23 @@ class ArgoCD extends Feature {
         installArgoCd()
     }
 
-    private void prepareControlApp() {
+    private void prepareGitOpsRepos() {
 
         if (!config.features['secrets']['active']) {
             // Secrets folder in controlApp is not needed
-            deleteDir controlAppTmpDir.absolutePath + '/secrets'
+            deleteDir clusterResourcesTmpDir.absolutePath + '/misc/secrets'
         }
 
         if (!config.features['monitoring']['active']) {
             // Monitoring folder in controlApp is not needed
-            deleteDir controlAppTmpDir.absolutePath + '/monitoring'
+            deleteDir clusterResourcesTmpDir.absolutePath + '/misc/monitoring'
         }
 
         if (!config.scmm["internal"]) {
             String externalScmmUrl = ScmmRepo.createScmmUrl(config)
-            log.debug("Configuring all yaml files in control app to use the external scmm url: ${externalScmmUrl}")
-            replaceFileContentInYamls(controlAppTmpDir, SCMM_URL_INTERNAL, externalScmmUrl)
+            log.debug("Configuring all yaml files in gitops repos to use the external scmm url: ${externalScmmUrl}")
+            replaceFileContentInYamls(clusterResourcesTmpDir, SCMM_URL_INTERNAL, externalScmmUrl)
+            replaceFileContentInYamls(exampleAppsTmpDir, SCMM_URL_INTERNAL, externalScmmUrl)
         }
     }
 
@@ -162,8 +166,8 @@ class ArgoCD extends Feature {
                 [stringData: ['admin.password': bcryptArgoCDPassword ] ])
 
         // Bootstrap root application
-        k8sClient.applyYaml(Path.of(argocdRepoTmpDir.absolutePath, 'projects/argo-project.yaml').toString())
-        k8sClient.applyYaml(Path.of(argocdRepoTmpDir.absolutePath, 'applications/root-app.yaml').toString())
+            k8sClient.applyYaml(Path.of(argocdRepoTmpDir.absolutePath, 'projects/argocd.yaml').toString())
+            k8sClient.applyYaml(Path.of(argocdRepoTmpDir.absolutePath, 'applications/bootstrap.yaml').toString())
 
         // Delete helm-argo secrets to decouple from helm.
         // This does not delete Argo from the cluster, but you can no longer modify argo directly with helm
@@ -174,8 +178,6 @@ class ArgoCD extends Feature {
 
     protected void prepareArgoCdRepo() {
         def tmpHelmValues = Path.of(argocdRepoTmpDir.absolutePath, HELM_VALUES_PATH)
-        def tmpHelmValuesFolder = tmpHelmValues.parent.toString()
-        def tmpHelmValuesFile = tmpHelmValues.fileName.toString()
 
         argocdRepo.cloneRepo()
 
@@ -187,9 +189,15 @@ class ArgoCD extends Feature {
 
         if (!config.application["remote"]) {
             log.debug("Setting argocd service.type to NodePort since it is not running in a remote cluster")
-            fileSystemUtils.replaceFileContent(tmpHelmValuesFolder, tmpHelmValuesFile,
-                    "LoadBalancer", "NodePort")
+            fileSystemUtils.replaceFileContent(tmpHelmValues.toString(), "LoadBalancer", "NodePort")
         }
+
+        if (config.features["argocd"]["url"]) {
+            log.debug("Setting argocd url for notifications")
+            fileSystemUtils.replaceFileContent(tmpHelmValues.toString(), 
+                    "argocdUrl: https://localhost:9092", "argocdUrl: ${config.features["argocd"]["url"]}")
+        }
+        
         argocdRepo.commitAndPush()
     }
 

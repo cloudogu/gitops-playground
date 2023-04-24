@@ -46,7 +46,8 @@ class ArgoCDTest {
     CommandExecutorForTest gitCommands = new CommandExecutorForTest()
     File argocdRepoTmpDir
     String actualHelmValuesFile
-    File controlAppTmpDir
+    File clusterResourcesTmpDir
+    File exampleAppsTmpDir
     File nginxHelmJenkinsTmpDir
 
     @Test
@@ -79,27 +80,24 @@ class ArgoCDTest {
         
         // Check bootstrapping
         assertCommand(k8sCommands, "kubectl apply -f " +
-                "${Path.of(argocdRepoTmpDir.absolutePath, 'projects/argo-project.yaml')}")
+                "${Path.of(argocdRepoTmpDir.absolutePath, 'projects/argocd.yaml')}")
         assertCommand(k8sCommands, "kubectl apply -f " +
-                "${Path.of(argocdRepoTmpDir.absolutePath, 'applications/root-app.yaml')}")
+                "${Path.of(argocdRepoTmpDir.absolutePath, 'applications/bootstrap.yaml')}")
 
         def deleteCommand = assertCommand(k8sCommands, 'kubectl delete secret -n argocd')
         assertThat(deleteCommand).contains('owner=helm', 'name=argocd')
-    }
 
-    private String assertCommand(CommandExecutorForTest commands, String commandStartsWith) {
-        def createSecretCommand = commands.actualCommands.find {
-            it.startsWith(commandStartsWith)
-        }
-        assertThat(createSecretCommand).as("Expected command to have been executed, but was not: ${commandStartsWith}")
-                .isNotNull()
-        return createSecretCommand
+        assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['server']['service']['type'])
+                .isEqualTo('NodePort')
+        assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['notifications']['argocdUrl'])
+                .isEqualTo( 'https://localhost:9092')
     }
 
     @Test
     void 'Installs argoCD for remote and external Scmm'() {
         config.application['remote'] = true
         config.scmm['internal'] = false
+        config.features['argocd']['url'] = 'https://argo.cd'
         
         createArgoCD().install()
         List filesWithInternalSCMM = findFilesContaining(argocdRepoTmpDir, ArgoCD.SCMM_URL_INTERNAL)
@@ -109,20 +107,22 @@ class ArgoCDTest {
 
         assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['server']['service']['type'])
                 .isEqualTo('LoadBalancer')
+        assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['notifications']['argocdUrl'])
+                .isEqualTo( 'https://argo.cd')
     }
 
     @Test
-    void 'When monitoring disabled: Does not push path monitoring to control app'() {
+    void 'When monitoring disabled: Does not push path monitoring to cluster resources'() {
         config.features['monitoring']['active'] = false
         createArgoCD().install()
-        assertThat(new File(controlAppTmpDir.absolutePath + "/monitoring")).doesNotExist()
+        assertThat(new File(clusterResourcesTmpDir.absolutePath + "/monitoring")).doesNotExist()
     }
 
     @Test
-    void 'When monitoring enabled: Does not push path monitoring to control app'() {
+    void 'When monitoring enabled: Does push path monitoring to cluster resources'() {
         config.features['monitoring']['active'] = true
         createArgoCD().install()
-        assertThat(new File(controlAppTmpDir.absolutePath + "/monitoring")).exists()
+        assertThat(new File(clusterResourcesTmpDir.absolutePath + "/misc/monitoring")).exists()
     }
 
     @Test
@@ -135,6 +135,7 @@ class ArgoCDTest {
         
         assertThat(new File(nginxHelmJenkinsTmpDir.absolutePath + "/k8s/staging/external-secret.yaml")).exists()
         assertThat(new File(nginxHelmJenkinsTmpDir.absolutePath + "/k8s/production/external-secret.yaml")).exists()
+        assertThat(new File(clusterResourcesTmpDir.absolutePath + "/misc/secrets")).exists()
     }
 
     @Test
@@ -152,10 +153,10 @@ class ArgoCDTest {
     }
 
     @Test
-    void 'When vault disabled: Does not push path "secrets" to control app'() {
+    void 'When vault disabled: Does not push path "secrets" to cluster resources'() {
         config.features['secrets']['active'] = false
         createArgoCD().install()
-        assertThat(new File(controlAppTmpDir.absolutePath + "/secrets")).doesNotExist()
+        assertThat(new File(clusterResourcesTmpDir.absolutePath + "/misc/secrets")).doesNotExist()
     }
 
     @Test
@@ -175,19 +176,26 @@ class ArgoCDTest {
     }
 
     @Test
-    void 'For internal SCMM: Use service address in control-app repo'() {
+    void 'For internal SCMM: Use service address in gitops repos'() {
         createArgoCD().install()
-        List filesWithInternalSCMM = findFilesContaining(controlAppTmpDir, ArgoCD.SCMM_URL_INTERNAL)
+        List filesWithInternalSCMM = findFilesContaining(clusterResourcesTmpDir, ArgoCD.SCMM_URL_INTERNAL)
+        assertThat(filesWithInternalSCMM).isNotEmpty()
+        filesWithInternalSCMM = findFilesContaining(exampleAppsTmpDir, ArgoCD.SCMM_URL_INTERNAL)
         assertThat(filesWithInternalSCMM).isNotEmpty()
     }
 
     @Test
-    void 'For external SCMM: Use external address in control-app repo'() {
+    void 'For external SCMM: Use external address in gitops repos'() {
         config.scmm['internal'] = false
         createArgoCD().install()
-        List filesWithInternalSCMM = findFilesContaining(controlAppTmpDir, ArgoCD.SCMM_URL_INTERNAL)
+        List filesWithInternalSCMM = findFilesContaining(clusterResourcesTmpDir, ArgoCD.SCMM_URL_INTERNAL)
         assertThat(filesWithInternalSCMM).isEmpty()
-        List filesWithExternalSCMM = findFilesContaining(controlAppTmpDir, "https://abc")
+        filesWithInternalSCMM = findFilesContaining(exampleAppsTmpDir, ArgoCD.SCMM_URL_INTERNAL)
+        assertThat(filesWithInternalSCMM).isEmpty()
+        
+        List filesWithExternalSCMM = findFilesContaining(clusterResourcesTmpDir, "https://abc")
+        assertThat(filesWithExternalSCMM).isNotEmpty()
+        filesWithExternalSCMM = findFilesContaining(exampleAppsTmpDir, "https://abc")
         assertThat(filesWithExternalSCMM).isNotEmpty()
     }
 
@@ -206,9 +214,19 @@ class ArgoCDTest {
         argocdRepoTmpDir = argoCD.argocdRepoTmpDir
         actualHelmValuesFile = Path.of(argocdRepoTmpDir.absolutePath, ArgoCD.HELM_VALUES_PATH)
 
-        controlAppTmpDir = argoCD.controlAppTmpDir
+        clusterResourcesTmpDir = argoCD.clusterResourcesTmpDir
+        exampleAppsTmpDir = argoCD.exampleAppsTmpDir
         nginxHelmJenkinsTmpDir = argoCD.nginxHelmJenkinsTmpDir
         return argoCD
+    }
+
+    private String assertCommand(CommandExecutorForTest commands, String commandStartsWith) {
+        def createSecretCommand = commands.actualCommands.find {
+            it.startsWith(commandStartsWith)
+        }
+        assertThat(createSecretCommand).as("Expected command to have been executed, but was not: ${commandStartsWith}")
+                .isNotNull()
+        return createSecretCommand
     }
 
     class ArgoCDForTest extends ArgoCD {

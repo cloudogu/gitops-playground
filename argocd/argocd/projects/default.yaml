@@ -3,6 +3,8 @@ kind: AppProject
 metadata:
   name: default
   namespace: argocd
+  annotations:
+    notifications.argoproj.io/subscribe.email: infra@example.org
 spec:
   description: Default fallback AppProject if none other is specified. Is not allowed to do anything.
   clusterResourceWhitelist:
