@@ -69,7 +69,6 @@ class ApplicationConfigurator {
                     fluxv2    : true,
                     argocd    : [
                             active    : true,
-                            configOnly: false,
                             url       : ''
                     ],
                     mail      : [

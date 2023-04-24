@@ -130,49 +130,46 @@ class ArgoCD extends Feature {
     }
 
     void installArgoCd() {
+        
+        prepareArgoCdRepo()
+        
+        log.debug("Creating repo credential secret that is used by argocd to access repos in SCM-Manager")
+        // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo 
+        def repoTemplateSecretName = 'argocd-repo-creds-scmm'
+        String scmmUrlForArgoCD = config.scmm["internal"] ? SCMM_URL_INTERNAL : ScmmRepo.createScmmUrl(config)
+        k8sClient.createSecret('generic', repoTemplateSecretName, 'argocd',
+                new Tuple2('url', scmmUrlForArgoCD),
+                new Tuple2('username', 'gitops'),
+                new Tuple2('password', password)
+        )
+        k8sClient.label('secret', repoTemplateSecretName,'argocd',
+                new Tuple2(' argocd.argoproj.io/secret-type', 'repo-creds'))
 
-        if (!config.features['argocd']['configOnly']) {
+        // Install umbrella chart from folder
+        String umbrellaChartPath = Path.of(argocdRepoTmpDir.absolutePath, 'argocd/')
+        // Even if the Chart.lock already contains the repo, we need to add it before resolving it
+        // See https://github.com/helm/helm/issues/8036#issuecomment-872502901
+        List helmDependencies = fileSystemUtils.readYaml(
+                Path.of(argocdRepoTmpDir.absolutePath, CHART_YAML_PATH))['dependencies'] 
+        helmClient.addRepo('argo', helmDependencies[0]['repository'] as String)
+        helmClient.dependencyBuild(umbrellaChartPath)
+        helmClient.upgrade('argocd', umbrellaChartPath, [namespace: 'argocd'])
+         
+        log.debug("Setting new argocd admin password")
+        // Set admin password imperatively here instead of values.yaml, because we don't want it to show in git repo 
+        String bcryptArgoCDPassword = BCrypt.hashpw(password, BCrypt.gensalt(4))
+        k8sClient.patch('secret', 'argocd-secret', 'argocd', 
+                [stringData: ['admin.password': bcryptArgoCDPassword ] ])
 
-            prepareArgoCdRepo()
-            
-            log.debug("Creating repo credential secret that is used by argocd to access repos in SCM-Manager")
-            // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo 
-            def repoTemplateSecretName = 'argocd-repo-creds-scmm'
-            String scmmUrlForArgoCD = config.scmm["internal"] ? SCMM_URL_INTERNAL : ScmmRepo.createScmmUrl(config)
-            k8sClient.createSecret('generic', repoTemplateSecretName, 'argocd',
-                    new Tuple2('url', scmmUrlForArgoCD),
-                    new Tuple2('username', 'gitops'),
-                    new Tuple2('password', password)
-            )
-            k8sClient.label('secret', repoTemplateSecretName,'argocd',
-                    new Tuple2(' argocd.argoproj.io/secret-type', 'repo-creds'))
+        // Bootstrap root application
+        k8sClient.applyYaml(Path.of(argocdRepoTmpDir.absolutePath, 'projects/argo-project.yaml').toString())
+        k8sClient.applyYaml(Path.of(argocdRepoTmpDir.absolutePath, 'applications/root-app.yaml').toString())
 
-            // Install umbrella chart from folder
-            String umbrellaChartPath = Path.of(argocdRepoTmpDir.absolutePath, 'argocd/')
-            // Even if the Chart.lock already contains the repo, we need to add it before resolving it
-            // See https://github.com/helm/helm/issues/8036#issuecomment-872502901
-            List helmDependencies = fileSystemUtils.readYaml(
-                    Path.of(argocdRepoTmpDir.absolutePath, CHART_YAML_PATH))['dependencies'] 
-            helmClient.addRepo('argo', helmDependencies[0]['repository'] as String)
-            helmClient.dependencyBuild(umbrellaChartPath)
-            helmClient.upgrade('argocd', umbrellaChartPath, [namespace: 'argocd'])
-             
-            log.debug("Setting new argocd admin password")
-            // Set admin password imperatively here instead of values.yaml, because we don't want it to show in git repo 
-            String bcryptArgoCDPassword = BCrypt.hashpw(password, BCrypt.gensalt(4))
-            k8sClient.patch('secret', 'argocd-secret', 'argocd', 
-                    [stringData: ['admin.password': bcryptArgoCDPassword ] ])
-
-            // Bootstrap root application
-            k8sClient.applyYaml(Path.of(argocdRepoTmpDir.absolutePath, 'projects/argo-project.yaml').toString())
-            k8sClient.applyYaml(Path.of(argocdRepoTmpDir.absolutePath, 'applications/root-app.yaml').toString())
-
-            // Delete helm-argo secrets to decouple from helm.
-            // This does not delete Argo from the cluster, but you can no longer modify argo directly with helm
-            // For development keeping it in helm makes it easier (e.g. for helm uninstall).
-            k8sClient.delete('secret', 'argocd', 
-                    new Tuple2('owner', 'helm'), new Tuple2('name', 'argocd'))
-        }
+        // Delete helm-argo secrets to decouple from helm.
+        // This does not delete Argo from the cluster, but you can no longer modify argo directly with helm
+        // For development keeping it in helm makes it easier (e.g. for helm uninstall).
+        k8sClient.delete('secret', 'argocd', 
+                new Tuple2('owner', 'helm'), new Tuple2('name', 'argocd'))
     }
 
     protected void prepareArgoCdRepo() {

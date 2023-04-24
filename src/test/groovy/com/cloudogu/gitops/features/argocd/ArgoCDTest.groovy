@@ -51,8 +51,6 @@ class ArgoCDTest {
 
     @Test
     void 'Installs argoCD'() {
-        config.features['argocd']['configOnly'] = false
-
         createArgoCD().install()
         
         // check values.yaml
@@ -100,7 +98,6 @@ class ArgoCDTest {
 
     @Test
     void 'Installs argoCD for remote and external Scmm'() {
-        config.features['argocd']['configOnly'] = false
         config.application['remote'] = true
         config.scmm['internal'] = false
         
