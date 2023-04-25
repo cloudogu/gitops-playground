@@ -160,19 +160,24 @@ class ArgoCDTest {
     }
 
     @Test
-    void 'Pushes example repo nginx-helm-jenkins for local'() {
+    void 'Pushes example repos for local'() {
         config.application['remote'] = false
         createArgoCD().install()
-        def valuesYaml = new YamlSlurper().parse(Path.of nginxHelmJenkinsTmpDir.absolutePath, ArgoCD.NGINX_HELM_JENKINS_VALUES_PATH)
+        def valuesYaml = parseActualYaml(nginxHelmJenkinsTmpDir, ArgoCD.NGINX_HELM_JENKINS_VALUES_PATH)
+        assertThat(valuesYaml['service']['type']).isEqualTo('NodePort')
+        
+        valuesYaml = parseActualYaml(exampleAppsTmpDir, ArgoCD.NGINX_HELM_DEPENDENCY_VALUES_PATH)
         assertThat(valuesYaml['service']['type']).isEqualTo('NodePort')
     }
 
     @Test
-    void 'Pushes example repo nginx-helm-jenkins for remote'() {
+    void 'Pushes example repos for remote'() {
         config.application['remote'] = true
         createArgoCD().install()
-        Map valuesYaml = (new YamlSlurper().parse(Path.of nginxHelmJenkinsTmpDir.absolutePath, ArgoCD.NGINX_HELM_JENKINS_VALUES_PATH)) as Map
-        assertThat(valuesYaml.toString()).doesNotContain('NodePort')
+        assertThat(parseActualYaml(nginxHelmJenkinsTmpDir, ArgoCD.NGINX_HELM_JENKINS_VALUES_PATH).toString())
+                .doesNotContain('NodePort')
+        assertThat(parseActualYaml(exampleAppsTmpDir, ArgoCD.NGINX_HELM_DEPENDENCY_VALUES_PATH).toString())
+                .doesNotContain('NodePort')
     }
 
     @Test
@@ -247,6 +252,10 @@ class ArgoCDTest {
         }
     }
 
+    private Map parseActualYaml(File folder, String file) {
+        return parseActualYaml(Path.of(folder.absolutePath, file).toString())
+    }
+    
     private Map parseActualYaml(String pathToYamlFile) {
         File yamlFile = new File(pathToYamlFile)
         def ys = new YamlSlurper()

@@ -323,9 +323,6 @@ function initArgo() {
   pushPetClinicRepo 'applications/argocd/petclinic/plain-k8s' 'argocd/petclinic-plain'
   pushPetClinicRepo 'applications/argocd/petclinic/helm' 'argocd/petclinic-helm'
 
-  # Set NodePort service, to avoid "Pending" services and "Processing" state in argo on local cluster
-  initRepoWithSource 'applications/argocd/nginx/helm-dependency' 'argocd/nginx-helm-dependency' \
-    "if [[ $REMOTE_CLUSTER != true ]]; then find . -name values.yaml -exec bash -c '(echo && echo \"    type: NodePort\" ) >> {}' \; ; fi"
   # Note: "applications/argocd/nginx/helm-jenkins" already migrated to groovy
 
   # init exercise

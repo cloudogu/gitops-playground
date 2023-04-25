@@ -55,9 +55,6 @@ function configureScmmManager() {
     addRepo "argocd" "nginx-helm-jenkins" "3rd Party app (NGINX) with helm, templated in Jenkins (gitops-build-lib)"
     setPermission "argocd" "nginx-helm-jenkins" "${GITOPS_USERNAME}" "WRITE"
     
-    addRepo "argocd" "nginx-helm-dependency" "3rd Party app (NGINX) with helm, templated via dependency (helm)"
-    setPermission "argocd" "nginx-helm-dependency" "${GITOPS_USERNAME}" "WRITE"
-
     addRepo "argocd" "petclinic-plain" "Java app with plain k8s resources"
     setPermission "argocd" "petclinic-plain" "${GITOPS_USERNAME}" "WRITE"
   

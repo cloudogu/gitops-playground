@@ -13,6 +13,7 @@ class ArgoCD extends Feature {
     static final String HELM_VALUES_PATH = 'argocd/values.yaml'
     static final String CHART_YAML_PATH = 'argocd/Chart.yaml'
     static final String NGINX_HELM_JENKINS_VALUES_PATH = 'k8s/values-shared.yaml'
+    static final String NGINX_HELM_DEPENDENCY_VALUES_PATH = 'apps/nginx-helm-dependency/values.yaml'
     static final String SCMM_URL_INTERNAL = "http://scmm-scm-manager.default.svc.cluster.local/scm"
 
     private Map config
@@ -97,6 +98,22 @@ class ArgoCD extends Feature {
             replaceFileContentInYamls(clusterResourcesTmpDir, SCMM_URL_INTERNAL, externalScmmUrl)
             replaceFileContentInYamls(exampleAppsTmpDir, SCMM_URL_INTERNAL, externalScmmUrl)
         }
+
+        fileSystemUtils.copyDirectory("${fileSystemUtils.rootDir}/applications/argocd/nginx/helm-dependency", 
+                Path.of(exampleAppsTmpDir.absolutePath, 'apps/nginx-helm-dependency/').toString())
+        if (!config.application["remote"]) {
+            //  Set NodePort service, to avoid "Pending" services and "Processing" state in argo on local cluster
+            log.debug("Setting service.type to NodePort since it is not running in a remote cluster for nginx-helm-dependency")
+            def nginxHelmValuesTmpFile = Path.of exampleAppsTmpDir.absolutePath, NGINX_HELM_DEPENDENCY_VALUES_PATH
+            Map nginxHelmValuesYaml = fileSystemUtils.readYaml(nginxHelmValuesTmpFile)
+            MapUtils.deepMerge(
+                    [ service: [
+                            type: 'NodePort'
+                    ]
+                    ],nginxHelmValuesYaml)
+            log.trace("nginx-helm-dependency values yaml: ${nginxHelmValuesYaml}")
+            fileSystemUtils.writeYaml(nginxHelmValuesYaml, nginxHelmValuesTmpFile.toFile())
+        }
     }
 
     private void prepareApplicationNginxHelmJenkins() {
@@ -166,8 +183,8 @@ class ArgoCD extends Feature {
                 [stringData: ['admin.password': bcryptArgoCDPassword ] ])
 
         // Bootstrap root application
-            k8sClient.applyYaml(Path.of(argocdRepoTmpDir.absolutePath, 'projects/argocd.yaml').toString())
-            k8sClient.applyYaml(Path.of(argocdRepoTmpDir.absolutePath, 'applications/bootstrap.yaml').toString())
+        k8sClient.applyYaml(Path.of(argocdRepoTmpDir.absolutePath, 'projects/argocd.yaml').toString())
+        k8sClient.applyYaml(Path.of(argocdRepoTmpDir.absolutePath, 'applications/bootstrap.yaml').toString())
 
         // Delete helm-argo secrets to decouple from helm.
         // This does not delete Argo from the cluster, but you can no longer modify argo directly with helm
