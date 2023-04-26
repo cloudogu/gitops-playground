@@ -8,9 +8,9 @@ export ABSOLUTE_BASEDIR
 PLAYGROUND_DIR="$(cd ${BASEDIR} && cd .. && pwd)"
 export PLAYGROUND_DIR
 
+# When updating, update in ApplicationConfigurator.groovy as well 
 PETCLINIC_COMMIT=32c8653
 SPRING_BOOT_HELM_CHART_COMMIT=0.3.0
-ARGO_HELM_CHART_VERSION=5.9.1 # From 5.10.0 Helm chart requires K8s 1.22: https://github.com/argoproj/argo-helm/commit/3d9e2f35a6e6249c27fd4ccd8129622d886ef4ea#diff-16f38cd1a4674cb682ac9f015fbc1c1ff552f024a8f791c16de0de21a1f65771R3
 K8S_VERSION=1.25.4
 
 source ${ABSOLUTE_BASEDIR}/utils.sh
@@ -127,9 +127,6 @@ function main() {
   if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV2 == true ]]; then
     evalWithSpinner "Starting Flux V2..." initFluxV2
   fi
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_ARGOCD == true ]]; then
-    evalWithSpinner "Starting ArgoCD..." initArgo
-  fi
 
   initJenkins
 
@@ -218,7 +215,6 @@ function applyBasicK8sResources() {
 
   helm repo add fluxcd https://charts.fluxcd.io
   helm repo add stable https://charts.helm.sh/stable
-  helm repo add bitnami https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami
   helm repo add scm-manager https://packages.scm-manager.org/repository/helm-v2-releases/
   helm repo add jenkins https://charts.jenkins.io
   
@@ -319,16 +315,6 @@ function initFluxV2() {
   kubectl apply -f fluxv2/clusters/gitops-playground/flux-system/gotk-kustomization.yaml || true
 }
 
-function initArgo() {
-  pushPetClinicRepo 'applications/argocd/petclinic/plain-k8s' 'argocd/petclinic-plain'
-  pushPetClinicRepo 'applications/argocd/petclinic/helm' 'argocd/petclinic-helm'
-
-  # Note: "applications/argocd/nginx/helm-jenkins" already migrated to groovy
-
-  # init exercise
-  pushPetClinicRepo 'exercises/petclinic-helm' 'exercises/petclinic-helm'
-}
-
 function replaceAllScmmUrlsInFolder() {
   CURRENT_DIR="${1}"
 
@@ -387,27 +373,6 @@ function createSecrets() {
 
 function createSecret() {
   kubectl create secret generic "$@" --dry-run=client -oyaml | kubectl apply -f-
-}
-
-function pushGopPipeline() {
-  SOURCE_REPO_PATH="$1"
-  TARGET_REPO_SCMM="$2"
-  TMP_REPO=$(mktemp -d)
-
-  git clone "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}" --quiet >/dev/null 2>&1
-  (
-    cd "${TMP_REPO}"
-    cp -r "${PLAYGROUND_DIR}/${SOURCE_REPO_PATH}"/Jenkinsfile .
-    git add .
-    git commit -m 'Add GitOps Pipeline and K8s resources' --quiet
-
-    waitForScmManager
-    git push -u "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
-  )
-
-  rm -rf "${TMP_REPO}"
-
-  setDefaultBranch "${TARGET_REPO_SCMM}"
 }
 
 function pushPetClinicRepo() {

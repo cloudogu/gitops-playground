@@ -27,7 +27,7 @@ class FileSystemUtils {
 
     String replaceFileContent(String fileToChange, String from, String to) {
         File file = new File(fileToChange)
-        String newConfig = file.text.replace(from, to)
+        String newConfig = file.text.replaceAll(from, to)
         file.setText(newConfig)
         return file
     }

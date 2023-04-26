@@ -6,12 +6,18 @@ import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.ScmmRepo
 import groovy.io.FileType
 import groovy.yaml.YamlSlurper
+import org.eclipse.jgit.api.CheckoutCommand
+import org.eclipse.jgit.api.CloneCommand
 import org.junit.jupiter.api.Test
 import org.springframework.security.crypto.bcrypt.BCrypt
 
 import java.nio.file.Path
 
 import static org.assertj.core.api.Assertions.assertThat
+import static org.assertj.core.api.Assertions.fail
+import static org.mockito.ArgumentMatchers.any
+import static org.mockito.ArgumentMatchers.anyString
+import static org.mockito.Mockito.*
 
 class ArgoCDTest {
     Map config = [
@@ -26,6 +32,29 @@ class ArgoCDTest {
                     host: 'abc',
                     username: '',
                     password: ''
+            ],
+            images     : [
+                    kubectl    : 'kubectl-value',
+                    helm       : 'helm-value',
+                    kubeval    : 'kubeval-value',
+                    helmKubeval: 'helmKubeval-value',
+                    yamllint   : 'yamllint-value'
+            ],
+            repositories : [
+                    springBootHelmChart: [
+                            url: 'https://github.com/cloudogu/spring-boot-helm-chart.git',
+                            ref: '0.3.0'
+                    ],
+                    springPetclinic: [
+                            url: 'https://github.com/cloudogu/spring-petclinic.git',
+                            ref: '32c8653'
+                    ],
+                    gitopsBuildLib: [
+                            url: "https://github.com/cloudogu/gitops-build-lib.git",
+                    ],
+                    cesBuildLib: [
+                            url: 'https://github.com/cloudogu/ces-build-lib.git',
+                    ]
             ],
             features   : [
                     argocd    : [
@@ -49,7 +78,10 @@ class ArgoCDTest {
     File clusterResourcesTmpDir
     File exampleAppsTmpDir
     File nginxHelmJenkinsTmpDir
-
+    File remotePetClinicRepoTmpDir
+    List<Tuple2<String, File>> petClinicLocalFoldersAndTmpDirs = []
+    CloneCommand gitCloneMock = mock(CloneCommand.class, RETURNS_DEEP_STUBS)
+    
     @Test
     void 'Installs argoCD'() {
         createArgoCD().install()
@@ -162,12 +194,25 @@ class ArgoCDTest {
     @Test
     void 'Pushes example repos for local'() {
         config.application['remote'] = false
+        
+        def setUriMock = mock(CloneCommand.class, RETURNS_DEEP_STUBS)
+        def checkoutMock = mock(CheckoutCommand.class, RETURNS_DEEP_STUBS)
+        when(gitCloneMock.setURI(anyString())).thenReturn(setUriMock)
+        when(setUriMock.setDirectory(any(File.class)).call().checkout()).thenReturn(checkoutMock)
+        
         createArgoCD().install()
         def valuesYaml = parseActualYaml(nginxHelmJenkinsTmpDir, ArgoCD.NGINX_HELM_JENKINS_VALUES_PATH)
         assertThat(valuesYaml['service']['type']).isEqualTo('NodePort')
         
         valuesYaml = parseActualYaml(exampleAppsTmpDir, ArgoCD.NGINX_HELM_DEPENDENCY_VALUES_PATH)
         assertThat(valuesYaml['service']['type']).isEqualTo('NodePort')
+        
+        // Assert Petclinic repo cloned
+        verify(gitCloneMock).setURI('https://github.com/cloudogu/spring-petclinic.git')
+        verify(setUriMock).setDirectory(remotePetClinicRepoTmpDir)
+        verify(checkoutMock).setName('32c8653')
+
+        assertPetClinicRepos('NodePort', 'LoadBalancer')
     }
 
     @Test
@@ -178,6 +223,8 @@ class ArgoCDTest {
                 .doesNotContain('NodePort')
         assertThat(parseActualYaml(exampleAppsTmpDir, ArgoCD.NGINX_HELM_DEPENDENCY_VALUES_PATH).toString())
                 .doesNotContain('NodePort')
+        
+        assertPetClinicRepos('LoadBalancer', 'NodePort')
     }
 
     @Test
@@ -222,6 +269,8 @@ class ArgoCDTest {
         clusterResourcesTmpDir = argoCD.clusterResourcesTmpDir
         exampleAppsTmpDir = argoCD.exampleAppsTmpDir
         nginxHelmJenkinsTmpDir = argoCD.nginxHelmJenkinsTmpDir
+        remotePetClinicRepoTmpDir = argoCD.remotePetClinicRepoTmpDir
+        petClinicLocalFoldersAndTmpDirs = argoCD.petClinicLocalFoldersAndTmpDirs
         return argoCD
     }
 
@@ -232,6 +281,60 @@ class ArgoCDTest {
         assertThat(createSecretCommand).as("Expected command to have been executed, but was not: ${commandStartsWith}")
                 .isNotNull()
         return createSecretCommand
+    }
+
+    void assertBuildImagesInJenkinsfileReplaced(File jenkinsfile) {
+        def actualBuildImages = ''
+        def insideBuildImagesBlock = false
+        
+        jenkinsfile.eachLine { line ->
+            if (line =~ /\s*buildImages\s*:\s*\[/) {
+                insideBuildImagesBlock = true
+                return
+            }
+
+            if (insideBuildImagesBlock) {
+                actualBuildImages += "${line.trim()}\n" 
+
+                if (line =~ /]/) {
+                    insideBuildImagesBlock = false
+                }
+            }
+        }
+        if (!actualBuildImages) {
+            fail("Missing build images in Jenkinsfile ${jenkinsfile}")
+        }
+
+        for (Map.Entry image : config.images as Map) {
+            assertThat(actualBuildImages).contains("${image.key}: '${image.value}',")
+        }
+    }
+
+    void assertPetClinicRepos(String expectedServiceType, String unexpectedServiceType) {
+        for (Tuple2<String, File> repo : petClinicLocalFoldersAndTmpDirs) {
+
+            def jenkinsfile = new File(repo.v2, 'Jenkinsfile')
+            assertThat(jenkinsfile).exists()
+
+            if (repo.v1 == 'applications/argocd/petclinic/plain-k8s') {
+                assertBuildImagesInJenkinsfileReplaced(jenkinsfile)
+                assertThat(new File(repo.v2, 'k8s/production/service.yaml').text).contains("type: ${expectedServiceType}")
+                assertThat(new File(repo.v2, 'k8s/staging/service.yaml').text).contains("type: ${expectedServiceType}")
+                
+                assertThat(new File(repo.v2, 'k8s/production/service.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
+                assertThat(new File(repo.v2, 'k8s/staging/service.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
+            } else if (repo.v1 == 'applications/argocd/petclinic/helm') {
+                assertBuildImagesInJenkinsfileReplaced(jenkinsfile)
+                assertThat(new File(repo.v2, 'k8s/values-shared.yaml').text).contains("type: ${expectedServiceType}")
+                assertThat(new File(repo.v2, 'k8s/values-shared.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
+            } else if (repo.v1 == 'exercises/petclinic-helm') {
+                // Does not contain the gitops build lib call, so no build images to replace
+                assertThat(new File(repo.v2, 'k8s/values-shared.yaml').text).contains("type: ${expectedServiceType}")
+                assertThat(new File(repo.v2, 'k8s/values-shared.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
+            } else {
+                fail("Unkown petclinic repo: ${repo.v1}")
+            }
+        }
     }
 
     class ArgoCDForTest extends ArgoCD {
@@ -249,6 +352,11 @@ class ArgoCDTest {
             repo.commandExecutor = gitCommands
             // We could add absoluteLocalRepoTmpDir here for assertion later 
             return repo
+        }
+
+        @Override
+        protected CloneCommand gitClone() {
+            return gitCloneMock
         }
     }
 

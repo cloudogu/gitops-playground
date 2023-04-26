@@ -3,6 +3,8 @@ package com.cloudogu.gitops.features.argocd
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
+import org.eclipse.jgit.api.CloneCommand
+import org.eclipse.jgit.api.Git
 import org.springframework.security.crypto.bcrypt.BCrypt
 
 import java.nio.file.Path
@@ -15,7 +17,12 @@ class ArgoCD extends Feature {
     static final String NGINX_HELM_JENKINS_VALUES_PATH = 'k8s/values-shared.yaml'
     static final String NGINX_HELM_DEPENDENCY_VALUES_PATH = 'apps/nginx-helm-dependency/values.yaml'
     static final String SCMM_URL_INTERNAL = "http://scmm-scm-manager.default.svc.cluster.local/scm"
-
+    static final List<Tuple2> PETCLINIC_REPOS = [
+            new Tuple2('applications/argocd/petclinic/plain-k8s', 'argocd/petclinic-plain'),
+            new Tuple2('applications/argocd/petclinic/helm', 'argocd/petclinic-helm'),
+            new Tuple2('exercises/petclinic-helm', 'exercises/petclinic-helm')
+    ]
+    
     private Map config
     private List<ScmmRepo> gitRepos = []
 
@@ -26,6 +33,8 @@ class ArgoCD extends Feature {
     protected File clusterResourcesTmpDir
     protected File exampleAppsTmpDir
     protected File nginxHelmJenkinsTmpDir
+    protected File remotePetClinicRepoTmpDir
+    protected List<Tuple2<String, File>> petClinicLocalFoldersAndTmpDirs = []
     
     protected K8sClient k8sClient = new K8sClient()
     protected HelmClient helmClient = new HelmClient()
@@ -56,6 +65,14 @@ class ArgoCD extends Feature {
         
         gitRepos += createRepo('exercises/nginx-validation', 'exercises/nginx-validation', File.createTempDir())
         gitRepos += createRepo('exercises/broken-application', 'exercises/broken-application', File.createTempDir())
+
+        remotePetClinicRepoTmpDir = File.createTempDir('gitops-playground-petclinic')
+        for (Tuple2 repo : PETCLINIC_REPOS) {
+            def petClinicTempDir = File.createTempDir(repo.v2.toString().replace('/', '-'))
+            petClinicTempDir.deleteOnExit()
+            petClinicLocalFoldersAndTmpDirs.add(new Tuple2(repo.v1.toString(), petClinicTempDir))
+            gitRepos += createRepo(remotePetClinicRepoTmpDir.absolutePath, repo.v2.toString(), petClinicTempDir)
+        }
     }
     
     @Override
@@ -65,6 +82,8 @@ class ArgoCD extends Feature {
 
     @Override
     void enable() {
+        cloneRemotePetclinicRepo()
+        
         gitRepos.forEach( repo -> {
             repo.cloneRepo()
         })
@@ -72,12 +91,26 @@ class ArgoCD extends Feature {
         prepareGitOpsRepos()
 
         prepareApplicationNginxHelmJenkins()
+        
+        preparePetClinicRepos()
 
         gitRepos.forEach( repo -> {
             repo.commitAndPush()
         })
 
         installArgoCd()
+    }
+
+    void cloneRemotePetclinicRepo() {
+        Git git = gitClone()
+                .setURI(config.repositories['springPetclinic']['url'].toString())
+                .setDirectory(remotePetClinicRepoTmpDir)
+                .call()
+        git.checkout().setName(config.repositories['springPetclinic']['ref'].toString()).call()
+    }
+
+    protected CloneCommand gitClone() {
+        Git.cloneRepository()
     }
 
     private void prepareGitOpsRepos() {
@@ -141,6 +174,25 @@ class ArgoCD extends Feature {
 
         log.trace("nginx-helm-jenkins values yaml: ${nginxHelmJenkinsValuesYaml}")
         fileSystemUtils.writeYaml(nginxHelmJenkinsValuesYaml, nginxHelmJenkinsValuesTmpFile.toFile())
+    }
+
+    void preparePetClinicRepos() {
+        for (Tuple2<String, File> repo : petClinicLocalFoldersAndTmpDirs) {
+            
+            log.debug("Copying playground files for petclinic repo: ${repo.v1}")
+            fileSystemUtils.copyDirectory("${fileSystemUtils.rootDir}/${repo.v1}", repo.v2.absolutePath)
+            
+            log.debug("Replacing gitops-build-lib images for petclinic repo: ${repo.v1}")
+            for (Map.Entry image : config.images as Map) {
+                fileSystemUtils.replaceFileContent(new File(repo.v2, 'Jenkinsfile').toString(),
+                        "${image.key}: .*", "${image.key}: '${image.value}',")
+            }
+
+            if (!config.application["remote"]) {
+                log.debug("Setting argocd service.type to NodePort since it is not running in a remote cluster, for petclinic repo: ${repo.v1}")
+                replaceFileContentInYamls(repo.v2, 'type: LoadBalancer', 'type: NodePort')
+            }
+        }
     }
 
     private void removeObjectFromList(Object list, String key, String value) {

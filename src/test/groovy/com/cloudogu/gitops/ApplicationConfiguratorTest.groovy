@@ -1,12 +1,12 @@
 package com.cloudogu.gitops
 
-import static groovy.test.GroovyAssert.shouldFail
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
 import com.cloudogu.gitops.utils.TestLogger
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
+import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.Mockito.mock
 import static org.mockito.Mockito.when 
@@ -56,7 +56,6 @@ class ApplicationConfiguratorTest {
         testLogger = new TestLogger(applicationConfigurator.getClass())
         when(fileSystemUtils.getRootDir()).thenReturn("/test")
         when(fileSystemUtils.getLineFromFile("/test/scm-manager/values.yaml", "nodePort:")).thenReturn("nodePort: 9091")
-
     }
 
     @Test
