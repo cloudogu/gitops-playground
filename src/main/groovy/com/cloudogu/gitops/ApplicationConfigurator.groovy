@@ -64,6 +64,7 @@ class ApplicationConfigurator {
                             // Take from env or use default because the Dockerfile provides a local copy of the repo
                             // This is really hard to unit test (especially with JDK17+, with system-lambda, et al.) 
                             // and because it's statically initialized. So let's skip the test for now
+                            // TODO this does not work in graalvm, presumably because this is static. Move to 
                             url: System.getenv('SPRING_BOOT_HELM_CHART_REPO') ?: 'https://github.com/cloudogu/spring-boot-helm-chart.git',
                             ref: '0.3.0'
                     ],

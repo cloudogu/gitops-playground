@@ -97,6 +97,8 @@ RUN rm -r /dist/app/.mvn
 RUN rm /dist/app/mvnw
 RUN rm /dist/app/pom.xml
 RUN rm /dist/app/compiler.groovy
+# Allow read access to /root, because JGit checks the git config in /root (probably for some GraalVM reason)
+RUN mkdir -p /dist/root && chmod 770 /dist/root
 
 FROM graal as native-image
 ENV MAVEN_OPTS='-Dmaven.repo.local=/mvn'
@@ -107,12 +109,13 @@ RUN gu install native-image
 # https://github.com/oracle/graal/issues/2824 and 
 # https://github.com/oracle/graal/blob/vm-ce-22.2.0.1/docs/reference-manual/native-image/guides/build-static-and-mostly-static-executable.md
 ARG RESULT_LIB="/musl"
+# TODO verify ASC?
 RUN mkdir ${RESULT_LIB} && \
     curl -L -o musl.tar.gz https://more.musl.cc/10.2.1/x86_64-linux-musl/x86_64-linux-musl-native.tgz && \
     tar -xvzf musl.tar.gz -C ${RESULT_LIB} --strip-components 1 && \
     cp /usr/lib/gcc/x86_64-redhat-linux/8/libstdc++.a ${RESULT_LIB}/lib/
 ENV CC=/musl/bin/gcc
-RUN curl -L -o zlib.tar.gz https://zlib.net/zlib-1.2.13.tar.gz && \
+RUN curl -L -o zlib.tar.gz https://github.com/madler/zlib/releases/download/v1.2.13/zlib-1.2.13.tar.gz && \
     mkdir zlib && tar -xvzf zlib.tar.gz -C zlib --strip-components 1 && \
     cd zlib && ./configure --static --prefix=/musl && \
     make && make install && \
@@ -122,15 +125,20 @@ ENV PATH="$PATH:/musl/bin"
 # Provide binaries used by apply-ng, so our runs with native-image-agent dont fail 
 # with "java.io.IOException: Cannot run program "kubectl"..." etc.
 RUN microdnf install iproute
-# Copy only binaries, not jenkins plugins. Avoids having to rebuild native image only plugin changes
-COPY --from=downloader /dist/usr/ /usr/
-
-# copy only resources that we need to compile the binary
-COPY --from=maven-build /app/gitops-playground.jar /app/
 
 WORKDIR /app
 
+# Copy only binaries, not jenkins plugins. Avoids having to rebuild native image only plugin changes
+COPY --from=downloader /dist/usr/ /usr/
+# copy only resources that we need to compile the binary
+COPY --from=maven-build /app/gitops-playground.jar /app/
+
 # Create Graal native image config
+# Here we could consider running unit test with the graal agent to get more execution paths.
+# However, this leads to some mysterious error "Class initialization of com.oracle.truffle.js.scriptengine.GraalJSEngineFactory failed." 🤷‍♂️ 
+# Also, a lot of failing test with FileNotFoundException (due to user.dir?)
+# If we do that we might want to add an env var that acutally calls JGit
+# ./mvnw test "-DargLine=-agentlib:native-image-agent=config-output-dir=conf" --fail-never
 RUN java -agentlib:native-image-agent=config-output-dir=conf/ -jar gitops-playground.jar || true
 # Run again with different params in order to avoid further ClassNotFoundExceptions
 RUN java -agentlib:native-image-agent=config-merge-dir=conf/ -jar gitops-playground.jar \
@@ -138,20 +146,22 @@ RUN java -agentlib:native-image-agent=config-merge-dir=conf/ -jar gitops-playgro
       --jenkins-username=a --jenkins-password=a --scmm-username=a--scmm-password=a --password=a \
       --registry-url=a --registry-path=a --remote --argocd --debug --trace \
     || true
-
 RUN native-image -Dgroovy.grape.enable=false \
     -H:+ReportExceptionStackTraces \
     -H:ConfigurationFileDirectories=conf/ \
+    -H:IncludeResourceBundles=org.eclipse.jgit.internal.JGitText \
     --static \
     --allow-incomplete-classpath \
     --report-unsupported-elements-at-runtime \
     --diagnostics-mode \
-    --initialize-at-run-time=org.codehaus.groovy.control.XStreamUtils,groovy.grape.GrapeIvy,org.codehaus.groovy.vmplugin.v8.Java8\$LookupHolder \
+    --initialize-at-run-time=org.codehaus.groovy.control.XStreamUtils,groovy.grape.GrapeIvy,org.codehaus.groovy.vmplugin.v8.Java8\$LookupHolder,org.eclipse.jgit.lib.RepositoryCache,org.eclipse.jgit.transport.HttpAuthMethod\$Digest,org.eclipse.jgit.lib.GpgSigner \
     --initialize-at-build-time \
     --no-fallback \
     --libc=musl \
     -jar gitops-playground.jar \
     apply-ng
+
+
 
 FROM alpine as prod
 # copy groovy cli binary from native-image stage
@@ -165,6 +175,8 @@ COPY --from=maven-build /app/gitops-playground.jar /app/
 COPY src /app/src
 # Allow initialization in final FROM ${ENV} stage
 USER 0
+# Avoids ERROR org.eclipse.jgit.util.FS - Cannot save config file 'FileBasedConfig[/app/?/.config/jgit/config]'
+RUN adduser --disabled-password --home /home --no-create-home --uid 1000 user
 
 
 # Pick final image according to build-arg
@@ -197,7 +209,7 @@ RUN apk update --no-cache && apk upgrade --no-cache && \
      git \
     unzip
 
-USER 1000
+USER 1000:0
 
 COPY --from=downloader /dist /
 

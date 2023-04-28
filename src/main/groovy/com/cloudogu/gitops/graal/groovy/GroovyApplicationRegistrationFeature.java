@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.klokwrk.tool.gradle.source.repack.graal;
+package com.cloudogu.gitops.graal.groovy;
 
 import com.oracle.svm.core.annotate.AutomaticFeature;
 import io.github.classgraph.ClassGraph;
@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
+ * Source: <a href="https://github.com/croz-ltd/klokwrk-project/tree/57202c58b792aff5f47e4c9033f91e5a31f100cc">...</a>
  * Programmatically registers application's reflective Groovy classes with Graal native image compiler.
  * <p/>
  * Behavior can be configured via {@code kwrk-graal.properties} file in classpath:

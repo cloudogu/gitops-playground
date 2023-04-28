@@ -102,11 +102,14 @@ class ArgoCD extends Feature {
     }
 
     void cloneRemotePetclinicRepo() {
+        log.debug("Cloning petclinic base repo, revision ${config.repositories['springPetclinic']['ref']}," +
+                " from ${config.repositories['springPetclinic']['url']}")
         Git git = gitClone()
                 .setURI(config.repositories['springPetclinic']['url'].toString())
                 .setDirectory(remotePetClinicRepoTmpDir)
                 .call()
         git.checkout().setName(config.repositories['springPetclinic']['ref'].toString()).call()
+        log.debug('Finished cloning petclinic base repo')
     }
 
     protected CloneCommand gitClone() {
@@ -116,12 +119,12 @@ class ArgoCD extends Feature {
     private void prepareGitOpsRepos() {
 
         if (!config.features['secrets']['active']) {
-            // Secrets folder in controlApp is not needed
+            log.debug("Deleting unnecessary secrets folder from cluster resources: ${clusterResourcesTmpDir}")
             deleteDir clusterResourcesTmpDir.absolutePath + '/misc/secrets'
         }
 
         if (!config.features['monitoring']['active']) {
-            // Monitoring folder in controlApp is not needed
+            log.debug("Deleting unnecessary monitoring folder from cluster resources: ${clusterResourcesTmpDir}")
             deleteDir clusterResourcesTmpDir.absolutePath + '/misc/monitoring'
         }
 

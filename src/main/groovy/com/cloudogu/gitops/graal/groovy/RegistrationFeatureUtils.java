@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.klokwrk.tool.gradle.source.repack.graal;
+package com.cloudogu.gitops.graal.groovy;
 
 import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ClassInfoList;
@@ -26,6 +26,9 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.Properties;
 
+/**
+ *  Source: <a href="https://github.com/croz-ltd/klokwrk-project/tree/57202c58b792aff5f47e4c9033f91e5a31f100cc">...</a>
+ */
 public class RegistrationFeatureUtils {
     /**
      * Registers all supplied classes for runtime reflection.

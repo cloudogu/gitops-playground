@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.klokwrk.tool.gradle.source.repack.graal;
+package com.cloudogu.gitops.graal.groovy;
 
 import com.oracle.svm.core.annotate.AutomaticFeature;
 import io.github.classgraph.ClassGraph;
@@ -25,6 +25,8 @@ import io.github.classgraph.ScanResult;
 import org.graalvm.nativeimage.hosted.Feature;
 
 /**
+ * Source: <a href="https://github.com/croz-ltd/klokwrk-project/tree/57202c58b792aff5f47e4c9033f91e5a31f100cc">...</a>
+ * 
  * Programmatically registers default Groovy methods (accessed by reflection) and {@code groovy.lang.Closure} extending classes from {@code org.codehaus.groovy.runtime} package with Graal native
  * image compiler.
  *
