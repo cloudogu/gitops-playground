@@ -5,6 +5,8 @@ import groovy.util.logging.Slf4j
 @Slf4j
 class CommandExecutor {
 
+    public static final int PROCESS_TIMEOUT_SECONDS = 120
+
     Output execute(String[] command, boolean failOnError = true) {
         Process proc = doExecute(command)
         return getOutput(proc, command.join(" "), failOnError)
@@ -32,7 +34,7 @@ class CommandExecutor {
     }
 
     protected Output getOutput(Process proc, String command, boolean failOnError = true) {
-        proc.waitForOrKill(60000)
+        proc.waitForOrKill(PROCESS_TIMEOUT_SECONDS * 1000)
         // err must be defined first because calling proc.text closes the output stream
         String err = proc.err.text.trim()
         String out = proc.text.trim()
