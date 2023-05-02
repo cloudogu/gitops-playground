@@ -92,11 +92,12 @@ RUN /jenkins/download-plugins.sh /dist/gitops/jenkins-plugins
 # Prepare local files for later stages
 COPY . /dist/app
 # Remove dev stuff
-RUN rm -r /dist/app/src
 RUN rm -r /dist/app/.mvn
 RUN rm /dist/app/mvnw
 RUN rm /dist/app/pom.xml
 RUN rm /dist/app/compiler.groovy
+# For dev image
+RUN mv /dist/app/src /src-without-graal && rm -r /src-without-graal/main/groovy/com/cloudogu/gitops/graal
 # Allow read access to /root, because JGit checks the git config in /root (probably for some GraalVM reason)
 RUN mkdir -p /dist/root && chmod 770 /dist/root
 
@@ -172,7 +173,7 @@ FROM eclipse-temurin:${JDK_VERSION}-jre-alpine as dev
 
 COPY scripts/apply-ng.sh /app/scripts/
 COPY --from=maven-build /app/gitops-playground.jar /app/
-COPY src /app/src
+COPY --from=downloader /src-without-graal  /app/src
 # Allow initialization in final FROM ${ENV} stage
 USER 0
 # Avoids ERROR org.eclipse.jgit.util.FS - Cannot save config file 'FileBasedConfig[/app/?/.config/jgit/config]'
