@@ -6,6 +6,7 @@ import com.cloudogu.gitops.utils.TestLogger
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
+import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.Mockito.mock
@@ -83,6 +84,30 @@ class ApplicationConfiguratorTest {
         assertThat(actualConfig['features']['secrets']['externalSecrets']).isNotNull()
         // Dynamic vaule (depends on vault mode)
         assertThat(actualConfig['features']['secrets']['active']).isEqualTo(true)
+    }
+
+    /**
+     * If you would like to run this test in the IDE, add the following JVM options. The same is done in pom.xml
+     * --add-opens java.base/java.util=ALL-UNNAMED
+     */
+    @Test
+    void "Certain properties are read from env"() {
+        withEnvironmentVariable('SPRING_BOOT_HELM_CHART_REPO', 'value1').execute {
+            Map actualConfig = new ApplicationConfigurator(networkingUtils, fileSystemUtils).setConfig(testConfig)
+            assertThat(actualConfig['repositories']['springBootHelmChart']['url']).isEqualTo('value1')
+        }
+        withEnvironmentVariable('SPRING_PETCLINIC_REPO', 'value2').execute {
+            Map actualConfig = new ApplicationConfigurator(networkingUtils, fileSystemUtils).setConfig(testConfig)
+            assertThat(actualConfig['repositories']['springPetclinic']['url']).isEqualTo('value2')
+        }
+        withEnvironmentVariable('GITOPS_BUILD_LIB_REPO', 'value3').execute {
+            Map actualConfig = new ApplicationConfigurator(networkingUtils, fileSystemUtils).setConfig(testConfig)
+            assertThat(actualConfig['repositories']['gitopsBuildLib']['url']).isEqualTo('value3')
+        }
+        withEnvironmentVariable('CES_BUILD_LIB_REPO', 'value4').execute {
+            Map actualConfig = new ApplicationConfigurator(networkingUtils, fileSystemUtils).setConfig(testConfig)
+            assertThat(actualConfig['repositories']['cesBuildLib']['url']).isEqualTo('value4')
+        }
     }
 
     @Test

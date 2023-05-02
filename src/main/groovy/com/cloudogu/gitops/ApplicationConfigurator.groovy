@@ -15,7 +15,8 @@ class ApplicationConfigurator {
     public static final String HELM_IMAGE = "ghcr.io/cloudogu/helm:3.10.3-1"
     public static final String DEFAULT_ADMIN_USER = 'admin'
     public static final String DEFAULT_ADMIN_PW = 'admin'
-    private static final Map DEFAULT_VALUES = makeDeeplyImmutable([
+    // This is deliberately non-static, so as to allow getenv() to work with GraalVM static images 
+    private final Map DEFAULT_VALUES = makeDeeplyImmutable([
             registry   : [
                     internal: true, // Set dynamically
                     url         : '',
@@ -62,9 +63,6 @@ class ApplicationConfigurator {
             repositories : [
                     springBootHelmChart: [
                             // Take from env or use default because the Dockerfile provides a local copy of the repo
-                            // This is really hard to unit test (especially with JDK17+, with system-lambda, et al.) 
-                            // and because it's statically initialized. So let's skip the test for now
-                            // TODO this does not work in graalvm, presumably because this is static. Move to 
                             url: System.getenv('SPRING_BOOT_HELM_CHART_REPO') ?: 'https://github.com/cloudogu/spring-boot-helm-chart.git',
                             ref: '0.3.0'
                     ],
