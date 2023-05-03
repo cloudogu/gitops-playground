@@ -30,12 +30,12 @@ bash <(curl -s \
   && sleep 2 && docker run --rm -it --pull=always -u $(id -u) \
     -v ~/.k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     --net=host \
-    ghcr.io/cloudogu/gitops-playground --yes
+    ghcr.io/cloudogu/gitops-playground --yes --argocd --fluxv2
 ```
 
 This command will also print URLs of the [applications](#applications) inside the cluster to get you started.  
-Note that you can append `--argocd` and `--fluxv2` to select specific operators. This will also speed up the 
-progress.
+Note that you can also use only one of `--argocd` or `--fluxv2` to select specific operators. This will also speed up 
+the progress.
 
 We recommend running this command as an unprivileged user, that is inside the [docker group](https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user). 
 
@@ -200,10 +200,10 @@ You can get a full list of all options like so:
 docker run --rm ghcr.io/cloudogu/gitops-playground --help
 ```
 
-##### Deploy specific GitOps operators only
+##### Deploy GitOps operators
 
-* `--argocd` - deploy only Argo CD GitOps operator
-* `--fluxv2` - deploy only Flux v2 GitOps operator
+* `--argocd` - deploy Argo CD GitOps operator
+* `--fluxv2` - deploy Flux v2 GitOps operator
 
 ##### Deploy with local Cloudogu Ecosystem
 

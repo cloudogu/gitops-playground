@@ -124,7 +124,7 @@ function main() {
   initSCMMVars
   evalWithSpinner "Starting SCM-Manager..." initSCMM
 
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV2 == true ]]; then
+  if [[ $INSTALL_FLUXV2 == true ]]; then
     evalWithSpinner "Starting Flux V2..." initFluxV2
   fi
 
@@ -199,13 +199,6 @@ function checkPrerequisites() {
       exit 1
     fi
   fi
-
-  if [[ $INSTALL_ALL_MODULES == false && $INSTALL_ARGOCD == false ]]; then
-    if [[ ${DEPLOY_METRICS} == true ]]; then
-      error "Metrics module only available in conjunction with ArgoCD"
-      exit 1
-    fi
-  fi
 }
 
 function applyBasicK8sResources() {
@@ -248,7 +241,7 @@ function initJenkins() {
   configureJenkinsCommand=(configureJenkins "${JENKINS_URL}" "${JENKINS_USERNAME}" "${JENKINS_PASSWORD}"
     "${SCMM_URL_FOR_JENKINS}" "${SCMM_PASSWORD}" "${REGISTRY_URL}"
     "${REGISTRY_PATH}" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}"
-    "${INSTALL_ALL_MODULES}" "${INSTALL_FLUXV2}" "${INSTALL_ARGOCD}")
+    "${INSTALL_FLUXV2}" "${INSTALL_ARGOCD}")
 
   evalWithSpinner "Configuring Jenkins..." "${configureJenkinsCommand[@]}"
 }
@@ -574,10 +567,10 @@ function printWelcomeScreen() {
   echo "| See here:"
   echo "|"
 
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV2 == true ]]; then
+  if [[ $INSTALL_FLUXV2 == true ]]; then
     echo -e "| - \e[32m${SCMM_URL}/repos/fluxv2/\e[0m"
   fi
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_ARGOCD == true ]]; then
+  if [[ $INSTALL_ARGOCD == true ]]; then
     echo -e "| - \e[32m${SCMM_URL}/repos/argocd/\e[0m"
   fi
 
@@ -588,10 +581,10 @@ function printWelcomeScreen() {
   echo "| namespace via the jenkins UI:"
   echo "|"
 
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV2 == true ]]; then
+  if [[ $INSTALL_FLUXV2 == true ]]; then
     echo -e "| - \e[32m${JENKINS_URL}/job/fluxv2-applications/\e[0m"
   fi
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_ARGOCD == true ]]; then
+  if [[ $INSTALL_ARGOCD == true ]]; then
     echo -e "| - \e[32m${JENKINS_URL}/job/argocd-applications/\e[0m"
   fi
   echo "|"
@@ -615,7 +608,7 @@ function printWelcomeScreen() {
 }
 
 function printWelcomeScreenFluxV2() {
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV2 == true ]]; then
+  if [[ $INSTALL_FLUXV2 == true ]]; then
     echo "| For Flux V2:"
     echo "|"
     echo -e "| - GitOps repo: \e[32m${SCMM_URL}/repo/fluxv2/gitops/code/sources/main/\e[0m"
@@ -630,7 +623,7 @@ function printWelcomeScreenArgocd() {
   ARGOCD_URL="$(createUrl "${CLUSTER_BIND_ADDRESS}" "$(grep 'nodePortHttp:' "${PLAYGROUND_DIR}"/argocd/argocd/argocd/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')")"
   setExternalHostnameIfNecessary 'ARGOCD' 'argocd-server' 'argocd'
 
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_ARGOCD == true ]]; then
+  if [[ $INSTALL_ARGOCD == true ]]; then
     echo "| For ArgoCD:"
     echo "|"
     echo -e "| - GitOps repo: \e[32m${SCMM_URL}/repo/argocd/gitops/code/sources/main/\e[0m"
@@ -714,7 +707,6 @@ readParameters() {
   eval set -- "$COMMANDS"
   
   DEBUG=false
-  INSTALL_ALL_MODULES=true
   INSTALL_FLUXV2=false
   INSTALL_ARGOCD=false
   REMOTE_CLUSTER=false
@@ -746,8 +738,8 @@ readParameters() {
   while true; do
     case "$1" in
       -h | --help          ) printUsage; exit 0 ;;
-      --fluxv2             ) INSTALL_FLUXV2=true; INSTALL_ALL_MODULES=false; shift ;;
-      --argocd             ) INSTALL_ARGOCD=true; INSTALL_ALL_MODULES=false; shift ;;
+      --fluxv2             ) INSTALL_FLUXV2=true; shift ;;
+      --argocd             ) INSTALL_ARGOCD=true; shift ;;
       --argocd-url         ) ARGOCD_URL="$2"; shift 2 ;;
       --remote             ) REMOTE_CLUSTER=true; shift ;;
       --jenkins-url        ) JENKINS_URL="$2"; shift 2 ;;

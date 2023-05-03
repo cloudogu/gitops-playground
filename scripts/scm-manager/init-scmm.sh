@@ -42,7 +42,7 @@ function configureScmmManager() {
   addUser "${GITOPS_USERNAME}" "${GITOPS_PASSWORD}" "gitops@mail.de"
 
   ### FluxV2 Repos
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV2 == true ]]; then
+  if [[ $INSTALL_FLUXV2 == true ]]; then
     addRepo "fluxv2" "gitops"
     setPermission "fluxv2" "gitops" "${GITOPS_USERNAME}" "WRITE"
   
@@ -51,7 +51,7 @@ function configureScmmManager() {
   fi
 
   ### ArgoCD Repos
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_ARGOCD == true ]]; then
+  if [[ $INSTALL_ARGOCD == true ]]; then
     addRepo "argocd" "nginx-helm-jenkins" "3rd Party app (NGINX) with helm, templated in Jenkins (gitops-build-lib)"
     setPermission "argocd" "nginx-helm-jenkins" "${GITOPS_USERNAME}" "WRITE"
     
