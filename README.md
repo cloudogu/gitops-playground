@@ -297,15 +297,8 @@ See [Secrets management tools](#secrets-managment-tools) for details.
 
 ### Remove playground
 
-For k3d, you can just `k3d cluster delete gitops-playground`. This will delete the whole cluster. If you just want to 
-remove the playground from the cluster, use this [script](scripts/destroy.sh): './scripts/destroy.sh'
-
-On remote clusters there is a [script](scripts/destroy.sh) inside this repo:
-
-```shell
-bash <(curl -s \
-  https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/destroy.sh) 
-```
+For k3d, you can just `k3d cluster delete gitops-playground`. This will delete the whole cluster.
+Right now, there is no way to remove the playground from a cluster completely. We are planning to implement this, though.
 
 ## Stack
 
