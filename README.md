@@ -5,10 +5,10 @@ Reproducible infrastructure to showcase GitOps workflows with Kubernetes.
 
 In fact, this rolls out a complete DevOps stack with different features including 
 * GitOps (with different controllers to choose from: Argo CD and Flux v2),
-* example applications and CI-pipelines (using Jenkins and our [GitOps library](https://github.com/cloudogu/gitops-build-lib)),
-* Notifications/Alerts (using Mailhog for Demo purposes)
+* example applications and CI-pipelines (using Jenkins and the [gitops-build-lib](https://github.com/cloudogu/gitops-build-lib)),
+* Notifications/Alerts (using Mailhog for demo purposes)
 * Monitoring (using Prometheus and Grafana),
-* Secrets management (using Vault).
+* Secrets management (using Vault and external secrets operator).
 
 The gitops-playground is derived from our experiences in [consulting](https://cloudogu.com/en/consulting/?mtm_campaign=gitops-playground&mtm_kwd=consulting&mtm_source=github&mtm_medium=link), 
 operating the [myCloudogu platform](https://my.cloudogu.com/) and is used in our [GitOps trainings for both Flux and ArgoCD](https://platform.cloudogu.com/en/trainings/gitops-continuous-operations/?mtm_campaign=gitops-playground&mtm_kwd=training&mtm_source=github&mtm_medium=link).  
@@ -54,8 +54,10 @@ We recommend running this command as an unprivileged user, that is inside the [d
     - [Apply via kubectl (remote cluster)](#apply-via-kubectl-remote-cluster)
     - [Additional parameters](#additional-parameters)
   - [Remove playground](#remove-playground)
-- [Applications](#applications)
+- [Stack](#stack)
   - [Credentials](#credentials)
+  - [Argo CD](#argo-cd)
+  - [Flux](#flux)
   - [Jenkins](#jenkins)
   - [SCM-Manager](#scm-manager)
   - [Monitoring tools](#monitoring-tools)
@@ -63,25 +65,26 @@ We recommend running this command as an unprivileged user, that is inside the [d
     - [dev mode](#dev-mode)
     - [prod mode](#prod-mode)
     - [Example app](#example-app)
-  - [Argo CD UI](#argo-cd-ui)
-  - [Demo applications](#demo-applications)
+  - [Example Applications](#example-applications)
     - [Flux V2](#flux-v2)
-    - [Argo CD](#argo-cd)
+    - [Argo CD](#argo-cd-1)
 - [Development](#development)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## What is the GitOps Playground?
 
-The GitOps Playground provides an reproducible environment for trying out GitOps. Is consists of Infra As Code and 
-scripts for automatically setting up a Kubernetes Cluster including CI-server (Jenkins), source code management 
-(SCM-Manager) and several GitOps operators (Flux V2, Argo CD). 
-CI-Server, SCM and operators are pre-configured with a number of [demo applications](#demo-applications).
+The GitOps Playground provides a reproducible environment for setting up a GitOps-Stack.
+It provides an image for automatically setting up a Kubernetes Cluster including CI-server (Jenkins), 
+source code management (SCM-Manager), Monitoring and Alerting (Prometheus and Grafana), Secrets Management (Hashicorop
+Vault and External Secrets Operator) and of course GitOps operators: here you can choose between Flux V2 and Argo CD.
+
+The playground also deploys a number of [example applications](#example-applications).
 
 The GitOps Playground lowers the barriers for getting your hands on GitOps. No need to read lots of books and operator
 docs, getting familiar with CLIs, ponder about GitOps Repository folder structures and staging, etc.
 The GitOps Playground is a pre-configured environment to see GitOps in motion, including more advanced use cases like 
-notifications and monitoring.
+notifications, monitoring and secrets management.
 
 ## Installation
 
@@ -143,7 +146,8 @@ k3d's kubeconfig.
 ```shell
 CLUSTER_NAME=gitops-playground
 docker pull ghcr.io/cloudogu/gitops-playground
-docker run --rm -it -u $(id -u)  -v ~/.k3d/kubeconfig-${CLUSTER_NAME}.yaml:/home/.kube/config \
+docker run --rm -it -u $(id -u) \
+  -v ~/.k3d/kubeconfig-${CLUSTER_NAME}.yaml:/home/.kube/config \
   --net=host \
   ghcr.io/cloudogu/gitops-playground # additional parameters go here
 ``` 
@@ -168,15 +172,16 @@ For remote clusters it is easiest to apply the playground via kubectl.
 You can find info on how to install kubectl [here](https://v1-25.docs.kubernetes.io/docs/tasks/tools/#kubectl).
 
 ```shell
-# Create a temporary ServiceAccount and authorize via RBAC. This is needed to install CRDs, etc.
+# Create a temporary ServiceAccount and authorize via RBAC.
+# This is needed to install CRDs, etc.
 kubectl create serviceaccount gitops-playground-job-executer -n default
 kubectl create clusterrolebinding gitops-playground-job-executer \
   --clusterrole=cluster-admin \
   --serviceaccount=default:gitops-playground-job-executer
 
 # Then start apply the playground with the following command
-# The --remote parameter exposes Jenkins, SCMM and argo on well-known ports for example, 
-# so you don't have to remember the individual ports
+# The --remote parameter exposes Jenkins, SCMM and argo on well-known ports 
+# for example, so you don't have to remember the individual ports
 kubectl run gitops-playground -i --tty --restart=Never \
   --overrides='{ "spec": { "serviceAccount": "gitops-playground-job-executer" } }' \
   --image ghcr.io/cloudogu/gitops-playground \
@@ -212,7 +217,8 @@ Then set the following parameters.
 
 ```shell
 # Note: 
-# * In this case --password only sets the Argo CD admin password (Jenkins and SCMM are external)
+# * In this case --password only sets the Argo CD admin password (Jenkins and 
+#    SCMM are external)
 # * Insecure is needed, because the local instance will not have a valid cert
 --jenkins-url=https://192.168.56.2/jenkins \ 
 --scmm-url=https://192.168.56.2/scm \
@@ -233,8 +239,8 @@ Note that you can get a free CES demo instance set up with a Kubernetes Cluster 
 [here](https://cloudogu.com/en/ecosystem/demo-appointment/?mtm_campaign=gitops-playground&mtm_kwd=ces&mtm_source=github&mtm_medium=link).
 
 ```shell
-# Note:
-# In this case --password only sets the Argo CD admin password (Jenkins and SCMM are external) 
+# Note: In this case --password only sets the Argo CD admin password (Jenkins 
+# and SCMM are external) 
 --jenkins-url=https://your-ecosystem.cloudogu.net/jenkins \ 
 --scmm-url=https://your-ecosystem.cloudogu.net/scm \
 --jenkins-username=admin \
@@ -301,17 +307,16 @@ bash <(curl -s \
   https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/destroy.sh) 
 ```
 
-## Applications
+## Stack
 
 As described [above](#what-is-the-gitops-playground) the GitOps playground comes with a number of applications. Some of
 them can be accessed via web.
 * Jenkins
 * SCM-Manager
 * Argo CD
-* Demo applications for each GitOps operator, each with staging and production instance.
-
-We distilled the logic used in the example application pipelines into a reusable library for Jenkins:
-[cloudogu/gitops-build-lib](https://github.com/cloudogu/gitops-build-lib).
+* Prometheus/Grafana
+* Vault
+* Example applications for each GitOps operator, some with staging and production environments.
 
 The URLs of the applications depend on the environment the playground is deployed to.
 The following lists all application and how to find out their respective URLs for a GitOps playground being deployed to
@@ -340,12 +345,125 @@ xdg-open $(bash <(curl -s \
   https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/get-remote-url) \
    jenkins default)
 ```
+
 ### Credentials
 
-If deployed within the cluster, Jenkins, SCM-Manager, Argo CD and others can be accessed via: `admin/admin`
+If deployed within the cluster, all applications can be accessed via: `admin/admin`
 
-Note that you can change (an should for a remote cluster!) the password with the `--password` argument.
+Note that you can change (and should for a remote cluster!) the password with the `--password` argument.
 There also is a `--username` parameter, which is ignored for argocd. That is, for now argos username ist always `admin`.
+
+### Argo CD
+
+Argo CD's web UI is available at
+
+* http://localhost:9092 (k3d)
+* `scripts/get-remote-url argocd-server argocd` (remote k8s)
+
+Argo CD is installed in a production-ready way, that allows for operating Argo CD with Argo CD, using GitOps and 
+providing a [repo per team pattern](https://github.com/cloudogu/gitops-patterns/tree/789d300#repository-structure).
+
+When installing the GitOps playground, the following steps are performed to bootstrap Argo CD:
+
+* The following repos are created and initialized:
+  * `argocd` (management and config of Argo CD itself),
+  * `example-apps` (example for a developer/application team's GitOps repo) and 
+  * `cluster-resources` (example for a cluster admin or infra/platform team's repo)
+* Argo CD is installed imperatively via a helm chart.
+* Two resources are applied imperatively to the cluster: an `AppProject` called `argocd` and an `Application` called 
+  `bootstrap`. These are also contained within the `argocd` repository.
+
+From there everything is managed via GitOps. This diagram shows how it works. 
+
+![](docs/argocd-repos.svg)
+
+1. The `bootstrap` application manages the folder `applications`, which also contains `bootstrap` itself.  
+   With this, changes to the `bootstrap` application can be done via GitOps. The `bootstrap` application also deploys 
+   other apps ([App Of Apps pattern](https://github.com/argoproj/argo-cd/blob/v2.7.1/docs/operator-manual/cluster-bootstrapping.md?plain=1))
+2. The `argocd` application manages the folder `argocd` which contains Argo CD's resources as an umbrella helm chart.  
+   The [umbrella chart pattern](https://github.com/helm/helm-www/blob/d2543/content/en/docs/howto/charts_tips_and_tricks.md#complex-charts-with-many-dependencies) 
+   allows describing the actual values in `values.yaml` and deploying additional resources (such as secrets and
+   ingresses) via the `templates` folder. The actual ArgoCD chart is declared in the `Chart.yaml`
+3. The `Chart.yaml` contains the Argo CD helm chart as `dependency`. It points to a deterministic version of the Chart
+   (pinned via `Chart.lock`) that is pulled from the Chart repository on the internet.  
+   This mechanism can be used to upgrade Argo CD via GitOps. See the [Readme of the argocd repository](argocd/argocd/README.md)
+   for details.
+4. The `projects` application manages the `projects` folder, that contains the following `AppProjects`:
+   * the `argocd` project, used for bootstrapping
+   * the built-in `default` project (which is restricted to [eliminate threats to security](https://github.com/argoproj/argo-cd/blob/ce8825ad569bf961178606acc5f3842532148093/docs/threat_model.pdf))
+   * one project per team (to implement least privilege and also notifications per team): 
+     * `cluster-resources` (for platform admin, needs more access to cluster) and
+     * `example-apps` (for developers, needs less access to cluster) 
+5. The `cluster-resources` application points to the `cluster-resources` git repository (`argocd` folder), which
+   has the typical folder structure of a GitOps repository (explained in the next step). This way, the platform admins 
+   use GitOps in the same way as their "customers" (the developers) and can provide better support.
+6. The `example-apps` application points to the `example-apps` git repository (`argocd` folder again). Like the 
+  `cluster-resources`, it also has the typical folder structure of a GitOps repository:
+   * `apps` - contains the kubernetes resources of all applications (the actual YAML)
+   * `argocd` - contains Argo CD `Applications` that point to subfolders of `apps` (App Of Apps pattern, again)
+   * `misc` - contains kubernetes resources, that do not belong to specific applications (namespaces, RBAC, 
+    resources used by multiple apps, etc.)
+7. The `misc` application points to the `misc` folder
+8. The `my-app-staging` application points to the `apps/my-app/staging` folder within the same repo. This provides a
+   folder structure for release promotion. The `my-app-*` applications implement the [Environment per App Pattern](https://github.com/cloudogu/gitops-patterns/tree/789d300#implementing-release-promotion).
+   This pattern allows each application to have its own environments, e.g. production and staging or none at all.
+   Note that the actual YAML here could either be pushed manually or using the CI server. See [example applications](#example-applications).  
+9. The corresponding production environment is realizing using the `my-app-production` application, that points to the 
+   `apps/my-app/production` folder within the same repo.  
+   Note that it is recommended to protect the `production` folders from manual access, using for example the 
+  [SCM-Manger's Path Write Protection plugin](https://scm-manager.org/plugins/scm-pathwp-plugin/)
+   (not implement in playground, yet).   
+   Alternatively, instead of different YAMLs files as used in the diagram, these applications could be realized as 
+    * Two applications in the same YAML (implemented in the playground, see e.g. [`petclinic-plain.yaml`](argocd/example-apps/argocd/petclinic-plain.yaml))
+    * Two application with the same name in different namespaces, when ArgoCD is enabled to search for applications 
+      within different namespaces (implemented in the playground, see 
+      [Argo CD's values.yaml](argocd/argocd/argocd/values.yaml) - `application.namespaces` setting)
+    * One `ApplicationSet`, using the [`git` generator for directories](https://github.com/argoproj/argo-cd/blob/v2.7.1/docs/operator-manual/applicationset/Generators-Git.md#git-generator-directories) 
+      (not used in GitOps playground, yet) 
+
+
+And advanced question: Why does the GitOps playground not use the [**argocd-autopilot**](https://github.com/argoproj-labs/argocd-autopilot)?
+
+The short answer is: As of 2023-05, version 0.4.15 it looks far from ready for production. 
+
+Here is a diagram that shows how the repo structure created by autopilot looks like:
+
+![](docs/autopilot-repos.svg)
+
+Here are some thoughts why we deem it not a good fit for production:
+
+* The version of ArgoCD is not pinned. 
+  * Instead, the `kustomization.yaml` (3️ in the diagram) points to a `base` within the autopilot repo, which in turn 
+    points to the `stable` branch of the Argo CD repo.
+  * While it might be possible to pin the version using Kustomize, this is not the default and looks complicated.   
+  * A non-deterministic version calls for trouble. Upgrades of Argo CD might happen unnoticed.
+  * What about breaking changes? What about disaster recovery? 
+* The repository structure autopilot creates is more complicated (i.e. difficult to understand and maintain) than 
+  the one used in the playground
+  * Why is the `autopilot-bootstrap` application (1️ in the diagram) not within the GitOps repo and lives only in the 
+    cluster?
+  * The approach of an `ApplicationSet` within the `AppProject`'s yaml pointing to a `config.json` (more difficult to 
+    write than YAML) is difficult to grasp (4️ and 6️ in the diagram)
+  * The `cluster-resources` `ApplicationSet` is a good approach to multi-cluster but again, requires writing JSON
+    (4️ in the diagram).
+* Projects are used to realize environments (6️ and 7️ in the diagram).  
+  How would we separate teams? 
+* The usage of the [monorepo pattern](https://github.com/cloudogu/gitops-patterns/tree/789d300#repository-structure)
+  does not match to our perception that repo per team are a better match for most organizations. 
+
+### Flux
+
+Flux does not come with a UI out of the box. So if you want to communicate it, the `flux` CLI is the best option.
+
+For Flux, the playground implements a [monorepo pattern](https://github.com/cloudogu/gitops-patterns/tree/789d300#repository-structure),
+that adheres to the repo structure created by the `flux` CLI:
+
+![fluxv2-repo structure](docs/fluxv2-repo.svg)
+
+The position of the apps does not completely adhere to the
+[recommended repo structure](https://fluxcd.io/flux/guides/repository-structure/), though. See also [#109](https://github.com/cloudogu/gitops-playground/issues/109).
+
+For upgrading Flux, see the [Readme of the flux repository](fluxv2/README.md)
 
 ### Jenkins
 
@@ -358,20 +476,19 @@ You can enable browser notifications about build results via a button in the low
 
 Note that this only works when using `localhost` or `https://`. 
 
-![Enable Jenkins Notifications](docs/jenkins-enable-notifications.png)
-
-![Example of a Jenkins browser notifications](docs/jenkins-example-notification.png)
+<img src="docs/jenkins-enable-notifications.png" alt="Enable Jenkins Notifications" width="300" >
+<img src="docs/jenkins-example-notification.png" alt="Example of a Jenkins browser notifications" width="300" >
 
 ###### External Jenkins
 
 You can set an external jenkins server via the following parameters when applying the playground.
-See [Parameters](#additional-parameters) for examples.
+See [parameters](#additional-parameters) for examples.
 
 * `--jenkins-url`, 
 * `--jenkins-username`, 
 * `--jenkins-password`
 
-Note that the [demo applications](#demo-applications) pipelines will only run on a Jenkins that uses agents that provide
+Note that the [example applications](#example-applications) pipelines will only run on a Jenkins that uses agents that provide
 a docker host. That is, Jenkins must be able to run e.g. `docker ps` successfully on the agent. 
 
 The user has to have the following privileges: 
@@ -480,8 +597,8 @@ If you want the example app to work, you'll have to manually
 
 #### Example app
 
-With vault in `dev` mode and ArgoCD enabled, the demo app `applications/nginx/argocd/helm-jenkins` will be deployed in 
-a way that exposes the vault secrets `secret/<stage>/nginx-secret` via HTTP on the URL `http://<host>/secret`, 
+With vault in `dev` mode and ArgoCD enabled, the example app `applications/nginx/argocd/helm-jenkins` will be deployed 
+in a way that exposes the vault secrets `secret/<environment>/nginx-secret` via HTTP on the URL `http://<host>/secret`, 
 for example `http://localhost:30024/secret`.
 
 While exposing secrets on the web is a very bad practice, it's very good for demoing auto reload of a secret changed in 
@@ -491,7 +608,8 @@ To demo this, you could
 * change the [staging secret](http://localhost:8200/ui/vault/secrets/secret/edit/staging/nginx-helm-jenkins)
 * Wait for the change to show on the web, e.g. like so
 ```shell
-while ; do echo -n "$(date '+%Y-%m-%d %H:%M:%S'): " ; curl http://localhost:30024/secret/ ; echo; sleep 1; done
+while ; do echo -n "$(date '+%Y-%m-%d %H:%M:%S'): " ; \
+  curl http://localhost:30024/secret/ ; echo; sleep 1; done
 ```
 
   This usually takes between a couple of seconds and 1-2 minutes.  
@@ -503,32 +621,29 @@ The following video shows this demo in time-lapse:
 
 [secrets-demo-video](https://user-images.githubusercontent.com/1824962/215204174-eadf180b-2a82-4273-8cbb-6e7c187267c6.mp4)
 
-### Argo CD UI
+### Example Applications
 
-Argo CD's web UI is available at
-
-* http://localhost:9092 (k3d)
-* `scripts/get-remote-url argocd-server argocd` (remote k8s)
-
-### Demo applications
-
-Each GitOps operator comes with a couple of demo applications that allow for experimenting with different GitOps 
+Each GitOps operator comes with a couple of example applications that allow for experimenting with different GitOps 
 features.
 
 All applications are deployed via separated application and GitOps repos: 
 
 ![](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/k8s-diagrams/cdd6bb77/diagrams/gitops-with-app-repo.puml&fmt=png)
 
-* Separation of app repo and GitOps repo
-* Infrastructure as Code is maintained  in app repo,
+* Separation of app repo (e.g. `petclinic-plain`) and GitOps repo (e.g. `argocd/example-app` or `fluxv2/gitops`)
+* Config is maintained in app repo,
 * CI Server writes to GitOps repo and creates PullRequests.
 
 The applications implement a simple staging mechanism:
 
 * After a successful Jenkins build, the staging application will be deployed into the cluster by the GitOps operator.
 * Deployment of production applications can be triggered by accepting pull requests.
+* For some applications working without CI Server and committing directly to the GitOps repo is pragmatic  
+  (e.g. 3rd-party-application like NGINX, like [`argocd/nginx-helm-dependency`](argocd/example-apps/argocd/nginx-helm-dependency.yaml))
 
-Note that we are working on moving the GitOps-related logic into a
+![app-repo-vs-gitops-repo](docs/app-repo-vs-gitops-repo.svg)
+
+Note that for ArgoCD the GitOps-related logic is implemented in the 
 [gitops-build-lib](https://github.com/cloudogu/gitops-build-lib) for Jenkins. See the README there for more options like
 * staging,
 * resource creation,
