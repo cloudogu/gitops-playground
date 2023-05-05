@@ -125,7 +125,7 @@ node('docker') {
                 
                stage('Push image') {
                     if (isBuildSuccessful()) {
-                        docker.withRegistry("https://${dockerRegistryBaseUrl}", 'cesmarvin-github') {
+                        docker.withRegistry("https://${dockerRegistryBaseUrl}", 'cesmarvin-ghcr') {
                             // Push prod image last, because last pushed image is listed on top in GitHub
                             if (git.isTag()) {
                                 images[1].push()
