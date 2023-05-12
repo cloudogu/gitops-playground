@@ -37,3 +37,8 @@ variable "k8s_version_prefix" {
   # When updating please also adapt in Dockerfile, init-cluster.sh, ApplicationConfigurator.groovy and apply.sh
   default = "1.25."
 }
+
+variable "creator" {
+  type = map
+  default = null
+}

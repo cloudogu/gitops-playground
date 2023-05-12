@@ -38,6 +38,10 @@ resource "google_container_cluster" "cluster" {
   provisioner "local-exec" {
     command = "if ! command -v gcloud >/dev/null 2>&1; then echo WARNING: gcloud not installed. Cannot add cluster to local kubeconfig; else gcloud container clusters get-credentials ${var.cluster_name} --zone ${var.gce_location} --project ${var.gce_project}; fi"
   }
+
+  # Set creator label only if it is build via job
+  resource_labels = var.creator != null ? var.creator : null
+
 }
 
 
