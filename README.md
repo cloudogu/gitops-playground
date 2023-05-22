@@ -428,7 +428,7 @@ The short answer is: As of 2023-05, version 0.4.15 it looks far from ready for p
 
 Here is a diagram that shows how the repo structure created by autopilot looks like:
 
-![](docs/autopilot-repos.svg)
+![](docs/autopilot-repo.svg)
 
 Here are some thoughts why we deem it not a good fit for production:
 
