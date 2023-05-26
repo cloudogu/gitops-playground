@@ -112,6 +112,9 @@ class ArgoCD extends Feature {
         log.debug('Finished cloning petclinic base repo')
     }
 
+    /**
+     * Overwrite for testing purposes
+     */
     protected CloneCommand gitClone() {
         Git.cloneRepository()
     }
