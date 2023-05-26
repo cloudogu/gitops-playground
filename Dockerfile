@@ -101,14 +101,12 @@ RUN mv /dist/app/src /src-without-graal && rm -r /src-without-graal/main/groovy/
 # Allow read access to /root, because JGit checks the git config in /root (probably for some GraalVM reason)
 RUN mkdir -p /dist/root && chmod 770 /dist/root
 
+# This stage builds a static binary using graal VM. For details see docs/developers.md#GraalVM
 FROM graal as native-image
 ENV MAVEN_OPTS='-Dmaven.repo.local=/mvn'
 RUN gu install native-image
 
 # Set up musl, in order to produce a static image compatible to alpine
-# See 
-# https://github.com/oracle/graal/issues/2824 and 
-# https://github.com/oracle/graal/blob/vm-ce-22.2.0.1/docs/reference-manual/native-image/guides/build-static-and-mostly-static-executable.md
 ARG RESULT_LIB="/musl"
 # TODO verify ASC?
 RUN mkdir ${RESULT_LIB} && \
@@ -135,11 +133,6 @@ COPY --from=downloader /dist/usr/ /usr/
 COPY --from=maven-build /app/gitops-playground.jar /app/
 
 # Create Graal native image config
-# Here we could consider running unit test with the graal agent to get more execution paths.
-# However, this leads to some mysterious error "Class initialization of com.oracle.truffle.js.scriptengine.GraalJSEngineFactory failed." 🤷‍♂️ 
-# Also, a lot of failing test with FileNotFoundException (due to user.dir?)
-# If we do that we might want to add an env var that acutally calls JGit
-# ./mvnw test "-DargLine=-agentlib:native-image-agent=config-output-dir=conf" --fail-never
 RUN java -agentlib:native-image-agent=config-output-dir=conf/ -jar gitops-playground.jar || true
 # Run again with different params in order to avoid further ClassNotFoundExceptions
 RUN java -agentlib:native-image-agent=config-merge-dir=conf/ -jar gitops-playground.jar \
