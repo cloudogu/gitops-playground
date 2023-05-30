@@ -133,7 +133,7 @@ class VaultTest {
         assertThat(helmCommands.actualCommands[0].trim()).isEqualTo(
                 'helm repo add Vault https://vault-reg')
         assertThat(helmCommands.actualCommands[1].trim()).isEqualTo(
-                'helm upgrade -i vault Vault/vault --version=42.23.0' +
+                'helm upgrade -i vault Vault/vault --version 42.23.0' +
                         " --values ${temporaryYamlFile} --namespace secrets")
     }
     

@@ -88,10 +88,8 @@ function configureJenkins() {
   REGISTRY_PATH="${7}"
   REGISTRY_USERNAME="${8}"
   REGISTRY_PASSWORD="${9}"
-  INSTALL_ALL_MODULES="${10}"
-  INSTALL_FLUXV2="${11}"
-  INSTALL_ARGOCD="${12}"
-  
+  INSTALL_FLUXV2="${10}"
+  INSTALL_ARGOCD="${11}"
   
   waitForJenkins
 
@@ -129,15 +127,16 @@ function configureJenkins() {
   setGlobalProperty "SCMM_URL" "${SCMM_URL}"
   setGlobalProperty "REGISTRY_URL" "${REGISTRY_URL}"
   setGlobalProperty "REGISTRY_PATH" "${REGISTRY_PATH}"
+  setGlobalProperty "K8S_VERSION" "${K8S_VERSION}"
 
   createCredentials "scmm-user" "gitops" "${SCMM_PASSWORD}" "credentials for accessing scm-manager"
   createCredentials "registry-user" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}" "credentials for accessing the docker-registry"
 
 
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV2 == true ]]; then
+  if [[ $INSTALL_FLUXV2 == true ]]; then
     createJob "fluxv2-applications" "${SCMM_URL}" "fluxv2" "scmm-user"
   fi
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_ARGOCD == true ]]; then
+  if [[ $INSTALL_ARGOCD == true ]]; then
     createJob "argocd-applications" "${SCMM_URL}" "argocd" "scmm-user"
   fi
 }

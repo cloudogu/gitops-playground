@@ -28,10 +28,6 @@ function getExternalIP() {
   echo $external_ip
 }
 
-function bcryptPassword() {
-  echo $(htpasswd -bnBC 10 "" $1 | tr -d ':\n')
-}
-
 function spinner() {
     local info="$1"
     local pid=$!

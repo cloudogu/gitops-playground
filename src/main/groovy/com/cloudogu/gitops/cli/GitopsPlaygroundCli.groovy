@@ -61,8 +61,6 @@ class GitopsPlaygroundCli implements Runnable {
     private String yamllintImage
     @Option(names = ['--skip-helm-update'], description = 'Skips adding and updating helm repos')
     private boolean skipHelmUpdate
-    @Option(names = ['--argocd-config-only'], description = 'Skips installing argo-cd. Applies ConfigMap and Application manifests to bootstrap existing argo-cd')
-    private boolean argocdConfigOnly
 
     // args group metrics
     @Option(names = ['--metrics', '--monitoring'], description = 'Installs the Kube-Prometheus-Stack. This includes Prometheus, the Prometheus operator, Grafana and some extra resources')
@@ -88,9 +86,9 @@ class GitopsPlaygroundCli implements Runnable {
     private boolean pipeYes
 
     // args group operator
-    @Option(names = ['--fluxv2'], description = 'Install the Flux V2 module')
+    @Option(names = ['--fluxv2'], description = 'Install Flux V2')
     private boolean fluxv2
-    @Option(names = ['--argocd'], description = 'Install the ArgoCD module')
+    @Option(names = ['--argocd'], description = 'Install ArgoCD ')
     private boolean argocd
     @Option(names = ['--argocd-url'], description = 'The URL where argocd is accessible. It has to be the full URL with http:// or https://')
     private String argocdUrl
@@ -149,7 +147,6 @@ class GitopsPlaygroundCli implements Runnable {
                         fluxv2 : fluxv2,
                         argocd : [
                                 active    : argocd,
-                                configOnly: argocdConfigOnly,
                                 url       : argocdUrl
                         ],
                         monitoring : [

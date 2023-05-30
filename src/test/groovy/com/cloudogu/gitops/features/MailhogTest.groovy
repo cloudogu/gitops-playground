@@ -80,7 +80,7 @@ class MailhogTest {
         assertThat(commandExecutor.actualCommands[0].trim()).isEqualTo(
                 'helm repo add Mailhog https://codecentric.github.io/helm-charts')
         assertThat(commandExecutor.actualCommands[1].trim()).isEqualTo(
-                'helm upgrade -i mailhog Mailhog/mailhog --version=5.0.1' +
+                'helm upgrade -i mailhog Mailhog/mailhog --version 5.0.1' +
                         " --values ${temporaryYamlFile} --namespace monitoring")
     }
 

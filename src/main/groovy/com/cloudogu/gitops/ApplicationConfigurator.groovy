@@ -15,7 +15,8 @@ class ApplicationConfigurator {
     public static final String HELM_IMAGE = "ghcr.io/cloudogu/helm:3.10.3-1"
     public static final String DEFAULT_ADMIN_USER = 'admin'
     public static final String DEFAULT_ADMIN_PW = 'admin'
-    private static final Map DEFAULT_VALUES = makeDeeplyImmutable([
+    // This is deliberately non-static, so as to allow getenv() to work with GraalVM static images 
+    private final Map DEFAULT_VALUES = makeDeeplyImmutable([
             registry   : [
                     internal: true, // Set dynamically
                     url         : '',
@@ -60,16 +61,27 @@ class ApplicationConfigurator {
                     yamllint   : "cytopia/yamllint:1.25-0.7"
             ],
             repositories : [
-                    springBootHelmChart: "https://github.com/cloudogu/spring-boot-helm-chart.git",
-                    springPetclinic    : "https://github.com/cloudogu/spring-petclinic.git",
-                    gitopsBuildLib     : "https://github.com/cloudogu/gitops-build-lib.git",
-                    cesBuildLib        : "https://github.com/cloudogu/ces-build-lib.git"
-            ],
+                    springBootHelmChart: [
+                            // Take from env or use default because the Dockerfile provides a local copy of the repo
+                            url: System.getenv('SPRING_BOOT_HELM_CHART_REPO') ?: 'https://github.com/cloudogu/spring-boot-helm-chart.git',
+                            ref: '0.3.0'
+                    ],
+                    springPetclinic: [
+                            url: System.getenv('SPRING_PETCLINIC_REPO') ?: 'https://github.com/cloudogu/spring-petclinic.git',
+                            ref: '32c8653'
+                    ],
+                    gitopsBuildLib: [
+                            url: System.getenv('GITOPS_BUILD_LIB_REPO') ?: 'https://github.com/cloudogu/gitops-build-lib.git',
+                    ],
+                    cesBuildLib: [
+                            url: System.getenv('CES_BUILD_LIB_REPO') ?: 'https://github.com/cloudogu/ces-build-lib.git',
+                    ]
+            ]
+            ,
             features   : [
                     fluxv2    : true,
                     argocd    : [
                             active    : true,
-                            configOnly: false,
                             url       : ''
                     ],
                     mail      : [

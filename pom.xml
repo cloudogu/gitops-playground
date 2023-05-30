@@ -122,6 +122,13 @@
     </dependency>
 
     <dependency>
+      <groupId>org.eclipse.jgit</groupId>
+      <artifactId>org.eclipse.jgit</artifactId>
+      <!-- JGit is known to cause trouble with GraalVM. So when updating, keep calm and read the developers.md#JGit docs -->
+      <version>6.5.0.202303070854-r</version>
+    </dependency>
+
+    <dependency>
       <!-- Avoids java.lang.NoClassDefFoundError: org/apache/commons/logging/Log-->
       <groupId>org.springframework</groupId>
       <artifactId>spring-jcl</artifactId>
@@ -202,6 +209,10 @@
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <version>2.22.2</version>
+        <configuration>
+          <!-- Needed to allow unit tests to do reflection, e.g. for SystemLambda's withEnvironmentVariable -->
+          <argLine>--add-opens java.base/java.util=ALL-UNNAMED</argLine>
+        </configuration>
       </plugin>
       <plugin>
         <artifactId>maven-jar-plugin</artifactId>

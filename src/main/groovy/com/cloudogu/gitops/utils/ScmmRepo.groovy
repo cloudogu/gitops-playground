@@ -11,18 +11,18 @@ class ScmmRepo {
     private String password
     private String scmmUrl
     private String scmmUrlWithCredentials
-    private String localSrcDir
+    private String srcDir
     private String absoluteLocalRepoTmpDir
     protected FileSystemUtils fileSystemUtils = new FileSystemUtils()
     protected CommandExecutor commandExecutor = new CommandExecutor()
 
-    ScmmRepo(Map config, String localSrcDir, String scmmRepoTarget, String absoluteLocalRepoTmpDir) {
+    ScmmRepo(Map config, String srcDir, String scmmRepoTarget, String absoluteLocalRepoTmpDir) {
         this.username =  config.scmm["internal"] ? config.application["username"] : config.scmm["username"]
         this.password = config.scmm["internal"] ? config.application["password"] : config.scmm["password"]
         this.scmmUrl = createScmmUrl(config)
         this.scmmUrlWithCredentials = "${config.scmm["protocol"]}://${username}:${password}@${config.scmm["host"]}"
         this.scmmRepoTarget = scmmRepoTarget
-        this.localSrcDir = localSrcDir
+        this.srcDir = srcDir
         this.scmmRepoTarget = scmmRepoTarget
         this.absoluteLocalRepoTmpDir = absoluteLocalRepoTmpDir
         gitRepoCommandInit(absoluteLocalRepoTmpDir)
@@ -34,23 +34,26 @@ class ScmmRepo {
 
     void cloneRepo() {
         String repoUrl = scmmUrlWithCredentials + "/repo/" + scmmRepoTarget
-        String absoluteSrcDirLocation = fileSystemUtils.getRootDir() + "/" + localSrcDir
+        String absoluteSrcDirLocation = srcDir
+        if (!new File(absoluteSrcDirLocation).isAbsolute()) {
+            absoluteSrcDirLocation = fileSystemUtils.getRootDir() + "/" + srcDir
+        }
 
         log.debug("Cloning $scmmRepoTarget repo")
         commandExecutor.execute("git clone ${repoUrl} ${absoluteLocalRepoTmpDir}")
+        checkoutOrCreateBranch('main')
         fileSystemUtils.copyDirectory(absoluteSrcDirLocation, absoluteLocalRepoTmpDir)
     }
 
     void commitAndPush() {
         log.debug("Checking out main, adding files for repo: ${scmmRepoTarget}")
-        checkoutOrCreateBranch('main')
         git("add .")
         // "git commit" fails if no changes
         if (areChangesStagedForCommit()) {
             log.debug("Pushing repo: ${scmmRepoTarget}")
             // Passing this as a single string leads to failing command
-            git(["commit", "-m", "\"Initial commit\""] as String[])
-            git("push -u $scmmUrlWithCredentials/repo/$scmmRepoTarget HEAD:main --force")
+            git(["commit", "-m", "Initial commit"] as String[])
+            git("push -u $scmmUrlWithCredentials/repo/$scmmRepoTarget HEAD:refs/heads/main --force")
         }
     }
 

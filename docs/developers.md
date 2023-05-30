@@ -125,7 +125,7 @@ TODO: Copy a script `apply-ng` into the dev image that calls `groovy GitopsPlayg
 Then, we can use the dev image to try out if the playground image works without having to wait for the static image to
 be built.
 
-## Implicit explicit dependencies
+## Implicit + explicit dependencies
 
 The GitOps Playground comprises a lot of software components. The versions of some of them are pinned within this 
 repository so need to be upgraded regularly.
@@ -187,3 +187,72 @@ In case of error
 ```shell
 flux uninstall
 ```
+
+
+## GraalVM
+
+The playground started up as a collection of ever-growing shell scripts. Once we realized that the playground is here to stay, we started looking into alternatives to keep our code base in a maintainable state.
+
+Our requirements:
+* a scriptable language, so we could easily explore new features at customers (see [Dev image](#development-image)), 
+* the possibility of generating a native binary, in order to get a more lightweight (in terms of vulnerabilities) resulting image.
+
+As the team at the time had a strong Java background and was already profound in groovy, e.g. from `Jenkinsfiles`, we decided to use groovy. 
+We added Micronaut, because it promised good support for CLI, groovy and GraalVM for creating a static image.
+It turned out that Micronaut did not support GraalVM native images for groovy. In order to get this to work some more 
+hacking was necessary. See [`graal` package](../src/main/groovy/com/cloudogu/gitops/graal) and also the `native-image` stage in [`Dockerfile`](../Dockerfile).
+
+### Graal package
+
+In order to make Groovy's dynamic magic work in a Graal native image, we use some classes from the [clockwork-project](https://github.com/croz-ltd/klokwrk-project) (see this [package](../src/main/groovy/com/cloudogu/gitops/graal/groovy)). Theses are picked during `native-image` compilation via Annotations.
+The native image compilation is done during `docker build`. See `Dockerfile`.
+
+### Dockerfile
+
+The `native-image` stage takes the `playground.jar` and packs it into a statically executable binary.
+
+Some things are a bit special for the playground:
+* We compile groovy code, which requires some parameters (e.g. `initialize-at-run-time`)
+* We want to run the static image on alpine, so we need to compile it against libmusl instead of glibc.
+  * For that we need to download and compile musl and its dependency zlib 😬 (as stated in [this issue](https://github.com/oracle/graal/issues/2824))
+  * See also [Graal docs](https://github.com/oracle/graal/blob/vm-ce-22.2.0.1/docs/reference-manual/native-image/guides/build-static-and-mostly-static-executable.md)
+* We run the playground jar with the native-image-agent attached a couple of times (see bellow)
+* We use the JGit library, which is not exactly compatible with GraalVM (see bellow)
+
+### Create Graal native image config
+
+The `RUN java -agentlib:native-image-agent` instructions in `Dockerfile` execute the `playground.jar` with the agent attached.
+These runs create static image config files for some dynamic reflection things. 
+These files are later picked up by the `native-image`.
+This is done to reduce the chance of `ClassNotFoundException`s, `MethodNotFoundException`s, etc. at runtime.
+
+In the future we could further improve this by running unit test with the graal agent to get even more execution paths.
+
+However, this leads to some mysterious error `Class initialization of com.oracle.truffle.js.scriptengine.GraalJSEngineFactory failed.` 🤷‍♂️
+Also, a lot of failing test with `FileNotFoundException` (due to `user.dir`?).
+If more Exceptions should turn up in the future we might follow up on this.
+Then, we might want to add an env var that actually calls JGit (instead of the mock) in order to execute JGit code with 
+the agent attached.
+```shell
+./mvnw test "-DargLine=-agentlib:native-image-agent=config-output-dir=conf" --fail-never
+```
+At the moment this does not seem to be necessary, though.
+
+### JGit
+
+JGit seems to cause [a lot](https://bugs.eclipse.org/bugs/show_bug.cgi?id=546175) [of](https://github.com/quarkusio/quarkus/issues/21372) [trouble](https://github.com/miguelaferreira/issue-micronaut-graalvm-jgit) with GraalVM.  
+Unfortunately for the playground, JGit is a good choice: The only(?) actively developed native Java library for git. 
+In the long run, we want to get rid of the shell-outs and the `git` binary in the playground image in order to reduce
+attack surface and complexity. So we need JGit.
+
+So - how do we get JGit to work with GraalVM?
+
+Fortunately, Quarkus provides [an extension to make JGit work with GraalVM](https://github.com/quarkiverse/quarkus-jgit/tree/3.0.0).
+Unfortunately, the playground uses Micronaut and can't just add this extension as a dependency.
+That's why we picked some classes into the Graal package (see this [package](../src/main/groovy/com/cloudogu/gitops/graal/jgit)).
+Those are picked up by `native-image` binary in `Dockerfile`.
+In addition, we had to add some more parameters (`initialize-at-run-time` and `-H:IncludeResourceBundles`) to `native-image`.
+
+For the moment this works and hopefully some day JGit will have support for GraalVM built-in. 
+Until then, there is a chance, that each upgrade of JGit causes new issues. If so, check if the code of the Quarkus 
+extension provides solutions. 🤞 Good luck 🍀. 

@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: nginx-helm-dependency
+  namespace: argocd-production
+spec:
+  destination:
+    namespace: argocd-production
+    server: https://kubernetes.default.svc
+  project: example-apps
+  source:
+    path: apps/nginx-helm-dependency
+    repoURL: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/example-apps
+    targetRevision: main
+    directory:
+      recurse: true
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

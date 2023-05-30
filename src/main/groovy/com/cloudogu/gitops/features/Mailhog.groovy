@@ -55,8 +55,8 @@ class Mailhog extends Feature {
         def helmConfig = config['features']['mail']['helm']
         helmClient.addRepo(getClass().simpleName, helmConfig['repoURL'] as String)
         helmClient.upgrade('mailhog', "${getClass().simpleName}/${helmConfig['chart']}",
-                helmConfig['version'] as String,
                 [namespace: 'monitoring',
+                 version: helmConfig['version'],
                  values: "${tmpHelmValues.toString()}"])
     }
 }

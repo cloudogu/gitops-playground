@@ -63,7 +63,7 @@ class PrometheusStackTest {
         assertThat(commandExecutor.actualCommands[0].trim()).isEqualTo(
                 'helm repo add PrometheusStack https://prom')
         assertThat(commandExecutor.actualCommands[1].trim()).isEqualTo(
-                'helm upgrade -i kube-prometheus-stack PrometheusStack/kube-prometheus-stack --version=19.2.2' +
+                'helm upgrade -i kube-prometheus-stack PrometheusStack/kube-prometheus-stack --version 19.2.2' +
                         " --values ${temporaryYamlFile} --namespace monitoring")
     }
 

@@ -8,9 +8,10 @@ export ABSOLUTE_BASEDIR
 PLAYGROUND_DIR="$(cd ${BASEDIR} && cd .. && pwd)"
 export PLAYGROUND_DIR
 
+# When updating, update in ApplicationConfigurator.groovy as well 
 PETCLINIC_COMMIT=32c8653
 SPRING_BOOT_HELM_CHART_COMMIT=0.3.0
-ARGO_HELM_CHART_VERSION=5.9.1 # From 5.10.0 Helm chart requires K8s 1.22: https://github.com/argoproj/argo-helm/commit/3d9e2f35a6e6249c27fd4ccd8129622d886ef4ea#diff-16f38cd1a4674cb682ac9f015fbc1c1ff552f024a8f791c16de0de21a1f65771R3
+K8S_VERSION=1.25.4
 
 source ${ABSOLUTE_BASEDIR}/utils.sh
 source ${ABSOLUTE_BASEDIR}/jenkins/init-jenkins.sh
@@ -26,7 +27,7 @@ SCMM_URL_FOR_JENKINS="http://scmm-scm-manager/scm"
 
 # When updating please also adapt in Dockerfile, vars.tf, ApplicationConfigurator.groovy and init-cluster.sh
 # Find and replace with this regex, e.g. ghcr.io/cloudogu/helm:([\d\.-]*)*
-KUBECTL_DEFAULT_IMAGE='lachlanevenson/k8s-kubectl:v1.25.4'
+KUBECTL_DEFAULT_IMAGE="lachlanevenson/k8s-kubectl:v${K8S_VERSION}"
 HELM_DEFAULT_IMAGE='ghcr.io/cloudogu/helm:3.10.3-1'
 YAMLLINT_DEFAULT_IMAGE='cytopia/yamllint:1.25-0.7'
 # cloudogu/helm also contains kubeval and helm kubeval plugin. Using the same image makes builds faster
@@ -123,11 +124,8 @@ function main() {
   initSCMMVars
   evalWithSpinner "Starting SCM-Manager..." initSCMM
 
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV2 == true ]]; then
+  if [[ $INSTALL_FLUXV2 == true ]]; then
     evalWithSpinner "Starting Flux V2..." initFluxV2
-  fi
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_ARGOCD == true ]]; then
-    evalWithSpinner "Starting ArgoCD..." initArgo
   fi
 
   initJenkins
@@ -195,23 +193,9 @@ function evalWithSpinner() {
 }
 
 function checkPrerequisites() {
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_ARGOCD == true ]]; then
-    if ! command -v htpasswd &>/dev/null; then
-      error "Missing required command htpasswd"
-      exit 1
-    fi
-  fi
-
   if [[ ${INTERNAL_SCMM} == false || ${INTERNAL_JENKINS} == false ]]; then
     if [[ ${INTERNAL_SCMM} == true || ${INTERNAL_JENKINS} == true ]]; then
       error "When setting JENKINS_URL, SCMM_URL must also be set and the other way round."
-      exit 1
-    fi
-  fi
-
-  if [[ $INSTALL_ALL_MODULES == false && $INSTALL_ARGOCD == false ]]; then
-    if [[ ${DEPLOY_METRICS} == true ]]; then
-      error "Metrics module only available in conjunction with ArgoCD"
       exit 1
     fi
   fi
@@ -222,13 +206,12 @@ function applyBasicK8sResources() {
 
   createSecrets
 
+  helm repo add fluxcd https://charts.fluxcd.io
+  helm repo add stable https://charts.helm.sh/stable
+  helm repo add scm-manager https://packages.scm-manager.org/repository/helm-v2-releases/
+  helm repo add jenkins https://charts.jenkins.io
+  
   if [[ $SKIP_HELM_UPDATE == false ]]; then
-    helm repo add fluxcd https://charts.fluxcd.io
-    helm repo add stable https://charts.helm.sh/stable
-    helm repo add argo https://argoproj.github.io/argo-helm
-    helm repo add bitnami https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami
-    helm repo add scm-manager https://packages.scm-manager.org/repository/helm-v2-releases/
-    helm repo add jenkins https://charts.jenkins.io
     helm repo update
   fi
 
@@ -258,7 +241,7 @@ function initJenkins() {
   configureJenkinsCommand=(configureJenkins "${JENKINS_URL}" "${JENKINS_USERNAME}" "${JENKINS_PASSWORD}"
     "${SCMM_URL_FOR_JENKINS}" "${SCMM_PASSWORD}" "${REGISTRY_URL}"
     "${REGISTRY_PATH}" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}"
-    "${INSTALL_ALL_MODULES}" "${INSTALL_FLUXV2}" "${INSTALL_ARGOCD}")
+    "${INSTALL_FLUXV2}" "${INSTALL_ARGOCD}")
 
   evalWithSpinner "Configuring Jenkins..." "${configureJenkinsCommand[@]}"
 }
@@ -311,7 +294,7 @@ function setExternalHostnameIfNecessary() {
 }
 
 function initFluxV2() {
-  pushPetClinicRepo 'applications/petclinic/fluxv2/plain-k8s' 'fluxv2/petclinic-plain'
+  pushPetClinicRepo 'applications/fluxv2/petclinic/plain-k8s' 'fluxv2/petclinic-plain'
 
   initRepoWithSource 'fluxv2' 'fluxv2/gitops'
 
@@ -323,44 +306,6 @@ function initFluxV2() {
   kubectl apply -f fluxv2/clusters/gitops-playground/flux-system/gotk-components.yaml || true
   kubectl apply -f "${REPOSITORY_YAML_PATH}" || true
   kubectl apply -f fluxv2/clusters/gitops-playground/flux-system/gotk-kustomization.yaml || true
-}
-
-function initArgo() {
-  VALUES_YAML_PATH="argocd/values.yaml"
-  CONTROL_APP_YAML_PATH="argocd/resources/control-app.yaml"
-  ARGOCD_CM_YAML_PATH="argocd/resources/argocd-cm.yaml"
-  if [[ ${INTERNAL_SCMM} == false ]]; then
-    VALUES_YAML_PATH="$(mkTmpWithReplacedScmmUrls "$VALUES_YAML_PATH")"
-    CONTROL_APP_YAML_PATH="$(mkTmpWithReplacedScmmUrls "$CONTROL_APP_YAML_PATH")"
-    ARGOCD_CM_YAML_PATH="$(mkTmpWithReplacedScmmUrls "$ARGOCD_CM_YAML_PATH")"
-  fi
-
-  if [[ ${ARGOCD_CONFIG_ONLY} == false ]]; then
-
-    helm upgrade -i argocd --values "${VALUES_YAML_PATH}" \
-      $(argoHelmSettingsForLocalCluster) --version ${ARGO_HELM_CHART_VERSION} argo/argo-cd -n argocd
-
-    BCRYPT_PW=$(bcryptPassword "${SET_PASSWORD}")
-    # set argocd admin password to 'admin' here, because it does not work through the helm chart
-    kubectl patch secret -n argocd argocd-secret -p '{"stringData": { "admin.password": "'"${BCRYPT_PW}"'"}}' || true
-  fi
-
-  kubectl apply -f "$ARGOCD_CM_YAML_PATH" || true
-  kubectl apply -f "$CONTROL_APP_YAML_PATH" || true
-
-  pushPetClinicRepo 'applications/petclinic/argocd/plain-k8s' 'argocd/petclinic-plain'
-  pushPetClinicRepo 'applications/petclinic/argocd/helm' 'argocd/petclinic-helm'
-  initRepo 'argocd/gitops'
-
-  # Set NodePort service, to avoid "Pending" services and "Processing" state in argo on local cluster
-  initRepoWithSource 'applications/nginx/argocd/helm-dependency' 'argocd/nginx-helm-dependency' \
-    "if [[ $REMOTE_CLUSTER != true ]]; then find . -name values.yaml -exec bash -c '(echo && echo \"    type: NodePort\" ) >> {}' \; ; fi"
-  # Note: "applications/nginx/argocd/helm-jenkins" already migrated to groovy
-
-  # init exercise
-  pushPetClinicRepo 'exercises/petclinic-helm' 'exercises/petclinic-helm'
-  initRepoWithSource 'exercises/nginx-validation' 'exercises/nginx-validation'
-  initRepoWithSource 'exercises/broken-application' 'exercises/broken-application'
 }
 
 function replaceAllScmmUrlsInFolder() {
@@ -413,44 +358,14 @@ function replaceImageIfSet() {
   fi
 }
 
-function argoHelmSettingsForLocalCluster() {
-  if [[ $REMOTE_CLUSTER != true ]]; then
-    # We need a host port, so argo can be reached via localhost:9092
-    # But: This helm charts only uses the nodePort value, if the type is "NodePort". So change it for local cluster.
-    echo '--set server.service.type=NodePort'
-  fi
-}
-
 function createSecrets() {
   createSecret gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=$SET_PASSWORD -n default
-  createSecret gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=$SET_PASSWORD -n argocd
   # flux needs lowercase fieldnames
   createSecret flux-system --from-literal=username=gitops --from-literal=password=$SET_PASSWORD -n flux-system
 }
 
 function createSecret() {
   kubectl create secret generic "$@" --dry-run=client -oyaml | kubectl apply -f-
-}
-
-function pushGopPipeline() {
-  SOURCE_REPO_PATH="$1"
-  TARGET_REPO_SCMM="$2"
-  TMP_REPO=$(mktemp -d)
-
-  git clone "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}" --quiet >/dev/null 2>&1
-  (
-    cd "${TMP_REPO}"
-    cp -r "${PLAYGROUND_DIR}/${SOURCE_REPO_PATH}"/Jenkinsfile .
-    git add .
-    git commit -m 'Add GitOps Pipeline and K8s resources' --quiet
-
-    waitForScmManager
-    git push -u "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
-  )
-
-  rm -rf "${TMP_REPO}"
-
-  setDefaultBranch "${TARGET_REPO_SCMM}"
 }
 
 function pushPetClinicRepo() {
@@ -564,28 +479,6 @@ function pushRepoMirror() {
   setDefaultBranch "${TARGET_REPO_SCMM}" "${DEFAULT_BRANCH}"
 }
 
-function initRepo() {
-  TARGET_REPO_SCMM="$1"
-
-  TMP_REPO=$(mktemp -d)
-
-  git clone "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}"
-  (
-    cd "${TMP_REPO}"
-    git checkout main --quiet || git checkout -b main --quiet
-    echo $'.*\n!/.gitignore' >.gitignore
-    git add .gitignore
-    # exits with 1 if there were differences and 0 means no differences.
-    if ! git diff-index --exit-code --quiet HEAD --; then
-      git commit -m "Add readme" --quiet
-    fi
-    waitForScmManager
-    git push -u "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" HEAD:main --force
-  )
-
-  setDefaultBranch "${TARGET_REPO_SCMM}"
-}
-
 function initRepoWithSource() {
   echo "initiating repo $1 with source $2"
   SOURCE_REPO="$1"
@@ -674,10 +567,10 @@ function printWelcomeScreen() {
   echo "| See here:"
   echo "|"
 
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV2 == true ]]; then
+  if [[ $INSTALL_FLUXV2 == true ]]; then
     echo -e "| - \e[32m${SCMM_URL}/repos/fluxv2/\e[0m"
   fi
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_ARGOCD == true ]]; then
+  if [[ $INSTALL_ARGOCD == true ]]; then
     echo -e "| - \e[32m${SCMM_URL}/repos/argocd/\e[0m"
   fi
 
@@ -688,10 +581,10 @@ function printWelcomeScreen() {
   echo "| namespace via the jenkins UI:"
   echo "|"
 
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV2 == true ]]; then
+  if [[ $INSTALL_FLUXV2 == true ]]; then
     echo -e "| - \e[32m${JENKINS_URL}/job/fluxv2-applications/\e[0m"
   fi
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_ARGOCD == true ]]; then
+  if [[ $INSTALL_ARGOCD == true ]]; then
     echo -e "| - \e[32m${JENKINS_URL}/job/argocd-applications/\e[0m"
   fi
   echo "|"
@@ -715,7 +608,7 @@ function printWelcomeScreen() {
 }
 
 function printWelcomeScreenFluxV2() {
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV2 == true ]]; then
+  if [[ $INSTALL_FLUXV2 == true ]]; then
     echo "| For Flux V2:"
     echo "|"
     echo -e "| - GitOps repo: \e[32m${SCMM_URL}/repo/fluxv2/gitops/code/sources/main/\e[0m"
@@ -727,10 +620,10 @@ function printWelcomeScreenFluxV2() {
 function printWelcomeScreenArgocd() {
 
 
-  ARGOCD_URL="$(createUrl "${CLUSTER_BIND_ADDRESS}" "$(grep 'nodePortHttp:' "${PLAYGROUND_DIR}"/argocd/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')")"
+  ARGOCD_URL="$(createUrl "${CLUSTER_BIND_ADDRESS}" "$(grep 'nodePortHttp:' "${PLAYGROUND_DIR}"/argocd/argocd/argocd/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')")"
   setExternalHostnameIfNecessary 'ARGOCD' 'argocd-server' 'argocd'
 
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_ARGOCD == true ]]; then
+  if [[ $INSTALL_ARGOCD == true ]]; then
     echo "| For ArgoCD:"
     echo "|"
     echo -e "| - GitOps repo: \e[32m${SCMM_URL}/repo/argocd/gitops/code/sources/main/\e[0m"
@@ -791,7 +684,6 @@ function printParameters() {
   echo
   echo "    | --insecure            >> Runs curl in insecure mode"
   echo "    | --skip-helm-update    >> Skips adding and updating helm repos"
-  echo "    | --argocd-config-only  >> Skips installing argo-cd. Applies ConfigMap and Application manifests to bootstrap existing argo-cd"
   echo
   echo "Configure additional modules"
   echo "    | --monitoring, --metrics        >> Installs the Kube-Prometheus-Stack for ArgoCD. This includes Prometheus, the Prometheus operator, Grafana and some extra resources"
@@ -804,7 +696,7 @@ function printParameters() {
 readParameters() {
   COMMANDS=$(getopt \
     -o hdxyc \
-    --long help,fluxv2,argocd,argocd-url:,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,trace,insecure,yes,skip-helm-update,argocd-config-only,metrics,monitoring,vault: \
+    --long help,fluxv2,argocd,argocd-url:,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,trace,insecure,yes,skip-helm-update,metrics,monitoring,vault: \
     -- "$@")
   
   if [ $? != 0 ]; then
@@ -815,7 +707,6 @@ readParameters() {
   eval set -- "$COMMANDS"
   
   DEBUG=false
-  INSTALL_ALL_MODULES=true
   INSTALL_FLUXV2=false
   INSTALL_ARGOCD=false
   REMOTE_CLUSTER=false
@@ -841,15 +732,14 @@ readParameters() {
   TRACE=false
   ASSUME_YES=false
   SKIP_HELM_UPDATE=false
-  ARGOCD_CONFIG_ONLY=false
   DEPLOY_METRICS=false
   ARGOCD_URL=""
   
   while true; do
     case "$1" in
       -h | --help          ) printUsage; exit 0 ;;
-      --fluxv2             ) INSTALL_FLUXV2=true; INSTALL_ALL_MODULES=false; shift ;;
-      --argocd             ) INSTALL_ARGOCD=true; INSTALL_ALL_MODULES=false; shift ;;
+      --fluxv2             ) INSTALL_FLUXV2=true; shift ;;
+      --argocd             ) INSTALL_ARGOCD=true; shift ;;
       --argocd-url         ) ARGOCD_URL="$2"; shift 2 ;;
       --remote             ) REMOTE_CLUSTER=true; shift ;;
       --jenkins-url        ) JENKINS_URL="$2"; shift 2 ;;
@@ -875,7 +765,6 @@ readParameters() {
       -x | --trace         ) TRACE=true; shift ;;
       -y | --yes           ) ASSUME_YES=true; shift ;;
       --skip-helm-update   ) SKIP_HELM_UPDATE=true; shift ;;
-      --argocd-config-only ) ARGOCD_CONFIG_ONLY=true; shift ;;
       --metrics | --monitoring ) DEPLOY_METRICS=true; shift;;
       --vault              ) shift 2;; # Ignore, used in groovy only
       --                   ) shift; break ;;

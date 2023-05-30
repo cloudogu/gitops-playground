@@ -42,7 +42,7 @@ function configureScmmManager() {
   addUser "${GITOPS_USERNAME}" "${GITOPS_PASSWORD}" "gitops@mail.de"
 
   ### FluxV2 Repos
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV2 == true ]]; then
+  if [[ $INSTALL_FLUXV2 == true ]]; then
     addRepo "fluxv2" "gitops"
     setPermission "fluxv2" "gitops" "${GITOPS_USERNAME}" "WRITE"
   
@@ -51,24 +51,24 @@ function configureScmmManager() {
   fi
 
   ### ArgoCD Repos
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_ARGOCD == true ]]; then
+  if [[ $INSTALL_ARGOCD == true ]]; then
     addRepo "argocd" "nginx-helm-jenkins" "3rd Party app (NGINX) with helm, templated in Jenkins (gitops-build-lib)"
     setPermission "argocd" "nginx-helm-jenkins" "${GITOPS_USERNAME}" "WRITE"
     
-    addRepo "argocd" "nginx-helm-dependency" "3rd Party app (NGINX) with helm, templated via dependency (helm)"
-    setPermission "argocd" "nginx-helm-dependency" "${GITOPS_USERNAME}" "WRITE"
-
     addRepo "argocd" "petclinic-plain" "Java app with plain k8s resources"
     setPermission "argocd" "petclinic-plain" "${GITOPS_USERNAME}" "WRITE"
   
     addRepo "argocd" "petclinic-helm" "Java app with custom helm chart"
     setPermission "argocd" "petclinic-helm" "${GITOPS_USERNAME}" "WRITE"
   
-    addRepo "argocd" "control-app" "Administration of ArgoCD (app of apps)"
-    setPermission "argocd" "control-app" "${GITOPS_USERNAME}" "WRITE"
-  
-    addRepo "argocd" "gitops" "The desired state of the apps deployed to k8s"
-    setPermission "argocd" "gitops" "${GITOPS_USERNAME}" "WRITE"
+    addRepo "argocd" "argocd" "GitOps repo for administration of ArgoCD"
+    setPermission "argocd" "argocd" "${GITOPS_USERNAME}" "WRITE"
+      
+    addRepo "argocd" "cluster-resources" "GitOps repo for basic cluster-resources"
+    setPermission "argocd" "cluster-resources" "${GITOPS_USERNAME}" "WRITE"
+    
+    addRepo "argocd" "example-apps" "GitOps repo for examples of end-user applications"
+    setPermission "argocd" "example-apps" "${GITOPS_USERNAME}" "WRITE"
   fi
 
   ### Common Repos

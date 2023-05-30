@@ -59,8 +59,8 @@ class PrometheusStack extends Feature {
         def helmConfig = config['features']['monitoring']['helm']
         helmClient.addRepo(getClass().simpleName, helmConfig['repoURL'] as String)
         helmClient.upgrade('kube-prometheus-stack', "${getClass().simpleName}/${helmConfig['chart']}",
-                helmConfig['version'] as String,
                 [namespace: 'monitoring',
+                 version: helmConfig['version'],
                  values: "${tmpHelmValues.toString()}"])
     }
 }

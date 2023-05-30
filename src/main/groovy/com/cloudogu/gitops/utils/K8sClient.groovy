@@ -43,7 +43,7 @@ class K8sClient {
                 "kubectl create secret ${type} ${name}${namespace ? " -n ${namespace}" : ''} " +
                         literals.collect { "--from-literal=${it.v1}=${it.v2}"}.join(' ') +
                         ' --dry-run=client -oyaml'
-        commandExecutor.execute(command, 'kubectl apply -f-').stdOut
+        commandExecutor.execute(command, 'kubectl apply -f-')
     }
     
     /**
@@ -55,6 +55,43 @@ class K8sClient {
                 "kubectl create configmap ${name}${namespace ? " -n ${namespace}" : ''}" +
                         " --from-file=${filePath}" +
                         ' --dry-run=client -oyaml'
-        commandExecutor.execute(command, 'kubectl apply -f-').stdOut
+        commandExecutor.execute(command, 'kubectl apply -f-')
+    }
+
+    void label(String resource, String name, String namespace  = '', Tuple2... keyValues) {
+        if (!keyValues) {
+            throw new RuntimeException("Missing key-value-pairs")
+        }
+        String command =
+                "kubectl label ${resource} ${name}${namespace ? " -n ${namespace}" : ''} " +
+                        '--overwrite ' + // Make idempotent
+                        keyValues.collect { "${it.v1}=${it.v2}"}.join(' ')
+        commandExecutor.execute(command)
+    }
+    
+    void patch(String resource, String name, String namespace  = '', Map yaml) {
+        // We're using a patch file here, instead of a patch JSON (--patch), because of quoting issues
+        // ERROR c.c.gitops.utils.CommandExecutor - Stderr: error: unable to parse "'{\"stringData\":": yaml: found unexpected end of stream
+        File patchYaml = File.createTempFile('gitops-playground-patch-yaml', '')
+        new FileSystemUtils().writeYaml(yaml, patchYaml)
+        
+        //  kubectl patch secret argocd-secret -p '{"stringData": { "admin.password": "'"${bcryptArgoCDPassword}"'"}}' || true
+        String command =
+                "kubectl patch ${resource} ${name}${namespace ? " -n ${namespace}" : ''}" +
+                        " --patch-file=${patchYaml.absolutePath}"
+        commandExecutor.execute(command)
+    }
+    
+    void delete(String resource, String namespace  = '', Tuple2... selectors) {
+        if (!selectors) {
+            throw new RuntimeException("Missing selectors")
+        }
+        // kubectl delete secret -n argocd -l owner=helm,name=argocd
+        String command =
+                "kubectl delete ${resource}${namespace ? " -n ${namespace}" : ''}" +
+                        ' --ignore-not-found=true ' + // Make idempotent
+                        selectors.collect { "--selector=${it.v1}=${it.v2}"}.join(' ')
+        
+        commandExecutor.execute(command)
     }
 }
