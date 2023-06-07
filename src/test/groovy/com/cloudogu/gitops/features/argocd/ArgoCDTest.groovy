@@ -346,12 +346,12 @@ class ArgoCDTest {
         }
 
         @Override
-        protected ScmmRepo createRepo(String localSrcDir, String scmmRepoTarget, File absoluteLocalRepoTmpDir) {
+        protected RepoInitializationAction createRepoInitializationAction(String localSrcDir, String scmmRepoTarget, File absoluteLocalRepoTmpDir) {
             // Actually copy files so we can assert but don't execute git clone, push, etc.
-            ScmmRepo repo = new ScmmRepo(config, localSrcDir, scmmRepoTarget, absoluteLocalRepoTmpDir.absolutePath)
+            ScmmRepo repo = new ScmmRepo(config, scmmRepoTarget, absoluteLocalRepoTmpDir.absolutePath)
             repo.commandExecutor = gitCommands
             // We could add absoluteLocalRepoTmpDir here for assertion later 
-            return repo
+            return new RepoInitializationAction(repo, localSrcDir)
         }
 
         @Override
