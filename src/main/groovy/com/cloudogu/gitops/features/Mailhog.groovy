@@ -1,8 +1,9 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
+import com.cloudogu.gitops.features.deployment.Deployer
+import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.HelmClient
 import groovy.util.logging.Slf4j
 import org.springframework.security.crypto.bcrypt.BCrypt
 
@@ -16,16 +17,19 @@ class Mailhog extends Feature {
     private String username
     private String password
     private FileSystemUtils fileSystemUtils
-    HelmClient helmClient
+    private DeploymentStrategy deployer
 
-    Mailhog(Map config, FileSystemUtils fileSystemUtils = new FileSystemUtils(),
-            HelmClient helmClient = new HelmClient()) {
+    Mailhog(
+            Map config,
+            FileSystemUtils fileSystemUtils = new FileSystemUtils(),
+            DeploymentStrategy deployer = new Deployer(config)
+    ) {
+        this.deployer = deployer
         this.config = config
         this.remoteCluster = config.application["remote"]
         this.username = config.application["username"]
         this.password = config.application["password"]
         this.fileSystemUtils = fileSystemUtils
-        this.helmClient = helmClient
     }
 
     @Override
@@ -53,10 +57,6 @@ class Mailhog extends Feature {
         fileSystemUtils.replaceFileContent(tmpHelmValuesFolder, tmpHelmValuesFile, from, to)
 
         def helmConfig = config['features']['mail']['helm']
-        helmClient.addRepo(getClass().simpleName, helmConfig['repoURL'] as String)
-        helmClient.upgrade('mailhog', "${getClass().simpleName}/${helmConfig['chart']}",
-                [namespace: 'monitoring',
-                 version: helmConfig['version'],
-                 values: "${tmpHelmValues.toString()}"])
+        deployer.deployFeature(helmConfig['repoURL'] as String, 'mailhog', helmConfig['chart'] as String, helmConfig['version'] as String, 'monitoring', 'mailhog', tmpHelmValues)
     }
 }

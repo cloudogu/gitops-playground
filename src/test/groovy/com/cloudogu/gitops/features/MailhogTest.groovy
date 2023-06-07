@@ -1,5 +1,7 @@
 package com.cloudogu.gitops.features
 
+
+import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.HelmClient
@@ -20,8 +22,19 @@ class MailhogTest {
                     remote  : false
 
             ],
+            scmm       : [
+                    internal: true,
+                    protocol: 'https',
+                    host: 'abc',
+                    username: '',
+                    password: ''
+            ],
             features    : [
-                    mail: [
+                    argocd    : [
+                            active: false,
+                    ],
+                    fluxv2    : false,
+                    mail      : [
                             active: true,
                             helm  : [
                                     chart  : 'mailhog',
@@ -74,13 +87,38 @@ class MailhogTest {
     }
 
     @Test
-    void 'helm release is installed'() {
+    void 'When flux and argocd enabled, mailhog is deployed imperatively via helm'() {
+        config.features['argocd']['active'] = true
+        config.features['fluxv2'] = true
+        
         createMailhog().install()
 
+        assertMailhogInstalledImperativelyViaHelm()
+    }
+    
+    @Test
+    void 'When flux enabled, mailhog is deployed imperatively via helm'() {
+        config.features['argocd']['active'] = false
+        config.features['fluxv2'] = true
+        
+        createMailhog().install()
+
+        assertMailhogInstalledImperativelyViaHelm()
+    }
+
+    @Test
+    void 'When only argoCD enabled, mailhog is deployed natively via argoCD'() {
+        config.features['argocd']['active'] = true
+        config.features['fluxv2'] = false
+        
+        createMailhog().install()
+    }
+
+    protected void assertMailhogInstalledImperativelyViaHelm() {
         assertThat(commandExecutor.actualCommands[0].trim()).isEqualTo(
-                'helm repo add Mailhog https://codecentric.github.io/helm-charts')
+                'helm repo add mailhog https://codecentric.github.io/helm-charts')
         assertThat(commandExecutor.actualCommands[1].trim()).isEqualTo(
-                'helm upgrade -i mailhog Mailhog/mailhog --version 5.0.1' +
+                'helm upgrade -i mailhog mailhog/mailhog --version 5.0.1' +
                         " --values ${temporaryYamlFile} --namespace monitoring")
     }
 
@@ -93,7 +131,7 @@ class MailhogTest {
                 temporaryYamlFile = super.copyToTempDir(filePath)
                 return temporaryYamlFile
             }
-        }, helmClient)
+        }, new HelmStrategy(helmClient))
     }
 
     private parseActualYaml() {
