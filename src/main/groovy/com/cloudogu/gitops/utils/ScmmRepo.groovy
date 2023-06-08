@@ -15,6 +15,17 @@ class ScmmRepo {
     protected FileSystemUtils fileSystemUtils = new FileSystemUtils()
     protected CommandExecutor commandExecutor
 
+    ScmmRepo(Map config, String scmmRepoTarget, CommandExecutor commandExecutor = new CommandExecutor()) {
+        this(config, scmmRepoTarget, File.createTempDir().absolutePath, commandExecutor)
+        new File(absoluteLocalRepoTmpDir).deleteOnExit()
+    }
+
+    /**
+     * @deprecated Deprecated in favor of {@link ScmmRepo#ScmmRepo(Map,String,CommandExecutor)}.
+     * We want to move the responsibility for managing the temporary directory from the caller to this class.
+     *
+     */
+    @Deprecated()
     ScmmRepo(Map config, String scmmRepoTarget, String absoluteLocalRepoTmpDir, CommandExecutor commandExecutor = new CommandExecutor()) {
         this.username =  config.scmm["internal"] ? config.application["username"] : config.scmm["username"]
         this.password = config.scmm["internal"] ? config.application["password"] : config.scmm["password"]
@@ -27,6 +38,10 @@ class ScmmRepo {
         gitRepoCommandInit(absoluteLocalRepoTmpDir)
     }
 
+    protected String getAbsoluteLocalRepoTmpDir() {
+        return absoluteLocalRepoTmpDir
+    }
+
     static String createScmmUrl(Map config) {
         return "${config.scmm["protocol"]}://${config.scmm["host"]}"
     }
@@ -37,6 +52,13 @@ class ScmmRepo {
         log.debug("Cloning $scmmRepoTarget repo")
         commandExecutor.execute("git clone ${repoUrl} ${absoluteLocalRepoTmpDir}")
         checkoutOrCreateBranch('main')
+    }
+
+    void writeFile(String path, String content) {
+        def file = new File("$absoluteLocalRepoTmpDir/$path")
+        fileSystemUtils.createDirectory(file.parent)
+        file.createNewFile()
+        file.text = content
     }
 
     void copyDirectoryContents(String srcDir) {
