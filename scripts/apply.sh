@@ -626,8 +626,8 @@ function printWelcomeScreenArgocd() {
   if [[ $INSTALL_ARGOCD == true ]]; then
     echo "| For ArgoCD:"
     echo "|"
-    echo -e "| - GitOps repo: \e[32m${SCMM_URL}/repo/argocd/gitops/code/sources/main/\e[0m"
-    echo -e "| - Pull requests: \e[32m${SCMM_URL}/repo/argocd/gitops/pull-requests\e[0m"
+    echo -e "| - GitOps repo: \e[32m${SCMM_URL}/repo/argocd/example-apps/code/sources/main/\e[0m"
+    echo -e "| - Pull requests: \e[32m${SCMM_URL}/repo/argocd/example-apps/pull-requests\e[0m"
     echo "|"
     echo -e "| There is also the ArgoCD UI which can be found at \e[32m${ARGOCD_URL}/\e[0m"
     echo -e "| Credentials for the ArgoCD UI are: \e[31m${SET_USERNAME}/${SET_PASSWORD}\e[0m"
