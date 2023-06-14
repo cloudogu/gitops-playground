@@ -51,9 +51,7 @@ class DeployerTest {
                         argocd: [
                                 active: argoCDActive
                         ],
-                        fluxv2: [
-                                active: fluxActive
-                        ]
+                        fluxv2: fluxActive
                 ]
         ]
 
