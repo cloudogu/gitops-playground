@@ -1,5 +1,4 @@
 # gitops-playground
-[![Build Status](https://oss.cloudogu.com/jenkins/buildStatus/icon?job=cloudogu-github/gitops-playground/main)](https://oss.cloudogu.com/jenkins/blue/organizations/jenkins/cloudogu-github%2Fgitops-playground/)
 
 Reproducible infrastructure to showcase GitOps workflows with Kubernetes.
 
