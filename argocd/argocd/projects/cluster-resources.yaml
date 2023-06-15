@@ -14,6 +14,7 @@ spec:
   sourceRepos:
   - http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/cluster-resources
   - https://codecentric.github.io/helm-charts
+  - https://charts.external-secrets.io
 
   # allow to only see application resources from the specified namespace
   sourceNamespaces:
