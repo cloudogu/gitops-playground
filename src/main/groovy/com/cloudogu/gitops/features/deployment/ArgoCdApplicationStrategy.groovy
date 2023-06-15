@@ -2,6 +2,7 @@ package com.cloudogu.gitops.features.deployment
 
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.utils.HelmValuesConverter
 import com.cloudogu.gitops.utils.ScmmRepo
 import groovy.yaml.YamlBuilder
 
@@ -35,6 +36,10 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 
         ScmmRepo clusterResourcesRepo = createScmmRepo(config, 'argocd/cluster-resources', commandExecutor)
         clusterResourcesRepo.cloneRepo()
+
+        // Inline values from tmpHelmValues file into ArgoCD Application YAML
+        def parameters = (new HelmValuesConverter()).flattenValues(fileSystemUtils.readYaml(helmValuesPath))
+
         // Write chart, repoURL and version into a ArgoCD Application YAML
         def yamlBuilder = new YamlBuilder()
         yamlBuilder([
@@ -57,16 +62,9 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
                                         targetRevision: version,
                                         helm          : [
                                                 releaseName: releaseName,
-                                                valueFiles : [
-                                                        '$cluster-resources-git/apps/mailhog/values.yaml'
-                                                ],
+                                                parameters: parameters
                                         ],
                                 ],
-                                [
-                                        repoURL       : "http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/cluster-resources",
-                                        targetRevision: "main",
-                                        ref           : "cluster-resources-git"
-                                ]
                         ],
                         syncPolicy : [
                                 automated: [
@@ -77,9 +75,6 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
                 ],
         ])
         clusterResourcesRepo.writeFile("argocd/${releaseName}.yaml", yamlBuilder.toString())
-
-        // Inline values from tmpHelmValues file into ArgoCD Application YAML
-        clusterResourcesRepo.writeFile("apps/mailhog/values.yaml", helmValuesPath.text)
 
         // push to cluster-resources repo
         clusterResourcesRepo.commitAndPush("Added $repoName/$chart to ArgoCD")

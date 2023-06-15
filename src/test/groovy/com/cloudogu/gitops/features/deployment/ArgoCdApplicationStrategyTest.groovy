@@ -39,21 +39,16 @@ spec:
     targetRevision: "version"
     helm:
       releaseName: "releaseName"
-      valueFiles:
-      - "\$cluster-resources-git/apps/mailhog/values.yaml"
-  - repoURL: "http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/cluster-resources"
-    targetRevision: "main"
-    ref: "cluster-resources-git"
+      parameters:
+      - name: "param1"
+        value: "value1"
+      - name: "param2"
+        value: "value2"
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
 """)
-        assertThat(new File("$localTempDir/apps/mailhog/values.yaml").text).isEqualTo("""
-param1: value1
-param2: value2
-""")
-
         assertThat(commandExecutor.actualCommands[0]).startsWith("git clone ")
     }
 
