@@ -16,6 +16,7 @@ spec:
   - https://codecentric.github.io/helm-charts
   - https://charts.external-secrets.io
   - https://helm.releases.hashicorp.com
+  - https://prometheus-community.github.io/helm-charts
 
   # allow to only see application resources from the specified namespace
   sourceNamespaces:
