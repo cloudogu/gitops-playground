@@ -1,8 +1,9 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
+import com.cloudogu.gitops.features.deployment.Deployer
+import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.HelmClient
 import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.MapUtils
 import groovy.util.logging.Slf4j
@@ -14,15 +15,19 @@ class Vault extends Feature {
 
     private Map config
     private FileSystemUtils fileSystemUtils
-    private HelmClient helmClient
     private File tmpHelmValues
     private K8sClient k8sClient
+    private DeploymentStrategy deployer
 
-    Vault(Map config, FileSystemUtils fileSystemUtils = new FileSystemUtils(),
-          K8sClient k8sClient = new K8sClient(), HelmClient helmClient = new HelmClient()) {
+    Vault(
+            Map config,
+            FileSystemUtils fileSystemUtils = new FileSystemUtils(),
+            K8sClient k8sClient = new K8sClient(),
+            DeploymentStrategy deployer = new Deployer(config)
+    ) {
+        this.deployer = deployer
         this.config = config
         this.fileSystemUtils = fileSystemUtils
-        this.helmClient = helmClient
         this.k8sClient = k8sClient
 
         tmpHelmValues = File.createTempFile('gitops-playground-vault-values', '')
@@ -113,10 +118,14 @@ class Vault extends Feature {
         fileSystemUtils.writeYaml(yaml, tmpHelmValues)
 
         def helmConfig = config['features']['secrets']['vault']['helm']
-        helmClient.addRepo(getClass().simpleName, helmConfig['repoURL'] as String)
-        helmClient.upgrade('vault', "${getClass().simpleName}/${helmConfig['chart']}",
-                [namespace: 'secrets',
-                 version: helmConfig['version'],
-                 values   : "${tmpHelmValues.toString()}"])
+        deployer.deployFeature(
+                helmConfig['repoURL'] as String,
+                'vault',
+                helmConfig['chart'] as String,
+                helmConfig['version'] as String,
+                'secrets',
+                'vault',
+                tmpHelmValues.toPath()
+        )
     }
 }
