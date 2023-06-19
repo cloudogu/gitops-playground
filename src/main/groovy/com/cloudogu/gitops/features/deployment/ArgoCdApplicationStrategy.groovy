@@ -2,9 +2,9 @@ package com.cloudogu.gitops.features.deployment
 
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.HelmValuesConverter
 import com.cloudogu.gitops.utils.ScmmRepo
-import groovy.yaml.YamlBuilder
+import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator
+import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 
 import java.nio.file.Path
 
@@ -30,11 +30,12 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
         clusterResourcesRepo.cloneRepo()
 
         // Inline values from tmpHelmValues file into ArgoCD Application YAML
-        def parameters = (new HelmValuesConverter()).flattenValues(fileSystemUtils.readYaml(helmValuesPath))
+        def inlineValues = helmValuesPath.text
 
         // Write chart, repoURL and version into a ArgoCD Application YAML
-        def yamlBuilder = new YamlBuilder()
-        yamlBuilder([
+
+        def yamlMapper = YAMLMapper.builder().enable(YAMLGenerator.Feature.LITERAL_BLOCK_STYLE).build()
+        def yamlResult = yamlMapper.writeValueAsString([
                 apiVersion: "argoproj.io/v1alpha1",
                 kind      : "Application",
                 metadata  : [
@@ -54,7 +55,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
                                         targetRevision: version,
                                         helm          : [
                                                 releaseName: releaseName,
-                                                parameters: parameters
+                                                values: inlineValues
                                         ],
                                 ],
                         ],
@@ -66,7 +67,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
                         ]
                 ],
         ])
-        clusterResourcesRepo.writeFile("argocd/${releaseName}.yaml", yamlBuilder.toString())
+        clusterResourcesRepo.writeFile("argocd/${releaseName}.yaml", yamlResult)
 
         clusterResourcesRepo.commitAndPush("Added $repoName/$chart to ArgoCD")
     }
