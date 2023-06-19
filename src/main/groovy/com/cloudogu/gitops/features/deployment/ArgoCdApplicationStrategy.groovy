@@ -25,14 +25,6 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 
     @Override
     void deployFeature(String repoURL, String repoName, String chart, String version, String namespace, String releaseName, Path helmValuesPath) {
-        // Helm "dependencies" via Git seems not be supported -> For Umbrella Charts: No support for Charts from git
-        // https://github.com/helm/helm/issues/9461
-        // There is a plugin, but using helm plugins in Argo CD might be impossible, will increase complexity at any rate
-        // https://github.com/aslafy-z/helm-git
-        // Unclear if argoCD supports credentials for umbrella charts
-        // https://github.com/argoproj/argo-cd/issues/7104#issuecomment-995366406
-        // Multi Source applications would be a better solution, but as of latest argo CD 2.7 they're still in beta
-        // -> We use argo cd applications with the values.yaml inlined
 
         ScmmRepo clusterResourcesRepo = createScmmRepo(config, 'argocd/cluster-resources', commandExecutor)
         clusterResourcesRepo.cloneRepo()
@@ -76,7 +68,6 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
         ])
         clusterResourcesRepo.writeFile("argocd/${releaseName}.yaml", yamlBuilder.toString())
 
-        // push to cluster-resources repo
         clusterResourcesRepo.commitAndPush("Added $repoName/$chart to ArgoCD")
     }
 

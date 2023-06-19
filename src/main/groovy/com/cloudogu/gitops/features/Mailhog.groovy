@@ -57,6 +57,13 @@ class Mailhog extends Feature {
         fileSystemUtils.replaceFileContent(tmpHelmValuesFolder, tmpHelmValuesFile, from, to)
 
         def helmConfig = config['features']['mail']['helm']
-        deployer.deployFeature(helmConfig['repoURL'] as String, 'mailhog', helmConfig['chart'] as String, helmConfig['version'] as String, 'monitoring', 'mailhog', tmpHelmValues)
+        deployer.deployFeature(
+                helmConfig['repoURL'] as String,
+                'mailhog',
+                helmConfig['chart'] as String,
+                helmConfig['version'] as String,
+                'monitoring',
+                'mailhog',
+                tmpHelmValues)
     }
 }

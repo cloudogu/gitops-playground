@@ -11,8 +11,8 @@ import static org.mockito.Mockito.never
 import static org.mockito.Mockito.verify
 
 class DeployerTest {
-    private DeploymentStrategy argoCdStrat = mock(DeploymentStrategy.class)
-    private DeploymentStrategy helmStrat = mock(DeploymentStrategy.class)
+    private ArgoCdApplicationStrategy argoCdStrat = mock(ArgoCdApplicationStrategy.class)
+    private HelmStrategy helmStrat = mock(HelmStrategy.class)
 
     @Test
     void 'When flux and argocd enabled, deploys imperatively via helm'() {
