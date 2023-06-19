@@ -361,7 +361,7 @@ When installing the GitOps playground, the following steps are performed to boot
 * The following repos are created and initialized:
     * `argocd` (management and config of Argo CD itself),
     * `example-apps` (example for a developer/application team's GitOps repo) and
-    * `cluster-resources` (example for a cluster admin or infra/platform team's repo; see bellow for details)
+    * `cluster-resources` (example for a cluster admin or infra/platform team's repo; see below for details)
 * Argo CD is installed imperatively via a helm chart.
 * Two resources are applied imperatively to the cluster: an `AppProject` called `argocd` and an `Application` called
   `bootstrap`. These are also contained within the `argocd` repository.
@@ -588,7 +588,7 @@ For this to work, the GitOps playground configures the whole chain in Kubernetes
 
 For testing you can set the parameter `--vault=dev` to deploy vault in development mode. This will lead to
 * vault being transient, i.e. all changes during runtime are not persisted. Meaning a restart will reset to default.
-* Vault is initialized with some fixed secrets that are used in the example app, see bellow.
+* Vault is initialized with some fixed secrets that are used in the example app, see below.
 * Vault authorization is initialized with service accounts used in example `SecretStore`s for external secrets operator
 * Vault is initialized with the usual `admin/admin` account (can be overriden with `--username` and `--password`)
 
