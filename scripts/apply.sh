@@ -682,6 +682,14 @@ function printParameters() {
   echo "    | --helmkubeval-image  >> Sets image for helmkubeval"
   echo "    | --yamllint-image     >> Sets image for yamllint"
   echo
+  echo "Configure images for tools"
+  echo "    | --grafana-image      >> Sets image for grafana"
+  echo "    | --external-secrets-image  >> Sets image for external secrets operator"
+  echo "    | --external-secrets-certcontroller-image >> Sets image for external secrets operator's cert controller"
+  echo "    | --external-secrets-webhook-image >> Sets image for external secrets operator's webhook controller"
+  echo "    | --vault-image >> Sets image for vault"
+  echo
+  echo "General settings"
   echo "    | --insecure            >> Runs curl in insecure mode"
   echo "    | --skip-helm-update    >> Skips adding and updating helm repos"
   echo
@@ -696,7 +704,7 @@ function printParameters() {
 readParameters() {
   COMMANDS=$(getopt \
     -o hdxyc \
-    --long help,fluxv2,argocd,argocd-url:,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,trace,insecure,yes,skip-helm-update,metrics,monitoring,vault: \
+    --long help,fluxv2,argocd,argocd-url:,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,grafana-image:,external-secrets-image:,external-secrets-certcontroller-image:,external-secrets-webhook-image:,vault-image:,trace,insecure,yes,skip-helm-update,metrics,monitoring,vault: \
     -- "$@")
   
   if [ $? != 0 ]; then
@@ -758,6 +766,11 @@ readParameters() {
       --kubeval-image      ) KUBEVAL_IMAGE="$2"; shift 2 ;;
       --helmkubeval-image  ) HELMKUBEVAL_IMAGE="$2"; shift 2 ;;
       --yamllint-image     ) YAMLLINT_IMAGE="$2"; shift 2 ;;
+      --grafana-image      ) shift 2;; # Ignore, used in groovy only
+      --external-secrets-image ) shift 2;; # Ignore, used in groovy only
+      --external-secrets-certcontroller-image ) shift 2;; # Ignore, used in groovy only
+      --external-secrets-webhook-image ) shift 2;; # Ignore, used in groovy only
+      --vault-image        ) shift 2;; # Ignore, used in groovy only
       --insecure           ) INSECURE=true; shift ;;
       --username           ) SET_USERNAME="$2"; shift 2 ;;
       --password           ) SET_PASSWORD="$2"; shift 2 ;;

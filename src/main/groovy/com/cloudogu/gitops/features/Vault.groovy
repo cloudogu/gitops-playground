@@ -3,6 +3,7 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.features.deployment.Deployer
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
+import com.cloudogu.gitops.utils.DockerImageParser
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.MapUtils
@@ -43,6 +44,8 @@ class Vault extends Feature {
     void enable() {
         // Note that some specific configuration steps are implemented in ArgoCD
 
+        def helmConfig = config['features']['secrets']['vault']['helm']
+
         Map yaml = [
                 ui: [
                         enabled: true,
@@ -58,6 +61,19 @@ class Vault extends Feature {
             log.debug("Setting Vault service.type to NodePort since it is not running in a remote cluster")
             yaml['ui']['serviceType'] = 'NodePort'
             yaml['ui']['serviceNodePort'] = 8200
+        }
+
+        if (null != helmConfig['image']) {
+            def image = DockerImageParser.parse(helmConfig['image'] as String)
+            MapUtils.deepMerge([
+                    server: [
+                            image: [
+
+                                    repository: image.repository,
+                                    tag       : image.tag
+                            ]
+                    ]
+            ], yaml)
         }
 
         String vaultMode = config['features']['secrets']['vault']['mode']
@@ -117,7 +133,6 @@ class Vault extends Feature {
         log.trace("Helm yaml to be applied: ${yaml}")
         fileSystemUtils.writeYaml(yaml, tmpHelmValues)
 
-        def helmConfig = config['features']['secrets']['vault']['helm']
         deployer.deployFeature(
                 helmConfig['repoURL'] as String,
                 'vault',

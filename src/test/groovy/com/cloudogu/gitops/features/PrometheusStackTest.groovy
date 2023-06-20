@@ -50,11 +50,30 @@ class PrometheusStackTest {
     }
 
     @Test
+    void "configures admin user if requested"() {
+        config['application']['username'] = "my-user"
+        config['application']['password'] = "hunter2"
+        createStack().install()
+
+        assertThat(parseActualStackYaml()['grafana']['adminUser']).isEqualTo('my-user')
+        assertThat(parseActualStackYaml()['grafana']['adminPassword']).isEqualTo('hunter2')
+    }
+
+    @Test
     void 'service type NodePort when not run remotely'() {
         config['application']['remote'] = false
         createStack().install()
 
         assertThat(parseActualStackYaml()['grafana']['service']['type']).isEqualTo('NodePort')
+    }
+
+    @Test
+    void "configures custom image for grafana"() {
+        config['features']['monitoring']['helm']['grafanaImage'] = "localhost:5000:the-tag"
+        createStack().install()
+
+        assertThat(parseActualStackYaml()['grafana']['image']['repository']).isEqualTo('localhost:5000')
+        assertThat(parseActualStackYaml()['grafana']['image']['tag']).isEqualTo('the-tag')
     }
 
     @Test

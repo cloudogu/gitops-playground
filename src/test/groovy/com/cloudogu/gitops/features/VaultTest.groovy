@@ -120,11 +120,21 @@ class VaultTest {
     void 'Prod mode can be enabled'() {
         config['features']['secrets']['vault']['mode'] = 'prod'
         createVault().install()
-        
+
         def actualYaml = parseActualYaml()
         assertThat(actualYaml as Map).doesNotContainKey('server')
-        
+
         assertThat(k8sCommands.actualCommands).isEmpty()
+    }
+
+    @Test
+    void 'custom image is used'() {
+        config['features']['secrets']['vault']['helm']['image'] = 'localhost:5000/hashicorp/vault:1.12.0'
+        createVault().install()
+
+        def actualYaml = parseActualYaml()
+        assertThat(actualYaml['server']['image']['repository']).isEqualTo('localhost:5000/hashicorp/vault')
+        assertThat(actualYaml['server']['image']['tag']).isEqualTo('1.12.0')
     }
     
     @Test

@@ -97,7 +97,8 @@ class ApplicationConfigurator {
                             helm  : [
                                     chart  : 'kube-prometheus-stack',
                                     repoURL: 'https://prometheus-community.github.io/helm-charts',
-                                    version: '19.2.2'
+                                    version: '19.2.2',
+                                    grafanaImage: null
                             ]
                     ],
                     secrets   : [
@@ -106,7 +107,10 @@ class ApplicationConfigurator {
                                     helm: [
                                             chart  : 'external-secrets',
                                             repoURL: 'https://charts.external-secrets.io',
-                                            version: '0.6.1'
+                                            version: '0.6.1',
+                                            image  : null,
+                                            certControllerImage: null,
+                                            webhookImage: null
                                     ]
                             ],
                             vault          : [

@@ -59,6 +59,17 @@ class GitopsPlaygroundCli implements Runnable {
     private String helmKubevalImage
     @Option(names = ['--yamllint-image'], description = 'Sets image for yamllint')
     private String yamllintImage
+    @Option(names = ['--grafana-image'], description = 'Sets image for grafana')
+    private String grafanaImage
+    @Option(names = ['--external-secrets-image'], description = 'Sets image for external secrets operator')
+    private String externalSecretsOperatorImage
+    @Option(names = ['--external-secrets-certcontroller-image'], description = 'Sets image for external secrets operator\'s controller')
+    private String externalSecretsOperatorCertControllerImage
+    @Option(names = ['--external-secrets-webhook-image'], description = 'Sets image for external secrets operator\'s webhook')
+    private String externalSecretsOperatorWebhookImage
+    @Option(names = ['--vault-image'], description = 'Sets image for vault')
+    private String vaultImage
+
     @Option(names = ['--skip-helm-update'], description = 'Skips adding and updating helm repos')
     private boolean skipHelmUpdate
 
@@ -141,7 +152,7 @@ class GitopsPlaygroundCli implements Runnable {
                         helm       : helmImage,
                         kubeval    : kubevalImage,
                         helmKubeval: helmKubevalImage,
-                        yamllint   : yamllintImage
+                        yamllint   : yamllintImage,
                 ],
                 features    : [
                         fluxv2 : fluxv2,
@@ -150,15 +161,27 @@ class GitopsPlaygroundCli implements Runnable {
                                 url       : argocdUrl
                         ],
                         monitoring : [
-                                active    : monitoring
+                                active    : monitoring,
+                                helm      : [
+                                        grafanaImage: grafanaImage
+                                ]
                         ],
                         secrets : [
                                 vault : [
-                                        mode : vault
+                                        mode : vault,
+                                        helm: [
+                                                image: vaultImage
+                                        ]
+                                ],
+                                externalSecrets: [
+                                        helm: [
+                                                image              : externalSecretsOperatorImage,
+                                                certControllerImage: externalSecretsOperatorCertControllerImage,
+                                                webhookImage       : externalSecretsOperatorWebhookImage
+                                        ]
                                 ]
                         ],
                 ]
         ]
     }
 }
-
