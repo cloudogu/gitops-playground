@@ -49,7 +49,7 @@ class ExternalSecretsOperatorTest {
                 'helm repo add externalsecretsoperator https://charts.external-secrets.io')
         assertThat(commandExecutor.actualCommands[1].trim()).isEqualTo(
                 'helm upgrade -i external-secrets externalsecretsoperator/external-secrets --version 0.6.0' +
-                        " --values ${fileSystemUtils.rootDir}/system/secrets/external-secrets/values.yaml --namespace secrets")
+                        " --values ${fileSystemUtils.rootDir}/applications/cluster-resources/secrets/external-secrets/values.yaml --namespace secrets")
     }
 
     private ExternalSecretsOperator createExternalSecretsOperator() {

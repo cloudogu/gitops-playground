@@ -39,7 +39,7 @@ class ExternalSecretsOperator extends Feature {
                 helmConfig['version'] as String,
                 'secrets',
                 'external-secrets',
-                Path.of("${fileSystemUtils.rootDir}/system/secrets/external-secrets/values.yaml")
+                Path.of("${fileSystemUtils.rootDir}/applications/cluster-resources/secrets/external-secrets/values.yaml")
         )
     }
 }

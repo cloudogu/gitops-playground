@@ -10,7 +10,7 @@ import org.springframework.security.crypto.bcrypt.BCrypt
 @Slf4j
 class Mailhog extends Feature {
 
-    static final String HELM_VALUES_PATH = "system/mailhog-helm-values.yaml"
+    static final String HELM_VALUES_PATH = "applications/cluster-resources/mailhog-helm-values.yaml"
     
     private Map config
     private boolean remoteCluster

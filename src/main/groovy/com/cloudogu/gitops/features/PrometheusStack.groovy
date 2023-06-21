@@ -9,7 +9,7 @@ import groovy.util.logging.Slf4j
 @Slf4j
 class PrometheusStack extends Feature {
 
-    static final String HELM_VALUES_PATH = "system/monitoring/prometheus-stack-helm-values.yaml"
+    static final String HELM_VALUES_PATH = "applications/cluster-resources/monitoring/prometheus-stack-helm-values.yaml"
     
     private Map config
     private boolean remoteCluster

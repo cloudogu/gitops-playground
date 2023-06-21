@@ -10,7 +10,7 @@ import groovy.util.logging.Slf4j
 
 @Slf4j
 class Vault extends Feature {
-    static final String VAULT_START_SCRIPT_PATH = '/system/secrets/vault/dev-post-start.sh'
+    static final String VAULT_START_SCRIPT_PATH = '/applications/cluster-resources/secrets/vault/dev-post-start.sh'
 
 
     private Map config
