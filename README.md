@@ -459,20 +459,11 @@ Here are some thoughts why we deem it not a good fit for production:
 
 #### cluster-resources
 
-The playgound installs cluster-resources (like prometheus, grafana, vault, external secrets operator, etc.) via the repo 
-`argocd/cluster-resources`.
-There, we decided  to use Argo CD `Application`s with inlined values yaml. We would have preferred a dedicated 
-`values.yaml`, because 
- * it's easier to handle than inline YAML, e.g. for local testing without Argo CD.
- * It would also suit our repo structure better (`argocd` folder -> `Application` YAML; `apps` folder -> `values.yaml`).
+The playground installs cluster-resources (like prometheus, grafana, vault, external secrets operator, etc.) via the repo  
+`argocd/cluster-resources`. See [ADR](docs/architecture-decision-records.md#deploying-cluster-resources-with-argo-cd-using-inline-yaml) for more details.
 
-However, both approaches for realizing this had their downsides:
-* Umbrella Charts: Likely [no support for using credentials](https://github.com/argoproj/argo-cd/issues/7104#issuecomment-995366406).  
-  In addition, no support for [Charts from Git](https://github.com/helm/helm/issues/9461). For the latter, there [is a helm plugin](https://github.com/aslafy-z/helm-git),
-  but [installing Helm plugins into Argo CD](https://github.com/argoproj/argo-cd/blob/v2.6.7/docs/user-guide/helm.md#helm-plugins) 
-  would make things too complex for our taste. Also using 3rd-party-plugins is always a risk, in terms of security and maintenance.
-* Multi-source `Application`s: These are the solution we have been waiting for, but as of argo CD 2.7 they're still in beta.
-  We experienced some limitations with multi-source apps in the UI and therefore refrain from using multi source repos in production at this point.
+When installing Argo CD *and* Flux, the tools are installed using helm imperatively, we fall back to using imperative 
+helm installation as kind of neutral ground.
 
 ### Flux
 
