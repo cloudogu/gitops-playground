@@ -23,6 +23,16 @@ class DockerImageParserTest {
     }
 
     @Test
+    void 'splits into registry and repository'() {
+        def result = DockerImageParser.parse("localhost:5000/the-registry/grafana/grafana:latest")
+
+        def (registry, repository) = result.splitRegistryAndRepository()
+        assertThat(registry).isEqualTo("localhost:5000/the-registry")
+        assertThat(repository).isEqualTo("grafana/grafana")
+        assertThat(result.tag).isEqualTo("latest")
+    }
+
+    @Test
     void 'throws when there is no colon'() {
         shouldFail(RuntimeException) {
             DockerImageParser.parse("grafana/grafana")

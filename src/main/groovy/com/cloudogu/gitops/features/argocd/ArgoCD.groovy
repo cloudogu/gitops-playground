@@ -2,6 +2,8 @@ package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.utils.*
+import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator
+import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 import groovy.util.logging.Slf4j
 import org.eclipse.jgit.api.CloneCommand
 import org.eclipse.jgit.api.Git
@@ -15,6 +17,8 @@ class ArgoCD extends Feature {
     static final String CHART_YAML_PATH = 'argocd/Chart.yaml'
     static final String NGINX_HELM_JENKINS_VALUES_PATH = 'k8s/values-shared.yaml'
     static final String NGINX_HELM_DEPENDENCY_VALUES_PATH = 'apps/nginx-helm-dependency/values.yaml'
+    static final String NGINX_VALIDATION_VALUES_PATH = 'k8s/values-shared.yaml'
+    static final String BROKEN_APPLICATION_RESOURCES_PATH = 'hello-kubernetes.yaml'
     static final String SCMM_URL_INTERNAL = "http://scmm-scm-manager.default.svc.cluster.local/scm"
     static final List<Tuple2> PETCLINIC_REPOS = [
             new Tuple2('applications/argocd/petclinic/plain-k8s', 'argocd/petclinic-plain'),
@@ -33,6 +37,8 @@ class ArgoCD extends Feature {
     protected File exampleAppsTmpDir
     protected File nginxHelmJenkinsTmpDir
     protected File remotePetClinicRepoTmpDir
+    protected File nginxValidationTmpDir
+    protected File brokenApplicationTmpDir
     protected List<Tuple2<String, File>> petClinicLocalFoldersAndTmpDirs = []
     
     protected K8sClient k8sClient = new K8sClient()
@@ -61,9 +67,14 @@ class ArgoCD extends Feature {
         nginxHelmJenkinsTmpDir.deleteOnExit()
         gitRepos += createRepoInitializationAction('applications/argocd/nginx/helm-jenkins', 'argocd/nginx-helm-jenkins',
                 nginxHelmJenkinsTmpDir)
-        
-        gitRepos += createRepoInitializationAction('exercises/nginx-validation', 'exercises/nginx-validation', File.createTempDir())
-        gitRepos += createRepoInitializationAction('exercises/broken-application', 'exercises/broken-application', File.createTempDir())
+
+        nginxValidationTmpDir = File.createTempDir()
+        nginxValidationTmpDir.deleteOnExit()
+        gitRepos += createRepoInitializationAction('exercises/nginx-validation', 'exercises/nginx-validation', nginxValidationTmpDir)
+
+        brokenApplicationTmpDir = File.createTempDir()
+        brokenApplicationTmpDir.deleteOnExit()
+        gitRepos += createRepoInitializationAction('exercises/broken-application', 'exercises/broken-application', brokenApplicationTmpDir)
 
         remotePetClinicRepoTmpDir = File.createTempDir('gitops-playground-petclinic')
         for (Tuple2 repo : PETCLINIC_REPOS) {
@@ -93,6 +104,9 @@ class ArgoCD extends Feature {
         
         preparePetClinicRepos()
 
+        prepareExerciseNginxValidationRepo()
+        prepareExerciseBrokenApplicationRepo()
+
         gitRepos.forEach( repoInitializationAction -> {
             repoInitializationAction.repo.commitAndPush("Initial Commit")
         })
@@ -100,7 +114,7 @@ class ArgoCD extends Feature {
         installArgoCd()
     }
 
-    void cloneRemotePetclinicRepo() {
+    private void cloneRemotePetclinicRepo() {
         log.debug("Cloning petclinic base repo, revision ${config.repositories['springPetclinic']['ref']}," +
                 " from ${config.repositories['springPetclinic']['url']}")
         Git git = gitClone()
@@ -170,18 +184,31 @@ class ArgoCD extends Feature {
 
         if (!config.application['remote']) {
             log.debug("Setting service.type to NodePort since it is not running in a remote cluster for nginx-helm-jenkins")
-            MapUtils.deepMerge(
-                    [ service: [
+            MapUtils.deepMerge([
+                    service: [
                             type: 'NodePort'
                     ]
-                    ],nginxHelmJenkinsValuesYaml)
+            ], nginxHelmJenkinsValuesYaml)
+        }
+
+        if (null != config['images']['nginx']) {
+            log.debug("Setting custom nginx image as requested for nginx-helm-jenkins")
+            def image = DockerImageParser.parse(config['images']['nginx'] as String)
+            def (registry, repository) = image.splitRegistryAndRepository()
+            MapUtils.deepMerge([
+                    image: [
+                            registry: registry,
+                            repository: repository,
+                            tag: image.tag
+                    ]
+            ], nginxHelmJenkinsValuesYaml)
         }
 
         log.trace("nginx-helm-jenkins values yaml: ${nginxHelmJenkinsValuesYaml}")
         fileSystemUtils.writeYaml(nginxHelmJenkinsValuesYaml, nginxHelmJenkinsValuesTmpFile.toFile())
     }
 
-    void preparePetClinicRepos() {
+    private void preparePetClinicRepos() {
         for (Tuple2<String, File> repo : petClinicLocalFoldersAndTmpDirs) {
             
             log.debug("Copying playground files for petclinic repo: ${repo.v1}")
@@ -200,6 +227,41 @@ class ArgoCD extends Feature {
         }
     }
 
+    private void prepareExerciseNginxValidationRepo() {
+        if (null == config['images']['nginx']) {
+            return
+        }
+
+        def image = DockerImageParser.parse(config['images']['nginx'] as String)
+        def (registry, repository) = image.splitRegistryAndRepository()
+        def tag = image.tag
+        def valuesSharedTmpFile = Path.of nginxValidationTmpDir.absolutePath, NGINX_VALIDATION_VALUES_PATH
+
+        def yaml = YAMLMapper.builder()
+                .disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER)
+                .build()
+                .writeValueAsString([
+                        image: [
+                                registry  : registry,
+                                repository: repository,
+                                tag       : tag,
+                        ]
+                ])
+        // This file contains broken yaml, therefore we cannot parse it
+        valuesSharedTmpFile.setText(valuesSharedTmpFile.text + yaml)
+    }
+
+    private void prepareExerciseBrokenApplicationRepo() {
+        if (null == config['images']['nginx']) {
+            return
+        }
+
+        def image = DockerImageParser.parse(config['images']['nginx'] as String)
+        def kubernetesResourcesPath = Path.of brokenApplicationTmpDir.absolutePath, BROKEN_APPLICATION_RESOURCES_PATH
+
+        fileSystemUtils.replaceFileContent(kubernetesResourcesPath.toString(), 'bitnami/nginx:1.25.1', "$image.repository:$image.tag")
+    }
+
     private void removeObjectFromList(Object list, String key, String value) {
         boolean successfullyRemoved = (list as List).removeIf(n -> n[key] == value)
         if (! successfullyRemoved) {
@@ -207,7 +269,7 @@ class ArgoCD extends Feature {
         }
     }
 
-    void installArgoCd() {
+    private void installArgoCd() {
         
         prepareArgoCdRepo()
         
@@ -293,7 +355,7 @@ class ArgoCD extends Feature {
         new RepoInitializationAction(new ScmmRepo(config, scmmRepoTarget, absoluteLocalRepoTmpDir.absolutePath), localSrcDir)
     }
 
-    void replaceFileContentInYamls(File folder, String from, String to) {
+    private void replaceFileContentInYamls(File folder, String from, String to) {
         fileSystemUtils.getAllFilesFromDirectoryWithEnding(folder.absolutePath, ".yaml").forEach(file -> {
             fileSystemUtils.replaceFileContent(file.absolutePath, from, to)
         })

@@ -27,6 +27,6 @@ spec:
     spec:
       containers:
         - name: hello-kubernetes
-          image: paulbouwer/hello-kubernetes:1.8
+          image: bitnami/nginx:1.25.1
           ports:
             - containerPort: 8080

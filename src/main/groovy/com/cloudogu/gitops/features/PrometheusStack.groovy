@@ -64,6 +64,7 @@ class PrometheusStack extends Feature {
 
         String grafanaImage = helmConfig['grafanaImage']
         if (grafanaImage != null) {
+            log.debug("Setting custom grafana image as requested for prometheus-stack")
             def image = DockerImageParser.parse(grafanaImage)
             MapUtils.deepMerge([
                     grafana: [

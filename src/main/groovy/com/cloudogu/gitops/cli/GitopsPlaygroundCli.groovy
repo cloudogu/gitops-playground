@@ -69,6 +69,8 @@ class GitopsPlaygroundCli implements Runnable {
     private String externalSecretsOperatorWebhookImage
     @Option(names = ['--vault-image'], description = 'Sets image for vault')
     private String vaultImage
+    @Option(names = ['--nginx-image'], description = 'Sets image for nginx used in various applications')
+    private String nginxImage
 
     @Option(names = ['--skip-helm-update'], description = 'Skips adding and updating helm repos')
     private boolean skipHelmUpdate
@@ -153,6 +155,7 @@ class GitopsPlaygroundCli implements Runnable {
                         kubeval    : kubevalImage,
                         helmKubeval: helmKubevalImage,
                         yamllint   : yamllintImage,
+                        nginx      : nginxImage,
                 ],
                 features    : [
                         fluxv2 : fluxv2,

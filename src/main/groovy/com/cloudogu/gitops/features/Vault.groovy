@@ -64,6 +64,7 @@ class Vault extends Feature {
         }
 
         if (null != helmConfig['image']) {
+            log.debug("Setting custom image as requested for vault")
             def image = DockerImageParser.parse(helmConfig['image'] as String)
             MapUtils.deepMerge([
                     server: [

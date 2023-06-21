@@ -58,7 +58,8 @@ class ApplicationConfigurator {
                     helm       : HELM_IMAGE,
                     kubeval    : HELM_IMAGE,
                     helmKubeval: HELM_IMAGE,
-                    yamllint   : "cytopia/yamllint:1.25-0.7"
+                    yamllint   : "cytopia/yamllint:1.25-0.7",
+                    nginx      : null,
             ],
             repositories : [
                     springBootHelmChart: [
@@ -118,7 +119,8 @@ class ApplicationConfigurator {
                                     helm: [
                                             chart  : 'vault',
                                             repoURL: 'https://helm.releases.hashicorp.com',
-                                            version: '0.22.1'
+                                            version: '0.22.1',
+                                            image: null,
                                     ]
                             ]
                     ],

@@ -35,6 +35,7 @@ class ExternalSecretsOperator extends Feature {
         def helmValuesPath = fileSystemUtils.copyToTempDir('applications/cluster-resources/secrets/external-secrets/values.yaml')
         def helmValuesYaml = fileSystemUtils.readYaml(helmValuesPath)
         if (null != helmConfig['image']) {
+            log.debug("Setting custom ESO image as requested for external-secrets-operator")
             def image = DockerImageParser.parse(helmConfig['image'] as String)
             MapUtils.deepMerge([
                     image: [
@@ -44,6 +45,7 @@ class ExternalSecretsOperator extends Feature {
             ], helmValuesYaml)
         }
         if (null != helmConfig['certControllerImage']) {
+            log.debug("Setting custom cert-controller image as requested for external-secrets-operator")
             def image = DockerImageParser.parse(helmConfig['certControllerImage'] as String)
             MapUtils.deepMerge([
                     certController: [
@@ -55,6 +57,7 @@ class ExternalSecretsOperator extends Feature {
             ], helmValuesYaml)
         }
         if (null != helmConfig['webhookImage']) {
+            log.debug("Setting custom webhook image as requested for external-secrets-operator")
             def image = DockerImageParser.parse(helmConfig['webhookImage'] as String)
             MapUtils.deepMerge([
                     webhook: [
