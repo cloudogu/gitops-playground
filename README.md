@@ -210,6 +210,10 @@ docker run --rm ghcr.io/cloudogu/gitops-playground --help
 * `--argocd` - deploy Argo CD GitOps operator
 * `--fluxv2` - deploy Flux v2 GitOps operator
 
+> ⚠️ **Note** that switching between operators is not supported.  
+That is, expect errors (for example with cluster-resources) if you apply the playground once with Argo CD and the next
+time with Flux. We recommend resetting the cluster with `init-cluster.sh` beforehand.
+
 ##### Deploy with local Cloudogu Ecosystem
 
 See our [Quickstart Guide](https://cloudogu.com/en/ecosystem/quick-start-guide/?mtm_campaign=gitops-playground&mtm_kwd=ces&mtm_source=github&mtm_medium=link) on how to set up the instance.  
