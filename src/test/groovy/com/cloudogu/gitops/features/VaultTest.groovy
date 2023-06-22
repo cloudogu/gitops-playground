@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.features
 
+import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.HelmClient
@@ -131,14 +132,14 @@ class VaultTest {
         createVault().install()
 
         assertThat(helmCommands.actualCommands[0].trim()).isEqualTo(
-                'helm repo add Vault https://vault-reg')
+                'helm repo add vault https://vault-reg')
         assertThat(helmCommands.actualCommands[1].trim()).isEqualTo(
-                'helm upgrade -i vault Vault/vault --version 42.23.0' +
+                'helm upgrade -i vault vault/vault --version 42.23.0' +
                         " --values ${temporaryYamlFile} --namespace secrets")
     }
     
     private Vault createVault() {
-        Vault vault = new Vault(config, new FileSystemUtils(), k8sClient, helmClient)
+        Vault vault = new Vault(config, new FileSystemUtils(), k8sClient, new HelmStrategy(helmClient))
         temporaryYamlFile = vault.tmpHelmValues
         return vault
     }

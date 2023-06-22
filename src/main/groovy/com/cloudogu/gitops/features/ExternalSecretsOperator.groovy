@@ -1,21 +1,27 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
+import com.cloudogu.gitops.features.deployment.Deployer
+import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.HelmClient
 import groovy.util.logging.Slf4j
+
+import java.nio.file.Path
 
 @Slf4j
 class ExternalSecretsOperator extends Feature {
     private Map config
     private FileSystemUtils fileSystemUtils
-    private HelmClient helmClient
-    
-    ExternalSecretsOperator(Map config, FileSystemUtils fileSystemUtils = new FileSystemUtils(), 
-                            HelmClient helmClient = new HelmClient()) {
+    private DeploymentStrategy deployer
+
+    ExternalSecretsOperator(
+            Map config,
+            FileSystemUtils fileSystemUtils = new FileSystemUtils(),
+            DeploymentStrategy deployer = new Deployer(config)
+    ) {
+        this.deployer = deployer
         this.config = config
         this.fileSystemUtils = fileSystemUtils
-        this.helmClient = helmClient
     }
 
     @Override
@@ -26,10 +32,14 @@ class ExternalSecretsOperator extends Feature {
     @Override
     void enable() {
         def helmConfig = config['features']['secrets']['externalSecrets']['helm']
-        helmClient.addRepo(getClass().simpleName, helmConfig['repoURL'] as String)
-        helmClient.upgrade('external-secrets', "${getClass().simpleName}/${helmConfig['chart']}",
-                [namespace: 'secrets',
-                 version: helmConfig['version'],
-                 values: "${fileSystemUtils.rootDir}/system/secrets/external-secrets/values.yaml"])
+        deployer.deployFeature(
+                helmConfig['repoURL'] as String,
+                "externalsecretsoperator",
+                helmConfig['chart'] as String,
+                helmConfig['version'] as String,
+                'secrets',
+                'external-secrets',
+                Path.of("${fileSystemUtils.rootDir}/applications/cluster-resources/secrets/external-secrets/values.yaml")
+        )
     }
 }

@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.features
 
+import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.HelmClient
@@ -61,9 +62,9 @@ class PrometheusStackTest {
         createStack().install()
      
         assertThat(commandExecutor.actualCommands[0].trim()).isEqualTo(
-                'helm repo add PrometheusStack https://prom')
+                'helm repo add prometheusstack https://prom')
         assertThat(commandExecutor.actualCommands[1].trim()).isEqualTo(
-                'helm upgrade -i kube-prometheus-stack PrometheusStack/kube-prometheus-stack --version 19.2.2' +
+                'helm upgrade -i kube-prometheus-stack prometheusstack/kube-prometheus-stack --version 19.2.2' +
                         " --values ${temporaryYamlFile} --namespace monitoring")
     }
 
@@ -75,7 +76,7 @@ class PrometheusStackTest {
                 temporaryYamlFile = super.copyToTempDir(filePath)
                 return temporaryYamlFile
             }
-        }, helmClient)
+        }, new HelmStrategy(helmClient))
     }
 
     private parseActualStackYaml() {

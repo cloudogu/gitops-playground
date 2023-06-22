@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.features
 
+import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.HelmClient
@@ -45,14 +46,14 @@ class ExternalSecretsOperatorTest {
         createExternalSecretsOperator().install()
 
         assertThat(commandExecutor.actualCommands[0].trim()).isEqualTo(
-                'helm repo add ExternalSecretsOperator https://charts.external-secrets.io')
+                'helm repo add externalsecretsoperator https://charts.external-secrets.io')
         assertThat(commandExecutor.actualCommands[1].trim()).isEqualTo(
-                'helm upgrade -i external-secrets ExternalSecretsOperator/external-secrets --version 0.6.0' +
-                        " --values ${fileSystemUtils.rootDir}/system/secrets/external-secrets/values.yaml --namespace secrets")
+                'helm upgrade -i external-secrets externalsecretsoperator/external-secrets --version 0.6.0' +
+                        " --values ${fileSystemUtils.rootDir}/applications/cluster-resources/secrets/external-secrets/values.yaml --namespace secrets")
     }
 
     private ExternalSecretsOperator createExternalSecretsOperator() {
-        new ExternalSecretsOperator(config, fileSystemUtils, helmClient)
+        new ExternalSecretsOperator(config, fileSystemUtils, new HelmStrategy(helmClient))
     }
 
 }

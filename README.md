@@ -209,6 +209,10 @@ docker run --rm ghcr.io/cloudogu/gitops-playground --help
 * `--argocd` - deploy Argo CD GitOps operator
 * `--fluxv2` - deploy Flux v2 GitOps operator
 
+> ⚠️ **Note** that switching between operators is not supported.  
+That is, expect errors (for example with cluster-resources) if you apply the playground once with Argo CD and the next
+time with Flux. We recommend resetting the cluster with `init-cluster.sh` beforehand.
+
 ##### Deploy with local Cloudogu Ecosystem
 
 See our [Quickstart Guide](https://cloudogu.com/en/ecosystem/quick-start-guide/?mtm_campaign=gitops-playground&mtm_kwd=ces&mtm_source=github&mtm_medium=link) on how to set up the instance.  
@@ -360,7 +364,7 @@ When installing the GitOps playground, the following steps are performed to boot
 * The following repos are created and initialized:
     * `argocd` (management and config of Argo CD itself),
     * `example-apps` (example for a developer/application team's GitOps repo) and
-    * `cluster-resources` (example for a cluster admin or infra/platform team's repo)
+    * `cluster-resources` (example for a cluster admin or infra/platform team's repo; see below for details)
 * Argo CD is installed imperatively via a helm chart.
 * Two resources are applied imperatively to the cluster: an `AppProject` called `argocd` and an `Application` called
   `bootstrap`. These are also contained within the `argocd` repository.
@@ -451,6 +455,14 @@ Here are some thoughts why we deem it not a good fit for production:
   This would mean that every team would have to manage its own ArgoCD instance.  
   How could this task be delegated to a dedicated platform team? These are the questions that lead to the structure
   realized in the GitOps playground.
+
+#### cluster-resources
+
+The playground installs cluster-resources (like prometheus, grafana, vault, external secrets operator, etc.) via the repo  
+`argocd/cluster-resources`. See [ADR](docs/architecture-decision-records.md#deploying-cluster-resources-with-argo-cd-using-inline-yaml) for more details.
+
+When installing Argo CD *and* Flux, the tools are installed using helm imperatively, we fall back to using imperative 
+helm installation as kind of neutral ground.
 
 ### Flux
 
@@ -570,7 +582,7 @@ For this to work, the GitOps playground configures the whole chain in Kubernetes
 
 For testing you can set the parameter `--vault=dev` to deploy vault in development mode. This will lead to
 * vault being transient, i.e. all changes during runtime are not persisted. Meaning a restart will reset to default.
-* Vault is initialized with some fixed secrets that are used in the example app, see bellow.
+* Vault is initialized with some fixed secrets that are used in the example app, see below.
 * Vault authorization is initialized with service accounts used in example `SecretStore`s for external secrets operator
 * Vault is initialized with the usual `admin/admin` account (can be overriden with `--username` and `--password`)
 

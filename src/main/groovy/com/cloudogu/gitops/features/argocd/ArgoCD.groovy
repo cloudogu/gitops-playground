@@ -11,7 +11,6 @@ import java.nio.file.Path
 
 @Slf4j
 class ArgoCD extends Feature {
-
     static final String HELM_VALUES_PATH = 'argocd/values.yaml'
     static final String CHART_YAML_PATH = 'argocd/Chart.yaml'
     static final String NGINX_HELM_JENKINS_VALUES_PATH = 'k8s/values-shared.yaml'
@@ -24,12 +23,12 @@ class ArgoCD extends Feature {
     ]
     
     private Map config
-    private List<ScmmRepo> gitRepos = []
+    private List<RepoInitializationAction> gitRepos = []
 
     private String password
     
     protected File argocdRepoTmpDir
-    private ScmmRepo argocdRepo
+    private RepoInitializationAction argocdRepoInitializationAction
     protected File clusterResourcesTmpDir
     protected File exampleAppsTmpDir
     protected File nginxHelmJenkinsTmpDir
@@ -48,30 +47,30 @@ class ArgoCD extends Feature {
         
         argocdRepoTmpDir = File.createTempDir('gitops-playground-argocd-repo')
         argocdRepoTmpDir.deleteOnExit()
-        argocdRepo = createRepo('argocd/argocd', 'argocd/argocd', argocdRepoTmpDir)
+        argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd', argocdRepoTmpDir)
         
         clusterResourcesTmpDir = File.createTempDir('gitops-playground-cluster-resources')
         clusterResourcesTmpDir.deleteOnExit()
-        gitRepos += createRepo('argocd/cluster-resources', 'argocd/cluster-resources', clusterResourcesTmpDir)
+        gitRepos += createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources', clusterResourcesTmpDir)
 
         exampleAppsTmpDir = File.createTempDir('gitops-playground-example-apps')
         exampleAppsTmpDir.deleteOnExit()
-        gitRepos += createRepo('argocd/example-apps', 'argocd/example-apps', exampleAppsTmpDir)
+        gitRepos += createRepoInitializationAction('argocd/example-apps', 'argocd/example-apps', exampleAppsTmpDir)
         
         nginxHelmJenkinsTmpDir = File.createTempDir('gitops-playground-nginx-helm-jenkins')
         nginxHelmJenkinsTmpDir.deleteOnExit()
-        gitRepos += createRepo('applications/argocd/nginx/helm-jenkins', 'argocd/nginx-helm-jenkins',
+        gitRepos += createRepoInitializationAction('applications/argocd/nginx/helm-jenkins', 'argocd/nginx-helm-jenkins',
                 nginxHelmJenkinsTmpDir)
         
-        gitRepos += createRepo('exercises/nginx-validation', 'exercises/nginx-validation', File.createTempDir())
-        gitRepos += createRepo('exercises/broken-application', 'exercises/broken-application', File.createTempDir())
+        gitRepos += createRepoInitializationAction('exercises/nginx-validation', 'exercises/nginx-validation', File.createTempDir())
+        gitRepos += createRepoInitializationAction('exercises/broken-application', 'exercises/broken-application', File.createTempDir())
 
         remotePetClinicRepoTmpDir = File.createTempDir('gitops-playground-petclinic')
         for (Tuple2 repo : PETCLINIC_REPOS) {
             def petClinicTempDir = File.createTempDir(repo.v2.toString().replace('/', '-'))
             petClinicTempDir.deleteOnExit()
             petClinicLocalFoldersAndTmpDirs.add(new Tuple2(repo.v1.toString(), petClinicTempDir))
-            gitRepos += createRepo(remotePetClinicRepoTmpDir.absolutePath, repo.v2.toString(), petClinicTempDir)
+            gitRepos += createRepoInitializationAction(remotePetClinicRepoTmpDir.absolutePath, repo.v2.toString(), petClinicTempDir)
         }
     }
     
@@ -84,8 +83,8 @@ class ArgoCD extends Feature {
     void enable() {
         cloneRemotePetclinicRepo()
         
-        gitRepos.forEach( repo -> {
-            repo.cloneRepo()
+        gitRepos.forEach( repoInitializationAction -> {
+            repoInitializationAction.initLocalRepo()
         })
         
         prepareGitOpsRepos()
@@ -94,8 +93,8 @@ class ArgoCD extends Feature {
         
         preparePetClinicRepos()
 
-        gitRepos.forEach( repo -> {
-            repo.commitAndPush()
+        gitRepos.forEach( repoInitializationAction -> {
+            repoInitializationAction.repo.commitAndPush("Initial Commit")
         })
 
         installArgoCd()
@@ -254,7 +253,7 @@ class ArgoCD extends Feature {
     protected void prepareArgoCdRepo() {
         def tmpHelmValues = Path.of(argocdRepoTmpDir.absolutePath, HELM_VALUES_PATH)
 
-        argocdRepo.cloneRepo()
+        argocdRepoInitializationAction.initLocalRepo()
 
         if (!config.scmm["internal"]) {
             String externalScmmUrl = ScmmRepo.createScmmUrl(config)
@@ -273,7 +272,7 @@ class ArgoCD extends Feature {
                     "argocdUrl: https://localhost:9092", "argocdUrl: ${config.features["argocd"]["url"]}")
         }
         
-        argocdRepo.commitAndPush()
+        argocdRepoInitializationAction.repo.commitAndPush("Initial Commit")
     }
 
     private void deleteFile(String path) {
@@ -290,13 +289,31 @@ class ArgoCD extends Feature {
         }
     }
 
-    protected ScmmRepo createRepo(String localSrcDir, String scmmRepoTarget, File absoluteLocalRepoTmpDir) {
-        new ScmmRepo(config, localSrcDir, scmmRepoTarget, absoluteLocalRepoTmpDir.absolutePath)
+    protected RepoInitializationAction createRepoInitializationAction(String localSrcDir, String scmmRepoTarget, File absoluteLocalRepoTmpDir) {
+        new RepoInitializationAction(new ScmmRepo(config, scmmRepoTarget, absoluteLocalRepoTmpDir.absolutePath), localSrcDir)
     }
 
     void replaceFileContentInYamls(File folder, String from, String to) {
         fileSystemUtils.getAllFilesFromDirectoryWithEnding(folder.absolutePath, ".yaml").forEach(file -> {
             fileSystemUtils.replaceFileContent(file.absolutePath, from, to)
         })
+    }
+
+    static class RepoInitializationAction {
+        private ScmmRepo repo
+        private String copyFromDirectory
+
+        RepoInitializationAction(ScmmRepo repo, String copyFromDirectory) {
+            this.repo = repo
+            this.copyFromDirectory = copyFromDirectory
+        }
+
+        /**
+         * Clone repo from SCM and initialize it with default basic files. Afterwards we can edit these files.
+         */
+        void initLocalRepo() {
+            repo.cloneRepo()
+            repo.copyDirectoryContents(copyFromDirectory)
+        }
     }
 }
