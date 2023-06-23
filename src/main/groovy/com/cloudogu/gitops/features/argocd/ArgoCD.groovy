@@ -144,9 +144,11 @@ class ArgoCD extends Feature {
             log.debug("Setting service.type to NodePort since it is not running in a remote cluster for nginx-helm-dependency")
             def nginxHelmValuesTmpFile = Path.of exampleAppsTmpDir.absolutePath, NGINX_HELM_DEPENDENCY_VALUES_PATH
             Map nginxHelmValuesYaml = fileSystemUtils.readYaml(nginxHelmValuesTmpFile)
-            MapUtils.deepMerge(
-                    [ service: [
-                            type: 'NodePort'
+            MapUtils.deepMerge([
+                    nginx: [
+                            service: [
+                                    type: 'NodePort'
+                            ]
                     ]
                     ],nginxHelmValuesYaml)
             log.trace("nginx-helm-dependency values yaml: ${nginxHelmValuesYaml}")
