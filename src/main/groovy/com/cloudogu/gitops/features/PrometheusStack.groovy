@@ -70,7 +70,7 @@ class PrometheusStack extends Feature {
                     grafana: [
                             image: [
 
-                                    repository: image.repository,
+                                    repository: image.getRegistryAndRepositoryAsString(),
                                     tag       : image.tag
                             ]
                     ]

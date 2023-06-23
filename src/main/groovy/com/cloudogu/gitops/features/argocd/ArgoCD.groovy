@@ -194,11 +194,10 @@ class ArgoCD extends Feature {
         if (null != config['images']['nginx']) {
             log.debug("Setting custom nginx image as requested for nginx-helm-jenkins")
             def image = DockerImageParser.parse(config['images']['nginx'] as String)
-            def (registry, repository) = image.splitRegistryAndRepository()
             MapUtils.deepMerge([
                     image: [
-                            registry: registry,
-                            repository: repository,
+                            registry: image.registry,
+                            repository: image.repository,
                             tag: image.tag
                     ]
             ], nginxHelmJenkinsValuesYaml)
@@ -233,8 +232,6 @@ class ArgoCD extends Feature {
         }
 
         def image = DockerImageParser.parse(config['images']['nginx'] as String)
-        def (registry, repository) = image.splitRegistryAndRepository()
-        def tag = image.tag
         def valuesSharedTmpFile = Path.of nginxValidationTmpDir.absolutePath, NGINX_VALIDATION_VALUES_PATH
 
         def yaml = YAMLMapper.builder()
@@ -242,9 +239,9 @@ class ArgoCD extends Feature {
                 .build()
                 .writeValueAsString([
                         image: [
-                                registry  : registry,
-                                repository: repository,
-                                tag       : tag,
+                                registry  : image.registry,
+                                repository: image.repository,
+                                tag       : image.tag,
                         ]
                 ])
         // This file contains broken yaml, therefore we cannot parse it
@@ -259,7 +256,7 @@ class ArgoCD extends Feature {
         def image = DockerImageParser.parse(config['images']['nginx'] as String)
         def kubernetesResourcesPath = Path.of brokenApplicationTmpDir.absolutePath, BROKEN_APPLICATION_RESOURCES_PATH
 
-        fileSystemUtils.replaceFileContent(kubernetesResourcesPath.toString(), 'bitnami/nginx:1.25.1', "$image.repository:$image.tag")
+        fileSystemUtils.replaceFileContent(kubernetesResourcesPath.toString(), 'bitnami/nginx:1.25.1', "${image.getRegistryAndRepositoryAsString()}:$image.tag")
     }
 
     private void removeObjectFromList(Object list, String key, String value) {

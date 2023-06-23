@@ -70,7 +70,7 @@ class Vault extends Feature {
                     server: [
                             image: [
 
-                                    repository: image.repository,
+                                    repository: image.getRegistryAndRepositoryAsString(),
                                     tag       : image.tag
                             ]
                     ]

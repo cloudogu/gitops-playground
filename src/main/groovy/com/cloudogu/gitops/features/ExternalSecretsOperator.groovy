@@ -39,7 +39,7 @@ class ExternalSecretsOperator extends Feature {
             def image = DockerImageParser.parse(helmConfig['image'] as String)
             MapUtils.deepMerge([
                     image: [
-                            repository: image.repository,
+                            repository: image.getRegistryAndRepositoryAsString(),
                             tag       : image.tag
                     ]
             ], helmValuesYaml)
@@ -50,7 +50,7 @@ class ExternalSecretsOperator extends Feature {
             MapUtils.deepMerge([
                     certController: [
                             image: [
-                                    repository: image.repository,
+                                    repository: image.getRegistryAndRepositoryAsString(),
                                     tag       : image.tag
                             ]
                     ]
@@ -62,7 +62,7 @@ class ExternalSecretsOperator extends Feature {
             MapUtils.deepMerge([
                     webhook: [
                             image: [
-                                    repository: image.repository,
+                                    repository: image.getRegistryAndRepositoryAsString(),
                                     tag       : image.tag
                             ]
                     ]

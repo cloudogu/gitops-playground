@@ -10,7 +10,9 @@ class DockerImageParserTest {
     void 'parses simple image string'() {
         def result = DockerImageParser.parse("grafana/grafana:latest")
 
+        assertThat(result.registry).isEqualTo("")
         assertThat(result.repository).isEqualTo("grafana/grafana")
+        assertThat(result.getRegistryAndRepositoryAsString()).isEqualTo("grafana/grafana")
         assertThat(result.tag).isEqualTo("latest")
     }
 
@@ -18,17 +20,9 @@ class DockerImageParserTest {
     void 'parses image string with port'() {
         def result = DockerImageParser.parse("localhost:5000/grafana/grafana:latest")
 
-        assertThat(result.repository).isEqualTo("localhost:5000/grafana/grafana")
-        assertThat(result.tag).isEqualTo("latest")
-    }
-
-    @Test
-    void 'splits into registry and repository'() {
-        def result = DockerImageParser.parse("localhost:5000/the-registry/grafana/grafana:latest")
-
-        def (registry, repository) = result.splitRegistryAndRepository()
-        assertThat(registry).isEqualTo("localhost:5000/the-registry")
-        assertThat(repository).isEqualTo("grafana/grafana")
+        assertThat(result.registry).isEqualTo("localhost:5000")
+        assertThat(result.repository).isEqualTo("grafana/grafana")
+        assertThat(result.getRegistryAndRepositoryAsString()).isEqualTo("localhost:5000/grafana/grafana")
         assertThat(result.tag).isEqualTo("latest")
     }
 
