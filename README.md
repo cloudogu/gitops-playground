@@ -257,7 +257,9 @@ Note that you can get a free CES demo instance set up with a Kubernetes Cluster 
 --registry-password="$( cat account.json | sed 's/"/\\"/g' )" 
 ```
 
-##### Override default images used in the gitops-build-lib
+##### Override default images 
+
+###### gitops-build-lib
 
 Images used by the gitops-build-lib are set in the `gitopsConfig` in each `Jenkinsfile` of an application like that:
 
@@ -280,6 +282,19 @@ To override each image in all the applications you can use following parameters:
 * `--kubeval-image someRegistry/someImage:1.0.0`
 * `--helmkubeval-image someRegistry/someImage:1.0.0`
 * `--yamllint-image someRegistry/someImage:1.0.0`
+
+###### Tools and Exercises
+
+Images used by various tools and exercises can be configured using the following parameters:
+
+* `--grafana-image someRegistry/someImage:1.0.0`
+* `--external-secrets-image someRegistry/someImage:1.0.0`
+* `--external-secrets-certcontroller-image someRegistry/someImage:1.0.0`
+* `--external-secrets-webhook-image someRegistry/someImage:1.0.0`
+* `--vault-image someRegistry/someImage:1.0.0`
+* `--nginx-image someRegistry/someImage:1.0.0`
+
+Note that specifying a tag is mandatory.
 
 ##### Argo CD-Notifications
 
