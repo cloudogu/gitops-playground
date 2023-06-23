@@ -59,9 +59,9 @@ argo-cd:
       nginx-helm-jenkins:
         name: nginx-helm-jenkins
         url: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/nginx-helm-jenkins
-      nginx-helm-dependency:
-        name: nginx-helm-dependency
-        url: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/nginx-helm-dependency
+      nginx-helm-umbrella:
+        name: nginx-helm-umbrella
+        url: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/nginx-helm-umbrella
       bitnami:
         name: bitnami
         type: helm

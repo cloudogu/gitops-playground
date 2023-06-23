@@ -667,7 +667,7 @@ The applications implement a simple staging mechanism:
 * After a successful Jenkins build, the staging application will be deployed into the cluster by the GitOps operator.
 * Deployment of production applications can be triggered by accepting pull requests.
 * For some applications working without CI Server and committing directly to the GitOps repo is pragmatic  
-  (e.g. 3rd-party-application like NGINX, like [`argocd/nginx-helm-dependency`](argocd/example-apps/argocd/nginx-helm-dependency.yaml))
+  (e.g. 3rd-party-application like NGINX, like [`argocd/nginx-helm-umbrella`](argocd/example-apps/argocd/nginx-helm-umbrella.yaml))
 
 ![app-repo-vs-gitops-repo](docs/app-repo-vs-gitops-repo.svg)
 
@@ -731,8 +731,9 @@ Alternatively you can trigger the deployment via the respective GitOps operator'
 
 ##### 3rd Party app (NGINX) with helm, using Helm dependency mechanism
 
+* Application name: `nginx-helm-umbrella`
 * local: [localhost:30026](http://localhost:30026)
-* remote: `scripts/get-remote-url nginx argocd-staging`
+* remote: `scripts/get-remote-url nginx-helm-umbrella argocd-production`
 
 ## Development
 
