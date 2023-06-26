@@ -9,7 +9,7 @@ String getDockerRegistryBaseUrl() { env.REGISTRY_URL }
 String getDockerRegistryPath() { env.REGISTRY_PATH }
 String getDockerRegistryCredentials() { 'registry-user' }
 String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/common/ces-build-lib/" }
-String getCesBuildLibVersion() { '1.46.1' }
+String getCesBuildLibVersion() { '1.64.1' }
 String getHelmChartRepository() { "${env.SCMM_URL}/repo/common/spring-boot-helm-chart-with-dependency" }
 String getHelmChartVersion() { "1.0.0" }
 String getMainBranch() { 'main' }
