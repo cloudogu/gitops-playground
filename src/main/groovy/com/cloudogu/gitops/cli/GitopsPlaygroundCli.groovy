@@ -9,11 +9,13 @@ import picocli.CommandLine.Option
 import static groovy.json.JsonOutput.prettyPrint
 import static groovy.json.JsonOutput.toJson
 
-@Command(name = 'gitops-playground-cli', description = 'CLI-tool to deploy gitops-playground.',
-        mixinStandardHelpOptions = true)
+@Command(
+        name = 'gitops-playground-cli',
+        description = 'CLI-tool to deploy gitops-playground.',
+        mixinStandardHelpOptions = true,
+        subcommands = JenkinsCli)
 @Slf4j
-class GitopsPlaygroundCli implements Runnable {
-
+class GitopsPlaygroundCli  implements Runnable {
     // args group registry
     @Option(names = ['--registry-url'], description = 'The url of your external registry')
     private String registryUrl
@@ -65,12 +67,12 @@ class GitopsPlaygroundCli implements Runnable {
     // args group metrics
     @Option(names = ['--metrics', '--monitoring'], description = 'Installs the Kube-Prometheus-Stack. This includes Prometheus, the Prometheus operator, Grafana and some extra resources')
     private boolean monitoring
-    
+
     // args group metrics
     @Option(names = ['--vault'], description = 'Installs Hashicorp vault and the external secrets operator. Possible values: ${COMPLETION-CANDIDATES}')
     private VaultModes vault
     enum VaultModes { dev, prod }
-    
+
     // args group debug
     @Option(names = ['-d', '--debug'], description = 'Debug output')
     private boolean debug
@@ -93,20 +95,26 @@ class GitopsPlaygroundCli implements Runnable {
     @Option(names = ['--argocd-url'], description = 'The URL where argocd is accessible. It has to be the full URL with http:// or https://')
     private String argocdUrl
 
+
     @Override
     void run() {
+        Map config = getConfig()
+        Application app = new Application(config)
+        app.start()
+    }
+
+    private Map getConfig() {
         ApplicationConfigurator applicationConfigurator = new ApplicationConfigurator()
         Map config = applicationConfigurator
                 // Here we could implement loading from a config file, giving CLI params precedence
                 //.setConfig(configFile.toFile().getText())
                 .setConfig(parseOptionsIntoConfig())
-        
+
         log.debug("Actual config: ${prettyPrint(toJson(config))}")
-        
-        Application app = new Application(config)
-        app.start()
+
+        return config
     }
-    
+
     private Map parseOptionsIntoConfig() {
         return [
                 registry   : [
@@ -161,4 +169,3 @@ class GitopsPlaygroundCli implements Runnable {
         ]
     }
 }
-

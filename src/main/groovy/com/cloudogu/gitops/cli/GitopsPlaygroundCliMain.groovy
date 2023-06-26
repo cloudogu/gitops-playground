@@ -25,4 +25,3 @@ class GitopsPlaygroundCliMain {
         System.exit(exitCode)
     }
 }
-
