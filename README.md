@@ -700,10 +700,10 @@ Alternatively you can trigger the deployment via the respective GitOps operator'
 * Application name: `petclinic-helm`
 * Staging
     * local [localhost:30022](http://localhost:30022)
-    * remote: `scripts/get-remote-url spring-petclinic-helm argocd-staging`
+    * remote: `scripts/get-remote-url spring-petclinic-helm-springboot argocd-staging`
 * Production
     * local [localhost:30023](http://localhost:30023)
-    * remote: `scripts/get-remote-url spring-petclinic-helm argocd-production`
+    * remote: `scripts/get-remote-url spring-petclinic-helm-springboot argocd-production`
 
 ##### 3rd Party app (NGINX) with helm, templated in Jenkins
 
