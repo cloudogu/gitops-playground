@@ -18,7 +18,7 @@ class ArgoCD extends Feature {
     static final String NGINX_HELM_JENKINS_VALUES_PATH = 'k8s/values-shared.yaml'
     static final String NGINX_HELM_DEPENDENCY_VALUES_PATH = 'apps/nginx-helm-umbrella/values.yaml'
     static final String NGINX_VALIDATION_VALUES_PATH = 'k8s/values-shared.yaml'
-    static final String BROKEN_APPLICATION_RESOURCES_PATH = 'hello-kubernetes.yaml'
+    static final String BROKEN_APPLICATION_RESOURCES_PATH = 'broken-application.yaml'
     static final String SCMM_URL_INTERNAL = "http://scmm-scm-manager.default.svc.cluster.local/scm"
     static final List<Tuple2> PETCLINIC_REPOS = [
             new Tuple2('applications/argocd/petclinic/plain-k8s', 'argocd/petclinic-plain'),
