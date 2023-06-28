@@ -10,7 +10,7 @@ export PLAYGROUND_DIR
 
 # When updating, update in ApplicationConfigurator.groovy as well 
 PETCLINIC_COMMIT=32c8653
-SPRING_BOOT_HELM_CHART_COMMIT=0.3.0
+SPRING_BOOT_HELM_CHART_COMMIT=0.3.1
 K8S_VERSION=1.25.4
 
 source ${ABSOLUTE_BASEDIR}/utils.sh
