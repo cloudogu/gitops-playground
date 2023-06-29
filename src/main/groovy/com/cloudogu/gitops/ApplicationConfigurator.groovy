@@ -99,7 +99,11 @@ class ApplicationConfigurator {
                                     chart  : 'kube-prometheus-stack',
                                     repoURL: 'https://prometheus-community.github.io/helm-charts',
                                     version: '19.2.2',
-                                    grafanaImage: null
+                                    grafanaImage: null,
+                                    grafanaSidecarImage: null,
+                                    prometheusImage: null,
+                                    prometheusOperatorImage: null,
+                                    prometheusConfigReloaderImage: null,
                             ]
                     ],
                     secrets   : [

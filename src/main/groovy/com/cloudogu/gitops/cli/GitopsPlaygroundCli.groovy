@@ -61,6 +61,14 @@ class GitopsPlaygroundCli implements Runnable {
     private String yamllintImage
     @Option(names = ['--grafana-image'], description = 'Sets image for grafana')
     private String grafanaImage
+    @Option(names = ['--grafana-sidecar-image'], description = 'Sets image for grafana\'s sidecar')
+    private String grafanaSidecarImage
+    @Option(names = ['--prometheus-image'], description = 'Sets image for prometheus')
+    private String prometheusImage
+    @Option(names = ['--prometheus-operator-image'], description = 'Sets image for prometheus-operator')
+    private String prometheusOperatorImage
+    @Option(names = ['--prometheus-config-reloader-image'], description = 'Sets image for prometheus-operator\'s config-reloader')
+    private String prometheusConfigReloaderImage
     @Option(names = ['--external-secrets-image'], description = 'Sets image for external secrets operator')
     private String externalSecretsOperatorImage
     @Option(names = ['--external-secrets-certcontroller-image'], description = 'Sets image for external secrets operator\'s controller')
@@ -166,7 +174,11 @@ class GitopsPlaygroundCli implements Runnable {
                         monitoring : [
                                 active    : monitoring,
                                 helm      : [
-                                        grafanaImage: grafanaImage
+                                        grafanaImage: grafanaImage,
+                                        grafanaSidecarImage: grafanaSidecarImage,
+                                        prometheusImage: prometheusImage,
+                                        prometheusOperatorImage: prometheusOperatorImage,
+                                        prometheusConfigReloaderImage: prometheusConfigReloaderImage,
                                 ]
                         ],
                         secrets : [

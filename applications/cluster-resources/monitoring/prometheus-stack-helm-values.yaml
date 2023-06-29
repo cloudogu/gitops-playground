@@ -30,6 +30,10 @@ nodeExporter:
   enabled: false
 prometheusOperator:
   enabled: true
+  admissionWebhooks:
+    enabled: false
+  tls:
+    enabled: false
 kubelet:
   enabled: false
 kubeControllerManager:

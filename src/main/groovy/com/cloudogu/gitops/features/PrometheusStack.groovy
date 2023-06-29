@@ -61,21 +61,7 @@ class PrometheusStack extends Feature {
 
 
         def helmConfig = config['features']['monitoring']['helm']
-
-        String grafanaImage = helmConfig['grafanaImage']
-        if (grafanaImage != null) {
-            log.debug("Setting custom grafana image as requested for prometheus-stack")
-            def image = DockerImageParser.parse(grafanaImage)
-            MapUtils.deepMerge([
-                    grafana: [
-                            image: [
-
-                                    repository: image.getRegistryAndRepositoryAsString(),
-                                    tag       : image.tag
-                            ]
-                    ]
-            ], helmValuesYaml)
-        }
+        setCustomImages(helmConfig, helmValuesYaml)
 
         fileSystemUtils.writeYaml(helmValuesYaml, tmpHelmValues.toFile())
 
@@ -88,5 +74,97 @@ class PrometheusStack extends Feature {
                 'kube-prometheus-stack',
                 tmpHelmValues
         )
+    }
+
+    private void setCustomImages(helmConfig, Map helmValuesYaml) {
+        setGrafanaImage(helmConfig, helmValuesYaml)
+        setGrafanaSidecarImage(helmConfig, helmValuesYaml)
+        setPrometheusImage(helmConfig, helmValuesYaml)
+        setPrometheusOperatorImage(helmConfig, helmValuesYaml)
+        setPrometheusConfigReloaderImage(helmConfig, helmValuesYaml)
+    }
+
+    private void setPrometheusConfigReloaderImage(helmConfig, Map helmValuesYaml) {
+        String prometheusConfigReloaderImage = helmConfig['prometheusConfigReloaderImage']
+        if (prometheusConfigReloaderImage != null) {
+            log.debug("Setting custom prometheus-config-reloader image as requested for prometheus-stack")
+            def image = DockerImageParser.parse(prometheusConfigReloaderImage)
+            MapUtils.deepMerge([
+                    prometheusOperator: [
+                            prometheusConfigReloaderImage: [
+                                    repository: image.getRegistryAndRepositoryAsString(),
+                                    tag       : image.tag
+                            ]
+                    ]
+            ], helmValuesYaml)
+        }
+    }
+
+    private void setPrometheusOperatorImage(helmConfig, Map helmValuesYaml) {
+        String prometheusOperatorImage = helmConfig['prometheusOperatorImage']
+        if (prometheusOperatorImage != null) {
+            log.debug("Setting custom prometheus-operator image as requested for prometheus-stack")
+            def image = DockerImageParser.parse(prometheusOperatorImage)
+            MapUtils.deepMerge([
+                    prometheusOperator: [
+                            image: [
+                                    repository: image.getRegistryAndRepositoryAsString(),
+                                    tag       : image.tag
+                            ]
+                    ]
+            ], helmValuesYaml)
+        }
+    }
+
+    private void setPrometheusImage(helmConfig, Map helmValuesYaml) {
+        String prometheusImage = helmConfig['prometheusImage']
+        if (prometheusImage != null) {
+            log.debug("Setting custom prometheus-operator image as requested for prometheus-stack")
+            def image = DockerImageParser.parse(prometheusImage)
+            MapUtils.deepMerge([
+                    prometheus: [
+                            prometheusSpec: [
+                                    image: [
+                                            repository: image.getRegistryAndRepositoryAsString(),
+                                            tag       : image.tag
+                                    ]
+                            ]
+                    ]
+            ], helmValuesYaml)
+        }
+    }
+
+    private void setGrafanaSidecarImage(helmConfig, Map helmValuesYaml) {
+        String grafanaSidecarImage = helmConfig['grafanaSidecarImage']
+        if (grafanaSidecarImage != null) {
+            log.debug("Setting custom grafana-sidecar image as requested for prometheus-stack")
+            def image = DockerImageParser.parse(grafanaSidecarImage)
+            MapUtils.deepMerge([
+                    grafana: [
+                            sidecar: [
+                                    image: [
+                                            repository: image.getRegistryAndRepositoryAsString(),
+                                            tag       : image.tag
+                                    ]
+                            ]
+                    ]
+            ], helmValuesYaml)
+        }
+    }
+
+    private void setGrafanaImage(helmConfig, Map helmValuesYaml) {
+        String grafanaImage = helmConfig['grafanaImage']
+        if (grafanaImage != null) {
+            log.debug("Setting custom grafana image as requested for prometheus-stack")
+            def image = DockerImageParser.parse(grafanaImage)
+            MapUtils.deepMerge([
+                    grafana: [
+                            image: [
+                                    repository: image.getRegistryAndRepositoryAsString(),
+                                    tag       : image.tag
+                            ]
+                    ]
+            ], helmValuesYaml)
+        }
     }
 }
