@@ -73,6 +73,10 @@ function waitForJenkins() {
   echo ""
 }
 
+function createUser() {
+  runGroovy jenkins add-user "$1" "$2" --jenkins-url="$JENKINS_URL" --jenkins-username="$JENKINS_USERNAME" --jenkins-password="$JENKINS_PASSWORD"
+}
+
 function configureJenkins() {
   local SCMM_URL pluginFolder
   
