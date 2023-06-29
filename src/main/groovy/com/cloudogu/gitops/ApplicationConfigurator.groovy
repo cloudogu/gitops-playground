@@ -51,7 +51,8 @@ class ApplicationConfigurator {
                     password      : DEFAULT_ADMIN_PW,
                     yes           : false,
                     runningInsideK8s : false, // Set dynamically
-                    clusterBindAddress : '' // Set dynamically
+                    clusterBindAddress : '', // Set dynamically
+                    namePrefix    : ''
             ],
             images     : [
                     kubectl    : "lachlanevenson/k8s-kubectl:v1.25.4",

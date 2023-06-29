@@ -129,14 +129,17 @@ function configureJenkins() {
   setGlobalProperty "REGISTRY_PATH" "${REGISTRY_PATH}"
   setGlobalProperty "K8S_VERSION" "${K8S_VERSION}"
 
-  createCredentials "scmm-user" "gitops" "${SCMM_PASSWORD}" "credentials for accessing scm-manager"
-  createCredentials "registry-user" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}" "credentials for accessing the docker-registry"
+
 
 
   if [[ $INSTALL_FLUXV2 == true ]]; then
-    createJob "fluxv2-applications" "${SCMM_URL}" "fluxv2" "scmm-user"
+    createJob "${NAME_PREFIX}fluxv2-example-apps" "${SCMM_URL}" "${NAME_PREFIX}fluxv2" "scmm-user"
+    createCredentials "scmm-user" "${NAME_PREFIX}gitops" "${SCMM_PASSWORD}" "credentials for accessing scm-manager" "${NAME_PREFIX}fluxv2-example-apps"
+    createCredentials "registry-user" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}" "credentials for accessing the docker-registry" "${NAME_PREFIX}fluxv2-example-apps"
   fi
   if [[ $INSTALL_ARGOCD == true ]]; then
-    createJob "argocd-applications" "${SCMM_URL}" "argocd" "scmm-user"
+    createJob "${NAME_PREFIX}example-apps" "${SCMM_URL}" "${NAME_PREFIX}argocd" "scmm-user"
+    createCredentials "scmm-user" "${NAME_PREFIX}gitops" "${SCMM_PASSWORD}" "credentials for accessing scm-manager" "${NAME_PREFIX}example-apps"
+    createCredentials "registry-user" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}" "credentials for accessing the docker-registry" "${NAME_PREFIX}example-apps"
   fi
 }

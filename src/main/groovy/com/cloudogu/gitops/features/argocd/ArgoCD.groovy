@@ -44,16 +44,16 @@ class ArgoCD extends Feature {
     protected K8sClient k8sClient = new K8sClient()
     protected HelmClient helmClient = new HelmClient()
 
-    private FileSystemUtils fileSystemUtils = new FileSystemUtils()
+    protected FileSystemUtils fileSystemUtils = new FileSystemUtils()
 
     ArgoCD(Map config) {
         this.config = config
         
         this.password = config.application["password"]
-        
+
         argocdRepoTmpDir = File.createTempDir('gitops-playground-argocd-repo')
         argocdRepoTmpDir.deleteOnExit()
-        argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd', argocdRepoTmpDir)
+        argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', "argocd/argocd", argocdRepoTmpDir)
         
         clusterResourcesTmpDir = File.createTempDir('gitops-playground-cluster-resources')
         clusterResourcesTmpDir.deleteOnExit()

@@ -29,7 +29,7 @@ function configureScmmManager() {
   INSTALL_FLUXV2="${7}"
   INSTALL_ARGOCD="${8}"
 
-  GITOPS_USERNAME="gitops"
+  GITOPS_USERNAME="${NAME_PREFIX}gitops"
   GITOPS_PASSWORD=${ADMIN_PASSWORD}
 
   waitForScmManager
@@ -39,61 +39,62 @@ function configureScmmManager() {
 
   setConfig
 
-  addUser "${GITOPS_USERNAME}" "${GITOPS_PASSWORD}" "gitops@mail.de"
+  addUser "${GITOPS_USERNAME}" "${GITOPS_PASSWORD}" "changeme@test.local"
 
   ### FluxV2 Repos
   if [[ $INSTALL_FLUXV2 == true ]]; then
-    addRepo "fluxv2" "gitops"
-    setPermission "fluxv2" "gitops" "${GITOPS_USERNAME}" "WRITE"
+    addRepo "${NAME_PREFIX}fluxv2" "gitops"
+    setPermission "${NAME_PREFIX}fluxv2" "gitops" "${GITOPS_USERNAME}" "WRITE"
   
-    addRepo "fluxv2" "petclinic-plain"
-    setPermission "fluxv2" "petclinic-plain" "${GITOPS_USERNAME}" "WRITE"
+    addRepo "${NAME_PREFIX}fluxv2" "petclinic-plain"
+    setPermission "${NAME_PREFIX}fluxv2" "petclinic-plain" "${GITOPS_USERNAME}" "WRITE"
   fi
 
   ### ArgoCD Repos
   if [[ $INSTALL_ARGOCD == true ]]; then
     setPermissionForNamespace "argocd" "${GITOPS_USERNAME}" "CI-SERVER"
 
-    addRepo "argocd" "nginx-helm-jenkins" "3rd Party app (NGINX) with helm, templated in Jenkins (gitops-build-lib)"
-    setPermission "argocd" "nginx-helm-jenkins" "${GITOPS_USERNAME}" "WRITE"
+    addRepo "${NAME_PREFIX}argocd" "nginx-helm-jenkins" "3rd Party app (NGINX) with helm, templated in Jenkins (gitops-build-lib)"
+    setPermission "${NAME_PREFIX}argocd" "nginx-helm-jenkins" "${GITOPS_USERNAME}" "WRITE"
     
-    addRepo "argocd" "petclinic-plain" "Java app with plain k8s resources"
-    setPermission "argocd" "petclinic-plain" "${GITOPS_USERNAME}" "WRITE"
+    addRepo "${NAME_PREFIX}argocd" "petclinic-plain" "Java app with plain k8s resources"
+    setPermission "${NAME_PREFIX}argocd" "petclinic-plain" "${GITOPS_USERNAME}" "WRITE"
   
-    addRepo "argocd" "petclinic-helm" "Java app with custom helm chart"
-    setPermission "argocd" "petclinic-helm" "${GITOPS_USERNAME}" "WRITE"
+    addRepo "${NAME_PREFIX}argocd" "petclinic-helm" "Java app with custom helm chart"
+    setPermission "${NAME_PREFIX}argocd" "petclinic-helm" "${GITOPS_USERNAME}" "WRITE"
   
-    addRepo "argocd" "argocd" "GitOps repo for administration of ArgoCD"
-    setPermission "argocd" "argocd" "${GITOPS_USERNAME}" "WRITE"
+    addRepo "${NAME_PREFIX}argocd" "argocd" "GitOps repo for administration of ArgoCD"
+    setPermission "${NAME_PREFIX}argocd" "argocd" "${GITOPS_USERNAME}" "WRITE"
       
-    addRepo "argocd" "cluster-resources" "GitOps repo for basic cluster-resources"
-    setPermission "argocd" "cluster-resources" "${GITOPS_USERNAME}" "WRITE"
+    addRepo "${NAME_PREFIX}argocd" "cluster-resources" "GitOps repo for basic cluster-resources"
+    setPermission "${NAME_PREFIX}argocd" "cluster-resources" "${GITOPS_USERNAME}" "WRITE"
     
-    addRepo "argocd" "example-apps" "GitOps repo for examples of end-user applications"
-    setPermission "argocd" "example-apps" "${GITOPS_USERNAME}" "WRITE"
+    addRepo "${NAME_PREFIX}argocd" "example-apps" "GitOps repo for examples of end-user applications"
+    setPermission "${NAME_PREFIX}argocd" "example-apps" "${GITOPS_USERNAME}" "WRITE"
   fi
 
-  ### Common Repos
-  addRepo "common" "spring-boot-helm-chart"
-  setPermission "common" "spring-boot-helm-chart" "${GITOPS_USERNAME}" "WRITE"
+  ### Repos with replicated dependencies
+  addRepo "3rd-party-dependencies" "spring-boot-helm-chart"
+  setPermission "3rd-party-dependencies" "spring-boot-helm-chart" "${GITOPS_USERNAME}" "WRITE"
 
-  addRepo "common" "spring-boot-helm-chart-with-dependency"
-  setPermission "common" "spring-boot-helm-chart-with-dependency" "${GITOPS_USERNAME}" "WRITE"
+  addRepo "3rd-party-dependencies" "spring-boot-helm-chart-with-dependency"
+  setPermission "3rd-party-dependencies" "spring-boot-helm-chart-with-dependency" "${GITOPS_USERNAME}" "WRITE"
 
-  addRepo "common" "gitops-build-lib" "Jenkins pipeline shared library for automating deployments via GitOps "
-  setPermission "common" "gitops-build-lib" "${GITOPS_USERNAME}" "WRITE"
+  addRepo "3rd-party-dependencies" "gitops-build-lib" "Jenkins pipeline shared library for automating deployments via GitOps "
+  setPermission "3rd-party-dependencies" "gitops-build-lib" "${GITOPS_USERNAME}" "WRITE"
 
-  addRepo "common" "ces-build-lib" "Jenkins pipeline shared library adding features for Maven, Gradle, Docker, SonarQube, Git and others"
-  setPermission "common" "ces-build-lib" "${GITOPS_USERNAME}" "WRITE"
+  addRepo "3rd-party-dependencies" "ces-build-lib" "Jenkins pipeline shared library adding features for Maven, Gradle, Docker, SonarQube, Git and others"
+  setPermission "3rd-party-dependencies" "ces-build-lib" "${GITOPS_USERNAME}" "WRITE"
 
-  addRepo "exercises" "petclinic-helm"
-  setPermission "exercises" "petclinic-helm" "${GITOPS_USERNAME}" "WRITE"
+  ### Exercise Repos
+  addRepo "${NAME_PREFIX}exercises" "petclinic-helm"
+  setPermission "${NAME_PREFIX}exercises" "petclinic-helm" "${GITOPS_USERNAME}" "WRITE"
 
-  addRepo "exercises" "nginx-validation"
-  setPermission "exercises" "nginx-validation" "${GITOPS_USERNAME}" "WRITE"
+  addRepo "${NAME_PREFIX}exercises" "nginx-validation"
+  setPermission "${NAME_PREFIX}exercises" "nginx-validation" "${GITOPS_USERNAME}" "WRITE"
 
-  addRepo "exercises" "broken-application"
-  setPermission "exercises" "broken-application" "${GITOPS_USERNAME}" "WRITE"
+  addRepo "${NAME_PREFIX}exercises" "broken-application"
+  setPermission "${NAME_PREFIX}exercises" "broken-application" "${GITOPS_USERNAME}" "WRITE"
 
   # Install necessary plugins
   installScmmPlugin "scm-mail-plugin" "false"
@@ -122,7 +123,7 @@ function addRepo() {
   printf 'Adding Repo %s/%s ... ' "${1}" "${2}"
 
   STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X POST -H "Content-Type: application/vnd.scmm-repository+json;v=2" \
-    --data "{\"name\":\"${NAME}\",\"namespace\":\"${NAMESPACE}\",\"type\":\"git\",\"contact\":\"admin@mail.de\",\"description\":\"${DESCRIPTION}\",\"contextEntries\":{},\"_links\":{}}" \
+    --data "{\"name\":\"${NAME}\",\"namespace\":\"${NAMESPACE}\",\"type\":\"git\",\"description\":\"${DESCRIPTION}\",\"contextEntries\":{},\"_links\":{}}" \
     "${SCMM_PROTOCOL}://${SCMM_USER}:${SCMM_PWD}@${SCMM_HOST}/api/v2/repositories/") && EXIT_STATUS=$? || EXIT_STATUS=$?
   if [ $EXIT_STATUS != 0 ]; then
     echo "Adding Repo failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"

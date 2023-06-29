@@ -8,6 +8,7 @@ import groovy.io.FileType
 import groovy.yaml.YamlSlurper
 import org.eclipse.jgit.api.CheckoutCommand
 import org.eclipse.jgit.api.CloneCommand
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.springframework.security.crypto.bcrypt.BCrypt
 
@@ -24,7 +25,8 @@ class ArgoCDTest {
             application: [
                     remote  : false,
                     password: '123',
-                    username: 'something'
+                    username: 'something',
+                    namePrefix : ''
             ],
             scmm       : [
                     internal: true,
@@ -81,6 +83,7 @@ class ArgoCDTest {
     File remotePetClinicRepoTmpDir
     List<Tuple2<String, File>> petClinicLocalFoldersAndTmpDirs = []
     CloneCommand gitCloneMock = mock(CloneCommand.class, RETURNS_DEEP_STUBS)
+    String[] scmmRepoTargets = []
     
     @Test
     void 'Installs argoCD'() {
@@ -249,9 +252,64 @@ class ArgoCDTest {
         assertThat(filesWithExternalSCMM).isNotEmpty()
         filesWithExternalSCMM = findFilesContaining(exampleAppsTmpDir, "https://abc")
         assertThat(filesWithExternalSCMM).isNotEmpty()
+
+        // TODO assert YAML prefixes here as well?
     }
 
-    List findFilesContaining(File folder, String stringToSearch) {
+    @Test
+    void 'Pushes repos with empty name-prefix'() {
+        createArgoCD().install()
+        
+        assertArgoCdYamlPrefixes(ArgoCD.SCMM_URL_INTERNAL, '')
+    }
+    
+    @Test
+    @Disabled
+    void 'Pushes repos with name-prefix'(){
+        config.application['namePrefix'] = 'abc'
+        createArgoCD().install()
+
+        assertArgoCdYamlPrefixes(ArgoCD.SCMM_URL_INTERNAL, 'abc-')
+    }
+
+    protected void assertArgoCdYamlPrefixes(String scmmUrl, String expectedPrefix) {
+        // TODO in applications assert metadata.namespace and spec.destination.namespace  
+        // TODO in projects assert metadata.namespace and spec.sourceNamespaces
+
+        assertAllYamlFiles(argocdRepoTmpDir, 'projects', 4) { File it ->
+            List<String> sourceRepos = parseActualYaml(it.absolutePath)['spec']['sourceRepos'] as List<String>
+            // Some projects might not have sourceRepos
+            if (sourceRepos) {
+                sourceRepos.each {
+                    if (it.startsWith(scmmUrl)) {
+                        assertThat(it).as("argocd/projects/*.yaml sourceRepos have name prefix").startsWith("${scmmUrl}/repo/${expectedPrefix}argocd")
+                    }
+                }
+            }
+        }
+
+        assertAllYamlFiles(argocdRepoTmpDir, 'applications', 5) { File it ->
+            assertThat(parseActualYaml(it.absolutePath)['spec']['source']['repoURL'] as String)
+                    .as("argocd/applications/*.yaml repoURL have name prefix")
+                    .startsWith("${scmmUrl}/repo/${expectedPrefix}argocd")
+        }
+
+        assertAllYamlFiles(exampleAppsTmpDir, 'argocd', 7) { File it ->
+            assertThat(parseActualYaml(it.absolutePath)['spec']['source']['repoURL'] as String)
+                    .as("argocd/argocd/*.yaml repoURL have name prefix")
+                    .startsWith("${scmmUrl}/repo/${expectedPrefix}argocd")
+        }
+    }
+
+    static void assertAllYamlFiles(File rootDir, String childDir, Integer numberOfFiles, Closure cl) {
+        def nFiles = 
+                new File(rootDir, childDir).listFiles({ _, name -> name ==~ /.*\.yaml/ } as FilenameFilter)
+                        .each(cl).size()
+        assertThat(nFiles).isEqualTo(numberOfFiles)
+    }
+
+
+    static List findFilesContaining(File folder, String stringToSearch) {
         List result = []
         folder.eachFileRecurse(FileType.FILES) {
             if (it.text.contains(stringToSearch)) {
@@ -274,7 +332,7 @@ class ArgoCDTest {
         return argoCD
     }
 
-    private String assertCommand(CommandExecutorForTest commands, String commandStartsWith) {
+    private static String assertCommand(CommandExecutorForTest commands, String commandStartsWith) {
         def createSecretCommand = commands.actualCommands.find {
             it.startsWith(commandStartsWith)
         }
@@ -350,6 +408,7 @@ class ArgoCDTest {
             // Actually copy files so we can assert but don't execute git clone, push, etc.
             ScmmRepo repo = new ScmmRepo(config, scmmRepoTarget, absoluteLocalRepoTmpDir.absolutePath)
             repo.commandExecutor = gitCommands
+            scmmRepoTargets += scmmRepoTarget
             // We could add absoluteLocalRepoTmpDir here for assertion later 
             return new RepoInitializationAction(repo, localSrcDir)
         }

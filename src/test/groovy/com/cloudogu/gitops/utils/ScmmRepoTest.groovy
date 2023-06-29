@@ -3,8 +3,7 @@ package com.cloudogu.gitops.utils
 import org.junit.jupiter.api.Test
 
 import static groovy.test.GroovyAssert.shouldFail
-import static org.assertj.core.api.Assertions.assertThat
-import static org.assertj.core.api.Assertions.shouldHaveThrown
+import static org.assertj.core.api.Assertions.assertThat 
 
 class ScmmRepoTest {
 
@@ -15,7 +14,10 @@ class ScmmRepoTest {
                     password: "dont-care-password",
                     protocol: "https",
                     host: "localhost"
-            ]
+            ],
+            application: [
+                    namePrefix : ''
+            ],
     ]
 
     @Test
@@ -63,7 +65,20 @@ class ScmmRepoTest {
         }
     }
 
-    private ScmmRepo createRepo() {
-        new ScmmRepo(config, "dont-care-repo-target", new CommandExecutorForTest())
+    @Test
+    void 'Creates repo with empty name-prefix'(){
+        def repo = createRepo('expetedRepoTarget')
+        assertThat(repo.scmmRepoTarget).isEqualTo('expetedRepoTarget')
+    }
+
+    @Test
+    void 'Creates repo with name-prefix'(){
+        config.application['namePrefix'] = 'abc'
+        def repo = createRepo('expetedRepoTarget')
+        assertThat(repo.scmmRepoTarget).isEqualTo('abc-expetedRepoTarget')
+    }
+
+    private ScmmRepo createRepo(String repoTarget = "dont-care-repo-target") {
+        new ScmmRepo(config, repoTarget, new CommandExecutorForTest())
     }
 }

@@ -47,6 +47,7 @@ function createJob() {
 
 function createCredentials() {
   printf 'Creating credentials for %s ... ' "${1}"
+  JOBNAME="${5}"
 
   # shellcheck disable=SC2016
   # we don't want to expand these variables in single quotes
@@ -61,7 +62,7 @@ function createCredentials() {
                < scripts/jenkins/credentialsTemplate.json)
 
   STATUS=$(curlJenkins --fail -L -o /dev/null --write-out '%{http_code}' \
-        -X POST "${JENKINS_URL}/credentials/store/system/domain/_/createCredentials" \
+        -X POST "${JENKINS_URL}/job/${JOBNAME}/credentials/store/folder/domain/_/createCredentials" \
         --data-urlencode "json=${CRED_CONFIG}") && EXIT_STATUS=$? || EXIT_STATUS=$?
   if [ $EXIT_STATUS != 0 ]
     then

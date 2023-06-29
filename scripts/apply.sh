@@ -66,6 +66,11 @@ function main() {
 
   CLUSTER_BIND_ADDRESS=$(findClusterBindAddress)
 
+  if [[ -n "${NAME_PREFIX}" ]]; then
+    # Name-prefix should always end with '-'
+    NAME_PREFIX="${NAME_PREFIX}-"
+  fi
+
   if [[ $INSECURE == true ]]; then
     CURL_HOME="${PLAYGROUND_DIR}"
     export CURL_HOME
@@ -271,10 +276,10 @@ function initSCMM() {
   configureScmmManager "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "${SCMM_URL}" "${JENKINS_URL_FOR_SCMM}" \
     "${SCMM_URL_FOR_JENKINS}" "${INTERNAL_SCMM}" "${INSTALL_FLUXV2}" "${INSTALL_ARGOCD}"
 
-  pushHelmChartRepo 'common/spring-boot-helm-chart'
-  pushHelmChartRepoWithDependency 'common/spring-boot-helm-chart-with-dependency'
-  pushRepoMirror "${GITOPS_BUILD_LIB_REPO}" 'common/gitops-build-lib'
-  pushRepoMirror "${CES_BUILD_LIB_REPO}" 'common/ces-build-lib' 'develop'
+  pushHelmChartRepo "3rd-party-dependencies/spring-boot-helm-chart"
+  pushHelmChartRepoWithDependency "3rd-party-dependencies/spring-boot-helm-chart-with-dependency"
+  pushRepoMirror "${GITOPS_BUILD_LIB_REPO}" "3rd-party-dependencies/gitops-build-lib"
+  pushRepoMirror "${CES_BUILD_LIB_REPO}" "3rd-party-dependencies/ces-build-lib" 'develop'
 }
 
 function setExternalHostnameIfNecessary() {
@@ -294,9 +299,9 @@ function setExternalHostnameIfNecessary() {
 }
 
 function initFluxV2() {
-  pushPetClinicRepo 'applications/fluxv2/petclinic/plain-k8s' 'fluxv2/petclinic-plain'
+  pushPetClinicRepo 'applications/fluxv2/petclinic/plain-k8s' "${NAME_PREFIX}fluxv2/petclinic-plain"
 
-  initRepoWithSource 'fluxv2' 'fluxv2/gitops'
+  initRepoWithSource 'fluxv2' "${NAME_PREFIX}fluxv2/gitops"
 
   REPOSITORY_YAML_PATH="fluxv2/clusters/gitops-playground/flux-system/gotk-sync.yaml"
   if [[ ${INTERNAL_SCMM} == false ]]; then
@@ -704,12 +709,13 @@ function printParameters() {
   echo " -d | --debug         >> Debug output"
   echo " -x | --trace         >> Debug + Show each command executed (set -x)"
   echo " -y | --yes           >> Skip kubecontext confirmation"
+  echo "    | --name-prefix   >> Set name-prefix for SCMM repos, Jenkins jobs, namespaces"
 }
 
 readParameters() {
   COMMANDS=$(getopt \
     -o hdxyc \
-    --long help,fluxv2,argocd,argocd-url:,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,grafana-image:,grafana-sidecar-image:,prometheus-image:,prometheus-operator-image:,prometheus-config-reloader-image:,external-secrets-image:,external-secrets-certcontroller-image:,external-secrets-webhook-image:,vault-image:,nginx-image:,trace,insecure,yes,skip-helm-update,metrics,monitoring,vault: \
+    --long help,fluxv2,argocd,argocd-url:,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,grafana-image:,grafana-sidecar-image:,prometheus-image:,prometheus-operator-image:,prometheus-config-reloader-image:,external-secrets-image:,external-secrets-certcontroller-image:,external-secrets-webhook-image:,vault-image:,nginx-image:,trace,insecure,yes,skip-helm-update,metrics,monitoring,vault:,name-prefix: \
     -- "$@")
   
   if [ $? != 0 ]; then
@@ -747,7 +753,8 @@ readParameters() {
   SKIP_HELM_UPDATE=false
   DEPLOY_METRICS=false
   ARGOCD_URL=""
-  
+  NAME_PREFIX=""
+
   while true; do
     case "$1" in
       -h | --help          ) printUsage; exit 0 ;;
@@ -784,6 +791,7 @@ readParameters() {
       --insecure           ) INSECURE=true; shift ;;
       --username           ) SET_USERNAME="$2"; shift 2 ;;
       --password           ) SET_PASSWORD="$2"; shift 2 ;;
+      --name-prefix        ) NAME_PREFIX="$2"; shift 2 ;;
       -d | --debug         ) DEBUG=true; shift ;;
       -x | --trace         ) TRACE=true; shift ;;
       -y | --yes           ) ASSUME_YES=true; shift ;;

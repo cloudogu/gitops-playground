@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test
 import static org.assertj.core.api.Assertions.assertThat
 
 class ArgoCdApplicationStrategyTest {
+    
     @Test
     void 'deploys feature using argo CD'() {
         def commandExecutor = new CommandExecutorForTest()
@@ -60,6 +61,9 @@ spec:
                         password: "dont-care-password",
                         protocol: "https",
                         host: "localhost"
+                ],
+                application: [
+                        namePrefix : ''
                 ]
         ]
 
