@@ -1,14 +1,12 @@
 package com.cloudogu.gitops.jenkins
 
+
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito
 
 import static groovy.test.GroovyAssert.shouldFail
-import static org.mockito.ArgumentMatchers.any
+import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.anyString
-import static org.mockito.Mockito.mock
-import static org.mockito.Mockito.verify
-import static org.mockito.Mockito.when
+import static org.mockito.Mockito.*
 
 class UserManagerTest {
     @Test
@@ -50,5 +48,50 @@ class UserManagerTest {
         shouldFail(RuntimeException) {
             new UserManager(client).createUser("the-user", "hunter2")
         }
+    }
+
+    @Test
+    void 'grants permission for user'() {
+        def client = mock(ApiClient)
+        when(client.runScript(anyString())).thenReturn("true")
+
+        new UserManager(client).grantPermission("the-'user", UserManager.Permissions.METRICS_VIEW)
+
+        verify(client).runScript("""
+            import org.jenkinsci.plugins.matrixauth.PermissionEntry
+            import org.jenkinsci.plugins.matrixauth.AuthorizationType
+
+            def permissions = Jenkins.getInstance().getAuthorizationStrategy().getGrantedPermissionEntries()
+            permissions.computeIfAbsent(jenkins.metrics.api.Metrics.VIEW) {
+              new HashSet<>()
+            }
+            print(permissions[jenkins.metrics.api.Metrics.VIEW].add(new PermissionEntry(AuthorizationType.USER, 'the-\\'user')))
+        """)
+    }
+
+    @Test
+    void 'throws when granting permission failed'() {
+        def client = mock(ApiClient)
+        when(client.runScript(anyString())).thenReturn("groovy.lang.MissingPropertyException: No such property: asd for class: Script1[...]")
+
+        shouldFail(RuntimeException) {
+            new UserManager(client).grantPermission("the-'user", UserManager.Permissions.METRICS_VIEW)
+        }
+    }
+
+    @Test
+    void 'checks whether matrix based authorization is enabled'() {
+        def client = mock(ApiClient)
+        when(client.runScript(anyString())).thenReturn("class hudson.security.GlobalMatrixAuthorizationStrategy")
+
+        assertThat(new UserManager(client).isUsingMatrixBasedPermissions()).isTrue()
+    }
+
+    @Test
+    void 'checks whether matrix based authorization is disabled'() {
+        def client = mock(ApiClient)
+        when(client.runScript(anyString())).thenReturn("class hudson.security.FullControlOnceLoggedInAuthorizationStrategy")
+
+        assertThat(new UserManager(client).isUsingMatrixBasedPermissions()).isFalse()
     }
 }

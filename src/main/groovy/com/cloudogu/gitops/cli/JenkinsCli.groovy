@@ -16,11 +16,27 @@ class JenkinsCli {
             @CommandLine.Parameters(paramLabel = "password", description = "The user's password") String password,
             @CommandLine.Mixin OptionsMixin options
     ) {
-        def context = ApplicationContext.run()
-            .registerSingleton(new Factory(options))
-
-        def userManager = context.getBean(UserManager)
+        def userManager = createApplicationContext(options).getBean(UserManager)
         userManager.createUser(username, password)
+    }
+
+    @CommandLine.Command(name = "set-permission", description = "adds user to jenkins", mixinStandardHelpOptions = true)
+    void grantPermission(
+            @CommandLine.Parameters(paramLabel = "username", description = "The username to grant the permission to") String username,
+            @CommandLine.Parameters(paramLabel = "permission", description = "The permission to grant") String permission,
+            @CommandLine.Mixin OptionsMixin options
+    ) {
+        def userManager = createApplicationContext(options).getBean(UserManager)
+        if (userManager.isUsingMatrixBasedPermissions()) {
+            userManager.grantPermission(username, UserManager.Permissions.valueOf(permission))
+        } else {
+            log.debug("Is not using matrix based permission. Does not need to add permission.")
+        }
+    }
+
+    private ApplicationContext createApplicationContext(OptionsMixin options) {
+        ApplicationContext.run()
+                .registerSingleton(new Factory(options))
     }
 
     static class OptionsMixin {
