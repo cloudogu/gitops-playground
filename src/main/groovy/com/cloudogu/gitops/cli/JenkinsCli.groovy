@@ -1,6 +1,6 @@
 package com.cloudogu.gitops.cli
 
-import com.cloudogu.gitops.dependencyinjection.Factory
+import com.cloudogu.gitops.dependencyinjection.JenkinsFactory
 import com.cloudogu.gitops.jenkins.UserManager
 import groovy.util.logging.Slf4j
 import io.micronaut.context.ApplicationContext
@@ -36,7 +36,7 @@ class JenkinsCli {
 
     private ApplicationContext createApplicationContext(OptionsMixin options) {
         ApplicationContext.run()
-                .registerSingleton(new Factory(options))
+                .registerSingleton(new JenkinsFactory(options))
     }
 
     static class OptionsMixin {

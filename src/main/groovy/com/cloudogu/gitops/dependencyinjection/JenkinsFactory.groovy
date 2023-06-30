@@ -6,21 +6,22 @@ import com.cloudogu.gitops.okhttp.RetryInterceptor
 import com.cloudogu.gitops.utils.InMemoryCookieJar
 import jakarta.inject.Singleton
 import okhttp3.OkHttpClient
+import io.micronaut.context.annotation.Factory
 
-@io.micronaut.context.annotation.Factory
-class Factory {
+@Factory
+class JenkinsFactory {
     private JenkinsCli.OptionsMixin config
 
-    Factory(JenkinsCli.OptionsMixin config) {
+    JenkinsFactory(JenkinsCli.OptionsMixin config) {
         this.config = config
     }
 
     @Singleton
     ApiClient jenkinsApiClient(OkHttpClient client) {
         return new ApiClient(
-                config.jenkinsUrl as String,
-                config.jenkinsUsername as String,
-                config.jenkinsPassword as String,
+                config.jenkinsUrl,
+                config.jenkinsUsername,
+                config.jenkinsPassword,
                 client
         )
     }
