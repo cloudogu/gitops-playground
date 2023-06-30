@@ -2,6 +2,7 @@ package com.cloudogu.gitops.dependencyinjection
 
 import com.cloudogu.gitops.cli.JenkinsCli
 import com.cloudogu.gitops.jenkins.ApiClient
+import com.cloudogu.gitops.okhttp.RetryInterceptor
 import com.cloudogu.gitops.utils.InMemoryCookieJar
 import jakarta.inject.Singleton
 import okhttp3.OkHttpClient
@@ -28,6 +29,7 @@ class Factory {
     OkHttpClient okHttpClient() {
         return new OkHttpClient.Builder()
                 .cookieJar(new InMemoryCookieJar())
+                .addInterceptor(new RetryInterceptor())
                 .build()
     }
 }
