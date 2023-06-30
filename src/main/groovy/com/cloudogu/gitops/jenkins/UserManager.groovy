@@ -13,22 +13,16 @@ class UserManager {
     }
 
     void createUser(String username, String password) {
-        if (username.contains("\\") || password.contains("\\")) {
-            // We don't want get in trouble with escaping,
-            // e.g. `foo\'foo` => `foo\\'foo`. Now we would have a backslash followed by an unescaped quote.
-            throw new IllegalArgumentException("Backslashes within the username or password are forbidden.")
-        }
-
         def result = apiClient.runScript("""
             def realm = Jenkins.getInstance().getSecurityRealm()
             def user = realm.createAccount('${escapeString(username)}', '${escapeString(password)}')
 
-            return user
+            print(user)
         """)
 
         log.debug("Added user $username to jenkins")
 
-        if (result != "Result: $username\n") {
+        if (result != username) {
             throw new RuntimeException("Error when creating user: $result")
         }
     }
@@ -37,7 +31,7 @@ class UserManager {
         def result = apiClient.runScript("""
             import org.jenkinsci.plugins.matrixauth.PermissionEntry
             import org.jenkinsci.plugins.matrixauth.AuthorizationType
-            
+
             def permissions = Jenkins.getInstance().getAuthorizationStrategy().getGrantedPermissionEntries()
             permissions.computeIfAbsent(jenkins.metrics.api.Metrics.VIEW) {
               new HashSet<>()
@@ -59,6 +53,12 @@ class UserManager {
     }
 
     private String escapeString(String str) {
+        if (str.contains("\\")) {
+            // We don't want get in trouble with escaping,
+            // e.g. `foo\'foo` => `foo\\'foo`. Now we would have a backslash followed by an unescaped quote.
+            throw new IllegalArgumentException("Backslashes within the escaped variables are forbidden.")
+        }
+
         return str.replace("'", "\\'")
     }
 
