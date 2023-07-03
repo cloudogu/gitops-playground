@@ -19,7 +19,7 @@ function groovy() {
   # Set params like startGroovy does (which is called by the "groovy" script)
   # See https://github.com/apache/groovy/blob/master/src/bin/startGroovy
   java \
-    -classpath /app/gitops-playground.jar \
+    -classpath "$PLAYGROUND_DIR"/gitops-playground.jar \
     org.codehaus.groovy.tools.GroovyStarter \
           --main groovy.ui.GroovyMain \
            "$@" 

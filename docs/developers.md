@@ -83,26 +83,21 @@ Jenkins.instance.pluginManager.plugins.collect().sort().each {
       --net=host gitops-playground:dev <params>
      ```
   * Locally:
-    * [Provide dependencies](#providing-dependencies)
-    * Just run `scripts/apply.sh <params>`
-
-### Providing dependencies
-
-It seems like `groovy --classpath gitops-playground-cli-*.jar` [does not load jars]( https://stackoverflow.com/questions/10585808/groovy-script-classpath),
-Workaround:
-
-* Run
-  ```shell
-  mvn package -DskipTests
-  ```
-* Copy `target/gitops-playground-cli-*.jar` to `~/.groovy/lib`
-* Make sure to use the exact same groovy version as in pom.xml
-  To avoid
-  ```
-  Caused by: groovy.lang.GroovyRuntimeException: Conflicting module versions. Module [groovy-datetime is loaded in version 3.0.8 and you are trying to load version 3.0.13
-  ```
-  Solution might be to remove groovy from `gitops-playground-cli-*.jar`
-
+    * Provide `gitops-playground.jar` for `apply-ng.sh`:
+      ```bash
+      ./mvnw package -DskipTests
+      ln -s target/gitops-playground-cli-0.1.jar gitops-playground.jar 
+       ```
+    * Just run `scripts/apply.sh <params>`.  
+      Hint: You can speed up the process by installing the Jenkins plugins from your filesystem, instead of from the internet.  
+      To do so, download the plugins into a folder, then set this folder vie env var:  
+      `JENKINS_PLUGIN_FOLDER=$(pwd) scripts/apply.sh <params>`.  
+      A working combination of plugins be extracted from the image:  
+      ```bash
+      id=$(docker create ghcr.io/cloudogu/gitops-playground)
+      docker cp $id:/gitops/jenkins-plugins .
+      docker rm -v $id
+      ```
 
 ## Development image
 
@@ -120,10 +115,7 @@ It can be built like so:
 docker buildx build -t gitops-playground:dev --build-arg ENV=dev  --progress=plain  .  
 ```
 Hint: uses buildkit for much faster builds, skipping the static image stuff not needed for dev.
-
-TODO: Copy a script `apply-ng` into the dev image that calls `groovy GitopsPlaygroundCliMain?! args`.
-Then, we can use the dev image to try out if the playground image works without having to wait for the static image to
-be built.
+With Docker version >= 23 you can also use `docker build`, because buildkit is the new default builder.
 
 ## Implicit + explicit dependencies
 

@@ -96,7 +96,7 @@ function configureJenkins() {
   if [[ -z "${JENKINS_PLUGIN_FOLDER}" ]]; then
     pluginFolder=$(mktemp -d)
     echo "Downloading jenkins plugins to ${pluginFolder}"
-    #"${PLAYGROUND_DIR}"/scripts/jenkins/plugins/download-plugins.sh "${pluginFolder}"
+    "${PLAYGROUND_DIR}"/scripts/jenkins/plugins/download-plugins.sh "${pluginFolder}"
   else
     echo "Jenkins plugins folder present, skipping plugin download"
     pluginFolder="${JENKINS_PLUGIN_FOLDER}"
