@@ -3,13 +3,13 @@
 String getApplication() { "exercise-spring-petclinic-helm" }
 String getScmManagerCredentials() { 'scmm-user' }
 String getConfigRepositoryPRBaseUrl() { env.SCMM_URL }
-String getConfigRepositoryPRRepo() { 'argocd/gitops' }
+String getConfigRepositoryPRRepo() { 'argocd/example-apps' }
 // The docker daemon cant use the k8s service name, because it is not running inside the cluster
 String getDockerRegistryBaseUrl() { env.REGISTRY_URL }
 String getDockerRegistryPath() { env.REGISTRY_PATH }
 String getDockerRegistryCredentials() { 'registry-user' }
 String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/common/ces-build-lib/" }
-String getCesBuildLibVersion() { '1.46.1' }
+String getCesBuildLibVersion() { '1.64.1' }
 String getHelmChartRepository() { "${env.SCMM_URL}/repo/common/spring-boot-helm-chart-with-dependency" }
 String getHelmChartVersion() { "1.0.0" }
 String getMainBranch() { 'main' }
@@ -46,7 +46,9 @@ node {
             String imageTag = createImageTag()
             String pathPrefix = !dockerRegistryPath?.trim() ? "" : "${dockerRegistryPath}/"
             imageName = "${dockerRegistryBaseUrl}/${pathPrefix}${application}:${imageTag}"
-            mvn "spring-boot:build-image -DskipTests -Dcheckstyle.skip -Dspring-boot.build-image.imageName=${imageName}"
+            mvn "spring-boot:build-image -DskipTests -Dcheckstyle.skip -Dspring-boot.build-image.imageName=${imageName}" +
+                                // Pin builder image for reproducible builds. Update here to get newer JDK minor versions.
+                                "-Dspring-boot.build-image.builder=paketobuildpacks/builder:0.3.229-base "
 
             if (isBuildSuccessful()) {
                 def docker = cesBuildLib.Docker.new(this)

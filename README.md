@@ -670,7 +670,7 @@ Alternatively you can trigger the deployment via the respective GitOps operator'
 
 ##### PetClinic with plain k8s resources
 
-[Jenkinsfile](applications/petclinic/fluxv2/plain-k8s/Jenkinsfile)
+[Jenkinsfile](applications/fluxv2/petclinic/plain-k8s/Jenkinsfile)
 
 * Staging
     * local: [localhost:30010](http://localhost:30010)
@@ -683,8 +683,9 @@ Alternatively you can trigger the deployment via the respective GitOps operator'
 
 ##### PetClinic with plain k8s resources
 
-[Jenkinsfile](applications/petclinic/argocd/plain-k8s/Jenkinsfile) for `plain` deployment
+[Jenkinsfile](applications/argocd/petclinic/plain-k8s/Jenkinsfile) for `plain` deployment
 
+* Application name: `petclinic-plain`
 * Staging
     * local [localhost:30020](http://localhost:30020)
     * remote: `scripts/get-remote-url spring-petclinic-plain argocd-staging`
@@ -694,30 +695,33 @@ Alternatively you can trigger the deployment via the respective GitOps operator'
 
 ##### PetClinic with helm
 
-[Jenkinsfile](applications/petclinic/argocd/helm/Jenkinsfile) for `helm` deployment
+[Jenkinsfile](applications/argocd/petclinic/helm/Jenkinsfile) for `helm` deployment
 
+* Application name: `petclinic-helm`
 * Staging
     * local [localhost:30022](http://localhost:30022)
-    * remote: `scripts/get-remote-url spring-petclinic-helm argocd-staging`
+    * remote: `scripts/get-remote-url spring-petclinic-helm-springboot argocd-staging`
 * Production
     * local [localhost:30023](http://localhost:30023)
-    * remote: `scripts/get-remote-url spring-petclinic-helm argocd-production`
+    * remote: `scripts/get-remote-url spring-petclinic-helm-springboot argocd-production`
 
 ##### 3rd Party app (NGINX) with helm, templated in Jenkins
 
-[Jenkinsfile](applications/nginx/argocd/helm-jenkins/Jenkinsfile)
+[Jenkinsfile](applications/argocd/nginx/helm-jenkins/Jenkinsfile)
 
+* Application name: `nginx-helm-jenkins`
 * Staging
     * local: [localhost:30024](http://localhost:30024)
-    * remote: `scripts/get-remote-url nginx argocd-staging`
+    * remote: `scripts/get-remote-url nginx-helm-jenkins argocd-staging`
 * Production
     * local: [localhost:30025](http://localhost:30025)
-    * remote: `scripts/get-remote-url nginx argocd-production`
+    * remote: `scripts/get-remote-url nginx-helm-jenkins argocd-production`
 
 ##### 3rd Party app (NGINX) with helm, using Helm dependency mechanism
 
+* Application name: `nginx-helm-dependency`
 * local: [localhost:30026](http://localhost:30026)
-* remote: `scripts/get-remote-url nginx argocd-staging`
+* remote: `scripts/get-remote-url nginx-helm-dependency argocd-production`
 
 ## Development
 
