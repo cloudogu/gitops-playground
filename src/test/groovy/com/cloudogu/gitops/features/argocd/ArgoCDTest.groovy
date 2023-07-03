@@ -205,7 +205,7 @@ class ArgoCDTest {
         assertThat(valuesYaml['service']['type']).isEqualTo('NodePort')
         
         valuesYaml = parseActualYaml(exampleAppsTmpDir, ArgoCD.NGINX_HELM_DEPENDENCY_VALUES_PATH)
-        assertThat(valuesYaml['service']['type']).isEqualTo('NodePort')
+        assertThat(valuesYaml['nginx']['service']['type']).isEqualTo('NodePort')
         
         // Assert Petclinic repo cloned
         verify(gitCloneMock).setURI('https://github.com/cloudogu/spring-petclinic.git')

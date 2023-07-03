@@ -52,6 +52,8 @@ function configureScmmManager() {
 
   ### ArgoCD Repos
   if [[ $INSTALL_ARGOCD == true ]]; then
+    setPermissionForNamespace "argocd" "${GITOPS_USERNAME}" "CI-SERVER"
+
     addRepo "argocd" "nginx-helm-jenkins" "3rd Party app (NGINX) with helm, templated in Jenkins (gitops-build-lib)"
     setPermission "argocd" "nginx-helm-jenkins" "${GITOPS_USERNAME}" "WRITE"
     
@@ -194,6 +196,20 @@ function setPermission() {
   STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X POST -H "Content-Type: application/vnd.scmm-repositoryPermission+json" \
     --data "{\"name\":\"${3}\",\"role\":\"${4}\",\"verbs\":[],\"groupPermission\":false}" \
     "${SCMM_PROTOCOL}://${SCMM_USER}:${SCMM_PWD}@${SCMM_HOST}/api/v2/repositories/${1}/${2}/permissions/") && EXIT_STATUS=$? || EXIT_STATUS=$?
+  if [ $EXIT_STATUS != 0 ]; then
+    echo "Setting Permission failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
+    exit $EXIT_STATUS
+  fi
+
+  printStatus "${STATUS}"
+}
+
+function setPermissionForNamespace() {
+  printf 'Setting permission %s on Namespace %s for %s... ' "${3}" "${1}" "${2}"
+
+  STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X POST -H "Content-Type: application/vnd.scmm-repositoryPermission+json;v=2" \
+    --data "{\"name\":\"${2}\",\"role\":\"${3}\",\"verbs\":[],\"groupPermission\":false}" \
+    "${SCMM_PROTOCOL}://${SCMM_USER}:${SCMM_PWD}@${SCMM_HOST}/api/v2/namespaces/${1}/permissions/") && EXIT_STATUS=$? || EXIT_STATUS=$?
   if [ $EXIT_STATUS != 0 ]; then
     echo "Setting Permission failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
     exit $EXIT_STATUS
