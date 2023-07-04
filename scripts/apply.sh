@@ -625,14 +625,14 @@ function printWelcomeScreenFluxV2() {
 function printWelcomeScreenArgocd() {
 
 
-  ARGOCD_URL="$(createUrl "${CLUSTER_BIND_ADDRESS}" "$(grep 'nodePortHttp:' "${PLAYGROUND_DIR}"/argocd/argocd/argocd/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')")"
+  ARGOCD_URL="$(createUrl "${CLUSTER_BIND_ADDRESS}" "$(grep 'nodePortHttp:' "${PLAYGROUND_DIR}"/argocd/argocd/argocd/values.tpl.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')")"
   setExternalHostnameIfNecessary 'ARGOCD' 'argocd-server' 'argocd'
 
   if [[ $INSTALL_ARGOCD == true ]]; then
     echo "| For ArgoCD:"
     echo "|"
-    echo -e "| - GitOps repo: \e[32m${SCMM_URL}/repo/argocd/example-apps/code/sources/main/\e[0m"
-    echo -e "| - Pull requests: \e[32m${SCMM_URL}/repo/argocd/example-apps/pull-requests\e[0m"
+    echo -e "| - GitOps repo: \e[32m${SCMM_URL}/repo/${NAME_PREFIX}argocd/example-apps/code/sources/main/\e[0m"
+    echo -e "| - Pull requests: \e[32m${SCMM_URL}/repo/${NAME_PREFIX}argocd/example-apps/pull-requests\e[0m"
     echo "|"
     echo -e "| There is also the ArgoCD UI which can be found at \e[32m${ARGOCD_URL}/\e[0m"
     echo -e "| Credentials for the ArgoCD UI are: \e[31m${SET_USERNAME}/${SET_PASSWORD}\e[0m"

@@ -271,14 +271,15 @@ class ArgoCD extends Feature {
     private void installArgoCd() {
         
         prepareArgoCdRepo()
-        
+
+        def namePrefix = config.application['namePrefix']
         log.debug("Creating repo credential secret that is used by argocd to access repos in SCM-Manager")
         // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo 
         def repoTemplateSecretName = 'argocd-repo-creds-scmm'
         String scmmUrlForArgoCD = config.scmm["internal"] ? SCMM_URL_INTERNAL : ScmmRepo.createScmmUrl(config)
         k8sClient.createSecret('generic', repoTemplateSecretName, 'argocd',
                 new Tuple2('url', scmmUrlForArgoCD),
-                new Tuple2('username', 'gitops'),
+                new Tuple2('username', "${namePrefix}gitops"),
                 new Tuple2('password', password)
         )
         k8sClient.label('secret', repoTemplateSecretName,'argocd',
@@ -378,9 +379,8 @@ class ArgoCD extends Feature {
             repo.cloneRepo()
             repo.copyDirectoryContents(copyFromDirectory)
 
-            String namePrefix = config.application['namePrefix']
             repo.replaceYamlTemplates([
-                    namePrefix: namePrefix ? namePrefix + "-" : ''
+                    namePrefix: config.application['namePrefix'] as String
             ])
         }
     }

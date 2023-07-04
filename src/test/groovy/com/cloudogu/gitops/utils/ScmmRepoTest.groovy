@@ -87,7 +87,7 @@ class ScmmRepoTest {
 
     @Test
     void 'Creates repo with name-prefix'(){
-        config.application['namePrefix'] = 'abc'
+        config.application['namePrefix'] = 'abc-'
         def repo = createRepo('expectedRepoTarget')
         assertThat(repo.scmmRepoTarget).isEqualTo('abc-expectedRepoTarget')
     }

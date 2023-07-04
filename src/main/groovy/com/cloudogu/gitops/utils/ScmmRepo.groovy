@@ -35,7 +35,7 @@ class ScmmRepo {
         this.password = config.scmm["internal"] ? config.application["password"] : config.scmm["password"]
         this.scmmUrl = createScmmUrl(config)
         this.scmmUrlWithCredentials = "${config.scmm["protocol"]}://${username}:${password}@${config.scmm["host"]}"
-        this.scmmRepoTarget =  config.application['namePrefix'] ? "${config.application['namePrefix']}-${scmmRepoTarget}" : scmmRepoTarget
+        this.scmmRepoTarget =  "${config.application['namePrefix']}${scmmRepoTarget}"
         this.absoluteLocalRepoTmpDir = absoluteLocalRepoTmpDir
         this.commandExecutor = commandExecutor
         gitRepoCommandInit(absoluteLocalRepoTmpDir)

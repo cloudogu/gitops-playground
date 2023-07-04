@@ -158,7 +158,7 @@ class GitopsPlaygroundCli implements Runnable {
                         username      : username,
                         password      : password,
                         pipeYes       : pipeYes,
-                        namePrefix    : namePrefix
+                        namePrefix    : namePrefix ? "$namePrefix-" : namePrefix,
                 ],
                 images     : [
                         kubectl    : kubectlImage,

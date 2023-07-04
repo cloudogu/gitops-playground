@@ -265,7 +265,7 @@ class ArgoCDTest {
     
     @Test
     void 'Pushes repos with name-prefix'(){
-        config.application['namePrefix'] = 'abc'
+        config.application['namePrefix'] = 'abc-'
         createArgoCD().install()
 
         assertArgoCdYamlPrefixes(ArgoCD.SCMM_URL_INTERNAL, 'abc-')
