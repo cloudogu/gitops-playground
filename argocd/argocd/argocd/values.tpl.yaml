@@ -49,19 +49,19 @@ argo-cd:
     repositories:
       argocd:
         name: argocd
-        url: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/argocd
+        url: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/${namePrefix}argocd/argocd
       example-apps:
         name: example-apps
-        url: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/example-apps
+        url: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/${namePrefix}argocd/example-apps
       cluster-resources:
         name: cluster-resources
-        url: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/cluster-resources
+        url: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/${namePrefix}argocd/cluster-resources
       nginx-helm-jenkins:
         name: nginx-helm-jenkins
-        url: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/nginx-helm-jenkins
+        url: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/${namePrefix}argocd/nginx-helm-jenkins
       nginx-helm-umbrella:
         name: nginx-helm-umbrella
-        url: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/nginx-helm-umbrella
+        url: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/${namePrefix}argocd/nginx-helm-umbrella
       bitnami:
         name: bitnami
         type: helm
@@ -120,8 +120,8 @@ argo-cd:
         message: |
           Application {{.app.metadata.name}} sync is 'Unknown'.
           Application details: {{.context.argocdUrl}}/applications/{{.app.metadata.name}}.
-          {{range $c := .app.status.conditions}}
-              * {{$c.message}}
+          {{range \$c := .app.status.conditions}}
+              * {{\$c.message}}
           {{end}}
       template.app-sync-succeeded: |
         email:

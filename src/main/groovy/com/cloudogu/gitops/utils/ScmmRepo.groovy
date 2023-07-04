@@ -1,6 +1,10 @@
 package com.cloudogu.gitops.utils
 
+import groovy.text.StreamingTemplateEngine
 import groovy.util.logging.Slf4j
+
+import java.nio.file.Files
+import java.nio.file.Path
 
 @Slf4j
 class ScmmRepo {
@@ -68,6 +72,20 @@ class ScmmRepo {
         fileSystemUtils.copyDirectory(absoluteSrcDirLocation, absoluteLocalRepoTmpDir)
     }
 
+    void replaceYamlTemplates(Map parameters) {
+        def engine = new StreamingTemplateEngine()
+        Files.walk(Path.of(absoluteLocalRepoTmpDir))
+                .filter { it.toString().endsWith(".tpl.yaml") }
+                .each { Path it ->
+                    def template = engine.createTemplate(it.toFile())
+                    def targetFile = new File(it.toString().replace(".tpl.yaml", ".yaml"))
+                    def writer = targetFile.newWriter()
+                    template.make(parameters).writeTo(writer)
+                    writer.flush()
+                    it.toFile().delete()
+                }
+    }
+
     void commitAndPush(String commitMessage) {
         log.debug("Checking out main, adding files for repo: ${scmmRepoTarget}")
         git("add .")
@@ -86,7 +104,7 @@ class ScmmRepo {
         log.debug("Stages changed for commit: ${changesStageForCommit}")
         return changesStageForCommit
     }
-    
+
     private void gitRepoCommandInit(String absoluteLocalRepoTmpDir) {
         gitRepoCommand = "git --git-dir=$absoluteLocalRepoTmpDir/.git/ --work-tree=$absoluteLocalRepoTmpDir"
     }
@@ -112,5 +130,4 @@ class ScmmRepo {
     private boolean branchExists(String branch) {
         git('branch').split(" ").contains(branch)
     }
-
 }

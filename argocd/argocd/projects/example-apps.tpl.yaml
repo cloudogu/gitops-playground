@@ -13,8 +13,8 @@ spec:
   - namespace: argocd-staging
     server: https://kubernetes.default.svc
   sourceRepos:
-  - http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/example-apps
-  - http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/nginx-helm-umbrella
+  - http://scmm-scm-manager.default.svc.cluster.local/scm/repo/${namePrefix}argocd/example-apps
+  - http://scmm-scm-manager.default.svc.cluster.local/scm/repo/${namePrefix}argocd/nginx-helm-umbrella
   
   
   # allow to only see application resources from the specified namespace

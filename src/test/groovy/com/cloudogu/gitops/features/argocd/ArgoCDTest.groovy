@@ -264,7 +264,6 @@ class ArgoCDTest {
     }
     
     @Test
-    @Disabled
     void 'Pushes repos with name-prefix'(){
         config.application['namePrefix'] = 'abc'
         createArgoCD().install()
@@ -282,7 +281,7 @@ class ArgoCDTest {
             if (sourceRepos) {
                 sourceRepos.each {
                     if (it.startsWith(scmmUrl)) {
-                        assertThat(it).as("argocd/projects/*.yaml sourceRepos have name prefix").startsWith("${scmmUrl}/repo/${expectedPrefix}argocd")
+                        assertThat(it).as("$it sourceRepos have name prefix").startsWith("${scmmUrl}/repo/${expectedPrefix}argocd")
                     }
                 }
             }
@@ -290,13 +289,13 @@ class ArgoCDTest {
 
         assertAllYamlFiles(argocdRepoTmpDir, 'applications', 5) { File it ->
             assertThat(parseActualYaml(it.absolutePath)['spec']['source']['repoURL'] as String)
-                    .as("argocd/applications/*.yaml repoURL have name prefix")
+                    .as("$it repoURL have name prefix")
                     .startsWith("${scmmUrl}/repo/${expectedPrefix}argocd")
         }
 
         assertAllYamlFiles(exampleAppsTmpDir, 'argocd', 7) { File it ->
             assertThat(parseActualYaml(it.absolutePath)['spec']['source']['repoURL'] as String)
-                    .as("argocd/argocd/*.yaml repoURL have name prefix")
+                    .as("$it repoURL have name prefix")
                     .startsWith("${scmmUrl}/repo/${expectedPrefix}argocd")
         }
     }
@@ -410,7 +409,7 @@ class ArgoCDTest {
             repo.commandExecutor = gitCommands
             scmmRepoTargets += scmmRepoTarget
             // We could add absoluteLocalRepoTmpDir here for assertion later 
-            return new RepoInitializationAction(repo, localSrcDir)
+            return new RepoInitializationAction(config, repo, localSrcDir)
         }
 
         @Override

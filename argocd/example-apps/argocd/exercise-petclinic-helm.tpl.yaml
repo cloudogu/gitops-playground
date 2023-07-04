@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: nginx-helm-jenkins
+  name: exercise-petclinic-helm
   namespace: argocd-staging
 spec:
   destination:
@@ -9,8 +9,8 @@ spec:
     server: https://kubernetes.default.svc
   project: example-apps
   source:
-    path: apps/nginx-helm-jenkins/staging
-    repoURL: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/example-apps
+    path: apps/exercise-spring-petclinic-helm/staging
+    repoURL: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/${namePrefix}argocd/example-apps
     targetRevision: main
     directory:
       recurse: true
@@ -24,7 +24,7 @@ spec:
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: nginx-helm-jenkins-production
+  name: exercise-petclinic-helm
   namespace: argocd-production
 spec:
   destination:
@@ -32,8 +32,8 @@ spec:
     server: https://kubernetes.default.svc
   project: example-apps
   source:
-    path: apps/nginx-helm-jenkins/production
-    repoURL: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/example-apps
+    path: apps/exercise-spring-petclinic-helm/production
+    repoURL: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/${namePrefix}argocd/example-apps
     targetRevision: main
     directory:
       recurse: true

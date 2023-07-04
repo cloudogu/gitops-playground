@@ -10,7 +10,7 @@ spec:
   project: example-apps
   source:
     path: apps/nginx-helm-umbrella
-    repoURL: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/example-apps
+    repoURL: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/${namePrefix}argocd/example-apps
     targetRevision: main
   syncPolicy:
     automated:

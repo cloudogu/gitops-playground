@@ -351,7 +351,7 @@ class ArgoCD extends Feature {
     }
 
     protected RepoInitializationAction createRepoInitializationAction(String localSrcDir, String scmmRepoTarget, File absoluteLocalRepoTmpDir) {
-        new RepoInitializationAction(new ScmmRepo(config, scmmRepoTarget, absoluteLocalRepoTmpDir.absolutePath), localSrcDir)
+        new RepoInitializationAction(config, new ScmmRepo(config, scmmRepoTarget, absoluteLocalRepoTmpDir.absolutePath), localSrcDir)
     }
 
     private void replaceFileContentInYamls(File folder, String from, String to) {
@@ -363,8 +363,10 @@ class ArgoCD extends Feature {
     static class RepoInitializationAction {
         private ScmmRepo repo
         private String copyFromDirectory
+        private Map config
 
-        RepoInitializationAction(ScmmRepo repo, String copyFromDirectory) {
+        RepoInitializationAction(Map config, ScmmRepo repo, String copyFromDirectory) {
+            this.config = config
             this.repo = repo
             this.copyFromDirectory = copyFromDirectory
         }
@@ -375,6 +377,11 @@ class ArgoCD extends Feature {
         void initLocalRepo() {
             repo.cloneRepo()
             repo.copyDirectoryContents(copyFromDirectory)
+
+            String namePrefix = config.application['namePrefix']
+            repo.replaceYamlTemplates([
+                    namePrefix: namePrefix ? namePrefix + "-" : ''
+            ])
         }
     }
 }
