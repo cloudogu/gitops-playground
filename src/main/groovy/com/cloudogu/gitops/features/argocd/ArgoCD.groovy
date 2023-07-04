@@ -172,21 +172,9 @@ class ArgoCD extends Feature {
         Map nginxHelmJenkinsValuesYaml = fileSystemUtils.readYaml(nginxHelmJenkinsValuesTmpFile)
 
         if (!config.features['secrets']['active']) {
-            removeObjectFromList(nginxHelmJenkinsValuesYaml['extraVolumes'], 'name', 'secret')
-            removeObjectFromList(nginxHelmJenkinsValuesYaml['extraVolumeMounts'], 'name', 'secret')
-
-            // External Secrets are not needed in example 
+            // External Secrets are not needed in example
             deleteFile nginxHelmJenkinsTmpDir.absolutePath + '/k8s/staging/external-secret.yaml'
             deleteFile nginxHelmJenkinsTmpDir.absolutePath + '/k8s/production/external-secret.yaml'
-        }
-
-        if (!config.application['remote']) {
-            log.debug("Setting service.type to NodePort since it is not running in a remote cluster for nginx-helm-jenkins")
-            MapUtils.deepMerge([
-                    service: [
-                            type: 'NodePort'
-                    ]
-            ], nginxHelmJenkinsValuesYaml)
         }
 
         if (config['images']['nginx']) {
@@ -245,15 +233,7 @@ class ArgoCD extends Feature {
         fileSystemUtils.replaceFileContent(kubernetesResourcesPath.toString(), 'bitnami/nginx:1.25.1', "${image.getRegistryAndRepositoryAsString()}:$image.tag")
     }
 
-    private void removeObjectFromList(Object list, String key, String value) {
-        boolean successfullyRemoved = (list as List).removeIf(n -> n[key] == value)
-        if (! successfullyRemoved) {
-            log.warn("Failed to remove object from list. No object found that has property '${key}: ${value}'. List ${list}")
-        }
-    }
-
     private void installArgoCd() {
-        
         prepareArgoCdRepo()
 
         def namePrefix = config.application['namePrefix']
@@ -367,6 +347,9 @@ class ArgoCD extends Feature {
                     namePrefix: config.application['namePrefix'] as String,
                     images: config.images,
                     isRemote: config.application['remote'],
+                    secrets: [
+                            active: config.features['secrets']['active']
+                    ],
                     scmm: [
                             baseUrl: config.scmm['internal'] ? 'http://scmm-scm-manager.default.svc.cluster.local/scm' : ScmmRepo.createScmmUrl(config)
                     ]
