@@ -298,6 +298,12 @@ class ArgoCDTest {
                     .as("$it repoURL have name prefix")
                     .startsWith("${scmmUrl}/repo/${expectedPrefix}argocd")
         }
+
+        assertAllYamlFiles(clusterResourcesTmpDir, 'argocd', 1) { File it ->
+            assertThat(parseActualYaml(it.absolutePath)['spec']['source']['repoURL'] as String)
+                    .as("$it repoURL have name prefix")
+                    .startsWith("${scmmUrl}/repo/${expectedPrefix}argocd")
+        }
     }
 
     static void assertAllYamlFiles(File rootDir, String childDir, Integer numberOfFiles, Closure cl) {

@@ -92,16 +92,17 @@ class ArgoCD extends Feature {
 
     @Override
     void enable() {
+        log.info("Cloning Repositories")
         cloneRemotePetclinicRepo()
         
         gitRepos.forEach( repoInitializationAction -> {
             repoInitializationAction.initLocalRepo()
         })
-        
+
         prepareGitOpsRepos()
 
         prepareApplicationNginxHelmJenkins()
-        
+
         preparePetClinicRepos()
 
         prepareExerciseNginxValidationRepo()
@@ -111,6 +112,7 @@ class ArgoCD extends Feature {
             repoInitializationAction.repo.commitAndPush("Initial Commit")
         })
 
+        log.info("Installing Argo CD")
         installArgoCd()
     }
 
