@@ -81,7 +81,7 @@ class ArgoCDTest {
     File exampleAppsTmpDir
     File nginxHelmJenkinsTmpDir
     File remotePetClinicRepoTmpDir
-    List<Tuple2<String, File>> petClinicLocalFoldersAndTmpDirs = []
+    List<File> petClinicTmpDirs = []
     CloneCommand gitCloneMock = mock(CloneCommand.class, RETURNS_DEEP_STUBS)
     String[] scmmRepoTargets = []
     
@@ -333,7 +333,7 @@ class ArgoCDTest {
         exampleAppsTmpDir = argoCD.exampleAppsTmpDir
         nginxHelmJenkinsTmpDir = argoCD.nginxHelmJenkinsTmpDir
         remotePetClinicRepoTmpDir = argoCD.remotePetClinicRepoTmpDir
-        petClinicLocalFoldersAndTmpDirs = argoCD.petClinicLocalFoldersAndTmpDirs
+        petClinicTmpDirs = argoCD.petClinicTmpDirs
         return argoCD
     }
 
@@ -369,33 +369,33 @@ class ArgoCDTest {
         }
 
         for (Map.Entry image : config.images as Map) {
-            assertThat(actualBuildImages).contains("${image.key}: '${image.value}',")
+            assertThat(actualBuildImages).contains("${image.key}: '${image.value}'")
         }
     }
 
     void assertPetClinicRepos(String expectedServiceType, String unexpectedServiceType) {
-        for (Tuple2<String, File> repo : petClinicLocalFoldersAndTmpDirs) {
+        for (File repo : petClinicTmpDirs) {
 
-            def jenkinsfile = new File(repo.v2, 'Jenkinsfile')
+            def jenkinsfile = new File(repo, 'Jenkinsfile')
             assertThat(jenkinsfile).exists()
 
-            if (repo.v1 == 'applications/argocd/petclinic/plain-k8s') {
+            if (repo.toString().contains('gitops-playground-petclinic-plain')) {
                 assertBuildImagesInJenkinsfileReplaced(jenkinsfile)
-                assertThat(new File(repo.v2, 'k8s/production/service.yaml').text).contains("type: ${expectedServiceType}")
-                assertThat(new File(repo.v2, 'k8s/staging/service.yaml').text).contains("type: ${expectedServiceType}")
+                assertThat(new File(repo, 'k8s/production/service.yaml').text).contains("type: ${expectedServiceType}")
+                assertThat(new File(repo, 'k8s/staging/service.yaml').text).contains("type: ${expectedServiceType}")
                 
-                assertThat(new File(repo.v2, 'k8s/production/service.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
-                assertThat(new File(repo.v2, 'k8s/staging/service.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
-            } else if (repo.v1 == 'applications/argocd/petclinic/helm') {
+                assertThat(new File(repo, 'k8s/production/service.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
+                assertThat(new File(repo, 'k8s/staging/service.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
+            } else if (repo.toString().contains('gitops-playground-petclinic-helm')) {
                 assertBuildImagesInJenkinsfileReplaced(jenkinsfile)
-                assertThat(new File(repo.v2, 'k8s/values-shared.yaml').text).contains("type: ${expectedServiceType}")
-                assertThat(new File(repo.v2, 'k8s/values-shared.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
-            } else if (repo.v1 == 'exercises/petclinic-helm') {
+                assertThat(new File(repo, 'k8s/values-shared.yaml').text).contains("type: ${expectedServiceType}")
+                assertThat(new File(repo, 'k8s/values-shared.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
+            } else if (repo.toString().contains('gitops-playground-exercise-petclinic-helm')) {
                 // Does not contain the gitops build lib call, so no build images to replace
-                assertThat(new File(repo.v2, 'k8s/values-shared.yaml').text).contains("type: ${expectedServiceType}")
-                assertThat(new File(repo.v2, 'k8s/values-shared.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
+                assertThat(new File(repo, 'k8s/values-shared.yaml').text).contains("type: ${expectedServiceType}")
+                assertThat(new File(repo, 'k8s/values-shared.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
             } else {
-                fail("Unkown petclinic repo: ${repo.v1}")
+                fail("Unkown petclinic repo: $repo")
             }
         }
     }

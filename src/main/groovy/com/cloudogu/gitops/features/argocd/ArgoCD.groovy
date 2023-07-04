@@ -20,12 +20,6 @@ class ArgoCD extends Feature {
     static final String NGINX_VALIDATION_VALUES_PATH = 'k8s/values-shared.yaml'
     static final String BROKEN_APPLICATION_RESOURCES_PATH = 'broken-application.yaml'
     static final String SCMM_URL_INTERNAL = "http://scmm-scm-manager.default.svc.cluster.local/scm"
-    static final List<Tuple2> PETCLINIC_REPOS = [
-            new Tuple2('applications/argocd/petclinic/plain-k8s', 'argocd/petclinic-plain'),
-            new Tuple2('applications/argocd/petclinic/helm', 'argocd/petclinic-helm'),
-            new Tuple2('exercises/petclinic-helm', 'exercises/petclinic-helm')
-    ]
-    
     private Map config
     private List<RepoInitializationAction> gitRepos = []
 
@@ -39,7 +33,7 @@ class ArgoCD extends Feature {
     protected File remotePetClinicRepoTmpDir
     protected File nginxValidationTmpDir
     protected File brokenApplicationTmpDir
-    protected List<Tuple2<String, File>> petClinicLocalFoldersAndTmpDirs = []
+    protected List<File> petClinicTmpDirs = []
     
     protected K8sClient k8sClient = new K8sClient()
     protected HelmClient helmClient = new HelmClient()
@@ -77,12 +71,19 @@ class ArgoCD extends Feature {
         gitRepos += createRepoInitializationAction('exercises/broken-application', 'exercises/broken-application', brokenApplicationTmpDir)
 
         remotePetClinicRepoTmpDir = File.createTempDir('gitops-playground-petclinic')
-        for (Tuple2 repo : PETCLINIC_REPOS) {
-            def petClinicTempDir = File.createTempDir(repo.v2.toString().replace('/', '-'))
-            petClinicTempDir.deleteOnExit()
-            petClinicLocalFoldersAndTmpDirs.add(new Tuple2(repo.v1.toString(), petClinicTempDir))
-            gitRepos += createRepoInitializationAction(remotePetClinicRepoTmpDir.absolutePath, repo.v2.toString(), petClinicTempDir)
-        }
+
+
+        def petClinicTempDir = File.createTempDir('gitops-playground-petclinic-plain')
+        petClinicTmpDirs += petClinicTempDir
+        gitRepos += createRepoInitializationAction('applications/argocd/petclinic/plain-k8s', 'argocd/petclinic-plain', petClinicTempDir)
+
+        petClinicTempDir = File.createTempDir('gitops-playground-petclinic-helm')
+        petClinicTmpDirs += petClinicTempDir
+        gitRepos += createRepoInitializationAction('applications/argocd/petclinic/helm', 'argocd/petclinic-helm', petClinicTempDir)
+
+        petClinicTempDir = File.createTempDir('gitops-playground-exercise-petclinic-helm')
+        petClinicTmpDirs += petClinicTempDir
+        gitRepos += createRepoInitializationAction('exercises/petclinic-helm', 'exercises/petclinic-helm', petClinicTempDir)
     }
     
     @Override
@@ -212,21 +213,9 @@ class ArgoCD extends Feature {
     }
 
     private void preparePetClinicRepos() {
-        for (Tuple2<String, File> repo : petClinicLocalFoldersAndTmpDirs) {
-            
-            log.debug("Copying playground files for petclinic repo: ${repo.v1}")
-            fileSystemUtils.copyDirectory("${fileSystemUtils.rootDir}/${repo.v1}", repo.v2.absolutePath)
-            
-            log.debug("Replacing gitops-build-lib images for petclinic repo: ${repo.v1}")
-            for (Map.Entry image : config.images as Map) {
-                fileSystemUtils.replaceFileContent(new File(repo.v2, 'Jenkinsfile').toString(),
-                        "${image.key}: .*", "${image.key}: '${image.value}',")
-            }
-
-            if (!config.application["remote"]) {
-                log.debug("Setting argocd service.type to NodePort since it is not running in a remote cluster, for petclinic repo: ${repo.v1}")
-                replaceFileContentInYamls(repo.v2, 'type: LoadBalancer', 'type: NodePort')
-            }
+        for (def tmpDir : petClinicTmpDirs) {
+            log.debug("Copying original petclinic files for petclinic repo: $tmpDir")
+            fileSystemUtils.copyDirectory(remotePetClinicRepoTmpDir.toString(), tmpDir.absolutePath)
         }
     }
 
@@ -381,8 +370,10 @@ class ArgoCD extends Feature {
             repo.cloneRepo()
             repo.copyDirectoryContents(copyFromDirectory)
 
-            repo.replaceYamlTemplates([
-                    namePrefix: config.application['namePrefix'] as String
+            repo.replaceTemplates(~/\.tpl/, [
+                    namePrefix: config.application['namePrefix'] as String,
+                    images: config.images,
+                    isRemote: config.application['remote']
             ])
         }
     }

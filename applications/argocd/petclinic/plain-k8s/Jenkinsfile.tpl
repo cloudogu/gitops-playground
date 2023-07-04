@@ -2,15 +2,15 @@
 
 // "Constants"
 String getApplication() { 'spring-petclinic-plain' }
-String getConfigRepositoryPRRepo() { 'argocd/example-apps' }
+String getConfigRepositoryPRRepo() { '${namePrefix}argocd/example-apps' }
 String getScmManagerCredentials() { 'scmm-user' }
 String getConfigRepositoryPRBaseUrl() { env.SCMM_URL }
 String getDockerRegistryBaseUrl() { env.REGISTRY_URL }
 String getDockerRegistryPath() { env.REGISTRY_PATH }
 String getDockerRegistryCredentials() { 'registry-user' }
-String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/3rd-party-dependencies/ces-build-lib" }
+String getCesBuildLibRepo() { "\${env.SCMM_URL}/repo/3rd-party-dependencies/ces-build-lib" }
 String getCesBuildLibVersion() { '1.64.1' }
-String getGitOpsBuildLibRepo() { "${env.SCMM_URL}/repo/3rd-party-dependencies/gitops-build-lib" }
+String getGitOpsBuildLibRepo() { "\${env.SCMM_URL}/repo/3rd-party-dependencies/gitops-build-lib" }
 String getGitOpsBuildLibVersion() { '0.4.0'}
 
 loadLibraries()
@@ -44,15 +44,15 @@ node {
         String imageName = ""
         stage('Docker') {
             String imageTag = createImageTag()
-            String pathPrefix = !dockerRegistryPath?.trim() ? "" : "${dockerRegistryPath}/"
-            imageName = "${dockerRegistryBaseUrl}/${pathPrefix}${application}:${imageTag}"
-            mvn "spring-boot:build-image -DskipTests -Dspring-boot.build-image.imageName=${imageName} " +
+            String pathPrefix = !dockerRegistryPath?.trim() ? "" : "\${dockerRegistryPath}/"
+            imageName = "\${dockerRegistryBaseUrl}/\${pathPrefix}\${application}:\${imageTag}"
+            mvn "spring-boot:build-image -DskipTests -Dspring-boot.build-image.imageName=\${imageName} " +
                     // Pin builder image for reproducible builds. Update here to get newer JDK minor versions.
                     "-Dspring-boot.build-image.builder=paketobuildpacks/builder:0.3.229-base "
 
             if (isBuildSuccessful()) {
                 def docker = cesBuildLib.Docker.new(this)
-                docker.withRegistry("http://${dockerRegistryBaseUrl}", dockerRegistryCredentials) {
+                docker.withRegistry("http://\${dockerRegistryBaseUrl}", dockerRegistryCredentials) {
                     def image = docker.image(imageName)
                     image.push()
                 }
@@ -74,7 +74,7 @@ node {
                         application: application,
                         gitopsTool: 'ARGO',
                         folderStructureStrategy: 'ENV_PER_APP',
-                        k8sVersion : "${env.K8S_VERSION}",
+                        k8sVersion : "\${env.K8S_VERSION}",
                         deployments: [
                                 sourcePath: 'k8s',
                                 destinationRootPath: 'apps',
@@ -132,11 +132,11 @@ void addSpecificGitOpsConfig(gitopsConfig) {
         // Those parameters overwrite the following parameters.
         // If you can access the internet, you can rely on the defaults, which load the images from public registries.
         buildImages          : [
-                helm: 'ghcr.io/cloudogu/helm:3.10.3-1',
-                kubectl: 'lachlanevenson/k8s-kubectl:v1.25.4',
-                kubeval: 'ghcr.io/cloudogu/helm:3.10.3-1',
-                helmKubeval: 'ghcr.io/cloudogu/helm:3.10.3-1',
-                yamllint: 'cytopia/yamllint:1.25-0.7'
+                helm: '<%= images.helm ? images.helm : "ghcr.io/cloudogu/helm:3.10.3-1" %>',
+                kubectl: '<%= images.kubectl ? images.kubectl : "lachlanevenson/k8s-kubectl:v1.25.4" %>',
+                kubeval: '<%= images.kubeval ? images.kubeval : "ghcr.io/cloudogu/helm:3.10.3-1" %>',
+                helmKubeval: '<%= images.helmKubeval ? images.helmKubeval : "ghcr.io/cloudogu/helm:3.10.3-1" %>',
+                yamllint: '<%= images.yamllint ? images.yamllint : "cytopia/yamllint:1.25-0.7" %>'
         ]
     ]
 }
@@ -147,25 +147,25 @@ String createImageTag() {
     String branchSuffix = ""
 
     if (!"develop".equals(branch)) {
-        branchSuffix = "-${branch}"
+        branchSuffix = "-\${branch}"
     }
 
-    return "${new Date().format('yyyyMMddHHmm')}-${git.commitHashShort}${branchSuffix}"
+    return "\${new Date().format('yyyyMMddHHmm')}-\${git.commitHashShort}\${branchSuffix}"
 }
 
 def loadLibraries() {
     // In the GitOps playground, we're loading the build libs from our local SCM so it also works in an offline context
     // If you can access the internet, you could also load the libraries directly from github like so
-    // @Library(["github.com/cloudogu/ces-build-lib@${cesBuildLibVersion}", "github.com/cloudogu/gitops-build-lib@${gitOpsBuildLibRepo}"]) _
+    // @Library(["github.com/cloudogu/ces-build-lib@\${cesBuildLibVersion}", "github.com/cloudogu/gitops-build-lib@\${gitOpsBuildLibRepo}"]) _
     //import com.cloudogu.ces.cesbuildlib.*
     //import com.cloudogu.ces.gitopsbuildlib.*
     
-    cesBuildLib = library(identifier: "ces-build-lib@${cesBuildLibVersion}",
-            retriever: modernSCM([$class: 'GitSCMSource', remote: cesBuildLibRepo, credentialsId: scmManagerCredentials])
+    cesBuildLib = library(identifier: "ces-build-lib@\${cesBuildLibVersion}",
+            retriever: modernSCM([\$class: 'GitSCMSource', remote: cesBuildLibRepo, credentialsId: scmManagerCredentials])
     ).com.cloudogu.ces.cesbuildlib
 
-    library(identifier: "gitops-build-lib@${gitOpsBuildLibVersion}",
-            retriever: modernSCM([$class: 'GitSCMSource', remote: gitOpsBuildLibRepo, credentialsId: scmManagerCredentials])
+    library(identifier: "gitops-build-lib@\${gitOpsBuildLibVersion}",
+            retriever: modernSCM([\$class: 'GitSCMSource', remote: gitOpsBuildLibRepo, credentialsId: scmManagerCredentials])
     ).com.cloudogu.gitops.gitopsbuildlib
 }
 

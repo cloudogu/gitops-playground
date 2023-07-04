@@ -72,7 +72,7 @@ class ScmmRepoTest {
         repo.writeFile("subdirectory/result.tpl.yaml", 'foo: ${prefix}suffix')
         repo.writeFile("subdirectory/keep-this-way.yaml", 'thiswont: ${prefix}-be-replaced')
 
-        repo.replaceYamlTemplates([prefix: "myteam-"])
+        repo.replaceTemplates(~/\.tpl\.yaml$/, [prefix: "myteam-"])
 
         assertThat(new File("$tempDir/subdirectory/result.yaml").text).isEqualTo("foo: myteam-suffix")
         assertThat(new File("$tempDir/subdirectory/keep-this-way.yaml").text).isEqualTo('thiswont: ${prefix}-be-replaced')

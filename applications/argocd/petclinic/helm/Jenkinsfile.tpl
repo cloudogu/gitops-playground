@@ -3,25 +3,25 @@
 String getApplication() { "spring-petclinic-helm" }
 String getScmManagerCredentials() { 'scmm-user' }
 String getConfigRepositoryPRBaseUrl() { env.SCMM_URL }
-String getConfigRepositoryPRRepo() { 'argocd/example-apps' }
+String getConfigRepositoryPRRepo() { '${namePrefix}argocd/example-apps' }
 // The docker daemon cant use the k8s service name, because it is not running inside the cluster
 String getDockerRegistryBaseUrl() { env.REGISTRY_URL }
 String getDockerRegistryPath() { env.REGISTRY_PATH }
 String getDockerRegistryCredentials() { 'registry-user' }
-String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/3rd-party-dependencies/ces-build-lib/" }
+String getCesBuildLibRepo() { "\${env.SCMM_URL}/repo/3rd-party-dependencies/ces-build-lib/" }
 String getCesBuildLibVersion() { '1.64.1' }
-String getGitOpsBuildLibRepo() { "${env.SCMM_URL}/repo/3rd-party-dependencies/gitops-build-lib" }
+String getGitOpsBuildLibRepo() { "\${env.SCMM_URL}/repo/3rd-party-dependencies/gitops-build-lib" }
 String getGitOpsBuildLibVersion() { '0.4.0'}
-String getHelmChartRepository() { "${env.SCMM_URL}/repo/3rd-party-dependencies/spring-boot-helm-chart-with-dependency" }
+String getHelmChartRepository() { "\${env.SCMM_URL}/repo/3rd-party-dependencies/spring-boot-helm-chart-with-dependency" }
 String getHelmChartVersion() { "1.0.0" }
 String getMainBranch() { 'main' }
 
-cesBuildLib = library(identifier: "ces-build-lib@${cesBuildLibVersion}",
-        retriever: modernSCM([$class: 'GitSCMSource', remote: cesBuildLibRepo, credentialsId: scmManagerCredentials])
+cesBuildLib = library(identifier: "ces-build-lib@\${cesBuildLibVersion}",
+        retriever: modernSCM([\$class: 'GitSCMSource', remote: cesBuildLibRepo, credentialsId: scmManagerCredentials])
 ).com.cloudogu.ces.cesbuildlib
 
-gitOpsBuildLib = library(identifier: "gitops-build-lib@${gitOpsBuildLibVersion}",
-    retriever: modernSCM([$class: 'GitSCMSource', remote: gitOpsBuildLibRepo, credentialsId: scmManagerCredentials])
+gitOpsBuildLib = library(identifier: "gitops-build-lib@\${gitOpsBuildLibVersion}",
+    retriever: modernSCM([\$class: 'GitSCMSource', remote: gitOpsBuildLibRepo, credentialsId: scmManagerCredentials])
 ).com.cloudogu.gitops.gitopsbuildlib
 
 properties([
@@ -50,15 +50,15 @@ node {
         String imageName = ""
         stage('Docker') {
             String imageTag = createImageTag()
-            String pathPrefix = !dockerRegistryPath?.trim() ? "" : "${dockerRegistryPath}/"
-            imageName = "${dockerRegistryBaseUrl}/${pathPrefix}${application}:${imageTag}"
-            mvn "spring-boot:build-image -DskipTests -Dcheckstyle.skip -Dspring-boot.build-image.imageName=${imageName} " +
+            String pathPrefix = !dockerRegistryPath?.trim() ? "" : "\${dockerRegistryPath}/"
+            imageName = "\${dockerRegistryBaseUrl}/\${pathPrefix}\${application}:\${imageTag}"
+            mvn "spring-boot:build-image -DskipTests -Dcheckstyle.skip -Dspring-boot.build-image.imageName=\${imageName} " +
                     // Pin builder image for reproducible builds. Update here to get newer JDK minor versions.
                     "-Dspring-boot.build-image.builder=paketobuildpacks/builder:0.3.229-base "
 
             if (isBuildSuccessful()) {
                 def docker = cesBuildLib.Docker.new(this)
-                docker.withRegistry("http://${dockerRegistryBaseUrl}", dockerRegistryCredentials) {
+                docker.withRegistry("http://\${dockerRegistryBaseUrl}", dockerRegistryCredentials) {
                     def image = docker.image(imageName)
                     image.push()
                 }
@@ -84,13 +84,13 @@ node {
                         mainBranch: mainBranch,
                         gitopsTool: 'ARGO',
                         folderStructureStrategy: 'ENV_PER_APP',
-                        k8sVersion : "${env.K8S_VERSION}",
+                        k8sVersion : "\${env.K8S_VERSION}",
                         buildImages          : [
-                                helm: 'ghcr.io/cloudogu/helm:3.10.3-1',
-                                kubectl: 'lachlanevenson/k8s-kubectl:v1.25.4',
-                                kubeval: 'ghcr.io/cloudogu/helm:3.10.3-1',
-                                helmKubeval: 'ghcr.io/cloudogu/helm:3.10.3-1',
-                                yamllint: 'cytopia/yamllint:1.25-0.7'
+                                helm: '<%= images.helm ? images.helm : "ghcr.io/cloudogu/helm:3.10.3-1" %>',
+                                kubectl: '<%= images.kubectl ? images.kubectl : "lachlanevenson/k8s-kubectl:v1.25.4" %>',
+                                kubeval: '<%= images.kubeval ? images.kubeval : "ghcr.io/cloudogu/helm:3.10.3-1" %>',
+                                helmKubeval: '<%= images.helmKubeval ? images.helmKubeval : "ghcr.io/cloudogu/helm:3.10.3-1" %>',
+                                yamllint: '<%= images.yamllint ? images.yamllint : "cytopia/yamllint:1.25-0.7" %>'
                         ],
                         deployments: [
                             sourcePath: 'k8s',
@@ -131,10 +131,10 @@ String createImageTag() {
     String branchSuffix = ""
 
     if (!"develop".equals(branch)) {
-        branchSuffix = "-${branch}"
+        branchSuffix = "-\${branch}"
     }
 
-    return "${new Date().format('yyyyMMddHHmm')}-${git.commitHashShort}${branchSuffix}"
+    return "\${new Date().format('yyyyMMddHHmm')}-\${git.commitHashShort}\${branchSuffix}"
 }
 
 def cesBuildLib

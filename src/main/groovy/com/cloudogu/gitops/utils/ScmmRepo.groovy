@@ -1,10 +1,12 @@
 package com.cloudogu.gitops.utils
 
+import groovy.text.SimpleTemplateEngine
 import groovy.text.StreamingTemplateEngine
 import groovy.util.logging.Slf4j
 
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.regex.Pattern
 
 @Slf4j
 class ScmmRepo {
@@ -72,13 +74,13 @@ class ScmmRepo {
         fileSystemUtils.copyDirectory(absoluteSrcDirLocation, absoluteLocalRepoTmpDir)
     }
 
-    void replaceYamlTemplates(Map parameters) {
-        def engine = new StreamingTemplateEngine()
+    void replaceTemplates(Pattern filepathMatches, Map parameters) {
+        def engine = new SimpleTemplateEngine()
         Files.walk(Path.of(absoluteLocalRepoTmpDir))
-                .filter { it.toString().endsWith(".tpl.yaml") }
+                .filter { filepathMatches.matcher(it.toString()).find() }
                 .each { Path it ->
                     def template = engine.createTemplate(it.toFile())
-                    def targetFile = new File(it.toString().replace(".tpl.yaml", ".yaml"))
+                    def targetFile = new File(it.toString().replace(".tpl", ""))
                     def writer = targetFile.newWriter()
                     template.make(parameters).writeTo(writer)
                     writer.flush()
