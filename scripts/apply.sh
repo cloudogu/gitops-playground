@@ -576,7 +576,7 @@ function printWelcomeScreen() {
     echo -e "| - \e[32m${SCMM_URL}/repos/fluxv2/\e[0m"
   fi
   if [[ $INSTALL_ARGOCD == true ]]; then
-    echo -e "| - \e[32m${SCMM_URL}/repos/argocd/\e[0m"
+    echo -e "| - \e[32m${SCMM_URL}/repos/${NAME_PREFIX}argocd/\e[0m"
   fi
 
   echo "|"
@@ -587,10 +587,10 @@ function printWelcomeScreen() {
   echo "|"
 
   if [[ $INSTALL_FLUXV2 == true ]]; then
-    echo -e "| - \e[32m${JENKINS_URL}/job/fluxv2-applications/\e[0m"
+    echo -e "| - \e[32m${JENKINS_URL}/job/${NAME_PREFIX}fluxv2-example-apps/\e[0m"
   fi
   if [[ $INSTALL_ARGOCD == true ]]; then
-    echo -e "| - \e[32m${JENKINS_URL}/job/argocd-applications/\e[0m"
+    echo -e "| - \e[32m${JENKINS_URL}/job/${NAME_PREFIX}example-apps/\e[0m"
   fi
   echo "|"
   echo "| During the job, jenkins pushes into the corresponding GitOps repo and creates a pull"
