@@ -63,7 +63,7 @@ class Vault extends Feature {
             yaml['ui']['serviceNodePort'] = 8200
         }
 
-        if (null != helmConfig['image']) {
+        if (helmConfig['image']) {
             log.debug("Setting custom image as requested for vault")
             def image = DockerImageParser.parse(helmConfig['image'] as String)
             MapUtils.deepMerge([

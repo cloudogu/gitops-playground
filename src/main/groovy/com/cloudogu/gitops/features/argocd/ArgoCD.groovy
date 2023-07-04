@@ -193,7 +193,7 @@ class ArgoCD extends Feature {
             ], nginxHelmJenkinsValuesYaml)
         }
 
-        if (null != config['images']['nginx']) {
+        if (config['images']['nginx']) {
             log.debug("Setting custom nginx image as requested for nginx-helm-jenkins")
             def image = DockerImageParser.parse(config['images']['nginx'] as String)
             MapUtils.deepMerge([
