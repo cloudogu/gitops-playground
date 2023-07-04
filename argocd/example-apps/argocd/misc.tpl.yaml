@@ -14,7 +14,7 @@ spec:
     namespace: argocd-production
   source:
     path: misc/
-    repoURL: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/${namePrefix}argocd/example-apps
+    repoURL: ${scmm.baseUrl}/repo/${namePrefix}argocd/example-apps
     targetRevision: main
     directory:
       recurse: true

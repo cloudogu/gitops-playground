@@ -10,7 +10,7 @@ spec:
   project: example-apps
   source:
     path: appps/exercise-nginx-helm/staging
-    repoURL: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/${namePrefix}argocd/example-apps
+    repoURL: ${scmm.baseUrl}/repo/${namePrefix}argocd/example-apps
     targetRevision: main
     directory:
       recurse: true
@@ -33,7 +33,7 @@ spec:
   project: example-apps
   source:
     path: apps/exercise-nginx-helm/production
-    repoURL: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/${namePrefix}argocd/example-apps
+    repoURL: ${scmm.baseUrl}/repo/${namePrefix}argocd/example-apps
     targetRevision: main
     directory:
       recurse: true

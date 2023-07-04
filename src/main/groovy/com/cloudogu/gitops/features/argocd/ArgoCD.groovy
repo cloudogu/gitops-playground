@@ -147,13 +147,6 @@ class ArgoCD extends Feature {
             deleteDir clusterResourcesTmpDir.absolutePath + '/misc/monitoring'
         }
 
-        if (!config.scmm["internal"]) {
-            String externalScmmUrl = ScmmRepo.createScmmUrl(config)
-            log.debug("Configuring all yaml files in gitops repos to use the external scmm url: ${externalScmmUrl}")
-            replaceFileContentInYamls(clusterResourcesTmpDir, SCMM_URL_INTERNAL, externalScmmUrl)
-            replaceFileContentInYamls(exampleAppsTmpDir, SCMM_URL_INTERNAL, externalScmmUrl)
-        }
-
         fileSystemUtils.copyDirectory("${fileSystemUtils.rootDir}/applications/argocd/nginx/helm-umbrella",
                 Path.of(exampleAppsTmpDir.absolutePath, 'apps/nginx-helm-umbrella/').toString())
         if (!config.application["remote"]) {
@@ -373,7 +366,10 @@ class ArgoCD extends Feature {
             repo.replaceTemplates(~/\.tpl/, [
                     namePrefix: config.application['namePrefix'] as String,
                     images: config.images,
-                    isRemote: config.application['remote']
+                    isRemote: config.application['remote'],
+                    scmm: [
+                            baseUrl: config.scmm['internal'] ? 'http://scmm-scm-manager.default.svc.cluster.local/scm' : ScmmRepo.createScmmUrl(config)
+                    ]
             ])
         }
     }
