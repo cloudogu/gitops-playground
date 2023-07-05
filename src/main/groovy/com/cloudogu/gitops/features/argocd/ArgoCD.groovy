@@ -229,7 +229,7 @@ class ArgoCD extends Feature {
     }
 
     private void prepareExerciseNginxValidationRepo() {
-        if (null == config['images']['nginx']) {
+        if (!config['images']['nginx']) {
             return
         }
 
@@ -251,7 +251,7 @@ class ArgoCD extends Feature {
     }
 
     private void prepareExerciseBrokenApplicationRepo() {
-        if (null == config['images']['nginx']) {
+        if (!config['images']['nginx']) {
             return
         }
 

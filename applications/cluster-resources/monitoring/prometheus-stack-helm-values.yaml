@@ -1,3 +1,5 @@
+# Note that many things are disabled here, because we want to start small, especially in airgapped envs where each image
+# has to be replicated individually
 defaultRules:
   rules:
     alertmanager: true
@@ -33,6 +35,9 @@ prometheusOperator:
   admissionWebhooks:
     enabled: false
   tls:
+    # Once admissionWebhooks is disabled, the operator fails with
+    # MountVolume.SetUp failed for volume "tls-secret" : secret "...-kube-prometh-admission" not found
+    # This can be worked around by disabling tls altogether
     enabled: false
 kubelet:
   enabled: false
