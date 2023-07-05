@@ -5,21 +5,21 @@ String getScmManagerCredentials() { 'scmm-user' }
 String getConfigRepositoryPRBaseUrl() { env.SCMM_URL }
 String getConfigRepositoryPRRepo() { '${namePrefix}argocd/example-apps' }
 <#noparse>
-String getCesBuildLibRepo() { "\${env.SCMM_URL}/repo/3rd-party-dependencies/ces-build-lib/" }
+String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/3rd-party-dependencies/ces-build-lib/" }
 String getCesBuildLibVersion() { '1.64.1' }
-String getGitOpsBuildLibRepo() { "\${env.SCMM_URL}/repo/3rd-party-dependencies/gitops-build-lib" }
+String getGitOpsBuildLibRepo() { "${env.SCMM_URL}/repo/3rd-party-dependencies/gitops-build-lib" }
 String getGitOpsBuildLibVersion() { '0.4.0'}
 String getHelmChartRepository() { "https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami" }
 String getHelmChartName() { "nginx" }
 String getHelmChartVersion() { "13.2.21" }
 String getMainBranch() { 'main' }
 
-cesBuildLib = library(identifier: "ces-build-lib@\${cesBuildLibVersion}",
-        retriever: modernSCM([\$class: 'GitSCMSource', remote: cesBuildLibRepo, credentialsId: scmManagerCredentials])
+cesBuildLib = library(identifier: "ces-build-lib@${cesBuildLibVersion}",
+        retriever: modernSCM([$class: 'GitSCMSource', remote: cesBuildLibRepo, credentialsId: scmManagerCredentials])
 ).com.cloudogu.ces.cesbuildlib
 
-gitOpsBuildLib = library(identifier: "gitops-build-lib@\${gitOpsBuildLibVersion}",
-    retriever: modernSCM([\$class: 'GitSCMSource', remote: gitOpsBuildLibRepo, credentialsId: scmManagerCredentials])
+gitOpsBuildLib = library(identifier: "gitops-build-lib@${gitOpsBuildLibVersion}",
+    retriever: modernSCM([$class: 'GitSCMSource', remote: gitOpsBuildLibRepo, credentialsId: scmManagerCredentials])
 ).com.cloudogu.gitops.gitopsbuildlib
 
 properties([
@@ -54,14 +54,16 @@ node('docker') {
                     mainBranch: mainBranch,
                     gitopsTool: 'ARGO',
                     folderStructureStrategy: 'ENV_PER_APP',
-                    k8sVersion : "\${env.K8S_VERSION}",
+                    k8sVersion : "${env.K8S_VERSION}",
+</#noparse>
                     buildImages          : [
-                            helm: '<%= images.helm ? images.helm : "ghcr.io/cloudogu/helm:3.10.3-1" %>',
-                            kubectl: '<%= images.kubectl ? images.kubectl : "lachlanevenson/k8s-kubectl:v1.25.4" %>',
-                            kubeval: '<%= images.kubeval ? images.kubeval : "ghcr.io/cloudogu/helm:3.10.3-1" %>',
-                            helmKubeval: '<%= images.helmKubeval ? images.helmKubeval : "ghcr.io/cloudogu/helm:3.10.3-1" %>',
-                            yamllint: '<%= images.yamllint ? images.yamllint : "cytopia/yamllint:1.25-0.7" %>'
+                            helm: '<#if images.helm != "">${images.helm}<#else>ghcr.io/cloudogu/helm:3.10.3-1</#if>',
+                            kubectl: '<#if images.kubectl != "">${images.kubectl}<#else>lachlanevenson/k8s-kubectl:v1.25.4</#if>',
+                            kubeval: '<#if images.kubeval != "">${images.kubeval}<#else>ghcr.io/cloudogu/helm:3.10.3-1</#if>',
+                            helmKubeval: '<#if images.helmKubeval != "">${images.helmKubeval}<#else>ghcr.io/cloudogu/helm:3.10.3-1</#if>',
+                            yamllint: '<#if images.yamllint != "">${images.yamllint}<#else>cytopia/yamllint:1.25-0.7</#if>'
                     ],
+<#noparse>
                     deployments: [
                         sourcePath: 'k8s',
                         destinationRootPath: 'apps',
@@ -102,3 +104,4 @@ node('docker') {
 
 def cesBuildLib
 def gitOpsBuildLib
+</#noparse>

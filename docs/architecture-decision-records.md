@@ -3,6 +3,55 @@ Architecture Decision Records
 
 Bases on [this template](https://adr.github.io/madr/examples.html).
 
+## Using Templating Mechanism for Generating Repositories 
+
+### Context and Problem Statement
+
+We need to configure various values depending on the environment and command line arguments.
+In the past, we used the following mechanisms:
+
+* `String.replace` on files
+* Building YAML in Groovy and appending to existing YAML file
+* Building a `Map`, then transforming into YAML and writing to file
+
+Having various mechanisms spread across the codebase is difficult to find.
+Furthermore, having baseline files, which will be modified out of band, can trick the reader 
+into thinking that file's content is final.
+
+### Considered Options
+
+We want to use templating to alleviate these problems.
+We need to template YAML files as well as Jenkinsfiles.
+
+* Groovy Templating
+* Micronaut-compatible Library
+
+### Decision Outcome
+
+#### Groovy Templating
+
+Groovy Templating has a very small footprint and does not rely on a third-party library.
+However, it relies on dynamic code execution and is therefore incompatible with GraalVM.
+
+#### Micronaut-compatible Library
+
+Although we do not want to use Micronauts View functionality, we expect micronaut
+to work well with GraalVM.
+
+**Thymeleaf** is a large templating engine for Java.
+We decided against it as it seemed cumbersome to configure.
+
+**Apache Velocity**'s templating syntax uses a simple hash symbol to identify templating language constructs.
+We decided against it as it might conflict with the template's content (e.g. comment in Jenkinsfile or YAML).
+
+**Apache Freemarker** is relatively easy to configure and does not have conflicting templating language constructs.
+Furthermore, it offers the tag `<#noparse>` to disable parsing content as a template.
+Using this directive, we do not need to escape other symbols (e.g. `$`) that would be picked up from the
+templating engine.
+
+We decided to use **Apache Freemarker**
+
+
 ## Deploying Cluster Resources with Argo CD using inline YAML
 
 ### Context and Problem Statement

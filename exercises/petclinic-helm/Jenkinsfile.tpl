@@ -4,18 +4,19 @@ String getApplication() { "exercise-spring-petclinic-helm" }
 String getScmManagerCredentials() { 'scmm-user' }
 String getConfigRepositoryPRBaseUrl() { env.SCMM_URL }
 String getConfigRepositoryPRRepo() { '${namePrefix}argocd/example-apps' }
+<#noparse>
 // The docker daemon cant use the k8s service name, because it is not running inside the cluster
 String getDockerRegistryBaseUrl() { env.REGISTRY_URL }
 String getDockerRegistryPath() { env.REGISTRY_PATH }
 String getDockerRegistryCredentials() { 'registry-user' }
-String getCesBuildLibRepo() { "\${env.SCMM_URL}/repo/3rd-party-dependencies/ces-build-lib/" }
+String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/3rd-party-dependencies/ces-build-lib/" }
 String getCesBuildLibVersion() { '1.64.1' }
-String getHelmChartRepository() { "\${env.SCMM_URL}/repo/3rd-party-dependencies/spring-boot-helm-chart-with-dependency" }
+String getHelmChartRepository() { "${env.SCMM_URL}/repo/3rd-party-dependencies/spring-boot-helm-chart-with-dependency" }
 String getHelmChartVersion() { "1.0.0" }
 String getMainBranch() { 'main' }
 
-cesBuildLib = library(identifier: "ces-build-lib@\${cesBuildLibVersion}",
-        retriever: modernSCM([\\$class: 'GitSCMSource', remote: cesBuildLibRepo, credentialsId: scmManagerCredentials])
+cesBuildLib = library(identifier: "ces-build-lib@${cesBuildLibVersion}",
+        retriever: modernSCM([$class: 'GitSCMSource', remote: cesBuildLibRepo, credentialsId: scmManagerCredentials])
 ).com.cloudogu.ces.cesbuildlib
 
 properties([
@@ -44,15 +45,15 @@ node {
         String imageName = ""
         stage('Docker') {
             String imageTag = createImageTag()
-            String pathPrefix = !dockerRegistryPath?.trim() ? "" : "\${dockerRegistryPath}/"
-            imageName = "\${dockerRegistryBaseUrl}/\${pathPrefix}\${application}:\${imageTag}"
-            mvn "spring-boot:build-image -DskipTests -Dcheckstyle.skip -Dspring-boot.build-image.imageName=\${imageName}" +
+            String pathPrefix = !dockerRegistryPath?.trim() ? "" : "${dockerRegistryPath}/"
+            imageName = "${dockerRegistryBaseUrl}/${pathPrefix}${application}:${imageTag}"
+            mvn "spring-boot:build-image -DskipTests -Dcheckstyle.skip -Dspring-boot.build-image.imageName=${imageName}" +
                                 // Pin builder image for reproducible builds. Update here to get newer JDK minor versions.
                                 "-Dspring-boot.build-image.builder=paketobuildpacks/builder:0.3.229-base "
 
             if (isBuildSuccessful()) {
                 def docker = cesBuildLib.Docker.new(this)
-                docker.withRegistry("http://\${dockerRegistryBaseUrl}", dockerRegistryCredentials) {
+                docker.withRegistry("http://${dockerRegistryBaseUrl}", dockerRegistryCredentials) {
                     def image = docker.image(imageName)
                     image.push()
                 }
@@ -77,10 +78,11 @@ String createImageTag() {
     String branchSuffix = ""
 
     if (!"develop".equals(branch)) {
-        branchSuffix = "-\${branch}"
+        branchSuffix = "-${branch}"
     }
 
-    return "\${new Date().format('yyyyMMddHHmm')}-\${git.commitHashShort}\${branchSuffix}"
+    return "${new Date().format('yyyyMMddHHmm')}-${git.commitHashShort}${branchSuffix}"
 }
 
 def cesBuildLib
+</#noparse>

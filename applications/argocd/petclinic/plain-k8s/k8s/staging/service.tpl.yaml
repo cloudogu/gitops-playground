@@ -6,7 +6,7 @@ metadata:
   labels:
     app: spring-petclinic-plain
 spec:
-  type: <%= isRemote ? "LoadBalancer" : "NodePort" %>
+  type: <#if isRemote>LoadBalancer<#else>NodePort</#if>
   ports:
     - name: http
       port: 80

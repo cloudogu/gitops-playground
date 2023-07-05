@@ -1,7 +1,6 @@
 package com.cloudogu.gitops.utils
 
-import groovy.text.SimpleTemplateEngine
-import groovy.text.StreamingTemplateEngine
+
 import groovy.util.logging.Slf4j
 
 import java.nio.file.Files
@@ -75,17 +74,10 @@ class ScmmRepo {
     }
 
     void replaceTemplates(Pattern filepathMatches, Map parameters) {
-        def engine = new SimpleTemplateEngine()
+        def engine = new TemplatingEngine()
         Files.walk(Path.of(absoluteLocalRepoTmpDir))
                 .filter { filepathMatches.matcher(it.toString()).find() }
-                .each { Path it ->
-                    def template = engine.createTemplate(it.toFile())
-                    def targetFile = new File(it.toString().replace(".tpl", ""))
-                    def writer = targetFile.newWriter()
-                    template.make(parameters).writeTo(writer)
-                    writer.flush()
-                    it.toFile().delete()
-                }
+                .each { Path it -> engine.replaceTemplate(it.toFile(), parameters) }
     }
 
     void commitAndPush(String commitMessage) {

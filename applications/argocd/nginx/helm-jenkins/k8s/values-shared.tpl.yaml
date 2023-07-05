@@ -1,7 +1,7 @@
 service:
   ports:
     http: 80
-  <% if (!isRemote) out.print 'type: NodePort'  %>
+  type: <#if isRemote>LoadBalancer<#else>NodePort</#if>
 # We don't use staticSiteConfigmap, so this is extensible for our secret example. See ArgoCD.groovy
 extraVolumes:
   - name: index
@@ -10,20 +10,20 @@ extraVolumes:
       items:
         - key: index.html
           path: index.html
-  <% if (secrets.active) { %>
+  <#if secrets.active>
   - name: secret
     secret:
       secretName: nginx-helm-jenkins
       items:
         - key: some-secret
           path: index.html
-  <% } %>
+  </#if>
 extraVolumeMounts: 
   - name: index
     mountPath: /app
     readOnly: true
-  <% if (secrets.active) { %>
+  <#if secrets.active>
   - name: secret
     mountPath: /app/secret
     readOnly: true
-  <% } %>
+  </#if>

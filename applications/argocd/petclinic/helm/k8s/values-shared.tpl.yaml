@@ -3,7 +3,7 @@ extraEnv: |
     value: Europe/Berlin
 
 service:
-  type: <%= isRemote ? "LoadBalancer" : "NodePort" %>
+  type: <#if isRemote>LoadBalancer<#else>NodePort</#if>
 
 ingress:
   enabled: false
