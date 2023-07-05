@@ -4,9 +4,12 @@ import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.HelmClient
+import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 
-import static org.assertj.core.api.Assertions.assertThat 
+import java.nio.file.Path
+
+import static org.assertj.core.api.Assertions.assertThat
 
 class ExternalSecretsOperatorTest {
 
@@ -32,7 +35,7 @@ class ExternalSecretsOperatorTest {
     ]
     CommandExecutorForTest commandExecutor = new CommandExecutorForTest()
     HelmClient helmClient = new HelmClient(commandExecutor)
-    FileSystemUtils fileSystemUtils = new FileSystemUtils()
+    Path temporaryYamlFile
 
     @Test
     void "is disabled via active flag"() {
@@ -49,11 +52,46 @@ class ExternalSecretsOperatorTest {
                 'helm repo add externalsecretsoperator https://charts.external-secrets.io')
         assertThat(commandExecutor.actualCommands[1].trim()).isEqualTo(
                 'helm upgrade -i external-secrets externalsecretsoperator/external-secrets --version 0.6.0' +
-                        " --values ${fileSystemUtils.rootDir}/applications/cluster-resources/secrets/external-secrets/values.yaml --namespace secrets")
+                        " --values $temporaryYamlFile --namespace secrets")
+    }
+
+    @Test
+    void 'helm release is installed with custom images'() {
+        config['features']['secrets']['externalSecrets']['helm'] = [
+                image              : 'localhost:5000/external-secrets/external-secrets:v0.6.1',
+                certControllerImage: 'localhost:5000/external-secrets/external-secrets-certcontroller:v0.6.1',
+                webhookImage       : 'localhost:5000/external-secrets/external-secrets-webhook:v0.6.1'
+        ]
+        createExternalSecretsOperator().install()
+
+
+        def valuesYaml = parseActualStackYaml()
+        assertThat(valuesYaml['image']['repository']).isEqualTo('localhost:5000/external-secrets/external-secrets')
+        assertThat(valuesYaml['image']['tag']).isEqualTo('v0.6.1')
+
+        assertThat(valuesYaml['certController']['image']['repository']).isEqualTo('localhost:5000/external-secrets/external-secrets-certcontroller')
+        assertThat(valuesYaml['certController']['image']['tag']).isEqualTo('v0.6.1')
+
+        assertThat(valuesYaml['webhook']['image']['repository']).isEqualTo('localhost:5000/external-secrets/external-secrets-webhook')
+        assertThat(valuesYaml['webhook']['image']['tag']).isEqualTo('v0.6.1')
     }
 
     private ExternalSecretsOperator createExternalSecretsOperator() {
-        new ExternalSecretsOperator(config, fileSystemUtils, new HelmStrategy(helmClient))
+        new ExternalSecretsOperator(
+                config,
+                new FileSystemUtils() {
+                    @Override
+                    Path copyToTempDir(String filePath) {
+                        temporaryYamlFile = super.copyToTempDir(filePath)
+                        return temporaryYamlFile
+                    }
+                },
+                new HelmStrategy(helmClient)
+        )
     }
 
+    private parseActualStackYaml() {
+        def ys = new YamlSlurper()
+        return ys.parse(temporaryYamlFile)
+    }
 }

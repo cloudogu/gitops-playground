@@ -59,6 +59,27 @@ class GitopsPlaygroundCli implements Runnable {
     private String helmKubevalImage
     @Option(names = ['--yamllint-image'], description = 'Sets image for yamllint')
     private String yamllintImage
+    @Option(names = ['--grafana-image'], description = 'Sets image for grafana')
+    private String grafanaImage
+    @Option(names = ['--grafana-sidecar-image'], description = 'Sets image for grafana\'s sidecar')
+    private String grafanaSidecarImage
+    @Option(names = ['--prometheus-image'], description = 'Sets image for prometheus')
+    private String prometheusImage
+    @Option(names = ['--prometheus-operator-image'], description = 'Sets image for prometheus-operator')
+    private String prometheusOperatorImage
+    @Option(names = ['--prometheus-config-reloader-image'], description = 'Sets image for prometheus-operator\'s config-reloader')
+    private String prometheusConfigReloaderImage
+    @Option(names = ['--external-secrets-image'], description = 'Sets image for external secrets operator')
+    private String externalSecretsOperatorImage
+    @Option(names = ['--external-secrets-certcontroller-image'], description = 'Sets image for external secrets operator\'s controller')
+    private String externalSecretsOperatorCertControllerImage
+    @Option(names = ['--external-secrets-webhook-image'], description = 'Sets image for external secrets operator\'s webhook')
+    private String externalSecretsOperatorWebhookImage
+    @Option(names = ['--vault-image'], description = 'Sets image for vault')
+    private String vaultImage
+    @Option(names = ['--nginx-image'], description = 'Sets image for nginx used in various applications')
+    private String nginxImage
+
     @Option(names = ['--skip-helm-update'], description = 'Skips adding and updating helm repos')
     private boolean skipHelmUpdate
 
@@ -141,7 +162,8 @@ class GitopsPlaygroundCli implements Runnable {
                         helm       : helmImage,
                         kubeval    : kubevalImage,
                         helmKubeval: helmKubevalImage,
-                        yamllint   : yamllintImage
+                        yamllint   : yamllintImage,
+                        nginx      : nginxImage,
                 ],
                 features    : [
                         fluxv2 : fluxv2,
@@ -150,15 +172,31 @@ class GitopsPlaygroundCli implements Runnable {
                                 url       : argocdUrl
                         ],
                         monitoring : [
-                                active    : monitoring
+                                active    : monitoring,
+                                helm      : [
+                                        grafanaImage: grafanaImage,
+                                        grafanaSidecarImage: grafanaSidecarImage,
+                                        prometheusImage: prometheusImage,
+                                        prometheusOperatorImage: prometheusOperatorImage,
+                                        prometheusConfigReloaderImage: prometheusConfigReloaderImage,
+                                ]
                         ],
                         secrets : [
                                 vault : [
-                                        mode : vault
+                                        mode : vault,
+                                        helm: [
+                                                image: vaultImage
+                                        ]
+                                ],
+                                externalSecrets: [
+                                        helm: [
+                                                image              : externalSecretsOperatorImage,
+                                                certControllerImage: externalSecretsOperatorCertControllerImage,
+                                                webhookImage       : externalSecretsOperatorWebhookImage
+                                        ]
                                 ]
                         ],
                 ]
         ]
     }
 }
-

@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: nginx-helm-dependency
+  name: nginx-helm-umbrella
   namespace: argocd-production
 spec:
   destination:
@@ -9,7 +9,7 @@ spec:
     server: https://kubernetes.default.svc
   project: example-apps
   source:
-    path: apps/nginx-helm-dependency
+    path: apps/nginx-helm-umbrella
     repoURL: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/example-apps
     targetRevision: main
   syncPolicy:
