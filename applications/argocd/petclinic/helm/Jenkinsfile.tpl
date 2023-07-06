@@ -93,7 +93,6 @@ node {
                                 kubeval: '<#if images.kubeval != "">${images.kubeval}<#else>ghcr.io/cloudogu/helm:3.10.3-1</#if>',
                                 helmKubeval: '<#if images.helmKubeval != "">${images.helmKubeval}<#else>ghcr.io/cloudogu/helm:3.10.3-1</#if>',
                                 yamllint: '<#if images.yamllint != "">${images.yamllint}<#else>cytopia/yamllint:1.25-0.7</#if>'
-<#noparse>
                         ],
                         deployments: [
                             sourcePath: 'k8s',
@@ -108,14 +107,14 @@ node {
                         ],
                         stages: [
                                 staging: [
-                                        namespace: 'argocd-staging',
+                                        namespace: '${namePrefix}example-apps-staging',
                                         deployDirectly: true ],
                                 production: [
-                                        namespace: 'argocd-production',
+                                        namespace: '${namePrefix}example-apps-production',
                                         deployDirectly: false ]
                         ]
                 ]
-
+<#noparse>
                 deployViaGitops(gitopsConfig)
             } else {
                 echo 'Skipping deploy, because build not successful or not on main branch'

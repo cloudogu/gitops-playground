@@ -25,6 +25,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 
     @Override
     void deployFeature(String repoURL, String repoName, String chart, String version, String namespace, String releaseName, Path helmValuesPath) {
+        def namePrefix = config.application['namePrefix']
 
         ScmmRepo clusterResourcesRepo = createScmmRepo(config, 'argocd/cluster-resources', commandExecutor)
         clusterResourcesRepo.cloneRepo()
@@ -40,12 +41,12 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
                 kind      : "Application",
                 metadata  : [
                         name     : repoName,
-                        namespace: "argocd"
+                        namespace: "${namePrefix}argocd".toString()
                 ],
                 spec      : [
                         destination: [
                                 server   : "https://kubernetes.default.svc",
-                                namespace: namespace
+                                namespace: "${namePrefix}${namespace}".toString()
                         ],
                         project    : "cluster-resources",
                         sources    : [

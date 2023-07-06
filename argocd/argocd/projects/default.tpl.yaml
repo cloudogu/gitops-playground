@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
   name: default
-  namespace: argocd
+  namespace: ${namePrefix}argocd
   annotations:
     notifications.argoproj.io/subscribe.email: infra@example.org
 spec:

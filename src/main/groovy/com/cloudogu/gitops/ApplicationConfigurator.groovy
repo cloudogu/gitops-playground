@@ -136,9 +136,9 @@ class ApplicationConfigurator {
     private NetworkingUtils networkingUtils
     private FileSystemUtils fileSystemUtils
 
-    ApplicationConfigurator(NetworkingUtils networkingUtils = new NetworkingUtils(), FileSystemUtils fileSystemUtils = new FileSystemUtils()) {
+    ApplicationConfigurator(NetworkingUtils networkingUtils = null, FileSystemUtils fileSystemUtils = new FileSystemUtils()) {
         this.config = DEFAULT_VALUES
-        this.networkingUtils = networkingUtils
+        this.networkingUtils = networkingUtils ?: new NetworkingUtils(config)
         this.fileSystemUtils = fileSystemUtils
     }
 

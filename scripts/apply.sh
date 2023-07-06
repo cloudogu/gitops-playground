@@ -212,7 +212,14 @@ function checkPrerequisites() {
 }
 
 function applyBasicK8sResources() {
-  kubectl apply -f k8s-namespaces || true
+  kubectl create namespace "${NAME_PREFIX}argocd" || true
+  kubectl create namespace "${NAME_PREFIX}example-apps-production" || true
+  kubectl create namespace "${NAME_PREFIX}example-apps-staging" || true
+  kubectl create namespace "flux-system" || true
+  kubectl create namespace "fluxv2-production" || true
+  kubectl create namespace "fluxv2-staging" || true
+  kubectl create namespace "${NAME_PREFIX}monitoring" || true
+  kubectl create namespace "${NAME_PREFIX}secrets" || true
 
   createSecrets
 

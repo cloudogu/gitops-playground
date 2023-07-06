@@ -19,8 +19,8 @@ class MailhogTest {
             application: [
                     username: 'abc',
                     password: '123',
-                    remote  : false
-
+                    remote  : false,
+                    namePrefix: "foo-",
             ],
             scmm       : [
                     internal: true,
@@ -119,7 +119,7 @@ class MailhogTest {
                 'helm repo add mailhog https://codecentric.github.io/helm-charts')
         assertThat(commandExecutor.actualCommands[1].trim()).isEqualTo(
                 'helm upgrade -i mailhog mailhog/mailhog --version 5.0.1' +
-                        " --values ${temporaryYamlFile} --namespace monitoring")
+                        " --values ${temporaryYamlFile} --namespace foo-monitoring")
     }
 
     private Mailhog createMailhog() {
@@ -131,7 +131,7 @@ class MailhogTest {
                 temporaryYamlFile = super.copyToTempDir(filePath)
                 return temporaryYamlFile
             }
-        }, new HelmStrategy(helmClient))
+        }, new HelmStrategy(config, helmClient))
     }
 
     private parseActualYaml() {

@@ -2,10 +2,10 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: exercise-petclinic-helm
-  namespace: argocd-staging
+  namespace: ${namePrefix}example-apps-staging
 spec:
   destination:
-    namespace: argocd-staging
+    namespace: ${namePrefix}example-apps-staging
     server: https://kubernetes.default.svc
   project: example-apps
   source:
@@ -25,10 +25,10 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: exercise-petclinic-helm
-  namespace: argocd-production
+  namespace: ${namePrefix}example-apps-production
 spec:
   destination:
-    namespace: argocd-production
+    namespace: ${namePrefix}example-apps-production
     server: https://kubernetes.default.svc
   project: example-apps
   source:

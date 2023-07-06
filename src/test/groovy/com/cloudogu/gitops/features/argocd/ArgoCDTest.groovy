@@ -416,7 +416,7 @@ class ArgoCDTest {
 
         ArgoCDForTest(Map config) {
             super(config)
-            this.k8sClient = new K8sClient(k8sCommands)
+            this.k8sClient = new K8sClient(config, k8sCommands)
             this.helmClient = new HelmClient(helmCommands)
         }
 

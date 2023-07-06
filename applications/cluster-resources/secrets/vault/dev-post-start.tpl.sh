@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 # No bash in vault container, only plain shell!
-
+<#noparse>
 set -o errexit -o nounset
 # No pipefail in plain shell (!= bash)
 #-o pipefail
@@ -10,10 +10,10 @@ set -x
 
 # Parameters (via env vars)
 # USERNAME, PASSWORD -> Human user account created in vault
-# ARGOCD -> Allows read access for service accounts within argocd-staging and -production namespaces used by external secrets operator
+# ARGOCD -> Allows read access for service accounts within example-apps-staging and -production namespaces used by external secrets operator
 
 main() {
-  
+
   waitForVault
   
   createSecretsForExampleApp
@@ -81,13 +81,16 @@ path "secret/data/${STAGE}/*" {
   capabilities = ["read"]
 }
 EOF
-  
+
     vault write auth/kubernetes/role/${STAGE} \
          bound_service_account_names=external-secrets-vault-reader \
-         bound_service_account_namespaces=argocd-${STAGE} \
+</#noparse>
+         bound_service_account_namespaces=${namePrefix}example-apps-${r"${STAGE}"} \
+<#noparse>
          policies=${POLICY} \
          ttl=24h
   done
 }
 
 main "$@"
+</#noparse>

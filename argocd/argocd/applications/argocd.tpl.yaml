@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: argocd
-  namespace: argocd
+  namespace: ${namePrefix}argocd
   annotations:
     # Only app with the sync-status-unknown alert, so that we only get one alert when SCM is not reachable.
     # Otherwise, there would be a spam wave by every application everytime the SCM is not reachable.
@@ -13,11 +13,11 @@ metadata:
 spec:
   destination:
     server: https://kubernetes.default.svc
-    namespace: argocd
+    namespace: ${namePrefix}argocd
   project: argocd
   source:
     path: argocd/
-    repoURL: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/${namePrefix}argocd/argocd
+    repoURL: ${scmm.baseUrl}/repo/${namePrefix}argocd/argocd
     targetRevision: main
   syncPolicy:
     automated:

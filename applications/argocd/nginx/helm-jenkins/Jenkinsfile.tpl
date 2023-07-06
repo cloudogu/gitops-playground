@@ -63,7 +63,6 @@ node('docker') {
                             helmKubeval: '<#if images.helmKubeval != "">${images.helmKubeval}<#else>ghcr.io/cloudogu/helm:3.10.3-1</#if>',
                             yamllint: '<#if images.yamllint != "">${images.yamllint}<#else>cytopia/yamllint:1.25-0.7</#if>'
                     ],
-<#noparse>
                     deployments: [
                         sourcePath: 'k8s',
                         destinationRootPath: 'apps',
@@ -76,14 +75,15 @@ node('docker') {
                     ],
                     stages: [
                             staging: [
-                                namespace: 'argocd-staging',
+                                namespace: '${namePrefix}example-apps-staging',
                                 deployDirectly: true
                                 ],
                             production: [
-                                namespace: 'argocd-production',
+                                namespace: '${namePrefix}example-apps-production',
                                 deployDirectly: false
                                 ],
                     ],
+<#noparse>
                     fileConfigmaps: [
                             [
                                 name : "index-nginx",

@@ -17,7 +17,8 @@ class PrometheusStackTest {
             application: [
                     username: 'abc',
                     password: '123',
-                    remote  : false
+                    remote  : false,
+                    namePrefix: "foo-",
             ],
             features   : [
                     monitoring: [
@@ -108,7 +109,7 @@ class PrometheusStackTest {
                 'helm repo add prometheusstack https://prom')
         assertThat(commandExecutor.actualCommands[1].trim()).isEqualTo(
                 'helm upgrade -i kube-prometheus-stack prometheusstack/kube-prometheus-stack --version 19.2.2' +
-                        " --values ${temporaryYamlFile} --namespace monitoring")
+                        " --values ${temporaryYamlFile} --namespace foo-monitoring")
     }
 
     private PrometheusStack createStack() {
@@ -116,10 +117,11 @@ class PrometheusStackTest {
         new PrometheusStack(config, new FileSystemUtils() {
             @Override
             Path copyToTempDir(String filePath) {
-                temporaryYamlFile = super.copyToTempDir(filePath)
-                return temporaryYamlFile
+                Path ret = super.copyToTempDir(filePath)
+                temporaryYamlFile = Path.of(ret.toString().replace(".tpl", "")) // Path after template invocation
+                return ret
             }
-        }, new HelmStrategy(helmClient))
+        }, new HelmStrategy(config, helmClient))
     }
 
     private parseActualStackYaml() {

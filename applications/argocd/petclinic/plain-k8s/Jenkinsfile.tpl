@@ -77,7 +77,6 @@ node {
                         folderStructureStrategy: 'ENV_PER_APP',
 </#noparse>
                         k8sVersion : env.${namePrefixForEnvVars}K8S_VERSION,
-<#noparse>
                         deployments: [
                                 sourcePath: 'k8s',
                                 destinationRootPath: 'apps',
@@ -99,13 +98,14 @@ node {
                         ],
                         stages: [
                                 staging: [
-                                        namespace: 'argocd-staging',
+                                        namespace: '${namePrefix}example-apps-staging',
                                         deployDirectly: true ],
                                 production: [
-                                        namespace: 'argocd-production',
+                                        namespace: '${namePrefix}example-apps-production',
                                         deployDirectly: false ],
                         ]
                 ]
+<#noparse>
                 addSpecificGitOpsConfig(gitopsConfig)
                 
                 deployViaGitops(gitopsConfig)

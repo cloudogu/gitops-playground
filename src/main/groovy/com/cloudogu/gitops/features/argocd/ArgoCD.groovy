@@ -35,13 +35,14 @@ class ArgoCD extends Feature {
     protected File brokenApplicationTmpDir
     protected List<File> petClinicTmpDirs = []
     
-    protected K8sClient k8sClient = new K8sClient()
+    protected K8sClient k8sClient
     protected HelmClient helmClient = new HelmClient()
 
     protected FileSystemUtils fileSystemUtils = new FileSystemUtils()
 
     ArgoCD(Map config) {
         this.config = config
+        k8sClient = new K8sClient(config)
         
         this.password = config.application["password"]
 
@@ -257,7 +258,7 @@ class ArgoCD extends Feature {
                 Path.of(argocdRepoTmpDir.absolutePath, CHART_YAML_PATH))['dependencies'] 
         helmClient.addRepo('argo', helmDependencies[0]['repository'] as String)
         helmClient.dependencyBuild(umbrellaChartPath)
-        helmClient.upgrade('argocd', umbrellaChartPath, [namespace: 'argocd'])
+        helmClient.upgrade('argocd', umbrellaChartPath, [namespace: "${namePrefix}argocd"])
          
         log.debug("Setting new argocd admin password")
         // Set admin password imperatively here instead of values.yaml, because we don't want it to show in git repo 

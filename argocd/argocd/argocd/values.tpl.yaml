@@ -11,7 +11,7 @@ argo-cd:
       enabled: true
       serviceMonitor:
         enabled: true
-        namespace: monitoring
+        namespace: ${namePrefix}monitoring
         selector:
           release: kube-prometheus-stack
   
@@ -20,7 +20,7 @@ argo-cd:
       enabled: true
       serviceMonitor:
         enabled: true
-        namespace: monitoring
+        namespace: ${namePrefix}monitoring
         selector:
           release: kube-prometheus-stack
   
@@ -29,7 +29,7 @@ argo-cd:
       enabled: true
       serviceMonitor:
         enabled: true
-        namespace: monitoring
+        namespace: ${namePrefix}monitoring
         selector:
           release: kube-prometheus-stack
   configs:
@@ -49,19 +49,19 @@ argo-cd:
     repositories:
       argocd:
         name: argocd
-        url: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/${namePrefix}argocd/argocd
+        url: ${scmm.baseUrl}/repo/${namePrefix}argocd/argocd
       example-apps:
         name: example-apps
-        url: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/${namePrefix}argocd/example-apps
+        url: ${scmm.baseUrl}/repo/${namePrefix}argocd/example-apps
       cluster-resources:
         name: cluster-resources
-        url: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/${namePrefix}argocd/cluster-resources
+        url: ${scmm.baseUrl}/repo/${namePrefix}argocd/cluster-resources
       nginx-helm-jenkins:
         name: nginx-helm-jenkins
-        url: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/${namePrefix}argocd/nginx-helm-jenkins
+        url: ${scmm.baseUrl}/repo/${namePrefix}argocd/nginx-helm-jenkins
       nginx-helm-umbrella:
         name: nginx-helm-umbrella
-        url: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/${namePrefix}argocd/nginx-helm-umbrella
+        url: ${scmm.baseUrl}/repo/${namePrefix}argocd/nginx-helm-umbrella
       bitnami:
         name: bitnami
         type: helm
@@ -87,9 +87,10 @@ argo-cd:
     argocdUrl: https://localhost:9092
     notifiers:
       service.email: |
-        host: mailhog.monitoring.svc.cluster.local
+        host: mailhog.${namePrefix}monitoring.svc.cluster.local
         port: 1025
         from: argocd-alerts@cloudogu.com
+<#noparse>
     templates:
       template.app-deployed: |
         email:
@@ -120,8 +121,8 @@ argo-cd:
         message: |
           Application {{.app.metadata.name}} sync is 'Unknown'.
           Application details: {{.context.argocdUrl}}/applications/{{.app.metadata.name}}.
-          {{range \$c := .app.status.conditions}}
-              * {{\$c.message}}
+          {{range $c := .app.status.conditions}}
+              * {{$c.message}}
           {{end}}
       template.app-sync-succeeded: |
         email:
@@ -185,3 +186,4 @@ argo-cd:
           send:
           - app-sync-status-longer-10s
           when: app.status.operationState.phase in ['Running'] and time.Now().Sub(time.Parse(app.status.operationState.startedAt)).Seconds() >= 10
+</#noparse>

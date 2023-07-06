@@ -4,14 +4,14 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: misc
-  namespace: argocd-production
+  namespace: ${namePrefix}example-apps-production
 spec:
   project: example-apps
   destination:
     server: https://kubernetes.default.svc
     # a namespace must be specified here, because teams are not allowed to deploy cluster-wide.
     # You can specify a different namespace in the ressource YAMLs, if you are permitted to deploy in them
-    namespace: argocd-production
+    namespace: ${namePrefix}example-apps-production
   source:
     path: misc/
     repoURL: ${scmm.baseUrl}/repo/${namePrefix}argocd/example-apps

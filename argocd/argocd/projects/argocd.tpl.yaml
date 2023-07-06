@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
   name: argocd
-  namespace: argocd
+  namespace: ${namePrefix}argocd
   annotations:
     notifications.argoproj.io/subscribe.email: infra@example.org
 spec:
@@ -15,9 +15,9 @@ spec:
       kind: '*'
   # must be able to get all git repos because of the Applications pointing to other repos
   sourceRepos:
-    - http://scmm-scm-manager.default.svc.cluster.local/scm/repo/${namePrefix}argocd/argocd
-    - http://scmm-scm-manager.default.svc.cluster.local/scm/repo/${namePrefix}argocd/cluster-resources
-    - http://scmm-scm-manager.default.svc.cluster.local/scm/repo/${namePrefix}argocd/example-apps
+    - ${scmm.baseUrl}/repo/${namePrefix}argocd/argocd
+    - ${scmm.baseUrl}/repo/${namePrefix}argocd/cluster-resources
+    - ${scmm.baseUrl}/repo/${namePrefix}argocd/example-apps
   # Allow applications from all namespaces to use this project for now.
   sourceNamespaces:
     - '*'

@@ -10,7 +10,7 @@ class TemplatingEngine {
         this.engine = engine ?: new Configuration(new Version("2.3.32"))
     }
 
-    void replaceTemplate(File file, Map parameters) {
+    File replaceTemplate(File file, Map parameters) {
         if (!file.name.contains(".tpl")) {
             throw new RuntimeException("File must contain .tpl to be a template")
         }
@@ -22,5 +22,7 @@ class TemplatingEngine {
         templ.process(parameters, targetFile.newWriter())
 
         file.delete()
+
+        return targetFile
     }
 }

@@ -3,18 +3,18 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: bootstrap
-  namespace: argocd
+  namespace: ${namePrefix}argocd
 # finalizer disabled, because otherwise everything under this Application would be deleted as well, if this Application is deleted by accident
 #  finalizers:
 #    - resources-finalizer.argocd.argoproj.io
 spec:
   destination:
     server: https://kubernetes.default.svc
-    namespace: argocd
+    namespace: ${namePrefix}argocd
   project: argocd
   source:
     path: applications/
-    repoURL: http://scmm-scm-manager.default.svc.cluster.local/scm/repo/${namePrefix}argocd/argocd
+    repoURL: ${scmm.baseUrl}/repo/${namePrefix}argocd/argocd
     targetRevision: main
     directory:
       recurse: true
