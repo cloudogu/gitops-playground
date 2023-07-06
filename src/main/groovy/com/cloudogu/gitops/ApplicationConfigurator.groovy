@@ -52,7 +52,8 @@ class ApplicationConfigurator {
                     yes           : false,
                     runningInsideK8s : false, // Set dynamically
                     clusterBindAddress : '', // Set dynamically
-                    namePrefix    : ''
+                    namePrefix    : '',
+                    namePrefixForEnvVars    : '',
             ],
             images     : [
                     kubectl    : "lachlanevenson/k8s-kubectl:v1.25.4",

@@ -3,7 +3,8 @@
 String getApplication() { "exercise-nginx-helm" }
 String getScmManagerCredentials() { 'scmm-user' }
 String getConfigRepositoryPRBaseUrl() { env.SCMM_URL }
-String getConfigRepositoryPRRepo() { 'argocd/example-apps' }
+String getConfigRepositoryPRRepo() { '${namePrefix}argocd/example-apps' }
+<#noparse>
 String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/3rd-party-dependencies/ces-build-lib/" }
 String getCesBuildLibVersion() { '1.64.1' }
 String getGitOpsBuildLibRepo() { "${env.SCMM_URL}/repo/3rd-party-dependencies/gitops-build-lib" }
@@ -53,14 +54,16 @@ node('docker') {
                     mainBranch: mainBranch,
                     gitopsTool: 'ARGO',
                     folderStructureStrategy: 'ENV_PER_APP',
-                    k8sVersion : "${env.K8S_VERSION}",
+</#noparse>
+                    k8sVersion : env.${namePrefixForEnvVars}K8S_VERSION,
                     buildImages          : [
-                            helm: 'ghcr.io/cloudogu/helm:3.10.3-1',
-                            kubectl: 'lachlanevenson/k8s-kubectl:v1.25.4',
-                            kubeval: 'ghcr.io/cloudogu/helm:3.10.3-1',
-                            helmKubeval: 'ghcr.io/cloudogu/helm:3.10.3-1',
-                            yamllint: 'cytopia/yamllint:1.25-0.7'
+                        helm: '<#if images.helm != "">${images.helm}<#else>ghcr.io/cloudogu/helm:3.10.3-1</#if>',
+                        kubectl: '<#if images.kubectl != "">${images.kubectl}<#else>lachlanevenson/k8s-kubectl:v1.25.4</#if>',
+                        kubeval: '<#if images.kubeval != "">${images.kubeval}<#else>ghcr.io/cloudogu/helm:3.10.3-1</#if>',
+                        helmKubeval: '<#if images.helmKubeval != "">${images.helmKubeval}<#else>ghcr.io/cloudogu/helm:3.10.3-1</#if>',
+                        yamllint: '<#if images.yamllint != "">${images.yamllint}<#else>cytopia/yamllint:1.25-0.7</#if>'
                     ],
+<#noparse>
                     deployments: [
                         sourcePath: 'k8s',
                         destinationRootPath: 'apps',
@@ -101,3 +104,4 @@ node('docker') {
 
 def cesBuildLib
 def gitOpsBuildLib
+</#noparse>

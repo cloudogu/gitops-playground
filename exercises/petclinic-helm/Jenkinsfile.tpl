@@ -4,10 +4,10 @@ String getApplication() { "exercise-spring-petclinic-helm" }
 String getScmManagerCredentials() { 'scmm-user' }
 String getConfigRepositoryPRBaseUrl() { env.SCMM_URL }
 String getConfigRepositoryPRRepo() { '${namePrefix}argocd/example-apps' }
-<#noparse>
 // The docker daemon cant use the k8s service name, because it is not running inside the cluster
-String getDockerRegistryBaseUrl() { env.REGISTRY_URL }
-String getDockerRegistryPath() { env.REGISTRY_PATH }
+String getDockerRegistryBaseUrl() { env.${namePrefixForEnvVars}REGISTRY_URL }
+String getDockerRegistryPath() { env.${namePrefixForEnvVars}REGISTRY_PATH }
+<#noparse>
 String getDockerRegistryCredentials() { 'registry-user' }
 String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/3rd-party-dependencies/ces-build-lib/" }
 String getCesBuildLibVersion() { '1.64.1' }

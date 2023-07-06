@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.springframework.security.crypto.bcrypt.BCrypt
 
+import java.nio.file.Files
 import java.nio.file.Path
 
 import static org.assertj.core.api.Assertions.assertThat
@@ -26,7 +27,8 @@ class ArgoCDTest {
                     remote  : false,
                     password: '123',
                     username: 'something',
-                    namePrefix : ''
+                    namePrefix : '',
+                    namePrefixForEnvVars : '',
             ],
             scmm       : [
                     internal: true,
@@ -261,17 +263,20 @@ class ArgoCDTest {
         createArgoCD().install()
         
         assertArgoCdYamlPrefixes(ArgoCD.SCMM_URL_INTERNAL, '')
+        assertJenkinsEnvironmentVariablesPrefixes('')
     }
     
     @Test
     void 'Pushes repos with name-prefix'(){
         config.application['namePrefix'] = 'abc-'
+        config.application['namePrefixForEnvVars'] = 'ABC_'
         createArgoCD().install()
 
         assertArgoCdYamlPrefixes(ArgoCD.SCMM_URL_INTERNAL, 'abc-')
+        assertJenkinsEnvironmentVariablesPrefixes('ABC_')
     }
 
-    protected void assertArgoCdYamlPrefixes(String scmmUrl, String expectedPrefix) {
+    private void assertArgoCdYamlPrefixes(String scmmUrl, String expectedPrefix) {
         // TODO in applications assert metadata.namespace and spec.destination.namespace  
         // TODO in projects assert metadata.namespace and spec.sourceNamespaces
 
@@ -306,15 +311,22 @@ class ArgoCDTest {
         }
     }
 
-    static void assertAllYamlFiles(File rootDir, String childDir, Integer numberOfFiles, Closure cl) {
+    private static void assertAllYamlFiles(File rootDir, String childDir, Integer numberOfFiles, Closure cl) {
         def nFiles = 
                 new File(rootDir, childDir).listFiles({ _, name -> name ==~ /.*\.yaml/ } as FilenameFilter)
                         .each(cl).size()
         assertThat(nFiles).isEqualTo(numberOfFiles)
     }
 
+    private void assertJenkinsEnvironmentVariablesPrefixes(String prefix) {
+        assertThat(new File(nginxHelmJenkinsTmpDir, 'Jenkinsfile').text).contains("env.${prefix}K8S_VERSION")
+        for (def petclinicTmpDir : petClinicTmpDirs) {
+            assertThat(new File(petclinicTmpDir, 'Jenkinsfile').text).contains("env.${prefix}REGISTRY_URL")
+            assertThat(new File(petclinicTmpDir, 'Jenkinsfile').text).contains("env.${prefix}REGISTRY_PATH")
+        }
+    }
 
-    static List findFilesContaining(File folder, String stringToSearch) {
+    private static List findFilesContaining(File folder, String stringToSearch) {
         List result = []
         folder.eachFileRecurse(FileType.FILES) {
             if (it.text.contains(stringToSearch)) {

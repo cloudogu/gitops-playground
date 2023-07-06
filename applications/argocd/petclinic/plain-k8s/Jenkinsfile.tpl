@@ -3,11 +3,11 @@
 // "Constants"
 String getApplication() { 'spring-petclinic-plain' }
 String getConfigRepositoryPRRepo() { '${namePrefix}argocd/example-apps' }
-<#noparse>
 String getScmManagerCredentials() { 'scmm-user' }
 String getConfigRepositoryPRBaseUrl() { env.SCMM_URL }
-String getDockerRegistryBaseUrl() { env.REGISTRY_URL }
-String getDockerRegistryPath() { env.REGISTRY_PATH }
+String getDockerRegistryBaseUrl() { env.${namePrefixForEnvVars}REGISTRY_URL }
+String getDockerRegistryPath() { env.${namePrefixForEnvVars}REGISTRY_PATH }
+<#noparse>
 String getDockerRegistryCredentials() { 'registry-user' }
 String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/3rd-party-dependencies/ces-build-lib" }
 String getCesBuildLibVersion() { '1.64.1' }
@@ -75,7 +75,9 @@ node {
                         application: application,
                         gitopsTool: 'ARGO',
                         folderStructureStrategy: 'ENV_PER_APP',
-                        k8sVersion : "${env.K8S_VERSION}",
+</#noparse>
+                        k8sVersion : env.${namePrefixForEnvVars}K8S_VERSION,
+<#noparse>
                         deployments: [
                                 sourcePath: 'k8s',
                                 destinationRootPath: 'apps',

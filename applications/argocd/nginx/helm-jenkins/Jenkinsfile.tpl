@@ -54,8 +54,8 @@ node('docker') {
                     mainBranch: mainBranch,
                     gitopsTool: 'ARGO',
                     folderStructureStrategy: 'ENV_PER_APP',
-                    k8sVersion : "${env.K8S_VERSION}",
 </#noparse>
+                    k8sVersion : env.${namePrefixForEnvVars}K8S_VERSION,
                     buildImages          : [
                             helm: '<#if images.helm != "">${images.helm}<#else>ghcr.io/cloudogu/helm:3.10.3-1</#if>',
                             kubectl: '<#if images.kubectl != "">${images.kubectl}<#else>lachlanevenson/k8s-kubectl:v1.25.4</#if>',

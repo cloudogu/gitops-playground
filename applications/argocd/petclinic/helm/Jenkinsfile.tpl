@@ -4,10 +4,10 @@ String getApplication() { "spring-petclinic-helm" }
 String getScmManagerCredentials() { 'scmm-user' }
 String getConfigRepositoryPRBaseUrl() { env.SCMM_URL }
 String getConfigRepositoryPRRepo() { '${namePrefix}argocd/example-apps' }
-<#noparse>
 // The docker daemon cant use the k8s service name, because it is not running inside the cluster
-String getDockerRegistryBaseUrl() { env.REGISTRY_URL }
-String getDockerRegistryPath() { env.REGISTRY_PATH }
+String getDockerRegistryBaseUrl() { env.${namePrefixForEnvVars}REGISTRY_URL }
+String getDockerRegistryPath() { env.${namePrefixForEnvVars}REGISTRY_PATH }
+<#noparse>
 String getDockerRegistryCredentials() { 'registry-user' }
 String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/3rd-party-dependencies/ces-build-lib/" }
 String getCesBuildLibVersion() { '1.64.1' }
@@ -85,9 +85,9 @@ node {
                         mainBranch: mainBranch,
                         gitopsTool: 'ARGO',
                         folderStructureStrategy: 'ENV_PER_APP',
-                        k8sVersion : "${env.K8S_VERSION}",
-                        buildImages          : [
 </#noparse>
+                        k8sVersion : env.${namePrefixForEnvVars}K8S_VERSION,
+                        buildImages          : [
                                 helm: '<#if images.helm != "">${images.helm}<#else>ghcr.io/cloudogu/helm:3.10.3-1</#if>',
                                 kubectl: '<#if images.kubectl != "">${images.kubectl}<#else>lachlanevenson/k8s-kubectl:v1.25.4</#if>',
                                 kubeval: '<#if images.kubeval != "">${images.kubeval}<#else>ghcr.io/cloudogu/helm:3.10.3-1</#if>',

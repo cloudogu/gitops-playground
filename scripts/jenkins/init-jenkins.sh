@@ -125,11 +125,9 @@ function configureJenkins() {
   waitForJenkins
 
   setGlobalProperty "SCMM_URL" "${SCMM_URL}"
-  setGlobalProperty "REGISTRY_URL" "${REGISTRY_URL}"
-  setGlobalProperty "REGISTRY_PATH" "${REGISTRY_PATH}"
-  setGlobalProperty "K8S_VERSION" "${K8S_VERSION}"
-
-
+  setGlobalProperty "${NAME_PREFIX_ENVIRONMENT_VARS}REGISTRY_URL" "${REGISTRY_URL}"
+  setGlobalProperty "${NAME_PREFIX_ENVIRONMENT_VARS}REGISTRY_PATH" "${REGISTRY_PATH}"
+  setGlobalProperty "${NAME_PREFIX_ENVIRONMENT_VARS}K8S_VERSION" "${K8S_VERSION}"
 
 
   if [[ $INSTALL_FLUXV2 == true ]]; then

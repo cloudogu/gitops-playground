@@ -345,6 +345,7 @@ class ArgoCD extends Feature {
 
             repo.replaceTemplates(~/\.tpl/, [
                     namePrefix: config.application['namePrefix'] as String,
+                    namePrefixForEnvVars: config.application['namePrefixForEnvVars'] as String,
                     images: config.images,
                     isRemote: config.application['remote'],
                     secrets: [

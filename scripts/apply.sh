@@ -66,9 +66,14 @@ function main() {
 
   CLUSTER_BIND_ADDRESS=$(findClusterBindAddress)
 
+  export ORIG_NAME_PREFIX="$NAME_PREFIX"
   if [[ -n "${NAME_PREFIX}" ]]; then
     # Name-prefix should always end with '-'
     NAME_PREFIX="${NAME_PREFIX}-"
+  fi
+  export NAME_PREFIX_ENVIRONMENT_VARS="$ORIG_NAME_PREFIX"
+  if [ -n "$NAME_PREFIX_ENVIRONMENT_VARS" ]; then
+      NAME_PREFIX_ENVIRONMENT_VARS="${NAME_PREFIX_ENVIRONMENT_VARS^^}_"
   fi
 
   if [[ $INSECURE == true ]]; then
@@ -388,6 +393,9 @@ function pushPetClinicRepo() {
     cp -r "${PLAYGROUND_DIR}/${LOCAL_PETCLINIC_SOURCE}"/* .
 
     replaceAllImagesInJenkinsfile "${TMP_REPO}/Jenkinsfile"
+
+    sed -i "s/env.REGISTRY_URL/env.${NAME_PREFIX_ENVIRONMENT_VARS}REGISTRY_URL/g" "${TMP_REPO}/Jenkinsfile"
+    sed -i "s/env.REGISTRY_PATH/env.${NAME_PREFIX_ENVIRONMENT_VARS}REGISTRY_PATH/g" "${TMP_REPO}/Jenkinsfile"
 
     if [[ $REMOTE_CLUSTER != true ]]; then
       # Set NodePort service, to avoid "Pending" services and "Processing" state in argo
