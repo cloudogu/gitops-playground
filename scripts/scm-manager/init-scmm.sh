@@ -43,11 +43,11 @@ function configureScmmManager() {
 
   ### FluxV2 Repos
   if [[ $INSTALL_FLUXV2 == true ]]; then
-    addRepo "${NAME_PREFIX}fluxv2" "gitops"
-    setPermission "${NAME_PREFIX}fluxv2" "gitops" "${GITOPS_USERNAME}" "WRITE"
+    addRepo "fluxv2" "gitops"
+    setPermission "fluxv2" "gitops" "${GITOPS_USERNAME}" "WRITE"
   
-    addRepo "${NAME_PREFIX}fluxv2" "petclinic-plain"
-    setPermission "${NAME_PREFIX}fluxv2" "petclinic-plain" "${GITOPS_USERNAME}" "WRITE"
+    addRepo "fluxv2" "petclinic-plain"
+    setPermission "fluxv2" "petclinic-plain" "${GITOPS_USERNAME}" "WRITE"
   fi
 
   ### ArgoCD Repos

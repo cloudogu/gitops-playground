@@ -311,9 +311,9 @@ function setExternalHostnameIfNecessary() {
 }
 
 function initFluxV2() {
-  pushPetClinicRepo 'applications/fluxv2/petclinic/plain-k8s' "${NAME_PREFIX}fluxv2/petclinic-plain"
+  pushPetClinicRepo 'applications/fluxv2/petclinic/plain-k8s' "fluxv2/petclinic-plain"
 
-  initRepoWithSource 'fluxv2' "${NAME_PREFIX}fluxv2/gitops"
+  initRepoWithSource 'fluxv2' "fluxv2/gitops"
 
   REPOSITORY_YAML_PATH="fluxv2/clusters/gitops-playground/flux-system/gotk-sync.yaml"
   if [[ ${INTERNAL_SCMM} == false ]]; then
@@ -376,9 +376,9 @@ function replaceImageIfSet() {
 }
 
 function createSecrets() {
-  createSecret gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=$SET_PASSWORD -n default
+  createSecret gitops-scmm --from-literal="USERNAME=${NAME_PREFIX}gitops" --from-literal=PASSWORD=$SET_PASSWORD -n default
   # flux needs lowercase fieldnames
-  createSecret flux-system --from-literal=username=gitops --from-literal=password=$SET_PASSWORD -n flux-system
+  createSecret flux-system --from-literal="username=${NAME_PREFIX}gitops" --from-literal=password=$SET_PASSWORD -n flux-system
 }
 
 function createSecret() {
@@ -602,7 +602,7 @@ function printWelcomeScreen() {
   echo "|"
 
   if [[ $INSTALL_FLUXV2 == true ]]; then
-    echo -e "| - \e[32m${JENKINS_URL}/job/${NAME_PREFIX}fluxv2-example-apps/\e[0m"
+    echo -e "| - \e[32m${JENKINS_URL}/job/fluxv2-example-apps/\e[0m"
   fi
   if [[ $INSTALL_ARGOCD == true ]]; then
     echo -e "| - \e[32m${JENKINS_URL}/job/${NAME_PREFIX}example-apps/\e[0m"

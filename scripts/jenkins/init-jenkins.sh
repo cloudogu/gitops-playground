@@ -131,9 +131,9 @@ function configureJenkins() {
 
 
   if [[ $INSTALL_FLUXV2 == true ]]; then
-    createJob "${NAME_PREFIX}fluxv2-example-apps" "${SCMM_URL}" "${NAME_PREFIX}fluxv2" "scmm-user"
-    createCredentials "scmm-user" "${NAME_PREFIX}gitops" "${SCMM_PASSWORD}" "credentials for accessing scm-manager" "${NAME_PREFIX}fluxv2-example-apps"
-    createCredentials "registry-user" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}" "credentials for accessing the docker-registry" "${NAME_PREFIX}fluxv2-example-apps"
+    createJob "fluxv2-example-apps" "${SCMM_URL}" "fluxv2" "scmm-user"
+    createCredentials "scmm-user" "${NAME_PREFIX}gitops" "${SCMM_PASSWORD}" "credentials for accessing scm-manager" "fluxv2-example-apps"
+    createCredentials "registry-user" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}" "credentials for accessing the docker-registry" "fluxv2-example-apps"
   fi
   if [[ $INSTALL_ARGOCD == true ]]; then
     createJob "${NAME_PREFIX}example-apps" "${SCMM_URL}" "${NAME_PREFIX}argocd" "scmm-user"
