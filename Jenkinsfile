@@ -20,7 +20,7 @@ properties([
     ])
 ])
 
-node('docker') {
+node('high-cpu') {
 
     git = new Git(this)
     // Avoid 'No such property: clusterName' error in 'Stop k3d' stage in builds that have failed in an early stage
