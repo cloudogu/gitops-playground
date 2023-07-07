@@ -14,6 +14,7 @@ import org.springframework.security.crypto.bcrypt.BCrypt
 
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.stream.Collectors
 
 import static org.assertj.core.api.Assertions.assertThat
 import static org.assertj.core.api.Assertions.fail
@@ -254,8 +255,6 @@ class ArgoCDTest {
         assertThat(filesWithExternalSCMM).isNotEmpty()
         filesWithExternalSCMM = findFilesContaining(exampleAppsTmpDir, "https://abc")
         assertThat(filesWithExternalSCMM).isNotEmpty()
-
-        // TODO assert YAML prefixes here as well?
     }
 
     @Test
@@ -277,44 +276,99 @@ class ArgoCDTest {
     }
 
     private void assertArgoCdYamlPrefixes(String scmmUrl, String expectedPrefix) {
-        // TODO in applications assert metadata.namespace and spec.destination.namespace  
-        // TODO in projects assert metadata.namespace and spec.sourceNamespaces
-
-        assertAllYamlFiles(argocdRepoTmpDir, 'projects', 4) { File it ->
-            List<String> sourceRepos = parseActualYaml(it.absolutePath)['spec']['sourceRepos'] as List<String>
+        assertAllYamlFiles(argocdRepoTmpDir, 'projects', 4) { Path file ->
+            def yaml = parseActualYaml(file.toString())
+            List<String> sourceRepos = yaml['spec']['sourceRepos'] as List<String>
             // Some projects might not have sourceRepos
             if (sourceRepos) {
                 sourceRepos.each {
                     if (it.startsWith(scmmUrl)) {
-                        assertThat(it).as("$it sourceRepos have name prefix").startsWith("${scmmUrl}/repo/${expectedPrefix}argocd")
+                        assertThat(it)
+                                .as("$file sourceRepos have name prefix")
+                                .startsWith("${scmmUrl}/repo/${expectedPrefix}argocd")
+                    }
+                }
+            }
+
+            String metadataNamespace = yaml['metadata']['namespace'] as String
+            if (metadataNamespace) {
+                assertThat(metadataNamespace)
+                        .as("$file metadata.namespace has name prefix")
+                        .isEqualTo("${expectedPrefix}argocd".toString())
+            }
+
+            List<String> sourceNamespaces = yaml['spec']['sourceNamespaces'] as List<String>
+            if (sourceNamespaces) {
+                sourceNamespaces.each {
+                    if (it != '*') {
+                        assertThat(it)
+                                .as("$file spec.sourceNamespace has name prefix")
+                                .startsWith("${expectedPrefix}")
                     }
                 }
             }
         }
 
-        assertAllYamlFiles(argocdRepoTmpDir, 'applications', 5) { File it ->
-            assertThat(parseActualYaml(it.absolutePath)['spec']['source']['repoURL'] as String)
+        assertAllYamlFiles(argocdRepoTmpDir, 'applications', 5) { Path file ->
+            def yaml = parseActualYaml(file.toString())
+            assertThat(yaml['spec']['source']['repoURL'] as String)
+                    .as("$file repoURL have name prefix")
+                    .startsWith("${scmmUrl}/repo/${expectedPrefix}argocd")
+
+            assertThat(yaml['metadata']['namespace'])
+                    .as("$file metadata.namspace has name prefix")
+                    .isEqualTo("${expectedPrefix}argocd".toString())
+
+            assertThat(yaml['spec']['destination']['namespace'])
+                    .as("$file spec.destination.namspace has name prefix")
+                    .isEqualTo("${expectedPrefix}argocd".toString())
+        }
+
+        assertAllYamlFiles(exampleAppsTmpDir, 'argocd', 7) { Path it ->
+            assertThat(parseActualYaml(it.toString())['spec']['source']['repoURL'] as String)
                     .as("$it repoURL have name prefix")
                     .startsWith("${scmmUrl}/repo/${expectedPrefix}argocd")
         }
 
-        assertAllYamlFiles(exampleAppsTmpDir, 'argocd', 7) { File it ->
-            assertThat(parseActualYaml(it.absolutePath)['spec']['source']['repoURL'] as String)
-                    .as("$it repoURL have name prefix")
+        assertAllYamlFiles(clusterResourcesTmpDir, 'argocd', 1) { Path it ->
+            def yaml = parseActualYaml(it.toString())
+
+            assertThat(yaml['spec']['source']['repoURL'] as String)
+                    .as("$it repoURL has name prefix")
                     .startsWith("${scmmUrl}/repo/${expectedPrefix}argocd")
+
+
+            def metadataNamespace = yaml['metadata']['namespace'] as String
+            if (metadataNamespace) {
+                assertThat(metadataNamespace)
+                        .as("$it metadata.namespace has name prefix")
+                        .startsWith("${expectedPrefix}")
+            }
+
+            def destinationNamespace = yaml['spec']['destination']['namespace']
+            if (destinationNamespace) {
+                assertThat(destinationNamespace as String)
+                        .as("$it spec.destination.namespace has name prefix")
+                        .startsWith("${expectedPrefix}")
+            }
         }
 
-        assertAllYamlFiles(clusterResourcesTmpDir, 'argocd', 1) { File it ->
-            assertThat(parseActualYaml(it.absolutePath)['spec']['source']['repoURL'] as String)
-                    .as("$it repoURL have name prefix")
-                    .startsWith("${scmmUrl}/repo/${expectedPrefix}argocd")
+        assertAllYamlFiles(clusterResourcesTmpDir, 'misc', 3) { Path it ->
+            def yaml = parseActualYaml(it.toString())
+
+            def metadataNamespace = yaml['metadata']['namespace'] as String
+            assertThat(metadataNamespace)
+                    .as("$it metadata.namespace has name prefix")
+                    .startsWith("${expectedPrefix}")
         }
     }
 
     private static void assertAllYamlFiles(File rootDir, String childDir, Integer numberOfFiles, Closure cl) {
-        def nFiles = 
-                new File(rootDir, childDir).listFiles({ _, name -> name ==~ /.*\.yaml/ } as FilenameFilter)
-                        .each(cl).size()
+        def nFiles = Files.walk(Path.of(rootDir.absolutePath, childDir))
+                .filter { it.toString() ==~ /.*\.yaml/ }
+                .collect(Collectors.toList())
+                .each(cl)
+                .size()
         assertThat(nFiles).isEqualTo(numberOfFiles)
     }
 

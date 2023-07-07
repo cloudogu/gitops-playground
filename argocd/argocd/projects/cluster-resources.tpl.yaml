@@ -20,7 +20,7 @@ spec:
 
   # allow to only see application resources from the specified namespace
   sourceNamespaces:
-    - 'argocd'
+    - '${namePrefix}argocd'
 
   # Allow all namespaced-scoped resources to be created
   namespaceResourceWhitelist:
