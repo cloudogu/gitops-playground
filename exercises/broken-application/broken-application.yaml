@@ -30,3 +30,10 @@ spec:
           image: bitnami/nginx:1.25.1
           ports:
             - containerPort: 8080
+          resources:
+            limits:
+              cpu: 100m
+              memory: 30Mi
+            requests:
+              cpu: 30m
+              memory: 15Mi

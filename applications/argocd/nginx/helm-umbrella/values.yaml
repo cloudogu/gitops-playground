@@ -4,3 +4,10 @@ nginx:
       http: 80
     nodePorts:
       http: 30026
+  resources:
+    limits:
+      cpu: 100m
+      memory: 30Mi
+    requests:
+      cpu: 30m
+      memory: 15Mi

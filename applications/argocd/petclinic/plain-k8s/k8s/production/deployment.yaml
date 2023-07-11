@@ -35,6 +35,13 @@ spec:
           volumeMounts:
             - name: messages
               mountPath: /tmp/messages
+          resources:
+            limits:
+              cpu: 1
+              memory: 1Gi
+            requests:
+              cpu: 300m
+              memory: 650Mi
       volumes:
         - name: messages
           configMap:

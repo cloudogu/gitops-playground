@@ -41,6 +41,13 @@ prometheusOperator:
     # MountVolume.SetUp failed for volume "tls-secret" : secret "...-kube-prometh-admission" not found
     # This can be worked around by disabling tls altogether
     enabled: false
+  resources:
+    limits:
+      cpu: 300m
+      memory: 80Mi
+    requests:
+      cpu: 20m
+      memory: 40Mi
 kubelet:
   enabled: false
 kubeControllerManager:
@@ -68,6 +75,13 @@ grafana:
       #this needs to be added so that the label will become 'label: grafana_dashboards: "1"'
       labelValue: 1
       searchNamespace: "ALL"
+    resources:
+      limits:
+        cpu: 100m
+        memory: 130Mi
+      requests:
+        cpu: 35m
+        memory: 65Mi
   notifiers:
     notifiers.yaml:
       notifiers:
@@ -82,3 +96,21 @@ grafana:
     GF_SMTP_ENABLED: true
     GF_SMTP_FROM_ADDRESS: grafana-alerts@cloudogu.com
     GF_SMTP_HOST: mailhog.monitoring.svc.cluster.local:1025
+
+  resources:
+    limits:
+      cpu: 1
+      memory: 140Mi
+    requests:
+      cpu: 350m
+      memory: 70Mi
+
+prometheus:
+  prometheusSpec:
+    resources:
+      limits:
+        cpu: 500m
+        memory: 1Gi
+      requests:
+        cpu: 50m
+        memory: 450Mi

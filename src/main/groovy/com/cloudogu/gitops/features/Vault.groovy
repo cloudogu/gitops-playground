@@ -54,6 +54,18 @@ class Vault extends Feature {
                 ],
                 injector: [
                         enabled: false
+                ],
+                server: [
+                        resources: [
+                                limits: [
+                                        memory: '200Mi',
+                                        cpu: '500m'
+                                ],
+                                requests: [
+                                        memory: '100Mi',
+                                        cpu: '50m'
+                                ]
+                        ]
                 ]
         ]
 
