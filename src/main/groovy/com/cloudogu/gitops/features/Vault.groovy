@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
+import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.features.deployment.Deployer
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.DockerImageParser
@@ -8,8 +9,12 @@ import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.MapUtils
 import groovy.util.logging.Slf4j
+import io.micronaut.core.annotation.Order
+import jakarta.inject.Singleton
 
 @Slf4j
+@Singleton
+@Order(500)
 class Vault extends Feature {
     static final String VAULT_START_SCRIPT_PATH = '/applications/cluster-resources/secrets/vault/dev-post-start.sh'
 
@@ -21,13 +26,13 @@ class Vault extends Feature {
     private DeploymentStrategy deployer
 
     Vault(
-            Map config,
-            FileSystemUtils fileSystemUtils = new FileSystemUtils(),
-            K8sClient k8sClient = new K8sClient(),
-            DeploymentStrategy deployer = new Deployer(config)
+            Configuration config,
+            FileSystemUtils fileSystemUtils,
+            K8sClient k8sClient,
+            DeploymentStrategy deployer
     ) {
         this.deployer = deployer
-        this.config = config
+        this.config = config.getConfig()
         this.fileSystemUtils = fileSystemUtils
         this.k8sClient = k8sClient
 

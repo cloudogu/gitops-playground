@@ -1,11 +1,16 @@
 package com.cloudogu.gitops.features.argocd
 
+import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.CommandExecutorForTest
+import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.HelmClient
 import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.ScmmRepo
 import groovy.io.FileType
 import groovy.yaml.YamlSlurper
+import io.micronaut.context.ApplicationContext
+import jakarta.inject.Singleton
 import org.eclipse.jgit.api.CheckoutCommand
 import org.eclipse.jgit.api.CloneCommand
 import org.junit.jupiter.api.Test
@@ -262,7 +267,7 @@ class ArgoCDTest {
     }
     
     ArgoCD createArgoCD() {
-        def argoCD = new ArgoCDForTest(config)
+        def argoCD = new ArgoCDForTest(new Configuration(config), new K8sClient(k8sCommands), new HelmClient(helmCommands), new FileSystemUtils())
         argocdRepoTmpDir = argoCD.argocdRepoTmpDir
         actualHelmValuesFile = Path.of(argocdRepoTmpDir.absolutePath, ArgoCD.HELM_VALUES_PATH)
 
@@ -338,11 +343,8 @@ class ArgoCDTest {
     }
 
     class ArgoCDForTest extends ArgoCD {
-
-        ArgoCDForTest(Map config) {
-            super(config)
-            this.k8sClient = new K8sClient(k8sCommands)
-            this.helmClient = new HelmClient(helmCommands)
+        ArgoCDForTest(Configuration config, K8sClient k8sClient, HelmClient helmClient, FileSystemUtils fileSystemUtils) {
+            super(config, k8sClient, helmClient, fileSystemUtils)
         }
 
         @Override

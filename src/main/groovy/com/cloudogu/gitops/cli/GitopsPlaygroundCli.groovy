@@ -3,8 +3,10 @@ package com.cloudogu.gitops.cli
 import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Logger
 import com.cloudogu.gitops.Application
-import com.cloudogu.gitops.ApplicationConfigurator
+import com.cloudogu.gitops.config.ApplicationConfigurator
+import com.cloudogu.gitops.config.Configuration
 import groovy.util.logging.Slf4j
+import io.micronaut.context.ApplicationContext
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import picocli.CommandLine.Command
@@ -122,8 +124,8 @@ class GitopsPlaygroundCli  implements Runnable {
 
     @Override
     void run() {
-        Map config = getConfig()
-        Application app = new Application(config)
+        def context = ApplicationContext.run().registerSingleton(new Configuration(getConfig()))
+        Application app = context.getBean(Application)
         app.start()
     }
 
@@ -141,7 +143,7 @@ class GitopsPlaygroundCli  implements Runnable {
     }
 
     private Map getConfig() {
-        ApplicationConfigurator applicationConfigurator = new ApplicationConfigurator()
+        ApplicationConfigurator applicationConfigurator = ApplicationContext.run().getBean(ApplicationConfigurator)
         Map config = applicationConfigurator
                 // Here we could implement loading from a config file, giving CLI params precedence
                 //.setConfig(configFile.toFile().getText())

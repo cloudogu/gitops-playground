@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.features
 
+import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -78,7 +79,7 @@ class ExternalSecretsOperatorTest {
 
     private ExternalSecretsOperator createExternalSecretsOperator() {
         new ExternalSecretsOperator(
-                config,
+                new Configuration(config),
                 new FileSystemUtils() {
                     @Override
                     Path copyToTempDir(String filePath) {

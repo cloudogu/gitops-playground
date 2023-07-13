@@ -1,8 +1,10 @@
 package com.cloudogu.gitops.utils
 
 import groovy.util.logging.Slf4j
+import jakarta.inject.Singleton
 
 @Slf4j
+@Singleton
 class CommandExecutor {
 
     public static final int PROCESS_TIMEOUT_SECONDS = 120

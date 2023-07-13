@@ -1,13 +1,17 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
-import com.cloudogu.gitops.features.deployment.Deployer
+import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.FileSystemUtils
 import groovy.util.logging.Slf4j
+import io.micronaut.core.annotation.Order
+import jakarta.inject.Singleton
 import org.springframework.security.crypto.bcrypt.BCrypt
 
 @Slf4j
+@Singleton
+@Order(200)
 class Mailhog extends Feature {
 
     static final String HELM_VALUES_PATH = "applications/cluster-resources/mailhog-helm-values.yaml"
@@ -20,15 +24,15 @@ class Mailhog extends Feature {
     private DeploymentStrategy deployer
 
     Mailhog(
-            Map config,
-            FileSystemUtils fileSystemUtils = new FileSystemUtils(),
-            DeploymentStrategy deployer = new Deployer(config)
+            Configuration config,
+            FileSystemUtils fileSystemUtils,
+            DeploymentStrategy deployer
     ) {
         this.deployer = deployer
-        this.config = config
-        this.remoteCluster = config.application["remote"]
-        this.username = config.application["username"]
-        this.password = config.application["password"]
+        this.config = config.getConfig()
+        this.remoteCluster = this.config.application["remote"]
+        this.username = this.config.application["username"]
+        this.password = this.config.application["password"]
         this.fileSystemUtils = fileSystemUtils
     }
 

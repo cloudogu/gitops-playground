@@ -1,5 +1,6 @@
 package com.cloudogu.gitops
 
+import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
 import com.cloudogu.gitops.utils.TestLogger

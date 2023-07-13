@@ -1,9 +1,11 @@
 package com.cloudogu.gitops.features.deployment
 
 import com.cloudogu.gitops.utils.HelmClient
+import jakarta.inject.Singleton
 
 import java.nio.file.Path
 
+@Singleton
 class HelmStrategy implements DeploymentStrategy {
     private HelmClient helmClient
 

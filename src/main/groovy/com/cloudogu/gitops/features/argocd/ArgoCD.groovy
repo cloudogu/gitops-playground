@@ -1,10 +1,13 @@
 package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.Feature
+import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.utils.*
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 import groovy.util.logging.Slf4j
+import io.micronaut.core.annotation.Order
+import jakarta.inject.Singleton
 import org.eclipse.jgit.api.CloneCommand
 import org.eclipse.jgit.api.Git
 import org.springframework.security.crypto.bcrypt.BCrypt
@@ -12,6 +15,8 @@ import org.springframework.security.crypto.bcrypt.BCrypt
 import java.nio.file.Path
 
 @Slf4j
+@Singleton
+@Order(100)
 class ArgoCD extends Feature {
     static final String HELM_VALUES_PATH = 'argocd/values.yaml'
     static final String CHART_YAML_PATH = 'argocd/Chart.yaml'
@@ -26,7 +31,7 @@ class ArgoCD extends Feature {
             new Tuple2('exercises/petclinic-helm', 'exercises/petclinic-helm')
     ]
     
-    private Map config
+    protected Map config
     private List<RepoInitializationAction> gitRepos = []
 
     private String password
@@ -41,15 +46,23 @@ class ArgoCD extends Feature {
     protected File brokenApplicationTmpDir
     protected List<Tuple2<String, File>> petClinicLocalFoldersAndTmpDirs = []
     
-    protected K8sClient k8sClient = new K8sClient()
-    protected HelmClient helmClient = new HelmClient()
+    protected K8sClient k8sClient
+    protected HelmClient helmClient
 
-    private FileSystemUtils fileSystemUtils = new FileSystemUtils()
+    protected FileSystemUtils fileSystemUtils
 
-    ArgoCD(Map config) {
-        this.config = config
+    ArgoCD(
+            Configuration config,
+            K8sClient k8sClient,
+            HelmClient helmClient,
+            FileSystemUtils fileSystemUtils
+    ) {
+        this.config = config.getConfig()
+        this.k8sClient = k8sClient
+        this.helmClient = helmClient
+        this.fileSystemUtils = fileSystemUtils
         
-        this.password = config.application["password"]
+        this.password = this.config.application["password"]
         
         argocdRepoTmpDir = File.createTempDir('gitops-playground-argocd-repo')
         argocdRepoTmpDir.deleteOnExit()
@@ -84,7 +97,7 @@ class ArgoCD extends Feature {
             gitRepos += createRepoInitializationAction(remotePetClinicRepoTmpDir.absolutePath, repo.v2.toString(), petClinicTempDir)
         }
     }
-    
+
     @Override
     boolean isEnabled() {
         config.features['argocd']['active']

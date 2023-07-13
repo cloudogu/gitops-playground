@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.features
 
+import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -149,7 +150,7 @@ class VaultTest {
     }
     
     private Vault createVault() {
-        Vault vault = new Vault(config, new FileSystemUtils(), k8sClient, new HelmStrategy(helmClient))
+        Vault vault = new Vault(new Configuration(config), new FileSystemUtils(), k8sClient, new HelmStrategy(helmClient))
         temporaryYamlFile = vault.tmpHelmValues
         return vault
     }

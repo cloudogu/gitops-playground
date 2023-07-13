@@ -1,26 +1,29 @@
 package com.cloudogu.gitops.features.deployment
 
+import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.ScmmRepo
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
+import jakarta.inject.Singleton
 
 import java.nio.file.Path
 
+@Singleton
 class ArgoCdApplicationStrategy implements DeploymentStrategy {
     private FileSystemUtils fileSystemUtils
     private Map config
     private CommandExecutor commandExecutor
 
     ArgoCdApplicationStrategy(
-            Map config,
+            Configuration config,
             FileSystemUtils fileSystemUtils,
-            CommandExecutor commandExecutor = new CommandExecutor()
+            CommandExecutor commandExecutor
     ) {
         this.fileSystemUtils = fileSystemUtils
         this.commandExecutor = commandExecutor
-        this.config = config
+        this.config = config.getConfig()
     }
 
     @Override

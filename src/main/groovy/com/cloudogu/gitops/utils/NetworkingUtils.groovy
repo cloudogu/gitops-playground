@@ -2,17 +2,19 @@ package com.cloudogu.gitops.utils
 
 
 import groovy.util.logging.Slf4j
+import jakarta.inject.Singleton
 
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
 @Slf4j
+@Singleton
 class NetworkingUtils {
 
     private K8sClient k8sClient
     private CommandExecutor commandExecutor
 
-    NetworkingUtils(K8sClient k8sClient = new K8sClient(), CommandExecutor commandExecutor = new CommandExecutor()) {
+    NetworkingUtils(K8sClient k8sClient, CommandExecutor commandExecutor) {
         this.k8sClient = k8sClient
         this.commandExecutor = commandExecutor
     }

@@ -2,13 +2,15 @@ package com.cloudogu.gitops.utils
 
 
 import groovy.util.logging.Slf4j
+import jakarta.inject.Singleton
 
 @Slf4j
+@Singleton
 class K8sClient {
 
     private CommandExecutor commandExecutor
 
-    K8sClient(CommandExecutor commandExecutor = new CommandExecutor()) {
+    K8sClient(CommandExecutor commandExecutor) {
         this.commandExecutor = commandExecutor
     }
 
