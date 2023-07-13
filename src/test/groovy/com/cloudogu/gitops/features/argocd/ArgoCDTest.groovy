@@ -1,16 +1,15 @@
 package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.HelmClient
 import com.cloudogu.gitops.utils.K8sClient
-import com.cloudogu.gitops.utils.ScmmRepo
+import com.cloudogu.gitops.scmm.ScmmRepo
 import groovy.io.FileType
 import groovy.yaml.YamlSlurper
-import io.micronaut.context.ApplicationContext
-import jakarta.inject.Singleton
 import org.eclipse.jgit.api.CheckoutCommand
 import org.eclipse.jgit.api.CloneCommand
 import org.junit.jupiter.api.Test
@@ -78,11 +77,11 @@ class ArgoCDTest {
     CommandExecutorForTest k8sCommands = new CommandExecutorForTest()
     CommandExecutorForTest helmCommands = new CommandExecutorForTest()
     CommandExecutorForTest gitCommands = new CommandExecutorForTest()
-    File argocdRepoTmpDir
+    ScmmRepo argocdRepo
     String actualHelmValuesFile
-    File clusterResourcesTmpDir
-    File exampleAppsTmpDir
-    File nginxHelmJenkinsTmpDir
+    ScmmRepo clusterResourcesRepo
+    ScmmRepo exampleAppsRepo
+    ScmmRepo nginxHelmJenkinsRepo
     File remotePetClinicRepoTmpDir
     List<Tuple2<String, File>> petClinicLocalFoldersAndTmpDirs = []
     CloneCommand gitCloneMock = mock(CloneCommand.class, RETURNS_DEEP_STUBS)
@@ -92,7 +91,7 @@ class ArgoCDTest {
         createArgoCD().install()
         
         // check values.yaml
-        List filesWithInternalSCMM = findFilesContaining(argocdRepoTmpDir, ArgoCD.SCMM_URL_INTERNAL)
+        List filesWithInternalSCMM = findFilesContaining(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), ArgoCD.SCMM_URL_INTERNAL)
         assertThat(filesWithInternalSCMM).isNotEmpty()
         assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['server']['service']['type'])
                 .isEqualTo('NodePort')
@@ -104,9 +103,9 @@ class ArgoCDTest {
         // Check dependency build and helm install
         assertThat(helmCommands.actualCommands[0].trim()).isEqualTo('helm repo add argo https://argoproj.github.io/argo-helm')
         assertThat(helmCommands.actualCommands[1].trim()).isEqualTo(
-                "helm dependency build ${Path.of(argocdRepoTmpDir.absolutePath, 'argocd/')}".toString())
+                "helm dependency build ${Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'argocd/')}".toString())
         assertThat(helmCommands.actualCommands[2].trim()).isEqualTo(
-                "helm upgrade -i argocd ${Path.of(argocdRepoTmpDir.absolutePath, 'argocd/')} --namespace argocd".toString())
+                "helm upgrade -i argocd ${Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'argocd/')} --namespace argocd".toString())
         
         // Check patched PW
         def patchCommand = assertCommand(k8sCommands, 'kubectl patch secret argocd-secret -n argocd')
@@ -117,9 +116,9 @@ class ArgoCDTest {
         
         // Check bootstrapping
         assertCommand(k8sCommands, "kubectl apply -f " +
-                "${Path.of(argocdRepoTmpDir.absolutePath, 'projects/argocd.yaml')}")
+                "${Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/argocd.yaml')}")
         assertCommand(k8sCommands, "kubectl apply -f " +
-                "${Path.of(argocdRepoTmpDir.absolutePath, 'applications/bootstrap.yaml')}")
+                "${Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'applications/bootstrap.yaml')}")
 
         def deleteCommand = assertCommand(k8sCommands, 'kubectl delete secret -n argocd')
         assertThat(deleteCommand).contains('owner=helm', 'name=argocd')
@@ -137,9 +136,9 @@ class ArgoCDTest {
         config.features['argocd']['url'] = 'https://argo.cd'
         
         createArgoCD().install()
-        List filesWithInternalSCMM = findFilesContaining(argocdRepoTmpDir, ArgoCD.SCMM_URL_INTERNAL)
+        List filesWithInternalSCMM = findFilesContaining(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), ArgoCD.SCMM_URL_INTERNAL)
         assertThat(filesWithInternalSCMM).isEmpty()
-        List filesWithExternalSCMM = findFilesContaining(argocdRepoTmpDir, "https://abc")
+        List filesWithExternalSCMM = findFilesContaining(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), "https://abc")
         assertThat(filesWithExternalSCMM).isNotEmpty()
 
         assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['server']['service']['type'])
@@ -152,48 +151,48 @@ class ArgoCDTest {
     void 'When monitoring disabled: Does not push path monitoring to cluster resources'() {
         config.features['monitoring']['active'] = false
         createArgoCD().install()
-        assertThat(new File(clusterResourcesTmpDir.absolutePath + "/monitoring")).doesNotExist()
+        assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + "/monitoring")).doesNotExist()
     }
 
     @Test
     void 'When monitoring enabled: Does push path monitoring to cluster resources'() {
         config.features['monitoring']['active'] = true
         createArgoCD().install()
-        assertThat(new File(clusterResourcesTmpDir.absolutePath + "/misc/monitoring")).exists()
+        assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + "/misc/monitoring")).exists()
     }
 
     @Test
     void 'When vault enabled: Pushes external secret, and mounts into example app'() {
         createArgoCD().install()
-        def valuesYaml = new YamlSlurper().parse(Path.of nginxHelmJenkinsTmpDir.absolutePath, ArgoCD.NGINX_HELM_JENKINS_VALUES_PATH)
+        def valuesYaml = new YamlSlurper().parse(Path.of nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.NGINX_HELM_JENKINS_VALUES_PATH)
         
         assertThat((valuesYaml['extraVolumeMounts'] as List)).hasSize(2) 
         assertThat((valuesYaml['extraVolumes'] as List)).hasSize(2)
         
-        assertThat(new File(nginxHelmJenkinsTmpDir.absolutePath + "/k8s/staging/external-secret.yaml")).exists()
-        assertThat(new File(nginxHelmJenkinsTmpDir.absolutePath + "/k8s/production/external-secret.yaml")).exists()
-        assertThat(new File(clusterResourcesTmpDir.absolutePath + "/misc/secrets")).exists()
+        assertThat(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir() + "/k8s/staging/external-secret.yaml")).exists()
+        assertThat(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir() + "/k8s/production/external-secret.yaml")).exists()
+        assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + "/misc/secrets")).exists()
     }
 
     @Test
     void 'When vault disabled: Does not push ExternalSecret and not mount into example app'() {
         config.features['secrets']['active'] = false
         createArgoCD().install()
-        def valuesYaml = new YamlSlurper().parse(Path.of nginxHelmJenkinsTmpDir.absolutePath, ArgoCD.NGINX_HELM_JENKINS_VALUES_PATH)
+        def valuesYaml = new YamlSlurper().parse(Path.of nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.NGINX_HELM_JENKINS_VALUES_PATH)
         assertThat((valuesYaml['extraVolumeMounts'] as List)).hasSize(1)
         assertThat((valuesYaml['extraVolumes'] as List)).hasSize(1)
         assertThat((valuesYaml['extraVolumeMounts'] as List)[0]['name']).isEqualTo('index')
         assertThat((valuesYaml['extraVolumes'] as List)[0]['name']).isEqualTo('index')
 
-        assertThat(new File(nginxHelmJenkinsTmpDir.absolutePath + "/k8s/staging/external-secret.yaml")).doesNotExist()
-        assertThat(new File(nginxHelmJenkinsTmpDir.absolutePath + "/k8s/production/external-secret.yaml")).doesNotExist()
+        assertThat(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir() + "/k8s/staging/external-secret.yaml")).doesNotExist()
+        assertThat(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir() + "/k8s/production/external-secret.yaml")).doesNotExist()
     }
 
     @Test
     void 'When vault disabled: Does not push path "secrets" to cluster resources'() {
         config.features['secrets']['active'] = false
         createArgoCD().install()
-        assertThat(new File(clusterResourcesTmpDir.absolutePath + "/misc/secrets")).doesNotExist()
+        assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + "/misc/secrets")).doesNotExist()
     }
 
     @Test
@@ -206,10 +205,10 @@ class ArgoCDTest {
         when(setUriMock.setDirectory(any(File.class)).call().checkout()).thenReturn(checkoutMock)
         
         createArgoCD().install()
-        def valuesYaml = parseActualYaml(nginxHelmJenkinsTmpDir, ArgoCD.NGINX_HELM_JENKINS_VALUES_PATH)
+        def valuesYaml = parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), ArgoCD.NGINX_HELM_JENKINS_VALUES_PATH)
         assertThat(valuesYaml['service']['type']).isEqualTo('NodePort')
         
-        valuesYaml = parseActualYaml(exampleAppsTmpDir, ArgoCD.NGINX_HELM_DEPENDENCY_VALUES_PATH)
+        valuesYaml = parseActualYaml(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), ArgoCD.NGINX_HELM_DEPENDENCY_VALUES_PATH)
         assertThat(valuesYaml['nginx']['service']['type']).isEqualTo('NodePort')
         
         // Assert Petclinic repo cloned
@@ -224,9 +223,9 @@ class ArgoCDTest {
     void 'Pushes example repos for remote'() {
         config.application['remote'] = true
         createArgoCD().install()
-        assertThat(parseActualYaml(nginxHelmJenkinsTmpDir, ArgoCD.NGINX_HELM_JENKINS_VALUES_PATH).toString())
+        assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), ArgoCD.NGINX_HELM_JENKINS_VALUES_PATH).toString())
                 .doesNotContain('NodePort')
-        assertThat(parseActualYaml(exampleAppsTmpDir, ArgoCD.NGINX_HELM_DEPENDENCY_VALUES_PATH).toString())
+        assertThat(parseActualYaml(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), ArgoCD.NGINX_HELM_DEPENDENCY_VALUES_PATH).toString())
                 .doesNotContain('NodePort')
         
         assertPetClinicRepos('LoadBalancer', 'NodePort')
@@ -235,9 +234,9 @@ class ArgoCDTest {
     @Test
     void 'For internal SCMM: Use service address in gitops repos'() {
         createArgoCD().install()
-        List filesWithInternalSCMM = findFilesContaining(clusterResourcesTmpDir, ArgoCD.SCMM_URL_INTERNAL)
+        List filesWithInternalSCMM = findFilesContaining(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), ArgoCD.SCMM_URL_INTERNAL)
         assertThat(filesWithInternalSCMM).isNotEmpty()
-        filesWithInternalSCMM = findFilesContaining(exampleAppsTmpDir, ArgoCD.SCMM_URL_INTERNAL)
+        filesWithInternalSCMM = findFilesContaining(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), ArgoCD.SCMM_URL_INTERNAL)
         assertThat(filesWithInternalSCMM).isNotEmpty()
     }
 
@@ -245,14 +244,14 @@ class ArgoCDTest {
     void 'For external SCMM: Use external address in gitops repos'() {
         config.scmm['internal'] = false
         createArgoCD().install()
-        List filesWithInternalSCMM = findFilesContaining(clusterResourcesTmpDir, ArgoCD.SCMM_URL_INTERNAL)
+        List filesWithInternalSCMM = findFilesContaining(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), ArgoCD.SCMM_URL_INTERNAL)
         assertThat(filesWithInternalSCMM).isEmpty()
-        filesWithInternalSCMM = findFilesContaining(exampleAppsTmpDir, ArgoCD.SCMM_URL_INTERNAL)
+        filesWithInternalSCMM = findFilesContaining(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), ArgoCD.SCMM_URL_INTERNAL)
         assertThat(filesWithInternalSCMM).isEmpty()
         
-        List filesWithExternalSCMM = findFilesContaining(clusterResourcesTmpDir, "https://abc")
+        List filesWithExternalSCMM = findFilesContaining(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), "https://abc")
         assertThat(filesWithExternalSCMM).isNotEmpty()
-        filesWithExternalSCMM = findFilesContaining(exampleAppsTmpDir, "https://abc")
+        filesWithExternalSCMM = findFilesContaining(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), "https://abc")
         assertThat(filesWithExternalSCMM).isNotEmpty()
     }
 
@@ -267,13 +266,13 @@ class ArgoCDTest {
     }
     
     ArgoCD createArgoCD() {
-        def argoCD = new ArgoCDForTest(new Configuration(config), new K8sClient(k8sCommands), new HelmClient(helmCommands), new FileSystemUtils())
-        argocdRepoTmpDir = argoCD.argocdRepoTmpDir
-        actualHelmValuesFile = Path.of(argocdRepoTmpDir.absolutePath, ArgoCD.HELM_VALUES_PATH)
-
-        clusterResourcesTmpDir = argoCD.clusterResourcesTmpDir
-        exampleAppsTmpDir = argoCD.exampleAppsTmpDir
-        nginxHelmJenkinsTmpDir = argoCD.nginxHelmJenkinsTmpDir
+        def fileSystemUtils = new FileSystemUtils()
+        def argoCD = new ArgoCDForTest(new Configuration(config), new K8sClient(k8sCommands, fileSystemUtils), new HelmClient(helmCommands), fileSystemUtils, gitCommands)
+        argocdRepo = argoCD.argocdRepoInitializationAction.repo
+        actualHelmValuesFile = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.HELM_VALUES_PATH)
+        clusterResourcesRepo = argoCD.clusterResourcesInitializationAction.repo
+        exampleAppsRepo = argoCD.exampleAppsInitializationAction.repo
+        nginxHelmJenkinsRepo = argoCD.nginxHelmJenkinsInitializationAction.repo
         remotePetClinicRepoTmpDir = argoCD.remotePetClinicRepoTmpDir
         petClinicLocalFoldersAndTmpDirs = argoCD.petClinicLocalFoldersAndTmpDirs
         return argoCD
@@ -343,17 +342,8 @@ class ArgoCDTest {
     }
 
     class ArgoCDForTest extends ArgoCD {
-        ArgoCDForTest(Configuration config, K8sClient k8sClient, HelmClient helmClient, FileSystemUtils fileSystemUtils) {
-            super(config, k8sClient, helmClient, fileSystemUtils)
-        }
-
-        @Override
-        protected RepoInitializationAction createRepoInitializationAction(String localSrcDir, String scmmRepoTarget, File absoluteLocalRepoTmpDir) {
-            // Actually copy files so we can assert but don't execute git clone, push, etc.
-            ScmmRepo repo = new ScmmRepo(config, scmmRepoTarget, absoluteLocalRepoTmpDir.absolutePath)
-            repo.commandExecutor = gitCommands
-            // We could add absoluteLocalRepoTmpDir here for assertion later 
-            return new RepoInitializationAction(repo, localSrcDir)
+        ArgoCDForTest(Configuration config, K8sClient k8sClient, HelmClient helmClient, FileSystemUtils fileSystemUtils, CommandExecutor gitCommands) {
+            super(config, k8sClient, helmClient, fileSystemUtils, new ScmmRepoProvider(config, gitCommands, fileSystemUtils))
         }
 
         @Override

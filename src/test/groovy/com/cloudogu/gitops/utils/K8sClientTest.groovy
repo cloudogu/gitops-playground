@@ -9,7 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat
 class K8sClientTest {
 
     CommandExecutorForTest commandExecutor = new CommandExecutorForTest()
-    K8sClient k8sClient = new K8sClient(commandExecutor)
+    K8sClient k8sClient = new K8sClient(commandExecutor, new FileSystemUtils())
 
     @Test
     void 'Creates secret'() {

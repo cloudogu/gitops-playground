@@ -40,7 +40,7 @@ class VaultTest {
     CommandExecutorForTest helmCommands = new CommandExecutorForTest()
     CommandExecutorForTest k8sCommands = new CommandExecutorForTest()
     HelmClient helmClient = new HelmClient(helmCommands)
-    K8sClient k8sClient = new K8sClient(k8sCommands)
+    K8sClient k8sClient = new K8sClient(k8sCommands, new FileSystemUtils())
     File temporaryYamlFile
     
     @Test

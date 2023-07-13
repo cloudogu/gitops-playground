@@ -1,5 +1,7 @@
-package com.cloudogu.gitops.utils
+package com.cloudogu.gitops.scmm
 
+import com.cloudogu.gitops.utils.CommandExecutor
+import com.cloudogu.gitops.utils.FileSystemUtils
 import groovy.util.logging.Slf4j
 
 @Slf4j
@@ -12,33 +14,26 @@ class ScmmRepo {
     private String scmmUrlWithCredentials
     private String scmmUrl
     private String absoluteLocalRepoTmpDir
-    protected FileSystemUtils fileSystemUtils = new FileSystemUtils()
     protected CommandExecutor commandExecutor
+    protected FileSystemUtils fileSystemUtils
 
-    ScmmRepo(Map config, String scmmRepoTarget, CommandExecutor commandExecutor = new CommandExecutor()) {
-        this(config, scmmRepoTarget, File.createTempDir().absolutePath, commandExecutor)
-        new File(absoluteLocalRepoTmpDir).deleteOnExit()
-    }
+    ScmmRepo(Map config, String scmmRepoTarget, CommandExecutor commandExecutor, FileSystemUtils fileSystemUtils) {
+        def tmpDir = File.createTempDir()
+        tmpDir.deleteOnExit()
 
-    /**
-     * @deprecated Deprecated in favor of {@link ScmmRepo#ScmmRepo(Map,String,CommandExecutor)}.
-     * We want to move the responsibility for managing the temporary directory from the caller to this class.
-     *
-     */
-    @Deprecated()
-    ScmmRepo(Map config, String scmmRepoTarget, String absoluteLocalRepoTmpDir, CommandExecutor commandExecutor = new CommandExecutor()) {
         this.username =  config.scmm["internal"] ? config.application["username"] : config.scmm["username"]
         this.password = config.scmm["internal"] ? config.application["password"] : config.scmm["password"]
         this.scmmUrl = createScmmUrl(config)
         this.scmmUrlWithCredentials = "${config.scmm["protocol"]}://${username}:${password}@${config.scmm["host"]}"
         this.scmmRepoTarget = scmmRepoTarget
         this.scmmRepoTarget = scmmRepoTarget
-        this.absoluteLocalRepoTmpDir = absoluteLocalRepoTmpDir
+        this.absoluteLocalRepoTmpDir = tmpDir.absolutePath
         this.commandExecutor = commandExecutor
+        this.fileSystemUtils = fileSystemUtils
         gitRepoCommandInit(absoluteLocalRepoTmpDir)
     }
 
-    protected String getAbsoluteLocalRepoTmpDir() {
+    String getAbsoluteLocalRepoTmpDir() {
         return absoluteLocalRepoTmpDir
     }
 

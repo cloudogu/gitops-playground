@@ -2,7 +2,6 @@ package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Configuration
-import com.cloudogu.gitops.features.deployment.Deployer
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.DockerImageParser
 import com.cloudogu.gitops.utils.FileSystemUtils

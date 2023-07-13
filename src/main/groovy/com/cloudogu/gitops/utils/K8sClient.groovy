@@ -9,8 +9,13 @@ import jakarta.inject.Singleton
 class K8sClient {
 
     private CommandExecutor commandExecutor
+    private FileSystemUtils fileSystemUtils
 
-    K8sClient(CommandExecutor commandExecutor) {
+    K8sClient(
+            CommandExecutor commandExecutor,
+            FileSystemUtils fileSystemUtils
+    ) {
+        this.fileSystemUtils = fileSystemUtils
         this.commandExecutor = commandExecutor
     }
 
@@ -75,7 +80,7 @@ class K8sClient {
         // We're using a patch file here, instead of a patch JSON (--patch), because of quoting issues
         // ERROR c.c.gitops.utils.CommandExecutor - Stderr: error: unable to parse "'{\"stringData\":": yaml: found unexpected end of stream
         File patchYaml = File.createTempFile('gitops-playground-patch-yaml', '')
-        new FileSystemUtils().writeYaml(yaml, patchYaml)
+        fileSystemUtils.writeYaml(yaml, patchYaml)
         
         //  kubectl patch secret argocd-secret -p '{"stringData": { "admin.password": "'"${bcryptArgoCDPassword}"'"}}' || true
         String command =
