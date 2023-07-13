@@ -58,7 +58,8 @@ class ApplicationConfigurator {
                     helm       : HELM_IMAGE,
                     kubeval    : HELM_IMAGE,
                     helmKubeval: HELM_IMAGE,
-                    yamllint   : "cytopia/yamllint:1.25-0.7"
+                    yamllint   : "cytopia/yamllint:1.25-0.7",
+                    nginx      : null,
             ],
             repositories : [
                     springBootHelmChart: [
@@ -97,7 +98,12 @@ class ApplicationConfigurator {
                             helm  : [
                                     chart  : 'kube-prometheus-stack',
                                     repoURL: 'https://prometheus-community.github.io/helm-charts',
-                                    version: '19.2.2'
+                                    version: '19.2.2',
+                                    grafanaImage: '',
+                                    grafanaSidecarImage: '',
+                                    prometheusImage: '',
+                                    prometheusOperatorImage: '',
+                                    prometheusConfigReloaderImage: '',
                             ]
                     ],
                     secrets   : [
@@ -106,7 +112,10 @@ class ApplicationConfigurator {
                                     helm: [
                                             chart  : 'external-secrets',
                                             repoURL: 'https://charts.external-secrets.io',
-                                            version: '0.6.1'
+                                            version: '0.6.1',
+                                            image  : '',
+                                            certControllerImage: '',
+                                            webhookImage: ''
                                     ]
                             ],
                             vault          : [
@@ -114,7 +123,8 @@ class ApplicationConfigurator {
                                     helm: [
                                             chart  : 'vault',
                                             repoURL: 'https://helm.releases.hashicorp.com',
-                                            version: '0.22.1'
+                                            version: '0.22.1',
+                                            image: '',
                                     ]
                             ]
                     ],

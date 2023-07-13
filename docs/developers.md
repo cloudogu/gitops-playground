@@ -83,26 +83,21 @@ Jenkins.instance.pluginManager.plugins.collect().sort().each {
       --net=host gitops-playground:dev <params>
      ```
   * Locally:
-    * [Provide dependencies](#providing-dependencies)
-    * Just run `scripts/apply.sh <params>`
-
-### Providing dependencies
-
-It seems like `groovy --classpath gitops-playground-cli-*.jar` [does not load jars]( https://stackoverflow.com/questions/10585808/groovy-script-classpath),
-Workaround:
-
-* Run
-  ```shell
-  mvn package -DskipTests
-  ```
-* Copy `target/gitops-playground-cli-*.jar` to `~/.groovy/lib`
-* Make sure to use the exact same groovy version as in pom.xml
-  To avoid
-  ```
-  Caused by: groovy.lang.GroovyRuntimeException: Conflicting module versions. Module [groovy-datetime is loaded in version 3.0.8 and you are trying to load version 3.0.13
-  ```
-  Solution might be to remove groovy from `gitops-playground-cli-*.jar`
-
+    * Provide `gitops-playground.jar` for `apply-ng.sh`:
+      ```bash
+      ./mvnw package -DskipTests
+      ln -s target/gitops-playground-cli-0.1.jar gitops-playground.jar 
+       ```
+    * Just run `scripts/apply.sh <params>`.  
+      Hint: You can speed up the process by installing the Jenkins plugins from your filesystem, instead of from the internet.  
+      To do so, download the plugins into a folder, then set this folder vie env var:  
+      `JENKINS_PLUGIN_FOLDER=$(pwd) scripts/apply.sh <params>`.  
+      A working combination of plugins be extracted from the image:  
+      ```bash
+      id=$(docker create ghcr.io/cloudogu/gitops-playground)
+      docker cp $id:/gitops/jenkins-plugins .
+      docker rm -v $id
+      ```
 
 ## Development image
 
@@ -120,10 +115,7 @@ It can be built like so:
 docker buildx build -t gitops-playground:dev --build-arg ENV=dev  --progress=plain  .  
 ```
 Hint: uses buildkit for much faster builds, skipping the static image stuff not needed for dev.
-
-TODO: Copy a script `apply-ng` into the dev image that calls `groovy GitopsPlaygroundCliMain?! args`.
-Then, we can use the dev image to try out if the playground image works without having to wait for the static image to
-be built.
+With Docker version >= 23 you can also use `docker build`, because buildkit is the new default builder.
 
 ## Implicit + explicit dependencies
 
@@ -256,3 +248,225 @@ In addition, we had to add some more parameters (`initialize-at-run-time` and `-
 For the moment this works and hopefully some day JGit will have support for GraalVM built-in. 
 Until then, there is a chance, that each upgrade of JGit causes new issues. If so, check if the code of the Quarkus 
 extension provides solutions. 🤞 Good luck 🍀. 
+
+# External registry for development
+
+If you need to emulate an "external", private registry with credentials, use the following.
+
+Write this `harbor-values.yaml`:
+
+```yaml
+expose:
+  type: nodePort
+  nodePort:
+    ports:
+      http:
+        # docker login localhost:$nodePort -u admin -p Harbor12345
+        # Web UI: http://localhost:nodePort
+        # !! When changing here, also change externalURL !!
+        nodePort: 30002
+
+  tls:
+    enabled: false
+
+externalURL: http://localhost:30002
+
+internalTLS:
+  enabled: false
+
+# Needs less resources but forces you to push images on every restart
+#persistence:
+#enabled: false
+
+chartMuseum:
+  enabled: false
+
+clair:
+  enabled: false
+
+trivy:
+  enabled: false
+
+notary:
+  enabled: false
+```
+
+Then install it like so:
+```bash
+helm upgrade -i my-harbor harbor/harbor -f harbor-values.yaml --version 1.12.2 --namespace harbor --create-namespace
+```
+Once it's up and running either create your own private project or just set the existing `library` to private:
+```bash
+curl -X PUT -u admin:Harbor12345 'http://localhost:30002/api/v2.0/projects/1'  -H 'Content-Type: application/json' \
+--data-raw '{"metadata":{"public":"false", "id":1,"project_id":1}}'
+```
+
+Then either import external images like so (requires `skopeao` but no prior pulling or insecure config necessary):
+```bash
+skopeo copy docker://bitnami/nginx:1.25.1 --dest-creds admin:Harbor12345 --dest-tls-verify=false  docker://localhost:30002/library/nginx:1.25.1
+```
+
+Alternatively, you could push existing images from your docker daemon.
+However, this takes longer (pull first) and you'll have to make sure to add `localhost:30002` to `insecure-registries` in `/etc/docker/daemon.json` and restart your docker daemon first.
+
+```bash
+docker login localhost:30002 -u admin -p Harbor12345
+docker tag bitnami/nginx:1.25.1 localhost:30002/library/nginx:1.25.1
+docker push localhost:30002/library/nginx:1.25.1
+```
+
+To make the registry credentials know to kubernetes, apply the following to *each* namespace where they are needed: 
+
+```bash
+kubectl create secret docker-registry regcred \
+--docker-server=localhost:30002 \
+--docker-username=admin \
+--docker-password=Harbor12345
+kubectl patch serviceaccount default -p '{"imagePullSecrets": [{"name": "regcred"}]}'
+```
+
+This will work for all pods that don't use their own ServiceAccount.
+That is, for most helm charts, you'll need to set an individual value.
+
+# Emulate an airgapped environment
+
+Let's set up our local playground to emulate an airgapped env, as some of our customers have.
+
+Note that with approach bellow, the whole k3d cluster is airgapped with one exception: the Jenkins agents can work around this.
+To be able to run the `docker` plugin in Jenkins (in a k3d cluster that only provides containerd) we mount the host's 
+docker socket into the agents. 
+From there it can start containers which are not airgapped.
+So this approach is not suitable to test if the builds use any public images.
+One solution could be to apply the `iptables` rule mentione bellow to `docker0` (not tested).
+
+The approach discussed here is suitable to check if the cluster tries to load anything from the internet, 
+like images or helm charts.
+
+## Setup cluster
+
+```
+scripts/init-cluster.sh --bind-localhost=false --cluster-name=airgapped-playground
+# This will start the cluster in its own network namespace, so no accessing via localhost from your machine
+# Note that at this point the cluster is not yet airgapped
+
+# Get the "nodeport" IP
+K3D_NODE=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' k3d-airgapped-playground-server-0)
+ 
+# Now init some apps you want to have running (e.g. harbor) before going airgapped
+helm upgrade  -i my-harbor harbor/harbor -f harbor-values.yaml --version 1.12.2 --namespace harbor --set externalURL=http://$K3D_NODE:30002 --create-namespace
+```
+
+Keep kubectl working when airgapped by setting the local IP of the container inside kubeconfig in `~/.k3d/...`
+```bash
+sed -i -r 's/0.0.0.0([^0-9]+[0-9]*|\$)/${K3D_NODE}:6443/g' ~/.k3d/kubeconfig-airgapped-playground.yaml
+```
+You can switching to the airgapped context in your current shell like so:
+```shell
+export KUBECONFIG=$HOME/.k3d/kubeconfig-airgapped-playground.yaml
+```
+
+TODO also replace in `~/.kube/config` for more convenience. 
+In there, we need to be more careful, because there are other contexts. This makes it more difficult.
+
+## Provide images needed by playground
+
+First, let's import necessary images into harbor using `skopeo`. 
+With `skopeo`, this process is much easier than with `docker` because we don't need to pull the images first.
+You can get a list of images from a running playground that is not airgapped.
+
+```bash
+# Add more images here, if you like
+# We're not adding registry, scmm, jenkins and argocd here, because we have to install them before we go offline (see bellow for details).
+IMAGE_PATTERNS=('external-secrets' \
+  'vault' \
+  'prometheus' \
+  'grafana' \
+  'sidecar' \
+  'nginx')
+BASIC_SRC_IMAGES=$(
+  kubectl get pods --all-namespaces -o jsonpath="{range .items[*]}{range .spec.containers[*]}{'\n'}{.image}{end}{end}" \
+  | grep -Ff <(printf "%s\n" "${IMAGE_PATTERNS[@]}") \
+  | sed 's/docker\.io\///g' | sort | uniq)
+BASIC_DST_IMAGES=''
+
+# Switch context to airgapped cluster here, e.g.
+export KUBECONFIG=$HOME/.k3d/kubeconfig-airgapped-playground.yaml
+
+while IFS= read -r image; do
+  local dstImage=$K3D_NODE:30002/library/${image##*/}
+  echo pushing image $image to $dstImage
+  skopeo copy docker://$image --dest-creds admin:Harbor12345 --dest-tls-verify=false  docker://$dstImage
+  BASIC_DST_IMAGES+="${dstImage}\n"
+done <<< "$BASIC_SRC_IMAGES"
+echo $BASIC_DST_IMAGES
+```
+
+Note that we're using harbor here, because `k3d image import -c airgapped-playground $(echo $BASIC_IMAGES)` does not
+help because some pods follow the policy of always pulling the images.
+
+## Install the playground
+
+Don't disconnect from the internet yet, because 
+
+* k3d needs some images itself, e.g. the `local-path-provisioner` (see Troubleshooting) which are only pulled on demand.
+  In this case when the first PVC gets provisioned.
+* SCMM needs to download the plugins from the internet
+* Helm repo updates need access to the internet
+* But also because we would have to replace the images for registry, scmm, jenkins (several images!) and argocd in the
+  source code, as there are no parameters to do so.
+
+So, start the installation and once Argo CD is running, go offline.
+```bash
+docker run -it -u $(id -u) \
+    -v ~/.k3d/kubeconfig-airgapped-playground.yaml:/home/.kube/config \
+    --net=host gitops-playground:dev --argocd --yes -x \
+      --vault=dev --metrics \
+      --grafana-image $K3D_NODE:30002/library/grafana:8.2.1 \
+      --grafana-sidecar-image $K3D_NODE:30002/library/k8s-sidecar:1.14.2 \
+      --prometheus-image $K3D_NODE:30002/library/prometheus:v2.28.1 \
+      --prometheus-operator-image $K3D_NODE:30002/library/prometheus-operator:v0.50.0 \
+      --prometheus-config-reloader-image $K3D_NODE:30002/library/prometheus-config-reloader:v0.50.0 \
+      --external-secrets-image $K3D_NODE:30002/library/external-secrets:v0.6.1 \
+      --external-secrets-certcontroller-image $K3D_NODE:30002/library/external-secrets:v0.6.1 \
+      --external-secrets-webhook-image $K3D_NODE:30002/library/external-secrets:v0.6.1 \
+      --vault-image $K3D_NODE:30002/library/vault:1.12.0 \
+      --nginx-image $K3D_NODE:30002/library/nginx:1.23.3-debian-11-r8
+```
+
+In a different shell start this script, that waits for Argo CD and then goes offline.
+
+```bash
+sudo id # cache sudo PW
+while true; do
+    pods=$(kubectl get pods -n argocd -o jsonpath="{range .items[*]}{.status.phase}{'\n'}{end}")
+    # Dont stop when there are no pods
+    [[ "$(kubectl get pods  -n argocd --output name | wc -l)" -gt 0 ]] && ready="True" || ready="False" 
+    while IFS= read -r pod; do
+        if [[ "$pod" != "Running" ]]; then
+            ready="False"
+        fi
+    done <<< "$pods"
+    if [[ "$ready" == "True" ]]; then
+        break
+    fi
+    echo "$(date '+%Y-%m-%d %H:%M:%S'): Waiting for ArgoCD pods to be ready. Status: $pods"
+    sleep 5
+done
+
+echo "$(date '+%Y-%m-%d %H:%M:%S'): Argo CD Ready, going offline"
+sudo iptables -I FORWARD -j DROP -i $(ip -o -4 addr show | awk -v ip="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.Gateway}}{{end}}' k3d-airgapped-playground-server-0)" '$4 ~ ip {print $2}')
+```
+
+If you want to go online again, use `-D`
+```bash
+sudo iptables -D FORWARD -j DROP -i $(ip -o -4 addr show | awk -v ip="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.Gateway}}{{end}}' k3d-airgapped-playground-server-0)" '$4 ~ ip {print $2}')
+```
+
+## Troubleshooting
+
+When stuck in `Pending` this might be due to volumes not being provisioned
+```bash
+k get pod -n kube-system
+NAME                                                         READY   STATUS             RESTARTS      AGE
+helper-pod-create-pvc-a3d2db89-5662-43c7-a945-22db6f52916d   0/1     ImagePullBackOff   0             72s
+```

@@ -257,7 +257,9 @@ Note that you can get a free CES demo instance set up with a Kubernetes Cluster 
 --registry-password="$( cat account.json | sed 's/"/\\"/g' )" 
 ```
 
-##### Override default images used in the gitops-build-lib
+##### Override default images 
+
+###### gitops-build-lib
 
 Images used by the gitops-build-lib are set in the `gitopsConfig` in each `Jenkinsfile` of an application like that:
 
@@ -280,6 +282,19 @@ To override each image in all the applications you can use following parameters:
 * `--kubeval-image someRegistry/someImage:1.0.0`
 * `--helmkubeval-image someRegistry/someImage:1.0.0`
 * `--yamllint-image someRegistry/someImage:1.0.0`
+
+###### Tools and Exercises
+
+Images used by various tools and exercises can be configured using the following parameters:
+
+* `--grafana-image someRegistry/someImage:1.0.0`
+* `--external-secrets-image someRegistry/someImage:1.0.0`
+* `--external-secrets-certcontroller-image someRegistry/someImage:1.0.0`
+* `--external-secrets-webhook-image someRegistry/someImage:1.0.0`
+* `--vault-image someRegistry/someImage:1.0.0`
+* `--nginx-image someRegistry/someImage:1.0.0`
+
+Note that specifying a tag is mandatory.
 
 ##### Argo CD-Notifications
 
@@ -652,7 +667,7 @@ The applications implement a simple staging mechanism:
 * After a successful Jenkins build, the staging application will be deployed into the cluster by the GitOps operator.
 * Deployment of production applications can be triggered by accepting pull requests.
 * For some applications working without CI Server and committing directly to the GitOps repo is pragmatic  
-  (e.g. 3rd-party-application like NGINX, like [`argocd/nginx-helm-dependency`](argocd/example-apps/argocd/nginx-helm-dependency.yaml))
+  (e.g. 3rd-party-application like NGINX, like [`argocd/nginx-helm-umbrella`](argocd/example-apps/argocd/nginx-helm-umbrella.yaml))
 
 ![app-repo-vs-gitops-repo](docs/app-repo-vs-gitops-repo.svg)
 
@@ -716,8 +731,9 @@ Alternatively you can trigger the deployment via the respective GitOps operator'
 
 ##### 3rd Party app (NGINX) with helm, using Helm dependency mechanism
 
+* Application name: `nginx-helm-umbrella`
 * local: [localhost:30026](http://localhost:30026)
-* remote: `scripts/get-remote-url nginx argocd-staging`
+* remote: `scripts/get-remote-url nginx-helm-umbrella argocd-production`
 
 ## Development
 

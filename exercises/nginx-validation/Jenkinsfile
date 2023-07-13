@@ -3,7 +3,7 @@
 String getApplication() { "exercise-nginx-helm" }
 String getScmManagerCredentials() { 'scmm-user' }
 String getConfigRepositoryPRBaseUrl() { env.SCMM_URL }
-String getConfigRepositoryPRRepo() { 'argocd/gitops' }
+String getConfigRepositoryPRRepo() { 'argocd/example-apps' }
 String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/common/ces-build-lib/" }
 String getCesBuildLibVersion() { '1.64.1' }
 String getGitOpsBuildLibRepo() { "${env.SCMM_URL}/repo/common/gitops-build-lib" }

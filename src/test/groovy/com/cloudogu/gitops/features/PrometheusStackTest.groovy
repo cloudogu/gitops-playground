@@ -50,11 +50,54 @@ class PrometheusStackTest {
     }
 
     @Test
+    void "configures admin user if requested"() {
+        config['application']['username'] = "my-user"
+        config['application']['password'] = "hunter2"
+        createStack().install()
+
+        assertThat(parseActualStackYaml()['grafana']['adminUser']).isEqualTo('my-user')
+        assertThat(parseActualStackYaml()['grafana']['adminPassword']).isEqualTo('hunter2')
+    }
+
+    @Test
     void 'service type NodePort when not run remotely'() {
         config['application']['remote'] = false
         createStack().install()
 
         assertThat(parseActualStackYaml()['grafana']['service']['type']).isEqualTo('NodePort')
+    }
+
+    @Test
+    void "configures custom image for grafana"() {
+        config['features']['monitoring']['helm']['grafanaImage'] = "localhost:5000:the-tag"
+        createStack().install()
+
+        assertThat(parseActualStackYaml()['grafana']['image']['repository']).isEqualTo('localhost:5000')
+        assertThat(parseActualStackYaml()['grafana']['image']['tag']).isEqualTo('the-tag')
+    }
+
+    @Test
+    void "configures custom image for grafana-sidecar"() {
+        config['features']['monitoring']['helm']['grafanaSidecarImage'] = "localhost:5000:the-tag"
+        createStack().install()
+
+        assertThat(parseActualStackYaml()['grafana']['sidecar']['image']['repository']).isEqualTo('localhost:5000')
+        assertThat(parseActualStackYaml()['grafana']['sidecar']['image']['tag']).isEqualTo('the-tag')
+    }
+
+    @Test
+    void "configures custom image for prometheus and operator"() {
+        config['features']['monitoring']['helm']['prometheusImage'] = "localhost:5000/prometheus:v1"
+        config['features']['monitoring']['helm']['prometheusOperatorImage'] = "localhost:5000/prometheus-operator:v2"
+        config['features']['monitoring']['helm']['prometheusConfigReloaderImage'] = "localhost:5000/prometheus-config-reloader:v3"
+        createStack().install()
+
+        assertThat(parseActualStackYaml()['prometheus']['prometheusSpec']['image']['repository']).isEqualTo('localhost:5000/prometheus')
+        assertThat(parseActualStackYaml()['prometheus']['prometheusSpec']['image']['tag']).isEqualTo('v1')
+        assertThat(parseActualStackYaml()['prometheusOperator']['image']['repository']).isEqualTo('localhost:5000/prometheus-operator')
+        assertThat(parseActualStackYaml()['prometheusOperator']['image']['tag']).isEqualTo('v2')
+        assertThat(parseActualStackYaml()['prometheusOperator']['prometheusConfigReloaderImage']['repository']).isEqualTo('localhost:5000/prometheus-config-reloader')
+        assertThat(parseActualStackYaml()['prometheusOperator']['prometheusConfigReloaderImage']['tag']).isEqualTo('v3')
     }
 
     @Test
