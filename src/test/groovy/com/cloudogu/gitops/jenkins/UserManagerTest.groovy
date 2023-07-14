@@ -54,9 +54,11 @@ class UserManagerTest {
     void 'grants permission for user'() {
         def client = mock(ApiClient)
         when(client.runScript(anyString())).thenReturn("true")
+        when(client.runScript("print(Jenkins.getInstance().getAuthorizationStrategy().class)")).thenReturn("class hudson.security.GlobalMatrixAuthorizationStrategy")
 
         new UserManager(client).grantPermission("the-'user", UserManager.Permissions.METRICS_VIEW)
 
+        verify(client).runScript("""print(Jenkins.getInstance().getAuthorizationStrategy().class)""")
         verify(client).runScript("""
             import org.jenkinsci.plugins.matrixauth.PermissionEntry
             import org.jenkinsci.plugins.matrixauth.AuthorizationType

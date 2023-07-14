@@ -27,6 +27,11 @@ class UserManager {
     }
 
     void grantPermission(String username, Permissions permission) {
+        if (!isUsingMatrixBasedPermissions()) {
+            log.debug("Is not using matrix based permission. Does not need to add permission.")
+            return
+        }
+
         log.debug("Grant user $username permission $permission")
         def result = apiClient.runScript("""
             import org.jenkinsci.plugins.matrixauth.PermissionEntry
@@ -46,6 +51,10 @@ class UserManager {
 
     boolean isUsingMatrixBasedPermissions() {
         def result = apiClient.runScript("print(Jenkins.getInstance().getAuthorizationStrategy().class)")
+
+        if (!result.startsWith("class ")) {
+            throw new RuntimeException("Error when trying to determine authorization strategy")
+        }
 
         return result == "class hudson.security.GlobalMatrixAuthorizationStrategy"
     }

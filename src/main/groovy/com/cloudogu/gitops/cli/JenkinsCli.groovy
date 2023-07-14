@@ -34,11 +34,7 @@ class JenkinsCli {
             OptionsMixin options
     ) {
         def userManager = createApplicationContext(options).getBean(UserManager)
-        if (userManager.isUsingMatrixBasedPermissions()) {
-            userManager.grantPermission(username, permission)
-        } else {
-            log.debug("Is not using matrix based permission. Does not need to add permission.")
-        }
+        userManager.grantPermission(username, permission)
     }
 
     private ApplicationContext createApplicationContext(OptionsMixin options) {
