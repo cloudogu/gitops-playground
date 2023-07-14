@@ -25,12 +25,4 @@ class JenkinsFactory {
                 client
         )
     }
-
-    @Singleton
-    OkHttpClient okHttpClient() {
-        return new OkHttpClient.Builder()
-                .cookieJar(new InMemoryCookieJar())
-                .addInterceptor(new RetryInterceptor())
-                .build()
-    }
 }

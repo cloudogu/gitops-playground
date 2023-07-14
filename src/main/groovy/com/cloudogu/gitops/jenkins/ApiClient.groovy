@@ -1,11 +1,13 @@
 package com.cloudogu.gitops.jenkins
 
 import groovy.json.JsonSlurper
+import groovy.util.logging.Slf4j
 import okhttp3.Credentials
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 
+@Slf4j
 class ApiClient {
     private String jenkinsUrl
     private String username
@@ -28,6 +30,7 @@ class ApiClient {
     String runScript(String code) {
         def crumb = getCrumb()
 
+        log.trace("Running groovy script in Jenkins: {}", code)
         def request = buildRequest("scriptText")
             .header("Jenkins-Crumb", crumb)
             .post(new FormBody.Builder().add("script", code).build())
@@ -42,6 +45,7 @@ class ApiClient {
     }
 
     private String getCrumb() {
+        log.trace("Getting Crumb for Jenkins")
         def request  = buildRequest("crumbIssuer/api/json").build()
         def response = client.newCall(request).execute()
 

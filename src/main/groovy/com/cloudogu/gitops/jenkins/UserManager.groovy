@@ -13,6 +13,7 @@ class UserManager {
     }
 
     void createUser(String username, String password) {
+        log.debug("Add user $username to jenkins")
         def result = apiClient.runScript("""
             def realm = Jenkins.getInstance().getSecurityRealm()
             def user = realm.createAccount('${escapeString(username)}', '${escapeString(password)}')
@@ -20,28 +21,25 @@ class UserManager {
             print(user)
         """)
 
-        log.debug("Added user $username to jenkins")
-
         if (result != username) {
             throw new RuntimeException("Error when creating user: $result")
         }
     }
 
     void grantPermission(String username, Permissions permission) {
+        log.debug("Grant user $username permission $permission")
         def result = apiClient.runScript("""
             import org.jenkinsci.plugins.matrixauth.PermissionEntry
             import org.jenkinsci.plugins.matrixauth.AuthorizationType
 
             def permissions = Jenkins.getInstance().getAuthorizationStrategy().getGrantedPermissionEntries()
-            permissions.computeIfAbsent(jenkins.metrics.api.Metrics.VIEW) {
+            permissions.computeIfAbsent(${permission.toJenkinsPermissionEnum()}) {
               new HashSet<>()
             }
-            print(permissions[$permission].add(new PermissionEntry(AuthorizationType.USER, '${escapeString(username)}')))
+            print(permissions[${permission.toJenkinsPermissionEnum()}].add(new PermissionEntry(AuthorizationType.USER, '${escapeString(username)}')))
         """)
 
-        log.debug("Granted user $username permission $permission")
-
-        if (result !in ["true", "false"]) { // true == was already in set, false == was not already in set
+        if (result !in ["true", "false"]) { // Both are valid return values for Set.add(). true == was already in set, false == was not already in set
             throw new RuntimeException("Failed to add permission $permission to $username: $result")
         }
     }
@@ -70,8 +68,7 @@ class UserManager {
             this.value = value
         }
 
-        @Override
-        String toString() {
+        String toJenkinsPermissionEnum() {
             return value
         }
     }
