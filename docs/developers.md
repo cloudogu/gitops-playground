@@ -29,7 +29,7 @@ Trying to overcome this issue we pinned all plugins within `scripts/jenkins/plug
 These pinned plugins get downloaded within the docker build and saved into a folder as `.hpi` files. Later on
 when configuring jenkins, we upload all the plugin files with the given version.
 
-Turns out it does not completely circumvent this issue. In some cases jenkins updates these plugins automagically (as it seems) when installing the pinned version fails at first.
+Turns out it does not completely circumvent this issue. In some cases jenkins updates these plugins automagically (as it seems) when installing the pinned version fails at first or being installed when resolving dependencies.
 This again may lead to a broken jenkins, where some of the automatically updated plugins have changes within their dependencies. These dependencies than again are not updated but pinned and may cause issues.
 
 Since solving this issue may require some additional deep dive into bash scripts we like to get rid of in the future, we decided to give some hints how to easily solve the issue (and keep the plugins list up to date :]) instead of fixing it with tremendous effort.
