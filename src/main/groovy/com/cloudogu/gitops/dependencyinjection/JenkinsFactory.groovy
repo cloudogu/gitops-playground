@@ -2,11 +2,9 @@ package com.cloudogu.gitops.dependencyinjection
 
 import com.cloudogu.gitops.cli.JenkinsCli
 import com.cloudogu.gitops.jenkins.ApiClient
-import com.cloudogu.gitops.okhttp.RetryInterceptor
-import com.cloudogu.gitops.utils.InMemoryCookieJar
+import io.micronaut.context.annotation.Factory
 import jakarta.inject.Singleton
 import okhttp3.OkHttpClient
-import io.micronaut.context.annotation.Factory
 
 @Factory
 class JenkinsFactory {

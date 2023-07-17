@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.jenkins
 
-import com.cloudogu.gitops.utils.InMemoryCookieJar
+
+import okhttp3.JavaNetCookieJar
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -31,7 +32,7 @@ class ApiClientTest {
         }
         webServer.start()
 
-        def httpClient = new OkHttpClient.Builder().cookieJar(new InMemoryCookieJar()).build()
+        def httpClient = new OkHttpClient.Builder().cookieJar(new JavaNetCookieJar(new CookieManager())).build()
         def apiClient = new ApiClient(webServer.url("jenkins").toString(), "admin", "admin", httpClient)
 
         def result = apiClient.runScript("println('ok')")
