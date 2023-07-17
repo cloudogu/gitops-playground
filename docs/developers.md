@@ -54,7 +54,7 @@ Since solving this issue may require some additional deep dive into bash scripts
 ![Jenkins-UI plugin list](get-plugin-list.png)
 
 ```groovy
-Jenkins.instance.pluginManager.plugins.collect().sort().each {
+Jenkins.instance.pluginManager.activePlugins.each {
   println "${it.shortName}:${it.version}"
 }
 ```

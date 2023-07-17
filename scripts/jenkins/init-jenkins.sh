@@ -107,8 +107,8 @@ function configureJenkins() {
   fi 
 
   echo "Installing Jenkins Plugins from ${pluginFolder}"
-  for pluginFile in "${pluginFolder}/plugins"/*; do 
-     installPlugin "${pluginFile}"
+  awk -F':' '{ print $1 }' scripts/jenkins/plugins/plugins.txt | while read -r pluginName; do
+     installPlugin "${pluginFolder}/plugins/${pluginName}.jpi"
   done
 
   echo "Waiting for plugin installation.."
