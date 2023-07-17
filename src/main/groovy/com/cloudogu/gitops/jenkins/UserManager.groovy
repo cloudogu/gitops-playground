@@ -56,7 +56,7 @@ class UserManager {
             throw new RuntimeException("Error when trying to determine authorization strategy")
         }
 
-        return result == "class hudson.security.GlobalMatrixAuthorizationStrategy"
+        return result == "class hudson.security.GlobalMatrixAuthorizationStrategy" || result == "class hudson.security.ProjectMatrixAuthorizationStrategy"
     }
 
     private String escapeString(String str) {
