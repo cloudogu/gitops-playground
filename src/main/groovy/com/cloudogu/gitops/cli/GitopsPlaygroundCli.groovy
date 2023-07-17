@@ -1,8 +1,12 @@
 package com.cloudogu.gitops.cli
 
+import ch.qos.logback.classic.Level
+import ch.qos.logback.classic.Logger
 import com.cloudogu.gitops.Application
 import com.cloudogu.gitops.ApplicationConfigurator
 import groovy.util.logging.Slf4j
+import org.slf4j.LoggerFactory
+import picocli.CommandLine
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 
@@ -95,9 +99,9 @@ class GitopsPlaygroundCli  implements Runnable {
     enum VaultModes { dev, prod }
 
     // args group debug
-    @Option(names = ['-d', '--debug'], description = 'Debug output')
+    @Option(names = ['-d', '--debug'], description = 'Debug output', scope = CommandLine.ScopeType.INHERIT)
     private boolean debug
-    @Option(names = ['-x', '--trace'], description = 'Debug + Show each command executed (set -x)')
+    @Option(names = ['-x', '--trace'], description = 'Debug + Show each command executed (set -x)', scope = CommandLine.ScopeType.INHERIT)
     private boolean trace
 
     // args group configuration
@@ -116,12 +120,24 @@ class GitopsPlaygroundCli  implements Runnable {
     @Option(names = ['--argocd-url'], description = 'The URL where argocd is accessible. It has to be the full URL with http:// or https://')
     private String argocdUrl
 
-
     @Override
     void run() {
         Map config = getConfig()
         Application app = new Application(config)
         app.start()
+    }
+
+    void setLogging() {
+        Logger logger = (Logger) LoggerFactory.getLogger("com.cloudogu.gitops")
+        if (trace) {
+            log.info("Setting loglevel to trace")
+            logger.setLevel(Level.TRACE)
+        } else if (debug) {
+            log.info("Setting loglevel to debug")
+            logger.setLevel(Level.DEBUG);
+        } else {
+            logger.setLevel(Level.INFO)
+        }
     }
 
     private Map getConfig() {

@@ -1,6 +1,5 @@
 package com.cloudogu.gitops.cli
 
-
 import com.cloudogu.gitops.dependencyinjection.JenkinsFactory
 import com.cloudogu.gitops.jenkins.UserManager
 import groovy.util.logging.Slf4j
