@@ -57,11 +57,11 @@ node('docker') {
 </#noparse>
                     k8sVersion : env.${namePrefixForEnvVars}K8S_VERSION,
                     buildImages          : [
-                        helm: '<#if images.helm != "">${images.helm}<#else>ghcr.io/cloudogu/helm:3.10.3-1</#if>',
-                        kubectl: '<#if images.kubectl != "">${images.kubectl}<#else>lachlanevenson/k8s-kubectl:v1.25.4</#if>',
-                        kubeval: '<#if images.kubeval != "">${images.kubeval}<#else>ghcr.io/cloudogu/helm:3.10.3-1</#if>',
-                        helmKubeval: '<#if images.helmKubeval != "">${images.helmKubeval}<#else>ghcr.io/cloudogu/helm:3.10.3-1</#if>',
-                        yamllint: '<#if images.yamllint != "">${images.yamllint}<#else>cytopia/yamllint:1.25-0.7</#if>'
+                        helm: '${images.helm}',
+                        kubectl: '${images.kubectl}',
+                        kubeval: '${images.kubeval}',
+                        helmKubeval: '${images.helmKubeval}',
+                        yamllint: '${images.yamllint}'
                     ],
                     deployments: [
                         sourcePath: 'k8s',
