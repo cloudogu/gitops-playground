@@ -344,7 +344,7 @@ class ArgoCD extends Feature {
             repo.cloneRepo()
             repo.copyDirectoryContents(copyFromDirectory)
 
-            repo.replaceTemplates(~/\.tpl/, [
+            repo.replaceTemplates(~/\.ftl/, [
                     namePrefix: config.application['namePrefix'] as String,
                     namePrefixForEnvVars: config.application['namePrefixForEnvVars'] as String,
                     images: config.images,

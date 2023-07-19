@@ -69,14 +69,14 @@ class ScmmRepoTest {
     void "replaces yaml templates"() {
         def repo = createRepo()
         def tempDir = repo.absoluteLocalRepoTmpDir
-        repo.writeFile("subdirectory/result.tpl.yaml", 'foo: ${prefix}suffix')
+        repo.writeFile("subdirectory/result.ftl.yaml", 'foo: ${prefix}suffix')
         repo.writeFile("subdirectory/keep-this-way.yaml", 'thiswont: ${prefix}-be-replaced')
 
-        repo.replaceTemplates(~/\.tpl\.yaml$/, [prefix: "myteam-"])
+        repo.replaceTemplates(~/\.ftl\.yaml$/, [prefix: "myteam-"])
 
         assertThat(new File("$tempDir/subdirectory/result.yaml").text).isEqualTo("foo: myteam-suffix")
         assertThat(new File("$tempDir/subdirectory/keep-this-way.yaml").text).isEqualTo('thiswont: ${prefix}-be-replaced')
-        assertThat(new File("$tempDir/subdirectory/result.tpl.yaml").exists()).isFalse()
+        assertThat(new File("$tempDir/subdirectory/result.ftl.yaml").exists()).isFalse()
     }
 
     @Test

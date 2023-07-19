@@ -118,7 +118,7 @@ class PrometheusStackTest {
             @Override
             Path copyToTempDir(String filePath) {
                 Path ret = super.copyToTempDir(filePath)
-                temporaryYamlFile = Path.of(ret.toString().replace(".tpl", "")) // Path after template invocation
+                temporaryYamlFile = Path.of(ret.toString().replace(".ftl", "")) // Path after template invocation
                 return ret
             }
         }, new HelmStrategy(config, helmClient))

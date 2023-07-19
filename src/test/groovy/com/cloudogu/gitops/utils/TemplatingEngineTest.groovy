@@ -10,7 +10,7 @@ class TemplatingEngineTest {
     void 'replaces two templates in different folders'() {
         def tmpDir = File.createTempDir('gitops-playground-tests-templatingengine')
         tmpDir.deleteOnExit()
-        def fooTemplate = new File(tmpDir.absolutePath, "foo.tpl.txt")
+        def fooTemplate = new File(tmpDir.absolutePath, "foo.ftl.txt")
         fooTemplate.text = """
             this is the template
             I can embed \${string}
@@ -23,7 +23,7 @@ class TemplatingEngineTest {
 
         def tmpDir2 = File.createTempDir('gitops-playground-tests-templatingengine')
         tmpDir2.deleteOnExit()
-        def barTemplate = new File(tmpDir.absolutePath, "bar.tpl.txt")
+        def barTemplate = new File(tmpDir.absolutePath, "bar.ftl.txt")
         barTemplate.text = "Hello \${name}"
 
         def engine = new TemplatingEngine()

@@ -640,7 +640,7 @@ function printWelcomeScreenFluxV2() {
 function printWelcomeScreenArgocd() {
 
 
-  ARGOCD_URL="$(createUrl "${CLUSTER_BIND_ADDRESS}" "$(grep 'nodePortHttp:' "${PLAYGROUND_DIR}"/argocd/argocd/argocd/values.tpl.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')")"
+  ARGOCD_URL="$(createUrl "${CLUSTER_BIND_ADDRESS}" "$(grep 'nodePortHttp:' "${PLAYGROUND_DIR}"/argocd/argocd/argocd/values.ftl.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')")"
   setExternalHostnameIfNecessary 'ARGOCD' 'argocd-server' 'argocd'
 
   if [[ $INSTALL_ARGOCD == true ]]; then

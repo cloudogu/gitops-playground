@@ -15,7 +15,7 @@ import java.nio.file.Path
 
 @Slf4j
 class Vault extends Feature {
-    static final String VAULT_START_SCRIPT_PATH = '/applications/cluster-resources/secrets/vault/dev-post-start.tpl.sh'
+    static final String VAULT_START_SCRIPT_PATH = '/applications/cluster-resources/secrets/vault/dev-post-start.ftl.sh'
 
 
     private Map config

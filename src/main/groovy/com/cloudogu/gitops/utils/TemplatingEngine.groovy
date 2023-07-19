@@ -11,13 +11,13 @@ class TemplatingEngine {
     }
 
     File replaceTemplate(File file, Map parameters) {
-        if (!file.name.contains(".tpl")) {
-            throw new RuntimeException("File must contain .tpl to be a template")
+        if (!file.name.contains(".ftl")) {
+            throw new RuntimeException("File must contain .ftl to be a template")
         }
 
         engine.setDirectoryForTemplateLoading(file.parentFile)
 
-        def targetFile = new File(file.toString().replace(".tpl", ""))
+        def targetFile = new File(file.toString().replace(".ftl", ""))
         def templ = engine.getTemplate(file.name)
         templ.process(parameters, targetFile.newWriter())
 
