@@ -2,6 +2,7 @@ package com.cloudogu.gitops.jenkins
 
 import groovy.util.logging.Slf4j
 import jakarta.inject.Singleton
+import org.intellij.lang.annotations.Language
 
 @Singleton
 @Slf4j
@@ -14,12 +15,16 @@ class UserManager {
 
     void createUser(String username, String password) {
         log.debug("Add user $username to jenkins")
-        def result = apiClient.runScript("""
+        
+        @Language("Groovy")
+        def script = """
             def realm = Jenkins.getInstance().getSecurityRealm()
             def user = realm.createAccount('${escapeString(username)}', '${escapeString(password)}')
 
             print(user)
-        """)
+        """
+        
+        def result = apiClient.runScript(script)
 
         if (result != username) {
             throw new RuntimeException("Error when creating user: $result")
@@ -33,7 +38,9 @@ class UserManager {
         }
 
         log.debug("Grant user $username permission $permission")
-        def result = apiClient.runScript("""
+
+        @Language("Groovy")
+        def script = """
             import org.jenkinsci.plugins.matrixauth.PermissionEntry
             import org.jenkinsci.plugins.matrixauth.AuthorizationType
 
@@ -42,7 +49,8 @@ class UserManager {
               new HashSet<>()
             }
             print(permissions[${permission.toJenkinsPermissionEnum()}].add(new PermissionEntry(AuthorizationType.USER, '${escapeString(username)}')))
-        """)
+        """
+        def result = apiClient.runScript(script)
 
         if (result !in ["true", "false"]) { // Both are valid return values for Set.add(). true == was already in set, false == was not already in set
             throw new RuntimeException("Failed to add permission $permission to $username: $result")
