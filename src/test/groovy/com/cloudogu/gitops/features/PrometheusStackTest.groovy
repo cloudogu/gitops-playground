@@ -5,7 +5,9 @@ import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.HelmClient
+import com.cloudogu.gitops.utils.K8sClient
 import groovy.yaml.YamlSlurper
+import jakarta.inject.Provider
 import org.junit.jupiter.api.Test
 
 import java.nio.file.Path
@@ -15,6 +17,11 @@ import static org.assertj.core.api.Assertions.assertThat
 class PrometheusStackTest {
 
     Map config = [
+            scmm: [
+                    internal: true,
+                    host: '',
+                    protocol: 'http',
+            ],
             application: [
                     username: 'abc',
                     password: '123',
@@ -32,8 +39,9 @@ class PrometheusStackTest {
                     ]
             ],
     ]
-    CommandExecutorForTest commandExecutor = new CommandExecutorForTest()
-    HelmClient helmClient = new HelmClient(commandExecutor)
+    CommandExecutorForTest helmCommandExecutor = new CommandExecutorForTest()
+    CommandExecutorForTest k8sCommandExecutor = new CommandExecutorForTest()
+    HelmClient helmClient = new HelmClient(helmCommandExecutor)
     Path temporaryYamlFile = null
 
     @Test
@@ -41,6 +49,8 @@ class PrometheusStackTest {
         config['features']['monitoring']['active'] = false
         createStack().install()
         assertThat(temporaryYamlFile).isNull()
+        assertThat(k8sCommandExecutor.actualCommands).isEmpty()
+        assertThat(helmCommandExecutor.actualCommands).isEmpty()
     }
 
     @Test
@@ -67,6 +77,19 @@ class PrometheusStackTest {
         createStack().install()
 
         assertThat(parseActualStackYaml()['grafana']['service']['type']).isEqualTo('NodePort')
+    }
+
+    @Test
+    void 'uses remote scmm url if requested'() {
+        config.scmm["internal"] = false
+        config.scmm["host"] = 'localhost:9091'
+        config.scmm["protocol"] = 'https'
+        createStack().install()
+
+
+        def additionalScrapeConfigs = parseActualStackYaml()['prometheus']['prometheusSpec']['additionalScrapeConfigs'] as List
+        assertThat(((additionalScrapeConfigs[0]['static_configs'] as List)[0]['targets'] as List)[0]).isEqualTo('localhost:9091')
+        assertThat(additionalScrapeConfigs[0]['scheme']).isEqualTo('https')
     }
 
     @Test
@@ -110,24 +133,33 @@ class PrometheusStackTest {
     @Test
     void 'helm release is installed'() {
         createStack().install()
-     
-        assertThat(commandExecutor.actualCommands[0].trim()).isEqualTo(
+
+        assertThat(k8sCommandExecutor.actualCommands[0].trim()).isEqualTo(
+                'kubectl create secret generic prometheus-metrics-creds-scmm -n foo-monitoring --from-literal=username=metrics --from-literal=password=123 --dry-run=client -oyaml | kubectl apply -f-')
+        assertThat(helmCommandExecutor.actualCommands[0].trim()).isEqualTo(
                 'helm repo add prometheusstack https://prom')
-        assertThat(commandExecutor.actualCommands[1].trim()).isEqualTo(
+        assertThat(helmCommandExecutor.actualCommands[1].trim()).isEqualTo(
                 'helm upgrade -i kube-prometheus-stack prometheusstack/kube-prometheus-stack --version 19.2.2' +
                         " --values ${temporaryYamlFile} --namespace foo-monitoring")
     }
 
     private PrometheusStack createStack() {
         // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
-        new PrometheusStack(new Configuration(config), new FileSystemUtils() {
+
+        def configuration = new Configuration(config)
+        new PrometheusStack(configuration, new FileSystemUtils() {
             @Override
             Path copyToTempDir(String filePath) {
                 Path ret = super.copyToTempDir(filePath)
                 temporaryYamlFile = Path.of(ret.toString().replace(".ftl", "")) // Path after template invocation
                 return ret
             }
-        }, new HelmStrategy(new Configuration(config), helmClient))
+        }, new HelmStrategy(configuration, helmClient), new K8sClient(k8sCommandExecutor, new FileSystemUtils(), new Provider<Configuration>() {
+            @Override
+            Configuration get() {
+                configuration
+            }
+        }))
     }
 
     private parseActualStackYaml() {

@@ -114,3 +114,14 @@ prometheus:
       requests:
         cpu: 50m
         memory: 450Mi
+    secrets:
+      - prometheus-metrics-creds-scmm
+    additionalScrapeConfigs:
+      - job_name: 'scm-manager'
+        static_configs:
+          - targets: [ '${scmm.host}' ]
+        scheme: ${scmm.protocol}
+        metrics_path: '/scm/api/v2/metrics/prometheus'
+        basic_auth:
+          username: '${namePrefix}metrics'
+          password_file: '/etc/prometheus/secrets/prometheus-metrics-creds-scmm/password'

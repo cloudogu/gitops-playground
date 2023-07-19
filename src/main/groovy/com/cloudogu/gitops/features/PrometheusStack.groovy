@@ -5,6 +5,7 @@ import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.DockerImageParser
 import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.MapUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
@@ -24,11 +25,13 @@ class PrometheusStack extends Feature {
     private String password
     private FileSystemUtils fileSystemUtils
     private DeploymentStrategy deployer
+    private K8sClient k8sClient
 
     PrometheusStack(
             Configuration config,
             FileSystemUtils fileSystemUtils,
-            DeploymentStrategy deployer
+            DeploymentStrategy deployer,
+            K8sClient k8sClient
     ) {
         this.deployer = deployer
         this.config = config.getConfig()
@@ -36,6 +39,7 @@ class PrometheusStack extends Feature {
         this.password = this.config.application["password"]
         this.remoteCluster = this.config.application["remote"]
         this.fileSystemUtils = fileSystemUtils
+        this.k8sClient = k8sClient
     }
 
     @Override
@@ -47,7 +51,13 @@ class PrometheusStack extends Feature {
     void enable() {
         // Note that some specific configuration steps are implemented in ArgoCD
         def namePrefix = config.application['namePrefix']
-        def tmpHelmValues = new TemplatingEngine().replaceTemplate(fileSystemUtils.copyToTempDir(HELM_VALUES_PATH).toFile(), [namePrefix: namePrefix]).toPath()
+        def tmpHelmValues = new TemplatingEngine().replaceTemplate(fileSystemUtils.copyToTempDir(HELM_VALUES_PATH).toFile(), [
+                namePrefix: namePrefix,
+                scmm: [
+                       host: config.scmm['internal'] ? 'scmm-scm-manager.default.svc.cluster.local' : config.scmm['host'],
+                       protocol: config.scmm['internal'] ? 'http' : config.scmm['protocol'],
+                ]
+        ]).toPath()
         Map helmValuesYaml = fileSystemUtils.readYaml(tmpHelmValues)
 
         if (remoteCluster) {
@@ -64,6 +74,13 @@ class PrometheusStack extends Feature {
             helmValuesYaml['grafana']['adminPassword'] = password
         }
 
+        k8sClient.createSecret(
+                'generic',
+                'prometheus-metrics-creds-scmm',
+                'monitoring',
+                new Tuple2('username', 'metrics'),
+                new Tuple2('password', password)
+        )
 
         def helmConfig = config['features']['monitoring']['helm']
         setCustomImages(helmConfig, helmValuesYaml)
