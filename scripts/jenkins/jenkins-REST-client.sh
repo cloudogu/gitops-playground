@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -o errexit -o pipefail
 
+# Currently we run into a curl bug where basic auth isn't passed along when following redirects
+# https://github.com/curl/curl/issues/11486
+# As a result, we replaced all `-L` with `--location-trusted`.
+# This can be reverted when the curl issue is resolved.
+
 function curlJenkins() {
   curl -s -H "Jenkins-Crumb:$(crumb)" --cookie /tmp/cookies \
     -u "${JENKINS_USERNAME}:${JENKINS_PASSWORD}" \
@@ -24,7 +29,7 @@ function createJob() {
   printf 'Creating job %s ... ' "${JOB_NAME}"
 
   # Don't add --fail here, because if the job already exists we get a return code of 400
-  STATUS=$(curlJenkins -L -o /dev/null --write-out '%{http_code}' \
+  STATUS=$(curlJenkins --location-trusted -o /dev/null --write-out '%{http_code}' \
            -X POST "${JENKINS_URL}/createItem?name=${JOB_NAME}" \
            -H "Content-Type:text/xml" \
            --data "${JOB_CONFIG}" ) && EXIT_STATUS=$? || EXIT_STATUS=$?
@@ -35,7 +40,7 @@ function createJob() {
   fi
   
   # Call "Scan now", triggering initialization of Job folder from SCMM Namespace
-  SCAN_STATUS=$(curlJenkins --fail -L -o /dev/null --write-out '%{http_code}' \
+  SCAN_STATUS=$(curlJenkins --fail --location-trusted -o /dev/null --write-out '%{http_code}' \
         -X POST "${JENKINS_URL}/job/${JOB_NAME}/build?delay=0") && EXIT_STATUS=$? || EXIT_STATUS=$?
   if [ $EXIT_STATUS != 0 ]
     then
@@ -60,7 +65,7 @@ function createCredentials() {
                          ${DESCRIPTION}' \
                < scripts/jenkins/credentialsTemplate.json)
 
-  STATUS=$(curlJenkins --fail -L -o /dev/null --write-out '%{http_code}' \
+  STATUS=$(curlJenkins --fail --location-trusted -o /dev/null --write-out '%{http_code}' \
         -X POST "${JENKINS_URL}/credentials/store/system/domain/_/createCredentials" \
         --data-urlencode "json=${CRED_CONFIG}") && EXIT_STATUS=$? || EXIT_STATUS=$?
   if [ $EXIT_STATUS != 0 ]
@@ -104,7 +109,7 @@ function installPlugin() {
 function postPlugin() {
   PLUGIN_PATH=${1}
 
-  STATUS=$(curlJenkins --fail -L -o /dev/null --write-out '%{http_code}' \
+  STATUS=$(curlJenkins --fail --location-trusted -o /dev/null --write-out '%{http_code}' \
           "-F file=@${PLUGIN_PATH}" \
           -F 'a=' \
           "${JENKINS_URL}/pluginManager/uploadPlugin") && EXIT_STATUS=$? || EXIT_STATUS=$?
@@ -137,7 +142,7 @@ function checkPluginStatus() {
                  envsubst '${PLUGIN_LIST}' \
                  < scripts/jenkins/pluginCheck.groovy)
 
-  STATUS=$(curlJenkins --fail -L /dev/null \
+  STATUS=$(curlJenkins --fail --location-trusted /dev/null \
            -d "script=${GROOVY_SCRIPT}" --user "${JENKINS_USERNAME}:${JENKINS_PASSWORD}" \
            "${JENKINS_URL}/scriptText")
 
@@ -155,7 +160,7 @@ function setGlobalProperty() {
                          ${VALUE}' \
                < scripts/jenkins/setGlobalPropertyTemplate.groovy)
 
-  STATUS=$(curlJenkins --fail -L -o /dev/null --write-out '%{http_code}' \
+  STATUS=$(curlJenkins --fail --location-trusted -o /dev/null --write-out '%{http_code}' \
        -d "script=${GROOVY_SCRIPT}" --user "${JENKINS_USERNAME}:${JENKINS_PASSWORD}" \
        "${JENKINS_URL}/scriptText" ) && EXIT_STATUS=$? || EXIT_STATUS=$?
   if [ $EXIT_STATUS != 0 ]
