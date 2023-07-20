@@ -70,10 +70,15 @@ Jenkins.instance.pluginManager.plugins.collect().sort().each {
     Note: If you encounter `error=2, No such file or directory`,
     it might be necessary to explicitly set your `PATH` in Run Configuration's Environment Section.
   * From shell:
-    * [Provide dependencies](#providing-dependencies)
+    * [Provide `gitops-playground.jar` for scripts](#provide-gitops-playgroundjar-for-scripts)
     * Run
       ```shell
-       groovy  -classpath src/main/groovy src/main/groovy/com/cloudogu/gitops/cli/GitopsPlaygroundCliMain.groovy
+      java -classpath $PWD/gitops-playground.jar \
+        org.codehaus.groovy.tools.GroovyStarter \
+        --main groovy.ui.GroovyMain \
+        -classpath "$PWD"/src/main/groovy \
+        "$PWD"/src/main/groovy/com/cloudogu/gitops/cli/GitopsPlaygroundCliMain.groovy \
+        <yourParamsHere>
        ```
 * Running the whole `apply.sh` (which in turn calls groovy)
   * Build and run dev Container:
@@ -83,11 +88,7 @@ Jenkins.instance.pluginManager.plugins.collect().sort().each {
       --net=host gitops-playground:dev <params>
      ```
   * Locally:
-    * Provide `gitops-playground.jar` for `apply-ng.sh`:
-      ```bash
-      ./mvnw package -DskipTests
-      ln -s target/gitops-playground-cli-0.1.jar gitops-playground.jar 
-       ```
+    * [Provide `gitops-playground.jar` for scripts](#provide-gitops-playgroundjar-for-scripts)
     * Just run `scripts/apply.sh <params>`.  
       Hint: You can speed up the process by installing the Jenkins plugins from your filesystem, instead of from the internet.  
       To do so, download the plugins into a folder, then set this folder vie env var:  
@@ -98,6 +99,13 @@ Jenkins.instance.pluginManager.plugins.collect().sort().each {
       docker cp $id:/gitops/jenkins-plugins .
       docker rm -v $id
       ```
+
+### Provide `gitops-playground.jar` for scripts
+
+```bash
+./mvnw package -DskipTests
+ln -s target/gitops-playground-cli-0.1.jar gitops-playground.jar 
+```
 
 ## Development image
 
