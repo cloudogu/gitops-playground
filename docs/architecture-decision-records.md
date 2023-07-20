@@ -24,7 +24,9 @@ We want to use templating to alleviate these problems.
 We need to template YAML files as well as Jenkinsfiles.
 
 * Groovy Templating
-* Micronaut-compatible Library
+* [Micronaut-compatible Library](https://micronaut-projects.github.io/micronaut-views/latest/guide/#templates)
+
+Micronaut aims to be compatible with groovy and graal. 
 
 ### Decision Outcome
 
