@@ -49,6 +49,8 @@ spec:
     automated:
       prune: true
       selfHeal: true
+    syncOptions:
+    - "ServerSideApply=true"
 """)
         assertThat(commandExecutor.actualCommands[0]).startsWith("git clone ")
     }

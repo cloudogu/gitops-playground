@@ -98,7 +98,7 @@ class ApplicationConfigurator {
                             helm  : [
                                     chart  : 'kube-prometheus-stack',
                                     repoURL: 'https://prometheus-community.github.io/helm-charts',
-                                    version: '19.2.2',
+                                    version: '42.0.3',
                                     grafanaImage: '',
                                     grafanaSidecarImage: '',
                                     prometheusImage: '',

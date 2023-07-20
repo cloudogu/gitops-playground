@@ -52,8 +52,6 @@ function configureScmmManager() {
 
   ### ArgoCD Repos
   if [[ $INSTALL_ARGOCD == true ]]; then
-    setPermissionForNamespace "argocd" "${GITOPS_USERNAME}" "CI-SERVER"
-
     addRepo "${NAME_PREFIX}argocd" "nginx-helm-jenkins" "3rd Party app (NGINX) with helm, templated in Jenkins (gitops-build-lib)"
     setPermission "${NAME_PREFIX}argocd" "nginx-helm-jenkins" "${GITOPS_USERNAME}" "WRITE"
     
@@ -71,6 +69,8 @@ function configureScmmManager() {
     
     addRepo "${NAME_PREFIX}argocd" "example-apps" "GitOps repo for examples of end-user applications"
     setPermission "${NAME_PREFIX}argocd" "example-apps" "${GITOPS_USERNAME}" "WRITE"
+
+    setPermissionForNamespace "${NAME_PREFIX}argocd" "${GITOPS_USERNAME}" "CI-SERVER"
   fi
 
   ### Repos with replicated dependencies

@@ -92,9 +92,12 @@ class PrometheusStack extends Feature {
             def image = DockerImageParser.parse(prometheusConfigReloaderImage)
             MapUtils.deepMerge([
                     prometheusOperator: [
-                            prometheusConfigReloaderImage: [
-                                    repository: image.getRegistryAndRepositoryAsString(),
-                                    tag       : image.tag
+                            prometheusConfigReloader: [
+                                    image: [
+                                            registry  : image.registry,
+                                            repository: image.repository,
+                                            tag       : image.tag
+                                    ]
                             ]
                     ]
             ], helmValuesYaml)
@@ -109,7 +112,8 @@ class PrometheusStack extends Feature {
             MapUtils.deepMerge([
                     prometheusOperator: [
                             image: [
-                                    repository: image.getRegistryAndRepositoryAsString(),
+                                    registry: image.registry,
+                                    repository: image.repository,
                                     tag       : image.tag
                             ]
                     ]
@@ -126,7 +130,8 @@ class PrometheusStack extends Feature {
                     prometheus: [
                             prometheusSpec: [
                                     image: [
-                                            repository: image.getRegistryAndRepositoryAsString(),
+                                            registry: image.registry,
+                                            repository: image.repository,
                                             tag       : image.tag
                                     ]
                             ]

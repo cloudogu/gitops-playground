@@ -8,24 +8,26 @@ defaultRules:
     k8s: false
     kubeApiserver: false
     kubeApiserverAvailability: false
-    kubeApiserverError: false
+    kubeApiserverBurnrate: false
+    kubeApiserverHistogram: false
     kubeApiserverSlos: false
     kubelet: false
     kubePrometheusGeneral: true
-    kubePrometheusNodeAlerting: false
     kubePrometheusNodeRecording: false
     kubernetesAbsent: false
     kubernetesApps: false
     kubernetesResources: false
     kubernetesStorage: false
     kubernetesSystem: false
-    kubeScheduler: false
+    kubeSchedulerAlerting: false
+    kubeSchedulerRecording: false
     kubeStateMetrics: false
     network: false
     node: false
+    nodeExporterAlerting: false
+    nodeExporterRecording: false
     prometheus: true
     prometheusOperator: true
-    time: false
 kubeStateMetrics:
   enabled: false
 nodeExporter:
@@ -80,15 +82,3 @@ grafana:
     GF_SMTP_ENABLED: true
     GF_SMTP_FROM_ADDRESS: grafana-alerts@cloudogu.com
     GF_SMTP_HOST: mailhog.${namePrefix}monitoring.svc.cluster.local:1025
-  rbac:
-    pspEnabled: false
-
-# Disable because incompatible with k8s 1.25
-# This can be removed once we upgrade to Helm Chart version 28.x
-# See also grafana.rbac.pspEnabled
-kube-state-metrics:
-  podSecurityPolicy:
-    enabled: false
-global:
-  rbac:
-    pspEnabled: false
