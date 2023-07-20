@@ -63,6 +63,10 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
                                 automated: [
                                         prune   : true,
                                         selfHeal: true
+                                ],
+                                syncOptions: [
+                                        // So that we can apply very large resources (e.g. prometheus CRD)
+                                        "ServerSideApply=true"
                                 ]
                         ]
                 ],

@@ -412,6 +412,8 @@ echo $BASIC_DST_IMAGES
 Note that we're using harbor here, because `k3d image import -c airgapped-playground $(echo $BASIC_IMAGES)` does not
 help because some pods follow the policy of always pulling the images.
 
+Note that even though the images are named `$K3D_NODE:30002/library/...`, these are available via `localhost:30002/library/...` in the k3d cluster.
+
 ## Install the playground
 
 Don't disconnect from the internet yet, because 
@@ -429,16 +431,16 @@ docker run -it -u $(id -u) \
     -v ~/.k3d/kubeconfig-airgapped-playground.yaml:/home/.kube/config \
     --net=host gitops-playground:dev --argocd --yes -x \
       --vault=dev --metrics \
-      --grafana-image $K3D_NODE:30002/library/grafana:8.2.1 \
-      --grafana-sidecar-image $K3D_NODE:30002/library/k8s-sidecar:1.14.2 \
-      --prometheus-image $K3D_NODE:30002/library/prometheus:v2.28.1 \
-      --prometheus-operator-image $K3D_NODE:30002/library/prometheus-operator:v0.50.0 \
-      --prometheus-config-reloader-image $K3D_NODE:30002/library/prometheus-config-reloader:v0.50.0 \
-      --external-secrets-image $K3D_NODE:30002/library/external-secrets:v0.6.1 \
-      --external-secrets-certcontroller-image $K3D_NODE:30002/library/external-secrets:v0.6.1 \
-      --external-secrets-webhook-image $K3D_NODE:30002/library/external-secrets:v0.6.1 \
-      --vault-image $K3D_NODE:30002/library/vault:1.12.0 \
-      --nginx-image $K3D_NODE:30002/library/nginx:1.23.3-debian-11-r8
+      --grafana-image localhost:30002/library/grafana:8.2.1 \
+      --grafana-sidecar-image localhost:30002/library/k8s-sidecar:1.14.2 \
+      --prometheus-image localhost:30002/library/prometheus:v2.28.1 \
+      --prometheus-operator-image localhost:30002/library/prometheus-operator:v0.50.0 \
+      --prometheus-config-reloader-image localhost:30002/library/prometheus-config-reloader:v0.50.0 \
+      --external-secrets-image localhost:30002/library/external-secrets:v0.6.1 \
+      --external-secrets-certcontroller-image localhost:30002/library/external-secrets:v0.6.1 \
+      --external-secrets-webhook-image localhost:30002/library/external-secrets:v0.6.1 \
+      --vault-image localhost:30002/library/vault:1.12.0 \
+      --nginx-image localhost:30002/library/nginx:1.23.3-debian-11-r8
 ```
 
 In a different shell start this script, that waits for Argo CD and then goes offline.
