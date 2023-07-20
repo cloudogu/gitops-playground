@@ -61,7 +61,7 @@ class UserManager {
         def result = apiClient.runScript("print(Jenkins.getInstance().getAuthorizationStrategy().class)")
 
         if (!result.startsWith("class ")) {
-            throw new RuntimeException("Error when trying to determine authorization strategy")
+            throw new RuntimeException("Error when trying to determine authorization strategy: $result")
         }
 
         return result == "class hudson.security.GlobalMatrixAuthorizationStrategy" || result == "class hudson.security.ProjectMatrixAuthorizationStrategy"

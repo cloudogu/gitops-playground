@@ -22,6 +22,11 @@ class PrometheusStackTest {
                     host: '',
                     protocol: 'http',
             ],
+            jenkins: [
+                    internal: true,
+                    metricsUsername: 'metrics',
+                    metricsPassword: 'metrics',
+            ],
             application: [
                     username: 'abc',
                     password: '123',
@@ -90,6 +95,39 @@ class PrometheusStackTest {
         def additionalScrapeConfigs = parseActualStackYaml()['prometheus']['prometheusSpec']['additionalScrapeConfigs'] as List
         assertThat(((additionalScrapeConfigs[0]['static_configs'] as List)[0]['targets'] as List)[0]).isEqualTo('localhost:9091')
         assertThat(additionalScrapeConfigs[0]['scheme']).isEqualTo('https')
+
+        // scrape config for jenkins is unchanged
+        assertThat(((additionalScrapeConfigs[1]['static_configs'] as List)[0]['targets'] as List)[0]).isEqualTo('jenkins.default.svc.cluster.local')
+        assertThat(additionalScrapeConfigs[1]['scheme']).isEqualTo('http')
+    }
+
+    @Test
+    void 'uses remote jenkins url if requested'() {
+        config.jenkins["internal"] = false
+        config.jenkins["host"] = 'localhost:9090'
+        config.jenkins["protocol"] = 'https'
+        createStack().install()
+
+
+        def additionalScrapeConfigs = parseActualStackYaml()['prometheus']['prometheusSpec']['additionalScrapeConfigs'] as List
+        assertThat(((additionalScrapeConfigs[1]['static_configs'] as List)[0]['targets'] as List)[0]).isEqualTo('localhost:9090')
+        assertThat(additionalScrapeConfigs[1]['scheme']).isEqualTo('https')
+
+        // scrape config for scmm is unchanged
+        assertThat(((additionalScrapeConfigs[0]['static_configs'] as List)[0]['targets'] as List)[0]).isEqualTo('scmm-scm-manager.default.svc.cluster.local')
+        assertThat(additionalScrapeConfigs[0]['scheme']).isEqualTo('http')
+    }
+
+
+    @Test
+    void 'configures custom metrics user for jenkins'() {
+        config.jenkins["metricsUsername"] = 'external-metrics-username'
+        config.jenkins["metricsPassword"] = 'hunter2'
+        createStack().install()
+
+        assertThat(k8sCommandExecutor.actualCommands[1]).isEqualTo("kubectl create secret generic prometheus-metrics-creds-jenkins -n foo-monitoring --from-literal=password=hunter2 --dry-run=client -oyaml | kubectl apply -f-")
+        def additionalScrapeConfigs = parseActualStackYaml()['prometheus']['prometheusSpec']['additionalScrapeConfigs'] as List
+        assertThat(additionalScrapeConfigs[1]['basic_auth']['username']).isEqualTo('external-metrics-username')
     }
 
     @Test
@@ -135,7 +173,7 @@ class PrometheusStackTest {
         createStack().install()
 
         assertThat(k8sCommandExecutor.actualCommands[0].trim()).isEqualTo(
-                'kubectl create secret generic prometheus-metrics-creds-scmm -n foo-monitoring --from-literal=username=metrics --from-literal=password=123 --dry-run=client -oyaml | kubectl apply -f-')
+                'kubectl create secret generic prometheus-metrics-creds-scmm -n foo-monitoring --from-literal=password=123 --dry-run=client -oyaml | kubectl apply -f-')
         assertThat(helmCommandExecutor.actualCommands[0].trim()).isEqualTo(
                 'helm repo add prometheusstack https://prom')
         assertThat(helmCommandExecutor.actualCommands[1].trim()).isEqualTo(

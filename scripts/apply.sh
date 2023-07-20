@@ -258,7 +258,7 @@ function initJenkins() {
   configureJenkinsCommand=(configureJenkins "${JENKINS_URL}" "${JENKINS_USERNAME}" "${JENKINS_PASSWORD}"
     "${SCMM_URL_FOR_JENKINS}" "${SCMM_PASSWORD}" "${REGISTRY_URL}"
     "${REGISTRY_PATH}" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}"
-    "${INSTALL_FLUXV2}" "${INSTALL_ARGOCD}")
+    "${INSTALL_FLUXV2}" "${INSTALL_ARGOCD}" "${JENKINS_METRICS_USERNAME}" "${JENKINS_METRICS_PASSWORD}")
 
   evalWithSpinner "Configuring Jenkins..." "${configureJenkinsCommand[@]}"
 }
@@ -679,6 +679,8 @@ function printParameters() {
   echo "    | --jenkins-url=http://jenkins   >> The url of your external jenkins"
   echo "    | --jenkins-username=myUsername  >> Mandatory when --jenkins-url is set"
   echo "    | --jenkins-password=myPassword  >> Mandatory when --jenkins-url is set"
+  echo "    | --metrics-username=myUsername  >> Mandatory when --jenkins-url is set and monitoring enabled. Predefined user for fetching prometheus metrics."
+  echo "    | --metrics-password=myPassword  >> Mandatory when --jenkins-url is set and monitoring enabled. Predefined user for fetching prometheus metrics."
   echo
   echo "Configure external scm-manager. Use this 3 parameters to configure an external scmm"
   echo "    | --scmm-url=http://scm-manager:8080   >> The host of your external scm-manager"
@@ -730,7 +732,7 @@ function printParameters() {
 readParameters() {
   COMMANDS=$(getopt \
     -o hdxyc \
-    --long help,fluxv2,argocd,argocd-url:,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,grafana-image:,grafana-sidecar-image:,prometheus-image:,prometheus-operator-image:,prometheus-config-reloader-image:,external-secrets-image:,external-secrets-certcontroller-image:,external-secrets-webhook-image:,vault-image:,nginx-image:,trace,insecure,yes,skip-helm-update,metrics,monitoring,vault:,name-prefix: \
+    --long help,fluxv2,argocd,argocd-url:,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,metrics-username:,metrics-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,grafana-image:,grafana-sidecar-image:,prometheus-image:,prometheus-operator-image:,prometheus-config-reloader-image:,external-secrets-image:,external-secrets-certcontroller-image:,external-secrets-webhook-image:,vault-image:,nginx-image:,trace,insecure,yes,skip-helm-update,metrics,monitoring,vault:,name-prefix: \
     -- "$@")
   
   if [ $? != 0 ]; then
@@ -749,6 +751,8 @@ readParameters() {
   JENKINS_URL=""
   JENKINS_USERNAME=""
   JENKINS_PASSWORD=""
+  JENKINS_METRICS_USERNAME="metrics"
+  JENKINS_METRICS_PASSWORD="metrics"
   REGISTRY_URL=""
   REGISTRY_PATH=""
   REGISTRY_USERNAME=""
@@ -780,6 +784,8 @@ readParameters() {
       --jenkins-url        ) JENKINS_URL="$2"; shift 2 ;;
       --jenkins-username   ) JENKINS_USERNAME="$2"; shift 2 ;;
       --jenkins-password   ) JENKINS_PASSWORD="$2"; shift 2 ;;
+      --jenkins-metrics-username   ) JENKINS_METRICS_USERNAME="$2"; shift 2 ;;
+      --jenkins-metrics-password   ) JENKINS_METRICS_PASSWORD="$2"; shift 2 ;;
       --registry-url       ) REGISTRY_URL="$2"; shift 2 ;;
       --registry-path      ) REGISTRY_PATH="$2"; shift 2 ;;
       --registry-username  ) REGISTRY_USERNAME="$2"; shift 2 ;;

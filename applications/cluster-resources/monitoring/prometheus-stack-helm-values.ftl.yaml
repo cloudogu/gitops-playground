@@ -116,6 +116,7 @@ prometheus:
         memory: 450Mi
     secrets:
       - prometheus-metrics-creds-scmm
+      - prometheus-metrics-creds-jenkins
     additionalScrapeConfigs:
       - job_name: 'scm-manager'
         static_configs:
@@ -125,3 +126,11 @@ prometheus:
         basic_auth:
           username: '${namePrefix}metrics'
           password_file: '/etc/prometheus/secrets/prometheus-metrics-creds-scmm/password'
+      - job_name: 'jenkins'
+        static_configs:
+          - targets: [ '${jenkins.host}' ]
+        scheme: ${jenkins.protocol}
+        metrics_path: 'prometheus'
+        basic_auth:
+          username: '${jenkins.metricsUsername}'
+          password_file: '/etc/prometheus/secrets/prometheus-metrics-creds-jenkins/password'

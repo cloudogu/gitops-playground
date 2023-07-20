@@ -3,6 +3,7 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
+import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.DockerImageParser
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
@@ -56,6 +57,11 @@ class PrometheusStack extends Feature {
                 scmm: [
                        host: config.scmm['internal'] ? 'scmm-scm-manager.default.svc.cluster.local' : config.scmm['host'],
                        protocol: config.scmm['internal'] ? 'http' : config.scmm['protocol'],
+                ],
+                jenkins: [
+                        metricsUsername: config.jenkins['metricsUsername'],
+                        host: config.jenkins['internal'] ? 'jenkins.default.svc.cluster.local' : config.jenkins['host'],
+                        protocol: config.jenkins['internal'] ? 'http' : config.jenkins['protocol'],
                 ]
         ]).toPath()
         Map helmValuesYaml = fileSystemUtils.readYaml(tmpHelmValues)
@@ -78,8 +84,14 @@ class PrometheusStack extends Feature {
                 'generic',
                 'prometheus-metrics-creds-scmm',
                 'monitoring',
-                new Tuple2('username', 'metrics'),
                 new Tuple2('password', password)
+        )
+
+        k8sClient.createSecret(
+                'generic',
+                'prometheus-metrics-creds-jenkins',
+                'monitoring',
+                new Tuple2('password', config.jenkins['metricsPassword']),
         )
 
         def helmConfig = config['features']['monitoring']['helm']

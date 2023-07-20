@@ -2,6 +2,7 @@ package com.cloudogu.gitops.cli
 
 import com.cloudogu.gitops.dependencyinjection.JenkinsFactory
 import com.cloudogu.gitops.jenkins.Configuration
+import com.cloudogu.gitops.jenkins.PrometheusConfigurator
 import com.cloudogu.gitops.jenkins.UserManager
 import groovy.util.logging.Slf4j
 import io.micronaut.context.ApplicationContext
@@ -35,6 +36,15 @@ class JenkinsCli {
     ) {
         def userManager = createApplicationContext(options).getBean(UserManager)
         userManager.grantPermission(username, permission)
+    }
+
+    @Command(name = "enable-prometheus-authentication", description = "Enables authentication for the prometheus endpoint.", mixinStandardHelpOptions = true)
+    void enablePrometheusAuthentication(
+            @Mixin
+            OptionsMixin options
+    ) {
+        def prometheusConfigurator = createApplicationContext(options).getBean(PrometheusConfigurator)
+        prometheusConfigurator.enableAuthentication()
     }
 
     private ApplicationContext createApplicationContext(OptionsMixin options) {

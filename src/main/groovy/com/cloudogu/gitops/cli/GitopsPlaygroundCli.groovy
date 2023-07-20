@@ -41,6 +41,10 @@ class GitopsPlaygroundCli  implements Runnable {
     private String jenkinsUsername
     @Option(names = ['--jenkins-password'], description = 'Mandatory when --jenkins-url is set')
     private String jenkinsPassword
+    @Option(names = ['--jenkins-metrics-username'], description = 'Mandatory when --jenkins-url is set and monitoring enabled')
+    private String jenkinsMetricsUsername
+    @Option(names = ['--jenkins-metrics-password'], description = 'Mandatory when --jenkins-url is set and monitoring enabled')
+    private String jenkinsMetricsPassword
 
     // args group scm
     @Option(names = ['--scmm-url'], description = 'The host of your external scm-manager')
@@ -168,7 +172,9 @@ class GitopsPlaygroundCli  implements Runnable {
                 jenkins    : [
                         url     : jenkinsUrl,
                         username: jenkinsUsername,
-                        password: jenkinsPassword
+                        password: jenkinsPassword,
+                        metricsUsername: jenkinsMetricsUsername,
+                        metricsPassword: jenkinsMetricsPassword,
                 ],
                 scmm       : [
                         url     : scmmUrl,
