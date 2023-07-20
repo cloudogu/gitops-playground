@@ -17,7 +17,7 @@ class Deployer implements DeploymentStrategy {
     }
 
     Deployer(Map config) {
-        this(config, new ArgoCdApplicationStrategy(config, new FileSystemUtils()), new HelmStrategy(new HelmClient()))
+        this(config, new ArgoCdApplicationStrategy(config, new FileSystemUtils()), new HelmStrategy(config, new HelmClient()))
     }
 
     @Override

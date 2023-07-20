@@ -20,12 +20,6 @@ class ArgoCD extends Feature {
     static final String NGINX_VALIDATION_VALUES_PATH = 'k8s/values-shared.yaml'
     static final String BROKEN_APPLICATION_RESOURCES_PATH = 'broken-application.yaml'
     static final String SCMM_URL_INTERNAL = "http://scmm-scm-manager.default.svc.cluster.local/scm"
-    static final List<Tuple2> PETCLINIC_REPOS = [
-            new Tuple2('applications/argocd/petclinic/plain-k8s', 'argocd/petclinic-plain'),
-            new Tuple2('applications/argocd/petclinic/helm', 'argocd/petclinic-helm'),
-            new Tuple2('exercises/petclinic-helm', 'exercises/petclinic-helm')
-    ]
-    
     private Map config
     private List<RepoInitializationAction> gitRepos = []
 
@@ -39,21 +33,22 @@ class ArgoCD extends Feature {
     protected File remotePetClinicRepoTmpDir
     protected File nginxValidationTmpDir
     protected File brokenApplicationTmpDir
-    protected List<Tuple2<String, File>> petClinicLocalFoldersAndTmpDirs = []
+    protected List<File> petClinicTmpDirs = []
     
-    protected K8sClient k8sClient = new K8sClient()
+    protected K8sClient k8sClient
     protected HelmClient helmClient = new HelmClient()
 
-    private FileSystemUtils fileSystemUtils = new FileSystemUtils()
+    protected FileSystemUtils fileSystemUtils = new FileSystemUtils()
 
     ArgoCD(Map config) {
         this.config = config
+        k8sClient = new K8sClient(config)
         
         this.password = config.application["password"]
-        
+
         argocdRepoTmpDir = File.createTempDir('gitops-playground-argocd-repo')
         argocdRepoTmpDir.deleteOnExit()
-        argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd', argocdRepoTmpDir)
+        argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', "argocd/argocd", argocdRepoTmpDir)
         
         clusterResourcesTmpDir = File.createTempDir('gitops-playground-cluster-resources')
         clusterResourcesTmpDir.deleteOnExit()
@@ -77,12 +72,19 @@ class ArgoCD extends Feature {
         gitRepos += createRepoInitializationAction('exercises/broken-application', 'exercises/broken-application', brokenApplicationTmpDir)
 
         remotePetClinicRepoTmpDir = File.createTempDir('gitops-playground-petclinic')
-        for (Tuple2 repo : PETCLINIC_REPOS) {
-            def petClinicTempDir = File.createTempDir(repo.v2.toString().replace('/', '-'))
-            petClinicTempDir.deleteOnExit()
-            petClinicLocalFoldersAndTmpDirs.add(new Tuple2(repo.v1.toString(), petClinicTempDir))
-            gitRepos += createRepoInitializationAction(remotePetClinicRepoTmpDir.absolutePath, repo.v2.toString(), petClinicTempDir)
-        }
+
+
+        def petClinicTempDir = File.createTempDir('gitops-playground-petclinic-plain')
+        petClinicTmpDirs += petClinicTempDir
+        gitRepos += createRepoInitializationAction('applications/argocd/petclinic/plain-k8s', 'argocd/petclinic-plain', petClinicTempDir)
+
+        petClinicTempDir = File.createTempDir('gitops-playground-petclinic-helm')
+        petClinicTmpDirs += petClinicTempDir
+        gitRepos += createRepoInitializationAction('applications/argocd/petclinic/helm', 'argocd/petclinic-helm', petClinicTempDir)
+
+        petClinicTempDir = File.createTempDir('gitops-playground-exercise-petclinic-helm')
+        petClinicTmpDirs += petClinicTempDir
+        gitRepos += createRepoInitializationAction('exercises/petclinic-helm', 'exercises/petclinic-helm', petClinicTempDir)
     }
     
     @Override
@@ -92,16 +94,17 @@ class ArgoCD extends Feature {
 
     @Override
     void enable() {
+        log.info("Cloning Repositories")
         cloneRemotePetclinicRepo()
         
         gitRepos.forEach( repoInitializationAction -> {
             repoInitializationAction.initLocalRepo()
         })
-        
+
         prepareGitOpsRepos()
 
         prepareApplicationNginxHelmJenkins()
-        
+
         preparePetClinicRepos()
 
         prepareExerciseNginxValidationRepo()
@@ -111,6 +114,7 @@ class ArgoCD extends Feature {
             repoInitializationAction.repo.commitAndPush("Initial Commit")
         })
 
+        log.info("Installing Argo CD")
         installArgoCd()
     }
 
@@ -144,13 +148,6 @@ class ArgoCD extends Feature {
             deleteDir clusterResourcesTmpDir.absolutePath + '/misc/monitoring'
         }
 
-        if (!config.scmm["internal"]) {
-            String externalScmmUrl = ScmmRepo.createScmmUrl(config)
-            log.debug("Configuring all yaml files in gitops repos to use the external scmm url: ${externalScmmUrl}")
-            replaceFileContentInYamls(clusterResourcesTmpDir, SCMM_URL_INTERNAL, externalScmmUrl)
-            replaceFileContentInYamls(exampleAppsTmpDir, SCMM_URL_INTERNAL, externalScmmUrl)
-        }
-
         fileSystemUtils.copyDirectory("${fileSystemUtils.rootDir}/applications/argocd/nginx/helm-umbrella",
                 Path.of(exampleAppsTmpDir.absolutePath, 'apps/nginx-helm-umbrella/').toString())
         if (!config.application["remote"]) {
@@ -176,21 +173,9 @@ class ArgoCD extends Feature {
         Map nginxHelmJenkinsValuesYaml = fileSystemUtils.readYaml(nginxHelmJenkinsValuesTmpFile)
 
         if (!config.features['secrets']['active']) {
-            removeObjectFromList(nginxHelmJenkinsValuesYaml['extraVolumes'], 'name', 'secret')
-            removeObjectFromList(nginxHelmJenkinsValuesYaml['extraVolumeMounts'], 'name', 'secret')
-
-            // External Secrets are not needed in example 
+            // External Secrets are not needed in example
             deleteFile nginxHelmJenkinsTmpDir.absolutePath + '/k8s/staging/external-secret.yaml'
             deleteFile nginxHelmJenkinsTmpDir.absolutePath + '/k8s/production/external-secret.yaml'
-        }
-
-        if (!config.application['remote']) {
-            log.debug("Setting service.type to NodePort since it is not running in a remote cluster for nginx-helm-jenkins")
-            MapUtils.deepMerge([
-                    service: [
-                            type: 'NodePort'
-                    ]
-            ], nginxHelmJenkinsValuesYaml)
         }
 
         if (config['images']['nginx']) {
@@ -210,21 +195,9 @@ class ArgoCD extends Feature {
     }
 
     private void preparePetClinicRepos() {
-        for (Tuple2<String, File> repo : petClinicLocalFoldersAndTmpDirs) {
-            
-            log.debug("Copying playground files for petclinic repo: ${repo.v1}")
-            fileSystemUtils.copyDirectory("${fileSystemUtils.rootDir}/${repo.v1}", repo.v2.absolutePath)
-            
-            log.debug("Replacing gitops-build-lib images for petclinic repo: ${repo.v1}")
-            for (Map.Entry image : config.images as Map) {
-                fileSystemUtils.replaceFileContent(new File(repo.v2, 'Jenkinsfile').toString(),
-                        "${image.key}: .*", "${image.key}: '${image.value}',")
-            }
-
-            if (!config.application["remote"]) {
-                log.debug("Setting argocd service.type to NodePort since it is not running in a remote cluster, for petclinic repo: ${repo.v1}")
-                replaceFileContentInYamls(repo.v2, 'type: LoadBalancer', 'type: NodePort')
-            }
+        for (def tmpDir : petClinicTmpDirs) {
+            log.debug("Copying original petclinic files for petclinic repo: $tmpDir")
+            fileSystemUtils.copyDirectory(remotePetClinicRepoTmpDir.toString(), tmpDir.absolutePath)
         }
     }
 
@@ -261,24 +234,17 @@ class ArgoCD extends Feature {
         fileSystemUtils.replaceFileContent(kubernetesResourcesPath.toString(), 'bitnami/nginx:1.25.1', "${image.getRegistryAndRepositoryAsString()}:$image.tag")
     }
 
-    private void removeObjectFromList(Object list, String key, String value) {
-        boolean successfullyRemoved = (list as List).removeIf(n -> n[key] == value)
-        if (! successfullyRemoved) {
-            log.warn("Failed to remove object from list. No object found that has property '${key}: ${value}'. List ${list}")
-        }
-    }
-
     private void installArgoCd() {
-        
         prepareArgoCdRepo()
-        
+
+        def namePrefix = config.application['namePrefix']
         log.debug("Creating repo credential secret that is used by argocd to access repos in SCM-Manager")
         // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo 
         def repoTemplateSecretName = 'argocd-repo-creds-scmm'
         String scmmUrlForArgoCD = config.scmm["internal"] ? SCMM_URL_INTERNAL : ScmmRepo.createScmmUrl(config)
         k8sClient.createSecret('generic', repoTemplateSecretName, 'argocd',
                 new Tuple2('url', scmmUrlForArgoCD),
-                new Tuple2('username', 'gitops'),
+                new Tuple2('username', "${namePrefix}gitops"),
                 new Tuple2('password', password)
         )
         k8sClient.label('secret', repoTemplateSecretName,'argocd',
@@ -292,7 +258,7 @@ class ArgoCD extends Feature {
                 Path.of(argocdRepoTmpDir.absolutePath, CHART_YAML_PATH))['dependencies'] 
         helmClient.addRepo('argo', helmDependencies[0]['repository'] as String)
         helmClient.dependencyBuild(umbrellaChartPath)
-        helmClient.upgrade('argocd', umbrellaChartPath, [namespace: 'argocd'])
+        helmClient.upgrade('argocd', umbrellaChartPath, [namespace: "${namePrefix}argocd"])
          
         log.debug("Setting new argocd admin password")
         // Set admin password imperatively here instead of values.yaml, because we don't want it to show in git repo 
@@ -351,7 +317,7 @@ class ArgoCD extends Feature {
     }
 
     protected RepoInitializationAction createRepoInitializationAction(String localSrcDir, String scmmRepoTarget, File absoluteLocalRepoTmpDir) {
-        new RepoInitializationAction(new ScmmRepo(config, scmmRepoTarget, absoluteLocalRepoTmpDir.absolutePath), localSrcDir)
+        new RepoInitializationAction(config, new ScmmRepo(config, scmmRepoTarget, absoluteLocalRepoTmpDir.absolutePath), localSrcDir)
     }
 
     private void replaceFileContentInYamls(File folder, String from, String to) {
@@ -363,8 +329,10 @@ class ArgoCD extends Feature {
     static class RepoInitializationAction {
         private ScmmRepo repo
         private String copyFromDirectory
+        private Map config
 
-        RepoInitializationAction(ScmmRepo repo, String copyFromDirectory) {
+        RepoInitializationAction(Map config, ScmmRepo repo, String copyFromDirectory) {
+            this.config = config
             this.repo = repo
             this.copyFromDirectory = copyFromDirectory
         }
@@ -375,6 +343,19 @@ class ArgoCD extends Feature {
         void initLocalRepo() {
             repo.cloneRepo()
             repo.copyDirectoryContents(copyFromDirectory)
+
+            repo.replaceTemplates(~/\.ftl/, [
+                    namePrefix: config.application['namePrefix'] as String,
+                    namePrefixForEnvVars: config.application['namePrefixForEnvVars'] as String,
+                    images: config.images,
+                    isRemote: config.application['remote'],
+                    secrets: [
+                            active: config.features['secrets']['active']
+                    ],
+                    scmm: [
+                            baseUrl: config.scmm['internal'] ? 'http://scmm-scm-manager.default.svc.cluster.local/scm' : ScmmRepo.createScmmUrl(config)
+                    ]
+            ])
         }
     }
 }

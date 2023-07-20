@@ -49,7 +49,9 @@ class ApplicationConfigurator {
                     password      : DEFAULT_ADMIN_PW,
                     yes           : false,
                     runningInsideK8s : false, // Set dynamically
-                    clusterBindAddress : '' // Set dynamically
+                    clusterBindAddress : '', // Set dynamically
+                    namePrefix    : '',
+                    namePrefixForEnvVars    : '',
             ],
             images     : [
                     kubectl    : "lachlanevenson/k8s-kubectl:v1.25.4",
@@ -132,9 +134,9 @@ class ApplicationConfigurator {
     private NetworkingUtils networkingUtils
     private FileSystemUtils fileSystemUtils
 
-    ApplicationConfigurator(NetworkingUtils networkingUtils = new NetworkingUtils(), FileSystemUtils fileSystemUtils = new FileSystemUtils()) {
+    ApplicationConfigurator(NetworkingUtils networkingUtils = null, FileSystemUtils fileSystemUtils = new FileSystemUtils()) {
         this.config = DEFAULT_VALUES
-        this.networkingUtils = networkingUtils
+        this.networkingUtils = networkingUtils ?: new NetworkingUtils(config)
         this.fileSystemUtils = fileSystemUtils
     }
 

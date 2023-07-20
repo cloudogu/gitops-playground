@@ -1,0 +1,43 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: nginx-helm-jenkins
+  namespace: ${namePrefix}example-apps-staging
+spec:
+  destination:
+    namespace: ${namePrefix}example-apps-staging
+    server: https://kubernetes.default.svc
+  project: example-apps
+  source:
+    path: apps/nginx-helm-jenkins/staging
+    repoURL: ${scmm.baseUrl}/repo/${namePrefix}argocd/example-apps
+    targetRevision: main
+    directory:
+      recurse: true
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+
+---
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: nginx-helm-jenkins-production
+  namespace: ${namePrefix}example-apps-production
+spec:
+  destination:
+    namespace: ${namePrefix}example-apps-production
+    server: https://kubernetes.default.svc
+  project: example-apps
+  source:
+    path: apps/nginx-helm-jenkins/production
+    repoURL: ${scmm.baseUrl}/repo/${namePrefix}argocd/example-apps
+    targetRevision: main
+    directory:
+      recurse: true
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

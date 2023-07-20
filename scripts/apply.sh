@@ -66,6 +66,16 @@ function main() {
 
   CLUSTER_BIND_ADDRESS=$(findClusterBindAddress)
 
+  export ORIG_NAME_PREFIX="$NAME_PREFIX"
+  if [[ -n "${NAME_PREFIX}" ]]; then
+    # Name-prefix should always end with '-'
+    NAME_PREFIX="${NAME_PREFIX}-"
+  fi
+  export NAME_PREFIX_ENVIRONMENT_VARS="$ORIG_NAME_PREFIX"
+  if [ -n "$NAME_PREFIX_ENVIRONMENT_VARS" ]; then
+      NAME_PREFIX_ENVIRONMENT_VARS="${NAME_PREFIX_ENVIRONMENT_VARS^^}_"
+  fi
+
   if [[ $INSECURE == true ]]; then
     CURL_HOME="${PLAYGROUND_DIR}"
     export CURL_HOME
@@ -202,7 +212,14 @@ function checkPrerequisites() {
 }
 
 function applyBasicK8sResources() {
-  kubectl apply -f k8s-namespaces || true
+  kubectl create namespace "${NAME_PREFIX}argocd" || true
+  kubectl create namespace "${NAME_PREFIX}example-apps-production" || true
+  kubectl create namespace "${NAME_PREFIX}example-apps-staging" || true
+  kubectl create namespace "flux-system" || true
+  kubectl create namespace "fluxv2-production" || true
+  kubectl create namespace "fluxv2-staging" || true
+  kubectl create namespace "${NAME_PREFIX}monitoring" || true
+  kubectl create namespace "${NAME_PREFIX}secrets" || true
 
   createSecrets
 
@@ -271,10 +288,10 @@ function initSCMM() {
   configureScmmManager "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "${SCMM_URL}" "${JENKINS_URL_FOR_SCMM}" \
     "${SCMM_URL_FOR_JENKINS}" "${INTERNAL_SCMM}" "${INSTALL_FLUXV2}" "${INSTALL_ARGOCD}"
 
-  pushHelmChartRepo 'common/spring-boot-helm-chart'
-  pushHelmChartRepoWithDependency 'common/spring-boot-helm-chart-with-dependency'
-  pushRepoMirror "${GITOPS_BUILD_LIB_REPO}" 'common/gitops-build-lib'
-  pushRepoMirror "${CES_BUILD_LIB_REPO}" 'common/ces-build-lib' 'develop'
+  pushHelmChartRepo "3rd-party-dependencies/spring-boot-helm-chart"
+  pushHelmChartRepoWithDependency "3rd-party-dependencies/spring-boot-helm-chart-with-dependency"
+  pushRepoMirror "${GITOPS_BUILD_LIB_REPO}" "3rd-party-dependencies/gitops-build-lib"
+  pushRepoMirror "${CES_BUILD_LIB_REPO}" "3rd-party-dependencies/ces-build-lib" 'develop'
 }
 
 function setExternalHostnameIfNecessary() {
@@ -294,9 +311,9 @@ function setExternalHostnameIfNecessary() {
 }
 
 function initFluxV2() {
-  pushPetClinicRepo 'applications/fluxv2/petclinic/plain-k8s' 'fluxv2/petclinic-plain'
+  pushPetClinicRepo 'applications/fluxv2/petclinic/plain-k8s' "fluxv2/petclinic-plain"
 
-  initRepoWithSource 'fluxv2' 'fluxv2/gitops'
+  initRepoWithSource 'fluxv2' "fluxv2/gitops"
 
   REPOSITORY_YAML_PATH="fluxv2/clusters/gitops-playground/flux-system/gotk-sync.yaml"
   if [[ ${INTERNAL_SCMM} == false ]]; then
@@ -359,9 +376,9 @@ function replaceImageIfSet() {
 }
 
 function createSecrets() {
-  createSecret gitops-scmm --from-literal=USERNAME=gitops --from-literal=PASSWORD=$SET_PASSWORD -n default
+  createSecret gitops-scmm --from-literal="USERNAME=${NAME_PREFIX}gitops" --from-literal=PASSWORD=$SET_PASSWORD -n default
   # flux needs lowercase fieldnames
-  createSecret flux-system --from-literal=username=gitops --from-literal=password=$SET_PASSWORD -n flux-system
+  createSecret flux-system --from-literal="username=${NAME_PREFIX}gitops" --from-literal=password=$SET_PASSWORD -n flux-system
 }
 
 function createSecret() {
@@ -383,6 +400,9 @@ function pushPetClinicRepo() {
     cp -r "${PLAYGROUND_DIR}/${LOCAL_PETCLINIC_SOURCE}"/* .
 
     replaceAllImagesInJenkinsfile "${TMP_REPO}/Jenkinsfile"
+
+    sed -i "s/env.REGISTRY_URL/env.${NAME_PREFIX_ENVIRONMENT_VARS}REGISTRY_URL/g" "${TMP_REPO}/Jenkinsfile"
+    sed -i "s/env.REGISTRY_PATH/env.${NAME_PREFIX_ENVIRONMENT_VARS}REGISTRY_PATH/g" "${TMP_REPO}/Jenkinsfile"
 
     if [[ $REMOTE_CLUSTER != true ]]; then
       # Set NodePort service, to avoid "Pending" services and "Processing" state in argo
@@ -571,7 +591,7 @@ function printWelcomeScreen() {
     echo -e "| - \e[32m${SCMM_URL}/repos/fluxv2/\e[0m"
   fi
   if [[ $INSTALL_ARGOCD == true ]]; then
-    echo -e "| - \e[32m${SCMM_URL}/repos/argocd/\e[0m"
+    echo -e "| - \e[32m${SCMM_URL}/repos/${NAME_PREFIX}argocd/\e[0m"
   fi
 
   echo "|"
@@ -582,10 +602,10 @@ function printWelcomeScreen() {
   echo "|"
 
   if [[ $INSTALL_FLUXV2 == true ]]; then
-    echo -e "| - \e[32m${JENKINS_URL}/job/fluxv2-applications/\e[0m"
+    echo -e "| - \e[32m${JENKINS_URL}/job/fluxv2-example-apps/\e[0m"
   fi
   if [[ $INSTALL_ARGOCD == true ]]; then
-    echo -e "| - \e[32m${JENKINS_URL}/job/argocd-applications/\e[0m"
+    echo -e "| - \e[32m${JENKINS_URL}/job/${NAME_PREFIX}example-apps/\e[0m"
   fi
   echo "|"
   echo "| During the job, jenkins pushes into the corresponding GitOps repo and creates a pull"
@@ -620,14 +640,14 @@ function printWelcomeScreenFluxV2() {
 function printWelcomeScreenArgocd() {
 
 
-  ARGOCD_URL="$(createUrl "${CLUSTER_BIND_ADDRESS}" "$(grep 'nodePortHttp:' "${PLAYGROUND_DIR}"/argocd/argocd/argocd/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')")"
+  ARGOCD_URL="$(createUrl "${CLUSTER_BIND_ADDRESS}" "$(grep 'nodePortHttp:' "${PLAYGROUND_DIR}"/argocd/argocd/argocd/values.ftl.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')")"
   setExternalHostnameIfNecessary 'ARGOCD' 'argocd-server' 'argocd'
 
   if [[ $INSTALL_ARGOCD == true ]]; then
     echo "| For ArgoCD:"
     echo "|"
-    echo -e "| - GitOps repo: \e[32m${SCMM_URL}/repo/argocd/example-apps/code/sources/main/\e[0m"
-    echo -e "| - Pull requests: \e[32m${SCMM_URL}/repo/argocd/example-apps/pull-requests\e[0m"
+    echo -e "| - GitOps repo: \e[32m${SCMM_URL}/repo/${NAME_PREFIX}argocd/example-apps/code/sources/main/\e[0m"
+    echo -e "| - Pull requests: \e[32m${SCMM_URL}/repo/${NAME_PREFIX}argocd/example-apps/pull-requests\e[0m"
     echo "|"
     echo -e "| There is also the ArgoCD UI which can be found at \e[32m${ARGOCD_URL}/\e[0m"
     echo -e "| Credentials for the ArgoCD UI are: \e[31m${SET_USERNAME}/${SET_PASSWORD}\e[0m"
@@ -704,12 +724,13 @@ function printParameters() {
   echo " -d | --debug         >> Debug output"
   echo " -x | --trace         >> Debug + Show each command executed (set -x)"
   echo " -y | --yes           >> Skip kubecontext confirmation"
+  echo "    | --name-prefix   >> Set name-prefix for SCMM repos, Jenkins jobs, namespaces"
 }
 
 readParameters() {
   COMMANDS=$(getopt \
     -o hdxyc \
-    --long help,fluxv2,argocd,argocd-url:,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,grafana-image:,grafana-sidecar-image:,prometheus-image:,prometheus-operator-image:,prometheus-config-reloader-image:,external-secrets-image:,external-secrets-certcontroller-image:,external-secrets-webhook-image:,vault-image:,nginx-image:,trace,insecure,yes,skip-helm-update,metrics,monitoring,vault: \
+    --long help,fluxv2,argocd,argocd-url:,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,grafana-image:,grafana-sidecar-image:,prometheus-image:,prometheus-operator-image:,prometheus-config-reloader-image:,external-secrets-image:,external-secrets-certcontroller-image:,external-secrets-webhook-image:,vault-image:,nginx-image:,trace,insecure,yes,skip-helm-update,metrics,monitoring,vault:,name-prefix: \
     -- "$@")
   
   if [ $? != 0 ]; then
@@ -747,7 +768,8 @@ readParameters() {
   SKIP_HELM_UPDATE=false
   DEPLOY_METRICS=false
   ARGOCD_URL=""
-  
+  NAME_PREFIX=""
+
   while true; do
     case "$1" in
       -h | --help          ) printUsage; exit 0 ;;
@@ -784,6 +806,7 @@ readParameters() {
       --insecure           ) INSECURE=true; shift ;;
       --username           ) SET_USERNAME="$2"; shift 2 ;;
       --password           ) SET_PASSWORD="$2"; shift 2 ;;
+      --name-prefix        ) NAME_PREFIX="$2"; shift 2 ;;
       -d | --debug         ) DEBUG=true; shift ;;
       -x | --trace         ) TRACE=true; shift ;;
       -y | --yes           ) ASSUME_YES=true; shift ;;

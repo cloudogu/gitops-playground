@@ -425,10 +425,10 @@ From there everything is managed via GitOps. This diagram shows how it works.
    `apps/my-app/production` folder within the same repo.  
    Note that it is recommended to protect the `production` folders from manual access, if supported by the SCM of your choice.  
    Alternatively, instead of different YAMLs files as used in the diagram, these applications could be realized as
-    * Two applications in the same YAML (implemented in the playground, see e.g. [`petclinic-plain.yaml`](argocd/example-apps/argocd/petclinic-plain.yaml))
+    * Two applications in the same YAML (implemented in the playground, see e.g. [`petclinic-plain.yaml`](argocd/example-apps/argocd/petclinic-plain.ftl.yaml))
     * Two application with the same name in different namespaces, when ArgoCD is enabled to search for applications
       within different namespaces (implemented in the playground, see
-      [Argo CD's values.yaml](argocd/argocd/argocd/values.yaml) - `application.namespaces` setting)
+      [Argo CD's values.yaml](argocd/argocd/argocd/values.ftl.yaml) - `application.namespaces` setting)
     * One `ApplicationSet`, using the [`git` generator for directories](https://github.com/argoproj/argo-cd/blob/v2.7.1/docs/operator-manual/applicationset/Generators-Git.md#git-generator-directories)
       (not used in GitOps playground, yet)
 
@@ -667,7 +667,7 @@ The applications implement a simple staging mechanism:
 * After a successful Jenkins build, the staging application will be deployed into the cluster by the GitOps operator.
 * Deployment of production applications can be triggered by accepting pull requests.
 * For some applications working without CI Server and committing directly to the GitOps repo is pragmatic  
-  (e.g. 3rd-party-application like NGINX, like [`argocd/nginx-helm-umbrella`](argocd/example-apps/argocd/nginx-helm-umbrella.yaml))
+  (e.g. 3rd-party-application like NGINX, like [`argocd/nginx-helm-umbrella`](argocd/example-apps/argocd/nginx-helm-umbrella.ftl.yaml))
 
 ![app-repo-vs-gitops-repo](docs/app-repo-vs-gitops-repo.svg)
 

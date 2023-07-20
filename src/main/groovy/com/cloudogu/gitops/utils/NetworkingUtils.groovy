@@ -12,7 +12,7 @@ class NetworkingUtils {
     private K8sClient k8sClient
     private CommandExecutor commandExecutor
 
-    NetworkingUtils(K8sClient k8sClient = new K8sClient(), CommandExecutor commandExecutor = new CommandExecutor()) {
+    NetworkingUtils(Map config, K8sClient k8sClient = new K8sClient(config), CommandExecutor commandExecutor = new CommandExecutor()) {
         this.k8sClient = k8sClient
         this.commandExecutor = commandExecutor
     }

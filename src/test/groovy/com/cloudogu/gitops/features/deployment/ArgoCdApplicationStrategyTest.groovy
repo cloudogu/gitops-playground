@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test
 import static org.assertj.core.api.Assertions.assertThat
 
 class ArgoCdApplicationStrategyTest {
+    
     @Test
     void 'deploys feature using argo CD'() {
         def commandExecutor = new CommandExecutorForTest()
@@ -28,11 +29,11 @@ apiVersion: "argoproj.io/v1alpha1"
 kind: "Application"
 metadata:
   name: "repoName"
-  namespace: "argocd"
+  namespace: "foo-argocd"
 spec:
   destination:
     server: "https://kubernetes.default.svc"
-    namespace: "namespace"
+    namespace: "foo-namespace"
   project: "cluster-resources"
   sources:
   - repoURL: "repoURL"
@@ -62,6 +63,9 @@ spec:
                         password: "dont-care-password",
                         protocol: "https",
                         host: "localhost"
+                ],
+                application: [
+                        namePrefix : 'foo-'
                 ]
         ]
 

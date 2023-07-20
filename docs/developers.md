@@ -257,6 +257,21 @@ For the moment this works and hopefully some day JGit will have support for Graa
 Until then, there is a chance, that each upgrade of JGit causes new issues. If so, check if the code of the Quarkus 
 extension provides solutions. 🤞 Good luck 🍀. 
 
+### FAQ
+
+#### SAM conversion problem
+
+```
+org.codehaus.groovy.runtime.typehandling.GroovyCastException: 
+Cannot cast object '[...]closure1@27aa43a9' 
+with class '[...]closure1' 
+to class 'java.util.function.Predicate'
+```
+
+Implicit closure-to-SAM conversions will not always happen.
+You can configure an explicit list in [resources/proxy-config.json](../src/main/resources/proxy-config.json) and [resources/reflect-config.json](../src/main/resources/reflect-config.json).
+
+
 # External registry for development
 
 If you need to emulate an "external", private registry with credentials, use the following.

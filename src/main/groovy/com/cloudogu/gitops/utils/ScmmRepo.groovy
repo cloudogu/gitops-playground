@@ -1,6 +1,11 @@
 package com.cloudogu.gitops.utils
 
+
 import groovy.util.logging.Slf4j
+
+import java.nio.file.Files
+import java.nio.file.Path
+import java.util.regex.Pattern
 
 @Slf4j
 class ScmmRepo {
@@ -31,8 +36,7 @@ class ScmmRepo {
         this.password = config.scmm["internal"] ? config.application["password"] : config.scmm["password"]
         this.scmmUrl = createScmmUrl(config)
         this.scmmUrlWithCredentials = "${config.scmm["protocol"]}://${username}:${password}@${config.scmm["host"]}"
-        this.scmmRepoTarget = scmmRepoTarget
-        this.scmmRepoTarget = scmmRepoTarget
+        this.scmmRepoTarget =  "${config.application['namePrefix']}${scmmRepoTarget}"
         this.absoluteLocalRepoTmpDir = absoluteLocalRepoTmpDir
         this.commandExecutor = commandExecutor
         gitRepoCommandInit(absoluteLocalRepoTmpDir)
@@ -69,6 +73,13 @@ class ScmmRepo {
         fileSystemUtils.copyDirectory(absoluteSrcDirLocation, absoluteLocalRepoTmpDir)
     }
 
+    void replaceTemplates(Pattern filepathMatches, Map parameters) {
+        def engine = new TemplatingEngine()
+        Files.walk(Path.of(absoluteLocalRepoTmpDir))
+                .filter { filepathMatches.matcher(it.toString()).find() }
+                .each { Path it -> engine.replaceTemplate(it.toFile(), parameters) }
+    }
+
     void commitAndPush(String commitMessage) {
         log.debug("Checking out main, adding files for repo: ${scmmRepoTarget}")
         git("add .")
@@ -87,7 +98,7 @@ class ScmmRepo {
         log.debug("Stages changed for commit: ${changesStageForCommit}")
         return changesStageForCommit
     }
-    
+
     private void gitRepoCommandInit(String absoluteLocalRepoTmpDir) {
         gitRepoCommand = "git --git-dir=$absoluteLocalRepoTmpDir/.git/ --work-tree=$absoluteLocalRepoTmpDir"
     }
@@ -113,5 +124,4 @@ class ScmmRepo {
     private boolean branchExists(String branch) {
         git('branch').split(" ").contains(branch)
     }
-
 }

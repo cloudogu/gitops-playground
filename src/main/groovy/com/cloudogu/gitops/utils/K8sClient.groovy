@@ -7,8 +7,10 @@ import groovy.util.logging.Slf4j
 class K8sClient {
 
     private CommandExecutor commandExecutor
+    private Map config
 
-    K8sClient(CommandExecutor commandExecutor = new CommandExecutor()) {
+    K8sClient(Map config, CommandExecutor commandExecutor = new CommandExecutor()) {
+        this.config = config
         this.commandExecutor = commandExecutor
     }
 
@@ -40,7 +42,7 @@ class K8sClient {
             throw new RuntimeException("Missing literals")
         }
         String command =
-                "kubectl create secret ${type} ${name}${namespace ? " -n ${namespace}" : ''} " +
+                "kubectl create secret ${type} ${name}${namespace ? " -n ${getNamePrefix()}${namespace}" : ''} " +
                         literals.collect { "--from-literal=${it.v1}=${it.v2}"}.join(' ') +
                         ' --dry-run=client -oyaml'
         commandExecutor.execute(command, 'kubectl apply -f-')
@@ -52,7 +54,7 @@ class K8sClient {
     void createConfigMapFromFile(String name, String namespace = '', String filePath) {
         //  kubectl create configmap dev-post-start --from-file=dev-post-start.sh
         String command =
-                "kubectl create configmap ${name}${namespace ? " -n ${namespace}" : ''}" +
+                "kubectl create configmap ${name}${namespace ? " -n ${getNamePrefix()}${namespace}" : ''}" +
                         " --from-file=${filePath}" +
                         ' --dry-run=client -oyaml'
         commandExecutor.execute(command, 'kubectl apply -f-')
@@ -63,7 +65,7 @@ class K8sClient {
             throw new RuntimeException("Missing key-value-pairs")
         }
         String command =
-                "kubectl label ${resource} ${name}${namespace ? " -n ${namespace}" : ''} " +
+                "kubectl label ${resource} ${name}${namespace ? " -n ${getNamePrefix()}${namespace}" : ''} " +
                         '--overwrite ' + // Make idempotent
                         keyValues.collect { "${it.v1}=${it.v2}"}.join(' ')
         commandExecutor.execute(command)
@@ -77,7 +79,7 @@ class K8sClient {
         
         //  kubectl patch secret argocd-secret -p '{"stringData": { "admin.password": "'"${bcryptArgoCDPassword}"'"}}' || true
         String command =
-                "kubectl patch ${resource} ${name}${namespace ? " -n ${namespace}" : ''}" +
+                "kubectl patch ${resource} ${name}${namespace ? " -n ${getNamePrefix()}${namespace}" : ''}" +
                         " --patch-file=${patchYaml.absolutePath}"
         commandExecutor.execute(command)
     }
@@ -88,10 +90,14 @@ class K8sClient {
         }
         // kubectl delete secret -n argocd -l owner=helm,name=argocd
         String command =
-                "kubectl delete ${resource}${namespace ? " -n ${namespace}" : ''}" +
+                "kubectl delete ${resource}${namespace ? " -n ${getNamePrefix()}${namespace}" : ''}" +
                         ' --ignore-not-found=true ' + // Make idempotent
                         selectors.collect { "--selector=${it.v1}=${it.v2}"}.join(' ')
         
         commandExecutor.execute(command)
+    }
+
+    private String getNamePrefix() {
+        return config.application['namePrefix'] as String
     }
 }
