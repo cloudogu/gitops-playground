@@ -45,8 +45,6 @@ class ApplicationConfigurator {
                     remote        : false,
                     insecure      : false,
                     skipHelmUpdate: false,
-                    debug         : false,
-                    trace         : false,
                     username      : DEFAULT_ADMIN_USER,
                     password      : DEFAULT_ADMIN_PW,
                     yes           : false,
@@ -149,7 +147,6 @@ class ApplicationConfigurator {
         Map newConfig = deepCopy(config)
         deepMerge(configToSet, newConfig)
 
-        setLogLevel(newConfig)
         addAdditionalApplicationConfig(newConfig)
         setScmmConfig(newConfig)
         addJenkinsConfig(newConfig)
@@ -204,20 +201,5 @@ class ApplicationConfigurator {
             newConfig.jenkins["urlForScmm"] = newConfig.jenkins["url"] 
         }
         // TODO missing external config (see setScmmConfig())
-    }
-
-    private void setLogLevel(Map newConfig) {
-        boolean trace = newConfig.application["trace"]
-        boolean debug = newConfig.application["debug"]
-        Logger logger = (Logger) LoggerFactory.getLogger("com.cloudogu.gitops");
-        if (trace) {
-            log.info("Setting loglevel to trace")
-            logger.setLevel(Level.TRACE)
-        } else if (debug) {
-            log.info("Setting loglevel to debug")
-            logger.setLevel(Level.DEBUG);
-        } else {
-            logger.setLevel(Level.INFO)
-        }
     }
 }
