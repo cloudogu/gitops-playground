@@ -3,10 +3,12 @@ package com.cloudogu.gitops.cli
 
 import com.github.stefanbirkner.systemlambda.SystemLambda
 import org.junit.jupiter.api.Test
+import picocli.CommandLine
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
+import picocli.CommandLine.ParseResult
 
-import static org.assertj.core.api.Assertions.assertThat 
+import static org.assertj.core.api.Assertions.assertThat
 
 class GitopsPlaygroundCliMainTest {
 
