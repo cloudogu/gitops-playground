@@ -2,7 +2,7 @@ extraEnv: |
   - name: TZ
     value: Europe/Berlin
 service:
-  type: LoadBalancer
+  type: <#if isRemote>LoadBalancer<#else>NodePort</#if>
 
 ingress:
   enabled: false
