@@ -3,7 +3,7 @@ extraEnv: |
     value: Europe/Berlin
 
 service:
-  type: <#if isRemote>LoadBalancer<#else>NodePort</#if>
+  type: LoadBalancer
 
 ingress:
   enabled: false
@@ -15,6 +15,8 @@ podinfo:
 
 resources:
   limits:
-    memory: 750Mi
+    cpu: 1
+    memory: 1Gi
   requests:
-    memory: 750Mi
+    cpu: 300m
+    memory: 650Mi

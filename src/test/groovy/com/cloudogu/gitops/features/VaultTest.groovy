@@ -120,7 +120,7 @@ class VaultTest {
         createVault().install()
 
         def actualYaml = parseActualYaml()
-        assertThat(actualYaml as Map).doesNotContainKey('server')
+        assertThat((actualYaml as Map)['server'] as Map).doesNotContainKey('dev')
 
         assertThat(k8sCommands.actualCommands).isEmpty()
     }

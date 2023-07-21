@@ -85,6 +85,9 @@ docs, getting familiar with CLIs, ponder about GitOps Repository folder structur
 The GitOps Playground is a pre-configured environment to see GitOps in motion, including more advanced use cases like
 notifications, monitoring and secrets management.
 
+We aim to be compatible with various environments, e.g. OpenShift and in an air-gapped network.
+The support for these is *work in progress*.
+
 ## Installation
 
 There a several options for running the GitOps playground

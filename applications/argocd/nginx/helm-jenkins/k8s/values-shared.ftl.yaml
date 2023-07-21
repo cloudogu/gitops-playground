@@ -27,3 +27,12 @@ extraVolumeMounts:
     mountPath: /app/secret
     readOnly: true
   </#if>
+
+
+resources:
+  limits:
+    cpu: 1
+    memory: 30Mi
+  requests:
+    cpu: 300m
+    memory: 15Mi
