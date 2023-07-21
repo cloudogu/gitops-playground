@@ -65,6 +65,7 @@ kubeProxy:
 alertmanager:
   enabled: false
 grafana:
+  defaultDashboardsEnabled: false
   adminUser: admin
   adminPassword: admin
   service:

@@ -353,7 +353,7 @@ class ArgoCDTest {
             }
         }
 
-        assertAllYamlFiles(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), 'misc', 5) { Path it ->
+        assertAllYamlFiles(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), 'misc', 6) { Path it ->
             def yaml = parseActualYaml(it.toString())
 
             def metadataNamespace = yaml['metadata']['namespace'] as String
