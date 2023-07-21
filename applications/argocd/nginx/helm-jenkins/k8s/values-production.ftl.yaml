@@ -1,0 +1,4 @@
+namespaceOverride: ${namePrefix}example-apps-production
+service:
+  nodePorts:
+    http: 30025

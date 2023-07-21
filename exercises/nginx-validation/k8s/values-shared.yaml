@@ -14,3 +14,11 @@ serverBlock: |-
       return 200 "hello!";
     }
   }
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 30Mi
+  requests:
+    cpu: 30m
+    memory: 15Mi

@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: spring-petclinic-plain
-  namespace: argocd-staging
 spec:
   replicas: 1
   selector:
@@ -35,6 +34,13 @@ spec:
           volumeMounts:
             - name: messages
               mountPath: /tmp/messages
+          resources:
+            limits:
+              cpu: 1
+              memory: 1Gi
+            requests:
+              cpu: 300m
+              memory: 650Mi
       volumes:
         - name: messages
           configMap:

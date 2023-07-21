@@ -17,8 +17,8 @@ class VaultTest {
             application: [
                     username: 'abc',
                     password: '123',
-                    remote  : false
-
+                    remote  : false,
+                    namePrefix: "foo-",
             ],
             features    : [
                     secrets   : [
@@ -40,7 +40,7 @@ class VaultTest {
     CommandExecutorForTest helmCommands = new CommandExecutorForTest()
     CommandExecutorForTest k8sCommands = new CommandExecutorForTest()
     HelmClient helmClient = new HelmClient(helmCommands)
-    K8sClient k8sClient = new K8sClient(k8sCommands, new FileSystemUtils())
+    K8sClient k8sClient = new K8sClient(k8sCommands, new FileSystemUtils(), new Configuration(config))
     File temporaryYamlFile
     
     @Test
@@ -93,16 +93,14 @@ class VaultTest {
         assertThat(actualVolumes[0]['configMap']['defaultMode']).isEqualTo(Integer.valueOf(0774))
         
         assertThat(actualVolumeMounts[0]['readOnly']).is(true)
-        String scriptFileName = Vault.VAULT_START_SCRIPT_PATH.substring(Vault.VAULT_START_SCRIPT_PATH.lastIndexOf('/'))
-        assertThat(actualPostStart[2] as String).contains(actualVolumeMounts[0]['mountPath'] as String + scriptFileName)
+        assertThat(actualPostStart[2] as String).contains(actualVolumeMounts[0]['mountPath'] as String + "/dev-post-start.sh")
 
         assertThat(k8sCommands.actualCommands).hasSize(1)
         
         def createdConfigMapName = ((k8sCommands.actualCommands[0] =~ /kubectl create configmap (\S*) .*/)[0] as List) [1]
         assertThat(actualVolumes[0]['configMap']['name']).isEqualTo(createdConfigMapName)
         
-        assertThat(k8sCommands.actualCommands[0]).contains('-n secrets')
-        assertThat(k8sCommands.actualCommands[0]).contains(Vault.VAULT_START_SCRIPT_PATH)
+        assertThat(k8sCommands.actualCommands[0]).contains('-n foo-secrets')
     }
 
     @Test
@@ -123,7 +121,7 @@ class VaultTest {
         createVault().install()
 
         def actualYaml = parseActualYaml()
-        assertThat(actualYaml as Map).doesNotContainKey('server')
+        assertThat((actualYaml as Map)['server'] as Map).doesNotContainKey('dev')
 
         assertThat(k8sCommands.actualCommands).isEmpty()
     }
@@ -146,11 +144,11 @@ class VaultTest {
                 'helm repo add vault https://vault-reg')
         assertThat(helmCommands.actualCommands[1].trim()).isEqualTo(
                 'helm upgrade -i vault vault/vault --version 42.23.0' +
-                        " --values ${temporaryYamlFile} --namespace secrets")
+                        " --values ${temporaryYamlFile} --namespace foo-secrets")
     }
     
     private Vault createVault() {
-        Vault vault = new Vault(new Configuration(config), new FileSystemUtils(), k8sClient, new HelmStrategy(helmClient))
+        Vault vault = new Vault(new Configuration(config), new FileSystemUtils(), k8sClient, new HelmStrategy(new Configuration(config), helmClient))
         temporaryYamlFile = vault.tmpHelmValues
         return vault
     }

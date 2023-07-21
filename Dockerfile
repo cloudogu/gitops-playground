@@ -144,6 +144,10 @@ RUN native-image -Dgroovy.grape.enable=false \
     -H:+ReportExceptionStackTraces \
     -H:ConfigurationFileDirectories=conf/ \
     -H:IncludeResourceBundles=org.eclipse.jgit.internal.JGitText \
+    -H:DynamicProxyConfigurationFiles=conf/proxy-config.json \
+    -H:DynamicProxyConfigurationResources=proxy-config.json \
+    -H:ReflectionConfigurationFiles=conf/reflect-config.json \
+    -H:ReflectionConfigurationResources=reflect-config.json \
     --static \
     --allow-incomplete-classpath \
     --report-unsupported-elements-at-runtime \

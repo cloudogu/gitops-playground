@@ -1,0 +1,20 @@
+# this misc-Application manages all resources in the misc folder in the gitops repository
+# use the misc folder to deploy resources, which are needed for multiple other apps such as ServiceAccounts or shared ConfigMaps
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: misc
+spec:
+  project: cluster-resources
+  destination:
+    server: https://kubernetes.default.svc
+  source:
+    path: misc/
+    repoURL: ${scmm.baseUrl}/repo/${namePrefix}argocd/cluster-resources
+    targetRevision: main
+    directory:
+      recurse: true
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

@@ -1,0 +1,4 @@
+namespaceOverride: ${namePrefix}example-apps-staging
+service:
+  nodePorts:
+  - http: 3OO42

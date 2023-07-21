@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.utils
 
+import com.cloudogu.gitops.config.Configuration
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 
@@ -8,8 +9,13 @@ import static org.assertj.core.api.Assertions.assertThat
 
 class K8sClientTest {
 
+    Map config = [
+            application: [
+                    namePrefix: "foo-"
+            ]
+    ]
     CommandExecutorForTest commandExecutor = new CommandExecutorForTest()
-    K8sClient k8sClient = new K8sClient(commandExecutor, new FileSystemUtils())
+    K8sClient k8sClient = new K8sClient(commandExecutor, new FileSystemUtils(), new Configuration(config))
 
     @Test
     void 'Creates secret'() {
@@ -17,7 +23,7 @@ class K8sClientTest {
                 new Tuple2('key1', 'value1'), new Tuple2('key2', 'value2'))
 
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
-                "kubectl create secret generic my-secret -n my-ns --from-literal=key1=value1 --from-literal=key2=value2" +
+                "kubectl create secret generic my-secret -n foo-my-ns --from-literal=key1=value1 --from-literal=key2=value2" +
                         " --dry-run=client -oyaml | kubectl apply -f-")
     }
 
@@ -42,7 +48,7 @@ class K8sClientTest {
         k8sClient.createConfigMapFromFile('my-map', 'my-ns', '/file')
 
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
-                "kubectl create configmap my-map -n my-ns --from-file=/file --dry-run=client -oyaml" +
+                "kubectl create configmap my-map -n foo-my-ns --from-file=/file --dry-run=client -oyaml" +
                         " | kubectl apply -f-")
     }
 
@@ -61,7 +67,7 @@ class K8sClientTest {
                 new Tuple2('key1', 'value1'), new Tuple2('key2', 'value2'))
 
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
-                "kubectl label secret my-secret -n my-ns --overwrite key1=value1 key2=value2")
+                "kubectl label secret my-secret -n foo-my-ns --overwrite key1=value1 key2=value2")
     }
 
     @Test
@@ -85,7 +91,7 @@ class K8sClientTest {
         def expectedYaml = [a: 'b']
         k8sClient.patch('secret', 'my-secret', 'ns', expectedYaml)
 
-        assertThat(commandExecutor.actualCommands[0]).startsWith("kubectl patch secret my-secret -n ns --patch-file=")
+        assertThat(commandExecutor.actualCommands[0]).startsWith("kubectl patch secret my-secret -n foo-ns --patch-file=")
 
         String patchFile = (commandExecutor.actualCommands[0] =~ /--patch-file=([\S]+)/)?.findResult { (it as List)[1] }
         assertThat(parseActualYaml(patchFile)).isEqualTo(expectedYaml)
@@ -104,7 +110,7 @@ class K8sClientTest {
                 new Tuple2('key1', 'value1'), new Tuple2('key2', 'value2'))
         
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
-                "kubectl delete secret -n my-ns --ignore-not-found=true --selector=key1=value1 --selector=key2=value2")
+                "kubectl delete secret -n foo-my-ns --ignore-not-found=true --selector=key1=value1 --selector=key2=value2")
     }
 
     @Test

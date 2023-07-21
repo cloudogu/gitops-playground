@@ -6,6 +6,7 @@ import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.DockerImageParser
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.MapUtils
+import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
@@ -15,7 +16,7 @@ import jakarta.inject.Singleton
 @Order(300)
 class PrometheusStack extends Feature {
 
-    static final String HELM_VALUES_PATH = "applications/cluster-resources/monitoring/prometheus-stack-helm-values.yaml"
+    static final String HELM_VALUES_PATH = "applications/cluster-resources/monitoring/prometheus-stack-helm-values.ftl.yaml"
     
     private Map config
     private boolean remoteCluster
@@ -45,8 +46,8 @@ class PrometheusStack extends Feature {
     @Override
     void enable() {
         // Note that some specific configuration steps are implemented in ArgoCD
-        
-        def tmpHelmValues = fileSystemUtils.copyToTempDir(HELM_VALUES_PATH)
+        def namePrefix = config.application['namePrefix']
+        def tmpHelmValues = new TemplatingEngine().replaceTemplate(fileSystemUtils.copyToTempDir(HELM_VALUES_PATH).toFile(), [namePrefix: namePrefix]).toPath()
         Map helmValuesYaml = fileSystemUtils.readYaml(tmpHelmValues)
 
         if (remoteCluster) {

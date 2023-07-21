@@ -1,0 +1,22 @@
+[
+  {
+    "name":"java.util.function.Consumer",
+    "allPublicMethods":true
+  },
+  {
+    "name":"java.util.function.Function",
+    "allPublicMethods":true
+  },
+  {
+    "name":"java.util.function.Predicate",
+    "allPublicMethods":true
+  },
+  {
+    "name":"java.util.function.Supplier",
+    "allPublicMethods":true
+  },
+  {
+    "name": "java.util.stream.BaseStream",
+    "allPublicMethods": true
+  }
+]

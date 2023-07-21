@@ -18,8 +18,8 @@ class ExternalSecretsOperatorTest {
             application: [
                     username: 'abc',
                     password: '123',
-                    remote  : false
-
+                    remote  : false,
+                    namePrefix: "foo-",
             ],
             features    : [
                     secrets   : [
@@ -53,7 +53,7 @@ class ExternalSecretsOperatorTest {
                 'helm repo add externalsecretsoperator https://charts.external-secrets.io')
         assertThat(commandExecutor.actualCommands[1].trim()).isEqualTo(
                 'helm upgrade -i external-secrets externalsecretsoperator/external-secrets --version 0.6.0' +
-                        " --values $temporaryYamlFile --namespace secrets")
+                        " --values $temporaryYamlFile --namespace foo-secrets")
     }
 
     @Test
@@ -87,7 +87,7 @@ class ExternalSecretsOperatorTest {
                         return temporaryYamlFile
                     }
                 },
-                new HelmStrategy(helmClient)
+                new HelmStrategy(new Configuration(config), helmClient)
         )
     }
 

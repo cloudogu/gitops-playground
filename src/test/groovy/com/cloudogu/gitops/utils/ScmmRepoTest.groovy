@@ -15,7 +15,10 @@ class ScmmRepoTest {
                     password: "dont-care-password",
                     protocol: "https",
                     host: "localhost"
-            ]
+            ],
+            application: [
+                    namePrefix : ''
+            ],
     ]
 
     @Test
@@ -63,7 +66,34 @@ class ScmmRepoTest {
         }
     }
 
-    private ScmmRepo createRepo() {
-        new ScmmRepo(config, "dont-care-repo-target", new CommandExecutorForTest(), new FileSystemUtils())
+    @Test
+    void "replaces yaml templates"() {
+        def repo = createRepo()
+        def tempDir = repo.absoluteLocalRepoTmpDir
+        repo.writeFile("subdirectory/result.ftl.yaml", 'foo: ${prefix}suffix')
+        repo.writeFile("subdirectory/keep-this-way.yaml", 'thiswont: ${prefix}-be-replaced')
+
+        repo.replaceTemplates(~/\.ftl\.yaml$/, [prefix: "myteam-"])
+
+        assertThat(new File("$tempDir/subdirectory/result.yaml").text).isEqualTo("foo: myteam-suffix")
+        assertThat(new File("$tempDir/subdirectory/keep-this-way.yaml").text).isEqualTo('thiswont: ${prefix}-be-replaced')
+        assertThat(new File("$tempDir/subdirectory/result.ftl.yaml").exists()).isFalse()
+    }
+
+    @Test
+    void 'Creates repo with empty name-prefix'(){
+        def repo = createRepo('expectedRepoTarget')
+        assertThat(repo.scmmRepoTarget).isEqualTo('expectedRepoTarget')
+    }
+
+    @Test
+    void 'Creates repo with name-prefix'(){
+        config.application['namePrefix'] = 'abc-'
+        def repo = createRepo('expectedRepoTarget')
+        assertThat(repo.scmmRepoTarget).isEqualTo('abc-expectedRepoTarget')
+    }
+
+    private ScmmRepo createRepo(String repoTarget = "dont-care-repo-target") {
+        new ScmmRepo(config, repoTarget, new CommandExecutorForTest(), new FileSystemUtils())
     }
 }

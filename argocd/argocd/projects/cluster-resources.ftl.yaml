@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: cluster-resources
+  # In a real-world scenario these might to into a separate namespace
+  namespace: ${namePrefix}argocd
+  annotations:
+        notifications.argoproj.io/subscribe.email: infra@example.org
+spec:
+  description: Contains basic cluster-resources
+  destinations:
+    - namespace: '*'
+      server: https://kubernetes.default.svc
+  sourceRepos:
+  - ${scmm.baseUrl}/repo/${namePrefix}argocd/cluster-resources
+  - https://codecentric.github.io/helm-charts
+  - https://charts.external-secrets.io
+  - https://helm.releases.hashicorp.com
+  - https://prometheus-community.github.io/helm-charts
+
+  # allow to only see application resources from the specified namespace
+  sourceNamespaces:
+    - '${namePrefix}argocd'
+
+  # Allow all namespaced-scoped resources to be created
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  # Allow all cluster-scoped resources to be created
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
