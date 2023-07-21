@@ -111,6 +111,8 @@ class GitopsPlaygroundCli  implements Runnable {
     private String password
     @Option(names = ['-y', '--yes'], description = 'Skip kubecontext confirmation')
     private boolean pipeYes
+    @Option(names = ['--name-prefix'], description = 'Set name-prefix for repos, jobs, namespaces')
+    private String namePrefix
 
     // args group operator
     @Option(names = ['--fluxv2'], description = 'Install Flux V2')
@@ -180,6 +182,8 @@ class GitopsPlaygroundCli  implements Runnable {
                         username      : username,
                         password      : password,
                         pipeYes       : pipeYes,
+                        namePrefix    : namePrefix ? "$namePrefix-" : "",
+                        namePrefixForEnvVars: namePrefix ? "${namePrefix.toUpperCase()}_" : "",
                 ],
                 images     : [
                         kubectl    : kubectlImage,

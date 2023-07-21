@@ -12,11 +12,11 @@ class HelmStrategyTest {
     @Test
     void 'deploys feature using helm client'() {
         def helmClient = mock(HelmClient)
-        def strategy = new HelmStrategy(helmClient)
+        def strategy = new HelmStrategy([application: [namePrefix: "foo-"]], helmClient)
         strategy.deployFeature("repoURL", "repoName", "chart", "version", "namespace", "releaseName", Path.of("values.yaml"))
         verify(helmClient).addRepo("repoName", "repoURL")
         verify(helmClient).upgrade("releaseName", "repoName/chart", [
-                namespace: "namespace",
+                namespace: "foo-namespace",
                 version: "version",
                 values: "values.yaml"
         ])

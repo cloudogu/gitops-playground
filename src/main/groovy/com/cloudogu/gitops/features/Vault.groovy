@@ -7,11 +7,15 @@ import com.cloudogu.gitops.utils.DockerImageParser
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.MapUtils
+import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
+
+import java.nio.file.Files
+import java.nio.file.Path
 
 @Slf4j
 class Vault extends Feature {
-    static final String VAULT_START_SCRIPT_PATH = '/applications/cluster-resources/secrets/vault/dev-post-start.sh'
+    static final String VAULT_START_SCRIPT_PATH = '/applications/cluster-resources/secrets/vault/dev-post-start.ftl.sh'
 
 
     private Map config
@@ -23,7 +27,7 @@ class Vault extends Feature {
     Vault(
             Map config,
             FileSystemUtils fileSystemUtils = new FileSystemUtils(),
-            K8sClient k8sClient = new K8sClient(),
+            K8sClient k8sClient = new K8sClient(config),
             DeploymentStrategy deployer = new Deployer(config)
     ) {
         this.deployer = deployer
@@ -98,9 +102,12 @@ class Vault extends Feature {
             // Init script creates/authorizes secrets, users, service accounts, etc.
             def vaultPostStartConfigMap = 'vault-dev-post-start'
             def vaultPostStartVolume = 'dev-post-start'
-            
-            k8sClient.createConfigMapFromFile(vaultPostStartConfigMap, 'secrets', fileSystemUtils.getRootDir() 
-                    + VAULT_START_SCRIPT_PATH )
+
+            def namePrefix = config.application['namePrefix']
+
+            def templatedFile = fileSystemUtils.copyToTempDir(fileSystemUtils.getRootDir() + VAULT_START_SCRIPT_PATH)
+            def postStartScript = new TemplatingEngine().replaceTemplate(templatedFile.toFile(), [namePrefix: namePrefix])
+            k8sClient.createConfigMapFromFile(vaultPostStartConfigMap, "secrets", postStartScript.absolutePath)
 
             MapUtils.deepMerge(
                     [
@@ -137,7 +144,7 @@ class Vault extends Feature {
                                                 "PASSWORD=${config['application']['password']} " +
                                                 "ARGOCD=${config.features['argocd']['active']} " +
                                                     // Write script output to file for easier debugging
-                                                    '/var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log'
+                                                    "/var/opt/scripts/${postStartScript.name} 2>&1 | tee /tmp/dev-post-start.log"
                                     ],
                             ]
                     ], yaml)

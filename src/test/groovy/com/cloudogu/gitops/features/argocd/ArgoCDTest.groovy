@@ -8,10 +8,13 @@ import groovy.io.FileType
 import groovy.yaml.YamlSlurper
 import org.eclipse.jgit.api.CheckoutCommand
 import org.eclipse.jgit.api.CloneCommand
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.springframework.security.crypto.bcrypt.BCrypt
 
+import java.nio.file.Files
 import java.nio.file.Path
+import java.util.stream.Collectors
 
 import static org.assertj.core.api.Assertions.assertThat
 import static org.assertj.core.api.Assertions.fail
@@ -24,7 +27,9 @@ class ArgoCDTest {
             application: [
                     remote  : false,
                     password: '123',
-                    username: 'something'
+                    username: 'something',
+                    namePrefix : '',
+                    namePrefixForEnvVars : '',
             ],
             scmm       : [
                     internal: true,
@@ -79,8 +84,9 @@ class ArgoCDTest {
     File exampleAppsTmpDir
     File nginxHelmJenkinsTmpDir
     File remotePetClinicRepoTmpDir
-    List<Tuple2<String, File>> petClinicLocalFoldersAndTmpDirs = []
+    List<File> petClinicTmpDirs = []
     CloneCommand gitCloneMock = mock(CloneCommand.class, RETURNS_DEEP_STUBS)
+    String[] scmmRepoTargets = []
     
     @Test
     void 'Installs argoCD'() {
@@ -251,7 +257,130 @@ class ArgoCDTest {
         assertThat(filesWithExternalSCMM).isNotEmpty()
     }
 
-    List findFilesContaining(File folder, String stringToSearch) {
+    @Test
+    void 'Pushes repos with empty name-prefix'() {
+        createArgoCD().install()
+        
+        assertArgoCdYamlPrefixes(ArgoCD.SCMM_URL_INTERNAL, '')
+        assertJenkinsEnvironmentVariablesPrefixes('')
+    }
+    
+    @Test
+    void 'Pushes repos with name-prefix'(){
+        config.application['namePrefix'] = 'abc-'
+        config.application['namePrefixForEnvVars'] = 'ABC_'
+        createArgoCD().install()
+
+        assertArgoCdYamlPrefixes(ArgoCD.SCMM_URL_INTERNAL, 'abc-')
+        assertJenkinsEnvironmentVariablesPrefixes('ABC_')
+    }
+
+    private void assertArgoCdYamlPrefixes(String scmmUrl, String expectedPrefix) {
+        assertAllYamlFiles(argocdRepoTmpDir, 'projects', 4) { Path file ->
+            def yaml = parseActualYaml(file.toString())
+            List<String> sourceRepos = yaml['spec']['sourceRepos'] as List<String>
+            // Some projects might not have sourceRepos
+            if (sourceRepos) {
+                sourceRepos.each {
+                    if (it.startsWith(scmmUrl)) {
+                        assertThat(it)
+                                .as("$file sourceRepos have name prefix")
+                                .startsWith("${scmmUrl}/repo/${expectedPrefix}argocd")
+                    }
+                }
+            }
+
+            String metadataNamespace = yaml['metadata']['namespace'] as String
+            if (metadataNamespace) {
+                assertThat(metadataNamespace)
+                        .as("$file metadata.namespace has name prefix")
+                        .isEqualTo("${expectedPrefix}argocd".toString())
+            }
+
+            List<String> sourceNamespaces = yaml['spec']['sourceNamespaces'] as List<String>
+            if (sourceNamespaces) {
+                sourceNamespaces.each {
+                    if (it != '*') {
+                        assertThat(it)
+                                .as("$file spec.sourceNamespace has name prefix")
+                                .startsWith("${expectedPrefix}")
+                    }
+                }
+            }
+        }
+
+        assertAllYamlFiles(argocdRepoTmpDir, 'applications', 5) { Path file ->
+            def yaml = parseActualYaml(file.toString())
+            assertThat(yaml['spec']['source']['repoURL'] as String)
+                    .as("$file repoURL have name prefix")
+                    .startsWith("${scmmUrl}/repo/${expectedPrefix}argocd")
+
+            assertThat(yaml['metadata']['namespace'])
+                    .as("$file metadata.namspace has name prefix")
+                    .isEqualTo("${expectedPrefix}argocd".toString())
+
+            assertThat(yaml['spec']['destination']['namespace'])
+                    .as("$file spec.destination.namspace has name prefix")
+                    .isEqualTo("${expectedPrefix}argocd".toString())
+        }
+
+        assertAllYamlFiles(exampleAppsTmpDir, 'argocd', 7) { Path it ->
+            assertThat(parseActualYaml(it.toString())['spec']['source']['repoURL'] as String)
+                    .as("$it repoURL have name prefix")
+                    .startsWith("${scmmUrl}/repo/${expectedPrefix}argocd")
+        }
+
+        assertAllYamlFiles(clusterResourcesTmpDir, 'argocd', 1) { Path it ->
+            def yaml = parseActualYaml(it.toString())
+
+            assertThat(yaml['spec']['source']['repoURL'] as String)
+                    .as("$it repoURL has name prefix")
+                    .startsWith("${scmmUrl}/repo/${expectedPrefix}argocd")
+
+
+            def metadataNamespace = yaml['metadata']['namespace'] as String
+            if (metadataNamespace) {
+                assertThat(metadataNamespace)
+                        .as("$it metadata.namespace has name prefix")
+                        .startsWith("${expectedPrefix}")
+            }
+
+            def destinationNamespace = yaml['spec']['destination']['namespace']
+            if (destinationNamespace) {
+                assertThat(destinationNamespace as String)
+                        .as("$it spec.destination.namespace has name prefix")
+                        .startsWith("${expectedPrefix}")
+            }
+        }
+
+        assertAllYamlFiles(clusterResourcesTmpDir, 'misc', 3) { Path it ->
+            def yaml = parseActualYaml(it.toString())
+
+            def metadataNamespace = yaml['metadata']['namespace'] as String
+            assertThat(metadataNamespace)
+                    .as("$it metadata.namespace has name prefix")
+                    .startsWith("${expectedPrefix}")
+        }
+    }
+
+    private static void assertAllYamlFiles(File rootDir, String childDir, Integer numberOfFiles, Closure cl) {
+        def nFiles = Files.walk(Path.of(rootDir.absolutePath, childDir))
+                .filter { it.toString() ==~ /.*\.yaml/ }
+                .collect(Collectors.toList())
+                .each(cl)
+                .size()
+        assertThat(nFiles).isEqualTo(numberOfFiles)
+    }
+
+    private void assertJenkinsEnvironmentVariablesPrefixes(String prefix) {
+        assertThat(new File(nginxHelmJenkinsTmpDir, 'Jenkinsfile').text).contains("env.${prefix}K8S_VERSION")
+        for (def petclinicTmpDir : petClinicTmpDirs) {
+            assertThat(new File(petclinicTmpDir, 'Jenkinsfile').text).contains("env.${prefix}REGISTRY_URL")
+            assertThat(new File(petclinicTmpDir, 'Jenkinsfile').text).contains("env.${prefix}REGISTRY_PATH")
+        }
+    }
+
+    private static List findFilesContaining(File folder, String stringToSearch) {
         List result = []
         folder.eachFileRecurse(FileType.FILES) {
             if (it.text.contains(stringToSearch)) {
@@ -270,11 +399,11 @@ class ArgoCDTest {
         exampleAppsTmpDir = argoCD.exampleAppsTmpDir
         nginxHelmJenkinsTmpDir = argoCD.nginxHelmJenkinsTmpDir
         remotePetClinicRepoTmpDir = argoCD.remotePetClinicRepoTmpDir
-        petClinicLocalFoldersAndTmpDirs = argoCD.petClinicLocalFoldersAndTmpDirs
+        petClinicTmpDirs = argoCD.petClinicTmpDirs
         return argoCD
     }
 
-    private String assertCommand(CommandExecutorForTest commands, String commandStartsWith) {
+    private static String assertCommand(CommandExecutorForTest commands, String commandStartsWith) {
         def createSecretCommand = commands.actualCommands.find {
             it.startsWith(commandStartsWith)
         }
@@ -306,33 +435,33 @@ class ArgoCDTest {
         }
 
         for (Map.Entry image : config.images as Map) {
-            assertThat(actualBuildImages).contains("${image.key}: '${image.value}',")
+            assertThat(actualBuildImages).contains("${image.key}: '${image.value}'")
         }
     }
 
     void assertPetClinicRepos(String expectedServiceType, String unexpectedServiceType) {
-        for (Tuple2<String, File> repo : petClinicLocalFoldersAndTmpDirs) {
+        for (File repo : petClinicTmpDirs) {
 
-            def jenkinsfile = new File(repo.v2, 'Jenkinsfile')
+            def jenkinsfile = new File(repo, 'Jenkinsfile')
             assertThat(jenkinsfile).exists()
 
-            if (repo.v1 == 'applications/argocd/petclinic/plain-k8s') {
+            if (repo.toString().contains('gitops-playground-petclinic-plain')) {
                 assertBuildImagesInJenkinsfileReplaced(jenkinsfile)
-                assertThat(new File(repo.v2, 'k8s/production/service.yaml').text).contains("type: ${expectedServiceType}")
-                assertThat(new File(repo.v2, 'k8s/staging/service.yaml').text).contains("type: ${expectedServiceType}")
+                assertThat(new File(repo, 'k8s/production/service.yaml').text).contains("type: ${expectedServiceType}")
+                assertThat(new File(repo, 'k8s/staging/service.yaml').text).contains("type: ${expectedServiceType}")
                 
-                assertThat(new File(repo.v2, 'k8s/production/service.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
-                assertThat(new File(repo.v2, 'k8s/staging/service.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
-            } else if (repo.v1 == 'applications/argocd/petclinic/helm') {
+                assertThat(new File(repo, 'k8s/production/service.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
+                assertThat(new File(repo, 'k8s/staging/service.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
+            } else if (repo.toString().contains('gitops-playground-petclinic-helm')) {
                 assertBuildImagesInJenkinsfileReplaced(jenkinsfile)
-                assertThat(new File(repo.v2, 'k8s/values-shared.yaml').text).contains("type: ${expectedServiceType}")
-                assertThat(new File(repo.v2, 'k8s/values-shared.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
-            } else if (repo.v1 == 'exercises/petclinic-helm') {
+                assertThat(new File(repo, 'k8s/values-shared.yaml').text).contains("type: ${expectedServiceType}")
+                assertThat(new File(repo, 'k8s/values-shared.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
+            } else if (repo.toString().contains('gitops-playground-exercise-petclinic-helm')) {
                 // Does not contain the gitops build lib call, so no build images to replace
-                assertThat(new File(repo.v2, 'k8s/values-shared.yaml').text).contains("type: ${expectedServiceType}")
-                assertThat(new File(repo.v2, 'k8s/values-shared.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
+                assertThat(new File(repo, 'k8s/values-shared.yaml').text).contains("type: ${expectedServiceType}")
+                assertThat(new File(repo, 'k8s/values-shared.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
             } else {
-                fail("Unkown petclinic repo: ${repo.v1}")
+                fail("Unkown petclinic repo: $repo")
             }
         }
     }
@@ -341,7 +470,7 @@ class ArgoCDTest {
 
         ArgoCDForTest(Map config) {
             super(config)
-            this.k8sClient = new K8sClient(k8sCommands)
+            this.k8sClient = new K8sClient(config, k8sCommands)
             this.helmClient = new HelmClient(helmCommands)
         }
 
@@ -350,8 +479,9 @@ class ArgoCDTest {
             // Actually copy files so we can assert but don't execute git clone, push, etc.
             ScmmRepo repo = new ScmmRepo(config, scmmRepoTarget, absoluteLocalRepoTmpDir.absolutePath)
             repo.commandExecutor = gitCommands
+            scmmRepoTargets += scmmRepoTarget
             // We could add absoluteLocalRepoTmpDir here for assertion later 
-            return new RepoInitializationAction(repo, localSrcDir)
+            return new RepoInitializationAction(config, repo, localSrcDir)
         }
 
         @Override
