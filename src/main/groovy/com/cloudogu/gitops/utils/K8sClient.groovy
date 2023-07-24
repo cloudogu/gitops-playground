@@ -2,6 +2,7 @@ package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Configuration
 import groovy.util.logging.Slf4j
+import jakarta.inject.Provider
 import jakarta.inject.Singleton
 
 @Slf4j
@@ -10,15 +11,15 @@ class K8sClient {
 
     private CommandExecutor commandExecutor
     private FileSystemUtils fileSystemUtils
-    private Map config
+    private Provider<Configuration> configurationProvider
 
     K8sClient(
             CommandExecutor commandExecutor,
             FileSystemUtils fileSystemUtils,
-            Configuration config
+            Provider<Configuration> configurationProvider // This is lazy to enable bootstrapping the configuration
     ) {
         this.fileSystemUtils = fileSystemUtils
-        this.config = config.config
+        this.configurationProvider = configurationProvider
         this.commandExecutor = commandExecutor
     }
 
@@ -106,6 +107,8 @@ class K8sClient {
     }
 
     private String getNamePrefix() {
+        def config = configurationProvider.get().config
+
         return config.application['namePrefix'] as String
     }
 }

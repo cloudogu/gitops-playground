@@ -7,6 +7,7 @@ import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.HelmClient
 import com.cloudogu.gitops.utils.K8sClient
 import groovy.yaml.YamlSlurper
+import jakarta.inject.Provider
 import org.junit.jupiter.api.Test
 
 import static org.assertj.core.api.Assertions.assertThat 
@@ -40,7 +41,12 @@ class VaultTest {
     CommandExecutorForTest helmCommands = new CommandExecutorForTest()
     CommandExecutorForTest k8sCommands = new CommandExecutorForTest()
     HelmClient helmClient = new HelmClient(helmCommands)
-    K8sClient k8sClient = new K8sClient(k8sCommands, new FileSystemUtils(), new Configuration(config))
+    K8sClient k8sClient = new K8sClient(k8sCommands, new FileSystemUtils(), new Provider<Configuration>() {
+        @Override
+        Configuration get() {
+            new Configuration(config)
+        }
+    })
     File temporaryYamlFile
     
     @Test

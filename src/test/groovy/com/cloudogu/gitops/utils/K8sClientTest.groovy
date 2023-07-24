@@ -2,6 +2,7 @@ package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Configuration
 import groovy.yaml.YamlSlurper
+import jakarta.inject.Provider
 import org.junit.jupiter.api.Test
 
 import static groovy.test.GroovyAssert.shouldFail
@@ -15,7 +16,12 @@ class K8sClientTest {
             ]
     ]
     CommandExecutorForTest commandExecutor = new CommandExecutorForTest()
-    K8sClient k8sClient = new K8sClient(commandExecutor, new FileSystemUtils(), new Configuration(config))
+    K8sClient k8sClient = new K8sClient(commandExecutor, new FileSystemUtils(), new Provider<Configuration>() {
+        @Override
+        Configuration get() {
+            new Configuration(config)
+        }
+    })
 
     @Test
     void 'Creates secret'() {

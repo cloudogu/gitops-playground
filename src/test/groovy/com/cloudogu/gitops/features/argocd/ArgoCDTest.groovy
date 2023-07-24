@@ -6,6 +6,7 @@ import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import com.cloudogu.gitops.utils.*
 import groovy.io.FileType
 import groovy.yaml.YamlSlurper
+import jakarta.inject.Provider
 import org.eclipse.jgit.api.CheckoutCommand
 import org.eclipse.jgit.api.CloneCommand
 import org.junit.jupiter.api.Test
@@ -393,7 +394,12 @@ class ArgoCDTest {
         def fileSystemUtils = new FileSystemUtils()
         def argoCD = new ArgoCDForTest(
                 new Configuration(config),
-                new K8sClient(k8sCommands, fileSystemUtils, new Configuration(config)),
+                new K8sClient(k8sCommands, fileSystemUtils, new Provider<Configuration>() {
+                    @Override
+                    Configuration get() {
+                        new Configuration(config)
+                    }
+                }),
                 new HelmClient(helmCommands),
                 fileSystemUtils,
                 gitCommands
