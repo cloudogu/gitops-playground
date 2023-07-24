@@ -1,9 +1,10 @@
 package com.cloudogu.gitops.utils
 
+import com.cloudogu.gitops.scmm.ScmmRepo
 import org.junit.jupiter.api.Test
 
 import static groovy.test.GroovyAssert.shouldFail
-import static org.assertj.core.api.Assertions.assertThat 
+import static org.assertj.core.api.Assertions.assertThat
 
 class ScmmRepoTest {
 
@@ -93,6 +94,6 @@ class ScmmRepoTest {
     }
 
     private ScmmRepo createRepo(String repoTarget = "dont-care-repo-target") {
-        new ScmmRepo(config, repoTarget, new CommandExecutorForTest())
+        new ScmmRepo(config, repoTarget, new CommandExecutorForTest(), new FileSystemUtils())
     }
 }

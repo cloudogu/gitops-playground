@@ -1,33 +1,40 @@
 package com.cloudogu.gitops.features.deployment
 
+import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.scmm.ScmmRepo
+import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.ScmmRepo
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
+import jakarta.inject.Singleton
 
 import java.nio.file.Path
 
+@Singleton
 class ArgoCdApplicationStrategy implements DeploymentStrategy {
     private FileSystemUtils fileSystemUtils
     private Map config
     private CommandExecutor commandExecutor
+    private final ScmmRepoProvider scmmRepoProvider
 
     ArgoCdApplicationStrategy(
-            Map config,
+            Configuration config,
             FileSystemUtils fileSystemUtils,
-            CommandExecutor commandExecutor = new CommandExecutor()
+            CommandExecutor commandExecutor,
+            ScmmRepoProvider scmmRepoProvider
     ) {
+        this.scmmRepoProvider = scmmRepoProvider
         this.fileSystemUtils = fileSystemUtils
         this.commandExecutor = commandExecutor
-        this.config = config
+        this.config = config.getConfig()
     }
 
     @Override
     void deployFeature(String repoURL, String repoName, String chart, String version, String namespace, String releaseName, Path helmValuesPath) {
         def namePrefix = config.application['namePrefix']
 
-        ScmmRepo clusterResourcesRepo = createScmmRepo(config, 'argocd/cluster-resources', commandExecutor)
+        ScmmRepo clusterResourcesRepo = scmmRepoProvider.getRepo('argocd/cluster-resources')
         clusterResourcesRepo.cloneRepo()
 
         // Inline values from tmpHelmValues file into ArgoCD Application YAML
@@ -75,9 +82,5 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
         clusterResourcesRepo.writeFile("argocd/${releaseName}.yaml", yamlResult)
 
         clusterResourcesRepo.commitAndPush("Added $repoName/$chart to ArgoCD")
-    }
-
-    protected ScmmRepo createScmmRepo(Map config, String repoTarget, CommandExecutor commandExecutor) {
-        return new ScmmRepo(config, repoTarget, commandExecutor)
     }
 }

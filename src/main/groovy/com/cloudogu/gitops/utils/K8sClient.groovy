@@ -1,16 +1,25 @@
 package com.cloudogu.gitops.utils
 
-
+import com.cloudogu.gitops.config.Configuration
 import groovy.util.logging.Slf4j
+import jakarta.inject.Provider
+import jakarta.inject.Singleton
 
 @Slf4j
+@Singleton
 class K8sClient {
 
     private CommandExecutor commandExecutor
-    private Map config
+    private FileSystemUtils fileSystemUtils
+    private Provider<Configuration> configurationProvider
 
-    K8sClient(Map config, CommandExecutor commandExecutor = new CommandExecutor()) {
-        this.config = config
+    K8sClient(
+            CommandExecutor commandExecutor,
+            FileSystemUtils fileSystemUtils,
+            Provider<Configuration> configurationProvider // This is lazy to enable bootstrapping the configuration
+    ) {
+        this.fileSystemUtils = fileSystemUtils
+        this.configurationProvider = configurationProvider
         this.commandExecutor = commandExecutor
     }
 
@@ -75,7 +84,7 @@ class K8sClient {
         // We're using a patch file here, instead of a patch JSON (--patch), because of quoting issues
         // ERROR c.c.gitops.utils.CommandExecutor - Stderr: error: unable to parse "'{\"stringData\":": yaml: found unexpected end of stream
         File patchYaml = File.createTempFile('gitops-playground-patch-yaml', '')
-        new FileSystemUtils().writeYaml(yaml, patchYaml)
+        fileSystemUtils.writeYaml(yaml, patchYaml)
         
         //  kubectl patch secret argocd-secret -p '{"stringData": { "admin.password": "'"${bcryptArgoCDPassword}"'"}}' || true
         String command =
@@ -98,6 +107,8 @@ class K8sClient {
     }
 
     private String getNamePrefix() {
+        def config = configurationProvider.get().config
+
         return config.application['namePrefix'] as String
     }
 }

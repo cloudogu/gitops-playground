@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.features.deployment
 
+import com.cloudogu.gitops.config.Configuration
 import org.junit.jupiter.api.Test
 
 import java.nio.file.Path
@@ -55,6 +56,6 @@ class DeployerTest {
                 ]
         ]
 
-        return new Deployer(config, argoCdStrat, helmStrat)
+        return new Deployer(new Configuration(config), argoCdStrat, helmStrat)
     }
 }

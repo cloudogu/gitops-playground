@@ -1,20 +1,22 @@
 package com.cloudogu.gitops.features.deployment
 
+import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.scmm.ScmmRepo
+import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.ScmmRepo
 import org.junit.jupiter.api.Test
 
 import static org.assertj.core.api.Assertions.assertThat
 
 class ArgoCdApplicationStrategyTest {
-    
+    private File localTempDir
+
     @Test
     void 'deploys feature using argo CD'() {
         def commandExecutor = new CommandExecutorForTest()
-        File localTempDir = File.createTempDir()
-        def strategy = createStrategy(commandExecutor, localTempDir)
+        def strategy = createStrategy(commandExecutor)
         File valuesYaml = File.createTempFile('values', 'yaml')
         valuesYaml.text = """
 param1: value1
@@ -55,7 +57,7 @@ spec:
         assertThat(commandExecutor.actualCommands[0]).startsWith("git clone ")
     }
 
-    private ArgoCdApplicationStrategy createStrategy(CommandExecutor executor, File localTempDir) {
+    private ArgoCdApplicationStrategy createStrategy(CommandExecutor executor) {
         Map config = [
                 scmm: [
                         internal: false,
@@ -69,11 +71,17 @@ spec:
                 ]
         ]
 
-        return new ArgoCdApplicationStrategy(config, new FileSystemUtils(), executor) {
+
+        def repoProvider = new ScmmRepoProvider(new Configuration(config), executor, new FileSystemUtils()) {
             @Override
-            protected ScmmRepo createScmmRepo(Map repoConfig, String repoTarget, CommandExecutor commandExecutor) {
-                return new ScmmRepo(repoConfig, repoTarget, localTempDir.absolutePath, commandExecutor)
+            ScmmRepo getRepo(String repoTarget) {
+                def repo = super.getRepo(repoTarget)
+                localTempDir = new File(repo.getAbsoluteLocalRepoTmpDir())
+
+                return repo
             }
         }
+
+        return new ArgoCdApplicationStrategy(new Configuration(config), new FileSystemUtils(), executor, repoProvider)
     }
 }

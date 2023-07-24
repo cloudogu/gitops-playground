@@ -1,15 +1,18 @@
 package com.cloudogu.gitops.features.deployment
 
+import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.utils.HelmClient
+import jakarta.inject.Singleton
 
 import java.nio.file.Path
 
+@Singleton
 class HelmStrategy implements DeploymentStrategy {
     private HelmClient helmClient
     private Map config
 
-    HelmStrategy(Map config, HelmClient helmClient) {
-        this.config = config
+    HelmStrategy(Configuration config, HelmClient helmClient) {
+        this.config = config.getConfig()
         this.helmClient = helmClient
     }
 

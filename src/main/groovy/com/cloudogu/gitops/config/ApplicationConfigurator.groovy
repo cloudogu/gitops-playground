@@ -1,15 +1,17 @@
-package com.cloudogu.gitops
+package com.cloudogu.gitops.config
 
 import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Logger
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
 import groovy.util.logging.Slf4j
+import jakarta.inject.Singleton
 import org.slf4j.LoggerFactory
 
 import static com.cloudogu.gitops.utils.MapUtils.*
 
 @Slf4j
+@Singleton
 class ApplicationConfigurator {
 
     public static final String HELM_IMAGE = "ghcr.io/cloudogu/helm:3.10.3-1"
@@ -134,9 +136,9 @@ class ApplicationConfigurator {
     private NetworkingUtils networkingUtils
     private FileSystemUtils fileSystemUtils
 
-    ApplicationConfigurator(NetworkingUtils networkingUtils = null, FileSystemUtils fileSystemUtils = new FileSystemUtils()) {
+    ApplicationConfigurator(NetworkingUtils networkingUtils, FileSystemUtils fileSystemUtils) {
         this.config = DEFAULT_VALUES
-        this.networkingUtils = networkingUtils ?: new NetworkingUtils(config)
+        this.networkingUtils = networkingUtils
         this.fileSystemUtils = fileSystemUtils
     }
 

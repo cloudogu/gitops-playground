@@ -1,23 +1,22 @@
 package com.cloudogu.gitops.features.deployment
 
-import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.HelmClient
+import com.cloudogu.gitops.config.Configuration
+import io.micronaut.context.annotation.Primary
+import jakarta.inject.Singleton
 
 import java.nio.file.Path
 
+@Singleton
+@Primary
 class Deployer implements DeploymentStrategy {
     private Map config
     private ArgoCdApplicationStrategy argoCdStrategy
     private HelmStrategy helmStrategy
 
-    protected Deployer(Map config, ArgoCdApplicationStrategy argoCdStrategy, HelmStrategy helmStrategy) {
+    Deployer(Configuration config, ArgoCdApplicationStrategy argoCdStrategy, HelmStrategy helmStrategy) {
         this.helmStrategy = helmStrategy
         this.argoCdStrategy = argoCdStrategy
-        this.config = config
-    }
-
-    Deployer(Map config) {
-        this(config, new ArgoCdApplicationStrategy(config, new FileSystemUtils()), new HelmStrategy(config, new HelmClient()))
+        this.config = config.getConfig()
     }
 
     @Override

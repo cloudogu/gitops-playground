@@ -1,11 +1,13 @@
 package com.cloudogu.gitops.features
 
+import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.HelmClient
 import com.cloudogu.gitops.utils.K8sClient
 import groovy.yaml.YamlSlurper
+import jakarta.inject.Provider
 import org.junit.jupiter.api.Test
 
 import static org.assertj.core.api.Assertions.assertThat 
@@ -39,7 +41,12 @@ class VaultTest {
     CommandExecutorForTest helmCommands = new CommandExecutorForTest()
     CommandExecutorForTest k8sCommands = new CommandExecutorForTest()
     HelmClient helmClient = new HelmClient(helmCommands)
-    K8sClient k8sClient = new K8sClient(config, k8sCommands)
+    K8sClient k8sClient = new K8sClient(k8sCommands, new FileSystemUtils(), new Provider<Configuration>() {
+        @Override
+        Configuration get() {
+            new Configuration(config)
+        }
+    })
     File temporaryYamlFile
     
     @Test
@@ -147,7 +154,7 @@ class VaultTest {
     }
     
     private Vault createVault() {
-        Vault vault = new Vault(config, new FileSystemUtils(), k8sClient, new HelmStrategy(config, helmClient))
+        Vault vault = new Vault(new Configuration(config), new FileSystemUtils(), k8sClient, new HelmStrategy(new Configuration(config), helmClient))
         temporaryYamlFile = vault.tmpHelmValues
         return vault
     }

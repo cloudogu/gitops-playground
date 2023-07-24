@@ -5,12 +5,14 @@ import groovy.io.FileType
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlBuilder
 import groovy.yaml.YamlSlurper
+import jakarta.inject.Singleton
 import org.apache.commons.io.FileUtils
 
 import java.nio.file.Files
 import java.nio.file.Path
 
 @Slf4j
+@Singleton
 class FileSystemUtils {
 
     /**

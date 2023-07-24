@@ -2,13 +2,15 @@ package com.cloudogu.gitops.utils
 
 
 import groovy.util.logging.Slf4j
+import jakarta.inject.Singleton
 
 @Slf4j
+@Singleton
 class HelmClient {
 
     private CommandExecutor commandExecutor
 
-    HelmClient(CommandExecutor commandExecutor = new CommandExecutor()) {
+    HelmClient(CommandExecutor commandExecutor) {
         this.commandExecutor = commandExecutor
     }
 

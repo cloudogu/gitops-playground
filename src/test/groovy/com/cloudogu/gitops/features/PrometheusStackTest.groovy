@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.features
 
+import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -119,14 +120,14 @@ class PrometheusStackTest {
 
     private PrometheusStack createStack() {
         // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
-        new PrometheusStack(config, new FileSystemUtils() {
+        new PrometheusStack(new Configuration(config), new FileSystemUtils() {
             @Override
             Path copyToTempDir(String filePath) {
                 Path ret = super.copyToTempDir(filePath)
                 temporaryYamlFile = Path.of(ret.toString().replace(".ftl", "")) // Path after template invocation
                 return ret
             }
-        }, new HelmStrategy(config, helmClient))
+        }, new HelmStrategy(new Configuration(config), helmClient))
     }
 
     private parseActualStackYaml() {
