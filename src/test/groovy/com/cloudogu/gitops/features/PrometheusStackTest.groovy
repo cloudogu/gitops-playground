@@ -87,37 +87,38 @@ class PrometheusStackTest {
     @Test
     void 'uses remote scmm url if requested'() {
         config.scmm["internal"] = false
-        config.scmm["host"] = 'localhost:9091'
-        config.scmm["protocol"] = 'https'
+        config.scmm["url"] = 'https://localhost:9091/prefix'
         createStack().install()
 
 
         def additionalScrapeConfigs = parseActualStackYaml()['prometheus']['prometheusSpec']['additionalScrapeConfigs'] as List
         assertThat(((additionalScrapeConfigs[0]['static_configs'] as List)[0]['targets'] as List)[0]).isEqualTo('localhost:9091')
+        assertThat(additionalScrapeConfigs[0]['metrics_path']).isEqualTo('/prefix/scm/api/v2/metrics/prometheus')
         assertThat(additionalScrapeConfigs[0]['scheme']).isEqualTo('https')
 
         // scrape config for jenkins is unchanged
         assertThat(((additionalScrapeConfigs[1]['static_configs'] as List)[0]['targets'] as List)[0]).isEqualTo('jenkins.default.svc.cluster.local')
         assertThat(additionalScrapeConfigs[1]['scheme']).isEqualTo('http')
+        assertThat(additionalScrapeConfigs[1]['metrics_path']).isEqualTo('/prometheus')
     }
 
     @Test
     void 'uses remote jenkins url if requested'() {
         config.jenkins["internal"] = false
-        config.jenkins["host"] = 'localhost:9090'
-        config.jenkins["protocol"] = 'https'
+        config.jenkins["url"] = 'https://localhost:9090/jenkins'
         createStack().install()
 
 
         def additionalScrapeConfigs = parseActualStackYaml()['prometheus']['prometheusSpec']['additionalScrapeConfigs'] as List
         assertThat(((additionalScrapeConfigs[1]['static_configs'] as List)[0]['targets'] as List)[0]).isEqualTo('localhost:9090')
+        assertThat(additionalScrapeConfigs[1]['metrics_path']).isEqualTo('/jenkins/prometheus')
         assertThat(additionalScrapeConfigs[1]['scheme']).isEqualTo('https')
 
         // scrape config for scmm is unchanged
         assertThat(((additionalScrapeConfigs[0]['static_configs'] as List)[0]['targets'] as List)[0]).isEqualTo('scmm-scm-manager.default.svc.cluster.local')
         assertThat(additionalScrapeConfigs[0]['scheme']).isEqualTo('http')
+        assertThat(additionalScrapeConfigs[0]['metrics_path']).isEqualTo('/scm/api/v2/metrics/prometheus')
     }
-
 
     @Test
     void 'configures custom metrics user for jenkins'() {

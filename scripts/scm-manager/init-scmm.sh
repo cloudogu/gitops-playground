@@ -43,7 +43,7 @@ function configureScmmManager() {
   setConfig
 
   addUser "${GITOPS_USERNAME}" "${GITOPS_PASSWORD}" "changeme@test.local"
-  addUser "${METRICS_USERNAME}" "${METRICS_PASSWORD}" "gitops@mail.de"
+  addUser "${METRICS_USERNAME}" "${METRICS_PASSWORD}" "changeme@test.local"
   setPermissionForUser "${METRICS_USERNAME}" "metrics:read"
 
   ### FluxV2 Repos

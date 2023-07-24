@@ -33,8 +33,6 @@ class ApplicationConfigurator {
                     username: DEFAULT_ADMIN_USER,
                     password: DEFAULT_ADMIN_PW,
                     urlForScmm: "http://jenkins",
-                    host : '', // Set dynamically
-                    protocol : '', // Set dynamically
                     metricsUsername: 'metrics',
                     metricsPassword: 'metrics',
             ],
@@ -207,10 +205,6 @@ class ApplicationConfigurator {
             newConfig.jenkins["urlForScmm"] = newConfig.jenkins["url"] 
         }
 
-        String jenkinsUrl = newConfig.jenkins["url"]
-        log.debug("Getting host and protocol from jenkinsUrl: " + jenkinsUrl)
-        newConfig.jenkins["host"] = networkingUtils.getHost(jenkinsUrl)
-        newConfig.jenkins["protocol"] = networkingUtils.getProtocol(jenkinsUrl)
         // TODO missing external config (see setScmmConfig())
     }
 }

@@ -54,15 +54,8 @@ class PrometheusStack extends Feature {
         def namePrefix = config.application['namePrefix']
         def tmpHelmValues = new TemplatingEngine().replaceTemplate(fileSystemUtils.copyToTempDir(HELM_VALUES_PATH).toFile(), [
                 namePrefix: namePrefix,
-                scmm: [
-                       host: config.scmm['internal'] ? 'scmm-scm-manager.default.svc.cluster.local' : config.scmm['host'],
-                       protocol: config.scmm['internal'] ? 'http' : config.scmm['protocol'],
-                ],
-                jenkins: [
-                        metricsUsername: config.jenkins['metricsUsername'],
-                        host: config.jenkins['internal'] ? 'jenkins.default.svc.cluster.local' : config.jenkins['host'],
-                        protocol: config.jenkins['internal'] ? 'http' : config.jenkins['protocol'],
-                ]
+                scmm: getScmmConfiguration(),
+                jenkins: getJenkinsConfiguration()
         ]).toPath()
         Map helmValuesYaml = fileSystemUtils.readYaml(tmpHelmValues)
 
@@ -108,6 +101,43 @@ class PrometheusStack extends Feature {
                 'kube-prometheus-stack',
                 tmpHelmValues
         )
+    }
+
+    private Map getScmmConfiguration() {
+        String protocol = 'http'
+        String host = 'scmm-scm-manager.default.svc.cluster.local'
+        String path = '/scm/api/v2/metrics/prometheus'
+        if (!config.scmm['internal']) {
+            URI uri = new URI((config.scmm['url'] as String) + path)
+            protocol = uri.scheme
+            host = uri.authority
+            path = uri.path
+        }
+
+        return [
+                protocol: protocol,
+                host    : host,
+                path    : path
+        ]
+    }
+
+    private Map getJenkinsConfiguration() {
+        String protocol = 'http'
+        String host = 'jenkins.default.svc.cluster.local'
+        String path = '/prometheus'
+        if (!config.jenkins['internal']) {
+            URI uri = new URI((config.jenkins['url'] as String) + path)
+            protocol = uri.scheme
+            host = uri.authority
+            path = uri.path
+        }
+
+        return [
+                metricsUsername: config.jenkins['metricsUsername'],
+                protocol       : protocol,
+                host           : host,
+                path           : path
+        ]
     }
 
     private void setCustomImages(helmConfig, Map helmValuesYaml) {

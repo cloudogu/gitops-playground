@@ -123,7 +123,7 @@ prometheus:
         static_configs:
           - targets: [ '${scmm.host}' ]
         scheme: ${scmm.protocol}
-        metrics_path: '/scm/api/v2/metrics/prometheus'
+        metrics_path: '${scmm.path}'
         basic_auth:
           username: '${namePrefix}metrics'
           password_file: '/etc/prometheus/secrets/prometheus-metrics-creds-scmm/password'
@@ -131,7 +131,7 @@ prometheus:
         static_configs:
           - targets: [ '${jenkins.host}' ]
         scheme: ${jenkins.protocol}
-        metrics_path: 'prometheus'
+        metrics_path: '${jenkins.path}'
         basic_auth:
           username: '${jenkins.metricsUsername}'
           password_file: '/etc/prometheus/secrets/prometheus-metrics-creds-jenkins/password'
