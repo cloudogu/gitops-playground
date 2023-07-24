@@ -111,6 +111,13 @@ class K8sClientTest {
     }
 
     @Test
+    void 'Patches with type merge'() {
+        k8sClient.patch('secret', 'my-secret', '', 'merge', [a: 'b'])
+
+        assertThat(commandExecutor.actualCommands[0]).startsWith("kubectl patch secret my-secret --type=merge --patch-file=")
+    }
+
+    @Test
     void 'Deletes'() {
         k8sClient.delete('secret', 'my-ns',
                 new Tuple2('key1', 'value1'), new Tuple2('key2', 'value2'))
@@ -133,6 +140,14 @@ class K8sClientTest {
         shouldFail(RuntimeException) {
             k8sClient.delete('secret')
         }
+    }
+
+    @Test
+    void 'Gets custom resources with name prefix'() {
+        commandExecutor.enqueueOutput(new CommandExecutor.Output('', "foo-namespace,name\nfoo-namespace2,name2", 0))
+        def result = k8sClient.getCustomResource('foo')
+
+        assertThat(result).isEqualTo([new K8sClient.CustomResource('namespace', 'name'), new K8sClient.CustomResource('namespace2', 'name2')])
     }
     
 

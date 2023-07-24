@@ -30,4 +30,10 @@ class HelmClient {
                 "${args.namespace? "--namespace ${args.namespace} " : ''}"
         commandExecutor.execute(command).stdOut
     }
+
+    String uninstall(String release) {
+        String[] command = ["helm", "uninstall", release]
+
+        commandExecutor.execute(command).stdOut
+    }
 }

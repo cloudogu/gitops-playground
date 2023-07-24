@@ -5,6 +5,7 @@ import ch.qos.logback.classic.Logger
 import com.cloudogu.gitops.Application
 import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.destroy.Destroyer
 import groovy.util.logging.Slf4j
 import io.micronaut.context.ApplicationContext
 import org.slf4j.LoggerFactory
@@ -115,6 +116,9 @@ class GitopsPlaygroundCli  implements Runnable {
     private boolean pipeYes
     @Option(names = ['--name-prefix'], description = 'Set name-prefix for repos, jobs, namespaces')
     private String namePrefix
+    @Option(names = ['--destroy'], description = 'Unroll playground')
+    private boolean destroy
+
 
     // args group operator
     @Option(names = ['--fluxv2'], description = 'Install Flux V2')
@@ -127,8 +131,14 @@ class GitopsPlaygroundCli  implements Runnable {
     @Override
     void run() {
         def context = ApplicationContext.run().registerSingleton(new Configuration(getConfig()))
-        Application app = context.getBean(Application)
-        app.start()
+
+        if (destroy) {
+            Destroyer destroyer = context.getBean(Destroyer)
+            destroyer.destroy()
+        } else {
+            Application app = context.getBean(Application)
+            app.start()
+        }
     }
 
     void setLogging() {
