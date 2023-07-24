@@ -22,7 +22,12 @@ class JenkinsCli {
             @Mixin OptionsMixin options
     ) {
         def userManager = createApplicationContext(options).getBean(UserManager)
-        userManager.createUser(username, password)
+
+        if (userManager.isUsingCasSecurityRealm()) {
+            log.trace("Using CAS Security Realm. Must not create user.")
+        } else {
+            userManager.createUser(username, password)
+        }
     }
 
     @Command(name = "grant-permission", description = "grants permission to jenkins user", mixinStandardHelpOptions = true)

@@ -67,6 +67,16 @@ class UserManager {
         return result == "class hudson.security.GlobalMatrixAuthorizationStrategy" || result == "class hudson.security.ProjectMatrixAuthorizationStrategy"
     }
 
+    boolean isUsingCasSecurityRealm() {
+        def result = apiClient.runScript("print(Jenkins.getInstance().getSecurityRealm().class)")
+
+        if (!result.startsWith("class ")) {
+            throw new RuntimeException("Error when trying to determine security realm: $result")
+        }
+
+        return result == "class org.jenkinsci.plugins.cas.CasSecurityRealm"
+    }
+
     private String escapeString(String str) {
         if (str.contains("\\")) {
             // We don't want get in trouble with escaping,
