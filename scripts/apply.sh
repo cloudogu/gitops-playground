@@ -128,17 +128,18 @@ function main() {
     echo "Full log output is appended to ${backgroundLogFile}"
   fi
 
+  if [[ "$DESTROY" != true ]]; then
+    evalWithSpinner "Basic setup & configuring registry..." applyBasicK8sResources
 
-  evalWithSpinner "Basic setup & configuring registry..." applyBasicK8sResources
+    initSCMMVars
+    evalWithSpinner "Starting SCM-Manager..." initSCMM
 
-  initSCMMVars
-  evalWithSpinner "Starting SCM-Manager..." initSCMM
+    if [[ $INSTALL_FLUXV2 == true ]]; then
+      evalWithSpinner "Starting Flux V2..." initFluxV2
+    fi
 
-  if [[ $INSTALL_FLUXV2 == true ]]; then
-    evalWithSpinner "Starting Flux V2..." initFluxV2
+    initJenkins
   fi
-
-  initJenkins
 
   if [[ $TRACE == true ]]; then
     set +x
@@ -718,6 +719,9 @@ function printParameters() {
   echo "    | --insecure            >> Runs curl in insecure mode"
   echo "    | --skip-helm-update    >> Skips adding and updating helm repos"
   echo
+  echo "Remove the playground"
+  echo "    | --destroy             >> Removes all resources added when deploying the playground."
+  echo
   echo "Configure additional modules"
   echo "    | --monitoring, --metrics        >> Installs the Kube-Prometheus-Stack for ArgoCD. This includes Prometheus, the Prometheus operator, Grafana and some extra resources"
   echo
@@ -730,7 +734,7 @@ function printParameters() {
 readParameters() {
   COMMANDS=$(getopt \
     -o hdxyc \
-    --long help,fluxv2,argocd,argocd-url:,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,grafana-image:,grafana-sidecar-image:,prometheus-image:,prometheus-operator-image:,prometheus-config-reloader-image:,external-secrets-image:,external-secrets-certcontroller-image:,external-secrets-webhook-image:,vault-image:,nginx-image:,trace,insecure,yes,skip-helm-update,metrics,monitoring,vault:,name-prefix: \
+    --long help,fluxv2,argocd,argocd-url:,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,grafana-image:,grafana-sidecar-image:,prometheus-image:,prometheus-operator-image:,prometheus-config-reloader-image:,external-secrets-image:,external-secrets-certcontroller-image:,external-secrets-webhook-image:,vault-image:,nginx-image:,trace,insecure,yes,skip-helm-update,destroy,metrics,monitoring,vault:,name-prefix: \
     -- "$@")
   
   if [ $? != 0 ]; then
@@ -767,6 +771,7 @@ readParameters() {
   ASSUME_YES=false
   SKIP_HELM_UPDATE=false
   DEPLOY_METRICS=false
+  DESTROY=false
   ARGOCD_URL=""
   NAME_PREFIX=""
 
@@ -813,6 +818,7 @@ readParameters() {
       --skip-helm-update   ) SKIP_HELM_UPDATE=true; shift ;;
       --metrics | --monitoring ) DEPLOY_METRICS=true; shift;;
       --vault              ) shift 2;; # Ignore, used in groovy only
+      --destroy            ) DESTROY=true; shift;; #
       --                   ) shift; break ;;
     *) break ;;
     esac

@@ -17,7 +17,7 @@ class JobManager {
         }
 
         @Language("groovy")
-        String script = "print(Jenkins.instance.getItem('$name').delete())"
+        String script = "print(Jenkins.instance.getItem('$name')?.delete())"
         def result = apiClient.runScript(script)
 
         if (result != 'null') {

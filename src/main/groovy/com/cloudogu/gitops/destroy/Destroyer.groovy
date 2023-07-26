@@ -18,9 +18,7 @@ class Destroyer implements DestructionHandler {
         log.info("Start destroying")
         for (def handler in destructionHandlers) {
             log.info("Running handler $handler.class.simpleName")
-            if (handler instanceof JenkinsDestructionHandler) {
-                handler.destroy()
-            }
+            handler.destroy()
         }
         log.info("Finished destroying")
     }
