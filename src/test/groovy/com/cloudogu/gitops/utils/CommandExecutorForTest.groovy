@@ -21,4 +21,9 @@ class CommandExecutorForTest extends CommandExecutor {
     protected Process doExecute(String command) {
         return mock(Process)
     }
+
+    @Override
+    protected Process doExecute(String[] command) {
+        return mock(Process)
+    }
 }
