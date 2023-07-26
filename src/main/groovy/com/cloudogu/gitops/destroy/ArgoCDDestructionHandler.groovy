@@ -6,11 +6,13 @@ import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.HelmClient
 import com.cloudogu.gitops.utils.K8sClient
+import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
 
 import java.nio.file.Path
 
 @Singleton
+@Order(100)
 class ArgoCDDestructionHandler implements DestructionHandler {
     private K8sClient k8sClient
     private ScmmRepoProvider repoProvider
@@ -71,7 +73,7 @@ class ArgoCDDestructionHandler implements DestructionHandler {
         }
 
         installArgoCDViaHelm(repo)
-        helmClient.uninstall('argocd')
+        helmClient.uninstall('argocd', 'argocd')
         for (def project in k8sClient.getCustomResource('appprojects')) {
             k8sClient.delete("appproject", project.namespace, project.name)
         }

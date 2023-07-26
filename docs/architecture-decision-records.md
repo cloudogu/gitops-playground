@@ -3,6 +3,39 @@ Architecture Decision Records
 
 Bases on [this template](https://adr.github.io/madr/examples.html).
 
+## Using Retrofit as API client for SCM-Manager
+
+### Context and Problem Statement
+
+We want to use the SCM-Manager REST-API to delete users and repositories
+for cleaning up the playground.
+In the future, we want to use the same client to create resources when moving away from bash.
+
+There is no official API client for SCM-Manager anymore.
+There is a OpenAPI document for the API.
+
+### Considered Options
+
+* Using a [client generator](https://github.com/OpenAPITools/openapi-generator/tree/master)
+* Using hand rolled API client based on an HTTP client
+* Using Retrofit
+
+### Decision Outcome
+
+The client generator for groovy does not support basic authentication needed for interfacing with SCM-Manager.
+The java generator needs various dependencies that we would need to introduce into the project.
+Both have mediocre support for specifying a base url at runtime.
+
+Hand rolling an API based on HTTP requires a lot of effort not only initially, but for every resource added to the client.
+
+Retrofit offers a declarative approach to define API clients.
+Furthermore, it has first-class support for specifying a base url.
+Retrofit uses reflection to generate the client. 
+As a result, we need to configure GraalVM appropriately.
+
+We decided to use Retrofit due to its small footprint and because we already integrated OkHttp.
+Additionally, creating an API endpoint in Retrofit requires little effort.
+
 ## Using Templating Mechanism for Generating Repositories 
 
 ### Context and Problem Statement

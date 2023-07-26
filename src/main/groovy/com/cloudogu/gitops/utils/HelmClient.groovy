@@ -31,8 +31,8 @@ class HelmClient {
         commandExecutor.execute(command).stdOut
     }
 
-    String uninstall(String release) {
-        String[] command = ["helm", "uninstall", release]
+    String uninstall(String release, String namespace) {
+        String[] command = ["helm", "uninstall", release, '--namespace', namespace]
 
         commandExecutor.execute(command).stdOut
     }

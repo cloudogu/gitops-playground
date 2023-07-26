@@ -23,8 +23,8 @@ class HelmClientTest {
     @Test
     void 'assembles parameters for uninstall'() {
         def commandExecutor = new CommandExecutorForTest()
-        new HelmClient(commandExecutor).uninstall("the-release")
+        new HelmClient(commandExecutor).uninstall("the-release", 'the-namespace')
 
-        Assertions.assertThat(commandExecutor.actualCommands[0]).isEqualTo('helm uninstall the-release')
+        Assertions.assertThat(commandExecutor.actualCommands[0]).isEqualTo('helm uninstall the-release --namespace the-namespace')
     }
 }
