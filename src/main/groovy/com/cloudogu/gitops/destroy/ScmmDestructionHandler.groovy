@@ -59,6 +59,6 @@ class ScmmDestructionHandler implements DestructionHandler {
     }
 
     private String getNamePrefix() {
-        return configuration.config.application['namePrefix']
+        return configuration.getNamePrefix()
     }
 }

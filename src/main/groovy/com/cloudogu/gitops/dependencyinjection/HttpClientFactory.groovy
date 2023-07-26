@@ -2,6 +2,7 @@ package com.cloudogu.gitops.dependencyinjection
 
 import com.cloudogu.gitops.okhttp.RetryInterceptor
 import io.micronaut.context.annotation.Factory
+import jakarta.inject.Named
 import jakarta.inject.Singleton
 import okhttp3.JavaNetCookieJar
 import okhttp3.OkHttpClient
@@ -12,6 +13,7 @@ import org.slf4j.LoggerFactory
 @Factory
 class HttpClientFactory {
     @Singleton
+    @Named("jenkins")
     OkHttpClient okHttpClient(HttpLoggingInterceptor httpLoggingInterceptor) {
         return new OkHttpClient.Builder()
                 .cookieJar(new JavaNetCookieJar(new CookieManager()))

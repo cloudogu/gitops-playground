@@ -13,4 +13,12 @@ class Configuration {
     Map getConfig() {
         return this.config
     }
+
+    String getNamePrefix() {
+        return this.config.application['namePrefix']
+    }
+
+    String getNamePrefixForEnvVars() {
+        return this.config.application['namePrefixForEnvVars']
+    }
 }

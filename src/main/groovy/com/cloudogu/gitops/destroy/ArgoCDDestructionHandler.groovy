@@ -88,7 +88,7 @@ class ArgoCDDestructionHandler implements DestructionHandler {
 
     void installArgoCDViaHelm(ScmmRepo repo) {
         // this is a hack to be able to uninstall using helm
-        def namePrefix = configuration.config.application['namePrefix']
+        def namePrefix = configuration.getNamePrefix()
 
         // Install umbrella chart from folder
         String umbrellaChartPath = Path.of(repo.getAbsoluteLocalRepoTmpDir(), 'argocd/')

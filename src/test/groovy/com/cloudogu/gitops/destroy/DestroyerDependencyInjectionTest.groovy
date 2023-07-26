@@ -5,7 +5,6 @@ import io.micronaut.context.ApplicationContext
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 
-
 class DestroyerDependencyInjectionTest {
     @Test
     void 'can create bean'() {
@@ -15,10 +14,15 @@ class DestroyerDependencyInjectionTest {
                                 url: 'http://localhost:9091/scm',
                                 username: 'admin',
                                 password: 'admin',
+                        ],
+                        jenkins: [
+                                url: 'http://localhost:9090',
+                                username: 'admin',
+                                password: 'admin',
                         ]
                 ]))
                 .getBean(Destroyer)
 
-        Assertions.assertThat(destroyer.destructionHandlers).hasSize(2)
+        Assertions.assertThat(destroyer.destructionHandlers).hasSize(3)
     }
 }
