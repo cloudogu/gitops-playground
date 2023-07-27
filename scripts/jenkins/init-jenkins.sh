@@ -77,6 +77,14 @@ function createUser() {
   runGroovy jenkins add-user "$1" "$2" --jenkins-url="$JENKINS_URL" --jenkins-username="$JENKINS_USERNAME" --jenkins-password="$JENKINS_PASSWORD"
 }
 
+function grantPermission() {
+  runGroovy jenkins grant-permission "$1" "$2" --jenkins-url="$JENKINS_URL" --jenkins-username="$JENKINS_USERNAME" --jenkins-password="$JENKINS_PASSWORD"
+}
+
+function enablePrometheusAuthentication() {
+  runGroovy jenkins enable-prometheus-authentication --jenkins-url="$JENKINS_URL" --jenkins-username="$JENKINS_USERNAME" --jenkins-password="$JENKINS_PASSWORD"
+}
+
 function configureJenkins() {
   local SCMM_URL pluginFolder
   
@@ -94,7 +102,9 @@ function configureJenkins() {
   REGISTRY_PASSWORD="${9}"
   INSTALL_FLUXV2="${10}"
   INSTALL_ARGOCD="${11}"
-  
+  JENKINS_METRICS_USERNAME="${12}"
+  JENKINS_METRICS_PASSWORD="${13}"
+
   waitForJenkins
 
   if [[ -z "${JENKINS_PLUGIN_FOLDER}" ]]; then
@@ -107,8 +117,8 @@ function configureJenkins() {
   fi 
 
   echo "Installing Jenkins Plugins from ${pluginFolder}"
-  for pluginFile in "${pluginFolder}/plugins"/*; do 
-     installPlugin "${pluginFile}"
+  awk -F':' '{ print $1 }' scripts/jenkins/plugins/plugins.txt | while read -r pluginName; do
+     installPlugin "${pluginFolder}/plugins/${pluginName}.jpi"
   done
 
   echo "Waiting for plugin installation.."
@@ -132,6 +142,10 @@ function configureJenkins() {
   setGlobalProperty "${NAME_PREFIX_ENVIRONMENT_VARS}REGISTRY_URL" "${REGISTRY_URL}"
   setGlobalProperty "${NAME_PREFIX_ENVIRONMENT_VARS}REGISTRY_PATH" "${REGISTRY_PATH}"
   setGlobalProperty "${NAME_PREFIX_ENVIRONMENT_VARS}K8S_VERSION" "${K8S_VERSION}"
+
+  createUser "${JENKINS_METRICS_USERNAME}" "${JENKINS_METRICS_PASSWORD}"
+  grantPermission "${JENKINS_METRICS_USERNAME}" "METRICS_VIEW"
+  enablePrometheusAuthentication
 
 
   if [[ $INSTALL_FLUXV2 == true ]]; then

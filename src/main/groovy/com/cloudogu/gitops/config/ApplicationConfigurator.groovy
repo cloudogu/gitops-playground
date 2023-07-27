@@ -32,7 +32,9 @@ class ApplicationConfigurator {
                     url     : '',
                     username: DEFAULT_ADMIN_USER,
                     password: DEFAULT_ADMIN_PW,
-                    urlForScmm: "http://jenkins"
+                    urlForScmm: "http://jenkins",
+                    metricsUsername: 'metrics',
+                    metricsPassword: 'metrics',
             ],
             scmm       : [
                     internal: true, // Set dynamically
@@ -202,6 +204,7 @@ class ApplicationConfigurator {
             newConfig.jenkins["internal"] = false
             newConfig.jenkins["urlForScmm"] = newConfig.jenkins["url"] 
         }
+
         // TODO missing external config (see setScmmConfig())
     }
 }

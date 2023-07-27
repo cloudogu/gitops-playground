@@ -53,13 +53,16 @@ function error() {
 
 # Entry point for the new generation of our apply script, written in groovy
 function runGroovy() {
+  ADDITIONAL_OPTIONS=""
+  [ -z "${DEBUG-}" ] || ADDITIONAL_OPTIONS+=" --debug"
+  [ -z "${TRACE-}" ] || ADDITIONAL_OPTIONS+=" --trace"
 
   if [[ -f "$PLAYGROUND_DIR/apply-ng" ]]; then
-      "$PLAYGROUND_DIR"/apply-ng "$@"
+      "$PLAYGROUND_DIR"/apply-ng "$@" $ADDITIONAL_OPTIONS
   else
       echo "apply-ng binary not found, calling groovy scripts"
       groovy --classpath "$PLAYGROUND_DIR"/src/main/groovy \
-        "$PLAYGROUND_DIR"/src/main/groovy/com/cloudogu/gitops/cli/GitopsPlaygroundCliMain.groovy "$@"
+        "$PLAYGROUND_DIR"/src/main/groovy/com/cloudogu/gitops/cli/GitopsPlaygroundCliMain.groovy "$@" $ADDITIONAL_OPTIONS
   fi
 }
 
