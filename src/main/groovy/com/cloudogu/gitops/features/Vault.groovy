@@ -24,7 +24,7 @@ class Vault extends Feature {
 
     private Map config
     private FileSystemUtils fileSystemUtils
-    private File tmpHelmValues
+    private Path tmpHelmValues
     private K8sClient k8sClient
     private DeploymentStrategy deployer
 
@@ -39,8 +39,7 @@ class Vault extends Feature {
         this.fileSystemUtils = fileSystemUtils
         this.k8sClient = k8sClient
 
-        tmpHelmValues = File.createTempFile('gitops-playground-vault-values', '')
-        tmpHelmValues.deleteOnExit()
+        tmpHelmValues = fileSystemUtils.createTempFile()
     }
 
     @Override
@@ -155,7 +154,7 @@ class Vault extends Feature {
         }
 
         log.trace("Helm yaml to be applied: ${yaml}")
-        fileSystemUtils.writeYaml(yaml, tmpHelmValues)
+        fileSystemUtils.writeYaml(yaml, tmpHelmValues.toFile())
 
         deployer.deployFeature(
                 helmConfig['repoURL'] as String,
@@ -164,7 +163,7 @@ class Vault extends Feature {
                 helmConfig['version'] as String,
                 'secrets',
                 'vault',
-                tmpHelmValues.toPath()
+                tmpHelmValues
         )
     }
 }

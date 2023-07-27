@@ -148,11 +148,12 @@ RUN native-image -Dgroovy.grape.enable=false \
     -H:DynamicProxyConfigurationResources=proxy-config.json \
     -H:ReflectionConfigurationFiles=conf/reflect-config.json \
     -H:ReflectionConfigurationResources=reflect-config.json \
+    --features=com.cloudogu.gitops.graal.groovy.GroovyApplicationRegistrationFeature,com.cloudogu.gitops.graal.groovy.GroovyDgmClassesRegistrationFeature \
     --static \
     --allow-incomplete-classpath \
     --report-unsupported-elements-at-runtime \
     --diagnostics-mode \
-    --initialize-at-run-time=org.codehaus.groovy.control.XStreamUtils,groovy.grape.GrapeIvy,org.codehaus.groovy.vmplugin.v8.Java8\$LookupHolder,org.eclipse.jgit.lib.RepositoryCache,org.eclipse.jgit.transport.HttpAuthMethod\$Digest,org.eclipse.jgit.lib.GpgSigner \
+    --initialize-at-run-time=org.codehaus.groovy.control.XStreamUtils,groovy.grape.GrapeIvy,org.codehaus.groovy.vmplugin.v8.Java8\$LookupHolder,org.eclipse.jgit.lib.RepositoryCache,org.eclipse.jgit.transport.HttpAuthMethod\$Digest,org.eclipse.jgit.lib.GpgSigner,io.micronaut.context.env.exp.RandomPropertyExpressionResolver\$LazyInit \
     --initialize-at-build-time \
     --no-fallback \
     --libc=musl \

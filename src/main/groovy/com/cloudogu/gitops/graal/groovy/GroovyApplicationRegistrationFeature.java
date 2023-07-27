@@ -17,7 +17,6 @@
  */
 package com.cloudogu.gitops.graal.groovy;
 
-import com.oracle.svm.core.annotate.AutomaticFeature;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfoList;
 import io.github.classgraph.ScanResult;
@@ -38,7 +37,6 @@ import java.util.List;
  * This class is used during compilation of GraalVM native image. It is auto-discovered by native image compiler. Needs to be written in Java.
  */
 @SuppressWarnings("unused")
-@AutomaticFeature
 public class GroovyApplicationRegistrationFeature implements Feature {
 
 

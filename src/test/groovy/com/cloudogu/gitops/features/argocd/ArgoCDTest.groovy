@@ -325,9 +325,13 @@ class ArgoCDTest {
         }
 
         assertAllYamlFiles(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'argocd', 7) { Path it ->
-            assertThat(parseActualYaml(it.toString())['spec']['source']['repoURL'] as String)
-                    .as("$it repoURL have name prefix")
-                    .startsWith("${scmmUrl}/repo/${expectedPrefix}argocd")
+            def yaml = parseActualYaml(it.toString())
+            List yamlDocuments = yaml instanceof List ? yaml : [yaml]
+            for (def document in yamlDocuments) {
+                assertThat(document['spec']['source']['repoURL'] as String)
+                        .as("$it repoURL have name prefix")
+                        .startsWith("${scmmUrl}/repo/${expectedPrefix}argocd")
+            }
         }
 
         assertAllYamlFiles(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), 'argocd', 1) { Path it ->
@@ -355,11 +359,13 @@ class ArgoCDTest {
 
         assertAllYamlFiles(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), 'misc', 6) { Path it ->
             def yaml = parseActualYaml(it.toString())
-
-            def metadataNamespace = yaml['metadata']['namespace'] as String
-            assertThat(metadataNamespace)
-                    .as("$it metadata.namespace has name prefix")
-                    .startsWith("${expectedPrefix}")
+            List yamlDocuments = yaml instanceof List ? yaml : [yaml]
+            for (def document in yamlDocuments) {
+                def metadataNamespace = document['metadata']['namespace'] as String
+                assertThat(metadataNamespace)
+                        .as("$it metadata.namespace has name prefix")
+                        .startsWith("${expectedPrefix}")
+            }
         }
     }
 

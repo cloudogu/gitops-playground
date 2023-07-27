@@ -10,7 +10,9 @@ import groovy.yaml.YamlSlurper
 import jakarta.inject.Provider
 import org.junit.jupiter.api.Test
 
-import static org.assertj.core.api.Assertions.assertThat 
+import java.nio.file.Path
+
+import static org.assertj.core.api.Assertions.assertThat
 
 class VaultTest {
 
@@ -154,8 +156,16 @@ class VaultTest {
     }
     
     private Vault createVault() {
-        Vault vault = new Vault(new Configuration(config), new FileSystemUtils(), k8sClient, new HelmStrategy(new Configuration(config), helmClient))
-        temporaryYamlFile = vault.tmpHelmValues
+        def fileSystemUtils = new FileSystemUtils() {
+            @Override
+            Path createTempFile() {
+                def ret = super.createTempFile()
+                temporaryYamlFile = ret.toFile()
+
+                return ret
+            }
+        }
+        Vault vault = new Vault(new Configuration(config), fileSystemUtils, k8sClient, new HelmStrategy(new Configuration(config), helmClient))
         return vault
     }
 

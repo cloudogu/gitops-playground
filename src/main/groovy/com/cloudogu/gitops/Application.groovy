@@ -24,4 +24,8 @@ class Application {
         })
         log.info("Application finished")
     }
+
+    List<Feature> getFeatures() {
+        return features
+    }
 }
