@@ -8,12 +8,12 @@
   <packaging>${packaging}</packaging>
 
   <parent>
-    <groupId>io.micronaut</groupId>
+    <groupId>io.micronaut.platform</groupId>
     <artifactId>micronaut-parent</artifactId>
     <!-- When updating, also update and graal version in dockerfile -->
-    <!-- See "graal.version" here https://central.sonatype.com/artifact/io.micronaut/micronaut-bom/3.8.7 -->
+    <!-- See "graal.version" here https://central.sonatype.com/artifact/io.micronaut.platform/micronaut-platform/4.0.1 -->
     <!-- ON NEXT GROOVY UPDATE: check if we can get rid of explicit jackson-dataformat-yaml without critical CVE -->
-    <version>3.8.7</version>
+    <version>4.0.1</version>
   </parent>
 
   <properties>
@@ -22,7 +22,22 @@
     <maven.compiler.target>17</maven.compiler.target>
     <mockitoVersion>4.8.0</mockitoVersion>
     <exec.mainClass>com.cloudogu.gitops.cli.GitopsPlaygroundCliMain</exec.mainClass>
+
+    <okhttpVersion>4.11.0</okhttpVersion>
+    <groovy.version>4.0.12</groovy.version>
   </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.micronaut</groupId>
+        <artifactId>micronaut-core-bom</artifactId>
+        <version>${micronaut.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <dependencies>
     <dependency>
@@ -32,7 +47,7 @@
     </dependency>
 
     <dependency>
-      <groupId>org.codehaus.groovy</groupId>
+      <groupId>org.apache.groovy</groupId>
       <artifactId>groovy-all</artifactId>
       <version>${groovy.version}</version>
       <type>pom</type>
@@ -42,20 +57,19 @@
           <artifactId>testng</artifactId>
         </exclusion>
         <exclusion>
-          <groupId>org.codehaus.groovy</groupId>
+          <groupId>org.apache.groovy</groupId>
           <artifactId>groovy-testng</artifactId>
         </exclusion>
         <exclusion>
-          <groupId>org.codehaus.groovy</groupId>
+          <groupId>org.apache.groovy</groupId>
           <artifactId>groovy-test</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
 
     <dependency>
-      <groupId>org.codehaus.groovy</groupId>
+      <groupId>org.apache.groovy</groupId>
       <artifactId>groovy-yaml</artifactId>
-      <version>${groovy.version}</version>
     </dependency>
 
     <!-- Avoid CVE-2022-1471 in transitive dependency of groovy-yaml. -->
@@ -96,7 +110,7 @@
     </dependency>
 
     <dependency>
-      <groupId>io.micronaut</groupId>
+      <groupId>io.micronaut.validation</groupId>
       <artifactId>micronaut-validation</artifactId>
       <scope>compile</scope>
     </dependency>
@@ -131,19 +145,19 @@
     <dependency>
       <groupId>com.squareup.okhttp3</groupId>
       <artifactId>okhttp</artifactId>
-      <version>4.11.0</version>
+      <version>${okhttpVersion}</version>
     </dependency>
 
     <dependency>
       <groupId>com.squareup.okhttp3</groupId>
       <artifactId>okhttp-urlconnection</artifactId>
-      <version>4.11.0</version>
+      <version>${okhttpVersion}</version>
     </dependency>
 
     <dependency>
       <groupId>com.squareup.okhttp3</groupId>
       <artifactId>mockwebserver</artifactId>
-      <version>4.11.0</version>
+      <version>${okhttpVersion}</version>
       <scope>test</scope>
     </dependency>
 
@@ -202,7 +216,7 @@
     </dependency>
 
     <dependency>
-      <groupId>org.codehaus.groovy</groupId>
+      <groupId>org.apache.groovy</groupId>
       <artifactId>groovy-test</artifactId>
       <scope>test</scope>
     </dependency>
@@ -245,7 +259,7 @@
       </plugin>
 
       <plugin>
-        <groupId>io.micronaut.build</groupId>
+        <groupId>io.micronaut.maven</groupId>
         <artifactId>micronaut-maven-plugin</artifactId>
       </plugin>
 

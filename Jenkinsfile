@@ -45,7 +45,7 @@ node('high-cpu') {
                     String groovyVersion = sh (returnStdout: true, script:
                             'MICRONAUT_VERSION=$(cat pom.xml | sed -n \'/<parent>/,/<\\/parent>/p\' | ' +
                                     'sed -n \'s/.*<version>\\(.*\\)<\\/version>.*/\\1/p\'); ' +
-                            'curl -s https://repo1.maven.org/maven2/io/micronaut/micronaut-bom/${MICRONAUT_VERSION}/micronaut-bom-${MICRONAUT_VERSION}.pom | ' +
+                            'curl -s https://repo1.maven.org/maven2/io/micronaut/micronaut-core-bom/${MICRONAUT_VERSION}/micronaut-core-bom-${MICRONAUT_VERSION}.pom | ' +
                                     'sed -n \'s/.*<groovy.version>\\(.*\\)<\\/groovy.version>.*/\\1/p\'').trim()
                     groovyImage = "groovy:${groovyVersion}-jdk${jdkVersion}"
                     // Re-use groovy image here, even though we only need JDK
