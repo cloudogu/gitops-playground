@@ -87,13 +87,13 @@ class PrometheusStackTest {
     @Test
     void 'uses remote scmm url if requested'() {
         config.scmm["internal"] = false
-        config.scmm["url"] = 'https://localhost:9091/prefix'
+        config.scmm["url"] = 'https://localhost:9091/scm'
         createStack().install()
 
 
         def additionalScrapeConfigs = parseActualStackYaml()['prometheus']['prometheusSpec']['additionalScrapeConfigs'] as List
         assertThat(((additionalScrapeConfigs[0]['static_configs'] as List)[0]['targets'] as List)[0]).isEqualTo('localhost:9091')
-        assertThat(additionalScrapeConfigs[0]['metrics_path']).isEqualTo('/prefix/scm/api/v2/metrics/prometheus')
+        assertThat(additionalScrapeConfigs[0]['metrics_path']).isEqualTo('/scm/api/v2/metrics/prometheus')
         assertThat(additionalScrapeConfigs[0]['scheme']).isEqualTo('https')
 
         // scrape config for jenkins is unchanged

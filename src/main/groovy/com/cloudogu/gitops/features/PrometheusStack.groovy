@@ -108,7 +108,7 @@ class PrometheusStack extends Feature {
         String host = 'scmm-scm-manager.default.svc.cluster.local'
         String path = '/scm/api/v2/metrics/prometheus'
         if (!config.scmm['internal']) {
-            URI uri = new URI((config.scmm['url'] as String) + path)
+            URI uri = new URI((config.scmm['url'] as String) + '/api/v2/metrics/prometheus')
             protocol = uri.scheme
             host = uri.authority
             path = uri.path
