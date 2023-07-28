@@ -679,8 +679,8 @@ function printParameters() {
   echo "    | --jenkins-url=http://jenkins   >> The url of your external jenkins"
   echo "    | --jenkins-username=myUsername  >> Mandatory when --jenkins-url is set"
   echo "    | --jenkins-password=myPassword  >> Mandatory when --jenkins-url is set"
-  echo "    | --metrics-username=myUsername  >> Mandatory when --jenkins-url is set and monitoring enabled. Predefined user for fetching prometheus metrics."
-  echo "    | --metrics-password=myPassword  >> Mandatory when --jenkins-url is set and monitoring enabled. Predefined user for fetching prometheus metrics."
+  echo "    | --jenkins-metrics-username=myUsername  >> Mandatory when --jenkins-url is set and monitoring enabled. Predefined user for fetching prometheus metrics."
+  echo "    | --jenkins-metrics-password=myPassword  >> Mandatory when --jenkins-url is set and monitoring enabled. Predefined user for fetching prometheus metrics."
   echo
   echo "Configure external scm-manager. Use this 3 parameters to configure an external scmm"
   echo "    | --scmm-url=http://scm-manager:8080   >> The host of your external scm-manager"
@@ -732,7 +732,7 @@ function printParameters() {
 readParameters() {
   COMMANDS=$(getopt \
     -o hdxyc \
-    --long help,fluxv2,argocd,argocd-url:,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,metrics-username:,metrics-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,grafana-image:,grafana-sidecar-image:,prometheus-image:,prometheus-operator-image:,prometheus-config-reloader-image:,external-secrets-image:,external-secrets-certcontroller-image:,external-secrets-webhook-image:,vault-image:,nginx-image:,trace,insecure,yes,skip-helm-update,metrics,monitoring,vault:,name-prefix: \
+    --long help,fluxv2,argocd,argocd-url:,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,jenkins-metrics-username:,jenkins-metrics-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,grafana-image:,grafana-sidecar-image:,prometheus-image:,prometheus-operator-image:,prometheus-config-reloader-image:,external-secrets-image:,external-secrets-certcontroller-image:,external-secrets-webhook-image:,vault-image:,nginx-image:,trace,insecure,yes,skip-helm-update,metrics,monitoring,vault:,name-prefix: \
     -- "$@")
   
   if [ $? != 0 ]; then
