@@ -9,7 +9,6 @@ PLAYGROUND_DIR="$(cd ${BASEDIR} && cd .. && pwd)"
 export PLAYGROUND_DIR
 
 # When updating, update in ApplicationConfigurator.groovy as well 
-PETCLINIC_COMMIT=32c8653
 SPRING_BOOT_HELM_CHART_COMMIT=0.3.1
 K8S_VERSION=1.25.4
 
@@ -25,17 +24,7 @@ INTERNAL_REGISTRY=true
 JENKINS_URL_FOR_SCMM="http://jenkins"
 SCMM_URL_FOR_JENKINS="http://scmm-scm-manager/scm"
 
-# When updating please also adapt in Dockerfile, vars.tf, ApplicationConfigurator.groovy and init-cluster.sh
-# Find and replace with this regex, e.g. ghcr.io/cloudogu/helm:([\d\.-]*)*
-KUBECTL_DEFAULT_IMAGE="lachlanevenson/k8s-kubectl:v${K8S_VERSION}"
-HELM_DEFAULT_IMAGE='ghcr.io/cloudogu/helm:3.10.3-1'
-YAMLLINT_DEFAULT_IMAGE='cytopia/yamllint:1.25-0.7'
-# cloudogu/helm also contains kubeval and helm kubeval plugin. Using the same image makes builds faster
-KUBEVAL_DEFAULT_IMAGE=${HELM_DEFAULT_IMAGE}
-HELMKUBEVAL_DEFAULT_IMAGE=${HELM_DEFAULT_IMAGE}
-
 SPRING_BOOT_HELM_CHART_REPO=${SPRING_BOOT_HELM_CHART_REPO:-'https://github.com/cloudogu/spring-boot-helm-chart.git'}
-SPRING_PETCLINIC_REPO=${SPRING_PETCLINIC_REPO:-'https://github.com/cloudogu/spring-petclinic.git'}
 GITOPS_BUILD_LIB_REPO=${GITOPS_BUILD_LIB_REPO:-'https://github.com/cloudogu/gitops-build-lib.git'}
 CES_BUILD_LIB_REPO=${CES_BUILD_LIB_REPO:-'https://github.com/cloudogu/ces-build-lib.git'}
 
@@ -302,99 +291,12 @@ function setExternalHostnameIfNecessary() {
   fi
 }
 
-function replaceAllScmmUrlsInFolder() {
-  CURRENT_DIR="${1}"
-
-  while IFS= read -r -d '' file; do
-    # shellcheck disable=SC2091
-    # We want to execute this here
-    $(buildScmmUrlReplaceCmd "$file" "-i")
-  done < <(find "${CURRENT_DIR}" -name '*.yaml' -print0)
-}
-
-function buildScmmUrlReplaceCmd() {
-  TARGET_FILE="${1}"
-  SED_PARAMS="${2:-""}"
-  echo 'sed '"${SED_PARAMS}"' -e '"s:http\\://scmm-scm-manager.default.svc.cluster.local/scm:${SCMM_PROTOCOL}\\://${SCMM_HOST}:g ${TARGET_FILE}"
-}
-
-function mkTmpWithReplacedScmmUrls() {
-  REPLACE_FILE="${1}"
-  TMP_FILENAME=$(mktemp /tmp/scmm-replace.XXXXXX)
-
-  # shellcheck disable=SC2091
-  # We want to execute this here
-  $(buildScmmUrlReplaceCmd "${REPLACE_FILE}") >"${TMP_FILENAME}"
-
-  echo "${TMP_FILENAME}"
-}
-
-function replaceAllImagesInJenkinsfile() {
-  JENKINSFILE_PATH="${1}"
-
-  replaceImageIfSet "$JENKINSFILE_PATH" 'kubectl' "$KUBECTL_DEFAULT_IMAGE" "$KUBECTL_IMAGE"
-  replaceImageIfSet "$JENKINSFILE_PATH" 'helm' "$HELM_DEFAULT_IMAGE" "$HELM_IMAGE"
-  replaceImageIfSet "$JENKINSFILE_PATH" 'kubeval' "$KUBEVAL_DEFAULT_IMAGE" "$KUBEVAL_IMAGE"
-  replaceImageIfSet "$JENKINSFILE_PATH" 'helmKubeval' "$HELMKUBEVAL_DEFAULT_IMAGE" "$HELMKUBEVAL_IMAGE"
-  replaceImageIfSet "$JENKINSFILE_PATH" 'yamllint' "$YAMLLINT_DEFAULT_IMAGE" "$YAMLLINT_IMAGE"
-}
-
-function replaceImageIfSet() {
-  JENKINSFILE_PATH="${1}"
-  IMAGE_KEY="${2}"
-  DEFAULT_IMAGE="${3}"
-  SET_IMAGE="${4:-""}"
-
-  if [[ -n "${SET_IMAGE}" ]]; then
-    FROM_IMAGE_STRING="$IMAGE_KEY: '$DEFAULT_IMAGE'"
-    TO_IMAGE_STRING="$IMAGE_KEY: '$SET_IMAGE'"
-    sed -i -e "s%${FROM_IMAGE_STRING}%${TO_IMAGE_STRING}%g" "${JENKINSFILE_PATH}"
-  fi
-}
-
 function createSecrets() {
   createSecret gitops-scmm --from-literal="USERNAME=${NAME_PREFIX}gitops" --from-literal=PASSWORD=$SET_PASSWORD -n default
 }
 
 function createSecret() {
   kubectl create secret generic "$@" --dry-run=client -oyaml | kubectl apply -f-
-}
-
-function pushPetClinicRepo() {
-  LOCAL_PETCLINIC_SOURCE="$1"
-  TARGET_REPO_SCMM="$2"
-
-  TMP_REPO=$(mktemp -d)
-
-  git clone -n "${SPRING_PETCLINIC_REPO}" "${TMP_REPO}" --quiet >/dev/null 2>&1
-  (
-    cd "${TMP_REPO}"
-    # Checkout a defined commit in order to get a deterministic result
-    git checkout ${PETCLINIC_COMMIT} --quiet
-
-    cp -r "${PLAYGROUND_DIR}/${LOCAL_PETCLINIC_SOURCE}"/* .
-
-    replaceAllImagesInJenkinsfile "${TMP_REPO}/Jenkinsfile"
-
-    sed -i "s/env.REGISTRY_URL/env.${NAME_PREFIX_ENVIRONMENT_VARS}REGISTRY_URL/g" "${TMP_REPO}/Jenkinsfile"
-    sed -i "s/env.REGISTRY_PATH/env.${NAME_PREFIX_ENVIRONMENT_VARS}REGISTRY_PATH/g" "${TMP_REPO}/Jenkinsfile"
-
-    if [[ $REMOTE_CLUSTER != true ]]; then
-      # Set NodePort service, to avoid "Pending" services and "Processing" state in argo
-      find . \( -name service.yaml -o -name values-shared.yaml \) -exec sed -i "s/LoadBalancer/NodePort/" {} \;
-    fi
-
-    git checkout -b main --quiet
-    git add .
-    git commit -m 'Add GitOps Pipeline and K8s resources' --quiet
-
-    waitForScmManager
-    git push -u "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
-  )
-
-  rm -rf "${TMP_REPO}"
-
-  setDefaultBranch "${TARGET_REPO_SCMM}"
 }
 
 function pushHelmChartRepo() {
@@ -472,38 +374,6 @@ function pushRepoMirror() {
   rm -rf "${TMP_REPO}"
 
   setDefaultBranch "${TARGET_REPO_SCMM}" "${DEFAULT_BRANCH}"
-}
-
-function initRepoWithSource() {
-  echo "initiating repo $1 with source $2"
-  SOURCE_REPO="$1"
-  TARGET_REPO_SCMM="$2"
-  EVAL_IN_REPO="${3-}"
-
-  TMP_REPO=$(mktemp -d)
-
-  git clone "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}"
-  (
-    cd "${TMP_REPO}"
-    cp -r "${PLAYGROUND_DIR}/${SOURCE_REPO}"/* .
-    if [[ ${INTERNAL_SCMM} == false ]]; then
-      replaceAllScmmUrlsInFolder "${TMP_REPO}"
-    fi
-
-    if [[ -n "${EVAL_IN_REPO}" ]]; then
-      eval "${EVAL_IN_REPO}"
-    fi
-
-    git checkout main --quiet || git checkout -b main --quiet
-    git add .
-    git commit -m "Init ${TARGET_REPO_SCMM}" --quiet || true
-    waitForScmManager
-    git push -u "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" HEAD:main --force
-  )
-
-  rm -rf "${TMP_REPO}"
-
-  setDefaultBranch "${TARGET_REPO_SCMM}"
 }
 
 function setDefaultBranch() {
@@ -716,16 +586,10 @@ readParameters() {
   SCMM_URL=""
   SCMM_USERNAME=""
   SCMM_PASSWORD=""
-  KUBECTL_IMAGE=""
-  HELM_IMAGE=""
-  KUBEVAL_IMAGE=""
-  HELMKUBEVAL_IMAGE=""
-  YAMLLINT_IMAGE=""
   INSECURE=false
   TRACE=false
   ASSUME_YES=false
   SKIP_HELM_UPDATE=false
-  DEPLOY_METRICS=false
   ARGOCD_URL=""
   NAME_PREFIX=""
 
@@ -748,11 +612,11 @@ readParameters() {
       --scmm-url           ) SCMM_URL="$2"; shift 2 ;;
       --scmm-username      ) SCMM_USERNAME="$2"; shift 2 ;;
       --scmm-password      ) SCMM_PASSWORD="$2"; shift 2 ;;
-      --kubectl-image      ) KUBECTL_IMAGE="$2"; shift 2 ;;
-      --helm-image         ) HELM_IMAGE="$2"; shift 2 ;;
-      --kubeval-image      ) KUBEVAL_IMAGE="$2"; shift 2 ;;
-      --helmkubeval-image  ) HELMKUBEVAL_IMAGE="$2"; shift 2 ;;
-      --yamllint-image     ) YAMLLINT_IMAGE="$2"; shift 2 ;;
+      --kubectl-image      ) shift 2;; # Ignore, used in groovy only
+      --helm-image         ) shift 2;; # Ignore, used in groovy only
+      --kubeval-image      ) shift 2;; # Ignore, used in groovy only
+      --helmkubeval-image  ) shift 2;; # Ignore, used in groovy only
+      --yamllint-image     ) shift 2;; # Ignore, used in groovy only
       --grafana-image      ) shift 2;; # Ignore, used in groovy only
       --grafana-sidecar-image ) shift 2;; # Ignore, used in groovy only
       --prometheus-image ) shift 2;; # Ignore, used in groovy only
@@ -771,7 +635,7 @@ readParameters() {
       -x | --trace         ) TRACE=true; shift ;;
       -y | --yes           ) ASSUME_YES=true; shift ;;
       --skip-helm-update   ) SKIP_HELM_UPDATE=true; shift ;;
-      --metrics | --monitoring ) DEPLOY_METRICS=true; shift;;
+      --metrics | --monitoring ) shift;; # Ignore, used in groovy only
       --vault              ) shift 2;; # Ignore, used in groovy only
       --                   ) shift; break ;;
     *) break ;;
