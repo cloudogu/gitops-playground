@@ -26,6 +26,7 @@ class ArgoCDTest {
     Map config = [
             application: [
                     remote  : false,
+                    insecure: false,
                     password: '123',
                     username: 'something',
                     namePrefix : '',
@@ -86,7 +87,6 @@ class ArgoCDTest {
     File remotePetClinicRepoTmpDir
     List<ScmmRepo> petClinicRepos = []
     CloneCommand gitCloneMock = mock(CloneCommand.class, RETURNS_DEEP_STUBS)
-    String[] scmmRepoTargets = []
 
     @Test
     void 'Installs argoCD'() {
@@ -147,6 +147,20 @@ class ArgoCDTest {
                 .isEqualTo('LoadBalancer')
         assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['notifications']['argocdUrl'])
                 .isEqualTo( 'https://argo.cd')
+    }
+
+    @Test
+    void 'disables tls verification when using --insecure'() {
+        config.application['insecure'] = true
+
+        createArgoCD().install()
+
+
+        def repositories = parseActualYaml(actualHelmValuesFile)['argo-cd']['configs']['repositories']
+
+        for (def repo in ["argocd", "example-apps", "cluster-resources", "nginx-helm-jenkins", "nginx-helm-umbrella"]) {
+            assertThat(repositories[repo]['insecure']).isEqualTo("true") // must be a string so that it can be passed to `|b64enc`
+        }
     }
 
     @Test

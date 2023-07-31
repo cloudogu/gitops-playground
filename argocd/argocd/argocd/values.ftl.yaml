@@ -50,18 +50,23 @@ argo-cd:
       argocd:
         name: argocd
         url: ${scmm.baseUrl}/repo/${namePrefix}argocd/argocd
+        <#if isInsecure>insecure: "true"</#if>
       example-apps:
         name: example-apps
         url: ${scmm.baseUrl}/repo/${namePrefix}argocd/example-apps
+        <#if isInsecure>insecure: "true"</#if>
       cluster-resources:
         name: cluster-resources
         url: ${scmm.baseUrl}/repo/${namePrefix}argocd/cluster-resources
+        <#if isInsecure>insecure: "true"</#if>
       nginx-helm-jenkins:
         name: nginx-helm-jenkins
         url: ${scmm.baseUrl}/repo/${namePrefix}argocd/nginx-helm-jenkins
+        <#if isInsecure>insecure: "true"</#if>
       nginx-helm-umbrella:
         name: nginx-helm-umbrella
         url: ${scmm.baseUrl}/repo/${namePrefix}argocd/nginx-helm-umbrella
+        <#if isInsecure>insecure: "true"</#if>
       bitnami:
         name: bitnami
         type: helm
