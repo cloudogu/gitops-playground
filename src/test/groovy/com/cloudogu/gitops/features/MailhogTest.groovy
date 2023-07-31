@@ -33,7 +33,6 @@ class MailhogTest {
                     argocd    : [
                             active: false,
                     ],
-                    fluxv2    : false,
                     mail      : [
                             active: true,
                             helm  : [
@@ -85,32 +84,20 @@ class MailhogTest {
         assertThat(new BCryptPasswordEncoder().matches(expectedPassword, actualPasswordBcrypted)).isTrue()
                 .withFailMessage("Expected password does not match actual hash")
     }
-
-    @Test
-    void 'When flux and argocd enabled, mailhog is deployed imperatively via helm'() {
-        config.features['argocd']['active'] = true
-        config.features['fluxv2'] = true
-        
-        createMailhog().install()
-
-        assertMailhogInstalledImperativelyViaHelm()
-    }
     
     @Test
-    void 'When flux enabled, mailhog is deployed imperatively via helm'() {
+    void 'When argocd disabled, mailhog is deployed imperatively via helm'() {
         config.features['argocd']['active'] = false
-        config.features['fluxv2'] = true
-        
+
         createMailhog().install()
 
         assertMailhogInstalledImperativelyViaHelm()
     }
 
     @Test
-    void 'When only argoCD enabled, mailhog is deployed natively via argoCD'() {
+    void 'When argoCD enabled, mailhog is deployed natively via argoCD'() {
         config.features['argocd']['active'] = true
-        config.features['fluxv2'] = false
-        
+
         createMailhog().install()
     }
 

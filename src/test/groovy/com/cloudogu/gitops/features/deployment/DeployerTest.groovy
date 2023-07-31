@@ -16,18 +16,8 @@ class DeployerTest {
     private HelmStrategy helmStrat = mock(HelmStrategy.class)
 
     @Test
-    void 'When flux and argocd enabled, deploys imperatively via helm'() {
-        def deployer = createDeployer(true, true)
-
-        deployer.deployFeature("repoURL", "repoName", "chart", "version", "namespace", "releaseName", Path.of("values.yaml"))
-
-        verify(argoCdStrat, never()).deployFeature(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), any(Path))
-        verify(helmStrat).deployFeature("repoURL", "repoName", "chart", "version", "namespace", "releaseName", Path.of("values.yaml"))
-    }
-
-    @Test
-    void 'When flux enabled, deploys imperatively via helm'() {
-        def deployer = createDeployer(false, true)
+    void 'When argocd disabled, deploys imperatively via helm'() {
+        def deployer = createDeployer(false)
 
         deployer.deployFeature("repoURL", "repoName", "chart", "version", "namespace", "releaseName", Path.of("values.yaml"))
 
@@ -37,8 +27,8 @@ class DeployerTest {
 
 
     @Test
-    void 'When only Argo CD enabled, deploys natively via Argo CD'() {
-        def deployer = createDeployer(true, false)
+    void 'When Argo CD enabled, deploys natively via Argo CD'() {
+        def deployer = createDeployer(true)
 
         deployer.deployFeature("repoURL", "repoName", "chart", "version", "namespace", "releaseName", Path.of("values.yaml"))
 
@@ -46,13 +36,12 @@ class DeployerTest {
         verify(helmStrat, never()).deployFeature(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), any(Path))
     }
 
-    private Deployer createDeployer(boolean argoCDActive, boolean fluxActive) {
+    private Deployer createDeployer(boolean argoCDActive) {
         def config = [
                 features: [
                         argocd: [
                                 active: argoCDActive
                         ],
-                        fluxv2: fluxActive
                 ]
         ]
 

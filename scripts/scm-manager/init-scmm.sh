@@ -26,8 +26,7 @@ function configureScmmManager() {
   # successful, when SCM also sends the Repo URLs using the internal URL
   BASE_URL=${5}
   IS_LOCAL=${6}
-  INSTALL_FLUXV2="${7}"
-  INSTALL_ARGOCD="${8}"
+  INSTALL_ARGOCD="${7}"
 
   GITOPS_USERNAME="${NAME_PREFIX}gitops"
   GITOPS_PASSWORD=${ADMIN_PASSWORD}
@@ -45,15 +44,6 @@ function configureScmmManager() {
   addUser "${GITOPS_USERNAME}" "${GITOPS_PASSWORD}" "changeme@test.local"
   addUser "${METRICS_USERNAME}" "${METRICS_PASSWORD}" "changeme@test.local"
   setPermissionForUser "${METRICS_USERNAME}" "metrics:read"
-
-  ### FluxV2 Repos
-  if [[ $INSTALL_FLUXV2 == true ]]; then
-    addRepo "fluxv2" "gitops"
-    setPermission "fluxv2" "gitops" "${GITOPS_USERNAME}" "WRITE"
-  
-    addRepo "fluxv2" "petclinic-plain"
-    setPermission "fluxv2" "petclinic-plain" "${GITOPS_USERNAME}" "WRITE"
-  fi
 
   ### ArgoCD Repos
   if [[ $INSTALL_ARGOCD == true ]]; then
@@ -161,36 +151,6 @@ function addUser() {
     "${SCMM_PROTOCOL}://${SCMM_USER}:${SCMM_PWD}@${SCMM_HOST}/api/v2/users") && EXIT_STATUS=$? || EXIT_STATUS=$?
   if [ $EXIT_STATUS != 0 ]; then
     echo "Adding User failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
-    exit $EXIT_STATUS
-  fi
-
-  printStatus "${STATUS}"
-}
-
-function setAdmin() {
-  printf 'Setting Admin %s ... ' "${1}"
-
-  STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X PUT -H "Content-Type: application/vnd.scmm-permissionCollection+json;v=2" \
-    --data "{\"permissions\":[\"*\"]}" \
-    "${SCMM_PROTOCOL}://${SCMM_USER}:${SCMM_PWD}@${SCMM_HOST}/api/v2/users/${1}/permissions") && EXIT_STATUS=$? || EXIT_STATUS=$?
-  if [ $EXIT_STATUS != 0 ]; then
-    echo "Setting Admin failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
-    exit $EXIT_STATUS
-  fi
-
-  printStatus "${STATUS}"
-}
-
-function deleteUser() {
-  userToDelete="$1"
-  loginUser="$2"
-  loginPassword="$3"
-  printf 'Deleting User %s ... ' "${userToDelete}"
-
-  STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X DELETE \
-    "${SCMM_PROTOCOL}://${loginUser}:${loginPassword}@${SCMM_HOST}/api/v2/users/${userToDelete}") && EXIT_STATUS=$? || EXIT_STATUS=$?
-  if [ $EXIT_STATUS != 0 ]; then
-    echo "Deleting User failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
     exit $EXIT_STATUS
   fi
 

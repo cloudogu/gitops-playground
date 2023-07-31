@@ -100,10 +100,9 @@ function configureJenkins() {
   REGISTRY_PATH="${7}"
   REGISTRY_USERNAME="${8}"
   REGISTRY_PASSWORD="${9}"
-  INSTALL_FLUXV2="${10}"
-  INSTALL_ARGOCD="${11}"
-  JENKINS_METRICS_USERNAME="${12}"
-  JENKINS_METRICS_PASSWORD="${13}"
+  INSTALL_ARGOCD="${10}"
+  JENKINS_METRICS_USERNAME="${11}"
+  JENKINS_METRICS_PASSWORD="${12}"
 
   waitForJenkins
 
@@ -147,12 +146,6 @@ function configureJenkins() {
   grantPermission "${JENKINS_METRICS_USERNAME}" "METRICS_VIEW"
   enablePrometheusAuthentication
 
-
-  if [[ $INSTALL_FLUXV2 == true ]]; then
-    createJob "fluxv2-example-apps" "${SCMM_URL}" "fluxv2" "scmm-user"
-    createCredentials "scmm-user" "${NAME_PREFIX}gitops" "${SCMM_PASSWORD}" "credentials for accessing scm-manager" "fluxv2-example-apps"
-    createCredentials "registry-user" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}" "credentials for accessing the docker-registry" "fluxv2-example-apps"
-  fi
   if [[ $INSTALL_ARGOCD == true ]]; then
     createJob "${NAME_PREFIX}example-apps" "${SCMM_URL}" "${NAME_PREFIX}argocd" "scmm-user"
     createCredentials "scmm-user" "${NAME_PREFIX}gitops" "${SCMM_PASSWORD}" "credentials for accessing scm-manager" "${NAME_PREFIX}example-apps"

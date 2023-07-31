@@ -84,7 +84,6 @@ class ApplicationConfigurator {
             ]
             ,
             features   : [
-                    fluxv2    : true,
                     argocd    : [
                             active    : true,
                             url       : ''
