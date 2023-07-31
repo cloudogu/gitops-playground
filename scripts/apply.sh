@@ -8,8 +8,7 @@ export ABSOLUTE_BASEDIR
 PLAYGROUND_DIR="$(cd ${BASEDIR} && cd .. && pwd)"
 export PLAYGROUND_DIR
 
-# When updating, update in ApplicationConfigurator.groovy as well 
-PETCLINIC_COMMIT=32c8653
+# When updating, update in ApplicationConfigurator.groovy as well
 SPRING_BOOT_HELM_CHART_COMMIT=0.3.1
 K8S_VERSION=1.25.4
 
@@ -25,17 +24,7 @@ INTERNAL_REGISTRY=true
 JENKINS_URL_FOR_SCMM="http://jenkins"
 SCMM_URL_FOR_JENKINS="http://scmm-scm-manager/scm"
 
-# When updating please also adapt in Dockerfile, vars.tf, ApplicationConfigurator.groovy and init-cluster.sh
-# Find and replace with this regex, e.g. ghcr.io/cloudogu/helm:([\d\.-]*)*
-KUBECTL_DEFAULT_IMAGE="lachlanevenson/k8s-kubectl:v${K8S_VERSION}"
-HELM_DEFAULT_IMAGE='ghcr.io/cloudogu/helm:3.10.3-1'
-YAMLLINT_DEFAULT_IMAGE='cytopia/yamllint:1.25-0.7'
-# cloudogu/helm also contains kubeval and helm kubeval plugin. Using the same image makes builds faster
-KUBEVAL_DEFAULT_IMAGE=${HELM_DEFAULT_IMAGE}
-HELMKUBEVAL_DEFAULT_IMAGE=${HELM_DEFAULT_IMAGE}
-
 SPRING_BOOT_HELM_CHART_REPO=${SPRING_BOOT_HELM_CHART_REPO:-'https://github.com/cloudogu/spring-boot-helm-chart.git'}
-SPRING_PETCLINIC_REPO=${SPRING_PETCLINIC_REPO:-'https://github.com/cloudogu/spring-petclinic.git'}
 GITOPS_BUILD_LIB_REPO=${GITOPS_BUILD_LIB_REPO:-'https://github.com/cloudogu/gitops-build-lib.git'}
 CES_BUILD_LIB_REPO=${CES_BUILD_LIB_REPO:-'https://github.com/cloudogu/ces-build-lib.git'}
 
@@ -134,11 +123,7 @@ function main() {
     initSCMMVars
     evalWithSpinner "Starting SCM-Manager..." initSCMM
 
-    if [[ $INSTALL_FLUXV2 == true ]]; then
-      evalWithSpinner "Starting Flux V2..." initFluxV2
-    fi
-
-    initJenkins
+    initJenkinsfi
   fi
 
   if [[ $TRACE == true ]]; then
@@ -216,15 +201,11 @@ function applyBasicK8sResources() {
   kubectl create namespace "${NAME_PREFIX}argocd" || true
   kubectl create namespace "${NAME_PREFIX}example-apps-production" || true
   kubectl create namespace "${NAME_PREFIX}example-apps-staging" || true
-  kubectl create namespace "flux-system" || true
-  kubectl create namespace "fluxv2-production" || true
-  kubectl create namespace "fluxv2-staging" || true
   kubectl create namespace "${NAME_PREFIX}monitoring" || true
   kubectl create namespace "${NAME_PREFIX}secrets" || true
 
   createSecrets
 
-  helm repo add fluxcd https://charts.fluxcd.io
   helm repo add stable https://charts.helm.sh/stable
   helm repo add scm-manager https://packages.scm-manager.org/repository/helm-v2-releases/
   helm repo add jenkins https://charts.jenkins.io
@@ -259,7 +240,7 @@ function initJenkins() {
   configureJenkinsCommand=(configureJenkins "${JENKINS_URL}" "${JENKINS_USERNAME}" "${JENKINS_PASSWORD}"
     "${SCMM_URL_FOR_JENKINS}" "${SCMM_PASSWORD}" "${REGISTRY_URL}"
     "${REGISTRY_PATH}" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}"
-    "${INSTALL_FLUXV2}" "${INSTALL_ARGOCD}")
+    "${INSTALL_ARGOCD}")
 
   evalWithSpinner "Configuring Jenkins..." "${configureJenkinsCommand[@]}"
 }
@@ -287,7 +268,7 @@ function initSCMM() {
   # They contain Repository URLs create with BASE_URL. Jenkins uses the internal URL for repos. So match is only
   # successful, when SCM also sends the Repo URLs using the internal URL
   configureScmmManager "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "${SCMM_URL}" "${JENKINS_URL_FOR_SCMM}" \
-    "${SCMM_URL_FOR_JENKINS}" "${INTERNAL_SCMM}" "${INSTALL_FLUXV2}" "${INSTALL_ARGOCD}"
+    "${SCMM_URL_FOR_JENKINS}" "${INTERNAL_SCMM}" "${INSTALL_ARGOCD}"
 
   pushHelmChartRepo "3rd-party-dependencies/spring-boot-helm-chart"
   pushHelmChartRepoWithDependency "3rd-party-dependencies/spring-boot-helm-chart-with-dependency"
@@ -311,116 +292,12 @@ function setExternalHostnameIfNecessary() {
   fi
 }
 
-function initFluxV2() {
-  pushPetClinicRepo 'applications/fluxv2/petclinic/plain-k8s' "fluxv2/petclinic-plain"
-
-  initRepoWithSource 'fluxv2' "fluxv2/gitops"
-
-  REPOSITORY_YAML_PATH="fluxv2/clusters/gitops-playground/flux-system/gotk-sync.yaml"
-  if [[ ${INTERNAL_SCMM} == false ]]; then
-    REPOSITORY_YAML_PATH="$(mkTmpWithReplacedScmmUrls "fluxv2/clusters/gitops-playground/flux-system/gotk-sync.yaml")"
-  fi
-
-  kubectl apply -f fluxv2/clusters/gitops-playground/flux-system/gotk-components.yaml || true
-  kubectl apply -f "${REPOSITORY_YAML_PATH}" || true
-  kubectl apply -f fluxv2/clusters/gitops-playground/flux-system/gotk-kustomization.yaml || true
-}
-
-function replaceAllScmmUrlsInFolder() {
-  CURRENT_DIR="${1}"
-
-  while IFS= read -r -d '' file; do
-    # shellcheck disable=SC2091
-    # We want to execute this here
-    $(buildScmmUrlReplaceCmd "$file" "-i")
-  done < <(find "${CURRENT_DIR}" -name '*.yaml' -print0)
-}
-
-function buildScmmUrlReplaceCmd() {
-  TARGET_FILE="${1}"
-  SED_PARAMS="${2:-""}"
-  echo 'sed '"${SED_PARAMS}"' -e '"s:http\\://scmm-scm-manager.default.svc.cluster.local/scm:${SCMM_PROTOCOL}\\://${SCMM_HOST}:g ${TARGET_FILE}"
-}
-
-function mkTmpWithReplacedScmmUrls() {
-  REPLACE_FILE="${1}"
-  TMP_FILENAME=$(mktemp /tmp/scmm-replace.XXXXXX)
-
-  # shellcheck disable=SC2091
-  # We want to execute this here
-  $(buildScmmUrlReplaceCmd "${REPLACE_FILE}") >"${TMP_FILENAME}"
-
-  echo "${TMP_FILENAME}"
-}
-
-function replaceAllImagesInJenkinsfile() {
-  JENKINSFILE_PATH="${1}"
-
-  replaceImageIfSet "$JENKINSFILE_PATH" 'kubectl' "$KUBECTL_DEFAULT_IMAGE" "$KUBECTL_IMAGE"
-  replaceImageIfSet "$JENKINSFILE_PATH" 'helm' "$HELM_DEFAULT_IMAGE" "$HELM_IMAGE"
-  replaceImageIfSet "$JENKINSFILE_PATH" 'kubeval' "$KUBEVAL_DEFAULT_IMAGE" "$KUBEVAL_IMAGE"
-  replaceImageIfSet "$JENKINSFILE_PATH" 'helmKubeval' "$HELMKUBEVAL_DEFAULT_IMAGE" "$HELMKUBEVAL_IMAGE"
-  replaceImageIfSet "$JENKINSFILE_PATH" 'yamllint' "$YAMLLINT_DEFAULT_IMAGE" "$YAMLLINT_IMAGE"
-}
-
-function replaceImageIfSet() {
-  JENKINSFILE_PATH="${1}"
-  IMAGE_KEY="${2}"
-  DEFAULT_IMAGE="${3}"
-  SET_IMAGE="${4:-""}"
-
-  if [[ -n "${SET_IMAGE}" ]]; then
-    FROM_IMAGE_STRING="$IMAGE_KEY: '$DEFAULT_IMAGE'"
-    TO_IMAGE_STRING="$IMAGE_KEY: '$SET_IMAGE'"
-    sed -i -e "s%${FROM_IMAGE_STRING}%${TO_IMAGE_STRING}%g" "${JENKINSFILE_PATH}"
-  fi
-}
-
 function createSecrets() {
   createSecret gitops-scmm --from-literal="USERNAME=${NAME_PREFIX}gitops" --from-literal=PASSWORD=$SET_PASSWORD -n default
-  # flux needs lowercase fieldnames
-  createSecret flux-system --from-literal="username=${NAME_PREFIX}gitops" --from-literal=password=$SET_PASSWORD -n flux-system
 }
 
 function createSecret() {
   kubectl create secret generic "$@" --dry-run=client -oyaml | kubectl apply -f-
-}
-
-function pushPetClinicRepo() {
-  LOCAL_PETCLINIC_SOURCE="$1"
-  TARGET_REPO_SCMM="$2"
-
-  TMP_REPO=$(mktemp -d)
-
-  git clone -n "${SPRING_PETCLINIC_REPO}" "${TMP_REPO}" --quiet >/dev/null 2>&1
-  (
-    cd "${TMP_REPO}"
-    # Checkout a defined commit in order to get a deterministic result
-    git checkout ${PETCLINIC_COMMIT} --quiet
-
-    cp -r "${PLAYGROUND_DIR}/${LOCAL_PETCLINIC_SOURCE}"/* .
-
-    replaceAllImagesInJenkinsfile "${TMP_REPO}/Jenkinsfile"
-
-    sed -i "s/env.REGISTRY_URL/env.${NAME_PREFIX_ENVIRONMENT_VARS}REGISTRY_URL/g" "${TMP_REPO}/Jenkinsfile"
-    sed -i "s/env.REGISTRY_PATH/env.${NAME_PREFIX_ENVIRONMENT_VARS}REGISTRY_PATH/g" "${TMP_REPO}/Jenkinsfile"
-
-    if [[ $REMOTE_CLUSTER != true ]]; then
-      # Set NodePort service, to avoid "Pending" services and "Processing" state in argo
-      find . \( -name service.yaml -o -name values-shared.yaml \) -exec sed -i "s/LoadBalancer/NodePort/" {} \;
-    fi
-
-    git checkout -b main --quiet
-    git add .
-    git commit -m 'Add GitOps Pipeline and K8s resources' --quiet
-
-    waitForScmManager
-    git push -u "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
-  )
-
-  rm -rf "${TMP_REPO}"
-
-  setDefaultBranch "${TARGET_REPO_SCMM}"
 }
 
 function pushHelmChartRepo() {
@@ -500,38 +377,6 @@ function pushRepoMirror() {
   setDefaultBranch "${TARGET_REPO_SCMM}" "${DEFAULT_BRANCH}"
 }
 
-function initRepoWithSource() {
-  echo "initiating repo $1 with source $2"
-  SOURCE_REPO="$1"
-  TARGET_REPO_SCMM="$2"
-  EVAL_IN_REPO="${3-}"
-
-  TMP_REPO=$(mktemp -d)
-
-  git clone "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" "${TMP_REPO}"
-  (
-    cd "${TMP_REPO}"
-    cp -r "${PLAYGROUND_DIR}/${SOURCE_REPO}"/* .
-    if [[ ${INTERNAL_SCMM} == false ]]; then
-      replaceAllScmmUrlsInFolder "${TMP_REPO}"
-    fi
-
-    if [[ -n "${EVAL_IN_REPO}" ]]; then
-      eval "${EVAL_IN_REPO}"
-    fi
-
-    git checkout main --quiet || git checkout -b main --quiet
-    git add .
-    git commit -m "Init ${TARGET_REPO_SCMM}" --quiet || true
-    waitForScmManager
-    git push -u "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" HEAD:main --force
-  )
-
-  rm -rf "${TMP_REPO}"
-
-  setDefaultBranch "${TARGET_REPO_SCMM}"
-}
-
 function setDefaultBranch() {
   TARGET_REPO_SCMM="$1"
   DEFAULT_BRANCH="${2:-main}"
@@ -588,9 +433,6 @@ function printWelcomeScreen() {
   echo "| See here:"
   echo "|"
 
-  if [[ $INSTALL_FLUXV2 == true ]]; then
-    echo -e "| - \e[32m${SCMM_URL}/repos/fluxv2/\e[0m"
-  fi
   if [[ $INSTALL_ARGOCD == true ]]; then
     echo -e "| - \e[32m${SCMM_URL}/repos/${NAME_PREFIX}argocd/\e[0m"
   fi
@@ -602,9 +444,6 @@ function printWelcomeScreen() {
   echo "| namespace via the jenkins UI:"
   echo "|"
 
-  if [[ $INSTALL_FLUXV2 == true ]]; then
-    echo -e "| - \e[32m${JENKINS_URL}/job/fluxv2-example-apps/\e[0m"
-  fi
   if [[ $INSTALL_ARGOCD == true ]]; then
     echo -e "| - \e[32m${JENKINS_URL}/job/${NAME_PREFIX}example-apps/\e[0m"
   fi
@@ -612,8 +451,6 @@ function printWelcomeScreen() {
   echo "| During the job, jenkins pushes into the corresponding GitOps repo and creates a pull"
   echo "| request for production:"
   echo "|"
-
-  printWelcomeScreenFluxV2
 
   printWelcomeScreenArgocd
 
@@ -626,16 +463,6 @@ function printWelcomeScreen() {
   echo "| Please see the README.md for how to find out the URLs of the individual applications."
   echo "|"
   echo "|----------------------------------------------------------------------------------------------|"
-}
-
-function printWelcomeScreenFluxV2() {
-  if [[ $INSTALL_FLUXV2 == true ]]; then
-    echo "| For Flux V2:"
-    echo "|"
-    echo -e "| - GitOps repo: \e[32m${SCMM_URL}/repo/fluxv2/gitops/code/sources/main/\e[0m"
-    echo -e "| - Pull requests: \e[32m${SCMM_URL}/repo/fluxv2/gitops/pull-requests\e[0m"
-    echo "|"
-  fi
 }
 
 function printWelcomeScreenArgocd() {
@@ -657,7 +484,7 @@ function printWelcomeScreenArgocd() {
 }
 
 function printUsage() {
-  echo "This script will install all necessary resources for Flux V2 and ArgoCD into your k8s-cluster."
+  echo "This script will install all necessary resources for ArgoCD into your k8s-cluster."
   echo ""
   printParameters
   echo ""
@@ -669,7 +496,6 @@ function printParameters() {
   echo " -h | --help     >> Help screen"
   echo
   echo "Install only the desired GitOps operators. Multiple selections possible."
-  echo "    | --fluxv2   >> Install the Flux V2"
   echo "    | --argocd   >> Install the ArgoCD"
   echo
   echo "    | --remote   >> Install on remote Cluster e.g. gcp"
@@ -734,7 +560,7 @@ function printParameters() {
 readParameters() {
   COMMANDS=$(getopt \
     -o hdxyc \
-    --long help,fluxv2,argocd,argocd-url:,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,grafana-image:,grafana-sidecar-image:,prometheus-image:,prometheus-operator-image:,prometheus-config-reloader-image:,external-secrets-image:,external-secrets-certcontroller-image:,external-secrets-webhook-image:,vault-image:,nginx-image:,trace,insecure,yes,skip-helm-update,destroy,metrics,monitoring,vault:,name-prefix: \
+    --long help,argocd,argocd-url:,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,grafana-image:,grafana-sidecar-image:,prometheus-image:,prometheus-operator-image:,prometheus-config-reloader-image:,external-secrets-image:,external-secrets-certcontroller-image:,external-secrets-webhook-image:,vault-image:,nginx-image:,trace,insecure,yes,skip-helm-update,destroy,metrics,monitoring,vault:,name-prefix: \
     -- "$@")
   
   if [ $? != 0 ]; then
@@ -745,7 +571,6 @@ readParameters() {
   eval set -- "$COMMANDS"
   
   DEBUG=false
-  INSTALL_FLUXV2=false
   INSTALL_ARGOCD=false
   REMOTE_CLUSTER=false
   SET_USERNAME="admin"
@@ -761,11 +586,6 @@ readParameters() {
   SCMM_URL=""
   SCMM_USERNAME=""
   SCMM_PASSWORD=""
-  KUBECTL_IMAGE=""
-  HELM_IMAGE=""
-  KUBEVAL_IMAGE=""
-  HELMKUBEVAL_IMAGE=""
-  YAMLLINT_IMAGE=""
   INSECURE=false
   TRACE=false
   ASSUME_YES=false
@@ -778,7 +598,6 @@ readParameters() {
   while true; do
     case "$1" in
       -h | --help          ) printUsage; exit 0 ;;
-      --fluxv2             ) INSTALL_FLUXV2=true; shift ;;
       --argocd             ) INSTALL_ARGOCD=true; shift ;;
       --argocd-url         ) ARGOCD_URL="$2"; shift 2 ;;
       --remote             ) REMOTE_CLUSTER=true; shift ;;
@@ -793,11 +612,11 @@ readParameters() {
       --scmm-url           ) SCMM_URL="$2"; shift 2 ;;
       --scmm-username      ) SCMM_USERNAME="$2"; shift 2 ;;
       --scmm-password      ) SCMM_PASSWORD="$2"; shift 2 ;;
-      --kubectl-image      ) KUBECTL_IMAGE="$2"; shift 2 ;;
-      --helm-image         ) HELM_IMAGE="$2"; shift 2 ;;
-      --kubeval-image      ) KUBEVAL_IMAGE="$2"; shift 2 ;;
-      --helmkubeval-image  ) HELMKUBEVAL_IMAGE="$2"; shift 2 ;;
-      --yamllint-image     ) YAMLLINT_IMAGE="$2"; shift 2 ;;
+      --kubectl-image      ) shift 2;; # Ignore, used in groovy only
+      --helm-image         ) shift 2;; # Ignore, used in groovy only
+      --kubeval-image      ) shift 2;; # Ignore, used in groovy only
+      --helmkubeval-image  ) shift 2;; # Ignore, used in groovy only
+      --yamllint-image     ) shift 2;; # Ignore, used in groovy only
       --grafana-image      ) shift 2;; # Ignore, used in groovy only
       --grafana-sidecar-image ) shift 2;; # Ignore, used in groovy only
       --prometheus-image ) shift 2;; # Ignore, used in groovy only
@@ -816,7 +635,7 @@ readParameters() {
       -x | --trace         ) TRACE=true; shift ;;
       -y | --yes           ) ASSUME_YES=true; shift ;;
       --skip-helm-update   ) SKIP_HELM_UPDATE=true; shift ;;
-      --metrics | --monitoring ) DEPLOY_METRICS=true; shift;;
+      --metrics | --monitoring ) shift;; # Ignore, used in groovy only
       --vault              ) shift 2;; # Ignore, used in groovy only
       --destroy            ) DESTROY=true; shift;; #
       --                   ) shift; break ;;

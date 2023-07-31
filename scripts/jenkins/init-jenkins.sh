@@ -92,9 +92,8 @@ function configureJenkins() {
   REGISTRY_PATH="${7}"
   REGISTRY_USERNAME="${8}"
   REGISTRY_PASSWORD="${9}"
-  INSTALL_FLUXV2="${10}"
-  INSTALL_ARGOCD="${11}"
-  
+  INSTALL_ARGOCD="${10}"
+
   waitForJenkins
 
   if [[ -z "${JENKINS_PLUGIN_FOLDER}" ]]; then
@@ -107,7 +106,7 @@ function configureJenkins() {
   fi 
 
   echo "Installing Jenkins Plugins from ${pluginFolder}"
-  for pluginFile in "${pluginFolder}/plugins"/*; do 
+  for pluginFile in "${pluginFolder}/plugins"/*; do
      installPlugin "${pluginFile}"
   done
 
@@ -133,12 +132,10 @@ function configureJenkins() {
   setGlobalProperty "${NAME_PREFIX_ENVIRONMENT_VARS}REGISTRY_PATH" "${REGISTRY_PATH}"
   setGlobalProperty "${NAME_PREFIX_ENVIRONMENT_VARS}K8S_VERSION" "${K8S_VERSION}"
 
+  createUser "${JENKINS_METRICS_USERNAME}" "${JENKINS_METRICS_PASSWORD}"
+  grantPermission "${JENKINS_METRICS_USERNAME}" "METRICS_VIEW"
+  enablePrometheusAuthentication
 
-  if [[ $INSTALL_FLUXV2 == true ]]; then
-    createJob "fluxv2-example-apps" "${SCMM_URL}" "fluxv2" "scmm-user"
-    createCredentials "scmm-user" "${NAME_PREFIX}gitops" "${SCMM_PASSWORD}" "credentials for accessing scm-manager" "fluxv2-example-apps"
-    createCredentials "registry-user" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}" "credentials for accessing the docker-registry" "fluxv2-example-apps"
-  fi
   if [[ $INSTALL_ARGOCD == true ]]; then
     createJob "${NAME_PREFIX}example-apps" "${SCMM_URL}" "${NAME_PREFIX}argocd" "scmm-user"
     createCredentials "scmm-user" "${NAME_PREFIX}gitops" "${SCMM_PASSWORD}" "credentials for accessing scm-manager" "${NAME_PREFIX}example-apps"

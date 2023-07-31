@@ -6,7 +6,6 @@
 !exercises/
 !argocd/
 !docker-registry/
-!fluxv2/
 !jenkins/
 !scm-manager/
 !scripts/jenkins/

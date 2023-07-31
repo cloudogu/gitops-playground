@@ -29,12 +29,10 @@ bash <(curl -s \
   && sleep 2 && docker run --rm -it --pull=always -u $(id -u) \
     -v ~/.k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     --net=host \
-    ghcr.io/cloudogu/gitops-playground --yes --argocd --fluxv2
+    ghcr.io/cloudogu/gitops-playground --yes --argocd
 ```
 
-This command will also print URLs of the [applications](#applications) inside the cluster to get you started.  
-Note that you can also use only one of `--argocd` or `--fluxv2` to select specific operators. This will also speed up
-the progress.
+This command will also print URLs of the [applications](#applications) inside the cluster to get you started.
 
 We recommend running this command as an unprivileged user, that is inside the [docker group](https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user).
 
@@ -210,11 +208,10 @@ docker run --rm ghcr.io/cloudogu/gitops-playground --help
 ##### Deploy GitOps operators
 
 * `--argocd` - deploy Argo CD GitOps operator
-* `--fluxv2` - deploy Flux v2 GitOps operator
 
 > ⚠️ **Note** that switching between operators is not supported.  
 That is, expect errors (for example with cluster-resources) if you apply the playground once with Argo CD and the next
-time with Flux. We recommend resetting the cluster with `init-cluster.sh` beforehand.
+time without it. We recommend resetting the cluster with `init-cluster.sh` beforehand.
 
 ##### Deploy with local Cloudogu Ecosystem
 
@@ -486,20 +483,6 @@ The playground installs cluster-resources (like prometheus, grafana, vault, exte
 When installing Argo CD *and* Flux, the tools are installed using helm imperatively, we fall back to using imperative 
 helm installation as kind of neutral ground.
 
-### Flux
-
-Flux does not come with a UI out of the box. So if you want to communicate it, the `flux` CLI is the best option.
-
-For Flux, the playground implements a [monorepo pattern](https://github.com/cloudogu/gitops-patterns/tree/789d300#repository-structure),
-that adheres to the repo structure created by the `flux` CLI:
-
-![fluxv2-repo structure](docs/fluxv2-repo.svg)
-
-The position of the apps does not completely adhere to the
-[recommended repo structure](https://fluxcd.io/flux/guides/repository-structure/), though. See also [#109](https://github.com/cloudogu/gitops-playground/issues/109).
-
-For upgrading Flux, see the [Readme of the flux repository](fluxv2/README.md)
-
 ### Jenkins
 
 Jenkins is available at
@@ -665,7 +648,7 @@ All applications are deployed via separated application and GitOps repos:
 
 ![](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/k8s-diagrams/cdd6bb77/diagrams/gitops-with-app-repo.puml&fmt=png)
 
-* Separation of app repo (e.g. `petclinic-plain`) and GitOps repo (e.g. `argocd/example-app` or `fluxv2/gitops`)
+* Separation of app repo (e.g. `petclinic-plain`) and GitOps repo (e.g. `argocd/example-app`)
 * Config is maintained in app repo,
 * CI Server writes to GitOps repo and creates PullRequests.
 
@@ -687,19 +670,6 @@ Note that for ArgoCD the GitOps-related logic is implemented in the
 Please note that it might take about a minute after the pull request has been accepted for the GitOps operator to start
 deploying.
 Alternatively you can trigger the deployment via the respective GitOps operator's CLI (flux) or UI (Argo CD)
-
-#### Flux V2
-
-##### PetClinic with plain k8s resources
-
-[Jenkinsfile](applications/petclinic/fluxv2/plain-k8s/Jenkinsfile)
-
-* Staging
-    * local: [localhost:30010](http://localhost:30010)
-    * remote: `scripts/get-remote-url spring-petclinic-plain fluxv2-staging`
-* Production
-    * local: [localhost:30011](http://localhost:30011)
-    * remote: `scripts/get-remote-url spring-petclinic-plain fluxv2-production`
 
 #### Argo CD
 

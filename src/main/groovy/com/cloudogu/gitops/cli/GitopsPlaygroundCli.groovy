@@ -121,8 +121,6 @@ class GitopsPlaygroundCli  implements Runnable {
 
 
     // args group operator
-    @Option(names = ['--fluxv2'], description = 'Install Flux V2')
-    private boolean fluxv2
     @Option(names = ['--argocd'], description = 'Install ArgoCD ')
     private boolean argocd
     @Option(names = ['--argocd-url'], description = 'The URL where argocd is accessible. It has to be the full URL with http:// or https://')
@@ -206,7 +204,6 @@ class GitopsPlaygroundCli  implements Runnable {
                         nginx      : nginxImage,
                 ],
                 features    : [
-                        fluxv2 : fluxv2,
                         argocd : [
                                 active    : argocd,
                                 url       : argocdUrl

@@ -56,7 +56,9 @@ class ApplicationConfigurator {
                     namePrefixForEnvVars    : '',
             ],
             images     : [
+                    // When updating please also adapt in Dockerfile, vars.tf, apply.sh and init-cluster.sh
                     kubectl    : "lachlanevenson/k8s-kubectl:v1.25.4",
+                    // cloudogu/helm also contains kubeval and helm kubeval plugin. Using the same image makes builds faster
                     helm       : HELM_IMAGE,
                     kubeval    : HELM_IMAGE,
                     helmKubeval: HELM_IMAGE,
@@ -82,7 +84,6 @@ class ApplicationConfigurator {
             ]
             ,
             features   : [
-                    fluxv2    : true,
                     argocd    : [
                             active    : true,
                             url       : ''
