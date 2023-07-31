@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test
 import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
+import static org.mockito.ArgumentMatchers.anyString
 import static org.mockito.Mockito.mock
 import static org.mockito.Mockito.when 
 
@@ -58,6 +59,11 @@ class ApplicationConfiguratorTest {
         testLogger = new TestLogger(applicationConfigurator.getClass())
         when(fileSystemUtils.getRootDir()).thenReturn("/test")
         when(fileSystemUtils.getLineFromFile("/test/scm-manager/values.yaml", "nodePort:")).thenReturn("nodePort: 9091")
+        when(fileSystemUtils.getLineFromFile("/test/jenkins/values.yaml", "nodePort:")).thenReturn("nodePort: 9090")
+
+        when(networkingUtils.createUrl(anyString(), anyString(), anyString())).thenCallRealMethod()
+        when(networkingUtils.createUrl(anyString(), anyString())).thenCallRealMethod()
+        when(networkingUtils.findClusterBindAddress()).thenReturn("localhost")
     }
 
     @Test
@@ -85,6 +91,30 @@ class ApplicationConfiguratorTest {
         assertThat(actualConfig['features']['secrets']['externalSecrets']).isNotNull()
         // Dynamic vaule (depends on vault mode)
         assertThat(actualConfig['features']['secrets']['active']).isEqualTo(true)
+    }
+
+    @Test
+    void "uses k8s services for jenkins and scmm if running as k8s job"() {
+        testConfig.jenkins['url'] = ''
+        testConfig.scmm['url'] = ''
+
+        withEnvironmentVariable("KUBERNETES_SERVICE_HOST", "127.0.0.1").execute {
+            Map actualConfig = applicationConfigurator.setConfig(testConfig)
+
+            assertThat(actualConfig.scmm['url']).isEqualTo("http://scmm-scm-manager.default.svc.cluster.local:80/scm")
+            assertThat(actualConfig.jenkins['url']).isEqualTo("http://jenkins.default.svc.cluster.local:80")
+        }
+    }
+
+    @Test
+    void "uses default localhost url for jenkins and scmm if nothing specified"() {
+        testConfig.jenkins['url'] = ''
+        testConfig.scmm['url'] = ''
+
+        Map actualConfig = applicationConfigurator.setConfig(testConfig)
+
+        assertThat(actualConfig.scmm['url']).isEqualTo("http://localhost:9091/scm")
+        assertThat(actualConfig.jenkins['url']).isEqualTo("http://localhost:9090")
     }
 
     /**

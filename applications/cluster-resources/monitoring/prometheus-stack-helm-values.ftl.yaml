@@ -65,7 +65,6 @@ kubeProxy:
 alertmanager:
   enabled: false
 grafana:
-  defaultDashboardsEnabled: false
   adminUser: admin
   adminPassword: admin
   service:
@@ -96,7 +95,7 @@ grafana:
   env:
     GF_SMTP_ENABLED: true
     GF_SMTP_FROM_ADDRESS: grafana-alerts@cloudogu.com
-    GF_SMTP_HOST: mailhog.${namePrefix}monitoring.svc.cluster.local:1025
+    GF_SMTP_HOST: mailhog.monitoring.svc.cluster.local:1025
 
   resources:
     limits:
@@ -115,23 +114,3 @@ prometheus:
       requests:
         cpu: 50m
         memory: 450Mi
-    secrets:
-      - prometheus-metrics-creds-scmm
-      - prometheus-metrics-creds-jenkins
-    additionalScrapeConfigs:
-      - job_name: 'scm-manager'
-        static_configs:
-          - targets: [ '${scmm.host}' ]
-        scheme: ${scmm.protocol}
-        metrics_path: '${scmm.path}'
-        basic_auth:
-          username: '${namePrefix}metrics'
-          password_file: '/etc/prometheus/secrets/prometheus-metrics-creds-scmm/password'
-      - job_name: 'jenkins'
-        static_configs:
-          - targets: [ '${jenkins.host}' ]
-        scheme: ${jenkins.protocol}
-        metrics_path: '${jenkins.path}'
-        basic_auth:
-          username: '${jenkins.metricsUsername}'
-          password_file: '/etc/prometheus/secrets/prometheus-metrics-creds-jenkins/password'

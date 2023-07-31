@@ -32,9 +32,7 @@ class ApplicationConfigurator {
                     url     : '',
                     username: DEFAULT_ADMIN_USER,
                     password: DEFAULT_ADMIN_PW,
-                    urlForScmm: "http://jenkins",
-                    metricsUsername: 'metrics',
-                    metricsPassword: 'metrics',
+                    urlForScmm: "http://jenkins"
             ],
             scmm       : [
                     internal: true, // Set dynamically
@@ -204,8 +202,14 @@ class ApplicationConfigurator {
             log.debug("Setting external jenkins config")
             newConfig.jenkins["internal"] = false
             newConfig.jenkins["urlForScmm"] = newConfig.jenkins["url"] 
+        } else if (newConfig.application["runningInsideK8s"]) {
+            log.debug("Setting jenkins url to k8s service, since installation is running inside k8s")
+            newConfig.jenkins["url"] = networkingUtils.createUrl("jenkins.default.svc.cluster.local", "80")
+        } else {
+            log.debug("Setting internal jenkins configs")
+            def port = fileSystemUtils.getLineFromFile(fileSystemUtils.getRootDir() + "/jenkins/values.yaml", "nodePort:").findAll(/\d+/)*.toString().get(0)
+            String cba = newConfig.application["clusterBindAddress"]
+            newConfig.jenkins["url"] = networkingUtils.createUrl(cba, port)
         }
-
-        // TODO missing external config (see setScmmConfig())
     }
 }

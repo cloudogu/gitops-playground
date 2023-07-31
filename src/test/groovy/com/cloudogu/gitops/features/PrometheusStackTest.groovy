@@ -5,9 +5,7 @@ import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.HelmClient
-import com.cloudogu.gitops.utils.K8sClient
 import groovy.yaml.YamlSlurper
-import jakarta.inject.Provider
 import org.junit.jupiter.api.Test
 
 import java.nio.file.Path
@@ -17,16 +15,6 @@ import static org.assertj.core.api.Assertions.assertThat
 class PrometheusStackTest {
 
     Map config = [
-            scmm: [
-                    internal: true,
-                    host: '',
-                    protocol: 'http',
-            ],
-            jenkins: [
-                    internal: true,
-                    metricsUsername: 'metrics',
-                    metricsPassword: 'metrics',
-            ],
             application: [
                     username: 'abc',
                     password: '123',
@@ -44,9 +32,8 @@ class PrometheusStackTest {
                     ]
             ],
     ]
-    CommandExecutorForTest helmCommandExecutor = new CommandExecutorForTest()
-    CommandExecutorForTest k8sCommandExecutor = new CommandExecutorForTest()
-    HelmClient helmClient = new HelmClient(helmCommandExecutor)
+    CommandExecutorForTest commandExecutor = new CommandExecutorForTest()
+    HelmClient helmClient = new HelmClient(commandExecutor)
     Path temporaryYamlFile = null
 
     @Test
@@ -54,8 +41,6 @@ class PrometheusStackTest {
         config['features']['monitoring']['active'] = false
         createStack().install()
         assertThat(temporaryYamlFile).isNull()
-        assertThat(k8sCommandExecutor.actualCommands).isEmpty()
-        assertThat(helmCommandExecutor.actualCommands).isEmpty()
     }
 
     @Test
@@ -82,53 +67,6 @@ class PrometheusStackTest {
         createStack().install()
 
         assertThat(parseActualStackYaml()['grafana']['service']['type']).isEqualTo('NodePort')
-    }
-
-    @Test
-    void 'uses remote scmm url if requested'() {
-        config.scmm["internal"] = false
-        config.scmm["url"] = 'https://localhost:9091/scm'
-        createStack().install()
-
-
-        def additionalScrapeConfigs = parseActualStackYaml()['prometheus']['prometheusSpec']['additionalScrapeConfigs'] as List
-        assertThat(((additionalScrapeConfigs[0]['static_configs'] as List)[0]['targets'] as List)[0]).isEqualTo('localhost:9091')
-        assertThat(additionalScrapeConfigs[0]['metrics_path']).isEqualTo('/scm/api/v2/metrics/prometheus')
-        assertThat(additionalScrapeConfigs[0]['scheme']).isEqualTo('https')
-
-        // scrape config for jenkins is unchanged
-        assertThat(((additionalScrapeConfigs[1]['static_configs'] as List)[0]['targets'] as List)[0]).isEqualTo('jenkins.default.svc.cluster.local')
-        assertThat(additionalScrapeConfigs[1]['scheme']).isEqualTo('http')
-        assertThat(additionalScrapeConfigs[1]['metrics_path']).isEqualTo('/prometheus')
-    }
-
-    @Test
-    void 'uses remote jenkins url if requested'() {
-        config.jenkins["internal"] = false
-        config.jenkins["url"] = 'https://localhost:9090/jenkins'
-        createStack().install()
-
-
-        def additionalScrapeConfigs = parseActualStackYaml()['prometheus']['prometheusSpec']['additionalScrapeConfigs'] as List
-        assertThat(((additionalScrapeConfigs[1]['static_configs'] as List)[0]['targets'] as List)[0]).isEqualTo('localhost:9090')
-        assertThat(additionalScrapeConfigs[1]['metrics_path']).isEqualTo('/jenkins/prometheus')
-        assertThat(additionalScrapeConfigs[1]['scheme']).isEqualTo('https')
-
-        // scrape config for scmm is unchanged
-        assertThat(((additionalScrapeConfigs[0]['static_configs'] as List)[0]['targets'] as List)[0]).isEqualTo('scmm-scm-manager.default.svc.cluster.local')
-        assertThat(additionalScrapeConfigs[0]['scheme']).isEqualTo('http')
-        assertThat(additionalScrapeConfigs[0]['metrics_path']).isEqualTo('/scm/api/v2/metrics/prometheus')
-    }
-
-    @Test
-    void 'configures custom metrics user for jenkins'() {
-        config.jenkins["metricsUsername"] = 'external-metrics-username'
-        config.jenkins["metricsPassword"] = 'hunter2'
-        createStack().install()
-
-        assertThat(k8sCommandExecutor.actualCommands[1]).isEqualTo("kubectl create secret generic prometheus-metrics-creds-jenkins -n foo-monitoring --from-literal=password=hunter2 --dry-run=client -oyaml | kubectl apply -f-")
-        def additionalScrapeConfigs = parseActualStackYaml()['prometheus']['prometheusSpec']['additionalScrapeConfigs'] as List
-        assertThat(additionalScrapeConfigs[1]['basic_auth']['username']).isEqualTo('external-metrics-username')
     }
 
     @Test
@@ -172,33 +110,24 @@ class PrometheusStackTest {
     @Test
     void 'helm release is installed'() {
         createStack().install()
-
-        assertThat(k8sCommandExecutor.actualCommands[0].trim()).isEqualTo(
-                'kubectl create secret generic prometheus-metrics-creds-scmm -n foo-monitoring --from-literal=password=123 --dry-run=client -oyaml | kubectl apply -f-')
-        assertThat(helmCommandExecutor.actualCommands[0].trim()).isEqualTo(
+     
+        assertThat(commandExecutor.actualCommands[0].trim()).isEqualTo(
                 'helm repo add prometheusstack https://prom')
-        assertThat(helmCommandExecutor.actualCommands[1].trim()).isEqualTo(
+        assertThat(commandExecutor.actualCommands[1].trim()).isEqualTo(
                 'helm upgrade -i kube-prometheus-stack prometheusstack/kube-prometheus-stack --version 19.2.2' +
                         " --values ${temporaryYamlFile} --namespace foo-monitoring")
     }
 
     private PrometheusStack createStack() {
         // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
-
-        def configuration = new Configuration(config)
-        new PrometheusStack(configuration, new FileSystemUtils() {
+        new PrometheusStack(new Configuration(config), new FileSystemUtils() {
             @Override
             Path copyToTempDir(String filePath) {
                 Path ret = super.copyToTempDir(filePath)
                 temporaryYamlFile = Path.of(ret.toString().replace(".ftl", "")) // Path after template invocation
                 return ret
             }
-        }, new HelmStrategy(configuration, helmClient), new K8sClient(k8sCommandExecutor, new FileSystemUtils(), new Provider<Configuration>() {
-            @Override
-            Configuration get() {
-                configuration
-            }
-        }))
+        }, new HelmStrategy(new Configuration(config), helmClient))
     }
 
     private parseActualStackYaml() {

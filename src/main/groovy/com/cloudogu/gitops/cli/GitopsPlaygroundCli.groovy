@@ -5,6 +5,7 @@ import ch.qos.logback.classic.Logger
 import com.cloudogu.gitops.Application
 import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.destroy.Destroyer
 import groovy.util.logging.Slf4j
 import io.micronaut.context.ApplicationContext
 import org.slf4j.LoggerFactory
@@ -41,10 +42,6 @@ class GitopsPlaygroundCli  implements Runnable {
     private String jenkinsUsername
     @Option(names = ['--jenkins-password'], description = 'Mandatory when --jenkins-url is set')
     private String jenkinsPassword
-    @Option(names = ['--jenkins-metrics-username'], description = 'Mandatory when --jenkins-url is set and monitoring enabled')
-    private String jenkinsMetricsUsername
-    @Option(names = ['--jenkins-metrics-password'], description = 'Mandatory when --jenkins-url is set and monitoring enabled')
-    private String jenkinsMetricsPassword
 
     // args group scm
     @Option(names = ['--scmm-url'], description = 'The host of your external scm-manager')
@@ -119,6 +116,9 @@ class GitopsPlaygroundCli  implements Runnable {
     private boolean pipeYes
     @Option(names = ['--name-prefix'], description = 'Set name-prefix for repos, jobs, namespaces')
     private String namePrefix
+    @Option(names = ['--destroy'], description = 'Unroll playground')
+    private boolean destroy
+
 
     // args group operator
     @Option(names = ['--argocd'], description = 'Install ArgoCD ')
@@ -129,8 +129,14 @@ class GitopsPlaygroundCli  implements Runnable {
     @Override
     void run() {
         def context = ApplicationContext.run().registerSingleton(new Configuration(getConfig()))
-        Application app = context.getBean(Application)
-        app.start()
+
+        if (destroy) {
+            Destroyer destroyer = context.getBean(Destroyer)
+            destroyer.destroy()
+        } else {
+            Application app = context.getBean(Application)
+            app.start()
+        }
     }
 
     void setLogging() {
@@ -170,9 +176,7 @@ class GitopsPlaygroundCli  implements Runnable {
                 jenkins    : [
                         url     : jenkinsUrl,
                         username: jenkinsUsername,
-                        password: jenkinsPassword,
-                        metricsUsername: jenkinsMetricsUsername,
-                        metricsPassword: jenkinsMetricsPassword,
+                        password: jenkinsPassword
                 ],
                 scmm       : [
                         url     : scmmUrl,

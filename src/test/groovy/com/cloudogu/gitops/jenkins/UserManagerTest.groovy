@@ -96,30 +96,4 @@ class UserManagerTest {
 
         assertThat(new UserManager(client).isUsingMatrixBasedPermissions()).isFalse()
     }
-
-    @Test
-    void 'checks whether cas security realm is used'() {
-        def client = mock(ApiClient)
-        when(client.runScript(anyString())).thenReturn("class org.jenkinsci.plugins.cas.CasSecurityRealm")
-
-        assertThat(new UserManager(client).isUsingCasSecurityRealm()).isTrue()
-    }
-
-    @Test
-    void 'checks whether cas security realm is not used'() {
-        def client = mock(ApiClient)
-        when(client.runScript(anyString())).thenReturn("class hudson.security.HudsonPrivateSecurityRealm")
-
-        assertThat(new UserManager(client).isUsingCasSecurityRealm()).isFalse()
-    }
-
-    @Test
-    void 'throws when determining security realm errors'() {
-        def client = mock(ApiClient)
-        when(client.runScript(anyString())).thenReturn("groovy.lang.MissingPropertyException: No such property: asd for class: Script1[...]")
-
-        shouldFail(RuntimeException) {
-            new UserManager(client).isUsingCasSecurityRealm()
-        }
-    }
 }

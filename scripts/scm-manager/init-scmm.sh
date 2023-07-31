@@ -31,9 +31,6 @@ function configureScmmManager() {
   GITOPS_USERNAME="${NAME_PREFIX}gitops"
   GITOPS_PASSWORD=${ADMIN_PASSWORD}
 
-  METRICS_USERNAME="${NAME_PREFIX}metrics"
-  METRICS_PASSWORD=${ADMIN_PASSWORD}
-
   waitForScmManager
 
   SCMM_USER=${ADMIN_USERNAME}
@@ -42,8 +39,6 @@ function configureScmmManager() {
   setConfig
 
   addUser "${GITOPS_USERNAME}" "${GITOPS_PASSWORD}" "changeme@test.local"
-  addUser "${METRICS_USERNAME}" "${METRICS_PASSWORD}" "changeme@test.local"
-  setPermissionForUser "${METRICS_USERNAME}" "metrics:read"
 
   ### ArgoCD Repos
   if [[ $INSTALL_ARGOCD == true ]]; then
@@ -102,7 +97,6 @@ function configureScmmManager() {
   installScmmPlugin "scm-readme-plugin" "false"
   installScmmPlugin "scm-webhook-plugin" "false"
   installScmmPlugin "scm-ci-plugin" "true"
-  installScmmPlugin "scm-metrics-prometheus-plugin" "true"
 
   # We have to wait 1 second to ensure that the restart is really initiated
   sleep 1
@@ -177,20 +171,6 @@ function setPermissionForNamespace() {
   STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X POST -H "Content-Type: application/vnd.scmm-repositoryPermission+json;v=2" \
     --data "{\"name\":\"${2}\",\"role\":\"${3}\",\"verbs\":[],\"groupPermission\":false}" \
     "${SCMM_PROTOCOL}://${SCMM_USER}:${SCMM_PWD}@${SCMM_HOST}/api/v2/namespaces/${1}/permissions/") && EXIT_STATUS=$? || EXIT_STATUS=$?
-  if [ $EXIT_STATUS != 0 ]; then
-    echo "Setting Permission failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
-    exit $EXIT_STATUS
-  fi
-
-  printStatus "${STATUS}"
-}
-
-function setPermissionForUser() {
-  printf 'Setting permission %s for %s... ' "${2}" "${1}"
-
-  STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X PUT -H "Content-Type: application/vnd.scmm-permissionCollection+json;v=2" \
-    --data "{\"permissions\":[\"${2}\"]}" \
-    "${SCMM_PROTOCOL}://${SCMM_USER}:${SCMM_PWD}@${SCMM_HOST}/api/v2/users/${1}/permissions") && EXIT_STATUS=$? || EXIT_STATUS=$?
   if [ $EXIT_STATUS != 0 ]; then
     echo "Setting Permission failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
     exit $EXIT_STATUS
