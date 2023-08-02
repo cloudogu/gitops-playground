@@ -185,6 +185,20 @@ function setPermissionForNamespace() {
   printStatus "${STATUS}"
 }
 
+function setPermissionForUser() {
+  printf 'Setting permission %s for %s... ' "${2}" "${1}"
+
+  STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X PUT -H "Content-Type: application/vnd.scmm-permissionCollection+json;v=2" \
+    --data "{\"permissions\":[\"${2}\"]}" \
+    "${SCMM_PROTOCOL}://${SCMM_USER}:${SCMM_PWD}@${SCMM_HOST}/api/v2/users/${1}/permissions") && EXIT_STATUS=$? || EXIT_STATUS=$?
+  if [ $EXIT_STATUS != 0 ]; then
+    echo "Setting Permission failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
+    exit $EXIT_STATUS
+  fi
+
+  printStatus "${STATUS}"
+}
+
 function installScmmPlugin() {
   DO_RESTART="?restart=false"
   if [[ "${2}" == true ]]; then
