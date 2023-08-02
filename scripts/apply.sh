@@ -240,7 +240,7 @@ function initJenkins() {
   configureJenkinsCommand=(configureJenkins "${JENKINS_URL}" "${JENKINS_USERNAME}" "${JENKINS_PASSWORD}"
     "${SCMM_URL_FOR_JENKINS}" "${SCMM_PASSWORD}" "${REGISTRY_URL}"
     "${REGISTRY_PATH}" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}"
-    "${INSTALL_ARGOCD}")
+    "${INSTALL_ARGOCD}" "${JENKINS_METRICS_USERNAME}" "${JENKINS_METRICS_PASSWORD}")
 
   evalWithSpinner "Configuring Jenkins..." "${configureJenkinsCommand[@]}"
 }
