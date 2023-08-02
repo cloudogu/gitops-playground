@@ -1,7 +1,6 @@
 package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Configuration
-import groovy.transform.Immutable
 import groovy.util.logging.Slf4j
 import jakarta.inject.Provider
 import jakarta.inject.Singleton
@@ -9,6 +8,7 @@ import jakarta.inject.Singleton
 @Slf4j
 @Singleton
 class K8sClient {
+
     private CommandExecutor commandExecutor
     private FileSystemUtils fileSystemUtils
     private Provider<Configuration> configurationProvider
@@ -79,21 +79,20 @@ class K8sClient {
                         keyValues.collect { "${it.v1}=${it.v2}"}.join(' ')
         commandExecutor.execute(command)
     }
-
-    void patch(String resource, String name, String namespace  = '', String type = '', Map yaml) {
+    
+    void patch(String resource, String name, String namespace  = '', Map yaml) {
         // We're using a patch file here, instead of a patch JSON (--patch), because of quoting issues
         // ERROR c.c.gitops.utils.CommandExecutor - Stderr: error: unable to parse "'{\"stringData\":": yaml: found unexpected end of stream
         File patchYaml = File.createTempFile('gitops-playground-patch-yaml', '')
         fileSystemUtils.writeYaml(yaml, patchYaml)
-
+        
         //  kubectl patch secret argocd-secret -p '{"stringData": { "admin.password": "'"${bcryptArgoCDPassword}"'"}}' || true
         String command =
                 "kubectl patch ${resource} ${name}${namespace ? " -n ${getNamePrefix()}${namespace}" : ''}" +
-                        (type ? " --type=$type" : '')+
                         " --patch-file=${patchYaml.absolutePath}"
         commandExecutor.execute(command)
     }
-
+    
     void delete(String resource, String namespace  = '', Tuple2... selectors) {
         if (!selectors) {
             throw new RuntimeException("Missing selectors")
@@ -103,46 +102,13 @@ class K8sClient {
                 "kubectl delete ${resource}${namespace ? " -n ${getNamePrefix()}${namespace}" : ''}" +
                         ' --ignore-not-found=true ' + // Make idempotent
                         selectors.collect { "--selector=${it.v1}=${it.v2}"}.join(' ')
-
+        
         commandExecutor.execute(command)
-    }
-
-    void delete(String resource, String namespace, String name) {
-        String command =
-                "kubectl delete ${resource}${namespace ? " -n ${getNamePrefix()}${namespace}" : ''}" +
-                        " $name" +
-                        ' --ignore-not-found=true ' // Make idempotent
-
-        commandExecutor.execute(command)
-    }
-
-    List<CustomResource> getCustomResource(String resource) {
-        String[] command = ["kubectl", "get", resource, "-A", "-o", "jsonpath={range .items[*]}{.metadata.namespace}{','}{.metadata.name}{'\\n'}{end}"]
-        def result = commandExecutor.execute(command)
-
-        if (!result.stdOut) {
-            return []
-        }
-
-        result.stdOut.split("\n").collect {
-            def parts = it.split(",")
-
-            def prefix = getNamePrefix()
-            assert(parts[0].startsWith(prefix))
-
-            return new CustomResource(parts[0].substring(prefix.length()), parts[1])
-        }
     }
 
     private String getNamePrefix() {
         def config = configurationProvider.get().config
 
         return config.application['namePrefix'] as String
-    }
-
-    @Immutable
-    static class CustomResource {
-        String namespace
-        String name
     }
 }

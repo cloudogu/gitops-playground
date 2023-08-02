@@ -357,7 +357,7 @@ class ArgoCDTest {
             }
         }
 
-        assertAllYamlFiles(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), 'misc', 3) { Path it ->
+        assertAllYamlFiles(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), 'misc', 6) { Path it ->
             def yaml = parseActualYaml(it.toString())
             List yamlDocuments = yaml instanceof List ? yaml : [yaml]
             for (def document in yamlDocuments) {

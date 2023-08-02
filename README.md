@@ -316,11 +316,7 @@ See [Secrets management tools](#secrets-managment-tools) for details.
 ### Remove playground
 
 For k3d, you can just `k3d cluster delete gitops-playground`. This will delete the whole cluster.
-
-To remove the playground without deleting the cluster, use the option `--destroy`.
-You need pass the same parameters when deploying the playground to ensure that the destroy script 
-can authenticate with all tools.
-Note that this option has limitations. It does not remove CRDs, namespaces, locally deployed SCM-Manager, Jenkins and registry, plugins for SCM-Manager and Jenkins 
+Right now, there is no way to remove the playground from a cluster completely. We are planning to implement this, though.
 
 ## Stack
 

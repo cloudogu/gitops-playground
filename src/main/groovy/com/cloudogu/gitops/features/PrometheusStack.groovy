@@ -3,8 +3,10 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
+import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.DockerImageParser
 import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.MapUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
@@ -24,11 +26,13 @@ class PrometheusStack extends Feature {
     private String password
     private FileSystemUtils fileSystemUtils
     private DeploymentStrategy deployer
+    private K8sClient k8sClient
 
     PrometheusStack(
             Configuration config,
             FileSystemUtils fileSystemUtils,
-            DeploymentStrategy deployer
+            DeploymentStrategy deployer,
+            K8sClient k8sClient
     ) {
         this.deployer = deployer
         this.config = config.getConfig()
@@ -36,6 +40,7 @@ class PrometheusStack extends Feature {
         this.password = this.config.application["password"]
         this.remoteCluster = this.config.application["remote"]
         this.fileSystemUtils = fileSystemUtils
+        this.k8sClient = k8sClient
     }
 
     @Override
@@ -47,7 +52,11 @@ class PrometheusStack extends Feature {
     void enable() {
         // Note that some specific configuration steps are implemented in ArgoCD
         def namePrefix = config.application['namePrefix']
-        def tmpHelmValues = new TemplatingEngine().replaceTemplate(fileSystemUtils.copyToTempDir(HELM_VALUES_PATH).toFile(), [namePrefix: namePrefix]).toPath()
+        def tmpHelmValues = new TemplatingEngine().replaceTemplate(fileSystemUtils.copyToTempDir(HELM_VALUES_PATH).toFile(), [
+                namePrefix: namePrefix,
+                scmm: getScmmConfiguration(),
+                jenkins: getJenkinsConfiguration()
+        ]).toPath()
         Map helmValuesYaml = fileSystemUtils.readYaml(tmpHelmValues)
 
         if (remoteCluster) {
@@ -64,6 +73,19 @@ class PrometheusStack extends Feature {
             helmValuesYaml['grafana']['adminPassword'] = password
         }
 
+        k8sClient.createSecret(
+                'generic',
+                'prometheus-metrics-creds-scmm',
+                'monitoring',
+                new Tuple2('password', password)
+        )
+
+        k8sClient.createSecret(
+                'generic',
+                'prometheus-metrics-creds-jenkins',
+                'monitoring',
+                new Tuple2('password', config.jenkins['metricsPassword']),
+        )
 
         def helmConfig = config['features']['monitoring']['helm']
         setCustomImages(helmConfig, helmValuesYaml)
@@ -79,6 +101,43 @@ class PrometheusStack extends Feature {
                 'kube-prometheus-stack',
                 tmpHelmValues
         )
+    }
+
+    private Map getScmmConfiguration() {
+        String protocol = 'http'
+        String host = 'scmm-scm-manager.default.svc.cluster.local'
+        String path = '/scm/api/v2/metrics/prometheus'
+        if (!config.scmm['internal']) {
+            URI uri = new URI((config.scmm['url'] as String) + '/api/v2/metrics/prometheus')
+            protocol = uri.scheme
+            host = uri.authority
+            path = uri.path
+        }
+
+        return [
+                protocol: protocol,
+                host    : host,
+                path    : path
+        ]
+    }
+
+    private Map getJenkinsConfiguration() {
+        String protocol = 'http'
+        String host = 'jenkins.default.svc.cluster.local'
+        String path = '/prometheus'
+        if (!config.jenkins['internal']) {
+            URI uri = new URI((config.jenkins['url'] as String) + path)
+            protocol = uri.scheme
+            host = uri.authority
+            path = uri.path
+        }
+
+        return [
+                metricsUsername: config.jenkins['metricsUsername'],
+                protocol       : protocol,
+                host           : host,
+                path           : path
+        ]
     }
 
     private void setCustomImages(helmConfig, Map helmValuesYaml) {
