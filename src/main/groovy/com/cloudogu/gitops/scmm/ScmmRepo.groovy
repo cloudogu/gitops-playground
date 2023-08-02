@@ -40,6 +40,10 @@ class ScmmRepo {
         return absoluteLocalRepoTmpDir
     }
 
+    String getScmmRepoTarget() {
+        return scmmRepoTarget
+    }
+
     static String createScmmUrl(Map config) {
         return "${config.scmm["protocol"]}://${config.scmm["host"]}"
     }

@@ -138,6 +138,13 @@ class FileSystemUtils {
         File.createTempDir("gitops-playground-").toPath()
     }
 
+    Path createTempFile() {
+        def file = File.createTempFile("gitops-playground-", '')
+        file.deleteOnExit()
+
+        return file.toPath()
+    }
+
     Map readYaml(Path path) {
         def ys = new YamlSlurper()
         return (ys.parse path) as Map

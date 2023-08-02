@@ -373,5 +373,9 @@ class ArgoCD extends Feature {
                     ]
             ])
         }
+
+        ScmmRepo getRepo() {
+            return repo
+        }
     }
 }

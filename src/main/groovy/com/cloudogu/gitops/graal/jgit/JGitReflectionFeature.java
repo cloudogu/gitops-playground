@@ -1,13 +1,11 @@
 package com.cloudogu.gitops.graal.jgit;
 
-import com.oracle.svm.core.annotate.AutomaticFeature;
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
 
 import java.util.Arrays;
 import java.util.List;
 
-@AutomaticFeature
 public class JGitReflectionFeature implements Feature {
 
     // Found here https://github.com/quarkiverse/quarkus-jgit/blob/3.0.0/deployment/src/main/java/io/quarkus/jgit/deployment/JGitProcessor.java

@@ -27,7 +27,7 @@ class ScmmRepoTest {
         repo.writeFile("test.txt", "the file's content")
 
         def expectedFile = new File("$repo.absoluteLocalRepoTmpDir/test.txt")
-        assertThat(expectedFile.text).is("the file's content")
+        assertThat(expectedFile.getText()).is("the file's content")
     }
 
     @Test
@@ -42,7 +42,7 @@ class ScmmRepoTest {
         repo.writeFile("already-exists.txt", "overwritten content")
 
         def expectedFile = new File("$tempDir/already-exists.txt")
-        assertThat(expectedFile.text).is("overwritten content")
+        assertThat(expectedFile.getText()).is("overwritten content")
     }
 
     @Test
@@ -52,7 +52,7 @@ class ScmmRepoTest {
         repo.writeFile("subdirectory/test.txt", "the file's content")
 
         def expectedFile = new File("$tempDir/subdirectory/test.txt")
-        assertThat(expectedFile.text).is("the file's content")
+        assertThat(expectedFile.getText()).is("the file's content")
     }
 
     @Test
