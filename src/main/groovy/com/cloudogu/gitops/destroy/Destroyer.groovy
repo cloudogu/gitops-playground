@@ -22,4 +22,8 @@ class Destroyer implements DestructionHandler {
         }
         log.info("Finished destroying")
     }
+
+    List<DestructionHandler> getDestructionHandlers() {
+        return destructionHandlers
+    }
 }

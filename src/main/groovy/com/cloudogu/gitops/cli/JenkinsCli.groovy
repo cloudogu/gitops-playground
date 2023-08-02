@@ -49,7 +49,7 @@ class JenkinsCli {
 
     private ApplicationContext createApplicationContext(OptionsMixin options) {
         ApplicationContext.run()
-                .registerSingleton(new JenkinsFactory(new Configuration(options.jenkinsUrl, options.jenkinsUsername, options.jenkinsPassword)))
+                .registerSingleton(new JenkinsFactory(new JenkinsConfiguration(options.jenkinsUrl, options.jenkinsUsername, options.jenkinsPassword)))
     }
 
     static class OptionsMixin {
