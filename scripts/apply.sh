@@ -123,7 +123,7 @@ function main() {
     initSCMMVars
     evalWithSpinner "Starting SCM-Manager..." initSCMM
 
-    initJenkinsfi
+    initJenkins
   fi
 
   if [[ $TRACE == true ]]; then
