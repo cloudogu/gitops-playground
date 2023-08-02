@@ -126,7 +126,7 @@ function postPlugin() {
 }
 
 function safeRestart() {
-  # Don't use -L here, otherwise follows to root page which is 503 on restart. Then fails.
+  # Don't use --location-trusted here, otherwise follows to root page which is 503 on restart. Then fails.
   curlJenkins --fail -o /dev/null --write-out '%{http_code}' \
     -X POST "${JENKINS_URL}/safeRestart" && EXIT_STATUS=$? || EXIT_STATUS=$?
   if [ $EXIT_STATUS != 0 ]

@@ -369,7 +369,9 @@ class ArgoCD extends Feature {
                             active: config.features['secrets']['active']
                     ],
                     scmm: [
-                            baseUrl: config.scmm['internal'] ? 'http://scmm-scm-manager.default.svc.cluster.local/scm' : ScmmRepo.createScmmUrl(config)
+                            baseUrl: config.scmm['internal'] ? 'http://scmm-scm-manager.default.svc.cluster.local/scm' : ScmmRepo.createScmmUrl(config),
+                            host: config.scmm['internal'] ? 'scmm-scm-manager.default.svc.cluster.local' : config.scmm['host'],
+                            protocol: config.scmm['internal'] ? 'http' : config.scmm['protocol'],
                     ]
             ])
         }

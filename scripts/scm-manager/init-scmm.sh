@@ -31,6 +31,9 @@ function configureScmmManager() {
   GITOPS_USERNAME="${NAME_PREFIX}gitops"
   GITOPS_PASSWORD=${ADMIN_PASSWORD}
 
+  METRICS_USERNAME="${NAME_PREFIX}metrics"
+  METRICS_PASSWORD=${ADMIN_PASSWORD}
+
   waitForScmManager
 
   SCMM_USER=${ADMIN_USERNAME}
@@ -39,6 +42,8 @@ function configureScmmManager() {
   setConfig
 
   addUser "${GITOPS_USERNAME}" "${GITOPS_PASSWORD}" "changeme@test.local"
+  addUser "${METRICS_USERNAME}" "${METRICS_PASSWORD}" "changeme@test.local"
+  setPermissionForUser "${METRICS_USERNAME}" "metrics:read"
 
   ### ArgoCD Repos
   if [[ $INSTALL_ARGOCD == true ]]; then
@@ -97,6 +102,7 @@ function configureScmmManager() {
   installScmmPlugin "scm-readme-plugin" "false"
   installScmmPlugin "scm-webhook-plugin" "false"
   installScmmPlugin "scm-ci-plugin" "true"
+  installScmmPlugin "scm-metrics-prometheus-plugin" "true"
 
   # We have to wait 1 second to ensure that the restart is really initiated
   sleep 1
