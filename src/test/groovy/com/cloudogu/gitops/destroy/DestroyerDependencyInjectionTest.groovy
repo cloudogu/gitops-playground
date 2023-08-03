@@ -19,6 +19,9 @@ class DestroyerDependencyInjectionTest {
                                 url: 'http://localhost:9090',
                                 username: 'admin',
                                 password: 'admin',
+                        ],
+                        application: [
+                                insecure: true
                         ]
                 ]))
                 .getBean(Destroyer)

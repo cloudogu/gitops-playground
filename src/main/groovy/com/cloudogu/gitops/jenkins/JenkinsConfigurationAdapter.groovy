@@ -10,6 +10,7 @@ class JenkinsConfigurationAdapter extends JenkinsConfiguration {
                 configuration.config.jenkins['url'] as String,
                 configuration.config.jenkins['username'] as String,
                 configuration.config.jenkins['password'] as String,
+                configuration.config.application['insecure'] as Boolean
         )
     }
 }

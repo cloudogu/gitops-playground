@@ -4,11 +4,13 @@ class JenkinsConfiguration {
     private final String url
     private final String username
     private final String password
+    private final boolean insecure
 
-    JenkinsConfiguration(String url, String username, String password) {
+    JenkinsConfiguration(String url, String username, String password, boolean insecure) {
         this.url = url
         this.username = username
         this.password = password
+        this.insecure = insecure
     }
 
     String getUrl() {
@@ -21,5 +23,9 @@ class JenkinsConfiguration {
 
     String getPassword() {
         return password
+    }
+
+    boolean getInsecure() {
+        return insecure
     }
 }

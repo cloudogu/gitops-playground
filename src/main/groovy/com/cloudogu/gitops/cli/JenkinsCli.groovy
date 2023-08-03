@@ -53,7 +53,7 @@ class JenkinsCli {
 
     private ApplicationContext createApplicationContext(OptionsMixin options) {
         ApplicationContext.run()
-                .registerSingleton(new JenkinsFactory(new JenkinsConfiguration(options.jenkinsUrl, options.jenkinsUsername, options.jenkinsPassword)))
+                .registerSingleton(new JenkinsConfiguration(options.jenkinsUrl, options.jenkinsUsername, options.jenkinsPassword, options.insecure))
     }
 
     static class OptionsMixin {
@@ -64,5 +64,7 @@ class JenkinsCli {
         public String jenkinsUsername
         @Option(names = ['--jenkins-password'], required = true, description = 'Mandatory when --jenkins-url is set')
         public String jenkinsPassword
+        @Option(names = ['--insecure'], description = 'Sets insecure-mode for the HTTP client which skips cert validation')
+        public boolean insecure
     }
 }
