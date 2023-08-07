@@ -261,7 +261,7 @@ class ArgoCD extends Feature {
         k8sClient.createSecret('generic', repoTemplateSecretName, 'argocd',
                 new Tuple2('url', scmmUrlForArgoCD),
                 new Tuple2('username', "${namePrefix}gitops"),
-                new Tuple2('password', password)
+                new Tuple2('password', config.scmm['password'])
         )
         k8sClient.label('secret', repoTemplateSecretName,'argocd',
                 new Tuple2(' argocd.argoproj.io/secret-type', 'repo-creds'))
@@ -365,6 +365,7 @@ class ArgoCD extends Feature {
                     namePrefixForEnvVars: config.application['namePrefixForEnvVars'] as String,
                     images: config.images,
                     isRemote: config.application['remote'],
+                    isInsecure: config.application['insecure'],
                     secrets: [
                             active: config.features['secrets']['active']
                     ],
