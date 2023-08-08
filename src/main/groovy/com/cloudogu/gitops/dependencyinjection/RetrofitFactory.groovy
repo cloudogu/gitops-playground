@@ -6,6 +6,7 @@ import com.cloudogu.gitops.scmm.api.RepositoryApi
 import com.cloudogu.gitops.scmm.api.UsersApi
 import io.micronaut.context.annotation.Factory
 import jakarta.inject.Named
+import jakarta.inject.Provider
 import jakarta.inject.Singleton
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -33,10 +34,16 @@ class RetrofitFactory {
 
     @Singleton
     @Named("scmm")
-    OkHttpClient okHttpClient(HttpLoggingInterceptor loggingInterceptor, Configuration configuration) {
-        return new OkHttpClient.Builder()
+    OkHttpClient okHttpClient(HttpLoggingInterceptor loggingInterceptor, Configuration configuration, Provider<HttpClientFactory.InsecureSslContext> insecureSslContext) {
+        def builder = new OkHttpClient.Builder()
                 .addInterceptor(new AuthorizationInterceptor(configuration.config.scmm['username'] as String, configuration.config.scmm['password'] as String))
                 .addInterceptor(loggingInterceptor)
-                .build()
+
+        if (configuration.config.application['insecure']) {
+            def context = insecureSslContext.get()
+            builder.sslSocketFactory(context.socketFactory, context.trustManager)
+        }
+
+        return builder.build()
     }
 }
