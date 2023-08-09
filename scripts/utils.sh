@@ -56,6 +56,7 @@ function runGroovy() {
   ADDITIONAL_OPTIONS=""
   [ -z "${DEBUG-}" ] || ADDITIONAL_OPTIONS+=" --debug"
   [ -z "${TRACE-}" ] || ADDITIONAL_OPTIONS+=" --trace"
+  [ -z "${INSECURE-}" ] || ADDITIONAL_OPTIONS+=" --insecure"
 
   if [[ -f "$PLAYGROUND_DIR/apply-ng" ]]; then
       "$PLAYGROUND_DIR"/apply-ng "$@" $ADDITIONAL_OPTIONS
