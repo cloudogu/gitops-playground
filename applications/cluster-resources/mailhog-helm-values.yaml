@@ -1,9 +1,13 @@
+image:
+  repository: corpusops/mailhog
+
 service:
   type: LoadBalancer
   port:
     http: 80
   nodePort:
     http: "9094"
+
 auth:
   enabled: true
   fileName: auth.txt
