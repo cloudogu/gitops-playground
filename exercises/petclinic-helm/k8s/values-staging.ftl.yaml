@@ -1,0 +1,10 @@
+service:
+  port: 80
+  nodePort: 30040
+
+<#if exampleApps.petclinic.baseDomain?has_content>
+ingress:
+  hosts:
+    - host: staging.exercise-petclinic-helm.${exampleApps.petclinic.baseDomain}
+      paths: ['/']
+</#if>

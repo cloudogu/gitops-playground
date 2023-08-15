@@ -1,3 +1,9 @@
+<#if nginxImage??>
+image:
+  registry: ${nginxImage.registry}
+  repository: ${nginxImage.repository}
+  tag: ${nginxImage.tag}
+</#if>
 service:
   ports:
     http: 80

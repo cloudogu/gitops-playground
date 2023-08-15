@@ -10,6 +10,7 @@ import org.apache.commons.io.FileUtils
 
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.regex.Pattern
 
 @Slf4j
 @Singleton
@@ -133,7 +134,14 @@ class FileSystemUtils {
         def destPath = destDir.resolve(sourcePath.fileName)
         return Files.copy(sourcePath, destPath)
     }
-    
+
+    void deleteEmptyFiles(Path path, Pattern pathPattern) {
+        Files.walk(path).filter { it.size() == 0 && it.toString() =~ pathPattern }.each { Path it ->
+            log.trace("Deleting empty file $it")
+            it.toFile().delete()
+        }
+    }
+
     Path createTempDir() {
         File.createTempDir("gitops-playground-").toPath()
     }

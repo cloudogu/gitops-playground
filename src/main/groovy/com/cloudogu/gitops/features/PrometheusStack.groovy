@@ -54,6 +54,11 @@ class PrometheusStack extends Feature {
         def namePrefix = config.application['namePrefix']
         def tmpHelmValues = new TemplatingEngine().replaceTemplate(fileSystemUtils.copyToTempDir(HELM_VALUES_PATH).toFile(), [
                 namePrefix: namePrefix,
+                monitoring: [
+                        grafana: [
+                                url: config.features['monitoring']['grafanaUrl']
+                        ]
+                ],
                 scmm: getScmmConfiguration(),
                 jenkins: getJenkinsConfiguration()
         ]).toPath()

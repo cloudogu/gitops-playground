@@ -19,6 +19,23 @@ class DockerImageParser {
 
             return "$registry/$repository"
         }
+
+        String getRegistry() {
+            return registry
+        }
+
+        String getRepository() {
+            return repository
+        }
+
+        String getTag() {
+            return tag
+        }
+
+        @Override
+        String toString() {
+            return getRegistryAndRepositoryAsString() + ":$tag"
+        }
     }
 
     static Image parse(String image) {

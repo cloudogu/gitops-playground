@@ -9,7 +9,7 @@ PLAYGROUND_DIR="$(cd ${BASEDIR} && cd .. && pwd)"
 export PLAYGROUND_DIR
 
 # When updating, update in ApplicationConfigurator.groovy as well
-SPRING_BOOT_HELM_CHART_COMMIT=0.3.1
+SPRING_BOOT_HELM_CHART_COMMIT=dd7d6a7ee0d7eefa7bb6768440223c19720d7812 # TODO: wait for release
 K8S_VERSION=1.25.4
 
 source ${ABSOLUTE_BASEDIR}/utils.sh
@@ -552,6 +552,11 @@ function printParameters() {
   echo
   echo "Configure additional modules"
   echo "    | --monitoring, --metrics        >> Installs the Kube-Prometheus-Stack for ArgoCD. This includes Prometheus, the Prometheus operator, Grafana and some extra resources"
+  echo "    | --mailhog-url           >> Sets url for mailhog"
+  echo "    | --grafana-url           >> Sets url for Grafana"
+  echo "    | --vault-url             >> Sets url for Vault"
+  echo "    | --petclinic-base-domain >> The domain under which a subdomain for all petclinic will be used. "
+  echo "    | --nginx-base-domain     >> The domain under which a subdomain for all nginx applications will be used. "
   echo
   echo " -d | --debug         >> Debug output"
   echo " -x | --trace         >> Debug + Show each command executed (set -x)"
@@ -562,7 +567,7 @@ function printParameters() {
 readParameters() {
   COMMANDS=$(getopt \
     -o hdxyc \
-    --long help,destroy,argocd,argocd-url:,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,jenkins-metrics-username:,jenkins-metrics-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,grafana-image:,grafana-sidecar-image:,prometheus-image:,prometheus-operator-image:,prometheus-config-reloader-image:,external-secrets-image:,external-secrets-certcontroller-image:,external-secrets-webhook-image:,vault-image:,nginx-image:,trace,insecure,yes,skip-helm-update,metrics,monitoring,vault:,name-prefix: \
+    --long help,destroy,argocd,argocd-url:,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,jenkins-metrics-username:,jenkins-metrics-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,grafana-url:,grafana-image:,grafana-sidecar-image:,prometheus-image:,prometheus-operator-image:,prometheus-config-reloader-image:,external-secrets-image:,external-secrets-certcontroller-image:,external-secrets-webhook-image:,vault-url:,vault-image:,nginx-image:,trace,insecure,yes,skip-helm-update,metrics,monitoring,mailhog-url:,vault:,petclinic-base-domain:,nginx-base-domain:,name-prefix: \
     -- "$@")
   
   if [ $? != 0 ]; then
@@ -594,16 +599,14 @@ readParameters() {
   TRACE=false
   ASSUME_YES=false
   SKIP_HELM_UPDATE=false
-  DEPLOY_METRICS=false
   DESTROY=false
-  ARGOCD_URL=""
   NAME_PREFIX=""
 
   while true; do
     case "$1" in
       -h | --help          ) printUsage; exit 0 ;;
       --argocd             ) INSTALL_ARGOCD=true; shift ;;
-      --argocd-url         ) ARGOCD_URL="$2"; shift 2 ;;
+      --argocd-url         ) shift 2 ;; # Ignore, used in groovy only
       --remote             ) REMOTE_CLUSTER=true; shift ;;
       --jenkins-url        ) JENKINS_URL="$2"; shift 2 ;;
       --jenkins-username   ) JENKINS_USERNAME="$2"; shift 2 ;;
@@ -623,6 +626,7 @@ readParameters() {
       --kubeval-image      ) shift 2;; # Ignore, used in groovy only
       --helmkubeval-image  ) shift 2;; # Ignore, used in groovy only
       --yamllint-image     ) shift 2;; # Ignore, used in groovy only
+      --grafana-url        ) shift 2;; # Ignore, used in groovy only
       --grafana-image      ) shift 2;; # Ignore, used in groovy only
       --grafana-sidecar-image ) shift 2;; # Ignore, used in groovy only
       --prometheus-image ) shift 2;; # Ignore, used in groovy only
@@ -631,6 +635,7 @@ readParameters() {
       --external-secrets-image ) shift 2;; # Ignore, used in groovy only
       --external-secrets-certcontroller-image ) shift 2;; # Ignore, used in groovy only
       --external-secrets-webhook-image ) shift 2;; # Ignore, used in groovy only
+      --vault-url          ) shift 2;; # Ignore, used in groovy only
       --vault-image        ) shift 2;; # Ignore, used in groovy only
       --nginx-image        ) shift 2;; # Ignore, used in groovy only
       --insecure           ) INSECURE=true; shift ;;
@@ -642,7 +647,10 @@ readParameters() {
       -y | --yes           ) ASSUME_YES=true; shift ;;
       --skip-helm-update   ) SKIP_HELM_UPDATE=true; shift ;;
       --metrics | --monitoring ) shift;; # Ignore, used in groovy only
+      --mailhog-url        ) shift 2;; # Ignore, used in groovy only
       --vault              ) shift 2;; # Ignore, used in groovy only
+      --petclinic-base-domain ) shift 2;; # Ignore, used in groovy only
+      --nginx-base-domain  ) shift 2;; # Ignore, used in groovy only
       --destroy            ) DESTROY=true; shift;; #
       --                   ) shift; break ;;
     *) break ;;

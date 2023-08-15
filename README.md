@@ -374,6 +374,7 @@ Argo CD's web UI is available at
 
 * http://localhost:9092 (k3d)
 * `scripts/get-remote-url argocd-server argocd` (remote k8s)
+* `--argocd-url` to specify domain name
 
 Argo CD is installed in a production-ready way, that allows for operating Argo CD with Argo CD, using GitOps and
 providing a [repo per team pattern](https://github.com/cloudogu/gitops-patterns/tree/8e1056f#repo-per-team).
@@ -549,9 +550,11 @@ This leads to the following tools to be exposed:
 * Mailhog
     * http://localhost:9094 (k3d)
     * `scripts/get-remote-url mailhog monitoring` (remote k8s)
+    * `--mailhog-url` to specify domain name
 * Grafana
     * http://localhost:9095 (k3d)
     * `scripts/get-remote-url kube-prometheus-stack-grafana monitoring` (remote k8s)
+    * `--grafana-url` to specify domain name
 
 Grafana can be used to query and visualize metrics via prometheus.
 Prometheus is not exposed by default.
@@ -597,6 +600,7 @@ the namespace `argocd-staging` and `argocd-production` namespaces
 You can reach the vault UI on
 * http://localhost:8200 (k3d)
 * `scripts/get-remote-url vault-ui secrets` (remote k8s)
+* `--vault-url` to specify domain name
 * You can log in vie the user account mentioned above.  
   If necessary, the root token can be found on the log:
   ```shell
@@ -680,9 +684,11 @@ Alternatively you can trigger the deployment via the respective GitOps operator'
 * Staging
     * local [localhost:30020](http://localhost:30020)
     * remote: `scripts/get-remote-url spring-petclinic-plain argocd-staging`
+    * `--petclinic-base-domain` to specify base domain. Then use `staging.petclinic-plain.$base-domain`
 * Production
     * local [localhost:30021](http://localhost:30021)
     * remote: `scripts/get-remote-url spring-petclinic-plain argocd-production`
+    * `--petclinic-base-domain` to specify base domain. Then use `production.petclinic-plain.$base-domain`
 
 ##### PetClinic with helm
 
@@ -691,9 +697,11 @@ Alternatively you can trigger the deployment via the respective GitOps operator'
 * Staging
     * local [localhost:30022](http://localhost:30022)
     * remote: `scripts/get-remote-url spring-petclinic-helm argocd-staging`
+    * `--petclinic-base-domain` to specify base domain. Then use `staging.petclinic-helm.$base-domain`
 * Production
     * local [localhost:30023](http://localhost:30023)
     * remote: `scripts/get-remote-url spring-petclinic-helm argocd-production`
+  * `--petclinic-base-domain` to specify base domain. Then use `production.petclinic-helm.$base-domain`
 
 ##### 3rd Party app (NGINX) with helm, templated in Jenkins
 
@@ -702,15 +710,18 @@ Alternatively you can trigger the deployment via the respective GitOps operator'
 * Staging
     * local: [localhost:30024](http://localhost:30024)
     * remote: `scripts/get-remote-url nginx argocd-staging`
+    * `--nginx-base-domain` to specify base domain. Then use `staging.nginx.$base-domain`
 * Production
     * local: [localhost:30025](http://localhost:30025)
     * remote: `scripts/get-remote-url nginx argocd-production`
+    * `--nginx-base-domain` to specify base domain. Then use `production.nginx.$base-domain`
 
 ##### 3rd Party app (NGINX) with helm, using Helm dependency mechanism
 
 * Application name: `nginx-helm-umbrella`
 * local: [localhost:30026](http://localhost:30026)
 * remote: `scripts/get-remote-url nginx-helm-umbrella argocd-production`
+* `--nginx-base-domain` to specify base domain. Then use `production.nginx-helm-umbrella.$base-domain`
 
 ## Development
 

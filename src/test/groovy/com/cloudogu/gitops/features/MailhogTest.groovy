@@ -71,6 +71,23 @@ class MailhogTest {
     }
 
     @Test
+    void 'uses ingress if enabled'() {
+        config.features['mail']['url'] = 'mailhog.local'
+        createMailhog().install()
+
+        def ingressYaml = parseActualYaml()['ingress']
+        assertThat(ingressYaml['enabled']).isEqualTo(true)
+        assertThat((ingressYaml['hosts'] as List)[0]['host']).isEqualTo('mailhog.local')
+    }
+
+    @Test
+    void 'does not use ingress by default'() {
+        createMailhog().install()
+
+        assertThat(parseActualYaml() as Map).doesNotContainKey('ingress')
+    }
+
+    @Test
     void 'Password and username can be changed'() {
         String expectedUsername = 'user42'
         String expectedPassword = '12345'
@@ -115,8 +132,10 @@ class MailhogTest {
         new Mailhog(new Configuration(config), new FileSystemUtils() {
             @Override
             Path copyToTempDir(String filePath) {
-                temporaryYamlFile = super.copyToTempDir(filePath)
-                return temporaryYamlFile
+                def ret = super.copyToTempDir(filePath)
+                temporaryYamlFile = Path.of(ret.toString().replace(".ftl", "")) // Path after template invocation
+
+                return ret
             }
         }, new HelmStrategy(new Configuration(config), helmClient))
     }

@@ -36,6 +36,7 @@ class PrometheusStackTest {
             features   : [
                     monitoring: [
                             active: true,
+                            grafanaUrl: '',
                             helm  : [
                                     chart  : 'kube-prometheus-stack',
                                     repoURL: 'https://prom',
@@ -82,6 +83,24 @@ class PrometheusStackTest {
         createStack().install()
 
         assertThat(parseActualStackYaml()['grafana']['service']['type']).isEqualTo('NodePort')
+    }
+
+    @Test
+    void 'uses ingress if enabled'() {
+        config['features']['monitoring']['grafanaUrl'] = 'grafana.local'
+        createStack().install()
+
+
+        def ingressYaml = parseActualStackYaml()['grafana']['ingress']
+        assertThat(ingressYaml['enabled']).isEqualTo(true)
+        assertThat((ingressYaml['hosts'] as List)[0]).isEqualTo('grafana.local')
+    }
+
+    @Test
+    void 'does not use ingress by default'() {
+        createStack().install()
+
+        assertThat(parseActualStackYaml()['grafana'] as Map).doesNotContainKey('ingress')
     }
 
     @Test
