@@ -71,7 +71,11 @@ grafana:
   service:
     type: NodePort
     nodePort: "9095"
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
   sidecar:
+    securityContext:
+      allowPrivilegeEscalation: false
     dashboards:
       #this needs to be added so that the label will become 'label: grafana_dashboards: "1"'
       labelValue: 1
