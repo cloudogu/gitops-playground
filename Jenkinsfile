@@ -73,28 +73,11 @@ node('high-cpu') {
                         'Scan image': {
                             stage('Scan image') {
 
-                                trivyConfig = [
-                                        imageName      : imageNames[0],
-                                        severity       : ['CRITICAL'],
-                                        additionalFlags: '--ignore-unfixed'
-                                ]
-                                def vulns = findVulnerabilitiesWithTrivy(trivyConfig)
+                                scanForCriticalVulns(imageNames[0],"prod-criticals")
+                                scanForCriticalVulns(imageNames[1], "dev-criticals")
 
-                                if (vulns.size() > 0) {
-                                    archiveArtifacts artifacts: '.trivy/trivyOutput.json'
-                                    unstable "Found  ${vulns.size()} vulnerabilities in image. See vulns.json"
-                                }
-
-                                trivyDevConfig = [
-                                        imageName: imageNames[1]
-                                ]
-                                vulns = findVulnerabilitiesWithTrivy(trivyDevConfig)
-
-                                if (vulns.size() > 0) {
-                                    writeFile(file: '.trivy/trivyOutputDev.json', encoding: "UTF-8", text: readFile(file: '.trivy/trivyOutput.json', encoding: "UTF-8"))
-                                    archiveArtifacts artifacts: '.trivy/trivyOutputDev.json'
-                                    unstable "Found  ${vulns.size()} vulnerabilities in dev image. See vulnsdev.json"
-                                }
+                                scanForAllVulns(imageNames[0], "prod-all")
+                                scanForAllVulns(imageNames[1], "dev-all")
                             }
                         },
 
@@ -211,7 +194,34 @@ def buildImage(String imageName, String additionalBuildArgs = '') {
                     ".")
 }
 
+def scanForCriticalVulns(String imageName, String fileName){
+    trivyConfig = [
+            imageName      : imageName,
+            severity       : ['CRITICAL'],
+            additionalFlags: '--ignore-unfixed'
+    ]
 
+    def vulns = findVulnerabilitiesWithTrivy(trivyConfig)
+
+    if (vulns.size() > 0) {
+        writeFile(file: ".trivy/${fileName}.json", encoding: "UTF-8", text: readFile(file: '.trivy/trivyOutput.json', encoding: "UTF-8"))
+        archiveArtifacts artifacts: ".trivy/${fileName}.json"
+        unstable "Found  ${vulns.size()} vulnerabilities in image. See ${fileName}.json"
+    }
+}
+
+def scanForAllVulns(String imageName, String fileName){
+    trivyConfig = [
+            imageName      : imageName
+    ]
+
+    def vulns = findVulnerabilitiesWithTrivy(trivyConfig)
+
+    if (vulns.size() > 0) {
+        writeFile(file: ".trivy/${fileName}.json", encoding: "UTF-8", text: readFile(file: '.trivy/trivyOutput.json', encoding: "UTF-8"))
+        archiveArtifacts artifacts: ".trivy/${fileName}.json"
+    }
+}
 
 def startK3d(clusterName) {
     sh "mkdir -p ${WORKSPACE}/.k3d/bin"
