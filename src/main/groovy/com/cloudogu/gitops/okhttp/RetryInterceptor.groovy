@@ -22,6 +22,7 @@ class RetryInterceptor implements Interceptor {
         def response = chain.proceed(chain.request())
         while (i < retries && response.code() in getStatusCodesToRetry()) {
             Thread.sleep(waitPeriodInMs)
+            response.close()
             response = chain.proceed(chain.request())
             ++i
         }
