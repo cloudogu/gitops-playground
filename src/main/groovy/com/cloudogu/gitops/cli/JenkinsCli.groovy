@@ -1,9 +1,11 @@
 package com.cloudogu.gitops.cli
 
 import com.cloudogu.gitops.dependencyinjection.JenkinsFactory
+import com.cloudogu.gitops.jenkins.GlobalPropertyManager
 import com.cloudogu.gitops.jenkins.JenkinsConfiguration
 import com.cloudogu.gitops.jenkins.PrometheusConfigurator
 import com.cloudogu.gitops.jenkins.UserManager
+import com.cloudogu.gitops.utils.CommandExecutor
 import groovy.util.logging.Slf4j
 import io.micronaut.context.ApplicationContext
 import picocli.CommandLine.Command
@@ -49,6 +51,19 @@ class JenkinsCli {
     ) {
         def prometheusConfigurator = createApplicationContext(options).getBean(PrometheusConfigurator)
         prometheusConfigurator.enableAuthentication()
+    }
+
+    @Command(name = "set-global-property", description = "Create a global property.", mixinStandardHelpOptions = true)
+    void setGlobalProperty(
+            @Parameters(paramLabel = "key", description = "The property's key")
+            String key,
+            @Parameters(paramLabel = "value", description = "The property's value")
+            String value,
+            @Mixin
+            OptionsMixin options
+    ) {
+        def globalPropertyManager = createApplicationContext(options).getBean(GlobalPropertyManager)
+        globalPropertyManager.setGlobalProperty(key, value)
     }
 
     private ApplicationContext createApplicationContext(OptionsMixin options) {

@@ -35,6 +35,19 @@ class RetryInterceptorTest {
     }
 
     @Test
+    void 'retries on 401 and 403'() {
+        webServer.enqueue(new MockResponse().setResponseCode(401))
+        webServer.enqueue(new MockResponse().setResponseCode(403))
+        webServer.enqueue(new MockResponse().setResponseCode(200).setBody("Successful Result"))
+
+        def client = createClient()
+
+        def response = client.newCall(new Request.Builder().url(webServer.url("")).build()).execute()
+
+        assertThat(response.body().string()).isEqualTo("Successful Result")
+    }
+
+    @Test
     void 'fails after third retry'() {
         webServer.enqueue(new MockResponse().setResponseCode(500))
         webServer.enqueue(new MockResponse().setResponseCode(500))
@@ -53,7 +66,7 @@ class RetryInterceptorTest {
 
     private OkHttpClient createClient() {
         new OkHttpClient.Builder()
-                .addInterceptor(new RetryInterceptor(waitPeriodInMs: 0))
+                .addInterceptor(new RetryInterceptor(retries: 3, waitPeriodInMs: 0))
                 .build()
     }
 }

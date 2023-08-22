@@ -145,29 +145,6 @@ function checkPluginStatus() {
   echo -e "${STATUS#*: }" | sed 's/^.//;s/.$//'
 }
 
-function setGlobalProperty() {
-  printf 'Setting Global Property %s:%s ...' "${1}" "${2}"
-
-  # shellcheck disable=SC2016
-  # we don't want to expand these variables in single quotes
-  GROOVY_SCRIPT=$(env -i KEY="${1}" \
-               VALUE="${2}" \
-               envsubst '${KEY},
-                         ${VALUE}' \
-               < scripts/jenkins/setGlobalPropertyTemplate.groovy)
-
-  STATUS=$(curlJenkins --fail -L -o /dev/null --write-out '%{http_code}' \
-       -d "script=${GROOVY_SCRIPT}" --user "${JENKINS_USERNAME}:${JENKINS_PASSWORD}" \
-       "${JENKINS_URL}/scriptText" ) && EXIT_STATUS=$? || EXIT_STATUS=$?
-  if [ $EXIT_STATUS != 0 ]
-    then
-      echo "Setting Global Property ${1}:${2} failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
-      exit $EXIT_STATUS
-  fi
-
-  printStatus "${STATUS}"
-}
-
 function printStatus() {
   STATUS_CODE=${1}
   if [ "${STATUS_CODE}" -eq 200 ] || [ "${STATUS_CODE}" -eq 302 ]

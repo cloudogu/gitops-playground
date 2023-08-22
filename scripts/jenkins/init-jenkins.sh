@@ -85,6 +85,10 @@ function enablePrometheusAuthentication() {
   runGroovy jenkins enable-prometheus-authentication --jenkins-url="$JENKINS_URL" --jenkins-username="$JENKINS_USERNAME" --jenkins-password="$JENKINS_PASSWORD"
 }
 
+function setGlobalProperty() {
+  runGroovy jenkins set-global-property "${1}" "${2}" --jenkins-url="$JENKINS_URL" --jenkins-username="$JENKINS_USERNAME" --jenkins-password="$JENKINS_PASSWORD"
+}
+
 function configureJenkins() {
   local SCMM_URL pluginFolder
   
