@@ -1,12 +1,6 @@
 package com.cloudogu.gitops.cli
 
-import com.cloudogu.gitops.dependencyinjection.JenkinsFactory
-import com.cloudogu.gitops.jenkins.GlobalPropertyManager
-import com.cloudogu.gitops.jenkins.JenkinsConfiguration
-import com.cloudogu.gitops.jenkins.JobManager
-import com.cloudogu.gitops.jenkins.PrometheusConfigurator
-import com.cloudogu.gitops.jenkins.UserManager
-import com.cloudogu.gitops.utils.CommandExecutor
+import com.cloudogu.gitops.jenkins.*
 import groovy.util.logging.Slf4j
 import io.micronaut.context.ApplicationContext
 import picocli.CommandLine.Command

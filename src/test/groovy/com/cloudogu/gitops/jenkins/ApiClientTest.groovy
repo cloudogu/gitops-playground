@@ -3,18 +3,15 @@ package com.cloudogu.gitops.jenkins
 import com.cloudogu.gitops.common.MockWebServerHttpsFactory
 import com.cloudogu.gitops.config.Configuration
 import io.micronaut.context.ApplicationContext
-import io.micronaut.context.Qualifier
+import okhttp3.FormBody
 import okhttp3.JavaNetCookieJar
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
-import okhttp3.tls.HandshakeCertificates
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 
-import javax.net.ssl.SSLContext
-import javax.net.ssl.X509TrustManager
-import java.security.SecureRandom
+import java.nio.charset.Charset
 
 import static org.assertj.core.api.Assertions.assertThat
 
@@ -54,6 +51,37 @@ class ApiClientTest {
         assertThat(runScriptRequest.path).isEqualTo("/jenkins/scriptText")
         assertThat(runScriptRequest.getHeader('Authorization')).startsWith("Basic ")
         assertThat(runScriptRequest.getHeader('Jenkins-Crumb')).startsWith("the-crumb")
+    }
+
+    @Test
+    void 'adds crumb to sendRequest'() {
+        webServer.enqueue(new MockResponse().setBody('{"crumb": "the-crumb", "crumbRequestField": "Jenkins-Crumb"}'))
+        webServer.enqueue(new MockResponse())
+
+        def client = new ApiClient(webServer.url('jenkins').toString(), 'admin', 'admin', new OkHttpClient())
+        client.sendRequest("foobar", null)
+
+        assertThat(webServer.requestCount).isEqualTo(2)
+        webServer.takeRequest() // crumb
+        def request = webServer.takeRequest()
+        assertThat(request.method).isEqualTo("GET")
+        assertThat(request.headers.get("Jenkins-Crumb")).isEqualTo("the-crumb")
+    }
+
+    @Test
+    void 'adds crumb and post data to sendRequest'() {
+        webServer.enqueue(new MockResponse().setBody('{"crumb": "the-crumb", "crumbRequestField": "Jenkins-Crumb"}'))
+        webServer.enqueue(new MockResponse())
+
+        def client = new ApiClient(webServer.url('jenkins').toString(), 'admin', 'admin', new OkHttpClient())
+        client.sendRequest("foobar", new FormBody.Builder().add('key', 'value with spaces').build())
+
+        assertThat(webServer.requestCount).isEqualTo(2)
+        webServer.takeRequest() // crumb
+        def request = webServer.takeRequest()
+        assertThat(request.method).isEqualTo("POST")
+        assertThat(request.headers.get("Jenkins-Crumb")).isEqualTo("the-crumb")
+        assertThat(request.body.readString(Charset.defaultCharset())).isEqualTo("key=value%20with%20spaces")
     }
 
     @Test
