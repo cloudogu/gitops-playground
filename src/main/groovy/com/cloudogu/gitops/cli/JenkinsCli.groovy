@@ -68,7 +68,7 @@ class JenkinsCli {
     }
 
 
-    @Command(name = "create-credential", description = "Create a credential withing a job.", mixinStandardHelpOptions = true)
+    @Command(name = "create-credential", description = "Create a credential within a job.", mixinStandardHelpOptions = true)
     void createCredential(
             @Parameters(paramLabel = "jobName", description = "The job to create the credential for")
             String jobName,

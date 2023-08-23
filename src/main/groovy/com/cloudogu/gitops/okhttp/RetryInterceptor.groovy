@@ -11,6 +11,7 @@ class RetryInterceptor implements Interceptor {
     private int retries
     private int waitPeriodInMs
 
+    // Number of retries in uncommonly high, because we might have to  outlive a unexpected Jenkins restart
     RetryInterceptor(int retries = 180, int waitPeriodInMs = 2000) {
         this.waitPeriodInMs = waitPeriodInMs
         this.retries = retries
