@@ -45,34 +45,6 @@ function createJob() {
   printStatus "${STATUS}"
 }
 
-function createCredentials() {
-  printf 'Creating credentials for %s ... ' "${1}"
-  JOBNAME="${5}"
-
-  # shellcheck disable=SC2016
-  # we don't want to expand these variables in single quotes
-  CRED_CONFIG=$(env -i CREDENTIALS_ID="${1}" \
-               USERNAME="${2}" \
-               PASSWORD="${3}" \
-               DESCRIPTION="${4}" \
-               envsubst '${CREDENTIALS_ID},
-                         ${USERNAME},
-                         ${PASSWORD},
-                         ${DESCRIPTION}' \
-               < scripts/jenkins/credentialsTemplate.json)
-
-  STATUS=$(curlJenkins --fail -L -o /dev/null --write-out '%{http_code}' \
-        -X POST "${JENKINS_URL}/job/${JOBNAME}/credentials/store/folder/domain/_/createCredentials" \
-        --data-urlencode "json=${CRED_CONFIG}") && EXIT_STATUS=$? || EXIT_STATUS=$?
-  if [ $EXIT_STATUS != 0 ]
-    then
-      echo "Creating Credentials failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
-      exit $EXIT_STATUS
-  fi
-
-  printStatus "${STATUS}"
-}
-
 function crumb() {
     
   RESPONSE=$(curl -s --cookie-jar /tmp/cookies \

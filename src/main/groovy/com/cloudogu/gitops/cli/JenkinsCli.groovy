@@ -3,6 +3,7 @@ package com.cloudogu.gitops.cli
 import com.cloudogu.gitops.dependencyinjection.JenkinsFactory
 import com.cloudogu.gitops.jenkins.GlobalPropertyManager
 import com.cloudogu.gitops.jenkins.JenkinsConfiguration
+import com.cloudogu.gitops.jenkins.JobManager
 import com.cloudogu.gitops.jenkins.PrometheusConfigurator
 import com.cloudogu.gitops.jenkins.UserManager
 import com.cloudogu.gitops.utils.CommandExecutor
@@ -64,6 +65,26 @@ class JenkinsCli {
     ) {
         def globalPropertyManager = createApplicationContext(options).getBean(GlobalPropertyManager)
         globalPropertyManager.setGlobalProperty(key, value)
+    }
+
+
+    @Command(name = "create-credential", description = "Create a credential withing a job.", mixinStandardHelpOptions = true)
+    void createCredential(
+            @Parameters(paramLabel = "jobName", description = "The job to create the credential for")
+            String jobName,
+            @Parameters(paramLabel = "id", description = "Credential's id")
+            String id,
+            @Parameters(paramLabel = "username", description = "Associated username")
+            String username,
+            @Parameters(paramLabel = "password", description = "Associated password")
+            String password,
+            @Parameters(paramLabel = "description", description = "The description")
+            String description,
+            @Mixin
+            OptionsMixin options
+    ) {
+        def globalPropertyManager = createApplicationContext(options).getBean(JobManager)
+        globalPropertyManager.createCredential(jobName, id, username, password, description)
     }
 
     private ApplicationContext createApplicationContext(OptionsMixin options) {

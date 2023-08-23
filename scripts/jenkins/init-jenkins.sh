@@ -89,6 +89,10 @@ function setGlobalProperty() {
   runGroovy jenkins set-global-property "${1}" "${2}" --jenkins-url="$JENKINS_URL" --jenkins-username="$JENKINS_USERNAME" --jenkins-password="$JENKINS_PASSWORD"
 }
 
+function createCredentials() {
+  runGroovy jenkins create-credential "${5}" "${1}" "${2}" "${3}" "${4}" --jenkins-url="$JENKINS_URL" --jenkins-username="$JENKINS_USERNAME" --jenkins-password="$JENKINS_PASSWORD"
+}
+
 function configureJenkins() {
   local SCMM_URL pluginFolder
   
