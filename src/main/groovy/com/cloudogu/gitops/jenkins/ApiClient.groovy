@@ -6,6 +6,7 @@ import okhttp3.Credentials
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 
 @Slf4j
 class ApiClient {
@@ -42,6 +43,17 @@ class ApiClient {
         }
 
         return response.body().string()
+    }
+
+    Response sendRequest(String url, FormBody postData) {
+        Request.Builder request = buildRequest(url)
+            .header("Jenkins-Crumb", getCrumb())
+
+        if (postData != null) {
+            request.method("POST", postData)
+        }
+
+        return client.newCall(request.build()).execute()
     }
 
     private String getCrumb() {

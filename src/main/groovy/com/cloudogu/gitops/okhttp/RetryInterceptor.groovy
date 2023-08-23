@@ -11,7 +11,8 @@ class RetryInterceptor implements Interceptor {
     private int retries
     private int waitPeriodInMs
 
-    RetryInterceptor(int retries = 3, int waitPeriodInMs = 1000) {
+    // Number of retries in uncommonly high, because we might have to  outlive a unexpected Jenkins restart
+    RetryInterceptor(int retries = 180, int waitPeriodInMs = 2000) {
         this.waitPeriodInMs = waitPeriodInMs
         this.retries = retries
     }
@@ -22,6 +23,7 @@ class RetryInterceptor implements Interceptor {
         def response = chain.proceed(chain.request())
         while (i < retries && response.code() in getStatusCodesToRetry()) {
             Thread.sleep(waitPeriodInMs)
+            response.close()
             response = chain.proceed(chain.request())
             ++i
         }
@@ -30,14 +32,17 @@ class RetryInterceptor implements Interceptor {
     }
 
     private List<Integer> getStatusCodesToRetry() {
-        // list of codes if from curl --retry
         return [
+            // list of codes if from curl --retry
             408, // Request Timeout
             429, // Too Many Requests
             500, // Internal Server Error
             502, // Bad Gateway
             503, // Service Unavailable
             504, // Gateway Timeout
+            // additional codes that could be temporary in e.g. Jenkins
+            401, // Unauthorized
+            403, // Forbidden
         ]
     }
 }
