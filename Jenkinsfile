@@ -1,23 +1,24 @@
 #!groovy
-@Library('github.com/cloudogu/ces-build-lib@1.64.1')
+@Library('github.com/cloudogu/ces-build-lib@1.65.1')
 import com.cloudogu.ces.cesbuildlib.*
 
 String getDockerRegistryBaseUrl() { 'ghcr.io' }
+
 String getDockerImageName() { 'cloudogu/gitops-playground' }
 // Note that from 0.30.x the resulting file will never be 0 kb in size, as checked in saveScanResultsOnVulnerabilities()
 String getTrivyVersion() { '0.29.2' }
 
 properties([
-    // Dont keep builds forever to preserve space
-    buildDiscarder(logRotator(numToKeepStr: '50')),
+        // Dont keep builds forever to preserve space
+        buildDiscarder(logRotator(numToKeepStr: '50')),
 
-    // For now allow concurrent builds.
-    // This is a slight risk of failing builds if two Jobs of the same branch install k3d (workspace-local) at the same time.
-    // If this happens to occur often, add the following here: disableConcurrentBuilds(),
+        // For now allow concurrent builds.
+        // This is a slight risk of failing builds if two Jobs of the same branch install k3d (workspace-local) at the same time.
+        // If this happens to occur often, add the following here: disableConcurrentBuilds(),
 
-    parameters([
-        booleanParam(defaultValue: false, name: 'forcePushImage', description: 'Pushes the image with the current git commit as tag, even when it is on a branch')
-    ])
+        parameters([
+                booleanParam(defaultValue: false, name: 'forcePushImage', description: 'Pushes the image with the current git commit as tag, even when it is on a branch')
+        ])
 ])
 
 node('high-cpu') {
@@ -27,7 +28,7 @@ node('high-cpu') {
     clusterName = ''
     images = []
     imageNames = []
-    
+
     timestamps {
         catchError {
             timeout(activity: false, time: 60, unit: 'MINUTES') {
@@ -39,18 +40,18 @@ node('high-cpu') {
 
                 stage('Build cli') {
                     // Read Java version from Dockerfile (DRY)
-                    String jdkVersion = sh (returnStdout: true, script: 
+                    String jdkVersion = sh(returnStdout: true, script:
                             'grep -r \'ARG JDK_VERSION\' Dockerfile | sed "s/.*JDK_VERSION=\'\\(.*\\)\'.*/\\1/" ').trim()
                     // Groovy version is defined by micronaut version. Get it from there.
-                    String groovyVersion = sh (returnStdout: true, script:
+                    String groovyVersion = sh(returnStdout: true, script:
                             'MICRONAUT_VERSION=$(cat pom.xml | sed -n \'/<parent>/,/<\\/parent>/p\' | ' +
                                     'sed -n \'s/.*<version>\\(.*\\)<\\/version>.*/\\1/p\'); ' +
-                            'curl -s https://repo1.maven.org/maven2/io/micronaut/micronaut-core-bom/${MICRONAUT_VERSION}/micronaut-core-bom-${MICRONAUT_VERSION}.pom | ' +
+                                    'curl -s https://repo1.maven.org/maven2/io/micronaut/micronaut-core-bom/${MICRONAUT_VERSION}/micronaut-core-bom-${MICRONAUT_VERSION}.pom | ' +
                                     'sed -n \'s/.*<groovy.version>\\(.*\\)<\\/groovy.version>.*/\\1/p\'').trim()
                     groovyImage = "groovy:${groovyVersion}-jdk${jdkVersion}"
                     // Re-use groovy image here, even though we only need JDK
                     mvn = new MavenWrapperInDocker(this, groovyImage)
-                    
+
                     mvn 'clean install -DskipTests'
                 }
 
@@ -62,20 +63,21 @@ node('high-cpu') {
 
                 stage('Build images') {
                     imageNames += createImageName(git.commitHashShort)
-                    imageNames += createImageName(git.commitHashShort) + '-dev' 
-                    
+                    imageNames += createImageName(git.commitHashShort) + '-dev'
+
                     images += buildImage(imageNames[0])
                     images += buildImage(imageNames[1], '--build-arg ENV=dev')
                 }
-                
+
                 parallel(
                         'Scan image': {
                             stage('Scan image') {
-                                scanImage(imageNames[0])
-                                saveScanResultsOnVulnerabilities()
-                                
-                                scanImage(imageNames[1], '-dev')
-                                saveScanResultsOnVulnerabilities('-dev')
+
+                                scanForCriticalVulns(imageNames[0],"prod-criticals")
+                                scanForCriticalVulns(imageNames[1], "dev-criticals")
+
+                                scanForAllVulns(imageNames[0], "prod-all")
+                                scanForAllVulns(imageNames[1], "dev-all")
                             }
                         },
 
@@ -93,7 +95,7 @@ node('high-cpu') {
 
                                 docker.image(imageNames[0])
                                         .inside("-e KUBECONFIG=${env.WORKSPACE}/.kube/config " +
-                                                " --network=host --entrypoint=''" ) {
+                                                " --network=host --entrypoint=''") {
                                             sh "/app/scripts/apply.sh --yes --trace --internal-registry-port=${registryPort} --argocd --monitoring --vault=dev"
                                         }
                             }
@@ -113,17 +115,17 @@ node('high-cpu') {
                     ).trim()
 
                     new Docker(this).image(groovyImage)
-                            // Avoids errors ("unable to resolve class") probably due to missing HOME for container in JVM.
-                            .mountJenkinsUser() 
+                    // Avoids errors ("unable to resolve class") probably due to missing HOME for container in JVM.
+                            .mountJenkinsUser()
                             .inside("--network=${k3dNetwork}") {
                                 // removing m2 and grapes avoids issues where grapes primarily resolves local m2 and fails on missing versions
                                 sh "rm -rf .m2/"
                                 sh "rm -rf .groovy/grapes"
                                 sh "groovy ./scripts/e2e.groovy --url http://${k3dAddress}:9090 --user admin --password admin --writeFailedLog --fail --retry 2"
-                    }
+                            }
                 }
-                
-               stage('Push image') {
+
+                stage('Push image') {
                     if (isBuildSuccessful()) {
                         docker.withRegistry("https://${dockerRegistryBaseUrl}", 'cesmarvin-ghcr') {
                             // Push prod image last, because last pushed image is listed on top in GitHub
@@ -132,7 +134,7 @@ node('high-cpu') {
                                 images[1].push(git.tag + '-dev')
                                 images[0].push()
                                 images[0].push(git.tag)
-                                
+
                                 currentBuild.description = createImageName(git.tag)
                                 currentBuild.description += "\n${imageNames[0]}"
 
@@ -182,7 +184,7 @@ node('high-cpu') {
     }
 }
 
-def buildImage(String imageName, String additionalBuildArgs='') {
+def buildImage(String imageName, String additionalBuildArgs = '') {
     String rfcDate = sh(returnStdout: true, script: 'date --rfc-3339 ns').trim()
     return docker.build(imageName,
             "--build-arg BUILD_DATE='${rfcDate}' " +
@@ -192,51 +194,52 @@ def buildImage(String imageName, String additionalBuildArgs='') {
                     ".")
 }
 
-def scanImage(String imageName, String suffix='') {
-    trivy(".trivy/trivyOutput${suffix}-fixable.txt", '--severity=CRITICAL --ignore-unfixed', imageName)
-    trivy(".trivy/trivyOutput${suffix}-all.txt", '', imageName)
-}
+def scanForCriticalVulns(String imageName, String fileName){
+    trivyConfig = [
+            imageName      : imageName,
+            severity       : ['CRITICAL'],
+            additionalFlags: '--ignore-unfixed'
+    ]
 
-private void trivy(output, flags, imageName) {
-    sh 'mkdir -p .trivy/.cache'
-    new Docker(this).image("aquasec/trivy:${trivyVersion}")
-            .mountJenkinsUser()
-            .mountDockerSocket()
-            .inside("-v ${env.WORKSPACE}/.trivy/.cache:/root/.cache/") {
-                // Scanning occasionally take longer than the default 5 min, increase timeout
-                // Avoid timouts with offline-scan. This does not affect updates of the trivy DB 
-                // https://github.com/aquasecurity/trivy/issues/3421
-                sh "trivy -d image --offline-scan --timeout 30m -o ${output} ${flags} ${imageName}"
-            }
-}
+    def vulns = findVulnerabilitiesWithTrivy(trivyConfig)
 
-def saveScanResultsOnVulnerabilities(String suffix='') {
-    if (readFile(".trivy/trivyOutput${suffix}-all.txt").size() != 0) {
-        archiveArtifacts artifacts: ".trivy/trivyOutput${suffix}-all.txt"
+    if (vulns.size() > 0) {
+        writeFile(file: ".trivy/${fileName}.json", encoding: "UTF-8", text: readFile(file: '.trivy/trivyOutput.json', encoding: "UTF-8"))
+        archiveArtifacts artifacts: ".trivy/${fileName}.json"
+        unstable "Found  ${vulns.size()} vulnerabilities in image. See ${fileName}.json"
     }
-    if (readFile(".trivy/trivyOutput${suffix}-fixable.txt").size() != 0) {
-        archiveArtifacts artifacts: ".trivy/trivyOutput${suffix}-fixable.txt"
-        unstable('There are critical and fixable vulnerabilities.')
+}
+
+def scanForAllVulns(String imageName, String fileName){
+    trivyConfig = [
+            imageName      : imageName
+    ]
+
+    def vulns = findVulnerabilitiesWithTrivy(trivyConfig)
+
+    if (vulns.size() > 0) {
+        writeFile(file: ".trivy/${fileName}.json", encoding: "UTF-8", text: readFile(file: '.trivy/trivyOutput.json', encoding: "UTF-8"))
+        archiveArtifacts artifacts: ".trivy/${fileName}.json"
     }
 }
 
 def startK3d(clusterName) {
     sh "mkdir -p ${WORKSPACE}/.k3d/bin"
-    
+
     withEnv(["HOME=${WORKSPACE}", "PATH=${WORKSPACE}/.k3d/bin:${PATH}"]) { // Make k3d write kubeconfig to WORKSPACE
         // Install k3d binary to workspace in order to avoid concurrency issues
         sh "if ! command -v k3d >/dev/null 2>&1; then " +
                 "curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh |" +
-                  'TAG=v$(sed -n "s/^K3D_VERSION=//p" scripts/init-cluster.sh) ' +
-                  "K3D_INSTALL_DIR=${WORKSPACE}/.k3d/bin " +
-                     'bash -s -- --no-sudo; fi'
+                'TAG=v$(sed -n "s/^K3D_VERSION=//p" scripts/init-cluster.sh) ' +
+                "K3D_INSTALL_DIR=${WORKSPACE}/.k3d/bin " +
+                'bash -s -- --no-sudo; fi'
         sh "yes | ./scripts/init-cluster.sh --cluster-name=${clusterName} --bind-localhost=false"
     }
 }
 
 String createClusterName() {
     String[] randomUUIDs = UUID.randomUUID().toString().split("-")
-    String uuid = randomUUIDs[randomUUIDs.length-1]
+    String uuid = randomUUIDs[randomUUIDs.length - 1]
     return "citest-" + uuid
 }
 
