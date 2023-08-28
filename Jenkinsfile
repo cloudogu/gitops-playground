@@ -5,8 +5,6 @@ import com.cloudogu.ces.cesbuildlib.*
 String getDockerRegistryBaseUrl() { 'ghcr.io' }
 
 String getDockerImageName() { 'cloudogu/gitops-playground' }
-// Note that from 0.30.x the resulting file will never be 0 kb in size, as checked in saveScanResultsOnVulnerabilities()
-String getTrivyVersion() { '0.29.2' }
 
 properties([
         // Dont keep builds forever to preserve space
