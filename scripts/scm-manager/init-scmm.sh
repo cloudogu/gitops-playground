@@ -236,6 +236,8 @@ function scmmHelmSettingsForRemoteCluster() {
     # Default clusters don't allow for node ports < 30.000, so just unset nodePort.
     # A defined nodePort is not needed for remote cluster, where the externalIp is used for accessing SCMM
     echo "--set service.nodePort="
+  else
+    echo "--set service.type=NodePort"
   fi
 }
 
