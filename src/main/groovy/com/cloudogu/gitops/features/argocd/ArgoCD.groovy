@@ -22,10 +22,6 @@ import java.nio.file.Path
 class ArgoCD extends Feature {
     static final String HELM_VALUES_PATH = 'argocd/values.yaml'
     static final String CHART_YAML_PATH = 'argocd/Chart.yaml'
-    static final String NGINX_HELM_JENKINS_VALUES_PATH = 'k8s/values-shared.yaml'
-    static final String NGINX_HELM_DEPENDENCY_VALUES_PATH = 'apps/nginx-helm-umbrella/values.yaml'
-    static final String NGINX_VALIDATION_VALUES_PATH = 'k8s/values-shared.yaml'
-    static final String BROKEN_APPLICATION_RESOURCES_PATH = 'broken-application.yaml'
     static final String SCMM_URL_INTERNAL = "http://scmm-scm-manager.default.svc.cluster.local/scm"
     private Map config
     private List<RepoInitializationAction> gitRepos = []
@@ -115,9 +111,6 @@ class ArgoCD extends Feature {
 
         preparePetClinicRepos()
 
-        prepareExerciseNginxValidationRepo()
-        prepareExerciseBrokenApplicationRepo()
-
         gitRepos.forEach( repoInitializationAction -> {
             repoInitializationAction.repo.commitAndPush("Initial Commit")
         })
@@ -165,48 +158,15 @@ class ArgoCD extends Feature {
 
         fileSystemUtils.copyDirectory("${fileSystemUtils.rootDir}/applications/argocd/nginx/helm-umbrella",
                 Path.of(exampleAppsInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'apps/nginx-helm-umbrella/').toString())
-        if (!config.application["remote"]) {
-            //  Set NodePort service, to avoid "Pending" services and "Processing" state in argo on local cluster
-            log.debug("Setting service.type to NodePort since it is not running in a remote cluster for nginx-helm-umbrella")
-            def nginxHelmValuesTmpFile = Path.of exampleAppsInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), NGINX_HELM_DEPENDENCY_VALUES_PATH
-            Map nginxHelmValuesYaml = fileSystemUtils.readYaml(nginxHelmValuesTmpFile)
-            MapUtils.deepMerge([
-                    nginx: [
-                            service: [
-                                    type: 'NodePort'
-                            ]
-                    ]
-            ], nginxHelmValuesYaml)
-            log.trace("nginx-helm-umbrella values yaml: ${nginxHelmValuesYaml}")
-            fileSystemUtils.writeYaml(nginxHelmValuesYaml, nginxHelmValuesTmpFile.toFile())
-        }
+        exampleAppsInitializationAction.replaceTemplates()
     }
 
     private void prepareApplicationNginxHelmJenkins() {
-
-        def nginxHelmJenkinsValuesTmpFile = Path.of nginxHelmJenkinsInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), NGINX_HELM_JENKINS_VALUES_PATH
-        Map nginxHelmJenkinsValuesYaml = fileSystemUtils.readYaml(nginxHelmJenkinsValuesTmpFile)
-
         if (!config.features['secrets']['active']) {
             // External Secrets are not needed in example
             deleteFile nginxHelmJenkinsInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/k8s/staging/external-secret.yaml'
             deleteFile nginxHelmJenkinsInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/k8s/production/external-secret.yaml'
         }
-
-        if (config['images']['nginx']) {
-            log.debug("Setting custom nginx image as requested for nginx-helm-jenkins")
-            def image = DockerImageParser.parse(config['images']['nginx'] as String)
-            MapUtils.deepMerge([
-                    image: [
-                            registry: image.registry,
-                            repository: image.repository,
-                            tag: image.tag
-                    ]
-            ], nginxHelmJenkinsValuesYaml)
-        }
-
-        log.trace("nginx-helm-jenkins values yaml: ${nginxHelmJenkinsValuesYaml}")
-        fileSystemUtils.writeYaml(nginxHelmJenkinsValuesYaml, nginxHelmJenkinsValuesTmpFile.toFile())
     }
 
     private void preparePetClinicRepos() {
@@ -214,40 +174,8 @@ class ArgoCD extends Feature {
             def tmpDir = repoInitAction.repo.getAbsoluteLocalRepoTmpDir()
             log.debug("Copying original petclinic files for petclinic repo: $tmpDir")
             fileSystemUtils.copyDirectory(remotePetClinicRepoTmpDir.toString(), tmpDir)
+            fileSystemUtils.deleteEmptyFiles(Path.of(tmpDir), ~/k8s\/.*\.yaml/)
         }
-    }
-
-    private void prepareExerciseNginxValidationRepo() {
-        if (!config['images']['nginx']) {
-            return
-        }
-
-        def image = DockerImageParser.parse(config['images']['nginx'] as String)
-        def valuesSharedTmpFile = Path.of nginxValidationInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), NGINX_VALIDATION_VALUES_PATH
-
-        def yaml = YAMLMapper.builder()
-                .disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER)
-                .build()
-                .writeValueAsString([
-                        image: [
-                                registry  : image.registry,
-                                repository: image.repository,
-                                tag       : image.tag,
-                        ]
-                ])
-        // This file contains broken yaml, therefore we cannot parse it
-        valuesSharedTmpFile.setText(valuesSharedTmpFile.text + yaml)
-    }
-
-    private void prepareExerciseBrokenApplicationRepo() {
-        if (!config['images']['nginx']) {
-            return
-        }
-
-        def image = DockerImageParser.parse(config['images']['nginx'] as String)
-        def kubernetesResourcesPath = Path.of brokenApplicationInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), BROKEN_APPLICATION_RESOURCES_PATH
-
-        fileSystemUtils.replaceFileContent(kubernetesResourcesPath.toString(), 'bitnami/nginx:1.25.1', "${image.getRegistryAndRepositoryAsString()}:$image.tag")
     }
 
     private void installArgoCd() {
@@ -359,20 +287,43 @@ class ArgoCD extends Feature {
         void initLocalRepo() {
             repo.cloneRepo()
             repo.copyDirectoryContents(copyFromDirectory)
+            replaceTemplates()
+        }
 
+        void replaceTemplates() {
             repo.replaceTemplates(~/\.ftl/, [
-                    namePrefix: config.application['namePrefix'] as String,
+                    namePrefix          : config.application['namePrefix'] as String,
                     namePrefixForEnvVars: config.application['namePrefixForEnvVars'] as String,
-                    images: config.images,
-                    isRemote: config.application['remote'],
-                    isInsecure: config.application['insecure'],
-                    secrets: [
-                            active: config.features['secrets']['active']
+                    images              : config.images,
+                    nginxImage          : config.images['nginx'] ? DockerImageParser.parse(config.images['nginx'] as String) : null,
+                    isRemote            : config.application['remote'],
+                    isInsecure          : config.application['insecure'],
+                    argocd              : [
+                            url: config.features['argocd']['url'],
                     ],
-                    scmm: [
-                            baseUrl: config.scmm['internal'] ? 'http://scmm-scm-manager.default.svc.cluster.local/scm' : ScmmRepo.createScmmUrl(config),
-                            host: config.scmm['internal'] ? 'scmm-scm-manager.default.svc.cluster.local' : config.scmm['host'],
+                    monitoring          : [
+                            grafana: [
+                                    url: config.features['monitoring']['grafanaUrl']
+                            ]
+                    ],
+                    secrets             : [
+                            active: config.features['secrets']['active'],
+                            vault : [
+                                    url: config.features['secrets']['vault']['url'],
+                            ],
+                    ],
+                    scmm                : [
+                            baseUrl : config.scmm['internal'] ? 'http://scmm-scm-manager.default.svc.cluster.local/scm' : ScmmRepo.createScmmUrl(config),
+                            host    : config.scmm['internal'] ? 'scmm-scm-manager.default.svc.cluster.local' : config.scmm['host'],
                             protocol: config.scmm['internal'] ? 'http' : config.scmm['protocol'],
+                    ],
+                    exampleApps         : [
+                            petclinic: [
+                                    baseDomain: config.features['exampleApps']['petclinic']['baseDomain']
+                            ],
+                            nginx    : [
+                                    baseDomain: config.features['exampleApps']['nginx']['baseDomain']
+                            ],
                     ]
             ])
         }

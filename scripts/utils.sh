@@ -22,7 +22,7 @@ function getExternalIP() {
   
   external_ip=""
   while [ -z $external_ip ]; do
-    external_ip=$(kubectl -n ${namespace} get svc ${servicename} --template="{{range .status.loadBalancer.ingress}}{{.ip}}{{end}}")
+    external_ip=$(kubectl -n ${namespace} get svc ${servicename} -o=jsonpath="{.status.loadBalancer.ingress[0]['hostname','ip']}")
     [ -z "$external_ip" ] && sleep 10
   done
   echo $external_ip

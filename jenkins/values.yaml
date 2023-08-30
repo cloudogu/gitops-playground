@@ -141,4 +141,3 @@ agent:
   # Not in Jenkins but in K8s. Helpful for debugging
   # In order to get rid of those many "default-xyz" pod use: kubectl delete pod -l jenkins/jenkins-jenkins-agent=true
   podRetention: "Always"
-

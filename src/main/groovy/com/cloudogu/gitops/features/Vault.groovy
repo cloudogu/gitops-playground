@@ -82,6 +82,19 @@ class Vault extends Feature {
             yaml['ui']['serviceNodePort'] = 8200
         }
 
+        if (config.features['secrets']['vault']['url']) {
+            MapUtils.deepMerge([
+                   server: [
+                           ingress: [
+                                   enabled: true,
+                                   hosts: [
+                                           [host: config.features['secrets']['vault']['url']],
+                                   ],
+                           ]
+                   ]
+            ], yaml)
+        }
+
         if (helmConfig['image']) {
             log.debug("Setting custom image as requested for vault")
             def image = DockerImageParser.parse(helmConfig['image'] as String)

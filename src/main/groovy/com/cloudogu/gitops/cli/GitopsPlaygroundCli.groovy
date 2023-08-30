@@ -99,11 +99,19 @@ class GitopsPlaygroundCli  implements Runnable {
     // args group metrics
     @Option(names = ['--metrics', '--monitoring'], description = 'Installs the Kube-Prometheus-Stack. This includes Prometheus, the Prometheus operator, Grafana and some extra resources')
     private boolean monitoring
+    @Option(names = ['--grafana-url'], description = 'Sets url for grafana')
+    private String grafanaUrl
 
     // args group metrics
     @Option(names = ['--vault'], description = 'Installs Hashicorp vault and the external secrets operator. Possible values: ${COMPLETION-CANDIDATES}')
     private VaultModes vault
     enum VaultModes { dev, prod }
+    @Option(names = ['--vault-url'], description = 'Sets url for vault ui')
+    private String vaultUrl
+
+    // args group mail
+    @Option(names = ['--mailhog-url'], description = 'Sets url for mailhog')
+    private String mailhogUrl
 
     // args group debug
     @Option(names = ['-d', '--debug'], description = 'Debug output', scope = CommandLine.ScopeType.INHERIT)
@@ -129,6 +137,13 @@ class GitopsPlaygroundCli  implements Runnable {
     private boolean argocd
     @Option(names = ['--argocd-url'], description = 'The URL where argocd is accessible. It has to be the full URL with http:// or https://')
     private String argocdUrl
+
+    // args group example apps
+    @Option(names = ['--petclinic-base-domain'], description = 'The domain under which a subdomain for all petclinic will be used.')
+    private String petclinicBaseDomain
+    @Option(names = ['--nginx-base-domain'], description = 'The domain under which a subdomain for all nginx applications will be used.')
+    private String nginxBaseDomain
+
 
     @Override
     void run() {
@@ -214,8 +229,20 @@ class GitopsPlaygroundCli  implements Runnable {
                                 active    : argocd,
                                 url       : argocdUrl
                         ],
+                        mail: [
+                                url: mailhogUrl,
+                        ],
+                        exampleApps: [
+                                petclinic: [
+                                        baseDomain: petclinicBaseDomain,
+                                ],
+                                nginx    : [
+                                        baseDomain: nginxBaseDomain,
+                                ],
+                        ],
                         monitoring : [
                                 active    : monitoring,
+                                grafanaUrl: grafanaUrl,
                                 helm      : [
                                         grafanaImage: grafanaImage,
                                         grafanaSidecarImage: grafanaSidecarImage,
@@ -227,6 +254,7 @@ class GitopsPlaygroundCli  implements Runnable {
                         secrets : [
                                 vault : [
                                         mode : vault,
+                                        url: vaultUrl,
                                         helm: [
                                                 image: vaultImage
                                         ]

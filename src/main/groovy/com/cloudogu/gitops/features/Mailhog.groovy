@@ -4,6 +4,7 @@ import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
@@ -14,10 +15,9 @@ import org.springframework.security.crypto.bcrypt.BCrypt
 @Order(200)
 class Mailhog extends Feature {
 
-    static final String HELM_VALUES_PATH = "applications/cluster-resources/mailhog-helm-values.yaml"
+    static final String HELM_VALUES_PATH = "applications/cluster-resources/mailhog-helm-values.ftl.yaml"
     
     private Map config
-    private boolean remoteCluster
     private String username
     private String password
     private FileSystemUtils fileSystemUtils
@@ -30,7 +30,6 @@ class Mailhog extends Feature {
     ) {
         this.deployer = deployer
         this.config = config.getConfig()
-        this.remoteCluster = this.config.application["remote"]
         this.username = this.config.application["username"]
         this.password = this.config.application["password"]
         this.fileSystemUtils = fileSystemUtils
@@ -43,22 +42,15 @@ class Mailhog extends Feature {
 
     @Override
     void enable() {
-        def tmpHelmValues = fileSystemUtils.copyToTempDir(HELM_VALUES_PATH)
-        def tmpHelmValuesFolder = tmpHelmValues.parent.toString()
-        def tmpHelmValuesFile = tmpHelmValues.fileName.toString()
-
-        if (!remoteCluster) {
-            log.debug("Setting mailhog service.type to NodePort since it is not running in a remote cluster")
-            fileSystemUtils.replaceFileContent(tmpHelmValuesFolder, tmpHelmValuesFile, 
-                    "LoadBalancer", "NodePort")
-        }
-
-        log.debug("Setting new mailhog credentials")
         String bcryptMailhogPassword = BCrypt.hashpw(password, BCrypt.gensalt(4))
-        String from = "fileContents: \"admin:\$2a\$04\$bM4G0jXB7m7mSv4UT8IuIe3.Bj6i6e2A13ryA0ln.hpyX7NeGQyG.\""
-        String to = "fileContents: \"$username:$bcryptMailhogPassword\""
-
-        fileSystemUtils.replaceFileContent(tmpHelmValuesFolder, tmpHelmValuesFile, from, to)
+        def tmpHelmValues = new TemplatingEngine().replaceTemplate(fileSystemUtils.copyToTempDir(HELM_VALUES_PATH).toFile(), [
+                mail: [
+                        url: config.features['mail']['url']
+                ],
+                isRemote: config.application['remote'],
+                username: username,
+                passwordCrypt: bcryptMailhogPassword,
+        ]).toPath()
 
         def helmConfig = config['features']['mail']['helm']
         deployer.deployFeature(

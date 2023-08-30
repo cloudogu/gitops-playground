@@ -2,6 +2,12 @@
 argo-cd:
 
   server:
+<#if argocd.url?has_content>
+    ingress:
+      enabled: true
+      hosts: [${argocd.url}]
+</#if>
+
     service:
       type: LoadBalancer
       # Is ignored when type is LoadBalancer. For local cluster we change the service type to NodePort
@@ -39,6 +45,7 @@ argo-cd:
     # https://github.com/argoproj/argo-cd/issues/11252
     params:
       application.namespaces: "*"
+      server.insecure: true # tls terminated in ingress
 
     # Repo credential templates are created dynamically in groovy, so they are not stored in git
     #credentialTemplates:

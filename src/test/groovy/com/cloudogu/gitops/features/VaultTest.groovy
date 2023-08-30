@@ -76,6 +76,24 @@ class VaultTest {
         assertThat(parseActualYaml()['ui']['serviceType']).isEqualTo('LoadBalancer')
         assertThat(parseActualYaml()['ui'] as Map).doesNotContainKey('serviceNodePort')
     }
+
+    @Test
+    void 'uses ingress if enabled'() {
+        config['features']['secrets']['vault']['url'] = 'vault.local'
+        createVault().install()
+
+
+        def ingressYaml = parseActualYaml()['server']['ingress']
+        assertThat(ingressYaml['enabled']).isEqualTo(true)
+        assertThat((ingressYaml['hosts'] as List)[0]['host']).isEqualTo('vault.local')
+    }
+
+    @Test
+    void 'does not use ingress by default'() {
+        createVault().install()
+
+        assertThat((parseActualYaml()['server'] as Map)).doesNotContainKey('ingress')
+    }
     
     @Test
     void 'Dev mode can be enabled via config'() {

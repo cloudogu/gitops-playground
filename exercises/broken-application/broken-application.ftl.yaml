@@ -27,7 +27,7 @@ spec:
     spec:
       containers:
         - name: broken-application
-          image: bitnami/nginx:1.25.1
+          image: <#if nginxImage??>${nginxImage}<#else>bitnami/nginx:1.25.1</#if>
           ports:
             - containerPort: 8080
           resources:

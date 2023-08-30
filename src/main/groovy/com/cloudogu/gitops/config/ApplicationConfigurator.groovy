@@ -1,12 +1,10 @@
 package com.cloudogu.gitops.config
 
-import ch.qos.logback.classic.Level
-import ch.qos.logback.classic.Logger
+
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
 import groovy.util.logging.Slf4j
 import jakarta.inject.Singleton
-import org.slf4j.LoggerFactory
 
 import static com.cloudogu.gitops.utils.MapUtils.*
 
@@ -71,7 +69,7 @@ class ApplicationConfigurator {
                     springBootHelmChart: [
                             // Take from env or use default because the Dockerfile provides a local copy of the repo
                             url: System.getenv('SPRING_BOOT_HELM_CHART_REPO') ?: 'https://github.com/cloudogu/spring-boot-helm-chart.git',
-                            ref: '0.3.0'
+                            ref: 'dd7d6a7ee0d7eefa7bb6768440223c19720d7812' // TODO: wait for release
                     ],
                     springPetclinic: [
                             url: System.getenv('SPRING_PETCLINIC_REPO') ?: 'https://github.com/cloudogu/spring-petclinic.git',
@@ -92,6 +90,7 @@ class ApplicationConfigurator {
                     ],
                     mail      : [
                             active: true,
+                            url: '',
                             helm  : [
                                     chart  : 'mailhog',
                                     repoURL: 'https://codecentric.github.io/helm-charts',
@@ -100,6 +99,7 @@ class ApplicationConfigurator {
                     ],
                     monitoring: [
                             active: false,
+                            grafanaUrl: '',
                             helm  : [
                                     chart  : 'kube-prometheus-stack',
                                     repoURL: 'https://prometheus-community.github.io/helm-charts',
@@ -125,6 +125,7 @@ class ApplicationConfigurator {
                             ],
                             vault          : [
                                     mode: '',
+                                    url: '',
                                     helm: [
                                             chart  : 'vault',
                                             repoURL: 'https://helm.releases.hashicorp.com',
@@ -133,6 +134,14 @@ class ApplicationConfigurator {
                                     ]
                             ]
                     ],
+                    exampleApps: [
+                            petclinic: [
+                                    baseDomain: '',
+                            ],
+                            nginx    : [
+                                    baseDomain: '',
+                            ],
+                    ]
             ]
     ])
     Map config
