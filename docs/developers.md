@@ -471,20 +471,16 @@ helper-pod-create-pvc-a3d2db89-5662-43c7-a945-22db6f52916d   0/1     ImagePullBa
 ## Using ingresses locally
 
 For testing (or because it's more convenient than remembering node ports) ingresses can be used.
+For that, k3d provides its own ingress controller traefik.
 
-For local development either create entries in `/etc/hosts` or use services like sslip.io or nip.io and use the `-url` params.
-
-Example:
-
-```shell
-source scripts/utils.sh &&  EXTERNAL_IP=$(getExternalIP traefik kube-system | tr '.' '-') && \
-  docker run --rm -it -u $(id -u) \
+```bash
+docker run --rm -it -u $(id -u) \
   -v ~/.k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
   --net=host \
   gitops-playground:dev --argocd --monitoring --vault=dev -x --yes \
-  --argocd-url argocd-$EXTERNAL_IP.sslip.io --grafana-url grafana-$EXTERNAL_IP.sslip.io --vault-url vault-$EXTERNAL_IP.sslip.io \
-  --mailhog-url mailhog-$EXTERNAL_IP.sslip.io --petclinic-base-domain petclinic-$EXTERNAL_IP.sslip.io \
-  --nginx-base-domain nginx-$EXTERNAL_IP.sslip.io
+  --argocd-url argocd.localhost --grafana-url grafana.localhost --vault-url vault.localhost \
+  --mailhog-url mailhog.localhost --petclinic-base-domain petclinic.localhost \
+  --nginx-base-domain nginx.localhost
 ```
 
 Once Jenkins and Argo CD are through with their initial steps you can conveniently get all ingresses via
@@ -492,9 +488,20 @@ Once Jenkins and Argo CD are through with their initial steps you can convenient
 ```shell
 $ kubectl get ingress -A
 NAMESPACE                 NAME                            CLASS     HOSTS                                                          ADDRESS                                                PORTS   AGE
-argocd                    argocd-server                   traefik   argocd-192-168-178-42.sslip.io                                 192.168.178.42,2001:e1:1234:1234:1234:1234:1234:1234   80      14m
+argocd                    argocd-server                   traefik   argocd.localhost                                 192.168.178.42,2001:e1:1234:1234:1234:1234:1234:1234   80      14m
 # ...
 ```
 
-Where opening for example http://argocd-192-168-178-42.sslip.io in your browser should work.
-You might have to reload a couple of times, though 🙈 
+Where opening for example http://argocd.localhost in your browser should work.
+
+The `base-domain` parameters lead to URLs in the following schema:  
+`<stage>.<app-name>.<parameter>`, e.g.  
+`staging.nginx-helm.nginx.localhost`
+
+### Troubleshooting
+
+When requests are denied, there might be problems with the iptables/nftables config on your host.
+Using nft insert, to make sure the rule is on top.
+```
+nft insert rule ip filter INPUT tcp dport 80 accept
+```
