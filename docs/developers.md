@@ -501,7 +501,7 @@ The `base-domain` parameters lead to URLs in the following schema:
 ### Troubleshooting
 
 When requests are denied, there might be problems with the iptables/nftables config on your host.
-
+Using nft insert, to make sure the rule is on top.
 ```
-nft add rule ip filter INPUT tcp dport 80 accept
+nft insert rule ip filter INPUT tcp dport 80 accept
 ```
