@@ -1,6 +1,8 @@
 package com.cloudogu.gitops.utils
 
+import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.scmm.ScmmRepo
+import org.eclipse.jgit.api.Git
 import org.junit.jupiter.api.Test
 
 import static groovy.test.GroovyAssert.shouldFail
@@ -93,7 +95,31 @@ class ScmmRepoTest {
         assertThat(repo.scmmRepoTarget).isEqualTo('abc-expectedRepoTarget')
     }
 
+    @Test
+    void 'Clones and checks out main'() {
+        def repo = createRepo()
+
+        repo.cloneRepo()
+        def HEAD = new File(repo.absoluteLocalRepoTmpDir, '.git/HEAD')
+        assertThat(HEAD.text).isEqualTo("ref: refs/heads/main\n")
+        assertThat(new File(repo.absoluteLocalRepoTmpDir, 'README.md')).exists()
+    }
+
+    @Test
+    void 'pushes changes to remote directory'() {
+        def repo = createRepo()
+
+        repo.cloneRepo()
+        def readme = new File(repo.absoluteLocalRepoTmpDir, 'README.md')
+        readme.text = 'This text should be in the readme afterwards'
+        repo.commitAndPush("The commit message")
+
+        def commits = Git.open(new File(repo.absoluteLocalRepoTmpDir)).log().setMaxCount(1).all().call().collect()
+        assertThat(commits.size()).isEqualTo(1)
+        assertThat(commits[0].fullMessage).isEqualTo("The commit message")
+    }
+
     private ScmmRepo createRepo(String repoTarget = "dont-care-repo-target") {
-        new ScmmRepo(config, repoTarget, new CommandExecutorForTest(), new FileSystemUtils())
+        return new TestScmmRepoProvider(new Configuration(config), new FileSystemUtils()).getRepo(repoTarget)
     }
 }

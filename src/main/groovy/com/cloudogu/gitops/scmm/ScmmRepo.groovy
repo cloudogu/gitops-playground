@@ -1,9 +1,12 @@
 package com.cloudogu.gitops.scmm
 
-import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
+import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.transport.RefSpec
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
+
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.regex.Pattern
@@ -11,29 +14,23 @@ import java.util.regex.Pattern
 @Slf4j
 class ScmmRepo {
 
-    private String gitRepoCommand
     private String scmmRepoTarget
     private String username
     private String password
-    private String scmmUrlWithCredentials
     private String scmmUrl
     private String absoluteLocalRepoTmpDir
-    protected CommandExecutor commandExecutor
     protected FileSystemUtils fileSystemUtils
 
-    ScmmRepo(Map config, String scmmRepoTarget, CommandExecutor commandExecutor, FileSystemUtils fileSystemUtils) {
+    ScmmRepo(Map config, String scmmRepoTarget, FileSystemUtils fileSystemUtils) {
         def tmpDir = File.createTempDir()
         tmpDir.deleteOnExit()
 
         this.username =  config.scmm["internal"] ? config.application["username"] : config.scmm["username"]
         this.password = config.scmm["internal"] ? config.application["password"] : config.scmm["password"]
-        this.scmmUrl = createScmmUrl(config)
-        this.scmmUrlWithCredentials = "${config.scmm["protocol"]}://${username}:${password}@${config.scmm["host"]}"
+        this.scmmUrl = "${config.scmm["protocol"]}://${config.scmm["host"]}"
         this.scmmRepoTarget =  "${config.application['namePrefix']}${scmmRepoTarget}"
         this.absoluteLocalRepoTmpDir = tmpDir.absolutePath
-        this.commandExecutor = commandExecutor
         this.fileSystemUtils = fileSystemUtils
-        gitRepoCommandInit(absoluteLocalRepoTmpDir)
     }
 
     String getAbsoluteLocalRepoTmpDir() {
@@ -49,10 +46,8 @@ class ScmmRepo {
     }
 
     void cloneRepo() {
-        String repoUrl = scmmUrlWithCredentials + "/repo/" + scmmRepoTarget
-
         log.debug("Cloning $scmmRepoTarget repo")
-        commandExecutor.execute("git clone ${repoUrl} ${absoluteLocalRepoTmpDir}")
+        gitClone()
         checkoutOrCreateBranch('main')
     }
 
@@ -80,46 +75,59 @@ class ScmmRepo {
 
     void commitAndPush(String commitMessage) {
         log.debug("Checking out main, adding files for repo: ${scmmRepoTarget}")
-        git("add .")
-        // "git commit" fails if no changes
-        if (areChangesStagedForCommit()) {
+        getGit()
+                .add()
+                .addFilepattern(".")
+                .call()
+
+        if (getGit().status().call().hasUncommittedChanges()) {
             log.debug("Pushing repo: ${scmmRepoTarget}")
-            // Passing this as a single string leads to failing command
-            git(["commit", "-m", commitMessage] as String[])
-            git("push -u $scmmUrlWithCredentials/repo/$scmmRepoTarget HEAD:refs/heads/main --force")
+            getGit()
+                    .commit()
+                    .setSign(false)
+                    .setMessage(commitMessage)
+                    .call()
+            getGit()
+                .push()
+                .setForce(true)
+                .setRemote(getGitRepositoryUrl())
+                .setRefSpecs(new RefSpec("HEAD:refs/heads/main"))
+                .setCredentialsProvider(new UsernamePasswordCredentialsProvider(username, password))
+                .call()
         }
-    }
-
-    boolean areChangesStagedForCommit() {
-        // See https://stackoverflow.com/a/5139346/
-        boolean changesStageForCommit = !git('status --porcelain').isEmpty()
-        log.debug("Stages changed for commit: ${changesStageForCommit}")
-        return changesStageForCommit
-    }
-
-    private void gitRepoCommandInit(String absoluteLocalRepoTmpDir) {
-        gitRepoCommand = "git --git-dir=$absoluteLocalRepoTmpDir/.git/ --work-tree=$absoluteLocalRepoTmpDir"
-    }
-
-    String git(String command) {
-        String gitCommand = gitRepoCommand + " " + command
-        commandExecutor.execute(gitCommand).stdOut
-    }
-
-    String git(String[] command) {
-        String[] gitCommand = gitRepoCommand.split(" ") + command
-        commandExecutor.execute(gitCommand).stdOut
     }
 
     void checkoutOrCreateBranch(String branch) {
-        if (branchExists(branch)) {
-            git("checkout ${branch}")
-        } else {
-            git("checkout -b ${branch}")
-        }
+        log.debug("Checking out $branch for repo $scmmRepoTarget")
+        getGit()
+                .checkout()
+                .setCreateBranch(!branchExists(branch))
+                .setName(branch)
+                .call()
     }
 
     private boolean branchExists(String branch) {
-        git('branch').split(" ").contains(branch)
+        return getGit()
+                .branchList()
+                .call()
+                .collect { it.name.replace("refs/heads/", "") }
+                .contains(branch)
+    }
+
+    protected Git gitClone() {
+        Git.cloneRepository()
+                .setURI(getGitRepositoryUrl())
+                .setDirectory(new File(absoluteLocalRepoTmpDir))
+                .setNoCheckout(true)
+                .setCredentialsProvider(new UsernamePasswordCredentialsProvider(username, password))
+                .call()
+    }
+
+    private Git getGit() {
+        return Git.open(new File(absoluteLocalRepoTmpDir))
+    }
+
+    protected String getGitRepositoryUrl() {
+        return scmmUrl + "/repo/" + scmmRepoTarget
     }
 }
