@@ -69,7 +69,7 @@ class ApplicationConfigurator {
                     springBootHelmChart: [
                             // Take from env or use default because the Dockerfile provides a local copy of the repo
                             url: System.getenv('SPRING_BOOT_HELM_CHART_REPO') ?: 'https://github.com/cloudogu/spring-boot-helm-chart.git',
-                            ref: 'dd7d6a7ee0d7eefa7bb6768440223c19720d7812' // TODO: wait for release
+                            ref: '0.3.2'
                     ],
                     springPetclinic: [
                             url: System.getenv('SPRING_PETCLINIC_REPO') ?: 'https://github.com/cloudogu/spring-petclinic.git',
