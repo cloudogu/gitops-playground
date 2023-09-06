@@ -24,6 +24,7 @@ class ScmmRepo {
     private String absoluteLocalRepoTmpDir
     protected FileSystemUtils fileSystemUtils
     private boolean insecure
+    private Git gitMemoization = null
 
     ScmmRepo(Map config, String scmmRepoTarget, FileSystemUtils fileSystemUtils) {
         def tmpDir = File.createTempDir()
@@ -139,7 +140,11 @@ class ScmmRepo {
     }
 
     private Git getGit() {
-        return Git.open(new File(absoluteLocalRepoTmpDir))
+        if (gitMemoization != null) {
+            return gitMemoization
+        }
+
+        return gitMemoization = Git.open(new File(absoluteLocalRepoTmpDir))
     }
 
     protected String getGitRepositoryUrl() {

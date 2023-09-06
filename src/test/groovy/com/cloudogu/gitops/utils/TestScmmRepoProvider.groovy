@@ -27,6 +27,7 @@ class TestScmmRepoProvider extends ScmmRepoProvider {
 
             @Override
             protected Git gitClone() {
+                // Cloning from filepath does not work without setting branch
                 Git.cloneRepository()
                         .setURI(getGitRepositoryUrl())
                         .setDirectory(new File(absoluteLocalRepoTmpDir))
