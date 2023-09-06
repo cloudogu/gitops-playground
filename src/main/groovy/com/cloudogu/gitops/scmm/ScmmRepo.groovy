@@ -1,9 +1,12 @@
 package com.cloudogu.gitops.scmm
 
+import com.cloudogu.gitops.scmm.jgit.InsecureCredentialProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
 import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.transport.ChainingCredentialsProvider
+import org.eclipse.jgit.transport.CredentialsProvider
 import org.eclipse.jgit.transport.RefSpec
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 
@@ -20,6 +23,7 @@ class ScmmRepo {
     private String scmmUrl
     private String absoluteLocalRepoTmpDir
     protected FileSystemUtils fileSystemUtils
+    private boolean insecure
 
     ScmmRepo(Map config, String scmmRepoTarget, FileSystemUtils fileSystemUtils) {
         def tmpDir = File.createTempDir()
@@ -31,6 +35,7 @@ class ScmmRepo {
         this.scmmRepoTarget =  "${config.application['namePrefix']}${scmmRepoTarget}"
         this.absoluteLocalRepoTmpDir = tmpDir.absolutePath
         this.fileSystemUtils = fileSystemUtils
+        this.insecure = config.application['insecure']
     }
 
     String getAbsoluteLocalRepoTmpDir() {
@@ -92,7 +97,7 @@ class ScmmRepo {
                 .setForce(true)
                 .setRemote(getGitRepositoryUrl())
                 .setRefSpecs(new RefSpec("HEAD:refs/heads/main"))
-                .setCredentialsProvider(new UsernamePasswordCredentialsProvider(username, password))
+                .setCredentialsProvider(getCredentialProvider())
                 .call()
         }
     }
@@ -119,8 +124,18 @@ class ScmmRepo {
                 .setURI(getGitRepositoryUrl())
                 .setDirectory(new File(absoluteLocalRepoTmpDir))
                 .setNoCheckout(true)
-                .setCredentialsProvider(new UsernamePasswordCredentialsProvider(username, password))
+                .setCredentialsProvider(getCredentialProvider())
                 .call()
+    }
+
+    private CredentialsProvider getCredentialProvider() {
+        def passwordAuthentication = new UsernamePasswordCredentialsProvider(username, password)
+
+        if (!insecure) {
+            return passwordAuthentication
+        }
+
+        return new ChainingCredentialsProvider(new InsecureCredentialProvider(), passwordAuthentication)
     }
 
     private Git getGit() {
