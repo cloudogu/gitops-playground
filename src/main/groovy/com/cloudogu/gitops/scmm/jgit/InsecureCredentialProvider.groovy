@@ -5,6 +5,18 @@ import org.eclipse.jgit.transport.CredentialItem
 import org.eclipse.jgit.transport.CredentialsProvider
 import org.eclipse.jgit.transport.URIish
 
+/**
+ * JGit, a project used within eclipse, is developed with an interactive UI in mind.
+ * The documentation for the CredentialsProvider says
+ * > CredentialItems are usually presented in bulk, allowing implementors to combine them into a single UI widget and streamline the authentication process for an end-user.
+ * This highlights the focus on the UI for an end-user.
+ *
+ * As a result, checking for SSL verification is a little clunky as we need to check for messages intended for end-users.
+ *
+ * Other options would have included overwriting the HttpConnection or saving the git configuration on disk.
+ *
+ * @link https://archive.eclipse.org/jgit/site/4.10.0.201712302008-r/apidocs/org/eclipse/jgit/transport/CredentialsProvider.html
+ */
 class InsecureCredentialProvider extends CredentialsProvider {
     @Override
     boolean isInteractive() {
