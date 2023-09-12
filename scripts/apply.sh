@@ -9,7 +9,7 @@ PLAYGROUND_DIR="$(cd ${BASEDIR} && cd .. && pwd)"
 export PLAYGROUND_DIR
 
 # When updating, update in ApplicationConfigurator.groovy as well
-SPRING_BOOT_HELM_CHART_COMMIT=dd7d6a7ee0d7eefa7bb6768440223c19720d7812 # TODO: wait for release
+SPRING_BOOT_HELM_CHART_COMMIT=0.3.2
 K8S_VERSION=1.25.4
 
 source ${ABSOLUTE_BASEDIR}/utils.sh

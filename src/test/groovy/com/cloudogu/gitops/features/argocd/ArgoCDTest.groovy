@@ -2,7 +2,6 @@ package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.scmm.ScmmRepo
-import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import com.cloudogu.gitops.utils.*
 import groovy.io.FileType
 import groovy.yaml.YamlSlurper
@@ -89,7 +88,6 @@ class ArgoCDTest {
 
     CommandExecutorForTest k8sCommands = new CommandExecutorForTest()
     CommandExecutorForTest helmCommands = new CommandExecutorForTest()
-    CommandExecutorForTest gitCommands = new CommandExecutorForTest()
     ScmmRepo argocdRepo
     String actualHelmValuesFile
     ScmmRepo clusterResourcesRepo
@@ -471,8 +469,7 @@ class ArgoCDTest {
                     }
                 }),
                 new HelmClient(helmCommands),
-                fileSystemUtils,
-                gitCommands
+                fileSystemUtils
         )
         argocdRepo = argoCD.argocdRepoInitializationAction.repo
         actualHelmValuesFile = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.HELM_VALUES_PATH)
@@ -576,8 +573,8 @@ class ArgoCDTest {
     }
 
     class ArgoCDForTest extends ArgoCD {
-        ArgoCDForTest(Configuration config, K8sClient k8sClient, HelmClient helmClient, FileSystemUtils fileSystemUtils, CommandExecutor gitCommands) {
-            super(config, k8sClient, helmClient, fileSystemUtils, new ScmmRepoProvider(config, gitCommands, fileSystemUtils))
+        ArgoCDForTest(Configuration config, K8sClient k8sClient, HelmClient helmClient, FileSystemUtils fileSystemUtils) {
+            super(config, k8sClient, helmClient, fileSystemUtils, new TestScmmRepoProvider(config, fileSystemUtils))
         }
 
         @Override
