@@ -1,9 +1,12 @@
 package com.cloudogu.gitops.config
 
-
+import com.cloudogu.gitops.config.schema.SchemaValidator
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.ObjectMapper
 import groovy.util.logging.Slf4j
+import groovy.yaml.YamlSlurper
 import jakarta.inject.Singleton
 
 import static com.cloudogu.gitops.utils.MapUtils.*
@@ -30,7 +33,7 @@ class ApplicationConfigurator {
                     url     : '',
                     username: DEFAULT_ADMIN_USER,
                     password: DEFAULT_ADMIN_PW,
-                    urlForScmm: "http://jenkins",
+                    urlForScmm: "http://jenkins", // Set dynamically
                     metricsUsername: 'metrics',
                     metricsPassword: 'metrics',
             ],
@@ -39,7 +42,7 @@ class ApplicationConfigurator {
                     url     : '',
                     username: DEFAULT_ADMIN_USER,
                     password: DEFAULT_ADMIN_PW,
-                    urlForJenkins : 'http://scmm-scm-manager/scm',
+                    urlForJenkins : 'http://scmm-scm-manager/scm', // set dynamically
                     host : '', // Set dynamically
                     protocol : '' // Set dynamically
             ],
@@ -53,7 +56,7 @@ class ApplicationConfigurator {
                     runningInsideK8s : false, // Set dynamically
                     clusterBindAddress : '', // Set dynamically
                     namePrefix    : '',
-                    namePrefixForEnvVars    : '',
+                    namePrefixForEnvVars    : '', // Set dynamically
             ],
             images     : [
                     // When updating please also adapt in Dockerfile, vars.tf, apply.sh and init-cluster.sh
@@ -147,8 +150,10 @@ class ApplicationConfigurator {
     Map config
     private NetworkingUtils networkingUtils
     private FileSystemUtils fileSystemUtils
+    private SchemaValidator schemaValidator
 
-    ApplicationConfigurator(NetworkingUtils networkingUtils, FileSystemUtils fileSystemUtils) {
+    ApplicationConfigurator(NetworkingUtils networkingUtils, FileSystemUtils fileSystemUtils, SchemaValidator schemaValidator) {
+        this.schemaValidator = schemaValidator
         this.config = DEFAULT_VALUES
         this.networkingUtils = networkingUtils
         this.fileSystemUtils = fileSystemUtils
@@ -157,7 +162,7 @@ class ApplicationConfigurator {
     /**
      * Sets config internally and als returns it, fluent interface
      */
-    Map setConfig(Map configToSet) {
+    ApplicationConfigurator setConfig(Map configToSet) {
         Map newConfig = deepCopy(config)
         deepMerge(configToSet, newConfig)
 
@@ -171,7 +176,15 @@ class ApplicationConfigurator {
             newConfig['features']['secrets']['active'] = true
         
         config = makeDeeplyImmutable(newConfig)
-        return config
+
+        return this
+    }
+
+    ApplicationConfigurator setConfig(File configFile) {
+        def map = new YamlSlurper().parse(configFile) as Map
+        schemaValidator.validate(new ObjectMapper().convertValue(map, JsonNode))
+
+        return setConfig(map)
     }
 
     private void addAdditionalApplicationConfig(Map newConfig) {

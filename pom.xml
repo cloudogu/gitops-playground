@@ -247,6 +247,24 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>com.github.victools</groupId>
+      <artifactId>jsonschema-generator</artifactId>
+      <version>[4.21.0,5.0.0)</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.networknt</groupId>
+      <artifactId>json-schema-validator</artifactId>
+      <version>1.0.87</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.commons</groupId>
+          <artifactId>commons-lang3</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
     <!-- GraalVM only -->
     <dependency>
       <groupId>org.graalvm.nativeimage</groupId>

@@ -493,7 +493,8 @@ function printUsage() {
 function printParameters() {
   echo "The following parameters are valid:"
   echo
-  echo " -h | --help     >> Help screen"
+  echo " -h | --help                    >> Help screen"
+  echo "    | --config-file=file.yaml   >> Use a YAML configuration file"
   echo
   echo "Install only the desired GitOps operators. Multiple selections possible."
   echo "    | --argocd   >> Install the ArgoCD"
@@ -567,7 +568,7 @@ function printParameters() {
 readParameters() {
   COMMANDS=$(getopt \
     -o hdxyc \
-    --long help,destroy,argocd,argocd-url:,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,jenkins-metrics-username:,jenkins-metrics-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,grafana-url:,grafana-image:,grafana-sidecar-image:,prometheus-image:,prometheus-operator-image:,prometheus-config-reloader-image:,external-secrets-image:,external-secrets-certcontroller-image:,external-secrets-webhook-image:,vault-url:,vault-image:,nginx-image:,trace,insecure,yes,skip-helm-update,metrics,monitoring,mailhog-url:,vault:,petclinic-base-domain:,nginx-base-domain:,name-prefix: \
+    --long help,config-file:,destroy,argocd,argocd-url:,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,jenkins-metrics-username:,jenkins-metrics-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,grafana-url:,grafana-image:,grafana-sidecar-image:,prometheus-image:,prometheus-operator-image:,prometheus-config-reloader-image:,external-secrets-image:,external-secrets-certcontroller-image:,external-secrets-webhook-image:,vault-url:,vault-image:,nginx-image:,trace,insecure,yes,skip-helm-update,metrics,monitoring,mailhog-url:,vault:,petclinic-base-domain:,nginx-base-domain:,name-prefix: \
     -- "$@")
   
   if [ $? != 0 ]; then
@@ -651,7 +652,8 @@ readParameters() {
       --vault              ) shift 2;; # Ignore, used in groovy only
       --petclinic-base-domain ) shift 2;; # Ignore, used in groovy only
       --nginx-base-domain  ) shift 2;; # Ignore, used in groovy only
-      --destroy            ) DESTROY=true; shift;; #
+      --destroy            ) DESTROY=true; shift;;
+      --config-file        ) shift;; # Ignore, used in groovy only
       --                   ) shift; break ;;
     *) break ;;
     esac

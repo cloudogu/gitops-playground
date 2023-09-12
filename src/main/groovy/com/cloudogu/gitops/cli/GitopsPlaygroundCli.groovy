@@ -130,6 +130,8 @@ class GitopsPlaygroundCli  implements Runnable {
     private String namePrefix
     @Option(names = ['--destroy'], description = 'Unroll playground')
     private boolean destroy
+    @Option(names = ['--config-file'], description = 'Configuration using a config file')
+    private String configFile
 
 
     // args group operator
@@ -173,10 +175,13 @@ class GitopsPlaygroundCli  implements Runnable {
 
     private Map getConfig() {
         ApplicationConfigurator applicationConfigurator = ApplicationContext.run().getBean(ApplicationConfigurator)
-        Map config = applicationConfigurator
-                // Here we could implement loading from a config file, giving CLI params precedence
-                //.setConfig(configFile.toFile().getText())
-                .setConfig(parseOptionsIntoConfig())
+        if (configFile) {
+            applicationConfigurator.setConfig(new File(configFile))
+        }
+
+        applicationConfigurator.setConfig(parseOptionsIntoConfig())
+
+        Map config = applicationConfigurator.getConfig()
 
         log.debug("Actual config: ${prettyPrint(toJson(config))}")
 
