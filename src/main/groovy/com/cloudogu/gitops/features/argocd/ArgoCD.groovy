@@ -300,17 +300,18 @@ class ArgoCD extends Feature {
                     isRemote            : config.application['remote'],
                     isInsecure          : config.application['insecure'],
                     argocd              : [
-                            url: config.features['argocd']['url'],
+                            url: config.features['argocd']['url'] ? new URL(config.features['argocd']['url'] as String) : null,
+                            host: config.features['argocd']['url'] ? new URL(config.features['argocd']['url'] as String).host : "",
                     ],
                     monitoring          : [
                             grafana: [
-                                    url: config.features['monitoring']['grafanaUrl']
+                                    url: config.features['monitoring']['grafanaUrl'] ? new URL(config.features['monitoring']['grafanaUrl'] as String) : null,
                             ]
                     ],
                     secrets             : [
                             active: config.features['secrets']['active'],
                             vault : [
-                                    url: config.features['secrets']['vault']['url'],
+                                    url: config.features['secrets']['vault']['url'] ? new URL(config.features['secrets']['vault']['url'] as String) : null,
                             ],
                     ],
                     scmm                : [

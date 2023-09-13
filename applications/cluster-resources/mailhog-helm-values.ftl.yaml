@@ -17,11 +17,11 @@ resources:
     memory: 10Mi
     cpu: 20m
 
-<#if mail.url?has_content>
+<#if mail.url??>
 ingress:
   enabled: true
   hosts:
-    - host: ${mail.url}
+    - host: ${mail.url.host}
       paths:
         - path: "/"
           pathType: Prefix

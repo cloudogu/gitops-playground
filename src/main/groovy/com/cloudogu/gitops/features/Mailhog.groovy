@@ -45,7 +45,7 @@ class Mailhog extends Feature {
         String bcryptMailhogPassword = BCrypt.hashpw(password, BCrypt.gensalt(4))
         def tmpHelmValues = new TemplatingEngine().replaceTemplate(fileSystemUtils.copyToTempDir(HELM_VALUES_PATH).toFile(), [
                 mail: [
-                        url: config.features['mail']['url']
+                        url: config.features['mail']['url'] ? new URL(config.features['mail']['url'] as String) : null
                 ],
                 isRemote: config.application['remote'],
                 username: username,
