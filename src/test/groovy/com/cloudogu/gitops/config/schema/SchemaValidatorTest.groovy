@@ -14,41 +14,22 @@ class SchemaValidatorTest {
     static Stream<Arguments> validSchemas() {
         Stream.Builder<Arguments> ret = Stream.builder()
 
-        ret.add(Arguments.of("empty registry", [
-                registry: [:]
+        ret.add(Arguments.of("empty images", [
+                images: [:]
         ]))
 
-        ret.add(Arguments.of("defined registry", [
-                registry: [
-                        url: "localhost",
-                        path: "gop",
-                        username: "admin",
-                        password: "hunter2",
-                        internalPort: 30000
+        ret.add(Arguments.of("defined images", [
+                images: [
+                        kubectl: "localhost:30000/kubectl",
+                        helm: "localhost:30000/helm",
+                        yamllint: "localhost:30000/yamllint",
+                        nginx: "localhost:30000/nginx",
                 ]
         ]))
 
         ret.add(Arguments.of("multiple values", [
-                registry: [
-                        url: "localhost",
-                        path: "gop",
-                ],
-                jenkins: [
-                        url: "http://localhost/jenkins"
-                ],
-                scmm: [
-                        url: "http://localhost/scmm"
-                ],
-                images: [
-                        kubectl: "localhost:30000/lachlanevenson/k8s-kubectl:v1.25.4"
-                ],
-                application: [
-                        remote: true,
-                        namePrefix: "prefix"
-                ],
                 features: [
                         argocd: [
-                                active: true,
                                 url: "http://localhost/argocd"
                         ],
                         exampleApps: [

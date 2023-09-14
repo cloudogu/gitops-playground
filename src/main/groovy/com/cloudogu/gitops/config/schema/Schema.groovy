@@ -1,11 +1,17 @@
 //file:noinspection unused
 package com.cloudogu.gitops.config.schema
 
+/**
+ * The schema for the configuration file.
+ * It is used to validate the passed yaml file.
+ *
+ * Currently only contains variables that are used in groovy only.
+ */
 class Schema {
-    private RegistrySchema registry
-    private JenkinsSchema jenkins
-    private ScmmSchema scmm
-    private ApplicationSchema application
+//    private RegistrySchema registry // used in bash
+//    private JenkinsSchema jenkins // used in bash
+//    private ScmmSchema scmm // used in bash
+//    private ApplicationSchema application // used in bash
     private ImagesSchema images
     private FeaturesSchema features
 
@@ -59,7 +65,7 @@ class Schema {
     }
 
     private static class ArgoCDSchema {
-        private boolean active = true
+//        private boolean active = true // used in bash
         private String url = ""
     }
 

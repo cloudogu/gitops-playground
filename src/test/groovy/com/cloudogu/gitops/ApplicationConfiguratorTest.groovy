@@ -148,28 +148,21 @@ class ApplicationConfiguratorTest {
         def configFile = File.createTempFile("gitops-playground", '.yaml')
         configFile.deleteOnExit()
         configFile.text = """
-jenkins:
-  username: "name-from-file"
-  password: "pw-from-file"
-scmm:
-  username: "name-from-file"
+images:
+  kubectl: "localhost:30000/kubectl"
+  helm: "localhost:30000/helm"
         """
         applicationConfigurator
                 .setConfig(configFile)
                 .setConfig([
-                        jenkins: [
-                                username: null, // do not overwrite default value
-                                password: "pw-from-cli",
+                        images: [
+                                kubectl: null, // do not overwrite default value
+                                helm: "localhost:30000/cli/helm",
                         ],
-                        scmm: [
-                                password: "pw-from-cli"
-                        ]
                 ])
 
-        assertThat(applicationConfigurator.config['jenkins']['username']).isEqualTo('name-from-file')
-        assertThat(applicationConfigurator.config['jenkins']['password']).isEqualTo('pw-from-cli')
-        assertThat(applicationConfigurator.config['scmm']['username']).isEqualTo('name-from-file')
-        assertThat(applicationConfigurator.config['scmm']['password']).isEqualTo('pw-from-cli')
+        assertThat(applicationConfigurator.config['images']['kubectl']).isEqualTo('localhost:30000/kubectl')
+        assertThat(applicationConfigurator.config['images']['helm']).isEqualTo('localhost:30000/cli/helm')
     }
 
     @Test

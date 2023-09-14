@@ -13,42 +13,12 @@
   },
   "type": "object",
   "properties": {
-    "application": {
-      "type": "object",
-      "properties": {
-        "insecure": {
-          "type": "boolean"
-        },
-        "namePrefix": {
-          "type": "string"
-        },
-        "password": {
-          "type": "string"
-        },
-        "remote": {
-          "type": "boolean"
-        },
-        "skipHelmUpdate": {
-          "type": "boolean"
-        },
-        "username": {
-          "type": "string"
-        },
-        "yes": {
-          "type": "boolean"
-        }
-      },
-      "additionalProperties": false
-    },
     "features": {
       "type": "object",
       "properties": {
         "argocd": {
           "type": "object",
           "properties": {
-            "active": {
-              "type": "boolean"
-            },
             "url": {
               "type": "string"
             }
@@ -179,63 +149,6 @@
           "type": "string"
         },
         "yamllint": {
-          "type": "string"
-        }
-      },
-      "additionalProperties": false
-    },
-    "jenkins": {
-      "type": "object",
-      "properties": {
-        "metricsPassword": {
-          "type": "string"
-        },
-        "metricsUsername": {
-          "type": "string"
-        },
-        "password": {
-          "type": "string"
-        },
-        "url": {
-          "type": "string"
-        },
-        "username": {
-          "type": "string"
-        }
-      },
-      "additionalProperties": false
-    },
-    "registry": {
-      "type": "object",
-      "properties": {
-        "internalPort": {
-          "type": "integer"
-        },
-        "password": {
-          "type": "string"
-        },
-        "path": {
-          "type": "string"
-        },
-        "url": {
-          "type": "string"
-        },
-        "username": {
-          "type": "string"
-        }
-      },
-      "additionalProperties": false
-    },
-    "scmm": {
-      "type": "object",
-      "properties": {
-        "password": {
-          "type": "string"
-        },
-        "url": {
-          "type": "string"
-        },
-        "username": {
           "type": "string"
         }
       },
