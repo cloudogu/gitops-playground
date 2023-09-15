@@ -5,7 +5,9 @@ import okhttp3.Response
 import org.jetbrains.annotations.NotNull
 
 /**
- * Retries request on specific status codes
+ * Retries request on specific status codes as well as timeouts.
+ * Both error codes (like temporary (!) 500 or 401/403) and timeouts occur often during our jenkins initialization, 
+ * due to necessary restarts, e.g. after plugin installs.
  */
 class RetryInterceptor implements Interceptor {
     private int retries
