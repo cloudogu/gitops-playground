@@ -210,6 +210,8 @@ docker run --rm ghcr.io/cloudogu/gitops-playground --help
 You can also use a configuration file to specify the parameters (`--config-file`).
 That file must be a YAML file. You can find the schema [here](https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/configuration.schema.json).
 
+Note that currently, only part of the configuration parameters are supported.
+
 See [here](https://www.jetbrains.com/help/ruby/yaml.html#remote_json) how to configure IntelliJ IDEA to use the schema and offer autocompletion and validation.
 
 ##### Deploy GitOps operators
