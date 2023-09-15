@@ -20,13 +20,20 @@ class RetryInterceptor implements Interceptor {
     @Override
     Response intercept(@NotNull Chain chain) throws IOException {
         def i = 0;
-        def response = chain.proceed(chain.request())
-        while (i < retries && response.code() in getStatusCodesToRetry()) {
+        Response response = null
+        do {
+            try {
+                response = chain.proceed(chain.request())
+                if (response.code() !in getStatusCodesToRetry()) {
+                    break
+                }
+            } catch (SocketTimeoutException ignored) {
+                // fallthrough to retry
+            }
+            response?.close()
             Thread.sleep(waitPeriodInMs)
-            response.close()
-            response = chain.proceed(chain.request())
             ++i
-        }
+        } while(i < retries)
 
         return response
     }
