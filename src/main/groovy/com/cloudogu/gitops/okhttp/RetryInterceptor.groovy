@@ -5,7 +5,9 @@ import okhttp3.Response
 import org.jetbrains.annotations.NotNull
 
 /**
- * Retries request on specific status codes
+ * Retries request on specific status codes as well as timeouts.
+ * Both error codes (like temporary (!) 500 or 401/403) and timeouts occur often during our jenkins initialization, 
+ * due to necessary restarts, e.g. after plugin installs.
  */
 class RetryInterceptor implements Interceptor {
     private int retries
@@ -20,13 +22,20 @@ class RetryInterceptor implements Interceptor {
     @Override
     Response intercept(@NotNull Chain chain) throws IOException {
         def i = 0;
-        def response = chain.proceed(chain.request())
-        while (i < retries && response.code() in getStatusCodesToRetry()) {
+        Response response = null
+        do {
+            try {
+                response = chain.proceed(chain.request())
+                if (response.code() !in getStatusCodesToRetry()) {
+                    break
+                }
+            } catch (SocketTimeoutException ignored) {
+                // fallthrough to retry
+            }
+            response?.close()
             Thread.sleep(waitPeriodInMs)
-            response.close()
-            response = chain.proceed(chain.request())
             ++i
-        }
+        } while(i < retries)
 
         return response
     }
