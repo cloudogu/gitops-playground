@@ -72,7 +72,7 @@ class MailhogTest {
 
     @Test
     void 'uses ingress if enabled'() {
-        config.features['mail']['url'] = 'mailhog.local'
+        config.features['mail']['url'] = 'http://mailhog.local'
         createMailhog().install()
 
         def ingressYaml = parseActualYaml()['ingress']

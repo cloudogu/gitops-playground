@@ -51,7 +51,7 @@ class PrometheusStack extends Feature {
                 namePrefix: namePrefix,
                 monitoring: [
                         grafana: [
-                                url: config.features['monitoring']['grafanaUrl']
+                                url: config.features['monitoring']['grafanaUrl'] ? new URL(config.features['monitoring']['grafanaUrl'] as String) : null,
                         ]
                 ],
                 scmm: getScmmConfiguration(),

@@ -87,7 +87,7 @@ class PrometheusStackTest {
 
     @Test
     void 'uses ingress if enabled'() {
-        config['features']['monitoring']['grafanaUrl'] = 'grafana.local'
+        config['features']['monitoring']['grafanaUrl'] = 'http://grafana.local'
         createStack().install()
 
 

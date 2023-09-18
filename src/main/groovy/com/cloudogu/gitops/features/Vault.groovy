@@ -3,16 +3,11 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
-import com.cloudogu.gitops.utils.DockerImageParser
-import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.K8sClient
-import com.cloudogu.gitops.utils.MapUtils
-import com.cloudogu.gitops.utils.TemplatingEngine
+import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
 
-import java.nio.file.Files
 import java.nio.file.Path
 
 @Slf4j
@@ -83,12 +78,13 @@ class Vault extends Feature {
         }
 
         if (config.features['secrets']['vault']['url']) {
+            def url = new URL(config.features['secrets']['vault']['url'] as String)
             MapUtils.deepMerge([
                    server: [
                            ingress: [
                                    enabled: true,
                                    hosts: [
-                                           [host: config.features['secrets']['vault']['url']],
+                                           [host: url.host],
                                    ],
                            ]
                    ]

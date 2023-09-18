@@ -79,7 +79,7 @@ class VaultTest {
 
     @Test
     void 'uses ingress if enabled'() {
-        config['features']['secrets']['vault']['url'] = 'vault.local'
+        config['features']['secrets']['vault']['url'] = 'http://vault.local'
         createVault().install()
 
 
