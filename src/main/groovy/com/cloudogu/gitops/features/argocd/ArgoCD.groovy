@@ -300,7 +300,6 @@ class ArgoCD extends Feature {
                     isRemote            : config.application['remote'],
                     isInsecure          : config.application['insecure'],
                     argocd              : [
-                            url: config.features['argocd']['url'] ? new URL(config.features['argocd']['url'] as String) : null,
                             host: config.features['argocd']['url'] ? new URL(config.features['argocd']['url'] as String).host : "",
                     ],
                     monitoring          : [
