@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.okhttp
 
+import groovy.util.logging.Slf4j
 import okhttp3.Interceptor
 import okhttp3.Response
 import org.jetbrains.annotations.NotNull
@@ -9,6 +10,7 @@ import org.jetbrains.annotations.NotNull
  * Both error codes (like temporary (!) 500 or 401/403) and timeouts occur often during our jenkins initialization, 
  * due to necessary restarts, e.g. after plugin installs.
  */
+@Slf4j
 class RetryInterceptor implements Interceptor {
     private int retries
     private int waitPeriodInMs
@@ -29,8 +31,12 @@ class RetryInterceptor implements Interceptor {
                 if (response.code() !in getStatusCodesToRetry()) {
                     break
                 }
-            } catch (SocketTimeoutException ignored) {
+
+                log.trace("Retry HTTP Request to {} due to status code {}", chain.request().url().toString(), response.code())
+
+            } catch (SocketTimeoutException e) {
                 // fallthrough to retry
+                log.trace("Retry HTTP Request to {} due to SocketTimeoutException: {}", chain.request().url().toString(), e.message)
             }
             response?.close()
             Thread.sleep(waitPeriodInMs)
