@@ -2,7 +2,7 @@ package com.cloudogu.gitops.config.schema
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.networknt.schema.JsonSchemaFactory
-import com.networknt.schema.SpecVersion
+import com.networknt.schema.SpecVersionDetector
 import jakarta.inject.Singleton
 
 @Singleton
@@ -14,7 +14,8 @@ class SchemaValidator {
     }
 
     void validate(JsonNode json) {
-        def schema = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V201909).getSchema(schemaGenerator.createSchema())
+        def schemaNode = schemaGenerator.createSchema()
+        def schema = JsonSchemaFactory.getInstance(SpecVersionDetector.detect(schemaNode)).getSchema(schemaNode)
 
         def validationMessages = schema.validate(json)
 

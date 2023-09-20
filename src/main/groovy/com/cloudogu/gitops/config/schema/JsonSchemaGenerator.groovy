@@ -12,7 +12,7 @@ import jakarta.inject.Singleton
 @Singleton
 class JsonSchemaGenerator {
     ObjectNode createSchema() {
-        SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2019_09, OptionPreset.PLAIN_JSON)
+        SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2020_12, OptionPreset.PLAIN_JSON)
         configBuilder.with(Option.FORBIDDEN_ADDITIONAL_PROPERTIES_BY_DEFAULT)
         SchemaGenerator generator = new SchemaGenerator(configBuilder.build())
 
