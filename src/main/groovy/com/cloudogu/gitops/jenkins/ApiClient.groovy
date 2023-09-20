@@ -35,7 +35,7 @@ class ApiClient {
 
     String runScript(String code) {
         log.trace("Running groovy script in Jenkins: {}", code)
-        def response = sendRequest("scriptText", new FormBody.Builder().add("script", code).build())
+        def response = sendRequestWithCrumb("scriptText", new FormBody.Builder().add("script", code).build())
         if (response.code() != 200) {
             throw new RuntimeException("Could not run script. Status code ${response.code()}")
         }
@@ -43,31 +43,22 @@ class ApiClient {
         return response.body().string()
     }
 
-    Response sendRequest(String url, FormBody postData) {
-        def retry = 0
-        Response response = null
-        do {
+    Response sendRequestWithCrumb(String url, FormBody postData) {
+        return sendRequestWithRetries {
             Request.Builder request = buildRequest(url)
-                    .header("Jenkins-Crumb", getCrumb())
+                .header("Jenkins-Crumb", getCrumb())
 
             if (postData != null) {
                 request.method("POST", postData)
             }
 
-            response = client.newCall(request.build()).execute()
-            if (!shouldRetryRequest(response)) {
-                break
-            }
-            Thread.sleep(waitPeriodInMs)
-        } while(++retry < maxRetries)
-
-        return response
+            request.build()
+        }
     }
 
     private String getCrumb() {
         log.trace("Getting Crumb for Jenkins")
-        def request  = buildRequest("crumbIssuer/api/json").build()
-        def response = client.newCall(request).execute()
+        def response = sendRequestWithRetries { buildRequest("crumbIssuer/api/json").build() }
 
         if (response.code() != 200) {
             throw new RuntimeException("Could not create crumb. Status code ${response.code()}")
@@ -86,6 +77,21 @@ class ApiClient {
         return new Request.Builder()
                 .url("$jenkinsUrl/$url")
                 .header("Authorization", Credentials.basic(username, password))
+    }
+
+    // We pass a closure, so that we actually refetch a new crumb for a failed request
+    private Response sendRequestWithRetries(Closure<Request> request) {
+        def retry = 0
+        Response response = null
+        do {
+            response = client.newCall(request()).execute()
+            if (!shouldRetryRequest(response)) {
+                break
+            }
+            Thread.sleep(waitPeriodInMs)
+        } while (++retry < maxRetries)
+
+        return response
     }
 
     private boolean shouldRetryRequest(Response response) {

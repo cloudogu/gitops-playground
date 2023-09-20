@@ -14,7 +14,7 @@ class JobManager {
     }
 
     void createCredential(String jobName, String id, String username, String password, String description) {
-        def response = apiClient.sendRequest(
+        def response = apiClient.sendRequestWithCrumb(
                 "job/$jobName/credentials/store/folder/domain/_/createCredentials",
                 new FormBody.Builder()
                         .add("json", JsonOutput.toJson([
