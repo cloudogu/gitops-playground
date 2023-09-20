@@ -34,19 +34,6 @@ class RetryInterceptorTest {
     }
 
     @Test
-    void 'retries on 401 and 403'() {
-        webServer.enqueue(new MockResponse().setResponseCode(401))
-        webServer.enqueue(new MockResponse().setResponseCode(403))
-        webServer.enqueue(new MockResponse().setResponseCode(200).setBody("Successful Result"))
-
-        def client = createClient()
-
-        def response = client.newCall(new Request.Builder().url(webServer.url("")).build()).execute()
-
-        assertThat(response.body().string()).isEqualTo("Successful Result")
-    }
-
-    @Test
     void 'retries on timeout'() {
         def timeoutResponse = new MockResponse()
         timeoutResponse.socketPolicy(SocketPolicy.NO_RESPONSE)
