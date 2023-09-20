@@ -57,9 +57,9 @@ class GitopsPlaygroundCli  implements Runnable {
 
     // args group remote
     @Option(names = ['--remote'], description = 'Install on remote Cluster e.g. gcp')
-    private boolean remote
+    private Boolean remote
     @Option(names = ['--insecure'], description = 'Sets insecure-mode in cURL which skips cert validation')
-    private boolean insecure
+    private Boolean insecure
 
     // args group tool configuration
     @Option(names = ['--kubectl-image'], description = 'Sets image for kubectl')
@@ -94,11 +94,11 @@ class GitopsPlaygroundCli  implements Runnable {
     private String nginxImage
 
     @Option(names = ['--skip-helm-update'], description = 'Skips adding and updating helm repos')
-    private boolean skipHelmUpdate
+    private Boolean skipHelmUpdate
 
     // args group metrics
     @Option(names = ['--metrics', '--monitoring'], description = 'Installs the Kube-Prometheus-Stack. This includes Prometheus, the Prometheus operator, Grafana and some extra resources')
-    private boolean monitoring
+    private Boolean monitoring
     @Option(names = ['--grafana-url'], description = 'Sets url for grafana')
     private String grafanaUrl
 
@@ -115,9 +115,9 @@ class GitopsPlaygroundCli  implements Runnable {
 
     // args group debug
     @Option(names = ['-d', '--debug'], description = 'Debug output', scope = CommandLine.ScopeType.INHERIT)
-    private boolean debug
+    private Boolean debug
     @Option(names = ['-x', '--trace'], description = 'Debug + Show each command executed (set -x)', scope = CommandLine.ScopeType.INHERIT)
-    private boolean trace
+    private Boolean trace
 
     // args group configuration
     @Option(names = ['--username'], description = 'Set initial admin username')
@@ -125,18 +125,18 @@ class GitopsPlaygroundCli  implements Runnable {
     @Option(names = ['--password'], description = 'Set initial admin passwords')
     private String password
     @Option(names = ['-y', '--yes'], description = 'Skip kubecontext confirmation')
-    private boolean pipeYes
+    private Boolean pipeYes
     @Option(names = ['--name-prefix'], description = 'Set name-prefix for repos, jobs, namespaces')
     private String namePrefix
     @Option(names = ['--destroy'], description = 'Unroll playground')
-    private boolean destroy
+    private Boolean destroy
     @Option(names = ['--config-file'], description = 'Configuration using a config file')
     private String configFile
 
 
     // args group operator
     @Option(names = ['--argocd'], description = 'Install ArgoCD ')
-    private boolean argocd
+    private Boolean argocd
     @Option(names = ['--argocd-url'], description = 'The URL where argocd is accessible. It has to be the full URL with http:// or https://')
     private String argocdUrl
 
