@@ -12,116 +12,116 @@ package com.cloudogu.gitops.config.schema
  * @see com.cloudogu.gitops.config.ApplicationConfigurator
  */
 class Schema {
-//    private RegistrySchema registry // used in bash
-//    private JenkinsSchema jenkins // used in bash
-//    private ScmmSchema scmm // used in bash
-//    private ApplicationSchema application // used in bash
-    private ImagesSchema images
-    private FeaturesSchema features
+//     RegistrySchema registry // used in bash
+//     JenkinsSchema jenkins // used in bash
+//     ScmmSchema scmm // used in bash
+//     ApplicationSchema application // used in bash
+     ImagesSchema images
+     FeaturesSchema features
 
-    private static class RegistrySchema {
-        private String url = ""
-        private String path = ""
-        private String username = ""
-        private String password = ""
-        private int internalPort
+     static class RegistrySchema {
+         String url = ""
+         String path = ""
+         String username = ""
+         String password = ""
+         int internalPort
     }
 
-    private static class JenkinsSchema {
-        private String url = ""
-        private String username = ""
-        private String password = ""
-        private String metricsUsername = ""
-        private String metricsPassword = ""
+     static class JenkinsSchema {
+         String url = ""
+         String username = ""
+         String password = ""
+         String metricsUsername = ""
+         String metricsPassword = ""
     }
 
-    private static class ScmmSchema {
-        private String url = ""
-        private String username = ""
-        private String password = ""
+     static class ScmmSchema {
+         String url = ""
+         String username = ""
+         String password = ""
     }
 
-    private static class ApplicationSchema {
-        private boolean remote = false
-        private boolean insecure = false
-        private boolean skipHelmUpdate = false
-        private boolean yes = false
-        private String username = ""
-        private String password = ""
-        private String namePrefix = ""
+     static class ApplicationSchema {
+         boolean remote = false
+         boolean insecure = false
+         boolean skipHelmUpdate = false
+         boolean yes = false
+         String username = ""
+         String password = ""
+         String namePrefix = ""
     }
 
-    private static class ImagesSchema {
-        private String kubectl = ""
-        private String helm = ""
-        private String kubeval = ""
-        private String helmKubeval = ""
-        private String yamllint = ""
-        private String nginx = ""
+     static class ImagesSchema {
+         String kubectl = ""
+         String helm = ""
+         String kubeval = ""
+         String helmKubeval = ""
+         String yamllint = ""
+         String nginx = ""
     }
 
-    private static class FeaturesSchema {
-        private ArgoCDSchema argocd
-        private MailSchema mail
-        private MonitoringSchema monitoring
-        private SecretsSchema secrets
-        private ExampleAppsSchema exampleApps
+     static class FeaturesSchema {
+         ArgoCDSchema argocd
+         MailSchema mail
+         MonitoringSchema monitoring
+         SecretsSchema secrets
+         ExampleAppsSchema exampleApps
     }
 
-    private static class ArgoCDSchema {
-//        private boolean active = true // used in bash
-        private String url = ""
+     static class ArgoCDSchema {
+//         boolean active = true // used in bash
+         String url = ""
     }
 
-    private static class MailSchema {
-        private String url = ""
+     static class MailSchema {
+         String url = ""
     }
 
-    private static class MonitoringSchema {
-        private boolean active = true
-        private String grafanaUrl = ""
-        private MonitoringHelmSchema helm
+     static class MonitoringSchema {
+         boolean active = true
+         String grafanaUrl = ""
+         MonitoringHelmSchema helm
 
-        private static class MonitoringHelmSchema {
-            private String grafanaImage = ""
-            private String grafanaSidecarImage = ""
-            private String prometheusImage = ""
-            private String prometheusOperatorImage = ""
-            private String prometheusConfigReloaderImage = ""
+         static class MonitoringHelmSchema {
+             String grafanaImage = ""
+             String grafanaSidecarImage = ""
+             String prometheusImage = ""
+             String prometheusOperatorImage = ""
+             String prometheusConfigReloaderImage = ""
         }
     }
 
-    private static class SecretsSchema {
-        private VaultSchema vault
-        private ESOSchema externalSecrets
+     static class SecretsSchema {
+         VaultSchema vault
+         ESOSchema externalSecrets
 
-        private static class VaultSchema {
-            private String mode = ""
-            private String url = ""
-            private VaultHelmSchema helm
+         static class VaultSchema {
+             String mode = ""
+             String url = ""
+             VaultHelmSchema helm
 
-            private static class VaultHelmSchema {
-                private String image = ""
+             static class VaultHelmSchema {
+                 String image = ""
             }
         }
 
-        private static class ESOSchema {
-            private ESOHelmSchema helm
+         static class ESOSchema {
+             ESOHelmSchema helm
 
-            private static class ESOHelmSchema {
-                private String image = ""
-                private String certControllerImage = ""
-                private String webhookImage = ""
+             static class ESOHelmSchema {
+                 String image = ""
+                 String certControllerImage = ""
+                 String webhookImage = ""
             }
         }
     }
 
-    private static class ExampleAppsSchema {
-        private BaseDomainSchema petclinic
-        private BaseDomainSchema nginx
+     static class ExampleAppsSchema {
+         BaseDomainSchema petclinic
+         BaseDomainSchema nginx
 
-        private static class BaseDomainSchema {
-            private String baseDomain = ""
+         static class BaseDomainSchema {
+             String baseDomain = ""
         }
     }
 }

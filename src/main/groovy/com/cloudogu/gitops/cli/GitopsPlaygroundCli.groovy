@@ -4,6 +4,7 @@ import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Logger
 import com.cloudogu.gitops.Application
 import com.cloudogu.gitops.config.ApplicationConfigurator
+import com.cloudogu.gitops.config.ConfigToConfigFileConverter
 import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.destroy.Destroyer
 import com.cloudogu.gitops.utils.K8sClient
@@ -16,7 +17,6 @@ import picocli.CommandLine.Option
 
 import static groovy.json.JsonOutput.prettyPrint
 import static groovy.json.JsonOutput.toJson
-
 /**
  * Provides the entrypoint to the application as well as all config parameters.
  * When changing parameters, make sure to update the Schema for the config file as well
@@ -141,6 +141,8 @@ class GitopsPlaygroundCli  implements Runnable {
     private String configFile
     @Option(names = ['--config-map'], description = 'Kubernetes configuration map. Should contain a key `config.yaml`.')
     private String configMap
+    @Option(names = ['--output-config-file'], description = 'Output current config as config file as much as possible')
+    private Boolean outputConfigFile
 
 
     // args group operator
@@ -163,6 +165,9 @@ class GitopsPlaygroundCli  implements Runnable {
         if (destroy) {
             Destroyer destroyer = context.getBean(Destroyer)
             destroyer.destroy()
+        } else if (outputConfigFile) {
+            def configFileConverter = context.getBean(ConfigToConfigFileConverter)
+            println(configFileConverter.convert(getConfig()))
         } else {
             Application app = context.getBean(Application)
             app.start()

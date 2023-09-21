@@ -213,6 +213,9 @@ That file must be a YAML file. You can find the schema [here](https://raw.github
 Note that currently, only part of the configuration parameters are supported.
 
 See [here](https://www.jetbrains.com/help/ruby/yaml.html#remote_json) how to configure IntelliJ IDEA to use the schema and offer autocompletion and validation.
+You can use `--output-config-file` to output the current config as a YAML file. 
+Note that only the currently supported parameters will be used. 
+The config file is not yet a complete replacement for CLI parameters. 
 
 ##### Deploy GitOps operators
 
