@@ -16,6 +16,12 @@ import picocli.CommandLine.Option
 import static groovy.json.JsonOutput.prettyPrint
 import static groovy.json.JsonOutput.toJson
 
+/**
+ * Provides the entrypoint to the application as well as all config parameters.
+ * When changing parameters, make sure to update the Schema for the config file as well
+ *
+ * @see com.cloudogu.gitops.config.schema.Schema
+ */
 @Command(
         name = 'gitops-playground-cli',
         description = 'CLI-tool to deploy gitops-playground.',

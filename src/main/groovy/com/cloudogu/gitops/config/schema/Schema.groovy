@@ -6,6 +6,10 @@ package com.cloudogu.gitops.config.schema
  * It is used to validate the passed yaml file.
  *
  * Currently only contains variables that are used in groovy only.
+ *
+ * When changing values make sure to modify GitOpsPlaygroundCli and ApplicationConfigurator as well
+ * @see com.cloudogu.gitops.cli.GitopsPlaygroundCli
+ * @see com.cloudogu.gitops.config.ApplicationConfigurator
  */
 class Schema {
 //    private RegistrySchema registry // used in bash
