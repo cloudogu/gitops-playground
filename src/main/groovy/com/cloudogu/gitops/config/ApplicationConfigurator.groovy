@@ -187,6 +187,13 @@ class ApplicationConfigurator {
         return setConfig(map)
     }
 
+    ApplicationConfigurator setConfig(String configFile) {
+        def map = new YamlSlurper().parseText(configFile) as Map
+        schemaValidator.validate(new ObjectMapper().convertValue(map, JsonNode))
+
+        return setConfig(map)
+    }
+
     private void addAdditionalApplicationConfig(Map newConfig) {
         if (System.getenv("KUBERNETES_SERVICE_HOST")) {
             log.debug("installation is running in kubernetes.")

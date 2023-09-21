@@ -134,6 +134,13 @@ class K8sClient {
         }
     }
 
+    String getConfigMap(String mapName, String key) {
+        String[] command = ["kubectl", "get", "configmap", mapName, "-o", "jsonpath={.data['"+key.replace(".", "\\.")+"']}"]
+        def result = commandExecutor.execute(command)
+
+        return result.stdOut
+    }
+
     private String getNamePrefix() {
         def config = configurationProvider.get().config
 

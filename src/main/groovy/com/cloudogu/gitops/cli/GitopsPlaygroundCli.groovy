@@ -6,6 +6,7 @@ import com.cloudogu.gitops.Application
 import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.destroy.Destroyer
+import com.cloudogu.gitops.utils.K8sClient
 import groovy.util.logging.Slf4j
 import io.micronaut.context.ApplicationContext
 import org.slf4j.LoggerFactory
@@ -138,6 +139,8 @@ class GitopsPlaygroundCli  implements Runnable {
     private Boolean destroy
     @Option(names = ['--config-file'], description = 'Configuration using a config file')
     private String configFile
+    @Option(names = ['--config-map'], description = 'Kubernetes configuration map. Should contain a key `config.yaml`.')
+    private String configMap
 
 
     // args group operator
@@ -180,9 +183,20 @@ class GitopsPlaygroundCli  implements Runnable {
     }
 
     private Map getConfig() {
-        ApplicationConfigurator applicationConfigurator = ApplicationContext.run().getBean(ApplicationConfigurator)
+        if (configFile && configMap) {
+            log.error("Cannot provide --config-file and --config-map at the same time.")
+            System.exit(1)
+        }
+
+        def appContext = ApplicationContext.run()
+        ApplicationConfigurator applicationConfigurator = appContext.getBean(ApplicationConfigurator)
         if (configFile) {
             applicationConfigurator.setConfig(new File(configFile))
+        } else if (configMap) {
+            def k8sClient = appContext.getBean(K8sClient)
+            def configValues = k8sClient.getConfigMap(configMap, 'config.yaml')
+
+            applicationConfigurator.setConfig(configValues)
         }
 
         applicationConfigurator.setConfig(parseOptionsIntoConfig())
