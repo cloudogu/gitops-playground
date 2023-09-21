@@ -6,10 +6,10 @@ import com.networknt.schema.SpecVersionDetector
 import jakarta.inject.Singleton
 
 @Singleton
-class SchemaValidator {
+class JsonSchemaValidator {
     private final JsonSchemaGenerator schemaGenerator
 
-    SchemaValidator(JsonSchemaGenerator schemaGenerator) {
+    JsonSchemaValidator(JsonSchemaGenerator schemaGenerator) {
         this.schemaGenerator = schemaGenerator
     }
 

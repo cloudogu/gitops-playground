@@ -10,7 +10,7 @@ import java.util.stream.Stream
 
 import static groovy.test.GroovyAssert.shouldFail
 
-class SchemaValidatorTest {
+class JsonSchemaValidatorTest {
     static Stream<Arguments> validSchemas() {
         Stream.Builder<Arguments> ret = Stream.builder()
 
@@ -47,7 +47,7 @@ class SchemaValidatorTest {
     @ParameterizedTest(name = "{0}")
     @MethodSource("validSchemas")
     void 'test valid schemas'(String description, Map schema) {
-        def validator = new SchemaValidator(new JsonSchemaGenerator())
+        def validator = new JsonSchemaValidator(new JsonSchemaGenerator())
 
         validator.validate(new ObjectMapper().convertValue(schema, JsonNode))
     }
@@ -89,7 +89,7 @@ class SchemaValidatorTest {
     @ParameterizedTest(name = "{0}")
     @MethodSource("invalidSchemas")
     void 'test invalid schemas'(String description, Map schema) {
-        def validator = new SchemaValidator(new JsonSchemaGenerator())
+        def validator = new JsonSchemaValidator(new JsonSchemaGenerator())
 
         shouldFail(RuntimeException) {
             validator.validate(new ObjectMapper().convertValue(schema, JsonNode))

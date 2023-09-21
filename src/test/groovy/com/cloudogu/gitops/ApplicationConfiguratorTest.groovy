@@ -2,7 +2,7 @@ package com.cloudogu.gitops
 
 import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.schema.JsonSchemaGenerator
-import com.cloudogu.gitops.config.schema.SchemaValidator
+import com.cloudogu.gitops.config.schema.JsonSchemaValidator
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
 import com.cloudogu.gitops.utils.TestLogger
@@ -57,7 +57,7 @@ class ApplicationConfiguratorTest {
     void setup() {
         networkingUtils = mock(NetworkingUtils.class)
         fileSystemUtils = mock(FileSystemUtils.class)
-        applicationConfigurator = new ApplicationConfigurator(networkingUtils, fileSystemUtils, new SchemaValidator(new JsonSchemaGenerator()))
+        applicationConfigurator = new ApplicationConfigurator(networkingUtils, fileSystemUtils, new JsonSchemaValidator(new JsonSchemaGenerator()))
         testLogger = new TestLogger(applicationConfigurator.getClass())
         when(fileSystemUtils.getRootDir()).thenReturn("/test")
         when(fileSystemUtils.getLineFromFile("/test/scm-manager/values.yaml", "nodePort:")).thenReturn("nodePort: 9091")
@@ -126,19 +126,19 @@ class ApplicationConfiguratorTest {
     @Test
     void "Certain properties are read from env"() {
         withEnvironmentVariable('SPRING_BOOT_HELM_CHART_REPO', 'value1').execute {
-            Map actualConfig = new ApplicationConfigurator(networkingUtils, fileSystemUtils, new SchemaValidator(new JsonSchemaGenerator())).setConfig(testConfig).getConfig()
+            Map actualConfig = new ApplicationConfigurator(networkingUtils, fileSystemUtils, new JsonSchemaValidator(new JsonSchemaGenerator())).setConfig(testConfig).getConfig()
             assertThat(actualConfig['repositories']['springBootHelmChart']['url']).isEqualTo('value1')
         }
         withEnvironmentVariable('SPRING_PETCLINIC_REPO', 'value2').execute {
-            Map actualConfig = new ApplicationConfigurator(networkingUtils, fileSystemUtils, new SchemaValidator(new JsonSchemaGenerator())).setConfig(testConfig).getConfig()
+            Map actualConfig = new ApplicationConfigurator(networkingUtils, fileSystemUtils, new JsonSchemaValidator(new JsonSchemaGenerator())).setConfig(testConfig).getConfig()
             assertThat(actualConfig['repositories']['springPetclinic']['url']).isEqualTo('value2')
         }
         withEnvironmentVariable('GITOPS_BUILD_LIB_REPO', 'value3').execute {
-            Map actualConfig = new ApplicationConfigurator(networkingUtils, fileSystemUtils, new SchemaValidator(new JsonSchemaGenerator())).setConfig(testConfig).getConfig()
+            Map actualConfig = new ApplicationConfigurator(networkingUtils, fileSystemUtils, new JsonSchemaValidator(new JsonSchemaGenerator())).setConfig(testConfig).getConfig()
             assertThat(actualConfig['repositories']['gitopsBuildLib']['url']).isEqualTo('value3')
         }
         withEnvironmentVariable('CES_BUILD_LIB_REPO', 'value4').execute {
-            Map actualConfig = new ApplicationConfigurator(networkingUtils, fileSystemUtils, new SchemaValidator(new JsonSchemaGenerator())).setConfig(testConfig).getConfig()
+            Map actualConfig = new ApplicationConfigurator(networkingUtils, fileSystemUtils, new JsonSchemaValidator(new JsonSchemaGenerator())).setConfig(testConfig).getConfig()
             assertThat(actualConfig['repositories']['cesBuildLib']['url']).isEqualTo('value4')
         }
     }

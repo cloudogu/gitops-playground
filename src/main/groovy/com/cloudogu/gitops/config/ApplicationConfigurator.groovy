@@ -1,6 +1,6 @@
 package com.cloudogu.gitops.config
 
-import com.cloudogu.gitops.config.schema.SchemaValidator
+import com.cloudogu.gitops.config.schema.JsonSchemaValidator
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
 import com.fasterxml.jackson.databind.JsonNode
@@ -150,9 +150,9 @@ class ApplicationConfigurator {
     Map config
     private NetworkingUtils networkingUtils
     private FileSystemUtils fileSystemUtils
-    private SchemaValidator schemaValidator
+    private JsonSchemaValidator schemaValidator
 
-    ApplicationConfigurator(NetworkingUtils networkingUtils, FileSystemUtils fileSystemUtils, SchemaValidator schemaValidator) {
+    ApplicationConfigurator(NetworkingUtils networkingUtils, FileSystemUtils fileSystemUtils, JsonSchemaValidator schemaValidator) {
         this.schemaValidator = schemaValidator
         this.config = DEFAULT_VALUES
         this.networkingUtils = networkingUtils
