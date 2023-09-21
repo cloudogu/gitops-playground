@@ -18,7 +18,12 @@ class ApplicationConfigurator {
     public static final String HELM_IMAGE = "ghcr.io/cloudogu/helm:3.10.3-1"
     public static final String DEFAULT_ADMIN_USER = 'admin'
     public static final String DEFAULT_ADMIN_PW = 'admin'
-    // This is deliberately non-static, so as to allow getenv() to work with GraalVM static images 
+    /**
+     * When changing values make sure to modify GitOpsPlaygroundCli and Schema as well
+     * @see com.cloudogu.gitops.cli.GitopsPlaygroundCli
+     * @see com.cloudogu.gitops.config.schema.Schema
+     */
+    // This is deliberately non-static, so as to allow getenv() to work with GraalVM static images
     private final Map DEFAULT_VALUES = makeDeeplyImmutable([
             registry   : [
                     internal: true, // Set dynamically
