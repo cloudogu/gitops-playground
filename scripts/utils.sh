@@ -44,7 +44,13 @@ function spinner() {
         done
         printf $reset
     done
-    echo " [ok] $info"
+
+    if wait -n $pid; then
+      echo " [ok] $info"
+    else
+      echo " [failed] $info"
+      exit 1
+    fi
 }
 
 function error() {
