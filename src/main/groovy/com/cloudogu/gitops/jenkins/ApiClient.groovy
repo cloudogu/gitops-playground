@@ -80,6 +80,7 @@ class ApiClient {
     }
 
     // We pass a closure, so that we actually refetch a new crumb for a failed request
+    // The Jenkins ApiClient has it's own retry logic on top of RetryInterceptor, because of crumb lifetime and restarts
     private Response sendRequestWithRetries(Closure<Request> request) {
         def retry = 0
         Response response = null

@@ -148,7 +148,7 @@ class ApiClientTest {
     }
 
     @Test
-    void 'retries max 3 times on invalid crumb'() {
+    void 'retries on invalid crumb are limited'() {
         webServer.setDispatcher { request ->
             switch (request.path) {
                 case "/jenkins/crumbIssuer/api/json":
