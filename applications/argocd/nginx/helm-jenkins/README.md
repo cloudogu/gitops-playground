@@ -2,5 +2,5 @@
 
 3rd Party app (NGINX) with Helm, templated in Jenkins using the gitops-build-lib.
 
-This example also integrates an external secret that is managed in Vault.
+When vault is enabled, this example also integrates an external secret that is managed in Vault.
 You can see this secret when visiting `/secret`.
