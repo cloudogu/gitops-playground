@@ -186,17 +186,23 @@ class ApplicationConfigurator {
     }
 
     ApplicationConfigurator setConfig(File configFile) {
-        def map = new YamlSlurper().parse(configFile) as Map
+        def map = new YamlSlurper().parse(configFile)
+        if (!(map instanceof Map)) {
+            throw new RuntimeException("Could not parse YAML as map: $map")
+        }
         schemaValidator.validate(new ObjectMapper().convertValue(map, JsonNode))
 
-        return setConfig(map)
+        return setConfig(map as Map)
     }
 
     ApplicationConfigurator setConfig(String configFile) {
-        def map = new YamlSlurper().parseText(configFile) as Map
+        def map = new YamlSlurper().parseText(configFile)
+        if (!(map instanceof Map)) {
+            throw new RuntimeException("Could not parse YAML as map: $map")
+        }
         schemaValidator.validate(new ObjectMapper().convertValue(map, JsonNode))
 
-        return setConfig(map)
+        return setConfig(map as Map)
     }
 
     private void addAdditionalApplicationConfig(Map newConfig) {

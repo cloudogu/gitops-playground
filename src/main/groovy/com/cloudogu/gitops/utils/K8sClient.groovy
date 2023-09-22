@@ -136,7 +136,14 @@ class K8sClient {
 
     String getConfigMap(String mapName, String key) {
         String[] command = ["kubectl", "get", "configmap", mapName, "-o", "jsonpath={.data['"+key.replace(".", "\\.")+"']}"]
-        def result = commandExecutor.execute(command)
+        def result = commandExecutor.execute(command, false)
+        if (result.exitCode != 0) {
+            throw new RuntimeException("Could not fetch configmap $mapName: ${result.stdErr}")
+        }
+
+        if (result.stdOut == "") {
+            throw new RuntimeException("Could not fetch $key within config-map $mapName")
+        }
 
         return result.stdOut
     }
