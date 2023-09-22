@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test
 
 import java.nio.charset.Charset
 
+import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
 
 class ApiClientTest {
@@ -59,7 +60,7 @@ class ApiClientTest {
         webServer.enqueue(new MockResponse())
 
         def client = new ApiClient(webServer.url('jenkins').toString(), 'admin', 'admin', new OkHttpClient())
-        client.sendRequest("foobar", null)
+        client.sendRequestWithCrumb("foobar", null)
 
         assertThat(webServer.requestCount).isEqualTo(2)
         webServer.takeRequest() // crumb
@@ -74,7 +75,7 @@ class ApiClientTest {
         webServer.enqueue(new MockResponse())
 
         def client = new ApiClient(webServer.url('jenkins').toString(), 'admin', 'admin', new OkHttpClient())
-        client.sendRequest("foobar", new FormBody.Builder().add('key', 'value with spaces').build())
+        client.sendRequestWithCrumb("foobar", new FormBody.Builder().add('key', 'value with spaces').build())
 
         assertThat(webServer.requestCount).isEqualTo(2)
         webServer.takeRequest() // crumb
@@ -117,5 +118,83 @@ class ApiClientTest {
         assertThat(runScriptRequest.path).isEqualTo("/jenkins/scriptText")
         assertThat(runScriptRequest.getHeader('Authorization')).startsWith("Basic ")
         assertThat(runScriptRequest.getHeader('Jenkins-Crumb')).startsWith("the-crumb")
+    }
+
+    @Test
+    void 'retries on invalid crumb'() {
+        Queue<String> crumbQueue = new ArrayDeque<String>()
+        crumbQueue.add("the-invalid-crumb")
+        crumbQueue.add("the-second-crumb")
+        webServer.setDispatcher { request ->
+            switch (request.path) {
+                case "/jenkins/crumbIssuer/api/json":
+                    return new MockResponse().setBody('{"crumb": "'+crumbQueue.poll()+'", "crumbRequestField": "Jenkins-Crumb"}')
+                case "/jenkins/scriptText":
+                    def isInvalidCrumb = request.getHeader('Jenkins-Crumb') == 'the-invalid-crumb'
+                    def body = !isInvalidCrumb ? 'ok' : '{"servlet":"Stapler", "message":"No valid crumb was included in the request", "url":"/scriptText", "status":"403"}'
+                    return new MockResponse().setBody(body).setResponseCode(isInvalidCrumb ? 403 : 200)
+                default:
+                    return new MockResponse().setStatus("404")
+            }
+        }
+        webServer.start()
+
+        def httpClient = new OkHttpClient()
+        def apiClient = new ApiClient(webServer.url("jenkins").toString(), "admin", "admin", httpClient, 3, 0)
+
+        def result = apiClient.runScript("println('ok')")
+        assertThat(result).isEqualTo("ok")
+        assertThat(crumbQueue.size()).isEqualTo(0)
+    }
+
+    @Test
+    void 'retries on invalid crumb are limited'() {
+        webServer.setDispatcher { request ->
+            switch (request.path) {
+                case "/jenkins/crumbIssuer/api/json":
+                    return new MockResponse().setBody('{"crumb": "the-invalid-crumb", "crumbRequestField": "Jenkins-Crumb"}')
+                case "/jenkins/scriptText":
+                    def body = '{"servlet":"Stapler", "message":"No valid crumb was included in the request", "url":"/scriptText", "status":"403"}'
+                    return new MockResponse().setBody(body).setResponseCode(403)
+                default:
+                    return new MockResponse().setStatus("404")
+            }
+        }
+        webServer.start()
+
+        def httpClient = new OkHttpClient()
+        def apiClient = new ApiClient(webServer.url("jenkins").toString(), "admin", "admin", httpClient, 3, 0)
+
+        shouldFail(RuntimeException) {
+            apiClient.runScript("println('ok')")
+        }
+        assertThat(webServer.requestCount).isEqualTo(3 /* fetch crumb */ + 3 /* call scriptText */)
+    }
+
+    @Test
+    void 'retries when fetching crumb fails'() {
+        def crumbRequestCounter = 0
+        webServer.setDispatcher { request ->
+            switch (request.path) {
+                case "/jenkins/crumbIssuer/api/json":
+                    if (++crumbRequestCounter > 1) {
+                        return new MockResponse().setBody('{"crumb": "the-invalid-crumb", "crumbRequestField": "Jenkins-Crumb"}')
+                    } else {
+                        return new MockResponse().setBody('error').setResponseCode(401)
+                    }
+                case "/jenkins/scriptText":
+                    return new MockResponse().setBody("ok")
+                default:
+                    return new MockResponse().setStatus("404")
+            }
+        }
+        webServer.start()
+
+        def httpClient = new OkHttpClient()
+        def apiClient = new ApiClient(webServer.url("jenkins").toString(), "admin", "admin", httpClient, 3, 0)
+
+        def result = apiClient.runScript("println('ok')")
+        assertThat(result).isEqualTo("ok")
+        assertThat(webServer.requestCount).isEqualTo(2 /* fetch crumb */ + 1 /* call scriptText */)
     }
 }

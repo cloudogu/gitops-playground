@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.dependencyinjection
 
 import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.okhttp.RetryInterceptor
 import com.cloudogu.gitops.scmm.api.AuthorizationInterceptor
 import com.cloudogu.gitops.scmm.api.RepositoryApi
 import com.cloudogu.gitops.scmm.api.UsersApi
@@ -38,6 +39,7 @@ class RetrofitFactory {
         def builder = new OkHttpClient.Builder()
                 .addInterceptor(new AuthorizationInterceptor(configuration.config.scmm['username'] as String, configuration.config.scmm['password'] as String))
                 .addInterceptor(loggingInterceptor)
+                .addInterceptor(new RetryInterceptor())
 
         if (configuration.config.application['insecure']) {
             def context = insecureSslContext.get()

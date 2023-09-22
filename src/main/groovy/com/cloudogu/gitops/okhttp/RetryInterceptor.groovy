@@ -55,9 +55,6 @@ class RetryInterceptor implements Interceptor {
             502, // Bad Gateway
             503, // Service Unavailable
             504, // Gateway Timeout
-            // additional codes that could be temporary in e.g. Jenkins
-            401, // Unauthorized
-            403, // Forbidden
         ]
     }
 }
