@@ -1,9 +1,12 @@
 package com.cloudogu.gitops.config
 
-
+import com.cloudogu.gitops.config.schema.JsonSchemaValidator
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.ObjectMapper
 import groovy.util.logging.Slf4j
+import groovy.yaml.YamlSlurper
 import jakarta.inject.Singleton
 
 import static com.cloudogu.gitops.utils.MapUtils.*
@@ -15,7 +18,12 @@ class ApplicationConfigurator {
     public static final String HELM_IMAGE = "ghcr.io/cloudogu/helm:3.10.3-1"
     public static final String DEFAULT_ADMIN_USER = 'admin'
     public static final String DEFAULT_ADMIN_PW = 'admin'
-    // This is deliberately non-static, so as to allow getenv() to work with GraalVM static images 
+    /**
+     * When changing values make sure to modify GitOpsPlaygroundCli and Schema as well
+     * @see com.cloudogu.gitops.cli.GitopsPlaygroundCli
+     * @see com.cloudogu.gitops.config.schema.Schema
+     */
+    // This is deliberately non-static, so as to allow getenv() to work with GraalVM static images
     private final Map DEFAULT_VALUES = makeDeeplyImmutable([
             registry   : [
                     internal: true, // Set dynamically
@@ -30,7 +38,7 @@ class ApplicationConfigurator {
                     url     : '',
                     username: DEFAULT_ADMIN_USER,
                     password: DEFAULT_ADMIN_PW,
-                    urlForScmm: "http://jenkins",
+                    urlForScmm: "http://jenkins", // Set dynamically
                     metricsUsername: 'metrics',
                     metricsPassword: 'metrics',
             ],
@@ -39,7 +47,7 @@ class ApplicationConfigurator {
                     url     : '',
                     username: DEFAULT_ADMIN_USER,
                     password: DEFAULT_ADMIN_PW,
-                    urlForJenkins : 'http://scmm-scm-manager/scm',
+                    urlForJenkins : 'http://scmm-scm-manager/scm', // set dynamically
                     host : '', // Set dynamically
                     protocol : '' // Set dynamically
             ],
@@ -53,7 +61,7 @@ class ApplicationConfigurator {
                     runningInsideK8s : false, // Set dynamically
                     clusterBindAddress : '', // Set dynamically
                     namePrefix    : '',
-                    namePrefixForEnvVars    : '',
+                    namePrefixForEnvVars    : '', // Set dynamically
             ],
             images     : [
                     // When updating please also adapt in Dockerfile, vars.tf, apply.sh and init-cluster.sh
@@ -147,8 +155,10 @@ class ApplicationConfigurator {
     Map config
     private NetworkingUtils networkingUtils
     private FileSystemUtils fileSystemUtils
+    private JsonSchemaValidator schemaValidator
 
-    ApplicationConfigurator(NetworkingUtils networkingUtils, FileSystemUtils fileSystemUtils) {
+    ApplicationConfigurator(NetworkingUtils networkingUtils, FileSystemUtils fileSystemUtils, JsonSchemaValidator schemaValidator) {
+        this.schemaValidator = schemaValidator
         this.config = DEFAULT_VALUES
         this.networkingUtils = networkingUtils
         this.fileSystemUtils = fileSystemUtils
@@ -157,7 +167,7 @@ class ApplicationConfigurator {
     /**
      * Sets config internally and als returns it, fluent interface
      */
-    Map setConfig(Map configToSet) {
+    ApplicationConfigurator setConfig(Map configToSet) {
         Map newConfig = deepCopy(config)
         deepMerge(configToSet, newConfig)
 
@@ -171,7 +181,28 @@ class ApplicationConfigurator {
             newConfig['features']['secrets']['active'] = true
         
         config = makeDeeplyImmutable(newConfig)
-        return config
+
+        return this
+    }
+
+    ApplicationConfigurator setConfig(File configFile) {
+        def map = new YamlSlurper().parse(configFile)
+        if (!(map instanceof Map)) {
+            throw new RuntimeException("Could not parse YAML as map: $map")
+        }
+        schemaValidator.validate(new ObjectMapper().convertValue(map, JsonNode))
+
+        return setConfig(map as Map)
+    }
+
+    ApplicationConfigurator setConfig(String configFile) {
+        def map = new YamlSlurper().parseText(configFile)
+        if (!(map instanceof Map)) {
+            throw new RuntimeException("Could not parse YAML as map: $map")
+        }
+        schemaValidator.validate(new ObjectMapper().convertValue(map, JsonNode))
+
+        return setConfig(map as Map)
     }
 
     private void addAdditionalApplicationConfig(Map newConfig) {

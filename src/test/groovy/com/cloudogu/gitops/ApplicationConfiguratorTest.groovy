@@ -1,6 +1,8 @@
 package com.cloudogu.gitops
 
 import com.cloudogu.gitops.config.ApplicationConfigurator
+import com.cloudogu.gitops.config.schema.JsonSchemaGenerator
+import com.cloudogu.gitops.config.schema.JsonSchemaValidator
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
 import com.cloudogu.gitops.utils.TestLogger
@@ -55,7 +57,7 @@ class ApplicationConfiguratorTest {
     void setup() {
         networkingUtils = mock(NetworkingUtils.class)
         fileSystemUtils = mock(FileSystemUtils.class)
-        applicationConfigurator = new ApplicationConfigurator(networkingUtils, fileSystemUtils)
+        applicationConfigurator = new ApplicationConfigurator(networkingUtils, fileSystemUtils, new JsonSchemaValidator(new JsonSchemaGenerator()))
         testLogger = new TestLogger(applicationConfigurator.getClass())
         when(fileSystemUtils.getRootDir()).thenReturn("/test")
         when(fileSystemUtils.getLineFromFile("/test/scm-manager/values.yaml", "nodePort:")).thenReturn("nodePort: 9091")
@@ -73,7 +75,7 @@ class ApplicationConfiguratorTest {
         when(networkingUtils.getProtocol("http://localhost:9091/scm")).thenReturn("http")
         when(networkingUtils.getHost("http://localhost:9091/scm")).thenReturn("localhost:9091/scm")
 
-        Map actualConfig = applicationConfigurator.setConfig(testConfig)
+        Map actualConfig = applicationConfigurator.setConfig(testConfig).getConfig()
 
         
         assertThat(actualConfig['registry']['internalPort']).isEqualTo(EXPECTED_REGISTRY_INTERNAL_PORT)
@@ -99,7 +101,7 @@ class ApplicationConfiguratorTest {
         testConfig.scmm['url'] = ''
 
         withEnvironmentVariable("KUBERNETES_SERVICE_HOST", "127.0.0.1").execute {
-            Map actualConfig = applicationConfigurator.setConfig(testConfig)
+            Map actualConfig = applicationConfigurator.setConfig(testConfig).getConfig()
 
             assertThat(actualConfig.scmm['url']).isEqualTo("http://scmm-scm-manager.default.svc.cluster.local:80/scm")
             assertThat(actualConfig.jenkins['url']).isEqualTo("http://jenkins.default.svc.cluster.local:80")
@@ -111,7 +113,7 @@ class ApplicationConfiguratorTest {
         testConfig.jenkins['url'] = ''
         testConfig.scmm['url'] = ''
 
-        Map actualConfig = applicationConfigurator.setConfig(testConfig)
+        Map actualConfig = applicationConfigurator.setConfig(testConfig).getConfig()
 
         assertThat(actualConfig.scmm['url']).isEqualTo("http://localhost:9091/scm")
         assertThat(actualConfig.jenkins['url']).isEqualTo("http://localhost:9090")
@@ -124,21 +126,43 @@ class ApplicationConfiguratorTest {
     @Test
     void "Certain properties are read from env"() {
         withEnvironmentVariable('SPRING_BOOT_HELM_CHART_REPO', 'value1').execute {
-            Map actualConfig = new ApplicationConfigurator(networkingUtils, fileSystemUtils).setConfig(testConfig)
+            Map actualConfig = new ApplicationConfigurator(networkingUtils, fileSystemUtils, new JsonSchemaValidator(new JsonSchemaGenerator())).setConfig(testConfig).getConfig()
             assertThat(actualConfig['repositories']['springBootHelmChart']['url']).isEqualTo('value1')
         }
         withEnvironmentVariable('SPRING_PETCLINIC_REPO', 'value2').execute {
-            Map actualConfig = new ApplicationConfigurator(networkingUtils, fileSystemUtils).setConfig(testConfig)
+            Map actualConfig = new ApplicationConfigurator(networkingUtils, fileSystemUtils, new JsonSchemaValidator(new JsonSchemaGenerator())).setConfig(testConfig).getConfig()
             assertThat(actualConfig['repositories']['springPetclinic']['url']).isEqualTo('value2')
         }
         withEnvironmentVariable('GITOPS_BUILD_LIB_REPO', 'value3').execute {
-            Map actualConfig = new ApplicationConfigurator(networkingUtils, fileSystemUtils).setConfig(testConfig)
+            Map actualConfig = new ApplicationConfigurator(networkingUtils, fileSystemUtils, new JsonSchemaValidator(new JsonSchemaGenerator())).setConfig(testConfig).getConfig()
             assertThat(actualConfig['repositories']['gitopsBuildLib']['url']).isEqualTo('value3')
         }
         withEnvironmentVariable('CES_BUILD_LIB_REPO', 'value4').execute {
-            Map actualConfig = new ApplicationConfigurator(networkingUtils, fileSystemUtils).setConfig(testConfig)
+            Map actualConfig = new ApplicationConfigurator(networkingUtils, fileSystemUtils, new JsonSchemaValidator(new JsonSchemaGenerator())).setConfig(testConfig).getConfig()
             assertThat(actualConfig['repositories']['cesBuildLib']['url']).isEqualTo('value4')
         }
+    }
+
+    @Test
+    void 'cli overwrites config file'() {
+        def configFile = File.createTempFile("gitops-playground", '.yaml')
+        configFile.deleteOnExit()
+        configFile.text = """
+images:
+  kubectl: "localhost:30000/kubectl"
+  helm: "localhost:30000/helm"
+        """
+        applicationConfigurator
+                .setConfig(configFile)
+                .setConfig([
+                        images: [
+                                kubectl: null, // do not overwrite default value
+                                helm: "localhost:30000/cli/helm",
+                        ],
+                ])
+
+        assertThat(applicationConfigurator.config['images']['kubectl']).isEqualTo('localhost:30000/kubectl')
+        assertThat(applicationConfigurator.config['images']['helm']).isEqualTo('localhost:30000/cli/helm')
     }
 
     @Test
@@ -149,7 +173,7 @@ class ApplicationConfiguratorTest {
             configurator.config['application']['remote'] = true
         }
         shouldFail(UnsupportedOperationException) {
-            configurator.setConfig(testConfig)['application']['remote'] = true
+            configurator.setConfig(testConfig).getConfig()['application']['remote'] = true
         }
     }
 }

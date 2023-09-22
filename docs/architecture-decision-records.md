@@ -3,6 +3,64 @@ Architecture Decision Records
 
 Bases on [this template](https://adr.github.io/madr/examples.html).
 
+## Using com.github.victools:jsonschema-generator to generate a schema for config file
+
+### Context and Problem Statement
+
+We want to provide the possibility to configure the problem with a configuration file 
+rather than command line parameters.
+This configuration file should be easy to use and hard to misuse.
+Thus, we want to provide IDE autocompletion and error messages for typos.
+We use a json schema for both: IntelliJ support json schemas for JSON and YAML files.
+Additionally, we can use the same schema to validate the config file.
+
+### Considered Options
+
+There are several option for schema generation:
+
+* by hand
+* https://github.com/saasquatch/json-schema-inferrer
+* https://github.com/victools/jsonschema-generator
+* https://github.com/FasterXML/jackson-module-jsonSchema
+* https://github.com/fxg42/groovyschema
+
+### Decision Outcome
+
+#### by hand
+Creating the schema handwritten is cumbersome and prone to errors.
+Especially considering common options that are relevant for most/all values (e.g. `additionalProperties`).
+
+#### saasquatch/json-schema-inferrer
+
+It is officially linked at https://json-schema.org/implementations.html#schema-generators.
+However, deriving the schema from data is prone to error. 
+Especially if we support union types such as `null|string`.
+
+#### victools/jsonschema-generator
+
+It is also officially linked at https://json-schema.org/implementations.html#schema-generators.
+It generates a schema by declaring that schema using classes.
+Furthermore, it integrates with Jackson, which we already include in the project.
+Therefore, we can use the defined schema to provide a type configuration in future work.
+
+#### FasterXML/jackson-module-jsonSchema
+
+Being a Jackson module, it directly integrates with Jackson.
+However, there are no plans to support Jackson 3.
+
+#### fxg42/groovyschema
+
+It is a tool written in Groovy. 
+However, defining the schema is very close to writing it by hand as it only offers an
+API on top of an untyped map representing the JSON schema.
+Furthermore, latest commits date back 9 years.
+
+#### Outcome
+
+We decided to use `victools/jsonschema-generator` as it integrates well with libraries we already include,
+opens the possibility to use it for future work and is officially linked at json-schema.org.
+
+
 ## Using Retrofit as API client for SCM-Manager
 
 ### Context and Problem Statement

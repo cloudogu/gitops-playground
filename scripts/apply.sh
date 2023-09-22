@@ -117,7 +117,7 @@ function main() {
     echo "Full log output is appended to ${backgroundLogFile}"
   fi
 
-  if [[ "$DESTROY" != true ]]; then
+  if [[ "$DESTROY" != true ]] && [[ "$OUTPUT_CONFIG_FILE" != true ]]; then
     evalWithSpinner "Basic setup & configuring registry..." applyBasicK8sResources
 
     initSCMMVars
@@ -130,10 +130,14 @@ function main() {
     set +x
   fi
 
-  # call our groovy cli and pass in all params
-  evalWithSpinner "Running apply-ng..." "$PLAYGROUND_DIR/scripts/apply-ng.sh" "$@"
-
-  printWelcomeScreen
+  if [[ "$OUTPUT_CONFIG_FILE" != true ]]; then
+    # call our groovy cli and pass in all params
+    evalWithSpinner "Running apply-ng..." "$PLAYGROUND_DIR/scripts/apply-ng.sh" "$@"
+    printWelcomeScreen
+  else
+    # we don't want the spinner hiding the output
+    "$PLAYGROUND_DIR/scripts/apply-ng.sh" "$@"
+  fi
 }
 
 function findClusterBindAddress() {
@@ -493,7 +497,10 @@ function printUsage() {
 function printParameters() {
   echo "The following parameters are valid:"
   echo
-  echo " -h | --help     >> Help screen"
+  echo " -h | --help                    >> Help screen"
+  echo "    | --config-file=file.yaml   >> Use a YAML configuration file"
+  echo "    | --config-map=map-name     >> Use a YAML configuration file via kubernetes config map. Should contain a key 'config.yaml'"
+  echo "    | --output-config-file      >> Output current config as config file as much as possible."
   echo
   echo "Install only the desired GitOps operators. Multiple selections possible."
   echo "    | --argocd   >> Install the ArgoCD"
@@ -567,7 +574,7 @@ function printParameters() {
 readParameters() {
   COMMANDS=$(getopt \
     -o hdxyc \
-    --long help,destroy,argocd,argocd-url:,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,jenkins-metrics-username:,jenkins-metrics-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,grafana-url:,grafana-image:,grafana-sidecar-image:,prometheus-image:,prometheus-operator-image:,prometheus-config-reloader-image:,external-secrets-image:,external-secrets-certcontroller-image:,external-secrets-webhook-image:,vault-url:,vault-image:,nginx-image:,trace,insecure,yes,skip-helm-update,metrics,monitoring,mailhog-url:,vault:,petclinic-base-domain:,nginx-base-domain:,name-prefix: \
+    --long help,config-file:,config-map:,output-config-file,destroy,argocd,argocd-url:,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,jenkins-metrics-username:,jenkins-metrics-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,grafana-url:,grafana-image:,grafana-sidecar-image:,prometheus-image:,prometheus-operator-image:,prometheus-config-reloader-image:,external-secrets-image:,external-secrets-certcontroller-image:,external-secrets-webhook-image:,vault-url:,vault-image:,nginx-image:,trace,insecure,yes,skip-helm-update,metrics,monitoring,mailhog-url:,vault:,petclinic-base-domain:,nginx-base-domain:,name-prefix: \
     -- "$@")
   
   if [ $? != 0 ]; then
@@ -600,6 +607,7 @@ readParameters() {
   ASSUME_YES=false
   SKIP_HELM_UPDATE=false
   DESTROY=false
+  OUTPUT_CONFIG_FILE=false
   NAME_PREFIX=""
 
   while true; do
@@ -651,7 +659,10 @@ readParameters() {
       --vault              ) shift 2;; # Ignore, used in groovy only
       --petclinic-base-domain ) shift 2;; # Ignore, used in groovy only
       --nginx-base-domain  ) shift 2;; # Ignore, used in groovy only
-      --destroy            ) DESTROY=true; shift;; #
+      --destroy            ) DESTROY=true; shift;;
+      --config-file        ) shift;; # Ignore, used in groovy only
+      --config-map         ) shift;; # Ignore, used in groovy only
+      --output-config-file ) OUTPUT_CONFIG_FILE=true; shift;;
       --                   ) shift; break ;;
     *) break ;;
     esac

@@ -149,6 +149,30 @@ class K8sClientTest {
 
         assertThat(result).isEqualTo([new K8sClient.CustomResource('namespace', 'name'), new K8sClient.CustomResource('namespace2', 'name2')])
     }
+
+    @Test
+    void 'fetches config map sucessfully'() {
+        commandExecutor.enqueueOutput(new CommandExecutor.Output('', "the-file-content", 0))
+        def map = k8sClient.getConfigMap("the-map", "file.yaml")
+
+        assertThat(map, "the-file-content")
+    }
+
+    @Test
+    void 'errors when config map does not exist'() {
+        commandExecutor.enqueueOutput(new CommandExecutor.Output("Error from server (NotFound): configmaps \"the-map\" not found\n", "", 1))
+        shouldFail() {
+            k8sClient.getConfigMap("the-map", "file.yaml")
+        }
+    }
+
+    @Test
+    void 'errors when file does not exist'() {
+        commandExecutor.enqueueOutput(new CommandExecutor.Output('', '', 0))
+        shouldFail() {
+            k8sClient.getConfigMap("the-map", "file.yaml")
+        }
+    }
     
 
     private Map parseActualYaml(String pathToYamlFile) {

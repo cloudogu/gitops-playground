@@ -185,7 +185,7 @@ kubectl create clusterrolebinding gitops-playground-job-executer \
 kubectl run gitops-playground -i --tty --restart=Never \
   --overrides='{ "spec": { "serviceAccount": "gitops-playground-job-executer" } }' \
   --image ghcr.io/cloudogu/gitops-playground \
-  -- --yes --remote # additional parameters go here
+  -- --yes --argocd --remote # additional parameters go here
 
 # If everything succeeded, remove the objects
 kubectl delete clusterrolebinding/gitops-playground-job-executer \
@@ -204,6 +204,57 @@ You can get a full list of all options like so:
 ```shell
 docker run --rm ghcr.io/cloudogu/gitops-playground --help
 ```
+
+##### Configuration file
+
+You can also use a configuration file to specify the parameters (`--config-file` or `--config-map`).
+That file must be a YAML file. You can find the schema [here](https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/configuration.schema.json).
+
+Note that currently, only part of the configuration parameters are supported.
+
+See [here](https://www.jetbrains.com/help/ruby/yaml.html#remote_json) how to configure IntelliJ IDEA to use the schema and offer autocompletion and validation.
+You can use `--output-config-file` to output the current config as a YAML file. 
+Note that only the currently supported parameters will be used. 
+The config file is not yet a complete replacement for CLI parameters. 
+
+##### Apply via Docker
+
+```bash
+docker run --rm -it --pull=always -u $(id -u) \
+    -v ~/.k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
+    -v $(pwd)/gitops-playground.yaml:/config/gitops-playground.yaml \
+    --net=host \
+    ghcr.io/cloudogu/gitops-playground --yes --argocd --config-file=/config/gitops-playground.yaml
+```
+
+##### Apply via kubectl
+
+[Create the serviceaccount and clusterrolebinding](#apply-via-kubectl-remote-cluster)
+
+```bash
+$ cat config.yaml # for example
+features: 
+  monitoring:
+    active: true
+
+# Convention:
+# Find the ConfigMap inside the current namespace for the config map
+# From the config map, pick the key "config.yaml"
+kubectl create configmap gitops-config --from-file=config.yaml
+
+kubectl run gitops-playground -i --tty --restart=Never \
+  --overrides='{ "spec": { "serviceAccount": "gitops-playground-job-executer" } }' \
+  --image ghcr.io/cloudogu/gitops-playground \
+  -- --yes --argocd --config-map=gitops-config
+```
+
+Afterwards, you might want to do a [clean up](#apply-via-kubectl-remote-cluster).
+In addition, you might want to delete the config-map as well.
+
+``` bash
+kubectl delete cm gitops-config 
+```
+
 
 ##### Deploy GitOps operators
 
