@@ -224,6 +224,7 @@ def scanForAllVulns(String imageName, String fileName){
 def startK3d(clusterName) {
     sh "mkdir -p ${WORKSPACE}/.k3d/bin"
 
+    
     withEnv(["HOME=${WORKSPACE}", "PATH=${WORKSPACE}/.k3d/bin:${PATH}"]) { // Make k3d write kubeconfig to WORKSPACE
         // Install k3d binary to workspace in order to avoid concurrency issues
         sh "if ! command -v k3d >/dev/null 2>&1; then " +
@@ -231,6 +232,7 @@ def startK3d(clusterName) {
                 'TAG=v$(sed -n "s/^K3D_VERSION=//p" scripts/init-cluster.sh) ' +
                 "K3D_INSTALL_DIR=${WORKSPACE}/.k3d/bin " +
                 'bash -s -- --no-sudo; fi'
+        
         sh "yes | ./scripts/init-cluster.sh --cluster-name=${clusterName} --bind-localhost=false"
     }
 }

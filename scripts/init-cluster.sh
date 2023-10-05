@@ -2,7 +2,7 @@
 
 # See https://github.com/rancher/k3d/releases
 # This variable is also read in Jenkinsfile
-K3D_VERSION=4.4.8
+K3D_VERSION=5.6.0
 # When updating please also adapt in Dockerfile, vars.tf, ApplicationConfigurator.groovy and apply.sh
 K8S_VERSION=1.25.5
 K3S_VERSION="rancher/k3s:v${K8S_VERSION}-k3s2"
@@ -45,15 +45,16 @@ function createCluster() {
     fi
   fi
 
+  HOST_PORT_RANGE='8010-32767'
   K3D_ARGS=(
     # Allow services to bind to ports < 30000
-    '--k3s-server-arg=--kube-apiserver-arg=service-node-port-range=8010-32767'
+    "--k3s-arg=--kube-apiserver-arg=service-node-port-range=${HOST_PORT_RANGE}@server:0"
     # Used by Jenkins Agents pods
-    '-v /var/run/docker.sock:/var/run/docker.sock@server[0]'
+    '-v /var/run/docker.sock:/var/run/docker.sock@server:0'
     # Allows for finding out the GID of the docker group in order to allow the Jenkins agents pod to access docker socket
-    '-v /etc/group:/etc/group@server[0]'
+    '-v /etc/group:/etc/group@server:0'
     # Persists the cache of Jenkins agents pods for faster builds
-    '-v /tmp:/tmp@server[0]'
+    '-v /tmp:/tmp@server:0'
     # Pin k8s version via k3s image
     "--image=$K3S_VERSION" 
   )
@@ -69,14 +70,14 @@ function createCluster() {
     # If available, use default port for playground registry, because no parameter is required when applying
     if command -v netstat >/dev/null 2>&1 && ! netstat -an | grep 30000 | grep LISTEN >/dev/null 2>&1; then
       K3D_ARGS+=(
-       '-p 30000:30000@server[0]'
+       '-p 30000:30000@server:0:direct'
       )
     else
       # If default port is in use, choose an arbitrary port.
       # The port must then be passed when applying the playground as --internal-registry-port (printed after creation)
       isUsingArbitraryRegistryPort=true
       K3D_ARGS+=(
-       '-p 30000@server[0]'
+       '-p 30000@server:0:direct'
       )
     fi
   fi
