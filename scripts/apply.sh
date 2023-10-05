@@ -226,7 +226,19 @@ function applyBasicK8sResources() {
 
 function initRegistry() {
   if [[ "${INTERNAL_REGISTRY}" == true ]]; then
-    helm upgrade -i docker-registry --values docker-registry/values.yaml --version 1.9.4 stable/docker-registry -n default
+    # We need a hostPort in order to work around our builds running on the host's docker daemon.
+    # So here, a ClusterIP is not enough
+    # Registry runs without auth, so don't expose as LB!
+    helm upgrade -i docker-registry --version 1.9.4 stable/docker-registry -n default \
+      --set service.nodePort=30000 --set service.type=NodePort
+      
+    if [[ -n "${INTERNAL_REGISTRY_PORT}" ]]; then
+      # Add additional node port
+      # 30000 is needed as a static by docker via port mapping of k3d, e.g. 32769 -> 30000 on server-0 container
+      # See "-p 30000" in init-cluster.sh
+      # e.g 32769 is needed so the kubelet can access the image inside the server-0 container
+      kubectl create service nodeport docker-registry-internal-port --tcp=5000 --node-port ${INTERNAL_REGISTRY_PORT} -n default
+    fi
   fi
 }
 

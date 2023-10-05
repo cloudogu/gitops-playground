@@ -45,9 +45,9 @@ function createCluster() {
     fi
   fi
 
-  HOST_PORT_RANGE='8010-32767'
+  HOST_PORT_RANGE='8010-65535'
   K3D_ARGS=(
-    # Allow services to bind to ports < 30000
+    # Allow services to bind to ports < 30000 > 32xxx
     "--k3s-arg=--kube-apiserver-arg=service-node-port-range=${HOST_PORT_RANGE}@server:0"
     # Used by Jenkins Agents pods
     '-v /var/run/docker.sock:/var/run/docker.sock@server:0'
