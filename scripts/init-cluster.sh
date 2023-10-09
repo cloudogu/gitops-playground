@@ -29,12 +29,18 @@ function main() {
 }
 
 function installK3d() {
-    echo "Installing install k3d ${K3D_VERSION}"
+    echo "Installing install k3d ${K3D_VERSION} to \$HOME/.local/bin"
     echo 'Using this script: https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh'
     # shellcheck disable=SC2016
-    echo 'You can later uninstall it via: sudo rm $(which k3d)'
-    if confirm "Do you want to continue"  ' [y/N]'; then
-      curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=v${K3D_VERSION} bash
+    echo 'If $HOME/.local/bin is not on your PATH, you can add it for this session: export PATH="$HOME/.local/bin:$PATH"'
+    # shellcheck disable=SC2016
+    echo 'You can uninstall k3d later via: rm $HOME/.local/bin/k3d'
+    if confirm "Do you want to continue?" ' [y/N]'; then
+      # Allow this script to execute k3d without having /.local/bin on the path
+      export PATH="$HOME/.local/bin:$PATH"
+      mkdir -p .local/bin
+      curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | \
+        TAG=v${K3D_VERSION} K3D_INSTALL_DIR=${HOME}/.local/bin bash -s -- --no-sudo
     else
       echo "Not installed."
       # Return error here to avoid possible subsequent commands to be executed
