@@ -17,12 +17,15 @@ resources:
     memory: 10Mi
     cpu: 20m
 
-<#if mail.url??>
 ingress:
   enabled: true
+<#if mail.url??>
   hosts:
     - host: ${mail.url.host}
+<#else>
+  hosts:
+    - host: mailhog.localhost
+</#if>
       paths:
         - path: "/"
           pathType: Prefix
-</#if>

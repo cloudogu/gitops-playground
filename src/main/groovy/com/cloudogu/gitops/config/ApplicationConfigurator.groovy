@@ -144,10 +144,10 @@ class ApplicationConfigurator {
                     ],
                     exampleApps: [
                             petclinic: [
-                                    baseDomain: '',
+                                    baseDomain: 'petclinic.localhost',
                             ],
                             nginx    : [
-                                    baseDomain: '',
+                                    baseDomain: 'nginx.localhost',
                             ],
                     ]
             ]

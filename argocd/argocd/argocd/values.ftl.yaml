@@ -2,10 +2,12 @@
 argo-cd:
 
   server:
-<#if argocd.host?has_content>
     ingress:
       enabled: true
+<#if argocd.host?has_content>
       hosts: [${argocd.host}]
+<#else>
+      hosts: [argocd.localhost]
 </#if>
 
     service:
