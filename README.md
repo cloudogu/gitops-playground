@@ -27,7 +27,7 @@ You can run a local k8s cluster with the GitOps playground installed with only o
 bash <(curl -s \
   https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh) \
   && sleep 2 && docker run --rm -it --pull=always -u $(id -u) \
-    -v ~/.k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
+    -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     --net=host \
     ghcr.io/cloudogu/gitops-playground --yes --argocd
 ```
@@ -147,7 +147,7 @@ k3d's kubeconfig.
 CLUSTER_NAME=gitops-playground
 docker pull ghcr.io/cloudogu/gitops-playground
 docker run --rm -it -u $(id -u) \
-  -v ~/.k3d/kubeconfig-${CLUSTER_NAME}.yaml:/home/.kube/config \
+  -v ~/.config/k3d/kubeconfig-${CLUSTER_NAME}.yaml:/home/.kube/config \
   --net=host \
   ghcr.io/cloudogu/gitops-playground # additional parameters go here
 ``` 
@@ -221,7 +221,7 @@ The config file is not yet a complete replacement for CLI parameters.
 
 ```bash
 docker run --rm -it --pull=always -u $(id -u) \
-    -v ~/.k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
+    -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     -v $(pwd)/gitops-playground.yaml:/config/gitops-playground.yaml \
     --net=host \
     ghcr.io/cloudogu/gitops-playground --yes --argocd --config-file=/config/gitops-playground.yaml

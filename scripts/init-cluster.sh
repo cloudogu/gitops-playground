@@ -105,8 +105,11 @@ function createCluster() {
     echo "Make sure to pass --internal-registry-port=${registryPort} when applying the playground."
   fi
 
-  echo "Adding k3d cluster to ~/.kube/config"
-  k3d kubeconfig merge ${CLUSTER_NAME} --kubeconfig-switch-context > /dev/null
+  # Write ~/.config/k3d/kubeconfig-${CLUSTER_NAME}.yaml
+  # https://k3d.io/v5.6.0/usage/kubeconfig/
+  # Using this file makes applying the playground from docker more reliable and secure
+  # Otherwise a change of the current kubecontext (e.g. via kubectx) in the default kubeconfig will lead to the playground being applied to the wrong cluster
+  k3d kubeconfig write ${CLUSTER_NAME} > /dev/null
 }
 
 function printParameters() {
