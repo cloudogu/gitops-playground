@@ -16,6 +16,7 @@ function main() {
   
   # Install k3d if necessary
   if ! command -v k3d >/dev/null 2>&1; then
+    echo The GitOps playground uses k3d, which is not found on the PATH. 
     installK3d
   else
     ACTUAL_K3D_VERSION="$(k3d --version | grep k3d | sed 's/k3d version v\(.*\)/\1/')"
@@ -28,7 +29,17 @@ function main() {
 }
 
 function installK3d() {
-  curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=v${K3D_VERSION} bash
+    echo "Installing install k3d ${K3D_VERSION}"
+    echo 'Using this script: https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh'
+    # shellcheck disable=SC2016
+    echo 'You can later uninstall it via: sudo rm $(which k3d)'
+    if confirm "Do you want to continue"  ' [y/N]'; then
+      curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=v${K3D_VERSION} bash
+    else
+      echo "Not installed."
+      # Return error here to avoid possible subsequent commands to be executed
+      exit 1
+    fi
 }
 
 function createCluster() {
