@@ -2,11 +2,5 @@ service:
   port: 80
   nodePort: 9091
 
-ingress:
-  enabled: true
-  path: /
-  hosts:
-    - scmm.localhost
-
 persistence:
   size: 1Gi

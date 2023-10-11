@@ -66,11 +66,6 @@ function createCluster() {
   K3D_ARGS=(
     # Allow services to bind to ports < 30000 > 32xxx
     "--k3s-arg=--kube-apiserver-arg=service-node-port-range=${HOST_PORT_RANGE}@server:0"
-    # TODO param for setting port?
-    # TODO or error handling when port in use -> let docker bind to arbitrary port
-    # TODO Default to other than 8080 to have less problems -> But longer urls scmm.localhost:8080 instead of plain scmm.localhost
-    # Note that 127.0.0.1:80 would be more secure, but then requests to localhost fail
-    '-p 8080:80@server:0:direct'
     # Used by Jenkins Agents pods
     '-v /var/run/docker.sock:/var/run/docker.sock@server:0'
     # Allows for finding out the GID of the docker group in order to allow the Jenkins agents pod to access docker socket
@@ -157,7 +152,7 @@ readParameters() {
   eval set -- "$COMMANDS"
   
   CLUSTER_NAME=gitops-playground
-  BIND_LOCALHOST=false
+  BIND_LOCALHOST=true
   TRACE=false
 
   while true; do

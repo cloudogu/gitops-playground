@@ -563,6 +563,9 @@ function printParameters() {
   echo "    | --nginx-image >> Sets image for nginx used in various applications"
   echo
   echo "General settings"
+  echo "    | --base-url   >> the external base url (TLD) for all tools, e.g. https://example.com or http://localhost:8080. The individual -url params for argocd, grafana, vault and mailhog take precedence."
+  echo "    | --remote   >> Install on remote Cluster e.g. gcp"
+  echo "    | --password=myPassword   >> Set initial admin passwords to 'myPassword'"
   echo "    | --insecure            >> Runs curl in insecure mode"
   echo "    | --skip-helm-update    >> Skips adding and updating helm repos"
   echo
@@ -586,7 +589,7 @@ function printParameters() {
 readParameters() {
   COMMANDS=$(getopt \
     -o hdxyc \
-    --long help,config-file:,config-map:,output-config-file,destroy,argocd,argocd-url:,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,jenkins-metrics-username:,jenkins-metrics-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,grafana-url:,grafana-image:,grafana-sidecar-image:,prometheus-image:,prometheus-operator-image:,prometheus-config-reloader-image:,external-secrets-image:,external-secrets-certcontroller-image:,external-secrets-webhook-image:,vault-url:,vault-image:,nginx-image:,trace,insecure,yes,skip-helm-update,metrics,monitoring,mailhog-url:,vault:,petclinic-base-domain:,nginx-base-domain:,name-prefix: \
+    --long help,config-file:,config-map:,output-config-file,destroy,argocd,argocd-url:,debug,remote,base-url:,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,jenkins-metrics-username:,jenkins-metrics-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,grafana-url:,grafana-image:,grafana-sidecar-image:,prometheus-image:,prometheus-operator-image:,prometheus-config-reloader-image:,external-secrets-image:,external-secrets-certcontroller-image:,external-secrets-webhook-image:,vault-url:,vault-image:,nginx-image:,trace,insecure,yes,skip-helm-update,metrics,monitoring,mailhog-url:,vault:,petclinic-base-domain:,nginx-base-domain:,name-prefix: \
     -- "$@")
   
   if [ $? != 0 ]; then
@@ -599,6 +602,7 @@ readParameters() {
   DEBUG=false
   INSTALL_ARGOCD=false
   REMOTE_CLUSTER=false
+  BASE_URL=""
   SET_USERNAME="admin"
   SET_PASSWORD="admin"
   JENKINS_URL=""
@@ -627,6 +631,7 @@ readParameters() {
       -h | --help          ) printUsage; exit 0 ;;
       --argocd             ) INSTALL_ARGOCD=true; shift ;;
       --argocd-url         ) shift 2 ;; # Ignore, used in groovy only
+      --base-url           ) BASE_URL="$2"; shift 2 ;;
       --remote             ) REMOTE_CLUSTER=true; shift ;;
       --jenkins-url        ) JENKINS_URL="$2"; shift 2 ;;
       --jenkins-username   ) JENKINS_USERNAME="$2"; shift 2 ;;

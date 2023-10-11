@@ -62,6 +62,7 @@ class ApplicationConfigurator {
                     clusterBindAddress : '', // Set dynamically
                     namePrefix    : '',
                     namePrefixForEnvVars    : '', // Set dynamically
+                    baseUrl: null,
             ],
             images     : [
                     // When updating please also adapt in Dockerfile, vars.tf, apply.sh and init-cluster.sh
@@ -144,10 +145,10 @@ class ApplicationConfigurator {
                     ],
                     exampleApps: [
                             petclinic: [
-                                    baseDomain: 'petclinic.localhost',
+                                    baseDomain: '',
                             ],
                             nginx    : [
-                                    baseDomain: 'nginx.localhost',
+                                    baseDomain: '',
                             ],
                     ]
             ]
@@ -179,6 +180,8 @@ class ApplicationConfigurator {
             newConfig.registry["internal"] = false
         if (newConfig['features']['secrets']['vault']['mode'])
             newConfig['features']['secrets']['active'] = true
+
+        evaluateBaseUrl(newConfig)
         
         config = makeDeeplyImmutable(newConfig)
 
@@ -253,5 +256,60 @@ class ApplicationConfigurator {
             String cba = newConfig.application["clusterBindAddress"]
             newConfig.jenkins["url"] = networkingUtils.createUrl(cba, port)
         }
+    }
+
+    private void evaluateBaseUrl(Map newConfig) {
+        String baseUrl = newConfig.application['baseUrl']
+        if (baseUrl) {
+            log.debug("Base URL set, adapting to individual tools")
+            def argocd = newConfig.features['argocd']
+            def mail = newConfig.features['mail']
+            def monitoring = newConfig.features['monitoring']
+            def vault = newConfig.features['secrets']['vault']
+            
+            if (argocd['active'] && !argocd['url']) {
+                argocd['url'] = injectSubdomain('argocd', baseUrl)
+                log.debug("Setting URL ${argocd['url']}")
+            }
+            if (mail['active'] && !mail['url']) {
+                mail['url'] = injectSubdomain('mailhog', baseUrl)
+                log.debug("Setting URL ${mail['url']}")
+            }
+            if (monitoring['active'] && !monitoring['grafanaUrl']) {
+                monitoring['grafanaUrl'] = injectSubdomain('grafana', baseUrl)
+                log.debug("Setting URL ${monitoring['grafanaUrl']}")
+            }
+            if ( newConfig.features['secrets']['active'] && !vault['url']) {
+                vault['url'] = injectSubdomain('vault', baseUrl)
+                log.debug("Setting URL ${vault['url']}")
+            }
+            
+            if (!newConfig.features['exampleApps']['petclinic']['baseDomain']) {
+                // This param only requires the host / domain
+                newConfig.features['exampleApps']['petclinic']['baseDomain'] = new URL(injectSubdomain('petclinic', baseUrl)).host
+                log.debug("Setting URL ${newConfig.features['exampleApps']['petclinic']['baseDomain']}")
+            }
+            if (!newConfig.features['exampleApps']['nginx']['baseDomain']) {
+                // This param only requires the host / domain
+                newConfig.features['exampleApps']['nginx']['baseDomain'] = new URL(injectSubdomain('nginx', baseUrl)).host
+                log.debug("Setting URL ${newConfig.features['exampleApps']['nginx']['baseDomain']}")
+            }
+        }
+    }
+
+    /**
+     * 
+     * @param subdomain, e.g. argocd
+     * @param baseUrl e.g. http://localhost:8080
+     * @return e.g. http://argocd.localhost:8080
+     */
+    String injectSubdomain(String subdomain, String baseUrl) {
+        URL url = new URL(baseUrl)
+        String newUrl = url.getProtocol() + "://" + subdomain + "." + url.getHost()
+        if (url.getPort() != -1) {
+            newUrl += ":" + url.getPort()
+        }
+        newUrl += url.getPath()
+        return newUrl
     }
 }

@@ -30,6 +30,7 @@ class ApplicationConfiguratorTest {
     private FileSystemUtils fileSystemUtils
     private TestLogger testLogger
     Map testConfig = [
+            application: [:],
             registry   : [
                     url         : EXPECTED_REGISTRY_URL,
                     internalPort: EXPECTED_REGISTRY_INTERNAL_PORT,
@@ -50,9 +51,15 @@ class ApplicationConfiguratorTest {
                                     mode : EXPECTED_VAULT_MODE
                             ]
                     ],
+                    mail: [:],
+                    monitoring: [:],
+                    exampleApps: [
+                            petclinic: [:],
+                            nginx    : [:],
+                    ]
             ]
     ]
-
+    
     @BeforeEach
     void setup() {
         networkingUtils = mock(NetworkingUtils.class)
@@ -175,5 +182,77 @@ images:
         shouldFail(UnsupportedOperationException) {
             configurator.setConfig(testConfig).getConfig()['application']['remote'] = true
         }
+    }
+
+    
+    @Test
+    void "base url: evaluates for all tools"() {
+        testConfig.application['baseUrl'] = 'http://localhost'
+        
+        testConfig.features['argocd']['active'] = true
+        testConfig.features['mail']['active'] = true
+        testConfig.features['monitoring']['active'] = true
+        testConfig.features['secrets']['active'] = true
+
+        Map actualConfig = applicationConfigurator.setConfig(testConfig).getConfig()
+
+        assertThat(actualConfig.features['argocd']['url']).isEqualTo("http://argocd.localhost")
+        assertThat(actualConfig.features['mail']['url']).isEqualTo("http://mailhog.localhost")
+        assertThat(actualConfig.features['monitoring']['grafanaUrl']).isEqualTo("http://grafana.localhost")
+        assertThat(actualConfig.features['secrets']['vault']['url']).isEqualTo("http://vault.localhost")
+        assertThat(actualConfig.features['exampleApps']['petclinic']['baseDomain']).isEqualTo("petclinic.localhost")
+        assertThat(actualConfig.features['exampleApps']['nginx']['baseDomain']).isEqualTo("nginx.localhost")
+    }
+
+    @Test
+    void "base url: also works when port is included "() {
+        testConfig.application['baseUrl'] = 'http://localhost:8080'
+        testConfig.features['argocd']['active'] = true
+
+        Map actualConfig = applicationConfigurator.setConfig(testConfig).getConfig()
+
+        assertThat(actualConfig.features['argocd']['url']).isEqualTo("http://argocd.localhost:8080")
+    }
+
+
+    @Test
+    void "base url: does not evaluate for inactive tools"() {
+        testConfig.features['argocd']['active'] = false
+        testConfig.features['mail']['active'] = false
+        testConfig.features['monitoring']['active'] = false
+        testConfig.features['secrets']['active'] = false
+
+        Map actualConfig = applicationConfigurator.setConfig(testConfig).getConfig()
+
+        assertThat(actualConfig.features['argocd']['url']).isEqualTo("")
+        assertThat(actualConfig.features['mail']['url']).isEqualTo("")
+        assertThat(actualConfig.features['monitoring']['grafanaUrl']).isEqualTo("")
+        assertThat(actualConfig.features['secrets']['vault']['url']).isEqualTo("")
+    }
+
+    @Test
+    void "base url: individual url params take precedence"() {
+        testConfig.application['baseUrl'] = 'http://localhost'
+
+        testConfig.features['argocd']['active'] = true
+        testConfig.features['mail']['active'] = true
+        testConfig.features['monitoring']['active'] = true
+        testConfig.features['secrets']['active'] = true
+
+        testConfig.features['argocd']['url'] = 'argocd'
+        testConfig.features['mail']['url'] = 'mailhog'
+        testConfig.features['monitoring']['grafanaUrl'] = 'grafana'
+        testConfig.features['secrets']['vault']['url'] = 'vault'
+        testConfig.features['exampleApps']['petclinic']['baseDomain'] = 'petclinic'
+        testConfig.features['exampleApps']['nginx']['baseDomain'] = 'nginx'
+
+        Map actualConfig = applicationConfigurator.setConfig(testConfig).getConfig()
+
+        assertThat(actualConfig.features['argocd']['url']).isEqualTo("argocd")
+        assertThat(actualConfig.features['mail']['url']).isEqualTo("mailhog")
+        assertThat(actualConfig.features['monitoring']['grafanaUrl']).isEqualTo("grafana")
+        assertThat(actualConfig.features['secrets']['vault']['url']).isEqualTo("vault")
+        assertThat(actualConfig.features['exampleApps']['petclinic']['baseDomain']).isEqualTo("petclinic")
+        assertThat(actualConfig.features['exampleApps']['nginx']['baseDomain']).isEqualTo("nginx")
     }
 }

@@ -14,10 +14,6 @@ controller:
   servicePort: 80
   # Is ignored when type is LoadBalancer. For local cluster we change the service type to NodePort
   nodePort: 9090
-  
-  ingress:
-    enabled: true
-    hostName: jenkins.localhost
 
   # Don't use controller for builds
   numExecutors: 0

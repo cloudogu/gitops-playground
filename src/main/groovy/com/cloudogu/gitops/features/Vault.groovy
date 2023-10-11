@@ -67,12 +67,6 @@ class Vault extends Feature {
                                         memory: '100Mi',
                                         cpu: '50m'
                                 ]
-                        ],
-                        ingress: [
-                                enabled: true,
-                                hosts: [
-                                        [host: 'vault.localhost'],
-                                ],
                         ]
                 ]
         ]
