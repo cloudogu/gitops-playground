@@ -244,7 +244,7 @@ function initRegistry() {
 
 function initJenkins() {
   if [[ ${INTERNAL_JENKINS} == true ]]; then
-    deployJenkinsCommand=(deployLocalJenkins "${SET_USERNAME}" "${SET_PASSWORD}" "${REMOTE_CLUSTER}" "${JENKINS_URL}")
+    deployJenkinsCommand=(deployLocalJenkins "${SET_USERNAME}" "${SET_PASSWORD}" "${REMOTE_CLUSTER}" "${JENKINS_URL}" "${BASE_URL}")
     evalWithSpinner "Deploying Jenkins..." "${deployJenkinsCommand[@]}"
 
     setExternalHostnameIfNecessary "JENKINS" "jenkins" "default"
@@ -274,14 +274,14 @@ function initSCMMVars() {
 
 function initSCMM() {
   if [[ ${INTERNAL_SCMM} == true ]]; then
-    deployLocalScmmManager "${REMOTE_CLUSTER}" "${SET_USERNAME}" "${SET_PASSWORD}"
+    deployLocalScmmManager "${REMOTE_CLUSTER}" "${SET_USERNAME}" "${SET_PASSWORD}" "${BASE_URL}"
   fi
 
   setExternalHostnameIfNecessary 'SCMM' 'scmm-scm-manager' 'default'
   [[ "${SCMM_URL}" != *scm ]] && SCMM_URL=${SCMM_URL}/scm
 
-  # When running in k3d, BASE_URL must be the internal URL. Otherwise webhooks from SCMM->Jenkins will fail, as
-  # They contain Repository URLs create with BASE_URL. Jenkins uses the internal URL for repos. So match is only
+  # When running in k3d, SCMM_BASE_URL must be internal. Otherwise webhooks from SCMM->Jenkins will fail, as
+  # they contain repository URLs created with SCMM_BASE_URL. Jenkins uses the internal URL for repos. So match is only
   # successful, when SCM also sends the Repo URLs using the internal URL
   configureScmmManager "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "${SCMM_URL}" "${JENKINS_URL_FOR_SCMM}" \
     "${SCMM_URL_FOR_JENKINS}" "${INTERNAL_SCMM}" "${INSTALL_ARGOCD}"

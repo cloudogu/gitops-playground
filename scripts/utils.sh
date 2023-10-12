@@ -28,6 +28,24 @@ function getExternalIP() {
   echo $external_ip
 }
 
+function extractHost() {
+    echo "$1" | grep -oP 'http[s]?://\K[^:]*'
+}
+
+function injectSubdomain() {
+    local BASE_URL="$1"
+    local SUBDOMAIN="$2"
+
+    if [[ "$BASE_URL" =~ ^http:// ]]; then
+        echo "${BASE_URL/http:\/\//http://${SUBDOMAIN}.}"
+    elif [[ "$BASE_URL" =~ ^https:// ]]; then
+        echo "${BASE_URL/https:\/\//https://${SUBDOMAIN}.}"
+    else
+        echo "Invalid BASE URL: ${BASE_URL}. It should start with either http:// or https://"
+        return 1
+    fi
+}
+
 function spinner() {
     local info="$1"
     local pid=$!

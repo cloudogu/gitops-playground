@@ -25,6 +25,7 @@ function deployLocalJenkins() {
   SET_PASSWORD=${2}
   REMOTE_CLUSTER=${3}
   JENKINS_URL=${4}
+  BASE_URL=${5}
 
   # Mark the first node for Jenkins and agents. See jenkins/values.yamls "agent.workingDir" for details.
   # Remove first (in case new nodes were added)
@@ -35,10 +36,21 @@ function deployLocalJenkins() {
 
   kubectl apply -f jenkins/resources || true
 
+  
   helm upgrade -i jenkins --values jenkins/values.yaml \
-    $(jenkinsHelmSettingsForLocalCluster) --set agent.runAsGroup=$(queryDockerGroupOfJenkinsNode) \
-    --set controller.jenkinsUrl=$JENKINS_URL \
+    $(jenkinsHelmSettingsForLocalCluster) $(jenkinsIngress) --set agent.runAsGroup=$(queryDockerGroupOfJenkinsNode) \
     --version ${JENKINS_HELM_CHART_VERSION} jenkins/jenkins -n default
+}
+
+function jenkinsIngress() {
+  
+    if [[ -n "${BASE_URL}" ]]; then
+      local jenkinsHost="jenkins.$(extractHost "${BASE_URL}")"
+      local externalJenkinsUrl="$(injectSubdomain "${BASE_URL}" 'jenkins')"
+      echo "--set controller.jenkinsUrl=$JENKINS_URL --set controller.ingress.enabled=true --set controller.ingress.hostName=${jenkinsHost}"
+    else
+      echo "--set controller.jenkinsUrl=$JENKINS_URL" 
+    fi
 }
 
 function jenkinsHelmSettingsForLocalCluster() {

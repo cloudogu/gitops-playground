@@ -8,11 +8,19 @@ function deployLocalScmmManager() {
   local REMOTE_CLUSTER=${1}
   local SET_USERNAME=${2}
   local SET_PASSWORD=${3}
+  BASE_URL=${4}
 
   helm upgrade -i scmm --values scm-manager/values.yaml \
-    $(scmmHelmSettingsForRemoteCluster) \
+    $(scmmHelmSettingsForRemoteCluster) $(scmmIngress)\
     --version ${SCMM_HELM_CHART_VERSION} scm-manager/scm-manager -n default \
     --set extraArgs="{-Dscm.initialPassword=${SET_PASSWORD},-Dscm.initialUser=${SET_USERNAME}}"
+}
+
+function scmmIngress() {
+    if [[ -n "${BASE_URL}" ]]; then
+      local scmmHost="scmm.$(extractHost "${BASE_URL}")"
+      echo "--set ingress.enabled=true --set ingress.path=/ --set ingress.hosts[0]=${scmmHost}" 
+    fi
 }
 
 function configureScmmManager() {
@@ -21,10 +29,10 @@ function configureScmmManager() {
   SCMM_HOST=$(getHost ${3})
   SCMM_PROTOCOL=$(getProtocol ${3})
   SCMM_JENKINS_URL=${4}
-  # When running in k3d, BASE_URL must be the internal URL. Otherwise webhooks from SCMM->Jenkins will fail, as
-  # They contain Repository URLs create with BASE_URL. Jenkins uses the internal URL for repos. So match is only
+  # When running in k3d, SCMM_BASE_URL must be the internal URL. Otherwise webhooks from SCMM->Jenkins will fail, as
+  # They contain Repository URLs create with SCMM_BASE_URL. Jenkins uses the internal URL for repos. So match is only
   # successful, when SCM also sends the Repo URLs using the internal URL
-  BASE_URL=${5}
+  SCMM_BASE_URL=${5}
   IS_LOCAL=${6}
   INSTALL_ARGOCD="${7}"
 
@@ -133,7 +141,7 @@ function setConfig() {
   printf 'Setting config'
 
   STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X PUT -H "Content-Type: application/vnd.scmm-config+json;v=2" \
-    --data "{\"proxyPassword\":null,\"proxyPort\":8080,\"proxyServer\":\"proxy.mydomain.com\",\"proxyUser\":null,\"enableProxy\":false,\"realmDescription\":\"SONIA :: SCM Manager\",\"disableGroupingGrid\":false,\"dateFormat\":\"YYYY-MM-DD HH:mm:ss\",\"anonymousAccessEnabled\":false,\"anonymousMode\":\"OFF\",\"baseUrl\":\"${BASE_URL}\",\"forceBaseUrl\":false,\"loginAttemptLimit\":-1,\"proxyExcludes\":[],\"skipFailedAuthenticators\":false,\"pluginUrl\":\"https://plugin-center-api.scm-manager.org/api/v1/plugins/{version}?os={os}&arch={arch}\",\"loginAttemptLimitTimeout\":300,\"enabledXsrfProtection\":true,\"namespaceStrategy\":\"CustomNamespaceStrategy\",\"loginInfoUrl\":\"https://login-info.scm-manager.org/api/v1/login-info\",\"releaseFeedUrl\":\"https://scm-manager.org/download/rss.xml\",\"mailDomainName\":\"scm-manager.local\",\"adminGroups\":[],\"adminUsers\":[]}" \
+    --data "{\"proxyPassword\":null,\"proxyPort\":8080,\"proxyServer\":\"proxy.mydomain.com\",\"proxyUser\":null,\"enableProxy\":false,\"realmDescription\":\"SONIA :: SCM Manager\",\"disableGroupingGrid\":false,\"dateFormat\":\"YYYY-MM-DD HH:mm:ss\",\"anonymousAccessEnabled\":false,\"anonymousMode\":\"OFF\",\"baseUrl\":\"${SCMM_BASE_URL}\",\"forceBaseUrl\":false,\"loginAttemptLimit\":-1,\"proxyExcludes\":[],\"skipFailedAuthenticators\":false,\"pluginUrl\":\"https://plugin-center-api.scm-manager.org/api/v1/plugins/{version}?os={os}&arch={arch}\",\"loginAttemptLimitTimeout\":300,\"enabledXsrfProtection\":true,\"namespaceStrategy\":\"CustomNamespaceStrategy\",\"loginInfoUrl\":\"https://login-info.scm-manager.org/api/v1/login-info\",\"releaseFeedUrl\":\"https://scm-manager.org/download/rss.xml\",\"mailDomainName\":\"scm-manager.local\",\"adminGroups\":[],\"adminUsers\":[]}" \
     "${SCMM_PROTOCOL}://${SCMM_USER}:${SCMM_PWD}@${SCMM_HOST}/api/v2/config") && EXIT_STATUS=$? || EXIT_STATUS=$?
   if [ $EXIT_STATUS != 0 ]; then
     echo "Setting config failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
