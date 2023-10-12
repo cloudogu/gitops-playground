@@ -237,7 +237,7 @@ function initRegistry() {
       # 30000 is needed as a static by docker via port mapping of k3d, e.g. 32769 -> 30000 on server-0 container
       # See "-p 30000" in init-cluster.sh
       # e.g 32769 is needed so the kubelet can access the image inside the server-0 container
-      kubectl create service nodeport docker-registry-internal-port --tcp=5000 --node-port ${INTERNAL_REGISTRY_PORT} -n default
+      kubectl create service nodeport docker-registry-internal-port --tcp=5000 --node-port ${INTERNAL_REGISTRY_PORT} -n default --dry-run=client -oyaml | kubectl apply -f-
     fi
   fi
 }
