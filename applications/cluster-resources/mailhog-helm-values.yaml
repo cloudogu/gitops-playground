@@ -1,5 +1,5 @@
 image:
-  repository: ghcr.io/cloudogu/mailhog:1.0.2
+  repository: ghcr.io/cloudogu/mailhog:latest
 
 service:
   type: LoadBalancer
