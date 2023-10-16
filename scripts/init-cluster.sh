@@ -49,8 +49,6 @@ function installK3d() {
 }
 
 function createCluster() {
-  echo "Initializing k3d-cluster '${CLUSTER_NAME}'"
-
   if k3d cluster list ${CLUSTER_NAME} >/dev/null 2>&1; then
     if confirm "Cluster '${CLUSTER_NAME}' already exists. Do you want to recreate the cluster?" ' [y/N]'; then
       echo "Deleting cluster ${CLUSTER_NAME}"
@@ -97,9 +95,16 @@ function createCluster() {
        '-p 30000@server:0:direct'
       )
     fi
+    
+    if [[ -n "${BIND_INGRESS_PORT}" ]]; then
+        # Note that 127.0.0.1:$BIND_INGRESS_PORT would be more secure, but then requests to localhost fail
+        K3D_ARGS+=(
+            "-p ${BIND_INGRESS_PORT}:80@server:0:direct"
+            )
+    fi
   fi
 
-  echo "Creating cluster ${CLUSTER_NAME}"
+  echo "Creating cluster '${CLUSTER_NAME}'"
   k3d cluster create ${CLUSTER_NAME} ${K3D_ARGS[*]} >/dev/null
   
   if [[ ${isUsingArbitraryRegistryPort} == 'true' ]]; then
@@ -109,6 +114,11 @@ function createCluster() {
        k3d-${CLUSTER_NAME}-server-0)
     echo "Bound internal registry port 30000 to free localhost port ${registryPort}."
     echo "Make sure to pass --internal-registry-port=${registryPort} when applying the playground."
+  fi
+  
+  if [[ -n "${BIND_INGRESS_PORT}" ]]; then
+    echo "Bound ingress port to localhost:${BIND_INGRESS_PORT}."
+    echo "Make sure to pass a base-url, e.g. --base-url=http://127.0.0.1.sslip.io:${BIND_INGRESS_PORT} when applying the playground."
   fi
 
   # Write ~/.config/k3d/kubeconfig-${CLUSTER_NAME}.yaml
@@ -123,8 +133,11 @@ function printParameters() {
   echo
   echo " -h | --help     >> Help screen"
   echo
-  echo "Set your prefered cluster name to install k3d. Defaults to 'gitops-playground'."
-  echo "    | --cluster-name=VALUE   >> Sets the cluster name."
+  echo "    | --cluster-name=STRING   >> Set your preferred cluster name to install k3d. Defaults to 'gitops-playground'."
+  echo "    | --bind-localhost=BOOLEAN   >> Bind the k3d container to host network. Exposes all k8s nodePorts to localhost. Defaults to true."
+  echo "    | --bind-ingress-port=INT   >> Bind only the ingress controller to this localhost port. Sets --bind-localhost=false. Defaults to empty."
+  echo
+  echo " -x | --trace         >> Debug + Show each command executed (set -x)"
 }
 
 function confirm() {
@@ -146,13 +159,14 @@ function confirm() {
 readParameters() {
   COMMANDS=$(getopt \
     -o hx \
-    --long help,cluster-name:,bind-localhost:,trace \
+    --long help,cluster-name:,bind-localhost:,bind-ingress-port:,trace \
     -- "$@")
   
   eval set -- "$COMMANDS"
   
   CLUSTER_NAME=gitops-playground
-  BIND_LOCALHOST=true
+  BIND_LOCALHOST=false
+  BIND_INGRESS_PORT=""
   TRACE=false
 
   while true; do
@@ -160,11 +174,17 @@ readParameters() {
       -h | --help   )   printParameters; exit 0 ;;
       --cluster-name)   CLUSTER_NAME="$2"; shift 2 ;;
       --bind-localhost) BIND_LOCALHOST="$2"; shift 2 ;;
+      --bind-ingress-port) BIND_INGRESS_PORT="$2"; shift 2 ;;
       -x | --trace    ) TRACE=true; shift ;;
       --) shift; break ;;
     *) break ;;
     esac
   done
+  
+  # bind-ingress-port takes precedence over bind-localhost  
+  if [[ -n "${BIND_INGRESS_PORT}" ]]; then
+    BIND_LOCALHOST=false
+  fi
 }
 
 main "$@"
