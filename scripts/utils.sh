@@ -29,7 +29,7 @@ function getExternalIP() {
 }
 
 function extractHost() {
-    echo "$1" | grep -oP 'http[s]?://\K[^:]*'
+    echo "$1" | awk -F[/:] '{print $4}'
 }
 
 function injectSubdomain() {
