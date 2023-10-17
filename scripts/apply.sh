@@ -31,7 +31,6 @@ CES_BUILD_LIB_REPO=${CES_BUILD_LIB_REPO:-'https://github.com/cloudogu/ces-build-
 JENKINS_PLUGIN_FOLDER=${JENKINS_PLUGIN_FOLDER:-''}
 
 function main() {
-  
   readParameters "$@"
 
   if [[ $ASSUME_YES == false ]]; then
@@ -419,84 +418,22 @@ function createUrl() {
 
 function printWelcomeScreen() {
 
-  if [[ $RUNNING_INSIDE_K8S == true ]]; then
-    # Internal service IPs have been set above.
-    # * Local k3d: Replace them by k3d container IP.
-    # * Remote cluster: Overwrite with setExternalHostnameIfNecessary() if necessary
-
-    local scmmPortFromValuesYaml="$(grep 'nodePort:' "${PLAYGROUND_DIR}"/scm-manager/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')"
-    SCMM_URL="$(createUrl "${CLUSTER_BIND_ADDRESS}" "${scmmPortFromValuesYaml}")/scm"
-    setExternalHostnameIfNecessary 'SCMM' 'scmm-scm-manager' 'default'
-    [[ "${SCMM_URL}" != *scm ]] && SCMM_URL=${SCMM_URL}/scm
-
-
-    local jenkinsPortFromValuesYaml="$(grep 'nodePort:' "${PLAYGROUND_DIR}"/jenkins/values.yaml | grep nodePort | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')"
-    JENKINS_URL=$(createUrl "${CLUSTER_BIND_ADDRESS}" "${jenkinsPortFromValuesYaml}")
-    setExternalHostnameIfNecessary 'JENKINS' 'jenkins' 'default'
-  fi
-
-  if [[ -z "${JENKINS_URL}" ]]; then
-    setExternalHostnameIfNecessary 'JENKINS' 'jenkins' 'default'
-  fi
-
   echo
   echo
-  echo "|----------------------------------------------------------------------------------------------|"
-  echo "|                     ☁️  Welcome to the GitOps playground by Cloudogu! ☁️                       |"
-  echo "|----------------------------------------------------------------------------------------------|"
-  echo "|"
-  echo "| The playground features example applications for different GitOps operators in SCM-Manager."
-  echo "| See here:"
-  echo "|"
-
-  if [[ $INSTALL_ARGOCD == true ]]; then
-    echo -e "| - \e[32m${SCMM_URL}/repos/${NAME_PREFIX}argocd/\e[0m"
-  fi
-
-  echo "|"
-  echo -e "| Credentials for SCM-Manager and Jenkins are: \e[31m${SET_USERNAME}/${SET_PASSWORD}\e[0m"
-  echo "|"
-  echo "| Once Jenkins is up, the following jobs can be started after scanning the corresponding "
-  echo "| namespace via the jenkins UI:"
-  echo "|"
-
-  if [[ $INSTALL_ARGOCD == true ]]; then
-    echo -e "| - \e[32m${JENKINS_URL}/job/${NAME_PREFIX}example-apps/\e[0m"
-  fi
-  echo "|"
-  echo "| During the job, jenkins pushes into the corresponding GitOps repo and creates a pull"
-  echo "| request for production:"
-  echo "|"
-
-  printWelcomeScreenArgocd
-
-  echo "| After a successful Jenkins build, the staging application will be deployed into the cluster."
-  echo "|"
-  echo "| The production applications can be deployed by accepting Pull Requests."
-  echo "| Shortly after the PullRequest has been accepted, the GitOps operator "
-  echo "| deploys to production."
-  echo "|"
-  echo "| Please see the README.md for how to find out the URLs of the individual applications."
-  echo "|"
-  echo "|----------------------------------------------------------------------------------------------|"
-}
-
-function printWelcomeScreenArgocd() {
-
-
-  ARGOCD_URL="$(createUrl "${CLUSTER_BIND_ADDRESS}" "$(grep 'nodePortHttp:' "${PLAYGROUND_DIR}"/argocd/argocd/argocd/values.ftl.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')")"
-  setExternalHostnameIfNecessary 'ARGOCD' 'argocd-server' 'argocd'
-
-  if [[ $INSTALL_ARGOCD == true ]]; then
-    echo "| For ArgoCD:"
-    echo "|"
-    echo -e "| - GitOps repo: \e[32m${SCMM_URL}/repo/${NAME_PREFIX}argocd/example-apps/code/sources/main/\e[0m"
-    echo -e "| - Pull requests: \e[32m${SCMM_URL}/repo/${NAME_PREFIX}argocd/example-apps/pull-requests\e[0m"
-    echo "|"
-    echo -e "| There is also the ArgoCD UI which can be found at \e[32m${ARGOCD_URL}/\e[0m"
-    echo -e "| Credentials for the ArgoCD UI are: \e[31m${SET_USERNAME}/${SET_PASSWORD}\e[0m"
-    echo "|"
-  fi
+  echo    "|----------------------------------------------------------------------------------------------|"
+  echo    "|                     ☁️  Welcome to the GitOps playground by Cloudogu! ☁️                       |"
+  echo    "|----------------------------------------------------------------------------------------------|"
+  echo    "|"
+  echo    "| 📖 Please find the URLs of the individual applications in our README:"
+  echo -e "| \e[32mhttps://github.com/cloudogu/gitops-playground/blob/main/README.md#table-of-contents\e[0m"
+  echo    "|"
+  echo -e "| \e[33m▶️\e[0m A good starting point might also be the services or ingresses inside your cluster: "
+  echo -e "| \e[32m kubectl get svc -A\e[0m"
+  echo -e "| Or (depending on your config)"
+  echo -e "| \e[32mkubectl get ing -A\e[0m"
+  echo    "|"
+  echo -e "| \e[33m⏳\e[0mPlease be aware, Jenkins and Argo CD may take some time to build and deploy all apps."
+  echo    "|----------------------------------------------------------------------------------------------|"
 }
 
 function printUsage() {
