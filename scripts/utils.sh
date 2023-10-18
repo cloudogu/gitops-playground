@@ -72,7 +72,8 @@ function spinner() {
 }
 
 function error() {
-     echo "$@" 1>&2; 
+    # Print to stderr in red
+    echo -e "\033[31m$@\033[0m" 1>&2;
 }
 
 # Entry point for the new generation of our apply script, written in groovy
