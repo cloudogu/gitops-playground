@@ -12,7 +12,7 @@ fi
 # In addition:
 # - Upgrade bash image in values.yaml and gid-grepper
 # - Also upgrade plugins. See docs/developers.md
-JENKINS_HELM_CHART_VERSION=4.3.22
+JENKINS_HELM_CHART_VERSION=4.8.1
 
 SET_USERNAME="admin"
 SET_PASSWORD="admin"
