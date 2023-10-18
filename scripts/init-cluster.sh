@@ -74,7 +74,6 @@ function createCluster() {
     "--image=$K3S_VERSION" 
   )
 
-  local isUsingArbitraryRegistryPort=false
   if [[ ${BIND_LOCALHOST} == 'true' ]]; then
     K3D_ARGS+=(
       '--network=host'
@@ -82,20 +81,12 @@ function createCluster() {
   else
     # Internal Docker registry must be on localhost. Otherwise docker will use HTTPS, leading to errors on docker push 
     # in the example application's Jenkins Jobs.
-    # If available, use default port for playground registry, because no parameter is required when applying
-    if command -v netstat >/dev/null 2>&1 && ! netstat -an | grep 30000 | grep LISTEN >/dev/null 2>&1; then
       K3D_ARGS+=(
-       '-p 30000:30000@server:0:direct'
+       "-p ${BIND_REGISTRY_PORT}:30000@server:0:direct"
       )
-    else
-      # If default port is in use, choose an arbitrary port.
-      # The port must then be passed when applying the playground as --internal-registry-port (printed after creation)
-      isUsingArbitraryRegistryPort=true
-      K3D_ARGS+=(
-       '-p 30000@server:0:direct'
-      )
-    fi
     
+    # Bind ingress port only when requested by parameter. 
+    # On linux the pods can be reached without ingress via the k3d container's network address and the node port. 
     if [[ -n "${BIND_INGRESS_PORT}" ]]; then
         # Note that 127.0.0.1:$BIND_INGRESS_PORT would be more secure, but then requests to localhost fail
         K3D_ARGS+=(
@@ -107,13 +98,9 @@ function createCluster() {
   echo "Creating cluster '${CLUSTER_NAME}'"
   k3d cluster create ${CLUSTER_NAME} ${K3D_ARGS[*]} >/dev/null
   
-  if [[ ${isUsingArbitraryRegistryPort} == 'true' ]]; then
-    local registryPort
-    registryPort=$(docker inspect \
-      --format='{{ with (index .NetworkSettings.Ports "30000/tcp") }}{{ (index . 0).HostPort }}{{ end }}' \
-       k3d-${CLUSTER_NAME}-server-0)
-    echo "Bound internal registry port 30000 to free localhost port ${registryPort}."
-    echoHightlighted "Make sure to pass --internal-registry-port=${registryPort} when applying the playground."
+  if [[ ${BIND_REGISTRY_PORT} != '30000' ]]; then
+    echo "Bound internal registry port 30000 to localhost port ${BIND_REGISTRY_PORT}."
+    echoHightlighted "Make sure to pass --internal-registry-port=${BIND_REGISTRY_PORT} when applying the playground."
   fi
   
   if [[ -n "${BIND_INGRESS_PORT}" ]]; then
@@ -134,8 +121,10 @@ function printParameters() {
   echo " -h | --help     >> Help screen"
   echo
   echo "    | --cluster-name=STRING   >> Set your preferred cluster name to install k3d. Defaults to 'gitops-playground'."
+  
   echo "    | --bind-localhost=BOOLEAN   >> Bind the k3d container to host network. Exposes all k8s nodePorts to localhost. Defaults to true."
-  echo "    | --bind-ingress-port=INT   >> Bind only the ingress controller to this localhost port. Sets --bind-localhost=false. Defaults to empty."
+  echo "    | --bind-ingress-port=INT   >> Bind the ingress controller to this localhost port. Sets --bind-localhost=false. Defaults to empty."
+  echo "    | --bind-registry-port=INT   >> Specify a custom port for the container registry to bind to localhost port. Only use this when port 30000 is blocked and --bind-localhost=true. Defaults to 30000 (default used by the playground)."
   echo
   echo " -x | --trace         >> Debug + Show each command executed (set -x)"
 }
@@ -159,7 +148,7 @@ function confirm() {
 readParameters() {
   COMMANDS=$(getopt \
     -o hx \
-    --long help,cluster-name:,bind-localhost:,bind-ingress-port:,trace \
+    --long help,cluster-name:,bind-localhost:,bind-ingress-port:,bind-registry-port:,trace \
     -- "$@")
   
   eval set -- "$COMMANDS"
@@ -167,6 +156,8 @@ readParameters() {
   CLUSTER_NAME=gitops-playground
   BIND_LOCALHOST=false
   BIND_INGRESS_PORT=""
+  # Use default port for playground registry, because no parameter is required when applying
+  BIND_REGISTRY_PORT="30000"
   TRACE=false
 
   while true; do
@@ -175,6 +166,7 @@ readParameters() {
       --cluster-name)   CLUSTER_NAME="$2"; shift 2 ;;
       --bind-localhost) BIND_LOCALHOST="$2"; shift 2 ;;
       --bind-ingress-port) BIND_INGRESS_PORT="$2"; shift 2 ;;
+      --bind-registry-port) BIND_REGISTRY_PORT="$2"; shift 2 ;;
       -x | --trace    ) TRACE=true; shift ;;
       --) shift; break ;;
     *) break ;;
