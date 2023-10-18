@@ -21,7 +21,7 @@ function main() {
   else
     ACTUAL_K3D_VERSION="$(k3d --version | grep k3d | sed 's/k3d version v\(.*\)/\1/')"
     if [[ "${K3D_VERSION}" != "${ACTUAL_K3D_VERSION}" ]]; then
-      echo "WARN: GitOps playground was tested with ${K3D_VERSION}. You are running k3d ${ACTUAL_K3D_VERSION}."
+      echoHightlighted "WARNING: GitOps playground was tested with ${K3D_VERSION}. You are running k3d ${ACTUAL_K3D_VERSION}."
     fi
   fi
 
@@ -113,12 +113,12 @@ function createCluster() {
       --format='{{ with (index .NetworkSettings.Ports "30000/tcp") }}{{ (index . 0).HostPort }}{{ end }}' \
        k3d-${CLUSTER_NAME}-server-0)
     echo "Bound internal registry port 30000 to free localhost port ${registryPort}."
-    echo "Make sure to pass --internal-registry-port=${registryPort} when applying the playground."
+    echoHightlighted "Make sure to pass --internal-registry-port=${registryPort} when applying the playground."
   fi
   
   if [[ -n "${BIND_INGRESS_PORT}" ]]; then
     echo "Bound ingress port to localhost:${BIND_INGRESS_PORT}."
-    echo "Make sure to pass a base-url, e.g. --base-url=http://127.0.0.1.sslip.io:${BIND_INGRESS_PORT} when applying the playground."
+    echoHightlighted "Make sure to pass a base-url, e.g. --base-url=http://127.0.0.1.sslip.io:${BIND_INGRESS_PORT} when applying the playground."
   fi
 
   # Write ~/.config/k3d/kubeconfig-${CLUSTER_NAME}.yaml
@@ -185,6 +185,11 @@ readParameters() {
   if [[ -n "${BIND_INGRESS_PORT}" ]]; then
     BIND_LOCALHOST=false
   fi
+}
+
+function echoHightlighted() {
+    # Print to stdout in green
+    echo -e "\e[32m$@\e[0m"
 }
 
 main "$@"
