@@ -9,6 +9,8 @@ function deployLocalScmmManager() {
   local SET_USERNAME=${2}
   local SET_PASSWORD=${3}
 
+  helm repo add scm-manager https://packages.scm-manager.org/repository/helm-v2-releases/
+  helm repo update scm-manager
   helm upgrade -i scmm --values scm-manager/values.yaml \
     $(scmmHelmSettingsForRemoteCluster) \
     --version ${SCMM_HELM_CHART_VERSION} scm-manager/scm-manager -n default \

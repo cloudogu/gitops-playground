@@ -35,6 +35,8 @@ function deployLocalJenkins() {
 
   kubectl apply -f jenkins/resources || true
 
+  helm repo add jenkins https://charts.jenkins.io
+  helm repo update jenkins
   helm upgrade -i jenkins --values jenkins/values.yaml \
     $(jenkinsHelmSettingsForLocalCluster) --set agent.runAsGroup=$(queryDockerGroupOfJenkinsNode) \
     --set controller.jenkinsUrl=$JENKINS_URL \

@@ -54,7 +54,6 @@ class ApplicationConfigurator {
             application: [
                     remote        : false,
                     insecure      : false,
-                    skipHelmUpdate: false,
                     username      : DEFAULT_ADMIN_USER,
                     password      : DEFAULT_ADMIN_PW,
                     yes           : false,

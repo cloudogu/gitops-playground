@@ -100,9 +100,6 @@ class GitopsPlaygroundCli  implements Runnable {
     @Option(names = ['--nginx-image'], description = 'Sets image for nginx used in various applications')
     private String nginxImage
 
-    @Option(names = ['--skip-helm-update'], description = 'Skips adding and updating helm repos')
-    private Boolean skipHelmUpdate
-
     // args group metrics
     @Option(names = ['--metrics', '--monitoring'], description = 'Installs the Kube-Prometheus-Stack. This includes Prometheus, the Prometheus operator, Grafana and some extra resources')
     private Boolean monitoring
@@ -237,7 +234,6 @@ class GitopsPlaygroundCli  implements Runnable {
                 application: [
                         remote        : remote,
                         insecure      : insecure,
-                        skipHelmUpdate: skipHelmUpdate,
                         debug         : debug,
                         trace         : trace,
                         username      : username,

@@ -126,6 +126,7 @@ function main() {
   fi
 
   if [[ $TRACE == true ]]; then
+    # Not longer print every command from here. Not needed for groovy and the welcome screen.
     set +x
   fi
 
@@ -209,22 +210,17 @@ function applyBasicK8sResources() {
 
   createSecrets
 
-  helm repo add stable https://charts.helm.sh/stable
-  helm repo add scm-manager https://packages.scm-manager.org/repository/helm-v2-releases/
-  helm repo add jenkins https://charts.jenkins.io
-  
-  if [[ $SKIP_HELM_UPDATE == false ]]; then
-    helm repo update
-  fi
-
-  # crd for servicemonitor. a prometheus operator specific resource
+  # Apply ServiceMonitor CRD; Argo CD fails if it is not there. Chicken-egg-problem.
+  # TODO try to extract it from the monitoring helm-chart, so we don't have to maintain the version twice
   kubectl apply -f https://raw.githubusercontent.com/prometheus-operator/kube-prometheus/v0.9.0/manifests/setup/prometheus-operator-0servicemonitorCustomResourceDefinition.yaml
-
+  
   initRegistry
 }
 
 function initRegistry() {
   if [[ "${INTERNAL_REGISTRY}" == true ]]; then
+    helm repo add stable https://charts.helm.sh/stable
+    helm repo update
     # We need a hostPort in order to work around our builds running on the host's docker daemon.
     # So here, a ClusterIP is not enough
     # Registry runs without auth, so don't expose as LB!
@@ -474,7 +470,6 @@ readParameters() {
   INSECURE=false
   TRACE=false
   ASSUME_YES=false
-  SKIP_HELM_UPDATE=false
   DESTROY=false
   OUTPUT_CONFIG_FILE=false
   NAME_PREFIX=""
@@ -522,7 +517,6 @@ readParameters() {
       -d | --debug         ) DEBUG=true; shift ;;
       -x | --trace         ) TRACE=true; shift ;;
       -y | --yes           ) ASSUME_YES=true; shift ;;
-      --skip-helm-update   ) SKIP_HELM_UPDATE=true; shift ;;
       --metrics | --monitoring ) shift;; # Ignore, used in groovy only
       --mailhog-url        ) shift 2;; # Ignore, used in groovy only
       --vault              ) shift 2;; # Ignore, used in groovy only
