@@ -24,7 +24,7 @@ import static groovy.json.JsonOutput.toJson
  * @see com.cloudogu.gitops.config.schema.Schema
  */
 @Command(
-        name = 'gitops-playground-cli',
+        name = 'apply.sh',
         description = 'CLI-tool to deploy gitops-playground.',
         mixinStandardHelpOptions = true,
         subcommands = JenkinsCli)

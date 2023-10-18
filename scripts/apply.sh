@@ -428,7 +428,7 @@ function printWelcomeScreen() {
   echo -e "| \e[32mhttps://github.com/cloudogu/gitops-playground/blob/main/README.md#table-of-contents\e[0m"
   echo    "|"
   echo -e "| \e[33m▶️\e[0m A good starting point might also be the services or ingresses inside your cluster: "
-  echo -e "| \e[32m kubectl get svc -A\e[0m"
+  echo -e "| \e[32mkubectl get svc -A\e[0m"
   echo -e "| Or (depending on your config)"
   echo -e "| \e[32mkubectl get ing -A\e[0m"
   echo    "|"
@@ -437,87 +437,7 @@ function printWelcomeScreen() {
 }
 
 function printUsage() {
-  echo "This script will install all necessary resources for ArgoCD into your k8s-cluster."
-  echo ""
-  printParameters
-  echo ""
-}
-
-function printParameters() {
-  echo "The following parameters are valid:"
-  echo
-  echo " -h | --help                    >> Help screen"
-  echo "    | --config-file=file.yaml   >> Use a YAML configuration file"
-  echo "    | --config-map=map-name     >> Use a YAML configuration file via kubernetes config map. Should contain a key 'config.yaml'"
-  echo "    | --output-config-file      >> Output current config as config file as much as possible."
-  echo
-  echo "Install only the desired GitOps operators. Multiple selections possible."
-  echo "    | --argocd   >> Install the ArgoCD"
-  echo
-  echo "    | --remote   >> Install on remote Cluster e.g. gcp"
-  echo
-  echo "    | --password=myPassword   >> Set initial admin passwords to 'myPassword'"
-  echo
-  echo "Configure external jenkins. Use this 3 parameters to configure an external jenkins"
-  echo "    | --jenkins-url=http://jenkins   >> The url of your external jenkins"
-  echo "    | --jenkins-username=myUsername  >> Mandatory when --jenkins-url is set"
-  echo "    | --jenkins-password=myPassword  >> Mandatory when --jenkins-url is set"
-  echo "    | --jenkins-metrics-username=myUsername  >> Mandatory when --jenkins-url is set and monitoring enabled. Predefined user for fetching prometheus metrics."
-  echo "    | --jenkins-metrics-password=myPassword  >> Mandatory when --jenkins-url is set and monitoring enabled. Predefined user for fetching prometheus metrics."
-  echo
-  echo "Configure external scm-manager. Use this 3 parameters to configure an external scmm"
-  echo "    | --scmm-url=http://scm-manager:8080   >> The host of your external scm-manager"
-  echo "    | --scmm-username=myUsername  >> Mandatory when --scmm-url is set"
-  echo "    | --scmm-password=myPassword  >> Mandatory when --scmm-url is set"
-  echo
-  echo "Configure external docker registry. Use this 4 parameters to configure an external docker registry"
-  echo "    | --registry-url=registry         >> The url of your external registry"
-  echo "    | --registry-path=public          >> Optional when --registry-url is set"
-  echo "    | --registry-username=myUsername  >> Optional when --registry-url is set"
-  echo "    | --registry-password=myPassword  >> Optional when --registry-url is set"
-  echo "    | --internal-registry-port         >> Port of registry registry. Ignored when registry-url is set."
-  echo
-  echo "Configure ArgoCD."
-  echo "    | --argocd-url=http://my-argo.com    >> The URL where argocd is accessible. It has to be the full URL with http:// or https://"
-  echo
-  echo "Configure images used by the gitops-build-lib in the application examples"
-  echo "    | --kubectl-image      >> Sets image for kubectl"
-  echo "    | --helm-image         >> Sets image for helm"
-  echo "    | --kubeval-image      >> Sets image for kubeval"
-  echo "    | --helmkubeval-image  >> Sets image for helmkubeval"
-  echo "    | --yamllint-image     >> Sets image for yamllint"
-  echo
-  echo "Configure images for tools"
-  echo "    | --grafana-image      >> Sets image for grafana"
-  echo "    | --grafana-sidecar-image >> Sets image for grafana's sidecar"
-  echo "    | --prometheus-image >> Sets image for prometheus"
-  echo "    | --prometheus-operator-image >> Sets image for prometheus-operator"
-  echo "    | --prometheus-config-reloader-image >> Sets image for prometheus-operator's config reloader"
-  echo "    | --external-secrets-image  >> Sets image for external secrets operator"
-  echo "    | --external-secrets-certcontroller-image >> Sets image for external secrets operator's cert controller"
-  echo "    | --external-secrets-webhook-image >> Sets image for external secrets operator's webhook controller"
-  echo "    | --vault-image >> Sets image for vault"
-  echo "    | --nginx-image >> Sets image for nginx used in various applications"
-  echo
-  echo "General settings"
-  echo "    | --insecure            >> Runs curl in insecure mode"
-  echo "    | --skip-helm-update    >> Skips adding and updating helm repos"
-  echo
-  echo "Remove the playground"
-  echo "    | --destroy             >> Removes all resources added when deploying the playground."
-  echo
-  echo "Configure additional modules"
-  echo "    | --monitoring, --metrics        >> Installs the Kube-Prometheus-Stack for ArgoCD. This includes Prometheus, the Prometheus operator, Grafana and some extra resources"
-  echo "    | --mailhog-url           >> Sets url for mailhog"
-  echo "    | --grafana-url           >> Sets url for Grafana"
-  echo "    | --vault-url             >> Sets url for Vault"
-  echo "    | --petclinic-base-domain >> The domain under which a subdomain for all petclinic will be used. "
-  echo "    | --nginx-base-domain     >> The domain under which a subdomain for all nginx applications will be used. "
-  echo
-  echo " -d | --debug         >> Debug output"
-  echo " -x | --trace         >> Debug + Show each command executed (set -x)"
-  echo " -y | --yes           >> Skip kubecontext confirmation"
-  echo "    | --name-prefix   >> Set name-prefix for SCMM repos, Jenkins jobs, namespaces"
+  runGroovy '--help'
 }
 
 readParameters() {
