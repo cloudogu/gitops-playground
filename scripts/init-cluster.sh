@@ -38,7 +38,7 @@ function installK3d() {
     if confirm "Do you want to continue?" ' [y/N]'; then
       # Allow this script to execute k3d without having /.local/bin on the path
       export PATH="$HOME/.local/bin:$PATH"
-      mkdir -p .local/bin
+      mkdir -p "$HOME/.local/bin"
       curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | \
         TAG=v${K3D_VERSION} K3D_INSTALL_DIR=${HOME}/.local/bin bash -s -- --no-sudo
     else
