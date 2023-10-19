@@ -79,11 +79,21 @@ function createCluster() {
       '--network=host'
     )
   else
-    # Internal Docker registry must be on localhost. Otherwise docker will use HTTPS, leading to errors on docker push 
-    # in the example application's Jenkins Jobs.
+    
+    if [[ "${BIND_REGISTRY_PORT}" != '0' ]]; then
+      
+      # Internal Docker registry must be on localhost. Otherwise docker will use HTTPS, leading to errors on docker push 
+      # in the example application's Jenkins Jobs.
       K3D_ARGS+=(
-       "-p ${BIND_REGISTRY_PORT}:30000@server:0:direct"
+        "-p ${BIND_REGISTRY_PORT}:30000@server:0:direct"
       )
+    else
+      # User wants us to choose an arbitrary port.
+      # The port must then be passed when applying the playground as --internal-registry-port (printed after creation)
+      K3D_ARGS+=(
+       '-p 30000@server:0:direct'
+      )
+    fi
     
     # Bind ingress port only when requested by parameter. 
     # On linux the pods can be reached without ingress via the k3d container's network address and the node port. 
@@ -99,8 +109,12 @@ function createCluster() {
   k3d cluster create ${CLUSTER_NAME} ${K3D_ARGS[*]} >/dev/null
   
   if [[ ${BIND_REGISTRY_PORT} != '30000' ]]; then
-    echo "Bound internal registry port 30000 to localhost port ${BIND_REGISTRY_PORT}."
-    echoHightlighted "Make sure to pass --internal-registry-port=${BIND_REGISTRY_PORT} when applying the playground."
+    local registryPort
+    registryPort=$(docker inspect \
+      --format='{{ with (index .NetworkSettings.Ports "30000/tcp") }}{{ (index . 0).HostPort }}{{ end }}' \
+       k3d-${CLUSTER_NAME}-server-0)
+    echo "Bound internal registry port 30000 to localhost port ${registryPort}."
+    echoHightlighted "Make sure to pass --internal-registry-port=${registryPort} when applying the playground."
   fi
   
   if [[ -n "${BIND_INGRESS_PORT}" ]]; then

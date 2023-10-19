@@ -226,7 +226,8 @@ def scanForAllVulns(String imageName, String fileName){
 def startK3d(clusterName) {
     // Install k3d to WORSKPACE and make k3d write kubeconfig to WORKSPACE
     withEnv(["HOME=${WORKSPACE}"]) {
-        sh "yes | ./scripts/init-cluster.sh --cluster-name=${clusterName} --bind-localhost=false"
+        // Bind to an arbitrary registry port
+        sh "yes | ./scripts/init-cluster.sh --cluster-name=${clusterName} --bind-localhost=false --bind-registry-port=0"
     }
 }
 
