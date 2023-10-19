@@ -119,7 +119,7 @@ function createCluster() {
   
   if [[ -n "${BIND_INGRESS_PORT}" ]]; then
     echo "Bound ingress port to localhost:${BIND_INGRESS_PORT}."
-    echoHightlighted "Make sure to pass a base-url, e.g. --base-url=http://127.0.0.1.sslip.io${BIND_INGRESS_PORT:+:${BIND_INGRESS_PORT}} when applying the playground."
+    echoHightlighted "Make sure to pass a base-url, e.g. --base-url=http://local.gd$(if [ "$BIND_INGRESS_PORT" -ne 80 ]; then echo ":${BIND_INGRESS_PORT}"; fi) when applying the playground."
   fi
 
   # Write ~/.config/k3d/kubeconfig-${CLUSTER_NAME}.yaml

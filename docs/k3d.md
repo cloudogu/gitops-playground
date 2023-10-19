@@ -2,7 +2,7 @@
 
 ## Create Cluster
 
-To be able to set up the infrastructure you only need a linux machine (tested with Ubuntu 20.04) with docker and curl
+To be able to set up the infrastructure, you only need a linux machine, Mac or Windows with WSL, with docker and curl
 installed.
 The k3d cluster is started like so:
 
@@ -11,7 +11,7 @@ bash <(curl -s https://raw.githubusercontent.com/cloudogu/gitops-playground/main
 ```
 
 If you plan to interact with your cluster directly (not only via GitOps), we recommend
-installing `kubectl` (see [here](https://v1-25.docs.kubernetes.io/docs/tasks/tools/#kubectl)). 
+installing `kubectl` (see [here](https://kubernetes.io/docs/tasks/tools/#kubectl)). 
 
 ## Parameters
 
@@ -19,24 +19,20 @@ installing `kubectl` (see [here](https://v1-25.docs.kubernetes.io/docs/tasks/too
 `--cluster-name` - default: `gitops-playground`
 
 ### --bind-localhost
-`--bind-localhost=false` - does not bind to localhost.
-That is, the URLs of the application will not be reachable via localhost but via the IP address of the k3d `server-0`
+`--bind-localhost=false` - does not bind to localhost. This only makes sense on Linux, as on Windows and Mac the  `host` network from Docker's perspective is not the localhost you can access from your browser. 
+When setting this to `true`, the URLs of the application will not be reachable via localhost but via the IP address of the k3d `server-0`
 docker container. Avoids port conflicts but is less convenient. We use this for our internal integration test in 
 [Jenkins](../Jenkinsfile), for example.
+For humans [`--bind-ingress-port`](#--bind-ingress-port) makes more sense.
 
-There is only one port that has to be bound to localhost: the registry port. 
+Even with `--bind-localhost=true`, there still is one port that has to be bound to localhost: the registry port. 
 For registries other than localhost or local ip addresses, docker will use HTTPS, leading to errors on `docker push` in the example application's Jenkins Jobs.
-Note that if you use this option and the registry's default port 30000 is already bound on localhost (e.g. when 
-starting more than one instance of the playground) the registry port will be bound to an arbitrary free port on 
-localhost. In this case, the port will be printed by the `init-cluster.sh` script but can also be queried via 
-`docker inspect`(see bellow).  
-This port has to be passed on when creating the playground via the `--internal-registry-port` parameter. For example: 
+Note that if you use this option and the registry's default port 30000 is already bound on localhost 
+(e.g. when starting more than one instance of the playground) you can overwrite it with `--bind-registry-port`.
+You can also bin the registry port will be bound to an arbitrary free port on localhost using `--bind-registry-port=0`, **which we don't recommend**.
+Note that this port changes on every restart of the k3d container, rendering the registry inside the playground's jenkins inaccessible. 
 
-```shell
---internal-registry-port=$(docker inspect \
---format='{{ with (index .NetworkSettings.Ports "30000/tcp") }}{{ (index . 0).HostPort }}{{ end }}' \
-k3d-${CLUSTER_NAME}-server-0)
-```
+This port has to be passed on when creating the playground via the `--internal-registry-port` parameter. For example: 
 
 In order to find out the IP address to access the services in the playground, the following docker command will do
 
@@ -45,6 +41,19 @@ $ docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' k
 172.24.0.2
 # In this example you could reach Jenkins on http://172.24.0.2:9090
 ```
+
+An easier alternative might be to use local ingresses with the `--bind-ingress-port` parameer.
+
+### --bind-ingress-port
+
+Binds the ingress controller to this localhost port.
+Sets `--bind-localhost=false`.
+Defaults to empty, i.e. no port is bound.
+
+This feature can be used for local ingresses which are the only way to run the playground on Windows and Mac, 
+reduce the risk of port conflicts and might be more convenient than using port numbers.
+
+See [README](../README.md) "Running on Windows or Mac" and "Local ingresses". 
 
 ## Implementation details
 
