@@ -203,6 +203,12 @@ readParameters() {
 }
 
 function echoHightlighted() {
+    # fallback to normal echo if TERM is not set
+    # because tput requires a valid terminal
+    if [ -z "$TERM" ]; then
+        echo "$@"
+    fi
+
     # Print to stdout in green
     tput setaf 2
     echo "$@"
