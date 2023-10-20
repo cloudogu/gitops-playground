@@ -224,11 +224,31 @@ def scanForAllVulns(String imageName, String fileName){
 }
 
 def startK3d(clusterName) {
-    // Install k3d to WORSKPACE and make k3d write kubeconfig to WORKSPACE
-    withEnv(["HOME=${WORKSPACE}"]) {
-        // Bind to an arbitrary registry port
-        sh "yes | ./scripts/init-cluster.sh --cluster-name=${clusterName} --bind-localhost=false --bind-registry-port=0"
-    }
+    
+    // Download latest version of static curl, needed insight the container bellow.
+    sh "mkdir -p $WORKSPACE/.local/bin"
+    sh(returnStdout: true, script: 'curl -sLo .local/bin/curl ' +
+            // Note that the repo moparisthebest/static-curl is listed on the official page, so it should be trustworthy
+            '$(curl -sL -I -o /dev/null -w %{url_effective} https://github.com/moparisthebest/static-curl/releases/latest ' +
+                '| sed "s/tag/download/")/curl-amd64 && ' +
+            'chmod +x .local/bin/curl'
+       ).trim()
+    
+    // Start k3d in a bash3 container to make sure we're OSX compatible 😞
+    new Docker(this).image('bash:3')
+            .mountDockerSocket()
+            .installDockerClient()
+            .inside() {
+                withEnv([
+                        // Install k3d to WORSKPACE and make k3d write kubeconfig to WORKSPACE
+                        "HOME=${WORKSPACE}",
+                        // Put k3d and curl on the path
+                         "PATH=${WORKSPACE}/.local/bin:${PATH}"]) {
+
+                    // Start k3d cluster, binding to an arbitrary registry port
+                    sh "yes | ./scripts/init-cluster.sh --cluster-name=${clusterName} --bind-localhost=false --bind-registry-port=0"
+                }
+            }
 }
 
 String createClusterName() {
