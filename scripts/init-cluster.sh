@@ -7,7 +7,9 @@ K3D_VERSION=5.6.0
 K8S_VERSION=1.25.5
 K3S_VERSION="rancher/k3s:v${K8S_VERSION}-k3s2"
 
-set -o errexit -o nounset -o pipefail
+set -o errexit
+set -o nounset
+set -o pipefail
 
 function main() {
   readParameters "$@"
@@ -159,14 +161,21 @@ function confirm() {
   esac
 }
 
+get_longopt_value(){
+  # ensure $1 has the form --longopt=value
+  VALUE=$(echo "$1" | sed -e 's/^[^=]*=//')
+  if [ -z "$VALUE" ]; then
+    echo "missing value of paramater $2" >&2
+    exit 1
+  elif [ "$VALUE" = "$1" ]; then
+    echo "missing value of paramater $2" >&2
+    exit 1
+  else
+    echo "$VALUE"
+  fi
+}
+
 readParameters() {
-  COMMANDS=$(getopt \
-    -o hx \
-    --long help,cluster-name:,bind-localhost:,bind-ingress-port:,bind-registry-port:,trace \
-    -- "$@")
-  
-  eval set -- "$COMMANDS"
-  
   CLUSTER_NAME=gitops-playground
   BIND_LOCALHOST=false
   BIND_INGRESS_PORT=""
@@ -174,13 +183,13 @@ readParameters() {
   BIND_REGISTRY_PORT="30000"
   TRACE=false
 
-  while true; do
+  while [ $# -gt 0 ]; do
     case "$1" in
       -h | --help   )   printParameters; exit 0 ;;
-      --cluster-name)   CLUSTER_NAME="$2"; shift 2 ;;
-      --bind-localhost) BIND_LOCALHOST="$2"; shift 2 ;;
-      --bind-ingress-port) BIND_INGRESS_PORT="$2"; shift 2 ;;
-      --bind-registry-port) BIND_REGISTRY_PORT="$2"; shift 2 ;;
+      --cluster-name*)   CLUSTER_NAME=$(get_longopt_value $1 "--cluster-name"); shift ;;
+      --bind-localhost*) BIND_LOCALHOST=$(get_longopt_value $1 "--bind-localhost"); shift ;;
+      --bind-ingress-port*) BIND_INGRESS_PORT=$(get_longopt_value $1 "--bind-ingress-port"); shift ;;
+      --bind-registry-port*) BIND_REGISTRY_PORT=$(get_longopt_value $1 "--bind-registry-port"); shift ;;
       -x | --trace    ) TRACE=true; shift ;;
       --) shift; break ;;
     *) break ;;
@@ -195,7 +204,9 @@ readParameters() {
 
 function echoHightlighted() {
     # Print to stdout in green
-    echo -e "\e[32m$@\e[0m"
+    tput setaf 2
+    echo "$@"
+    tput sgr0
 }
 
 main "$@"
