@@ -2,7 +2,7 @@
 set -o errexit -o nounset -o pipefail
 
 SCMM_PROTOCOL=http
-SCMM_HELM_CHART_VERSION=2.44.2
+SCMM_HELM_CHART_VERSION=2.47.0
 
 function deployLocalScmmManager() {
   local REMOTE_CLUSTER=${1}
@@ -98,7 +98,7 @@ function configureScmmManager() {
   installScmmPlugin "scm-review-plugin" "false"
   installScmmPlugin "scm-code-editor-plugin" "false"
   installScmmPlugin "scm-editor-plugin" "false"
-  installScmmPlugin "scm-activity-plugin" "false"
+  installScmmPlugin "scm-landingpage-plugin" "false"
   installScmmPlugin "scm-el-plugin" "false"
   installScmmPlugin "scm-jenkins-plugin" "false"
   installScmmPlugin "scm-readme-plugin" "false"
