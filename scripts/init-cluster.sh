@@ -2,7 +2,7 @@
 
 # See https://github.com/rancher/k3d/releases
 # This variable is also read in Jenkinsfile
-K3D_VERSION=4.4.8
+K3D_VERSION=5.6.0
 # When updating please also adapt in Dockerfile, vars.tf, ApplicationConfigurator.groovy and apply.sh
 K8S_VERSION=1.25.5
 K3S_VERSION="rancher/k3s:v${K8S_VERSION}-k3s2"
@@ -16,6 +16,7 @@ function main() {
   
   # Install k3d if necessary
   if ! command -v k3d >/dev/null 2>&1; then
+    echo The GitOps playground uses k3d, which is not found on the PATH. 
     installK3d
   else
     ACTUAL_K3D_VERSION="$(k3d --version | grep k3d | sed 's/k3d version v\(.*\)/\1/')"
@@ -28,7 +29,23 @@ function main() {
 }
 
 function installK3d() {
-  curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=v${K3D_VERSION} bash
+    echo "Installing install k3d ${K3D_VERSION} to \$HOME/.local/bin"
+    echo 'Using this script: https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh'
+    # shellcheck disable=SC2016
+    echo 'If $HOME/.local/bin is not on your PATH, you can add it for this session: export PATH="$HOME/.local/bin:$PATH"'
+    # shellcheck disable=SC2016
+    echo 'You can uninstall k3d later via: rm $HOME/.local/bin/k3d'
+    if confirm "Do you want to continue?" ' [y/N]'; then
+      # Allow this script to execute k3d without having /.local/bin on the path
+      export PATH="$HOME/.local/bin:$PATH"
+      mkdir -p .local/bin
+      curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | \
+        TAG=v${K3D_VERSION} K3D_INSTALL_DIR=${HOME}/.local/bin bash -s -- --no-sudo
+    else
+      echo "Not installed."
+      # Return error here to avoid possible subsequent commands to be executed
+      exit 1
+    fi
 }
 
 function createCluster() {
@@ -45,15 +62,16 @@ function createCluster() {
     fi
   fi
 
+  HOST_PORT_RANGE='8010-65535'
   K3D_ARGS=(
-    # Allow services to bind to ports < 30000
-    '--k3s-server-arg=--kube-apiserver-arg=service-node-port-range=8010-32767'
+    # Allow services to bind to ports < 30000 > 32xxx
+    "--k3s-arg=--kube-apiserver-arg=service-node-port-range=${HOST_PORT_RANGE}@server:0"
     # Used by Jenkins Agents pods
-    '-v /var/run/docker.sock:/var/run/docker.sock@server[0]'
+    '-v /var/run/docker.sock:/var/run/docker.sock@server:0'
     # Allows for finding out the GID of the docker group in order to allow the Jenkins agents pod to access docker socket
-    '-v /etc/group:/etc/group@server[0]'
+    '-v /etc/group:/etc/group@server:0'
     # Persists the cache of Jenkins agents pods for faster builds
-    '-v /tmp:/tmp@server[0]'
+    '-v /tmp:/tmp@server:0'
     # Pin k8s version via k3s image
     "--image=$K3S_VERSION" 
   )
@@ -69,14 +87,14 @@ function createCluster() {
     # If available, use default port for playground registry, because no parameter is required when applying
     if command -v netstat >/dev/null 2>&1 && ! netstat -an | grep 30000 | grep LISTEN >/dev/null 2>&1; then
       K3D_ARGS+=(
-       '-p 30000:30000@server[0]'
+       '-p 30000:30000@server:0:direct'
       )
     else
       # If default port is in use, choose an arbitrary port.
       # The port must then be passed when applying the playground as --internal-registry-port (printed after creation)
       isUsingArbitraryRegistryPort=true
       K3D_ARGS+=(
-       '-p 30000@server[0]'
+       '-p 30000@server:0:direct'
       )
     fi
   fi
@@ -93,8 +111,11 @@ function createCluster() {
     echo "Make sure to pass --internal-registry-port=${registryPort} when applying the playground."
   fi
 
-  echo "Adding k3d cluster to ~/.kube/config"
-  k3d kubeconfig merge ${CLUSTER_NAME} --kubeconfig-switch-context > /dev/null
+  # Write ~/.config/k3d/kubeconfig-${CLUSTER_NAME}.yaml
+  # https://k3d.io/v5.6.0/usage/kubeconfig/
+  # Using this file makes applying the playground from docker more reliable and secure
+  # Otherwise a change of the current kubecontext (e.g. via kubectx) in the default kubeconfig will lead to the playground being applied to the wrong cluster
+  k3d kubeconfig write ${CLUSTER_NAME} > /dev/null
 }
 
 function printParameters() {

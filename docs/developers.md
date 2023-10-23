@@ -84,7 +84,7 @@ Jenkins.instance.pluginManager.activePlugins.each {
   * Build and run dev Container:
     ```shell
     docker buildx build -t gitops-playground:dev --build-arg ENV=dev  --progress=plain .
-    docker run --rm -it -u $(id -u) -v ~/.k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
+    docker run --rm -it -u $(id -u) -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
       --net=host gitops-playground:dev <params>
      ```
   * Locally:
@@ -351,13 +351,13 @@ K3D_NODE=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{
 helm upgrade  -i my-harbor harbor/harbor -f harbor-values.yaml --version 1.12.2 --namespace harbor --set externalURL=http://$K3D_NODE:30002 --create-namespace
 ```
 
-Keep kubectl working when airgapped by setting the local IP of the container inside kubeconfig in `~/.k3d/...`
+Keep kubectl working when airgapped by setting the local IP of the container inside kubeconfig in `~/.config/k3d/...`
 ```bash
-sed -i -r 's/0.0.0.0([^0-9]+[0-9]*|\$)/${K3D_NODE}:6443/g' ~/.k3d/kubeconfig-airgapped-playground.yaml
+sed -i -r 's/0.0.0.0([^0-9]+[0-9]*|\$)/${K3D_NODE}:6443/g' ~/.config/k3d/kubeconfig-airgapped-playground.yaml
 ```
 You can switching to the airgapped context in your current shell like so:
 ```shell
-export KUBECONFIG=$HOME/.k3d/kubeconfig-airgapped-playground.yaml
+export KUBECONFIG=$HOME/.config/k3d/kubeconfig-airgapped-playground.yaml
 ```
 
 TODO also replace in `~/.kube/config` for more convenience. 
@@ -385,7 +385,7 @@ BASIC_SRC_IMAGES=$(
 BASIC_DST_IMAGES=''
 
 # Switch context to airgapped cluster here, e.g.
-export KUBECONFIG=$HOME/.k3d/kubeconfig-airgapped-playground.yaml
+export KUBECONFIG=$HOME/.config/k3d/kubeconfig-airgapped-playground.yaml
 
 while IFS= read -r image; do
   local dstImage=$K3D_NODE:30002/library/${image##*/}
@@ -415,7 +415,7 @@ Don't disconnect from the internet yet, because
 So, start the installation and once Argo CD is running, go offline.
 ```bash
 docker run -it -u $(id -u) \
-    -v ~/.k3d/kubeconfig-airgapped-playground.yaml:/home/.kube/config \
+    -v ~/.config/k3d/kubeconfig-airgapped-playground.yaml:/home/.kube/config \
     --net=host gitops-playground:dev --argocd --yes -x \
       --vault=dev --metrics \
       --grafana-image localhost:30002/library/grafana:8.2.1 \
@@ -475,7 +475,7 @@ For that, k3d provides its own ingress controller traefik.
 
 ```bash
 docker run --rm -it -u $(id -u) \
-  -v ~/.k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
+  -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
   --net=host \
   gitops-playground:dev --argocd --monitoring --vault=dev -x --yes \
   --argocd-url argocd.localhost --grafana-url grafana.localhost --vault-url vault.localhost \

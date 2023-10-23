@@ -172,8 +172,10 @@ node('high-cpu') {
 
             if (clusterName) {
                 // Don't fail build if cleaning up fails
-                withEnv(["PATH=${WORKSPACE}/.k3d/bin:${PATH}"]) {
-                    sh "k3d cluster delete ${clusterName} || true"
+                withEnv(["PATH=${WORKSPACE}/.local/bin:${PATH}"]) {
+                    sh "if k3d cluster ls ${clusterName} > /dev/null; " +
+                            "then k3d cluster delete ${clusterName}; " +
+                        "fi"
                 }
             }
         }
@@ -222,15 +224,8 @@ def scanForAllVulns(String imageName, String fileName){
 }
 
 def startK3d(clusterName) {
-    sh "mkdir -p ${WORKSPACE}/.k3d/bin"
-
-    withEnv(["HOME=${WORKSPACE}", "PATH=${WORKSPACE}/.k3d/bin:${PATH}"]) { // Make k3d write kubeconfig to WORKSPACE
-        // Install k3d binary to workspace in order to avoid concurrency issues
-        sh "if ! command -v k3d >/dev/null 2>&1; then " +
-                "curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh |" +
-                'TAG=v$(sed -n "s/^K3D_VERSION=//p" scripts/init-cluster.sh) ' +
-                "K3D_INSTALL_DIR=${WORKSPACE}/.k3d/bin " +
-                'bash -s -- --no-sudo; fi'
+    // Install k3d to WORSKPACE and make k3d write kubeconfig to WORKSPACE
+    withEnv(["HOME=${WORKSPACE}"]) {
         sh "yes | ./scripts/init-cluster.sh --cluster-name=${clusterName} --bind-localhost=false"
     }
 }
