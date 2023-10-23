@@ -92,7 +92,7 @@ class ApplicationConfigurator {
             ,
             features   : [
                     argocd    : [
-                            active    : true,
+                            active    : false,
                             url       : ''
                     ],
                     mail      : [
