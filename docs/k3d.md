@@ -13,6 +13,41 @@ bash <(curl -s https://raw.githubusercontent.com/cloudogu/gitops-playground/main
 If you plan to interact with your cluster directly (not only via GitOps), we recommend
 installing `kubectl` (see [here](https://kubernetes.io/docs/tasks/tools/#kubectl)). 
 
+### Create Cluster without installing k3d
+
+The following works on Linux:
+
+```shell
+K3D_VERSION=$(curl -s https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh | grep  '^K3D_VERSION='  | cut -d '=' -f 2)
+
+docker run --rm -it -u $(id -u ):$(getent group docker | cut -d: -f3)  \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v $HOME/.config/k3d:/tmp/.config/k3d \
+  -v $HOME/.kube:/tmp/.kube \
+  -e HOME=/tmp \
+  --entrypoint bash \
+  ghcr.io/k3d-io/k3d:${K3D_VERSION}-dind \
+    -c "bash <(curl -s https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh) # Add params here"
+```
+
+For deletion use `-c "k3d cluster rm gitops-playground"` in the last line.
+
+For this to work on MacOS and Windows with WSL2 we would have to overcome the missing docker group there.
+One option would be to run the container as root to access the docker socket and then `chown` the files back to the original user, e.g. like so:
+
+```shell
+K3D_VERSION=$(curl -s https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh | grep  '^K3D_VERSION='  | cut -d '=' -f 2)
+docker run --rm -it -u $(id -u ):$(getent group docker | cut -d: -f3)  \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v $HOME/.config/k3d:/root/.config/k3d \
+  --entrypoint bash \
+  ghcr.io/k3d-io/k3d:${K3D_VERSION}-dind \
+    -c "bash <(curl -s https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh) && chown -R \$(ls -ld /root/.config/k3d/ | awk '{print \$3 \":\" \$4}') /root/.config/k3d/"
+```
+This example only writes cluster's kubeconfig to `~/.config/k3d`, but not to your default `~/.kube/config`.
+So to access the cluster, your would have to use `export KUBECONFIG=$HOME/.config/k3d/kubeconfig-gitops-playground.yaml` 
+or also add a `-v` and `chown` for `.kube/config`.
+
 ## Parameters
 
 ### --cluster-name

@@ -433,17 +433,18 @@ Note that this option has limitations. It does not remove CRDs, namespaces, loca
 * An easy way to get DNS resolution to your localhost without having to adapt you local `hosts` file are services like [local.gd](https://local.gd/), [sslip.io](https://sslip.io/), [nip.io](https://nip.io/) or host your own [localtls](https://github.com/Corollarium/localtls).  
 * In our examples we use `local.gd`, because it's shortest. An alernative would be to use `127.0.0.1.sslip.io` 
 
+
 #### Mac and Windows WSL
 
-On Mac and when using the Windows Subsystem Linux on Windows (WSL), you can almost run our [TL;DR command](#tldr), except that you have to use [local ingresses](#local-ingresses) to reach all kubernetes services via a single bound port. 
+On macOS and when using the Windows Subsystem Linux on Windows (WSL), you can almost run our [TL;DR command](#tldr), except that you have to use [local ingresses](#local-ingresses) to reach all kubernetes services via a single bound port.
 
-On Arm Macs you'll have to pass another paramter to docker, as we don't have an Arm-native image, yet: `--platform linux/amd64`. 
+For macOS, please increase the Memory limit in Docker Desktop (for your DockerVM) to be > 10 GB.
+Recommendation: 16GB.
 
 ```bash
 bash <(curl -s \
   https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh) --bind-ingress-port=80
 
-# On Arm Macs, add --platform linux/amd64 after "docker run"
 docker run --rm --pull=always -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     --net=host \
@@ -467,7 +468,9 @@ process apparently never started in /tmp/gitops-playground-jenkins-agent/workspa
 Cannot contact default-1bg7f: java.nio.file.NoSuchFileException: /tmp/gitops-playground-jenkins-agent/workspace/xample-apps_petclinic-plain_main/.configRepoTempDir@tmp/durable-7f109066/output.txt
 ```
 * In Docker Desktop, it's recommended to use WSL2 as backend. 
-* Using the Hyper-V backend should also work, but we experienced random `CrashLoopBackoff`s of running pods due to liveness probe timeouts
+* Using the Hyper-V backend should also work, but we experienced random `CrashLoopBackoff`s of running pods due to liveness probe timeouts.  
+  Same as for macOS, increasing the Memory limit in Docker Desktop (for your DockerVM) to be > 10 GB might help.  
+  Recommendation: 16GB.
 
 Here is how you can start the playground from a Windows-native PowerShell console:
 
@@ -481,6 +484,8 @@ winget install k3d --version x.y.z
 $ingress_port = "80"
 $registry_port = "30000"
 $image = "rancher/k3s:v1.25.5-k3s2"
+# Note that ou can query the image version used by playground like so: 
+# (Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh').Content -split "`r?`n" | Select-String -Pattern 'K8S_VERSION=|K3S_VERSION='
 
 k3d cluster create gitops-playground `
     --k3s-arg=--kube-apiserver-arg=service-node-port-range=8010-65535@server:0 `
