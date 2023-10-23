@@ -44,7 +44,6 @@ class Schema {
      static class ApplicationSchema {
          boolean remote = false
          boolean insecure = false
-         boolean skipHelmUpdate = false
          boolean yes = false
          String username = ""
          String password = ""

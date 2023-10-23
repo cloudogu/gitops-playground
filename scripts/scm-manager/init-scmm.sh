@@ -2,13 +2,15 @@
 set -o errexit -o nounset -o pipefail
 
 SCMM_PROTOCOL=http
-SCMM_HELM_CHART_VERSION=2.44.2
+SCMM_HELM_CHART_VERSION=2.47.0
 
 function deployLocalScmmManager() {
   local REMOTE_CLUSTER=${1}
   local SET_USERNAME=${2}
   local SET_PASSWORD=${3}
 
+  helm repo add scm-manager https://packages.scm-manager.org/repository/helm-v2-releases/
+  helm repo update scm-manager
   helm upgrade -i scmm --values scm-manager/values.yaml \
     $(scmmHelmSettingsForRemoteCluster) \
     --version ${SCMM_HELM_CHART_VERSION} scm-manager/scm-manager -n default \
@@ -96,7 +98,7 @@ function configureScmmManager() {
   installScmmPlugin "scm-review-plugin" "false"
   installScmmPlugin "scm-code-editor-plugin" "false"
   installScmmPlugin "scm-editor-plugin" "false"
-  installScmmPlugin "scm-activity-plugin" "false"
+  installScmmPlugin "scm-landingpage-plugin" "false"
   installScmmPlugin "scm-el-plugin" "false"
   installScmmPlugin "scm-jenkins-plugin" "false"
   installScmmPlugin "scm-readme-plugin" "false"

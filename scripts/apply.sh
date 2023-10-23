@@ -31,7 +31,6 @@ CES_BUILD_LIB_REPO=${CES_BUILD_LIB_REPO:-'https://github.com/cloudogu/ces-build-
 JENKINS_PLUGIN_FOLDER=${JENKINS_PLUGIN_FOLDER:-''}
 
 function main() {
-  
   readParameters "$@"
 
   if [[ $ASSUME_YES == false ]]; then
@@ -127,6 +126,7 @@ function main() {
   fi
 
   if [[ $TRACE == true ]]; then
+    # Not longer print every command from here. Not needed for groovy and the welcome screen.
     set +x
   fi
 
@@ -210,22 +210,17 @@ function applyBasicK8sResources() {
 
   createSecrets
 
-  helm repo add stable https://charts.helm.sh/stable
-  helm repo add scm-manager https://packages.scm-manager.org/repository/helm-v2-releases/
-  helm repo add jenkins https://charts.jenkins.io
-  
-  if [[ $SKIP_HELM_UPDATE == false ]]; then
-    helm repo update
-  fi
-
-  # crd for servicemonitor. a prometheus operator specific resource
+  # Apply ServiceMonitor CRD; Argo CD fails if it is not there. Chicken-egg-problem.
+  # TODO try to extract it from the monitoring helm-chart, so we don't have to maintain the version twice
   kubectl apply -f https://raw.githubusercontent.com/prometheus-operator/kube-prometheus/v0.9.0/manifests/setup/prometheus-operator-0servicemonitorCustomResourceDefinition.yaml
-
+  
   initRegistry
 }
 
 function initRegistry() {
   if [[ "${INTERNAL_REGISTRY}" == true ]]; then
+    helm repo add stable https://charts.helm.sh/stable
+    helm repo update
     # We need a hostPort in order to work around our builds running on the host's docker daemon.
     # So here, a ClusterIP is not enough
     # Registry runs without auth, so don't expose as LB!
@@ -419,168 +414,26 @@ function createUrl() {
 
 function printWelcomeScreen() {
 
-  if [[ $RUNNING_INSIDE_K8S == true ]]; then
-    # Internal service IPs have been set above.
-    # * Local k3d: Replace them by k3d container IP.
-    # * Remote cluster: Overwrite with setExternalHostnameIfNecessary() if necessary
-
-    local scmmPortFromValuesYaml="$(grep 'nodePort:' "${PLAYGROUND_DIR}"/scm-manager/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')"
-    SCMM_URL="$(createUrl "${CLUSTER_BIND_ADDRESS}" "${scmmPortFromValuesYaml}")/scm"
-    setExternalHostnameIfNecessary 'SCMM' 'scmm-scm-manager' 'default'
-    [[ "${SCMM_URL}" != *scm ]] && SCMM_URL=${SCMM_URL}/scm
-
-
-    local jenkinsPortFromValuesYaml="$(grep 'nodePort:' "${PLAYGROUND_DIR}"/jenkins/values.yaml | grep nodePort | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')"
-    JENKINS_URL=$(createUrl "${CLUSTER_BIND_ADDRESS}" "${jenkinsPortFromValuesYaml}")
-    setExternalHostnameIfNecessary 'JENKINS' 'jenkins' 'default'
-  fi
-
-  if [[ -z "${JENKINS_URL}" ]]; then
-    setExternalHostnameIfNecessary 'JENKINS' 'jenkins' 'default'
-  fi
-
   echo
   echo
-  echo "|----------------------------------------------------------------------------------------------|"
-  echo "|                     ☁️  Welcome to the GitOps playground by Cloudogu! ☁️                       |"
-  echo "|----------------------------------------------------------------------------------------------|"
-  echo "|"
-  echo "| The playground features example applications for different GitOps operators in SCM-Manager."
-  echo "| See here:"
-  echo "|"
-
-  if [[ $INSTALL_ARGOCD == true ]]; then
-    echo -e "| - \e[32m${SCMM_URL}/repos/${NAME_PREFIX}argocd/\e[0m"
-  fi
-
-  echo "|"
-  echo -e "| Credentials for SCM-Manager and Jenkins are: \e[31m${SET_USERNAME}/${SET_PASSWORD}\e[0m"
-  echo "|"
-  echo "| Once Jenkins is up, the following jobs can be started after scanning the corresponding "
-  echo "| namespace via the jenkins UI:"
-  echo "|"
-
-  if [[ $INSTALL_ARGOCD == true ]]; then
-    echo -e "| - \e[32m${JENKINS_URL}/job/${NAME_PREFIX}example-apps/\e[0m"
-  fi
-  echo "|"
-  echo "| During the job, jenkins pushes into the corresponding GitOps repo and creates a pull"
-  echo "| request for production:"
-  echo "|"
-
-  printWelcomeScreenArgocd
-
-  echo "| After a successful Jenkins build, the staging application will be deployed into the cluster."
-  echo "|"
-  echo "| The production applications can be deployed by accepting Pull Requests."
-  echo "| Shortly after the PullRequest has been accepted, the GitOps operator "
-  echo "| deploys to production."
-  echo "|"
-  echo "| Please see the README.md for how to find out the URLs of the individual applications."
-  echo "|"
-  echo "|----------------------------------------------------------------------------------------------|"
-}
-
-function printWelcomeScreenArgocd() {
-
-
-  ARGOCD_URL="$(createUrl "${CLUSTER_BIND_ADDRESS}" "$(grep 'nodePortHttp:' "${PLAYGROUND_DIR}"/argocd/argocd/argocd/values.ftl.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')")"
-  setExternalHostnameIfNecessary 'ARGOCD' 'argocd-server' 'argocd'
-
-  if [[ $INSTALL_ARGOCD == true ]]; then
-    echo "| For ArgoCD:"
-    echo "|"
-    echo -e "| - GitOps repo: \e[32m${SCMM_URL}/repo/${NAME_PREFIX}argocd/example-apps/code/sources/main/\e[0m"
-    echo -e "| - Pull requests: \e[32m${SCMM_URL}/repo/${NAME_PREFIX}argocd/example-apps/pull-requests\e[0m"
-    echo "|"
-    echo -e "| There is also the ArgoCD UI which can be found at \e[32m${ARGOCD_URL}/\e[0m"
-    echo -e "| Credentials for the ArgoCD UI are: \e[31m${SET_USERNAME}/${SET_PASSWORD}\e[0m"
-    echo "|"
-  fi
+  echo    "|----------------------------------------------------------------------------------------------|"
+  echo    "|                     ☁️  Welcome to the GitOps playground by Cloudogu! ☁️                       |"
+  echo    "|----------------------------------------------------------------------------------------------|"
+  echo    "|"
+  echo    "| 📖 Please find the URLs of the individual applications in our README:"
+  echo -e "| \e[32mhttps://github.com/cloudogu/gitops-playground/blob/main/README.md#table-of-contents\e[0m"
+  echo    "|"
+  echo -e "| \e[33m▶️\e[0m A good starting point might also be the services or ingresses inside your cluster: "
+  echo -e "| \e[32mkubectl get svc -A\e[0m"
+  echo -e "| Or (depending on your config)"
+  echo -e "| \e[32mkubectl get ing -A\e[0m"
+  echo    "|"
+  echo -e "| \e[33m⏳\e[0mPlease be aware, Jenkins and Argo CD may take some time to build and deploy all apps."
+  echo    "|----------------------------------------------------------------------------------------------|"
 }
 
 function printUsage() {
-  echo "This script will install all necessary resources for ArgoCD into your k8s-cluster."
-  echo ""
-  printParameters
-  echo ""
-}
-
-function printParameters() {
-  echo "The following parameters are valid:"
-  echo
-  echo " -h | --help                    >> Help screen"
-  echo "    | --config-file=file.yaml   >> Use a YAML configuration file"
-  echo "    | --config-map=map-name     >> Use a YAML configuration file via kubernetes config map. Should contain a key 'config.yaml'"
-  echo "    | --output-config-file      >> Output current config as config file as much as possible."
-  echo
-  echo "Install only the desired GitOps operators. Multiple selections possible."
-  echo "    | --argocd   >> Install the ArgoCD"
-  echo
-  echo "    | --remote   >> Install on remote Cluster e.g. gcp"
-  echo
-  echo "    | --password=myPassword   >> Set initial admin passwords to 'myPassword'"
-  echo
-  echo "Configure external jenkins. Use this 3 parameters to configure an external jenkins"
-  echo "    | --jenkins-url=http://jenkins   >> The url of your external jenkins"
-  echo "    | --jenkins-username=myUsername  >> Mandatory when --jenkins-url is set"
-  echo "    | --jenkins-password=myPassword  >> Mandatory when --jenkins-url is set"
-  echo "    | --jenkins-metrics-username=myUsername  >> Mandatory when --jenkins-url is set and monitoring enabled. Predefined user for fetching prometheus metrics."
-  echo "    | --jenkins-metrics-password=myPassword  >> Mandatory when --jenkins-url is set and monitoring enabled. Predefined user for fetching prometheus metrics."
-  echo
-  echo "Configure external scm-manager. Use this 3 parameters to configure an external scmm"
-  echo "    | --scmm-url=http://scm-manager:8080   >> The host of your external scm-manager"
-  echo "    | --scmm-username=myUsername  >> Mandatory when --scmm-url is set"
-  echo "    | --scmm-password=myPassword  >> Mandatory when --scmm-url is set"
-  echo
-  echo "Configure external docker registry. Use this 4 parameters to configure an external docker registry"
-  echo "    | --registry-url=registry         >> The url of your external registry"
-  echo "    | --registry-path=public          >> Optional when --registry-url is set"
-  echo "    | --registry-username=myUsername  >> Optional when --registry-url is set"
-  echo "    | --registry-password=myPassword  >> Optional when --registry-url is set"
-  echo "    | --internal-registry-port         >> Port of registry registry. Ignored when registry-url is set."
-  echo
-  echo "Configure ArgoCD."
-  echo "    | --argocd-url=http://my-argo.com    >> The URL where argocd is accessible. It has to be the full URL with http:// or https://"
-  echo
-  echo "Configure images used by the gitops-build-lib in the application examples"
-  echo "    | --kubectl-image      >> Sets image for kubectl"
-  echo "    | --helm-image         >> Sets image for helm"
-  echo "    | --kubeval-image      >> Sets image for kubeval"
-  echo "    | --helmkubeval-image  >> Sets image for helmkubeval"
-  echo "    | --yamllint-image     >> Sets image for yamllint"
-  echo
-  echo "Configure images for tools"
-  echo "    | --grafana-image      >> Sets image for grafana"
-  echo "    | --grafana-sidecar-image >> Sets image for grafana's sidecar"
-  echo "    | --prometheus-image >> Sets image for prometheus"
-  echo "    | --prometheus-operator-image >> Sets image for prometheus-operator"
-  echo "    | --prometheus-config-reloader-image >> Sets image for prometheus-operator's config reloader"
-  echo "    | --external-secrets-image  >> Sets image for external secrets operator"
-  echo "    | --external-secrets-certcontroller-image >> Sets image for external secrets operator's cert controller"
-  echo "    | --external-secrets-webhook-image >> Sets image for external secrets operator's webhook controller"
-  echo "    | --vault-image >> Sets image for vault"
-  echo "    | --nginx-image >> Sets image for nginx used in various applications"
-  echo
-  echo "General settings"
-  echo "    | --insecure            >> Runs curl in insecure mode"
-  echo "    | --skip-helm-update    >> Skips adding and updating helm repos"
-  echo
-  echo "Remove the playground"
-  echo "    | --destroy             >> Removes all resources added when deploying the playground."
-  echo
-  echo "Configure additional modules"
-  echo "    | --monitoring, --metrics        >> Installs the Kube-Prometheus-Stack for ArgoCD. This includes Prometheus, the Prometheus operator, Grafana and some extra resources"
-  echo "    | --mailhog-url           >> Sets url for mailhog"
-  echo "    | --grafana-url           >> Sets url for Grafana"
-  echo "    | --vault-url             >> Sets url for Vault"
-  echo "    | --petclinic-base-domain >> The domain under which a subdomain for all petclinic will be used. "
-  echo "    | --nginx-base-domain     >> The domain under which a subdomain for all nginx applications will be used. "
-  echo
-  echo " -d | --debug         >> Debug output"
-  echo " -x | --trace         >> Debug + Show each command executed (set -x)"
-  echo " -y | --yes           >> Skip kubecontext confirmation"
-  echo "    | --name-prefix   >> Set name-prefix for SCMM repos, Jenkins jobs, namespaces"
+  runGroovy '--help'
 }
 
 readParameters() {
@@ -617,7 +470,6 @@ readParameters() {
   INSECURE=false
   TRACE=false
   ASSUME_YES=false
-  SKIP_HELM_UPDATE=false
   DESTROY=false
   OUTPUT_CONFIG_FILE=false
   NAME_PREFIX=""
@@ -665,7 +517,6 @@ readParameters() {
       -d | --debug         ) DEBUG=true; shift ;;
       -x | --trace         ) TRACE=true; shift ;;
       -y | --yes           ) ASSUME_YES=true; shift ;;
-      --skip-helm-update   ) SKIP_HELM_UPDATE=true; shift ;;
       --metrics | --monitoring ) shift;; # Ignore, used in groovy only
       --mailhog-url        ) shift 2;; # Ignore, used in groovy only
       --vault              ) shift 2;; # Ignore, used in groovy only
