@@ -12,7 +12,7 @@ fi
 # In addition:
 # - Upgrade bash image in values.yaml and gid-grepper
 # - Also upgrade plugins. See docs/developers.md
-JENKINS_HELM_CHART_VERSION=4.3.22
+JENKINS_HELM_CHART_VERSION=4.8.1
 
 SET_USERNAME="admin"
 SET_PASSWORD="admin"
@@ -36,7 +36,8 @@ function deployLocalJenkins() {
 
   kubectl apply -f jenkins/resources || true
 
-  
+  helm repo add jenkins https://charts.jenkins.io
+  helm repo update jenkins
   helm upgrade -i jenkins --values jenkins/values.yaml \
     $(jenkinsHelmSettingsForLocalCluster) $(jenkinsIngress) $(setAgentGidOrUid) \
     --version ${JENKINS_HELM_CHART_VERSION} jenkins/jenkins -n default
