@@ -45,8 +45,7 @@ class Mailhog extends Feature {
         String bcryptMailhogPassword = BCrypt.hashpw(password, BCrypt.gensalt(4))
         def tmpHelmValues = new TemplatingEngine().replaceTemplate(fileSystemUtils.copyToTempDir(HELM_VALUES_PATH).toFile(), [
                 mail: [
-                        // We extract the host directly here (instead of passing in the URL object), because 
-                        // Freemarker reports "mail.url.host" as null or missing, even though it's there.
+                        // Note that passing the URL object here leads to problems in Graal Native image, see Git history
                         host: config.features['mail']['url'] ? new URL(config.features['mail']['url'] as String).host : "",
                 ],
                 isRemote: config.application['remote'],

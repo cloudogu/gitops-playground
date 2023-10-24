@@ -300,9 +300,7 @@ class ArgoCD extends Feature {
                     isRemote            : config.application['remote'],
                     isInsecure          : config.application['insecure'],
                     argocd              : [
-                            // We extract the host directly here (instead of passing in the URL object), because 
-                            // Freemarker reports "argocd.url.host" as null or missing, even though it's there. 
-                            // See discussion on #149
+                            // Note that passing the URL object here leads to problems in Graal Native image, see Git history
                             host: config.features['argocd']['url'] ? new URL(config.features['argocd']['url'] as String).host : "",
                     ],
                     monitoring          : [
