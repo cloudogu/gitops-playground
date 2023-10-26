@@ -47,6 +47,7 @@ class Mailhog extends Feature {
                 mail: [
                         url: config.features['mail']['url'] ? new URL(config.features['mail']['url'] as String) : null
                 ],
+                image: config['features']['mail']['helm']['image'] as String,
                 isRemote: config.application['remote'],
                 username: username,
                 passwordCrypt: bcryptMailhogPassword,

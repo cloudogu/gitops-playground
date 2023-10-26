@@ -101,7 +101,8 @@ class ApplicationConfigurator {
                             helm  : [
                                     chart  : 'mailhog',
                                     repoURL: 'https://codecentric.github.io/helm-charts',
-                                    version: '5.0.1'
+                                    version: '5.0.1',
+                                    image: 'ghcr.io/cloudogu/mailhog:v1.0.1'
                             ]
                     ],
                     monitoring: [
