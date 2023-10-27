@@ -1,13 +1,18 @@
 # gitops-playground
 
-Reproducible infrastructure to showcase GitOps workflows with Kubernetes.
+Creates a complete GitOps-based operational stack on your Kubernetes clusters:
 
-In fact, this rolls out a complete DevOps stack with different features including
-* GitOps (with different controllers to choose from: Argo CD and Flux v2),
-* example applications and CI-pipelines (using Jenkins and the [gitops-build-lib](https://github.com/cloudogu/gitops-build-lib)),
-* Notifications/Alerts (using Mailhog for demo purposes)
-* Monitoring (using Prometheus and Grafana),
-* Secrets management (using Vault and external secrets operator).
+* Deployment: GitOps via Argo CD with a ready-to-use [repo structure](#argocd)
+* Monitoring: [Prometheus and Grafana](#monitoring-tools)
+* Secrets Management:  [Vault and External Secrets Operator](#secrets-management-tools)
+* Notifications/Alerts: [MailHog](https://github.com/mailhog/MailHog) for demo purposes
+* Pipelines: Example applications using [Jenkins](#jenkins) with the [gitops-build-lib](https://github.com/cloudogu/gitops-build-lib) and [SCM-Manager](#scm-manager)
+* Ingress Controller: (planned)
+* Certificate Management: (planned)
+* Runs on: 
+  * local cluster (try it [with only one command](#tldr)), 
+  * in the public cloud, 
+  * and even air-gapped environments (work in progress).
 
 The gitops-playground is derived from our experiences in [consulting](https://cloudogu.com/en/consulting/?mtm_campaign=gitops-playground&mtm_kwd=consulting&mtm_source=github&mtm_medium=link),
 operating the [myCloudogu platform](https://my.cloudogu.com/) and is used in our [GitOps trainings for both Flux and ArgoCD](https://platform.cloudogu.com/en/trainings/gitops-continuous-operations/?mtm_campaign=gitops-playground&mtm_kwd=training&mtm_source=github&mtm_medium=link).  
@@ -76,13 +81,13 @@ We recommend running this command as an unprivileged user, that is inside the [d
 
 The GitOps Playground provides a reproducible environment for setting up a GitOps-Stack.
 It provides an image for automatically setting up a Kubernetes Cluster including CI-server (Jenkins),
-source code management (SCM-Manager), Monitoring and Alerting (Prometheus and Grafana), Secrets Management (Hashicorop
+source code management (SCM-Manager), Monitoring and Alerting (Prometheus, Grafana, Mailhog), Secrets Management (Hashicorop
 Vault and External Secrets Operator) and of course Argo CD as GitOps operator.
 
 The playground also deploys a number of [example applications](#example-applications).
 
 The GitOps Playground lowers the barriers for getting your hands on GitOps. No need to read lots of books and operator
-docs, getting familiar with CLIs, ponder about GitOps Repository folder structures and staging, etc.
+docs, getting familiar with CLIs, ponder about GitOps Repository folder structures and promotion to different environments, etc.  
 The GitOps Playground is a pre-configured environment to see GitOps in motion, including more advanced use cases like
 notifications, monitoring and secrets management.
 
