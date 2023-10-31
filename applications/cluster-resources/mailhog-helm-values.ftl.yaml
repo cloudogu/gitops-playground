@@ -1,3 +1,11 @@
+<#if image?has_content>
+image:
+  repository: ${image?split(":")[0]}
+  <#if image?contains(":")>
+  tag: ${image?split(":")[1]}
+  </#if>
+</#if>
+
 service:
   type: <#if isRemote>LoadBalancer<#else>NodePort</#if>
   port:
