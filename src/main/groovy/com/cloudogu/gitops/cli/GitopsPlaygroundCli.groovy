@@ -114,6 +114,8 @@ class GitopsPlaygroundCli  implements Runnable {
     private String vaultUrl
 
     // args group mail
+    @Option(names = ['--mail'], description = 'Installs MailHog as Mailsystem.')
+    private Boolean mail
     @Option(names = ['--mailhog-url'], description = 'Sets url for mailhog')
     private String mailhogUrl
 
@@ -256,7 +258,8 @@ class GitopsPlaygroundCli  implements Runnable {
                                 url       : argocdUrl
                         ],
                         mail: [
-                                url: mailhogUrl,
+                                active    : mail,
+                                url       : mailhogUrl,
                         ],
                         exampleApps: [
                                 petclinic: [
