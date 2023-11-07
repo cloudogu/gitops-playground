@@ -1,13 +1,18 @@
 # gitops-playground
 
-Reproducible infrastructure to showcase GitOps workflows with Kubernetes.
+Creates a complete GitOps-based operational stack on your Kubernetes clusters:
 
-In fact, this rolls out a complete DevOps stack with different features including
-* GitOps (with different controllers to choose from: Argo CD and Flux v2),
-* example applications and CI-pipelines (using Jenkins and the [gitops-build-lib](https://github.com/cloudogu/gitops-build-lib)),
-* Notifications/Alerts (using Mailhog for demo purposes)
-* Monitoring (using Prometheus and Grafana),
-* Secrets management (using Vault and external secrets operator).
+* Deployment: GitOps via Argo CD with a ready-to-use [repo structure](#argocd)
+* Monitoring: [Prometheus and Grafana](#monitoring-tools)
+* Secrets Management:  [Vault and External Secrets Operator](#secrets-management-tools)
+* Notifications/Alerts: [MailHog](https://github.com/mailhog/MailHog) for demo purposes
+* Pipelines: Example applications using [Jenkins](#jenkins) with the [gitops-build-lib](https://github.com/cloudogu/gitops-build-lib) and [SCM-Manager](#scm-manager)
+* Ingress Controller: (planned)
+* Certificate Management: (planned)
+* Runs on: 
+  * local cluster (try it [with only one command](#tldr)), 
+  * in the public cloud, 
+  * and even air-gapped environments (work in progress).
 
 The gitops-playground is derived from our experiences in [consulting](https://cloudogu.com/en/consulting/?mtm_campaign=gitops-playground&mtm_kwd=consulting&mtm_source=github&mtm_medium=link),
 operating the [myCloudogu platform](https://my.cloudogu.com/) and is used in our [GitOps trainings for both Flux and ArgoCD](https://platform.cloudogu.com/en/trainings/gitops-continuous-operations/?mtm_campaign=gitops-playground&mtm_kwd=training&mtm_source=github&mtm_medium=link).  
@@ -38,33 +43,36 @@ We recommend running this command as an unprivileged user, that is inside the [d
 
 # Table of contents
 
-<!-- Update with `doctoc --notitle README.md.md --maxlevel 4`. See https://github.com/thlorenz/doctoc -->
+<!-- Update with `doctoc --notitle README.md --maxlevel 4`. See https://github.com/thlorenz/doctoc -->
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 - [What is the GitOps Playground?](#what-is-the-gitops-playground)
 - [Installation](#installation)
-    - [Overview](#overview)
-    - [Create Cluster](#create-cluster)
-    - [Apply playground](#apply-playground)
-        - [Apply via Docker (local cluster)](#apply-via-docker-local-cluster)
-        - [Apply via kubectl (remote cluster)](#apply-via-kubectl-remote-cluster)
-        - [Additional parameters](#additional-parameters)
-    - [Remove playground](#remove-playground)
+  - [Overview](#overview)
+  - [Create Cluster](#create-cluster)
+  - [Apply playground](#apply-playground)
+    - [Apply via Docker (local cluster)](#apply-via-docker-local-cluster)
+    - [Apply via kubectl (remote cluster)](#apply-via-kubectl-remote-cluster)
+    - [Additional parameters](#additional-parameters)
+  - [Remove playground](#remove-playground)
 - [Stack](#stack)
-    - [Credentials](#credentials)
-    - [Argo CD](#argo-cd)
-    - [Flux](#flux)
-    - [Jenkins](#jenkins)
-    - [SCM-Manager](#scm-manager)
-    - [Monitoring tools](#monitoring-tools)
-    - [Secrets Management Tools](#secrets-management-tools)
-        - [dev mode](#dev-mode)
-        - [prod mode](#prod-mode)
-        - [Example app](#example-app)
-    - [Example Applications](#example-applications)
-        - [Flux V2](#flux-v2)
-        - [Argo CD](#argo-cd-1)
+  - [Credentials](#credentials)
+  - [Argo CD](#argo-cd)
+    - [Why not use argocd-autopilot?](#why-not-use-argocd-autopilot)
+    - [cluster-resources](#cluster-resources)
+  - [Jenkins](#jenkins)
+  - [SCM-Manager](#scm-manager)
+  - [Monitoring tools](#monitoring-tools)
+  - [Secrets Management Tools](#secrets-management-tools)
+    - [dev mode](#dev-mode)
+    - [prod mode](#prod-mode)
+    - [Example app](#example-app)
+  - [Example Applications](#example-applications)
+    - [PetClinic with plain k8s resources](#petclinic-with-plain-k8s-resources)
+    - [PetClinic with helm](#petclinic-with-helm)
+    - [3rd Party app (NGINX) with helm, templated in Jenkins](#3rd-party-app-nginx-with-helm-templated-in-jenkins)
+    - [3rd Party app (NGINX) with helm, using Helm dependency mechanism](#3rd-party-app-nginx-with-helm-using-helm-dependency-mechanism)
 - [Development](#development)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -73,13 +81,13 @@ We recommend running this command as an unprivileged user, that is inside the [d
 
 The GitOps Playground provides a reproducible environment for setting up a GitOps-Stack.
 It provides an image for automatically setting up a Kubernetes Cluster including CI-server (Jenkins),
-source code management (SCM-Manager), Monitoring and Alerting (Prometheus and Grafana), Secrets Management (Hashicorop
-Vault and External Secrets Operator) and of course GitOps operators: here you can choose between Flux V2 and Argo CD.
+source code management (SCM-Manager), Monitoring and Alerting (Prometheus, Grafana, Mailhog), Secrets Management (Hashicorop
+Vault and External Secrets Operator) and of course Argo CD as GitOps operator.
 
 The playground also deploys a number of [example applications](#example-applications).
 
 The GitOps Playground lowers the barriers for getting your hands on GitOps. No need to read lots of books and operator
-docs, getting familiar with CLIs, ponder about GitOps Repository folder structures and staging, etc.
+docs, getting familiar with CLIs, ponder about GitOps Repository folder structures and promotion to different environments, etc.  
 The GitOps Playground is a pre-configured environment to see GitOps in motion, including more advanced use cases like
 notifications, monitoring and secrets management.
 
@@ -532,8 +540,8 @@ Here are some thoughts why we deem it not a good fit for production:
 The playground installs cluster-resources (like prometheus, grafana, vault, external secrets operator, etc.) via the repo  
 `argocd/cluster-resources`. See [ADR](docs/architecture-decision-records.md#deploying-cluster-resources-with-argo-cd-using-inline-yaml) for more details.
 
-When installing Argo CD *and* Flux, the tools are installed using helm imperatively, we fall back to using imperative 
-helm installation as kind of neutral ground.
+When installing without Argo CD, the tools are installed using helm imperatively, we fall back to using imperative 
+helm installation as a kind of neutral ground.
 
 ### Jenkins
 
@@ -696,8 +704,7 @@ The following video shows this demo in time-lapse:
 
 ### Example Applications
 
-Each GitOps operator comes with a couple of example applications that allow for experimenting with different GitOps
-features.
+The playground comes with example applications that allow for experimenting with different GitOps features.
 
 All applications are deployed via separated application and GitOps repos:
 
@@ -724,11 +731,10 @@ Note that for ArgoCD the GitOps-related logic is implemented in the
 
 Please note that it might take about a minute after the pull request has been accepted for the GitOps operator to start
 deploying.
-Alternatively you can trigger the deployment via the respective GitOps operator's CLI (flux) or UI (Argo CD)
+Alternatively you can trigger the deployment via ArgoCD's UI or CLI.
 
-#### Argo CD
 
-##### PetClinic with plain k8s resources
+#### PetClinic with plain k8s resources
 
 [Jenkinsfile](applications/petclinic/argocd/plain-k8s/Jenkinsfile) for `plain` deployment
 
@@ -741,7 +747,7 @@ Alternatively you can trigger the deployment via the respective GitOps operator'
     * remote: `scripts/get-remote-url spring-petclinic-plain argocd-production`
     * `--petclinic-base-domain` to specify base domain. Then use `production.petclinic-plain.$base-domain`
 
-##### PetClinic with helm
+#### PetClinic with helm
 
 [Jenkinsfile](applications/petclinic/argocd/helm/Jenkinsfile) for `helm` deployment
 
@@ -754,7 +760,7 @@ Alternatively you can trigger the deployment via the respective GitOps operator'
     * remote: `scripts/get-remote-url spring-petclinic-helm argocd-production`
   * `--petclinic-base-domain` to specify base domain. Then use `production.petclinic-helm.$base-domain`
 
-##### 3rd Party app (NGINX) with helm, templated in Jenkins
+#### 3rd Party app (NGINX) with helm, templated in Jenkins
 
 [Jenkinsfile](applications/nginx/argocd/helm-jenkins/Jenkinsfile)
 
@@ -767,7 +773,7 @@ Alternatively you can trigger the deployment via the respective GitOps operator'
     * remote: `scripts/get-remote-url nginx argocd-production`
     * `--nginx-base-domain` to specify base domain. Then use `production.nginx.$base-domain`
 
-##### 3rd Party app (NGINX) with helm, using Helm dependency mechanism
+#### 3rd Party app (NGINX) with helm, using Helm dependency mechanism
 
 * Application name: `nginx-helm-umbrella`
 * local: [localhost:30026](http://localhost:30026)
