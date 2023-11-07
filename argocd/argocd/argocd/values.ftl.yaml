@@ -94,6 +94,7 @@ argo-cd:
     cm:
       timeout.reconciliation: 15s
 
+<#if mail.active??>
   notifications:
     enabled: true
     argocdUrl: https://localhost:9092
@@ -199,3 +200,4 @@ argo-cd:
           - app-sync-status-longer-10s
           when: app.status.operationState.phase in ['Running'] and time.Now().Sub(time.Parse(app.status.operationState.startedAt)).Seconds() >= 10
 </#noparse>
+</#if>

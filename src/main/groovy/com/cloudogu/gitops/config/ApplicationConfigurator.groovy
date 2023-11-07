@@ -95,7 +95,7 @@ class ApplicationConfigurator {
                             active    : false,
                             url       : ''
                     ],
-                    mail      : [
+                    mail   : [
                             active: false,
                             url: '',
                             helm  : [

@@ -518,7 +518,7 @@ readParameters() {
       -x | --trace         ) TRACE=true; shift ;;
       -y | --yes           ) ASSUME_YES=true; shift ;;
       --metrics | --monitoring ) shift;; # Ignore, used in groovy only
-      --mail               ) shift 2;; # Ignore, used in groovy only
+      --mail               ) shift;; # Ignore, used in groovy only
       --mailhog-url        ) shift 2;; # Ignore, used in groovy only
       --vault              ) shift 2;; # Ignore, used in groovy only
       --petclinic-base-domain ) shift 2;; # Ignore, used in groovy only

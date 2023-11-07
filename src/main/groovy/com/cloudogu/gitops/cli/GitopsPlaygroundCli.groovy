@@ -114,12 +114,12 @@ class GitopsPlaygroundCli  implements Runnable {
     private String vaultUrl
 
     // args group mail
-    @Option(names = ['--mail'], description = 'Installs MailHog as Mailsystem.')
+    @Option(names = ['--mail'], description = 'Installs MailHog as Mailsystem.', scope = CommandLine.ScopeType.INHERIT)
     private Boolean mail
     @Option(names = ['--mailhog-url'], description = 'Sets url for mailhog')
     private String mailhogUrl
 
-    // args group debug
+// args group debug
     @Option(names = ['-d', '--debug'], description = 'Debug output', scope = CommandLine.ScopeType.INHERIT)
     private Boolean debug
     @Option(names = ['-x', '--trace'], description = 'Debug + Show each command executed (set -x)', scope = CommandLine.ScopeType.INHERIT)
