@@ -358,6 +358,10 @@ Set the parameter `--monitoring` to enable deployment of monitoring and alerting
 
 See [Monitoring tools](#monitoring-tools) for details.
 
+##### Mailsystem
+The gitops-playground uses MailHog as a simple Mailsystem. 
+Set the parameter `--mail` to enable the deployment of the Mailsystem.
+
 ##### Secrets Management
 
 Set the parameter `--vault=[dev|prod]` to enable deployment of secret management tools hashicorp vault and external
