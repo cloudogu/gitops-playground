@@ -66,6 +66,9 @@ class ArgoCDTest {
                             active: true,
                             configOnly: true
                     ],
+                    mail   : [
+                            active: true
+                    ],
                     monitoring: [
                             active: true
                     ],
@@ -187,6 +190,22 @@ class ArgoCDTest {
         config.features['monitoring']['active'] = true
         createArgoCD().install()
         assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + "/misc/monitoring")).exists()
+    }
+
+    @Test
+    void 'When mailhog disabled: Does not include mailconfigurations into cluster resources'() {
+        config.features['mail']['active'] = false
+        createArgoCD().install()
+        def valuesYaml = parseActualYaml(actualHelmValuesFile)
+        assertThat(valuesYaml['argo-cd']['notifications']['enabled']).isEqualTo(false)
+    }
+
+    @Test
+    void 'When mailhog enabled: Does not include mailconfigurations into cluster resources'() {
+        config.features['mail']['active'] = true
+        createArgoCD().install()
+        def valuesYaml = parseActualYaml(actualHelmValuesFile)
+        assertThat(valuesYaml['argo-cd']['notifications']['enabled']).isEqualTo(true)
     }
 
     @Test
@@ -336,6 +355,21 @@ class ArgoCDTest {
   tag: latest
 """)
     }
+
+/*
+    @Test
+    void 'When mailsystem is disabled: Exclude mailconfig from configuration'() {
+        config.features['secrets']['active'] = false
+        createArgoCD().install()
+        def yaml = parseActualYaml(nginxHelmJenkinsRepo.absoluteLocalRepoTmpDir + '/k8s/values.yaml')
+    }
+
+    @Test
+    void 'When mailsystem is enabled: Include mailconfig to configuration'() {
+        config.features['secrets']['active'] = false
+        createArgoCD().install()
+    }
+*/
 
     private void assertArgoCdYamlPrefixes(String scmmUrl, String expectedPrefix) {
         assertAllYamlFiles(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), 'projects', 4) { Path file ->

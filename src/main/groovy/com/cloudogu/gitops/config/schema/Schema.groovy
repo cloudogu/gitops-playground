@@ -73,7 +73,7 @@ class Schema {
     }
 
      static class MailSchema {
-         boolean active = true
+//         boolean active = true
          String url = ""
     }
 

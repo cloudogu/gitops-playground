@@ -94,9 +94,14 @@ argo-cd:
     cm:
       timeout.reconciliation: 15s
 
-<#if mail.active??>
   notifications:
+  <#if mail.active == true>
     enabled: true
+  </#if>
+  <#if mail.active == false>
+    enabled: false
+  </#if>
+  <#if mail.active == true >
     argocdUrl: https://localhost:9092
     notifiers:
       service.email: |
