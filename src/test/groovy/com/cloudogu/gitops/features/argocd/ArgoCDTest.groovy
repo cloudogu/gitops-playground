@@ -356,21 +356,6 @@ class ArgoCDTest {
 """)
     }
 
-/*
-    @Test
-    void 'When mailsystem is disabled: Exclude mailconfig from configuration'() {
-        config.features['secrets']['active'] = false
-        createArgoCD().install()
-        def yaml = parseActualYaml(nginxHelmJenkinsRepo.absoluteLocalRepoTmpDir + '/k8s/values.yaml')
-    }
-
-    @Test
-    void 'When mailsystem is enabled: Include mailconfig to configuration'() {
-        config.features['secrets']['active'] = false
-        createArgoCD().install()
-    }
-*/
-
     private void assertArgoCdYamlPrefixes(String scmmUrl, String expectedPrefix) {
         assertAllYamlFiles(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), 'projects', 4) { Path file ->
             def yaml = parseActualYaml(file.toString())
