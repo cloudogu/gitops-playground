@@ -7,7 +7,9 @@ package com.cloudogu.gitops.config.schema
  *
  * Currently only contains variables that are used in groovy only.
  *
- * When changing values make sure to modify GitOpsPlaygroundCli and ApplicationConfigurator as well
+ * When changing values make sure to
+ * * recreate file configuration.schema.json using JsonSchemaGenerator (copy output into file an format using IDE)
+ * * modify GitOpsPlaygroundCli and ApplicationConfigurator as well.
  * @see com.cloudogu.gitops.cli.GitopsPlaygroundCli
  * @see com.cloudogu.gitops.config.ApplicationConfigurator
  */
@@ -73,7 +75,7 @@ class Schema {
     }
 
      static class MailSchema {
-//         boolean active = true
+         boolean active = true
          String url = ""
     }
 
