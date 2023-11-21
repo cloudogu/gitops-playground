@@ -193,19 +193,21 @@ class ArgoCDTest {
     }
 
     @Test
-    void 'When mailhog disabled: Does not include mailconfigurations into cluster resources'() {
+    void 'When mailhog disabled: Does not include mail configurations into cluster resources'() {
         config.features['mail']['active'] = false
         createArgoCD().install()
         def valuesYaml = parseActualYaml(actualHelmValuesFile)
         assertThat(valuesYaml['argo-cd']['notifications']['enabled']).isEqualTo(false)
+        assertThat(valuesYaml['argo-cd']['notifications']['notifiers']).isNull()
     }
 
     @Test
-    void 'When mailhog enabled: Does not include mailconfigurations into cluster resources'() {
+    void 'When mailhog enabled: Includes mail configurations into cluster resources'() {
         config.features['mail']['active'] = true
         createArgoCD().install()
         def valuesYaml = parseActualYaml(actualHelmValuesFile)
         assertThat(valuesYaml['argo-cd']['notifications']['enabled']).isEqualTo(true)
+        assertThat(valuesYaml['argo-cd']['notifications']['notifiers']).isNotNull()
     }
 
     @Test
