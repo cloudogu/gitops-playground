@@ -40,6 +40,9 @@
         "mail": {
           "type": "object",
           "properties": {
+            "active": {
+              "type": "boolean"
+            },
             "url": {
               "type": "string"
             }

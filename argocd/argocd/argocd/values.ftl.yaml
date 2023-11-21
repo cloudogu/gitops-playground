@@ -95,8 +95,9 @@ argo-cd:
       timeout.reconciliation: 15s
 
   notifications:
-    enabled: true
+    enabled: ${mail.active?string('true', 'false')}
     argocdUrl: https://localhost:9092
+<#if mail.active == true>
     notifiers:
       service.email: |
         host: mailhog.${namePrefix}monitoring.svc.cluster.local
@@ -199,3 +200,4 @@ argo-cd:
           - app-sync-status-longer-10s
           when: app.status.operationState.phase in ['Running'] and time.Now().Sub(time.Parse(app.status.operationState.startedAt)).Seconds() >= 10
 </#noparse>
+</#if>

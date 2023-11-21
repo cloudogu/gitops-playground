@@ -16,7 +16,7 @@ import org.springframework.security.crypto.bcrypt.BCrypt
 class Mailhog extends Feature {
 
     static final String HELM_VALUES_PATH = "applications/cluster-resources/mailhog-helm-values.ftl.yaml"
-    
+
     private Map config
     private String username
     private String password

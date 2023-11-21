@@ -54,6 +54,9 @@ class PrometheusStack extends Feature {
                                 url: config.features['monitoring']['grafanaUrl'] ? new URL(config.features['monitoring']['grafanaUrl'] as String) : null,
                         ]
                 ],
+                mail: [
+                        active: config.features['mail']['active']
+                ],
                 scmm: getScmmConfiguration(),
                 jenkins: getJenkinsConfiguration()
         ]).toPath()

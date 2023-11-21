@@ -95,8 +95,8 @@ class ApplicationConfigurator {
                             active    : false,
                             url       : ''
                     ],
-                    mail      : [
-                            active: true,
+                    mail   : [
+                            active: false,
                             url: '',
                             helm  : [
                                     chart  : 'mailhog',

@@ -366,6 +366,11 @@ Set the parameter `--monitoring` to enable deployment of monitoring and alerting
 
 See [Monitoring tools](#monitoring-tools) for details.
 
+##### Mail server
+The gitops-playground uses MailHog to showcase notifications. 
+Set the parameter `--mail` to enable it.
+This will deploy MailHog and configure Argo CD and Grafana to send mails to MailHog.
+
 ##### Secrets Management
 
 Set the parameter `--vault=[dev|prod]` to enable deployment of secret management tools hashicorp vault and external

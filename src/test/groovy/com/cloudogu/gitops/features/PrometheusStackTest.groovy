@@ -42,6 +42,9 @@ class PrometheusStackTest {
                                     repoURL: 'https://prom',
                                     version: '19.2.2'
                             ]
+                    ],
+                    mail   : [
+                            active: true
                     ]
             ],
     ]
@@ -57,6 +60,20 @@ class PrometheusStackTest {
         assertThat(temporaryYamlFile).isNull()
         assertThat(k8sCommandExecutor.actualCommands).isEmpty()
         assertThat(helmCommandExecutor.actualCommands).isEmpty()
+    }
+
+    @Test
+    void 'When mailhog disabled: Does not include mail configurations into cluster resources'() {
+        config.features['mail']['active'] = false
+        createStack().install()
+        assertThat(parseActualStackYaml()['grafana']['notifiers']).isNull()
+    }
+
+    @Test
+    void 'When mailhog enabled: Includes mail configurations into cluster resources'() {
+        config.features['mail']['active'] = true
+        createStack().install()
+        assertThat(parseActualStackYaml()['grafana']['notifiers']).isNotNull()
     }
 
     @Test
