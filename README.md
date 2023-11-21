@@ -358,9 +358,10 @@ Set the parameter `--monitoring` to enable deployment of monitoring and alerting
 
 See [Monitoring tools](#monitoring-tools) for details.
 
-##### Mailsystem
-The gitops-playground uses MailHog as a simple Mailsystem. 
-Set the parameter `--mail` to enable the deployment of the Mailsystem.
+##### Mail server
+The gitops-playground uses MailHog to showcase notifications. 
+Set the parameter `--mail` to enable it.
+This will deploy MailHog and configure Argo CD and Grafana to send mails to MailHog.
 
 ##### Secrets Management
 

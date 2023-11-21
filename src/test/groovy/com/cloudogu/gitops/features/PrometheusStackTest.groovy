@@ -63,14 +63,14 @@ class PrometheusStackTest {
     }
 
     @Test
-    void 'When mailhog disabled: Does not include mailconfigurations into cluster resources'() {
+    void 'When mailhog disabled: Does not include mail configurations into cluster resources'() {
         config.features['mail']['active'] = false
         createStack().install()
         assertThat(parseActualStackYaml()['grafana']['notifiers']).isNull()
     }
 
     @Test
-    void 'When mailhog enabled: Does not include mailconfigurations into cluster resources'() {
+    void 'When mailhog enabled: Includes mail configurations into cluster resources'() {
         config.features['mail']['active'] = true
         createStack().install()
         assertThat(parseActualStackYaml()['grafana']['notifiers']).isNotNull()
