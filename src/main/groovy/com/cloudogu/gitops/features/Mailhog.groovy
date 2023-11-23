@@ -16,7 +16,7 @@ import org.springframework.security.crypto.bcrypt.BCrypt
 class Mailhog extends Feature {
 
     static final String HELM_VALUES_PATH = "applications/cluster-resources/mailhog-helm-values.ftl.yaml"
-    
+
     private Map config
     private String username
     private String password
@@ -48,6 +48,7 @@ class Mailhog extends Feature {
                         // Note that passing the URL object here leads to problems in Graal Native image, see Git history
                         host: config.features['mail']['url'] ? new URL(config.features['mail']['url'] as String).host : "",
                 ],
+                image: config['features']['mail']['helm']['image'] as String,
                 isRemote: config.application['remote'],
                 username: username,
                 passwordCrypt: bcryptMailhogPassword,

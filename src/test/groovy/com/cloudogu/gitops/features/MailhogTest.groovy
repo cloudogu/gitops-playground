@@ -38,7 +38,8 @@ class MailhogTest {
                             helm  : [
                                     chart  : 'mailhog',
                                     repoURL: 'https://codecentric.github.io/helm-charts',
-                                    version: '5.0.1'
+                                    version: '5.0.1',
+                                    image: ''
                             ]
                     ]
             ],
@@ -116,6 +117,36 @@ class MailhogTest {
         config.features['argocd']['active'] = true
 
         createMailhog().install()
+    }
+    
+    @Test
+    void 'Allows overriding the image'() {
+        config['features']['mail']['helm']['image'] = 'abc'
+
+        createMailhog().install()
+        assertThat(parseActualYaml()['image']['repository']).isEqualTo('abc')
+    }
+    
+    @Test
+    void 'Allows overriding the image with tag'() {
+        config['features']['mail']['helm']['image'] = 'abc:42'
+        
+        createMailhog().install()
+        assertThat(parseActualYaml()['image']['repository']).isEqualTo('abc')
+        assertThat(parseActualYaml()['image']['tag']).isEqualTo(42)
+    }
+    
+    @Test
+    void 'Image is optional'() {
+        config['features']['mail']['helm']['image'] = ''
+
+        createMailhog().install()
+        assertThat(parseActualYaml()['image']).isNull()
+        
+        config['features']['mail']['helm']['image'] = null
+
+        createMailhog().install()
+        assertThat(parseActualYaml()['image']).isNull()
     }
 
     protected void assertMailhogInstalledImperativelyViaHelm() {
