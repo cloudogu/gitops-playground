@@ -298,15 +298,16 @@ To use them locally,
 * apply your playground with the following parameters  
   (when using a port other than 80, append `:port`, e.g. `localhost:8080`): 
   * `--base-url=http://localhost` 
-    * this is possible when using Linux with [systemd-resolved](https://www.freedesktop.org/software/systemd/man/systemd-resolved.service.html) (default in Ubuntu, not Debian)  
+    * this is possible on Windows (tested on 11), Mac (tested on Ventura) or when using Linux with [systemd-resolved](https://www.freedesktop.org/software/systemd/man/systemd-resolved.service.html) (default in Ubuntu, not Debian)  
       As an alternative, you could add all `*.localhost` entries to your `hosts` file.  
       Use `kubectl get ingress -A` to get a full list 
     * Then, you can reach argocd on `http://argocd.localhost`, for example
-  * `--base-url=http://local.gd`
+  * `--base-url=http://local.gd` (or `127.0.0.1.nip.io`, `127.0.0.1.sslip.io`, or others)
     * This should work for all other machines that have access to the internet without further config 
     * Then, you can reach argocd on `http://argocd.local.gd`, for example
 * Note that when using port 80, the URLs are shorter, but you run into issues because port 80 is regarded as a privileged port. 
   Java applications seem not to be able to reach `localhost:80` or even `127.0.0.1:80` (`NoRouteToHostException`)
+* If your setup requires you to bind to a specific interface, you can just pass it with e.g. `--bind-ingress-port=127.0.0.1:80`
 
 ##### Deploy GitOps operators
 
@@ -428,11 +429,9 @@ Note that this option has limitations. It does not remove CRDs, namespaces, loca
 
 ### Running on Windows or Mac
 
-* In general: We cannot use the `host` network, so it's easiest to access [via ingresses](#local-ingresses).  
-  For ingresses we need hostnames, and for hostnames, we need DNS.
-* An easy way to get DNS resolution to your localhost without having to adapt you local `hosts` file are services like [local.gd](https://local.gd/), [sslip.io](https://sslip.io/), [nip.io](https://nip.io/) or host your own [localtls](https://github.com/Corollarium/localtls).  
-* In our examples we use `local.gd`, because it's shortest. An alernative would be to use `127.0.0.1.sslip.io` 
-
+* In general: We cannot use the `host` network, so it's easiest to access [via ingresses](#local-ingresses).
+* `--base-url=http://localhost` should work on both Windows and Mac
+* In case of problems resolving e.g. `jenkins.localhost`, you could try using `--base-url=http://local.gd` or similar, as described in [local ingresses](#local-ingresses).
 
 #### Mac and Windows WSL
 
@@ -448,16 +447,16 @@ bash <(curl -s \
 docker run --rm --pull=always -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     --net=host \
-    ghcr.io/cloudogu/gitops-playground --yes --argocd --base-url=http://local.gd
+    ghcr.io/cloudogu/gitops-playground --yes --argocd --base-url=http://localhost
 ```
 
 When you encounter errors with port 80 you might want to use e.g. 
 * `--bind-ingress-port=8080` and 
-* `--base-url=http://local.gd:8080` instead.
+* `--base-url=http://localhost:8080` instead.
 
 #### Windows Docker Desktop
 
-* We recommend using Windows Subsystem for Linux version 2 (WSL2) with a native installation of Docker Engine, because it's easier to set up and less prone to errors.
+* We recommend using Windows Subsystem for Linux version 2 (WSL2) with a [native installation of Docker Engine](https://docs.docker.com/desktop/install/linux-install/), because it's easier to set up and less prone to errors.
 * If you must, you can also run using Docker Desktop from native Windows console (see bellow)
 * However, there seems to be a problem when the Jenkins Jobs running the playground access docker, e.g.   
 ```
@@ -501,7 +500,7 @@ k3d kubeconfig write gitops-playground
   * You can ignore the warning about docker.sock
   * We're mounting the docker socket, so it can be used by the Jenkins Agents for the docker-plugin.
   * Windows seems not to provide a group id for the docker socket. So the Jenkins Agents run as root user.
-  * If you prefer running with an unprivileged user, consider running on on WSL2, Mac or Linux
+  * If you prefer running with an unprivileged user, consider running on WSL2, Mac or Linux
   * You could also add `-v gitops-playground-build-cache:/tmp@server:0 ` to persist the Cache of the Jenkins agent between restarts of k3d containers.
 * Apply playground:  
   Note that when using a `$registry_port` other than `30000` append the command `--internal-registry-port=$registry_port` bellow
@@ -510,7 +509,7 @@ k3d kubeconfig write gitops-playground
 docker run --rm --pull=always `
     -v $HOME/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config `
     --net=host `
-    ghcr.io/cloudogu/gitops-playground --yes --argocd --base-url=http://local.gd:$ingress_port
+    ghcr.io/cloudogu/gitops-playground --yes --argocd --base-url=http://localhost:$ingress_port
 ```
 
 ## Stack
