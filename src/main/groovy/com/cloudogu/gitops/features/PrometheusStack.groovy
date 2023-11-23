@@ -51,7 +51,8 @@ class PrometheusStack extends Feature {
                 namePrefix: namePrefix,
                 monitoring: [
                         grafana: [
-                                url: config.features['monitoring']['grafanaUrl'] ? new URL(config.features['monitoring']['grafanaUrl'] as String) : null,
+                                // Note that passing the URL object here leads to problems in Graal Native image, see Git history
+                                host: config.features['monitoring']['grafanaUrl'] ? new URL(config.features['monitoring']['grafanaUrl'] as String).host : "",
                         ]
                 ],
                 mail: [

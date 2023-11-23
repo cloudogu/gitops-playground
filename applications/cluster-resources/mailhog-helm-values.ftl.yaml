@@ -24,12 +24,12 @@ resources:
   requests:
     memory: 10Mi
     cpu: 20m
-
-<#if mail.url??>
+  
+<#if mail.host?has_content>
 ingress:
   enabled: true
   hosts:
-    - host: ${mail.url.host}
+    - host: ${mail.host}
       paths:
         - path: "/"
           pathType: Prefix

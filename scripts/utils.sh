@@ -28,6 +28,24 @@ function getExternalIP() {
   echo $external_ip
 }
 
+function extractHost() {
+    echo "$1" | awk -F[/:] '{print $4}'
+}
+
+function injectSubdomain() {
+    local BASE_URL="$1"
+    local SUBDOMAIN="$2"
+
+    if [[ "$BASE_URL" =~ ^http:// ]]; then
+        echo "${BASE_URL/http:\/\//http://${SUBDOMAIN}.}"
+    elif [[ "$BASE_URL" =~ ^https:// ]]; then
+        echo "${BASE_URL/https:\/\//https://${SUBDOMAIN}.}"
+    else
+        echo "Invalid BASE URL: ${BASE_URL}. It should start with either http:// or https://"
+        return 1
+    fi
+}
+
 function spinner() {
     local info="$1"
     local pid=$!
@@ -54,7 +72,8 @@ function spinner() {
 }
 
 function error() {
-     echo "$@" 1>&2; 
+    # Print to stderr in red
+    echo -e "\033[31m$@\033[0m" 1>&2;
 }
 
 # Entry point for the new generation of our apply script, written in groovy

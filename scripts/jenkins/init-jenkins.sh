@@ -25,6 +25,7 @@ function deployLocalJenkins() {
   SET_PASSWORD=${2}
   REMOTE_CLUSTER=${3}
   JENKINS_URL=${4}
+  BASE_URL=${5}
 
   # Mark the first node for Jenkins and agents. See jenkins/values.yamls "agent.workingDir" for details.
   # Remove first (in case new nodes were added)
@@ -38,9 +39,19 @@ function deployLocalJenkins() {
   helm repo add jenkins https://charts.jenkins.io
   helm repo update jenkins
   helm upgrade -i jenkins --values jenkins/values.yaml \
-    $(jenkinsHelmSettingsForLocalCluster) --set agent.runAsGroup=$(queryDockerGroupOfJenkinsNode) \
-    --set controller.jenkinsUrl=$JENKINS_URL \
+    $(jenkinsHelmSettingsForLocalCluster) $(jenkinsIngress) $(setAgentGidOrUid) \
     --version ${JENKINS_HELM_CHART_VERSION} jenkins/jenkins -n default
+}
+
+function jenkinsIngress() {
+  
+    if [[ -n "${BASE_URL}" ]]; then
+      local jenkinsHost="jenkins.$(extractHost "${BASE_URL}")"
+      local externalJenkinsUrl="$(injectSubdomain "${BASE_URL}" 'jenkins')"
+      echo "--set controller.jenkinsUrl=$JENKINS_URL --set controller.ingress.enabled=true --set controller.ingress.hostName=${jenkinsHost}"
+    else
+      echo "--set controller.jenkinsUrl=$JENKINS_URL" 
+    fi
 }
 
 function jenkinsHelmSettingsForLocalCluster() {
@@ -51,17 +62,24 @@ function jenkinsHelmSettingsForLocalCluster() {
   fi
 }
 
-# using local cluster on k3d we grep local host gid for docker
-function queryDockerGroupOfJenkinsNode() {
+# Enable access for the Jenkins Agents Pods to the docker socket  
+function setAgentGidOrUid() {
+  # Try to find out the group ID (GID) of the docker group
   kubectl apply -f jenkins/tmp-docker-gid-grepper.yaml >/dev/null
   until kubectl get po --field-selector=status.phase=Running | grep tmp-docker-gid-grepper >/dev/null; do
     sleep 1
   done
 
-  kubectl exec tmp-docker-gid-grepper -- cat /etc/group | grep docker | cut -d: -f3
-
-  # This call might block some (unnecessary) seconds so move to background
-  kubectl delete -f jenkins/tmp-docker-gid-grepper.yaml >/dev/null &
+  local DOCKER_GID=$(kubectl exec tmp-docker-gid-grepper -- cat /etc/group | grep docker | cut -d: -f3)
+  if [[ -n "${DOCKER_GID}" ]]; then
+    echo "--set agent.runAsGroup=$DOCKER_GID"
+  else
+    # If the docker group cannot be found, run as root user
+    # Unfortunately, the root group (GID 0) usually does not have access to the docker socket. Last ressort: run as root.
+    # This will happen on Docker Desktop for Windows for example
+    error "Warning: Unable to determine Docker Group ID (GID). Jenkins Agent pods will run as root user (UID 0)!"
+    echo '--set agent.runAsUser=0'
+  fi
 }
 
 function waitForJenkins() {

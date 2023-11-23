@@ -132,6 +132,8 @@ class GitopsPlaygroundCli  implements Runnable {
     private String password
     @Option(names = ['-y', '--yes'], description = 'Skip kubecontext confirmation')
     private Boolean pipeYes
+    @Option(names = ['--base-url'], description = 'the external base url (TLD) for all tools, e.g. https://example.com or http://localhost:8080. The individual -url params for argocd, grafana, vault and mailhog take precedence.')
+    private String baseUrl
     @Option(names = ['--name-prefix'], description = 'Set name-prefix for repos, jobs, namespaces')
     private String namePrefix
     @Option(names = ['--destroy'], description = 'Unroll playground')
@@ -243,6 +245,7 @@ class GitopsPlaygroundCli  implements Runnable {
                         pipeYes       : pipeYes,
                         namePrefix    : namePrefix ? "$namePrefix-" : "",
                         namePrefixForEnvVars: namePrefix ? "${namePrefix.toUpperCase()}_" : "",
+                        baseUrl : baseUrl,
                 ],
                 images     : [
                         kubectl    : kubectlImage,

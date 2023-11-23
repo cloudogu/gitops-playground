@@ -24,14 +24,14 @@ For questions or suggestions you are welcome to join us at our myCloudogu [commu
 |-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | ![Playground features](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml-src/gitops-playground-features.puml&fmt=svg) | ![Installation](https://user-images.githubusercontent.com/1824962/215206261-fbae92fc-e73c-4977-99e3-858769e73c53.png) |
 
-# TLDR;
+# TL;DR
 
-You can run a local k8s cluster with the GitOps playground installed with only one command (on Linux)
+You can run a local k8s cluster with the GitOps playground installed with only one command (on Linux, for Windows and Mac see [here](#windows-or-mac))
 
 ```shell
 bash <(curl -s \
   https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh) \
-  && sleep 2 && docker run --rm -it --pull=always -u $(id -u) \
+  && sleep 2 && docker run --rm --pull=always -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     --net=host \
     ghcr.io/cloudogu/gitops-playground --yes --argocd
@@ -55,7 +55,19 @@ We recommend running this command as an unprivileged user, that is inside the [d
     - [Apply via Docker (local cluster)](#apply-via-docker-local-cluster)
     - [Apply via kubectl (remote cluster)](#apply-via-kubectl-remote-cluster)
     - [Additional parameters](#additional-parameters)
+      - [Configuration file](#configuration-file)
+      - [Deploy Ingresses](#deploy-ingresses)
+      - [Deploy GitOps operators](#deploy-gitops-operators)
+      - [Deploy with local Cloudogu Ecosystem](#deploy-with-local-cloudogu-ecosystem)
+      - [Deploy with productive Cloudogu Ecosystem and GCR](#deploy-with-productive-cloudogu-ecosystem-and-gcr)
+      - [Override default images](#override-default-images)
+      - [Argo CD-Notifications](#argo-cd-notifications)
+      - [Monitoring](#monitoring)
+      - [Secrets Management](#secrets-management)
   - [Remove playground](#remove-playground)
+  - [Running on Windows or Mac](#running-on-windows-or-mac)
+    - [Mac and Windows WSL](#mac-and-windows-wsl)
+    - [Windows Docker Desktop](#windows-docker-desktop)
 - [Stack](#stack)
   - [Credentials](#credentials)
   - [Argo CD](#argo-cd)
@@ -69,10 +81,11 @@ We recommend running this command as an unprivileged user, that is inside the [d
     - [prod mode](#prod-mode)
     - [Example app](#example-app)
   - [Example Applications](#example-applications)
-    - [PetClinic with plain k8s resources](#petclinic-with-plain-k8s-resources)
-    - [PetClinic with helm](#petclinic-with-helm)
-    - [3rd Party app (NGINX) with helm, templated in Jenkins](#3rd-party-app-nginx-with-helm-templated-in-jenkins)
-    - [3rd Party app (NGINX) with helm, using Helm dependency mechanism](#3rd-party-app-nginx-with-helm-using-helm-dependency-mechanism)
+    - [Argo CD](#argo-cd-1)
+      - [PetClinic with plain k8s resources](#petclinic-with-plain-k8s-resources)
+      - [PetClinic with helm](#petclinic-with-helm)
+      - [3rd Party app (NGINX) with helm, templated in Jenkins](#3rd-party-app-nginx-with-helm-templated-in-jenkins)
+      - [3rd Party app (NGINX) with helm, using Helm dependency mechanism](#3rd-party-app-nginx-with-helm-using-helm-dependency-mechanism)
 - [Development](#development)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -98,11 +111,8 @@ The support for these is *work in progress*.
 
 There a several options for running the GitOps playground
 
-* on a local k3d cluster  
-  __NOTE: Currently runs only on linux!__  
-  Running on Windows or Mac is possible in general, but we would need to bind all needed ports to k3d container.  
-  See our [POC](https://github.com/cloudogu/gitops-playground/commit/d11f1cf77cc58fdc2b768202f9447eab31770f75).
-  Let us know if this feature is of interest to you.
+* on a local k3d cluster
+  Works best on Linux, but is possible on [Windows and Mac](#windows-or-mac). 
 * on a remote k8s cluster
 * each with the option
     * to use an external Jenkins, SCM-Manager and registry
@@ -123,7 +133,7 @@ Jenkins build agents spawned in the cloud.
 
 ### Create Cluster
 
-If you don't have a demo cluster at hand we provide scripts to create either
+You can apply the GitOps playground to 
 
 * a local k3d cluster (see [docs](docs/k3d.md) or [script](scripts/init-cluster.sh) for more details):
   ```shell
@@ -132,7 +142,7 @@ If you don't have a demo cluster at hand we provide scripts to create either
   ```
 * a remote k8s cluster on Google Kubernetes Engine (e.g. via Terraform, see our [docs](docs/gke.md)),
 * or almost any k8s cluster.  
-  Note that if you want to deploy Jenkins inside the cluster, Docker is required as container runtime.
+  Note that if you want to deploy Jenkins inside the cluster, you either need Docker as container runtime or set Jenkins up to run its build on an agent that provides Docker.
 
 ### Apply playground
 
@@ -154,7 +164,7 @@ k3d's kubeconfig.
 ```shell
 CLUSTER_NAME=gitops-playground
 docker pull ghcr.io/cloudogu/gitops-playground
-docker run --rm -it -u $(id -u) \
+docker run --rm -u $(id -u) \
   -v ~/.config/k3d/kubeconfig-${CLUSTER_NAME}.yaml:/home/.kube/config \
   --net=host \
   ghcr.io/cloudogu/gitops-playground # additional parameters go here
@@ -225,17 +235,17 @@ You can use `--output-config-file` to output the current config as a YAML file.
 Note that only the currently supported parameters will be used. 
 The config file is not yet a complete replacement for CLI parameters. 
 
-##### Apply via Docker
+###### Apply via Docker
 
 ```bash
-docker run --rm -it --pull=always -u $(id -u) \
+docker run --rm --pull=always -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     -v $(pwd)/gitops-playground.yaml:/config/gitops-playground.yaml \
     --net=host \
     ghcr.io/cloudogu/gitops-playground --yes --argocd --config-file=/config/gitops-playground.yaml
 ```
 
-##### Apply via kubectl
+###### Apply via kubectl
 
 [Create the serviceaccount and clusterrolebinding](#apply-via-kubectl-remote-cluster)
 
@@ -263,6 +273,46 @@ In addition, you might want to delete the config-map as well.
 kubectl delete cm gitops-config 
 ```
 
+##### Deploy Ingresses
+
+It is possible to deploy ingresses for all components. You can either 
+* Set a common base url (`--base-url=https://example.com`) or
+* individual URLS: 
+```
+--argocd-url https://argocd.example.com 
+--grafana-url https://grafana.example.com 
+--vault-url https://vault.example.com 
+--mailhog-url https://mailhog.example.com 
+--petclinic-base-domain petclinic.example.com 
+--nginx-base-domain nginx.example.com
+```
+* or both, where the individual URLs take precedence.
+
+Note: `jenkins-url` and `scmm-url` are for external services and do not lead to ingresses, but you can set them via `--base-url` for now.
+
+###### Local ingresses
+
+The ingresses can also be used when running the playground on your local machine:
+
+* Ingresses might be easier to remember than arbitrary port numbers and look better in demos 
+* With ingresses, we can execute our [local clusters](docs/k3d.md) in higher isolation or multiple playgrounds concurrently
+* Ingresses are required [for running on Windows/Mac](#windows-or-mac).
+
+To use them locally, 
+* init your cluster (`init-cluster.sh`) with `--bind-ingress-port`, e.g. `80` or `8080`.
+* apply your playground with the following parameters  
+  (when using a port other than 80, append `:port`, e.g. `localhost:8080`): 
+  * `--base-url=http://localhost` 
+    * this is possible on Windows (tested on 11), Mac (tested on Ventura) or when using Linux with [systemd-resolved](https://www.freedesktop.org/software/systemd/man/systemd-resolved.service.html) (default in Ubuntu, not Debian)  
+      As an alternative, you could add all `*.localhost` entries to your `hosts` file.  
+      Use `kubectl get ingress -A` to get a full list 
+    * Then, you can reach argocd on `http://argocd.localhost`, for example
+  * `--base-url=http://local.gd` (or `127.0.0.1.nip.io`, `127.0.0.1.sslip.io`, or others)
+    * This should work for all other machines that have access to the internet without further config 
+    * Then, you can reach argocd on `http://argocd.local.gd`, for example
+* Note that when using port 80, the URLs are shorter, but you run into issues because port 80 is regarded as a privileged port. 
+  Java applications seem not to be able to reach `localhost:80` or even `127.0.0.1:80` (`NoRouteToHostException`)
+* If your setup requires you to bind to a specific interface, you can just pass it with e.g. `--bind-ingress-port=127.0.0.1:80`
 
 ##### Deploy GitOps operators
 
@@ -357,7 +407,7 @@ Note that specifying a tag is mandatory.
 
 ##### Argo CD-Notifications
 
-If you are using a remote cluster you can set the `--argocd-url` parameter so that argocd-notification messages have a
+If you are using a remote cluster, you can set the `--argocd-url` parameter so that argocd-notification messages have a
 link to the corresponding application.
 
 ##### Monitoring
@@ -380,11 +430,97 @@ See [Secrets management tools](#secrets-managment-tools) for details.
 ### Remove playground
 
 For k3d, you can just `k3d cluster delete gitops-playground`. This will delete the whole cluster.
+If you want to delete k3d use `rm .local/bin/k3d`.
 
 To remove the playground without deleting the cluster, use the option `--destroy`.
-You need pass the same parameters when deploying the playground to ensure that the destroy script 
+You need to pass the same parameters when deploying the playground to ensure that the destroy script 
 can authenticate with all tools.
 Note that this option has limitations. It does not remove CRDs, namespaces, locally deployed SCM-Manager, Jenkins and registry, plugins for SCM-Manager and Jenkins 
+
+### Running on Windows or Mac
+
+* In general: We cannot use the `host` network, so it's easiest to access [via ingresses](#local-ingresses).
+* `--base-url=http://localhost` should work on both Windows and Mac
+* In case of problems resolving e.g. `jenkins.localhost`, you could try using `--base-url=http://local.gd` or similar, as described in [local ingresses](#local-ingresses).
+
+#### Mac and Windows WSL
+
+On macOS and when using the Windows Subsystem Linux on Windows (WSL), you can almost run our [TL;DR command](#tldr), except that you have to use [local ingresses](#local-ingresses) to reach all kubernetes services via a single bound port.
+
+For macOS, please increase the Memory limit in Docker Desktop (for your DockerVM) to be > 10 GB.
+Recommendation: 16GB.
+
+```bash
+bash <(curl -s \
+  https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh) --bind-ingress-port=80
+
+docker run --rm --pull=always -u $(id -u) \
+    -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
+    --net=host \
+    ghcr.io/cloudogu/gitops-playground --yes --argocd --base-url=http://localhost
+```
+
+When you encounter errors with port 80 you might want to use e.g. 
+* `--bind-ingress-port=8080` and 
+* `--base-url=http://localhost:8080` instead.
+
+#### Windows Docker Desktop
+
+* We recommend using Windows Subsystem for Linux version 2 (WSL2) with a [native installation of Docker Engine](https://docs.docker.com/desktop/install/linux-install/), because it's easier to set up and less prone to errors.
+* If you must, you can also run using Docker Desktop from native Windows console (see bellow)
+* However, there seems to be a problem when the Jenkins Jobs running the playground access docker, e.g.   
+```
+$ docker run -t -d -u 0:133 -v ... -e ******** bitnami/kubectl:1.25.4 cat
+docker top e69b92070acf3c1d242f4341eb1fa225cc40b98733b0335f7237a01b4425aff3 -eo pid,comm
+process apparently never started in /tmp/gitops-playground-jenkins-agent/workspace/xample-apps_petclinic-plain_main/.configRepoTempDir@tmp/durable-7f109066
+(running Jenkins temporarily with -Dorg.jenkinsci.plugins.durabletask.BourneShellScript.LAUNCH_DIAGNOSTICS=true might make the problem clearer)
+Cannot contact default-1bg7f: java.nio.file.NoSuchFileException: /tmp/gitops-playground-jenkins-agent/workspace/xample-apps_petclinic-plain_main/.configRepoTempDir@tmp/durable-7f109066/output.txt
+```
+* In Docker Desktop, it's recommended to use WSL2 as backend. 
+* Using the Hyper-V backend should also work, but we experienced random `CrashLoopBackoff`s of running pods due to liveness probe timeouts.  
+  Same as for macOS, increasing the Memory limit in Docker Desktop (for your DockerVM) to be > 10 GB might help.  
+  Recommendation: 16GB.
+
+Here is how you can start the playground from a Windows-native PowerShell console:
+
+* [Install k3d](https://k3d.io/#installation), see [init-cluster.sh](scripts/init-cluster.sh) for `K3D_VERSION`, e.g. using `winget`
+```powershell
+winget install k3d --version x.y.z
+```
+* Create k3d cluster.
+  See `K3S_VERSION` in [init-cluster.sh](scripts/init-cluster.sh) for `$image`, then execute  
+```powershell
+$ingress_port = "80"
+$registry_port = "30000"
+$image = "rancher/k3s:v1.25.5-k3s2"
+# Note that ou can query the image version used by playground like so: 
+# (Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh').Content -split "`r?`n" | Select-String -Pattern 'K8S_VERSION=|K3S_VERSION='
+
+k3d cluster create gitops-playground `
+    --k3s-arg=--kube-apiserver-arg=service-node-port-range=8010-65535@server:0 `
+    -p ${ingress_port}:80@server:0:direct `
+    -v /var/run/docker.sock:/var/run/docker.sock@server:0 `
+    --image=${image} `
+    -p ${registry_port}:30000@server:0:direct
+
+# Write $HOME/.config/k3d/kubeconfig-gitops-playground.yaml
+k3d kubeconfig write gitops-playground
+```
+* Note that
+  * You can ignore the warning about docker.sock
+  * We're mounting the docker socket, so it can be used by the Jenkins Agents for the docker-plugin.
+  * Windows seems not to provide a group id for the docker socket. So the Jenkins Agents run as root user.
+  * If you prefer running with an unprivileged user, consider running on WSL2, Mac or Linux
+  * You could also add `-v gitops-playground-build-cache:/tmp@server:0 ` to persist the Cache of the Jenkins agent between restarts of k3d containers.
+* Apply playground:  
+  Note that when using a `$registry_port` other than `30000` append the command `--internal-registry-port=$registry_port` bellow
+  
+```powershell
+docker run --rm --pull=always `
+    -v $HOME/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config `
+    --net=host `
+    ghcr.io/cloudogu/gitops-playground --yes --argocd --base-url=http://localhost:$ingress_port
+```
 
 ## Stack
 
@@ -398,7 +534,7 @@ them can be accessed via web.
 * Example applications for each GitOps operator, some with staging and production environments.
 
 The URLs of the applications depend on the environment the playground is deployed to.
-The following lists all application and how to find out their respective URLs for a GitOps playground being deployed to
+The following lists all applications and how to find out their respective URLs for a GitOps playground being deployed to
 local or remote cluster.
 
 For remote clusters you need the external IP, no need to specify the port (everything running on port 80).

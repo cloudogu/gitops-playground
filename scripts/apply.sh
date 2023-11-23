@@ -239,7 +239,7 @@ function initRegistry() {
 
 function initJenkins() {
   if [[ ${INTERNAL_JENKINS} == true ]]; then
-    deployJenkinsCommand=(deployLocalJenkins "${SET_USERNAME}" "${SET_PASSWORD}" "${REMOTE_CLUSTER}" "${JENKINS_URL}")
+    deployJenkinsCommand=(deployLocalJenkins "${SET_USERNAME}" "${SET_PASSWORD}" "${REMOTE_CLUSTER}" "${JENKINS_URL}" "${BASE_URL}")
     evalWithSpinner "Deploying Jenkins..." "${deployJenkinsCommand[@]}"
 
     setExternalHostnameIfNecessary "JENKINS" "jenkins" "default"
@@ -269,14 +269,14 @@ function initSCMMVars() {
 
 function initSCMM() {
   if [[ ${INTERNAL_SCMM} == true ]]; then
-    deployLocalScmmManager "${REMOTE_CLUSTER}" "${SET_USERNAME}" "${SET_PASSWORD}"
+    deployLocalScmmManager "${REMOTE_CLUSTER}" "${SET_USERNAME}" "${SET_PASSWORD}" "${BASE_URL}"
   fi
 
   setExternalHostnameIfNecessary 'SCMM' 'scmm-scm-manager' 'default'
   [[ "${SCMM_URL}" != *scm ]] && SCMM_URL=${SCMM_URL}/scm
 
-  # When running in k3d, BASE_URL must be the internal URL. Otherwise webhooks from SCMM->Jenkins will fail, as
-  # They contain Repository URLs create with BASE_URL. Jenkins uses the internal URL for repos. So match is only
+  # When running in k3d, SCMM_BASE_URL must be internal. Otherwise webhooks from SCMM->Jenkins will fail, as
+  # they contain repository URLs created with SCMM_BASE_URL. Jenkins uses the internal URL for repos. So match is only
   # successful, when SCM also sends the Repo URLs using the internal URL
   configureScmmManager "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "${SCMM_URL}" "${JENKINS_URL_FOR_SCMM}" \
     "${SCMM_URL_FOR_JENKINS}" "${INTERNAL_SCMM}" "${INSTALL_ARGOCD}"
@@ -439,7 +439,7 @@ function printUsage() {
 readParameters() {
   COMMANDS=$(getopt \
     -o hdxyc \
-    --long help,config-file:,config-map:,output-config-file,destroy,argocd,argocd-url:,debug,remote,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,jenkins-metrics-username:,jenkins-metrics-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,grafana-url:,grafana-image:,grafana-sidecar-image:,prometheus-image:,prometheus-operator-image:,prometheus-config-reloader-image:,external-secrets-image:,external-secrets-certcontroller-image:,external-secrets-webhook-image:,vault-url:,vault-image:,nginx-image:,trace,insecure,yes,skip-helm-update,metrics,monitoring,mail,mailhog-url:,vault:,petclinic-base-domain:,nginx-base-domain:,name-prefix: \
+    --long help,config-file:,config-map:,output-config-file,destroy,argocd,argocd-url:,debug,remote,base-url:,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,jenkins-metrics-username:,jenkins-metrics-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,grafana-url:,grafana-image:,grafana-sidecar-image:,prometheus-image:,prometheus-operator-image:,prometheus-config-reloader-image:,external-secrets-image:,external-secrets-certcontroller-image:,external-secrets-webhook-image:,vault-url:,vault-image:,nginx-image:,trace,insecure,yes,skip-helm-update,metrics,monitoring,mailhog-url:,vault:,petclinic-base-domain:,nginx-base-domain:,name-prefix: \
     -- "$@")
   
   if [ $? != 0 ]; then
@@ -452,6 +452,7 @@ readParameters() {
   DEBUG=false
   INSTALL_ARGOCD=false
   REMOTE_CLUSTER=false
+  BASE_URL=""
   SET_USERNAME="admin"
   SET_PASSWORD="admin"
   JENKINS_URL=""
@@ -479,6 +480,7 @@ readParameters() {
       -h | --help          ) printUsage; exit 0 ;;
       --argocd             ) INSTALL_ARGOCD=true; shift ;;
       --argocd-url         ) shift 2 ;; # Ignore, used in groovy only
+      --base-url           ) BASE_URL="$2"; shift 2 ;;
       --remote             ) REMOTE_CLUSTER=true; shift ;;
       --jenkins-url        ) JENKINS_URL="$2"; shift 2 ;;
       --jenkins-username   ) JENKINS_USERNAME="$2"; shift 2 ;;
