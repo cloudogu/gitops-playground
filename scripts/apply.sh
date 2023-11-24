@@ -439,7 +439,7 @@ function printUsage() {
 readParameters() {
   COMMANDS=$(getopt \
     -o hdxyc \
-    --long help,config-file:,config-map:,output-config-file,destroy,argocd,argocd-url:,debug,remote,base-url:,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,jenkins-metrics-username:,jenkins-metrics-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,grafana-url:,grafana-image:,grafana-sidecar-image:,prometheus-image:,prometheus-operator-image:,prometheus-config-reloader-image:,external-secrets-image:,external-secrets-certcontroller-image:,external-secrets-webhook-image:,vault-url:,vault-image:,nginx-image:,trace,insecure,yes,skip-helm-update,metrics,monitoring,mailhog-url:,vault:,petclinic-base-domain:,nginx-base-domain:,name-prefix: \
+    --long help,config-file:,config-map:,output-config-file,destroy,argocd,argocd-url:,debug,remote,base-url:,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,jenkins-metrics-username:,jenkins-metrics-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,grafana-url:,grafana-image:,grafana-sidecar-image:,prometheus-image:,prometheus-operator-image:,prometheus-config-reloader-image:,external-secrets-image:,external-secrets-certcontroller-image:,external-secrets-webhook-image:,vault-url:,vault-image:,nginx-image:,trace,insecure,yes,skip-helm-update,metrics,monitoring,grafana-email-from,grafana-email-to,argocd-email-from,argocd-email-to-admin,argocd-email-to-user,mailhog-url:,vault:,petclinic-base-domain:,nginx-base-domain:,name-prefix: \
     -- "$@")
   
   if [ $? != 0 ]; then
@@ -480,6 +480,9 @@ readParameters() {
       -h | --help          ) printUsage; exit 0 ;;
       --argocd             ) INSTALL_ARGOCD=true; shift ;;
       --argocd-url         ) shift 2 ;; # Ignore, used in groovy only
+      --argocd-email-from     ) shift ;; # Ignore, used in groovy only
+      --argocd-email-to-user  ) shift ;; # Ignore, used in groovy only
+      --argocd-email-to-admin ) shift ;; # Ignore, used in groovy only
       --base-url           ) BASE_URL="$2"; shift 2 ;;
       --remote             ) REMOTE_CLUSTER=true; shift ;;
       --jenkins-url        ) JENKINS_URL="$2"; shift 2 ;;
@@ -502,6 +505,8 @@ readParameters() {
       --yamllint-image     ) shift 2;; # Ignore, used in groovy only
       --grafana-url        ) shift 2;; # Ignore, used in groovy only
       --grafana-image      ) shift 2;; # Ignore, used in groovy only
+      --grafana-email-from ) shift ;; # Ignore, used in groovy only
+      --grafana-email-to   ) shift ;; # Ignore, used in groovy only
       --grafana-sidecar-image ) shift 2;; # Ignore, used in groovy only
       --prometheus-image ) shift 2;; # Ignore, used in groovy only
       --prometheus-operator-image ) shift 2;; # Ignore, used in groovy only

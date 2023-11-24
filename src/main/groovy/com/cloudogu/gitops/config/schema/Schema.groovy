@@ -72,6 +72,9 @@ class Schema {
      static class ArgoCDSchema {
 //         boolean active = true // used in bash
          String url = ""
+         String emailFrom = ""
+         String emailToUser = ""
+         String emailToAdmin = ""
     }
 
      static class MailSchema {
@@ -83,6 +86,8 @@ class Schema {
          boolean active = true
          String grafanaUrl = ""
          MonitoringHelmSchema helm
+         String grafanaEmailFrom = ""
+         String grafanaEmailTo = ""
 
          static class MonitoringHelmSchema {
              String grafanaImage = ""
