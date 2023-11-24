@@ -102,7 +102,11 @@ argo-cd:
       service.email: |
         host: mailhog.${namePrefix}monitoring.svc.cluster.local
         port: 1025
-        from: argocd-alerts@cloudogu.com
+      <#if argocd.emailFrom?has_content>
+        from: ${argocd.emailFrom}
+      <#else>
+        from: argocd@example.org
+      </#if>
 <#noparse>
     templates:
       template.app-deployed: |
