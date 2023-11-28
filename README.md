@@ -26,18 +26,21 @@ For questions or suggestions you are welcome to join us at our myCloudogu [commu
 
 # TL;DR
 
-You can run a local k8s cluster with the GitOps playground installed with only one command (on Linux, for Windows and Mac see [here](#windows-or-mac))
+You can try the GitOps Playground on a local Kubernetes cluster by running a single command:
 
 ```shell
 bash <(curl -s \
-  https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh) \
-  && sleep 2 && docker run --rm --pull=always -u $(id -u) \
+  https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh) --bind-ingress-port=80
+  && docker run --rm --pull=always -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     --net=host \
-    ghcr.io/cloudogu/gitops-playground --yes --argocd
+    ghcr.io/cloudogu/gitops-playground --yes --argocd --base-url=http://localhost
 ```
 
-This command will also print URLs of the [applications](#applications) inside the cluster to get you started.
+Note that on some linux distros like debian do not support subdomains of localhost.
+There you might have to use `--base-url=http://local.gd` (see [local ingresses](#local-ingresses)).
+
+See the list of [applications](#applications) to get started.
 
 We recommend running this command as an unprivileged user, that is inside the [docker group](https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user).
 
@@ -452,9 +455,8 @@ Recommendation: 16GB.
 
 ```bash
 bash <(curl -s \
-  https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh) --bind-ingress-port=80
-
-docker run --rm --pull=always -u $(id -u) \
+  https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh) --bind-ingress-port=80 \
+  && docker run --rm --pull=always -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     --net=host \
     ghcr.io/cloudogu/gitops-playground --yes --argocd --base-url=http://localhost
