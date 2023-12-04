@@ -155,11 +155,11 @@ class GitopsPlaygroundCli  implements Runnable {
     private Boolean argocd
     @Option(names = ['--argocd-url'], description = 'The URL where argocd is accessible. It has to be the full URL with http:// or https://')
     private String argocdUrl
-    @Option(names = ['--argocd-email-from'], description = 'Notifications, define senders email address')
+    @Option(names = ['--argocd-email-from'], description = 'Notifications, define Argo CD sender email address')
     private String emailFrom
-    @Option(names = ['--argocd-email-to-user'], description = 'Notifications, define user recipient email address')
+    @Option(names = ['--argocd-email-to-user'], description = 'Notifications, define Argo CD user / app-team recipient email address')
     private String emailToUser
-    @Option(names = ['--argocd-email-to-admin'], description = 'Notifications, define admin recipient email address')
+    @Option(names = ['--argocd-email-to-admin'], description = 'Notifications, define Argo CD admin recipient email address')
     private String emailToAdmin
 
     // args group example apps

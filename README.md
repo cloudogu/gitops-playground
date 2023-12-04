@@ -409,11 +409,12 @@ Note that specifying a tag is mandatory.
 
 If you are using a remote cluster, you can set the `--argocd-url` parameter so that argocd-notification messages have a
 link to the corresponding application.
-You can give your email addresses for notifications, if not uses default values wil be used:
+
+You can specify email addresses for notifications (note that by default, MailHog will not actually send emails)
 ```shell
---argocd-email-from        // sender email address  default is argocd@example.org
---argocd-email-to-admin    // alerts send to admin  default is infra@example.org
---argocd-email-to-user     // alerts send to user   default is app-team@example.org
+--argocd-email-from        // sender email address. Default is argocd@example.org
+--argocd-email-to-admin    // alerts send to admin. Default is infra@example.org
+--argocd-email-to-user     // alerts send to user. Default is app-team@example.org
 ```
 
 ##### Monitoring
@@ -422,10 +423,10 @@ Set the parameter `--monitoring` to enable deployment of monitoring and alerting
 
 See [Monitoring tools](#monitoring-tools) for details.
 
-You can give your email addresses for notifications, if not uses default values wil be used:
+You can specify email addresses for notifications (note that by default, MailHog will not actually send emails)
 ```shell
---grafana-email-from       // sender email address  default is grafana@example.org
---grafana-email-to         // recipient email address infra@example.org
+--grafana-email-from       // sender email address. Default is grafana@example.org
+--grafana-email-to         // recipient email address. Default is infra@example.org
 ```
 
 ##### Mail server
