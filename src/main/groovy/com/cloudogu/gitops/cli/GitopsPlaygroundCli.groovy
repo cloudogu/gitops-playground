@@ -288,10 +288,8 @@ class GitopsPlaygroundCli  implements Runnable {
                         monitoring : [
                                 active    : monitoring,
                                 grafanaUrl: grafanaUrl,
-                                grafana: [
-                                        emailFrom : grafanaEmailFrom,
-                                        emailTo   : grafanaEmailTo
-                                ],
+                                grafanaEmailFrom : grafanaEmailFrom,
+                                grafanaEmailTo   : grafanaEmailTo,
                                 helm      : [
                                         grafanaImage: grafanaImage,
                                         grafanaSidecarImage: grafanaSidecarImage,

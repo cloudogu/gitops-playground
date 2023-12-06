@@ -28,7 +28,7 @@ class ArgoCD extends Feature {
     private List<RepoInitializationAction> gitRepos = []
 
     private String password
-    
+
     protected RepoInitializationAction argocdRepoInitializationAction
     protected RepoInitializationAction clusterResourcesInitializationAction
     protected RepoInitializationAction exampleAppsInitializationAction
@@ -56,7 +56,7 @@ class ArgoCD extends Feature {
         this.k8sClient = k8sClient
         this.helmClient = helmClient
         this.fileSystemUtils = fileSystemUtils
-        
+
         this.password = this.config.application["password"]
 
         argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd')

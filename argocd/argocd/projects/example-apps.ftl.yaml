@@ -5,11 +5,7 @@ metadata:
   namespace: ${namePrefix}argocd
   annotations:
 <#if mail.active == true>
-  <#if argocd.emailToAdmin?has_content>
-    notifications.argoproj.io/subscribe.email: ${argocd.emailToUser}
-  <#else>
-    notifications.argoproj.io/subscribe.email: app-team@example.org
-  </#if>
+     notifications.argoproj.io/subscribe.email: ${argocd.emailToUser}
 </#if>
 spec:
   description: Contains examples of end-user applications

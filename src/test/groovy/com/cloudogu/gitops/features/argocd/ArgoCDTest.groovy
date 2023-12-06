@@ -65,9 +65,9 @@ class ArgoCDTest {
                     argocd    : [
                             active: true,
                             configOnly: true,
-                            emailFrom : '',
-                            emailToUser : '',
-                            emailToAdmin : ''
+                            emailFrom : 'argocd@example.org',
+                            emailToUser : 'app-team@example.org',
+                            emailToAdmin : 'infra@example.org'
                     ],
                     mail   : [
                             active: true

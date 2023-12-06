@@ -37,10 +37,8 @@ class PrometheusStackTest {
                     monitoring: [
                             active: true,
                             grafanaUrl: '',
-                            grafana: [
-                                    emailFrom: '',
-                                    emailTo: ''
-                            ],
+                            grafanaEmailFrom: 'grafana@example.org',
+                            grafanaEmailTo: 'infra@example.org',
                             helm  : [
                                     chart  : 'kube-prometheus-stack',
                                     repoURL: 'https://prom',
@@ -82,8 +80,8 @@ class PrometheusStackTest {
 
     @Test
     void "When Email Addresses is set"() {
-        config.features['monitoring']['grafana']['emailFrom'] = 'grafana@example.com'
-        config.features['monitoring']['grafana']['emailTo'] = 'infra@example.com'
+        config.features['monitoring']['grafanaEmailFrom'] = 'grafana@example.com'
+        config.features['monitoring']['grafanaEmailTo'] = 'infra@example.com'
         createStack().install()
 
         def notifiersYaml = parseActualStackYaml()['grafana']['notifiers']['notifiers.yaml']['notifiers']['settings'] as List

@@ -101,19 +101,11 @@ grafana:
         uid: email1
         is_default: true
         settings:
-        <#if monitoring.grafana.emailTo?has_content>
-          addresses: ${monitoring.grafana.emailTo}
-        <#else>
-          addresses: infra@example.org
-        </#if>
+          addresses: ${monitoring.grafanaEmailTo}
           uploadImage: false
   env:
     GF_SMTP_ENABLED: true
-  <#if monitoring.grafana.emailFrom?has_content>
-    GF_SMTP_FROM_ADDRESS: ${monitoring.grafana.emailFrom}
-  <#else>
-    GF_SMTP_FROM_ADDRESS: grafana@example.org
-  </#if>
+    GF_SMTP_FROM_ADDRESS: ${monitoring.grafanaEmailFrom}
     GF_SMTP_HOST: mailhog.${namePrefix}monitoring.svc.cluster.local:1025
 </#if>
   resources:

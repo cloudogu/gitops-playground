@@ -5,11 +5,7 @@ metadata:
   namespace: ${namePrefix}argocd
   annotations:
 <#if mail.active == true>
-  <#if argocd.emailToAdmin?has_content>
     notifications.argoproj.io/subscribe.email: ${argocd.emailToAdmin}
-  <#else>
-    notifications.argoproj.io/subscribe.email: infra@example.org
-  </#if>
 </#if>
 spec:
   description: AppProject for ArgoCD-specific applications.

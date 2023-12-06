@@ -50,11 +50,11 @@ class PrometheusStack extends Feature {
         def tmpHelmValues = new TemplatingEngine().replaceTemplate(fileSystemUtils.copyToTempDir(HELM_VALUES_PATH).toFile(), [
                 namePrefix: namePrefix,
                 monitoring: [
+                        grafanaEmailFrom: config.features['monitoring']['grafanaEmailFrom'] as String,
+                        grafanaEmailTo: config.features['monitoring']['grafanaEmailTo'] as String,
                         grafana: [
                                 // Note that passing the URL object here leads to problems in Graal Native image, see Git history
-                                host: config.features['monitoring']['grafanaUrl'] ? new URL(config.features['monitoring']['grafanaUrl'] as String).host : "",
-                                emailFrom: config.features['monitoring']['grafana']['emailFrom'] as String,
-                                emailTo: config.features['monitoring']['grafana']['emailTo'] as String
+                                host: config.features['monitoring']['grafanaUrl'] ? new URL(config.features['monitoring']['grafanaUrl'] as String).host : ""
                         ]
                 ],
                 mail: [
