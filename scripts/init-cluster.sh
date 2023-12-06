@@ -72,6 +72,8 @@ function createCluster() {
     '-v /etc/group:/etc/group@server:0'
     # Persists the cache of Jenkins agents pods for faster builds
     '-v /tmp:/tmp@server:0'
+    # Disable traefik (we roll our own nginx-ingress)
+    '--k3s-arg=--disable=traefik@server:0' 
     # Pin k8s version via k3s image
     "--image=$K3S_VERSION" 
   )

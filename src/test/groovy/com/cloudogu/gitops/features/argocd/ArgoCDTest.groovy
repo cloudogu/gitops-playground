@@ -455,7 +455,7 @@ class ArgoCDTest {
             }
         }
 
-        assertAllYamlFiles(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), 'argocd', 1) { Path it ->
+        assertAllYamlFiles(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), 'argocd', 2) { Path it ->
             def yaml = parseActualYaml(it.toString())
 
             assertThat(yaml['spec']['source']['repoURL'] as String)
@@ -490,13 +490,19 @@ class ArgoCDTest {
         }
     }
 
-    private static void assertAllYamlFiles(File rootDir, String childDir, Integer numberOfFiles, Closure cl) {
-        def nFiles = Files.walk(Path.of(rootDir.absolutePath, childDir))
+    private static void assertAllYamlFiles(File rootDir, String childDir, Integer numberOfFiles, Closure eachFileClosure) {
+        def files = Files.walk(Path.of(rootDir.absolutePath, childDir))
                 .filter { it.toString() ==~ /.*\.yaml/ }
                 .collect(Collectors.toList())
-                .each(cl)
+
+        def nFiles = files.each(eachFileClosure)
                 .size()
-        assertThat(nFiles).isEqualTo(numberOfFiles)
+
+        assertThat(nFiles)
+                .as("Number of YAML files")
+                .overridingErrorMessage("Expected %d files but found %d. Actual Files: %s", numberOfFiles, nFiles,
+                        files.collect { it.toString().substring(it.toString().indexOf(childDir)) })
+                .isEqualTo(numberOfFiles)
     }
 
     private void assertJenkinsEnvironmentVariablesPrefixes(String prefix) {

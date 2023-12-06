@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ingress-nginx
+  namespace: ${namePrefix}argocd
+spec:
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ${namePrefix}ingress-nginx
+  project: cluster-resources
+  source:
+    path: apps/ingress-nginx/
+    repoURL: ${scmm.baseUrl}/repo/${namePrefix}argocd/cluster-resources
+    targetRevision: main
+    helm:
+      releaseName: ingress-nginx
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+    automated:
+      prune: true
+      selfHeal: true

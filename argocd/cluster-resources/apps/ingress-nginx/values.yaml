@@ -1,0 +1,61 @@
+ingress-nginx:
+  #defaultBackend:
+  #  enabled: true
+  
+  controller:
+    watchIngressWithoutClass: true
+    
+    # TODO error when applying ingress
+    # Internal error occurred: failed calling webhook "validate.nginx.ingress.kubernetes.io": failed to call webhook:
+    # Post "https://ingress-nginx-controller-admission.ingress-nginx.svc:443/networking/v1/ingresses?timeout=10s": 
+    # x509: certificate signed by unknown authority
+    admissionWebhooks:
+      enabled: false
+      
+    kind: Deployment
+    service:
+      # Preserve client ip address
+      # https://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/#preserving-the-client-source-ip
+      externalTrafficPolicy: Local
+    # anti-affinity can decrease uptime on node failure when multiple replicas are present
+    #      affinity:
+    #        podAntiAffinity:
+    #          requiredDuringSchedulingIgnoredDuringExecution:
+    #            - labelSelector:
+    #                matchExpressions:
+    #                  - key: "app"
+    #                    operator: In
+    #                    values:
+    #                      - traefik-ingress-lb
+    #              topologyKey: "kubernetes.io/hostname"
+    replicaCount: 1
+    resources:
+      # Leave limits open for now, because our ingress controller is Single Point of failure
+      ##  limits:
+      ##    cpu: 100m
+      ##    memory: 90Mi
+      requests:
+        cpu: 100m
+        memory: 90Mi
+    ingressClassResource:
+      enabled: true
+      default: true
+    #extraArgs:
+      #default-ssl-certificate: "ingress-nginx/wildcard-cert"
+    config:
+      # settings for compression
+      use-gzip: "true"
+      enable-brotli: "true"
+      # permanent redirect from http to https
+      #force-ssl-redirect: "true"
+      # customize access log format to include requested hostname ($host)
+      # https://github.com/kubernetes/ingress-nginx/blob/controller-v1.2.1/docs/user-guide/nginx-configuration/log-format.md
+      log-format-upstream: '$remote_addr - $remote_user [$time_local] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent" "$host" $request_length $request_time [$proxy_upstream_name] [$proxy_alternative_upstream_name] $upstream_addr $upstream_response_length $upstream_response_time $upstream_status $req_id'
+    metrics:
+        enabled: true
+        serviceMonitor:
+          enabled: true
+          # TODO  namespace: ${namePrefix}monitoring
+          namespace: monitoring
+          # TODO do we need to add prometheus' labels? As selector? See also  argocd/values.ftl.yaml
+          #  release: kube-prometheus-stack
