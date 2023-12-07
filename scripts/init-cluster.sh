@@ -177,7 +177,7 @@ get_longopt_value(){
 
 readParameters() {
   CLUSTER_NAME=gitops-playground
-  BIND_LOCALHOST=false
+  BIND_LOCALHOST=true
   BIND_INGRESS_PORT=""
   # Use default port for playground registry, because no parameter is required when applying
   BIND_REGISTRY_PORT="30000"
