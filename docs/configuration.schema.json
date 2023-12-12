@@ -19,6 +19,15 @@
         "argocd": {
           "type": "object",
           "properties": {
+            "emailFrom": {
+              "type": "string"
+            },
+            "emailToAdmin": {
+              "type": "string"
+            },
+            "emailToUser": {
+              "type": "string"
+            },
             "url": {
               "type": "string"
             }
@@ -54,6 +63,12 @@
           "properties": {
             "active": {
               "type": "boolean"
+            },
+            "grafanaEmailFrom": {
+              "type": "string"
+            },
+            "grafanaEmailTo": {
+              "type": "string"
             },
             "grafanaUrl": {
               "type": "string"

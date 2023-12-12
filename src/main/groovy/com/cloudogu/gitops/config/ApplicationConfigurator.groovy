@@ -94,7 +94,10 @@ class ApplicationConfigurator {
             features   : [
                     argocd    : [
                             active    : false,
-                            url       : ''
+                            url       : '',
+                            emailFrom : 'argocd@example.org',
+                            emailToUser : 'app-team@example.org',
+                            emailToAdmin : 'infra@example.org'
                     ],
                     mail   : [
                             active: false,
@@ -109,6 +112,8 @@ class ApplicationConfigurator {
                     monitoring: [
                             active: false,
                             grafanaUrl: '',
+                            grafanaEmailFrom : 'grafana@example.org',
+                            grafanaEmailTo : 'infra@example.org',
                             helm  : [
                                     chart  : 'kube-prometheus-stack',
                                     repoURL: 'https://prometheus-community.github.io/helm-charts',

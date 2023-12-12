@@ -4,7 +4,9 @@ metadata:
   name: example-apps
   namespace: ${namePrefix}argocd
   annotations:
-    notifications.argoproj.io/subscribe.email: app-team@example.org
+<#if mail.active == true>
+     notifications.argoproj.io/subscribe.email: ${argocd.emailToUser}
+</#if>
 spec:
   description: Contains examples of end-user applications
   destinations:

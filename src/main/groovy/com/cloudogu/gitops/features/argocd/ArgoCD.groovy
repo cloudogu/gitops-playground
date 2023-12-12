@@ -28,7 +28,7 @@ class ArgoCD extends Feature {
     private List<RepoInitializationAction> gitRepos = []
 
     private String password
-    
+
     protected RepoInitializationAction argocdRepoInitializationAction
     protected RepoInitializationAction clusterResourcesInitializationAction
     protected RepoInitializationAction exampleAppsInitializationAction
@@ -56,7 +56,7 @@ class ArgoCD extends Feature {
         this.k8sClient = k8sClient
         this.helmClient = helmClient
         this.fileSystemUtils = fileSystemUtils
-        
+
         this.password = this.config.application["password"]
 
         argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd')
@@ -302,6 +302,9 @@ class ArgoCD extends Feature {
                     argocd              : [
                             // Note that passing the URL object here leads to problems in Graal Native image, see Git history
                             host: config.features['argocd']['url'] ? new URL(config.features['argocd']['url'] as String).host : "",
+                            emailFrom    : config.features['argocd']['emailFrom'],
+                            emailToUser  : config.features['argocd']['emailToUser'],
+                            emailToAdmin : config.features['argocd']['emailToAdmin']
                     ],
                     monitoring          : [
                             grafana: [

@@ -105,8 +105,12 @@ class GitopsPlaygroundCli  implements Runnable {
     private Boolean monitoring
     @Option(names = ['--grafana-url'], description = 'Sets url for grafana')
     private String grafanaUrl
+    @Option(names = ['--grafana-email-from'], description = 'Notifications, define grafana alerts sender email address')
+    private String grafanaEmailFrom
+    @Option(names = ['--grafana-email-to'], description = 'Notifications, define grafana alerts recipient email address')
+    private String grafanaEmailTo
 
-    // args group metrics
+    // args group vault / secrets
     @Option(names = ['--vault'], description = 'Installs Hashicorp vault and the external secrets operator. Possible values: ${COMPLETION-CANDIDATES}')
     private VaultModes vault
     enum VaultModes { dev, prod }
@@ -146,11 +150,17 @@ class GitopsPlaygroundCli  implements Runnable {
     private Boolean outputConfigFile
 
 
-    // args group operator
+    // args group ArgoCD operator
     @Option(names = ['--argocd'], description = 'Install ArgoCD ')
     private Boolean argocd
     @Option(names = ['--argocd-url'], description = 'The URL where argocd is accessible. It has to be the full URL with http:// or https://')
     private String argocdUrl
+    @Option(names = ['--argocd-email-from'], description = 'Notifications, define Argo CD sender email address')
+    private String emailFrom
+    @Option(names = ['--argocd-email-to-user'], description = 'Notifications, define Argo CD user / app-team recipient email address')
+    private String emailToUser
+    @Option(names = ['--argocd-email-to-admin'], description = 'Notifications, define Argo CD admin recipient email address')
+    private String emailToAdmin
 
     // args group example apps
     @Option(names = ['--petclinic-base-domain'], description = 'The domain under which a subdomain for all petclinic will be used.')
@@ -258,7 +268,10 @@ class GitopsPlaygroundCli  implements Runnable {
                 features    : [
                         argocd : [
                                 active    : argocd,
-                                url       : argocdUrl
+                                url       : argocdUrl,
+                                emailFrom    : emailFrom,
+                                emailToUser  : emailToUser,
+                                emailToAdmin : emailToAdmin
                         ],
                         mail: [
                                 active    : mail,
@@ -275,6 +288,8 @@ class GitopsPlaygroundCli  implements Runnable {
                         monitoring : [
                                 active    : monitoring,
                                 grafanaUrl: grafanaUrl,
+                                grafanaEmailFrom : grafanaEmailFrom,
+                                grafanaEmailTo   : grafanaEmailTo,
                                 helm      : [
                                         grafanaImage: grafanaImage,
                                         grafanaSidecarImage: grafanaSidecarImage,

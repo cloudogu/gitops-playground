@@ -5,7 +5,9 @@ metadata:
   # In a real-world scenario these might to into a separate namespace
   namespace: ${namePrefix}argocd
   annotations:
-        notifications.argoproj.io/subscribe.email: infra@example.org
+<#if mail.active == true>
+    notifications.argoproj.io/subscribe.email: ${argocd.emailToAdmin}
+</#if>
 spec:
   description: Contains basic cluster-resources
   destinations:

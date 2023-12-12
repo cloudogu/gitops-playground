@@ -101,11 +101,11 @@ grafana:
         uid: email1
         is_default: true
         settings:
-          addresses: alerts@cloudogu.com
+          addresses: ${monitoring.grafanaEmailTo}
           uploadImage: false
   env:
     GF_SMTP_ENABLED: true
-    GF_SMTP_FROM_ADDRESS: grafana-alerts@cloudogu.com
+    GF_SMTP_FROM_ADDRESS: ${monitoring.grafanaEmailFrom}
     GF_SMTP_HOST: mailhog.${namePrefix}monitoring.svc.cluster.local:1025
 </#if>
   resources:

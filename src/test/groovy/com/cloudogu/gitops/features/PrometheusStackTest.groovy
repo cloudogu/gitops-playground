@@ -37,6 +37,8 @@ class PrometheusStackTest {
                     monitoring: [
                             active: true,
                             grafanaUrl: '',
+                            grafanaEmailFrom: 'grafana@example.org',
+                            grafanaEmailTo: 'infra@example.org',
                             helm  : [
                                     chart  : 'kube-prometheus-stack',
                                     repoURL: 'https://prom',
@@ -74,6 +76,26 @@ class PrometheusStackTest {
         config.features['mail']['active'] = true
         createStack().install()
         assertThat(parseActualStackYaml()['grafana']['notifiers']).isNotNull()
+    }
+
+    @Test
+    void "When Email Addresses is set"() {
+        config.features['monitoring']['grafanaEmailFrom'] = 'grafana@example.com'
+        config.features['monitoring']['grafanaEmailTo'] = 'infra@example.com'
+        createStack().install()
+
+        def notifiersYaml = parseActualStackYaml()['grafana']['notifiers']['notifiers.yaml']['notifiers']['settings'] as List
+        assertThat(notifiersYaml[0]['addresses']).isEqualTo('infra@example.com')
+        assertThat(parseActualStackYaml()['grafana']['env']['GF_SMTP_FROM_ADDRESS']).isEqualTo('grafana@example.com')
+    }
+
+    @Test
+    void "When Email Addresses is NOT set"() {
+        createStack().install()
+
+        def notifiersYaml = parseActualStackYaml()['grafana']['notifiers']['notifiers.yaml']['notifiers']['settings'] as List
+        assertThat(notifiersYaml[0]['addresses']).isEqualTo('infra@example.org')
+        assertThat(parseActualStackYaml()['grafana']['env']['GF_SMTP_FROM_ADDRESS']).isEqualTo('grafana@example.org')
     }
 
     @Test

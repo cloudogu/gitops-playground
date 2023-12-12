@@ -53,11 +53,16 @@ images:
 features:
   argocd:
     url: ""
+    emailFrom: ""
+    emailToUser: ""
+    emailToAdmin: ""
   mail: null
   monitoring:
     active: true
     grafanaUrl: ""
     helm: null
+    grafanaEmailFrom: ""
+    grafanaEmailTo: ""
   secrets:
     vault:
       mode: ""
