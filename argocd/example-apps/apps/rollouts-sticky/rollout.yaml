@@ -1,0 +1,41 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: rollouts-sticky
+spec:
+  replicas: 1
+  strategy:
+    canary:
+      steps:
+        - setWeight: 100  # Immediately set the canary weight to 100% (all traffic)
+        - pause: { duration: 15s } # Retain old version until old sessions are gone
+      canaryService: rollouts-sticky-canary
+      stableService: rollouts-sticky-stable
+      trafficRouting:
+        nginx:
+          stableIngress: rollouts-sticky-stable
+#          additionalIngressAnnotations:
+#            # If needed: Force requests to canary
+#            # curl -H "X-Canary: true" sticky.rollouts.localhost/color
+#            canary-by-header: X-Canary
+#            canary-by-header-value: "true"
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: rollouts-sticky
+  template:
+    metadata:
+      labels:
+        app: rollouts-sticky
+    spec:
+      containers:
+      - name: rollouts-sticky
+        image: argoproj/rollouts-demo:blue
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        resources:
+          requests:
+            memory: 32Mi
+            cpu: 5m

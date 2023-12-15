@@ -1,0 +1,8 @@
+apiVersion: v2
+name: argo-rollouts
+version: 1.0.0
+description: Wraps the upstream argo-rollout helm chart
+dependencies:
+  - name: argo-rollouts
+    version: 2.32.5
+    repository: https://argoproj.github.io/argo-helm

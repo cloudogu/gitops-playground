@@ -7,6 +7,7 @@ Creates a complete GitOps-based operational stack on your Kubernetes clusters:
 * Secrets Management:  [Vault and External Secrets Operator](#secrets-management-tools)
 * Notifications/Alerts: [MailHog](https://github.com/mailhog/MailHog) for demo purposes
 * Pipelines: Example applications using [Jenkins](#jenkins) with the [gitops-build-lib](https://github.com/cloudogu/gitops-build-lib) and [SCM-Manager](#scm-manager)
+* Progressive Delivery (Argo Rollouts)
 * Ingress Controller: (planned)
 * Certificate Management: (planned)
 * Runs on: 
@@ -861,6 +862,20 @@ This time consists of `ExternalSecret`'s `refreshInterval`, as well as the [kube
 The following video shows this demo in time-lapse:
 
 [secrets-demo-video](https://user-images.githubusercontent.com/1824962/215204174-eadf180b-2a82-4273-8cbb-6e7c187267c6.mp4)
+
+### Progressive Delivery
+
+⚠️ 🚧 Work in Progress! TODO Enable ingress controller and rollouts only when the respective params have been set
+
+
+The playground provides argo rollouts as a solution to implement progressive delivery.
+
+The Argo Rollouts controller joins forces with the ingress controller (NGINX) to implement declarative `Rollout` strategies. 
+
+To showcase possible solutions, the playground provides two examples
+
+* [blue/green deployment](argocd/example-apps/apps/rollouts-bg/README.md)
+* [canry deployment with sticky session](argocd/example-apps/apps/rollouts-sticky/README.md), where users with session remain on the old version, while new requests go to the new version
 
 ### Example Applications
 

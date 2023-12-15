@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argo-rollouts
+  namespace: ${namePrefix}argocd
+spec:
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ${namePrefix}argo-rollouts
+  project: cluster-resources
+  source:
+    path: apps/argo-rollouts/
+    repoURL: ${scmm.baseUrl}/repo/${namePrefix}argocd/cluster-resources
+    targetRevision: main
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+    automated:
+      prune: true
+      selfHeal: true

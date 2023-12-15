@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rollouts-sticky-stable
+  annotations:
+    nginx.ingress.kubernetes.io/affinity: cookie
+    nginx.ingress.kubernetes.io/affinity-mode: persistent
+    # TODO adapt expires time to scaleDownDelaySeconds in rollout?
+    # Must be way bigger than scale down delay to avoid premature cutover to new version
+    nginx.ingress.kubernetes.io/session-cookie-expires: "172800"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: sticky.rollouts.localhost
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            # Reference to a Service name, also specified in the Rollout spec.strategy.canary.stableService field
+            name: rollouts-sticky-stable
+            port:
+              number: 80

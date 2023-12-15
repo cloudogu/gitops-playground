@@ -1,0 +1,11 @@
+argo-rollouts:
+  # For the local playground, one instance is enough
+  controller:
+    replicas: 1
+  dashboard:
+    enabled: true
+    ingress:
+    # TODO Expose at all? No auth! Parameterize? e.g. rollouts-url activates?
+      enabled: true
+      hosts: 
+      - argorollouts.localhost
