@@ -34,7 +34,7 @@ class MailhogTest {
                             active: false,
                     ],
                     mail      : [
-                            active: true,
+                            mailhog: true,
                             helm  : [
                                     chart  : 'mailhog',
                                     repoURL: 'https://codecentric.github.io/helm-charts',
@@ -50,7 +50,7 @@ class MailhogTest {
 
     @Test
     void "is disabled via active flag"() {
-        config['features']['mail']['active'] = false
+        config['features']['mail']['mailhog'] = false
         createMailhog().install()
         assertThat(temporaryYamlFile).isNull()
     }

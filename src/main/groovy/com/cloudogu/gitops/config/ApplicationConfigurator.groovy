@@ -100,7 +100,8 @@ class ApplicationConfigurator {
                             emailToAdmin : 'infra@example.org'
                     ],
                     mail   : [
-                            active: false,
+                            active: false, // set dynamicly
+                            mailhog : false,
                             url: '',
                             helm  : [
                                     chart  : 'mailhog',
@@ -185,6 +186,8 @@ class ApplicationConfigurator {
             newConfig.registry["internal"] = false
         if (newConfig['features']['secrets']['vault']['mode'])
             newConfig['features']['secrets']['active'] = true
+//        if (newConfig.['features']['mail']['mailhog'] || smt-paramer)
+//           -> mail active == true
 
         evaluateBaseUrl(newConfig)
         
@@ -276,7 +279,7 @@ class ApplicationConfigurator {
                 argocd['url'] = injectSubdomain('argocd', baseUrl)
                 log.debug("Setting URL ${argocd['url']}")
             }
-            if (mail['active'] && !mail['url']) {
+            if (mail['mailhog'] && !mail['url']) {
                 mail['url'] = injectSubdomain('mailhog', baseUrl)
                 log.debug("Setting URL ${mail['url']}")
             }

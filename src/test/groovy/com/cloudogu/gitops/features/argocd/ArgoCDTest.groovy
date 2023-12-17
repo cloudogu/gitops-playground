@@ -70,7 +70,11 @@ class ArgoCDTest {
                             emailToAdmin : 'infra@example.org'
                     ],
                     mail   : [
-                            active: true
+                            active: true,
+                            externalMailserver : '',
+                            externalMailserverPort : '',
+                            externalMailserverUser : '',
+                            externalMailserverPassword : ''
                     ],
                     monitoring: [
                             active: true
@@ -246,6 +250,34 @@ class ArgoCDTest {
         assertThat(argocdYaml['metadata']['annotations']['notifications.argoproj.io/subscribe.on-sync-status-unknown.email']).isEqualTo('infra@example.org')
         assertThat(defaultYaml['metadata']['annotations']['notifications.argoproj.io/subscribe.email']).isEqualTo('infra@example.org')
         assertThat(exampleAppsYaml['metadata']['annotations']['notifications.argoproj.io/subscribe.email']).isEqualTo('app-team@example.org')
+    }
+
+    @Test
+    void 'When external Mailserver is set'() {
+        config.features['mail']['active'] = true
+        config.features['mail']['externalMailserver'] = 'smtp.example.com'
+        config.features['mail']['externalMailserverPort'] = '1010110'
+        config.features['mail']['externalMailserverUser'] = 'argo@example.com'
+        config.features['mail']['externalMailserverPassword'] = '1101ABCabc&/+*~'
+        createArgoCD().install()
+        def valuesYaml = parseActualYaml(actualHelmValuesFile)
+
+        assertThat(new YamlSlurper().parseText(valuesYaml['argo-cd']['notifications']['notifiers']['service.email'] as String)['host']).isEqualTo("smtp.example.com")
+        assertThat(new YamlSlurper().parseText(valuesYaml['argo-cd']['notifications']['notifiers']['service.email'] as String)['port']).isEqualTo(1010110)
+        assertThat(new YamlSlurper().parseText(valuesYaml['argo-cd']['notifications']['notifiers']['service.email'] as String)['username']).isEqualTo("argo@example.com")
+        assertThat(new YamlSlurper().parseText(valuesYaml['argo-cd']['notifications']['notifiers']['service.email'] as String)['password']).isEqualTo("1101ABCabc&/+*~")
+    }
+
+    @Test
+    void 'When external Mailserver is NOT set'() {
+        config.features['mail']['active'] = true
+        createArgoCD().install()
+        def valuesYaml = parseActualYaml(actualHelmValuesFile)
+
+        assertThat(new YamlSlurper().parseText(valuesYaml['argo-cd']['notifications']['notifiers']['service.email'] as String)['host'])doesNotHaveToString('mailhog.*monitoring.svc.cluster.local')
+        assertThat(new YamlSlurper().parseText(valuesYaml['argo-cd']['notifications']['notifiers']['service.email'] as String)['port']).isEqualTo(1025)
+        assertThat(new YamlSlurper().parseText(valuesYaml['argo-cd']['notifications']['notifiers']['service.email'] as String))doesNotHaveToString('username')
+        assertThat(new YamlSlurper().parseText(valuesYaml['argo-cd']['notifications']['notifiers']['service.email'] as String))doesNotHaveToString('password')
     }
 
     @Test

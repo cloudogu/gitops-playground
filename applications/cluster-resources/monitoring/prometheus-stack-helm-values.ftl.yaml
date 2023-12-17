@@ -103,10 +103,41 @@ grafana:
         settings:
           addresses: ${monitoring.grafanaEmailTo}
           uploadImage: false
+
+  alerting:
+    contactpoints.yaml:
+      apiVersion: 1
+      contactPoints:
+        - orgId: 1
+          name: email
+          is_default: true
+          receivers:
+          - uid: email1
+            type: email
+            settings:
+              addresses: ${monitoring.grafanaEmailTo}
+    notification-policies.yaml:
+      apiVersion: 1
+      policies:
+        - orgId: 1
+          is_default: true
+          receiver: email
+          routes:
+          - receiver: email
+          group_by: ["grafana_folder", "alertname"]
+ <#if mail.externalMailserver?has_content>
+  env:
+    GF_SMTP_ENABLED: true
+    GF_SMTP_FROM_ADDRESS: ${monitoring.grafanaEmailFrom}
+    GF_SMTP_HOST: ${mail.externalMailserver}:${mail.externalMailserverPort}
+    GF_SMTP_USER: ${mail.externalMailserverUser}
+    GF_SMTP_PASSWORD: ${mail.externalMailserverPassword}
+ <#else>
   env:
     GF_SMTP_ENABLED: true
     GF_SMTP_FROM_ADDRESS: ${monitoring.grafanaEmailFrom}
     GF_SMTP_HOST: mailhog.${namePrefix}monitoring.svc.cluster.local:1025
+ </#if>
 </#if>
   resources:
     limits:

@@ -459,6 +459,19 @@ If you want to go online again, use `-D`
 sudo iptables -D FORWARD -j DROP -i $(ip -o -4 addr show | awk -v ip="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.Gateway}}{{end}}' k3d-airgapped-playground-server-0)" '$4 ~ ip {print $2}')
 ```
 
+## Notifications
+Notifications is implemented via Mail. <br>
+Either internal Mailsystem or a external Mailserver can be used. <br>
+Howto use the internal Mailser is described in the README.md <br>
+To test with a external Mailserver, setup the configuration as follows:
+
+```
+--argocd --monitoring --smtp-address <smtp.server.address> --smtp-port <port> --smtp-user <login-username> --smtp-password 'your-secret' --grafana-email-to recipient@example.com --argocd-email-to-user recipient@example.com --argocd-email-to-admin recipient@example.com --argocd-email-from sender@example.com --grafana-email-from sender@example.com --base-url=http://localhost
+```
+
+A Testemail can be send via the Grafana UI. Go to Alerting > Notifications, here at contact Points click on the right side at provisioned email contact on "View contact point" <br>
+Here you can check if the configuration is implemented correctly and fire up a Testmail.
+
 ## Troubleshooting
 
 When stuck in `Pending` this might be due to volumes not being provisioned

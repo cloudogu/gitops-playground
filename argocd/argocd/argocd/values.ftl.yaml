@@ -100,9 +100,16 @@ argo-cd:
 <#if mail.active == true>
     notifiers:
       service.email: |
+      <#if mail.externalMailserver?has_content>
+        host: ${mail.externalMailserver}
+        port: ${mail.externalMailserverPort}
+        username: ${mail.externalMailserverUser}
+        password: ${mail.externalMailserverPassword}
+      <#else>
         host: mailhog.${namePrefix}monitoring.svc.cluster.local
         port: 1025
         from: ${argocd.emailFrom}
+      </#if>
 <#noparse>
     templates:
       template.app-deployed: |

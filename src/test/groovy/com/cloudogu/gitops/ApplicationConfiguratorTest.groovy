@@ -84,7 +84,6 @@ class ApplicationConfiguratorTest {
 
         Map actualConfig = applicationConfigurator.setConfig(testConfig).getConfig()
 
-        
         assertThat(actualConfig['registry']['internalPort']).isEqualTo(EXPECTED_REGISTRY_INTERNAL_PORT)
         assertThat(actualConfig['registry']['url']).isEqualTo(EXPECTED_REGISTRY_URL)
         assertThat(actualConfig['registry']['path']).isEqualTo('')
@@ -190,7 +189,7 @@ images:
         testConfig.application['baseUrl'] = 'http://localhost'
         
         testConfig.features['argocd']['active'] = true
-        testConfig.features['mail']['active'] = true
+        testConfig.features['mail']['mailhog'] = true
         testConfig.features['monitoring']['active'] = true
         testConfig.features['secrets']['active'] = true
 

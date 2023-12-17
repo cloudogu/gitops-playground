@@ -34,7 +34,7 @@ bash <(curl -s \
   && sleep 2 && docker run --rm --pull=always -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     --net=host \
-    ghcr.io/cloudogu/gitops-playground --yes --argocd
+    ghcr.io/cloudogu/gitops-playground --yes --argocd --mail
 ```
 
 This command will also print URLs of the [applications](#applications) inside the cluster to get you started.
@@ -94,7 +94,7 @@ We recommend running this command as an unprivileged user, that is inside the [d
 
 The GitOps Playground provides a reproducible environment for setting up a GitOps-Stack.
 It provides an image for automatically setting up a Kubernetes Cluster including CI-server (Jenkins),
-source code management (SCM-Manager), Monitoring and Alerting (Prometheus, Grafana, Mailhog), Secrets Management (Hashicorop
+source code management (SCM-Manager), Monitoring and Alerting (Prometheus, Grafana, MailHog), Secrets Management (Hashicorop
 Vault and External Secrets Operator) and of course Argo CD as GitOps operator.
 
 The playground also deploys a number of [example applications](#example-applications).
@@ -405,17 +405,20 @@ Images used by various tools and exercises can be configured using the following
 
 Note that specifying a tag is mandatory.
 
+<br>
+
 ##### Argo CD-Notifications
 
 If you are using a remote cluster, you can set the `--argocd-url` parameter so that argocd-notification messages have a
 link to the corresponding application.
 
 You can specify email addresses for notifications (note that by default, MailHog will not actually send emails)
-```shell
---argocd-email-from        // sender email address. Default is argocd@example.org
---argocd-email-to-admin    // alerts send to admin. Default is infra@example.org
---argocd-email-to-user     // alerts send to user. Default is app-team@example.org
-```
+
+* `--argocd-email-from        // sender email address. Default is argocd@example.org`
+* `--argocd-email-to-admin    // alerts send to admin. Default is infra@example.org`
+* `--argocd-email-to-user     // alerts send to user. Default is app-team@example.org`
+
+<br>
 
 ##### Monitoring
 
@@ -424,16 +427,35 @@ Set the parameter `--monitoring` to enable deployment of monitoring and alerting
 See [Monitoring tools](#monitoring-tools) for details.
 
 You can specify email addresses for notifications (note that by default, MailHog will not actually send emails)
-```shell
---grafana-email-from       // sender email address. Default is grafana@example.org
---grafana-email-to         // recipient email address. Default is infra@example.org
-```
+
+* `--grafana-email-from       // sender email address. Default is grafana@example.org`
+* `--grafana-email-to         // recipient email address. Default is infra@example.org`
+<br><br>
 
 ##### Mail server
 The gitops-playground uses MailHog to showcase notifications. 
-Set the parameter `--mail` to enable it.
-This will deploy MailHog and configure Argo CD and Grafana to send mails to MailHog.
+Set the parameter `--mail` to enable it.<br>
+This will deploy MailHog and configure Argo CD and Grafana to send mails to MailHog.<br>
 Extra email addresses can be set via parameter in some applications.
+<br>Parameters:
+* `--mail      // to activate MailHog as internal Mailserver`
+* `--mailhog-url  // to specify domain name`
+<br>
+
+`--mail` can not be used when external Mailserver is set, either internal or external Mailserver can be set up, not both together.
+
+##### Use external Mailserver
+If you want to use a external Mailserver you can set it with these parameters
+
+* `--smtp-address              // external Mailservers smtp address`
+* `--smtp-port                 // smtp port of external Mailserver`
+* `--smtp-user                 // external Mailservers login username` 
+* `--smtp-password             // external Mailservers login password`
+
+*Set parameters without equal sign "=" <br>*
+*Put your password in single quotes*
+
+<br>
 
 ##### Secrets Management
 
@@ -471,7 +493,7 @@ bash <(curl -s \
 docker run --rm --pull=always -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     --net=host \
-    ghcr.io/cloudogu/gitops-playground --yes --argocd --base-url=http://localhost
+    ghcr.io/cloudogu/gitops-playground --yes --argocd --base-url=http://localhost --mail
 ```
 
 When you encounter errors with port 80 you might want to use e.g. 

@@ -13,6 +13,7 @@ import io.micronaut.context.ApplicationContext
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import picocli.CommandLine.Command
+import picocli.CommandLine.ArgGroup
 import picocli.CommandLine.Option
 
 import static groovy.json.JsonOutput.prettyPrint
@@ -28,6 +29,7 @@ import static groovy.json.JsonOutput.toJson
         description = 'CLI-tool to deploy gitops-playground.',
         mixinStandardHelpOptions = true,
         subcommands = JenkinsCli)
+
 @Slf4j
 class GitopsPlaygroundCli  implements Runnable {
     // args group registry
@@ -117,11 +119,37 @@ class GitopsPlaygroundCli  implements Runnable {
     @Option(names = ['--vault-url'], description = 'Sets url for vault ui')
     private String vaultUrl
 
-    // args group mail
-    @Option(names = ['--mail'], description = 'Installs MailHog as Mail server.', scope = CommandLine.ScopeType.INHERIT)
-    private Boolean mail
-    @Option(names = ['--mailhog-url'], description = 'Sets url for mailhog')
-    private String mailhogUrl
+    @ArgGroup(exclusive = true)
+    MailHogUrlIfNotBaseUrl mailHogUrlIfNotBaseUrl
+    static class MailHogUrlIfNotBaseUrl{
+        @Option(names = ['--mailhog-url'], description = 'Sets url for MailHog')
+        private String mailhogUrl
+        @Option(names = ['--base-url'], description = 'the external base url (TLD) for all tools, e.g. https://example.com or http://localhost:8080. The individual -url params for argocd, grafana, vault and mailhog take precedence.')
+        private String baseUrl
+    }
+
+
+    @ArgGroup(exclusive = true)
+    MailHogOrExternalMailArgs mailHogOrExternalMailArgs
+    static class MailHogOrExternalMailArgs {
+        @Option(names = ['--mail', '--mailhog'], description = 'Prepares config files for Mailing capabilities.', scope = CommandLine.ScopeType.INHERIT)
+        Boolean mailHog
+
+        @ArgGroup(exclusive = false)
+        ExternalMailserverArgs externalMailserverArgs
+    }
+
+    // condition check dependent parameters of external Mailserver
+    static class ExternalMailserverArgs {
+        @Option(names = ['--smtp-address'], required = true, description = 'Sets smtp port of external Mailserver')
+        String externalMailserver
+        @Option(names = ['--smtp-port'], required = true, description = 'Sets smtp port of external Mailserver')
+        Integer externalMailserverPort
+        @Option(names = ['--smtp-user'], required = true, description = 'Sets smtp username for external Mailserver')
+        String externalMailserverUser
+        @Option(names = ['--smtp-password'], required = true, description = 'Sets smtp password of external Mailserver')
+        String externalMailserverPassword
+    }
 
 // args group debug
     @Option(names = ['-d', '--debug'], description = 'Debug output', scope = CommandLine.ScopeType.INHERIT)
@@ -136,8 +164,6 @@ class GitopsPlaygroundCli  implements Runnable {
     private String password
     @Option(names = ['-y', '--yes'], description = 'Skip kubecontext confirmation')
     private Boolean pipeYes
-    @Option(names = ['--base-url'], description = 'the external base url (TLD) for all tools, e.g. https://example.com or http://localhost:8080. The individual -url params for argocd, grafana, vault and mailhog take precedence.')
-    private String baseUrl
     @Option(names = ['--name-prefix'], description = 'Set name-prefix for repos, jobs, namespaces')
     private String namePrefix
     @Option(names = ['--destroy'], description = 'Unroll playground')
@@ -167,7 +193,6 @@ class GitopsPlaygroundCli  implements Runnable {
     private String petclinicBaseDomain
     @Option(names = ['--nginx-base-domain'], description = 'The domain under which a subdomain for all nginx applications will be used.')
     private String nginxBaseDomain
-
 
     @Override
     void run() {
@@ -225,6 +250,30 @@ class GitopsPlaygroundCli  implements Runnable {
     }
 
     private Map parseOptionsIntoConfig() {
+        Boolean mailhog = null
+        String smtpAddress = null
+        String smtpPort = null
+        String smtpUser = null
+        String smtpPassword = null
+        String baseUrl = null
+        String mailhogUrl = null
+
+        if (mailHogOrExternalMailArgs) {
+            mailhog = mailHogOrExternalMailArgs.mailHog
+
+            if (mailHogOrExternalMailArgs.externalMailserverArgs){
+                smtpAddress = mailHogOrExternalMailArgs.externalMailserverArgs.externalMailserver
+                smtpPort = mailHogOrExternalMailArgs.externalMailserverArgs.externalMailserverPort
+                smtpUser = mailHogOrExternalMailArgs.externalMailserverArgs.externalMailserverUser
+                smtpPassword = mailHogOrExternalMailArgs.externalMailserverArgs.externalMailserverPassword
+            }
+        }
+
+        if (mailHogUrlIfNotBaseUrl) {
+                baseUrl = mailHogUrlIfNotBaseUrl.baseUrl
+                mailhogUrl = mailHogUrlIfNotBaseUrl.mailhogUrl
+        }
+
         return [
                 registry   : [
                         url         : registryUrl,
@@ -274,8 +323,12 @@ class GitopsPlaygroundCli  implements Runnable {
                                 emailToAdmin : emailToAdmin
                         ],
                         mail: [
-                                active    : mail,
+                                mailhog   : mailhog,
                                 url       : mailhogUrl,
+                                externalMailserver : smtpAddress,
+                                externalMailserverPort : smtpPort,
+                                externalMailserverUser : smtpUser,
+                                externalMailserverPassword : smtpPassword
                         ],
                         exampleApps: [
                                 petclinic: [
