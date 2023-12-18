@@ -5,7 +5,7 @@ metadata:
   # In a real-world scenario these might to into a separate namespace
   namespace: ${namePrefix}argocd
   annotations:
-<#if mail.active == true>
+<#if mail.active??>
     notifications.argoproj.io/subscribe.email: ${argocd.emailToAdmin}
 </#if>
 spec:

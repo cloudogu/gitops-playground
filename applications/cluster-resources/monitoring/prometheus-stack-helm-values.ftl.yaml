@@ -92,7 +92,7 @@ grafana:
       requests:
         cpu: 35m
         memory: 65Mi
-<#if mail.active == true>
+<#if (mail.active)??>
   notifiers:
     notifiers.yaml:
       notifiers:

@@ -70,7 +70,7 @@ class ArgoCDTest {
                             emailToAdmin : 'infra@example.org'
                     ],
                     mail   : [
-                            active: true,
+                            mailhog: true,
                             externalMailserver : '',
                             externalMailserverPort : '',
                             externalMailserverUser : '',
@@ -201,7 +201,7 @@ class ArgoCDTest {
 
     @Test
     void 'When mailhog disabled: Does not include mail configurations into cluster resources'() {
-        config.features['mail']['active'] = false
+        config.features['mail']['mailhog'] = null
         createArgoCD().install()
         def valuesYaml = parseActualYaml(actualHelmValuesFile)
         assertThat(valuesYaml['argo-cd']['notifications']['enabled']).isEqualTo(false)
@@ -210,7 +210,7 @@ class ArgoCDTest {
 
     @Test
     void 'When mailhog enabled: Includes mail configurations into cluster resources'() {
-        config.features['mail']['active'] = true
+        config.features['mail']['mailhog'] = true
         createArgoCD().install()
         def valuesYaml = parseActualYaml(actualHelmValuesFile)
         assertThat(valuesYaml['argo-cd']['notifications']['enabled']).isEqualTo(true)
@@ -254,7 +254,7 @@ class ArgoCDTest {
 
     @Test
     void 'When external Mailserver is set'() {
-        config.features['mail']['active'] = true
+        config.features['mail']['mailhog'] = true
         config.features['mail']['externalMailserver'] = 'smtp.example.com'
         config.features['mail']['externalMailserverPort'] = '1010110'
         config.features['mail']['externalMailserverUser'] = 'argo@example.com'
@@ -270,7 +270,7 @@ class ArgoCDTest {
 
     @Test
     void 'When external Mailserver is NOT set'() {
-        config.features['mail']['active'] = true
+        config.features['mail']['mailhog'] = true
         createArgoCD().install()
         def valuesYaml = parseActualYaml(actualHelmValuesFile)
 
