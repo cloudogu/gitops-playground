@@ -460,16 +460,19 @@ sudo iptables -D FORWARD -j DROP -i $(ip -o -4 addr show | awk -v ip="$(docker i
 ```
 
 ## Notifications
-Notifications is implemented via Mail. <br>
-Either internal Mailsystem or a external Mailserver can be used. <br>
-Howto use the internal Mailser is described in the README.md <br>
-To test with a external Mailserver, setup the configuration as follows:
+Notifications are implemented via Mail.  
+Either internal MailHog or a external mail server can be used.  
+
+To test with an external mail server, set up the configuration as follows:
 
 ```
---argocd --monitoring --smtp-address <smtp.server.address> --smtp-port <port> --smtp-user <login-username> --smtp-password 'your-secret' --grafana-email-to recipient@example.com --argocd-email-to-user recipient@example.com --argocd-email-to-admin recipient@example.com --argocd-email-from sender@example.com --grafana-email-from sender@example.com --base-url=http://localhost
+--argocd --monitoring \
+--smtp-address <smtp.server.address> --smtp-port <port> --smtp-user <login-username> --smtp-password 'your-secret' \
+--grafana-email-to recipient@example.com --argocd-email-to-user recipient@example.com --argocd-email-to-admin recipient@example.com --argocd-email-from sender@example.com --grafana-email-from sender@example.com 
 ```
 
-A Testemail can be send via the Grafana UI. Go to Alerting > Notifications, here at contact Points click on the right side at provisioned email contact on "View contact point" <br>
+For testing, an email can be sent via the Grafana UI.  
+Go to Alerting > Notifications, here at contact Points click on the right side at provisioned email contact on "View contact point"   
 Here you can check if the configuration is implemented correctly and fire up a Testmail.
 
 ## Troubleshooting
