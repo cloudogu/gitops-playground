@@ -20,24 +20,26 @@ For questions or suggestions you are welcome to join us at our myCloudogu [commu
 
 [![Discuss it on myCloudogu](https://static.cloudogu.com/static/images/discuss-it.png)](https://community.cloudogu.com/t/introducing-the-gitops-playground/107)
 
-| Playground features                                                                                                                                                               | Installation                                                                                                                                                              |
-|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| ![Playground features](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml-src/gitops-playground-features.puml&fmt=svg) | ![Installation](https://user-images.githubusercontent.com/1824962/215206261-fbae92fc-e73c-4977-99e3-858769e73c53.png) |
+![Playground features](docs/gitops-playground-features.drawio.svg)
+©Cloudogu GmbH 2023: GitOps Playground© for use with  Argo™, Git™, Jenkins®, Kubernetes®, Prometheus®, Vault® and SCM-Manager 
 
 # TL;DR
 
-You can run a local k8s cluster with the GitOps playground installed with only one command (on Linux, for Windows and Mac see [here](#windows-or-mac))
+You can try the GitOps Playground on a local Kubernetes cluster by running a single command:
 
 ```shell
 bash <(curl -s \
-  https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh) \
-  && sleep 2 && docker run --rm --pull=always -u $(id -u) \
+  https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh) --bind-ingress-port=80 \
+  && docker run --rm --pull=always -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     --net=host \
-    ghcr.io/cloudogu/gitops-playground --yes --argocd --mail
+    ghcr.io/cloudogu/gitops-playground --yes --argocd --mail --base-url=http://localhost
 ```
 
-This command will also print URLs of the [applications](#applications) inside the cluster to get you started.
+Note that on some linux distros like debian do not support subdomains of localhost.
+There you might have to use `--base-url=http://local.gd` (see [local ingresses](#local-ingresses)).
+
+See the list of [applications](#applications) to get started.
 
 We recommend running this command as an unprivileged user, that is inside the [docker group](https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user).
 
@@ -94,15 +96,19 @@ We recommend running this command as an unprivileged user, that is inside the [d
 
 The GitOps Playground provides a reproducible environment for setting up a GitOps-Stack.
 It provides an image for automatically setting up a Kubernetes Cluster including CI-server (Jenkins),
-source code management (SCM-Manager), Monitoring and Alerting (Prometheus, Grafana, MailHog), Secrets Management (Hashicorop
+source code management (SCM-Manager), Monitoring and Alerting (Prometheus, Grafana, MailHog), Secrets Management (Hashicorp
 Vault and External Secrets Operator) and of course Argo CD as GitOps operator.
 
 The playground also deploys a number of [example applications](#example-applications).
 
-The GitOps Playground lowers the barriers for getting your hands on GitOps. No need to read lots of books and operator
+The GitOps Playground lowers the barriers for operating your application on Kubernetes using GitOps.
+It creates a complete GitOps-based operational stack on your Kubernetes clusters.
+No need to read lots of books and operator
 docs, getting familiar with CLIs, ponder about GitOps Repository folder structures and promotion to different environments, etc.  
 The GitOps Playground is a pre-configured environment to see GitOps in motion, including more advanced use cases like
-notifications, monitoring and secrets management.
+notifications, monitoring and secret management.
+
+In addition to creating an operational stack in production, you can run the playground locally, for learning and developing new features. 
 
 We aim to be compatible with various environments, e.g. OpenShift and in an air-gapped network.
 The support for these is *work in progress*.
@@ -127,9 +133,9 @@ scenario with the Cloudogu EcoSystem (CES). Here better security and build perfo
 Jenkins build agents spawned in the cloud.
 
 ### Overview
-| Demo on local machine                                                                                                                                                                          | Demo on remote cluster                                                                                                                                                                                 | Production environment with CES |
-|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------|
-| ![Playground on local machine](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml-src/gitops-playground.puml&fmt=svg) | ![Playground on remote cluster](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml-src/gitops-playground-remote.puml&fmt=svg) | ![A possible production environment](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml-src/production-setting.puml&fmt=svg) |
+| Playground on local machine                                             | Production environment with Cloudogu EcoSystem                                                                                                                                                        |
+|-------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ![Playground on local machine](docs/gitops-playground-local.drawio.svg) | ![A possible production environment](docs/gitops-playground-production.drawio.svg) |
 
 ### Create Cluster
 
@@ -488,9 +494,8 @@ Recommendation: 16GB.
 
 ```bash
 bash <(curl -s \
-  https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh) --bind-ingress-port=80
-
-docker run --rm --pull=always -u $(id -u) \
+  https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh) --bind-ingress-port=80 \
+  && docker run --rm --pull=always -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     --net=host \
     ghcr.io/cloudogu/gitops-playground --yes --argocd --base-url=http://localhost --mail
@@ -900,7 +905,7 @@ The applications implement a simple staging mechanism:
 
 ![app-repo-vs-gitops-repo](docs/app-repo-vs-gitops-repo.svg)
 
-Note that for ArgoCD the GitOps-related logic is implemented in the
+Note that the GitOps-related logic is implemented in the
 [gitops-build-lib](https://github.com/cloudogu/gitops-build-lib) for Jenkins. See the README there for more options like
 * staging,
 * resource creation,
@@ -908,7 +913,7 @@ Note that for ArgoCD the GitOps-related logic is implemented in the
 
 Please note that it might take about a minute after the pull request has been accepted for the GitOps operator to start
 deploying.
-Alternatively you can trigger the deployment via ArgoCD's UI or CLI.
+Alternatively, you can trigger the deployment via ArgoCD's UI or CLI.
 
 
 #### PetClinic with plain k8s resources
