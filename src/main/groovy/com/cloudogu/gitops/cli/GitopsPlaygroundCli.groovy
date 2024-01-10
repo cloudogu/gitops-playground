@@ -119,14 +119,8 @@ class GitopsPlaygroundCli  implements Runnable {
     @Option(names = ['--vault-url'], description = 'Sets url for vault ui')
     private String vaultUrl
 
-    @ArgGroup(exclusive = true)
-    MailHogUrlIfNotBaseUrl mailHogUrlIfNotBaseUrl
-    static class MailHogUrlIfNotBaseUrl{
-        @Option(names = ['--mailhog-url'], description = 'Sets url for MailHog')
-        private String mailhogUrl
-        @Option(names = ['--base-url'], description = 'the external base url (TLD) for all tools, e.g. https://example.com or http://localhost:8080. The individual -url params for argocd, grafana, vault and mailhog take precedence.')
-        private String baseUrl
-    }
+    @Option(names = ['--mailhog-url'], description = 'Sets url for MailHog')
+    private String mailhogUrl
 
 
     @ArgGroup(exclusive = true)
@@ -164,6 +158,8 @@ class GitopsPlaygroundCli  implements Runnable {
     private String password
     @Option(names = ['-y', '--yes'], description = 'Skip kubecontext confirmation')
     private Boolean pipeYes
+    @Option(names = ['--base-url'], description = 'the external base url (TLD) for all tools, e.g. https://example.com or http://localhost:8080. The individual -url params for argocd, grafana, vault and mailhog take precedence.')
+    private String baseUrl
     @Option(names = ['--name-prefix'], description = 'Set name-prefix for repos, jobs, namespaces')
     private String namePrefix
     @Option(names = ['--destroy'], description = 'Unroll playground')
@@ -255,8 +251,6 @@ class GitopsPlaygroundCli  implements Runnable {
         String smtpPort = null
         String smtpUser = null
         String smtpPassword = null
-        String baseUrl = null
-        String mailhogUrl = null
 
         if (mailHogOrExternalMailArgs) {
             mailhog = mailHogOrExternalMailArgs.mailHog
@@ -267,11 +261,6 @@ class GitopsPlaygroundCli  implements Runnable {
                 smtpUser = mailHogOrExternalMailArgs.externalMailserverArgs.externalMailserverUser
                 smtpPassword = mailHogOrExternalMailArgs.externalMailserverArgs.externalMailserverPassword
             }
-        }
-
-        if (mailHogUrlIfNotBaseUrl) {
-                baseUrl = mailHogUrlIfNotBaseUrl.baseUrl
-                mailhogUrl = mailHogUrlIfNotBaseUrl.mailhogUrl
         }
 
         return [
@@ -323,7 +312,7 @@ class GitopsPlaygroundCli  implements Runnable {
                                 emailToAdmin : emailToAdmin
                         ],
                         mail: [
-                                mailhog   : mailhog,
+                                active: mailhog,
                                 url       : mailhogUrl,
                                 externalMailserver : smtpAddress,
                                 externalMailserverPort : smtpPort,

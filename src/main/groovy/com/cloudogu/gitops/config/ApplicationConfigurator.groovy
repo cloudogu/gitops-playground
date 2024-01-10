@@ -102,6 +102,7 @@ class ApplicationConfigurator {
                     mail   : [
                             active: false, // set dynamicly
                             mailhog : false,
+                            externalMailserver: '',
                             url: '',
                             helm  : [
                                     chart  : 'mailhog',
@@ -186,8 +187,8 @@ class ApplicationConfigurator {
             newConfig.registry["internal"] = false
         if (newConfig['features']['secrets']['vault']['mode'])
             newConfig['features']['secrets']['active'] = true
-//        if (newConfig.['features']['mail']['mailhog'] || smt-paramer)
-//           -> mail active == true
+        if (newConfig['features']['mail']['mailhog'] || newConfig['features']['mail']['externalMailserver'])
+            newConfig['features']['mail']['active'] = true
 
         evaluateBaseUrl(newConfig)
         

@@ -210,7 +210,7 @@ class ArgoCDTest {
 
     @Test
     void 'When mailhog enabled: Includes mail configurations into cluster resources'() {
-        config.features['mail']['mailhog'] = true
+        config.features['mail']['active'] = true
         createArgoCD().install()
         def valuesYaml = parseActualYaml(actualHelmValuesFile)
         assertThat(valuesYaml['argo-cd']['notifications']['enabled']).isEqualTo(true)
@@ -219,6 +219,7 @@ class ArgoCDTest {
 
     @Test
     void 'When emailaddress is set: Include given email addresses into configurations'() {
+        config.features['mail']['active'] = true
         config.features['argocd']['emailFrom'] = 'argocd@example.com'
         config.features['argocd']['emailToUser'] = 'app-team@example.com'
         config.features['argocd']['emailToAdmin'] = 'argocd@example.com'
@@ -238,6 +239,8 @@ class ArgoCDTest {
 
     @Test
     void 'When emailaddress is NOT set: Use default email addresses in configurations'() {
+        config.features['mail']['active'] = true
+
         createArgoCD().install()
         def valuesYaml = parseActualYaml(actualHelmValuesFile)
         def clusterRessourcesYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/cluster-resources.yaml')
@@ -254,7 +257,7 @@ class ArgoCDTest {
 
     @Test
     void 'When external Mailserver is set'() {
-        config.features['mail']['mailhog'] = true
+        config.features['mail']['active'] = true
         config.features['mail']['externalMailserver'] = 'smtp.example.com'
         config.features['mail']['externalMailserverPort'] = '1010110'
         config.features['mail']['externalMailserverUser'] = 'argo@example.com'
@@ -270,7 +273,7 @@ class ArgoCDTest {
 
     @Test
     void 'When external Mailserver is NOT set'() {
-        config.features['mail']['mailhog'] = true
+        config.features['mail']['active'] = true
         createArgoCD().install()
         def valuesYaml = parseActualYaml(actualHelmValuesFile)
 

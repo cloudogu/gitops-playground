@@ -58,8 +58,7 @@ class PrometheusStack extends Feature {
                         ]
                 ],
                 mail: [
-                        active: config.features['mail']['mailhog'] || config.features['mail']['externalMailserver'] ? true : null,
-                        //active: config.features['mail']['mailhog'] ? config.features['mail']['mailhog'] : false,
+                        active: config.features['mail']['active'],
                         externalMailserver : config.features['mail']['externalMailserver'],
                         externalMailserverPort : config.features['mail']['externalMailserverPort'],
                         externalMailserverUser : config.features['mail']['externalMailserverUser'],

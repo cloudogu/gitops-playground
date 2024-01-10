@@ -77,14 +77,14 @@ class PrometheusStackTest {
 
     @Test
     void 'When mailhog enabled: Includes mail configurations into cluster resources'() {
-        config.features['mail']['mailhog'] = true
+        config.features['mail']['active'] = true
         createStack().install()
         assertThat(parseActualStackYaml()['grafana']['notifiers']).isNotNull()
     }
 
     @Test
     void "When Email Addresses is set"() {
-        config.features['mail']['mailhog'] = true
+        config.features['mail']['active'] = true
         config.features['monitoring']['grafanaEmailFrom'] = 'grafana@example.com'
         config.features['monitoring']['grafanaEmailTo'] = 'infra@example.com'
         createStack().install()
@@ -96,7 +96,7 @@ class PrometheusStackTest {
 
     @Test
     void "When Email Addresses is NOT set"() {
-        config.features['mail']['mailhog'] = true
+        config.features['mail']['active'] = true
         createStack().install()
 
         def notifiersYaml = parseActualStackYaml()['grafana']['notifiers']['notifiers.yaml']['notifiers']['settings'] as List
@@ -106,7 +106,7 @@ class PrometheusStackTest {
 
     @Test
     void 'When external Mailserver is set'() {
-        config.features['mail']['mailhog'] = true
+        config.features['mail']['active'] = true
         config.features['mail']['externalMailserver'] = 'smtp.example.com'
         config.features['mail']['externalMailserverPort'] = '1010110'
         config.features['mail']['externalMailserverUser'] = 'mailserver@example.com'

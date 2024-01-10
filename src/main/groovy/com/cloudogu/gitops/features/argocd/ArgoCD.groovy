@@ -312,7 +312,7 @@ class ArgoCD extends Feature {
                             ]
                     ],
                     mail: [
-                            active: config.features['mail']['mailhog'],
+                            active: config.features['mail']['active'],
                             externalMailserver : config.features['mail']['externalMailserver'],
                             externalMailserverPort : config.features['mail']['externalMailserverPort'],
                             externalMailserverUser : config.features['mail']['externalMailserverUser'],
