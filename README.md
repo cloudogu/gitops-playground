@@ -410,10 +410,10 @@ Images used by various tools and exercises can be configured using the following
 * `--vault-image someRegistry/someImage:1.0.0`
 * `--nginx-image someRegistry/someImage:1.0.0`
 
-Note that specifying a tag is mandatory.
-
-<br>
-
+Note that specifying a tag is mandatory.  
+  
+  
+  
 ##### Argo CD-Notifications
 
 If you are using a remote cluster, you can set the `--argocd-url` parameter so that argocd-notification messages have a
@@ -443,7 +443,8 @@ The gitops-playground uses MailHog to showcase notifications.
 Alternatively, you can configure an external mailserver.
 
 Note that you can't use both at the same time.   
-Use either `--mailhog` or `--smtp-*` paramters.  
+If you set either `--mailhog` or `--mail` parameter, MailHog will be installed  
+If you set `--smtp-*` parameters, a external Mailserver will be used and MailHog will not be deployed.
 
 ##### MailHog
 Set the parameter `--mailhog` to enable MailHog.

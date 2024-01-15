@@ -187,8 +187,12 @@ class ApplicationConfigurator {
             newConfig.registry["internal"] = false
         if (newConfig['features']['secrets']['vault']['mode'])
             newConfig['features']['secrets']['active'] = true
-        if (newConfig['features']['mail']['mailhog'] || newConfig['features']['mail']['externalMailserver'])
+        if (newConfig['features']['mail']['externalMailserver'] || newConfig['features']['mail']['mailhog'])
             newConfig['features']['mail']['active'] = true
+        if (newConfig['features']['mail']['externalMailserver'] && newConfig['features']['mail']['mailhog']) {
+            newConfig['features']['mail']['mailhog'] = false
+            log.warn("Enabled both external Mailserver and MailHog! Implicitly deactivating MailHog")
+        }
 
         evaluateBaseUrl(newConfig)
         

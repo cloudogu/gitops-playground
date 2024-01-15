@@ -121,29 +121,18 @@ class GitopsPlaygroundCli  implements Runnable {
 
     @Option(names = ['--mailhog-url'], description = 'Sets url for MailHog')
     private String mailhogUrl
-
-
-    @ArgGroup(exclusive = true)
-    MailHogOrExternalMailArgs mailHogOrExternalMailArgs
-    static class MailHogOrExternalMailArgs {
-        @Option(names = ['--mail', '--mailhog'], description = 'Prepares config files for Mailing capabilities.', scope = CommandLine.ScopeType.INHERIT)
-        Boolean mailHog
-
-        @ArgGroup(exclusive = false)
-        ExternalMailserverArgs externalMailserverArgs
-    }
+    @Option(names = ['--mail', '--mailhog'], description = 'Prepares config files for Mailing capabilities.', scope = CommandLine.ScopeType.INHERIT)
+    Boolean mailhog
 
     // condition check dependent parameters of external Mailserver
-    static class ExternalMailserverArgs {
-        @Option(names = ['--smtp-address'], required = true, description = 'Sets smtp port of external Mailserver')
-        String externalMailserver
-        @Option(names = ['--smtp-port'], required = true, description = 'Sets smtp port of external Mailserver')
-        Integer externalMailserverPort
-        @Option(names = ['--smtp-user'], required = true, description = 'Sets smtp username for external Mailserver')
-        String externalMailserverUser
-        @Option(names = ['--smtp-password'], required = true, description = 'Sets smtp password of external Mailserver')
-        String externalMailserverPassword
-    }
+    @Option(names = ['--smtp-address'], description = 'Sets smtp port of external Mailserver')
+    String smtpAddress
+    @Option(names = ['--smtp-port'], description = 'Sets smtp port of external Mailserver')
+    Integer smtpPort
+    @Option(names = ['--smtp-user'], description = 'Sets smtp username for external Mailserver')
+    String smtpUser
+    @Option(names = ['--smtp-password'], description = 'Sets smtp password of external Mailserver')
+    String smtpPassword
 
 // args group debug
     @Option(names = ['-d', '--debug'], description = 'Debug output', scope = CommandLine.ScopeType.INHERIT)
@@ -246,22 +235,6 @@ class GitopsPlaygroundCli  implements Runnable {
     }
 
     private Map parseOptionsIntoConfig() {
-        Boolean mailhog = null
-        String smtpAddress = null
-        String smtpPort = null
-        String smtpUser = null
-        String smtpPassword = null
-
-        if (mailHogOrExternalMailArgs) {
-            mailhog = mailHogOrExternalMailArgs.mailHog
-
-            if (mailHogOrExternalMailArgs.externalMailserverArgs){
-                smtpAddress = mailHogOrExternalMailArgs.externalMailserverArgs.externalMailserver
-                smtpPort = mailHogOrExternalMailArgs.externalMailserverArgs.externalMailserverPort
-                smtpUser = mailHogOrExternalMailArgs.externalMailserverArgs.externalMailserverUser
-                smtpPassword = mailHogOrExternalMailArgs.externalMailserverArgs.externalMailserverPassword
-            }
-        }
 
         return [
                 registry   : [
@@ -312,7 +285,7 @@ class GitopsPlaygroundCli  implements Runnable {
                                 emailToAdmin : emailToAdmin
                         ],
                         mail: [
-                                active: mailhog,
+                                mailhog: mailhog,
                                 url       : mailhogUrl,
                                 externalMailserver : smtpAddress,
                                 externalMailserverPort : smtpPort,
