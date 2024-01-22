@@ -3,6 +3,7 @@ package com.cloudogu.gitops
 import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.schema.JsonSchemaGenerator
 import com.cloudogu.gitops.config.schema.JsonSchemaValidator
+import com.cloudogu.gitops.config.schema.Schema
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
 import com.cloudogu.gitops.utils.TestLogger
@@ -183,7 +184,45 @@ images:
         }
     }
 
+    @Test
+    void "config file has only fields that are present in default values"() {
+        def defaultConfig = applicationConfigurator.setConfig([:]).config
+        
+        def fields = getAllFieldNames(Schema.class).sort()
+        def keys = getAllKeys2(defaultConfig).sort()
+
+        assertThat(fields).isSubsetOf(keys)
+    }
     
+    List<String> getAllFieldNames(Class clazz, String parentField = '', List<String> fieldNames = []) {
+        clazz.declaredFields.each { field ->
+            def currentField = parentField + field.name
+            if (field.type instanceof Class 
+                    && !field.type.isArray() 
+                    && field.type.name.startsWith(Schema.class.getPackageName())) {
+                println "nested class $field.type, $currentField + '.', $fieldNames"
+                getAllFieldNames(field.type, currentField + '.', fieldNames)
+            } else {
+                if (!field.name.startsWith('_') && !field.name.startsWith('$') && field.name != 'metaClass') {
+                    fieldNames.add(currentField)
+                }
+            }
+        }
+        return fieldNames
+    }
+
+    List<String> getAllKeys2(Map map, String parentKey = '', List<String> keysList = []) {
+        map.each { key, value ->
+            def currentKey = parentKey + key
+            if (value instanceof Map) {
+                getAllKeys2(value, currentKey + '.', keysList)
+            } else {
+                keysList.add(currentKey)
+            }
+        }
+        return keysList
+    }
+
     @Test
     void "base url: evaluates for all tools"() {
         testConfig.application['baseUrl'] = 'http://localhost'
