@@ -13,11 +13,10 @@ import io.micronaut.context.ApplicationContext
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import picocli.CommandLine.Command
-import picocli.CommandLine.ArgGroup
 import picocli.CommandLine.Option
 
 import static groovy.json.JsonOutput.prettyPrint
-import static groovy.json.JsonOutput.toJson
+import static groovy.json.JsonOutput.toJson 
 /**
  * Provides the entrypoint to the application as well as all config parameters.
  * When changing parameters, make sure to update the Schema for the config file as well
@@ -121,7 +120,7 @@ class GitopsPlaygroundCli  implements Runnable {
 
     @Option(names = ['--mailhog-url'], description = 'Sets url for MailHog')
     private String mailhogUrl
-    @Option(names = ['--mail', '--mailhog'], description = 'Prepares config files for Mailing capabilities.', scope = CommandLine.ScopeType.INHERIT)
+    @Option(names = ['--mailhog', '--mail'], description = 'Installs MailHog as Mail server.', scope = CommandLine.ScopeType.INHERIT)
     Boolean mailhog
 
     // condition check dependent parameters of external Mailserver

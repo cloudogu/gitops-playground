@@ -100,9 +100,12 @@ class ApplicationConfigurator {
                             emailToAdmin : 'infra@example.org'
                     ],
                     mail   : [
-                            active: false, // set dynamicly
+                            active: false, // set dynamically
                             mailhog : false,
                             externalMailserver: '',
+                            externalMailserverPort : '',
+                            externalMailserverUser : '',
+                            externalMailserverPassword : '', 
                             url: '',
                             helm  : [
                                     chart  : 'mailhog',
