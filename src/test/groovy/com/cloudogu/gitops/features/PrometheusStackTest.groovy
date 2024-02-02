@@ -116,8 +116,33 @@ class PrometheusStackTest {
         createStack().install()
         def contactPointsYaml = parseActualStackYaml()
 
-        assert contactPointsYaml['grafana']['alerting']['contactpoints.yaml'] != null
-        assert contactPointsYaml['grafana']['alerting']['notification-policies.yaml'] != null
+        assertThat(contactPointsYaml['grafana']['alerting']['contactpoints.yaml']).isEqualTo(new YamlSlurper().parseText(
+"""
+apiVersion: 1
+contactPoints:
+- orgId: 1
+  name: email
+  is_default: true
+  receivers:
+  - uid: email1
+    type: email
+    settings:
+      addresses: ${config.features['monitoring']['grafanaEmailTo']}
+"""
+                )
+        )
+        assertThat(contactPointsYaml['grafana']['alerting']['notification-policies.yaml']).isEqualTo(new YamlSlurper().parseText(
+'''
+apiVersion: 1
+policies:
+- orgId: 1
+  is_default: true
+  receiver: email
+  routes:
+  - receiver: email
+  group_by: ["grafana_folder", "alertname"]
+'''
+        ))
     }
 
     @Test
@@ -126,7 +151,7 @@ class PrometheusStackTest {
         createStack().install()
         def contactPointsYaml = parseActualStackYaml()
 
-        assert contactPointsYaml['grafana']['alerting'] == null
+        assertThat(contactPointsYaml['grafana']['alerting']).isNull()
     }
 
     @Test
