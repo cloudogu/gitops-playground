@@ -143,6 +143,23 @@ policies:
   group_by: ["grafana_folder", "alertname"]
 '''
         ))
+
+        assertThat(contactPointsYaml['grafana']['env']['GF_SMTP_HOST']).isEqualTo('smtp.example.com:1010110')
+        assertThat(contactPointsYaml['grafana']['env']['GF_SMTP_USER']).isEqualTo(config.features['mail']['smtpUser'])
+        assertThat(contactPointsYaml['grafana']['env']['GF_SMTP_PASSWORD']).isEqualTo(config.features['mail']['smtpPassword'])
+    }
+
+    @Test
+    void 'When external Mailserver is set without port, user, password'() {
+        config.features['mail']['active'] = true
+        config.features['mail']['smtpAddress'] = 'smtp.example.com'
+
+        createStack().install()
+        def contactPointsYaml = parseActualStackYaml()
+        
+        assertThat(contactPointsYaml['grafana']['env']['GF_SMTP_HOST']).isEqualTo('smtp.example.com')
+        assertThat(contactPointsYaml['grafana']['env'] as Map).doesNotContainKey('GF_SMTP_USER')
+        assertThat(contactPointsYaml['grafana']['env'] as Map).doesNotContainKey('GF_SMTP_PASSWORD')
     }
 
     @Test

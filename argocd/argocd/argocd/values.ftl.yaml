@@ -102,14 +102,14 @@ argo-cd:
       service.email: |
       <#if mail.smtpAddress?has_content>
         host: ${mail.smtpAddress}
-        port: ${mail.smtpPort}
-        username: ${mail.smtpUser}
-        password: ${mail.smtpPassword}
+        <#if mail.smtpPort?has_content>port: ${mail.smtpPort}</#if>
+        <#if mail.smtpUser?has_content>username: ${mail.smtpUser}</#if>
+        <#if mail.smtpPassword?has_content>password: ${mail.smtpPassword}</#if>
       <#else>
         host: mailhog.${namePrefix}monitoring.svc.cluster.local
         port: 1025
-        from: ${argocd.emailFrom}
       </#if>
+        from: ${argocd.emailFrom}
 <#noparse>
     templates:
       template.app-deployed: |
