@@ -459,9 +459,10 @@ If you want to go online again, use `-D`
 sudo iptables -D FORWARD -j DROP -i $(ip -o -4 addr show | awk -v ip="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.Gateway}}{{end}}' k3d-airgapped-playground-server-0)" '$4 ~ ip {print $2}')
 ```
 
-## Notifications
+## Notifications / E-Mail
+
 Notifications are implemented via Mail.  
-Either internal MailHog or a external mail server can be used.  
+Either internal MailHog or an external mail server can be used.
 
 To test with an external mail server, set up the configuration as follows:
 
@@ -474,6 +475,8 @@ To test with an external mail server, set up the configuration as follows:
 For testing, an email can be sent via the Grafana UI.  
 Go to Alerting > Notifications, here at contact Points click on the right side at provisioned email contact on "View contact point"   
 Here you can check if the configuration is implemented correctly and fire up a Testmail.
+
+For testing Argo CD, just uncomment some of the defaultTriggers in it's values.yaml and it will send a lot of emails.
 
 ## Troubleshooting
 
