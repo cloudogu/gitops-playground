@@ -125,13 +125,13 @@ grafana:
           routes:
           - receiver: email
           group_by: ["grafana_folder", "alertname"]
- <#if mail.externalMailserver?has_content>
+ <#if mail.smtpAddress?has_content>
   env:
     GF_SMTP_ENABLED: true
     GF_SMTP_FROM_ADDRESS: ${monitoring.grafanaEmailFrom}
-    GF_SMTP_HOST: ${mail.externalMailserver}:${mail.externalMailserverPort}
-    GF_SMTP_USER: ${mail.externalMailserverUser}
-    GF_SMTP_PASSWORD: ${mail.externalMailserverPassword}
+    GF_SMTP_HOST: ${mail.smtpAddress}:${mail.smtpPort}
+    GF_SMTP_USER: ${mail.smtpUser}
+    GF_SMTP_PASSWORD: ${mail.smtpPassword}
  <#else>
   env:
     GF_SMTP_ENABLED: true

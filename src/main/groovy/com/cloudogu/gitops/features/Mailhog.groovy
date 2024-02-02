@@ -46,7 +46,7 @@ class Mailhog extends Feature {
         def tmpHelmValues = new TemplatingEngine().replaceTemplate(fileSystemUtils.copyToTempDir(HELM_VALUES_PATH).toFile(), [
                 mail: [
                         // Note that passing the URL object here leads to problems in Graal Native image, see Git history
-                        host: config.features['mail']['url'] ? new URL(config.features['mail']['url'] as String).host : "",
+                        host: config.features['mail']['mailhogUrl'] ? new URL(config.features['mail']['mailhogUrl'] as String).host : "",
                 ],
                 image: config['features']['mail']['helm']['image'] as String,
                 isRemote: config.application['remote'],

@@ -285,11 +285,11 @@ class GitopsPlaygroundCli  implements Runnable {
                         ],
                         mail: [
                                 mailhog: mailhog,
-                                url       : mailhogUrl,
-                                externalMailserver : smtpAddress,
-                                externalMailserverPort : smtpPort,
-                                externalMailserverUser : smtpUser,
-                                externalMailserverPassword : smtpPassword
+                                mailhogUrl : mailhogUrl,
+                                smtpAddress : smtpAddress,
+                                smtpPort : smtpPort,
+                                smtpUser : smtpUser,
+                                smtpPassword : smtpPassword
                         ],
                         exampleApps: [
                                 petclinic: [

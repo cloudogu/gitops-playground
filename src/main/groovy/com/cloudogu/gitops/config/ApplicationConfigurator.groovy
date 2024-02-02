@@ -102,10 +102,11 @@ class ApplicationConfigurator {
                     mail   : [
                             active: false, // set dynamically
                             mailhog : false,
-                            externalMailserver: '',
-                            externalMailserverPort : '',
-                            externalMailserverUser : '',
-                            externalMailserverPassword : '', 
+                            mailhogUrl : '',
+                            smtpAddress: '',
+                            smtpPort : '',
+                            smtpUser : '',
+                            smtpPassword : '', 
                             url: '',
                             helm  : [
                                     chart  : 'mailhog',
@@ -190,9 +191,9 @@ class ApplicationConfigurator {
             newConfig.registry["internal"] = false
         if (newConfig['features']['secrets']['vault']['mode'])
             newConfig['features']['secrets']['active'] = true
-        if (newConfig['features']['mail']['externalMailserver'] || newConfig['features']['mail']['mailhog'])
+        if (newConfig['features']['mail']['smtpAddress'] || newConfig['features']['mail']['mailhog'])
             newConfig['features']['mail']['active'] = true
-        if (newConfig['features']['mail']['externalMailserver'] && newConfig['features']['mail']['mailhog']) {
+        if (newConfig['features']['mail']['smtpAddress'] && newConfig['features']['mail']['mailhog']) {
             newConfig['features']['mail']['mailhog'] = false
             log.warn("Enabled both external Mailserver and MailHog! Implicitly deactivating MailHog")
         }
@@ -287,9 +288,9 @@ class ApplicationConfigurator {
                 argocd['url'] = injectSubdomain('argocd', baseUrl)
                 log.debug("Setting URL ${argocd['url']}")
             }
-            if (mail['mailhog'] && !mail['url']) {
-                mail['url'] = injectSubdomain('mailhog', baseUrl)
-                log.debug("Setting URL ${mail['url']}")
+            if (mail['mailhog'] && !mail['mailhogUrl']) {
+                mail['mailhogUrl'] = injectSubdomain('mailhog', baseUrl)
+                log.debug("Setting URL ${mail['mailhogUrl']}")
             }
             if (monitoring['active'] && !monitoring['grafanaUrl']) {
                 monitoring['grafanaUrl'] = injectSubdomain('grafana', baseUrl)

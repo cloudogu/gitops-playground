@@ -47,10 +47,10 @@ class PrometheusStackTest {
                     ],
                     mail   : [
                             mailhog: true,
-                            externalMailserver : '',
-                            externalMailserverPort : '',
-                            externalMailserverUser : '',
-                            externalMailserverPassword : ''
+                            smtpAddress : '',
+                            smtpPort : '',
+                            smtpUser : '',
+                            smtpPassword : ''
                     ]
             ],
     ]
@@ -107,10 +107,10 @@ class PrometheusStackTest {
     @Test
     void 'When external Mailserver is set'() {
         config.features['mail']['active'] = true
-        config.features['mail']['externalMailserver'] = 'smtp.example.com'
-        config.features['mail']['externalMailserverPort'] = '1010110'
-        config.features['mail']['externalMailserverUser'] = 'mailserver@example.com'
-        config.features['mail']['externalMailserverPassword'] = '1101ABCabc&/+*~'
+        config.features['mail']['smtpAddress'] = 'smtp.example.com'
+        config.features['mail']['smtpPort'] = '1010110'
+        config.features['mail']['smtpUser'] = 'mailserver@example.com'
+        config.features['mail']['smtpPassword'] = '1101ABCabc&/+*~'
         config.features['monitoring']['grafanaEmailTo'] = 'grafana@example.com'   // needed to check that yaml is inserted correctly
 
         createStack().install()

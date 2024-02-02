@@ -59,10 +59,10 @@ class PrometheusStack extends Feature {
                 ],
                 mail: [
                         active: config.features['mail']['active'],
-                        externalMailserver : config.features['mail']['externalMailserver'],
-                        externalMailserverPort : config.features['mail']['externalMailserverPort'],
-                        externalMailserverUser : config.features['mail']['externalMailserverUser'],
-                        externalMailserverPassword : config.features['mail']['externalMailserverPassword']
+                        smtpAddress : config.features['mail']['smtpAddress'],
+                        smtpPort : config.features['mail']['smtpPort'],
+                        smtpUser : config.features['mail']['smtpUser'],
+                        smtpPassword : config.features['mail']['smtpPassword']
                 ],
                 scmm: getScmmConfiguration(),
                 jenkins: getJenkinsConfiguration()

@@ -521,3 +521,23 @@ Using nft insert, to make sure the rule is on top.
 ```
 nft insert rule ip filter INPUT tcp dport 80 accept
 ```
+
+# Generate schema.json
+
+Locally:
+````shell
+mvnp -DskipTests
+java -classpath target/gitops-playground-cli-0.1.jar org.codehaus.groovy.tools.GroovyStarter --main groovy.ui.GroovyMain \
+  --classpath src/main/groovy src/main/groovy/com/cloudogu/gitops/cli/GenerateJsonSchema.groovy \
+   | jq > docs/configuration.schema.json
+````
+
+Or via container:
+
+```shell
+docker build -t gitops-playground:dev --build-arg ENV=dev  --progress=plain .
+docker run --rm --entrypoint java gitops-playground:dev -classpath /app/gitops-playground.jar \
+ org.codehaus.groovy.tools.GroovyStarter --main groovy.ui.GroovyMain \
+ --classpath /app/src/main/groovy /app/src/main/groovy/com/cloudogu/gitops/cli/GenerateJsonSchema.groovy \
+ | jq > docs/configuration.schema.json
+```
