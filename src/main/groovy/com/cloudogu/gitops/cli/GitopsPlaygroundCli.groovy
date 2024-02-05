@@ -16,7 +16,7 @@ import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 
 import static groovy.json.JsonOutput.prettyPrint
-import static groovy.json.JsonOutput.toJson
+import static groovy.json.JsonOutput.toJson 
 /**
  * Provides the entrypoint to the application as well as all config parameters.
  * When changing parameters, make sure to update the Schema for the config file as well
@@ -28,6 +28,7 @@ import static groovy.json.JsonOutput.toJson
         description = 'CLI-tool to deploy gitops-playground.',
         mixinStandardHelpOptions = true,
         subcommands = JenkinsCli)
+
 @Slf4j
 class GitopsPlaygroundCli  implements Runnable {
     // args group registry
@@ -117,11 +118,20 @@ class GitopsPlaygroundCli  implements Runnable {
     @Option(names = ['--vault-url'], description = 'Sets url for vault ui')
     private String vaultUrl
 
-    // args group mail
-    @Option(names = ['--mail'], description = 'Installs MailHog as Mail server.', scope = CommandLine.ScopeType.INHERIT)
-    private Boolean mail
-    @Option(names = ['--mailhog-url'], description = 'Sets url for mailhog')
+    @Option(names = ['--mailhog-url'], description = 'Sets url for MailHog')
     private String mailhogUrl
+    @Option(names = ['--mailhog', '--mail'], description = 'Installs MailHog as Mail server.', scope = CommandLine.ScopeType.INHERIT)
+    Boolean mailhog
+
+    // condition check dependent parameters of external Mailserver
+    @Option(names = ['--smtp-address'], description = 'Sets smtp port of external Mailserver')
+    String smtpAddress
+    @Option(names = ['--smtp-port'], description = 'Sets smtp port of external Mailserver')
+    Integer smtpPort
+    @Option(names = ['--smtp-user'], description = 'Sets smtp username for external Mailserver')
+    String smtpUser
+    @Option(names = ['--smtp-password'], description = 'Sets smtp password of external Mailserver')
+    String smtpPassword
 
 // args group debug
     @Option(names = ['-d', '--debug'], description = 'Debug output', scope = CommandLine.ScopeType.INHERIT)
@@ -167,7 +177,6 @@ class GitopsPlaygroundCli  implements Runnable {
     private String petclinicBaseDomain
     @Option(names = ['--nginx-base-domain'], description = 'The domain under which a subdomain for all nginx applications will be used.')
     private String nginxBaseDomain
-
 
     @Override
     void run() {
@@ -225,6 +234,7 @@ class GitopsPlaygroundCli  implements Runnable {
     }
 
     private Map parseOptionsIntoConfig() {
+
         return [
                 registry   : [
                         url         : registryUrl,
@@ -274,8 +284,12 @@ class GitopsPlaygroundCli  implements Runnable {
                                 emailToAdmin : emailToAdmin
                         ],
                         mail: [
-                                active    : mail,
-                                url       : mailhogUrl,
+                                mailhog: mailhog,
+                                mailhogUrl : mailhogUrl,
+                                smtpAddress : smtpAddress,
+                                smtpPort : smtpPort,
+                                smtpUser : smtpUser,
+                                smtpPassword : smtpPassword
                         ],
                         exampleApps: [
                                 petclinic: [

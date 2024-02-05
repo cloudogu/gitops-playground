@@ -3,6 +3,7 @@ package com.cloudogu.gitops
 import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.schema.JsonSchemaGenerator
 import com.cloudogu.gitops.config.schema.JsonSchemaValidator
+import com.cloudogu.gitops.config.schema.Schema
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
 import com.cloudogu.gitops.utils.TestLogger
@@ -84,7 +85,6 @@ class ApplicationConfiguratorTest {
 
         Map actualConfig = applicationConfigurator.setConfig(testConfig).getConfig()
 
-        
         assertThat(actualConfig['registry']['internalPort']).isEqualTo(EXPECTED_REGISTRY_INTERNAL_PORT)
         assertThat(actualConfig['registry']['url']).isEqualTo(EXPECTED_REGISTRY_URL)
         assertThat(actualConfig['registry']['path']).isEqualTo('')
@@ -184,20 +184,58 @@ images:
         }
     }
 
+    @Test
+    void "config file has only fields that are present in default values"() {
+        def defaultConfig = applicationConfigurator.setConfig([:]).config
+        
+        def fields = getAllFieldNames(Schema.class).sort()
+        def keys = getAllKeys2(defaultConfig).sort()
+
+        assertThat(fields).isSubsetOf(keys)
+    }
     
+    List<String> getAllFieldNames(Class clazz, String parentField = '', List<String> fieldNames = []) {
+        clazz.declaredFields.each { field ->
+            def currentField = parentField + field.name
+            if (field.type instanceof Class 
+                    && !field.type.isArray() 
+                    && field.type.name.startsWith(Schema.class.getPackageName())) {
+                println "nested class $field.type, $currentField + '.', $fieldNames"
+                getAllFieldNames(field.type, currentField + '.', fieldNames)
+            } else {
+                if (!field.name.startsWith('_') && !field.name.startsWith('$') && field.name != 'metaClass') {
+                    fieldNames.add(currentField)
+                }
+            }
+        }
+        return fieldNames
+    }
+
+    List<String> getAllKeys2(Map map, String parentKey = '', List<String> keysList = []) {
+        map.each { key, value ->
+            def currentKey = parentKey + key
+            if (value instanceof Map) {
+                getAllKeys2(value, currentKey + '.', keysList)
+            } else {
+                keysList.add(currentKey)
+            }
+        }
+        return keysList
+    }
+
     @Test
     void "base url: evaluates for all tools"() {
         testConfig.application['baseUrl'] = 'http://localhost'
         
         testConfig.features['argocd']['active'] = true
-        testConfig.features['mail']['active'] = true
+        testConfig.features['mail']['mailhog'] = true
         testConfig.features['monitoring']['active'] = true
         testConfig.features['secrets']['active'] = true
 
         Map actualConfig = applicationConfigurator.setConfig(testConfig).getConfig()
 
         assertThat(actualConfig.features['argocd']['url']).isEqualTo("http://argocd.localhost")
-        assertThat(actualConfig.features['mail']['url']).isEqualTo("http://mailhog.localhost")
+        assertThat(actualConfig.features['mail']['mailhogUrl']).isEqualTo("http://mailhog.localhost")
         assertThat(actualConfig.features['monitoring']['grafanaUrl']).isEqualTo("http://grafana.localhost")
         assertThat(actualConfig.features['secrets']['vault']['url']).isEqualTo("http://vault.localhost")
         assertThat(actualConfig.features['exampleApps']['petclinic']['baseDomain']).isEqualTo("petclinic.localhost")
@@ -225,7 +263,7 @@ images:
         Map actualConfig = applicationConfigurator.setConfig(testConfig).getConfig()
 
         assertThat(actualConfig.features['argocd']['url']).isEqualTo("")
-        assertThat(actualConfig.features['mail']['url']).isEqualTo("")
+        assertThat(actualConfig.features['mail']['mailhogUrl']).isEqualTo("")
         assertThat(actualConfig.features['monitoring']['grafanaUrl']).isEqualTo("")
         assertThat(actualConfig.features['secrets']['vault']['url']).isEqualTo("")
     }
@@ -240,7 +278,7 @@ images:
         testConfig.features['secrets']['active'] = true
 
         testConfig.features['argocd']['url'] = 'argocd'
-        testConfig.features['mail']['url'] = 'mailhog'
+        testConfig.features['mail']['mailhogUrl'] = 'mailhog'
         testConfig.features['monitoring']['grafanaUrl'] = 'grafana'
         testConfig.features['secrets']['vault']['url'] = 'vault'
         testConfig.features['exampleApps']['petclinic']['baseDomain'] = 'petclinic'
@@ -249,7 +287,7 @@ images:
         Map actualConfig = applicationConfigurator.setConfig(testConfig).getConfig()
 
         assertThat(actualConfig.features['argocd']['url']).isEqualTo("argocd")
-        assertThat(actualConfig.features['mail']['url']).isEqualTo("mailhog")
+        assertThat(actualConfig.features['mail']['mailhogUrl']).isEqualTo("mailhog")
         assertThat(actualConfig.features['monitoring']['grafanaUrl']).isEqualTo("grafana")
         assertThat(actualConfig.features['secrets']['vault']['url']).isEqualTo("vault")
         assertThat(actualConfig.features['exampleApps']['petclinic']['baseDomain']).isEqualTo("petclinic")

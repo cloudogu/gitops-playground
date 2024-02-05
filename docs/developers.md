@@ -459,6 +459,25 @@ If you want to go online again, use `-D`
 sudo iptables -D FORWARD -j DROP -i $(ip -o -4 addr show | awk -v ip="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.Gateway}}{{end}}' k3d-airgapped-playground-server-0)" '$4 ~ ip {print $2}')
 ```
 
+## Notifications / E-Mail
+
+Notifications are implemented via Mail.  
+Either internal MailHog or an external mail server can be used.
+
+To test with an external mail server, set up the configuration as follows:
+
+```
+--argocd --monitoring \
+--smtp-address <smtp.server.address> --smtp-port <port> --smtp-user <login-username> --smtp-password 'your-secret' \
+--grafana-email-to recipient@example.com --argocd-email-to-user recipient@example.com --argocd-email-to-admin recipient@example.com --argocd-email-from sender@example.com --grafana-email-from sender@example.com 
+```
+
+For testing, an email can be sent via the Grafana UI.  
+Go to Alerting > Notifications, here at contact Points click on the right side at provisioned email contact on "View contact point"   
+Here you can check if the configuration is implemented correctly and fire up a Testmail.
+
+For testing Argo CD, just uncomment some of the defaultTriggers in it's values.yaml and it will send a lot of emails.
+
 ## Troubleshooting
 
 When stuck in `Pending` this might be due to volumes not being provisioned
@@ -504,4 +523,24 @@ When requests are denied, there might be problems with the iptables/nftables con
 Using nft insert, to make sure the rule is on top.
 ```
 nft insert rule ip filter INPUT tcp dport 80 accept
+```
+
+# Generate schema.json
+
+Locally:
+````shell
+mvnp -DskipTests
+java -classpath target/gitops-playground-cli-0.1.jar org.codehaus.groovy.tools.GroovyStarter --main groovy.ui.GroovyMain \
+  --classpath src/main/groovy src/main/groovy/com/cloudogu/gitops/cli/GenerateJsonSchema.groovy \
+   | jq > docs/configuration.schema.json
+````
+
+Or via container:
+
+```shell
+docker build -t gitops-playground:dev --build-arg ENV=dev  --progress=plain .
+docker run --rm --entrypoint java gitops-playground:dev -classpath /app/gitops-playground.jar \
+ org.codehaus.groovy.tools.GroovyStarter --main groovy.ui.GroovyMain \
+ --classpath /app/src/main/groovy /app/src/main/groovy/com/cloudogu/gitops/cli/GenerateJsonSchema.groovy \
+ | jq > docs/configuration.schema.json
 ```

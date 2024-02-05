@@ -49,10 +49,22 @@
         "mail": {
           "type": "object",
           "properties": {
-            "active": {
+            "mailhog": {
               "type": "boolean"
             },
-            "url": {
+            "mailhogUrl": {
+              "type": "string"
+            },
+            "smtpAddress": {
+              "type": "string"
+            },
+            "smtpPassword": {
+              "type": "string"
+            },
+            "smtpPort": {
+              "type": "integer"
+            },
+            "smtpUser": {
               "type": "string"
             }
           },

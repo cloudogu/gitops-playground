@@ -46,7 +46,11 @@ class PrometheusStackTest {
                             ]
                     ],
                     mail   : [
-                            active: true
+                            mailhog: true,
+                            smtpAddress : '',
+                            smtpPort : '',
+                            smtpUser : '',
+                            smtpPassword : ''
                     ]
             ],
     ]
@@ -66,7 +70,7 @@ class PrometheusStackTest {
 
     @Test
     void 'When mailhog disabled: Does not include mail configurations into cluster resources'() {
-        config.features['mail']['active'] = false
+        config.features['mail']['mailhog'] = false
         createStack().install()
         assertThat(parseActualStackYaml()['grafana']['notifiers']).isNull()
     }
@@ -80,6 +84,7 @@ class PrometheusStackTest {
 
     @Test
     void "When Email Addresses is set"() {
+        config.features['mail']['active'] = true
         config.features['monitoring']['grafanaEmailFrom'] = 'grafana@example.com'
         config.features['monitoring']['grafanaEmailTo'] = 'infra@example.com'
         createStack().install()
@@ -91,11 +96,79 @@ class PrometheusStackTest {
 
     @Test
     void "When Email Addresses is NOT set"() {
+        config.features['mail']['active'] = true
         createStack().install()
 
         def notifiersYaml = parseActualStackYaml()['grafana']['notifiers']['notifiers.yaml']['notifiers']['settings'] as List
         assertThat(notifiersYaml[0]['addresses']).isEqualTo('infra@example.org')
         assertThat(parseActualStackYaml()['grafana']['env']['GF_SMTP_FROM_ADDRESS']).isEqualTo('grafana@example.org')
+    }
+
+    @Test
+    void 'When external Mailserver is set'() {
+        config.features['mail']['active'] = true
+        config.features['mail']['smtpAddress'] = 'smtp.example.com'
+        config.features['mail']['smtpPort'] = '1010110'
+        config.features['mail']['smtpUser'] = 'mailserver@example.com'
+        config.features['mail']['smtpPassword'] = '1101ABCabc&/+*~'
+        config.features['monitoring']['grafanaEmailTo'] = 'grafana@example.com'   // needed to check that yaml is inserted correctly
+
+        createStack().install()
+        def contactPointsYaml = parseActualStackYaml()
+
+        assertThat(contactPointsYaml['grafana']['alerting']['contactpoints.yaml']).isEqualTo(new YamlSlurper().parseText(
+"""
+apiVersion: 1
+contactPoints:
+- orgId: 1
+  name: email
+  is_default: true
+  receivers:
+  - uid: email1
+    type: email
+    settings:
+      addresses: ${config.features['monitoring']['grafanaEmailTo']}
+"""
+                )
+        )
+        assertThat(contactPointsYaml['grafana']['alerting']['notification-policies.yaml']).isEqualTo(new YamlSlurper().parseText(
+'''
+apiVersion: 1
+policies:
+- orgId: 1
+  is_default: true
+  receiver: email
+  routes:
+  - receiver: email
+  group_by: ["grafana_folder", "alertname"]
+'''
+        ))
+
+        assertThat(contactPointsYaml['grafana']['env']['GF_SMTP_HOST']).isEqualTo('smtp.example.com:1010110')
+        assertThat(contactPointsYaml['grafana']['env']['GF_SMTP_USER']).isEqualTo(config.features['mail']['smtpUser'])
+        assertThat(contactPointsYaml['grafana']['env']['GF_SMTP_PASSWORD']).isEqualTo(config.features['mail']['smtpPassword'])
+    }
+
+    @Test
+    void 'When external Mailserver is set without port, user, password'() {
+        config.features['mail']['active'] = true
+        config.features['mail']['smtpAddress'] = 'smtp.example.com'
+
+        createStack().install()
+        def contactPointsYaml = parseActualStackYaml()
+        
+        assertThat(contactPointsYaml['grafana']['env']['GF_SMTP_HOST']).isEqualTo('smtp.example.com')
+        assertThat(contactPointsYaml['grafana']['env'] as Map).doesNotContainKey('GF_SMTP_USER')
+        assertThat(contactPointsYaml['grafana']['env'] as Map).doesNotContainKey('GF_SMTP_PASSWORD')
+    }
+
+    @Test
+    void 'When external Mailserver is NOT set'() {
+        config.features['mail']['mailhog'] = false
+        createStack().install()
+        def contactPointsYaml = parseActualStackYaml()
+
+        assertThat(contactPointsYaml['grafana']['alerting']).isNull()
     }
 
     @Test

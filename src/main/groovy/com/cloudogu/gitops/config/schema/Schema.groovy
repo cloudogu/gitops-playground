@@ -78,8 +78,12 @@ class Schema {
     }
 
      static class MailSchema {
-         boolean active = true
-         String url = ""
+         boolean mailhog = false
+         String mailhogUrl = ""
+         String smtpAddress = ""
+         Integer smtpPort = null
+         String smtpUser = ""
+         String smtpPassword = ""
     }
 
      static class MonitoringSchema {

@@ -95,13 +95,20 @@ argo-cd:
       timeout.reconciliation: 15s
 
   notifications:
-    enabled: ${mail.active?string('true', 'false')}
+    enabled: <#if mail.active??>true<#else>false</#if>
     argocdUrl: https://localhost:9092
-<#if mail.active == true>
+<#if mail.active??>
     notifiers:
       service.email: |
+      <#if mail.smtpAddress?has_content>
+        host: ${mail.smtpAddress}
+        <#if mail.smtpPort?has_content>port: ${mail.smtpPort}</#if>
+        <#if mail.smtpUser?has_content>username: ${mail.smtpUser}</#if>
+        <#if mail.smtpPassword?has_content>password: ${mail.smtpPassword}</#if>
+      <#else>
         host: mailhog.${namePrefix}monitoring.svc.cluster.local
         port: 1025
+      </#if>
         from: ${argocd.emailFrom}
 <#noparse>
     templates:
