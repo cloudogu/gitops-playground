@@ -81,10 +81,10 @@ class Schema {
     }
 
      static class MailSchema {
-         boolean mailhog = true
+         boolean mailhog = false
          String mailhogUrl = ""
          String smtpAddress = ""
-         Integer smtpPort
+         Integer smtpPort = null
          String smtpUser = ""
          String smtpPassword = ""
     }

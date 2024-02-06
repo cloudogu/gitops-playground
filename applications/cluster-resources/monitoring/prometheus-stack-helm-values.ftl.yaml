@@ -92,7 +92,7 @@ grafana:
       requests:
         cpu: 35m
         memory: 65Mi
-<#if (mail.active)??>
+<#if mail.active??>
   notifiers:
     notifiers.yaml:
       notifiers:
@@ -125,13 +125,13 @@ grafana:
           routes:
           - receiver: email
           group_by: ["grafana_folder", "alertname"]
- <#if mail.externalMailserver?has_content>
+  <#if mail.smtpAddress?has_content>
   env:
     GF_SMTP_ENABLED: true
     GF_SMTP_FROM_ADDRESS: ${monitoring.grafanaEmailFrom}
-    GF_SMTP_HOST: ${mail.externalMailserver}:${mail.externalMailserverPort}
-    GF_SMTP_USER: ${mail.externalMailserverUser}
-    GF_SMTP_PASSWORD: ${mail.externalMailserverPassword}
+    GF_SMTP_HOST: ${mail.smtpAddress}<#if mail.smtpPort?has_content>:${mail.smtpPort}</#if>
+    <#if mail.smtpUser?has_content>GF_SMTP_USER: ${mail.smtpUser}</#if>
+    <#if mail.smtpPassword?has_content>GF_SMTP_PASSWORD: ${mail.smtpPassword}</#if>
  <#else>
   env:
     GF_SMTP_ENABLED: true
