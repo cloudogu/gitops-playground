@@ -1,3 +1,11 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Exercise: Resource validation using `gitops-build-lib`](#exercise-resource-validation-using-gitops-build-lib)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Exercise: Resource validation using `gitops-build-lib`
 
 This repository contains an exercise on the validation utils provided by our `gitops-build-lib`. We've prepared some

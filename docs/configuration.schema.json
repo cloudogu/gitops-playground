@@ -46,6 +46,15 @@
           },
           "additionalProperties": false
         },
+        "ingress": {
+          "type": "object",
+          "properties": {
+            "active": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
         "mail": {
           "type": "object",
           "properties": {

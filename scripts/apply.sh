@@ -439,7 +439,7 @@ function printUsage() {
 readParameters() {
   COMMANDS=$(getopt \
     -o hdxyc \
-    --long help,config-file:,config-map:,output-config-file,destroy,argocd,argocd-url:,debug,remote,base-url:,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,jenkins-metrics-username:,jenkins-metrics-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,grafana-url:,grafana-image:,grafana-sidecar-image:,prometheus-image:,prometheus-operator-image:,prometheus-config-reloader-image:,external-secrets-image:,external-secrets-certcontroller-image:,external-secrets-webhook-image:,vault-url:,vault-image:,nginx-image:,trace,insecure,yes,skip-helm-update,metrics,monitoring,grafana-email-from:,grafana-email-to:,argocd-email-from:,argocd-email-to-admin:,argocd-email-to-user:,mail,mailhog,mailhog-url:,smtp-address:,smtp-port:,smtp-user:,smtp-password:,vault:,petclinic-base-domain:,nginx-base-domain:,name-prefix: \
+    --long help,config-file:,config-map:,output-config-file,destroy,argocd,argocd-url:,debug,remote,base-url:,username:,password:,jenkins-url:,jenkins-username:,jenkins-password:,jenkins-metrics-username:,jenkins-metrics-password:,registry-url:,registry-path:,registry-username:,registry-password:,internal-registry-port:,scmm-url:,scmm-username:,scmm-password:,kubectl-image:,helm-image:,kubeval-image:,helmkubeval-image:,yamllint-image:,grafana-url:,grafana-image:,grafana-sidecar-image:,prometheus-image:,prometheus-operator-image:,prometheus-config-reloader-image:,external-secrets-image:,external-secrets-certcontroller-image:,external-secrets-webhook-image:,vault-url:,vault-image:,nginx-image:,trace,insecure,yes,skip-helm-update,metrics,monitoring,grafana-email-from:,grafana-email-to:,argocd-email-from:,argocd-email-to-admin:,argocd-email-to-user:,mail,mailhog,mailhog-url:,smtp-address:,smtp-port:,smtp-user:,smtp-password:,vault:,petclinic-base-domain:,nginx-base-domain:,name-prefix:,ingress-nginx \
     -- "$@")
   
   if [ $? != 0 ]; then
@@ -474,6 +474,7 @@ readParameters() {
   DESTROY=false
   OUTPUT_CONFIG_FILE=false
   NAME_PREFIX=""
+  INGRESS_NGINX=false
 
   while true; do
     case "$1" in
@@ -526,12 +527,12 @@ readParameters() {
       -y | --yes           ) ASSUME_YES=true; shift ;;
       --metrics | --monitoring ) shift;; # Ignore, used in groovy only
       --mail               ) shift;; # Ignore, used in groovy only
-      --mailhog            ) shift;; # Ignore, used in groovy only
       --mailhog-url        ) shift 2;; # Ignore, used in groovy only
       --smtp-address         ) shift ;; # Ignore, used in groovy only
       --smtp-port     ) shift ;; # Ignore, used in groovy only
       --smtp-user     ) shift ;; # Ignore, used in groovy only
       --smtp-password ) shift ;; # Ignore, used in groovy only
+      --ingress-nginx      ) INGRESS_NGINX=true; shift ;;
       --vault              ) shift 2;; # Ignore, used in groovy only
       --petclinic-base-domain ) shift 2;; # Ignore, used in groovy only
       --nginx-base-domain  ) shift 2;; # Ignore, used in groovy only

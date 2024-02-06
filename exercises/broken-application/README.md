@@ -1,3 +1,11 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Exercise: Broken Application](#exercise-broken-application)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Exercise: Broken Application
 
 This application does not run. Can you figure out how to resolve these errors?

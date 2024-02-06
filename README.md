@@ -46,7 +46,7 @@ We recommend running this command as an unprivileged user, that is inside the [d
 
 # Table of contents
 
-<!-- Update with `doctoc --notitle README.md --maxlevel 4`. See https://github.com/thlorenz/doctoc -->
+<!-- Update with `doctoc --notitle README.md --maxlevel 5`. See https://github.com/thlorenz/doctoc -->
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
@@ -59,6 +59,7 @@ We recommend running this command as an unprivileged user, that is inside the [d
     - [Apply via kubectl (remote cluster)](#apply-via-kubectl-remote-cluster)
     - [Additional parameters](#additional-parameters)
       - [Configuration file](#configuration-file)
+      - [Deploy Ingress-Controller](#deploy-ingress-controller)
       - [Deploy Ingresses](#deploy-ingresses)
       - [Deploy GitOps operators](#deploy-gitops-operators)
       - [Deploy with local Cloudogu Ecosystem](#deploy-with-local-cloudogu-ecosystem)
@@ -66,6 +67,9 @@ We recommend running this command as an unprivileged user, that is inside the [d
       - [Override default images](#override-default-images)
       - [Argo CD-Notifications](#argo-cd-notifications)
       - [Monitoring](#monitoring)
+      - [Mail server](#mail-server)
+      - [MailHog](#mailhog)
+      - [External Mailserver](#external-mailserver)
       - [Secrets Management](#secrets-management)
   - [Remove playground](#remove-playground)
   - [Running on Windows or Mac](#running-on-windows-or-mac)
@@ -84,11 +88,10 @@ We recommend running this command as an unprivileged user, that is inside the [d
     - [prod mode](#prod-mode)
     - [Example app](#example-app)
   - [Example Applications](#example-applications)
-    - [Argo CD](#argo-cd-1)
-      - [PetClinic with plain k8s resources](#petclinic-with-plain-k8s-resources)
-      - [PetClinic with helm](#petclinic-with-helm)
-      - [3rd Party app (NGINX) with helm, templated in Jenkins](#3rd-party-app-nginx-with-helm-templated-in-jenkins)
-      - [3rd Party app (NGINX) with helm, using Helm dependency mechanism](#3rd-party-app-nginx-with-helm-using-helm-dependency-mechanism)
+    - [PetClinic with plain k8s resources](#petclinic-with-plain-k8s-resources)
+    - [PetClinic with helm](#petclinic-with-helm)
+    - [3rd Party app (NGINX) with helm, templated in Jenkins](#3rd-party-app-nginx-with-helm-templated-in-jenkins)
+    - [3rd Party app (NGINX) with helm, using Helm dependency mechanism](#3rd-party-app-nginx-with-helm-using-helm-dependency-mechanism)
 - [Development](#development)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -279,6 +282,15 @@ In addition, you might want to delete the config-map as well.
 ``` bash
 kubectl delete cm gitops-config 
 ```
+
+##### Deploy Ingress-Controller
+
+In the default installation the GitOPS-Playground comes without an Ingress-Controller.  
+
+We use Nginx as default Ingress-Controller, via the configfile or parameter `--ingress-nginx` a Nginx Ingress-Controller can be deployed.  
+If you deploy the Ingress-Controller you have to define `--base-url` also.  
+  
+
 
 ##### Deploy Ingresses
 

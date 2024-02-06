@@ -150,6 +150,14 @@ class ApplicationConfigurator {
                                     ]
                             ]
                     ],
+                    ingress: [
+                            active: false, // Set dynamically
+                            helm  : [
+                                    chart: 'ingress-nginx',
+                                    repoURL: 'https://kubernetes.github.io/ingress-nginx',
+                                    version: '4.8.0'
+                            ],
+                    ],
                     exampleApps: [
                             petclinic: [
                                     baseDomain: '',
@@ -192,6 +200,9 @@ class ApplicationConfigurator {
         if (newConfig['features']['mail']['externalMailserver'] && newConfig['features']['mail']['mailhog']) {
             newConfig['features']['mail']['mailhog'] = false
             log.warn("Enabled both external Mailserver and MailHog! Implicitly deactivating MailHog")
+        }
+        if (newConfig['application']['baseUrl'] && !newConfig['features']['ingress']['active']) {
+            log.warn("Ingress-controller is activated without baseUrl parameter. Services will not be accessible by hostnames. To avoid this use baseUrl with ingress. ")
         }
 
         evaluateBaseUrl(newConfig)

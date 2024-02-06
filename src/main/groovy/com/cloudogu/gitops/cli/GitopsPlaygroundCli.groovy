@@ -101,6 +101,8 @@ class GitopsPlaygroundCli  implements Runnable {
     private String vaultImage
     @Option(names = ['--nginx-image'], description = 'Sets image for nginx used in various applications')
     private String nginxImage
+    @Option(names = ['--base-url'], description = 'the external base url (TLD) for all tools, e.g. https://example.com or http://localhost:8080. The individual -url params for argocd, grafana, vault and mailhog take precedence.')
+    private String baseUrl
 
     // args group metrics
     @Option(names = ['--metrics', '--monitoring'], description = 'Installs the Kube-Prometheus-Stack. This includes Prometheus, the Prometheus operator, Grafana and some extra resources')
@@ -134,7 +136,7 @@ class GitopsPlaygroundCli  implements Runnable {
     @Option(names = ['--smtp-password'], description = 'Sets smtp password of external Mailserver')
     String smtpPassword
 
-// args group debug
+    // args group debug
     @Option(names = ['-d', '--debug'], description = 'Debug output', scope = CommandLine.ScopeType.INHERIT)
     private Boolean debug
     @Option(names = ['-x', '--trace'], description = 'Debug + Show each command executed (set -x)', scope = CommandLine.ScopeType.INHERIT)
@@ -147,8 +149,6 @@ class GitopsPlaygroundCli  implements Runnable {
     private String password
     @Option(names = ['-y', '--yes'], description = 'Skip kubecontext confirmation')
     private Boolean pipeYes
-    @Option(names = ['--base-url'], description = 'the external base url (TLD) for all tools, e.g. https://example.com or http://localhost:8080. The individual -url params for argocd, grafana, vault and mailhog take precedence.')
-    private String baseUrl
     @Option(names = ['--name-prefix'], description = 'Set name-prefix for repos, jobs, namespaces')
     private String namePrefix
     @Option(names = ['--destroy'], description = 'Unroll playground')
@@ -159,7 +159,6 @@ class GitopsPlaygroundCli  implements Runnable {
     private String configMap
     @Option(names = ['--output-config-file'], description = 'Output current config as config file as much as possible')
     private Boolean outputConfigFile
-
 
     // args group ArgoCD operator
     @Option(names = ['--argocd'], description = 'Install ArgoCD ')
@@ -178,6 +177,12 @@ class GitopsPlaygroundCli  implements Runnable {
     private String petclinicBaseDomain
     @Option(names = ['--nginx-base-domain'], description = 'The domain under which a subdomain for all nginx applications will be used.')
     private String nginxBaseDomain
+
+    // args Ingress-Class
+    @Option(names = ['--ingress-nginx'], description = 'Sets and enables Nginx Ingress Controller')
+    private Boolean ingressNginx
+
+
 
     @Override
     void run() {
@@ -328,6 +333,9 @@ class GitopsPlaygroundCli  implements Runnable {
                                                 webhookImage       : externalSecretsOperatorWebhookImage
                                         ]
                                 ]
+                        ],
+                        ingress: [
+                               active: ingressNginx
                         ],
                 ]
         ]

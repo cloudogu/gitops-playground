@@ -1,6 +1,8 @@
 //file:noinspection unused
 package com.cloudogu.gitops.config.schema
 
+import com.cloudogu.gitops.features.IngressNginx
+
 /**
  * The schema for the configuration file.
  * It is used to validate the passed yaml file.
@@ -67,6 +69,7 @@ class Schema {
          MonitoringSchema monitoring
          SecretsSchema secrets
          ExampleAppsSchema exampleApps
+         IngressNginxSchema ingress
     }
 
      static class ArgoCDSchema {
@@ -134,5 +137,9 @@ class Schema {
          static class BaseDomainSchema {
              String baseDomain = ""
         }
+    }
+
+    static class IngressNginxSchema {
+        Boolean active = true
     }
 }

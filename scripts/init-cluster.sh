@@ -73,7 +73,9 @@ function createCluster() {
     # Persists the cache of Jenkins agents pods for faster builds
     '-v /tmp:/tmp@server:0'
     # Pin k8s version via k3s image
-    "--image=$K3S_VERSION" 
+    "--image=$K3S_VERSION"
+    # Disable traefik (we roll our own ingress-controller)
+    '--k3s-arg=--disable=traefik@server:0'
   )
 
   if [[ ${BIND_LOCALHOST} == 'true' ]]; then
