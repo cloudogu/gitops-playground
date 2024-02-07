@@ -155,11 +155,11 @@ class ApplicationConfigurator {
                             ]
                     ],
                     ingressNginx: [
-                            active: false, // Set dynamically
+                            active: false,
                             helm  : [
                                     chart: 'ingress-nginx',
                                     repoURL: 'https://kubernetes.github.io/ingress-nginx',
-                                    version: '4.8.0'
+                                    version: '4.9.1'
                             ],
                     ],
                     exampleApps: [
