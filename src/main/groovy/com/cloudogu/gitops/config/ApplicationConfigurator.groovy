@@ -154,7 +154,7 @@ class ApplicationConfigurator {
                                     ]
                             ]
                     ],
-                    ingress: [
+                    ingressNginx: [
                             active: false, // Set dynamically
                             helm  : [
                                     chart: 'ingress-nginx',
@@ -205,7 +205,7 @@ class ApplicationConfigurator {
             newConfig['features']['mail']['mailhog'] = false
             log.warn("Enabled both external Mailserver and MailHog! Implicitly deactivating MailHog")
         }
-        if (newConfig['application']['baseUrl'] && !newConfig['features']['ingress']['active']) {
+        if (newConfig['application']['baseUrl'] && !newConfig['features']['ingressNginx']['active']) {
             log.warn("Ingress-controller is activated without baseUrl parameter. Services will not be accessible by hostnames. To avoid this use baseUrl with ingress. ")
         }
 

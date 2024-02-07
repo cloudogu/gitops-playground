@@ -22,7 +22,7 @@ class IngressNginxTest {
                     namePrefix: "foo-",
             ],
             features:[
-                    ingress: [
+                    ingressNginx: [
                             active: false,
                             helm  : [
                                     chart: 'ingress-nginx',
@@ -39,11 +39,12 @@ class IngressNginxTest {
 
     @Test
     void 'When Ingress-Nginx is enabled, ingressClassResource is set to true'() {
-        config.features['ingress']['active'] = true
+        config.features['ingressNginx']['active'] = true
 
         createIngressNginx().install()
 
-        assertThat(temporaryYamlFile.toFile().getText()).isEqualTo("""---
+        assertThat(temporaryYamlFile.toFile().getText()).isEqualTo('''
+
 controller:
   annotations:
     ingressclass.kubernetes.io/is-default-class: "true"
@@ -72,15 +73,16 @@ controller:
     enable-brotli: "true"
     # permanent redirect from http to https
     #force-ssl-redirect: "true"
-    # customize access log format to include requested hostname (\$host)
+    # customize access log format to include requested hostname ($host)
     # https://github.com/kubernetes/ingress-nginx/blob/controller-v1.2.1/docs/user-guide/nginx-configuration/log-format.md
-    log-format-upstream: '\$remote_addr - \$remote_user [\$time_local] \"\$request\" \$status \$body_bytes_sent \"\$http_referer\" \"\$http_user_agent\" \"\$host\" \$request_length \$request_time [\$proxy_upstream_name] [\$proxy_alternative_upstream_name] \$upstream_addr \$upstream_response_length \$upstream_response_time \$upstream_status \$req_id'
-""")
+    log-format-upstream: '$remote_addr - $remote_user [$time_local] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent" "$host" $request_length $request_time [$proxy_upstream_name] [$proxy_alternative_upstream_name] $upstream_addr $upstream_response_length $upstream_response_time $upstream_status $req_id'
+
+    '''.trim())
     }
 
     @Test
     void 'When Ingress-Nginx is not enabled, ingress-nginx-helm-values yaml has no content'() {
-        config.features['ingress']['active'] = false
+        config.features['ingressNginx']['active'] = false
 
         createIngressNginx().install()
 

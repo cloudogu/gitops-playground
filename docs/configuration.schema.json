@@ -46,7 +46,7 @@
           },
           "additionalProperties": false
         },
-        "ingress": {
+        "ingressNginx": {
           "type": "object",
           "properties": {
             "active": {

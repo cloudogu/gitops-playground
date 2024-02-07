@@ -32,7 +32,7 @@ class IngressNginx extends Feature {
 
     @Override
     boolean isEnabled() {
-        return config.features['ingress']['active']
+        return config.features['ingressNginx']['active']
     }
 
     @Override
@@ -42,7 +42,7 @@ class IngressNginx extends Feature {
                    // once we introduce new parameters, we pass them to template here
                 ]).toPath()
 
-        def helmConfig = config['features']['ingress']['helm']
+        def helmConfig = config['features']['ingressNginx']['helm']
 
         deployer.deployFeature(
                 helmConfig['repoURL'] as String,

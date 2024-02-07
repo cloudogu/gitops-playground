@@ -1,13 +1,3 @@
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
-
-- [Argo CD](#argo-cd)
-  - [Upgrade Argo CD to newer version](#upgrade-argo-cd-to-newer-version)
-  - [What to do if argo breaks itself](#what-to-do-if-argo-breaks-itself)
-
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
 # Argo CD
 
 Repo for managing Argo CD via GitOps. This repository contains the following folders:

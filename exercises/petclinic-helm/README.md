@@ -1,11 +1,3 @@
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
-
-- [Exercise: Deployment from helm application](#exercise-deployment-from-helm-application)
-
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
 # Exercise: Deployment from helm application
 
 This repository contains an exercise on how to use our `gitops-build-lib` to create k8s resources and deploy an application.

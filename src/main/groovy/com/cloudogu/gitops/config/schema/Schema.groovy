@@ -69,7 +69,7 @@ class Schema {
          MonitoringSchema monitoring
          SecretsSchema secrets
          ExampleAppsSchema exampleApps
-         IngressNginxSchema ingress
+         IngressNginxSchema ingressNginx
     }
 
      static class ArgoCDSchema {

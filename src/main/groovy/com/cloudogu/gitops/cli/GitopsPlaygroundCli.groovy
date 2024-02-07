@@ -333,7 +333,7 @@ class GitopsPlaygroundCli  implements Runnable {
                                         ]
                                 ]
                         ],
-                        ingress: [
+                        ingressNginx: [
                                active: ingressNginx
                         ],
                 ]

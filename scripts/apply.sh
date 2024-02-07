@@ -527,6 +527,7 @@ readParameters() {
       -y | --yes           ) ASSUME_YES=true; shift ;;
       --metrics | --monitoring ) shift;; # Ignore, used in groovy only
       --mail               ) shift;; # Ignore, used in groovy only
+      --mailhog            ) shift;; # Ignore, used in groovy only
       --mailhog-url        ) shift 2;; # Ignore, used in groovy only
       --smtp-address         ) shift ;; # Ignore, used in groovy only
       --smtp-port     ) shift ;; # Ignore, used in groovy only
