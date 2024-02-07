@@ -205,7 +205,7 @@ class ApplicationConfigurator {
             newConfig['features']['mail']['mailhog'] = false
             log.warn("Enabled both external Mailserver and MailHog! Implicitly deactivating MailHog")
         }
-        if (newConfig['application']['baseUrl'] && !newConfig['features']['ingressNginx']['active']) {
+        if (newConfig['features']['ingressNginx']['active'] && !newConfig['application']['baseUrl']) {
             log.warn("Ingress-controller is activated without baseUrl parameter. Services will not be accessible by hostnames. To avoid this use baseUrl with ingress. ")
         }
 
