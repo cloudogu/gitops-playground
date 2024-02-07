@@ -475,7 +475,6 @@ readParameters() {
   DESTROY=false
   OUTPUT_CONFIG_FILE=false
   NAME_PREFIX=""
-  INGRESS_NGINX=false
 
   while true; do
     case "$1" in
@@ -534,7 +533,7 @@ readParameters() {
       --smtp-port     ) shift ;; # Ignore, used in groovy only
       --smtp-user     ) shift ;; # Ignore, used in groovy only
       --smtp-password ) shift ;; # Ignore, used in groovy only
-      --ingress-nginx      ) INGRESS_NGINX=true; shift ;;
+      --ingress-nginx      ) shift ;; # Ignore, used in groovy only
       --vault              ) shift 2;; # Ignore, used in groovy only
       --petclinic-base-domain ) shift 2;; # Ignore, used in groovy only
       --nginx-base-domain  ) shift 2;; # Ignore, used in groovy only
