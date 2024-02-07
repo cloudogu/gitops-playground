@@ -12,7 +12,6 @@ import jakarta.inject.Singleton
 @Slf4j
 @Singleton
 @Order(150)
-
 class IngressNginx extends Feature {
     static final String HELM_VALUES_PATH = "applications/cluster-resources/ingress-nginx-helm-values.ftl.yaml"
 
@@ -49,7 +48,7 @@ class IngressNginx extends Feature {
                 'ingress-nginx',
                 helmConfig['chart'] as String,
                 helmConfig['version'] as String,
-                'kube-system',
+                'ingress-nginx',
                 'ingress-nginx',
                 tmpHelmValues)
 

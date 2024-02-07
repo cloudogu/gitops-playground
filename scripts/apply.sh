@@ -207,6 +207,7 @@ function applyBasicK8sResources() {
   kubectl create namespace "${NAME_PREFIX}example-apps-staging" || true
   kubectl create namespace "${NAME_PREFIX}monitoring" || true
   kubectl create namespace "${NAME_PREFIX}secrets" || true
+  kubectl create namespace "${NAME_PREFIX}ingress-nginx" || true
 
   createSecrets
 
