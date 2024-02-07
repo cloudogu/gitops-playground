@@ -23,7 +23,7 @@ For questions or suggestions you are welcome to join us at our myCloudogu [commu
 ![Playground features](docs/gitops-playground-features.drawio.svg)
 ©Cloudogu GmbH 2023: GitOps Playground© for use with  Argo™, Git™, Jenkins®, Kubernetes®, Prometheus®, Vault® and SCM-Manager 
 
-# TL;DR
+## TL;DR
 
 You can try the GitOps Playground on a local Kubernetes cluster by running a single command:
 
@@ -44,7 +44,7 @@ See the list of [applications](#applications) to get started.
 
 We recommend running this command as an unprivileged user, that is inside the [docker group](https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user).
 
-# Table of contents
+## Table of contents
 
 <!-- Update with `doctoc --notitle README.md --maxlevel 5`. See https://github.com/thlorenz/doctoc -->
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->

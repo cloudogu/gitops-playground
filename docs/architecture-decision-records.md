@@ -1,41 +1,25 @@
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
-
-- [Architecture Decision Records](#architecture-decision-records)
-  - [Using com.github.victools:jsonschema-generator to generate a schema for config file](#using-comgithubvictoolsjsonschema-generator-to-generate-a-schema-for-config-file)
-    - [Context and Problem Statement](#context-and-problem-statement)
-    - [Considered Options](#considered-options)
-    - [Decision Outcome](#decision-outcome)
-      - [by hand](#by-hand)
-      - [saasquatch/json-schema-inferrer](#saasquatchjson-schema-inferrer)
-      - [victools/jsonschema-generator](#victoolsjsonschema-generator)
-      - [FasterXML/jackson-module-jsonSchema](#fasterxmljackson-module-jsonschema)
-      - [fxg42/groovyschema](#fxg42groovyschema)
-      - [Outcome](#outcome)
-  - [Using Retrofit as API client for SCM-Manager](#using-retrofit-as-api-client-for-scm-manager)
-    - [Context and Problem Statement](#context-and-problem-statement-1)
-    - [Considered Options](#considered-options-1)
-    - [Decision Outcome](#decision-outcome-1)
-  - [Using Templating Mechanism for Generating Repositories](#using-templating-mechanism-for-generating-repositories)
-    - [Context and Problem Statement](#context-and-problem-statement-2)
-    - [Considered Options](#considered-options-2)
-    - [Decision Outcome](#decision-outcome-2)
-      - [Groovy Templating](#groovy-templating)
-      - [Micronaut-compatible Library](#micronaut-compatible-library)
-  - [Deploying Cluster Resources with Argo CD using inline YAML](#deploying-cluster-resources-with-argo-cd-using-inline-yaml)
-    - [Context and Problem Statement](#context-and-problem-statement-3)
-    - [Considered Options](#considered-options-3)
-    - [Decision Outcome](#decision-outcome-3)
-
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
 Architecture Decision Records
 ====
 
 Bases on [this template](https://adr.github.io/madr/examples.html).
 
-## Using com.github.victools:jsonschema-generator to generate a schema for config file
+## Table of contents
+
+<!-- Update with ` doctoc --notitle docs/architecture-decision-records.md --maxlevel 2`. See https://github.com/thlorenz/doctoc -->
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Using jsonschema-generator to generate a schema for config file](#using-jsonschema-generator-to-generate-a-schema-for-config-file)
+- [Using Retrofit as API client for SCM-Manager](#using-retrofit-as-api-client-for-scm-manager)
+- [Using Templating Mechanism for Generating Repositories](#using-templating-mechanism-for-generating-repositories)
+- [Deploying Cluster Resources with Argo CD using inline YAML](#deploying-cluster-resources-with-argo-cd-using-inline-yaml)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+
+## Using jsonschema-generator to generate a schema for config file
+
+`com.github.victools:jsonschema-generator`
 
 ### Context and Problem Statement
 

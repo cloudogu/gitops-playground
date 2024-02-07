@@ -1,18 +1,3 @@
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
-
-- [k3d](#k3d)
-  - [Create Cluster](#create-cluster)
-    - [Create Cluster without installing k3d](#create-cluster-without-installing-k3d)
-  - [Parameters](#parameters)
-    - [--cluster-name](#--cluster-name)
-    - [--bind-localhost](#--bind-localhost)
-    - [--bind-ingress-port](#--bind-ingress-port)
-  - [Implementation details](#implementation-details)
-
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
 # k3d
 
 ## Create Cluster

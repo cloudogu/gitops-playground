@@ -1,16 +1,3 @@
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
-
-- [Google Kubernetes Engine](#google-kubernetes-engine)
-  - [Prerequisites](#prerequisites)
-  - [Create Cluster using Terraform](#create-cluster-using-terraform)
-    - [State](#state)
-    - [Create cluster](#create-cluster)
-    - [Clean up](#clean-up)
-
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
 ### Google Kubernetes Engine
 
 ⚠️ Note that since k8s 1.24 [GKE no longer supports nodes with docker](https://cloud.google.com/kubernetes-engine/docs/deprecations/docker-containerd).

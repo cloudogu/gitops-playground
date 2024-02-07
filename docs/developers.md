@@ -1,8 +1,15 @@
+# Developers
+
+This document collects some information about things developers of the gop should know or
+problems they might face when they try to run and test their changes.
+It provides workarounds or solutions for the given issues.
+
+## Table of contents
+
+<!-- Update with ` doctoc --notitle docs/developers.md --maxlevel 4      `. See https://github.com/thlorenz/doctoc -->
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-- [Developers](#developers)
   - [Testing](#testing)
     - [Usage](#usage)
     - [Options](#options)
@@ -24,18 +31,13 @@
   - [Setup cluster](#setup-cluster)
   - [Provide images needed by playground](#provide-images-needed-by-playground)
   - [Install the playground](#install-the-playground)
-  - [Notifications](#notifications)
+  - [Notifications / E-Mail](#notifications--e-mail)
   - [Troubleshooting](#troubleshooting)
   - [Using ingresses locally](#using-ingresses-locally)
     - [Troubleshooting](#troubleshooting-1)
+- [Generate schema.json](#generate-schemajson)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
-# Developers
-
-This document collects some information about things developers of the gop should know or
-problems they might face when they try to run and test their changes.
-It provides workarounds or solutions for the given issues.
 
 ## Testing
 
