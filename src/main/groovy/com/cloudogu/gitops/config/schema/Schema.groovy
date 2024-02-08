@@ -67,6 +67,7 @@ class Schema {
          MonitoringSchema monitoring
          SecretsSchema secrets
          ExampleAppsSchema exampleApps
+         IngressNginxSchema ingressNginx
     }
 
      static class ArgoCDSchema {
@@ -134,5 +135,9 @@ class Schema {
          static class BaseDomainSchema {
              String baseDomain = ""
         }
+    }
+
+    static class IngressNginxSchema {
+        Boolean active = false
     }
 }

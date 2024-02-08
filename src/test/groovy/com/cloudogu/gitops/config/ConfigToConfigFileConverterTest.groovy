@@ -38,6 +38,9 @@ class ConfigToConfigFileConverterTest {
                                 nginx: [
                                         baseDomain: 'base-domain'
                                 ]
+                        ],
+                        ingressNginx: [
+                                active: true
                         ]
                 ]
         ])
@@ -74,6 +77,8 @@ features:
       baseDomain: "base-domain"
     nginx:
       baseDomain: "base-domain"
+  ingressNginx:
+    active: true
 """)
     }
 }

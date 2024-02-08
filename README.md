@@ -23,7 +23,7 @@ For questions or suggestions you are welcome to join us at our myCloudogu [commu
 ![Playground features](docs/gitops-playground-features.drawio.svg)
 ©Cloudogu GmbH 2023: GitOps Playground© for use with  Argo™, Git™, Jenkins®, Kubernetes®, Prometheus®, Vault® and SCM-Manager 
 
-# TL;DR
+## TL;DR
 
 You can try the GitOps Playground on a local Kubernetes cluster by running a single command:
 
@@ -33,7 +33,7 @@ bash <(curl -s \
   && docker run --rm --pull=always -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     --net=host \
-    ghcr.io/cloudogu/gitops-playground --yes --argocd --base-url=http://localhost
+    ghcr.io/cloudogu/gitops-playground --yes --argocd --ingress-nginx --base-url=http://localhost
 # If you want to try all features, you might want to add these params: --mail --monitoring --vault=dev
 ```
 
@@ -44,9 +44,9 @@ See the list of [applications](#applications) to get started.
 
 We recommend running this command as an unprivileged user, that is inside the [docker group](https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user).
 
-# Table of contents
+## Table of contents
 
-<!-- Update with `doctoc --notitle README.md --maxlevel 4`. See https://github.com/thlorenz/doctoc -->
+<!-- Update with `doctoc --notitle README.md --maxlevel 5`. See https://github.com/thlorenz/doctoc -->
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
@@ -59,6 +59,7 @@ We recommend running this command as an unprivileged user, that is inside the [d
     - [Apply via kubectl (remote cluster)](#apply-via-kubectl-remote-cluster)
     - [Additional parameters](#additional-parameters)
       - [Configuration file](#configuration-file)
+      - [Deploy Ingress Controller](#deploy-ingress-controller)
       - [Deploy Ingresses](#deploy-ingresses)
       - [Deploy GitOps operators](#deploy-gitops-operators)
       - [Deploy with local Cloudogu Ecosystem](#deploy-with-local-cloudogu-ecosystem)
@@ -66,6 +67,9 @@ We recommend running this command as an unprivileged user, that is inside the [d
       - [Override default images](#override-default-images)
       - [Argo CD-Notifications](#argo-cd-notifications)
       - [Monitoring](#monitoring)
+      - [Mail server](#mail-server)
+      - [MailHog](#mailhog)
+      - [External Mailserver](#external-mailserver)
       - [Secrets Management](#secrets-management)
   - [Remove playground](#remove-playground)
   - [Running on Windows or Mac](#running-on-windows-or-mac)
@@ -84,11 +88,10 @@ We recommend running this command as an unprivileged user, that is inside the [d
     - [prod mode](#prod-mode)
     - [Example app](#example-app)
   - [Example Applications](#example-applications)
-    - [Argo CD](#argo-cd-1)
-      - [PetClinic with plain k8s resources](#petclinic-with-plain-k8s-resources)
-      - [PetClinic with helm](#petclinic-with-helm)
-      - [3rd Party app (NGINX) with helm, templated in Jenkins](#3rd-party-app-nginx-with-helm-templated-in-jenkins)
-      - [3rd Party app (NGINX) with helm, using Helm dependency mechanism](#3rd-party-app-nginx-with-helm-using-helm-dependency-mechanism)
+    - [PetClinic with plain k8s resources](#petclinic-with-plain-k8s-resources)
+    - [PetClinic with helm](#petclinic-with-helm)
+    - [3rd Party app (NGINX) with helm, templated in Jenkins](#3rd-party-app-nginx-with-helm-templated-in-jenkins)
+    - [3rd Party app (NGINX) with helm, using Helm dependency mechanism](#3rd-party-app-nginx-with-helm-using-helm-dependency-mechanism)
 - [Development](#development)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -280,9 +283,19 @@ In addition, you might want to delete the config-map as well.
 kubectl delete cm gitops-config 
 ```
 
+##### Deploy Ingress Controller
+
+In the default installation the GitOps-Playground comes without an Ingress-Controller.  
+
+We use Nginx as default Ingress-Controller.
+It can be enabled via the configfile or parameter `--ingress-nginx`.
+
+In order to make use of the ingress controller, it is recommended to use it in conjunction with [`--base-url`](#deploy-ingresses), which will create `Ingress` objects for all components of the GitOps playground.
+
+
 ##### Deploy Ingresses
 
-It is possible to deploy ingresses for all components. You can either 
+It is possible to deploy `Ingress` objects for all components. You can either 
 * Set a common base url (`--base-url=https://example.com`) or
 * individual URLS: 
 ```
@@ -295,7 +308,9 @@ It is possible to deploy ingresses for all components. You can either
 ```
 * or both, where the individual URLs take precedence.
 
-Note: `jenkins-url` and `scmm-url` are for external services and do not lead to ingresses, but you can set them via `--base-url` for now.
+Note: 
+* `jenkins-url` and `scmm-url` are for external services and do not lead to ingresses, but you can set them via `--base-url` for now.
+* In order to make use of the `Ingress` you need an ingress controller. If your cluster does not provide one, the Playground can deploy one for you, via the [`--ingress-nginx` parameter](#deploy-ingress-controller).
 
 ###### Local ingresses
 
@@ -485,8 +500,8 @@ Note that this option has limitations. It does not remove CRDs, namespaces, loca
 
 ### Running on Windows or Mac
 
-* In general: We cannot use the `host` network, so it's easiest to access [via ingresses](#local-ingresses).
-* `--base-url=http://localhost` should work on both Windows and Mac
+* In general: We cannot use the `host` network, so it's easiest to access via [ingress controller](#deploy-ingress-controller) and [ingresses](#local-ingresses).
+* `--base-url=http://localhost --ingress-nginx` should work on both Windows and Mac.
 * In case of problems resolving e.g. `jenkins.localhost`, you could try using `--base-url=http://local.gd` or similar, as described in [local ingresses](#local-ingresses).
 
 #### Mac and Windows WSL
@@ -564,7 +579,7 @@ k3d kubeconfig write gitops-playground
 docker run --rm --pull=always `
     -v $HOME/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config `
     --net=host `
-    ghcr.io/cloudogu/gitops-playground --yes --argocd --base-url=http://localhost:$ingress_port # more params go here
+    ghcr.io/cloudogu/gitops-playground --yes --argocd --ingress-nginx --base-url=http://localhost:$ingress_port # more params go here
 ```
 
 ## Stack

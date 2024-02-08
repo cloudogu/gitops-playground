@@ -73,7 +73,9 @@ function createCluster() {
     # Persists the cache of Jenkins agents pods for faster builds
     '-v /tmp:/tmp@server:0'
     # Pin k8s version via k3s image
-    "--image=$K3S_VERSION" 
+    "--image=$K3S_VERSION"
+    # Disable traefik (we roll our own ingress-controller)
+    '--k3s-arg=--disable=traefik@server:0'
   )
 
   if [[ ${BIND_LOCALHOST} == 'true' ]]; then
@@ -121,7 +123,7 @@ function createCluster() {
   
   if [[ -n "${BIND_INGRESS_PORT}" ]]; then
     echo "Bound ingress port to localhost:${BIND_INGRESS_PORT}."
-    echoHightlighted "Make sure to pass a base-url, e.g. --base-url=http://local.gd$(if [ "$BIND_INGRESS_PORT" -ne 80 ]; then echo ":${BIND_INGRESS_PORT}"; fi) when applying the playground."
+    echoHightlighted "Make sure to pass a base-url, e.g. --ingress-nginx --base-url=http://localhost$(if [ "$BIND_INGRESS_PORT" -ne 80 ]; then echo ":${BIND_INGRESS_PORT}"; fi) when applying the playground."
   fi
 
   # Write ~/.config/k3d/kubeconfig-${CLUSTER_NAME}.yaml

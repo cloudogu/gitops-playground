@@ -90,6 +90,10 @@ argo-cd:
         type: helm
         url: https://argoproj.github.io/argo-helm
         name: argocd
+      ingress-nginx:
+        type: helm
+        url: https://kubernetes.github.io/ingress-nginx
+        name: ingress-nginx
 
     cm:
       timeout.reconciliation: 15s

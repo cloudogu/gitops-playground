@@ -46,6 +46,15 @@
           },
           "additionalProperties": false
         },
+        "ingressNginx": {
+          "type": "object",
+          "properties": {
+            "active": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
         "mail": {
           "type": "object",
           "properties": {
