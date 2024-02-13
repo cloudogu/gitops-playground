@@ -186,12 +186,23 @@ class ArgoCD extends Feature {
         log.debug("Creating repo credential secret that is used by argocd to access repos in SCM-Manager")
         // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo 
         def repoTemplateSecretName = 'argocd-repo-creds-scmm'
+        def notificationEmailSecret = 'argocd-notifications-secret'
         String scmmUrlForArgoCD = config.scmm["internal"] ? SCMM_URL_INTERNAL : ScmmRepo.createScmmUrl(config)
         k8sClient.createSecret('generic', repoTemplateSecretName, 'argocd',
                 new Tuple2('url', scmmUrlForArgoCD),
                 new Tuple2('username', "${namePrefix}gitops"),
                 new Tuple2('password', config.scmm['password'])
         )
+        if ((config.features['mail']['smtpUser']) && (config.features['mail']['smtpPassword'])) {
+            k8sClient.createSecret(
+                    'generic',
+                    'notificationEmailSecret',
+                    'argocd',
+                    new Tuple2('email-username', config.features['mail']['smtpUser']),
+                    new Tuple2('email-password', config.features['mail']['smtpPassword'])
+            )
+        }
+
         k8sClient.label('secret', repoTemplateSecretName,'argocd',
                 new Tuple2(' argocd.argoproj.io/secret-type', 'repo-creds'))
 

@@ -145,8 +145,8 @@ policies:
         ))
 
         assertThat(contactPointsYaml['grafana']['env']['GF_SMTP_HOST']).isEqualTo('smtp.example.com:1010110')
-        assertThat(contactPointsYaml['grafana']['env']['GF_SMTP_USER']).isEqualTo(config.features['mail']['smtpUser'])
-        assertThat(contactPointsYaml['grafana']['env']['GF_SMTP_PASSWORD']).isEqualTo(config.features['mail']['smtpPassword'])
+        assertThat(contactPointsYaml['grafana']['smtp']['userKey']).isEqualTo('email-username')
+        assertThat(contactPointsYaml['grafana']['smtp']['passwordKey']).isEqualTo('email-password')
     }
 
     @Test

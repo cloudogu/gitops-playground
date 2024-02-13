@@ -262,15 +262,15 @@ class ArgoCDTest {
         config.features['mail']['smtpPort'] = '1010110'
         config.features['mail']['smtpUser'] = 'argo@example.com'
         config.features['mail']['smtpPassword'] = '1101:ABCabc&/+*~'
-        
+
         createArgoCD().install()
         def serviceEmail = new YamlSlurper().parseText(
                 parseActualYaml(actualHelmValuesFile)['argo-cd']['notifications']['notifiers']['service.email'] as String)
         
         assertThat(serviceEmail['host']).isEqualTo(config.features['mail']['smtpAddress'])
         assertThat(serviceEmail['port'] as String).isEqualTo(config.features['mail']['smtpPort'])
-        assertThat(serviceEmail['username']).isEqualTo( config.features['mail']['smtpUser'])
-        assertThat(serviceEmail['password']).isEqualTo(config.features['mail']['smtpPassword'])
+        assertThat(serviceEmail['username']).isEqualTo('$email-username')
+        assertThat(serviceEmail['password']).isEqualTo('$email-password')
     }
 
     @Test
