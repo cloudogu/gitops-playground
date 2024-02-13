@@ -109,8 +109,6 @@ class PrometheusStackTest {
         config.features['mail']['active'] = true
         config.features['mail']['smtpAddress'] = 'smtp.example.com'
         config.features['mail']['smtpPort'] = '1010110'
-        config.features['mail']['smtpUser'] = 'mailserver@example.com'
-        config.features['mail']['smtpPassword'] = '1101ABCabc&/+*~'
         config.features['monitoring']['grafanaEmailTo'] = 'grafana@example.com'   // needed to check that yaml is inserted correctly
 
         createStack().install()
@@ -145,12 +143,59 @@ policies:
         ))
 
         assertThat(contactPointsYaml['grafana']['env']['GF_SMTP_HOST']).isEqualTo('smtp.example.com:1010110')
-        assertThat(contactPointsYaml['grafana']['env']['GF_SMTP_USER']).isEqualTo(config.features['mail']['smtpUser'])
-        assertThat(contactPointsYaml['grafana']['env']['GF_SMTP_PASSWORD']).isEqualTo(config.features['mail']['smtpPassword'])
     }
 
     @Test
-    void 'When external Mailserver is set without port, user, password'() {
+    void 'When external Mailserver is set with user'() {
+        config.features['mail']['active'] = true
+        config.features['mail']['smtpAddress'] = 'smtp.example.com'
+        config.features['mail']['smtpUser'] = 'mailserver@example.com'
+
+        createStack().install()
+        def valuesFromYaml = parseActualStackYaml()['grafana']['valuesFrom'] as List
+
+        assertThat(valuesFromYaml[0]['name']).isEqualTo('grafana-email-secret')
+        assertThat(parseActualStackYaml()['grafana']['smtp']['existingSecret']).isEqualTo('grafana-email-secret')
+    }
+
+    @Test
+    void 'When external Mailserver is set with password'() {
+        config.features['mail']['active'] = true
+        config.features['mail']['smtpAddress'] = 'smtp.example.com'
+        config.features['mail']['smtpPassword'] = '1101ABCabc&/+*~'
+
+        createStack().install()
+        def valuesFromYaml = parseActualStackYaml()['grafana']['valuesFrom'] as List
+
+        assertThat(valuesFromYaml[0]['name']).isEqualTo('grafana-email-secret')
+        assertThat(parseActualStackYaml()['grafana']['smtp']['existingSecret']).isEqualTo('grafana-email-secret')
+    }
+
+    @Test
+    void 'When external Mailserver is set without user and password'() {
+        config.features['mail']['active'] = true
+        config.features['mail']['smtpAddress'] = 'smtp.example.com'
+
+        createStack().install()
+
+        assertThat(parseActualStackYaml()['grafana']['valuesFrom']).isNull()
+        assertThat(parseActualStackYaml()['grafana']['smtp']).isNull()
+    }
+    
+    @Test
+    void 'Check if kubernetes secret will be created when external emailservers credential is set'() {
+        config.features['mail']['active'] = true
+        config.features['mail']['smtpAddress'] = 'smtp.example.com'
+        config.features['mail']['smtpUser'] = 'grafana@example.com'
+        config.features['mail']['smtpPassword'] = '1101ABCabc&/+*~'
+
+        createStack().install()
+
+        assertThat(k8sCommandExecutor.actualCommands[2]).isEqualTo("kubectl create secret generic grafana-email-secret -n foo-monitoring --from-literal=user=grafana@example.com --from-literal=password=1101ABCabc&/+*~ --dry-run=client -oyaml | kubectl apply -f-")
+    }
+
+    @Test
+    void 'When external Mailserver is set without port'() {
         config.features['mail']['active'] = true
         config.features['mail']['smtpAddress'] = 'smtp.example.com'
 
@@ -158,8 +203,6 @@ policies:
         def contactPointsYaml = parseActualStackYaml()
         
         assertThat(contactPointsYaml['grafana']['env']['GF_SMTP_HOST']).isEqualTo('smtp.example.com')
-        assertThat(contactPointsYaml['grafana']['env'] as Map).doesNotContainKey('GF_SMTP_USER')
-        assertThat(contactPointsYaml['grafana']['env'] as Map).doesNotContainKey('GF_SMTP_PASSWORD')
     }
 
     @Test

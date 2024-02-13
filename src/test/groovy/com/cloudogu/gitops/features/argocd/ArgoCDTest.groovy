@@ -262,16 +262,42 @@ class ArgoCDTest {
         config.features['mail']['smtpPort'] = '1010110'
         config.features['mail']['smtpUser'] = 'argo@example.com'
         config.features['mail']['smtpPassword'] = '1101:ABCabc&/+*~'
-        
+
         createArgoCD().install()
         def serviceEmail = new YamlSlurper().parseText(
                 parseActualYaml(actualHelmValuesFile)['argo-cd']['notifications']['notifiers']['service.email'] as String)
         
         assertThat(serviceEmail['host']).isEqualTo(config.features['mail']['smtpAddress'])
         assertThat(serviceEmail['port'] as String).isEqualTo(config.features['mail']['smtpPort'])
-        assertThat(serviceEmail['username']).isEqualTo( config.features['mail']['smtpUser'])
-        assertThat(serviceEmail['password']).isEqualTo(config.features['mail']['smtpPassword'])
+        // username and password are both linked to the k8s secret. Secrets will be created at runtime, in this test
+        assertThat(serviceEmail['username']).isEqualTo('$email-username')
+        assertThat(serviceEmail['password']).isEqualTo('$email-password')
     }
+
+    @Test
+    void 'When external emailservers username is set, check if kubernetes secret will be created'() {
+        config.features['mail']['active'] = true
+        config.features['mail']['smtpAddress'] = 'smtp.example.com'
+        config.features['mail']['smtpUser'] = 'argo@example.com'
+
+        createArgoCD().install()
+
+        def createMailSecretCommand = assertCommand(k8sCommands, 'kubectl create secret generic argocd-notifications-secret -n argocd')
+        assertThat(createMailSecretCommand).contains('email-username', config.features['mail']['smtpUser'] as CharSequence)
+    }
+
+    @Test
+    void 'When external emailservers password is set, check if kubernetes secret will be created'() {
+        config.features['mail']['active'] = true
+        config.features['mail']['smtpAddress'] = 'smtp.example.com'
+        config.features['mail']['smtpPassword'] = '1101:ABCabc&/+*~'
+
+        createArgoCD().install()
+
+        def createMailSecretCommand = assertCommand(k8sCommands, 'kubectl create secret generic argocd-notifications-secret -n argocd')
+        assertThat(createMailSecretCommand).contains('email-password', config.features['mail']['smtpPassword'] as CharSequence)
+    }
+
 
     @Test
     void 'When external Mailserver is set without port, user, password'() {
@@ -281,7 +307,8 @@ class ArgoCDTest {
         createArgoCD().install()
         def serviceEmail = new YamlSlurper().parseText(
                 parseActualYaml(actualHelmValuesFile)['argo-cd']['notifications']['notifiers']['service.email'] as String)
-
+        // TODO
+        // k8s secret anlegen, zeiter Test wenn secret nicht angelegt wird
         assertThat(serviceEmail['host']).isEqualTo("smtp.example.com")
         assertThat(serviceEmail as Map).doesNotContainKey('port')
         assertThat(serviceEmail as Map).doesNotContainKey('username')

@@ -47,6 +47,7 @@ class PrometheusStack extends Feature {
     void enable() {
         // Note that some specific configuration steps are implemented in ArgoCD
         def namePrefix = config.application['namePrefix']
+
         def tmpHelmValues = new TemplatingEngine().replaceTemplate(fileSystemUtils.copyToTempDir(HELM_VALUES_PATH).toFile(), [
                 namePrefix: namePrefix,
                 monitoring: [
@@ -83,6 +84,7 @@ class PrometheusStack extends Feature {
             helmValuesYaml['grafana']['adminPassword'] = password
         }
 
+        // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo
         k8sClient.createSecret(
                 'generic',
                 'prometheus-metrics-creds-scmm',
@@ -96,6 +98,16 @@ class PrometheusStack extends Feature {
                 'monitoring',
                 new Tuple2('password', config.jenkins['metricsPassword']),
         )
+
+        if ((config.features['mail']['smtpUser']) || (config.features['mail']['smtpPassword'])) {
+            k8sClient.createSecret(
+                    'generic',
+                    'grafana-email-secret',
+                    'monitoring',
+                    new Tuple2('user', config.features['mail']['smtpUser']),
+                    new Tuple2('password', config.features['mail']['smtpPassword'])
+            )
+        }
 
         def helmConfig = config['features']['monitoring']['helm']
         setCustomImages(helmConfig, helmValuesYaml)
