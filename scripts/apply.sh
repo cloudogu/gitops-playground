@@ -10,7 +10,7 @@ export PLAYGROUND_DIR
 
 # When updating, update in ApplicationConfigurator.groovy as well
 SPRING_BOOT_HELM_CHART_COMMIT=0.3.2
-K8S_VERSION=1.25.4
+K8S_VERSION=1.29.1
 
 source ${ABSOLUTE_BASEDIR}/utils.sh
 source ${ABSOLUTE_BASEDIR}/jenkins/init-jenkins.sh

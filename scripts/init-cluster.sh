@@ -4,7 +4,7 @@
 # This variable is also read in Jenkinsfile
 K3D_VERSION=5.6.0
 # When updating please also adapt in Dockerfile, vars.tf, ApplicationConfigurator.groovy and apply.sh
-K8S_VERSION=1.25.5
+K8S_VERSION=1.29.1
 K3S_VERSION="rancher/k3s:v${K8S_VERSION}-k3s2"
 
 set -o errexit
