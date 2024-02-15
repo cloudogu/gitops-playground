@@ -5,7 +5,7 @@ argo-cd:
 <#if argocd.host?has_content>
     ingress:
       enabled: true
-      hosts: [${argocd.host}]
+      hostname: ${argocd.host}
 </#if>
 
     service:
