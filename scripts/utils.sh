@@ -28,6 +28,10 @@ function getExternalIP() {
   echo $external_ip
 }
 
+function createSecret() {
+  kubectl create secret generic "$@" --dry-run=client -oyaml | kubectl apply -f-
+}
+
 function extractHost() {
     echo "$1" | awk -F[/:] '{print $4}'
 }
@@ -44,6 +48,22 @@ function injectSubdomain() {
         echo "Invalid BASE URL: ${BASE_URL}. It should start with either http:// or https://"
         return 1
     fi
+}
+
+function setExternalHostnameIfNecessary() {
+  local variablePrefix="$1"
+  local serviceName="$2"
+  local namespace="$3"
+
+  # :-} expands to empty string, e.g. for INTERNAL_ARGO which does not exist.
+  # This only works when checking for != false 😬
+  if [[ $REMOTE_CLUSTER == true && "$(eval echo "\${INTERNAL_${variablePrefix}:-}")" != 'false' ]]; then
+    # Update SCMM_URL or JENKINS_URL or ARGOCD_URL
+    # Only if apps are not external
+    # Our apps are configured to use port 80 on remote clusters
+    # Argo forwards to HTTPS so simply use HTTP here
+    declare -g "${variablePrefix}_URL"="http://$(getExternalIP "${serviceName}" "${namespace}")"
+  fi
 }
 
 function spinner() {

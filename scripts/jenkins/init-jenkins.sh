@@ -1,31 +1,59 @@
 #!/usr/bin/env bash
 set -o errexit -o nounset -o pipefail
-# set -x
 
+source ${ABSOLUTE_BASEDIR}/utils.sh
+
+# TODO set from groovy
 if [[ -z ${PLAYGROUND_DIR+x} ]]; then
   BASEDIR=$(dirname $0)
   PLAYGROUND_DIR="$(cd "${BASEDIR}" && cd .. && cd .. && pwd)"
 fi
 
+# TODO set env from AppConfigurator.groovy
 # When Upgrading helm chart, also upgrade controller.tag in jenkins/values.yaml
 #
 # In addition:
 # - Upgrade bash image in values.yaml and gid-grepper
 # - Also upgrade plugins. See docs/developers.md
 JENKINS_HELM_CHART_VERSION=4.8.1
+K8S_VERSION=1.25.4
 
-SET_USERNAME="admin"
-SET_PASSWORD="admin"
-REMOTE_CLUSTER=false
+# TODO does this hack for dev still work when called from groovy?
+JENKINS_PLUGIN_FOLDER=${JENKINS_PLUGIN_FOLDER:-''}
 
 source "${PLAYGROUND_DIR}"/scripts/jenkins/jenkins-REST-client.sh
 
+function initJenkins() {
+  JENKINS_URL="${1}"
+  JENKINS_USERNAME="${2}"
+  JENKINS_PASSWORD="${3}"
+  SCMM_URL="${4}"
+  SCMM_PASSWORD="${5}"
+  REGISTRY_URL="${6}"
+  REGISTRY_PATH="${7}"
+  REGISTRY_USERNAME="${8}"
+  REGISTRY_PASSWORD="${9}"
+  INSTALL_ARGOCD="${10}"
+  JENKINS_METRICS_USERNAME="${11}"
+  JENKINS_METRICS_PASSWORD="${12}"
+  REMOTE_CLUSTER="${13}"
+  BASE_URL="${14}"
+    
+  if [[ ${INTERNAL_JENKINS} == true ]]; then
+    SET_USERNAME="${JENKINS_USERNAME}"
+    SET_PASSWORD="${JENKINS_PASSWORD}"
+    deployLocalJenkins 
+
+    setExternalHostnameIfNecessary "JENKINS" "jenkins" "default"
+
+    JENKINS_USERNAME="${SET_USERNAME}"
+    JENKINS_PASSWORD="${SET_PASSWORD}"
+  fi
+
+  configureJenkins
+}
+
 function deployLocalJenkins() {
-  SET_USERNAME=${1}
-  SET_PASSWORD=${2}
-  REMOTE_CLUSTER=${3}
-  JENKINS_URL=${4}
-  BASE_URL=${5}
 
   # Mark the first node for Jenkins and agents. See jenkins/values.yamls "agent.workingDir" for details.
   # Remove first (in case new nodes were added)
@@ -114,23 +142,7 @@ function createCredentials() {
 }
 
 function configureJenkins() {
-  local SCMM_URL pluginFolder
-  
-  JENKINS_URL="${1}"
-  export JENKINS_URL
-  JENKINS_USERNAME="${2}"
-  export JENKINS_USERNAME
-  JENKINS_PASSWORD="${3}"
-  export JENKINS_PASSWORD
-  SCMM_URL="${4}"
-  SCMM_PASSWORD="${5}"
-  REGISTRY_URL="${6}"
-  REGISTRY_PATH="${7}"
-  REGISTRY_USERNAME="${8}"
-  REGISTRY_PASSWORD="${9}"
-  INSTALL_ARGOCD="${10}"
-  JENKINS_METRICS_USERNAME="${11}"
-  JENKINS_METRICS_PASSWORD="${12}"
+  local pluginFolder
 
   waitForJenkins
 
