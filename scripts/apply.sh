@@ -31,8 +31,6 @@ function main() {
 
   if [[ $TRACE == true ]]; then
     set -x
-    # Trace without debug does not make to much sense, as the spinner spams the output
-    DEBUG=true
   fi
 
   # The - avoids "unbound variable", because it expands to empty string if unset
@@ -101,22 +99,15 @@ function main() {
 
   checkPrerequisites
 
-  if [[ $DEBUG != true ]]; then
-    backgroundLogFile=$(mktemp /tmp/playground-log-XXXXXXXXX)
-    echo "Full log output is appended to ${backgroundLogFile}"
-  fi
-
   if [[ "$DESTROY" != true ]] && [[ "$OUTPUT_CONFIG_FILE" != true ]]; then
-    evalWithSpinner "Basic setup & configuring registry..." applyBasicK8sResources
+    applyBasicK8sResources
 
-    evalWithSpinner "Starting SCM-Manager..." initSCMM
+    initSCMM
 
-   startJenkinsCommand=(initJenkins "${JENKINS_URL}" "${SET_USERNAME}" "${SET_PASSWORD}"
-      "${SCMM_URL_FOR_JENKINS}" "${SCMM_PASSWORD}" "${REGISTRY_URL}"
-      "${REGISTRY_PATH}" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}"
-      "${INSTALL_ARGOCD}" "${JENKINS_METRICS_USERNAME}" "${JENKINS_METRICS_PASSWORD}" "${REMOTE_CLUSTER}" "${BASE_URL}")
-
-    evalWithSpinner "Starting Jenkins..." "${startJenkinsCommand[@]}"
+   initJenkins "${JENKINS_URL}" "${SET_USERNAME}" "${SET_PASSWORD}" \
+         "${SCMM_URL_FOR_JENKINS}" "${SCMM_PASSWORD}" "${REGISTRY_URL}" \
+         "${REGISTRY_PATH}" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}" \
+         "${INSTALL_ARGOCD}" "${JENKINS_METRICS_USERNAME}" "${JENKINS_METRICS_PASSWORD}" "${REMOTE_CLUSTER}" "${BASE_URL}"
   fi
 
   if [[ $TRACE == true ]]; then
@@ -126,7 +117,7 @@ function main() {
 
   if [[ "$OUTPUT_CONFIG_FILE" != true ]]; then
     # call our groovy cli and pass in all params
-    evalWithSpinner "Running apply-ng..." "$PLAYGROUND_DIR/scripts/apply-ng.sh" "$@"
+    "$PLAYGROUND_DIR/scripts/apply-ng.sh" "$@"
     printWelcomeScreen
   else
     # we don't want the spinner hiding the output
@@ -168,22 +159,6 @@ function waitForNode() {
   done
   # Return first node
   kubectl get node -oname | head -n1
-}
-
-function evalWithSpinner() {
-
-  spinnerOutput="${1}"
-  shift
-  function_args=("$@")
-
-  commandToEval="$(printf "'%s' " "${function_args[@]}")"
-
-  if [[ $DEBUG == true ]]; then
-    eval "$commandToEval"
-  else
-    eval "$commandToEval" >>"${backgroundLogFile}" 2>&1 &
-    spinner "${spinnerOutput}"
-  fi
 }
 
 function checkPrerequisites() {
