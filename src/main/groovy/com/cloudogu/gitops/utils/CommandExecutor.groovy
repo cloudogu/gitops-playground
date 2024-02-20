@@ -2,6 +2,9 @@ package com.cloudogu.gitops.utils
 
 import groovy.util.logging.Slf4j
 import jakarta.inject.Singleton
+import org.apache.commons.io.output.TeeOutputStream
+
+import java.util.concurrent.TimeUnit
 
 @Slf4j
 @Singleton
@@ -38,47 +41,49 @@ class CommandExecutor {
         String command = command1 + " | " + command2
         return getOutput(proc, command, failOnError)
     }
-    
+
     protected Process doExecute(String command, List envp = null) {
         log.trace("Executing command: '${command}'")
         command.execute(envp, null)
     }
-    
+
     protected Process doExecute(String[] command) {
         log.trace("Executing command: '${command}'")
         command.execute()
     }
 
     protected Output getOutput(Process proc, String command, boolean failOnError = true) {
-        // TODO stream err and out while waiting, like this method would
-        // proc.waitForProcessOutput(System.out, System.err)
-        // but also use timeout. Groovy doesn't seem to offer both
-        // We could write our on groovy process class that uses a timeout  self.waitFor(timeout)
-        // Or Use the java process builder
-        proc.waitForOrKill(PROCESS_TIMEOUT_SECONDS * 1000)
-        // err must be defined first because calling proc.text closes the output stream
-        String err = proc.err.text.trim()
-        String out = proc.text.trim()
+        ByteArrayOutputStream stdOut = new ByteArrayOutputStream()
+        ByteArrayOutputStream stdErr = new ByteArrayOutputStream()
+        
+        if (log.isTraceEnabled()) {
+            // Pass stdout and stderr streams through to the main process while waiting
+            TeeOutputStream teeOut = new TeeOutputStream(System.out, stdOut)
+            TeeOutputStream teeErr = new TeeOutputStream(System.err, stdErr)
+            proc.consumeProcessOutput(teeOut, teeErr)
+        } else {
+            proc.consumeProcessOutput(stdOut, stdErr)
+        }
+
+        def processFinished = proc.waitFor(PROCESS_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        if (!processFinished) {
+            log.error("Timeout waiting for command ${command}. Killing process.")
+            proc.waitForOrKill(1)
+        }
+        
         if (failOnError && proc.exitValue() > 0) {
             log.error("Executing command failed: ${command}")
-            log.error("Stderr: ${err.toString().trim()}")
-            log.error("StdOut: ${out.toString().trim()}")
             System.exit(1)
         }
-        if (out) {
-            log.debug("${command}\n Success: ${out}")
-        }
-        if (err) {
-            log.debug("${command}\n Warning / Error: ${err}")
-        }
-        return new Output(err, out, proc.exitValue())
+
+        return new Output(stdErr.toString().trim(), stdOut.toString().trim(), proc.exitValue())
     }
-    
+
     static class Output {
         String stdErr
         String stdOut
         int exitCode
-        
+
         Output(String stdErr, String stdOut, int exitCode) {
             this.stdErr = stdErr
             this.stdOut = stdOut
