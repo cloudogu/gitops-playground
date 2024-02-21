@@ -55,11 +55,12 @@ class CommandExecutor {
     protected Output getOutput(Process proc, String command, boolean failOnError = true) {
         ByteArrayOutputStream stdOut = new ByteArrayOutputStream()
         ByteArrayOutputStream stdErr = new ByteArrayOutputStream()
+        TeeOutputStream teeOut, teeErr
         
         if (log.isTraceEnabled()) {
-            // Pass stdout and stderr streams through to the main process while waiting
-            TeeOutputStream teeOut = new TeeOutputStream(System.out, stdOut)
-            TeeOutputStream teeErr = new TeeOutputStream(System.err, stdErr)
+            // While waiting for the process to finish, also print stdout and stderr streams through to the main process
+            teeOut = new TeeOutputStream(stdOut, System.out)
+            teeErr = new TeeOutputStream(stdErr, System.err)
             proc.consumeProcessOutput(teeOut, teeErr)
         } else {
             proc.consumeProcessOutput(stdOut, stdErr)
@@ -70,6 +71,10 @@ class CommandExecutor {
             log.error("Timeout waiting for command ${command}. Killing process.")
             proc.waitForOrKill(1)
         }
+
+        // Make sure all bytes have been written, before returning output
+        if (teeOut)  teeOut.flush()
+        if (teeErr) teeErr.flush()
         
         if (failOnError && proc.exitValue() > 0) {
             log.error("Executing command failed: ${command}")

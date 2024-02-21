@@ -2,12 +2,8 @@ package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.features.deployment.HelmStrategy
-import com.cloudogu.gitops.utils.CommandExecutorForTest
-import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.HelmClient
-import com.cloudogu.gitops.utils.K8sClient
+import com.cloudogu.gitops.utils.*
 import groovy.yaml.YamlSlurper
-import jakarta.inject.Provider
 import org.junit.jupiter.api.Test
 
 import java.nio.file.Path
@@ -41,22 +37,16 @@ class VaultTest {
             ],
     ]
     CommandExecutorForTest helmCommands = new CommandExecutorForTest()
-    CommandExecutorForTest k8sCommands = new CommandExecutorForTest()
     HelmClient helmClient = new HelmClient(helmCommands)
-    K8sClient k8sClient = new K8sClient(k8sCommands, new FileSystemUtils(), new Provider<Configuration>() {
-        @Override
-        Configuration get() {
-            new Configuration(config)
-        }
-    })
+    K8sClientForTest k8sClient = new K8sClientForTest(config)
     File temporaryYamlFile
-    
+
     @Test
     void 'is disabled via active flag'() {
         config['features']['secrets']['active'] = false
         createVault().install()
         assertThat(helmCommands.actualCommands).isEmpty()
-        assertThat(k8sCommands.actualCommands).isEmpty()
+        assertThat(k8sClient.commandExecutorForTest.actualCommands).isEmpty()
     }
 
     @Test
@@ -67,7 +57,7 @@ class VaultTest {
         assertThat(parseActualYaml()['ui']['serviceType']).isEqualTo('NodePort')
         assertThat(parseActualYaml()['ui']['serviceNodePort']).isEqualTo(8200)
     }
-    
+
     @Test
     void 'when run remotely, use service type loadbalancer'() {
         config['application']['remote'] = true
@@ -94,7 +84,7 @@ class VaultTest {
 
         assertThat((parseActualYaml()['server'] as Map)).doesNotContainKey('ingress')
     }
-    
+
     @Test
     void 'Dev mode can be enabled via config'() {
         config['features']['secrets']['vault']['mode'] = 'dev'
@@ -102,14 +92,14 @@ class VaultTest {
 
         def actualYaml = parseActualYaml()
         assertThat(actualYaml['server']['dev']['enabled']).isEqualTo(true)
-        
+
         assertThat(actualYaml['server']['dev']['devRootToken']).isNotEqualTo('root')
         assertThat(actualYaml['server']['dev']['devRootToken']).isNotEqualTo(config['application']['password'])
 
         List actualPostStart = (List) actualYaml['server']['postStart']
         assertThat(actualPostStart[0]).isEqualTo('/bin/sh')
         assertThat(actualPostStart[1]).isEqualTo('-c')
-        
+
         assertThat(actualPostStart[2]).isEqualTo(
                 'USERNAME=abc PASSWORD=123 ARGOCD=true /var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log')
 
@@ -117,16 +107,16 @@ class VaultTest {
         List actualVolumeMounts = actualYaml['server']['volumeMounts'] as List
         assertThat(actualVolumes[0]['name']).isEqualTo(actualVolumeMounts[0]['name'])
         assertThat(actualVolumes[0]['configMap']['defaultMode']).isEqualTo(Integer.valueOf(0774))
-        
+
         assertThat(actualVolumeMounts[0]['readOnly']).is(true)
         assertThat(actualPostStart[2] as String).contains(actualVolumeMounts[0]['mountPath'] as String + "/dev-post-start.sh")
 
-        assertThat(k8sCommands.actualCommands).hasSize(1)
-        
-        def createdConfigMapName = ((k8sCommands.actualCommands[0] =~ /kubectl create configmap (\S*) .*/)[0] as List) [1]
+        assertThat(k8sClient.commandExecutorForTest.actualCommands).hasSize(1)
+
+        def createdConfigMapName = ((k8sClient.commandExecutorForTest.actualCommands[0] =~ /kubectl create configmap (\S*) .*/)[0] as List) [1]
         assertThat(actualVolumes[0]['configMap']['name']).isEqualTo(createdConfigMapName)
-        
-        assertThat(k8sCommands.actualCommands[0]).contains('-n foo-secrets')
+
+        assertThat(k8sClient.commandExecutorForTest.actualCommands[0]).contains('-n foo-secrets')
     }
 
     @Test
@@ -149,7 +139,7 @@ class VaultTest {
         def actualYaml = parseActualYaml()
         assertThat((actualYaml as Map)['server'] as Map).doesNotContainKey('dev')
 
-        assertThat(k8sCommands.actualCommands).isEmpty()
+        assertThat(k8sClient.commandExecutorForTest.actualCommands).isEmpty()
     }
 
     @Test
@@ -161,7 +151,7 @@ class VaultTest {
         assertThat(actualYaml['server']['image']['repository']).isEqualTo('localhost:5000/hashicorp/vault')
         assertThat(actualYaml['server']['image']['tag']).isEqualTo('1.12.0')
     }
-    
+
     @Test
     void 'helm release is installed'() {
         createVault().install()
@@ -172,7 +162,7 @@ class VaultTest {
                 'helm upgrade -i vault vault/vault --version 42.23.0' +
                         " --values ${temporaryYamlFile} --namespace foo-secrets")
     }
-    
+
     private Vault createVault() {
         def fileSystemUtils = new FileSystemUtils() {
             @Override

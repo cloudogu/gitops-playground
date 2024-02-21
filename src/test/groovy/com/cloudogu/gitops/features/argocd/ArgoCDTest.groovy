@@ -2,10 +2,13 @@ package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.scmm.ScmmRepo
-import com.cloudogu.gitops.utils.*
+import com.cloudogu.gitops.utils.CommandExecutorForTest
+import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.utils.HelmClient
+import com.cloudogu.gitops.utils.K8sClientForTest
+import com.cloudogu.gitops.utils.TestScmmRepoProvider
 import groovy.io.FileType
 import groovy.yaml.YamlSlurper
-import jakarta.inject.Provider
 import org.eclipse.jgit.api.CheckoutCommand
 import org.eclipse.jgit.api.CloneCommand
 import org.junit.jupiter.api.Test
@@ -96,7 +99,7 @@ class ArgoCDTest {
             ]
     ]
 
-    CommandExecutorForTest k8sCommands = new CommandExecutorForTest()
+    CommandExecutorForTest k8sCommands 
     CommandExecutorForTest helmCommands = new CommandExecutorForTest()
     ScmmRepo argocdRepo
     String actualHelmValuesFile
@@ -570,18 +573,8 @@ class ArgoCDTest {
     }
     
     ArgoCD createArgoCD() {
-        def fileSystemUtils = new FileSystemUtils()
-        def argoCD = new ArgoCDForTest(
-                new Configuration(config),
-                new K8sClient(k8sCommands, fileSystemUtils, new Provider<Configuration>() {
-                    @Override
-                    Configuration get() {
-                        new Configuration(config)
-                    }
-                }),
-                new HelmClient(helmCommands),
-                fileSystemUtils
-        )
+        def argoCD = new ArgoCDForTest(config, helmCommands)
+        k8sCommands = (argoCD.k8sClient as K8sClientForTest).commandExecutorForTest
         argocdRepo = argoCD.argocdRepoInitializationAction.repo
         actualHelmValuesFile = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.HELM_VALUES_PATH)
         clusterResourcesRepo = argoCD.clusterResourcesInitializationAction.repo
@@ -684,8 +677,9 @@ class ArgoCDTest {
     }
 
     class ArgoCDForTest extends ArgoCD {
-        ArgoCDForTest(Configuration config, K8sClient k8sClient, HelmClient helmClient, FileSystemUtils fileSystemUtils) {
-            super(config, k8sClient, helmClient, fileSystemUtils, new TestScmmRepoProvider(config, fileSystemUtils))
+        ArgoCDForTest(Map config, CommandExecutorForTest helmCommands) {
+            super(new Configuration(config), new K8sClientForTest(config), new HelmClient(helmCommands), new FileSystemUtils(), 
+                    new TestScmmRepoProvider(new Configuration(config), new FileSystemUtils()))
         }
 
         @Override
