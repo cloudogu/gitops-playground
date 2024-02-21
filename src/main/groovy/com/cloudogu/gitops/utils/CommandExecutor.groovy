@@ -10,7 +10,12 @@ import java.util.concurrent.TimeUnit
 @Singleton
 class CommandExecutor {
 
-    public static final int PROCESS_TIMEOUT_SECONDS = 120
+    /* This timeout is mainly here to not freeze forever the apply process in the worst case scenario.
+    
+       Calls to init-scmm.sh and init-jenkins.sh take several minutes at best and might be slower with poor connections 
+       to the internet.
+       Once they are migrated to groovy we can reduce this timeout.*/
+    public static final int PROCESS_TIMEOUT_MINUTES = 15
 
     Output execute(String[] command, boolean failOnError = true) {
         Process proc = doExecute(command)
@@ -66,7 +71,7 @@ class CommandExecutor {
             proc.consumeProcessOutput(stdOut, stdErr)
         }
 
-        def processFinished = proc.waitFor(PROCESS_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        def processFinished = proc.waitFor(PROCESS_TIMEOUT_MINUTES, TimeUnit.MINUTES)
         if (!processFinished) {
             log.error("Timeout waiting for command ${command}. Killing process.")
             proc.waitForOrKill(1)

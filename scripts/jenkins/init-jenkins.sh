@@ -2,52 +2,19 @@
 set -o errexit -o nounset -o pipefail
 
 source ${ABSOLUTE_BASEDIR}/utils.sh
-
-# TODO set from groovy
-if [[ -z ${PLAYGROUND_DIR+x} ]]; then
-  BASEDIR=$(dirname $0)
-  PLAYGROUND_DIR="$(cd "${BASEDIR}" && cd .. && cd .. && pwd)"
-fi
-
-# TODO set env from AppConfigurator.groovy
-# When Upgrading helm chart, also upgrade controller.tag in jenkins/values.yaml
-#
-# In addition:
-# - Upgrade bash image in values.yaml and gid-grepper
-# - Also upgrade plugins. See docs/developers.md
-JENKINS_HELM_CHART_VERSION=4.8.1
-K8S_VERSION=1.25.4
-
-# TODO does this hack for dev still work when called from groovy?
-JENKINS_PLUGIN_FOLDER=${JENKINS_PLUGIN_FOLDER:-''}
-
 source "${PLAYGROUND_DIR}"/scripts/jenkins/jenkins-REST-client.sh
 
+if [[ $TRACE == true ]]; then
+  set -x
+fi
+
+JENKINS_PLUGIN_FOLDER=${JENKINS_PLUGIN_FOLDER:-''}
+
 function initJenkins() {
-  JENKINS_URL="${1}"
-  JENKINS_USERNAME="${2}"
-  JENKINS_PASSWORD="${3}"
-  SCMM_URL="${4}"
-  SCMM_PASSWORD="${5}"
-  REGISTRY_URL="${6}"
-  REGISTRY_PATH="${7}"
-  REGISTRY_USERNAME="${8}"
-  REGISTRY_PASSWORD="${9}"
-  INSTALL_ARGOCD="${10}"
-  JENKINS_METRICS_USERNAME="${11}"
-  JENKINS_METRICS_PASSWORD="${12}"
-  REMOTE_CLUSTER="${13}"
-  BASE_URL="${14}"
-    
   if [[ ${INTERNAL_JENKINS} == true ]]; then
-    SET_USERNAME="${JENKINS_USERNAME}"
-    SET_PASSWORD="${JENKINS_PASSWORD}"
     deployLocalJenkins 
 
     setExternalHostnameIfNecessary "JENKINS" "jenkins" "default"
-
-    JENKINS_USERNAME="${SET_USERNAME}"
-    JENKINS_PASSWORD="${SET_PASSWORD}"
   fi
 
   configureJenkins
@@ -60,9 +27,7 @@ function deployLocalJenkins() {
   kubectl label --all nodes node- >/dev/null
   kubectl label $(kubectl get node -o name | sort | head -n 1) node=jenkins
 
-  createSecret jenkins-credentials --from-literal=jenkins-admin-user=$SET_USERNAME --from-literal=jenkins-admin-password=$SET_PASSWORD -n default
-
-  kubectl apply -f jenkins/resources || true
+  createSecret jenkins-credentials --from-literal=jenkins-admin-user=$JENKINS_USERNAME --from-literal=jenkins-admin-password=$JENKINS_PASSWORD -n default
 
   helm repo add jenkins https://charts.jenkins.io
   helm repo update jenkins
@@ -192,3 +157,5 @@ function configureJenkins() {
     createCredentials "registry-user" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}" "credentials for accessing the docker-registry" "${NAME_PREFIX}example-apps"
   fi
 }
+
+initJenkins "$@"

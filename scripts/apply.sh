@@ -2,19 +2,16 @@
 set -o errexit -o nounset -o pipefail
 
 BASEDIR=$(dirname $0)
-export BASEDIR
 ABSOLUTE_BASEDIR="$(cd ${BASEDIR} && pwd)"
-export ABSOLUTE_BASEDIR
 PLAYGROUND_DIR="$(cd ${BASEDIR} && cd .. && pwd)"
-export PLAYGROUND_DIR
 
 source ${ABSOLUTE_BASEDIR}/utils.sh
-source ${ABSOLUTE_BASEDIR}/jenkins/init-jenkins.sh
 source ${ABSOLUTE_BASEDIR}/scm-manager/init-scmm.sh
 
 INTERNAL_SCMM=true
 INTERNAL_JENKINS=true
-INTERNAL_REGISTRY=true
+INTERNAL_REGISTRY=true # Only used in apply.sh, can be removed once registry is in groovy
+
 # When running in k3d, connection between SCMM <-> Jenkins must be via k8s services, because external "localhost"
 # addresses will not work
 JENKINS_URL_FOR_SCMM="http://jenkins"
@@ -33,6 +30,7 @@ function main() {
     set -x
   fi
 
+  local RUNNING_INSIDE_K8S
   # The - avoids "unbound variable", because it expands to empty string if unset
   if [[ -n "${KUBERNETES_SERVICE_HOST-}" ]]; then
     RUNNING_INSIDE_K8S=true
@@ -40,14 +38,14 @@ function main() {
     RUNNING_INSIDE_K8S=false
   fi
 
-  CLUSTER_BIND_ADDRESS=$(findClusterBindAddress)
+  local CLUSTER_BIND_ADDRESS=$(findClusterBindAddress)
 
-  export ORIG_NAME_PREFIX="$NAME_PREFIX"
+  ORIG_NAME_PREFIX="$NAME_PREFIX"
   if [[ -n "${NAME_PREFIX}" ]]; then
     # Name-prefix should always end with '-'
     NAME_PREFIX="${NAME_PREFIX}-"
   fi
-  export NAME_PREFIX_ENVIRONMENT_VARS="$ORIG_NAME_PREFIX"
+  NAME_PREFIX_ENVIRONMENT_VARS="$ORIG_NAME_PREFIX"
   if [ -n "$NAME_PREFIX_ENVIRONMENT_VARS" ]; then
       NAME_PREFIX_ENVIRONMENT_VARS="${NAME_PREFIX_ENVIRONMENT_VARS^^}_"
   fi
@@ -99,29 +97,30 @@ function main() {
 
   checkPrerequisites
 
-  if [[ "$DESTROY" != true ]] && [[ "$OUTPUT_CONFIG_FILE" != true ]]; then
+  if [[ "$DESTROY" != true ]]; then
     applyBasicK8sResources
-
+    
     initSCMM
-
-   initJenkins "${JENKINS_URL}" "${SET_USERNAME}" "${SET_PASSWORD}" \
-         "${SCMM_URL_FOR_JENKINS}" "${SCMM_PASSWORD}" "${REGISTRY_URL}" \
-         "${REGISTRY_PATH}" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}" \
-         "${INSTALL_ARGOCD}" "${JENKINS_METRICS_USERNAME}" "${JENKINS_METRICS_PASSWORD}" "${REMOTE_CLUSTER}" "${BASE_URL}"
   fi
+  
+  export INTERNAL_SCMM \
+         INTERNAL_JENKINS \
+         JENKINS_URL_FOR_SCMM \
+         SCMM_URL_FOR_JENKINS \
+         SCMM_URL \
+         JENKINS_URL \
+         NAME_PREFIX \
+         NAME_PREFIX_ENVIRONMENT_VARS \
+         REGISTRY_URL \
+         REGISTRY_PATH
 
-  if [[ $TRACE == true ]]; then
-    # Not longer print every command from here. Not needed for groovy and the welcome screen.
-    set +x
-  fi
-
+  # call our groovy cli and pass in all params
+  "$PLAYGROUND_DIR/scripts/apply-ng.sh" "$@"
+  
   if [[ "$OUTPUT_CONFIG_FILE" != true ]]; then
-    # call our groovy cli and pass in all params
-    "$PLAYGROUND_DIR/scripts/apply-ng.sh" "$@"
+      # Not longer print every command from here. Not needed for the welcome screen
+      set +x
     printWelcomeScreen
-  else
-    # we don't want the spinner hiding the output
-    "$PLAYGROUND_DIR/scripts/apply-ng.sh" "$@"
   fi
 }
 

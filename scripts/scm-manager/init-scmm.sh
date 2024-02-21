@@ -3,6 +3,10 @@ set -o errexit -o nounset -o pipefail
 
 source ${ABSOLUTE_BASEDIR}/utils.sh
 
+#if [[ $TRACE == true ]]; then
+#  set -x
+#fi
+
 SCMM_PROTOCOL=http
 # TODO move to groovy
 SCMM_HELM_CHART_VERSION=2.47.0

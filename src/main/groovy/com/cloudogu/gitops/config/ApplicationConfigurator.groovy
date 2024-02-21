@@ -16,6 +16,8 @@ import static com.cloudogu.gitops.utils.MapUtils.*
 class ApplicationConfigurator {
 
     public static final String HELM_IMAGE = "ghcr.io/cloudogu/helm:3.10.3-1"
+    // When updating please also adapt in Dockerfile, vars.tf and init-cluster.sh
+    public static final String K8S_VERSION = "1.25.4"
     public static final String DEFAULT_ADMIN_USER = 'admin'
     public static final String DEFAULT_ADMIN_PW = 'admin'
     /**
@@ -41,6 +43,16 @@ class ApplicationConfigurator {
                     urlForScmm: "http://jenkins", // Set dynamically
                     metricsUsername: 'metrics',
                     metricsPassword: 'metrics',
+                    helm  : [
+                            //chart  : 'jenkins',
+                            //repoURL: 'https://charts.jenkins.io',
+                            /* When Upgrading helm chart, also upgrade controller.tag in jenkins/values.yaml
+                            In addition:
+                             - Upgrade bash image in values.yaml and gid-grepper
+                             - Also upgrade plugins. See docs/developers.md
+                             */
+                            version: '4.8.1'
+                    ]
             ],
             scmm       : [
                     internal: true, // Set dynamically
@@ -64,8 +76,7 @@ class ApplicationConfigurator {
                     baseUrl: null,
             ],
             images     : [
-                    // When updating please also adapt in Dockerfile, vars.tf, apply.sh and init-cluster.sh
-                    kubectl    : "lachlanevenson/k8s-kubectl:v1.25.4",
+                    kubectl    : "lachlanevenson/k8s-kubectl:v$K8S_VERSION",
                     // cloudogu/helm also contains kubeval and helm kubeval plugin. Using the same image makes builds faster
                     helm       : HELM_IMAGE,
                     kubeval    : HELM_IMAGE,
