@@ -6,7 +6,6 @@ ABSOLUTE_BASEDIR="$(cd ${BASEDIR} && pwd)"
 PLAYGROUND_DIR="$(cd ${BASEDIR} && cd .. && pwd)"
 
 source ${ABSOLUTE_BASEDIR}/utils.sh
-source ${ABSOLUTE_BASEDIR}/scm-manager/init-scmm.sh
 
 INTERNAL_SCMM=true
 INTERNAL_JENKINS=true
@@ -99,8 +98,6 @@ function main() {
 
   if [[ "$DESTROY" != true ]]; then
     applyBasicK8sResources
-    
-    initSCMM
   fi
   
   export INTERNAL_SCMM \

@@ -61,7 +61,12 @@ class ApplicationConfigurator {
                     password: DEFAULT_ADMIN_PW,
                     urlForJenkins : 'http://scmm-scm-manager/scm', // set dynamically
                     host : '', // Set dynamically
-                    protocol : '' // Set dynamically
+                    protocol : '', // Set dynamically
+                    helm  : [
+                            //chart  : 'scm-manager',
+                            //repoURL: 'https://packages.scm-manager.org/repository/helm-v2-releases/',
+                            version: '2.47.0'
+                    ]
             ],
             application: [
                     remote        : false,
@@ -100,8 +105,7 @@ class ApplicationConfigurator {
                     cesBuildLib: [
                             url: System.getenv('CES_BUILD_LIB_REPO') ?: 'https://github.com/cloudogu/ces-build-lib.git',
                     ]
-            ]
-            ,
+            ],
             features   : [
                     argocd    : [
                             active    : false,

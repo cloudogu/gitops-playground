@@ -3,22 +3,11 @@ set -o errexit -o nounset -o pipefail
 
 source ${ABSOLUTE_BASEDIR}/utils.sh
 
-#if [[ $TRACE == true ]]; then
-#  set -x
-#fi
+if [[ $TRACE == true ]]; then
+  set -x
+fi
 
 SCMM_PROTOCOL=http
-# TODO move to groovy
-SCMM_HELM_CHART_VERSION=2.47.0
-
-# TODO set env from AppConfigurator.groovy
-# When updating, update in ApplicationConfigurator.groovy as well
-SPRING_BOOT_HELM_CHART_COMMIT=0.3.2
-SPRING_BOOT_HELM_CHART_REPO=${SPRING_BOOT_HELM_CHART_REPO:-'https://github.com/cloudogu/spring-boot-helm-chart.git'}
-GITOPS_BUILD_LIB_REPO=${GITOPS_BUILD_LIB_REPO:-'https://github.com/cloudogu/gitops-build-lib.git'}
-CES_BUILD_LIB_REPO=${CES_BUILD_LIB_REPO:-'https://github.com/cloudogu/ces-build-lib.git'}
-
-# TODO set PLAYGROUND_DIR
 
 function initSCMM() {
   
@@ -26,10 +15,7 @@ function initSCMM() {
   SCMM_PROTOCOL=$(getProtocol "${SCMM_URL}")
   
   if [[ ${INTERNAL_SCMM} == true ]]; then
-      SCMM_USERNAME=${SET_USERNAME}
-      SCMM_PASSWORD=${SET_PASSWORD}
-      
-    deployLocalScmmManager "${REMOTE_CLUSTER}" "${SET_USERNAME}" "${SET_PASSWORD}" "${BASE_URL}"
+    deployLocalScmmManager "${REMOTE_CLUSTER}" "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "${BASE_URL}"
   fi
 
   setExternalHostnameIfNecessary 'SCMM' 'scmm-scm-manager' 'default'
@@ -134,17 +120,13 @@ function setDefaultBranch() {
 }
 
 function deployLocalScmmManager() {
-  local REMOTE_CLUSTER=${1}
-  local SET_USERNAME=${2}
-  local SET_PASSWORD=${3}
-  BASE_URL=${4}
 
   helm repo add scm-manager https://packages.scm-manager.org/repository/helm-v2-releases/
   helm repo update scm-manager
   helm upgrade -i scmm --values scm-manager/values.yaml \
     $(scmmHelmSettingsForRemoteCluster) $(scmmIngress)\
     --version ${SCMM_HELM_CHART_VERSION} scm-manager/scm-manager -n default \
-    --set extraArgs="{-Dscm.initialPassword=${SET_PASSWORD},-Dscm.initialUser=${SET_USERNAME}}"
+    --set extraArgs="{-Dscm.initialPassword=${SCMM_PASSWORD},-Dscm.initialUser=${SCMM_USERNAME}}"
 }
 
 function scmmIngress() {
@@ -418,3 +400,5 @@ function printStatus() {
     echo -e ' \u274c ' "(status code: $STATUS_CODE)"
   fi
 }
+
+initSCMM "$@"
