@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 set -o errexit -o nounset -o pipefail
 
-BASEDIR=$(dirname $0)
-ABSOLUTE_BASEDIR="$(cd ${BASEDIR} && pwd)"
-PLAYGROUND_DIR="$(cd ${BASEDIR} && cd .. && pwd)"
+ABSOLUTE_BASEDIR="$(cd "$(dirname $0)" && pwd)"
+PLAYGROUND_DIR="$(cd ${ABSOLUTE_BASEDIR} && cd .. && pwd)"
 
 source ${ABSOLUTE_BASEDIR}/utils.sh
 
@@ -112,7 +111,7 @@ function main() {
          REGISTRY_PATH
 
   # call our groovy cli and pass in all params
-  "$PLAYGROUND_DIR/scripts/apply-ng.sh" "$@"
+  runGroovy "$@"
   
   if [[ "$OUTPUT_CONFIG_FILE" != true ]]; then
       # Not longer print every command from here. Not needed for the welcome screen

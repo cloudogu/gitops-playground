@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -o errexit -o nounset -o pipefail
 
-source ${ABSOLUTE_BASEDIR}/utils.sh
+ABSOLUTE_BASEDIR="$(cd "$(dirname $0)" && pwd)"
+source ${ABSOLUTE_BASEDIR}/../utils.sh
 
 if [[ $TRACE == true ]]; then
   set -x

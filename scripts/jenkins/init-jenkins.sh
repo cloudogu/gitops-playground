@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
 set -o errexit -o nounset -o pipefail
 
-source ${ABSOLUTE_BASEDIR}/utils.sh
-source "${PLAYGROUND_DIR}"/scripts/jenkins/jenkins-REST-client.sh
+ABSOLUTE_BASEDIR="$(cd "$(dirname $0)" && pwd)"
+
+source ${ABSOLUTE_BASEDIR}/../utils.sh
+source ${ABSOLUTE_BASEDIR}/jenkins-REST-client.sh
 
 if [[ $TRACE == true ]]; then
   set -x
 fi
+
+PLAYGROUND_DIR="$(cd ${ABSOLUTE_BASEDIR} && cd ../.. && pwd)"
 
 JENKINS_PLUGIN_FOLDER=${JENKINS_PLUGIN_FOLDER:-''}
 

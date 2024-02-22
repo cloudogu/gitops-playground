@@ -5,8 +5,6 @@ import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import org.junit.jupiter.api.Test
 
-import java.nio.file.Path
-
 import static org.assertj.core.api.Assertions.assertThat 
 
 class ScmManagerTest {
@@ -60,10 +58,6 @@ class ScmManagerTest {
                 "${System.getProperty('user.dir')}/scripts/scm-manager/init-scmm.sh" as String)
 
         assertThat(env['TRACE']).isEqualTo('true')
-        def absoluteBasedir = Path.of(env['ABSOLUTE_BASEDIR'])
-        assertThat(absoluteBasedir.toString()).startsWith(System.getProperty('user.dir'));
-        assertThat(absoluteBasedir.toString()).endsWith('/scripts')
-        assertThat(env['PLAYGROUND_DIR']).isEqualTo(System.getProperty('user.dir'))
         assertThat(env['SCMM_URL']).isEqualTo('http://scmm')
         assertThat(env['SCMM_USERNAME']).isEqualTo('scmm-usr')
         assertThat(env['SCMM_PASSWORD']).isEqualTo('scmm-pw')

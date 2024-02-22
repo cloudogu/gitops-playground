@@ -169,7 +169,6 @@ COPY --from=native-image /app/apply-ng app/apply-ng
 
 FROM eclipse-temurin:${JDK_VERSION}-jre-alpine as dev
 
-COPY scripts/apply-ng.sh /app/scripts/
 COPY --from=maven-build /app/gitops-playground.jar /app/
 COPY --from=downloader /src-without-graal  /app/src
 # Allow initialization in final FROM ${ENV} stage

@@ -47,8 +47,6 @@ class ScmManager extends Feature {
          */
         commandExecutor.execute("${fileSystemUtils.rootDir}/scripts/scm-manager/init-scmm.sh", [
                 TRACE : config.application['trace'],
-                ABSOLUTE_BASEDIR:  new File(System.getProperty('user.dir'), 'scripts'),
-                PLAYGROUND_DIR: System.getProperty('user.dir'),
                 SCMM_URL:  config.scmm['url'],
                 SCMM_USERNAME: config.scmm['username'],
                 SCMM_PASSWORD: config.scmm['password'],

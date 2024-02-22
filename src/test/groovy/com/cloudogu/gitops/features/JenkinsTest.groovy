@@ -6,8 +6,6 @@ import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import org.junit.jupiter.api.Test
 
-import java.nio.file.Path
-
 import static org.assertj.core.api.Assertions.assertThat 
 
 class JenkinsTest {
@@ -64,10 +62,6 @@ class JenkinsTest {
                 "${System.getProperty('user.dir')}/scripts/jenkins/init-jenkins.sh" as String)
 
         assertThat(env['TRACE']).isEqualTo('true')
-        def absoluteBasedir = Path.of(env['ABSOLUTE_BASEDIR'])
-        assertThat(absoluteBasedir.toString()).startsWith(System.getProperty('user.dir'));
-        assertThat(absoluteBasedir.toString()).endsWith('/scripts')
-        assertThat(env['PLAYGROUND_DIR']).isEqualTo(System.getProperty('user.dir'))
         assertThat(env['JENKINS_HELM_CHART_VERSION']).isEqualTo('4.8.1')
         assertThat(env['JENKINS_URL']).isEqualTo('http://jenkins')
         assertThat(env['JENKINS_USERNAME']).isEqualTo('jenusr')

@@ -50,8 +50,6 @@ class Jenkins extends Feature {
          */
         commandExecutor.execute("${fileSystemUtils.rootDir}/scripts/jenkins/init-jenkins.sh", [
                 TRACE : config.application['trace'],
-                ABSOLUTE_BASEDIR:  new File(System.getProperty('user.dir'), 'scripts'),
-                PLAYGROUND_DIR: System.getProperty('user.dir'),
                 JENKINS_HELM_CHART_VERSION: config.jenkins['helm']['version'],
                 JENKINS_URL: config.jenkins['url'],
                 JENKINS_USERNAME: config.jenkins['username'],
