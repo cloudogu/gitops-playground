@@ -64,7 +64,8 @@ class Jenkins extends Feature {
                 SCMM_PASSWORD             : config.scmm['password'],
                 INSTALL_ARGOCD            : config.features['argocd']['active'],
                 NAME_PREFIX               : config.application['namePrefix'],
-                INSECURE                  : config.application['insecure']
+                INSECURE                  : config.application['insecure'],
+                URL_SEPARATOR_HYPHEN      : config.application['urlSeparatorHyphen']
         ])
 
         globalPropertyManager.setGlobalProperty('SCMM_URL', config.scmm['url'] as String)

@@ -140,8 +140,12 @@ function deployLocalScmmManager() {
 
 function scmmIngress() {
     if [[ -n "${BASE_URL}" ]]; then
-      local scmmHost="scmm.$(extractHost "${BASE_URL}")"
-      echo "--set ingress.enabled=true --set ingress.path=/ --set ingress.hosts[0]=${scmmHost}" 
+      if [[ $URL_SEPARATOR_HYPHEN == true ]]; then
+        local scmmHost="scmm-$(extractHost "${BASE_URL}")"
+      else
+        local scmmHost="scmm.$(extractHost "${BASE_URL}")"
+      fi
+    echo "--set ingress.enabled=true --set ingress.path=/ --set ingress.hosts[0]=${scmmHost}"
     fi
 }
 

@@ -330,6 +330,11 @@ To use them locally,
 * Note that when using port 80, the URLs are shorter, but you run into issues because port 80 is regarded as a privileged port. 
   Java applications seem not to be able to reach `localhost:80` or even `127.0.0.1:80` (`NoRouteToHostException`)
 * If your setup requires you to bind to a specific interface, you can just pass it with e.g. `--bind-ingress-port=127.0.0.1:80`
+* If your environment can not use (more) subdomain levels, separate them with hyphens instead of dots.  
+  With the parameter `--url-seperator-hyphen` the playground uses hyphen instead of dot to seperate application name from baseurl.  
+  For example if your base domain is `xyz.example.org` it will create `https://argocd-xyz.example.org` instead of `https://argocd.xyz.example.org`  
+  This is usefull when using a wildacard certificate because they only cover one level of subdomains.
+
 
 ##### Deploy GitOps operators
 
