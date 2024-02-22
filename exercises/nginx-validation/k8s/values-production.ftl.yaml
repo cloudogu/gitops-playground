@@ -7,5 +7,9 @@ service:
 ingress:
   enabled: true
   pathType: Prefix
+  <#if urlSeparatorHyphen>
+  hostname: production-exercise-nginx-helm-${exampleApps.nginx.baseDomain}
+  <#else>
   hostname: production.exercise-nginx-helm.${exampleApps.nginx.baseDomain}
+  </#if>
 </#if>

@@ -30,6 +30,7 @@ class ArgoCDTest {
                     username: 'something',
                     namePrefix : '',
                     namePrefixForEnvVars : '',
+                    urlSeparatorHyphen : '',
             ],
             scmm       : [
                     internal: true,
@@ -367,6 +368,7 @@ class ArgoCDTest {
         config.application['remote'] = true
         config.features['exampleApps']['petclinic']['baseDomain'] = 'petclinic.local'
         config.features['exampleApps']['nginx']['baseDomain'] = 'nginx.local'
+        config.application['urlSeparatorHyphen'] = false
         createArgoCD().install()
         assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-shared.yaml').toString())
                 .doesNotContain('NodePort')
@@ -380,6 +382,37 @@ class ArgoCDTest {
         assertThat(valuesYaml['nginx']['ingress']['hostname'] as String).isEqualTo('production.nginx-helm-umbrella.nginx.local')
         
         assertPetClinicRepos('LoadBalancer', 'NodePort', 'petclinic.local')
+    }
+
+    @Test
+    void 'If urlSeparatorHyphen is set, ensure that hostnames are build correctly '() {
+        config.application['remote'] = true
+        config.features['exampleApps']['petclinic']['baseDomain'] = 'petclinic-local'
+        config.features['exampleApps']['nginx']['baseDomain'] = 'nginx-local'
+        config.application['urlSeparatorHyphen'] = true
+        createArgoCD().install()
+
+        def valuesYaml = parseActualYaml(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'apps/nginx-helm-umbrella/values.yaml')
+        assertThat(valuesYaml['nginx']['ingress']['hostname'] as String).isEqualTo('production-nginx-helm-umbrella-nginx-local')
+
+        assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-production.yaml')['ingress']['hostname']).isEqualTo('production-nginx-helm-nginx-local')
+        assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-staging.yaml')['ingress']['hostname']).isEqualTo('staging-nginx-helm-nginx-local')
+
+    }
+
+    @Test
+    void 'If urlSeparatorHyphen is NOT set, ensure that hostnames are build correctly '() {
+        config.application['remote'] = true
+        config.features['exampleApps']['petclinic']['baseDomain'] = 'petclinic.local'
+        config.features['exampleApps']['nginx']['baseDomain'] = 'nginx.local'
+        config.application['urlSeparatorHyphen'] = false
+        createArgoCD().install()
+
+        def valuesYaml = parseActualYaml(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'apps/nginx-helm-umbrella/values.yaml')
+        assertThat(valuesYaml['nginx']['ingress']['hostname'] as String).isEqualTo('production.nginx-helm-umbrella.nginx.local')
+
+        assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-production.yaml')['ingress']['hostname']).isEqualTo('production.nginx-helm.nginx.local')
+        assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-staging.yaml')['ingress']['hostname']).isEqualTo('staging.nginx-helm.nginx.local')
     }
 
     @Test

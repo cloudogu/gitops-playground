@@ -102,6 +102,8 @@ class GitopsPlaygroundCli  implements Runnable {
     private String nginxImage
     @Option(names = ['--base-url'], description = 'the external base url (TLD) for all tools, e.g. https://example.com or http://localhost:8080. The individual -url params for argocd, grafana, vault and mailhog take precedence.')
     private String baseUrl
+    @Option(names = ['--url-separator-hyphen'], description = 'Use Hyphen instead of dot to separate application name from baseurl')
+    private Boolean urlSeparatorHyphen
 
     // args group metrics
     @Option(names = ['--metrics', '--monitoring'], description = 'Installs the Kube-Prometheus-Stack. This includes Prometheus, the Prometheus operator, Grafana and some extra resources')
@@ -271,6 +273,7 @@ class GitopsPlaygroundCli  implements Runnable {
                         namePrefix    : namePrefix ? "$namePrefix-" : "",
                         namePrefixForEnvVars: namePrefix ? "${namePrefix.toUpperCase()}_" : "",
                         baseUrl : baseUrl,
+                        urlSeparatorHyphen : urlSeparatorHyphen
                 ],
                 images     : [
                         kubectl    : kubectlImage,
