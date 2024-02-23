@@ -210,6 +210,14 @@ class ApplicationConfigurator {
         setScmmConfig(newConfig)
         addJenkinsConfig(newConfig)
 
+
+        String namePrefix = newConfig.application['namePrefix']
+        if (namePrefix) {
+            if (!namePrefix.endsWith('-')) {
+                newConfig.application['namePrefix'] = "${namePrefix}-"
+            }
+            newConfig.application['namePrefixForEnvVars'] ="${(newConfig.application['namePrefix'] as String).toUpperCase().replace('-', '_')}"
+        }
         if (newConfig.registry['url'])
             newConfig.registry["internal"] = false
         if (newConfig['features']['secrets']['vault']['mode'])

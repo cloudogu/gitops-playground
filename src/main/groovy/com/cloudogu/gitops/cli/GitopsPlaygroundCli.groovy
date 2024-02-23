@@ -26,8 +26,7 @@ import static groovy.json.JsonOutput.toJson
 @Command(
         name = 'apply.sh',
         description = 'CLI-tool to deploy gitops-playground.',
-        mixinStandardHelpOptions = true,
-        subcommands = JenkinsCli)
+        mixinStandardHelpOptions = true)
 
 @Slf4j
 class GitopsPlaygroundCli  implements Runnable {
@@ -268,8 +267,7 @@ class GitopsPlaygroundCli  implements Runnable {
                         username      : username,
                         password      : password,
                         pipeYes       : pipeYes,
-                        namePrefix    : namePrefix ? "$namePrefix-" : "",
-                        namePrefixForEnvVars: namePrefix ? "${namePrefix.toUpperCase()}_" : "",
+                        namePrefix    : namePrefix,
                         baseUrl : baseUrl,
                 ],
                 images     : [

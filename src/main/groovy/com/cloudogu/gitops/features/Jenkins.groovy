@@ -3,6 +3,10 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.jenkins.GlobalPropertyManager
+import com.cloudogu.gitops.jenkins.JobManager
+import com.cloudogu.gitops.jenkins.PrometheusConfigurator
+import com.cloudogu.gitops.jenkins.UserManager
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.FileSystemUtils
 import groovy.util.logging.Slf4j
@@ -17,15 +21,27 @@ class Jenkins extends Feature {
     private Map config
     private CommandExecutor commandExecutor
     private FileSystemUtils fileSystemUtils
+    private GlobalPropertyManager globalPropertyManager
+    private JobManager jobManger
+    private UserManager userManager
+    private PrometheusConfigurator prometheusConfigurator
 
     Jenkins(
             Configuration config,
             CommandExecutor commandExecutor,
-            FileSystemUtils fileSystemUtils
+            FileSystemUtils fileSystemUtils,
+            GlobalPropertyManager globalPropertyManager,
+            JobManager jobManger,
+            UserManager userManager,
+            PrometheusConfigurator prometheusConfigurator
     ) {
         this.config = config.getConfig()
         this.commandExecutor = commandExecutor
         this.fileSystemUtils = fileSystemUtils
+        this.globalPropertyManager = globalPropertyManager
+        this.jobManger = jobManger
+        this.userManager = userManager
+        this.prometheusConfigurator = prometheusConfigurator
     }
 
     @Override
@@ -42,31 +58,54 @@ class Jenkins extends Feature {
          JENKINS_URL_FOR_SCMM \
          SCMM_URL_FOR_JENKINS \
          SCMM_URL \
-         JENKINS_URL \
-         NAME_PREFIX \
-         NAME_PREFIX_ENVIRONMENT_VARS \
-         REGISTRY_URL \
-         REGISTRY_PATH
+         JENKINS_URL
          */
         commandExecutor.execute("${fileSystemUtils.rootDir}/scripts/jenkins/init-jenkins.sh", [
-                TRACE : config.application['trace'],
+                TRACE                     : config.application['trace'],
                 JENKINS_HELM_CHART_VERSION: config.jenkins['helm']['version'],
-                JENKINS_URL: config.jenkins['url'],
-                JENKINS_USERNAME: config.jenkins['username'],
-                JENKINS_PASSWORD: config.jenkins['password'],
-                REMOTE_CLUSTER: config.application['remote'],
-                BASE_URL: config.application['baseUrl'] ? config.application['baseUrl'] : '',
-                // Those are needed for calls made to jenkinsCli and can be migrated to groovy easily
-                K8S_VERSION: ApplicationConfigurator.K8S_VERSION,
-                SCMM_URL:  config.scmm['url'],
-                SCMM_PASSWORD: config.scmm['password'],
-                JENKINS_METRICS_USERNAME: config.jenkins['metricsUsername'],
-                JENKINS_METRICS_PASSWORD: config.jenkins['metricsPassword'],
-                //REGISTRY_URL: config.registry['url'],
-                //REGISTRY_PATH: config.registry['path'],
-                REGISTRY_USERNAME: config.registry['username'],
-                REGISTRY_PASSWORD: config.registry['password'],
-                INSTALL_ARGOCD: config.features['argocd']['active'],
+                JENKINS_URL               : config.jenkins['url'],
+                JENKINS_USERNAME          : config.jenkins['username'],
+                JENKINS_PASSWORD          : config.jenkins['password'],
+                REMOTE_CLUSTER            : config.application['remote'],
+                BASE_URL                  : config.application['baseUrl'] ? config.application['baseUrl'] : '',
+                SCMM_URL                  : config.scmm['url'],
+                SCMM_PASSWORD             : config.scmm['password'],
+                INSTALL_ARGOCD            : config.features['argocd']['active'],
+                NAME_PREFIX               : config.application['namePrefix']
         ])
+
+        globalPropertyManager.setGlobalProperty('SCMM_URL', config.scmm['url'] as String)
+        //globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_URL", config.registry['url'] as String)
+        //globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_PATH", config.registry['path'] as String)
+        // For now, apply.sh modifies this, depending on internal or external registry, so we need to use the env var
+        globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_URL", System.getenv('REGISTRY_URL'))
+        globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_PATH", System.getenv('REGISTRY_PATH'))
+        
+        globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}K8S_VERSION", ApplicationConfigurator.K8S_VERSION)
+
+        if (userManager.isUsingCasSecurityRealm()) {
+            log.trace("Using CAS Security Realm. Must not create user.")
+        } else {
+            userManager.createUser(config.jenkins['metricsUsername'] as String, config.jenkins['metricsPassword'] as String)
+        }
+        userManager.grantPermission(config.jenkins['metricsUsername'] as String, UserManager.Permissions.METRICS_VIEW)
+
+        prometheusConfigurator.enableAuthentication()
+
+        if (config.features['argocd']['active']) {
+            jobManger.createCredential(
+                    "${config.application['namePrefix']}example-apps",
+                    "scmm-user",
+                    "${config.application['namePrefix']}gitops",
+                    "${config.scmm['password']}",
+                    'credentials for accessing scm-manager')
+
+            jobManger.createCredential(
+                    "${config.application['namePrefix']}example-apps",
+                    "registry-user",
+                    "${config.registry['username']}",
+                    "${config.registry['password']}",
+                    'credentials for accessing the docker-registry')
+        }
     }
 }

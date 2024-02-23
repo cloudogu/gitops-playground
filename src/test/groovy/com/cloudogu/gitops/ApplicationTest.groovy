@@ -14,7 +14,8 @@ class ApplicationTest {
             ],
             scmm: [
                     internal: true
-            ]
+            ],
+            jenkins: [:]
     ]
 
     @Test

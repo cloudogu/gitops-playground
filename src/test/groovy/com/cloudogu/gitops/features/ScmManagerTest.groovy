@@ -69,6 +69,7 @@ class ScmManagerTest {
         assertThat(env['SPRING_BOOT_HELM_CHART_REPO']).isEqualTo('springBootHelmChartUrl')
         assertThat(env['GITOPS_BUILD_LIB_REPO']).isEqualTo('gitopsBuildLibUrl')
         assertThat(env['CES_BUILD_LIB_REPO']).isEqualTo('cesBuildLibUrl')
+        assertThat(env['NAME_PREFIX']).isEqualTo('foo-')
     }
 
     @Test

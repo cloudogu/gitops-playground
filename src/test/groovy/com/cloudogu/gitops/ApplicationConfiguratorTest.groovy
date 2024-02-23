@@ -293,4 +293,22 @@ images:
         assertThat(actualConfig.features['exampleApps']['petclinic']['baseDomain']).isEqualTo("petclinic")
         assertThat(actualConfig.features['exampleApps']['nginx']['baseDomain']).isEqualTo("nginx")
     }
+
+    @Test
+    void "Sets namePrefix"() {
+        testConfig.application['namePrefix'] = 'my-prefix'
+
+        Map actualConfig = applicationConfigurator.setConfig(testConfig).getConfig()
+        assertThat(actualConfig.application['namePrefix'].toString()).isEqualTo('my-prefix-')
+        assertThat(actualConfig.application['namePrefixForEnvVars'].toString()).isEqualTo('MY_PREFIX_')
+    }
+
+    @Test
+    void "Sets namePrefix when ending in hyphen"() {
+        testConfig.application['namePrefix'] = 'my-prefix-'
+
+        Map actualConfig = applicationConfigurator.setConfig(testConfig).getConfig()
+        assertThat(actualConfig.application['namePrefix'].toString()).isEqualTo('my-prefix-')
+        assertThat(actualConfig.application['namePrefixForEnvVars'].toString()).isEqualTo('MY_PREFIX_')
+    }
 }

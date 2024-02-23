@@ -90,26 +90,6 @@ function waitForJenkins() {
   echo ""
 }
 
-function createUser() {
-  runGroovy jenkins add-user "$1" "$2" --jenkins-url="$JENKINS_URL" --jenkins-username="$JENKINS_USERNAME" --jenkins-password="$JENKINS_PASSWORD"
-}
-
-function grantPermission() {
-  runGroovy jenkins grant-permission "$1" "$2" --jenkins-url="$JENKINS_URL" --jenkins-username="$JENKINS_USERNAME" --jenkins-password="$JENKINS_PASSWORD"
-}
-
-function enablePrometheusAuthentication() {
-  runGroovy jenkins enable-prometheus-authentication --jenkins-url="$JENKINS_URL" --jenkins-username="$JENKINS_USERNAME" --jenkins-password="$JENKINS_PASSWORD"
-}
-
-function setGlobalProperty() {
-  runGroovy jenkins set-global-property "${1}" "${2}" --jenkins-url="$JENKINS_URL" --jenkins-username="$JENKINS_USERNAME" --jenkins-password="$JENKINS_PASSWORD"
-}
-
-function createCredentials() {
-  runGroovy jenkins create-credential "${5}" "${1}" "${2}" "${3}" "${4}" --jenkins-url="$JENKINS_URL" --jenkins-username="$JENKINS_USERNAME" --jenkins-password="$JENKINS_PASSWORD"
-}
-
 function configureJenkins() {
   local pluginFolder
 
@@ -145,21 +125,10 @@ function configureJenkins() {
   # Since safeRestart can take time until it really restarts jenkins, we will sleep here before querying jenkins status.
   sleep 5
   waitForJenkins
-
-  setGlobalProperty "SCMM_URL" "${SCMM_URL}"
-  setGlobalProperty "${NAME_PREFIX_ENVIRONMENT_VARS}REGISTRY_URL" "${REGISTRY_URL}"
-  setGlobalProperty "${NAME_PREFIX_ENVIRONMENT_VARS}REGISTRY_PATH" "${REGISTRY_PATH}"
-  setGlobalProperty "${NAME_PREFIX_ENVIRONMENT_VARS}K8S_VERSION" "${K8S_VERSION}"
-
-  createUser "${JENKINS_METRICS_USERNAME}" "${JENKINS_METRICS_PASSWORD}"
-  grantPermission "${JENKINS_METRICS_USERNAME}" "METRICS_VIEW"
-  enablePrometheusAuthentication
-
-  if [[ $INSTALL_ARGOCD == true ]]; then
-    createJob "${NAME_PREFIX}example-apps" "${SCMM_URL}" "${NAME_PREFIX}argocd" "scmm-user"
-    createCredentials "scmm-user" "${NAME_PREFIX}gitops" "${SCMM_PASSWORD}" "credentials for accessing scm-manager" "${NAME_PREFIX}example-apps"
-    createCredentials "registry-user" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}" "credentials for accessing the docker-registry" "${NAME_PREFIX}example-apps"
-  fi
+  
+    if [[ $INSTALL_ARGOCD == true ]]; then
+      createJob "${NAME_PREFIX}example-apps" "${SCMM_URL}" "${NAME_PREFIX}argocd" "scmm-user"
+    fi
 }
 
 initJenkins "$@"

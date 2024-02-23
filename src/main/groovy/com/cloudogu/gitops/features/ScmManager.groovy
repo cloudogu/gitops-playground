@@ -41,9 +41,7 @@ class ScmManager extends Feature {
          JENKINS_URL_FOR_SCMM \
          SCMM_URL_FOR_JENKINS \
          SCMM_URL \
-         JENKINS_URL \
-         NAME_PREFIX \
-         NAME_PREFIX_ENVIRONMENT_VARS
+         JENKINS_URL
          */
         commandExecutor.execute("${fileSystemUtils.rootDir}/scripts/scm-manager/init-scmm.sh", [
                 TRACE : config.application['trace'],
@@ -57,7 +55,8 @@ class ScmManager extends Feature {
                 SPRING_BOOT_HELM_CHART_COMMIT: config.repositories['springBootHelmChart']['ref'],
                 SPRING_BOOT_HELM_CHART_REPO: config.repositories['springBootHelmChart']['url'],
                 GITOPS_BUILD_LIB_REPO: config.repositories['gitopsBuildLib']['url'],
-                CES_BUILD_LIB_REPO: config.repositories['cesBuildLib']['url']
+                CES_BUILD_LIB_REPO: config.repositories['cesBuildLib']['url'],
+                NAME_PREFIX : config.application['namePrefix']
         ])
     }
 }

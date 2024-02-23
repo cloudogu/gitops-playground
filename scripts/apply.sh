@@ -38,14 +38,9 @@ function main() {
 
   local CLUSTER_BIND_ADDRESS=$(findClusterBindAddress)
 
-  ORIG_NAME_PREFIX="$NAME_PREFIX"
   if [[ -n "${NAME_PREFIX}" ]]; then
     # Name-prefix should always end with '-'
     NAME_PREFIX="${NAME_PREFIX}-"
-  fi
-  NAME_PREFIX_ENVIRONMENT_VARS="$ORIG_NAME_PREFIX"
-  if [ -n "$NAME_PREFIX_ENVIRONMENT_VARS" ]; then
-      NAME_PREFIX_ENVIRONMENT_VARS="${NAME_PREFIX_ENVIRONMENT_VARS^^}_"
   fi
 
   if [[ $INSECURE == true ]]; then
@@ -105,8 +100,6 @@ function main() {
          SCMM_URL_FOR_JENKINS \
          SCMM_URL \
          JENKINS_URL \
-         NAME_PREFIX \
-         NAME_PREFIX_ENVIRONMENT_VARS \
          REGISTRY_URL \
          REGISTRY_PATH
 
@@ -219,6 +212,28 @@ function createUrl() {
   echo -n "http://${hostname}"
   echo -n ":${port}"
   #  [[ "${port}" != 80 && "${port}" != 443 ]] && echo -n ":${port}"
+}
+
+# Entry point for the new generation of our apply script, written in groovy
+function runGroovy() {
+  if [[ -f "$PLAYGROUND_DIR/apply-ng" ]]; then
+      "$PLAYGROUND_DIR"/apply-ng "$@"
+  else
+      groovy --classpath "$PLAYGROUND_DIR"/src/main/groovy \
+        "$PLAYGROUND_DIR"/src/main/groovy/com/cloudogu/gitops/cli/GitopsPlaygroundCliMain.groovy "$@"
+  fi
+}
+
+function groovy() {
+  # We don't need the groovy "binary" (script) to start, because the gitops-playground.jar already contains groovy-all.
+
+  # Set params like startGroovy does (which is called by the "groovy" script)
+  # See https://github.com/apache/groovy/blob/master/src/bin/startGroovy
+  java \
+    -classpath "$PLAYGROUND_DIR"/gitops-playground.jar \
+    org.codehaus.groovy.tools.GroovyStarter \
+          --main groovy.ui.GroovyMain \
+           "$@"
 }
 
 function printWelcomeScreen() {
