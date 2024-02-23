@@ -20,6 +20,7 @@ class ApplicationConfigurator {
     public static final String K8S_VERSION = "1.25.4"
     public static final String DEFAULT_ADMIN_USER = 'admin'
     public static final String DEFAULT_ADMIN_PW = 'admin'
+    public static final String DEFAULT_REGISTRY_PORT = '30000'
     /**
      * When changing values make sure to modify GitOpsPlaygroundCli and Schema as well
      * @see com.cloudogu.gitops.cli.GitopsPlaygroundCli
@@ -33,7 +34,12 @@ class ApplicationConfigurator {
                     path        : '',
                     username    : '',
                     password    : '',
-                    internalPort: ''
+                    internalPort: DEFAULT_REGISTRY_PORT,
+                    helm  : [
+                            chart  : 'docker-registry',
+                            repoURL: 'https://charts.helm.sh/stable',
+                            version: '1.9.4'
+                    ]
             ],
             jenkins    : [
                     internal: true, // Set dynamically
@@ -218,8 +224,18 @@ class ApplicationConfigurator {
             }
             newConfig.application['namePrefixForEnvVars'] ="${(newConfig.application['namePrefix'] as String).toUpperCase().replace('-', '_')}"
         }
-        if (newConfig.registry['url'])
-            newConfig.registry["internal"] = false
+
+        if (newConfig.registry['url']) {
+            newConfig.registry['internal'] = false
+        } else {
+            /* Internal Docker registry must be on localhost. Otherwise docker will use HTTPS, leading to errors on 
+               docker push in the example application's Jenkins Jobs.
+               Both setting up HTTPS or allowing insecure registry via daemon.json makes the playground difficult to use.
+               So, always use localhost.
+               Allow overriding the port, in case multiple playground instance run on a single host in different 
+               k3d clusters. */
+            newConfig.registry['url'] = "localhost:${newConfig.registry['internalPort']}"
+        }
         if (newConfig['features']['secrets']['vault']['mode'])
             newConfig['features']['secrets']['active'] = true
         if (newConfig['features']['mail']['smtpAddress'] || newConfig['features']['mail']['mailhog'])

@@ -88,9 +88,8 @@ class JenkinsTest {
         assertThat(env['INSTALL_ARGOCD']).isEqualTo('true')
 
         verify(globalPropertyManager).setGlobalProperty('SCMM_URL', 'http://scmm')
-        // TODO enable these, once registry is moved. Testing env vars is just too much PITA for a temporary solution
-        //verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_URL', 'reg-url')
-        //verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_PATH', 'reg-path')
+        verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_URL', 'reg-url')
+        verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_PATH', 'reg-path')
         verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_K8S_VERSION', ApplicationConfigurator.K8S_VERSION)
 
         verify(userManager).createUser('metrics-usr', 'metrics-pw')

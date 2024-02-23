@@ -20,7 +20,7 @@ import static org.mockito.Mockito.when
 class ApplicationConfiguratorTest {
 
     static final String EXPECTED_REGISTRY_URL = 'http://my-reg'
-    static final int EXPECTED_REGISTRY_INTERNAL_PORT = 0
+    static final int EXPECTED_REGISTRY_INTERNAL_PORT = 33333
     static final boolean EXPECTED_ARGOCD = false
     static final String EXPECTED_VAULT_MODE = 'prod'
     public static final String EXPECTED_JENKINS_URL = 'http://my-jenkins'
@@ -310,5 +310,16 @@ images:
         Map actualConfig = applicationConfigurator.setConfig(testConfig).getConfig()
         assertThat(actualConfig.application['namePrefix'].toString()).isEqualTo('my-prefix-')
         assertThat(actualConfig.application['namePrefixForEnvVars'].toString()).isEqualTo('MY_PREFIX_')
+    }
+    
+    @Test
+    void "Registry: Sets url to internal when not set"() {
+        testConfig.registry['url'] = null
+        
+        Map actualConfig = applicationConfigurator.setConfig(testConfig).getConfig()
+        
+        assertThat(actualConfig['registry']['url'].toString()).isEqualTo('localhost:33333')
+        assertThat(actualConfig['registry']['internalPort']).isEqualTo(EXPECTED_REGISTRY_INTERNAL_PORT)
+        assertThat(actualConfig['registry']['internal']).isEqualTo(true)
     }
 }

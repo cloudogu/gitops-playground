@@ -51,7 +51,7 @@ class K8sClientTest {
                 "kubectl create configmap my-map -n foo-my-ns --from-file=/file --dry-run=client -oyaml" +
                         " | kubectl apply -f-")
     }
-
+    
     @Test
     void 'Creates configmap without namespace'() {
         k8sClient.createConfigMapFromFile('my-map', '/file')
@@ -59,6 +59,24 @@ class K8sClientTest {
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
                 "kubectl create configmap my-map --from-file=/file --dry-run=client -oyaml" +
                         " | kubectl apply -f-")
+    }
+
+    @Test
+    void 'Creates service type nodePort'() {
+        k8sClient.createServiceNodePort('my-svc', '42:23', '32000', 'my-ns')
+        
+        assertThat(commandExecutor.actualCommands[0]).isEqualTo(
+                'kubectl create service nodeport my-svc -n foo-my-ns --tcp=42:23 --node-port=32000' +
+                        ' --dry-run=client -oyaml | kubectl apply -f-')
+    }
+
+    @Test
+    void 'Creates service type nodePort without namespace and explicit nodePort'() {
+        k8sClient.createServiceNodePort('my-svc', '42:23')
+
+        assertThat(commandExecutor.actualCommands[0]).isEqualTo(
+                'kubectl create service nodeport my-svc --tcp=42:23' +
+                        ' --dry-run=client -oyaml | kubectl apply -f-')
     }
 
     @Test

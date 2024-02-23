@@ -68,6 +68,20 @@ class K8sClient {
                         ' --dry-run=client -oyaml'
         commandExecutor.execute(command, 'kubectl apply -f-')
     }
+    
+    /**
+     * Idempotent create, i.e. overwrites if exists.
+     * 
+     * @param tcp Port pairs can be specified as '<port>:<targetPort>'.
+     */
+    void createServiceNodePort(String name, String tcp, String nodePort = '', String namespace = '') {
+        String command =
+                "kubectl create service nodeport ${name}${namespace ? " -n ${getNamePrefix()}${namespace}" : ''}" +
+                        " --tcp=${tcp}" +
+                        "${nodePort ? " --node-port=${nodePort}" : ''}" +
+                        ' --dry-run=client -oyaml'
+        commandExecutor.execute(command, 'kubectl apply -f-')
+    }
 
     void label(String resource, String name, String namespace  = '', Tuple2... keyValues) {
         if (!keyValues) {

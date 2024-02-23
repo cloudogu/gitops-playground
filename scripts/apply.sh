@@ -8,7 +8,6 @@ source ${ABSOLUTE_BASEDIR}/utils.sh
 
 INTERNAL_SCMM=true
 INTERNAL_JENKINS=true
-INTERNAL_REGISTRY=true # Only used in apply.sh, can be removed once registry is in groovy
 
 # When running in k3d, connection between SCMM <-> Jenkins must be via k8s services, because external "localhost"
 # addresses will not work
@@ -71,23 +70,6 @@ function main() {
     JENKINS_URL=$(createUrl "${CLUSTER_BIND_ADDRESS}" "${jenkinsPortFromValuesYaml}")
   fi
 
-  if [[ -z "${REGISTRY_URL}" ]]; then
-    local registryPort
-    registryPort='30000'
-    if [[ -n "${INTERNAL_REGISTRY_PORT}" ]]; then
-      registryPort="${INTERNAL_REGISTRY_PORT}"
-    fi
-    # Internal Docker registry must be on localhost. Otherwise docker will use HTTPS, leading to errors on docker push
-    # in the example application's Jenkins Jobs.
-    # Both setting up HTTPS or allowing insecure registry via daemon.json makes the playground difficult to use.
-    # So, always use localhost.
-    # Allow overriding the port, in case multiple playground instance run on a single host in different k3d clusters.
-    REGISTRY_URL="localhost:${registryPort}"
-    REGISTRY_PATH=""
-  else
-    INTERNAL_REGISTRY=false
-  fi
-
   checkPrerequisites
 
   if [[ "$DESTROY" != true ]]; then
@@ -99,9 +81,7 @@ function main() {
          JENKINS_URL_FOR_SCMM \
          SCMM_URL_FOR_JENKINS \
          SCMM_URL \
-         JENKINS_URL \
-         REGISTRY_URL \
-         REGISTRY_PATH
+         JENKINS_URL
 
   # call our groovy cli and pass in all params
   runGroovy "$@"
@@ -171,28 +151,6 @@ function applyBasicK8sResources() {
   # Apply ServiceMonitor CRD; Argo CD fails if it is not there. Chicken-egg-problem.
   # TODO try to extract it from the monitoring helm-chart, so we don't have to maintain the version twice
   kubectl apply -f https://raw.githubusercontent.com/prometheus-operator/kube-prometheus/v0.9.0/manifests/setup/prometheus-operator-0servicemonitorCustomResourceDefinition.yaml
-  
-  initRegistry
-}
-
-function initRegistry() {
-  if [[ "${INTERNAL_REGISTRY}" == true ]]; then
-    helm repo add stable https://charts.helm.sh/stable
-    helm repo update
-    # We need a hostPort in order to work around our builds running on the host's docker daemon.
-    # So here, a ClusterIP is not enough
-    # Registry runs without auth, so don't expose as LB!
-    helm upgrade -i docker-registry --version 1.9.4 stable/docker-registry -n default \
-      --set service.nodePort=30000 --set service.type=NodePort
-      
-    if [[ -n "${INTERNAL_REGISTRY_PORT}" ]]; then
-      # Add additional node port
-      # 30000 is needed as a static by docker via port mapping of k3d, e.g. 32769 -> 30000 on server-0 container
-      # See "-p 30000" in init-cluster.sh
-      # e.g 32769 is needed so the kubelet can access the image inside the server-0 container
-      kubectl create service nodeport docker-registry-internal-port --tcp=5000 --node-port ${INTERNAL_REGISTRY_PORT} -n default --dry-run=client -oyaml | kubectl apply -f-
-    fi
-  fi
 }
 
 function createSecrets() {

@@ -75,11 +75,8 @@ class Jenkins extends Feature {
         ])
 
         globalPropertyManager.setGlobalProperty('SCMM_URL', config.scmm['url'] as String)
-        //globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_URL", config.registry['url'] as String)
-        //globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_PATH", config.registry['path'] as String)
-        // For now, apply.sh modifies this, depending on internal or external registry, so we need to use the env var
-        globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_URL", System.getenv('REGISTRY_URL'))
-        globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_PATH", System.getenv('REGISTRY_PATH'))
+        globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_URL", config.registry['url'] as String)
+        globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_PATH", config.registry['path'] as String)
         
         globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}K8S_VERSION", ApplicationConfigurator.K8S_VERSION)
 
