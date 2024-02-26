@@ -180,9 +180,18 @@ class ArgoCD extends Feature {
     }
 
     private void installArgoCd() {
+        
         prepareArgoCdRepo()
 
         def namePrefix = config.application['namePrefix']
+        def argocdNamespace = 'argocd'
+        
+        log.debug("Creating namespace for argocd")
+        k8sClient.createNamespace(argocdNamespace)
+        
+        log.debug("Creating namespace for monitoring, so argocd can add its service monitors there")
+        k8sClient.createNamespace('monitoring')
+        
         log.debug("Creating repo credential secret that is used by argocd to access repos in SCM-Manager")
         // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo 
         def repoTemplateSecretName = 'argocd-repo-creds-scmm'
@@ -203,7 +212,7 @@ class ArgoCD extends Feature {
                 Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), CHART_YAML_PATH))['dependencies']
         helmClient.addRepo('argo', helmDependencies[0]['repository'] as String)
         helmClient.dependencyBuild(umbrellaChartPath)
-        helmClient.upgrade('argocd', umbrellaChartPath, [namespace: "${namePrefix}argocd"])
+        helmClient.upgrade('argocd', umbrellaChartPath, [namespace: "${namePrefix}${argocdNamespace}"])
          
         log.debug("Setting new argocd admin password")
         // Set admin password imperatively here instead of values.yaml, because we don't want it to show in git repo 

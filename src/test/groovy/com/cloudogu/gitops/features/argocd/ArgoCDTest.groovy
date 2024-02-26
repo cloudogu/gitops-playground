@@ -26,65 +26,65 @@ import static org.mockito.Mockito.*
 
 class ArgoCDTest {
     Map config = [
-            application: [
-                    remote  : false,
-                    insecure: false,
-                    password: '123',
-                    username: 'something',
-                    namePrefix : '',
-                    namePrefixForEnvVars : '',
+            application : [
+                    remote              : false,
+                    insecure            : false,
+                    password            : '123',
+                    username            : 'something',
+                    namePrefix          : '',
+                    namePrefixForEnvVars: '',
             ],
-            scmm       : [
+            scmm        : [
                     internal: true,
                     protocol: 'https',
-                    host: 'abc',
+                    host    : 'abc',
                     username: '',
                     password: ''
             ],
-            images     : [
+            images      : [
                     kubectl    : 'kubectl-value',
                     helm       : 'helm-value',
                     kubeval    : 'kubeval-value',
                     helmKubeval: 'helmKubeval-value',
                     yamllint   : 'yamllint-value'
             ],
-            repositories : [
+            repositories: [
                     springBootHelmChart: [
                             url: 'https://github.com/cloudogu/spring-boot-helm-chart.git',
                             ref: '0.3.0'
                     ],
-                    springPetclinic: [
+                    springPetclinic    : [
                             url: 'https://github.com/cloudogu/spring-petclinic.git',
                             ref: '32c8653'
                     ],
-                    gitopsBuildLib: [
+                    gitopsBuildLib     : [
                             url: "https://github.com/cloudogu/gitops-build-lib.git",
                     ],
-                    cesBuildLib: [
+                    cesBuildLib        : [
                             url: 'https://github.com/cloudogu/ces-build-lib.git',
                     ]
             ],
-            features   : [
-                    argocd    : [
-                            active: true,
-                            configOnly: true,
-                            emailFrom : 'argocd@example.org',
+            features    : [
+                    argocd     : [
+                            active      : true,
+                            configOnly  : true,
+                            emailFrom   : 'argocd@example.org',
                             emailToUser : 'app-team@example.org',
-                            emailToAdmin : 'infra@example.org'
+                            emailToAdmin: 'infra@example.org'
                     ],
-                    mail   : [
-                            mailhog: true,
+                    mail       : [
+                            mailhog     : true,
                             smtpAddress : '',
-                            smtpPort : '',
-                            smtpUser : '',
-                            smtpPassword : ''
+                            smtpPort    : '',
+                            smtpUser    : '',
+                            smtpPassword: ''
                     ],
-                    monitoring: [
+                    monitoring : [
                             active: true
                     ],
-                    secrets   : [
+                    secrets    : [
                             active: true,
-                            vault: [
+                            vault : [
                                     url: ''
                             ]
                     ],
@@ -92,14 +92,14 @@ class ArgoCDTest {
                             petclinic: [
                                     baseDomain: ''
                             ],
-                            nginx: [
+                            nginx    : [
                                     baseDomain: ''
                             ]
                     ]
             ]
     ]
 
-    CommandExecutorForTest k8sCommands 
+    CommandExecutorForTest k8sCommands
     CommandExecutorForTest helmCommands = new CommandExecutorForTest()
     ScmmRepo argocdRepo
     String actualHelmValuesFile
@@ -115,7 +115,10 @@ class ArgoCDTest {
     @Test
     void 'Installs argoCD'() {
         createArgoCD().install()
-        
+
+        assertCommand(k8sCommands, 'kubectl create namespace argocd')
+        assertCommand(k8sCommands, 'kubectl create namespace monitoring')
+
         // check values.yaml
         List filesWithInternalSCMM = findFilesContaining(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), ArgoCD.SCMM_URL_INTERNAL)
         assertThat(filesWithInternalSCMM).isNotEmpty()
@@ -125,21 +128,21 @@ class ArgoCDTest {
         // check repoTemplateSecretName
         assertCommand(k8sCommands, 'kubectl create secret generic argocd-repo-creds-scmm -n argocd')
         assertCommand(k8sCommands, 'kubectl label secret argocd-repo-creds-scmm -n argocd')
-        
+
         // Check dependency build and helm install
         assertThat(helmCommands.actualCommands[0].trim()).isEqualTo('helm repo add argo https://argoproj.github.io/argo-helm')
         assertThat(helmCommands.actualCommands[1].trim()).isEqualTo(
                 "helm dependency build ${Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'argocd/')}".toString())
         assertThat(helmCommands.actualCommands[2].trim()).isEqualTo(
-                "helm upgrade -i argocd ${Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'argocd/')} --namespace argocd".toString())
-        
+                "helm upgrade -i argocd ${Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'argocd/')} --namespace argocd --create-namespace".toString())
+
         // Check patched PW
         def patchCommand = assertCommand(k8sCommands, 'kubectl patch secret argocd-secret -n argocd')
         String patchFile = (patchCommand =~ /--patch-file=([\S]+)/)?.findResult { (it as List)[1] }
         assertThat(BCrypt.checkpw(config['application']['password'] as String,
                 parseActualYaml(patchFile)['stringData']['admin.password'] as String))
                 .as("Password hash missmatch").isTrue()
-        
+
         // Check bootstrapping
         assertCommand(k8sCommands, "kubectl apply -f " +
                 "${Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/argocd.yaml')}")
@@ -152,7 +155,14 @@ class ArgoCDTest {
         assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['server']['service']['type'])
                 .isEqualTo('NodePort')
         assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['notifications']['argocdUrl'])
-                .isEqualTo( 'https://localhost:9092')
+                .isEqualTo('https://localhost:9092')
+
+
+        def namespacesYaml = clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + "/misc/namespaces.yaml"
+        assertThat(new File(namespacesYaml)).exists()
+        def yaml = parseActualYaml(namespacesYaml)
+        assertThat(yaml[0]['metadata']['name']).isEqualTo('example-apps-staging')
+        assertThat(yaml[1]['metadata']['name']).isEqualTo('example-apps-production')
     }
 
     @Test
@@ -160,7 +170,7 @@ class ArgoCDTest {
         config.application['remote'] = true
         config.scmm['internal'] = false
         config.features['argocd']['url'] = 'https://argo.cd'
-        
+
         createArgoCD().install()
         List filesWithInternalSCMM = findFilesContaining(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), ArgoCD.SCMM_URL_INTERNAL)
         assertThat(filesWithInternalSCMM).isEmpty()
@@ -169,7 +179,7 @@ class ArgoCDTest {
 
         def valuesYaml = parseActualYaml(actualHelmValuesFile)
         assertThat(valuesYaml['argo-cd']['server']['service']['type']).isEqualTo('LoadBalancer')
-        assertThat(valuesYaml['argo-cd']['notifications']['argocdUrl']).isEqualTo( 'https://argo.cd')
+        assertThat(valuesYaml['argo-cd']['notifications']['argocdUrl']).isEqualTo('https://argo.cd')
         assertThat(valuesYaml['argo-cd']['server']['ingress']['enabled']).isEqualTo(true)
         assertThat((valuesYaml['argo-cd']['server']['ingress']['hosts'] as List)[0]).isEqualTo('argo.cd')
     }
@@ -184,7 +194,8 @@ class ArgoCDTest {
         def repositories = parseActualYaml(actualHelmValuesFile)['argo-cd']['configs']['repositories']
 
         for (def repo in ["argocd", "example-apps", "cluster-resources", "nginx-helm-jenkins", "nginx-helm-umbrella"]) {
-            assertThat(repositories[repo]['insecure']).isEqualTo("true") // must be a string so that it can be passed to `|b64enc`
+            assertThat(repositories[repo]['insecure']).isEqualTo("true")
+            // must be a string so that it can be passed to `|b64enc`
         }
     }
 
@@ -265,14 +276,14 @@ class ArgoCDTest {
         config.features['mail']['smtpPort'] = '1010110'
         config.features['mail']['smtpUser'] = 'argo@example.com'
         config.features['mail']['smtpPassword'] = '1101:ABCabc&/+*~'
-        
+
         createArgoCD().install()
         def serviceEmail = new YamlSlurper().parseText(
                 parseActualYaml(actualHelmValuesFile)['argo-cd']['notifications']['notifiers']['service.email'] as String)
-        
+
         assertThat(serviceEmail['host']).isEqualTo(config.features['mail']['smtpAddress'])
         assertThat(serviceEmail['port'] as String).isEqualTo(config.features['mail']['smtpPort'])
-        assertThat(serviceEmail['username']).isEqualTo( config.features['mail']['smtpUser'])
+        assertThat(serviceEmail['username']).isEqualTo(config.features['mail']['smtpUser'])
         assertThat(serviceEmail['password']).isEqualTo(config.features['mail']['smtpPassword'])
     }
 
@@ -297,20 +308,20 @@ class ArgoCDTest {
         createArgoCD().install()
         def valuesYaml = parseActualYaml(actualHelmValuesFile)
 
-        assertThat(new YamlSlurper().parseText(valuesYaml['argo-cd']['notifications']['notifiers']['service.email'] as String)['host'])doesNotHaveToString('mailhog.*monitoring.svc.cluster.local')
+        assertThat(new YamlSlurper().parseText(valuesYaml['argo-cd']['notifications']['notifiers']['service.email'] as String)['host']) doesNotHaveToString('mailhog.*monitoring.svc.cluster.local')
         assertThat(new YamlSlurper().parseText(valuesYaml['argo-cd']['notifications']['notifiers']['service.email'] as String)['port']).isEqualTo(1025)
-        assertThat(new YamlSlurper().parseText(valuesYaml['argo-cd']['notifications']['notifiers']['service.email'] as String))doesNotHaveToString('username')
-        assertThat(new YamlSlurper().parseText(valuesYaml['argo-cd']['notifications']['notifiers']['service.email'] as String))doesNotHaveToString('password')
+        assertThat(new YamlSlurper().parseText(valuesYaml['argo-cd']['notifications']['notifiers']['service.email'] as String)) doesNotHaveToString('username')
+        assertThat(new YamlSlurper().parseText(valuesYaml['argo-cd']['notifications']['notifiers']['service.email'] as String)) doesNotHaveToString('password')
     }
 
     @Test
     void 'When vault enabled: Pushes external secret, and mounts into example app'() {
         createArgoCD().install()
         def valuesYaml = new YamlSlurper().parse(Path.of nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir(), 'k8s/values-shared.yaml')
-        
-        assertThat((valuesYaml['extraVolumeMounts'] as List)).hasSize(2) 
+
+        assertThat((valuesYaml['extraVolumeMounts'] as List)).hasSize(2)
         assertThat((valuesYaml['extraVolumes'] as List)).hasSize(2)
-        
+
         assertThat(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir() + "/k8s/staging/external-secret.yaml")).exists()
         assertThat(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir() + "/k8s/production/external-secret.yaml")).exists()
         assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + "/misc/secrets")).exists()
@@ -340,12 +351,12 @@ class ArgoCDTest {
     @Test
     void 'Pushes example repos for local'() {
         config.application['remote'] = false
-        
+
         def setUriMock = mock(CloneCommand.class, RETURNS_DEEP_STUBS)
         def checkoutMock = mock(CheckoutCommand.class, RETURNS_DEEP_STUBS)
         when(gitCloneMock.setURI(anyString())).thenReturn(setUriMock)
         when(setUriMock.setDirectory(any(File.class)).call().checkout()).thenReturn(checkoutMock)
-        
+
         createArgoCD().install()
         def valuesYaml = parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-shared.yaml')
         assertThat(valuesYaml['service']['type']).isEqualTo('NodePort')
@@ -381,7 +392,7 @@ class ArgoCDTest {
 
         def valuesYaml = parseActualYaml(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'apps/nginx-helm-umbrella/values.yaml')
         assertThat(valuesYaml['nginx']['ingress']['hostname'] as String).isEqualTo('production.nginx-helm-umbrella.nginx.local')
-        
+
         assertPetClinicRepos('LoadBalancer', 'NodePort', 'petclinic.local')
     }
 
@@ -402,7 +413,7 @@ class ArgoCDTest {
         assertThat(filesWithInternalSCMM).isEmpty()
         filesWithInternalSCMM = findFilesContaining(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), ArgoCD.SCMM_URL_INTERNAL)
         assertThat(filesWithInternalSCMM).isEmpty()
-        
+
         List filesWithExternalSCMM = findFilesContaining(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), "https://abc")
         assertThat(filesWithExternalSCMM).isNotEmpty()
         filesWithExternalSCMM = findFilesContaining(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), "https://abc")
@@ -418,7 +429,7 @@ class ArgoCDTest {
     }
 
     @Test
-    void 'Pushes repos with name-prefix'(){
+    void 'Pushes repos with name-prefix'() {
         config.application['namePrefix'] = 'abc-'
         config.application['namePrefixForEnvVars'] = 'ABC_'
         createArgoCD().install()
@@ -533,14 +544,17 @@ class ArgoCDTest {
             }
         }
 
-        assertAllYamlFiles(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), 'misc', 6) { Path it ->
+        assertAllYamlFiles(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), 'misc', 7) { Path it ->
             def yaml = parseActualYaml(it.toString())
             List yamlDocuments = yaml instanceof List ? yaml : [yaml]
             for (def document in yamlDocuments) {
-                def metadataNamespace = document['metadata']['namespace'] as String
-                assertThat(metadataNamespace)
-                        .as("$it metadata.namespace has name prefix")
-                        .startsWith("${expectedPrefix}")
+                // Check all YAMLs objects for proper namespace, but namespaces because they dont have namespace attributes 
+                if (document && document['kind'] != 'Namespace') {
+                    def metadataNamespace = document['metadata']['namespace'] as String
+                    assertThat(metadataNamespace)
+                            .as("$it metadata.namespace has name prefix")
+                            .startsWith("${expectedPrefix}")
+                }
             }
         }
     }
@@ -571,7 +585,7 @@ class ArgoCDTest {
         }
         return result
     }
-    
+
     ArgoCD createArgoCD() {
         def argoCD = new ArgoCDForTest(config, helmCommands)
         k8sCommands = (argoCD.k8sClient as K8sClientForTest).commandExecutorForTest
@@ -583,7 +597,7 @@ class ArgoCDTest {
         nginxValidationRepo = argoCD.nginxValidationInitializationAction.repo
         brokenApplicationRepo = argoCD.brokenApplicationInitializationAction.repo
         remotePetClinicRepoTmpDir = argoCD.remotePetClinicRepoTmpDir
-        petClinicRepos = argoCD.petClinicInitializationActions.collect {  it.repo }
+        petClinicRepos = argoCD.petClinicInitializationActions.collect { it.repo }
         return argoCD
     }
 
@@ -599,7 +613,7 @@ class ArgoCDTest {
     void assertBuildImagesInJenkinsfileReplaced(File jenkinsfile) {
         def actualBuildImages = ''
         def insideBuildImagesBlock = false
-        
+
         jenkinsfile.eachLine { line ->
             if (line =~ /\s*buildImages\s*:\s*\[/) {
                 insideBuildImagesBlock = true
@@ -607,7 +621,7 @@ class ArgoCDTest {
             }
 
             if (insideBuildImagesBlock) {
-                actualBuildImages += "${line.trim()}\n" 
+                actualBuildImages += "${line.trim()}\n"
 
                 if (line =~ /]/) {
                     insideBuildImagesBlock = false
@@ -634,7 +648,7 @@ class ArgoCDTest {
                 assertBuildImagesInJenkinsfileReplaced(jenkinsfile)
                 assertThat(new File(tmpDir, 'k8s/production/service.yaml').text).contains("type: ${expectedServiceType}")
                 assertThat(new File(tmpDir, 'k8s/staging/service.yaml').text).contains("type: ${expectedServiceType}")
-                
+
                 assertThat(new File(tmpDir, 'k8s/production/service.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
                 assertThat(new File(tmpDir, 'k8s/staging/service.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
                 if (!ingressUrl) {
@@ -678,7 +692,7 @@ class ArgoCDTest {
 
     class ArgoCDForTest extends ArgoCD {
         ArgoCDForTest(Map config, CommandExecutorForTest helmCommands) {
-            super(new Configuration(config), new K8sClientForTest(config), new HelmClient(helmCommands), new FileSystemUtils(), 
+            super(new Configuration(config), new K8sClientForTest(config), new HelmClient(helmCommands), new FileSystemUtils(),
                     new TestScmmRepoProvider(new Configuration(config), new FileSystemUtils()))
         }
 
@@ -691,7 +705,7 @@ class ArgoCDTest {
     private Map parseActualYaml(File folder, String file) {
         return parseActualYaml(Path.of(folder.absolutePath, file).toString())
     }
-    
+
     private Map parseActualYaml(String pathToYamlFile) {
         File yamlFile = new File(pathToYamlFile)
         def ys = new YamlSlurper()

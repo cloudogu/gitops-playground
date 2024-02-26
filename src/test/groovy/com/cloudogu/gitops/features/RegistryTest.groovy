@@ -59,7 +59,7 @@ class RegistryTest {
                 'helm repo add registry https://charts.helm.sh/stable')
         assertThat(helmCommands.actualCommands[1].trim()).isEqualTo(
                 'helm upgrade -i docker-registry registry/docker-registry --version 1.9.4' +
-                        " --values ${temporaryYamlFile} --namespace foo-default")
+                        " --values ${temporaryYamlFile} --namespace foo-default --create-namespace")
         assertThat(k8sClient.commandExecutorForTest.actualCommands).isEmpty()
     }
 

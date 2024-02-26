@@ -46,6 +46,16 @@ class K8sClient {
     /**
      * Idempotent create, i.e. overwrites if exists.
      */
+    void createNamespace(String name) {
+        String command =
+                "kubectl create namespace ${getNamePrefix()}${name}" + 
+                        ' --dry-run=client -oyaml'
+        commandExecutor.execute(command, 'kubectl apply -f-')
+    }
+
+    /**
+     * Idempotent create, i.e. overwrites if exists.
+     */
     void createSecret(String type, String name, String namespace = '', Tuple2... literals) {
         if (!literals) {
             throw new RuntimeException("Missing literals")

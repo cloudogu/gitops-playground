@@ -53,7 +53,7 @@ class ExternalSecretsOperatorTest {
                 'helm repo add externalsecretsoperator https://charts.external-secrets.io')
         assertThat(commandExecutor.actualCommands[1].trim()).isEqualTo(
                 'helm upgrade -i external-secrets externalsecretsoperator/external-secrets --version 0.6.0' +
-                        " --values $temporaryYamlFile --namespace foo-secrets")
+                        " --values $temporaryYamlFile --namespace foo-secrets --create-namespace")
     }
 
     @Test

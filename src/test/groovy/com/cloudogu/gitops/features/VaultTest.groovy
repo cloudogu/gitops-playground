@@ -111,12 +111,14 @@ class VaultTest {
         assertThat(actualVolumeMounts[0]['readOnly']).is(true)
         assertThat(actualPostStart[2] as String).contains(actualVolumeMounts[0]['mountPath'] as String + "/dev-post-start.sh")
 
-        assertThat(k8sClient.commandExecutorForTest.actualCommands).hasSize(1)
+        assertThat(k8sClient.commandExecutorForTest.actualCommands).hasSize(2)
 
-        def createdConfigMapName = ((k8sClient.commandExecutorForTest.actualCommands[0] =~ /kubectl create configmap (\S*) .*/)[0] as List) [1]
+        assertThat(k8sClient.commandExecutorForTest.actualCommands[0]).contains('kubectl create namespace foo-secrets')
+        
+        def createdConfigMapName = ((k8sClient.commandExecutorForTest.actualCommands[1] =~ /kubectl create configmap (\S*) .*/)[0] as List) [1]
         assertThat(actualVolumes[0]['configMap']['name']).isEqualTo(createdConfigMapName)
 
-        assertThat(k8sClient.commandExecutorForTest.actualCommands[0]).contains('-n foo-secrets')
+        assertThat(k8sClient.commandExecutorForTest.actualCommands[1]).contains('-n foo-secrets')
     }
 
     @Test
@@ -160,7 +162,7 @@ class VaultTest {
                 'helm repo add vault https://vault-reg')
         assertThat(helmCommands.actualCommands[1].trim()).isEqualTo(
                 'helm upgrade -i vault vault/vault --version 42.23.0' +
-                        " --values ${temporaryYamlFile} --namespace foo-secrets")
+                        " --values ${temporaryYamlFile} --namespace foo-secrets --create-namespace")
     }
 
     private Vault createVault() {

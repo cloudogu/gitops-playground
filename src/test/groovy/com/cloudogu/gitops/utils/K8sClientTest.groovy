@@ -18,6 +18,15 @@ class K8sClientTest {
     CommandExecutorForTest commandExecutor =  k8sClient.commandExecutorForTest
 
     @Test
+    void 'Creates namespace'() {
+        k8sClient.createNamespace('my-ns')
+
+        assertThat(commandExecutor.actualCommands[0]).isEqualTo(
+                "kubectl create namespace foo-my-ns" +
+                        " --dry-run=client -oyaml | kubectl apply -f-")
+    }
+    
+    @Test
     void 'Creates secret'() {
         k8sClient.createSecret('generic', 'my-secret', 'my-ns',
                 new Tuple2('key1', 'value1'), new Tuple2('key2', 'value2'))

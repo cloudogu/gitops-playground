@@ -19,13 +19,10 @@ function main() {
     set -x
   fi
 
-  if [[ -n "${NAME_PREFIX}" ]]; then
-    # Name-prefix should always end with '-'
-    NAME_PREFIX="${NAME_PREFIX}-"
-  fi
-
   if [[ "$DESTROY" != true ]]; then
-    applyBasicK8sResources
+    # Apply ServiceMonitor CRD; Argo CD fails if it is not there. Chicken-egg-problem.
+    # TODO make note next to helm chart version to also upgrade this
+    kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/kube-prometheus-stack-42.0.3/charts/kube-prometheus-stack/crds/crd-servicemonitors.yaml
   fi
   
   # call our groovy cli and pass in all params
@@ -36,19 +33,6 @@ function main() {
       set +x
     printWelcomeScreen
   fi
-}
-
-function applyBasicK8sResources() {
-  kubectl create namespace "${NAME_PREFIX}argocd" || true
-  kubectl create namespace "${NAME_PREFIX}example-apps-production" || true
-  kubectl create namespace "${NAME_PREFIX}example-apps-staging" || true
-  kubectl create namespace "${NAME_PREFIX}monitoring" || true
-  kubectl create namespace "${NAME_PREFIX}secrets" || true
-  kubectl create namespace "${NAME_PREFIX}ingress-nginx" || true
-
-  # Apply ServiceMonitor CRD; Argo CD fails if it is not there. Chicken-egg-problem.
-  # TODO try to extract it from the monitoring helm-chart, so we don't have to maintain the version twice
-  kubectl apply -f https://raw.githubusercontent.com/prometheus-operator/kube-prometheus/v0.9.0/manifests/setup/prometheus-operator-0servicemonitorCustomResourceDefinition.yaml
 }
 
 # Entry point for the new generation of our apply script, written in groovy
