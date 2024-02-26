@@ -13,7 +13,7 @@ https://github.com/cloudogu/gitops-playground/assets/1824962/47944db1-4fca-47b1-
 
 1. Open http://sticky.rollouts.localhost
 2. Open http://argocd.localhost/applications/example-apps-production/rollouts-sticky
-3. ~~Open http://argorollouts.localhost~~ (argo rollouts dashboard stays in "loading" state) 
+3. Open http://argorollouts.localhost (change Namespace to "example-apps-production" in the top right corner) 
 2. In a separate Window change the image in [`rollout.yaml`](http://scmm.localhost/scm/repo/argocd/example-apps/code/sources/main/apps/rollouts-sticky/rollout.yaml/)
   * from: `argoproj/rollouts-demo:blue`
   * to `argoproj/rollouts-demo:green`
