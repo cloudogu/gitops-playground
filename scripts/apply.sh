@@ -46,15 +46,9 @@ function applyBasicK8sResources() {
   kubectl create namespace "${NAME_PREFIX}secrets" || true
   kubectl create namespace "${NAME_PREFIX}ingress-nginx" || true
 
-  createSecrets
-
   # Apply ServiceMonitor CRD; Argo CD fails if it is not there. Chicken-egg-problem.
   # TODO try to extract it from the monitoring helm-chart, so we don't have to maintain the version twice
   kubectl apply -f https://raw.githubusercontent.com/prometheus-operator/kube-prometheus/v0.9.0/manifests/setup/prometheus-operator-0servicemonitorCustomResourceDefinition.yaml
-}
-
-function createSecrets() {
-  createSecret gitops-scmm --from-literal="USERNAME=${NAME_PREFIX}gitops" --from-literal=PASSWORD=$SET_PASSWORD -n default
 }
 
 # Entry point for the new generation of our apply script, written in groovy
