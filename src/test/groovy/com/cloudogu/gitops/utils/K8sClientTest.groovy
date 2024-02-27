@@ -195,6 +195,13 @@ class K8sClientTest {
         }
     }
     
+    @Test
+    void 'returns current context'() {
+        def expectedOutput = 'k3d-something'
+        commandExecutor.enqueueOutput(new CommandExecutor.Output('', expectedOutput, 0))
+        
+        assertThat(k8sClient.currentContext).isEqualTo(expectedOutput)
+    }
 
     private Map parseActualYaml(String pathToYamlFile) {
         File yamlFile = new File(pathToYamlFile)

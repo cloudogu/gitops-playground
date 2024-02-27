@@ -171,6 +171,10 @@ class K8sClient {
 
         return result.stdOut
     }
+    
+    String getCurrentContext() {
+        commandExecutor.execute('kubectl config current-context').stdOut
+    }
 
     private String getNamePrefix() {
         def config = configurationProvider.get().config

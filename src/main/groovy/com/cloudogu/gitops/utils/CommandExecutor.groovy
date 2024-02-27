@@ -78,7 +78,7 @@ class CommandExecutor {
         }
 
         // Make sure all bytes have been written, before returning output
-        if (teeOut)  teeOut.flush()
+        if (teeOut) teeOut.flush()
         if (teeErr) teeErr.flush()
         
         if (failOnError && proc.exitValue() > 0) {

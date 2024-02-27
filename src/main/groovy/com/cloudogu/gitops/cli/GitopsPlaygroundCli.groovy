@@ -145,12 +145,12 @@ class GitopsPlaygroundCli  implements Runnable {
     private String username
     @Option(names = ['--password'], description = 'Set initial admin passwords')
     private String password
-    @Option(names = ['-y', '--yes'], description = 'Skip kubecontext confirmation')
-    private Boolean pipeYes
+    @Option(names = ['-y', '--yes'], description = 'Skip confirmation')
+    Boolean pipeYes
     @Option(names = ['--name-prefix'], description = 'Set name-prefix for repos, jobs, namespaces')
     private String namePrefix
     @Option(names = ['--destroy'], description = 'Unroll playground')
-    private Boolean destroy
+    Boolean destroy
     @Option(names = ['--config-file'], description = 'Configuration using a config file')
     private String configFile
     @Option(names = ['--config-map'], description = 'Kubernetes configuration map. Should contain a key `config.yaml`.')
@@ -184,20 +184,43 @@ class GitopsPlaygroundCli  implements Runnable {
     @Override
     void run() {
         setLogging()
-        def context = ApplicationContext.run()
+        def context = createApplicationContext()
         def config = getConfig(context)
         context = context.registerSingleton(new Configuration(config))
+        K8sClient k8sClient = context.getBean(K8sClient)
 
-        if (destroy) {
-            Destroyer destroyer = context.getBean(Destroyer)
-            destroyer.destroy()
-        } else if (outputConfigFile) {
+        if (outputConfigFile) {
             def configFileConverter = context.getBean(ConfigToConfigFileConverter)
             println(configFileConverter.convert(config))
+        } else if (destroy) {
+            confirmOrExit "Destroying gitops playground in kubernetes cluster '${k8sClient.currentContext}'."
+            
+            Destroyer destroyer = context.getBean(Destroyer)
+            destroyer.destroy()
         } else {
+            confirmOrExit "Applying gitops playground to kubernetes cluster '${k8sClient.currentContext}'."
+
             Application app = context.getBean(Application)
             app.start()
         }
+    }
+
+    private void confirmOrExit(String message) {
+        if (pipeYes) {
+            return
+        }
+        
+        log.info("\n${message}\nContinue? y/n [n]")
+                
+        def input = System.in.newReader().readLine()
+        
+        if (input != 'y') {
+            System.exit(1) 
+        }
+    }
+    
+    protected ApplicationContext createApplicationContext() {
+        ApplicationContext.run()
     }
 
     void setLogging() {
