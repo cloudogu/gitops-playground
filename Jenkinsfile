@@ -94,7 +94,7 @@ node('high-cpu') {
                                 docker.image(imageNames[0])
                                         .inside("-e KUBECONFIG=${env.WORKSPACE}/.kube/config " +
                                                 " --network=host --entrypoint=''") {
-                                            sh "/app/scripts/apply.sh --yes --trace --internal-registry-port=${registryPort} " +
+                                            sh "/app/apply-ng --yes --trace --internal-registry-port=${registryPort} " +
                                                     "--argocd --monitoring --vault=dev --ingress-nginx --mailhog"
                                         }
                             }

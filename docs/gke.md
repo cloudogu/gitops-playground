@@ -6,7 +6,7 @@ We recommend setting up [GCP VMs as build agents](https://cloud.google.com/archi
 
 #### Prerequisites
 
-You will need the `OWNER` role fpr GKE, because `apply.sh` applies `ClusterRoles`, which is only allowed to owners.
+You will need the `OWNER` role fpr GKE, because we need `ClusterRoles`, which are only allowed to owners.
 
 #### Create Cluster using Terraform
 The following steps are deploying a k8s cluster with a node pool to GKE in the europe-west-3 region.
