@@ -15,12 +15,6 @@ function main() {
 
   # call our groovy cli and pass in all params
   runGroovy "$@"
-  
-  if [[ "$OUTPUT_CONFIG_FILE" != true ]]; then
-      # Not longer print every command from here. Not needed for the welcome screen
-      set +x
-    printWelcomeScreen
-  fi
 }
 
 # Entry point for the new generation of our apply script, written in groovy
@@ -43,26 +37,6 @@ function groovy() {
     org.codehaus.groovy.tools.GroovyStarter \
           --main groovy.ui.GroovyMain \
            "$@"
-}
-
-function printWelcomeScreen() {
-
-  echo
-  echo
-  echo    "|----------------------------------------------------------------------------------------------|"
-  echo    "|                     ☁️  Welcome to the GitOps playground by Cloudogu! ☁️                       |"
-  echo    "|----------------------------------------------------------------------------------------------|"
-  echo    "|"
-  echo    "| 📖 Please find the URLs of the individual applications in our README:"
-  echo -e "| \e[32mhttps://github.com/cloudogu/gitops-playground/blob/main/README.md#table-of-contents\e[0m"
-  echo    "|"
-  echo -e "| \e[33m▶️\e[0m A good starting point might also be the services or ingresses inside your cluster: "
-  echo -e "| \e[32mkubectl get svc -A\e[0m"
-  echo -e "| Or (depending on your config)"
-  echo -e "| \e[32mkubectl get ing -A\e[0m"
-  echo    "|"
-  echo -e "| \e[33m⏳\e[0mPlease be aware, Jenkins and Argo CD may take some time to build and deploy all apps."
-  echo    "|----------------------------------------------------------------------------------------------|"
 }
 
 function printUsage() {
