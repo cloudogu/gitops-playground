@@ -159,6 +159,51 @@ docker run --rm -it  -u $(id -u) \
 scripts/apply-ng.sh #params
 ```
 
+## Running multiple instances on one machine
+
+Sometimes it makes sense to run more than one instance on your developer machine.
+For example, you might want to conduct multiple long-running tests in parallel or
+you might be interested to see how the latest stable version behaved in comparission to you local build.
+
+You have to options to do this
+
+1. Use a different ingress port
+2. Access local docker network (linux only)
+
+### Use a different ingress port
+
+```bash
+INSTANCE=2
+
+scripts/init-cluster.sh --bind-ingress-port="808$INSTANCE" \
+  --cluster-name="gitops-playground$INSTANCE" --bind-registry-port="3000$INSTANCE"
+
+docker run --rm -t -u $(id -u) \
+ -v "$HOME/.config/k3d/kubeconfig-playground$INSTANCE.yaml:/home/.kube/config" \
+    --net=host \
+    ghcr.io/cloudogu/gitops-playground --yes --internal-registry-port="3000$INSTANCE" -x \
+      --base-url="http://localhost:808$INSTANCE" --argocd --ingress-nginx
+
+echo "Once Argo CD has deployed the nginx-ingress. you cn reach your instance at http://scmm.localhost:808$INSTANCE for example"
+```
+
+### Access local docker network
+
+This will work on linux only
+
+```bash
+INSTANCE=3
+
+scripts/init-cluster.sh --bind-localhost=false \
+  --cluster-name="gitops-playground$INSTANCE" --bind-registry-port="3000$INSTANCE" 
+
+docker run --rm -t -u $(id -u) \
+ -v "$HOME/.config/k3d/kubeconfig-playground$INSTANCE.yaml:/home/.kube/config" \
+    --net=host \
+    ghcr.io/cloudogu/gitops-playground --yes --internal-registry-port="3000$INSTANCE" -x --argocd 
+
+xdg-open "http://$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}'  k3d-playground$INSTANCE-server-0):9091"
+```
 
 ## Implicit + explicit dependencies
 
