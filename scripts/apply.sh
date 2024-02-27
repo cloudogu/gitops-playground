@@ -19,12 +19,6 @@ function main() {
     set -x
   fi
 
-  if [[ "$DESTROY" != true ]]; then
-    # Apply ServiceMonitor CRD; Argo CD fails if it is not there. Chicken-egg-problem.
-    # TODO make note next to helm chart version to also upgrade this
-    kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/kube-prometheus-stack-42.0.3/charts/kube-prometheus-stack/crds/crd-servicemonitors.yaml
-  fi
-  
   # call our groovy cli and pass in all params
   runGroovy "$@"
   

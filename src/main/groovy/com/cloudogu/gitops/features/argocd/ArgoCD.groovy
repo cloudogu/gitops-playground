@@ -24,6 +24,7 @@ class ArgoCD extends Feature {
     static final String HELM_VALUES_PATH = 'argocd/values.yaml'
     static final String CHART_YAML_PATH = 'argocd/Chart.yaml'
     static final String SCMM_URL_INTERNAL = "http://scmm-scm-manager.default.svc.cluster.local/scm"
+    static final String SERVICE_MONITOR_CRD = 'applications/cluster-resources/monitoring/crd-servicemonitors.yaml'
     private Map config
     private List<RepoInitializationAction> gitRepos = []
 
@@ -191,6 +192,8 @@ class ArgoCD extends Feature {
         
         log.debug("Creating namespace for monitoring, so argocd can add its service monitors there")
         k8sClient.createNamespace('monitoring')
+        log.debug("Applying ServiceMonitor CRD; Argo CD fails if it is not there. Chicken-egg-problem.")
+        k8sClient.applyYaml("https://raw.githubusercontent.com/prometheus-community/helm-charts/kube-prometheus-stack-${config['features']['monitoring']['helm']['version']}/charts/kube-prometheus-stack/crds/crd-servicemonitors.yaml")
         
         log.debug("Creating repo credential secret that is used by argocd to access repos in SCM-Manager")
         // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo 

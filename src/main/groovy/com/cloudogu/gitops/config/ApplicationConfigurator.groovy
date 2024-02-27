@@ -142,6 +142,12 @@ class ApplicationConfigurator {
                             grafanaEmailFrom : 'grafana@example.org',
                             grafanaEmailTo : 'infra@example.org',
                             helm  : [
+                                    /* Before allowing to override this via config, we have to change
+                                       ArgoCD.groovy to extract the monitoring CRD from the chart instead of applying 
+                                       from GitHub.
+                                        
+                                        First approach: 
+                                        helm template prometheus-community/kube-prometheus-stack --version XYZ --include-crds */
                                     chart  : 'kube-prometheus-stack',
                                     repoURL: 'https://prometheus-community.github.io/helm-charts',
                                     version: '42.0.3',
