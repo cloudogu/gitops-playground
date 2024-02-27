@@ -181,17 +181,18 @@ class GitopsPlaygroundCli  implements Runnable {
     private Boolean ingressNginx
 
 
-
     @Override
     void run() {
-        def context = ApplicationContext.run().registerSingleton(new Configuration(getConfig()))
+        def context = ApplicationContext.run()
+        def config = getConfig(context)
+        context = context.registerSingleton(new Configuration(config))
 
         if (destroy) {
             Destroyer destroyer = context.getBean(Destroyer)
             destroyer.destroy()
         } else if (outputConfigFile) {
             def configFileConverter = context.getBean(ConfigToConfigFileConverter)
-            println(configFileConverter.convert(getConfig()))
+            println(configFileConverter.convert(config))
         } else {
             Application app = context.getBean(Application)
             app.start()
@@ -211,13 +212,12 @@ class GitopsPlaygroundCli  implements Runnable {
         }
     }
 
-    private Map getConfig() {
+    private Map getConfig(ApplicationContext appContext) {
         if (configFile && configMap) {
             log.error("Cannot provide --config-file and --config-map at the same time.")
             System.exit(1)
         }
 
-        def appContext = ApplicationContext.run()
         ApplicationConfigurator applicationConfigurator = appContext.getBean(ApplicationConfigurator)
         if (configFile) {
             applicationConfigurator.setConfig(new File(configFile))
