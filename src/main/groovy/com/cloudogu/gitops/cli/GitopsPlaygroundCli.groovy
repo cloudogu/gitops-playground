@@ -183,6 +183,7 @@ class GitopsPlaygroundCli  implements Runnable {
 
     @Override
     void run() {
+        setLogging()
         def context = ApplicationContext.run()
         def config = getConfig(context)
         context = context.registerSingleton(new Configuration(config))
