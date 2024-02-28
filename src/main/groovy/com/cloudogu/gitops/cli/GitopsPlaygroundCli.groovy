@@ -266,18 +266,18 @@ class GitopsPlaygroundCli  implements Runnable {
     void printWelcomeScreen() {
         log.info '''\n
   |----------------------------------------------------------------------------------------------|
-  |                     ☁️  Welcome to the GitOps playground by Cloudogu! ☁️
+  |                       Welcome to the GitOps playground by Cloudogu!
   |----------------------------------------------------------------------------------------------|
   |
-  | 📖 Please find the URLs of the individual applications in our README:
+  | Please find the URLs of the individual applications in our README:
   | https://github.com/cloudogu/gitops-playground/blob/main/README.md#table-of-contents
   |
-  | ▶️ A good starting point might also be the services or ingresses inside your cluster:  
+  | A good starting point might also be the services or ingresses inside your cluster:  
   | kubectl get svc -A
   | Or (depending on your config)
   | kubectl get ing -A
   |
-  | ⏳ Please be aware, Jenkins and Argo CD may take some time to build and deploy all apps.
+  | Please be aware, Jenkins and Argo CD may take some time to build and deploy all apps.
   |----------------------------------------------------------------------------------------------|
 '''
     }
