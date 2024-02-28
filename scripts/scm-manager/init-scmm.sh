@@ -10,6 +10,14 @@ fi
 
 SCMM_PROTOCOL=http
 
+PLAYGROUND_DIR="$(cd ${ABSOLUTE_BASEDIR} && cd ../.. && pwd)"
+
+if [[ $INSECURE == true ]]; then
+  CURL_HOME="${PLAYGROUND_DIR}"
+  export CURL_HOME
+  export GIT_SSL_NO_VERIFY=1
+fi
+
 function initSCMM() {
   
   SCMM_HOST=$(getHost "${SCMM_URL}")

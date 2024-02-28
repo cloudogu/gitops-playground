@@ -213,6 +213,11 @@ class ApplicationConfigurator {
         deepMerge(configToSet, newConfig)
 
         addAdditionalApplicationConfig(newConfig)
+        
+        if (newConfig.scmm["url"] && !newConfig.jenkins["url"] ||
+            !newConfig.scmm["url"] && newConfig.jenkins["url"]) {
+            throw new RuntimeException('When setting jenkins URL, scmm URL must also be set and the other way round')
+        }
         setScmmConfig(newConfig)
         addJenkinsConfig(newConfig)
 

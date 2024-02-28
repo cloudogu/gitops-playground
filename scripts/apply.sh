@@ -6,14 +6,6 @@ PLAYGROUND_DIR="$(cd ${ABSOLUTE_BASEDIR} && cd .. && pwd)"
 
 source ${ABSOLUTE_BASEDIR}/utils.sh
 
-INTERNAL_SCMM=true
-INTERNAL_JENKINS=true
-
-# When running in k3d, connection between SCMM <-> Jenkins must be via k8s services, because external "localhost"
-# addresses will not work
-JENKINS_URL_FOR_SCMM="http://jenkins"
-SCMM_URL_FOR_JENKINS="http://scmm-scm-manager/scm"
-
 function main() {
   readParameters "$@"
 
@@ -27,62 +19,15 @@ function main() {
     set -x
   fi
 
-  local RUNNING_INSIDE_K8S
-  # The - avoids "unbound variable", because it expands to empty string if unset
-  if [[ -n "${KUBERNETES_SERVICE_HOST-}" ]]; then
-    RUNNING_INSIDE_K8S=true
-  else
-    RUNNING_INSIDE_K8S=false
-  fi
-
-  local CLUSTER_BIND_ADDRESS=$(findClusterBindAddress)
-
   if [[ -n "${NAME_PREFIX}" ]]; then
     # Name-prefix should always end with '-'
     NAME_PREFIX="${NAME_PREFIX}-"
   fi
 
-  if [[ $INSECURE == true ]]; then
-    CURL_HOME="${PLAYGROUND_DIR}"
-    export CURL_HOME
-    export GIT_SSL_NO_VERIFY=1
-  fi
-
-  if [[ -n "${SCMM_URL}" ]]; then
-    INTERNAL_SCMM=false
-    # We can't use internal kubernetes services in this scenario
-    SCMM_URL_FOR_JENKINS=${SCMM_URL}
-  elif [[ $RUNNING_INSIDE_K8S == true ]]; then
-    SCMM_URL="$(createUrl "scmm-scm-manager.default.svc.cluster.local" "80")/scm"
-  else
-    local scmmPortFromValuesYaml="$(grep 'nodePort:' "${PLAYGROUND_DIR}"/scm-manager/values.yaml | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')"
-    SCMM_URL="$(createUrl "${CLUSTER_BIND_ADDRESS}" "${scmmPortFromValuesYaml}")/scm"
-  fi
-
-  if [[ -n "${JENKINS_URL}" ]]; then
-    INTERNAL_JENKINS=false
-    # We can't use internal kubernetes services in this scenario
-    JENKINS_URL_FOR_SCMM=${JENKINS_URL}
-  elif [[ $RUNNING_INSIDE_K8S == true ]]; then
-    JENKINS_URL=$(createUrl "jenkins.default.svc.cluster.local" "80")
-  else
-    local jenkinsPortFromValuesYaml="$(grep 'nodePort:' "${PLAYGROUND_DIR}"/jenkins/values.yaml | grep nodePort | tail -n1 | cut -f2 -d':' | tr -d '[:space:]')"
-    JENKINS_URL=$(createUrl "${CLUSTER_BIND_ADDRESS}" "${jenkinsPortFromValuesYaml}")
-  fi
-
-  checkPrerequisites
-
   if [[ "$DESTROY" != true ]]; then
     applyBasicK8sResources
   fi
   
-  export INTERNAL_SCMM \
-         INTERNAL_JENKINS \
-         JENKINS_URL_FOR_SCMM \
-         SCMM_URL_FOR_JENKINS \
-         SCMM_URL \
-         JENKINS_URL
-
   # call our groovy cli and pass in all params
   runGroovy "$@"
   
@@ -90,51 +35,6 @@ function main() {
       # Not longer print every command from here. Not needed for the welcome screen
       set +x
     printWelcomeScreen
-  fi
-}
-
-function findClusterBindAddress() {
-  local potentialClusterBindAddress
-  local localAddress
-  
-  # Use an internal IP to contact Jenkins and SCMM
-  # For k3d this is either the host's IP or the IP address of the k3d API server's container IP (when --bind-localhost=false)
-  # Note that this might return multiple InternalIP (IPV4 and IPV6) - we assume the first one is IPV4 (break after first)
-  potentialClusterBindAddress="$(kubectl get "$(waitForNode)" \
-          --template='{{range .status.addresses}}{{ if eq .type "InternalIP" }}{{.address}}{{break}}{{end}}{{end}}')"
-
-  localAddress="$(ip route get 1 | sed -n 's/^.*src \([0-9.]*\) .*$/\1/p')"
-
-  # Check if we can use localhost instead of the external address
-  # This address is later printed on the welcome screen, where localhost is much more constant and intuitive as the 
-  # the external address. Also Jenkins notifications only work on localhost, not external addresses.
-  # Note that this will only work when executed as a script locally, or in a container with --net=host.
-  # When executing via kubectl run, this will still output the potentialClusterBindAddress.
-  if [[ "${localAddress}" == "${potentialClusterBindAddress}" ]]; then 
-    echo "localhost" 
-  else 
-    echo "${potentialClusterBindAddress}"
-  fi
-}
-
-function waitForNode() {
-  # With TLDR command from readme "kubectl get node" might be executed right after cluster start, where no nodes are 
-  # returned, resulting in 'error: the server doesn't have a resource type ""'
-  local nodes=""
-  while [ -z "${nodes}" ]; do
-    nodes=$(kubectl get node -oname)
-    [ -z "${nodes}" ] && sleep 1
-  done
-  # Return first node
-  kubectl get node -oname | head -n1
-}
-
-function checkPrerequisites() {
-  if [[ ${INTERNAL_SCMM} == false || ${INTERNAL_JENKINS} == false ]]; then
-    if [[ ${INTERNAL_SCMM} == true || ${INTERNAL_JENKINS} == true ]]; then
-      error "When setting JENKINS_URL, SCMM_URL must also be set and the other way round."
-      exit 1
-    fi
   fi
 }
 
@@ -155,21 +55,6 @@ function applyBasicK8sResources() {
 
 function createSecrets() {
   createSecret gitops-scmm --from-literal="USERNAME=${NAME_PREFIX}gitops" --from-literal=PASSWORD=$SET_PASSWORD -n default
-}
-
-function createUrl() {
-  local hostname="$1"
-  local port="$2"
-
-  if [[ -z "${port}" ]]; then
-    error "No port found for hostname ${hostname}"
-    exit 1
-  fi
-
-  # Argo forwards to HTTPS so simply use HTTP here
-  echo -n "http://${hostname}"
-  echo -n ":${port}"
-  #  [[ "${port}" != 80 && "${port}" != 443 ]] && echo -n ":${port}"
 }
 
 # Entry point for the new generation of our apply script, written in groovy

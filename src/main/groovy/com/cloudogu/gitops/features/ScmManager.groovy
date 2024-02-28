@@ -35,28 +35,25 @@ class ScmManager extends Feature {
     @Override
     void enable() {
 
-        /* Values set in apply.sh:
-            INTERNAL_SCMM \
-         INTERNAL_JENKINS \
-         JENKINS_URL_FOR_SCMM \
-         SCMM_URL_FOR_JENKINS \
-         SCMM_URL \
-         JENKINS_URL
-         */
         commandExecutor.execute("${fileSystemUtils.rootDir}/scripts/scm-manager/init-scmm.sh", [
-                TRACE : config.application['trace'],
-                SCMM_URL:  config.scmm['url'],
-                SCMM_USERNAME: config.scmm['username'],
-                SCMM_PASSWORD: config.scmm['password'],
-                REMOTE_CLUSTER: config.application['remote'],
-                BASE_URL: config.application['baseUrl'] ? config.application['baseUrl'] : '',
-                INSTALL_ARGOCD: config.features['argocd']['active'],
-                SCMM_HELM_CHART_VERSION: config.scmm['helm']['version'],
+                TRACE                        : config.application['trace'],
+                SCMM_URL                     : config.scmm['url'],
+                SCMM_USERNAME                : config.scmm['username'],
+                SCMM_PASSWORD                : config.scmm['password'],
+                JENKINS_URL                  : config.jenkins['url'],
+                INTERNAL_SCMM                : config.scmm['internal'],
+                JENKINS_URL_FOR_SCMM         : config.jenkins['urlForScmm'],
+                SCMM_URL_FOR_JENKINS         : config.scmm['urlForJenkins'],
+                REMOTE_CLUSTER               : config.application['remote'],
+                BASE_URL                     : config.application['baseUrl'] ? config.application['baseUrl'] : '',
+                INSTALL_ARGOCD               : config.features['argocd']['active'],
+                SCMM_HELM_CHART_VERSION      : config.scmm['helm']['version'],
                 SPRING_BOOT_HELM_CHART_COMMIT: config.repositories['springBootHelmChart']['ref'],
-                SPRING_BOOT_HELM_CHART_REPO: config.repositories['springBootHelmChart']['url'],
-                GITOPS_BUILD_LIB_REPO: config.repositories['gitopsBuildLib']['url'],
-                CES_BUILD_LIB_REPO: config.repositories['cesBuildLib']['url'],
-                NAME_PREFIX : config.application['namePrefix']
+                SPRING_BOOT_HELM_CHART_REPO  : config.repositories['springBootHelmChart']['url'],
+                GITOPS_BUILD_LIB_REPO        : config.repositories['gitopsBuildLib']['url'],
+                CES_BUILD_LIB_REPO           : config.repositories['cesBuildLib']['url'],
+                NAME_PREFIX                  : config.application['namePrefix'],
+                INSECURE                     : config.application['insecure']
         ])
     }
 }

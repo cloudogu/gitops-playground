@@ -116,6 +116,28 @@ class ApplicationConfiguratorTest {
     }
 
     @Test
+    void 'Fails if jenkins is internal and scmm is external'() {
+        testConfig.jenkins['url'] = ''
+        testConfig.scmm['url'] = 'external'
+
+        def exception = shouldFail(RuntimeException) {
+            applicationConfigurator.setConfig(testConfig).getConfig()
+        }
+        assertThat(exception.message).isEqualTo('When setting jenkins URL, scmm URL must also be set and the other way round')
+    }
+    
+    @Test
+    void 'Fails if jenkins is external and scmm is internal'() {
+        testConfig.jenkins['url'] = 'external'
+        testConfig.scmm['url'] = ''
+        
+        def exception = shouldFail(RuntimeException) {
+            applicationConfigurator.setConfig(testConfig).getConfig()
+        }
+        assertThat(exception.message).isEqualTo('When setting jenkins URL, scmm URL must also be set and the other way round')
+    }
+
+    @Test
     void "uses default localhost url for jenkins and scmm if nothing specified"() {
         testConfig.jenkins['url'] = ''
         testConfig.scmm['url'] = ''

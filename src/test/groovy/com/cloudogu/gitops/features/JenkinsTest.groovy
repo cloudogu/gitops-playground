@@ -24,7 +24,8 @@ class JenkinsTest {
                     trace               : true,
                     baseUrl             : 'http://localhost',
                     namePrefix          : "my-prefix-",
-                    namePrefixForEnvVars: 'MY_PREFIX_'
+                    namePrefixForEnvVars: 'MY_PREFIX_',
+                    insecure : false
             ],
             jenkins    : [
                     internal       : true,
@@ -74,6 +75,7 @@ class JenkinsTest {
                 "${System.getProperty('user.dir')}/scripts/jenkins/init-jenkins.sh" as String)
 
         assertThat(env['TRACE']).isEqualTo('true')
+        assertThat(env['INTERNAL_JENKINS']).isEqualTo('true')
         assertThat(env['JENKINS_HELM_CHART_VERSION']).isEqualTo('4.8.1')
         assertThat(env['JENKINS_URL']).isEqualTo('http://jenkins')
         assertThat(env['JENKINS_USERNAME']).isEqualTo('jenusr')
@@ -82,6 +84,7 @@ class JenkinsTest {
         assertThat(env['REMOTE_CLUSTER']).isEqualTo('true')
         assertThat(env['BASE_URL']).isEqualTo('http://localhost')
         assertThat(env['NAME_PREFIX']).isEqualTo('my-prefix-')
+        assertThat(env['INSECURE']).isEqualTo('false')
 
         assertThat(env['SCMM_URL']).isEqualTo('http://scmm')
         assertThat(env['SCMM_PASSWORD']).isEqualTo('scmm-pw')

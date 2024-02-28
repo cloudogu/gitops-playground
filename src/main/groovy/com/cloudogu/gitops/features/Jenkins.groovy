@@ -51,17 +51,9 @@ class Jenkins extends Feature {
 
     @Override
     void enable() {
-
-        /* Values set in apply.sh:
-            INTERNAL_SCMM \
-         INTERNAL_JENKINS \
-         JENKINS_URL_FOR_SCMM \
-         SCMM_URL_FOR_JENKINS \
-         SCMM_URL \
-         JENKINS_URL
-         */
         commandExecutor.execute("${fileSystemUtils.rootDir}/scripts/jenkins/init-jenkins.sh", [
                 TRACE                     : config.application['trace'],
+                INTERNAL_JENKINS          : config.jenkins['internal'],
                 JENKINS_HELM_CHART_VERSION: config.jenkins['helm']['version'],
                 JENKINS_URL               : config.jenkins['url'],
                 JENKINS_USERNAME          : config.jenkins['username'],
@@ -71,13 +63,14 @@ class Jenkins extends Feature {
                 SCMM_URL                  : config.scmm['url'],
                 SCMM_PASSWORD             : config.scmm['password'],
                 INSTALL_ARGOCD            : config.features['argocd']['active'],
-                NAME_PREFIX               : config.application['namePrefix']
+                NAME_PREFIX               : config.application['namePrefix'],
+                INSECURE                  : config.application['insecure']
         ])
 
         globalPropertyManager.setGlobalProperty('SCMM_URL', config.scmm['url'] as String)
         globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_URL", config.registry['url'] as String)
         globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_PATH", config.registry['path'] as String)
-        
+
         globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}K8S_VERSION", ApplicationConfigurator.K8S_VERSION)
 
         if (userManager.isUsingCasSecurityRealm()) {

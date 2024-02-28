@@ -14,6 +14,11 @@ PLAYGROUND_DIR="$(cd ${ABSOLUTE_BASEDIR} && cd ../.. && pwd)"
 
 JENKINS_PLUGIN_FOLDER=${JENKINS_PLUGIN_FOLDER:-''}
 
+if [[ $INSECURE == true ]]; then
+  CURL_HOME="${PLAYGROUND_DIR}"
+  export CURL_HOME
+fi
+
 function initJenkins() {
   if [[ ${INTERNAL_JENKINS} == true ]]; then
     deployLocalJenkins 

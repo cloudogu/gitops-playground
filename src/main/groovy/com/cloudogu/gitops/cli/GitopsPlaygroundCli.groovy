@@ -40,7 +40,7 @@ class GitopsPlaygroundCli  implements Runnable {
     @Option(names = ['--registry-password'], description = 'Optional when --registry-url is set')
     private String registryPassword
     @Option(names = ['--internal-registry-port'], description = 'Port of registry registry. Ignored when registry-url is set')
-    private int internalRegistryPort
+    private Integer internalRegistryPort
 
     // args group jenkins
     @Option(names = ['--jenkins-url'], description = 'The url of your external jenkins')
@@ -122,17 +122,17 @@ class GitopsPlaygroundCli  implements Runnable {
     @Option(names = ['--mailhog-url'], description = 'Sets url for MailHog')
     private String mailhogUrl
     @Option(names = ['--mailhog', '--mail'], description = 'Installs MailHog as Mail server.', scope = CommandLine.ScopeType.INHERIT)
-    Boolean mailhog
+    private Boolean mailhog
 
     // condition check dependent parameters of external Mailserver
     @Option(names = ['--smtp-address'], description = 'Sets smtp port of external Mailserver')
-    String smtpAddress
+    private String smtpAddress
     @Option(names = ['--smtp-port'], description = 'Sets smtp port of external Mailserver')
-    Integer smtpPort
+    private Integer smtpPort
     @Option(names = ['--smtp-user'], description = 'Sets smtp username for external Mailserver')
-    String smtpUser
+    private String smtpUser
     @Option(names = ['--smtp-password'], description = 'Sets smtp password of external Mailserver')
-    String smtpPassword
+    private String smtpPassword
 
     // args group debug
     @Option(names = ['-d', '--debug'], description = 'Debug output', scope = CommandLine.ScopeType.INHERIT)

@@ -16,7 +16,8 @@ class ScmManagerTest {
                     remote    : true,
                     namePrefix: "foo-",
                     trace     : true,
-                    baseUrl : 'http://localhost'
+                    baseUrl : 'http://localhost',
+                    insecure : false
             ],
             scmm       : [
                     url: 'http://scmm',
@@ -25,9 +26,15 @@ class ScmManagerTest {
                     host    : 'abc',
                     username: 'scmm-usr',
                     password: 'scmm-pw',
+                    urlForJenkins : 'http://scmm4jenkins',
                     helm  : [
                             version: '2.47.0'
                     ]
+            ],
+            jenkins    : [
+                    internal       : true,
+                    url            : 'http://jenkins',
+                    urlForScmm     : 'http://jenkins4scm',
             ],
             features   : [
                     argocd: [
@@ -61,6 +68,10 @@ class ScmManagerTest {
         assertThat(env['SCMM_URL']).isEqualTo('http://scmm')
         assertThat(env['SCMM_USERNAME']).isEqualTo('scmm-usr')
         assertThat(env['SCMM_PASSWORD']).isEqualTo('scmm-pw')
+        assertThat(env['JENKINS_URL']).isEqualTo( 'http://jenkins')
+        assertThat(env['INTERNAL_SCMM']).isEqualTo( 'true')
+        assertThat(env['JENKINS_URL_FOR_SCMM']).isEqualTo( 'http://jenkins4scm')
+        assertThat(env['SCMM_URL_FOR_JENKINS']).isEqualTo( 'http://scmm4jenkins')
         assertThat(env['REMOTE_CLUSTER']).isEqualTo('true')
         assertThat(env['BASE_URL']).isEqualTo('http://localhost')
         assertThat(env['INSTALL_ARGOCD']).isEqualTo('true')
@@ -70,6 +81,7 @@ class ScmManagerTest {
         assertThat(env['GITOPS_BUILD_LIB_REPO']).isEqualTo('gitopsBuildLibUrl')
         assertThat(env['CES_BUILD_LIB_REPO']).isEqualTo('cesBuildLibUrl')
         assertThat(env['NAME_PREFIX']).isEqualTo('foo-')
+        assertThat(env['INSECURE']).isEqualTo('false')
     }
 
     @Test
