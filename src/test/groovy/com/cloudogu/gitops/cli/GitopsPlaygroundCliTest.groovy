@@ -1,5 +1,9 @@
 package com.cloudogu.gitops.cli
 
+import ch.qos.logback.classic.Logger
+import ch.qos.logback.classic.LoggerContext
+import ch.qos.logback.classic.encoder.PatternLayoutEncoder
+import ch.qos.logback.core.ConsoleAppender
 import com.cloudogu.gitops.Application
 import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.destroy.Destroyer
@@ -7,8 +11,10 @@ import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.K8sClientForTest
 import com.github.stefanbirkner.systemlambda.SystemLambda
 import io.micronaut.context.ApplicationContext
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
+import org.slf4j.LoggerFactory
 
 import java.util.concurrent.TimeUnit
 
@@ -18,11 +24,19 @@ import static org.mockito.Mockito.*
 
 class GitopsPlaygroundCliTest {
 
+    static final String ORIGINAL_LOGGING_PATTERN = loggingEncoder.pattern
+    
     K8sClientForTest k8sClient = new K8sClientForTest(new HashMap())
     Application application = mock(Application)
     ApplicationConfigurator applicationConfigurator = mock(ApplicationConfigurator)
     Destroyer destroyer = mock(Destroyer)
-
+    
+    @AfterEach
+    void setup() {
+        // Restore logging pattern, if modified
+        loggingEncoder.setPattern(ORIGINAL_LOGGING_PATTERN)
+    }
+    
     @Test
     void 'Returns error, when applying is not confirmed'() {
         int status = SystemLambda.catchSystemExit(() -> {
@@ -85,8 +99,47 @@ class GitopsPlaygroundCliTest {
         verify(destroyer).destroy()
     }
 
+    @Test
+    void 'sets simplified logging pattern'() {
+        def cli = new GitopsPlaygroundCliForTest()
+        cli.pipeYes = true
+        cli.run()
 
-    private void writeViaSystemIn(String value) {
+        assertThat(getLoggingPattern()).doesNotContain('%logger', '%thread')
+    }
+
+    @Test
+    void 'keeps simplified logging pattern when trace is enabled'() {
+        def cli = new GitopsPlaygroundCliForTest()
+        cli.pipeYes = true
+        cli.trace = true
+        cli.run()
+
+        assertThat(getLoggingPattern()).contains('%logger', '%thread')
+    }
+    
+    @Test
+    void 'keeps simplified logging pattern when debug is enabled'() {
+        def cli = new GitopsPlaygroundCliForTest()
+        cli.pipeYes = true
+        cli.debug = true
+        cli.run()
+
+        assertThat(getLoggingPattern()).contains('%logger', '%thread')
+    }
+
+    static String getLoggingPattern() {
+        loggingEncoder.pattern
+    }
+
+    static PatternLayoutEncoder getLoggingEncoder() {
+        LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory()
+        def rootLogger = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME)
+        def consoleAppender = rootLogger.getAppender('STDOUT') as ConsoleAppender
+        consoleAppender.getEncoder() as PatternLayoutEncoder
+    }
+
+    void writeViaSystemIn(String value) {
         ByteArrayInputStream inContent = new ByteArrayInputStream("${value}\n".getBytes())
         System.setIn(inContent)
     }

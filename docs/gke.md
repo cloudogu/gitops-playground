@@ -97,7 +97,10 @@ gcloud container clusters get-credentials ${cluster_name} --zone ${gce_location}
 
 Now you're ready to apply the apps to the cluster.
 
-Note that you need to pass the `--remote` flag when applying the playground.
+Note that to be able to access the services remotely you either need to pass the
+* `--remote` flag (exposes alls services as `LoadBalancer` with external IP) or
+* `--ingress-nginx --base-url=$yourdomain` and either set a DNS record or `/etc/hosts` entries to the external IP of the
+  ingress-nginx service. 
 
 ##### Clean up
 

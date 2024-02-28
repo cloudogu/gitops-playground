@@ -2,6 +2,10 @@ package com.cloudogu.gitops.cli
 
 import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Logger
+import ch.qos.logback.classic.LoggerContext
+import ch.qos.logback.classic.encoder.PatternLayoutEncoder
+import ch.qos.logback.classic.spi.ILoggingEvent
+import ch.qos.logback.core.ConsoleAppender
 import com.cloudogu.gitops.Application
 import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.ConfigToConfigFileConverter
@@ -63,7 +67,7 @@ class GitopsPlaygroundCli  implements Runnable {
     private String scmmPassword
 
     // args group remote
-    @Option(names = ['--remote'], description = 'Install on remote Cluster e.g. gcp')
+    @Option(names = ['--remote'], description = 'Expose services as LoadBalancers')
     private Boolean remote
     @Option(names = ['--insecure'], description = 'Sets insecure-mode in cURL which skips cert validation')
     private Boolean insecure
@@ -136,9 +140,9 @@ class GitopsPlaygroundCli  implements Runnable {
 
     // args group debug
     @Option(names = ['-d', '--debug'], description = 'Debug output', scope = CommandLine.ScopeType.INHERIT)
-    private Boolean debug
+    Boolean debug
     @Option(names = ['-x', '--trace'], description = 'Debug + Show each command executed (set -x)', scope = CommandLine.ScopeType.INHERIT)
-    private Boolean trace
+    Boolean trace
 
     // args group configuration
     @Option(names = ['--username'], description = 'Set initial admin username')
@@ -232,10 +236,36 @@ class GitopsPlaygroundCli  implements Runnable {
             logger.setLevel(Level.TRACE)
         } else if (debug) {
             log.info("Setting loglevel to debug")
-            logger.setLevel(Level.DEBUG);
+            logger.setLevel(Level.DEBUG)
         } else {
-            logger.setLevel(Level.INFO)
+            setSimpleLogPattern()
         }
+    }
+
+    /**
+     * Changes log pattern to a simpler one, to reduce noise for normal users
+     */
+    void setSimpleLogPattern() {
+        LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory()
+        def rootLogger = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME)
+        def defaultPattern = ((rootLogger.getAppender('STDOUT') as ConsoleAppender)
+                .getEncoder() as PatternLayoutEncoder).pattern
+
+        // Avoid duplicate output by existing appender
+        rootLogger.detachAppender('STDOUT')
+        PatternLayoutEncoder encoder = new PatternLayoutEncoder()
+        // Remove less relevant details from log pattern
+        encoder.setPattern(defaultPattern 
+                .replaceAll(" \\S*%thread\\S* ", " ")
+                .replaceAll(" \\S*%logger\\S* ", " "))
+        encoder.setContext(loggerContext)
+        encoder.start()
+        ConsoleAppender<ILoggingEvent> appender = new ConsoleAppender<>()
+        appender.setName('STDOUT')
+        appender.setContext(loggerContext)
+        appender.setEncoder(encoder)
+        appender.start()
+        rootLogger.addAppender(appender)
     }
 
     private Map getConfig(ApplicationContext appContext) {

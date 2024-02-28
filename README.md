@@ -30,7 +30,7 @@ You can try the GitOps Playground on a local Kubernetes cluster by running a sin
 ```shell
 bash <(curl -s \
   https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh) --bind-ingress-port=80 \
-  && docker run --rm --pull=always -u $(id -u) \
+  && docker run --rm -t --pull=always -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     --net=host \
     ghcr.io/cloudogu/gitops-playground --yes --argocd --ingress-nginx --base-url=http://localhost
@@ -174,7 +174,7 @@ k3d's kubeconfig.
 ```shell
 CLUSTER_NAME=gitops-playground
 docker pull ghcr.io/cloudogu/gitops-playground
-docker run --rm -u $(id -u) \
+docker run --rm -t -u $(id -u) \
   -v ~/.config/k3d/kubeconfig-${CLUSTER_NAME}.yaml:/home/.kube/config \
   --net=host \
   ghcr.io/cloudogu/gitops-playground # additional parameters go here
@@ -207,13 +207,12 @@ kubectl create clusterrolebinding gitops-playground-job-executer \
   --clusterrole=cluster-admin \
   --serviceaccount=default:gitops-playground-job-executer
 
-# Then start apply the playground with the following command
-# The --remote parameter exposes Jenkins, SCMM and argo on well-known ports 
-# for example, so you don't have to remember the individual ports
+# Then start apply the playground with the following command:
+# To access services on remote clusters, add either --remote or --ingress-nginx --base-url=$yourdomain
 kubectl run gitops-playground -i --tty --restart=Never \
   --overrides='{ "spec": { "serviceAccount": "gitops-playground-job-executer" } }' \
   --image ghcr.io/cloudogu/gitops-playground \
-  -- --yes --argocd --remote # additional parameters go here
+  -- --yes --argocd # additional parameters go here. 
 
 # If everything succeeded, remove the objects
 kubectl delete clusterrolebinding/gitops-playground-job-executer \
@@ -230,7 +229,7 @@ The following describes more parameters and use cases.
 You can get a full list of all options like so:
 
 ```shell
-docker run --rm ghcr.io/cloudogu/gitops-playground --help
+docker run -t --rm ghcr.io/cloudogu/gitops-playground --help
 ```
 
 ##### Configuration file
@@ -248,7 +247,7 @@ The config file is not yet a complete replacement for CLI parameters.
 ###### Apply via Docker
 
 ```bash
-docker run --rm --pull=always -u $(id -u) \
+docker run --rm -t --pull=always -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     -v $(pwd)/gitops-playground.yaml:/config/gitops-playground.yaml \
     --net=host \
@@ -514,7 +513,7 @@ Recommendation: 16GB.
 ```bash
 bash <(curl -s \
   https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh) --bind-ingress-port=80 \
-  && docker run --rm --pull=always -u $(id -u) \
+  && docker run -t --rm --pull=always -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     --net=host \
     ghcr.io/cloudogu/gitops-playground --yes --argocd --base-url=http://localhost # more params go here
@@ -576,7 +575,7 @@ k3d kubeconfig write gitops-playground
   Note that when using a `$registry_port` other than `30000` append the command `--internal-registry-port=$registry_port` bellow
   
 ```powershell
-docker run --rm --pull=always `
+docker run --rm -t --pull=always `
     -v $HOME/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config `
     --net=host `
     ghcr.io/cloudogu/gitops-playground --yes --argocd --ingress-nginx --base-url=http://localhost:$ingress_port # more params go here
