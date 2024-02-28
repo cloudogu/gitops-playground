@@ -202,6 +202,14 @@ class K8sClientTest {
         
         assertThat(k8sClient.currentContext).isEqualTo(expectedOutput)
     }
+    
+    @Test
+    void 'returns useful information, even if current context is not set'() {
+        def expectedOutput = ''
+        commandExecutor.enqueueOutput(new CommandExecutor.Output('error: current-context is not set', expectedOutput, 1))
+        
+        assertThat(k8sClient.currentContext).isEqualTo('(current context not set)')
+    }
 
     private Map parseActualYaml(String pathToYamlFile) {
         File yamlFile = new File(pathToYamlFile)

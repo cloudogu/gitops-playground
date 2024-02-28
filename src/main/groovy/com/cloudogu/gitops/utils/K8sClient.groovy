@@ -173,7 +173,12 @@ class K8sClient {
     }
     
     String getCurrentContext() {
-        commandExecutor.execute('kubectl config current-context').stdOut
+        // When running inside a pod this might fail
+        def output = commandExecutor.execute('kubectl config current-context', false)
+        if (!output.stdOut) {
+            output.stdOut = '(current context not set)'
+        }
+        return output.stdOut
     }
 
     private String getNamePrefix() {
