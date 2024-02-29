@@ -7,7 +7,7 @@ Creates a complete GitOps-based operational stack on your Kubernetes clusters:
 * Secrets Management:  [Vault and External Secrets Operator](#secrets-management-tools)
 * Notifications/Alerts: [MailHog](https://github.com/mailhog/MailHog) for demo purposes
 * Pipelines: Example applications using [Jenkins](#jenkins) with the [gitops-build-lib](https://github.com/cloudogu/gitops-build-lib) and [SCM-Manager](#scm-manager)
-* Ingress Controller: (planned)
+* Ingress Controller: [ingress-nginx](https://github.com/kubernetes/ingress-nginx/)
 * Certificate Management: (planned)
 * Runs on: 
   * local cluster (try it [with only one command](#tldr)), 
