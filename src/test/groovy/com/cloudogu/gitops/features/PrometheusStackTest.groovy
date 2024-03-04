@@ -156,6 +156,7 @@ policies:
 
         assertThat(valuesFromYaml[0]['name']).isEqualTo('grafana-email-secret')
         assertThat(parseActualStackYaml()['grafana']['smtp']['existingSecret']).isEqualTo('grafana-email-secret')
+        k8sCommandExecutor.assertExecuted('kubectl create secret generic grafana-email-secret -n foo-monitoring --from-literal=user=mailserver@example.com --from-literal=password=')
     }
 
     @Test
@@ -169,6 +170,7 @@ policies:
 
         assertThat(valuesFromYaml[0]['name']).isEqualTo('grafana-email-secret')
         assertThat(parseActualStackYaml()['grafana']['smtp']['existingSecret']).isEqualTo('grafana-email-secret')
+        k8sCommandExecutor.assertExecuted('kubectl create secret generic grafana-email-secret -n foo-monitoring --from-literal=user= --from-literal=password=1101ABCabc&/+*~')
     }
 
     @Test
@@ -180,6 +182,7 @@ policies:
 
         assertThat(parseActualStackYaml()['grafana']['valuesFrom']).isNull()
         assertThat(parseActualStackYaml()['grafana']['smtp']).isNull()
+        k8sCommandExecutor.assertNotExecuted('kubectl create secret generic grafana-email-secret')
     }
     
     @Test
@@ -191,7 +194,7 @@ policies:
 
         createStack().install()
 
-        assertThat(k8sCommandExecutor.actualCommands[2]).isEqualTo("kubectl create secret generic grafana-email-secret -n foo-monitoring --from-literal=user=grafana@example.com --from-literal=password=1101ABCabc&/+*~ --dry-run=client -oyaml | kubectl apply -f-")
+        k8sCommandExecutor.assertExecuted('kubectl create secret generic grafana-email-secret -n foo-monitoring --from-literal=user=grafana@example.com --from-literal=password=1101ABCabc&/+*~')
     }
 
     @Test

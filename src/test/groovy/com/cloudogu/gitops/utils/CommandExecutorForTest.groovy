@@ -1,4 +1,6 @@
 package com.cloudogu.gitops.utils
+
+import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.Mockito.mock
 
 class CommandExecutorForTest extends CommandExecutor {
@@ -25,5 +27,22 @@ class CommandExecutorForTest extends CommandExecutor {
     @Override
     protected Process doExecute(String[] command) {
         return mock(Process)
+    }
+
+    String assertExecuted(String commandStartsWith) {
+        def actualCommand = actualCommands.find {
+            it.startsWith(commandStartsWith)
+        }
+        assertThat(actualCommand).as("Expected command to have been executed, but was not: ${commandStartsWith}")
+                .isNotNull()
+        return actualCommand
+    }
+
+    void assertNotExecuted(String commandStartsWith) {
+        def actualCommand = actualCommands.find {
+            it.startsWith(commandStartsWith)
+        }
+        assertThat(actualCommand).as("Expected command to have been executed, but was not: ${commandStartsWith}")
+                .isNull()
     }
 }
