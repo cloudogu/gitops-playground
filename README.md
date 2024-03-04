@@ -5,7 +5,7 @@ Creates a complete GitOps-based operational stack on your Kubernetes clusters:
 * Deployment: GitOps via Argo CD with a ready-to-use [repo structure](#argocd)
 * Monitoring: [Prometheus and Grafana](#monitoring-tools)
 * Secrets Management:  [Vault and External Secrets Operator](#secrets-management-tools)
-* Notifications/Alerts: [MailHog](https://github.com/mailhog/MailHog) for demo purposes
+* Notifications/Alerts: Grafana and ArgoCD can be predefined with either an external mailserver or [MailHog](https://github.com/mailhog/MailHog) for demo purposes.
 * Pipelines: Example applications using [Jenkins](#jenkins) with the [gitops-build-lib](https://github.com/cloudogu/gitops-build-lib) and [SCM-Manager](#scm-manager)
 * Ingress Controller: [ingress-nginx](https://github.com/kubernetes/ingress-nginx/)
 * Certificate Management: (planned)
