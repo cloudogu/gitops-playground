@@ -99,7 +99,7 @@ argo-cd:
       timeout.reconciliation: 15s
 
   notifications:
-    # secrets are created dynamically over groovy method K8sClient.createSecret, so they are not stored in git
+    # secrets are created dynamically in groovy, so they are not stored in git
     secret:
       create: false
     enabled: <#if mail.active??>true<#else>false</#if>

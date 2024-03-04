@@ -196,7 +196,7 @@ class ArgoCD extends Feature {
         k8sClient.label('secret', repoTemplateSecretName,'argocd',
                 new Tuple2(' argocd.argoproj.io/secret-type', 'repo-creds'))
 
-        if ((config.features['mail']['smtpUser']) || (config.features['mail']['smtpPassword'])) {
+        if (config.features['mail']['smtpUser'] || config.features['mail']['smtpPassword']) {
             k8sClient.createSecret(
                     'generic',
                     'argocd-notifications-secret',

@@ -99,7 +99,7 @@ class PrometheusStack extends Feature {
                 new Tuple2('password', config.jenkins['metricsPassword']),
         )
 
-        if ((config.features['mail']['smtpUser']) || (config.features['mail']['smtpPassword'])) {
+        if (config.features['mail']['smtpUser'] || config.features['mail']['smtpPassword']) {
             k8sClient.createSecret(
                     'generic',
                     'grafana-email-secret',
