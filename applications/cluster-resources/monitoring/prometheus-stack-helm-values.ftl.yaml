@@ -126,11 +126,6 @@ grafana:
           - receiver: email
           group_by: ["grafana_folder", "alertname"]
   <#if mail.smtpUser?has_content || mail.smtpPassword?has_content>
-  valuesFrom:
-    - kind: Secret
-      name: grafana-email-secret
-      valuesKey: values.yaml
-
   smtp:
     # `existingSecret` is a reference to an existing secret containing the smtp configuration
     # for Grafana.

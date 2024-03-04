@@ -152,9 +152,7 @@ policies:
         config.features['mail']['smtpUser'] = 'mailserver@example.com'
 
         createStack().install()
-        def valuesFromYaml = parseActualStackYaml()['grafana']['valuesFrom'] as List
-
-        assertThat(valuesFromYaml[0]['name']).isEqualTo('grafana-email-secret')
+        
         assertThat(parseActualStackYaml()['grafana']['smtp']['existingSecret']).isEqualTo('grafana-email-secret')
         k8sCommandExecutor.assertExecuted('kubectl create secret generic grafana-email-secret -n foo-monitoring --from-literal=user=mailserver@example.com --from-literal=password=')
     }
@@ -166,9 +164,6 @@ policies:
         config.features['mail']['smtpPassword'] = '1101ABCabc&/+*~'
 
         createStack().install()
-        def valuesFromYaml = parseActualStackYaml()['grafana']['valuesFrom'] as List
-
-        assertThat(valuesFromYaml[0]['name']).isEqualTo('grafana-email-secret')
         assertThat(parseActualStackYaml()['grafana']['smtp']['existingSecret']).isEqualTo('grafana-email-secret')
         k8sCommandExecutor.assertExecuted('kubectl create secret generic grafana-email-secret -n foo-monitoring --from-literal=user= --from-literal=password=1101ABCabc&/+*~')
     }
