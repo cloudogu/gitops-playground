@@ -22,6 +22,11 @@ class CommandExecutor {
         return getOutput(proc, command.join(" "), failOnError)
     }
 
+    /**
+     * Please prefer using {@link #execute(java.lang.String[], boolean)}, because 
+     * it avoids quoting issues when passing arguments containing whitespaces.
+     */
+    @Deprecated
     Output execute(String command, boolean failOnError = true) {
         Process proc = doExecute(command)
         return getOutput(proc, command, failOnError)
@@ -41,10 +46,29 @@ class CommandExecutor {
         return getOutput(proc, command, failOnError)
     }
 
-    Output execute(String command1, String command2, boolean failOnError = true) {
-        Process proc = doExecute(command1) | doExecute(command2)
-        String command = command1 + " | " + command2
-        return getOutput(proc, command, failOnError)
+    Output execute(String[] command1, String[] command2, boolean failOnError = true) {
+        String command = "${command1.join(' ')} | ${command2.join(' ')}"
+        def process1 = doExecute(command1)
+        def process2 = doExecute(command2)
+        
+        def finalOutput = getOutput(process1.pipeTo(process2), command, false)
+        
+        if (process1.exitValue() > 0) {
+            log.error("Pipefail! First process of command failed ${command}.")
+            log.error("Stderr: ${process1.err.text.trim()}")
+        }
+        if (process2.exitValue() > 0) {
+            log.error("Executing command failed: ${command}")
+            log.error("Stderr: ${finalOutput.stdErr}")
+            log.error("StdOut: ${finalOutput.stdOut}")
+        }
+        
+        boolean success = process1.exitValue() == 0 && process2.exitValue() == 0
+        if (!success && failOnError) {
+            throw new RuntimeException("Executing command failed: ${command}")
+        }
+        
+        return finalOutput
     }
 
     protected Process doExecute(String command, List envp = null) {
@@ -80,13 +104,18 @@ class CommandExecutor {
         // Make sure all bytes have been written, before returning output
         if (teeOut) teeOut.flush()
         if (teeErr) teeErr.flush()
+        def output = new Output(stdErr.toString().trim(), stdOut.toString().trim(), proc.exitValue())
         
         if (failOnError && proc.exitValue() > 0) {
             log.error("Executing command failed: ${command}")
-            System.exit(1)
+            log.error("Stderr: ${output.stdErr}")
+            log.error("StdOut: ${output.stdOut}")
+            if (failOnError) {
+                throw new RuntimeException("Executing command failed: ${command}")
+            }
         }
 
-        return new Output(stdErr.toString().trim(), stdOut.toString().trim(), proc.exitValue())
+        return output
     }
 
     static class Output {

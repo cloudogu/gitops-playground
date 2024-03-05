@@ -99,6 +99,9 @@ argo-cd:
       timeout.reconciliation: 15s
 
   notifications:
+    # secrets are created dynamically in groovy, so they are not stored in git
+    secret:
+      create: false
     enabled: <#if mail.active??>true<#else>false</#if>
     argocdUrl: https://localhost:9092
 <#if mail.active??>
@@ -107,8 +110,8 @@ argo-cd:
       <#if mail.smtpAddress?has_content>
         host: ${mail.smtpAddress}
         <#if mail.smtpPort?has_content>port: ${mail.smtpPort}</#if>
-        <#if mail.smtpUser?has_content>username: ${mail.smtpUser}</#if>
-        <#if mail.smtpPassword?has_content>password: ${mail.smtpPassword}</#if>
+        <#if mail.smtpUser?has_content>username: $email-username</#if>
+        <#if mail.smtpPassword?has_content>password: $email-password</#if>
       <#else>
         host: mailhog.${namePrefix}monitoring.svc.cluster.local
         port: 1025

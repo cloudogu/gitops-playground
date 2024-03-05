@@ -130,8 +130,8 @@ class ArgoCDTest {
                 .isEqualTo('NodePort')
 
         // check repoTemplateSecretName
-        assertCommand(k8sCommands, 'kubectl create secret generic argocd-repo-creds-scmm -n argocd')
-        assertCommand(k8sCommands, 'kubectl label secret argocd-repo-creds-scmm -n argocd')
+        k8sCommands.assertExecuted('kubectl create secret generic argocd-repo-creds-scmm -n argocd')
+        k8sCommands.assertExecuted('kubectl label secret argocd-repo-creds-scmm -n argocd')
 
         // Check dependency build and helm install
         assertThat(helmCommands.actualCommands[0].trim()).isEqualTo('helm repo add argo https://argoproj.github.io/argo-helm')
@@ -141,19 +141,19 @@ class ArgoCDTest {
                 "helm upgrade -i argocd ${Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'argocd/')} --namespace argocd --create-namespace".toString())
 
         // Check patched PW
-        def patchCommand = assertCommand(k8sCommands, 'kubectl patch secret argocd-secret -n argocd')
+        def patchCommand = k8sCommands.assertExecuted('kubectl patch secret argocd-secret -n argocd')
         String patchFile = (patchCommand =~ /--patch-file=([\S]+)/)?.findResult { (it as List)[1] }
         assertThat(BCrypt.checkpw(config['application']['password'] as String,
                 parseActualYaml(patchFile)['stringData']['admin.password'] as String))
                 .as("Password hash missmatch").isTrue()
 
         // Check bootstrapping
-        assertCommand(k8sCommands, "kubectl apply -f " +
+        k8sCommands.assertExecuted("kubectl apply -f " +
                 "${Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/argocd.yaml')}")
-        assertCommand(k8sCommands, "kubectl apply -f " +
+        k8sCommands.assertExecuted("kubectl apply -f " +
                 "${Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'applications/bootstrap.yaml')}")
 
-        def deleteCommand = assertCommand(k8sCommands, 'kubectl delete secret -n argocd')
+        def deleteCommand = k8sCommands.assertExecuted('kubectl delete secret -n argocd')
         assertThat(deleteCommand).contains('owner=helm', 'name=argocd')
 
         assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['server']['service']['type'])
@@ -287,9 +287,39 @@ class ArgoCDTest {
 
         assertThat(serviceEmail['host']).isEqualTo(config.features['mail']['smtpAddress'])
         assertThat(serviceEmail['port'] as String).isEqualTo(config.features['mail']['smtpPort'])
-        assertThat(serviceEmail['username']).isEqualTo(config.features['mail']['smtpUser'])
-        assertThat(serviceEmail['password']).isEqualTo(config.features['mail']['smtpPassword'])
+        // username and password are both linked to the k8s secret. Secrets will be created at runtime, in this test
+        assertThat(serviceEmail['username']).isEqualTo('$email-username')
+        assertThat(serviceEmail['password']).isEqualTo('$email-password')
+
+        def createMailSecretCommand = k8sCommands.assertExecuted('kubectl create secret generic argocd-notifications-secret -n argocd')
+        assertThat(createMailSecretCommand).contains('email-username', config.features['mail']['smtpUser'] as CharSequence)
+        assertThat(createMailSecretCommand).contains('email-password', config.features['mail']['smtpPassword'] as CharSequence)
     }
+
+    @Test
+    void 'When external emailservers username is set, check if kubernetes secret will be created'() {
+        config.features['mail']['active'] = true
+        config.features['mail']['smtpAddress'] = 'smtp.example.com'
+        config.features['mail']['smtpUser'] = 'argo@example.com'
+
+        createArgoCD().install()
+
+        def createMailSecretCommand = k8sCommands.assertExecuted('kubectl create secret generic argocd-notifications-secret -n argocd')
+        assertThat(createMailSecretCommand).contains('email-username', config.features['mail']['smtpUser'] as CharSequence)
+    }
+
+    @Test
+    void 'When external emailservers password is set, check if kubernetes secret will be created'() {
+        config.features['mail']['active'] = true
+        config.features['mail']['smtpAddress'] = 'smtp.example.com'
+        config.features['mail']['smtpPassword'] = '1101:ABCabc&/+*~'
+
+        createArgoCD().install()
+
+        def createMailSecretCommand = k8sCommands.assertExecuted('kubectl create secret generic argocd-notifications-secret -n argocd')
+        assertThat(createMailSecretCommand).contains('email-password', config.features['mail']['smtpPassword'] as CharSequence)
+    }
+
 
     @Test
     void 'When external Mailserver is set without port, user, password'() {
@@ -300,6 +330,8 @@ class ArgoCDTest {
         def serviceEmail = new YamlSlurper().parseText(
                 parseActualYaml(actualHelmValuesFile)['argo-cd']['notifications']['notifiers']['service.email'] as String)
 
+        k8sCommands.assertNotExecuted('kubectl create secret generic argocd-notifications-secret')
+        
         assertThat(serviceEmail['host']).isEqualTo("smtp.example.com")
         assertThat(serviceEmail as Map).doesNotContainKey('port')
         assertThat(serviceEmail as Map).doesNotContainKey('username')
@@ -603,15 +635,6 @@ class ArgoCDTest {
         remotePetClinicRepoTmpDir = argoCD.remotePetClinicRepoTmpDir
         petClinicRepos = argoCD.petClinicInitializationActions.collect { it.repo }
         return argoCD
-    }
-
-    private static String assertCommand(CommandExecutorForTest commands, String commandStartsWith) {
-        def createSecretCommand = commands.actualCommands.find {
-            it.startsWith(commandStartsWith)
-        }
-        assertThat(createSecretCommand).as("Expected command to have been executed, but was not: ${commandStartsWith}")
-                .isNotNull()
-        return createSecretCommand
     }
 
     void assertBuildImagesInJenkinsfileReplaced(File jenkinsfile) {
