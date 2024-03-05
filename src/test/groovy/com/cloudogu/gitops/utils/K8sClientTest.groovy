@@ -47,9 +47,10 @@ class K8sClientTest {
 
     @Test
     void 'Creates no secret when literals are missing'() {
-        shouldFail(RuntimeException) {
+        def exception = shouldFail(RuntimeException) {
             k8sClient.createSecret('generic', 'my-secret')
         }
+        assertThat(exception.message).isEqualTo('Missing values for parameter \'--from-literal\' in command \'kubectl create secret generic my-secret\'')
     }
 
     @Test
@@ -108,9 +109,10 @@ class K8sClientTest {
 
     @Test
     void 'Does not add label when key value pairs are missing'() {
-        shouldFail(RuntimeException) {
+        def exception = shouldFail(RuntimeException) {
             k8sClient.label('secret', 'my-secret')
         }
+        assertThat(exception.message).isEqualTo('Missing key-value-pairs')
     }
 
     @Test
@@ -158,9 +160,10 @@ class K8sClientTest {
 
     @Test
     void 'Does not add delete when selectors are missing'() {
-        shouldFail(RuntimeException) {
+        def exception = shouldFail(RuntimeException) {
             k8sClient.delete('secret')
         }
+        assertThat(exception.message).isEqualTo('Missing selectors')
     }
 
     @Test
@@ -181,18 +184,20 @@ class K8sClientTest {
 
     @Test
     void 'errors when config map does not exist'() {
-        commandExecutor.enqueueOutput(new CommandExecutor.Output("Error from server (NotFound): configmaps \"the-map\" not found\n", "", 1))
-        shouldFail() {
+        commandExecutor.enqueueOutput(new CommandExecutor.Output("Error from server (NotFound): configmaps \"the-map\" not found", "", 1))
+        def exception = shouldFail() {
             k8sClient.getConfigMap("the-map", "file.yaml")
         }
+        assertThat(exception.message).isEqualTo("Could not fetch configmap the-map: Error from server (NotFound): configmaps \"the-map\" not found")
     }
 
     @Test
     void 'errors when file does not exist'() {
         commandExecutor.enqueueOutput(new CommandExecutor.Output('', '', 0))
-        shouldFail() {
+        def exception = shouldFail() {
             k8sClient.getConfigMap("the-map", "file.yaml")
         }
+        assertThat(exception.message).isEqualTo('Could not fetch file.yaml within config-map the-map')
     }
     
     @Test

@@ -9,6 +9,8 @@ import jakarta.inject.Singleton
 @Slf4j
 @Singleton
 class K8sClient {
+    private static final String[] APPLY_FROM_STDIN = [ 'kubectl', 'apply', '-f-' ]
+
     private CommandExecutor commandExecutor
     private FileSystemUtils fileSystemUtils
     private Provider<Configuration> configurationProvider
@@ -49,40 +51,36 @@ class K8sClient {
      * Idempotent create, i.e. overwrites if exists.
      */
     void createNamespace(String name) {
-        String[] command1 =
-                [ 'kubectl', 'create', 'namespace', "${getNamePrefix()}${name}", '--dry-run=client', '-oyaml']
-        String[] command2 = ['kubectl', 'apply', '-f-']
-        commandExecutor.execute(command1, command2)
+        def command1 = kubectl( 'create', 'namespace', "${getNamePrefix()}${name}")
+                .dryRunOutputYaml()
+                .build()
+        
+        commandExecutor.execute(command1, APPLY_FROM_STDIN)
     }
     /**
      * Idempotent create, i.e. overwrites if exists.
      */
     void createSecret(String type, String name, String namespace = '', Tuple2... literals) {
-        if (!literals) {
-            throw new RuntimeException("Missing literals")
-        }
-        String[] command1 = [ 'kubectl', 'create', 'secret', type, name ] 
-        if (namespace) {
-            command1 += ['-n', "${getNamePrefix()}${namespace}" ]
-        }
-        literals.each {command1 += [ '--from-literal', "${it.v1}=${it.v2}" ] }
-        command1 += ['--dry-run=client', '-oyaml'] 
-        String[] command2 = ['kubectl', 'apply', '-f-']
-        commandExecutor.execute(command1, command2)
+        def command1 = kubectl( 'create', 'secret', type, name)
+                .namespace(namespace)
+                .addAllMandatory('--from-literal', literals)
+                .dryRunOutputYaml()
+                .build()
+        
+        commandExecutor.execute(command1, APPLY_FROM_STDIN)
     }
     
     /**
      * Idempotent create, i.e. overwrites if exists.
      */
     void createConfigMapFromFile(String name, String namespace = '', String filePath) {
-        //  kubectl create configmap dev-post-start --from-file=dev-post-start.sh
-        String[] command1 = [ 'kubectl', 'create', 'configmap', name ]
-        if (namespace) {
-            command1 += ['-n', "${getNamePrefix()}${namespace}" ]
-        }
-        command1 += [ '--from-file', filePath, '--dry-run=client', '-oyaml']
-        String[] command2 = ['kubectl', 'apply', '-f-']
-        commandExecutor.execute(command1, command2)
+        def command1 = kubectl('create', 'configmap', name)
+                .namespace(namespace)
+                .mandatory('--from-file', filePath)
+                .dryRunOutputYaml()
+                .build()
+
+        commandExecutor.execute(command1, APPLY_FROM_STDIN)
     }
     
     /**
@@ -91,18 +89,14 @@ class K8sClient {
      * @param tcp Port pairs can be specified as '<port>:<targetPort>'.
      */
     void createServiceNodePort(String name, String tcp, String nodePort = '', String namespace = '') {
-        String[] command1 = [ 'kubectl', 'create', 'service', 'nodeport', name ]
-        if (namespace) {
-            command1 += ['-n', "${getNamePrefix()}${namespace}" ]
-        }
-        command1 += ['--tcp', tcp ]
-        if (nodePort) {
-            command1 += ['--node-port', nodePort]
-        }
-
-        command1 += ['--dry-run=client', '-oyaml']
-        String[] command2 = ['kubectl', 'apply', '-f-']
-        commandExecutor.execute(command1, command2)
+        def command1 = kubectl('create', 'service', 'nodeport', name)
+                .namespace(namespace)
+                .mandatory('--tcp', tcp)
+                .optional('--node-port', nodePort)
+                .dryRunOutputYaml()
+                .build()
+        
+        commandExecutor.execute(command1, APPLY_FROM_STDIN)
     }
 
     void label(String resource, String name, String namespace  = '', Tuple2... keyValues) {
@@ -199,9 +193,58 @@ class K8sClient {
         return config.application['namePrefix'] as String
     }
 
+    Kubectl kubectl(String ... args) {
+        new Kubectl(args)
+    }
+
     @Immutable
     static class CustomResource {
         String namespace
         String name
+    }
+    
+    private class Kubectl {
+        private List<String> command = [ 'kubectl' ]
+        
+        Kubectl(String ... args) {
+            command.addAll(args)
+        }
+        
+        Kubectl namespace(String namespace) {
+            if (namespace) {
+                this.command += ['-n', getNamePrefix() + namespace ]
+            }
+            return this
+        }
+
+        Kubectl mandatory(String paramName, String value) {
+            // Here we could assert that value != null. For historical reasons we don't, for now.
+            this.command += [paramName, value ]
+            return this
+        }
+
+        Kubectl addAllMandatory(String paramName, Tuple2... values) {
+            if (!values) {
+                throw new RuntimeException("Missing values for parameter '${paramName}' in command '${command.join(' ')}'")
+            }
+            values.each {command += [ paramName, "${it.v1}=${it.v2}".toString() ] }
+            return this
+        }
+
+        Kubectl optional(String paramName, String value) {
+            if (value) {
+                this.command += [paramName, value ]
+            }
+            return this
+        }
+        
+        Kubectl dryRunOutputYaml() {
+            this.command += [ '--dry-run=client', '-oyaml' ]
+            return this
+        }
+        
+        String[] build() {
+            this.command
+        }
     }
 }
