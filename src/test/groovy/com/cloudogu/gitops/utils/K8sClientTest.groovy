@@ -29,7 +29,7 @@ class K8sClientTest {
                 new Tuple2('key1', 'value1'), new Tuple2('key2', 'value2'))
 
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
-                "kubectl create secret generic my-secret -n foo-my-ns --from-literal=key1=value1 --from-literal=key2=value2" +
+                "kubectl create secret generic my-secret -n foo-my-ns --from-literal key1=value1 --from-literal key2=value2" +
                         " --dry-run=client -oyaml | kubectl apply -f-")
     }
 
@@ -38,7 +38,7 @@ class K8sClientTest {
         k8sClient.createSecret('generic', 'my-secret', new Tuple2('key1', 'value1'))
 
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
-                "kubectl create secret generic my-secret --from-literal=key1=value1 --dry-run=client -oyaml" +
+                "kubectl create secret generic my-secret --from-literal key1=value1 --dry-run=client -oyaml" +
                         " | kubectl apply -f-")
     }
 
@@ -54,7 +54,7 @@ class K8sClientTest {
         k8sClient.createConfigMapFromFile('my-map', 'my-ns', '/file')
 
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
-                "kubectl create configmap my-map -n foo-my-ns --from-file=/file --dry-run=client -oyaml" +
+                "kubectl create configmap my-map -n foo-my-ns --from-file /file --dry-run=client -oyaml" +
                         " | kubectl apply -f-")
     }
 
@@ -63,7 +63,7 @@ class K8sClientTest {
         k8sClient.createConfigMapFromFile('my-map', '/file')
 
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
-                "kubectl create configmap my-map --from-file=/file --dry-run=client -oyaml" +
+                "kubectl create configmap my-map --from-file /file --dry-run=client -oyaml" +
                         " | kubectl apply -f-")
     }
 

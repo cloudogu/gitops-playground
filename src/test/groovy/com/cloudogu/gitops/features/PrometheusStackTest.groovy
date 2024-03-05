@@ -154,7 +154,7 @@ policies:
         createStack().install()
         
         assertThat(parseActualStackYaml()['grafana']['smtp']['existingSecret']).isEqualTo('grafana-email-secret')
-        k8sCommandExecutor.assertExecuted('kubectl create secret generic grafana-email-secret -n foo-monitoring --from-literal=user=mailserver@example.com --from-literal=password=')
+        k8sCommandExecutor.assertExecuted('kubectl create secret generic grafana-email-secret -n foo-monitoring --from-literal user=mailserver@example.com --from-literal password=')
     }
 
     @Test
@@ -165,7 +165,7 @@ policies:
 
         createStack().install()
         assertThat(parseActualStackYaml()['grafana']['smtp']['existingSecret']).isEqualTo('grafana-email-secret')
-        k8sCommandExecutor.assertExecuted('kubectl create secret generic grafana-email-secret -n foo-monitoring --from-literal=user= --from-literal=password=1101ABCabc&/+*~')
+        k8sCommandExecutor.assertExecuted('kubectl create secret generic grafana-email-secret -n foo-monitoring --from-literal user= --from-literal password=1101ABCabc&/+*~')
     }
 
     @Test
@@ -189,7 +189,7 @@ policies:
 
         createStack().install()
 
-        k8sCommandExecutor.assertExecuted('kubectl create secret generic grafana-email-secret -n foo-monitoring --from-literal=user=grafana@example.com --from-literal=password=1101ABCabc&/+*~')
+        k8sCommandExecutor.assertExecuted('kubectl create secret generic grafana-email-secret -n foo-monitoring --from-literal user=grafana@example.com --from-literal password=1101ABCabc&/+*~')
     }
 
     @Test
@@ -298,7 +298,7 @@ policies:
         config.jenkins["metricsPassword"] = 'hunter2'
         createStack().install()
 
-        assertThat(k8sCommandExecutor.actualCommands[1]).isEqualTo("kubectl create secret generic prometheus-metrics-creds-jenkins -n foo-monitoring --from-literal=password=hunter2 --dry-run=client -oyaml | kubectl apply -f-")
+        assertThat(k8sCommandExecutor.actualCommands[1]).isEqualTo("kubectl create secret generic prometheus-metrics-creds-jenkins -n foo-monitoring --from-literal password=hunter2 --dry-run=client -oyaml | kubectl apply -f-")
         def additionalScrapeConfigs = parseActualStackYaml()['prometheus']['prometheusSpec']['additionalScrapeConfigs'] as List
         assertThat(additionalScrapeConfigs[1]['basic_auth']['username']).isEqualTo('external-metrics-username')
     }
@@ -346,7 +346,7 @@ policies:
         createStack().install()
 
         assertThat(k8sCommandExecutor.actualCommands[0].trim()).isEqualTo(
-                'kubectl create secret generic prometheus-metrics-creds-scmm -n foo-monitoring --from-literal=password=123 --dry-run=client -oyaml | kubectl apply -f-')
+                'kubectl create secret generic prometheus-metrics-creds-scmm -n foo-monitoring --from-literal password=123 --dry-run=client -oyaml | kubectl apply -f-')
         assertThat(helmCommandExecutor.actualCommands[0].trim()).isEqualTo(
                 'helm repo add prometheusstack https://prom')
         assertThat(helmCommandExecutor.actualCommands[1].trim()).isEqualTo(

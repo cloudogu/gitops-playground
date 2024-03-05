@@ -14,13 +14,18 @@ class CommandExecutor {
         return getOutput(proc, command.join(" "), failOnError)
     }
 
+    /**
+     * Please prefer using {@link #execute(java.lang.String[], boolean)}, because 
+     * it avoids quoting issues when passing arguments containing whitespaces.
+     */
+    @Deprecated
     Output execute(String command, boolean failOnError = true) {
         Process proc = doExecute(command)
         return getOutput(proc, command, failOnError)
     }
 
-    Output execute(String command1, String command2, boolean failOnError = true) {
-        String command = "${command1} | ${command2}"
+    Output execute(String[] command1, String[] command2, boolean failOnError = true) {
+        String command = "${command1.join(' ')} | ${command2.join(' ')}"
         def process1 = doExecute(command1)
         def process2 = doExecute(command2)
         
