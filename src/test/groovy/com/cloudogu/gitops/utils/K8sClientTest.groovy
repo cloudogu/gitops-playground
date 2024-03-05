@@ -75,7 +75,7 @@ class K8sClientTest {
         k8sClient.createServiceNodePort('my-svc', '42:23', '32000', 'my-ns')
         
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
-                'kubectl create service nodeport my-svc -n foo-my-ns --tcp=42:23 --node-port=32000' +
+                'kubectl create service nodeport my-svc -n foo-my-ns --tcp 42:23 --node-port 32000' +
                         ' --dry-run=client -oyaml | kubectl apply -f-')
     }
 
@@ -84,7 +84,7 @@ class K8sClientTest {
         k8sClient.createServiceNodePort('my-svc', '42:23')
 
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
-                'kubectl create service nodeport my-svc --tcp=42:23' +
+                'kubectl create service nodeport my-svc --tcp 42:23' +
                         ' --dry-run=client -oyaml | kubectl apply -f-')
     }
 

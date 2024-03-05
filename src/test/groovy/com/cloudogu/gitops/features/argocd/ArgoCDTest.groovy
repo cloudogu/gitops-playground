@@ -119,9 +119,9 @@ class ArgoCDTest {
     void 'Installs argoCD'() {
         createArgoCD().install()
 
-        assertCommand(k8sCommands, 'kubectl create namespace argocd')
-        assertCommand(k8sCommands, 'kubectl create namespace monitoring')
-        assertCommand(k8sCommands, "kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/kube-prometheus-stack-42.0.3/charts/kube-prometheus-stack/crds/crd-servicemonitors.yaml")
+        k8sCommands.assertExecuted('kubectl create namespace argocd')
+        k8sCommands.assertExecuted('kubectl create namespace monitoring')
+        k8sCommands.assertExecuted("kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/kube-prometheus-stack-42.0.3/charts/kube-prometheus-stack/crds/crd-servicemonitors.yaml")
 
         // check values.yaml
         List filesWithInternalSCMM = findFilesContaining(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), ArgoCD.SCMM_URL_INTERNAL)

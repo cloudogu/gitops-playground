@@ -70,7 +70,7 @@ class RegistryTest {
 
         createRegistry().install()
 
-        assertThat(k8sClient.commandExecutorForTest.actualCommands[0]).contains("--node-port=$expectedNodePort")
+        assertThat(k8sClient.commandExecutorForTest.actualCommands[0]).contains("--node-port $expectedNodePort")
     }
     
     private Registry createRegistry() {

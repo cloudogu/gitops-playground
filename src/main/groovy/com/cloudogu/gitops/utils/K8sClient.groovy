@@ -49,12 +49,11 @@ class K8sClient {
      * Idempotent create, i.e. overwrites if exists.
      */
     void createNamespace(String name) {
-        String command =
-                "kubectl create namespace ${getNamePrefix()}${name}" + 
-                        ' --dry-run=client -oyaml'
-        commandExecutor.execute(command, 'kubectl apply -f-')
+        String[] command1 =
+                [ 'kubectl', 'create', 'namespace', "${getNamePrefix()}${name}", '--dry-run=client', '-oyaml']
+        String[] command2 = ['kubectl', 'apply', '-f-']
+        commandExecutor.execute(command1, command2)
     }
-
     /**
      * Idempotent create, i.e. overwrites if exists.
      */
@@ -92,12 +91,18 @@ class K8sClient {
      * @param tcp Port pairs can be specified as '<port>:<targetPort>'.
      */
     void createServiceNodePort(String name, String tcp, String nodePort = '', String namespace = '') {
-        String command =
-                "kubectl create service nodeport ${name}${namespace ? " -n ${getNamePrefix()}${namespace}" : ''}" +
-                        " --tcp=${tcp}" +
-                        "${nodePort ? " --node-port=${nodePort}" : ''}" +
-                        ' --dry-run=client -oyaml'
-        commandExecutor.execute(command, 'kubectl apply -f-')
+        String[] command1 = [ 'kubectl', 'create', 'service', 'nodeport', name ]
+        if (namespace) {
+            command1 += ['-n', "${getNamePrefix()}${namespace}" ]
+        }
+        command1 += ['--tcp', tcp ]
+        if (nodePort) {
+            command1 += ['--node-port', nodePort]
+        }
+
+        command1 += ['--dry-run=client', '-oyaml']
+        String[] command2 = ['kubectl', 'apply', '-f-']
+        commandExecutor.execute(command1, command2)
     }
 
     void label(String resource, String name, String namespace  = '', Tuple2... keyValues) {
