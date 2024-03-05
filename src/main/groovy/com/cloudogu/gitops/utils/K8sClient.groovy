@@ -36,7 +36,9 @@ class K8sClient {
     }
 
     private String waitForNode() {
-        return commandExecutor.execute("kubectl get node -oname", "head -n1").stdOut
+        String[] command1 = ['kubectl', 'get', 'node', '-oname']
+        String[] command2 = ['head', '-n1']
+        return commandExecutor.execute(command1, command2).stdOut
     }
 
     String applyYaml(String yamlLocation) {
@@ -50,11 +52,14 @@ class K8sClient {
         if (!literals) {
             throw new RuntimeException("Missing literals")
         }
-        String command =
-                "kubectl create secret ${type} ${name}${namespace ? " -n ${getNamePrefix()}${namespace}" : ''} " +
-                        literals.collect { "--from-literal=${it.v1}=${it.v2}"}.join(' ') +
-                        ' --dry-run=client -oyaml'
-        commandExecutor.execute(command, 'kubectl apply -f-')
+        String[] command1 = [ 'kubectl', 'create', 'secret', type, name ] 
+        if (namespace) {
+            command1 += ['-n', "${getNamePrefix()}${namespace}" ]
+        }
+        literals.each {command1 += [ '--from-literal', "${it.v1}=${it.v2}" ] }
+        command1 += ['--dry-run=client', '-oyaml'] 
+        String[] command2 = ['kubectl', 'apply', '-f-']
+        commandExecutor.execute(command1, command2)
     }
     
     /**
@@ -62,11 +67,13 @@ class K8sClient {
      */
     void createConfigMapFromFile(String name, String namespace = '', String filePath) {
         //  kubectl create configmap dev-post-start --from-file=dev-post-start.sh
-        String command =
-                "kubectl create configmap ${name}${namespace ? " -n ${getNamePrefix()}${namespace}" : ''}" +
-                        " --from-file=${filePath}" +
-                        ' --dry-run=client -oyaml'
-        commandExecutor.execute(command, 'kubectl apply -f-')
+        String[] command1 = [ 'kubectl', 'create', 'configmap', name ]
+        if (namespace) {
+            command1 += ['-n', "${getNamePrefix()}${namespace}" ]
+        }
+        command1 += [ '--from-file', filePath, '--dry-run=client', '-oyaml']
+        String[] command2 = ['kubectl', 'apply', '-f-']
+        commandExecutor.execute(command1, command2)
     }
 
     void label(String resource, String name, String namespace  = '', Tuple2... keyValues) {

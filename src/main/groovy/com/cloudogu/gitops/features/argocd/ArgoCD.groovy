@@ -192,8 +192,20 @@ class ArgoCD extends Feature {
                 new Tuple2('username', "${namePrefix}gitops"),
                 new Tuple2('password', config.scmm['password'])
         )
+
         k8sClient.label('secret', repoTemplateSecretName,'argocd',
                 new Tuple2(' argocd.argoproj.io/secret-type', 'repo-creds'))
+
+        if (config.features['mail']['smtpUser'] || config.features['mail']['smtpPassword']) {
+            k8sClient.createSecret(
+                    'generic',
+                    'argocd-notifications-secret',
+                    'argocd',
+                    new Tuple2('email-username', config.features['mail']['smtpUser']),
+                    new Tuple2('email-password', config.features['mail']['smtpPassword'])
+            )
+        }
+
 
         // Install umbrella chart from folder
         String umbrellaChartPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'argocd/')
