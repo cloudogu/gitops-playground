@@ -50,6 +50,8 @@ class Schema {
          String username = ""
          String password = ""
          String namePrefix = ""
+         String gitName = ""
+         String gitEmail = ""
     }
 
      static class ImagesSchema {

@@ -17,7 +17,9 @@ class ScmManagerTest {
                     namePrefix: "foo-",
                     trace     : true,
                     baseUrl : 'http://localhost',
-                    insecure : false
+                    insecure : false,
+                    gitName : 'Cloudogu',
+                    gitEmail : 'hello@cloudogu.com'
             ],
             scmm       : [
                     url: 'http://scmm',
@@ -64,6 +66,10 @@ class ScmManagerTest {
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
                 "${System.getProperty('user.dir')}/scripts/scm-manager/init-scmm.sh" as String)
 
+        assertThat(env['GIT_COMMITTER_NAME']).isEqualTo('Cloudogu')
+        assertThat(env['GIT_COMMITTER_EMAIL']).isEqualTo('hello@cloudogu.com')
+        assertThat(env['GIT_AUTHOR_NAME']).isEqualTo('Cloudogu')
+        assertThat(env['GIT_AUTHOR_EMAIL']).isEqualTo('hello@cloudogu.com')
         assertThat(env['TRACE']).isEqualTo('true')
         assertThat(env['SCMM_URL']).isEqualTo('http://scmm')
         assertThat(env['SCMM_USERNAME']).isEqualTo('scmm-usr')

@@ -64,7 +64,9 @@ spec:
                         host: "localhost"
                 ],
                 application: [
-                        namePrefix : 'foo-'
+                        namePrefix : 'foo-',
+                        gitName    : 'Cloudogu',
+                        gitEmail   : 'hello@cloudogu.com'
                 ]
         ]
 

@@ -33,6 +33,8 @@ class ArgoCDTest {
                     username            : 'something',
                     namePrefix          : '',
                     namePrefixForEnvVars: '',
+                    gitName             : 'Cloudogu',
+                    gitEmail            : 'hello@cloudogu.com'
             ],
             scmm        : [
                     internal: true,

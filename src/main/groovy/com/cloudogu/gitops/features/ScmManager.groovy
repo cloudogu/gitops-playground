@@ -36,6 +36,11 @@ class ScmManager extends Feature {
     void enable() {
 
         commandExecutor.execute("${fileSystemUtils.rootDir}/scripts/scm-manager/init-scmm.sh", [
+
+                GIT_COMMITTER_NAME           : config.application['gitName'],
+                GIT_COMMITTER_EMAIL          : config.application['gitEmail'],
+                GIT_AUTHOR_NAME              : config.application['gitName'],
+                GIT_AUTHOR_EMAIL             : config.application['gitEmail'],
                 TRACE                        : config.application['trace'],
                 SCMM_URL                     : config.scmm['url'],
                 SCMM_USERNAME                : config.scmm['username'],

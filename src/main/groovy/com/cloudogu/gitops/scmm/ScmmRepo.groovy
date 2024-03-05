@@ -25,6 +25,9 @@ class ScmmRepo {
     protected FileSystemUtils fileSystemUtils
     private boolean insecure
     private Git gitMemoization = null
+    private String gitName
+    private String gitEmail
+
 
     ScmmRepo(Map config, String scmmRepoTarget, FileSystemUtils fileSystemUtils) {
         def tmpDir = File.createTempDir()
@@ -37,6 +40,8 @@ class ScmmRepo {
         this.absoluteLocalRepoTmpDir = tmpDir.absolutePath
         this.fileSystemUtils = fileSystemUtils
         this.insecure = config.application['insecure']
+        this.gitName = config.application['gitName']
+        this.gitEmail = config.application['gitEmail']
     }
 
     String getAbsoluteLocalRepoTmpDir() {
@@ -92,6 +97,8 @@ class ScmmRepo {
                     .commit()
                     .setSign(false)
                     .setMessage(commitMessage)
+                    .setAuthor(gitName, gitEmail)
+                    .setCommitter(gitName, gitEmail)
                     .call()
             getGit()
                 .push()

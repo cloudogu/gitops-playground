@@ -81,10 +81,6 @@ RUN git clone --bare https://github.com/cloudogu/spring-boot-helm-chart.git
 RUN git clone --bare https://github.com/cloudogu/gitops-build-lib.git
 RUN git clone --bare https://github.com/cloudogu/ces-build-lib.git
 
-# Creates /dist/home/.gitconfig
-RUN git config --global user.email "hello@cloudogu.com" && \
-    git config --global user.name "Cloudogu"
-
 # Download Jenkins Plugin
 COPY scripts/jenkins/plugins /jenkins
 RUN /jenkins/download-plugins.sh /dist/gitops/jenkins-plugins
@@ -98,8 +94,10 @@ RUN rm /dist/app/pom.xml
 RUN rm /dist/app/compiler.groovy
 # For dev image
 RUN mv /dist/app/src /src-without-graal && rm -r /src-without-graal/main/groovy/com/cloudogu/gitops/graal
-# Allow read access to /root, because JGit checks the git config in /root (probably for some GraalVM reason)
-RUN mkdir -p /dist/root && chmod 770 /dist/root
+# Required to prevent Java exceptions resulting from AccessDeniedException by jgit when running arbitrary user
+RUN mkdir -p /dist/root/.config/jgit
+RUN touch /dist/root/.config/jgit/config
+RUN chmod +r /dist/root/ && chmod g+rw /dist/root/.config/jgit/
 
 # This stage builds a static binary using graal VM. For details see docs/developers.md#GraalVM
 FROM graal as native-image
