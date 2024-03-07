@@ -21,7 +21,6 @@ For questions or suggestions you are welcome to join us at our myCloudogu [commu
 [![Discuss it on myCloudogu](https://static.cloudogu.com/static/images/discuss-it.png)](https://community.cloudogu.com/t/introducing-the-gitops-playground/107)
 
 ![Playground features](docs/gitops-playground-features.drawio.svg)
-©Cloudogu GmbH 2023: GitOps Playground© for use with  Argo™, Git™, Jenkins®, Kubernetes®, Prometheus®, Vault® and SCM-Manager 
 
 ## TL;DR
 
