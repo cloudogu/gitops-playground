@@ -39,8 +39,8 @@ FROM alpine as downloader
 # * also update in init-cluster.sh. vars.tf, ApplicationConfigurator.groovy and apply.sh
 # When upgrading to 1.26 we can verify the kubectl signature with cosign!
 # https://kubernetes.io/blog/2022/12/12/kubernetes-release-artifact-signing/
-ARG K8S_VERSION=1.25.5
-ARG KUBECTL_CHECKSUM=6a660cd44db3d4bfe1563f6689cbe2ffb28ee4baf3532e04fff2d7b909081c29
+ARG K8S_VERSION=1.29.1
+ARG KUBECTL_CHECKSUM=69ab3a931e826bf7ac14d38ba7ca637d66a6fcb1ca0e3333a2cafdf15482af9f
 # When updating, also update the checksum found at https://github.com/helm/helm/releases
 ARG HELM_VERSION=3.10.3
 ARG HELM_CHECKSUM=950439759ece902157cf915b209b8d694e6f675eaab5099fb7894f30eeaee9a2

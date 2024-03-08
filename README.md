@@ -398,7 +398,7 @@ def gitopsConfig = [
     ...
     buildImages          : [
             helm: 'ghcr.io/cloudogu/helm:3.10.3-1',
-            kubectl: 'lachlanevenson/k8s-kubectl:v1.25.4',
+            kubectl: 'bitnami/kubectl:1.29',
             kubeval: 'ghcr.io/cloudogu/helm:3.10.3-1',
             helmKubeval: 'ghcr.io/cloudogu/helm:3.10.3-1',
             yamllint: 'cytopia/yamllint:1.25-0.7'

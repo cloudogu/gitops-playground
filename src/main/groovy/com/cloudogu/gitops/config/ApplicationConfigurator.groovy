@@ -17,7 +17,7 @@ class ApplicationConfigurator {
 
     public static final String HELM_IMAGE = "ghcr.io/cloudogu/helm:3.10.3-1"
     // When updating please also adapt in Dockerfile, vars.tf and init-cluster.sh
-    public static final String K8S_VERSION = "1.25.4"
+    public static final String K8S_VERSION = "1.29"
     public static final String DEFAULT_ADMIN_USER = 'admin'
     public static final String DEFAULT_ADMIN_PW = 'admin'
     public static final String DEFAULT_REGISTRY_PORT = '30000'
@@ -57,7 +57,7 @@ class ApplicationConfigurator {
                              - Upgrade bash image in values.yaml and gid-grepper
                              - Also upgrade plugins. See docs/developers.md
                              */
-                            version: '4.8.1'
+                            version: '5.0.17'
                     ]
             ],
             scmm       : [
@@ -87,7 +87,7 @@ class ApplicationConfigurator {
                     baseUrl: null,
             ],
             images     : [
-                    kubectl    : "lachlanevenson/k8s-kubectl:v$K8S_VERSION",
+                    kubectl    : "bitnami/kubectl:$K8S_VERSION",
                     // cloudogu/helm also contains kubeval and helm kubeval plugin. Using the same image makes builds faster
                     helm       : HELM_IMAGE,
                     kubeval    : HELM_IMAGE,

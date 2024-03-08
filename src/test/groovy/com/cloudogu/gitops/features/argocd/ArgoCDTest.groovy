@@ -185,7 +185,7 @@ class ArgoCDTest {
         assertThat(valuesYaml['argo-cd']['server']['service']['type']).isEqualTo('LoadBalancer')
         assertThat(valuesYaml['argo-cd']['notifications']['argocdUrl']).isEqualTo('https://argo.cd')
         assertThat(valuesYaml['argo-cd']['server']['ingress']['enabled']).isEqualTo(true)
-        assertThat((valuesYaml['argo-cd']['server']['ingress']['hosts'] as List)[0]).isEqualTo('argo.cd')
+        assertThat(valuesYaml['argo-cd']['server']['ingress']['hostname']).isEqualTo('argo.cd')
     }
 
     @Test
