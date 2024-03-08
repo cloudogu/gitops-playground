@@ -35,7 +35,7 @@ variable "k8s_version_prefix" {
   description = "Master and Node version prefix to setup"
   
   # When updating please also adapt in Dockerfile, init-cluster.sh, ApplicationConfigurator.groovy and apply.sh
-  default = "1.25."
+  default = "1.29."
 }
 
 variable "creator" {
