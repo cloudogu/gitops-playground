@@ -2,9 +2,11 @@
 dockerClientVersion: 24.0.6
 
 controller:
-  image: "ghcr.io/cloudogu/jenkins-helm"
-  # Use same version here as in jenkins/init-jenkins.sh, JENKINS_HELM_CHART_VERSION; plus suffix, usually "-1"
-  tag: "4.8.1-1"
+  image:
+    registry: ghcr.io
+    repository: cloudogu/jenkins-helm
+    # Use same version here as in ApplicationConfigurator.groovy (config.jenkins['helm']['version'])
+    tag: "5.0.17"
   installPlugins: false
 
   # to prevent the jenkins-ui-test pod being created
@@ -36,6 +38,7 @@ controller:
 
   admin:
     # Use reproducible admin password from secret. Change there, if necessary.
+    #createSecret: false
     existingSecret: jenkins-credentials
 
   containerEnv:
@@ -53,7 +56,7 @@ controller:
       securityContext:
         runAsUser: 1000
       # Note: When upgrading, use same image as in gid-grepper for performance reasons
-      image: bash:5-alpine3.18
+      image: bash:5-alpine3.19
       imagePullPolicy: "{{ .Values.controller.imagePullPolicy }}"
       command: [ "/usr/local/bin/bash", "-c" ]
       args:
