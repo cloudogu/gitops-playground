@@ -156,11 +156,11 @@ class GitopsPlaygroundCli  implements Runnable {
     @Option(names = ['--destroy'], description = 'Unroll playground')
     Boolean destroy
     @Option(names = ['--config-file'], description = 'Configuration using a config file')
-    private String configFile
+    String configFile
     @Option(names = ['--config-map'], description = 'Kubernetes configuration map. Should contain a key `config.yaml`.')
-    private String configMap
+    String configMap
     @Option(names = ['--output-config-file'], description = 'Output current config as config file as much as possible')
-    private Boolean outputConfigFile
+    Boolean outputConfigFile
 
     // args group ArgoCD operator
     @Option(names = ['--argocd'], description = 'Install ArgoCD ')
@@ -188,15 +188,20 @@ class GitopsPlaygroundCli  implements Runnable {
     @Override
     void run() {
         setLogging()
+        
         def context = createApplicationContext()
-        def config = getConfig(context)
+        
+        if (outputConfigFile) {
+            println(context.getBean(ConfigToConfigFileConverter)
+                    .convert(getConfig(context, true)))
+            return
+        }
+        
+        def config = getConfig(context, false)
         context = context.registerSingleton(new Configuration(config))
         K8sClient k8sClient = context.getBean(K8sClient)
 
-        if (outputConfigFile) {
-            def configFileConverter = context.getBean(ConfigToConfigFileConverter)
-            println(configFileConverter.convert(config))
-        } else if (destroy) {
+        if (destroy) {
             confirmOrExit "Destroying gitops playground in kubernetes cluster '${k8sClient.currentContext}'."
             
             Destroyer destroyer = context.getBean(Destroyer)
@@ -268,25 +273,22 @@ class GitopsPlaygroundCli  implements Runnable {
         rootLogger.addAppender(appender)
     }
 
-    private Map getConfig(ApplicationContext appContext) {
+    private Map getConfig(ApplicationContext appContext, boolean skipInternalConfig) {
         if (configFile && configMap) {
-            log.error("Cannot provide --config-file and --config-map at the same time.")
-            System.exit(1)
+            throw new RuntimeException("Cannot provide --config-file and --config-map at the same time.")
         }
 
         ApplicationConfigurator applicationConfigurator = appContext.getBean(ApplicationConfigurator)
         if (configFile) {
-            applicationConfigurator.setConfig(new File(configFile))
+            applicationConfigurator.setConfig(new File(configFile), true)
         } else if (configMap) {
             def k8sClient = appContext.getBean(K8sClient)
             def configValues = k8sClient.getConfigMap(configMap, 'config.yaml')
 
-            applicationConfigurator.setConfig(configValues)
+            applicationConfigurator.setConfig(configValues, true)
         }
 
-        applicationConfigurator.setConfig(parseOptionsIntoConfig())
-
-        Map config = applicationConfigurator.getConfig()
+        Map config = applicationConfigurator.setConfig(parseOptionsIntoConfig(), skipInternalConfig)
 
         log.debug("Actual config: ${prettyPrint(toJson(config))}")
 

@@ -199,7 +199,8 @@ class ApplicationConfigurator {
                     ]
             ]
     ])
-    Map config
+    
+    private Map config
     private NetworkingUtils networkingUtils
     private FileSystemUtils fileSystemUtils
     private JsonSchemaValidator schemaValidator
@@ -214,16 +215,20 @@ class ApplicationConfigurator {
     /**
      * Sets config internally and als returns it, fluent interface
      */
-    ApplicationConfigurator setConfig(Map configToSet) {
+    Map setConfig(Map configToSet, boolean skipInternalConfig = false) {
         Map newConfig = deepCopy(config)
         deepMerge(configToSet, newConfig)
 
+        validate(newConfig)
+        
+        if (skipInternalConfig) {
+            config = makeDeeplyImmutable(newConfig)
+            return config
+        }
+        
         addAdditionalApplicationConfig(newConfig)
         
-        if (newConfig.scmm["url"] && !newConfig.jenkins["url"] ||
-            !newConfig.scmm["url"] && newConfig.jenkins["url"]) {
-            throw new RuntimeException('When setting jenkins URL, scmm URL must also be set and the other way round')
-        }
+
         setScmmConfig(newConfig)
         addJenkinsConfig(newConfig)
 
@@ -263,27 +268,27 @@ class ApplicationConfigurator {
         
         config = makeDeeplyImmutable(newConfig)
 
-        return this
+        return config
     }
 
-    ApplicationConfigurator setConfig(File configFile) {
+    Map setConfig(File configFile, boolean skipInternalConfig = false) {
         def map = new YamlSlurper().parse(configFile)
         if (!(map instanceof Map)) {
             throw new RuntimeException("Could not parse YAML as map: $map")
         }
         schemaValidator.validate(new ObjectMapper().convertValue(map, JsonNode))
 
-        return setConfig(map as Map)
+        return setConfig(map as Map, skipInternalConfig)
     }
 
-    ApplicationConfigurator setConfig(String configFile) {
+    Map setConfig(String configFile, boolean skipInternalConfig = false) {
         def map = new YamlSlurper().parseText(configFile)
         if (!(map instanceof Map)) {
             throw new RuntimeException("Could not parse YAML as map: $map")
         }
         schemaValidator.validate(new ObjectMapper().convertValue(map, JsonNode))
 
-        return setConfig(map as Map)
+        return setConfig(map as Map, skipInternalConfig)
     }
 
     private void addAdditionalApplicationConfig(Map newConfig) {
@@ -381,7 +386,7 @@ class ApplicationConfigurator {
      * @param baseUrl e.g. http://localhost:8080
      * @return e.g. http://argocd.localhost:8080
      */
-    String injectSubdomain(String subdomain, String baseUrl) {
+    private String injectSubdomain(String subdomain, String baseUrl) {
         URL url = new URL(baseUrl)
         String newUrl = url.getProtocol() + "://" + subdomain + "." + url.getHost()
         if (url.getPort() != -1) {
@@ -389,5 +394,12 @@ class ApplicationConfigurator {
         }
         newUrl += url.getPath()
         return newUrl
+    }
+
+    private void validate(Map configToSet) {
+        if (configToSet.scmm["url"] && !configToSet.jenkins["url"] ||
+                !configToSet.scmm["url"] && configToSet.jenkins["url"]) {
+            throw new RuntimeException('When setting jenkins URL, scmm URL must also be set and the other way round')
+        }
     }
 }
