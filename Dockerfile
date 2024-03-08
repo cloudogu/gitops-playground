@@ -134,12 +134,10 @@ COPY --from=maven-build /app/gitops-playground.jar /app/
 
 # Create Graal native image config
 RUN java -agentlib:native-image-agent=config-output-dir=conf/ -jar gitops-playground.jar || true
-# Run again with different params in order to avoid further ClassNotFoundExceptions
-RUN java -agentlib:native-image-agent=config-merge-dir=conf/ -jar gitops-playground.jar \
-      --yes --jenkins-url=a --scmm-url=a \
-      --jenkins-username=a --jenkins-password=a --scmm-username=a--scmm-password=a --password=a \
-      --registry-url=a --registry-path=a --remote --argocd --debug --trace \
-    || true
+# Run again with different params in order to avoid NoSuchMethodException with config file
+RUN echo 'features: {}' > config.yaml  && \
+    java -agentlib:native-image-agent=config-merge-dir=conf/ -jar gitops-playground.jar \
+      --yes --config-file=config.yaml || true \
 RUN native-image -Dgroovy.grape.enable=false \
     -H:+ReportExceptionStackTraces \
     -H:ConfigurationFileDirectories=conf/ \
