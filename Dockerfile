@@ -138,6 +138,9 @@ RUN java -agentlib:native-image-agent=config-output-dir=conf/ -jar gitops-playgr
 RUN echo 'features: {}' > config.yaml  && \
     java -agentlib:native-image-agent=config-merge-dir=conf/ -jar gitops-playground.jar \
       --yes --config-file=config.yaml || true \
+# Run again with different params in order to avoid NoSuchMethodException with output-config file
+RUN java -agentlib:native-image-agent=config-merge-dir=conf/ -jar gitops-playground.jar \
+      --yes  --output-config-file || true
 RUN native-image -Dgroovy.grape.enable=false \
     -H:+ReportExceptionStackTraces \
     -H:ConfigurationFileDirectories=conf/ \
