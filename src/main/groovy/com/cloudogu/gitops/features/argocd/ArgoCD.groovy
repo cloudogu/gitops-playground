@@ -24,6 +24,7 @@ class ArgoCD extends Feature {
     static final String HELM_VALUES_PATH = 'argocd/values.yaml'
     static final String CHART_YAML_PATH = 'argocd/Chart.yaml'
     static final String SCMM_URL_INTERNAL = "http://scmm-scm-manager.default.svc.cluster.local/scm"
+    static final String SERVICE_MONITOR_CRD = 'applications/cluster-resources/monitoring/crd-servicemonitors.yaml'
     private Map config
     private List<RepoInitializationAction> gitRepos = []
 
@@ -99,7 +100,7 @@ class ArgoCD extends Feature {
 
     @Override
     void enable() {
-        log.info("Cloning Repositories")
+        log.debug("Cloning Repositories")
         cloneRemotePetclinicRepo()
         
         gitRepos.forEach( repoInitializationAction -> {
@@ -116,7 +117,7 @@ class ArgoCD extends Feature {
             repoInitializationAction.repo.commitAndPush("Initial Commit")
         })
 
-        log.info("Installing Argo CD")
+        log.debug("Installing Argo CD")
         installArgoCd()
     }
 
@@ -180,9 +181,20 @@ class ArgoCD extends Feature {
     }
 
     private void installArgoCd() {
+        
         prepareArgoCdRepo()
 
         def namePrefix = config.application['namePrefix']
+        def argocdNamespace = 'argocd'
+        
+        log.debug("Creating namespace for argocd")
+        k8sClient.createNamespace(argocdNamespace)
+        
+        log.debug("Creating namespace for monitoring, so argocd can add its service monitors there")
+        k8sClient.createNamespace('monitoring')
+        log.debug("Applying ServiceMonitor CRD; Argo CD fails if it is not there. Chicken-egg-problem.")
+        k8sClient.applyYaml("https://raw.githubusercontent.com/prometheus-community/helm-charts/kube-prometheus-stack-${config['features']['monitoring']['helm']['version']}/charts/kube-prometheus-stack/crds/crd-servicemonitors.yaml")
+        
         log.debug("Creating repo credential secret that is used by argocd to access repos in SCM-Manager")
         // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo 
         def repoTemplateSecretName = 'argocd-repo-creds-scmm'
@@ -215,7 +227,7 @@ class ArgoCD extends Feature {
                 Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), CHART_YAML_PATH))['dependencies']
         helmClient.addRepo('argo', helmDependencies[0]['repository'] as String)
         helmClient.dependencyBuild(umbrellaChartPath)
-        helmClient.upgrade('argocd', umbrellaChartPath, [namespace: "${namePrefix}argocd"])
+        helmClient.upgrade('argocd', umbrellaChartPath, [namespace: "${namePrefix}${argocdNamespace}"])
          
         log.debug("Setting new argocd admin password")
         // Set admin password imperatively here instead of values.yaml, because we don't want it to show in git repo 

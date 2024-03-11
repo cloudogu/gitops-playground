@@ -1,40 +1,42 @@
 #!/usr/bin/env bash
 set -o errexit -o nounset -o pipefail
-# set -x
 
-if [[ -z ${PLAYGROUND_DIR+x} ]]; then
-  BASEDIR=$(dirname $0)
-  PLAYGROUND_DIR="$(cd "${BASEDIR}" && cd .. && cd .. && pwd)"
+ABSOLUTE_BASEDIR="$(cd "$(dirname $0)" && pwd)"
+
+source ${ABSOLUTE_BASEDIR}/../utils.sh
+source ${ABSOLUTE_BASEDIR}/jenkins-REST-client.sh
+
+if [[ $TRACE == true ]]; then
+  set -x
 fi
 
-# When Upgrading helm chart, also upgrade controller.tag in jenkins/values.yaml
-#
-# In addition:
-# - Upgrade bash image in values.yaml and gid-grepper
-# - Also upgrade plugins. See docs/developers.md
-JENKINS_HELM_CHART_VERSION=5.1.0
+PLAYGROUND_DIR="$(cd ${ABSOLUTE_BASEDIR} && cd ../.. && pwd)"
 
-SET_USERNAME="admin"
-SET_PASSWORD="admin"
-REMOTE_CLUSTER=false
+JENKINS_PLUGIN_FOLDER=${JENKINS_PLUGIN_FOLDER:-''}
 
-source "${PLAYGROUND_DIR}"/scripts/jenkins/jenkins-REST-client.sh
+if [[ $INSECURE == true ]]; then
+  CURL_HOME="${PLAYGROUND_DIR}"
+  export CURL_HOME
+fi
+
+function initJenkins() {
+  if [[ ${INTERNAL_JENKINS} == true ]]; then
+    deployLocalJenkins 
+
+    setExternalHostnameIfNecessary "JENKINS" "jenkins" "default"
+  fi
+
+  configureJenkins
+}
 
 function deployLocalJenkins() {
-  SET_USERNAME=${1}
-  SET_PASSWORD=${2}
-  REMOTE_CLUSTER=${3}
-  JENKINS_URL=${4}
-  BASE_URL=${5}
 
   # Mark the first node for Jenkins and agents. See jenkins/values.yamls "agent.workingDir" for details.
   # Remove first (in case new nodes were added)
   kubectl label --all nodes node- >/dev/null
   kubectl label $(kubectl get node -o name | sort | head -n 1) node=jenkins
 
-  createSecret jenkins-credentials --from-literal=jenkins-admin-user=$SET_USERNAME --from-literal=jenkins-admin-password=$SET_PASSWORD -n default
-
-  kubectl apply -f jenkins/resources || true
+  createSecret jenkins-credentials --from-literal=jenkins-admin-user=$JENKINS_USERNAME --from-literal=jenkins-admin-password=$JENKINS_PASSWORD -n default
 
   helm repo add jenkins https://charts.jenkins.io
   helm repo update jenkins
@@ -93,44 +95,8 @@ function waitForJenkins() {
   echo ""
 }
 
-function createUser() {
-  runGroovy jenkins add-user "$1" "$2" --jenkins-url="$JENKINS_URL" --jenkins-username="$JENKINS_USERNAME" --jenkins-password="$JENKINS_PASSWORD"
-}
-
-function grantPermission() {
-  runGroovy jenkins grant-permission "$1" "$2" --jenkins-url="$JENKINS_URL" --jenkins-username="$JENKINS_USERNAME" --jenkins-password="$JENKINS_PASSWORD"
-}
-
-function enablePrometheusAuthentication() {
-  runGroovy jenkins enable-prometheus-authentication --jenkins-url="$JENKINS_URL" --jenkins-username="$JENKINS_USERNAME" --jenkins-password="$JENKINS_PASSWORD"
-}
-
-function setGlobalProperty() {
-  runGroovy jenkins set-global-property "${1}" "${2}" --jenkins-url="$JENKINS_URL" --jenkins-username="$JENKINS_USERNAME" --jenkins-password="$JENKINS_PASSWORD"
-}
-
-function createCredentials() {
-  runGroovy jenkins create-credential "${5}" "${1}" "${2}" "${3}" "${4}" --jenkins-url="$JENKINS_URL" --jenkins-username="$JENKINS_USERNAME" --jenkins-password="$JENKINS_PASSWORD"
-}
-
 function configureJenkins() {
-  local SCMM_URL pluginFolder
-  
-  JENKINS_URL="${1}"
-  export JENKINS_URL
-  JENKINS_USERNAME="${2}"
-  export JENKINS_USERNAME
-  JENKINS_PASSWORD="${3}"
-  export JENKINS_PASSWORD
-  SCMM_URL="${4}"
-  SCMM_PASSWORD="${5}"
-  REGISTRY_URL="${6}"
-  REGISTRY_PATH="${7}"
-  REGISTRY_USERNAME="${8}"
-  REGISTRY_PASSWORD="${9}"
-  INSTALL_ARGOCD="${10}"
-  JENKINS_METRICS_USERNAME="${11}"
-  JENKINS_METRICS_PASSWORD="${12}"
+  local pluginFolder
 
   waitForJenkins
 
@@ -164,19 +130,10 @@ function configureJenkins() {
   # Since safeRestart can take time until it really restarts jenkins, we will sleep here before querying jenkins status.
   sleep 5
   waitForJenkins
-
-  setGlobalProperty "SCMM_URL" "${SCMM_URL}"
-  setGlobalProperty "${NAME_PREFIX_ENVIRONMENT_VARS}REGISTRY_URL" "${REGISTRY_URL}"
-  setGlobalProperty "${NAME_PREFIX_ENVIRONMENT_VARS}REGISTRY_PATH" "${REGISTRY_PATH}"
-  setGlobalProperty "${NAME_PREFIX_ENVIRONMENT_VARS}K8S_VERSION" "${K8S_VERSION}"
-
-  createUser "${JENKINS_METRICS_USERNAME}" "${JENKINS_METRICS_PASSWORD}"
-  grantPermission "${JENKINS_METRICS_USERNAME}" "METRICS_VIEW"
-  enablePrometheusAuthentication
-
-  if [[ $INSTALL_ARGOCD == true ]]; then
-    createJob "${NAME_PREFIX}example-apps" "${SCMM_URL}" "${NAME_PREFIX}argocd" "scmm-user"
-    createCredentials "scmm-user" "${NAME_PREFIX}gitops" "${SCMM_PASSWORD}" "credentials for accessing scm-manager" "${NAME_PREFIX}example-apps"
-    createCredentials "registry-user" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}" "credentials for accessing the docker-registry" "${NAME_PREFIX}example-apps"
-  fi
+  
+    if [[ $INSTALL_ARGOCD == true ]]; then
+      createJob "${NAME_PREFIX}example-apps" "${SCMM_URL}" "${NAME_PREFIX}argocd" "scmm-user"
+    fi
 }
+
+initJenkins "$@"

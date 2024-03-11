@@ -16,8 +16,11 @@ import static com.cloudogu.gitops.utils.MapUtils.*
 class ApplicationConfigurator {
 
     public static final String HELM_IMAGE = "ghcr.io/cloudogu/helm:3.10.3-1"
+    // When updating please also adapt in Dockerfile, vars.tf and init-cluster.sh
+    public static final String K8S_VERSION = "1.29"
     public static final String DEFAULT_ADMIN_USER = 'admin'
     public static final String DEFAULT_ADMIN_PW = 'admin'
+    public static final String DEFAULT_REGISTRY_PORT = '30000'
     /**
      * When changing values make sure to modify GitOpsPlaygroundCli and Schema as well
      * @see com.cloudogu.gitops.cli.GitopsPlaygroundCli
@@ -31,7 +34,12 @@ class ApplicationConfigurator {
                     path        : '',
                     username    : '',
                     password    : '',
-                    internalPort: ''
+                    internalPort: DEFAULT_REGISTRY_PORT,
+                    helm  : [
+                            chart  : 'docker-registry',
+                            repoURL: 'https://charts.helm.sh/stable',
+                            version: '1.9.4'
+                    ]
             ],
             jenkins    : [
                     internal: true, // Set dynamically
@@ -41,6 +49,16 @@ class ApplicationConfigurator {
                     urlForScmm: "http://jenkins", // Set dynamically
                     metricsUsername: 'metrics',
                     metricsPassword: 'metrics',
+                    helm  : [
+                            //chart  : 'jenkins',
+                            //repoURL: 'https://charts.jenkins.io',
+                            /* When Upgrading helm chart, also upgrade controller.tag in jenkins/values.yaml
+                            In addition:
+                             - Upgrade bash image in values.yaml and gid-grepper
+                             - Also upgrade plugins. See docs/developers.md
+                             */
+                            version: '5.0.17'
+                    ]
             ],
             scmm       : [
                     internal: true, // Set dynamically
@@ -49,7 +67,12 @@ class ApplicationConfigurator {
                     password: DEFAULT_ADMIN_PW,
                     urlForJenkins : 'http://scmm-scm-manager/scm', // set dynamically
                     host : '', // Set dynamically
-                    protocol : '' // Set dynamically
+                    protocol : '', // Set dynamically
+                    helm  : [
+                            //chart  : 'scm-manager',
+                            //repoURL: 'https://packages.scm-manager.org/repository/helm-v2-releases/',
+                            version: '2.47.0'
+                    ]
             ],
             application: [
                     remote        : false,
@@ -64,8 +87,7 @@ class ApplicationConfigurator {
                     baseUrl: null,
             ],
             images     : [
-                    // When updating please also adapt in Dockerfile, vars.tf, apply.sh and init-cluster.sh
-                    kubectl    : "bitnami/kubectl:1.29",
+                    kubectl    : "bitnami/kubectl:$K8S_VERSION",
                     // cloudogu/helm also contains kubeval and helm kubeval plugin. Using the same image makes builds faster
                     helm       : HELM_IMAGE,
                     kubeval    : HELM_IMAGE,
@@ -89,8 +111,7 @@ class ApplicationConfigurator {
                     cesBuildLib: [
                             url: System.getenv('CES_BUILD_LIB_REPO') ?: 'https://github.com/cloudogu/ces-build-lib.git',
                     ]
-            ]
-            ,
+            ],
             features   : [
                     argocd    : [
                             active    : false,
@@ -121,6 +142,12 @@ class ApplicationConfigurator {
                             grafanaEmailFrom : 'grafana@example.org',
                             grafanaEmailTo : 'infra@example.org',
                             helm  : [
+                                    /* Before allowing to override this via config, we have to change
+                                       ArgoCD.groovy to extract the monitoring CRD from the chart instead of applying 
+                                       from GitHub.
+                                        
+                                        First approach: 
+                                        helm template prometheus-community/kube-prometheus-stack --version XYZ --include-crds */
                                     chart  : 'kube-prometheus-stack',
                                     repoURL: 'https://prometheus-community.github.io/helm-charts',
                                     version: '42.0.3',
@@ -172,7 +199,8 @@ class ApplicationConfigurator {
                     ]
             ]
     ])
-    Map config
+    
+    private Map config
     private NetworkingUtils networkingUtils
     private FileSystemUtils fileSystemUtils
     private JsonSchemaValidator schemaValidator
@@ -187,16 +215,43 @@ class ApplicationConfigurator {
     /**
      * Sets config internally and als returns it, fluent interface
      */
-    ApplicationConfigurator setConfig(Map configToSet) {
+    Map setConfig(Map configToSet, boolean skipInternalConfig = false) {
         Map newConfig = deepCopy(config)
         deepMerge(configToSet, newConfig)
 
+        validate(newConfig)
+        
+        if (skipInternalConfig) {
+            config = makeDeeplyImmutable(newConfig)
+            return config
+        }
+        
         addAdditionalApplicationConfig(newConfig)
+        
+
         setScmmConfig(newConfig)
         addJenkinsConfig(newConfig)
 
-        if (newConfig.registry['url'])
-            newConfig.registry["internal"] = false
+
+        String namePrefix = newConfig.application['namePrefix']
+        if (namePrefix) {
+            if (!namePrefix.endsWith('-')) {
+                newConfig.application['namePrefix'] = "${namePrefix}-"
+            }
+            newConfig.application['namePrefixForEnvVars'] ="${(newConfig.application['namePrefix'] as String).toUpperCase().replace('-', '_')}"
+        }
+
+        if (newConfig.registry['url']) {
+            newConfig.registry['internal'] = false
+        } else {
+            /* Internal Docker registry must be on localhost. Otherwise docker will use HTTPS, leading to errors on 
+               docker push in the example application's Jenkins Jobs.
+               Both setting up HTTPS or allowing insecure registry via daemon.json makes the playground difficult to use.
+               So, always use localhost.
+               Allow overriding the port, in case multiple playground instance run on a single host in different 
+               k3d clusters. */
+            newConfig.registry['url'] = "localhost:${newConfig.registry['internalPort']}"
+        }
         if (newConfig['features']['secrets']['vault']['mode'])
             newConfig['features']['secrets']['active'] = true
         if (newConfig['features']['mail']['smtpAddress'] || newConfig['features']['mail']['mailhog'])
@@ -213,27 +268,27 @@ class ApplicationConfigurator {
         
         config = makeDeeplyImmutable(newConfig)
 
-        return this
+        return config
     }
 
-    ApplicationConfigurator setConfig(File configFile) {
+    Map setConfig(File configFile, boolean skipInternalConfig = false) {
         def map = new YamlSlurper().parse(configFile)
         if (!(map instanceof Map)) {
             throw new RuntimeException("Could not parse YAML as map: $map")
         }
         schemaValidator.validate(new ObjectMapper().convertValue(map, JsonNode))
 
-        return setConfig(map as Map)
+        return setConfig(map as Map, skipInternalConfig)
     }
 
-    ApplicationConfigurator setConfig(String configFile) {
+    Map setConfig(String configFile, boolean skipInternalConfig = false) {
         def map = new YamlSlurper().parseText(configFile)
         if (!(map instanceof Map)) {
             throw new RuntimeException("Could not parse YAML as map: $map")
         }
         schemaValidator.validate(new ObjectMapper().convertValue(map, JsonNode))
 
-        return setConfig(map as Map)
+        return setConfig(map as Map, skipInternalConfig)
     }
 
     private void addAdditionalApplicationConfig(Map newConfig) {
@@ -331,7 +386,7 @@ class ApplicationConfigurator {
      * @param baseUrl e.g. http://localhost:8080
      * @return e.g. http://argocd.localhost:8080
      */
-    String injectSubdomain(String subdomain, String baseUrl) {
+    private String injectSubdomain(String subdomain, String baseUrl) {
         URL url = new URL(baseUrl)
         String newUrl = url.getProtocol() + "://" + subdomain + "." + url.getHost()
         if (url.getPort() != -1) {
@@ -339,5 +394,12 @@ class ApplicationConfigurator {
         }
         newUrl += url.getPath()
         return newUrl
+    }
+
+    private void validate(Map configToSet) {
+        if (configToSet.scmm["url"] && !configToSet.jenkins["url"] ||
+                !configToSet.scmm["url"] && configToSet.jenkins["url"]) {
+            throw new RuntimeException('When setting jenkins URL, scmm URL must also be set and the other way round')
+        }
     }
 }

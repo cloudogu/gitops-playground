@@ -27,7 +27,8 @@ class HelmClient {
         String command =  "helm upgrade -i ${release} ${chartOrPath} " +
                 "${args.version? "--version ${args.version} " : ''}" +
                 "${args.values? "--values ${args.values} " : ''}" +
-                "${args.namespace? "--namespace ${args.namespace} " : ''}"
+                "${args.namespace? "--namespace ${args.namespace} " : ''}" +
+                '--create-namespace '
         commandExecutor.execute(command).stdOut
     }
 

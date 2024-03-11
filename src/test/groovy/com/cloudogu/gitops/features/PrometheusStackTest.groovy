@@ -351,7 +351,7 @@ policies:
                 'helm repo add prometheusstack https://prom')
         assertThat(helmCommandExecutor.actualCommands[1].trim()).isEqualTo(
                 'helm upgrade -i kube-prometheus-stack prometheusstack/kube-prometheus-stack --version 19.2.2' +
-                        " --values ${temporaryYamlFile} --namespace foo-monitoring")
+                        " --values ${temporaryYamlFile} --namespace foo-monitoring --create-namespace")
     }
 
     private PrometheusStack createStack() {

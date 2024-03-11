@@ -1,21 +1,141 @@
 #!/usr/bin/env bash
 set -o errexit -o nounset -o pipefail
 
+ABSOLUTE_BASEDIR="$(cd "$(dirname $0)" && pwd)"
+source ${ABSOLUTE_BASEDIR}/../utils.sh
+
+if [[ $TRACE == true ]]; then
+  set -x
+fi
+
 SCMM_PROTOCOL=http
-SCMM_HELM_CHART_VERSION=2.47.0
+
+PLAYGROUND_DIR="$(cd ${ABSOLUTE_BASEDIR} && cd ../.. && pwd)"
+
+if [[ $INSECURE == true ]]; then
+  CURL_HOME="${PLAYGROUND_DIR}"
+  export CURL_HOME
+  export GIT_SSL_NO_VERIFY=1
+fi
+
+function initSCMM() {
+  
+  SCMM_HOST=$(getHost "${SCMM_URL}")
+  SCMM_PROTOCOL=$(getProtocol "${SCMM_URL}")
+  
+  if [[ ${INTERNAL_SCMM} == true ]]; then
+    deployLocalScmmManager "${REMOTE_CLUSTER}" "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "${BASE_URL}"
+  fi
+
+  setExternalHostnameIfNecessary 'SCMM' 'scmm-scm-manager' 'default'
+  [[ "${SCMM_URL}" != *scm ]] && SCMM_URL=${SCMM_URL}/scm
+
+  # When running in k3d, SCMM_BASE_URL must be internal. Otherwise webhooks from SCMM->Jenkins will fail, as
+  # they contain repository URLs created with SCMM_BASE_URL. Jenkins uses the internal URL for repos. So match is only
+  # successful, when SCM also sends the Repo URLs using the internal URL
+  configureScmmManager "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "${SCMM_URL}" "${JENKINS_URL_FOR_SCMM}" \
+    "${SCMM_URL_FOR_JENKINS}" "${INTERNAL_SCMM}" "${INSTALL_ARGOCD}"
+
+  pushHelmChartRepo "3rd-party-dependencies/spring-boot-helm-chart"
+  pushHelmChartRepoWithDependency "3rd-party-dependencies/spring-boot-helm-chart-with-dependency"
+  pushRepoMirror "${GITOPS_BUILD_LIB_REPO}" "3rd-party-dependencies/gitops-build-lib"
+  pushRepoMirror "${CES_BUILD_LIB_REPO}" "3rd-party-dependencies/ces-build-lib" 'develop'
+}
+
+function pushHelmChartRepo() {
+  TARGET_REPO_SCMM="$1"
+
+  TMP_REPO=$(mktemp -d)
+  git clone -n "${SPRING_BOOT_HELM_CHART_REPO}" "${TMP_REPO}" --quiet
+  (
+    cd "${TMP_REPO}"
+    # Checkout a defined commit in order to get a deterministic result
+    git checkout ${SPRING_BOOT_HELM_CHART_COMMIT} --quiet
+
+    # Create a defined version to use in demo applications
+    git tag 1.0.0
+
+    git branch --quiet -d main
+    git checkout --quiet -b main
+
+    waitForScmManager
+    git push "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
+    git push "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" refs/tags/1.0.0 --quiet --force
+  )
+
+  rm -rf "${TMP_REPO}"
+
+  setDefaultBranch "${TARGET_REPO_SCMM}"
+}
+
+function pushHelmChartRepoWithDependency() {
+  TARGET_REPO_SCMM="$1"
+
+  TMP_REPO=$(mktemp -d)
+  git clone -n "${SPRING_BOOT_HELM_CHART_REPO}" "${TMP_REPO}" --quiet
+  (
+    cd "${TMP_REPO}"
+    # Checkout a defined commit in order to get a deterministic result
+    git checkout ${SPRING_BOOT_HELM_CHART_COMMIT} --quiet
+
+    # Create a defined version to use in demo applications
+    git tag 1.0.0
+
+    git branch --quiet -d main
+    git checkout --quiet -b main
+
+    echo "dependencies:
+- name: podinfo
+  version: \"5.2.0\"
+  repository: \"https://stefanprodan.github.io/podinfo\"" >>./Chart.yaml
+
+    git commit -a -m "Added dependency" --quiet
+
+    waitForScmManager
+    git push "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
+    git push "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" refs/tags/1.0.0 --quiet --force
+  )
+
+  rm -rf "${TMP_REPO}"
+
+  setDefaultBranch "${TARGET_REPO_SCMM}"
+}
+
+function pushRepoMirror() {
+  SOURCE_REPO_URL="$1"
+  TARGET_REPO_SCMM="$2"
+  DEFAULT_BRANCH="${3:-main}"
+
+  TMP_REPO=$(mktemp -d)
+  git clone --bare "${SOURCE_REPO_URL}" "${TMP_REPO}" --quiet
+  (
+    cd "${TMP_REPO}"
+    waitForScmManager
+    git push --mirror "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" --force --quiet
+  )
+
+  rm -rf "${TMP_REPO}"
+
+  setDefaultBranch "${TARGET_REPO_SCMM}" "${DEFAULT_BRANCH}"
+}
+
+function setDefaultBranch() {
+  TARGET_REPO_SCMM="$1"
+  DEFAULT_BRANCH="${2:-main}"
+
+  curl -s -L -X PUT -H 'Content-Type: application/vnd.scmm-gitConfig+json' \
+    --data-raw "{\"defaultBranch\":\"${DEFAULT_BRANCH}\"}" \
+    "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/api/v2/config/git/${TARGET_REPO_SCMM}"
+}
 
 function deployLocalScmmManager() {
-  local REMOTE_CLUSTER=${1}
-  local SET_USERNAME=${2}
-  local SET_PASSWORD=${3}
-  BASE_URL=${4}
 
   helm repo add scm-manager https://packages.scm-manager.org/repository/helm-v2-releases/
   helm repo update scm-manager
   helm upgrade -i scmm --values scm-manager/values.yaml \
     $(scmmHelmSettingsForRemoteCluster) $(scmmIngress)\
     --version ${SCMM_HELM_CHART_VERSION} scm-manager/scm-manager -n default \
-    --set extraArgs="{-Dscm.initialPassword=${SET_PASSWORD},-Dscm.initialUser=${SET_USERNAME}}"
+    --set extraArgs="{-Dscm.initialPassword=${SCMM_PASSWORD},-Dscm.initialUser=${SCMM_USERNAME}}"
 }
 
 function scmmIngress() {
@@ -289,3 +409,5 @@ function printStatus() {
     echo -e ' \u274c ' "(status code: $STATUS_CODE)"
   fi
 }
+
+initSCMM "$@"

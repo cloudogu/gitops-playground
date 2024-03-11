@@ -2,6 +2,10 @@ package com.cloudogu.gitops.cli
 
 import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Logger
+import ch.qos.logback.classic.LoggerContext
+import ch.qos.logback.classic.encoder.PatternLayoutEncoder
+import ch.qos.logback.classic.spi.ILoggingEvent
+import ch.qos.logback.core.ConsoleAppender
 import com.cloudogu.gitops.Application
 import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.ConfigToConfigFileConverter
@@ -24,10 +28,9 @@ import static groovy.json.JsonOutput.toJson
  * @see com.cloudogu.gitops.config.schema.Schema
  */
 @Command(
-        name = 'apply.sh',
+        name = 'apply-ng',
         description = 'CLI-tool to deploy gitops-playground.',
-        mixinStandardHelpOptions = true,
-        subcommands = JenkinsCli)
+        mixinStandardHelpOptions = true)
 
 @Slf4j
 class GitopsPlaygroundCli  implements Runnable {
@@ -41,7 +44,7 @@ class GitopsPlaygroundCli  implements Runnable {
     @Option(names = ['--registry-password'], description = 'Optional when --registry-url is set')
     private String registryPassword
     @Option(names = ['--internal-registry-port'], description = 'Port of registry registry. Ignored when registry-url is set')
-    private int internalRegistryPort
+    private Integer internalRegistryPort
 
     // args group jenkins
     @Option(names = ['--jenkins-url'], description = 'The url of your external jenkins')
@@ -64,7 +67,7 @@ class GitopsPlaygroundCli  implements Runnable {
     private String scmmPassword
 
     // args group remote
-    @Option(names = ['--remote'], description = 'Install on remote Cluster e.g. gcp')
+    @Option(names = ['--remote'], description = 'Expose services as LoadBalancers')
     private Boolean remote
     @Option(names = ['--insecure'], description = 'Sets insecure-mode in cURL which skips cert validation')
     private Boolean insecure
@@ -123,41 +126,41 @@ class GitopsPlaygroundCli  implements Runnable {
     @Option(names = ['--mailhog-url'], description = 'Sets url for MailHog')
     private String mailhogUrl
     @Option(names = ['--mailhog', '--mail'], description = 'Installs MailHog as Mail server.', scope = CommandLine.ScopeType.INHERIT)
-    Boolean mailhog
+    private Boolean mailhog
 
     // condition check dependent parameters of external Mailserver
     @Option(names = ['--smtp-address'], description = 'Sets smtp port of external Mailserver')
-    String smtpAddress
+    private String smtpAddress
     @Option(names = ['--smtp-port'], description = 'Sets smtp port of external Mailserver')
-    Integer smtpPort
+    private Integer smtpPort
     @Option(names = ['--smtp-user'], description = 'Sets smtp username for external Mailserver')
-    String smtpUser
+    private String smtpUser
     @Option(names = ['--smtp-password'], description = 'Sets smtp password of external Mailserver')
-    String smtpPassword
+    private String smtpPassword
 
     // args group debug
     @Option(names = ['-d', '--debug'], description = 'Debug output', scope = CommandLine.ScopeType.INHERIT)
-    private Boolean debug
+    Boolean debug
     @Option(names = ['-x', '--trace'], description = 'Debug + Show each command executed (set -x)', scope = CommandLine.ScopeType.INHERIT)
-    private Boolean trace
+    Boolean trace
 
     // args group configuration
     @Option(names = ['--username'], description = 'Set initial admin username')
     private String username
     @Option(names = ['--password'], description = 'Set initial admin passwords')
     private String password
-    @Option(names = ['-y', '--yes'], description = 'Skip kubecontext confirmation')
-    private Boolean pipeYes
+    @Option(names = ['-y', '--yes'], description = 'Skip confirmation')
+    Boolean pipeYes
     @Option(names = ['--name-prefix'], description = 'Set name-prefix for repos, jobs, namespaces')
     private String namePrefix
     @Option(names = ['--destroy'], description = 'Unroll playground')
-    private Boolean destroy
+    Boolean destroy
     @Option(names = ['--config-file'], description = 'Configuration using a config file')
-    private String configFile
+    String configFile
     @Option(names = ['--config-map'], description = 'Kubernetes configuration map. Should contain a key `config.yaml`.')
-    private String configMap
+    String configMap
     @Option(names = ['--output-config-file'], description = 'Output current config as config file as much as possible')
-    private Boolean outputConfigFile
+    Boolean outputConfigFile
 
     // args group ArgoCD operator
     @Option(names = ['--argocd'], description = 'Install ArgoCD ')
@@ -182,21 +185,53 @@ class GitopsPlaygroundCli  implements Runnable {
     private Boolean ingressNginx
 
 
-
     @Override
     void run() {
-        def context = ApplicationContext.run().registerSingleton(new Configuration(getConfig()))
+        setLogging()
+        
+        def context = createApplicationContext()
+        
+        if (outputConfigFile) {
+            println(context.getBean(ConfigToConfigFileConverter)
+                    .convert(getConfig(context, true)))
+            return
+        }
+        
+        def config = getConfig(context, false)
+        context = context.registerSingleton(new Configuration(config))
+        K8sClient k8sClient = context.getBean(K8sClient)
 
         if (destroy) {
+            confirmOrExit "Destroying gitops playground in kubernetes cluster '${k8sClient.currentContext}'."
+            
             Destroyer destroyer = context.getBean(Destroyer)
             destroyer.destroy()
-        } else if (outputConfigFile) {
-            def configFileConverter = context.getBean(ConfigToConfigFileConverter)
-            println(configFileConverter.convert(getConfig()))
         } else {
+            confirmOrExit "Applying gitops playground to kubernetes cluster '${k8sClient.currentContext}'."
+
             Application app = context.getBean(Application)
             app.start()
+
+            printWelcomeScreen()
         }
+    }
+
+    private void confirmOrExit(String message) {
+        if (pipeYes) {
+            return
+        }
+        
+        log.info("\n${message}\nContinue? y/n [n]")
+                
+        def input = System.in.newReader().readLine()
+        
+        if (input != 'y') {
+            System.exit(1) 
+        }
+    }
+    
+    protected ApplicationContext createApplicationContext() {
+        ApplicationContext.run()
     }
 
     void setLogging() {
@@ -206,36 +241,77 @@ class GitopsPlaygroundCli  implements Runnable {
             logger.setLevel(Level.TRACE)
         } else if (debug) {
             log.info("Setting loglevel to debug")
-            logger.setLevel(Level.DEBUG);
+            logger.setLevel(Level.DEBUG)
         } else {
-            logger.setLevel(Level.INFO)
+            setSimpleLogPattern()
         }
     }
 
-    private Map getConfig() {
+    /**
+     * Changes log pattern to a simpler one, to reduce noise for normal users
+     */
+    void setSimpleLogPattern() {
+        LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory()
+        def rootLogger = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME)
+        def defaultPattern = ((rootLogger.getAppender('STDOUT') as ConsoleAppender)
+                .getEncoder() as PatternLayoutEncoder).pattern
+
+        // Avoid duplicate output by existing appender
+        rootLogger.detachAppender('STDOUT')
+        PatternLayoutEncoder encoder = new PatternLayoutEncoder()
+        // Remove less relevant details from log pattern
+        encoder.setPattern(defaultPattern 
+                .replaceAll(" \\S*%thread\\S* ", " ")
+                .replaceAll(" \\S*%logger\\S* ", " "))
+        encoder.setContext(loggerContext)
+        encoder.start()
+        ConsoleAppender<ILoggingEvent> appender = new ConsoleAppender<>()
+        appender.setName('STDOUT')
+        appender.setContext(loggerContext)
+        appender.setEncoder(encoder)
+        appender.start()
+        rootLogger.addAppender(appender)
+    }
+
+    private Map getConfig(ApplicationContext appContext, boolean skipInternalConfig) {
         if (configFile && configMap) {
-            log.error("Cannot provide --config-file and --config-map at the same time.")
-            System.exit(1)
+            throw new RuntimeException("Cannot provide --config-file and --config-map at the same time.")
         }
 
-        def appContext = ApplicationContext.run()
         ApplicationConfigurator applicationConfigurator = appContext.getBean(ApplicationConfigurator)
         if (configFile) {
-            applicationConfigurator.setConfig(new File(configFile))
+            applicationConfigurator.setConfig(new File(configFile), true)
         } else if (configMap) {
             def k8sClient = appContext.getBean(K8sClient)
             def configValues = k8sClient.getConfigMap(configMap, 'config.yaml')
 
-            applicationConfigurator.setConfig(configValues)
+            applicationConfigurator.setConfig(configValues, true)
         }
 
-        applicationConfigurator.setConfig(parseOptionsIntoConfig())
-
-        Map config = applicationConfigurator.getConfig()
+        Map config = applicationConfigurator.setConfig(parseOptionsIntoConfig(), skipInternalConfig)
 
         log.debug("Actual config: ${prettyPrint(toJson(config))}")
 
         return config
+    }
+
+    void printWelcomeScreen() {
+        log.info '''\n
+  |----------------------------------------------------------------------------------------------|
+  |                       Welcome to the GitOps playground by Cloudogu!
+  |----------------------------------------------------------------------------------------------|
+  |
+  | Please find the URLs of the individual applications in our README:
+  | https://github.com/cloudogu/gitops-playground/blob/main/README.md#table-of-contents
+  |
+  | A good starting point might also be the services or ingresses inside your cluster:  
+  | kubectl get svc -A
+  | Or (depending on your config)
+  | kubectl get ing -A
+  |
+  | Please be aware, Jenkins and Argo CD may take some time to build and deploy all apps.
+  |----------------------------------------------------------------------------------------------|
+'''
     }
 
     private Map parseOptionsIntoConfig() {
@@ -268,8 +344,7 @@ class GitopsPlaygroundCli  implements Runnable {
                         username      : username,
                         password      : password,
                         pipeYes       : pipeYes,
-                        namePrefix    : namePrefix ? "$namePrefix-" : "",
-                        namePrefixForEnvVars: namePrefix ? "${namePrefix.toUpperCase()}_" : "",
+                        namePrefix    : namePrefix,
                         baseUrl : baseUrl,
                 ],
                 images     : [

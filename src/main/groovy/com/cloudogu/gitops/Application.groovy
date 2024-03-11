@@ -18,11 +18,11 @@ class Application {
     }
 
     def start() {
-        log.info("Starting Application")
+        log.debug("Starting Application")
         features.forEach(feature -> {
             feature.install()
         })
-        log.info("Application finished")
+        log.debug("Application finished")
     }
 
     List<Feature> getFeatures() {

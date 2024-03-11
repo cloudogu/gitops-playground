@@ -119,6 +119,9 @@ class Vault extends Feature {
 
             def templatedFile = fileSystemUtils.copyToTempDir(fileSystemUtils.getRootDir() + VAULT_START_SCRIPT_PATH)
             def postStartScript = new TemplatingEngine().replaceTemplate(templatedFile.toFile(), [namePrefix: namePrefix])
+            
+            log.debug("Creating namespace for vault, so it can add its secrets there")
+            k8sClient.createNamespace("secrets")
             k8sClient.createConfigMapFromFile(vaultPostStartConfigMap, "secrets", postStartScript.absolutePath)
 
             MapUtils.deepMerge(

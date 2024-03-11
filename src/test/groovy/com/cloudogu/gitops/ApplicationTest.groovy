@@ -14,7 +14,8 @@ class ApplicationTest {
             ],
             scmm: [
                     internal: true
-            ]
+            ],
+            jenkins: [:]
     ]
 
     @Test
@@ -24,6 +25,6 @@ class ApplicationTest {
                 .getBean(Application)
         def features = application.features.collect { it.class.simpleName }
 
-        assertThat(features).isEqualTo(["ArgoCD", "IngressNginx", "Mailhog", "PrometheusStack", "ExternalSecretsOperator", "Vault"])
+        assertThat(features).isEqualTo(["Registry", "ScmManager", "Jenkins", "ArgoCD", "IngressNginx", "Mailhog", "PrometheusStack", "ExternalSecretsOperator", "Vault"])
     }
 }

@@ -2,12 +2,20 @@ package com.cloudogu.gitops.utils
 
 import groovy.util.logging.Slf4j
 import jakarta.inject.Singleton
+import org.apache.commons.io.output.TeeOutputStream
+
+import java.util.concurrent.TimeUnit
 
 @Slf4j
 @Singleton
 class CommandExecutor {
 
-    public static final int PROCESS_TIMEOUT_SECONDS = 120
+    /* This timeout is mainly here to not freeze forever the apply process in the worst case scenario.
+    
+       Calls to init-scmm.sh and init-jenkins.sh take several minutes at best and might be slower with poor connections 
+       to the internet.
+       Once they are migrated to groovy we can reduce this timeout.*/
+    public static final int PROCESS_TIMEOUT_MINUTES = 15
 
     Output execute(String[] command, boolean failOnError = true) {
         Process proc = doExecute(command)
@@ -21,6 +29,20 @@ class CommandExecutor {
     @Deprecated
     Output execute(String command, boolean failOnError = true) {
         Process proc = doExecute(command)
+        return getOutput(proc, command, failOnError)
+    }
+    
+    /**
+     * @param envp a List of Objects (converted to Strings using toString), each member of which has environment 
+     * variable settings in the format <i>name</i>=<i>value</i>, or <tt>null</tt> if the subprocess should inherit
+     * the environment of the current process.
+     */
+    Output execute(String command, Map additionalEnv, boolean failOnError = true) {
+        Map newEnv = [:] 
+        newEnv.putAll(System.getenv()) // Copy existing environment variables
+        newEnv.putAll(additionalEnv)
+        
+        Process proc = doExecute(command, newEnv.collect { key, value -> "${key}=${value}" })
         return getOutput(proc, command, failOnError)
     }
 
@@ -48,44 +70,59 @@ class CommandExecutor {
         
         return finalOutput
     }
-    
-    protected Process doExecute(String command) {
+
+    protected Process doExecute(String command, List envp = null) {
         log.trace("Executing command: '${command}'")
-        command.execute()
+        command.execute(envp, null)
     }
-    
+
     protected Process doExecute(String[] command) {
         log.trace("Executing command: '${command}'")
         command.execute()
     }
 
     protected Output getOutput(Process proc, String command, boolean failOnError = true) {
-        proc.waitForOrKill(PROCESS_TIMEOUT_SECONDS * 1000)
-        // err must be defined first because calling proc.text closes the output stream
-        String err = proc.err.text.trim()
-        String out = proc.text.trim()
-        if (proc.exitValue() > 0) {
+        ByteArrayOutputStream stdOut = new ByteArrayOutputStream()
+        ByteArrayOutputStream stdErr = new ByteArrayOutputStream()
+        TeeOutputStream teeOut, teeErr
+        
+        if (log.isTraceEnabled()) {
+            // While waiting for the process to finish, also print stdout and stderr streams through to the main process
+            teeOut = new TeeOutputStream(stdOut, System.out)
+            teeErr = new TeeOutputStream(stdErr, System.err)
+            proc.consumeProcessOutput(teeOut, teeErr)
+        } else {
+            proc.consumeProcessOutput(stdOut, stdErr)
+        }
+
+        def processFinished = proc.waitFor(PROCESS_TIMEOUT_MINUTES, TimeUnit.MINUTES)
+        if (!processFinished) {
+            log.error("Timeout waiting for command ${command}. Killing process.")
+            proc.waitForOrKill(1)
+        }
+
+        // Make sure all bytes have been written, before returning output
+        if (teeOut) teeOut.flush()
+        if (teeErr) teeErr.flush()
+        def output = new Output(stdErr.toString().trim(), stdOut.toString().trim(), proc.exitValue())
+        
+        if (failOnError && proc.exitValue() > 0) {
             log.error("Executing command failed: ${command}")
-            log.error("Stderr: ${err.toString().trim()}")
-            log.error("StdOut: ${out.toString().trim()}")
+            log.error("Stderr: ${output.stdErr}")
+            log.error("StdOut: ${output.stdOut}")
             if (failOnError) {
                 throw new RuntimeException("Executing command failed: ${command}")
             }
         }
-        if (out) {
-            log.debug("${command}\n Success: ${out}")
-        }
-        if (err) {
-            log.debug("${command}\n Warning / Error: ${err}")
-        }
-        return new Output(err, out, proc.exitValue())
+
+        return output
     }
-    
+
     static class Output {
         String stdErr
         String stdOut
         int exitCode
-        
+
         Output(String stdErr, String stdOut, int exitCode) {
             this.stdErr = stdErr
             this.stdOut = stdOut

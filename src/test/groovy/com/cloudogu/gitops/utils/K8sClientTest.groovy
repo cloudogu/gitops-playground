@@ -1,12 +1,11 @@
 package com.cloudogu.gitops.utils
 
-import com.cloudogu.gitops.config.Configuration
+
 import groovy.yaml.YamlSlurper
-import jakarta.inject.Provider
 import org.junit.jupiter.api.Test
 
 import static groovy.test.GroovyAssert.shouldFail
-import static org.assertj.core.api.Assertions.assertThat
+import static org.assertj.core.api.Assertions.assertThat 
 
 class K8sClientTest {
 
@@ -15,14 +14,18 @@ class K8sClientTest {
                     namePrefix: "foo-"
             ]
     ]
-    CommandExecutorForTest commandExecutor = new CommandExecutorForTest()
-    K8sClient k8sClient = new K8sClient(commandExecutor, new FileSystemUtils(), new Provider<Configuration>() {
-        @Override
-        Configuration get() {
-            new Configuration(config)
-        }
-    })
+    K8sClientForTest k8sClient = new K8sClientForTest(config)
+    CommandExecutorForTest commandExecutor =  k8sClient.commandExecutorForTest
 
+    @Test
+    void 'Creates namespace'() {
+        k8sClient.createNamespace('my-ns')
+
+        assertThat(commandExecutor.actualCommands[0]).isEqualTo(
+                "kubectl create namespace foo-my-ns" +
+                        " --dry-run=client -oyaml | kubectl apply -f-")
+    }
+    
     @Test
     void 'Creates secret'() {
         k8sClient.createSecret('generic', 'my-secret', 'my-ns',
@@ -44,9 +47,10 @@ class K8sClientTest {
 
     @Test
     void 'Creates no secret when literals are missing'() {
-        shouldFail(RuntimeException) {
+        def exception = shouldFail(RuntimeException) {
             k8sClient.createSecret('generic', 'my-secret')
         }
+        assertThat(exception.message).isEqualTo('Missing values for parameter \'--from-literal\' in command \'kubectl create secret generic my-secret\'')
     }
 
     @Test
@@ -57,7 +61,7 @@ class K8sClientTest {
                 "kubectl create configmap my-map -n foo-my-ns --from-file /file --dry-run=client -oyaml" +
                         " | kubectl apply -f-")
     }
-
+    
     @Test
     void 'Creates configmap without namespace'() {
         k8sClient.createConfigMapFromFile('my-map', '/file')
@@ -65,6 +69,24 @@ class K8sClientTest {
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
                 "kubectl create configmap my-map --from-file /file --dry-run=client -oyaml" +
                         " | kubectl apply -f-")
+    }
+
+    @Test
+    void 'Creates service type nodePort'() {
+        k8sClient.createServiceNodePort('my-svc', '42:23', '32000', 'my-ns')
+        
+        assertThat(commandExecutor.actualCommands[0]).isEqualTo(
+                'kubectl create service nodeport my-svc -n foo-my-ns --tcp 42:23 --node-port 32000' +
+                        ' --dry-run=client -oyaml | kubectl apply -f-')
+    }
+
+    @Test
+    void 'Creates service type nodePort without namespace and explicit nodePort'() {
+        k8sClient.createServiceNodePort('my-svc', '42:23')
+
+        assertThat(commandExecutor.actualCommands[0]).isEqualTo(
+                'kubectl create service nodeport my-svc --tcp 42:23' +
+                        ' --dry-run=client -oyaml | kubectl apply -f-')
     }
 
     @Test
@@ -87,9 +109,10 @@ class K8sClientTest {
 
     @Test
     void 'Does not add label when key value pairs are missing'() {
-        shouldFail(RuntimeException) {
+        def exception = shouldFail(RuntimeException) {
             k8sClient.label('secret', 'my-secret')
         }
+        assertThat(exception.message).isEqualTo('Missing key-value-pairs')
     }
 
     @Test
@@ -137,9 +160,10 @@ class K8sClientTest {
 
     @Test
     void 'Does not add delete when selectors are missing'() {
-        shouldFail(RuntimeException) {
+        def exception = shouldFail(RuntimeException) {
             k8sClient.delete('secret')
         }
+        assertThat(exception.message).isEqualTo('Missing selectors')
     }
 
     @Test
@@ -160,20 +184,37 @@ class K8sClientTest {
 
     @Test
     void 'errors when config map does not exist'() {
-        commandExecutor.enqueueOutput(new CommandExecutor.Output("Error from server (NotFound): configmaps \"the-map\" not found\n", "", 1))
-        shouldFail() {
+        commandExecutor.enqueueOutput(new CommandExecutor.Output("Error from server (NotFound): configmaps \"the-map\" not found", "", 1))
+        def exception = shouldFail() {
             k8sClient.getConfigMap("the-map", "file.yaml")
         }
+        assertThat(exception.message).isEqualTo("Could not fetch configmap the-map: Error from server (NotFound): configmaps \"the-map\" not found")
     }
 
     @Test
     void 'errors when file does not exist'() {
         commandExecutor.enqueueOutput(new CommandExecutor.Output('', '', 0))
-        shouldFail() {
+        def exception = shouldFail() {
             k8sClient.getConfigMap("the-map", "file.yaml")
         }
+        assertThat(exception.message).isEqualTo('Could not fetch file.yaml within config-map the-map')
     }
     
+    @Test
+    void 'returns current context'() {
+        def expectedOutput = 'k3d-something'
+        commandExecutor.enqueueOutput(new CommandExecutor.Output('', expectedOutput, 0))
+        
+        assertThat(k8sClient.currentContext).isEqualTo(expectedOutput)
+    }
+    
+    @Test
+    void 'returns useful information, even if current context is not set'() {
+        def expectedOutput = ''
+        commandExecutor.enqueueOutput(new CommandExecutor.Output('error: current-context is not set', expectedOutput, 1))
+        
+        assertThat(k8sClient.currentContext).isEqualTo('(current context not set)')
+    }
 
     private Map parseActualYaml(String pathToYamlFile) {
         File yamlFile = new File(pathToYamlFile)

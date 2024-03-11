@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ${namePrefix}example-apps-staging
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ${namePrefix}example-apps-production
+---

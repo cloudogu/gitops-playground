@@ -100,47 +100,37 @@ Jenkins.instance.pluginManager.activePlugins.sort().each {
 
 ## Local development
 
-* Run only groovy scripts - allows for simple debugging
-  * Run from IDE, works e.g. with IntelliJ IDEA 
+* Run locally
+  * Run from IDE (allows for easy debugging), works e.g. with IntelliJ IDEA 
     Note: If you encounter `error=2, No such file or directory`,
     it might be necessary to explicitly set your `PATH` in Run Configuration's Environment Section.
-  * From shell:
-    * [Provide `gitops-playground.jar` for scripts](#provide-gitops-playgroundjar-for-scripts)
-    * Run
+  * From shell:  
+    Run
       ```shell
-      java -classpath $PWD/gitops-playground.jar \
+    ./mvnw package -DskipTests
+      java -classpath target/gitops-playground-cli-0.1.jar \
         org.codehaus.groovy.tools.GroovyStarter \
         --main groovy.ui.GroovyMain \
-        -classpath "$PWD"/src/main/groovy \
-        "$PWD"/src/main/groovy/com/cloudogu/gitops/cli/GitopsPlaygroundCliMain.groovy \
+        -classpath src/main/groovy \
+        src/main/groovy/com/cloudogu/gitops/cli/GitopsPlaygroundCliMain.groovy \
         <yourParamsHere>
        ```
-* Running the whole `apply.sh` (which in turn calls groovy)
+* Running inside the container:
   * Build and run dev Container:
     ```shell
-    docker buildx build -t gitops-playground:dev --build-arg ENV=dev  --progress=plain .
+    docker buildx build -t gitops-playground:dev --build-arg ENV=dev --progress=plain .
     docker run --rm -it -u $(id -u) -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
-      --net=host gitops-playground:dev <params>
+      --net=host gitops-playground:dev #params
      ```
-  * Locally:
-    * [Provide `gitops-playground.jar` for scripts](#provide-gitops-playgroundjar-for-scripts)
-    * Just run `scripts/apply.sh <params>`.  
-      Hint: You can speed up the process by installing the Jenkins plugins from your filesystem, instead of from the internet.  
-      To do so, download the plugins into a folder, then set this folder vie env var:  
-      `JENKINS_PLUGIN_FOLDER=$(pwd) scripts/apply.sh <params>`.  
-      A working combination of plugins be extracted from the image:  
+  * Hint: You can speed up the process by installing the Jenkins plugins from your filesystem, instead of from the internet.  
+    To do so, download the plugins into a folder, then set this folder vie env var:  
+    `JENKINS_PLUGIN_FOLDER=$(pwd) java -classpath .. # See above`.  
+    A working combination of plugins be extracted from the image:
       ```bash
       id=$(docker create ghcr.io/cloudogu/gitops-playground)
       docker cp $id:/gitops/jenkins-plugins .
       docker rm -v $id
       ```
-
-### Provide `gitops-playground.jar` for scripts
-
-```bash
-./mvnw package -DskipTests
-ln -s target/gitops-playground-cli-0.1.jar gitops-playground.jar 
-```
 
 ## Development image
 
@@ -155,10 +145,65 @@ e.g.
 It can be built like so:
 
 ```shell
-docker buildx build -t gitops-playground:dev --build-arg ENV=dev  --progress=plain  .  
+docker build -t gitops-playground:dev --build-arg ENV=dev --progress=plain . 
 ```
-Hint: uses buildkit for much faster builds, skipping the static image stuff not needed for dev.
-With Docker version >= 23 you can also use `docker build`, because buildkit is the new default builder.
+
+If you're running the dev image and want to try some changes in groovy instantly you can do the following:
+
+```shell
+docker run --rm -it  -u $(id -u) \
+    -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
+    --net=host --entrypoint bash \
+     ghcr.io/cloudogu/gitops-playground:dev
+ # do your changes in src/main/groovy
+scripts/apply-ng.sh #params
+```
+
+## Running multiple instances on one machine
+
+Sometimes it makes sense to run more than one instance on your developer machine.
+For example, you might want to conduct multiple long-running tests in parallel or
+you might be interested to see how the latest stable version behaved in comparission to you local build.
+
+You have to options to do this
+
+1. Use a different ingress port
+2. Access local docker network (linux only)
+
+### Use a different ingress port
+
+```bash
+INSTANCE=2
+
+scripts/init-cluster.sh --bind-ingress-port="808$INSTANCE" \
+  --cluster-name="gitops-playground$INSTANCE" --bind-registry-port="3000$INSTANCE"
+
+docker run --rm -t -u $(id -u) \
+ -v "$HOME/.config/k3d/kubeconfig-playground$INSTANCE.yaml:/home/.kube/config" \
+    --net=host \
+    ghcr.io/cloudogu/gitops-playground --yes --internal-registry-port="3000$INSTANCE" -x \
+      --base-url="http://localhost:808$INSTANCE" --argocd --ingress-nginx
+
+echo "Once Argo CD has deployed the nginx-ingress. you cn reach your instance at http://scmm.localhost:808$INSTANCE for example"
+```
+
+### Access local docker network
+
+This will work on linux only
+
+```bash
+INSTANCE=3
+
+scripts/init-cluster.sh --bind-localhost=false \
+  --cluster-name="gitops-playground$INSTANCE" --bind-registry-port="3000$INSTANCE" 
+
+docker run --rm -t -u $(id -u) \
+ -v "$HOME/.config/k3d/kubeconfig-playground$INSTANCE.yaml:/home/.kube/config" \
+    --net=host \
+    ghcr.io/cloudogu/gitops-playground --yes --internal-registry-port="3000$INSTANCE" -x --argocd 
+
+xdg-open "http://$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}'  k3d-playground$INSTANCE-server-0):9091"
+```
 
 ## Implicit + explicit dependencies
 

@@ -1,7 +1,8 @@
 package com.cloudogu.gitops.utils
 
-import org.assertj.core.api.Assertions
+
 import org.junit.jupiter.api.Test
+import static org.assertj.core.api.Assertions.assertThat
 
 class HelmClientTest {
     @Test
@@ -15,9 +16,9 @@ class HelmClientTest {
         new HelmClient(commandExecutor).upgrade("the-release", "path/to/chart", [:])
         new HelmClient(commandExecutor).upgrade("the-release", "path/to/chart", [namespace: 'the-namespace'])
 
-        Assertions.assertThat(commandExecutor.actualCommands[0]).isEqualTo('helm upgrade -i the-release path/to/chart --version the-version --values values.yaml --namespace the-namespace ')
-        Assertions.assertThat(commandExecutor.actualCommands[1]).isEqualTo('helm upgrade -i the-release path/to/chart ')
-        Assertions.assertThat(commandExecutor.actualCommands[2]).isEqualTo('helm upgrade -i the-release path/to/chart --namespace the-namespace ')
+        assertThat(commandExecutor.actualCommands[0]).isEqualTo('helm upgrade -i the-release path/to/chart --version the-version --values values.yaml --namespace the-namespace --create-namespace ')
+        assertThat(commandExecutor.actualCommands[1]).isEqualTo('helm upgrade -i the-release path/to/chart --create-namespace ')
+        assertThat(commandExecutor.actualCommands[2]).isEqualTo('helm upgrade -i the-release path/to/chart --namespace the-namespace --create-namespace ')
     }
 
     @Test
@@ -25,6 +26,6 @@ class HelmClientTest {
         def commandExecutor = new CommandExecutorForTest()
         new HelmClient(commandExecutor).uninstall("the-release", 'the-namespace')
 
-        Assertions.assertThat(commandExecutor.actualCommands[0]).isEqualTo('helm uninstall the-release --namespace the-namespace')
+        assertThat(commandExecutor.actualCommands[0]).isEqualTo('helm uninstall the-release --namespace the-namespace')
     }
 }

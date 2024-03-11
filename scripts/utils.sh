@@ -28,6 +28,10 @@ function getExternalIP() {
   echo $external_ip
 }
 
+function createSecret() {
+  kubectl create secret generic "$@" --dry-run=client -oyaml | kubectl apply -f-
+}
+
 function extractHost() {
     echo "$1" | awk -F[/:] '{print $4}'
 }
@@ -46,54 +50,23 @@ function injectSubdomain() {
     fi
 }
 
-function spinner() {
-    local info="$1"
-    local pid=$!
-    local delay=0.1
-    local spinstr='|/-\'
-    while kill -0 $pid 2> /dev/null; do
-        local temp=${spinstr#?}
-        printf " [%c]  $info" "$spinstr"
-        local spinstr=$temp${spinstr%"$temp"}
-        sleep $delay
-        local reset="\b\b\b\b\b"
-        for ((i=1; i<=$(echo $info | wc -c); i++)); do
-            reset+="\b"
-        done
-        printf $reset
-    done
+function setExternalHostnameIfNecessary() {
+  local variablePrefix="$1"
+  local serviceName="$2"
+  local namespace="$3"
 
-    if wait -n $pid; then
-      echo " [ok] $info"
-    else
-      echo " [failed] $info"
-      exit 1
-    fi
+  # :-} expands to empty string, e.g. for INTERNAL_ARGO which does not exist.
+  # This only works when checking for != false 😬
+  if [[ $REMOTE_CLUSTER == true && "$(eval echo "\${INTERNAL_${variablePrefix}:-}")" != 'false' ]]; then
+    # Update SCMM_URL or JENKINS_URL or ARGOCD_URL
+    # Only if apps are not external
+    # Our apps are configured to use port 80 on remote clusters
+    # Argo forwards to HTTPS so simply use HTTP here
+    declare -g "${variablePrefix}_URL"="http://$(getExternalIP "${serviceName}" "${namespace}")"
+  fi
 }
 
 function error() {
     # Print to stderr in red
     echo -e "\033[31m$@\033[0m" 1>&2;
-}
-
-# Entry point for the new generation of our apply script, written in groovy
-function runGroovy() {
-  if [[ -f "$PLAYGROUND_DIR/apply-ng" ]]; then
-      "$PLAYGROUND_DIR"/apply-ng "$@"
-  else
-      groovy --classpath "$PLAYGROUND_DIR"/src/main/groovy \
-        "$PLAYGROUND_DIR"/src/main/groovy/com/cloudogu/gitops/cli/GitopsPlaygroundCliMain.groovy "$@"
-  fi
-}
-
-function groovy() {
-  # We don't need the groovy "binary" (script) to start, because the gitops-playground.jar already contains groovy-all.
-
-  # Set params like startGroovy does (which is called by the "groovy" script)
-  # See https://github.com/apache/groovy/blob/master/src/bin/startGroovy
-  java \
-    -classpath "$PLAYGROUND_DIR"/gitops-playground.jar \
-    org.codehaus.groovy.tools.GroovyStarter \
-          --main groovy.ui.GroovyMain \
-           "$@"
 }

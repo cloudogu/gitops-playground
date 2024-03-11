@@ -134,12 +134,13 @@ COPY --from=maven-build /app/gitops-playground.jar /app/
 
 # Create Graal native image config
 RUN java -agentlib:native-image-agent=config-output-dir=conf/ -jar gitops-playground.jar || true
-# Run again with different params in order to avoid further ClassNotFoundExceptions
+# Run again with different params in order to avoid NoSuchMethodException with config file
+RUN echo 'features: {}' > config.yaml  && \
+    java -agentlib:native-image-agent=config-merge-dir=conf/ -jar gitops-playground.jar \
+      --yes --config-file=config.yaml || true \
+# Run again with different params in order to avoid NoSuchMethodException with output-config file
 RUN java -agentlib:native-image-agent=config-merge-dir=conf/ -jar gitops-playground.jar \
-      --yes --jenkins-url=a --scmm-url=a \
-      --jenkins-username=a --jenkins-password=a --scmm-username=a--scmm-password=a --password=a \
-      --registry-url=a --registry-path=a --remote --argocd --debug --trace \
-    || true
+      --yes  --output-config-file || true
 RUN native-image -Dgroovy.grape.enable=false \
     -H:+ReportExceptionStackTraces \
     -H:ConfigurationFileDirectories=conf/ \
@@ -157,6 +158,7 @@ RUN native-image -Dgroovy.grape.enable=false \
     --initialize-at-build-time \
     --no-fallback \
     --libc=musl \
+    --install-exit-handlers \
     -jar gitops-playground.jar \
     apply-ng
 
@@ -165,10 +167,12 @@ RUN native-image -Dgroovy.grape.enable=false \
 FROM alpine as prod
 # copy groovy cli binary from native-image stage
 COPY --from=native-image /app/apply-ng app/apply-ng
+ENTRYPOINT ["/app/apply-ng"]
 
 
 FROM eclipse-temurin:${JDK_VERSION}-jre-alpine as dev
 
+# apply-ng.sh is part of the dev image and allows trying changing groovy code inside the image for debugging
 COPY scripts/apply-ng.sh /app/scripts/
 COPY --from=maven-build /app/gitops-playground.jar /app/
 COPY --from=downloader /src-without-graal  /app/src
@@ -177,6 +181,14 @@ USER 0
 # Avoids ERROR org.eclipse.jgit.util.FS - Cannot save config file 'FileBasedConfig[/app/?/.config/jgit/config]'
 RUN adduser --disabled-password --home /home --no-create-home --uid 1000 user
 
+# We're explicitly not calling apply-ng.sh here, so the java process is started as PID 1
+# and can handles signals such as ctrl+c
+ENTRYPOINT [ "java", \
+    "-classpath", "/app/gitops-playground.jar", \
+    "org.codehaus.groovy.tools.GroovyStarter", \
+    "--main", "groovy.ui.GroovyMain", \
+    "--classpath", "/app/src/main/groovy", \
+    "/app/src/main/groovy/com/cloudogu/gitops/cli/GitopsPlaygroundCliMain.groovy" ]
 
 # Pick final image according to build-arg
 FROM ${ENV}
@@ -195,8 +207,6 @@ ENV HOME=/home \
     JENKINS_PLUGIN_FOLDER=/gitops/jenkins-plugins/
 
 WORKDIR /app
-
-ENTRYPOINT ["scripts/apply.sh"]
 
 # Unzip is needed for downloading docker plugins (install-plugins.sh)
 RUN apk update --no-cache && apk upgrade --no-cache && \

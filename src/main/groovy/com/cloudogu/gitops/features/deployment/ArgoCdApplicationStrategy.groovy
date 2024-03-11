@@ -70,7 +70,9 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
                                 ],
                                 syncOptions: [
                                         // So that we can apply very large resources (e.g. prometheus CRD)
-                                        "ServerSideApply=true"
+                                        "ServerSideApply=true",
+                                        // Create namespaces for helm charts
+                                        "CreateNamespace=true"
                                 ]
                         ]
                 ],

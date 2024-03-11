@@ -12,6 +12,9 @@ class CommandExecutorForTest extends CommandExecutor {
         outputs.add(output)
     }
     
+    // This is actually only set when an env is passed to CommandExecutor
+    List<GString> environment = [] 
+    
     @Override
     protected Output getOutput(Process proc, String command, boolean failOnError) {
         actualCommands += command
@@ -26,6 +29,12 @@ class CommandExecutorForTest extends CommandExecutor {
 
     @Override
     protected Process doExecute(String[] command) {
+        return mock(Process)
+    }
+
+    @Override
+    protected Process doExecute(String command, List envp) {
+        environment = envp
         return mock(Process)
     }
 
