@@ -181,6 +181,10 @@ node('high-cpu') {
         }
 
         mailIfStatusChanged(git.commitAuthorEmail)
+        
+        if (env.BRANCH_NAME == 'main' && env.GOP_DEVELOPERS) {
+            mailIfStatusChanged(env.GOP_DEVELOPERS)
+        }
     }
 }
 
