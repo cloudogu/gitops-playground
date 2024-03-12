@@ -6,9 +6,9 @@ controller:
     registry: ghcr.io
     repository: cloudogu/jenkins-helm
     # Use same version here as in ApplicationConfigurator.groovy (config.jenkins['helm']['version'])
-    tag: "5.0.17"
+    tag: "5.1.0"
   installPlugins: false
-
+  
   # to prevent the jenkins-ui-test pod being created
   testEnabled: false
 
