@@ -5,9 +5,9 @@ Creates a complete GitOps-based operational stack on your Kubernetes clusters:
 * Deployment: GitOps via Argo CD with a ready-to-use [repo structure](#argocd)
 * Monitoring: [Prometheus and Grafana](#monitoring-tools)
 * Secrets Management:  [Vault and External Secrets Operator](#secrets-management-tools)
-* Notifications/Alerts: [MailHog](https://github.com/mailhog/MailHog) for demo purposes
+* Notifications/Alerts: Grafana and ArgoCD can be predefined with either an external mailserver or [MailHog](https://github.com/mailhog/MailHog) for demo purposes.
 * Pipelines: Example applications using [Jenkins](#jenkins) with the [gitops-build-lib](https://github.com/cloudogu/gitops-build-lib) and [SCM-Manager](#scm-manager)
-* Ingress Controller: (planned)
+* Ingress Controller: [ingress-nginx](https://github.com/kubernetes/ingress-nginx/)
 * Certificate Management: (planned)
 * Runs on: 
   * local cluster (try it [with only one command](#tldr)), 
@@ -21,7 +21,6 @@ For questions or suggestions you are welcome to join us at our myCloudogu [commu
 [![Discuss it on myCloudogu](https://static.cloudogu.com/static/images/discuss-it.png)](https://community.cloudogu.com/t/introducing-the-gitops-playground/107)
 
 ![Playground features](docs/gitops-playground-features.drawio.svg)
-©Cloudogu GmbH 2023: GitOps Playground© for use with  Argo™, Git™, Jenkins®, Kubernetes®, Prometheus®, Vault® and SCM-Manager 
 
 ## TL;DR
 
