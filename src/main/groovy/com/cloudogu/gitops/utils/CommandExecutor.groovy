@@ -47,25 +47,29 @@ class CommandExecutor {
     }
 
     Output execute(String[] command1, String[] command2, boolean failOnError = true) {
-        String command = "${command1.join(' ')} | ${command2.join(' ')}"
+        String pipedCommand = "${command1.join(' ')} | ${command2.join(' ')}"
         def process1 = doExecute(command1)
         def process2 = doExecute(command2)
         
-        def finalOutput = getOutput(process1.pipeTo(process2), command, false)
+        def finalOutput = getOutput(process1.pipeTo(process2), pipedCommand, false)
+        // Proc1 should have finished when proc2 has. 
+        // Still, there is the occasional "IllegalThreadStateException: process hasn't exited"... concurrency 🤷
+        // Avoid the exceptions, by explicitly waiting for the process  to end
+        waitForOrKill(process1, command1.join(' '))
         
         if (process1.exitValue() > 0) {
-            log.error("Pipefail! First process of command failed ${command}.")
+            log.error("Pipefail! First process of command failed ${pipedCommand}.")
             log.error("Stderr: ${process1.err.text.trim()}")
         }
         if (process2.exitValue() > 0) {
-            log.error("Executing command failed: ${command}")
+            log.error("Executing command failed: ${pipedCommand}")
             log.error("Stderr: ${finalOutput.stdErr}")
             log.error("StdOut: ${finalOutput.stdOut}")
         }
         
         boolean success = process1.exitValue() == 0 && process2.exitValue() == 0
         if (!success && failOnError) {
-            throw new RuntimeException("Executing command failed: ${command}")
+            throw new RuntimeException("Executing command failed: ${pipedCommand}")
         }
         
         return finalOutput
@@ -95,11 +99,7 @@ class CommandExecutor {
             proc.consumeProcessOutput(stdOut, stdErr)
         }
 
-        def processFinished = proc.waitFor(PROCESS_TIMEOUT_MINUTES, TimeUnit.MINUTES)
-        if (!processFinished) {
-            log.error("Timeout waiting for command ${command}. Killing process.")
-            proc.waitForOrKill(1)
-        }
+        waitForOrKill(proc, command)
 
         // Make sure all bytes have been written, before returning output
         if (teeOut) teeOut.flush()
@@ -116,6 +116,14 @@ class CommandExecutor {
         }
 
         return output
+    }
+
+    protected void waitForOrKill(Process proc, String command) {
+        def processFinished = proc.waitFor(PROCESS_TIMEOUT_MINUTES, TimeUnit.MINUTES)
+        if (!processFinished) {
+            log.error("Timeout waiting for command ${command}. Killing process.")
+            proc.waitForOrKill(1)
+        }
     }
 
     static class Output {

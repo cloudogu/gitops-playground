@@ -85,6 +85,10 @@ class ApplicationConfigurator {
                     namePrefix    : '',
                     namePrefixForEnvVars    : '', // Set dynamically
                     baseUrl: null,
+                    gitName: 'Cloudogu',
+                    gitEmail: 'hello@cloudogu.com'
+
+
             ],
             images     : [
                     kubectl    : "bitnami/kubectl:$K8S_VERSION",

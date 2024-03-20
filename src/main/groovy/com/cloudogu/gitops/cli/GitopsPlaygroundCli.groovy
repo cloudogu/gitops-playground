@@ -65,6 +65,10 @@ class GitopsPlaygroundCli  implements Runnable {
     private String scmmUsername
     @Option(names = ['--scmm-password'], description = 'Mandatory when --scmm-url is set')
     private String scmmPassword
+    @Option(names = ['--git-name'], description = 'Sets git author and committer name used for initial commits')
+    private String gitName
+    @Option(names = ['--git-email'], description = 'Sets git author and committer email used for initial commits')
+    private String gitEmail
 
     // args group remote
     @Option(names = ['--remote'], description = 'Expose services as LoadBalancers')
@@ -346,6 +350,8 @@ class GitopsPlaygroundCli  implements Runnable {
                         pipeYes       : pipeYes,
                         namePrefix    : namePrefix,
                         baseUrl : baseUrl,
+                        gitName: gitName,
+                        gitEmail: gitEmail,
                 ],
                 images     : [
                         kubectl    : kubectlImage,

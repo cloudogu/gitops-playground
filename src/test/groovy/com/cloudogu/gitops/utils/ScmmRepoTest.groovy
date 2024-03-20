@@ -16,10 +16,12 @@ class ScmmRepoTest {
                     username: "dont-care-username",
                     password: "dont-care-password",
                     protocol: "https",
-                    host: "localhost"
+                    host: "localhost",
             ],
             application: [
-                    namePrefix : ''
+                    namePrefix : '',
+                    gitName: "Cloudogu",
+                    gitEmail: "hello@cloudogu.com",
             ],
     ]
 
@@ -117,6 +119,10 @@ class ScmmRepoTest {
         def commits = Git.open(new File(repo.absoluteLocalRepoTmpDir)).log().setMaxCount(1).all().call().collect()
         assertThat(commits.size()).isEqualTo(1)
         assertThat(commits[0].fullMessage).isEqualTo("The commit message")
+        assertThat(commits[0].authorIdent.emailAddress).isEqualTo('hello@cloudogu.com')
+        assertThat(commits[0].authorIdent.name).isEqualTo('Cloudogu')
+        assertThat(commits[0].committerIdent.emailAddress).isEqualTo('hello@cloudogu.com')
+        assertThat(commits[0].committerIdent.name).isEqualTo("Cloudogu")
     }
 
     private ScmmRepo createRepo(String repoTarget = "dont-care-repo-target") {
