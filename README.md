@@ -501,7 +501,9 @@ Note that this option has limitations. It does not remove CRDs, namespaces, loca
 
 #### Mac and Windows WSL
 
-On macOS and when using the Windows Subsystem Linux on Windows (WSL), you can almost run our [TL;DR command](#tldr), except that you have to use [local ingresses](#local-ingresses) to reach all kubernetes services via a single bound port.
+On macOS and when using the Windows Subsystem Linux on Windows (WSL), you can just run our [TL;DR command](#tldr) after installing Docker.
+
+For Windows, we recommend using [Windows Subsystem for Linux version 2](https://learn.microsoft.com/en-us/windows/wsl/install#install-wsl-command) (WSL2) with a [native installation of Docker Engine](https://docs.docker.com/engine/install/), because it's easier to set up and less prone to errors.
 
 For macOS, please increase the Memory limit in Docker Desktop (for your DockerVM) to be > 10 GB.
 Recommendation: 16GB.
@@ -509,10 +511,11 @@ Recommendation: 16GB.
 ```bash
 bash <(curl -s \
   https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh) --bind-ingress-port=80 \
-  && docker run -t --rm --pull=always -u $(id -u) \
+  && docker run --rm -t --pull=always -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     --net=host \
-    ghcr.io/cloudogu/gitops-playground --yes --argocd --base-url=http://localhost # more params go here
+    ghcr.io/cloudogu/gitops-playground --yes --argocd --ingress-nginx --base-url=http://localhost
+# If you want to try all features, you might want to add these params: --mail --monitoring --vault=dev
 ```
 
 When you encounter errors with port 80 you might want to use e.g. 
@@ -521,7 +524,7 @@ When you encounter errors with port 80 you might want to use e.g.
 
 #### Windows Docker Desktop
 
-* We recommend using Windows Subsystem for Linux version 2 (WSL2) with a [native installation of Docker Engine](https://docs.docker.com/desktop/install/linux-install/), because it's easier to set up and less prone to errors.
+* As mentioned in the previous section, we recommend using WSL2 with a native Docker Engine.
 * If you must, you can also run using Docker Desktop from native Windows console (see bellow)
 * However, there seems to be a problem when the Jenkins Jobs running the playground access docker, e.g.   
 ```

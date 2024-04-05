@@ -198,7 +198,7 @@ scripts/init-cluster.sh --bind-localhost=false \
   --cluster-name="gitops-playground$INSTANCE" --bind-registry-port="3000$INSTANCE" 
 
 docker run --rm -t -u $(id -u) \
- -v "$HOME/.config/k3d/kubeconfig-playground$INSTANCE.yaml:/home/.kube/config" \
+ -v "$HOME/.config/k3d/kubeconfig-gitops-playground$INSTANCE.yaml:/home/.kube/config" \
     --net=host \
     ghcr.io/cloudogu/gitops-playground --yes --internal-registry-port="3000$INSTANCE" -x --argocd 
 
@@ -376,7 +376,7 @@ curl -X PUT -u admin:Harbor12345 'http://localhost:30002/api/v2.0/projects/1'  -
 --data-raw '{"metadata":{"public":"false", "id":1,"project_id":1}}'
 ```
 
-Then either import external images like so (requires `skopeao` but no prior pulling or insecure config necessary):
+Then either import external images like so (requires `skopeo` but no prior pulling or insecure config necessary):
 ```bash
 skopeo copy docker://bitnami/nginx:1.25.1 --dest-creds admin:Harbor12345 --dest-tls-verify=false  docker://localhost:30002/library/nginx:1.25.1
 ```
@@ -412,7 +412,7 @@ To be able to run the `docker` plugin in Jenkins (in a k3d cluster that only pro
 docker socket into the agents. 
 From there it can start containers which are not airgapped.
 So this approach is not suitable to test if the builds use any public images.
-One solution could be to apply the `iptables` rule mentione bellow to `docker0` (not tested).
+One solution could be to apply the `iptables` rule mentioned bellow to `docker0` (not tested).
 
 The approach discussed here is suitable to check if the cluster tries to load anything from the internet, 
 like images or helm charts.
@@ -433,9 +433,9 @@ helm upgrade  -i my-harbor harbor/harbor -f harbor-values.yaml --version 1.12.2 
 
 Keep kubectl working when airgapped by setting the local IP of the container inside kubeconfig in `~/.config/k3d/...`
 ```bash
-sed -i -r 's/0.0.0.0([^0-9]+[0-9]*|\$)/${K3D_NODE}:6443/g' ~/.config/k3d/kubeconfig-airgapped-playground.yaml
+sed -i -r "s/0.0.0.0([^0-9]+[0-9]*|\$)/${K3D_NODE}:6443/g" ~/.config/k3d/kubeconfig-airgapped-playground.yaml
 ```
-You can switching to the airgapped context in your current shell like so:
+You can switch to the airgapped context in your current shell like so:
 ```shell
 export KUBECONFIG=$HOME/.config/k3d/kubeconfig-airgapped-playground.yaml
 ```
