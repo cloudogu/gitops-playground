@@ -109,7 +109,7 @@ class GitopsPlaygroundCli  implements Runnable {
     private String nginxImage
     @Option(names = ['--base-url'], description = 'the external base url (TLD) for all tools, e.g. https://example.com or http://localhost:8080. The individual -url params for argocd, grafana, vault and mailhog take precedence.')
     private String baseUrl
-    @Option(names = ['--url-separator-hyphen'], description = 'Use Hyphen instead of dot to separate application name from baseurl')
+    @Option(names = ['--url-separator-hyphen'], description = 'Use hyphens instead of dots to separate application name from base-url')
     private Boolean urlSeparatorHyphen
 
     // args group metrics
