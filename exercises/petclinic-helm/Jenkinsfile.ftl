@@ -47,14 +47,10 @@ node {
             String imageTag = createImageTag()
             String pathPrefix = !dockerRegistryPath?.trim() ? "" : "${dockerRegistryPath}/"
             imageName = "${dockerRegistryBaseUrl}/${pathPrefix}${application}:${imageTag}"
-            mvn "spring-boot:build-image -DskipTests -Dcheckstyle.skip -Dspring-boot.build-image.imageName=${imageName}" +
-                                // Pin builder image for reproducible builds. Update here to get newer JDK minor versions.
-                                "-Dspring-boot.build-image.builder=paketobuildpacks/builder:0.3.229-base "
+            image = docker.build(imageName, '.')
 
             if (isBuildSuccessful()) {
-                def docker = cesBuildLib.Docker.new(this)
                 docker.withRegistry("http://${dockerRegistryBaseUrl}", dockerRegistryCredentials) {
-                    def image = docker.image(imageName)
                     image.push()
                 }
             } else {

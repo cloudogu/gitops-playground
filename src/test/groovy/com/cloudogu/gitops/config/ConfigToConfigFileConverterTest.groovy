@@ -16,7 +16,8 @@ class ConfigToConfigFileConverterTest {
                         helm       : 'helm-value',
                         kubeval    : 'kubeval-value',
                         helmKubeval: 'helmKubeval-value',
-                        yamllint   : 'yamllint-value'
+                        yamllint   : 'yamllint-value',
+                        petclinic : 'petclinic-value'
                 ],
                 features   : [
                         argocd    : [
@@ -53,6 +54,7 @@ images:
   helmKubeval: "helmKubeval-value"
   yamllint: "yamllint-value"
   nginx: ""
+  petclinic: "petclinic-value"
 features:
   argocd:
     url: ""

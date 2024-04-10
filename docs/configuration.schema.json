@@ -187,6 +187,9 @@
         "nginx": {
           "type": "string"
         },
+        "petclinic": {
+          "type": "string"
+        },
         "yamllint": {
           "type": "string"
         }

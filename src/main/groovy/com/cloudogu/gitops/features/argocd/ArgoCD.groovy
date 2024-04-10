@@ -4,10 +4,7 @@ import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.scmm.ScmmRepoProvider
-import com.cloudogu.gitops.utils.DockerImageParser
-import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.HelmClient
-import com.cloudogu.gitops.utils.K8sClient
+import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
@@ -174,9 +171,16 @@ class ArgoCD extends Feature {
     private void preparePetClinicRepos() {
         for (def repoInitAction : petClinicInitializationActions) {
             def tmpDir = repoInitAction.repo.getAbsoluteLocalRepoTmpDir()
+            
             log.debug("Copying original petclinic files for petclinic repo: $tmpDir")
             fileSystemUtils.copyDirectory(remotePetClinicRepoTmpDir.toString(), tmpDir)
             fileSystemUtils.deleteEmptyFiles(Path.of(tmpDir), ~/k8s\/.*\.yaml/)
+            
+            new TemplatingEngine().template(
+                    new File("${fileSystemUtils.getRootDir()}/applications/argocd/petclinic/Dockerfile.ftl"),
+                    new File("${tmpDir}/Dockerfile"),
+                    [ baseImage: config['images']['petclinic'] as String ]
+            )
         }
     }
 
@@ -267,7 +271,7 @@ class ArgoCD extends Feature {
             fileSystemUtils.replaceFileContent(tmpHelmValues.toString(), 
                     "argocdUrl: https://localhost:9092", "argocdUrl: ${config.features["argocd"]["url"]}")
         }
-        
+
         argocdRepoInitializationAction.repo.commitAndPush("Initial Commit")
     }
 

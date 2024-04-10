@@ -98,6 +98,7 @@ class ApplicationConfigurator {
                     helmKubeval: HELM_IMAGE,
                     yamllint   : "cytopia/yamllint:1.25-0.7",
                     nginx      : null,
+                    petclinic   : 'eclipse-temurin:11-jre-alpine'
             ],
             repositories : [
                     springBootHelmChart: [

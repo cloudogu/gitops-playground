@@ -107,6 +107,8 @@ class GitopsPlaygroundCli  implements Runnable {
     private String vaultImage
     @Option(names = ['--nginx-image'], description = 'Sets image for nginx used in various applications')
     private String nginxImage
+    @Option(names = ['--petclinic-image'], description = 'Sets image for petclinic used in various applications')
+    private String petClinicImage
     @Option(names = ['--base-url'], description = 'the external base url (TLD) for all tools, e.g. https://example.com or http://localhost:8080. The individual -url params for argocd, grafana, vault and mailhog take precedence.')
     private String baseUrl
 
@@ -360,6 +362,7 @@ class GitopsPlaygroundCli  implements Runnable {
                         helmKubeval: helmKubevalImage,
                         yamllint   : yamllintImage,
                         nginx      : nginxImage,
+                        petclinic  : petClinicImage,
                 ],
                 features    : [
                         argocd : [

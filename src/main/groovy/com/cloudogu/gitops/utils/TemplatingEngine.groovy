@@ -10,19 +10,32 @@ class TemplatingEngine {
         this.engine = engine ?: new Configuration(new Version("2.3.32"))
     }
 
-    File replaceTemplate(File file, Map parameters) {
-        if (!file.name.contains(".ftl")) {
+    /**
+     * Executes template with parameters and replaces the .ftl in the file name.
+     */
+    File replaceTemplate(File templateFile, Map parameters) {
+        def targetFile = new File(templateFile.toString().replace(".ftl", ""))
+
+        template(templateFile, targetFile, parameters)
+
+        templateFile.delete()
+
+        return targetFile
+    }
+
+    /**
+     * Executes template and writes to targetFile, keeping the template file.
+     */
+    File template(File templateFile, File targetFile, Map parameters) {
+        if (!templateFile.name.contains(".ftl")) {
             throw new RuntimeException("File must contain .ftl to be a template")
         }
 
-        engine.setDirectoryForTemplateLoading(file.parentFile)
+        engine.setDirectoryForTemplateLoading(templateFile.parentFile)
 
-        def targetFile = new File(file.toString().replace(".ftl", ""))
-        def templ = engine.getTemplate(file.name)
-        templ.process(parameters, targetFile.newWriter())
-
-        file.delete()
-
+        def template = engine.getTemplate(templateFile.name)
+        template.process(parameters, targetFile.newWriter())
+        
         return targetFile
     }
 }
