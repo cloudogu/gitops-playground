@@ -60,7 +60,7 @@ class Jenkins extends Feature {
                 JENKINS_PASSWORD          : config.jenkins['password'],
                 REMOTE_CLUSTER            : config.application['remote'],
                 BASE_URL                  : config.application['baseUrl'] ? config.application['baseUrl'] : '',
-                SCMM_URL                  : config.scmm['url'],
+                SCMM_URL                  : config.scmm['urlForJenkins'],
                 SCMM_PASSWORD             : config.scmm['password'],
                 INSTALL_ARGOCD            : config.features['argocd']['active'],
                 NAME_PREFIX               : config.application['namePrefix'],
