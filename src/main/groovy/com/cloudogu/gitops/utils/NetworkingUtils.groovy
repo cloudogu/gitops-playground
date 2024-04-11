@@ -1,11 +1,7 @@
 package com.cloudogu.gitops.utils
 
-
 import groovy.util.logging.Slf4j
 import jakarta.inject.Singleton
-
-import java.util.regex.Matcher
-import java.util.regex.Pattern
 
 @Slf4j
 @Singleton
@@ -32,27 +28,47 @@ class NetworkingUtils {
         String potentialClusterBindAddress = k8sClient.getInternalNodeIp()
         potentialClusterBindAddress = potentialClusterBindAddress.replaceAll("'", "")
 
-        def ipCommand = 'ip route get 1'
-        String outputIpCommand = commandExecutor.execute(ipCommand).stdOut
-        if (!outputIpCommand.contains('src'))  {
-            throw new RuntimeException("Could not determine local ip address, because command '${ipCommand}' returned: '${outputIpCommand}'")
-        }
-        String substringWithSrcIp = outputIpCommand.substring(outputIpCommand.indexOf('src'))
-        String localAddress = getIpFromString(substringWithSrcIp)
+        String localAddress = localAddress
 
         log.debug("Local address: " + localAddress)
         log.debug("Cluster address: " + potentialClusterBindAddress)
 
-        if(potentialClusterBindAddress == null || potentialClusterBindAddress.isEmpty()) {
+        if(!potentialClusterBindAddress) {
             throw new RuntimeException("Could not connect to kubernetes cluster: no cluster bind address")
         }
 
         if (localAddress == potentialClusterBindAddress) {
+            // This happens, when running on local cluster that runs in the host network.
+            // The reasons for introducing this might not be valid anymore:
+            // https://github.com/cloudogu/gitops-playground/commit/ea805d
+            // We no longer use jenkins notifications and have removed the address part from the welcome screen.
+            // So in the future, we might consider removing this and the whole localAdresse part to reduce complexity.
             log.debug("Local address and cluster bind address are equal, so returning localhost")
             return "localhost"
         } else {
             log.debug("Installing on external cluster, so returning cluster ip address")
             return potentialClusterBindAddress
+        }
+    }
+
+    /**
+     * Try to emulate the command "ip route get 1" by iterating the interfaces by index and returning first local address
+     */
+    String getLocalAddress() {
+        try {
+            List<NetworkInterface> sortedInterfaces = 
+                    Collections.list(NetworkInterface.getNetworkInterfaces()).sort { it.index }
+
+            for (NetworkInterface anInterface : sortedInterfaces) {
+                for (InetAddress address : Collections.list(anInterface.inetAddresses)) {
+                    if (!address.isLoopbackAddress() && address.isSiteLocalAddress()) {
+                        return address.getHostAddress()
+                    }
+                }
+            }
+            return ''
+        } catch (SocketException e) {
+            throw new RuntimeException("Could not determine local ip address", e)
         }
     }
 
@@ -68,22 +84,5 @@ class NetworkingUtils {
             return "https"
         if (url.contains("http://"))
             return "http"
-    }
-
-    String getIpFromString(String ipString) {
-        log.debug("Extracting ip address from string: " + ipString)
-        String IPADDRESS_PATTERN =
-                "(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)"
-
-        Pattern pattern = Pattern.compile(IPADDRESS_PATTERN);
-        Matcher matcher = pattern.matcher(ipString);
-        if (matcher.find()) {
-            String ipAddress = matcher.group()
-            log.debug("Returning found ip address: " + ipAddress)
-            return ipAddress
-        } else {
-            log.debug("No ip address found in String. Returning 0.0.0.0")
-            return "0.0.0.0"
-        }
     }
 }
