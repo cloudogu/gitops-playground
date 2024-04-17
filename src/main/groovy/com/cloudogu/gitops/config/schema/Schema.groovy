@@ -52,6 +52,7 @@ class Schema {
          String namePrefix = ""
          String gitName = ""
          String gitEmail = ""
+         boolean urlSeparatorHyphen = false
     }
 
      static class ImagesSchema {
