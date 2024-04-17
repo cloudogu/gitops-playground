@@ -11,6 +11,21 @@ class ConfigToConfigFileConverterTest {
         def converter = new ConfigToConfigFileConverter()
 
         def config = converter.convert([
+                registry   : [
+                        internalPort: 123,
+                        url         : 'url',
+                        path        : 'path',
+                        username    : 'username',
+                        password    : 'password',
+                        pullUrl         : 'pullUrl',
+                        pullPath        : 'pullPath',
+                        pullUsername    : 'pullUsername',
+                        pullPassword    : 'pullPassword',
+                        pushUrl         : 'pushUrl',
+                        pushPath        : 'pushPath',
+                        pushUsername    : 'pushUsername',
+                        pushPassword    : 'pushPassword',
+                ],
                 images     : [
                         kubectl    : 'kubectl-value',
                         helm       : 'helm-value',
@@ -47,6 +62,20 @@ class ConfigToConfigFileConverterTest {
         ])
 
         assertThat(config).isEqualTo("""---
+registry:
+  internalPort: 123
+  url: "url"
+  path: "path"
+  username: "username"
+  password: "password"
+  pullUrl: "pullUrl"
+  pullPath: "pullPath"
+  pullUsername: "pullUsername"
+  pullPassword: "pullPassword"
+  pushUrl: "pushUrl"
+  pushPath: "pushPath"
+  pushUsername: "pushUsername"
+  pushPassword: "pushPassword"
 images:
   kubectl: "kubectl-value"
   helm: "helm-value"

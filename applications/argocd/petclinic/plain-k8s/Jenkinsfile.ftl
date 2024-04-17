@@ -1,14 +1,22 @@
 #!groovy
 
-// "Constants"
 String getApplication() { 'spring-petclinic-plain' }
 String getConfigRepositoryPRRepo() { '${namePrefix}argocd/example-apps' }
 String getScmManagerCredentials() { 'scmm-user' }
 String getConfigRepositoryPRBaseUrl() { env.SCMM_URL }
+<#if registry.twoRegistries>
+String getDockerRegistryPullBaseUrl() { env.${namePrefixForEnvVars}REGISTRY_PULL_URL }
+String getDockerRegistryPullPath() { env.${namePrefixForEnvVars}REGISTRY_PULL_PATH }
+String getDockerRegistryPullCredentials() { 'registry-pull-user' }
+String getDockerRegistryPushBaseUrl() { env.${namePrefixForEnvVars}REGISTRY_PUSH_URL }
+String getDockerRegistryPushPath() { env.${namePrefixForEnvVars}REGISTRY_PUSH_PATH }
+String getDockerRegistryPushCredentials() { 'registry-push-user' }
+<#else>
 String getDockerRegistryBaseUrl() { env.${namePrefixForEnvVars}REGISTRY_URL }
 String getDockerRegistryPath() { env.${namePrefixForEnvVars}REGISTRY_PATH }
-<#noparse>
 String getDockerRegistryCredentials() { 'registry-user' }
+</#if>
+<#noparse>
 String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/3rd-party-dependencies/ces-build-lib" }
 String getCesBuildLibVersion() { '1.64.1' }
 String getGitOpsBuildLibRepo() { "${env.SCMM_URL}/repo/3rd-party-dependencies/gitops-build-lib" }
@@ -44,12 +52,34 @@ node {
         String imageName = ""
         stage('Docker') {
             String imageTag = createImageTag()
+</#noparse>
+<#if registry.twoRegistries>
+<#noparse>
+            String pathPrefix = !dockerRegistryPushPath?.trim() ? "" : "${dockerRegistryPushPath}/"
+            imageName = "${dockerRegistryPushBaseUrl}/${pathPrefix}${application}:${imageTag}"
+            docker.withRegistry("http://${dockerRegistryPullBaseUrl}", dockerRegistryPullCredentials) {
+                image = docker.build(imageName, '.')
+            }
+</#noparse>
+<#else>
+<#noparse>
             String pathPrefix = !dockerRegistryPath?.trim() ? "" : "${dockerRegistryPath}/"
-            imageName = "${dockerRegistryBaseUrl}/${pathPrefix}${application}:${imageTag}"
-            image = docker.build(imageName, '.')
+                imageName = "${dockerRegistryBaseUrl}/${pathPrefix}${application}:${imageTag}"
+                image = docker.build(imageName, '.')
+</#noparse>
+</#if>
 
             if (isBuildSuccessful()) {
+<#if registry.twoRegistries>
+<#noparse>
+                        docker.withRegistry("http://${dockerRegistryPushBaseUrl}", dockerRegistryPushCredentials) {
+</#noparse>
+<#else>
+<#noparse>
                 docker.withRegistry("http://${dockerRegistryBaseUrl}", dockerRegistryCredentials) {
+</#noparse>
+</#if>
+<#noparse>
                     image.push()
                 }
             } else {

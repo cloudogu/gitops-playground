@@ -14,7 +14,7 @@ package com.cloudogu.gitops.config.schema
  * @see com.cloudogu.gitops.config.ApplicationConfigurator
  */
 class Schema {
-//     RegistrySchema registry // used in bash
+     RegistrySchema registry
 //     JenkinsSchema jenkins // used in bash
 //     ScmmSchema scmm // used in bash
 //     ApplicationSchema application // used in bash
@@ -22,11 +22,22 @@ class Schema {
      FeaturesSchema features
 
      static class RegistrySchema {
+         int internalPort
          String url = ""
          String path = ""
          String username = ""
          String password = ""
-         int internalPort
+         // Alternative: Use different registries, e.g. in air-gapped envs 
+         // "Pull" registry for 3rd party images
+         String pullUrl = ""
+         String pullPath = ""
+         String pullUsername = ""
+         String pullPassword = ""
+         // "Push" registry for writing application specific images
+         String pushUrl = ""
+         String pushPath = ""
+         String pushUsername = ""
+         String pushPassword = ""
     }
 
      static class JenkinsSchema {

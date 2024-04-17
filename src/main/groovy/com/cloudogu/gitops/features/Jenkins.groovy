@@ -69,8 +69,15 @@ class Jenkins extends Feature {
         ])
 
         globalPropertyManager.setGlobalProperty('SCMM_URL', config.scmm['url'] as String)
-        globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_URL", config.registry['url'] as String)
-        globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_PATH", config.registry['path'] as String)
+        if (config.registry['twoRegistries']) {
+            globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_PULL_URL", config.registry['pullUrl'] as String)
+            globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_PULL_PATH", config.registry['pullPath'] as String)
+            globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_PUSH_URL", config.registry['pushUrl'] as String)
+            globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_PUSH_PATH", config.registry['pushPath'] as String)
+        } else {
+            globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_URL", config.registry['url'] as String)
+            globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_PATH", config.registry['path'] as String)
+        }
 
         globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}K8S_VERSION", ApplicationConfigurator.K8S_VERSION)
 
@@ -91,12 +98,27 @@ class Jenkins extends Feature {
                     "${config.scmm['password']}",
                     'credentials for accessing scm-manager')
 
-            jobManger.createCredential(
-                    "${config.application['namePrefix']}example-apps",
-                    "registry-user",
-                    "${config.registry['username']}",
-                    "${config.registry['password']}",
-                    'credentials for accessing the docker-registry')
+            if (config.registry['twoRegistries']) {
+                jobManger.createCredential(
+                        "${config.application['namePrefix']}example-apps",
+                        "registry-pull-user",
+                        "${config.registry['pullUsername']}",
+                        "${config.registry['pullPassword']}",
+                        'credentials for accessing the docker-registry that contains 3rd party or base images')
+                jobManger.createCredential(
+                        "${config.application['namePrefix']}example-apps",
+                        "registry-push-user",
+                        "${config.registry['pushUsername']}",
+                        "${config.registry['pushPassword']}",
+                        'credentials for accessing the docker-registry that contains images built on jenkins')
+            } else {
+                jobManger.createCredential(
+                        "${config.application['namePrefix']}example-apps",
+                        "registry-user",
+                        "${config.registry['username']}",
+                        "${config.registry['password']}",
+                        'credentials for accessing the docker-registry')
+            }
         }
     }
 }
