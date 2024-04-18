@@ -25,7 +25,8 @@ class JenkinsTest {
                     baseUrl             : 'http://localhost',
                     namePrefix          : "my-prefix-",
                     namePrefixForEnvVars: 'MY_PREFIX_',
-                    insecure : false
+                    insecure : false,
+                    urlSeparatorHyphen : true,
             ],
             jenkins    : [
                     internal       : true,
@@ -85,6 +86,7 @@ class JenkinsTest {
         assertThat(env['BASE_URL']).isEqualTo('http://localhost')
         assertThat(env['NAME_PREFIX']).isEqualTo('my-prefix-')
         assertThat(env['INSECURE']).isEqualTo('false')
+        assertThat(env['URL_SEPARATOR_HYPHEN']).isEqualTo('true')
 
         assertThat(env['SCMM_URL']).isEqualTo('http://scmm')
         assertThat(env['SCMM_PASSWORD']).isEqualTo('scmm-pw')

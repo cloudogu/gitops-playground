@@ -19,7 +19,8 @@ class ScmManagerTest {
                     baseUrl : 'http://localhost',
                     insecure : false,
                     gitName : 'Cloudogu',
-                    gitEmail : 'hello@cloudogu.com'
+                    gitEmail : 'hello@cloudogu.com',
+                    urlSeparatorHyphen : true,
             ],
             scmm       : [
                     url: 'http://scmm',
@@ -88,6 +89,7 @@ class ScmManagerTest {
         assertThat(env['CES_BUILD_LIB_REPO']).isEqualTo('cesBuildLibUrl')
         assertThat(env['NAME_PREFIX']).isEqualTo('foo-')
         assertThat(env['INSECURE']).isEqualTo('false')
+        assertThat(env['URL_SEPARATOR_HYPHEN']).isEqualTo('true')
     }
 
     @Test

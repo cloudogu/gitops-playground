@@ -48,7 +48,11 @@ function deployLocalJenkins() {
 function jenkinsIngress() {
   
     if [[ -n "${BASE_URL}" ]]; then
-      local jenkinsHost="jenkins.$(extractHost "${BASE_URL}")"
+      if [[ $URL_SEPARATOR_HYPHEN == true ]]; then
+        local jenkinsHost="jenkins-$(extractHost "${BASE_URL}")"
+      else
+        local jenkinsHost="jenkins.$(extractHost "${BASE_URL}")"
+      fi
       local externalJenkinsUrl="$(injectSubdomain "${BASE_URL}" 'jenkins')"
       echo "--set controller.jenkinsUrl=$JENKINS_URL --set controller.ingress.enabled=true --set controller.ingress.hostName=${jenkinsHost}"
     else

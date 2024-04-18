@@ -34,7 +34,8 @@ class ArgoCDTest {
                     namePrefix          : '',
                     namePrefixForEnvVars: '',
                     gitName             : 'Cloudogu',
-                    gitEmail            : 'hello@cloudogu.com'
+                    gitEmail            : 'hello@cloudogu.com',
+                    urlSeparatorHyphen : false,
             ],
             scmm        : [
                     internal: true,
@@ -419,7 +420,9 @@ class ArgoCDTest {
         config.application['remote'] = true
         config.features['exampleApps']['petclinic']['baseDomain'] = 'petclinic.local'
         config.features['exampleApps']['nginx']['baseDomain'] = 'nginx.local'
+
         createArgoCD().install()
+
         assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-shared.yaml').toString())
                 .doesNotContain('NodePort')
         assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-production.yaml')['ingress']['hostname']).isEqualTo('production.nginx-helm.nginx.local')
@@ -431,6 +434,40 @@ class ArgoCDTest {
         def valuesYaml = parseActualYaml(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'apps/nginx-helm-umbrella/values.yaml')
         assertThat(valuesYaml['nginx']['ingress']['hostname'] as String).isEqualTo('production.nginx-helm-umbrella.nginx.local')
 
+        assertPetClinicRepos('LoadBalancer', 'NodePort', 'petclinic.local')
+    }
+
+    @Test
+    void 'If urlSeparatorHyphen is set, ensure that hostnames are build correctly '() {
+        config.application['remote'] = true
+        config.features['exampleApps']['petclinic']['baseDomain'] = 'petclinic-local'
+        config.features['exampleApps']['nginx']['baseDomain'] = 'nginx-local'
+        config.application['urlSeparatorHyphen'] = true
+
+        createArgoCD().install()
+
+        def valuesYaml = parseActualYaml(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'apps/nginx-helm-umbrella/values.yaml')
+        assertThat(valuesYaml['nginx']['ingress']['hostname'] as String).isEqualTo('production-nginx-helm-umbrella-nginx-local')
+
+        assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-production.yaml')['ingress']['hostname']).isEqualTo('production-nginx-helm-nginx-local')
+        assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-staging.yaml')['ingress']['hostname']).isEqualTo('staging-nginx-helm-nginx-local')
+        assertPetClinicRepos('LoadBalancer', 'NodePort', 'petclinic-local', true)
+    }
+
+    @Test
+    void 'If urlSeparatorHyphen is NOT set, ensure that hostnames are build correctly '() {
+        config.application['remote'] = true
+        config.features['exampleApps']['petclinic']['baseDomain'] = 'petclinic.local'
+        config.features['exampleApps']['nginx']['baseDomain'] = 'nginx.local'
+        config.application['urlSeparatorHyphen'] = false
+
+        createArgoCD().install()
+
+        def valuesYaml = parseActualYaml(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'apps/nginx-helm-umbrella/values.yaml')
+        assertThat(valuesYaml['nginx']['ingress']['hostname'] as String).isEqualTo('production.nginx-helm-umbrella.nginx.local')
+
+        assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-production.yaml')['ingress']['hostname']).isEqualTo('production.nginx-helm.nginx.local')
+        assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-staging.yaml')['ingress']['hostname']).isEqualTo('staging.nginx-helm.nginx.local')
         assertPetClinicRepos('LoadBalancer', 'NodePort', 'petclinic.local')
     }
 
@@ -666,7 +703,7 @@ class ArgoCDTest {
         }
     }
 
-    void assertPetClinicRepos(String expectedServiceType, String unexpectedServiceType, String ingressUrl) {
+    void assertPetClinicRepos(String expectedServiceType, String unexpectedServiceType, String ingressUrl, boolean separatorHyphen = false) {
         for (ScmmRepo repo : petClinicRepos) {
 
             def tmpDir = repo.absoluteLocalRepoTmpDir
@@ -680,13 +717,22 @@ class ArgoCDTest {
 
                 assertThat(new File(tmpDir, 'k8s/production/service.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
                 assertThat(new File(tmpDir, 'k8s/staging/service.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
+
                 if (!ingressUrl) {
                     assertThat(new File(tmpDir, 'k8s/staging/ingress.yaml')).doesNotExist()
                     assertThat(new File(tmpDir, 'k8s/production/ingress.yaml')).doesNotExist()
                 } else {
-                    assertThat((parseActualYaml(tmpDir + '/k8s/staging/ingress.yaml')['spec']['rules'] as List)[0]['host'] as String).isEqualTo("staging.petclinic-plain.$ingressUrl".toString())
-                    assertThat((parseActualYaml(tmpDir + '/k8s/production/ingress.yaml')['spec']['rules'] as List)[0]['host'] as String).isEqualTo("production.petclinic-plain.$ingressUrl".toString())
+                    String ingressHostProduction = (parseActualYaml(tmpDir + '/k8s/production/ingress.yaml')['spec']['rules'] as List)[0]['host']
+                    String ingressHostStaging = (parseActualYaml(tmpDir + '/k8s/staging/ingress.yaml')['spec']['rules'] as List)[0]['host']
+                    if (separatorHyphen) {
+                        assertThat(ingressHostStaging).isEqualTo("staging-petclinic-plain-$ingressUrl".toString())
+                        assertThat(ingressHostProduction).isEqualTo("production-petclinic-plain-$ingressUrl".toString())
+                    } else {
+                        assertThat(ingressHostStaging).isEqualTo("staging.petclinic-plain.$ingressUrl".toString())
+                        assertThat(ingressHostProduction).isEqualTo("production.petclinic-plain.$ingressUrl".toString())
+                    }
                 }
+
             } else if (repo.scmmRepoTarget == 'argocd/petclinic-helm') {
                 assertBuildImagesInJenkinsfileReplaced(jenkinsfile)
                 assertThat(new File(tmpDir, 'k8s/values-shared.yaml').text).contains("type: ${expectedServiceType}")
@@ -696,10 +742,19 @@ class ArgoCDTest {
                     assertThat(parseActualYaml(tmpDir + '/k8s/values-production.yaml')).doesNotContainKey('ingress')
                     assertThat(parseActualYaml(tmpDir + '/k8s/values-staging.yaml')).doesNotContainKey('ingress')
                 } else {
+                    String ingressHostProduction = (parseActualYaml(tmpDir + '/k8s/values-production.yaml')['ingress']['hosts'] as List)[0]['host']
+                    String ingressHostStaging = (parseActualYaml(tmpDir + '/k8s/values-staging.yaml')['ingress']['hosts'] as List)[0]['host']
+
                     assertThat(parseActualYaml(tmpDir + '/k8s/values-shared.yaml')['ingress']['enabled']).isEqualTo(true)
-                    assertThat((parseActualYaml(tmpDir + '/k8s/values-production.yaml')['ingress']['hosts'] as List)[0]['host'] as String).isEqualTo("production.petclinic-helm.$ingressUrl".toString())
-                    assertThat((parseActualYaml(tmpDir + '/k8s/values-staging.yaml')['ingress']['hosts'] as List)[0]['host'] as String).isEqualTo("staging.petclinic-helm.$ingressUrl".toString())
+                    if (separatorHyphen) {
+                        assertThat(ingressHostProduction).isEqualTo("production-petclinic-helm-$ingressUrl".toString())
+                        assertThat(ingressHostStaging).isEqualTo("staging-petclinic-helm-$ingressUrl".toString())
+                    } else {
+                        assertThat(ingressHostProduction).isEqualTo("production.petclinic-helm.$ingressUrl".toString())
+                        assertThat(ingressHostStaging).isEqualTo("staging.petclinic-helm.$ingressUrl".toString())
+                    }
                 }
+
             } else if (repo.scmmRepoTarget == 'exercises/petclinic-helm') {
                 // Does not contain the gitops build lib call, so no build images to replace
                 assertThat(new File(tmpDir, 'k8s/values-shared.yaml').text).contains("type: ${expectedServiceType}")
@@ -709,9 +764,17 @@ class ArgoCDTest {
                     assertThat(parseActualYaml(tmpDir + '/k8s/values-production.yaml')).doesNotContainKey('ingress')
                     assertThat(parseActualYaml(tmpDir + '/k8s/values-staging.yaml')).doesNotContainKey('ingress')
                 } else {
+                    String ingressHostProduction = (parseActualYaml(tmpDir + '/k8s/values-production.yaml')['ingress']['hosts'] as List)[0]['host']
+                    String ingressHostStaging = (parseActualYaml(tmpDir + '/k8s/values-staging.yaml')['ingress']['hosts'] as List)[0]['host']
+
                     assertThat(parseActualYaml(tmpDir + '/k8s/values-shared.yaml')['ingress']['enabled']).isEqualTo(true)
-                    assertThat((parseActualYaml(tmpDir + '/k8s/values-production.yaml')['ingress']['hosts'] as List)[0]['host'] as String).isEqualTo("production.exercise-petclinic-helm.$ingressUrl".toString())
-                    assertThat((parseActualYaml(tmpDir + '/k8s/values-staging.yaml')['ingress']['hosts'] as List)[0]['host'] as String).isEqualTo("staging.exercise-petclinic-helm.$ingressUrl".toString())
+                    if (separatorHyphen) {
+                        assertThat(ingressHostProduction).isEqualTo("production-exercise-petclinic-helm-$ingressUrl".toString())
+                        assertThat(ingressHostStaging).isEqualTo("staging-exercise-petclinic-helm-$ingressUrl".toString())
+                    } else {
+                        assertThat(ingressHostProduction).isEqualTo("production.exercise-petclinic-helm.$ingressUrl".toString())
+                        assertThat(ingressHostStaging).isEqualTo("staging.exercise-petclinic-helm.$ingressUrl".toString())
+                    }
                 }
             } else {
                 fail("Unkown petclinic repo: $repo")

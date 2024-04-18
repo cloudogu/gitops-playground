@@ -58,7 +58,8 @@ class ScmManager extends Feature {
                 GITOPS_BUILD_LIB_REPO        : config.repositories['gitopsBuildLib']['url'],
                 CES_BUILD_LIB_REPO           : config.repositories['cesBuildLib']['url'],
                 NAME_PREFIX                  : config.application['namePrefix'],
-                INSECURE                     : config.application['insecure']
+                INSECURE                     : config.application['insecure'],
+                URL_SEPARATOR_HYPHEN         : config.application['urlSeparatorHyphen']
         ])
     }
 }

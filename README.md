@@ -307,6 +307,17 @@ Note:
 * `jenkins-url` and `scmm-url` are for external services and do not lead to ingresses, but you can set them via `--base-url` for now.
 * In order to make use of the `Ingress` you need an ingress controller. If your cluster does not provide one, the Playground can deploy one for you, via the [`--ingress-nginx` parameter](#deploy-ingress-controller).
 
+###### Subdomains vs hyphen-separated ingresses
+
+* By default, the ingresses are built as subdomains of `--base-url`.  
+* You can change this behaviour using the parameter `--url-separator-hyphen`.  
+* With this, hyphen are used instead of dots to separate application name from base URL.
+* Examples: 
+  * `--base-url=https://xyz.example.org`: `argocd.xyz.example.org` (default)  
+  * `--base-url=https://xyz.example.org`: `argocd-xyz.example.org` (`--url-separator-hyphen`)
+* This is useful when you have a wildcard certificate for the TLD, but use a subdomain as base URL.  
+  Here, browsers accept the validity only for the first level of subdomains.
+
 ###### Local ingresses
 
 The ingresses can also be used when running the playground on your local machine:

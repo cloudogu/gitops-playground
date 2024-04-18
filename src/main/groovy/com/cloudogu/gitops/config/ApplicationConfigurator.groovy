@@ -86,9 +86,8 @@ class ApplicationConfigurator {
                     namePrefixForEnvVars    : '', // Set dynamically
                     baseUrl: null,
                     gitName: 'Cloudogu',
-                    gitEmail: 'hello@cloudogu.com'
-
-
+                    gitEmail: 'hello@cloudogu.com',
+                    urlSeparatorHyphen: false
             ],
             images     : [
                     kubectl    : "bitnami/kubectl:$K8S_VERSION",
@@ -353,32 +352,35 @@ class ApplicationConfigurator {
             def mail = newConfig.features['mail']
             def monitoring = newConfig.features['monitoring']
             def vault = newConfig.features['secrets']['vault']
+            boolean urlSeparatorHyphen = newConfig.application['urlSeparatorHyphen']
             
             if (argocd['active'] && !argocd['url']) {
-                argocd['url'] = injectSubdomain('argocd', baseUrl)
+                argocd['url'] = injectSubdomain('argocd', baseUrl, urlSeparatorHyphen)
                 log.debug("Setting URL ${argocd['url']}")
             }
             if (mail['mailhog'] && !mail['mailhogUrl']) {
-                mail['mailhogUrl'] = injectSubdomain('mailhog', baseUrl)
+                mail['mailhogUrl'] = injectSubdomain('mailhog', baseUrl, urlSeparatorHyphen)
                 log.debug("Setting URL ${mail['mailhogUrl']}")
             }
             if (monitoring['active'] && !monitoring['grafanaUrl']) {
-                monitoring['grafanaUrl'] = injectSubdomain('grafana', baseUrl)
+                monitoring['grafanaUrl'] = injectSubdomain('grafana', baseUrl, urlSeparatorHyphen)
                 log.debug("Setting URL ${monitoring['grafanaUrl']}")
             }
             if ( newConfig.features['secrets']['active'] && !vault['url']) {
-                vault['url'] = injectSubdomain('vault', baseUrl)
+                vault['url'] = injectSubdomain('vault', baseUrl, urlSeparatorHyphen)
                 log.debug("Setting URL ${vault['url']}")
             }
             
             if (!newConfig.features['exampleApps']['petclinic']['baseDomain']) {
                 // This param only requires the host / domain
-                newConfig.features['exampleApps']['petclinic']['baseDomain'] = new URL(injectSubdomain('petclinic', baseUrl)).host
+                newConfig.features['exampleApps']['petclinic']['baseDomain'] = 
+                        new URL(injectSubdomain('petclinic', baseUrl, urlSeparatorHyphen)).host
                 log.debug("Setting URL ${newConfig.features['exampleApps']['petclinic']['baseDomain']}")
             }
             if (!newConfig.features['exampleApps']['nginx']['baseDomain']) {
                 // This param only requires the host / domain
-                newConfig.features['exampleApps']['nginx']['baseDomain'] = new URL(injectSubdomain('nginx', baseUrl)).host
+                newConfig.features['exampleApps']['nginx']['baseDomain'] = 
+                        new URL(injectSubdomain('nginx', baseUrl, urlSeparatorHyphen)).host
                 log.debug("Setting URL ${newConfig.features['exampleApps']['nginx']['baseDomain']}")
             }
         }
@@ -388,11 +390,18 @@ class ApplicationConfigurator {
      * 
      * @param subdomain, e.g. argocd
      * @param baseUrl e.g. http://localhost:8080
+     * @param urlSeparatorHyphen
      * @return e.g. http://argocd.localhost:8080
      */
-    private String injectSubdomain(String subdomain, String baseUrl) {
+    private String injectSubdomain(String subdomain, String baseUrl, boolean urlSeparatorHyphen) {
         URL url = new URL(baseUrl)
-        String newUrl = url.getProtocol() + "://" + subdomain + "." + url.getHost()
+        String newUrl
+
+        if (urlSeparatorHyphen) {
+            newUrl = url.getProtocol() + "://" + subdomain + "-" + url.getHost()
+        } else {
+            newUrl = url.getProtocol() + "://" + subdomain + "." + url.getHost()
+        }
         if (url.getPort() != -1) {
             newUrl += ":" + url.getPort()
         }

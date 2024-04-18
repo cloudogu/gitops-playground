@@ -249,6 +249,26 @@ images:
     }
 
     @Test
+    void "base url with url-hyphens: evaluates for all tools"() {
+        testConfig.application['baseUrl'] = 'http://localhost'
+        testConfig.application['urlSeparatorHyphen'] = true
+
+        testConfig.features['argocd']['active'] = true
+        testConfig.features['mail']['mailhog'] = true
+        testConfig.features['monitoring']['active'] = true
+        testConfig.features['secrets']['active'] = true
+
+        Map actualConfig = applicationConfigurator.setConfig(testConfig)
+
+        assertThat(actualConfig.features['argocd']['url']).isEqualTo("http://argocd-localhost")
+        assertThat(actualConfig.features['mail']['mailhogUrl']).isEqualTo("http://mailhog-localhost")
+        assertThat(actualConfig.features['monitoring']['grafanaUrl']).isEqualTo("http://grafana-localhost")
+        assertThat(actualConfig.features['secrets']['vault']['url']).isEqualTo("http://vault-localhost")
+        assertThat(actualConfig.features['exampleApps']['petclinic']['baseDomain']).isEqualTo("petclinic-localhost")
+        assertThat(actualConfig.features['exampleApps']['nginx']['baseDomain']).isEqualTo("nginx-localhost")
+    }
+
+    @Test
     void "base url: also works when port is included "() {
         testConfig.application['baseUrl'] = 'http://localhost:8080'
         testConfig.features['argocd']['active'] = true
@@ -256,6 +276,17 @@ images:
         Map actualConfig = applicationConfigurator.setConfig(testConfig)
 
         assertThat(actualConfig.features['argocd']['url']).isEqualTo("http://argocd.localhost:8080")
+    }
+
+    @Test
+    void "base url: also works when port is included and use url-hyphens is set"() {
+        testConfig.application['baseUrl'] = 'http://localhost:6502'
+        testConfig.features['argocd']['active'] = true
+        testConfig.application['urlSeparatorHyphen'] = true
+
+        Map actualConfig = applicationConfigurator.setConfig(testConfig)
+
+        assertThat(actualConfig.features['argocd']['url']).isEqualTo("http://argocd-localhost:6502")
     }
 
 

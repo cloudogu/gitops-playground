@@ -323,6 +323,7 @@ class ArgoCD extends Feature {
                     nginxImage          : config.images['nginx'] ? DockerImageParser.parse(config.images['nginx'] as String) : null,
                     isRemote            : config.application['remote'],
                     isInsecure          : config.application['insecure'],
+                    urlSeparatorHyphen  : config.application['urlSeparatorHyphen'],
                     argocd              : [
                             // Note that passing the URL object here leads to problems in Graal Native image, see Git history
                             host: config.features['argocd']['url'] ? new URL(config.features['argocd']['url'] as String).host : "",
