@@ -34,6 +34,9 @@ spec:
           volumeMounts:
             - name: messages
               mountPath: /tmp/messages
+            - name: tmp
+              # Make /tmp writable with readOnlyRootFilesystem
+              mountPath: /tmp
           resources:
             limits:
               cpu: 1
@@ -41,7 +44,25 @@ spec:
             requests:
               cpu: 300m
               memory: 650Mi
+          securityContext: # Implement some least privilege good practices
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+            # These two seem to cause problems with OpenShift, so we disable them for now
+            #runAsUser: 65312
+            #seccompProfile:
+            #  type: RuntimeDefault
+            # With k8s 1.30 apparmor is added 
+            # Won't work on k3d, though, because apparmor is not enabled
+            # apparmorProfile: "runtime/default"
+      enableServiceLinks: false
+      automountServiceAccountToken: false # When not communicating with API Server
       volumes:
         - name: messages
           configMap:
             name: messages
+        - name: tmp
+          emptyDir: {}

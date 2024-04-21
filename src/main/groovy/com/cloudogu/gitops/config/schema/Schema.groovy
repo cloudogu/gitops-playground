@@ -62,6 +62,7 @@ class Schema {
          String helmKubeval = ""
          String yamllint = ""
          String nginx = ""
+         String petclinic = ""
     }
 
      static class FeaturesSchema {

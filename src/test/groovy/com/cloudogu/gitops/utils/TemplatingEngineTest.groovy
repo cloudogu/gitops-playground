@@ -1,15 +1,23 @@
 package com.cloudogu.gitops.utils
 
+
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
-import static org.assertj.core.api.Assertions.assertThat
+import static org.assertj.core.api.Assertions.assertThat 
 
 class TemplatingEngineTest {
 
+    File tmpDir
+
+    @BeforeEach
+    void before() {
+        tmpDir = File.createTempDir('gitops-playground-tests-templatingengine')
+        tmpDir.deleteOnExit()
+    }
+
     @Test
     void 'replaces two templates in different folders'() {
-        def tmpDir = File.createTempDir('gitops-playground-tests-templatingengine')
-        tmpDir.deleteOnExit()
         def fooTemplate = new File(tmpDir.absolutePath, "foo.ftl.txt")
         fooTemplate.text = """
             this is the template
@@ -23,7 +31,7 @@ class TemplatingEngineTest {
 
         def tmpDir2 = File.createTempDir('gitops-playground-tests-templatingengine')
         tmpDir2.deleteOnExit()
-        def barTemplate = new File(tmpDir.absolutePath, "bar.ftl.txt")
+        def barTemplate = new File(tmpDir2.absolutePath, "bar.ftl.txt")
         barTemplate.text = "Hello \${name}"
 
         def engine = new TemplatingEngine()
@@ -31,6 +39,22 @@ class TemplatingEngineTest {
                 name: "Playground",
         ])
 
-        assertThat(new File(tmpDir.absolutePath, "bar.txt").text).isEqualTo("Hello Playground")
+        assertThat(new File(tmpDir2.absolutePath, "bar.txt").text).isEqualTo("Hello Playground")
+        assertThat(barTemplate).doesNotExist()
+    }
+
+    @Test
+    void 'keeps template file'() {
+        def barTemplate = new File(tmpDir.absolutePath, "bar.ftl.txt")
+        def barTarget = new File(tmpDir.absolutePath, "bar.txt")
+        barTemplate.text = "Hello \${name}"
+        
+        def engine = new TemplatingEngine()
+        engine.template(barTemplate, barTarget, [
+                name: "Playground",
+        ])
+
+        assertThat(barTarget.text).isEqualTo("Hello Playground")
+        assertThat(barTemplate).exists()
     }
 }

@@ -25,6 +25,13 @@ import static org.mockito.ArgumentMatchers.anyString
 import static org.mockito.Mockito.*
 
 class ArgoCDTest {
+    Map buildImages = [
+            kubectl    : 'kubectl-value',
+            helm       : 'helm-value',
+            kubeval    : 'kubeval-value',
+            helmKubeval: 'helmKubeval-value',
+            yamllint   : 'yamllint-value'
+    ]
     Map config = [
             application : [
                     remote              : false,
@@ -44,13 +51,7 @@ class ArgoCDTest {
                     username: '',
                     password: ''
             ],
-            images      : [
-                    kubectl    : 'kubectl-value',
-                    helm       : 'helm-value',
-                    kubeval    : 'kubeval-value',
-                    helmKubeval: 'helmKubeval-value',
-                    yamllint   : 'yamllint-value'
-            ],
+            images      : buildImages + [ petclinic  : 'petclinic-value' ],
             repositories: [
                     springBootHelmChart: [
                             url: 'https://github.com/cloudogu/spring-boot-helm-chart.git',
@@ -698,7 +699,7 @@ class ArgoCDTest {
             fail("Missing build images in Jenkinsfile ${jenkinsfile}")
         }
 
-        for (Map.Entry image : config.images as Map) {
+        for (Map.Entry image : buildImages as Map) {
             assertThat(actualBuildImages).contains("${image.key}: '${image.value}'")
         }
     }
@@ -712,6 +713,9 @@ class ArgoCDTest {
 
             if (repo.scmmRepoTarget == 'argocd/petclinic-plain') {
                 assertBuildImagesInJenkinsfileReplaced(jenkinsfile)
+                
+                assertThat(new File(tmpDir, 'Dockerfile').text).startsWith('FROM petclinic-value')
+                
                 assertThat(new File(tmpDir, 'k8s/production/service.yaml').text).contains("type: ${expectedServiceType}")
                 assertThat(new File(tmpDir, 'k8s/staging/service.yaml').text).contains("type: ${expectedServiceType}")
 
