@@ -64,7 +64,7 @@ RUN wget -q -O helm.tar.gz.asc https://github.com/helm/helm/releases/download/v$
 RUN tar -xf helm.tar.gz
 # Without the two spaces the check fails!
 RUN echo "${HELM_CHECKSUM}  helm.tar.gz" | sha256sum -c
-RUN wget -q https://raw.githubusercontent.com/helm/helm/main/KEYS -O- | gpg --import
+RUN wget -t 3 -q https://raw.githubusercontent.com/helm/helm/main/KEYS -O- | gpg --import
 RUN gpg --batch --verify helm.tar.gz.asc helm.tar.gz
 RUN mv linux-amd64/helm /dist/usr/local/bin
 
