@@ -5,7 +5,13 @@ defaultRules:
     alertmanager: true
     etcd: false
     general: true
-    k8s: false
+    k8sContainerCpuUsageSecondsTotal: false
+    k8sContainerMemoryCache: false
+    k8sContainerMemoryRss: false
+    k8sContainerMemorySwap: false
+    k8sContainerResource: false
+    k8sContainerMemoryWorkingSetBytes: false
+    k8sPodOwner: false
     kubeApiserver: false
     kubeApiserverAvailability: false
     kubeApiserverBurnrate: false
@@ -28,6 +34,7 @@ defaultRules:
     nodeExporterRecording: false
     prometheus: true
     prometheusOperator: true
+    windows: false
 kubeStateMetrics:
   enabled: false
 nodeExporter:
@@ -76,11 +83,7 @@ grafana:
     enabled: true
     hosts: [${monitoring.grafana.host}]
 </#if>
-  containerSecurityContext:
-    allowPrivilegeEscalation: false
   sidecar:
-    securityContext:
-      allowPrivilegeEscalation: false
     dashboards:
       #this needs to be added so that the label will become 'label: grafana_dashboards: "1"'
       labelValue: 1

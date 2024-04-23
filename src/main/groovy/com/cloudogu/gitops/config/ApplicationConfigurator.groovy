@@ -154,7 +154,7 @@ class ApplicationConfigurator {
                                         helm template prometheus-community/kube-prometheus-stack --version XYZ --include-crds */
                                     chart  : 'kube-prometheus-stack',
                                     repoURL: 'https://prometheus-community.github.io/helm-charts',
-                                    version: '42.0.3',
+                                    version: '58.2.1',
                                     grafanaImage: '',
                                     grafanaSidecarImage: '',
                                     prometheusImage: '',
