@@ -2,8 +2,11 @@ package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.features.deployment.DeploymentStrategy
+import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
@@ -13,18 +16,24 @@ import jakarta.inject.Singleton
 @Order(80)
 class ScmManager extends Feature {
 
+    static final String HELM_VALUES_PATH = "scm-manager/values.ftl.yaml"
+
     private Map config
     private CommandExecutor commandExecutor
     private FileSystemUtils fileSystemUtils
+    private DeploymentStrategy deployer
 
     ScmManager(
             Configuration config,
             CommandExecutor commandExecutor,
-            FileSystemUtils fileSystemUtils
+            FileSystemUtils fileSystemUtils,
+            // For now we deploy imperatively using helm to avoid order problems. In future we could deploy via argocd.
+            HelmStrategy deployer
     ) {
         this.config = config.getConfig()
         this.commandExecutor = commandExecutor
         this.fileSystemUtils = fileSystemUtils
+        this.deployer = deployer
     }
 
     @Override
@@ -34,6 +43,27 @@ class ScmManager extends Feature {
 
     @Override
     void enable() {
+
+        if (config.scmm['internal']) {
+            def helmConfig = config['scmm']['helm']
+
+            def tmpHelmValues = new TemplatingEngine().replaceTemplate(fileSystemUtils.copyToTempDir(HELM_VALUES_PATH).toFile(), [
+                    host  : config.scmm['ingress'],
+                    remote: config.application['remote'],
+                    username:  config.scmm['username'],
+                    password: config.scmm['password']
+            ]).toPath()
+
+            deployer.deployFeature(
+                    helmConfig['repoURL'] as String,
+                    'scm-manager',
+                    helmConfig['chart'] as String,
+                    helmConfig['version'] as String,
+                    'default',
+                    'scmm',
+                    tmpHelmValues
+            )
+        }
 
         commandExecutor.execute("${fileSystemUtils.rootDir}/scripts/scm-manager/init-scmm.sh", [
 
@@ -46,20 +76,17 @@ class ScmManager extends Feature {
                 SCMM_USERNAME                : config.scmm['username'],
                 SCMM_PASSWORD                : config.scmm['password'],
                 JENKINS_URL                  : config.jenkins['url'],
-                INTERNAL_SCMM                : config.scmm['internal'],
                 JENKINS_URL_FOR_SCMM         : config.jenkins['urlForScmm'],
                 SCMM_URL_FOR_JENKINS         : config.scmm['urlForJenkins'],
+                // Used indirectly in utils.sh 😬
                 REMOTE_CLUSTER               : config.application['remote'],
-                BASE_URL                     : config.application['baseUrl'] ? config.application['baseUrl'] : '',
                 INSTALL_ARGOCD               : config.features['argocd']['active'],
-                SCMM_HELM_CHART_VERSION      : config.scmm['helm']['version'],
                 SPRING_BOOT_HELM_CHART_COMMIT: config.repositories['springBootHelmChart']['ref'],
                 SPRING_BOOT_HELM_CHART_REPO  : config.repositories['springBootHelmChart']['url'],
                 GITOPS_BUILD_LIB_REPO        : config.repositories['gitopsBuildLib']['url'],
                 CES_BUILD_LIB_REPO           : config.repositories['cesBuildLib']['url'],
                 NAME_PREFIX                  : config.application['namePrefix'],
                 INSECURE                     : config.application['insecure'],
-                URL_SEPARATOR_HYPHEN         : config.application['urlSeparatorHyphen']
         ])
     }
 }

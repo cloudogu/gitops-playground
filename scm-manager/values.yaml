@@ -1,6 +1,0 @@
-service:
-  port: 80
-  nodePort: 9091
-
-persistence:
-  size: 1Gi

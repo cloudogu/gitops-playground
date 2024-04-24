@@ -22,10 +22,6 @@ function initSCMM() {
   
   SCMM_HOST=$(getHost "${SCMM_URL}")
   SCMM_PROTOCOL=$(getProtocol "${SCMM_URL}")
-  
-  if [[ ${INTERNAL_SCMM} == true ]]; then
-    deployLocalScmmManager "${REMOTE_CLUSTER}" "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "${BASE_URL}"
-  fi
 
   setExternalHostnameIfNecessary 'SCMM' 'scmm-scm-manager' 'default'
   [[ "${SCMM_URL}" != *scm ]] && SCMM_URL=${SCMM_URL}/scm
@@ -34,7 +30,7 @@ function initSCMM() {
   # they contain repository URLs created with SCMM_BASE_URL. Jenkins uses the internal URL for repos. So match is only
   # successful, when SCM also sends the Repo URLs using the internal URL
   configureScmmManager "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "${SCMM_URL}" "${JENKINS_URL_FOR_SCMM}" \
-    "${SCMM_URL_FOR_JENKINS}" "${INTERNAL_SCMM}" "${INSTALL_ARGOCD}"
+    "${SCMM_URL_FOR_JENKINS}" "${INSTALL_ARGOCD}"
 
   pushHelmChartRepo "3rd-party-dependencies/spring-boot-helm-chart"
   pushHelmChartRepoWithDependency "3rd-party-dependencies/spring-boot-helm-chart-with-dependency"
@@ -128,27 +124,6 @@ function setDefaultBranch() {
     "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/api/v2/config/git/${TARGET_REPO_SCMM}"
 }
 
-function deployLocalScmmManager() {
-
-  helm repo add scm-manager https://packages.scm-manager.org/repository/helm-v2-releases/
-  helm repo update scm-manager
-  helm upgrade -i scmm --values scm-manager/values.yaml \
-    $(scmmHelmSettingsForRemoteCluster) $(scmmIngress)\
-    --version ${SCMM_HELM_CHART_VERSION} scm-manager/scm-manager -n default \
-    --set extraArgs="{-Dscm.initialPassword=${SCMM_PASSWORD},-Dscm.initialUser=${SCMM_USERNAME}}"
-}
-
-function scmmIngress() {
-    if [[ -n "${BASE_URL}" ]]; then
-      if [[ $URL_SEPARATOR_HYPHEN == true ]]; then
-        local scmmHost="scmm-$(extractHost "${BASE_URL}")"
-      else
-        local scmmHost="scmm.$(extractHost "${BASE_URL}")"
-      fi
-    echo "--set ingress.enabled=true --set ingress.path=/ --set ingress.hosts[0]=${scmmHost}"
-    fi
-}
-
 function configureScmmManager() {
   ADMIN_USERNAME=${1}
   ADMIN_PASSWORD=${2}
@@ -159,8 +134,7 @@ function configureScmmManager() {
   # They contain Repository URLs create with SCMM_BASE_URL. Jenkins uses the internal URL for repos. So match is only
   # successful, when SCM also sends the Repo URLs using the internal URL
   SCMM_BASE_URL=${5}
-  IS_LOCAL=${6}
-  INSTALL_ARGOCD="${7}"
+  INSTALL_ARGOCD="${6}"
 
   GITOPS_USERNAME="${NAME_PREFIX}gitops"
   GITOPS_PASSWORD=${ADMIN_PASSWORD}
@@ -363,16 +337,6 @@ function configJenkins() {
   fi
 
   printStatus "${STATUS}"
-}
-
-function scmmHelmSettingsForRemoteCluster() {
-  if [[ $REMOTE_CLUSTER == true ]]; then
-    # Default clusters don't allow for node ports < 30.000, so just unset nodePort.
-    # A defined nodePort is not needed for remote cluster, where the externalIp is used for accessing SCMM
-    echo "--set service.nodePort="
-  else
-    echo "--set service.type=NodePort"
-  fi
 }
 
 function waitForScmManager() {
