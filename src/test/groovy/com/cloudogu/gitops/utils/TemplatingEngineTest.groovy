@@ -57,4 +57,17 @@ class TemplatingEngineTest {
         assertThat(barTarget.text).isEqualTo("Hello Playground")
         assertThat(barTemplate).exists()
     }
+
+    @Test
+    void 'Templates to string'() {
+        def fooTemplate = new File(tmpDir.absolutePath, "foo.ftl.txt")
+        fooTemplate.text = "Hello \${name}"
+
+        def engine = new TemplatingEngine()
+        String result = engine.template(fooTemplate, [
+                name: "Playground",
+        ])
+
+        assertThat(result).isEqualTo("Hello Playground")
+    }
 }

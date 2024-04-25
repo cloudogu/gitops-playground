@@ -219,8 +219,9 @@ class ApplicationConfigurator {
                             helm  : [
                                     chart: 'ingress-nginx',
                                     repoURL: 'https://kubernetes.github.io/ingress-nginx',
-                                    version: '4.9.1'
-                            ],
+                                    version: '4.9.1',
+                                    values: [:]
+                             ],
                     ],
                     exampleApps: [
                             petclinic: [

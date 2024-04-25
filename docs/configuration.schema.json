@@ -51,6 +51,16 @@
           "properties": {
             "active": {
               "type": "boolean"
+            },
+            "helm": {
+              "type": "object",
+              "properties": {
+                "values": {
+                  "type": "object",
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false

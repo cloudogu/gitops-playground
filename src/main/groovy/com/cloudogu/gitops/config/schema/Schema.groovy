@@ -154,5 +154,13 @@ class Schema {
 
     static class IngressNginxSchema {
         Boolean active = false
+        IngressNginxHelmSchema helm
+
+        static class IngressNginxHelmSchema {
+            /* Before we use this class as typed config we need to find a way to convert this to a map while keeping it 
+               an (unvalidated) object in the schema.json.
+               This might work using JacksonModule for SchemaGenerator, @JsonDeserialize, etc. */
+            Map<String, Object> values
+        }
     }
 }
