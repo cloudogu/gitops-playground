@@ -34,6 +34,7 @@ RUN mv $(ls -S target/*.jar | head -n 1) /app/gitops-playground.jar
 
 
 FROM alpine as downloader
+RUN apk add curl 
 # When updating, 
 # * also update the checksum found at https://dl.k8s.io/release/v${K8S_VERSION}/bin/linux/amd64/kubectl.sha256
 # * also update in init-cluster.sh. vars.tf, ApplicationConfigurator.groovy and apply.sh
@@ -59,17 +60,18 @@ RUN chmod a=rwx -R ${HOME}
 WORKDIR /tmp
 
 # Helm
-RUN wget -q -O helm.tar.gz https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz 
-RUN wget -q -O helm.tar.gz.asc https://github.com/helm/helm/releases/download/v${HELM_VERSION}/helm-v${HELM_VERSION}-linux-amd64.tar.gz.asc
+RUN curl --location --fail --retry 20 --retry-connrefused --retry-all-errors --output helm.tar.gz https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz 
+RUN curl --location --fail --retry 20 --retry-connrefused --retry-all-errors --output helm.tar.gz.asc https://github.com/helm/helm/releases/download/v${HELM_VERSION}/helm-v${HELM_VERSION}-linux-amd64.tar.gz.asc
 RUN tar -xf helm.tar.gz
 # Without the two spaces the check fails!
 RUN echo "${HELM_CHECKSUM}  helm.tar.gz" | sha256sum -c
-RUN wget -q https://raw.githubusercontent.com/helm/helm/main/KEYS -O- | gpg --import
+RUN set -o pipefail && curl --location --fail --retry 20 --retry-connrefused --retry-all-errors \
+  https://raw.githubusercontent.com/helm/helm/main/KEYS | gpg --import
 RUN gpg --batch --verify helm.tar.gz.asc helm.tar.gz
 RUN mv linux-amd64/helm /dist/usr/local/bin
 
 # Kubectl
-RUN wget -q -O kubectl https://dl.k8s.io/release/v${K8S_VERSION}/bin/linux/amd64/kubectl
+RUN curl --location --fail --retry 20 --retry-connrefused --retry-all-errors --output kubectl https://dl.k8s.io/release/v${K8S_VERSION}/bin/linux/amd64/kubectl
 RUN echo "${KUBECTL_CHECKSUM}  kubectl" | sha256sum -c
 RUN chmod +x /tmp/kubectl
 RUN mv /tmp/kubectl /dist/usr/local/bin/kubectl
