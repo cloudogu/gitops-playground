@@ -148,7 +148,7 @@ node('high-cpu') {
                             } else if (env.BRANCH_NAME == 'main') {
                                 images[1].push()
                                 images[0].push()
-                                currentBuild.description += "${imageNames[0]}"
+                                currentBuild.description = "${imageNames[0]}"
                             } else if (env.BRANCH_NAME == 'test') {
                                 images[1].push()
                                 images[1].push('test-dev')
