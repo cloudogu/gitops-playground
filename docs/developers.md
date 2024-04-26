@@ -624,3 +624,15 @@ docker run --rm --entrypoint java gitops-playground:dev -classpath /app/gitops-p
  --classpath /app/src/main/groovy /app/src/main/groovy/com/cloudogu/gitops/cli/GenerateJsonSchema.groovy \
  | jq > docs/configuration.schema.json
 ```
+
+## Releasing
+
+On `main` branch:
+
+````shell
+git tag -s x.y.z -m x.y.z
+git push --follow-tags
+````
+
+For now start a Jenkins Build of `main` manually.
+We might introduce tag builds in our Jenkins organization at a later stage.
