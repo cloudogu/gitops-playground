@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: example-apps
+  namespace: ${namePrefix}argocd
+  annotations:
+<#if mail.active??>
+     notifications.argoproj.io/subscribe.email: ${argocd.emailToUser}
+</#if>
+spec:
+  description: Contains examples of end-user applications
+  destinations:
+  - namespace: ${namePrefix}example-apps-production
+    server: https://kubernetes.default.svc
+  - namespace: ${namePrefix}example-apps-staging
+    server: https://kubernetes.default.svc
+  sourceRepos:
+  - ${scmm.baseUrl}/repo/${namePrefix}argocd/example-apps
+  - ${scmm.baseUrl}/repo/${namePrefix}argocd/nginx-helm-umbrella
+  
+  
+  # allow to only see application resources from the specified namespace
+  sourceNamespaces:
+    - '${namePrefix}example-apps-staging'
+    - '${namePrefix}example-apps-production'
+
+  # Allow all namespaced-scoped resources to be created
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'
+
+  # Deny all cluster-scoped resources from being created. Least privilege.
+  clusterResourceWhitelist:

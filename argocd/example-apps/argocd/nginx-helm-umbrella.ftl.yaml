@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: nginx-helm-umbrella
+  namespace: ${namePrefix}example-apps-production
+spec:
+  destination:
+    namespace: ${namePrefix}example-apps-production
+    server: https://kubernetes.default.svc
+  project: example-apps
+  source:
+    path: apps/nginx-helm-umbrella
+    repoURL: ${scmm.baseUrl}/repo/${namePrefix}argocd/example-apps
+    targetRevision: main
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

@@ -1,0 +1,36 @@
+<#if image?has_content>
+image:
+  repository: ${image?split(":")[0]}
+  <#if image?contains(":")>
+  tag: ${image?split(":")[1]}
+  </#if>
+</#if>
+
+service:
+  type: <#if isRemote>LoadBalancer<#else>NodePort</#if>
+  port:
+    http: 80
+  nodePort:
+    http: "9094"
+auth:
+  enabled: true
+  fileName: auth.txt
+  fileContents: "${username}:${passwordCrypt}"
+
+resources:
+  limits:
+    memory: 20Mi
+    cpu: 500m
+  requests:
+    memory: 10Mi
+    cpu: 20m
+  
+<#if mail.host?has_content>
+ingress:
+  enabled: true
+  hosts:
+    - host: ${mail.host}
+      paths:
+        - path: "/"
+          pathType: Prefix
+</#if>

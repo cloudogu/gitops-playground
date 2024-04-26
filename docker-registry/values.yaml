@@ -1,8 +1,0 @@
-service:
-  # We need a hostPort in order to work around our builds running on the host's docker daemon.
-  # So here, a ClusterIP is not enough
-  port: 30000
-  nodePort: 30000
-  # Registry runs without auth, so don't expose as LB!
-  type: NodePort
-

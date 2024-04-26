@@ -1,45 +1,63 @@
 #!/usr/bin/env bash
 set -o errexit -o nounset -o pipefail
-# set -x
 
-if [[ -z ${PLAYGROUND_DIR+x} ]]; then
-  BASEDIR=$(dirname $0)
-  PLAYGROUND_DIR="$(cd "${BASEDIR}" && cd .. && cd .. && pwd)"
+ABSOLUTE_BASEDIR="$(cd "$(dirname $0)" && pwd)"
+
+source ${ABSOLUTE_BASEDIR}/../utils.sh
+source ${ABSOLUTE_BASEDIR}/jenkins-REST-client.sh
+
+if [[ $TRACE == true ]]; then
+  set -x
 fi
 
-# When Upgrading helm chart, also upgrade additionalPlugins in jenkins/values.yaml
-# Check for "Failed to load" in the Jenkins log and add or upgrade the plugins mentioned there appropriately.
-#
-# In addition:
-# - Upgrade bash image in values.yaml and gid-grepper
-# - Also upgrade plugins. See docs/developers.md
-JENKINS_HELM_CHART_VERSION=4.2.19
+PLAYGROUND_DIR="$(cd ${ABSOLUTE_BASEDIR} && cd ../.. && pwd)"
 
-SET_USERNAME="admin"
-SET_PASSWORD="admin"
-REMOTE_CLUSTER=false
+JENKINS_PLUGIN_FOLDER=${JENKINS_PLUGIN_FOLDER:-''}
 
-source "${PLAYGROUND_DIR}"/scripts/jenkins/jenkins-REST-client.sh
+if [[ $INSECURE == true ]]; then
+  CURL_HOME="${PLAYGROUND_DIR}"
+  export CURL_HOME
+fi
+
+function initJenkins() {
+  if [[ ${INTERNAL_JENKINS} == true ]]; then
+    deployLocalJenkins 
+
+    setExternalHostnameIfNecessary "JENKINS" "jenkins" "default"
+  fi
+
+  configureJenkins
+}
 
 function deployLocalJenkins() {
-  SET_USERNAME=${1}
-  SET_PASSWORD=${2}
-  REMOTE_CLUSTER=${3}
-  JENKINS_URL=${4}
 
   # Mark the first node for Jenkins and agents. See jenkins/values.yamls "agent.workingDir" for details.
   # Remove first (in case new nodes were added)
   kubectl label --all nodes node- >/dev/null
   kubectl label $(kubectl get node -o name | sort | head -n 1) node=jenkins
 
-  createSecret jenkins-credentials --from-literal=jenkins-admin-user=$SET_USERNAME --from-literal=jenkins-admin-password=$SET_PASSWORD -n default
+  createSecret jenkins-credentials --from-literal=jenkins-admin-user=$JENKINS_USERNAME --from-literal=jenkins-admin-password=$JENKINS_PASSWORD -n default
 
-  kubectl apply -f jenkins/resources || true
-
+  helm repo add jenkins https://charts.jenkins.io
+  helm repo update jenkins
   helm upgrade -i jenkins --values jenkins/values.yaml \
-    $(jenkinsHelmSettingsForLocalCluster) --set agent.runAsGroup=$(queryDockerGroupOfJenkinsNode) \
-    --set controller.jenkinsUrl=$JENKINS_URL \
+    $(jenkinsHelmSettingsForLocalCluster) $(jenkinsIngress) $(setAgentGidOrUid) \
     --version ${JENKINS_HELM_CHART_VERSION} jenkins/jenkins -n default
+}
+
+function jenkinsIngress() {
+  
+    if [[ -n "${BASE_URL}" ]]; then
+      if [[ $URL_SEPARATOR_HYPHEN == true ]]; then
+        local jenkinsHost="jenkins-$(extractHost "${BASE_URL}")"
+      else
+        local jenkinsHost="jenkins.$(extractHost "${BASE_URL}")"
+      fi
+      local externalJenkinsUrl="$(injectSubdomain "${BASE_URL}" 'jenkins')"
+      echo "--set controller.jenkinsUrl=$JENKINS_URL --set controller.ingress.enabled=true --set controller.ingress.hostName=${jenkinsHost}"
+    else
+      echo "--set controller.jenkinsUrl=$JENKINS_URL" 
+    fi
 }
 
 function jenkinsHelmSettingsForLocalCluster() {
@@ -50,17 +68,24 @@ function jenkinsHelmSettingsForLocalCluster() {
   fi
 }
 
-# using local cluster on k3d we grep local host gid for docker
-function queryDockerGroupOfJenkinsNode() {
+# Enable access for the Jenkins Agents Pods to the docker socket  
+function setAgentGidOrUid() {
+  # Try to find out the group ID (GID) of the docker group
   kubectl apply -f jenkins/tmp-docker-gid-grepper.yaml >/dev/null
   until kubectl get po --field-selector=status.phase=Running | grep tmp-docker-gid-grepper >/dev/null; do
     sleep 1
   done
 
-  kubectl exec tmp-docker-gid-grepper -- cat /etc/group | grep docker | cut -d: -f3
-
-  # This call might block some (unnecessary) seconds so move to background
-  kubectl delete -f jenkins/tmp-docker-gid-grepper.yaml >/dev/null &
+  local DOCKER_GID=$(kubectl exec tmp-docker-gid-grepper -- cat /etc/group | grep docker | cut -d: -f3)
+  if [[ -n "${DOCKER_GID}" ]]; then
+    echo "--set agent.runAsGroup=$DOCKER_GID"
+  else
+    # If the docker group cannot be found, run as root user
+    # Unfortunately, the root group (GID 0) usually does not have access to the docker socket. Last ressort: run as root.
+    # This will happen on Docker Desktop for Windows for example
+    error "Warning: Unable to determine Docker Group ID (GID). Jenkins Agent pods will run as root user (UID 0)!"
+    echo '--set agent.runAsUser=0'
+  fi
 }
 
 function waitForJenkins() {
@@ -75,39 +100,22 @@ function waitForJenkins() {
 }
 
 function configureJenkins() {
-  local SCMM_URL pluginFolder
-  
-  JENKINS_URL="${1}"
-  export JENKINS_URL
-  JENKINS_USERNAME="${2}"
-  export JENKINS_USERNAME
-  JENKINS_PASSWORD="${3}"
-  export JENKINS_PASSWORD
-  SCMM_URL="${4}"
-  SCMM_PASSWORD="${5}"
-  REGISTRY_URL="${6}"
-  REGISTRY_PATH="${7}"
-  REGISTRY_USERNAME="${8}"
-  REGISTRY_PASSWORD="${9}"
-  INSTALL_ALL_MODULES="${10}"
-  INSTALL_FLUXV2="${11}"
-  INSTALL_ARGOCD="${12}"
-  
-  
+  local pluginFolder
+
   waitForJenkins
 
   if [[ -z "${JENKINS_PLUGIN_FOLDER}" ]]; then
     pluginFolder=$(mktemp -d)
     echo "Downloading jenkins plugins to ${pluginFolder}"
-    #"${PLAYGROUND_DIR}"/scripts/jenkins/plugins/download-plugins.sh "${pluginFolder}"
+    "${PLAYGROUND_DIR}"/scripts/jenkins/plugins/download-plugins.sh "${pluginFolder}"
   else
     echo "Jenkins plugins folder present, skipping plugin download"
     pluginFolder="${JENKINS_PLUGIN_FOLDER}"
   fi 
 
   echo "Installing Jenkins Plugins from ${pluginFolder}"
-  for pluginFile in "${pluginFolder}/plugins"/*; do 
-     installPlugin "${pluginFile}"
+  awk -F':' '{ print $1 }' scripts/jenkins/plugins/plugins.txt | while read -r pluginName; do
+     installPlugin "${pluginFolder}/plugins/${pluginName}.jpi"
   done
 
   echo "Waiting for plugin installation.."
@@ -126,19 +134,10 @@ function configureJenkins() {
   # Since safeRestart can take time until it really restarts jenkins, we will sleep here before querying jenkins status.
   sleep 5
   waitForJenkins
-
-  setGlobalProperty "SCMM_URL" "${SCMM_URL}"
-  setGlobalProperty "REGISTRY_URL" "${REGISTRY_URL}"
-  setGlobalProperty "REGISTRY_PATH" "${REGISTRY_PATH}"
-
-  createCredentials "scmm-user" "gitops" "${SCMM_PASSWORD}" "credentials for accessing scm-manager"
-  createCredentials "registry-user" "${REGISTRY_USERNAME}" "${REGISTRY_PASSWORD}" "credentials for accessing the docker-registry"
-
-
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_FLUXV2 == true ]]; then
-    createJob "fluxv2-applications" "${SCMM_URL}" "fluxv2" "scmm-user"
-  fi
-  if [[ $INSTALL_ALL_MODULES == true || $INSTALL_ARGOCD == true ]]; then
-    createJob "argocd-applications" "${SCMM_URL}" "argocd" "scmm-user"
-  fi
+  
+    if [[ $INSTALL_ARGOCD == true ]]; then
+      createJob "${NAME_PREFIX}example-apps" "${SCMM_URL}" "${NAME_PREFIX}argocd" "scmm-user"
+    fi
 }
+
+initJenkins "$@"

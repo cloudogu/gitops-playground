@@ -22,35 +22,51 @@ function getExternalIP() {
   
   external_ip=""
   while [ -z $external_ip ]; do
-    external_ip=$(kubectl -n ${namespace} get svc ${servicename} --template="{{range .status.loadBalancer.ingress}}{{.ip}}{{end}}")
+    external_ip=$(kubectl -n ${namespace} get svc ${servicename} -o=jsonpath="{.status.loadBalancer.ingress[0]['hostname','ip']}")
     [ -z "$external_ip" ] && sleep 10
   done
   echo $external_ip
 }
 
-function bcryptPassword() {
-  echo $(htpasswd -bnBC 10 "" $1 | tr -d ':\n')
+function createSecret() {
+  kubectl create secret generic "$@" --dry-run=client -oyaml | kubectl apply -f-
 }
 
-function spinner() {
-    local info="$1"
-    local pid=$!
-    local delay=0.1
-    local spinstr='|/-\'
-    while kill -0 $pid 2> /dev/null; do
-        local temp=${spinstr#?}
-        printf " [%c]  $info" "$spinstr"
-        local spinstr=$temp${spinstr%"$temp"}
-        sleep $delay
-        local reset="\b\b\b\b\b"
-        for ((i=1; i<=$(echo $info | wc -c); i++)); do
-            reset+="\b"
-        done
-        printf $reset
-    done
-    echo " [ok] $info"
+function extractHost() {
+    echo "$1" | awk -F[/:] '{print $4}'
+}
+
+function injectSubdomain() {
+    local BASE_URL="$1"
+    local SUBDOMAIN="$2"
+
+    if [[ "$BASE_URL" =~ ^http:// ]]; then
+        echo "${BASE_URL/http:\/\//http://${SUBDOMAIN}.}"
+    elif [[ "$BASE_URL" =~ ^https:// ]]; then
+        echo "${BASE_URL/https:\/\//https://${SUBDOMAIN}.}"
+    else
+        echo "Invalid BASE URL: ${BASE_URL}. It should start with either http:// or https://"
+        return 1
+    fi
+}
+
+function setExternalHostnameIfNecessary() {
+  local variablePrefix="$1"
+  local serviceName="$2"
+  local namespace="$3"
+
+  # :-} expands to empty string, e.g. for INTERNAL_ARGO which does not exist.
+  # This only works when checking for != false 😬
+  if [[ $REMOTE_CLUSTER == true && "$(eval echo "\${INTERNAL_${variablePrefix}:-}")" != 'false' ]]; then
+    # Update SCMM_URL or JENKINS_URL or ARGOCD_URL
+    # Only if apps are not external
+    # Our apps are configured to use port 80 on remote clusters
+    # Argo forwards to HTTPS so simply use HTTP here
+    declare -g "${variablePrefix}_URL"="http://$(getExternalIP "${serviceName}" "${namespace}")"
+  fi
 }
 
 function error() {
-     echo "$@" 1>&2; 
+    # Print to stderr in red
+    echo -e "\033[31m$@\033[0m" 1>&2;
 }

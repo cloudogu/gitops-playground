@@ -1,0 +1,15 @@
+namespaceOverride: ${namePrefix}example-apps-staging
+service:
+  nodePorts:
+  - http: 3OO42
+
+<#if exampleApps.nginx.baseDomain?has_content>
+ingress:
+  enabled: true
+  pathType: Prefix
+  <#if urlSeparatorHyphen>
+  hostname: staging-exercise-nginx-helm-${exampleApps.nginx.baseDomain}
+  <#else>
+  hostname: staging.exercise-nginx-helm.${exampleApps.nginx.baseDomain}
+  </#if>
+</#if>

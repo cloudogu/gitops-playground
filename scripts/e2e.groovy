@@ -3,6 +3,7 @@
 @Grapes([
         @Grab('org.slf4j:slf4j-api:1.7.32'),
         @Grab('org.slf4j:slf4j-simple:1.7.32'),
+        @Grab('javax.xml.bind:jaxb-api:2.3.1'),
         @Grab('com.offbytwo.jenkins:jenkins-client:0.3.8'),
         @Grab('org.apache.httpcomponents:httpclient:4.5.13'),
 ])

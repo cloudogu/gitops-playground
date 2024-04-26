@@ -1,0 +1,21 @@
+extraEnv: |
+  - name: TZ
+    value: Europe/Berlin
+service:
+  type: <#if isRemote>LoadBalancer<#else>NodePort</#if>
+
+ingress:
+  enabled: <#if exampleApps.petclinic.baseDomain?has_content>true<#else>false</#if>
+
+# this is a helm chart dependency
+podinfo:
+  ui:
+    color: '#456456'
+
+resources:
+  limits:
+    cpu: 1
+    memory: 1Gi
+  requests:
+    cpu: 300m
+    memory: 650Mi

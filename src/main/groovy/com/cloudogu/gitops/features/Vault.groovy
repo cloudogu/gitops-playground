@@ -1,34 +1,40 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
-import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.HelmClient
-import com.cloudogu.gitops.utils.K8sClient
-import com.cloudogu.gitops.utils.MapUtils
+import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.features.deployment.DeploymentStrategy
+import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
+import io.micronaut.core.annotation.Order
+import jakarta.inject.Singleton
 
 import java.nio.file.Path
 
 @Slf4j
+@Singleton
+@Order(500)
 class Vault extends Feature {
-    static final String VAULT_START_SCRIPT_PATH = '/system/secrets/vault/dev-post-start.sh'
+    static final String VAULT_START_SCRIPT_PATH = '/applications/cluster-resources/secrets/vault/dev-post-start.ftl.sh'
 
 
     private Map config
     private FileSystemUtils fileSystemUtils
-    private HelmClient helmClient
-    private File tmpHelmValues
+    private Path tmpHelmValues
     private K8sClient k8sClient
+    private DeploymentStrategy deployer
 
-    Vault(Map config, FileSystemUtils fileSystemUtils = new FileSystemUtils(),
-          K8sClient k8sClient = new K8sClient(), HelmClient helmClient = new HelmClient()) {
-        this.config = config
+    Vault(
+            Configuration config,
+            FileSystemUtils fileSystemUtils,
+            K8sClient k8sClient,
+            DeploymentStrategy deployer
+    ) {
+        this.deployer = deployer
+        this.config = config.getConfig()
         this.fileSystemUtils = fileSystemUtils
-        this.helmClient = helmClient
         this.k8sClient = k8sClient
 
-        tmpHelmValues = File.createTempFile('gitops-playground-control-app', '')
-        tmpHelmValues.deleteOnExit()
+        tmpHelmValues = fileSystemUtils.createTempFile()
     }
 
     @Override
@@ -40,6 +46,8 @@ class Vault extends Feature {
     void enable() {
         // Note that some specific configuration steps are implemented in ArgoCD
 
+        def helmConfig = config['features']['secrets']['vault']['helm']
+
         Map yaml = [
                 ui: [
                         enabled: true,
@@ -48,6 +56,18 @@ class Vault extends Feature {
                 ],
                 injector: [
                         enabled: false
+                ],
+                server: [
+                        resources: [
+                                limits: [
+                                        memory: '200Mi',
+                                        cpu: '500m'
+                                ],
+                                requests: [
+                                        memory: '100Mi',
+                                        cpu: '50m'
+                                ]
+                        ]
                 ]
         ]
 
@@ -55,6 +75,34 @@ class Vault extends Feature {
             log.debug("Setting Vault service.type to NodePort since it is not running in a remote cluster")
             yaml['ui']['serviceType'] = 'NodePort'
             yaml['ui']['serviceNodePort'] = 8200
+        }
+
+        if (config.features['secrets']['vault']['url']) {
+            def url = new URL(config.features['secrets']['vault']['url'] as String)
+            MapUtils.deepMerge([
+                   server: [
+                           ingress: [
+                                   enabled: true,
+                                   hosts: [
+                                           [host: url.host],
+                                   ],
+                           ]
+                   ]
+            ], yaml)
+        }
+
+        if (helmConfig['image']) {
+            log.debug("Setting custom image as requested for vault")
+            def image = DockerImageParser.parse(helmConfig['image'] as String)
+            MapUtils.deepMerge([
+                    server: [
+                            image: [
+
+                                    repository: image.getRegistryAndRepositoryAsString(),
+                                    tag       : image.tag
+                            ]
+                    ]
+            ], yaml)
         }
 
         String vaultMode = config['features']['secrets']['vault']['mode']
@@ -66,9 +114,15 @@ class Vault extends Feature {
             // Init script creates/authorizes secrets, users, service accounts, etc.
             def vaultPostStartConfigMap = 'vault-dev-post-start'
             def vaultPostStartVolume = 'dev-post-start'
+
+            def namePrefix = config.application['namePrefix']
+
+            def templatedFile = fileSystemUtils.copyToTempDir(fileSystemUtils.getRootDir() + VAULT_START_SCRIPT_PATH)
+            def postStartScript = new TemplatingEngine().replaceTemplate(templatedFile.toFile(), [namePrefix: namePrefix])
             
-            k8sClient.createConfigMapFromFile(vaultPostStartConfigMap, 'secrets', fileSystemUtils.getRootDir() 
-                    + VAULT_START_SCRIPT_PATH )
+            log.debug("Creating namespace for vault, so it can add its secrets there")
+            k8sClient.createNamespace("secrets")
+            k8sClient.createConfigMapFromFile(vaultPostStartConfigMap, "secrets", postStartScript.absolutePath)
 
             MapUtils.deepMerge(
                     [
@@ -105,20 +159,23 @@ class Vault extends Feature {
                                                 "PASSWORD=${config['application']['password']} " +
                                                 "ARGOCD=${config.features['argocd']['active']} " +
                                                     // Write script output to file for easier debugging
-                                                    '/var/opt/scripts/dev-post-start.sh 2>&1 | tee /tmp/dev-post-start.log'
+                                                    "/var/opt/scripts/${postStartScript.name} 2>&1 | tee /tmp/dev-post-start.log"
                                     ],
                             ]
                     ], yaml)
         }
 
         log.trace("Helm yaml to be applied: ${yaml}")
-        fileSystemUtils.writeYaml(yaml, tmpHelmValues)
+        fileSystemUtils.writeYaml(yaml, tmpHelmValues.toFile())
 
-        def helmConfig = config['features']['secrets']['vault']['helm']
-        helmClient.addRepo(getClass().simpleName, helmConfig['repoURL'] as String)
-        helmClient.upgrade('vault', "${getClass().simpleName}/${helmConfig['chart']}",
+        deployer.deployFeature(
+                helmConfig['repoURL'] as String,
+                'vault',
+                helmConfig['chart'] as String,
                 helmConfig['version'] as String,
-                [namespace: 'secrets',
-                 values   : "${tmpHelmValues.toString()}"])
+                'secrets',
+                'vault',
+                tmpHelmValues
+        )
     }
 }

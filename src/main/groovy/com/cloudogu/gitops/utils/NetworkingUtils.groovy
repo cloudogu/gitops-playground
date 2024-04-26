@@ -2,17 +2,19 @@ package com.cloudogu.gitops.utils
 
 
 import groovy.util.logging.Slf4j
+import jakarta.inject.Singleton
 
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
 @Slf4j
+@Singleton
 class NetworkingUtils {
 
     private K8sClient k8sClient
     private CommandExecutor commandExecutor
 
-    NetworkingUtils(K8sClient k8sClient = new K8sClient(), CommandExecutor commandExecutor = new CommandExecutor()) {
+    NetworkingUtils(K8sClient k8sClient, CommandExecutor commandExecutor) {
         this.k8sClient = k8sClient
         this.commandExecutor = commandExecutor
     }
@@ -29,8 +31,13 @@ class NetworkingUtils {
 
         String potentialClusterBindAddress = k8sClient.getInternalNodeIp()
         potentialClusterBindAddress = potentialClusterBindAddress.replaceAll("'", "")
-        String ipConfig = commandExecutor.execute("ip route get 1").stdOut
-        String substringWithSrcIp = ipConfig.substring(ipConfig.indexOf("src"))
+
+        def ipCommand = 'ip route get 1'
+        String outputIpCommand = commandExecutor.execute(ipCommand).stdOut
+        if (!outputIpCommand.contains('src'))  {
+            throw new RuntimeException("Could not determine local ip address, because command '${ipCommand}' returned: '${outputIpCommand}'")
+        }
+        String substringWithSrcIp = outputIpCommand.substring(outputIpCommand.indexOf('src'))
         String localAddress = getIpFromString(substringWithSrcIp)
 
         log.debug("Local address: " + localAddress)

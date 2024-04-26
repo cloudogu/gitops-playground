@@ -1,0 +1,25 @@
+<#if exampleApps.petclinic.baseDomain?has_content>
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: spring-petclinic-plain
+  labels:
+    app: spring-petclinic-plain
+spec:
+  rules:
+    <#if urlSeparatorHyphen>
+    - host: staging-petclinic-plain-${exampleApps.petclinic.baseDomain}
+    <#else>
+    - host: staging.petclinic-plain.${exampleApps.petclinic.baseDomain}
+    </#if>
+      http:
+        paths:
+          - backend:
+              service:
+                name: spring-petclinic-plain
+                port:
+                  name: http
+            path: /
+            pathType: Prefix
+
+</#if>

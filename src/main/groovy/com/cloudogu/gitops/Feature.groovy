@@ -11,7 +11,7 @@ abstract class Feature {
             enable()
             return true
         } else {
-            log.info("Feature ${getClass().getSimpleName()} is disabled")
+            log.debug("Feature ${getClass().getSimpleName()} is disabled")
             disable()
             return false
         }

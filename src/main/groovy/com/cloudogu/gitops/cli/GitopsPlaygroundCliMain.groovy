@@ -2,7 +2,7 @@ package com.cloudogu.gitops.cli
 
 
 import groovy.util.logging.Slf4j
-import io.micronaut.configuration.picocli.PicocliRunner
+import picocli.CommandLine
 
 @Slf4j
 class GitopsPlaygroundCliMain {
@@ -21,8 +21,10 @@ class GitopsPlaygroundCliMain {
         else if (args.contains('--debug') || args.contains('-d'))
             System.setProperty("picocli.trace", "INFO")
 
-        int exitCode = PicocliRunner.execute(commandClass, args)
+        def app = commandClass.getDeclaredConstructor().newInstance()
+        def exitCode = new CommandLine(app)
+                .execute(args)
+
         System.exit(exitCode)
     }
 }
-

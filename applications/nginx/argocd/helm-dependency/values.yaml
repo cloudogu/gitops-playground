@@ -1,6 +1,0 @@
-nginx:
-  service:
-    ports:
-      http: 80
-    nodePorts:
-      http: 30026

@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: broken-application
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 8080
+      nodePort: 30046
+  selector:
+    app: broken-application
+---
+apiVersion: apps/v1
+kind: Deployment(z)
+metadata:
+  name: broken-application
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: broken-application
+  template:
+    metadata:
+      labels:
+        app: broken-application
+    spec:
+      containers:
+        - name: broken-application
+          image: <#if nginxImage??>${nginxImage}<#else>bitnami/nginx:1.25.1</#if>
+          ports:
+            - containerPort: 8080
+          resources:
+            limits:
+              cpu: 100m
+              memory: 30Mi
+            requests:
+              cpu: 30m
+              memory: 15Mi

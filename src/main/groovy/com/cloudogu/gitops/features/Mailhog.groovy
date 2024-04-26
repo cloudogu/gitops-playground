@@ -1,62 +1,67 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
+import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.HelmClient
+import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
+import io.micronaut.core.annotation.Order
+import jakarta.inject.Singleton
 import org.springframework.security.crypto.bcrypt.BCrypt
 
 @Slf4j
+@Singleton
+@Order(200)
 class Mailhog extends Feature {
 
-    static final String HELM_VALUES_PATH = "system/mailhog-helm-values.yaml"
-    
+    static final String HELM_VALUES_PATH = "applications/cluster-resources/mailhog-helm-values.ftl.yaml"
+
     private Map config
-    private boolean remoteCluster
     private String username
     private String password
     private FileSystemUtils fileSystemUtils
-    HelmClient helmClient
+    private DeploymentStrategy deployer
 
-    Mailhog(Map config, FileSystemUtils fileSystemUtils = new FileSystemUtils(),
-            HelmClient helmClient = new HelmClient()) {
-        this.config = config
-        this.remoteCluster = config.application["remote"]
-        this.username = config.application["username"]
-        this.password = config.application["password"]
+    Mailhog(
+            Configuration config,
+            FileSystemUtils fileSystemUtils,
+            DeploymentStrategy deployer
+    ) {
+        this.deployer = deployer
+        this.config = config.getConfig()
+        this.username = this.config.application["username"]
+        this.password = this.config.application["password"]
         this.fileSystemUtils = fileSystemUtils
-        this.helmClient = helmClient
     }
 
     @Override
     boolean isEnabled() {
-        return config.features['mail']['active']
+        return config.features['mail']['mailhog']
     }
 
     @Override
     void enable() {
-        def tmpHelmValues = fileSystemUtils.copyToTempDir(HELM_VALUES_PATH)
-        def tmpHelmValuesFolder = tmpHelmValues.parent.toString()
-        def tmpHelmValuesFile = tmpHelmValues.fileName.toString()
-
-        if (!remoteCluster) {
-            log.debug("Setting mailhog service.type to NodePort since it is not running in a remote cluster")
-            fileSystemUtils.replaceFileContent(tmpHelmValuesFolder, tmpHelmValuesFile, 
-                    "LoadBalancer", "NodePort")
-        }
-
-        log.debug("Setting new mailhog credentials")
         String bcryptMailhogPassword = BCrypt.hashpw(password, BCrypt.gensalt(4))
-        String from = "fileContents: \"admin:\$2a\$04\$bM4G0jXB7m7mSv4UT8IuIe3.Bj6i6e2A13ryA0ln.hpyX7NeGQyG.\""
-        String to = "fileContents: \"$username:$bcryptMailhogPassword\""
-
-        fileSystemUtils.replaceFileContent(tmpHelmValuesFolder, tmpHelmValuesFile, from, to)
+        def tmpHelmValues = new TemplatingEngine().replaceTemplate(fileSystemUtils.copyToTempDir(HELM_VALUES_PATH).toFile(), [
+                mail: [
+                        // Note that passing the URL object here leads to problems in Graal Native image, see Git history
+                        host: config.features['mail']['mailhogUrl'] ? new URL(config.features['mail']['mailhogUrl'] as String).host : "",
+                ],
+                image: config['features']['mail']['helm']['image'] as String,
+                isRemote: config.application['remote'],
+                username: username,
+                passwordCrypt: bcryptMailhogPassword,
+        ]).toPath()
 
         def helmConfig = config['features']['mail']['helm']
-        helmClient.addRepo(getClass().simpleName, helmConfig['repoURL'] as String)
-        helmClient.upgrade('mailhog', "${getClass().simpleName}/${helmConfig['chart']}",
+        deployer.deployFeature(
+                helmConfig['repoURL'] as String,
+                'mailhog',
+                helmConfig['chart'] as String,
                 helmConfig['version'] as String,
-                [namespace: 'monitoring',
-                 values: "${tmpHelmValues.toString()}"])
+                'monitoring',
+                'mailhog',
+                tmpHelmValues)
     }
 }

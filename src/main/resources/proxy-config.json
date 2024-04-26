@@ -1,0 +1,8 @@
+[
+  ["java.util.function.Consumer"],
+  ["java.util.function.Function"],
+  ["java.util.function.Predicate"],
+  ["java.util.function.Supplier"],
+  ["com.cloudogu.gitops.scmm.api.UsersApi"],
+  ["com.cloudogu.gitops.scmm.api.RepositoryApi"]
+]

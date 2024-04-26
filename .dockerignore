@@ -6,17 +6,13 @@
 !exercises/
 !argocd/
 !docker-registry/
-!fluxv2/
 !jenkins/
-!k8s-namespaces/
-!system/
 !scm-manager/
 !scripts/jenkins/
 !scripts/scm-manager/
-!scripts/apply.sh
-!scripts/apply-ng.sh
 !scripts/get-remote-url
 !scripts/utils.sh
+!scripts/apply-ng.sh
 !.curlrc
 !LICENSE
 

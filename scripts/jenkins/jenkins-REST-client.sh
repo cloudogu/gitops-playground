@@ -45,33 +45,6 @@ function createJob() {
   printStatus "${STATUS}"
 }
 
-function createCredentials() {
-  printf 'Creating credentials for %s ... ' "${1}"
-
-  # shellcheck disable=SC2016
-  # we don't want to expand these variables in single quotes
-  CRED_CONFIG=$(env -i CREDENTIALS_ID="${1}" \
-               USERNAME="${2}" \
-               PASSWORD="${3}" \
-               DESCRIPTION="${4}" \
-               envsubst '${CREDENTIALS_ID},
-                         ${USERNAME},
-                         ${PASSWORD},
-                         ${DESCRIPTION}' \
-               < scripts/jenkins/credentialsTemplate.json)
-
-  STATUS=$(curlJenkins --fail -L -o /dev/null --write-out '%{http_code}' \
-        -X POST "${JENKINS_URL}/credentials/store/system/domain/_/createCredentials" \
-        --data-urlencode "json=${CRED_CONFIG}") && EXIT_STATUS=$? || EXIT_STATUS=$?
-  if [ $EXIT_STATUS != 0 ]
-    then
-      echo "Creating Credentials failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
-      exit $EXIT_STATUS
-  fi
-
-  printStatus "${STATUS}"
-}
-
 function crumb() {
     
   RESPONSE=$(curl -s --cookie-jar /tmp/cookies \
@@ -142,29 +115,6 @@ function checkPluginStatus() {
            "${JENKINS_URL}/scriptText")
 
   echo -e "${STATUS#*: }" | sed 's/^.//;s/.$//'
-}
-
-function setGlobalProperty() {
-  printf 'Setting Global Property %s:%s ...' "${1}" "${2}"
-
-  # shellcheck disable=SC2016
-  # we don't want to expand these variables in single quotes
-  GROOVY_SCRIPT=$(env -i KEY="${1}" \
-               VALUE="${2}" \
-               envsubst '${KEY},
-                         ${VALUE}' \
-               < scripts/jenkins/setGlobalPropertyTemplate.groovy)
-
-  STATUS=$(curlJenkins --fail -L -o /dev/null --write-out '%{http_code}' \
-       -d "script=${GROOVY_SCRIPT}" --user "${JENKINS_USERNAME}:${JENKINS_PASSWORD}" \
-       "${JENKINS_URL}/scriptText" ) && EXIT_STATUS=$? || EXIT_STATUS=$?
-  if [ $EXIT_STATUS != 0 ]
-    then
-      echo "Setting Global Property ${1}:${2} failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
-      exit $EXIT_STATUS
-  fi
-
-  printStatus "${STATUS}"
 }
 
 function printStatus() {

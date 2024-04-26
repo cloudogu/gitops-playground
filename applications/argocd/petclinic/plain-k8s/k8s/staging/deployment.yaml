@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spring-petclinic-plain
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spring-petclinic-plain
+  template:
+    metadata:
+      labels:
+        app: spring-petclinic-plain
+    spec:
+      containers:
+        - name: spring-petclinic-plain
+          image: localhost:30000/petclinic-plain:1
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: MANAGEMENT_SERVER_PORT
+              value: "9080"
+            - name: SPRING_MESSAGES_BASENAME
+              value: "file:/tmp/messages/messages"
+            - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK
+              value: INFO
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /actuator/health/readiness
+              port: 9080
+              scheme: HTTP
+          volumeMounts:
+            - name: messages
+              mountPath: /tmp/messages
+            - name: tmp
+              # Make /tmp writable with readOnlyRootFilesystem
+              mountPath: /tmp
+          resources:
+            limits:
+              cpu: 1
+              memory: 1Gi
+            requests:
+              cpu: 300m
+              memory: 650Mi
+          securityContext: # Implement some least privilege good practices
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+            # These two seem to cause problems with OpenShift, so we disable them for now
+            #runAsUser: 65312
+            #seccompProfile:
+            #  type: RuntimeDefault
+            # With k8s 1.30 apparmor is added 
+            # Won't work on k3d, though, because apparmor is not enabled
+            # apparmorProfile: "runtime/default"
+      enableServiceLinks: false
+      automountServiceAccountToken: false # When not communicating with API Server
+      volumes:
+        - name: messages
+          configMap:
+            name: messages
+        - name: tmp
+          emptyDir: {}

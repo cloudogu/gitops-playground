@@ -1,0 +1,14 @@
+service:
+  port: 80
+  nodePort: 30041
+
+<#if exampleApps.petclinic.baseDomain?has_content>
+ingress:
+  hosts:
+    <#if urlSeparatorHyphen>
+    - host: production-exercise-petclinic-helm-${exampleApps.petclinic.baseDomain}
+    <#else>
+    - host: production.exercise-petclinic-helm.${exampleApps.petclinic.baseDomain}
+    </#if>
+      paths: ['/']
+</#if>

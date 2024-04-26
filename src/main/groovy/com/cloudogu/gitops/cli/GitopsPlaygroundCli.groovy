@@ -1,19 +1,39 @@
 package com.cloudogu.gitops.cli
 
+import ch.qos.logback.classic.Level
+import ch.qos.logback.classic.Logger
+import ch.qos.logback.classic.LoggerContext
+import ch.qos.logback.classic.encoder.PatternLayoutEncoder
+import ch.qos.logback.classic.spi.ILoggingEvent
+import ch.qos.logback.core.ConsoleAppender
 import com.cloudogu.gitops.Application
-import com.cloudogu.gitops.ApplicationConfigurator
+import com.cloudogu.gitops.config.ApplicationConfigurator
+import com.cloudogu.gitops.config.ConfigToConfigFileConverter
+import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.destroy.Destroyer
+import com.cloudogu.gitops.utils.K8sClient
 import groovy.util.logging.Slf4j
+import io.micronaut.context.ApplicationContext
+import org.slf4j.LoggerFactory
+import picocli.CommandLine
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 
 import static groovy.json.JsonOutput.prettyPrint
 import static groovy.json.JsonOutput.toJson
-
-@Command(name = 'gitops-playground-cli', description = 'CLI-tool to deploy gitops-playground.',
+/**
+ * Provides the entrypoint to the application as well as all config parameters.
+ * When changing parameters, make sure to update the Schema for the config file as well
+ *
+ * @see com.cloudogu.gitops.config.schema.Schema
+ */
+@Command(
+        name = 'apply-ng',
+        description = 'CLI-tool to deploy gitops-playground.',
         mixinStandardHelpOptions = true)
-@Slf4j
-class GitopsPlaygroundCli implements Runnable {
 
+@Slf4j
+class GitopsPlaygroundCli  implements Runnable {
     // args group registry
     @Option(names = ['--registry-url'], description = 'The url of your external registry')
     private String registryUrl
@@ -24,7 +44,7 @@ class GitopsPlaygroundCli implements Runnable {
     @Option(names = ['--registry-password'], description = 'Optional when --registry-url is set')
     private String registryPassword
     @Option(names = ['--internal-registry-port'], description = 'Port of registry registry. Ignored when registry-url is set')
-    private int internalRegistryPort
+    private Integer internalRegistryPort
 
     // args group jenkins
     @Option(names = ['--jenkins-url'], description = 'The url of your external jenkins')
@@ -33,6 +53,10 @@ class GitopsPlaygroundCli implements Runnable {
     private String jenkinsUsername
     @Option(names = ['--jenkins-password'], description = 'Mandatory when --jenkins-url is set')
     private String jenkinsPassword
+    @Option(names = ['--jenkins-metrics-username'], description = 'Mandatory when --jenkins-url is set and monitoring enabled')
+    private String jenkinsMetricsUsername
+    @Option(names = ['--jenkins-metrics-password'], description = 'Mandatory when --jenkins-url is set and monitoring enabled')
+    private String jenkinsMetricsPassword
 
     // args group scm
     @Option(names = ['--scmm-url'], description = 'The host of your external scm-manager')
@@ -41,12 +65,16 @@ class GitopsPlaygroundCli implements Runnable {
     private String scmmUsername
     @Option(names = ['--scmm-password'], description = 'Mandatory when --scmm-url is set')
     private String scmmPassword
+    @Option(names = ['--git-name'], description = 'Sets git author and committer name used for initial commits')
+    private String gitName
+    @Option(names = ['--git-email'], description = 'Sets git author and committer email used for initial commits')
+    private String gitEmail
 
     // args group remote
-    @Option(names = ['--remote'], description = 'Install on remote Cluster e.g. gcp')
-    private boolean remote
+    @Option(names = ['--remote'], description = 'Expose services as LoadBalancers')
+    private Boolean remote
     @Option(names = ['--insecure'], description = 'Sets insecure-mode in cURL which skips cert validation')
-    private boolean insecure
+    private Boolean insecure
     @Option(names = ['--openshift'], description = 'Install with openshift compatibility')
     private boolean openshift
 
@@ -61,41 +89,111 @@ class GitopsPlaygroundCli implements Runnable {
     private String helmKubevalImage
     @Option(names = ['--yamllint-image'], description = 'Sets image for yamllint')
     private String yamllintImage
-    @Option(names = ['--skip-helm-update'], description = 'Skips adding and updating helm repos')
-    private boolean skipHelmUpdate
-    @Option(names = ['--argocd-config-only'], description = 'Skips installing argo-cd. Applies ConfigMap and Application manifests to bootstrap existing argo-cd')
-    private boolean argocdConfigOnly
+    @Option(names = ['--grafana-image'], description = 'Sets image for grafana')
+    private String grafanaImage
+    @Option(names = ['--grafana-sidecar-image'], description = 'Sets image for grafana\'s sidecar')
+    private String grafanaSidecarImage
+    @Option(names = ['--prometheus-image'], description = 'Sets image for prometheus')
+    private String prometheusImage
+    @Option(names = ['--prometheus-operator-image'], description = 'Sets image for prometheus-operator')
+    private String prometheusOperatorImage
+    @Option(names = ['--prometheus-config-reloader-image'], description = 'Sets image for prometheus-operator\'s config-reloader')
+    private String prometheusConfigReloaderImage
+    @Option(names = ['--external-secrets-image'], description = 'Sets image for external secrets operator')
+    private String externalSecretsOperatorImage
+    @Option(names = ['--external-secrets-certcontroller-image'], description = 'Sets image for external secrets operator\'s controller')
+    private String externalSecretsOperatorCertControllerImage
+    @Option(names = ['--external-secrets-webhook-image'], description = 'Sets image for external secrets operator\'s webhook')
+    private String externalSecretsOperatorWebhookImage
+    @Option(names = ['--vault-image'], description = 'Sets image for vault')
+    private String vaultImage
+    @Option(names = ['--nginx-image'], description = 'Sets image for nginx used in various applications')
+    private String nginxImage
+    @Option(names = ['--petclinic-image'], description = 'Sets image for petclinic used in various applications')
+    private String petClinicImage
+    @Option(names = ['--base-url'], description = 'the external base url (TLD) for all tools, e.g. https://example.com or http://localhost:8080. The individual -url params for argocd, grafana, vault and mailhog take precedence.')
+    private String baseUrl
+    @Option(names = ['--url-separator-hyphen'], description = 'Use hyphens instead of dots to separate application name from base-url')
+    private Boolean urlSeparatorHyphen
 
     // args group metrics
     @Option(names = ['--metrics', '--monitoring'], description = 'Installs the Kube-Prometheus-Stack. This includes Prometheus, the Prometheus operator, Grafana and some extra resources')
-    private boolean monitoring
-    
-    // args group metrics
+    private Boolean monitoring
+    @Option(names = ['--grafana-url'], description = 'Sets url for grafana')
+    private String grafanaUrl
+    @Option(names = ['--grafana-email-from'], description = 'Notifications, define grafana alerts sender email address')
+    private String grafanaEmailFrom
+    @Option(names = ['--grafana-email-to'], description = 'Notifications, define grafana alerts recipient email address')
+    private String grafanaEmailTo
+
+    // args group vault / secrets
     @Option(names = ['--vault'], description = 'Installs Hashicorp vault and the external secrets operator. Possible values: ${COMPLETION-CANDIDATES}')
     private VaultModes vault
     enum VaultModes { dev, prod }
-    
+    @Option(names = ['--vault-url'], description = 'Sets url for vault ui')
+    private String vaultUrl
+
+    @Option(names = ['--mailhog-url'], description = 'Sets url for MailHog')
+    private String mailhogUrl
+    @Option(names = ['--mailhog', '--mail'], description = 'Installs MailHog as Mail server.', scope = CommandLine.ScopeType.INHERIT)
+    private Boolean mailhog
+
+    // condition check dependent parameters of external Mailserver
+    @Option(names = ['--smtp-address'], description = 'Sets smtp port of external Mailserver')
+    private String smtpAddress
+    @Option(names = ['--smtp-port'], description = 'Sets smtp port of external Mailserver')
+    private Integer smtpPort
+    @Option(names = ['--smtp-user'], description = 'Sets smtp username for external Mailserver')
+    private String smtpUser
+    @Option(names = ['--smtp-password'], description = 'Sets smtp password of external Mailserver')
+    private String smtpPassword
+
     // args group debug
-    @Option(names = ['-d', '--debug'], description = 'Debug output')
-    private boolean debug
-    @Option(names = ['-x', '--trace'], description = 'Debug + Show each command executed (set -x)')
-    private boolean trace
+    @Option(names = ['-d', '--debug'], description = 'Debug output', scope = CommandLine.ScopeType.INHERIT)
+    Boolean debug
+    @Option(names = ['-x', '--trace'], description = 'Debug + Show each command executed (set -x)', scope = CommandLine.ScopeType.INHERIT)
+    Boolean trace
 
     // args group configuration
     @Option(names = ['--username'], description = 'Set initial admin username')
     private String username
     @Option(names = ['--password'], description = 'Set initial admin passwords')
     private String password
-    @Option(names = ['-y', '--yes'], description = 'Skip kubecontext confirmation')
-    private boolean pipeYes
+    @Option(names = ['-y', '--yes'], description = 'Skip confirmation')
+    Boolean pipeYes
+    @Option(names = ['--name-prefix'], description = 'Set name-prefix for repos, jobs, namespaces')
+    private String namePrefix
+    @Option(names = ['--destroy'], description = 'Unroll playground')
+    Boolean destroy
+    @Option(names = ['--config-file'], description = 'Configuration using a config file')
+    String configFile
+    @Option(names = ['--config-map'], description = 'Kubernetes configuration map. Should contain a key `config.yaml`.')
+    String configMap
+    @Option(names = ['--output-config-file'], description = 'Output current config as config file as much as possible')
+    Boolean outputConfigFile
 
-    // args group operator
-    @Option(names = ['--fluxv2'], description = 'Install the Flux V2 module')
-    private boolean fluxv2
-    @Option(names = ['--argocd'], description = 'Install the ArgoCD module')
-    private boolean argocd
+    // args group ArgoCD operator
+    @Option(names = ['--argocd'], description = 'Install ArgoCD ')
+    private Boolean argocd
     @Option(names = ['--argocd-url'], description = 'The URL where argocd is accessible. It has to be the full URL with http:// or https://')
     private String argocdUrl
+    @Option(names = ['--argocd-email-from'], description = 'Notifications, define Argo CD sender email address')
+    private String emailFrom
+    @Option(names = ['--argocd-email-to-user'], description = 'Notifications, define Argo CD user / app-team recipient email address')
+    private String emailToUser
+    @Option(names = ['--argocd-email-to-admin'], description = 'Notifications, define Argo CD admin recipient email address')
+    private String emailToAdmin
+
+    // args group example apps
+    @Option(names = ['--petclinic-base-domain'], description = 'The domain under which a subdomain for all petclinic will be used.')
+    private String petclinicBaseDomain
+    @Option(names = ['--nginx-base-domain'], description = 'The domain under which a subdomain for all nginx applications will be used.')
+    private String nginxBaseDomain
+
+    // args Ingress-Class
+    @Option(names = ['--ingress-nginx'], description = 'Sets and enables Nginx Ingress Controller')
+    private Boolean ingressNginx
+
     @Option(names = ['--argocd-operator'], description = 'Install ArgoCd via Operator')
     private boolean argocdOperator
     @Option(names = ['--argocd-namespace'], description = 'Deploy ArgoCD into specific namespace')
@@ -103,19 +201,135 @@ class GitopsPlaygroundCli implements Runnable {
 
     @Override
     void run() {
-        ApplicationConfigurator applicationConfigurator = new ApplicationConfigurator()
-        Map config = applicationConfigurator
-                // Here we could implement loading from a config file, giving CLI params precedence
-                //.setConfig(configFile.toFile().getText())
-                .setConfig(parseOptionsIntoConfig())
+        setLogging()
         
-        log.debug("Actual config: ${prettyPrint(toJson(config))}")
-        
-        Application app = new Application(config)
-        app.start()
+        def context = createApplicationContext()
+
+        if (outputConfigFile) {
+            println(context.getBean(ConfigToConfigFileConverter)
+                    .convert(getConfig(context, true)))
+            return
+        }
+
+        def config = getConfig(context, false)
+        context = context.registerSingleton(new Configuration(config))
+        K8sClient k8sClient = context.getBean(K8sClient)
+
+        if (destroy) {
+            confirmOrExit "Destroying gitops playground in kubernetes cluster '${k8sClient.currentContext}'."
+
+            Destroyer destroyer = context.getBean(Destroyer)
+            destroyer.destroy()
+        } else {
+            confirmOrExit "Applying gitops playground to kubernetes cluster '${k8sClient.currentContext}'."
+
+            Application app = context.getBean(Application)
+            app.start()
+
+            printWelcomeScreen()
+        }
     }
-    
+
+    private void confirmOrExit(String message) {
+        if (pipeYes) {
+            return
+        }
+
+        log.info("\n${message}\nContinue? y/n [n]")
+
+        def input = System.in.newReader().readLine()
+
+        if (input != 'y') {
+            System.exit(1)
+        }
+    }
+
+    protected ApplicationContext createApplicationContext() {
+        ApplicationContext.run()
+    }
+
+    void setLogging() {
+        Logger logger = (Logger) LoggerFactory.getLogger("com.cloudogu.gitops")
+        if (trace) {
+            log.info("Setting loglevel to trace")
+            logger.setLevel(Level.TRACE)
+        } else if (debug) {
+            log.info("Setting loglevel to debug")
+            logger.setLevel(Level.DEBUG)
+        } else {
+            setSimpleLogPattern()
+        }
+    }
+
+    /**
+     * Changes log pattern to a simpler one, to reduce noise for normal users
+     */
+    void setSimpleLogPattern() {
+        LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory()
+        def rootLogger = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME)
+        def defaultPattern = ((rootLogger.getAppender('STDOUT') as ConsoleAppender)
+                .getEncoder() as PatternLayoutEncoder).pattern
+
+        // Avoid duplicate output by existing appender
+        rootLogger.detachAppender('STDOUT')
+        PatternLayoutEncoder encoder = new PatternLayoutEncoder()
+        // Remove less relevant details from log pattern
+        encoder.setPattern(defaultPattern
+                .replaceAll(" \\S*%thread\\S* ", " ")
+                .replaceAll(" \\S*%logger\\S* ", " "))
+        encoder.setContext(loggerContext)
+        encoder.start()
+        ConsoleAppender<ILoggingEvent> appender = new ConsoleAppender<>()
+        appender.setName('STDOUT')
+        appender.setContext(loggerContext)
+        appender.setEncoder(encoder)
+        appender.start()
+        rootLogger.addAppender(appender)
+    }
+
+    private Map getConfig(ApplicationContext appContext, boolean skipInternalConfig) {
+        if (configFile && configMap) {
+            throw new RuntimeException("Cannot provide --config-file and --config-map at the same time.")
+        }
+
+        ApplicationConfigurator applicationConfigurator = appContext.getBean(ApplicationConfigurator)
+        if (configFile) {
+            applicationConfigurator.setConfig(new File(configFile), true)
+        } else if (configMap) {
+            def k8sClient = appContext.getBean(K8sClient)
+            def configValues = k8sClient.getConfigMap(configMap, 'config.yaml')
+
+            applicationConfigurator.setConfig(configValues, true)
+        }
+
+        Map config = applicationConfigurator.setConfig(parseOptionsIntoConfig(), skipInternalConfig)
+
+        log.debug("Actual config: ${prettyPrint(toJson(config))}")
+
+        return config
+    }
+
+    void printWelcomeScreen() {
+        log.info '''\n
+  |----------------------------------------------------------------------------------------------|
+  |                       Welcome to the GitOps playground by Cloudogu!
+  |----------------------------------------------------------------------------------------------|
+  |
+  | Please find the URLs of the individual applications in our README:
+  | https://github.com/cloudogu/gitops-playground/blob/main/README.md#table-of-contents
+  |
+  | A good starting point might also be the services or ingresses inside your cluster:  
+  | kubectl get svc -A
+  | Or (depending on your config)
+  | kubectl get ing -A
+  |
+  | Please be aware, Jenkins and Argo CD may take some time to build and deploy all apps.
+  |----------------------------------------------------------------------------------------------|
+'''
+    }
+
     private Map parseOptionsIntoConfig() {
+
         return [
                 registry   : [
                         url         : registryUrl,
@@ -127,7 +341,9 @@ class GitopsPlaygroundCli implements Runnable {
                 jenkins    : [
                         url     : jenkinsUrl,
                         username: jenkinsUsername,
-                        password: jenkinsPassword
+                        password: jenkinsPassword,
+                        metricsUsername: jenkinsMetricsUsername,
+                        metricsPassword: jenkinsMetricsPassword,
                 ],
                 scmm       : [
                         url     : scmmUrl,
@@ -138,39 +354,85 @@ class GitopsPlaygroundCli implements Runnable {
                         openshift     : openshift,
                         remote        : remote,
                         insecure      : insecure,
-                        skipHelmUpdate: skipHelmUpdate,
                         debug         : debug,
                         trace         : trace,
                         username      : username,
                         password      : password,
                         pipeYes       : pipeYes,
+                        namePrefix    : namePrefix,
+                        baseUrl : baseUrl,
+                        gitName: gitName,
+                        gitEmail: gitEmail,
+                        urlSeparatorHyphen : urlSeparatorHyphen
                 ],
                 images     : [
                         kubectl    : kubectlImage,
                         helm       : helmImage,
                         kubeval    : kubevalImage,
                         helmKubeval: helmKubevalImage,
-                        yamllint   : yamllintImage
+                        yamllint   : yamllintImage,
+                        nginx      : nginxImage,
+                        petclinic  : petClinicImage,
                 ],
                 features    : [
-                        fluxv2 : fluxv2,
                         argocd : [
                                 active    : argocd,
-                                configOnly: argocdConfigOnly,
                                 url       : argocdUrl,
                                 operator  : argocdOperator,
-                                namespace : argocdNamespace
+                                namespace : argocdNamespace,
+                                emailFrom    : emailFrom,
+                                emailToUser  : emailToUser,
+                                emailToAdmin : emailToAdmin
+                        ],
+                        mail: [
+                                mailhog: mailhog,
+                                mailhogUrl : mailhogUrl,
+                                smtpAddress : smtpAddress,
+                                smtpPort : smtpPort,
+                                smtpUser : smtpUser,
+                                smtpPassword : smtpPassword
+                        ],
+                        exampleApps: [
+                                petclinic: [
+                                        baseDomain: petclinicBaseDomain,
+                                ],
+                                nginx    : [
+                                        baseDomain: nginxBaseDomain,
+                                ],
                         ],
                         monitoring : [
-                                active    : monitoring
+                                active    : monitoring,
+                                grafanaUrl: grafanaUrl,
+                                grafanaEmailFrom : grafanaEmailFrom,
+                                grafanaEmailTo   : grafanaEmailTo,
+                                helm      : [
+                                        grafanaImage: grafanaImage,
+                                        grafanaSidecarImage: grafanaSidecarImage,
+                                        prometheusImage: prometheusImage,
+                                        prometheusOperatorImage: prometheusOperatorImage,
+                                        prometheusConfigReloaderImage: prometheusConfigReloaderImage,
+                                ]
                         ],
                         secrets : [
                                 vault : [
-                                        mode : vault
+                                        mode : vault,
+                                        url: vaultUrl,
+                                        helm: [
+                                                image: vaultImage
+                                        ]
+                                ],
+                                externalSecrets: [
+                                        helm: [
+                                                image              : externalSecretsOperatorImage,
+                                                certControllerImage: externalSecretsOperatorCertControllerImage,
+                                                webhookImage       : externalSecretsOperatorWebhookImage
+                                        ]
                                 ]
+                        ],
+                        ingressNginx: [
+                               active: ingressNginx
                         ],
                 ]
         ]
     }
 }
-

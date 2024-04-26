@@ -5,12 +5,15 @@ import groovy.io.FileType
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlBuilder
 import groovy.yaml.YamlSlurper
+import jakarta.inject.Singleton
 import org.apache.commons.io.FileUtils
 
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.regex.Pattern
 
 @Slf4j
+@Singleton
 class FileSystemUtils {
 
     /**
@@ -27,7 +30,7 @@ class FileSystemUtils {
 
     String replaceFileContent(String fileToChange, String from, String to) {
         File file = new File(fileToChange)
-        String newConfig = file.text.replace(from, to)
+        String newConfig = file.text.replaceAll(from, to)
         file.setText(newConfig)
         return file
     }
@@ -131,9 +134,23 @@ class FileSystemUtils {
         def destPath = destDir.resolve(sourcePath.fileName)
         return Files.copy(sourcePath, destPath)
     }
-    
+
+    void deleteEmptyFiles(Path path, Pattern pathPattern) {
+        Files.walk(path).filter { it.size() == 0 && it.toString() =~ pathPattern }.each { Path it ->
+            log.trace("Deleting empty file $it")
+            it.toFile().delete()
+        }
+    }
+
     Path createTempDir() {
         File.createTempDir("gitops-playground-").toPath()
+    }
+
+    Path createTempFile() {
+        def file = File.createTempFile("gitops-playground-", '')
+        file.deleteOnExit()
+
+        return file.toPath()
     }
 
     Map readYaml(Path path) {

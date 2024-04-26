@@ -1,0 +1,16 @@
+namespaceOverride: ${namePrefix}example-apps-production
+service:
+  nodePorts:
+    http: 30025
+
+
+<#if exampleApps.nginx.baseDomain?has_content>
+ingress:
+  enabled: true
+  pathType: Prefix
+  <#if urlSeparatorHyphen>
+  hostname: production-nginx-helm-${exampleApps.nginx.baseDomain}
+  <#else>
+  hostname: production.nginx-helm.${exampleApps.nginx.baseDomain}
+  </#if>
+</#if>

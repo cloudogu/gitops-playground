@@ -33,7 +33,12 @@ variable "k8s_version_prefix" {
   # Resulting in "Error 400: Master version "X" is unsupported., badRequest"
   # So we use a version prefix hoping that the stable patch versions won't do unexpected things (which is unlikely!) 
   description = "Master and Node version prefix to setup"
-  
-  # When updating please also adapt in Dockerfile, init-cluster.sh, ApplicationConfigurator.groovy and apply.sh
-  default = "1.25."
+
+  # When updating please also adapt in Dockerfile, init-cluster.sh and ApplicationConfigurator.groovy
+  default = "1.29."
+}
+
+variable "creator" {
+  type = map
+  default = null
 }

@@ -1,11 +1,16 @@
 package com.cloudogu.gitops.features
 
+import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.HelmClient
+import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 
-import static org.assertj.core.api.Assertions.assertThat 
+import java.nio.file.Path
+
+import static org.assertj.core.api.Assertions.assertThat
 
 class ExternalSecretsOperatorTest {
 
@@ -13,8 +18,8 @@ class ExternalSecretsOperatorTest {
             application: [
                     username: 'abc',
                     password: '123',
-                    remote  : false
-
+                    remote  : false,
+                    namePrefix: "foo-",
             ],
             features    : [
                     secrets   : [
@@ -31,7 +36,7 @@ class ExternalSecretsOperatorTest {
     ]
     CommandExecutorForTest commandExecutor = new CommandExecutorForTest()
     HelmClient helmClient = new HelmClient(commandExecutor)
-    FileSystemUtils fileSystemUtils = new FileSystemUtils()
+    Path temporaryYamlFile
 
     @Test
     void "is disabled via active flag"() {
@@ -45,14 +50,49 @@ class ExternalSecretsOperatorTest {
         createExternalSecretsOperator().install()
 
         assertThat(commandExecutor.actualCommands[0].trim()).isEqualTo(
-                'helm repo add ExternalSecretsOperator https://charts.external-secrets.io')
+                'helm repo add externalsecretsoperator https://charts.external-secrets.io')
         assertThat(commandExecutor.actualCommands[1].trim()).isEqualTo(
-                'helm upgrade -i external-secrets ExternalSecretsOperator/external-secrets --version=0.6.0' +
-                        " --values ${fileSystemUtils.rootDir}/system/secrets/external-secrets/values.yaml --namespace secrets")
+                'helm upgrade -i external-secrets externalsecretsoperator/external-secrets --version 0.6.0' +
+                        " --values $temporaryYamlFile --namespace foo-secrets --create-namespace")
+    }
+
+    @Test
+    void 'helm release is installed with custom images'() {
+        config['features']['secrets']['externalSecrets']['helm'] = [
+                image              : 'localhost:5000/external-secrets/external-secrets:v0.6.1',
+                certControllerImage: 'localhost:5000/external-secrets/external-secrets-certcontroller:v0.6.1',
+                webhookImage       : 'localhost:5000/external-secrets/external-secrets-webhook:v0.6.1'
+        ]
+        createExternalSecretsOperator().install()
+
+
+        def valuesYaml = parseActualStackYaml()
+        assertThat(valuesYaml['image']['repository']).isEqualTo('localhost:5000/external-secrets/external-secrets')
+        assertThat(valuesYaml['image']['tag']).isEqualTo('v0.6.1')
+
+        assertThat(valuesYaml['certController']['image']['repository']).isEqualTo('localhost:5000/external-secrets/external-secrets-certcontroller')
+        assertThat(valuesYaml['certController']['image']['tag']).isEqualTo('v0.6.1')
+
+        assertThat(valuesYaml['webhook']['image']['repository']).isEqualTo('localhost:5000/external-secrets/external-secrets-webhook')
+        assertThat(valuesYaml['webhook']['image']['tag']).isEqualTo('v0.6.1')
     }
 
     private ExternalSecretsOperator createExternalSecretsOperator() {
-        new ExternalSecretsOperator(config, fileSystemUtils, helmClient)
+        new ExternalSecretsOperator(
+                new Configuration(config),
+                new FileSystemUtils() {
+                    @Override
+                    Path copyToTempDir(String filePath) {
+                        temporaryYamlFile = super.copyToTempDir(filePath)
+                        return temporaryYamlFile
+                    }
+                },
+                new HelmStrategy(new Configuration(config), helmClient)
+        )
     }
 
+    private parseActualStackYaml() {
+        def ys = new YamlSlurper()
+        return ys.parse(temporaryYamlFile)
+    }
 }

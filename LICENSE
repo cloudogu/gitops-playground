@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2020 Cloudogu
+Copyright (c) 2024 Cloudogu GmbH
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,3 +19,13 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+©Cloudogu GmbH 2024: GitOps Playground© for use with  Argo™, Git™, Jenkins®, Kubernetes®, Prometheus®, Vault® and SCM-Manager 
+
+Argo™ is an unregistered trademark of The Linux Foundation®
+Git™ is an unregistered trademark of Software Freedom Conservancy Inc.
+Jenkins® is a registered trademark of LF Charities Inc.
+Kubernetes® and the Kubernetes logo® are registered trademarks of The Linux Foundation®
+K8s® is a registered trademark of The Linux Foundation®
+Prometheus® is a registered trademark of The Linux Foundation®
+Vault® and the Vault logo® are registered trademarks of HashiCorp® (http://www.hashicorp.com/)

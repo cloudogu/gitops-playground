@@ -1,0 +1,15 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: default
+  namespace: ${namePrefix}argocd
+  annotations:
+<#if mail.active??>
+    notifications.argoproj.io/subscribe.email: ${argocd.emailToAdmin}
+</#if>
+spec:
+  description: Default fallback AppProject if none other is specified. Is not allowed to do anything.
+  clusterResourceWhitelist:
+  destinations:
+  sourceRepos:
+  sourceNamespaces:

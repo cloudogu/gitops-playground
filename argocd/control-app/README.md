@@ -1,1 +1,0 @@
-Administration of ArgoCD (app of apps)

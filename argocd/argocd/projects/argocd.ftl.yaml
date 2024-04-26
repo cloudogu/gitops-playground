@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: argocd
+  namespace: ${namePrefix}argocd
+  annotations:
+<#if mail.active??>
+    notifications.argoproj.io/subscribe.email: ${argocd.emailToAdmin}
+</#if>
+spec:
+  description: AppProject for ArgoCD-specific applications.
+  destinations:
+    - namespace: '*'
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  # must be able to get all git repos because of the Applications pointing to other repos
+  sourceRepos:
+    - ${scmm.baseUrl}/repo/${namePrefix}argocd/argocd
+    - ${scmm.baseUrl}/repo/${namePrefix}argocd/cluster-resources
+    - ${scmm.baseUrl}/repo/${namePrefix}argocd/example-apps
+  # Allow applications from all namespaces to use this project for now.
+  sourceNamespaces:
+    - '*'
