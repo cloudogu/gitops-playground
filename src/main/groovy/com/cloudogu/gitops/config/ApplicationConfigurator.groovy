@@ -169,7 +169,7 @@ class ApplicationConfigurator {
                                     helm: [
                                             chart  : 'external-secrets',
                                             repoURL: 'https://charts.external-secrets.io',
-                                            version: '0.6.1',
+                                            version: '0.9.16',
                                             image  : '',
                                             certControllerImage: '',
                                             webhookImage: ''
@@ -181,7 +181,7 @@ class ApplicationConfigurator {
                                     helm: [
                                             chart  : 'vault',
                                             repoURL: 'https://helm.releases.hashicorp.com',
-                                            version: '0.22.1',
+                                            version: '0.25.0',
                                             image: '',
                                     ]
                             ]
