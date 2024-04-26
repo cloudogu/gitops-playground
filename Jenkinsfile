@@ -34,6 +34,8 @@ node('high-cpu') {
                 stage('Checkout') {
                     checkout scm
                     git.clean('')
+                    // Otherwise git.isTag() will not be reliable. Jenkins seems to do a sparse checkout only
+                    sh "git fetch --tags"
                 }
 
                 stage('Build cli') {
@@ -128,10 +130,16 @@ node('high-cpu') {
                     if (isBuildSuccessful()) {
                         docker.withRegistry("https://${dockerRegistryBaseUrl}", 'cesmarvin-ghcr') {
                             // Push prod image last, because last pushed image is listed on top in GitHub
-                            if (git.isTag()) {
+                            
+                            if (git.isTag() && env.BRANCH_NAME == 'main') {
+                                // Build tags only on main to avoid human errors
+                                
                                 images[1].push()
                                 images[1].push(git.tag + '-dev')
+                                images[1].push('dev')
+                                images[1].push('latest-dev')
                                 images[0].push()
+                                images[0].push('latest')
                                 images[0].push(git.tag)
 
                                 currentBuild.description = createImageName(git.tag)
@@ -139,12 +147,8 @@ node('high-cpu') {
 
                             } else if (env.BRANCH_NAME == 'main') {
                                 images[1].push()
-                                images[1].push('dev')
-                                images[1].push('latest-dev')
                                 images[0].push()
-                                images[0].push('latest')
-                                currentBuild.description = createImageName('latest')
-                                currentBuild.description += "\n${imageNames[0]}"
+                                currentBuild.description += "${imageNames[0]}"
                             } else if (env.BRANCH_NAME == 'test') {
                                 images[1].push()
                                 images[1].push('test-dev')
