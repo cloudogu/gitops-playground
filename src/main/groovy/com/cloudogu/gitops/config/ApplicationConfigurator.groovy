@@ -40,7 +40,6 @@ class ApplicationConfigurator {
                     // Alternative: Use different registries, e.g. in air-gapped envs 
                     // "Pull" registry for 3rd party images
                     pullUrl         : '',
-                    pullPath        : '',
                     pullUsername    : '',
                     pullPassword    : '',
                     // "Push" registry for writing application specific images

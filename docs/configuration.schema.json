@@ -211,9 +211,6 @@
         "pullPassword": {
           "type": "string"
         },
-        "pullPath": {
-          "type": "string"
-        },
         "pullUrl": {
           "type": "string"
         },

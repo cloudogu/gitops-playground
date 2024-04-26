@@ -18,7 +18,6 @@ class ConfigToConfigFileConverterTest {
                         username    : 'username',
                         password    : 'password',
                         pullUrl         : 'pullUrl',
-                        pullPath        : 'pullPath',
                         pullUsername    : 'pullUsername',
                         pullPassword    : 'pullPassword',
                         pushUrl         : 'pushUrl',
@@ -69,7 +68,6 @@ registry:
   username: "username"
   password: "password"
   pullUrl: "pullUrl"
-  pullPath: "pullPath"
   pullUsername: "pullUsername"
   pullPassword: "pullPassword"
   pushUrl: "pushUrl"

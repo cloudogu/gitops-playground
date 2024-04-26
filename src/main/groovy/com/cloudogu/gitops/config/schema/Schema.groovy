@@ -1,6 +1,5 @@
 //file:noinspection unused
-package com.cloudogu.gitops.config.schema
-
+package com.cloudogu.gitops.config.schema 
 /**
  * The schema for the configuration file.
  * It is used to validate the passed yaml file.
@@ -28,9 +27,8 @@ class Schema {
          String username = ""
          String password = ""
          // Alternative: Use different registries, e.g. in air-gapped envs 
-         // "Pull" registry for 3rd party images
+         // "Pull" registry for 3rd party images, e.g. base images
          String pullUrl = ""
-         String pullPath = ""
          String pullUsername = ""
          String pullPassword = ""
          // "Push" registry for writing application specific images
