@@ -211,7 +211,7 @@ The GitOps Playground comprises a lot of software components. The versions of so
 repository so need to be upgraded regularly.
 
 * Kubernetes [in Terraform](../terraform/vars.tf) and locally [k3d](../scripts/init-cluster.sh),
-* [k3d](../scripts/init-cluster.sh), [Upgrade to v5 WIP](https://github.com/cloudogu/gitops-playground/tree/feature/k3d-version5) 
+* [k3d](../scripts/init-cluster.sh)
 * [Groovy libs](../pom.xml) + [Maven](../.mvn/wrapper/maven-wrapper.properties)
 * Installed components
   * Jenkins 
@@ -223,11 +223,11 @@ repository so need to be upgraded regularly.
     * Agent Image
   * SCM-Manager Helm Chart + Plugins
   * Docker Registry Helm Chart
-  * GitOps Operators
-    * ArgoCD Helm Chart
-    * Flux v2 Helm Charts
+  * ArgoCD Helm Chart
   * Grafana + Prometheus [Helm Charts](../src/main/groovy/com/cloudogu/gitops/ApplicationConfigurator.groovy)
   * Vault + ExternalSerets Operator [Helm Charts](../src/main/groovy/com/cloudogu/gitops/ApplicationConfigurator.groovy)
+  * Ingress-nginx [Helm Charts](https://artifacthub.io/packages/helm/ingress-nginx/ingress-nginx)
+  * Mailhog
 * Applications
   * GitOps-build-lib + `buildImages`
   * ces-build-lib

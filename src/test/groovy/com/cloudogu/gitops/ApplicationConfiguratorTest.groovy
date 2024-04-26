@@ -74,7 +74,7 @@ class ApplicationConfiguratorTest {
         applicationConfigurator = new ApplicationConfigurator(networkingUtils, fileSystemUtils, new JsonSchemaValidator(new JsonSchemaGenerator()))
         testLogger = new TestLogger(applicationConfigurator.getClass())
         when(fileSystemUtils.getRootDir()).thenReturn("/test")
-        when(fileSystemUtils.getLineFromFile("/test/scm-manager/values.yaml", "nodePort:")).thenReturn("nodePort: 9091")
+        when(fileSystemUtils.getLineFromFile("/test/scm-manager/values.ftl.yaml", "nodePort:")).thenReturn("nodePort: 9091")
         when(fileSystemUtils.getLineFromFile("/test/jenkins/values.yaml", "nodePort:")).thenReturn("nodePort: 9090")
 
         when(networkingUtils.createUrl(anyString(), anyString(), anyString())).thenCallRealMethod()
@@ -246,6 +246,7 @@ images:
         assertThat(actualConfig.features['secrets']['vault']['url']).isEqualTo("http://vault.localhost")
         assertThat(actualConfig.features['exampleApps']['petclinic']['baseDomain']).isEqualTo("petclinic.localhost")
         assertThat(actualConfig.features['exampleApps']['nginx']['baseDomain']).isEqualTo("nginx.localhost")
+        assertThat(actualConfig.scmm['ingress']).isEqualTo("scmm.localhost")
     }
 
     @Test
@@ -266,6 +267,7 @@ images:
         assertThat(actualConfig.features['secrets']['vault']['url']).isEqualTo("http://vault-localhost")
         assertThat(actualConfig.features['exampleApps']['petclinic']['baseDomain']).isEqualTo("petclinic-localhost")
         assertThat(actualConfig.features['exampleApps']['nginx']['baseDomain']).isEqualTo("nginx-localhost")
+        assertThat(actualConfig.scmm['ingress']).isEqualTo("scmm-localhost")
     }
 
     @Test

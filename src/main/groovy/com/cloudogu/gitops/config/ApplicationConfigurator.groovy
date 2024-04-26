@@ -68,10 +68,11 @@ class ApplicationConfigurator {
                     urlForJenkins : 'http://scmm-scm-manager/scm', // set dynamically
                     host : '', // Set dynamically
                     protocol : '', // Set dynamically
+                    ingress : '', // Set dynamically
                     helm  : [
-                            //chart  : 'scm-manager',
-                            //repoURL: 'https://packages.scm-manager.org/repository/helm-v2-releases/',
-                            version: '2.47.0'
+                            chart  : 'scm-manager',
+                            repoURL: 'https://packages.scm-manager.org/repository/helm-v2-releases/',
+                            version: '3.1.0'
                     ]
             ],
             application: [
@@ -154,7 +155,7 @@ class ApplicationConfigurator {
                                         helm template prometheus-community/kube-prometheus-stack --version XYZ --include-crds */
                                     chart  : 'kube-prometheus-stack',
                                     repoURL: 'https://prometheus-community.github.io/helm-charts',
-                                    version: '42.0.3',
+                                    version: '58.2.1',
                                     grafanaImage: '',
                                     grafanaSidecarImage: '',
                                     prometheusImage: '',
@@ -168,7 +169,7 @@ class ApplicationConfigurator {
                                     helm: [
                                             chart  : 'external-secrets',
                                             repoURL: 'https://charts.external-secrets.io',
-                                            version: '0.6.1',
+                                            version: '0.9.16',
                                             image  : '',
                                             certControllerImage: '',
                                             webhookImage: ''
@@ -180,7 +181,7 @@ class ApplicationConfigurator {
                                     helm: [
                                             chart  : 'vault',
                                             repoURL: 'https://helm.releases.hashicorp.com',
-                                            version: '0.22.1',
+                                            version: '0.25.0',
                                             image: '',
                                     ]
                             ]
@@ -317,7 +318,7 @@ class ApplicationConfigurator {
             newConfig.scmm["url"] = networkingUtils.createUrl("scmm-scm-manager.default.svc.cluster.local", "80", "/scm")
         } else {
             log.debug("Setting internal scmm configs")
-            def port = fileSystemUtils.getLineFromFile(fileSystemUtils.getRootDir() + "/scm-manager/values.yaml", "nodePort:").findAll(/\d+/)*.toString().get(0)
+            def port = fileSystemUtils.getLineFromFile(fileSystemUtils.getRootDir() + "/scm-manager/values.ftl.yaml", "nodePort:").findAll(/\d+/)*.toString().get(0)
             String cba = newConfig.application["clusterBindAddress"]
             newConfig.scmm["url"] = networkingUtils.createUrl(cba, port, "/scm")
         }
@@ -326,6 +327,12 @@ class ApplicationConfigurator {
         log.debug("Getting host and protocol from scmmUrl: " + scmmUrl)
         newConfig.scmm["host"] = networkingUtils.getHost(scmmUrl)
         newConfig.scmm["protocol"] = networkingUtils.getProtocol(scmmUrl)
+        
+        // We probably could get rid of some of the complexity by refactoring url, host and ingress into a single var
+        if (newConfig.application['baseUrl']) {
+            newConfig.scmm['ingress'] = new URL(injectSubdomain('scmm', 
+                    newConfig.application['baseUrl'] as String, newConfig.application['urlSeparatorHyphen'] as Boolean)).host
+        }
     }
 
     private void addJenkinsConfig(Map newConfig) {
