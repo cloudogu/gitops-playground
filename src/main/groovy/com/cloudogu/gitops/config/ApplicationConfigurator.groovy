@@ -46,6 +46,12 @@ class ApplicationConfigurator {
                     url     : '',
                     username: DEFAULT_ADMIN_USER,
                     password: DEFAULT_ADMIN_PW,
+                    /* This is the URL configured in SCMM inside the Jenkins Plugin, e.g. at http://scmm.localhost/scm/admin/settings/jenkins
+                      We use the K8s service as default name here, because it is the only option:
+                      "jenkins.localhost" will not work inside the Pods and k3d-container IP + Port (e.g. 172.x.y.z:9090) will not work on Windows and MacOS.
+                      
+                      For production we overwrite this when config.jenkins["url"] is set. 
+                      See addJenkinsConfig() and the comment at scmm.urlForJenkins */
                     urlForScmm: "http://jenkins", // Set dynamically
                     metricsUsername: 'metrics',
                     metricsPassword: 'metrics',
@@ -65,6 +71,16 @@ class ApplicationConfigurator {
                     url     : '',
                     username: DEFAULT_ADMIN_USER,
                     password: DEFAULT_ADMIN_PW,
+                    /* This corresponds to the "Base URL" in SCMM Settings.
+                       We use the K8s service as default name here, to make the build on push feature (webhooks from SCMM to Jenkins that trigger builds) work in k3d.
+                       The webhook contains repository URLs that start with the "Base URL" Setting of SCMM.
+                       Jenkins checks these repo URLs and triggers all builds that match repo URLs. 
+                       In k3d, we have to define the repos in Jenkins using the K8s Service name, because they are the only option.
+                       "scmm.localhost" will not work inside the Pods and k3d-container IP + Port (e.g. 172.x.y.z:9091) will not work on Windows and MacOS.
+                       So, we have to use the matching URL in SCMM as well.
+                       
+                       For production we overwrite this when config.scmm["url"] is set. 
+                       See addScmmConfig() */
                     urlForJenkins : 'http://scmm-scm-manager/scm', // set dynamically
                     host : '', // Set dynamically
                     protocol : '', // Set dynamically
@@ -234,7 +250,7 @@ class ApplicationConfigurator {
         addAdditionalApplicationConfig(newConfig)
         
 
-        setScmmConfig(newConfig)
+        addScmmConfig(newConfig)
         addJenkinsConfig(newConfig)
 
 
@@ -306,7 +322,7 @@ class ApplicationConfigurator {
         newConfig.application["clusterBindAddress"] = clusterBindAddress
     }
 
-    private void setScmmConfig(Map newConfig) {
+    private void addScmmConfig(Map newConfig) {
         log.debug("Adding additional config for SCM-Manager")
 
         if (newConfig.scmm["url"]) {
@@ -317,7 +333,7 @@ class ApplicationConfigurator {
             log.debug("Setting scmm url to k8s service, since installation is running inside k8s")
             newConfig.scmm["url"] = networkingUtils.createUrl("scmm-scm-manager.default.svc.cluster.local", "80", "/scm")
         } else {
-            log.debug("Setting internal scmm configs")
+            log.debug("Setting internal configs for local single node cluster with internal scmm")
             def port = fileSystemUtils.getLineFromFile(fileSystemUtils.getRootDir() + "/scm-manager/values.ftl.yaml", "nodePort:").findAll(/\d+/)*.toString().get(0)
             String cba = newConfig.application["clusterBindAddress"]
             newConfig.scmm["url"] = networkingUtils.createUrl(cba, port, "/scm")
@@ -327,10 +343,10 @@ class ApplicationConfigurator {
         log.debug("Getting host and protocol from scmmUrl: " + scmmUrl)
         newConfig.scmm["host"] = networkingUtils.getHost(scmmUrl)
         newConfig.scmm["protocol"] = networkingUtils.getProtocol(scmmUrl)
-        
+
         // We probably could get rid of some of the complexity by refactoring url, host and ingress into a single var
         if (newConfig.application['baseUrl']) {
-            newConfig.scmm['ingress'] = new URL(injectSubdomain('scmm', 
+            newConfig.scmm['ingress'] = new URL(injectSubdomain('scmm',
                     newConfig.application['baseUrl'] as String, newConfig.application['urlSeparatorHyphen'] as Boolean)).host
         }
     }
@@ -345,7 +361,7 @@ class ApplicationConfigurator {
             log.debug("Setting jenkins url to k8s service, since installation is running inside k8s")
             newConfig.jenkins["url"] = networkingUtils.createUrl("jenkins.default.svc.cluster.local", "80")
         } else {
-            log.debug("Setting internal jenkins configs")
+            log.debug("Setting jenkins configs for local single node cluster with internal jenkins")
             def port = fileSystemUtils.getLineFromFile(fileSystemUtils.getRootDir() + "/jenkins/values.yaml", "nodePort:").findAll(/\d+/)*.toString().get(0)
             String cba = newConfig.application["clusterBindAddress"]
             newConfig.jenkins["url"] = networkingUtils.createUrl(cba, port)
@@ -361,7 +377,7 @@ class ApplicationConfigurator {
             def monitoring = newConfig.features['monitoring']
             def vault = newConfig.features['secrets']['vault']
             boolean urlSeparatorHyphen = newConfig.application['urlSeparatorHyphen']
-            
+
             if (argocd['active'] && !argocd['url']) {
                 argocd['url'] = injectSubdomain('argocd', baseUrl, urlSeparatorHyphen)
                 log.debug("Setting URL ${argocd['url']}")
@@ -381,13 +397,13 @@ class ApplicationConfigurator {
             
             if (!newConfig.features['exampleApps']['petclinic']['baseDomain']) {
                 // This param only requires the host / domain
-                newConfig.features['exampleApps']['petclinic']['baseDomain'] = 
+                newConfig.features['exampleApps']['petclinic']['baseDomain'] =
                         new URL(injectSubdomain('petclinic', baseUrl, urlSeparatorHyphen)).host
                 log.debug("Setting URL ${newConfig.features['exampleApps']['petclinic']['baseDomain']}")
             }
             if (!newConfig.features['exampleApps']['nginx']['baseDomain']) {
                 // This param only requires the host / domain
-                newConfig.features['exampleApps']['nginx']['baseDomain'] = 
+                newConfig.features['exampleApps']['nginx']['baseDomain'] =
                         new URL(injectSubdomain('nginx', baseUrl, urlSeparatorHyphen)).host
                 log.debug("Setting URL ${newConfig.features['exampleApps']['nginx']['baseDomain']}")
             }

@@ -35,33 +35,17 @@ class NetworkingUtilsTest {
     
     @Test
     void 'clusterBindAddress: returns localhost when node IP and local IP are equal'() {
-        def internalNodeIp = '1.2.3.4'
-        // getInternalNodeIp -> waitForNode()
+        def internalNodeIp = networkingUtils.localAddress
+        assertThat(internalNodeIp).isNotEmpty()
+        
+        // getInternalNodeIp -> waitForNode(), don't care
         k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', '', 0))
         // getInternalNodeIp -> actual exec
         k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', internalNodeIp, 0))
-        commandExecutor.enqueueOutput(new CommandExecutor.Output('', 
-                "1.0.0.0 via w.x.y.z dev someDevice src ${internalNodeIp} uid 1000", 0))
 
         def actualBindAddress = networkingUtils.findClusterBindAddress()
         
         assertThat(actualBindAddress).isEqualTo('localhost')
-    }
-    
-    @Test
-    void 'clusterBindAddress: fails when output of ip command unexpected'() {
-        def invalidOutputOfIpCommand = 'someInvalidOutput'
-        // getInternalNodeIp -> waitForNode()
-        k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', '', 0))
-        // getInternalNodeIp -> actual exec
-        k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', 'w.x.y.z', 0))
-        
-        commandExecutor.enqueueOutput(new CommandExecutor.Output('', invalidOutputOfIpCommand, 0))
-
-        def exception = shouldFail(RuntimeException) {
-            networkingUtils.findClusterBindAddress()
-        }
-        assertThat(exception.message).isEqualTo('Could not determine local ip address, because command \'ip route get 1\' returned: \'someInvalidOutput\'')
     }
     
     @Test

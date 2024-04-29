@@ -48,6 +48,7 @@ class JenkinsTest {
             ],
             scmm       : [
                     url     : 'http://scmm',
+                    urlForJenkins : 'http://scmm-scm-manager/scm',
                     internal: true,
                     protocol: 'https',
                     host    : 'abc',
@@ -88,7 +89,7 @@ class JenkinsTest {
         assertThat(env['INSECURE']).isEqualTo('false')
         assertThat(env['URL_SEPARATOR_HYPHEN']).isEqualTo('true')
 
-        assertThat(env['SCMM_URL']).isEqualTo('http://scmm')
+        assertThat(env['SCMM_URL']).isEqualTo('http://scmm-scm-manager/scm')
         assertThat(env['SCMM_PASSWORD']).isEqualTo('scmm-pw')
         assertThat(env['INSTALL_ARGOCD']).isEqualTo('true')
 
