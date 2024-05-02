@@ -105,6 +105,7 @@ class ApplicationConfigurator {
             ],
             application: [
                     remote        : false,
+                    airGapped     : false,
                     insecure      : false,
                     username      : DEFAULT_ADMIN_USER,
                     password      : DEFAULT_ADMIN_PW,
@@ -177,13 +178,12 @@ class ApplicationConfigurator {
                             helm  : [
                                     /* Before allowing to override this via config, we have to change
                                        ArgoCD.groovy to extract the monitoring CRD from the chart instead of applying 
-                                       from GitHub.
-                                        
-                                        First approach: 
-                                        helm template prometheus-community/kube-prometheus-stack --version XYZ --include-crds */
+                                       from GitHub.*/
                                     chart  : 'kube-prometheus-stack',
                                     repoURL: 'https://prometheus-community.github.io/helm-charts',
                                     version: '58.2.1',
+                                    // Take from env because the Dockerfile provides a local copy of the repo for air-gapped mode
+                                    localFolder: System.getenv('KUBE_PROM_STACK_HELMCHART_PATH'), 
                                     grafanaImage: '',
                                     grafanaSidecarImage: '',
                                     prometheusImage: '',

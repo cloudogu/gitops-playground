@@ -54,6 +54,7 @@ class Schema {
 
      static class ApplicationSchema {
          boolean remote = false
+         boolean airGapped = false
          boolean insecure = false
          boolean yes = false
          String username = ""

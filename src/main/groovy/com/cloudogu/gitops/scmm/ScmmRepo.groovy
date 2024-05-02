@@ -70,6 +70,7 @@ class ScmmRepo {
     }
 
     void copyDirectoryContents(String srcDir) {
+        log.debug("Initializing repo $scmmRepoTarget with content of folder $srcDir")
         String absoluteSrcDirLocation = srcDir
         if (!new File(absoluteSrcDirLocation).isAbsolute()) {
             absoluteSrcDirLocation = fileSystemUtils.getRootDir() + "/" + srcDir
@@ -84,7 +85,7 @@ class ScmmRepo {
                 .each { Path it -> engine.replaceTemplate(it.toFile(), parameters) }
     }
 
-    void commitAndPush(String commitMessage) {
+    void commitAndPush(String commitMessage, String tag = null) {
         log.debug("Checking out main, adding files for repo: ${scmmRepoTarget}")
         getGit()
                 .add()
@@ -92,7 +93,6 @@ class ScmmRepo {
                 .call()
 
         if (getGit().status().call().hasUncommittedChanges()) {
-            log.debug("Pushing repo: ${scmmRepoTarget}")
             getGit()
                     .commit()
                     .setSign(false)
@@ -100,13 +100,28 @@ class ScmmRepo {
                     .setAuthor(gitName, gitEmail)
                     .setCommitter(gitName, gitEmail)
                     .call()
-            getGit()
-                .push()
-                .setForce(true)
-                .setRemote(getGitRepositoryUrl())
-                .setRefSpecs(new RefSpec("HEAD:refs/heads/main"))
-                .setCredentialsProvider(getCredentialProvider())
-                .call()
+            
+            def pushCommand = getGit()
+                    .push()
+                    .setForce(true)
+                    .setRemote(getGitRepositoryUrl())
+                    .setRefSpecs(new RefSpec("HEAD:refs/heads/main"))
+                    .setCredentialsProvider(getCredentialProvider())
+            
+            if (tag) {
+                log.debug("Setting tag '${tag}' on repo: ${scmmRepoTarget}")
+                // Delete existing tags first to get idempotence
+                getGit().tagDelete().setTags(tag).call()
+                getGit()
+                        .tag()
+                        .setName(tag)
+                        .call()
+                
+                pushCommand.setPushTags()
+            }
+            
+            log.debug("Pushing repo: ${scmmRepoTarget}")
+            pushCommand.call()
         }
     }
 

@@ -5,8 +5,13 @@ import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
+import groovy.yaml.YamlSlurper
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
+
+import java.nio.file.Path
+
+import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.RepoType
 
 @Slf4j
 @Singleton
@@ -48,7 +53,7 @@ class PrometheusStack extends Feature {
         // Note that some specific configuration steps are implemented in ArgoCD
         def namePrefix = config.application['namePrefix']
 
-        def tmpHelmValues = new TemplatingEngine().replaceTemplate(fileSystemUtils.copyToTempDir(HELM_VALUES_PATH).toFile(), [
+        def prometheusHelmValuesFile = new TemplatingEngine().replaceTemplate(fileSystemUtils.copyToTempDir(HELM_VALUES_PATH).toFile(), [
                 namePrefix: namePrefix,
                 monitoring: [
                         grafanaEmailFrom: config.features['monitoring']['grafanaEmailFrom'] as String,
@@ -68,7 +73,7 @@ class PrometheusStack extends Feature {
                 scmm: getScmmConfiguration(),
                 jenkins: getJenkinsConfiguration()
         ]).toPath()
-        Map helmValuesYaml = fileSystemUtils.readYaml(tmpHelmValues)
+        Map helmValuesYaml = fileSystemUtils.readYaml(prometheusHelmValuesFile)
 
         if (remoteCluster) {
             log.debug("Setting grafana service.type to LoadBalancer since it is running in a remote cluster")
@@ -112,35 +117,72 @@ class PrometheusStack extends Feature {
         def helmConfig = config['features']['monitoring']['helm']
         setCustomImages(helmConfig, helmValuesYaml)
 
-        fileSystemUtils.writeYaml(helmValuesYaml, tmpHelmValues.toFile())
 
-        deployer.deployFeature(
-                helmConfig['repoURL'] as String,
-                'prometheusstack',
-                helmConfig['chart'] as String,
-                helmConfig['version'] as String,
-                'monitoring',
-                'kube-prometheus-stack',
-                tmpHelmValues
-        )
+        if (config.application['airGapped']) {
+            log.debug("Air-gapped mode: Deploying prometheus and grafana separately from mirrored repos from Git")
+
+            def grafanaHelmValuesFile = fileSystemUtils.createTempFile()
+            fileSystemUtils.writeYaml(helmValuesYaml['grafana'] as Map, grafanaHelmValuesFile.toFile())
+            
+            helmValuesYaml.remove('grafana')
+            fileSystemUtils.writeYaml(helmValuesYaml, prometheusHelmValuesFile.toFile())
+
+            def ys = new YamlSlurper()
+            String grafanaVersion = 
+                    ys.parse(Path.of("${config['features']['monitoring']['helm']['localFolder']}/charts/grafana",
+                    'Chart.yaml'))['version']
+            String prometheusVersion = 
+                    ys.parse(Path.of(config['features']['monitoring']['helm']['localFolder'] as String,
+                    'Chart.yaml'))['version']
+
+            deployer.deployFeature(
+                    "${scmmUri}/repo/${ScmManager.NAMESPACE_3RD_PARTY_DEPENDENCIES}/grafana",
+                    'grafana',
+                    '.',
+                    grafanaVersion,
+                    'monitoring',
+                    'grafana',
+                    grafanaHelmValuesFile, RepoType.GIT)
+            deployer.deployFeature(
+                    "${scmmUri}/repo/${ScmManager.NAMESPACE_3RD_PARTY_DEPENDENCIES}/kube-prometheus-stack",
+                    'prometheusstack',
+                    '.',
+                    prometheusVersion,
+                    'monitoring',
+                    'kube-prometheus-stack',
+                    prometheusHelmValuesFile, RepoType.GIT)
+        } else {
+            fileSystemUtils.writeYaml(helmValuesYaml, prometheusHelmValuesFile.toFile())
+    
+            deployer.deployFeature(
+                    helmConfig['repoURL'] as String,
+                    'prometheusstack',
+                    helmConfig['chart'] as String,
+                    helmConfig['version'] as String,
+                    'monitoring',
+                    'kube-prometheus-stack',
+                    prometheusHelmValuesFile)
+        }
     }
 
     private Map getScmmConfiguration() {
-        String protocol = 'http'
-        String host = 'scmm-scm-manager.default.svc.cluster.local'
-        String path = '/scm/api/v2/metrics/prometheus'
-        if (!config.scmm['internal']) {
-            URI uri = new URI((config.scmm['url'] as String) + path)
-            protocol = uri.scheme
-            host = uri.authority
-            path = uri.path
-        }
+        // Note that URI.resolve() seems to throw away the existing path. So we create a new URI object.
+        URI uri = new URI("${scmmUri}/api/v2/metrics/prometheus")
 
         return [
-                protocol: protocol,
-                host    : host,
-                path    : path
+                protocol: uri.scheme,
+                host    : uri.authority,
+                path    : uri.path
         ]
+    }
+    
+    private URI getScmmUri() {
+        // TODO use config.scmm['url']
+        if (config.scmm['internal']) {
+            new URI('http://scmm-scm-manager.default.svc.cluster.local/scm')
+        } else {
+            new URI("${config.scmm['url']}/scm")
+        }
     }
 
     private Map getJenkinsConfiguration() {

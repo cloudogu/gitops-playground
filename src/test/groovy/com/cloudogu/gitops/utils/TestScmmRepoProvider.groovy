@@ -7,13 +7,15 @@ import org.apache.commons.io.FileUtils
 import org.eclipse.jgit.api.Git
 
 class TestScmmRepoProvider extends ScmmRepoProvider {
+    Map<String, ScmmRepo> repos = [:]
+    
     TestScmmRepoProvider(Configuration configuration, FileSystemUtils fileSystemUtils) {
         super(configuration, fileSystemUtils)
     }
 
     @Override
     ScmmRepo getRepo(String repoTarget) {
-        return new ScmmRepo(configuration.config, repoTarget, fileSystemUtils) {
+        ScmmRepo repo = new ScmmRepo(configuration.config, repoTarget, fileSystemUtils) {
             @Override
             protected String getGitRepositoryUrl() {
                 def tempDir = File.createTempDir('gitops-playground-repocopy')
@@ -36,5 +38,7 @@ class TestScmmRepoProvider extends ScmmRepoProvider {
                         .call()
             }
         }
+        repos.put(repoTarget, repo)
+        return repo
     }
 }

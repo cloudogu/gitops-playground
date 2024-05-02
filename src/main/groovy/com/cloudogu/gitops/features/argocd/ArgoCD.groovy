@@ -195,7 +195,11 @@ class ArgoCD extends Feature {
         
         log.debug("Creating namespace for monitoring, so argocd can add its service monitors there")
         k8sClient.createNamespace('monitoring')
+        
         log.debug("Applying ServiceMonitor CRD; Argo CD fails if it is not there. Chicken-egg-problem.")
+        // Instead of applying this straight from github we should extract the CRDs from the chart
+        // Either from the one packaged in the image or like this:
+        // helm template prometheus-community/kube-prometheus-stack --version XYZ --include-crds
         k8sClient.applyYaml("https://raw.githubusercontent.com/prometheus-community/helm-charts/kube-prometheus-stack-${config['features']['monitoring']['helm']['version']}/charts/kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml")
 
         log.debug("Creating repo credential secret that is used by argocd to access repos in SCM-Manager")
@@ -327,6 +331,7 @@ class ArgoCD extends Feature {
                     isRemote            : config.application['remote'],
                     isInsecure          : config.application['insecure'],
                     urlSeparatorHyphen  : config.application['urlSeparatorHyphen'],
+                    airGapped           : config.application['airGapped'],
                     argocd              : [
                             // Note that passing the URL object here leads to problems in Graal Native image, see Git history
                             host: config.features['argocd']['url'] ? new URL(config.features['argocd']['url'] as String).host : "",

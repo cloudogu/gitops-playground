@@ -27,7 +27,9 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
     }
 
     @Override
-    void deployFeature(String repoURL, String repoName, String chart, String version, String namespace, String releaseName, Path helmValuesPath) {
+    @SuppressWarnings('GroovyGStringKey') // Using key string seems an easy to read way avoid more ifs
+    void deployFeature(String repoURL, String repoName, String chartOrPath, String version, String namespace,
+                       String releaseName, Path helmValuesPath, RepoType repoType) {
         def namePrefix = config.application['namePrefix']
 
         ScmmRepo clusterResourcesRepo = scmmRepoProvider.getRepo('argocd/cluster-resources')
@@ -54,10 +56,10 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
                         project    : "cluster-resources",
                         sources    : [
                                 [
-                                        repoURL       : repoURL,
-                                        chart         : chart,
-                                        targetRevision: version,
-                                        helm          : [
+                                        repoURL                            : repoURL,
+                                        "${chooseKeyChartOrPath(repoType)}": chartOrPath,
+                                        targetRevision                     : version,
+                                        helm                               : [
                                                 releaseName: releaseName,
                                                 values: inlineValues
                                         ],
@@ -79,6 +81,16 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
         ])
         clusterResourcesRepo.writeFile("argocd/${releaseName}.yaml", yamlResult)
 
-        clusterResourcesRepo.commitAndPush("Added $repoName/$chart to ArgoCD")
+        clusterResourcesRepo.commitAndPush("Added $repoName/$chartOrPath to ArgoCD")
+    }
+
+    String chooseKeyChartOrPath(RepoType repoType) {
+        switch (repoType) {
+            case RepoType.HELM: 'chart'
+                break
+            case RepoType.GIT: 'path'
+                break
+            default: throw new RuntimeException("Repo type ${repoType} not implemented for ${this.class.simpleName}")
+        }
     }
 }

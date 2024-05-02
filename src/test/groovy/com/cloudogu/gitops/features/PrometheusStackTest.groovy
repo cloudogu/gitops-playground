@@ -1,18 +1,22 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Configuration
-import com.cloudogu.gitops.features.deployment.HelmStrategy
+import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.HelmClient
 import com.cloudogu.gitops.utils.K8sClient
 import groovy.yaml.YamlSlurper
 import jakarta.inject.Provider
 import org.junit.jupiter.api.Test
 
+import java.nio.file.Files
 import java.nio.file.Path
 
-import static org.assertj.core.api.Assertions.assertThat 
+import static org.assertj.core.api.Assertions.assertThat
+import static org.mockito.Mockito.mock
+import static org.mockito.Mockito.verify
+import static org.mockito.Mockito.verifyNoMoreInteractions
+import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.RepoType
 
 class PrometheusStackTest {
 
@@ -32,6 +36,7 @@ class PrometheusStackTest {
                     password: '123',
                     remote  : false,
                     namePrefix: "foo-",
+                    airGapped: false
             ],
             features   : [
                     monitoring: [
@@ -54,18 +59,20 @@ class PrometheusStackTest {
                     ]
             ],
     ]
-    CommandExecutorForTest helmCommandExecutor = new CommandExecutorForTest()
     CommandExecutorForTest k8sCommandExecutor = new CommandExecutorForTest()
-    HelmClient helmClient = new HelmClient(helmCommandExecutor)
-    Path temporaryYamlFile = null
+    DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
+    Path temporaryYamlFilePrometheus = null
+    Path temporaryYamlFileGrafana = null
+    FileSystemUtils fileSystemUtils = new FileSystemUtils()
 
     @Test
     void "is disabled via active flag"() {
         config['features']['monitoring']['active'] = false
         createStack().install()
-        assertThat(temporaryYamlFile).isNull()
+        assertThat(temporaryYamlFilePrometheus).isNull()
+        assertThat(temporaryYamlFileGrafana).isNull()
         assertThat(k8sCommandExecutor.actualCommands).isEmpty()
-        assertThat(helmCommandExecutor.actualCommands).isEmpty()
+        verifyNoMoreInteractions(deploymentStrategy)
     }
 
     @Test
@@ -347,11 +354,49 @@ policies:
 
         assertThat(k8sCommandExecutor.actualCommands[0].trim()).isEqualTo(
                 'kubectl create secret generic prometheus-metrics-creds-scmm -n foo-monitoring --from-literal password=123 --dry-run=client -oyaml | kubectl apply -f-')
-        assertThat(helmCommandExecutor.actualCommands[0].trim()).isEqualTo(
-                'helm repo add prometheusstack https://prom')
-        assertThat(helmCommandExecutor.actualCommands[1].trim()).isEqualTo(
+
+        verify(deploymentStrategy).deployFeature('https://prom', 'prometheusstack', 
+                'kube-prometheus-stack', '19.2.2','monitoring',
+                'kube-prometheus-stack', temporaryYamlFilePrometheus)
+        assertThat(temporaryYamlFileGrafana).isNull()
+        /* This corresponds to 
+                'helm repo add prometheusstack https://prom'
                 'helm upgrade -i kube-prometheus-stack prometheusstack/kube-prometheus-stack --version 19.2.2' +
-                        " --values ${temporaryYamlFile} --namespace foo-monitoring --create-namespace")
+                        " --values ${temporaryYamlFile} --namespace foo-monitoring --create-namespace") */
+    }
+    
+    @Test
+    void 'helm releases are installed in air-gapped mode'() {
+        config.application['airGapped'] = true
+
+        Path prometheusSourceChart = Files.createTempDirectory(this.class.getSimpleName())
+        config.features['monitoring']['helm']['localFolder'] = prometheusSourceChart.toString()
+        
+        Map prometheusChartYaml = [ version     : '1.2.3' ]
+        fileSystemUtils.writeYaml(prometheusChartYaml, prometheusSourceChart.resolve('Chart.yaml').toFile())
+
+        Path grafanaChartPath = prometheusSourceChart.resolve('charts/grafana')
+        Files.createDirectories(grafanaChartPath)
+        Map grafanaChartYaml = [ version: 'x.y.z' ]
+        fileSystemUtils.writeYaml(grafanaChartYaml, grafanaChartPath.resolve('Chart.yaml').toFile())
+        
+        createStack().install()
+
+        verify(deploymentStrategy).deployFeature(
+                'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/3rd-party-dependencies/grafana', 
+                'grafana', '.', 'x.y.z','monitoring',
+                'grafana', temporaryYamlFileGrafana, RepoType.GIT)
+        verify(deploymentStrategy).deployFeature(
+                'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack', 
+                'prometheusstack', '.', '1.2.3','monitoring',
+                'kube-prometheus-stack', temporaryYamlFilePrometheus, RepoType.GIT)
+        
+        YamlSlurper ys = new YamlSlurper()
+        def actualPrometheusYaml = ys.parse(temporaryYamlFilePrometheus) as Map
+        assertThat(actualPrometheusYaml).doesNotContainKey('grafana')
+        def actualGrafanaYaml = ys.parse(temporaryYamlFileGrafana) as Map
+        // Just pick one representative property to check to not make this test too complex
+        assertThat(actualGrafanaYaml).containsKey('adminUser')
     }
 
     private PrometheusStack createStack() {
@@ -362,10 +407,16 @@ policies:
             @Override
             Path copyToTempDir(String filePath) {
                 Path ret = super.copyToTempDir(filePath)
-                temporaryYamlFile = Path.of(ret.toString().replace(".ftl", "")) // Path after template invocation
+                temporaryYamlFilePrometheus = Path.of(ret.toString().replace(".ftl", "")) // Path after template invocation
                 return ret
             }
-        }, new HelmStrategy(configuration, helmClient), new K8sClient(k8sCommandExecutor, new FileSystemUtils(), new Provider<Configuration>() {
+            @Override
+            Path createTempFile() {
+                def ret = super.createTempFile()
+                temporaryYamlFileGrafana = ret
+                return ret
+            }
+        }, deploymentStrategy, new K8sClient(k8sCommandExecutor, new FileSystemUtils(), new Provider<Configuration>() {
             @Override
             Configuration get() {
                 configuration
@@ -375,6 +426,6 @@ policies:
 
     private parseActualStackYaml() {
         def ys = new YamlSlurper()
-        return ys.parse(temporaryYamlFile)
+        return ys.parse(temporaryYamlFilePrometheus)
     }
 }

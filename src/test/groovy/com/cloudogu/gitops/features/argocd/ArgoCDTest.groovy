@@ -42,7 +42,8 @@ class ArgoCDTest {
                     namePrefixForEnvVars: '',
                     gitName             : 'Cloudogu',
                     gitEmail            : 'hello@cloudogu.com',
-                    urlSeparatorHyphen : false,
+                    urlSeparatorHyphen  : false,
+                    airGapped           : false
             ],
             scmm        : [
                     internal: true,
@@ -174,6 +175,15 @@ class ArgoCDTest {
         def yaml = parseActualYaml(namespacesYaml)
         assertThat(yaml[0]['metadata']['name']).isEqualTo('example-apps-staging')
         assertThat(yaml[1]['metadata']['name']).isEqualTo('example-apps-production')
+
+        Map repos = parseActualYaml(actualHelmValuesFile)['argo-cd']['configs']['repositories'] as Map
+        assertThat(repos).doesNotContainKey('grafana')
+        assertThat(repos['prometheus']['url']).isEqualTo('https://prometheus-community.github.io/helm-charts')
+
+        def clusterRessourcesYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/cluster-resources.yaml')
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains('https://prometheus-community.github.io/helm-charts')
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain('http://scmm-scm-manager.default.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack',
+                'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/3rd-party-dependencies/grafana')
     }
 
     @Test
@@ -441,6 +451,24 @@ class ArgoCDTest {
         assertPetClinicRepos('LoadBalancer', 'NodePort', 'petclinic.local')
     }
 
+
+    @Test
+    void 'Prepares repos for air-gapped mode'() {
+        config.application['airGapped'] = true
+        
+        createArgoCD().install()
+
+        Map repos = parseActualYaml(actualHelmValuesFile)['argo-cd']['configs']['repositories'] as Map
+        assertThat(repos).containsKey('grafana')
+        assertThat(repos['grafana']['url']).isEqualTo('http://scmm-scm-manager.default.svc.cluster.local/scm/repo/3rd-party-dependencies/grafana')
+        assertThat(repos['prometheus']['url']).isEqualTo('http://scmm-scm-manager.default.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack')
+
+        def clusterRessourcesYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/cluster-resources.yaml')
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains('http://scmm-scm-manager.default.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack',
+                'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/3rd-party-dependencies/grafana')
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain('https://prometheus-community.github.io/helm-charts')
+    }
+    
     @Test
     void 'If urlSeparatorHyphen is set, ensure that hostnames are build correctly '() {
         config.application['remote'] = true

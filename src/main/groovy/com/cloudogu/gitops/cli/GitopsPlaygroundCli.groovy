@@ -129,6 +129,8 @@ class GitopsPlaygroundCli  implements Runnable {
     private String baseUrl
     @Option(names = ['--url-separator-hyphen'], description = 'Use hyphens instead of dots to separate application name from base-url')
     private Boolean urlSeparatorHyphen
+    @Option(names = ['--air-gapped'], description = 'Changes the sources of the deployed tools so they are not pulled from the internet and work in air-gapped environments.')
+    private Boolean airGapped
 
     // args group metrics
     @Option(names = ['--metrics', '--monitoring'], description = 'Installs the Kube-Prometheus-Stack. This includes Prometheus, the Prometheus operator, Grafana and some extra resources')
@@ -370,6 +372,7 @@ class GitopsPlaygroundCli  implements Runnable {
                 ],
                 application: [
                         remote        : remote,
+                        airGapped     : airGapped, 
                         insecure      : insecure,
                         debug         : debug,
                         trace         : trace,

@@ -17,11 +17,19 @@ class HelmStrategy implements DeploymentStrategy {
     }
 
     @Override
-    void deployFeature(String repoURL, String repoName, String chart, String version, String namespace, String releaseName, Path helmValuesPath) {
+    void deployFeature(String repoURL, String repoName, String chartOrPath, String version, String namespace,
+                       String releaseName, Path helmValuesPath, RepoType repoType) {
+        
+        if (repoType == RepoType.GIT) {
+            // This would be possible with plugins or by pulling the repo first, but for now, we don't need it
+            throw new RuntimeException("Unable to deploy helm chart via Helm CLI from Git URL, because helm does not support this out of the box.\n" +
+                    "Repo URL: ${repoURL}")
+        }
+        
         def namePrefix = config.application['namePrefix']
 
         helmClient.addRepo(repoName, repoURL)
-        helmClient.upgrade(releaseName, "$repoName/$chart",
+        helmClient.upgrade(releaseName, "$repoName/$chartOrPath",
                 [namespace: "${namePrefix}${namespace}".toString(),
                  version  : version,
                  values   : helmValuesPath.toString()])
