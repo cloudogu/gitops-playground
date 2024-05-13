@@ -44,7 +44,16 @@ class JenkinsTest {
                     url     : 'reg-url',
                     path    : 'reg-path',
                     username: 'reg-usr',
-                    password: 'reg-pw'
+                    password: 'reg-pw',
+                    twoRegistries: false,
+                    pullUrl: 'reg-pull-url',
+                    pullPath: 'reg-pull-path',
+                    pullUsername    : 'reg-pull-usr',
+                    pullPassword    : 'reg-pull-pw',
+                    pushUrl: 'reg-push-url',
+                    pushPath: 'reg-push-path',
+                    pushUsername    : 'reg-push-usr',
+                    pushPassword    : 'reg-push-pw',
             ],
             scmm       : [
                     url     : 'http://scmm',
@@ -94,10 +103,15 @@ class JenkinsTest {
         assertThat(env['INSTALL_ARGOCD']).isEqualTo('true')
 
         verify(globalPropertyManager).setGlobalProperty('SCMM_URL', 'http://scmm')
+        verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_K8S_VERSION', ApplicationConfigurator.K8S_VERSION)
+        
         verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_URL', 'reg-url')
         verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_PATH', 'reg-path')
-        verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_K8S_VERSION', ApplicationConfigurator.K8S_VERSION)
-
+        verify(globalPropertyManager, never()).setGlobalProperty(eq('MY_PREFIX_REGISTRY_PULL_URL'), anyString())
+        verify(globalPropertyManager, never()).setGlobalProperty(eq('MY_PREFIX_REGISTRY_PULL_PATH'), anyString())
+        verify(globalPropertyManager, never()).setGlobalProperty(eq('MY_PREFIX_REGISTRY_PUSH_URL'), anyString())
+        verify(globalPropertyManager, never()).setGlobalProperty(eq('MY_PREFIX_REGISTRY_PUSH_PATH'), anyString())
+        
         verify(userManager).createUser('metrics-usr', 'metrics-pw')
         verify(userManager).grantPermission('metrics-usr', UserManager.Permissions.METRICS_VIEW)
 
@@ -105,10 +119,40 @@ class JenkinsTest {
 
         verify(jobManger).createCredential('my-prefix-example-apps', 'scmm-user', 
                 'my-prefix-gitops', 'scmm-pw', 'credentials for accessing scm-manager')
+        
         verify(jobManger).createCredential('my-prefix-example-apps', 'registry-user', 
                 'reg-usr', 'reg-pw', 'credentials for accessing the docker-registry')
+        verify(jobManger, never()).createCredential(eq('my-prefix-example-apps'), eq('registry-pull-user'),
+                anyString(), anyString(), anyString())
+        verify(jobManger, never()).createCredential(eq('my-prefix-example-apps'), eq('registry-push-user'),
+                anyString(), anyString(), anyString())
     }
 
+
+    @Test
+    void 'Handles two registries'() {
+        config.registry['twoRegistries'] = true
+        
+        createJenkins().install()
+        
+        verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_PULL_URL', 'reg-pull-url')
+        verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_PULL_PATH', 'reg-pull-path')
+        verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_PUSH_URL', 'reg-push-url')
+        verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_PUSH_PATH', 'reg-push-path')
+
+        verify(jobManger).createCredential('my-prefix-example-apps', 'registry-pull-user',
+                'reg-pull-usr', 'reg-pull-pw', 
+                'credentials for accessing the docker-registry that contains 3rd party or base images')
+        verify(jobManger).createCredential('my-prefix-example-apps', 'registry-push-user',
+                'reg-push-usr', 'reg-push-pw', 
+                'credentials for accessing the docker-registry that contains images built on jenkins')
+
+        verify(globalPropertyManager, never()).setGlobalProperty(eq('MY_PREFIX_REGISTRY_URL'), anyString())
+        verify(globalPropertyManager, never()).setGlobalProperty(eq('MY_PREFIX_REGISTRY_PATH'), anyString())
+        verify(jobManger, never()).createCredential(eq('my-prefix-example-apps'), eq('registry-user'), 
+                anyString(), anyString(), anyString())
+    }
+    
     @Test
     void 'Does not create create job credentials when argo cd is deactivated'() {
         when(userManager.isUsingCasSecurityRealm()).thenReturn(true)

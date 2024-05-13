@@ -30,11 +30,23 @@ class ApplicationConfigurator {
     private final Map DEFAULT_VALUES = makeDeeplyImmutable([
             registry   : [
                     internal: true, // Set dynamically
+                    twoRegistries: false, // Set dynamically
+                    internalPort: DEFAULT_REGISTRY_PORT,
+                    // Single registry
                     url         : '',
                     path        : '',
                     username    : '',
                     password    : '',
-                    internalPort: DEFAULT_REGISTRY_PORT,
+                    // Alternative: Use different registries, e.g. in air-gapped envs 
+                    // "Pull" registry for 3rd party images
+                    pullUrl         : '',
+                    pullUsername    : '',
+                    pullPassword    : '',
+                    // "Push" registry for writing application specific images
+                    pushUrl         : '',
+                    pushPath        : '',
+                    pushUsername    : '',
+                    pushPassword    : '',
                     helm  : [
                             chart  : 'docker-registry',
                             repoURL: 'https://charts.helm.sh/stable',
@@ -262,17 +274,8 @@ class ApplicationConfigurator {
             newConfig.application['namePrefixForEnvVars'] ="${(newConfig.application['namePrefix'] as String).toUpperCase().replace('-', '_')}"
         }
 
-        if (newConfig.registry['url']) {
-            newConfig.registry['internal'] = false
-        } else {
-            /* Internal Docker registry must be on localhost. Otherwise docker will use HTTPS, leading to errors on 
-               docker push in the example application's Jenkins Jobs.
-               Both setting up HTTPS or allowing insecure registry via daemon.json makes the playground difficult to use.
-               So, always use localhost.
-               Allow overriding the port, in case multiple playground instance run on a single host in different 
-               k3d clusters. */
-            newConfig.registry['url'] = "localhost:${newConfig.registry['internalPort']}"
-        }
+        addRegistryConfig(newConfig)
+        
         if (newConfig['features']['secrets']['vault']['mode'])
             newConfig['features']['secrets']['active'] = true
         if (newConfig['features']['mail']['smtpAddress'] || newConfig['features']['mail']['mailhog'])
@@ -290,6 +293,31 @@ class ApplicationConfigurator {
         config = makeDeeplyImmutable(newConfig)
 
         return config
+    }
+
+    private void addRegistryConfig(Map newConfig) {
+        if (newConfig.registry['pullUrl'] && newConfig.registry['pushUrl']) {
+            newConfig.registry['twoRegistries'] = true
+        } else if (newConfig.registry['pullUrl'] && !newConfig.registry['pushUrl'] ||
+                newConfig.registry['pushUrl'] && !newConfig.registry['pullUrl']) {
+            throw new RuntimeException("Always set pull AND push URL. pullUrl=${newConfig.registry['pullUrl']}, pushUrl=${newConfig.registry['pushUrl']}")
+        }
+
+        if (newConfig.registry['url'] && newConfig.registry['twoRegistries']) {
+            log.warn("Set both registry.url and registry.pullUrl/registry.pushUrl! Implicitly ignoring registry.url")
+        }
+
+        if (newConfig.registry['url'] || newConfig.registry['twoRegistries']) {
+            newConfig.registry['internal'] = false
+        } else {
+            /* Internal Docker registry must be on localhost. Otherwise docker will use HTTPS, leading to errors on 
+               docker push in the example application's Jenkins Jobs.
+               Both setting up HTTPS or allowing insecure registry via daemon.json makes the playground difficult to use.
+               So, always use localhost.
+               Allow overriding the port, in case multiple playground instance run on a single host in different 
+               k3d clusters. */
+            newConfig.registry['url'] = "localhost:${newConfig.registry['internalPort']}"
+        }
     }
 
     Map setConfig(File configFile, boolean skipInternalConfig = false) {

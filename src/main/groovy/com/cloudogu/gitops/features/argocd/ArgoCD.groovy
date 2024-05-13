@@ -334,6 +334,9 @@ class ArgoCD extends Feature {
                             emailToUser  : config.features['argocd']['emailToUser'],
                             emailToAdmin : config.features['argocd']['emailToAdmin']
                     ],
+                    registry : [
+                            twoRegistries: config.registry['twoRegistries']
+                    ],
                     monitoring          : [
                             grafana: [
                                     url: config.features['monitoring']['grafanaUrl'] ? new URL(config.features['monitoring']['grafanaUrl'] as String) : null,
