@@ -176,11 +176,9 @@ class ApplicationConfigurator {
                             grafanaEmailFrom : 'grafana@example.org',
                             grafanaEmailTo : 'infra@example.org',
                             helm  : [
-                                    /* Before allowing to override this via config, we have to change
-                                       ArgoCD.groovy to extract the monitoring CRD from the chart instead of applying 
-                                       from GitHub.*/
                                     chart  : 'kube-prometheus-stack',
                                     repoURL: 'https://prometheus-community.github.io/helm-charts',
+                                    /* When updating this make sure to also test if air-gapped mode still works */
                                     version: '58.2.1',
                                     // Take from env because the Dockerfile provides a local copy of the repo for air-gapped mode
                                     localFolder: System.getenv('KUBE_PROM_STACK_HELMCHART_PATH'), 
@@ -466,5 +464,15 @@ class ApplicationConfigurator {
                 !configToSet.scmm["url"] && configToSet.jenkins["url"]) {
             throw new RuntimeException('When setting jenkins URL, scmm URL must also be set and the other way round')
         }
+        def monitoringHelmConfig = configToSet['features']['monitoring']['helm']
+        if (!monitoringHelmConfig['localFolder']) {
+            // This should only happen when run outside the image, i.e. during development
+            throw new RuntimeException("Missing config for localFolder of helm chart ${monitoringHelmConfig['chart']}.\n" +
+                    "Either run inside the official container image or setting env var " +
+                    "KUBE_PROM_STACK_HELMCHART_PATH='charts/kube-prometheus-stack' after running this:\n" +
+                    "helm repo add prometheus-community ${monitoringHelmConfig['repoURL']}\n" +
+                    "helm pull --untar --untardir charts prometheus-community/${monitoringHelmConfig['chart']} --version ${monitoringHelmConfig['version']}")
+        }
+
     }
 }

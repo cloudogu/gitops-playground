@@ -27,7 +27,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
     }
 
     @Override
-    @SuppressWarnings('GroovyGStringKey') // Using key string seems an easy to read way avoid more ifs
+    @SuppressWarnings('GroovyGStringKey') // Using dynamic strings as keys seems an easy to read way to avoid more ifs
     void deployFeature(String repoURL, String repoName, String chartOrPath, String version, String namespace,
                        String releaseName, Path helmValuesPath, RepoType repoType) {
         def namePrefix = config.application['namePrefix']

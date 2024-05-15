@@ -192,15 +192,25 @@ class ArgoCD extends Feature {
         
         log.debug("Creating namespace for argocd")
         k8sClient.createNamespace(argocdNamespace)
-        
-        log.debug("Creating namespace for monitoring, so argocd can add its service monitors there")
-        k8sClient.createNamespace('monitoring')
-        
-        log.debug("Applying ServiceMonitor CRD; Argo CD fails if it is not there. Chicken-egg-problem.")
-        // Instead of applying this straight from github we should extract the CRDs from the chart
-        // Either from the one packaged in the image or like this:
-        // helm template prometheus-community/kube-prometheus-stack --version XYZ --include-crds
-        k8sClient.applyYaml("https://raw.githubusercontent.com/prometheus-community/helm-charts/kube-prometheus-stack-${config['features']['monitoring']['helm']['version']}/charts/kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml")
+
+        if (config['features']['monitoring']['active']) {
+            log.debug("Creating namespace for monitoring, so argocd can add its service monitors there")
+            k8sClient.createNamespace('monitoring')
+
+            def serviceMonitorCrdYaml
+            if (config.application['airGapped']) {
+                serviceMonitorCrdYaml = Path.of(config['features']['monitoring']['helm']['localFolder'] as String,
+                        'charts/crds/crds/crd-servicemonitors.yaml').toString()
+            } else {
+                serviceMonitorCrdYaml = 
+                        "https://raw.githubusercontent.com/prometheus-community/helm-charts/" +
+                                "kube-prometheus-stack-${config['features']['monitoring']['helm']['version']}/" +
+                                "charts/kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml"
+            }
+            log.debug("Applying ServiceMonitor CRD; Argo CD fails if it is not there. Chicken-egg-problem.\n" +
+                    "Applying from path ${serviceMonitorCrdYaml}")
+            k8sClient.applyYaml(serviceMonitorCrdYaml)
+        }
 
         log.debug("Creating repo credential secret that is used by argocd to access repos in SCM-Manager")
         // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo 

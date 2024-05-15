@@ -32,8 +32,6 @@ class ScmManager extends Feature {
     private CommandExecutor commandExecutor
     private FileSystemUtils fileSystemUtils
     private DeploymentStrategy deployer
-    private String gitName
-    private String gitEmail
     private ScmmRepoProvider repoProvider
     private RepositoryApi repositoryApi
     private String gitOpsUsername
@@ -53,8 +51,6 @@ class ScmManager extends Feature {
         this.repoProvider = repoProvider
         this.repositoryApi = repositoryApi
         this.deployer = deployer
-        this.gitName = this.config['application']['gitName']
-        this.gitEmail = this.config['application']['gitEmail']
         this.gitOpsUsername = "${this.config.application['namePrefix']}gitops"
     }
 
@@ -119,24 +115,16 @@ class ScmManager extends Feature {
             // As helm does not provide an option for changing them interactively, we push the charts into a separate repo.
             // We alter these repos to resolve dependencies locally
             
-            // TODO only when monitoring active!
-            
-            def helmConfig = config['features']['monitoring']['helm']
-            // TODO move to AppConfigurator
-            if (!helmConfig['localFolder']) {
-                // This should only happen when run outside the image, i.e. during development
-                throw new RuntimeException("Missing config for localFolder of helm chart ${helmConfig['chart']}.\n " +
-                        "Either run inside the official container image or setting env var" +
-                        "KUBE_PROM_STACK_HELMCHART_PATH='charts/kube-prometheus-stack' after running this:\n" +
-                        "helm repo add prometheus-community ${helmConfig['repoURL']}\n" +
-                        "helm pull --untar --untardir charts prometheus-community/${helmConfig['chart']} --version ${helmConfig['version']}")
-            }
-
             preparePrometheusRepo()
         }
     }
 
-    protected void preparePrometheusRepo() {
+    private void preparePrometheusRepo() {
+        if (!config['features']['monitoring']['active']) {
+            return
+        }
+        
+        log.debug("Air-gapped mode: Preparing Prometheus")
         def helmConfig = config['features']['monitoring']['helm']
         def namespace = NAMESPACE_3RD_PARTY_DEPENDENCIES
         String repoName = helmConfig['chart']
@@ -158,7 +146,7 @@ class ScmManager extends Feature {
                 "Dependencies localized to run in air-gapped environments", prometheusChartYaml.version as String)
     }
 
-    void createRepo(String namespace, String repoName, String description) {
+    private void createRepo(String namespace, String repoName, String description) {
         def repo = new Repository(namespace, repoName, description)
         def createResponse = repositoryApi.create(repo, true).execute()
         handleResponse(createResponse, repo)
@@ -168,7 +156,7 @@ class ScmManager extends Feature {
         handleResponse(permissionResponse, permission, "for repo $namespace/$repoName")
     }
 
-    protected void handleResponse(Response<Void> response, Object body, String additionalMessage = '') {
+    private void handleResponse(Response<Void> response, Object body, String additionalMessage = '') {
         if (response.code() == 409) {
             // Here, we could consider sending another request for changing the existing object to become proper idempotent
             log.debug("${body.class.simpleName} already exists ${additionalMessage}, ignoring: ${body}")
@@ -178,7 +166,7 @@ class ScmManager extends Feature {
         }
     }
 
-    Map localizeChartYaml(ScmmRepo scmmRepo) {
+    private Map localizeChartYaml(ScmmRepo scmmRepo) {
         log.debug("Preparing repo ${scmmRepo.scmmRepoTarget} for air-gapped use: Changing Chart.yaml to resolve depencies locally")
         
         def chartYamlPath = Path.of(scmmRepo.absoluteLocalRepoTmpDir, 'Chart.yaml')

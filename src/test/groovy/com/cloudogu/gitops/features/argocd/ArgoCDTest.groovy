@@ -128,8 +128,6 @@ class ArgoCDTest {
         createArgoCD().install()
 
         k8sCommands.assertExecuted('kubectl create namespace argocd')
-        k8sCommands.assertExecuted('kubectl create namespace monitoring')
-        k8sCommands.assertExecuted("kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/kube-prometheus-stack-42.0.3/charts/kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml")
 
         // check values.yaml
         List filesWithInternalSCMM = findFilesContaining(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), ArgoCD.SCMM_URL_INTERNAL)
@@ -451,9 +449,9 @@ class ArgoCDTest {
         assertPetClinicRepos('LoadBalancer', 'NodePort', 'petclinic.local')
     }
 
-
     @Test
     void 'Prepares repos for air-gapped mode'() {
+        config['features']['monitoring']['active'] = false
         config.application['airGapped'] = true
         
         createArgoCD().install()
@@ -466,6 +464,32 @@ class ArgoCDTest {
                 'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack')
         assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain(
                 'https://prometheus-community.github.io/helm-charts')
+    }
+
+    @Test
+    void 'Applies Prometheus ServiceMonitor CRD from file before installing (air-gapped mode)'() {
+        config['features']['monitoring']['active'] = true
+        config.application['airGapped'] = true
+        Path prometheusSourceChart = Files.createTempDirectory(this.class.getSimpleName())
+        config.features['monitoring']['helm']['localFolder'] = prometheusSourceChart.toString()
+
+        Path crdPath = prometheusSourceChart.resolve('charts/crds/crds/crd-servicemonitors.yaml')
+        Files.createDirectories(crdPath)
+
+        createArgoCD().install()
+
+        k8sCommands.assertExecuted('kubectl create namespace monitoring')
+        k8sCommands.assertExecuted("kubectl apply -f ${crdPath}")
+    }
+    
+    @Test
+    void 'Applies Prometheus ServiceMonitor CRD from GitHub before installing'() {
+        config['features']['monitoring']['active'] = true
+
+        createArgoCD().install()
+
+        k8sCommands.assertExecuted('kubectl create namespace monitoring')
+        k8sCommands.assertExecuted("kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/kube-prometheus-stack-42.0.3/charts/kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml")
     }
     
     @Test
@@ -576,7 +600,7 @@ class ArgoCDTest {
   tag: latest
 """)
     }
-
+    
     private void assertArgoCdYamlPrefixes(String scmmUrl, String expectedPrefix) {
         assertAllYamlFiles(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), 'projects', 4) { Path file ->
             def yaml = parseActualYaml(file.toString())

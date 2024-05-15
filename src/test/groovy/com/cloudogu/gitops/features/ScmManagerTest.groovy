@@ -67,6 +67,7 @@ class ScmManagerTest {
                             active: true,
                     ],
                     monitoring: [
+                            active: true,
                             helm  : [
                                     chart  : 'kube-prometheus-stack',
                                     repoURL: 'https://kube-prometheus-stack-repo-url',
@@ -182,6 +183,14 @@ class ScmManagerTest {
                 'Unable to determine proper version for dependency grafana (version: 7.3.*) ' +
                         'from repo foo-3rd-party-dependencies/kube-prometheus-stack'
         )
+    }
+
+    @Test
+    void 'Air-gapped: Prometheus only applied when monitoring active'() {
+        config['features']['monitoring']['active'] = false
+        createScmManager().install()
+
+        assertThat(scmmRepoProvider.repos['3rd-party-dependencies/kube-prometheus-stack']).isNull()
     }
     
     @Test

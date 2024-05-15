@@ -90,7 +90,7 @@ RUN /jenkins/download-plugins.sh /dist/gitops/jenkins-plugins
 
 RUN mkdir -p /dist/gitops/charts
 COPY src/main/groovy/com/cloudogu/gitops/config/ApplicationConfigurator.groovy /tmp/
-RUN chartDetails=$(grep -C2 kube-prometheus-stack  /tmp/ApplicationConfigurator.groovy) \
+RUN chartDetails=$(grep -C3 kube-prometheus-stack  /tmp/ApplicationConfigurator.groovy) \
   repo=$(echo "$chartDetails"  | grep -oP "repoURL\s*:\s*'\K[^']+") \
   chart=$(echo "$chartDetails" | grep -oP "chart\s*:\s*'\K[^']+") \
   version=$(echo "$chartDetails" | grep -oP "version\s*:\s*'\K[^']+") && \

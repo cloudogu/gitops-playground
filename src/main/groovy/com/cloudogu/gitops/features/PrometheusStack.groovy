@@ -53,7 +53,7 @@ class PrometheusStack extends Feature {
         // Note that some specific configuration steps are implemented in ArgoCD
         def namePrefix = config.application['namePrefix']
 
-        def prometheusHelmValuesFile = new TemplatingEngine().replaceTemplate(fileSystemUtils.copyToTempDir(HELM_VALUES_PATH).toFile(), [
+        def tmpHelmValues = new TemplatingEngine().replaceTemplate(fileSystemUtils.copyToTempDir(HELM_VALUES_PATH).toFile(), [
                 namePrefix: namePrefix,
                 monitoring: [
                         grafanaEmailFrom: config.features['monitoring']['grafanaEmailFrom'] as String,
@@ -73,7 +73,7 @@ class PrometheusStack extends Feature {
                 scmm: getScmmConfiguration(),
                 jenkins: getJenkinsConfiguration()
         ]).toPath()
-        Map helmValuesYaml = fileSystemUtils.readYaml(prometheusHelmValuesFile)
+        Map helmValuesYaml = fileSystemUtils.readYaml(tmpHelmValues)
 
         if (remoteCluster) {
             log.debug("Setting grafana service.type to LoadBalancer since it is running in a remote cluster")
@@ -132,9 +132,9 @@ class PrometheusStack extends Feature {
                     prometheusVersion,
                     'monitoring',
                     'kube-prometheus-stack',
-                    prometheusHelmValuesFile, RepoType.GIT)
+                    tmpHelmValues, RepoType.GIT)
         } else {
-            fileSystemUtils.writeYaml(helmValuesYaml, prometheusHelmValuesFile.toFile())
+            fileSystemUtils.writeYaml(helmValuesYaml, tmpHelmValues.toFile())
     
             deployer.deployFeature(
                     helmConfig['repoURL'] as String,
@@ -143,7 +143,7 @@ class PrometheusStack extends Feature {
                     helmConfig['version'] as String,
                     'monitoring',
                     'kube-prometheus-stack',
-                    prometheusHelmValuesFile)
+                    tmpHelmValues)
         }
     }
 
@@ -159,7 +159,6 @@ class PrometheusStack extends Feature {
     }
     
     private URI getScmmUri() {
-        // TODO use config.scmm['url']
         if (config.scmm['internal']) {
             new URI('http://scmm-scm-manager.default.svc.cluster.local/scm')
         } else {
@@ -168,21 +167,19 @@ class PrometheusStack extends Feature {
     }
 
     private Map getJenkinsConfiguration() {
-        String protocol = 'http'
-        String host = 'jenkins.default.svc.cluster.local'
-        String path = '/prometheus'
-        if (!config.jenkins['internal']) {
-            URI uri = new URI((config.jenkins['url'] as String) + path)
-            protocol = uri.scheme
-            host = uri.authority
-            path = uri.path
+        String path = 'prometheus'
+        URI uri
+        if (config.jenkins['internal']) {
+            uri = new URI("http://jenkins.default.svc.cluster.local/${path}")
+        } else {
+            uri = new URI("${config.jenkins['url']}/${path}")
         }
 
         return [
                 metricsUsername: config.jenkins['metricsUsername'],
-                protocol       : protocol,
-                host           : host,
-                path           : path
+                protocol       : uri.scheme,
+                host           : uri.authority,
+                path           : uri.path
         ]
     }
 
