@@ -22,7 +22,6 @@ import retrofit2.Response
 
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util.stream.Collectors
 
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
@@ -171,6 +170,19 @@ class ScmManagerTest {
 
         assertAirGapped()
     }
+
+    @Test
+    void 'Air-gapped: Fails when unable to resolve version of dependencies'() {
+        setupForAirgappedUse([:])
+        def exception = shouldFail(RuntimeException) {
+            createScmManager().install()
+        }
+        
+        assertThat(exception.message).isEqualTo(
+                'Unable to determine proper version for dependency grafana (version: 7.3.*) ' +
+                        'from repo foo-3rd-party-dependencies/kube-prometheus-stack'
+        )
+    }
     
     @Test
     void 'Ignores existing Repos'() {
@@ -235,7 +247,7 @@ class ScmManagerTest {
         assertThat(exception.message).contains('500')
     }
 
-    protected void setupForAirgappedUse() {
+    protected void setupForAirgappedUse(Map prometheusChartLock = null) {
         def response = mockSuccessfulResponse(201)
         when(repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response)
         when(repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(response)
@@ -255,22 +267,29 @@ class ScmManagerTest {
                                 condition : 'grafana.enabled',
                                 name      : 'grafana',
                                 repository: 'https://grafana-repo-url',
-                                version   : '6.47.*',
+                                version   : '7.3.*',
                         ]
                 ]
         ]
         fileSystemUtils.writeYaml(prometheusChartYaml, prometheusSourceChart.resolve('Chart.yaml').toFile())
-        def filePath = prometheusSourceChart.resolve "Chart.lock"
-        Files.write(filePath, 'promChartLock'.getBytes())
 
-        Path grafanaChartPath = prometheusSourceChart.resolve('charts/grafana')
-        Files.createDirectories(grafanaChartPath)
-        Files.createDirectories(prometheusSourceChart.resolve('charts/crds'))
-        Map grafanaChartYaml = [
-                version: 'x.y.z',
-                name   : 'grafana',
-        ]
-        fileSystemUtils.writeYaml(grafanaChartYaml, grafanaChartPath.resolve('Chart.yaml').toFile())
+        if(prometheusChartLock == null) {
+            prometheusChartLock = [
+                dependencies: [
+                        [
+                                name: 'crds',
+                                repository: "",
+                                version: '0.0.0'
+                        ],
+                        [
+                                name: 'grafana',
+                                repository: 'https://grafana.github.io/helm-charts',
+                                version: '7.3.9'
+                        ]
+                ]
+            ]
+        }
+        fileSystemUtils.writeYaml(prometheusChartLock, prometheusSourceChart.resolve('Chart.lock').toFile())
 
         config.application['airGapped'] = true
         config.features['monitoring']['helm']['localFolder'] = prometheusSourceChart.toString()
@@ -281,43 +300,32 @@ class ScmManagerTest {
         assertThat(prometheusRepo).isNotNull()
         assertThat(Path.of(prometheusRepo.absoluteLocalRepoTmpDir, 'Chart.lock')).doesNotExist()
 
-        List<Path> chartSubFolders = Files.list(Path.of(prometheusRepo.absoluteLocalRepoTmpDir, 'charts')).collect(Collectors.toList())
-        assertThat(chartSubFolders).hasSize(1)
-        assertThat(chartSubFolders[0].fileName.toString()).isEqualTo('crds')
-
         def ys = new YamlSlurper()
         def actualPrometheusChartYaml = ys.parse(Path.of(prometheusRepo.absoluteLocalRepoTmpDir, 'Chart.yaml'))
         assertThat(actualPrometheusChartYaml['name']).isEqualTo('kube-prometheus-stack-chart')
+        
         def dependencies = actualPrometheusChartYaml['dependencies'] as List
-        assertThat(dependencies).hasSize(1)
+        assertThat(dependencies).hasSize(2)
         assertThat(dependencies[0]['name']).isEqualTo('crds')
+        assertThat(dependencies[0]['version']).isEqualTo('0.0.0')
+        assertThat(dependencies[0]['repository']).isEqualTo('')
+        assertThat(dependencies[1]['name']).isEqualTo('grafana')
+        assertThat(dependencies[1]['version']).isEqualTo('7.3.9')
+        assertThat(dependencies[1]['repository']).isEqualTo('')
+        
         assertHelmRepoCommits(prometheusRepo, '1.2.3', 'Chart kube-prometheus-stack-chart, version: 1.2.3\n\n' +
-                'Source: https://kube-prometheus-stack-repo-url\nDependencies removed to run in air-gapped environments')
+                'Source: https://kube-prometheus-stack-repo-url\nDependencies localized to run in air-gapped environments')
 
         def repoCreateArgument = ArgumentCaptor.forClass(Repository)
-        verify(repositoryApi, times(2)).create(repoCreateArgument.capture(), eq(true))
+        verify(repositoryApi, times(1)).create(repoCreateArgument.capture(), eq(true))
         assertThat(repoCreateArgument.allValues[0].namespace).isEqualTo(ScmManager.NAMESPACE_3RD_PARTY_DEPENDENCIES)
         assertThat(repoCreateArgument.allValues[0].name).isEqualTo('kube-prometheus-stack')
         assertThat(repoCreateArgument.allValues[0].description).isEqualTo('Mirror of Helm chart kube-prometheus-stack from https://kube-prometheus-stack-repo-url')
 
         def permissionCreateArgument = ArgumentCaptor.forClass(Permission)
-        verify(repositoryApi, times(2)).createPermission(anyString(), anyString(), permissionCreateArgument.capture())
+        verify(repositoryApi, times(1)).createPermission(anyString(), anyString(), permissionCreateArgument.capture())
         assertThat(permissionCreateArgument.allValues[0].name).isEqualTo('foo-gitops')
         assertThat(permissionCreateArgument.allValues[0].role).isEqualTo(Permission.Role.WRITE)
-
-        ScmmRepo grafanaRepo = scmmRepoProvider.repos['3rd-party-dependencies/grafana']
-        assertThat(grafanaRepo).isNotNull()
-        def actualGrafanaChartYaml = ys.parse(Path.of(grafanaRepo.absoluteLocalRepoTmpDir, 'Chart.yaml'))
-        assertThat(actualGrafanaChartYaml['name']).isEqualTo('grafana')
-
-        assertHelmRepoCommits(grafanaRepo, 'x.y.z', 'Chart grafana, version: x.y.z\n\n' +
-                'Source: https://grafana-repo-url')
-        assertThat(repoCreateArgument.allValues[1].namespace).isEqualTo(ScmManager.NAMESPACE_3RD_PARTY_DEPENDENCIES)
-        assertThat(repoCreateArgument.allValues[1].name).isEqualTo('grafana')
-        assertThat(repoCreateArgument.allValues[1].description).isEqualTo('Mirror of Helm chart grafana from https://grafana-repo-url')
-
-        assertThat(permissionCreateArgument.allValues[1].name).isEqualTo('foo-gitops')
-        assertThat(permissionCreateArgument.allValues[1].role).isEqualTo(Permission.Role.WRITE)
     }
     
     Call<Void> mockSuccessfulResponse(int expectedReturnCode) {

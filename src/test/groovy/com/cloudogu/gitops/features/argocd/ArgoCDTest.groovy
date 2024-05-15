@@ -177,13 +177,13 @@ class ArgoCDTest {
         assertThat(yaml[1]['metadata']['name']).isEqualTo('example-apps-production')
 
         Map repos = parseActualYaml(actualHelmValuesFile)['argo-cd']['configs']['repositories'] as Map
-        assertThat(repos).doesNotContainKey('grafana')
         assertThat(repos['prometheus']['url']).isEqualTo('https://prometheus-community.github.io/helm-charts')
 
         def clusterRessourcesYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/cluster-resources.yaml')
-        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains('https://prometheus-community.github.io/helm-charts')
-        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain('http://scmm-scm-manager.default.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack',
-                'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/3rd-party-dependencies/grafana')
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains(
+                'https://prometheus-community.github.io/helm-charts')
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain(
+                'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack')
     }
 
     @Test
@@ -459,14 +459,13 @@ class ArgoCDTest {
         createArgoCD().install()
 
         Map repos = parseActualYaml(actualHelmValuesFile)['argo-cd']['configs']['repositories'] as Map
-        assertThat(repos).containsKey('grafana')
-        assertThat(repos['grafana']['url']).isEqualTo('http://scmm-scm-manager.default.svc.cluster.local/scm/repo/3rd-party-dependencies/grafana')
         assertThat(repos['prometheus']['url']).isEqualTo('http://scmm-scm-manager.default.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack')
 
         def clusterRessourcesYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/cluster-resources.yaml')
-        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains('http://scmm-scm-manager.default.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack',
-                'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/3rd-party-dependencies/grafana')
-        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain('https://prometheus-community.github.io/helm-charts')
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains(
+                'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack')
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain(
+                'https://prometheus-community.github.io/helm-charts')
     }
     
     @Test

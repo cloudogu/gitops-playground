@@ -117,7 +117,7 @@ class ScmManager extends Feature {
             
             // In air-gapped mode, the chart's dependencies can't be resolved.
             // As helm does not provide an option for changing them interactively, we push the charts into a separate repo.
-            // There, we remove all dependencies, and deploy them separately.
+            // We alter these repos to resolve dependencies locally
             
             // TODO only when monitoring active!
             
@@ -133,8 +133,6 @@ class ScmManager extends Feature {
             }
 
             preparePrometheusRepo()
-
-            prepareGrafanaRepo()
         }
     }
 
@@ -142,7 +140,6 @@ class ScmManager extends Feature {
         def helmConfig = config['features']['monitoring']['helm']
         def namespace = NAMESPACE_3RD_PARTY_DEPENDENCIES
         String repoName = helmConfig['chart']
-        def ys = new YamlSlurper()
         
         createRepo(namespace, repoName, "Mirror of Helm chart $repoName from ${helmConfig['repoURL']}")
 
@@ -150,44 +147,15 @@ class ScmManager extends Feature {
         prometheusRepo.cloneRepo()
         prometheusRepo.copyDirectoryContents(helmConfig['localFolder'] as String)
 
-        log.debug("Preparing repo ${prometheusRepo.scmmRepoTarget} for air-gapped use: Removing external dependencies.")
-        def prometheusChartYamlPath = Path.of(prometheusRepo.absoluteLocalRepoTmpDir, 'Chart.yaml')
-        Map prometheusChartYaml = ys.parse(prometheusChartYamlPath) as Map
-        (prometheusChartYaml['dependencies'] as List).removeAll { it['name'] != 'crds' }
-        fileSystemUtils.writeYaml(prometheusChartYaml, prometheusChartYamlPath.toFile())
+        def prometheusChartYaml = localizeChartYaml(prometheusRepo)
 
-        fileSystemUtils.deleteFilesExcept(new File(prometheusRepo.absoluteLocalRepoTmpDir, 'charts'), 'crds')
-        
         // Chart.lock contains pinned dependencies and digest. 
-        // Both have to go because they no longer match after changes made above
+        // We either have to update or remove them. Take the easier approach.
         new File(prometheusRepo.absoluteLocalRepoTmpDir, 'Chart.lock').delete()
 
         prometheusRepo.commitAndPush("Chart ${prometheusChartYaml.name}, version: ${prometheusChartYaml.version}\n\n" +
                 "Source: ${helmConfig['repoURL']}\n" +
-                "Dependencies removed to run in air-gapped environments", prometheusChartYaml.version as String)
-    }
-
-    protected void prepareGrafanaRepo() {
-        def helmConfig = config['features']['monitoring']['helm']
-        def namespace = NAMESPACE_3RD_PARTY_DEPENDENCIES
-        def repoName = 'grafana'
-        def ys = new YamlSlurper()
-        
-        def prometheusChartYamlPath = Path.of(helmConfig['localFolder'] as String, 'Chart.yaml')
-        Map grafanaDependencyFromPrometheusChart = ys.parse(prometheusChartYamlPath)['dependencies'].find { it['name'] == 'grafana' } as Map
-        def repositoryUrl = grafanaDependencyFromPrometheusChart.repository
-
-        createRepo(namespace, repoName, "Mirror of Helm chart ${repoName} from ${repositoryUrl}")
-
-        ScmmRepo grafanaRepo =  repoProvider.getRepo("$namespace/${repoName}")
-        grafanaRepo.cloneRepo()
-        grafanaRepo.copyDirectoryContents("${helmConfig['localFolder']}/charts/$repoName")
-
-        def grafanaChartYamlPath = Path.of(grafanaRepo.absoluteLocalRepoTmpDir, 'Chart.yaml')
-        Map grafanaChartYaml = ys.parse(grafanaChartYamlPath) as Map
-
-        grafanaRepo.commitAndPush("Chart ${repoName}, version: ${grafanaChartYaml.version}\n\n" +
-                "Source: ${repositoryUrl}", grafanaChartYaml.version as String)
+                "Dependencies localized to run in air-gapped environments", prometheusChartYaml.version as String)
     }
 
     void createRepo(String namespace, String repoName, String description) {
@@ -208,5 +176,33 @@ class ScmManager extends Feature {
             throw new RuntimeException("Could not create ${body.class.simpleName} ${additionalMessage}.\n${body}\n" +
                     "HTTP Details: ${response.code()} ${response.message()}: ${response.errorBody().string()}")
         }
+    }
+
+    Map localizeChartYaml(ScmmRepo scmmRepo) {
+        log.debug("Preparing repo ${scmmRepo.scmmRepoTarget} for air-gapped use: Changing Chart.yaml to resolve depencies locally")
+        
+        def chartYamlPath = Path.of(scmmRepo.absoluteLocalRepoTmpDir, 'Chart.yaml')
+        def chartLockPath = Path.of(scmmRepo.absoluteLocalRepoTmpDir, 'Chart.lock')
+
+        def ys = new YamlSlurper()
+        Map chartYaml = ys.parse(chartYamlPath) as Map
+        Map chartLock = ys.parse(chartLockPath) as Map
+        
+        (chartYaml['dependencies'] as List).each { chartYamlDep ->
+            // Resolve proper dependency version from Chart.lock, e.g. 5.18.* -> 5.18.1
+            def chartLockDep = chartLock.dependencies.find { dep -> dep['name'] == chartYamlDep['name'] }
+            if (chartLockDep) {
+                chartYamlDep['version'] = chartLockDep['version']
+            } else if ((chartYamlDep['version'] as String).contains('*')) {
+                throw new RuntimeException("Unable to determine proper version for dependency " +
+                        "${chartYamlDep['name']} (version: ${chartYamlDep['version']}) from repo ${scmmRepo.scmmRepoTarget}")
+            }
+            
+            // Remove link to external repo, to force using local one
+            chartYamlDep['repository'] = ''
+        }
+        
+        fileSystemUtils.writeYaml(chartYaml, chartYamlPath.toFile())
+        return chartYaml
     }
 }

@@ -62,7 +62,6 @@ class PrometheusStackTest {
     CommandExecutorForTest k8sCommandExecutor = new CommandExecutorForTest()
     DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
     Path temporaryYamlFilePrometheus = null
-    Path temporaryYamlFileGrafana = null
     FileSystemUtils fileSystemUtils = new FileSystemUtils()
 
     @Test
@@ -70,7 +69,6 @@ class PrometheusStackTest {
         config['features']['monitoring']['active'] = false
         createStack().install()
         assertThat(temporaryYamlFilePrometheus).isNull()
-        assertThat(temporaryYamlFileGrafana).isNull()
         assertThat(k8sCommandExecutor.actualCommands).isEmpty()
         verifyNoMoreInteractions(deploymentStrategy)
     }
@@ -358,7 +356,6 @@ policies:
         verify(deploymentStrategy).deployFeature('https://prom', 'prometheusstack', 
                 'kube-prometheus-stack', '19.2.2','monitoring',
                 'kube-prometheus-stack', temporaryYamlFilePrometheus)
-        assertThat(temporaryYamlFileGrafana).isNull()
         /* This corresponds to 
                 'helm repo add prometheusstack https://prom'
                 'helm upgrade -i kube-prometheus-stack prometheusstack/kube-prometheus-stack --version 19.2.2' +
@@ -375,28 +372,12 @@ policies:
         Map prometheusChartYaml = [ version     : '1.2.3' ]
         fileSystemUtils.writeYaml(prometheusChartYaml, prometheusSourceChart.resolve('Chart.yaml').toFile())
 
-        Path grafanaChartPath = prometheusSourceChart.resolve('charts/grafana')
-        Files.createDirectories(grafanaChartPath)
-        Map grafanaChartYaml = [ version: 'x.y.z' ]
-        fileSystemUtils.writeYaml(grafanaChartYaml, grafanaChartPath.resolve('Chart.yaml').toFile())
-        
         createStack().install()
 
-        verify(deploymentStrategy).deployFeature(
-                'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/3rd-party-dependencies/grafana', 
-                'grafana', '.', 'x.y.z','monitoring',
-                'grafana', temporaryYamlFileGrafana, RepoType.GIT)
         verify(deploymentStrategy).deployFeature(
                 'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack', 
                 'prometheusstack', '.', '1.2.3','monitoring',
                 'kube-prometheus-stack', temporaryYamlFilePrometheus, RepoType.GIT)
-        
-        YamlSlurper ys = new YamlSlurper()
-        def actualPrometheusYaml = ys.parse(temporaryYamlFilePrometheus) as Map
-        assertThat(actualPrometheusYaml).doesNotContainKey('grafana')
-        def actualGrafanaYaml = ys.parse(temporaryYamlFileGrafana) as Map
-        // Just pick one representative property to check to not make this test too complex
-        assertThat(actualGrafanaYaml).containsKey('adminUser')
     }
 
     private PrometheusStack createStack() {
@@ -408,12 +389,6 @@ policies:
             Path copyToTempDir(String filePath) {
                 Path ret = super.copyToTempDir(filePath)
                 temporaryYamlFilePrometheus = Path.of(ret.toString().replace(".ftl", "")) // Path after template invocation
-                return ret
-            }
-            @Override
-            Path createTempFile() {
-                def ret = super.createTempFile()
-                temporaryYamlFileGrafana = ret
                 return ret
             }
         }, deploymentStrategy, new K8sClient(k8sCommandExecutor, new FileSystemUtils(), new Provider<Configuration>() {

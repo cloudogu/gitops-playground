@@ -119,30 +119,12 @@ class PrometheusStack extends Feature {
 
 
         if (config.application['airGapped']) {
-            log.debug("Air-gapped mode: Deploying prometheus and grafana separately from mirrored repos from Git")
+            log.debug("Air-gapped mode: Deploying prometheus from local git repo")
 
-            def grafanaHelmValuesFile = fileSystemUtils.createTempFile()
-            fileSystemUtils.writeYaml(helmValuesYaml['grafana'] as Map, grafanaHelmValuesFile.toFile())
+            String prometheusVersion =
+                    new YamlSlurper().parse(Path.of(config['features']['monitoring']['helm']['localFolder'] as String,
+                    'Chart.yaml'))['version']
             
-            helmValuesYaml.remove('grafana')
-            fileSystemUtils.writeYaml(helmValuesYaml, prometheusHelmValuesFile.toFile())
-
-            def ys = new YamlSlurper()
-            String grafanaVersion = 
-                    ys.parse(Path.of("${config['features']['monitoring']['helm']['localFolder']}/charts/grafana",
-                    'Chart.yaml'))['version']
-            String prometheusVersion = 
-                    ys.parse(Path.of(config['features']['monitoring']['helm']['localFolder'] as String,
-                    'Chart.yaml'))['version']
-
-            deployer.deployFeature(
-                    "${scmmUri}/repo/${ScmManager.NAMESPACE_3RD_PARTY_DEPENDENCIES}/grafana",
-                    'grafana',
-                    '.',
-                    grafanaVersion,
-                    'monitoring',
-                    'grafana',
-                    grafanaHelmValuesFile, RepoType.GIT)
             deployer.deployFeature(
                     "${scmmUri}/repo/${ScmManager.NAMESPACE_3RD_PARTY_DEPENDENCIES}/kube-prometheus-stack",
                     'prometheusstack',
