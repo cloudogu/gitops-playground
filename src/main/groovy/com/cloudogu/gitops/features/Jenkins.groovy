@@ -65,7 +65,7 @@ class Jenkins extends Feature {
                 INSTALL_ARGOCD            : config.features['argocd']['active'],
                 NAME_PREFIX               : config.application['namePrefix'],
                 INSECURE                  : config.application['insecure'],
-                URL_SEPARATOR_HYPHEN      : config.application['urlSeparatorHyphen']
+                URL_SEPARATOR_HYPHEN      : config.application['urlSeparatorHyphen'],
         ])
 
         globalPropertyManager.setGlobalProperty('SCMM_URL', config.scmm['url'] as String)
@@ -77,6 +77,10 @@ class Jenkins extends Feature {
         } else {
             globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_URL", config.registry['url'] as String)
             globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_PATH", config.registry['path'] as String)
+        }
+
+        if (config.jenkins['mavenCentralMirror']) {
+            globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}MAVEN_CENTRAL_MIRROR", config.jenkins['mavenCentralMirror'] as String)
         }
 
         globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}K8S_VERSION", ApplicationConfigurator.K8S_VERSION)

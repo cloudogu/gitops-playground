@@ -376,6 +376,9 @@ class ArgoCD extends Feature {
                             host    : config.scmm['internal'] ? 'scmm-scm-manager.default.svc.cluster.local' : config.scmm['host'],
                             protocol: config.scmm['internal'] ? 'http' : config.scmm['protocol'],
                     ],
+                    jenkins             : [
+                            mavenCentralMirror  : config.jenkins['mavenCentralMirror'],
+                    ],
                     exampleApps         : [
                             petclinic: [
                                     baseDomain: config.features['exampleApps']['petclinic']['baseDomain']

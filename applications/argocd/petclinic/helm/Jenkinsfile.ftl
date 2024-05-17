@@ -19,7 +19,7 @@ String getDockerRegistryCredentials() { 'registry-user' }
 
 <#noparse>
 String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/3rd-party-dependencies/ces-build-lib/" }
-String getCesBuildLibVersion() { '1.64.1' }
+String getCesBuildLibVersion() { '2.2.0' }
 String getGitOpsBuildLibRepo() { "${env.SCMM_URL}/repo/3rd-party-dependencies/gitops-build-lib" }
 String getGitOpsBuildLibVersion() { '0.4.0'}
 String getHelmChartRepository() { "${env.SCMM_URL}/repo/3rd-party-dependencies/spring-boot-helm-chart-with-dependency" }
@@ -40,7 +40,13 @@ properties([
 ])
 
 node {
+
     mvn = cesBuildLib.MavenWrapper.new(this)
+</#noparse>
+<#if jenkins.mavenCentralMirror?has_content>
+    mvn.useMirrors([name: 'maven-central-mirror', mirrorOf: 'central', url:  env.${namePrefixForEnvVars}MAVEN_CENTRAL_MIRROR])
+</#if>
+<#noparse>
 
     catchError {
 

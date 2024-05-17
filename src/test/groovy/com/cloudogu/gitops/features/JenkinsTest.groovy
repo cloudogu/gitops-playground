@@ -111,7 +111,7 @@ class JenkinsTest {
         verify(globalPropertyManager, never()).setGlobalProperty(eq('MY_PREFIX_REGISTRY_PULL_PATH'), anyString())
         verify(globalPropertyManager, never()).setGlobalProperty(eq('MY_PREFIX_REGISTRY_PUSH_URL'), anyString())
         verify(globalPropertyManager, never()).setGlobalProperty(eq('MY_PREFIX_REGISTRY_PUSH_PATH'), anyString())
-        
+
         verify(userManager).createUser('metrics-usr', 'metrics-pw')
         verify(userManager).grantPermission('metrics-usr', UserManager.Permissions.METRICS_VIEW)
 
@@ -177,6 +177,14 @@ class JenkinsTest {
 
         def env = getEnvAsMap()
         assertThat(env['BASE_URL']).isNotEqualTo('null')
+    }
+
+    @Test
+    void 'Does not set maven mirror'() {
+        config.jenkins['mavenCentralMirror'] = null
+        createJenkins().install()
+
+        verify(globalPropertyManager, never()).setGlobalProperty(eq('MAVEN_CENTRAL_MIRROR'), anyString())
     }
 
     protected Map<String, String> getEnvAsMap() {

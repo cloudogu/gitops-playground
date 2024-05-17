@@ -45,6 +45,9 @@ class ArgoCDTest {
                     urlSeparatorHyphen  : false,
                     mirrorRepos         : false
             ],
+            jenkins     : [
+                    mavenCentralMirror: '',
+            ],
             scmm        : [
                     internal: true,
                     protocol: 'https',
@@ -454,7 +457,7 @@ class ArgoCDTest {
     void 'Prepares repos for air-gapped mode'() {
         config['features']['monitoring']['active'] = false
         config.application['mirrorRepos'] = true
-        
+
         createArgoCD().install()
 
         Map repos = parseActualYaml(actualHelmValuesFile)['argo-cd']['configs']['repositories'] as Map
@@ -483,7 +486,7 @@ class ArgoCDTest {
         k8sCommands.assertExecuted('kubectl create namespace monitoring')
         k8sCommands.assertExecuted("kubectl apply -f ${crdPath}")
     }
-    
+
     @Test
     void 'Applies Prometheus ServiceMonitor CRD from GitHub before installing'() {
         config['features']['monitoring']['active'] = true
@@ -493,7 +496,7 @@ class ArgoCDTest {
         k8sCommands.assertExecuted('kubectl create namespace monitoring')
         k8sCommands.assertExecuted("kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/kube-prometheus-stack-42.0.3/charts/kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml")
     }
-    
+
     @Test
     void 'If urlSeparatorHyphen is set, ensure that hostnames are build correctly '() {
         config.application['remote'] = true
@@ -602,7 +605,20 @@ class ArgoCDTest {
   tag: latest
 """)
     }
-    
+
+    @Test
+    void 'Write maven mirror into jenkinsfiles'() {
+        config.jenkins['mavenCentralMirror'] = 'http://test'
+        createArgoCD().install()
+
+
+        for (def petclinicRepo : petClinicRepos) {
+                assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).contains(
+                        'mvn.useMirrors([name: \'maven-central-mirror\', mirrorOf: \'central\', url:  env.MAVEN_CENTRAL_MIRROR])'
+                )
+        }
+    }
+
     private void assertArgoCdYamlPrefixes(String scmmUrl, String expectedPrefix) {
         assertAllYamlFiles(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), 'projects', 4) { Path file ->
             def yaml = parseActualYaml(file.toString())
