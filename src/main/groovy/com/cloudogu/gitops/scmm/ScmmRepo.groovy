@@ -17,6 +17,8 @@ import java.util.regex.Pattern
 @Slf4j
 class ScmmRepo {
 
+    static final String NAMESPACE_3RD_PARTY_DEPENDENCIES = '3rd-party-dependencies'
+    
     private String scmmRepoTarget
     private String username
     private String password
@@ -36,7 +38,8 @@ class ScmmRepo {
         this.username =  config.scmm["internal"] ? config.application["username"] : config.scmm["username"]
         this.password = config.scmm["internal"] ? config.application["password"] : config.scmm["password"]
         this.scmmUrl = "${config.scmm["protocol"]}://${config.scmm["host"]}"
-        this.scmmRepoTarget =  "${config.application['namePrefix']}${scmmRepoTarget}"
+        this.scmmRepoTarget =  scmmRepoTarget.startsWith(NAMESPACE_3RD_PARTY_DEPENDENCIES) ? scmmRepoTarget : 
+                "${config.application['namePrefix']}${scmmRepoTarget}"
         this.absoluteLocalRepoTmpDir = tmpDir.absolutePath
         this.fileSystemUtils = fileSystemUtils
         this.insecure = config.application['insecure']

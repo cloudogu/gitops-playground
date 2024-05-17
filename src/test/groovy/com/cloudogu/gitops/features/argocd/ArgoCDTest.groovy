@@ -90,6 +90,7 @@ class ArgoCDTest {
                     monitoring : [
                             active: true,
                             helm  : [
+                                    chart: 'kube-prometheus-stack',
                                     version: '42.0.3'
                                     ]
                     ],
@@ -470,10 +471,11 @@ class ArgoCDTest {
     void 'Applies Prometheus ServiceMonitor CRD from file before installing (air-gapped mode)'() {
         config['features']['monitoring']['active'] = true
         config.application['airGapped'] = true
-        Path prometheusSourceChart = Files.createTempDirectory(this.class.getSimpleName())
-        config.features['monitoring']['helm']['localFolder'] = prometheusSourceChart.toString()
 
-        Path crdPath = prometheusSourceChart.resolve('charts/crds/crds/crd-servicemonitors.yaml')
+        Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
+        config.application['localHelmChartFolder'] = rootChartsFolder.toString()
+
+        Path crdPath = rootChartsFolder.resolve('kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml')
         Files.createDirectories(crdPath)
 
         createArgoCD().install()

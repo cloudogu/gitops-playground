@@ -97,6 +97,13 @@ class ScmmRepoTest {
         def repo = createRepo('expectedRepoTarget')
         assertThat(repo.scmmRepoTarget).isEqualTo('abc-expectedRepoTarget')
     }
+    
+    @Test
+    void 'Creates repo without name-prefix when in namespace 3rd-party-deps'(){
+        config.application['namePrefix'] = 'abc-'
+        def repo = createRepo("${ScmmRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/foo")
+        assertThat(repo.scmmRepoTarget).isEqualTo("${ScmmRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/foo".toString())
+    }
 
     @Test
     void 'Clones and checks out main'() {

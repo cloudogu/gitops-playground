@@ -27,12 +27,14 @@ class PrometheusStack extends Feature {
     private FileSystemUtils fileSystemUtils
     private DeploymentStrategy deployer
     private K8sClient k8sClient
+    private AirGappedUtils airGappedUtils
 
     PrometheusStack(
             Configuration config,
             FileSystemUtils fileSystemUtils,
             DeploymentStrategy deployer,
-            K8sClient k8sClient
+            K8sClient k8sClient,
+            AirGappedUtils airGappedUtils
     ) {
         this.deployer = deployer
         this.config = config.getConfig()
@@ -41,6 +43,7 @@ class PrometheusStack extends Feature {
         this.remoteCluster = this.config.application["remote"]
         this.fileSystemUtils = fileSystemUtils
         this.k8sClient = k8sClient
+        this.airGappedUtils = airGappedUtils
     }
 
     @Override
@@ -121,12 +124,14 @@ class PrometheusStack extends Feature {
         if (config.application['airGapped']) {
             log.debug("Air-gapped mode: Deploying prometheus from local git repo")
 
+            def repoNamespaceAndName = airGappedUtils.mirrorHelmRepoToGit(config['features']['monitoring']['helm'] as Map)
+
             String prometheusVersion =
-                    new YamlSlurper().parse(Path.of(config['features']['monitoring']['helm']['localFolder'] as String,
+                    new YamlSlurper().parse(Path.of("${config.application['localHelmChartFolder']}/${helmConfig['chart']}",
                     'Chart.yaml'))['version']
             
             deployer.deployFeature(
-                    "${scmmUri}/repo/${ScmManager.NAMESPACE_3RD_PARTY_DEPENDENCIES}/kube-prometheus-stack",
+                    "${scmmUri}/repo/${repoNamespaceAndName}",
                     'prometheusstack',
                     '.',
                     prometheusVersion,

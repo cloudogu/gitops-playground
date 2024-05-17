@@ -37,7 +37,9 @@ class ApplicationConfiguratorTest {
     private FileSystemUtils fileSystemUtils
     private TestLogger testLogger
     Map testConfig = [
-            application: [:],
+            application: [
+                    localHelmChartFolder : 'someValue',
+            ],
             registry   : [
                     url         : EXPECTED_REGISTRY_URL,
                     pullUrl: "pull-$EXPECTED_REGISTRY_URL",
@@ -61,11 +63,7 @@ class ApplicationConfiguratorTest {
                             ]
                     ],
                     mail: [:],
-                    monitoring: [
-                            helm: [
-                                    localFolder: 'someValue'
-                            ]
-                    ],
+                    monitoring: [:],
                     exampleApps: [
                             petclinic: [:],
                             nginx    : [:],
@@ -75,13 +73,9 @@ class ApplicationConfiguratorTest {
     
     // We have to set this value using env vars, which makes tests complicated, so ignore it
     Map almostEmptyConfig = [
-            features: [
-                    monitoring: [
-                            helm: [
-                                    localFolder: 'someValue'
-                            ]
-                    ]
-            ]
+            application: [
+                    localHelmChartFolder : 'someValue',
+            ],
     ]
     
     @BeforeEach
@@ -173,15 +167,14 @@ class ApplicationConfiguratorTest {
     
     @Test
     void 'Fails if monitoring local is not set'() {
-        testConfig['features']['monitoring']['helm']['localFolder'] = ''
+        testConfig['application']['localHelmChartFolder'] = ''
         
         def exception = shouldFail(RuntimeException) {
             applicationConfigurator.setConfig(testConfig)
         }
-        assertThat(exception.message).isEqualTo('Missing config for localFolder of helm chart kube-prometheus-stack.\n' +
-                'Either run inside the official container image or setting env var KUBE_PROM_STACK_HELMCHART_PATH=\'charts/kube-prometheus-stack\' after running this:\n' +
-                'helm repo add prometheus-community https://prometheus-community.github.io/helm-charts\n' +
-                'helm pull --untar --untardir charts prometheus-community/kube-prometheus-stack --version 58.2.1')
+        assertThat(exception.message).isEqualTo('Missing config for localHelmChartFolder.\n' +
+                'Either run inside the official container image or setting env var LOCAL_HELM_CHART_FOLDER=\'charts\' ' +
+                'after running \'scripts/downloadHelmCharts.sh\' from the repo')
     }
     
     @Test

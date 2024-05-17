@@ -88,17 +88,9 @@ RUN git clone --bare https://github.com/cloudogu/ces-build-lib.git
 COPY scripts/jenkins/plugins /jenkins
 RUN /jenkins/download-plugins.sh /dist/gitops/jenkins-plugins
 
-RUN mkdir -p /dist/gitops/charts
 COPY src/main/groovy/com/cloudogu/gitops/config/ApplicationConfigurator.groovy /tmp/
-RUN chartDetails=$(grep -C3 kube-prometheus-stack  /tmp/ApplicationConfigurator.groovy) \
-  repo=$(echo "$chartDetails"  | grep -oP "repoURL\s*:\s*'\K[^']+") \
-  chart=$(echo "$chartDetails" | grep -oP "chart\s*:\s*'\K[^']+") \
-  version=$(echo "$chartDetails" | grep -oP "version\s*:\s*'\K[^']+") && \
-  helm repo add prometheus-community "$repo" && \
-  helm pull --untar --untardir /dist/gitops/charts "prometheus-community/$chart" --version "$version" 
-# Note that keeping charts as tgx would need only 1/10 of storage \
-# But untaring them in groovy would need additional libraries.
-# As layers of the image are compressed anyway, we'll do the untar process here, pragmatically
+COPY scripts/downloadHelmCharts.sh /tmp/
+RUN cd /dist/gitops && /tmp/downloadHelmCharts.sh /tmp/ApplicationConfigurator.groovy
 
 WORKDIR /tmp
 # Prepare local files for later stages
@@ -108,6 +100,7 @@ RUN rm -r /dist/app/.mvn
 RUN rm /dist/app/mvnw
 RUN rm /dist/app/pom.xml
 RUN rm /dist/app/compiler.groovy
+RUN cd /dist/app/scripts && rm downloadHelmCharts.sh apply-ng.sh
 # For dev image
 RUN mv /dist/app/src /src-without-graal && rm -r /src-without-graal/main/groovy/com/cloudogu/gitops/graal
 # Required to prevent Java exceptions resulting from AccessDeniedException by jgit when running arbitrary user
@@ -219,8 +212,7 @@ ENV HOME=/home \
     GITOPS_BUILD_LIB_REPO=/gitops/repos/gitops-build-lib.git \
     CES_BUILD_LIB_REPO=/gitops/repos/ces-build-lib.git \
     JENKINS_PLUGIN_FOLDER=/gitops/jenkins-plugins/ \
-    KUBE_PROM_STACK_HELMCHART_PATH=/gitops/charts/kube-prometheus-stack
-    
+    LOCAL_HELM_CHART_FOLDER=/gitops/charts/
 
 WORKDIR /app
 

@@ -2,21 +2,22 @@ package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
+import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
 import groovy.yaml.YamlSlurper
 import jakarta.inject.Provider
 import org.junit.jupiter.api.Test
+import org.mockito.ArgumentCaptor
 
 import java.nio.file.Files
 import java.nio.file.Path
 
-import static org.assertj.core.api.Assertions.assertThat
-import static org.mockito.Mockito.mock
-import static org.mockito.Mockito.verify
-import static org.mockito.Mockito.verifyNoMoreInteractions
 import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.RepoType
+import static org.assertj.core.api.Assertions.assertThat
+import static org.mockito.ArgumentMatchers.any
+import static org.mockito.Mockito.*
 
 class PrometheusStackTest {
 
@@ -61,6 +62,7 @@ class PrometheusStackTest {
     ]
     CommandExecutorForTest k8sCommandExecutor = new CommandExecutorForTest()
     DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
+    AirGappedUtils airGappedUtils = mock(AirGappedUtils)
     Path temporaryYamlFilePrometheus = null
     FileSystemUtils fileSystemUtils = new FileSystemUtils()
 
@@ -365,17 +367,26 @@ policies:
     @Test
     void 'helm releases are installed in air-gapped mode'() {
         config.application['airGapped'] = true
+        when(airGappedUtils.mirrorHelmRepoToGit(any(Map))).thenReturn('a/b')
 
-        Path prometheusSourceChart = Files.createTempDirectory(this.class.getSimpleName())
-        config.features['monitoring']['helm']['localFolder'] = prometheusSourceChart.toString()
+        Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
+        config.application['localHelmChartFolder'] = rootChartsFolder.toString()
+
+        Path prometheusSourceChart = rootChartsFolder.resolve('kube-prometheus-stack')
+        Files.createDirectories(prometheusSourceChart)
         
         Map prometheusChartYaml = [ version     : '1.2.3' ]
         fileSystemUtils.writeYaml(prometheusChartYaml, prometheusSourceChart.resolve('Chart.yaml').toFile())
 
         createStack().install()
 
+        def helmConfig = ArgumentCaptor.forClass(Map)
+        verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
+        assertThat(helmConfig.value.chart).isEqualTo('kube-prometheus-stack')
+        assertThat(helmConfig.value.repoURL).isEqualTo('https://prom')
+        assertThat(helmConfig.value.version).isEqualTo('19.2.2')
         verify(deploymentStrategy).deployFeature(
-                'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack', 
+                'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/a/b', 
                 'prometheusstack', '.', '1.2.3','monitoring',
                 'kube-prometheus-stack', temporaryYamlFilePrometheus, RepoType.GIT)
     }
@@ -396,7 +407,7 @@ policies:
             Configuration get() {
                 configuration
             }
-        }))
+        }), airGappedUtils)
     }
 
     private parseActualStackYaml() {

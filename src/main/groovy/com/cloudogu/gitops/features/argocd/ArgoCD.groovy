@@ -199,8 +199,9 @@ class ArgoCD extends Feature {
 
             def serviceMonitorCrdYaml
             if (config.application['airGapped']) {
-                serviceMonitorCrdYaml = Path.of(config['features']['monitoring']['helm']['localFolder'] as String,
-                        'charts/crds/crds/crd-servicemonitors.yaml').toString()
+                serviceMonitorCrdYaml = Path.of(
+                        "${config.application['localHelmChartFolder']}/${config['features']['monitoring']['helm']['chart']}/charts/crds/crds/crd-servicemonitors.yaml"
+                ).toString()
             } else {
                 serviceMonitorCrdYaml = 
                         "https://raw.githubusercontent.com/prometheus-community/helm-charts/" +
