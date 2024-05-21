@@ -21,12 +21,15 @@ class AirGappedUtils {
     private ScmmRepoProvider repoProvider
     private RepositoryApi repositoryApi
     private FileSystemUtils fileSystemUtils
+    private HelmClient helmClient
 
-    AirGappedUtils(Configuration config, ScmmRepoProvider repoProvider, RepositoryApi repositoryApi, FileSystemUtils fileSystemUtils) {
+    AirGappedUtils(Configuration config, ScmmRepoProvider repoProvider, RepositoryApi repositoryApi, 
+                   FileSystemUtils fileSystemUtils, HelmClient helmClient) {
         this.config = config.getConfig()
         this.repoProvider = repoProvider
         this.repositoryApi = repositoryApi
         this.fileSystemUtils = fileSystemUtils
+        this.helmClient = helmClient
     }
 
     /**
@@ -41,7 +44,8 @@ class AirGappedUtils {
         String namespace = ScmmRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES
         def repoNamespaceAndName = "${namespace}/${repoName}"
         def localHelmChartFolder = "${config.application['localHelmChartFolder']}/${repoName}"
-        // TODO check if folder exists
+
+        validateChart(repoNamespaceAndName, localHelmChartFolder, repoName)
 
         createRepo(namespace, repoName,"Mirror of Helm chart $repoName from ${helmConfig['repoURL']}")
 
@@ -60,6 +64,16 @@ class AirGappedUtils {
                 "Source: ${helmConfig['repoURL']}\n" +
                 "Dependencies localized to run in air-gapped environments", chartYaml.version as String)
         return repoNamespaceAndName
+    }
+
+    private void validateChart(repoNamespaceAndName, String localHelmChartFolder, String repoName) {
+        log.debug("Validating helm chart before pushing it to SCM, by running helm template.\n" +
+                "Potential repo: ${repoNamespaceAndName}, chart folder: ${localHelmChartFolder}")
+        try {
+            helmClient.template(repoName, localHelmChartFolder)
+        } catch (RuntimeException e) {
+            throw new RuntimeException("Helm chart in folder ${localHelmChartFolder} seems invalid.", e)
+        }
     }
 
     // This could be moved to ScmmRepo, if needed
@@ -93,7 +107,8 @@ class AirGappedUtils {
         Map chartYaml = ys.parse(chartYamlPath) as Map
         Map chartLock = ys.parse(chartLockPath) as Map
 
-        (chartYaml['dependencies'] as List).each { chartYamlDep ->
+        def dependencies = chartYaml['dependencies'] ?: []
+        (dependencies as List).each { chartYamlDep ->
             // Resolve proper dependency version from Chart.lock, e.g. 5.18.* -> 5.18.1
             def chartLockDep = chartLock.dependencies.find { dep -> dep['name'] == chartYamlDep['name'] }
             if (chartLockDep) {

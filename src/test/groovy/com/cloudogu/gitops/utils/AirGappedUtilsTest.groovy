@@ -48,6 +48,7 @@ class AirGappedUtilsTest {
     TestScmmRepoProvider scmmRepoProvider = new TestScmmRepoProvider(new Configuration(config), new FileSystemUtils())
     FileSystemUtils fileSystemUtils = new FileSystemUtils()
     RepositoryApi repositoryApi = mock(RepositoryApi)
+    HelmClient helmClient = mock(HelmClient)
 
     @Test
     void 'Prepares repos for air-gapped use'() {
@@ -65,7 +66,7 @@ class AirGappedUtilsTest {
     }
 
     @Test
-    void 'Air-gapped: Fails when unable to resolve version of dependencies'() {
+    void 'Fails when unable to resolve version of dependencies'() {
         setupForAirgappedUse([:])
         def exception = shouldFail(RuntimeException) {
             createAirGappedUtils().mirrorHelmRepoToGit(helmConfig)
@@ -75,6 +76,35 @@ class AirGappedUtilsTest {
                 'Unable to determine proper version for dependency grafana (version: 7.3.*) ' +
                         'from repo 3rd-party-dependencies/kube-prometheus-stack'
         )
+    }
+
+    @Test
+    void 'Also works for charts without dependencies'() {
+        setupForAirgappedUse(null, [])
+        createAirGappedUtils().mirrorHelmRepoToGit(helmConfig)
+
+        ScmmRepo prometheusRepo = scmmRepoProvider.repos['3rd-party-dependencies/kube-prometheus-stack']
+        def actualPrometheusChartYaml = new YamlSlurper().parse(Path.of(prometheusRepo.absoluteLocalRepoTmpDir, 'Chart.yaml'))
+
+        def dependencies = actualPrometheusChartYaml['dependencies'] 
+        assertThat(dependencies).isNull()
+    }
+
+
+    @Test
+    void 'Fails for invalid helm charts'() {
+        setupForAirgappedUse()
+
+        def expectedException = new RuntimeException()
+        doThrow(expectedException).when(helmClient).template(anyString(), anyString())
+
+        def exception = shouldFail(RuntimeException) {
+            createAirGappedUtils().mirrorHelmRepoToGit(helmConfig)
+        }
+        
+        assertThat(exception.getMessage()).isEqualTo(
+                "Helm chart in folder ${rootChartsFolder}/kube-prometheus-stack seems invalid.".toString())
+        assertThat(exception.getCause()).isSameAs(expectedException)
     }
 
     @Test
@@ -140,7 +170,7 @@ class AirGappedUtilsTest {
         assertThat(exception.message).contains('500')
     }
 
-    protected void setupForAirgappedUse(Map chartLock = null) {
+    protected void setupForAirgappedUse(Map chartLock = null, List dependencies = null) {
         def response = mockSuccessfulResponse(201)
         when(repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response)
         when(repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(response)
@@ -165,6 +195,15 @@ class AirGappedUtilsTest {
                         ]
                 ]
         ]
+        
+        if (dependencies != null) {
+            if (dependencies.isEmpty()) {
+                prometheusChartYaml.remove('dependencies')
+            } else {
+                prometheusChartYaml.dependencies = dependencies
+            }
+        }
+        
         fileSystemUtils.writeYaml(prometheusChartYaml, sourceChart.resolve('Chart.yaml').toFile())
 
         if(chartLock == null) {
@@ -246,6 +285,6 @@ class AirGappedUtilsTest {
     }
 
     AirGappedUtils createAirGappedUtils() {
-        new AirGappedUtils(new Configuration(config), scmmRepoProvider, repositoryApi, fileSystemUtils)
+        new AirGappedUtils(new Configuration(config), scmmRepoProvider, repositoryApi, fileSystemUtils, helmClient)
     }
 }

@@ -160,9 +160,11 @@ class VaultTest {
 
         assertThat(helmCommands.actualCommands[0].trim()).isEqualTo(
                 'helm repo add vault https://vault-reg')
-        assertThat(helmCommands.actualCommands[1].trim()).isEqualTo(
-                'helm upgrade -i vault vault/vault --version 42.23.0' +
-                        " --values ${temporaryYamlFile} --namespace foo-secrets --create-namespace")
+        assertThat(helmCommands.actualCommands[1].trim()).startsWith(
+                'helm upgrade -i vault vault/vault --create-namespace')
+        assertThat(helmCommands.actualCommands[1].trim()).contains('--version 42.23.0')
+        assertThat(helmCommands.actualCommands[1].trim()).contains(" --values ${temporaryYamlFile}")
+        assertThat(helmCommands.actualCommands[1].trim()).contains('--namespace foo-secrets')
     }
 
     private Vault createVault() {

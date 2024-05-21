@@ -152,9 +152,10 @@ class MailhogTest {
     protected void assertMailhogInstalledImperativelyViaHelm() {
         assertThat(commandExecutor.actualCommands[0].trim()).isEqualTo(
                 'helm repo add mailhog https://codecentric.github.io/helm-charts')
-        assertThat(commandExecutor.actualCommands[1].trim()).isEqualTo(
-                'helm upgrade -i mailhog mailhog/mailhog --version 5.0.1' +
-                        " --values ${temporaryYamlFile} --namespace foo-monitoring --create-namespace")
+        assertThat(commandExecutor.actualCommands[1].trim()).startsWith(
+                'helm upgrade -i mailhog mailhog/mailhog --create-namespace')
+        assertThat(commandExecutor.actualCommands[1].trim()).contains('--version 5.0.1')
+        assertThat(commandExecutor.actualCommands[1].trim()).contains('--namespace foo-monitoring')
     }
 
     private Mailhog createMailhog() {

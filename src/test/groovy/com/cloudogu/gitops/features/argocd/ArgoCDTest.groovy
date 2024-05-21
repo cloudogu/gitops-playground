@@ -145,7 +145,7 @@ class ArgoCDTest {
         assertThat(helmCommands.actualCommands[1].trim()).isEqualTo(
                 "helm dependency build ${Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'argocd/')}".toString())
         assertThat(helmCommands.actualCommands[2].trim()).isEqualTo(
-                "helm upgrade -i argocd ${Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'argocd/')} --namespace argocd --create-namespace".toString())
+                "helm upgrade -i argocd ${Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'argocd/')} --create-namespace --namespace argocd".toString())
 
         // Check patched PW
         def patchCommand = k8sCommands.assertExecuted('kubectl patch secret argocd-secret -n argocd')

@@ -83,9 +83,11 @@ class ScmManagerTest {
         assertThat(parseActualYaml()['ingress']).isEqualTo([ enabled: true, path: '/', hosts: [ 'scmm.localhost'] ])
         assertThat(helmCommands.actualCommands[0].trim()).isEqualTo(
                 'helm repo add scm-manager https://packages.scm-manager.org/repository/helm-v2-releases/')
-        assertThat(helmCommands.actualCommands[1].trim()).isEqualTo(
-                'helm upgrade -i scmm scm-manager/scm-manager-chart --version 2.47.0' +
-                        " --values ${temporaryYamlFile} --namespace foo-default --create-namespace")
+        assertThat(helmCommands.actualCommands[1].trim()).startsWith(
+                'helm upgrade -i scmm scm-manager/scm-manager-chart --create-namespace')
+        assertThat(helmCommands.actualCommands[1].trim()).contains('--version 2.47.0')
+        assertThat(helmCommands.actualCommands[1].trim()).contains(" --values ${temporaryYamlFile}")
+        assertThat(helmCommands.actualCommands[1].trim()).contains('--namespace foo-default')
 
         def env = getEnvAsMap()
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
