@@ -106,7 +106,7 @@ class ApplicationConfigurator {
             ],
             application: [
                     remote        : false,
-                    airGapped     : false,
+                    mirrorRepos     : false,
                     // Take from env because the Dockerfile provides a local copy of the repo for air-gapped mode
                     localHelmChartFolder: System.getenv('LOCAL_HELM_CHART_FOLDER'),
                     insecure      : false,

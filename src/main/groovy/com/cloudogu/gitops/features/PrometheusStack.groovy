@@ -121,8 +121,8 @@ class PrometheusStack extends Feature {
         setCustomImages(helmConfig, helmValuesYaml)
 
 
-        if (config.application['airGapped']) {
-            log.debug("Air-gapped mode: Deploying prometheus from local git repo")
+        if (config.application['mirrorRepos']) {
+            log.debug("Mirroring repos: Deploying prometheus from local git repo")
 
             def repoNamespaceAndName = airGappedUtils.mirrorHelmRepoToGit(config['features']['monitoring']['helm'] as Map)
 

@@ -43,7 +43,7 @@ class ArgoCDTest {
                     gitName             : 'Cloudogu',
                     gitEmail            : 'hello@cloudogu.com',
                     urlSeparatorHyphen  : false,
-                    airGapped           : false
+                    mirrorRepos         : false
             ],
             scmm        : [
                     internal: true,
@@ -453,7 +453,7 @@ class ArgoCDTest {
     @Test
     void 'Prepares repos for air-gapped mode'() {
         config['features']['monitoring']['active'] = false
-        config.application['airGapped'] = true
+        config.application['mirrorRepos'] = true
         
         createArgoCD().install()
 
@@ -470,7 +470,7 @@ class ArgoCDTest {
     @Test
     void 'Applies Prometheus ServiceMonitor CRD from file before installing (air-gapped mode)'() {
         config['features']['monitoring']['active'] = true
-        config.application['airGapped'] = true
+        config.application['mirrorRepos'] = true
 
         Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
         config.application['localHelmChartFolder'] = rootChartsFolder.toString()

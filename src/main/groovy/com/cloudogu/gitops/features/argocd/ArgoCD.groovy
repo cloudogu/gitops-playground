@@ -198,7 +198,7 @@ class ArgoCD extends Feature {
             k8sClient.createNamespace('monitoring')
 
             def serviceMonitorCrdYaml
-            if (config.application['airGapped']) {
+            if (config.application['mirrorRepos']) {
                 serviceMonitorCrdYaml = Path.of(
                         "${config.application['localHelmChartFolder']}/${config['features']['monitoring']['helm']['chart']}/charts/crds/crds/crd-servicemonitors.yaml"
                 ).toString()
@@ -342,7 +342,7 @@ class ArgoCD extends Feature {
                     isRemote            : config.application['remote'],
                     isInsecure          : config.application['insecure'],
                     urlSeparatorHyphen  : config.application['urlSeparatorHyphen'],
-                    airGapped           : config.application['airGapped'],
+                    mirrorRepos           : config.application['mirrorRepos'],
                     argocd              : [
                             // Note that passing the URL object here leads to problems in Graal Native image, see Git history
                             host: config.features['argocd']['url'] ? new URL(config.features['argocd']['url'] as String).host : "",

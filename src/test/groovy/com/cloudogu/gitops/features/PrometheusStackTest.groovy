@@ -37,7 +37,7 @@ class PrometheusStackTest {
                     password: '123',
                     remote  : false,
                     namePrefix: "foo-",
-                    airGapped: false
+                    mirrorRepos: false
             ],
             features   : [
                     monitoring: [
@@ -366,7 +366,7 @@ policies:
     
     @Test
     void 'helm releases are installed in air-gapped mode'() {
-        config.application['airGapped'] = true
+        config.application['mirrorRepos'] = true
         when(airGappedUtils.mirrorHelmRepoToGit(any(Map))).thenReturn('a/b')
 
         Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
