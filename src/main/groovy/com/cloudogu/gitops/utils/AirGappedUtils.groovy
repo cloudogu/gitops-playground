@@ -110,7 +110,7 @@ class AirGappedUtils {
         def dependencies = chartYaml['dependencies'] ?: []
         (dependencies as List).each { chartYamlDep ->
             // Resolve proper dependency version from Chart.lock, e.g. 5.18.* -> 5.18.1
-            def chartLockDep = chartLock.dependencies.find { dep -> dep['name'] == chartYamlDep['name'] }
+            def chartLockDep = findByName(chartLock.dependencies as List, chartYamlDep['name'] as String)
             if (chartLockDep) {
                 chartYamlDep['version'] = chartLockDep['version']
             } else if ((chartYamlDep['version'] as String).contains('*')) {
@@ -124,5 +124,14 @@ class AirGappedUtils {
 
         fileSystemUtils.writeYaml(chartYaml, chartYamlPath.toFile())
         return chartYaml
+    }
+
+    Map findByName(List<Map> list, String name) {
+        if (!list) return [:]
+        // Note that list.find{} does not work in GraalVM native image: 
+        // UnsupportedFeatureError: Runtime reflection is not supported
+        list.stream()
+                .filter(map -> map['name'] == name)
+                .findFirst().orElse([:])
     }
 }
