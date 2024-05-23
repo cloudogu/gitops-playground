@@ -35,6 +35,8 @@ import static groovy.json.JsonOutput.toJson
 @Slf4j
 class GitopsPlaygroundCli  implements Runnable {
     // args group registry
+    @Option(names = ['--internal-registry-port'], description = 'Port of registry registry. Ignored when a registry*url params are set')
+    private Integer internalRegistryPort
     @Option(names = ['--registry-url'], description = 'The url of your external registry')
     private String registryUrl
     @Option(names = ['--registry-path'], description = 'Optional when --registry-url is set')
@@ -43,8 +45,22 @@ class GitopsPlaygroundCli  implements Runnable {
     private String registryUsername
     @Option(names = ['--registry-password'], description = 'Optional when --registry-url is set')
     private String registryPassword
-    @Option(names = ['--internal-registry-port'], description = 'Port of registry registry. Ignored when registry-url is set')
-    private Integer internalRegistryPort
+    @Option(names = ['--registry-pull-url'], description = 'The url of your external pull-registry. Make sure to always use this with --registry-push-url')
+    private String registryPullUrl
+    @Option(names = ['--registry-pull-path'], description = 'Optional when --registry-pull-url is set')
+    private String registryPullPath
+    @Option(names = ['--registry-pull-username'], description = 'Optional when --registry-pull-url is set')
+    private String registryPullUsername
+    @Option(names = ['--registry-pull-password'], description = 'Optional when --registry-pull-url is set')
+    private String registryPullPassword
+    @Option(names = ['--registry-push-url'], description = 'The url of your external pull-registry. Make sure to always use this with --registry-pull-url')
+    private String registryPushUrl
+    @Option(names = ['--registry-push-path'], description = 'Optional when --registry-push-url is set')
+    private String registryPushPath
+    @Option(names = ['--registry-push-username'], description = 'Optional when --registry-push-url is set')
+    private String registryPushUsername
+    @Option(names = ['--registry-push-password'], description = 'Optional when --registry-push-url is set')
+    private String registryPushPassword
 
     // args group jenkins
     @Option(names = ['--jenkins-url'], description = 'The url of your external jenkins')
@@ -331,11 +347,19 @@ class GitopsPlaygroundCli  implements Runnable {
 
         return [
                 registry   : [
+                        internalPort: internalRegistryPort,
                         url         : registryUrl,
                         path        : registryPath,
                         username    : registryUsername,
                         password    : registryPassword,
-                        internalPort: internalRegistryPort
+                        pullUrl         : registryPullUrl,
+                        pullPath        : registryPullPath,
+                        pullUsername    : registryPullUsername,
+                        pullPassword    : registryPullPassword,
+                        pushUrl         : registryPushUrl,
+                        pushPath        : registryPushPath,
+                        pushUsername    : registryPushUsername,
+                        pushPassword    : registryPushPassword,
                 ],
                 jenkins    : [
                         url     : jenkinsUrl,

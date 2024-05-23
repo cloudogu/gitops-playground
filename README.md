@@ -231,14 +231,26 @@ docker run -t --rm ghcr.io/cloudogu/gitops-playground --help
 ##### Configuration file
 
 You can also use a configuration file to specify the parameters (`--config-file` or `--config-map`).
-That file must be a YAML file. You can find the schema [here](https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/configuration.schema.json).
+That file must be a YAML file. 
 
-Note that currently, only part of the configuration parameters are supported.
+Note that the config file is not yet a complete replacement for CLI parameters.
 
-See [here](https://www.jetbrains.com/help/ruby/yaml.html#remote_json) how to configure IntelliJ IDEA to use the schema and offer autocompletion and validation.
-You can use `--output-config-file` to output the current config as a YAML file. 
-Note that only the currently supported parameters will be used. 
-The config file is not yet a complete replacement for CLI parameters. 
+You can use `--output-config-file` to output the current config as set by defaults and CLI parameters.
+
+In addition, For easier validation and auto-completion, we provide a [schema file](https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/configuration.schema.json).
+
+For example in Jetbrains IntelliJ IDEA, you can use the schema for autocompletion and validation when you put the following at the beginning of your config file:
+
+```yaml
+# $schema: https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/configuration.schema.json
+```
+
+If you work with an older version, you can use a specific git commit ID instead of `main` in the schema URL.
+
+Then use the context assistant to enable coding assistance or fill in all available properties.
+See [here](https://www.jetbrains.com/help/ruby/yaml.html#use-schema-keyword) for the full manual.
+
+![example of a config file inside Jetbrains IntelliJ IDEA](docs/config-file-assistant.png)
 
 ###### Apply via Docker
 

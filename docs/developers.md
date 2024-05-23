@@ -10,22 +10,22 @@ It provides workarounds or solutions for the given issues.
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-  - [Testing](#testing)
-    - [Usage](#usage)
-    - [Options](#options)
-  - [Jenkins plugin installation issues](#jenkins-plugin-installation-issues)
-    - [Solution](#solution)
-  - [Local development](#local-development)
-    - [Provide `gitops-playground.jar` for scripts](#provide-gitops-playgroundjar-for-scripts)
-  - [Development image](#development-image)
-  - [Implicit + explicit dependencies](#implicit--explicit-dependencies)
-  - [GraalVM](#graalvm)
-    - [Graal package](#graal-package)
-    - [Dockerfile](#dockerfile)
-    - [Create Graal native image config](#create-graal-native-image-config)
-    - [JGit](#jgit)
-    - [FAQ](#faq)
-      - [SAM conversion problem](#sam-conversion-problem)
+- [Testing](#testing)
+  - [Usage](#usage)
+  - [Options](#options)
+- [Jenkins plugin installation issues](#jenkins-plugin-installation-issues)
+  - [Solution](#solution)
+- [Local development](#local-development)
+  - [Provide `gitops-playground.jar` for scripts](#provide-gitops-playgroundjar-for-scripts)
+- [Development image](#development-image)
+- [Implicit + explicit dependencies](#implicit--explicit-dependencies)
+- [GraalVM](#graalvm)
+  - [Graal package](#graal-package)
+  - [Dockerfile](#dockerfile)
+  - [Create Graal native image config](#create-graal-native-image-config)
+  - [JGit](#jgit)
+  - [FAQ](#faq)
+    - [SAM conversion problem](#sam-conversion-problem)
 - [External registry for development](#external-registry-for-development)
 - [Emulate an airgapped environment](#emulate-an-airgapped-environment)
   - [Setup cluster](#setup-cluster)
@@ -101,7 +101,7 @@ Jenkins.instance.pluginManager.activePlugins.sort().each {
 ## Local development
 
 * Run locally
-  * Run from IDE (allows for easy debugging), works e.g. with IntelliJ IDEA 
+  * Run from IDE (allows for easy debugging), works e.g. with IntelliJ IDEA
     Note: If you encounter `error=2, No such file or directory`,
     it might be necessary to explicitly set your `PATH` in Run Configuration's Environment Section.
   * From shell:  
@@ -207,15 +207,15 @@ xdg-open "http://$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAd
 
 ## Implicit + explicit dependencies
 
-The GitOps Playground comprises a lot of software components. The versions of some of them are pinned within this 
+The GitOps Playground comprises a lot of software components. The versions of some of them are pinned within this
 repository so need to be upgraded regularly.
 
 * Kubernetes [in Terraform](../terraform/vars.tf) and locally [k3d](../scripts/init-cluster.sh),
-* [k3d](../scripts/init-cluster.sh), [Upgrade to v5 WIP](https://github.com/cloudogu/gitops-playground/tree/feature/k3d-version5) 
+* [k3d](../scripts/init-cluster.sh)
 * [Groovy libs](../pom.xml) + [Maven](../.mvn/wrapper/maven-wrapper.properties)
 * Installed components
-  * Jenkins 
-    * Helm Chart 
+  * Jenkins
+    * Helm Chart
     * Plugins
     * Pod `tmp-docker-gid-grepper`
     * `dockerClientVersion`
@@ -223,11 +223,11 @@ repository so need to be upgraded regularly.
     * Agent Image
   * SCM-Manager Helm Chart + Plugins
   * Docker Registry Helm Chart
-  * GitOps Operators
-    * ArgoCD Helm Chart
-    * Flux v2 Helm Charts
+  * ArgoCD Helm Chart
   * Grafana + Prometheus [Helm Charts](../src/main/groovy/com/cloudogu/gitops/ApplicationConfigurator.groovy)
   * Vault + ExternalSerets Operator [Helm Charts](../src/main/groovy/com/cloudogu/gitops/ApplicationConfigurator.groovy)
+  * Ingress-nginx [Helm Charts](https://artifacthub.io/packages/helm/ingress-nginx/ingress-nginx)
+  * Mailhog
 * Applications
   * GitOps-build-lib + `buildImages`
   * ces-build-lib
@@ -246,12 +246,12 @@ repository so need to be upgraded regularly.
 The playground started up as a collection of ever-growing shell scripts. Once we realized that the playground is here to stay, we started looking into alternatives to keep our code base in a maintainable state.
 
 Our requirements:
-* a scriptable language, so we could easily explore new features at customers (see [Dev image](#development-image)), 
+* a scriptable language, so we could easily explore new features at customers (see [Dev image](#development-image)),
 * the possibility of generating a native binary, in order to get a more lightweight (in terms of vulnerabilities) resulting image.
 
-As the team at the time had a strong Java background and was already profound in groovy, e.g. from `Jenkinsfiles`, we decided to use groovy. 
+As the team at the time had a strong Java background and was already profound in groovy, e.g. from `Jenkinsfiles`, we decided to use groovy.
 We added Micronaut, because it promised good support for CLI, groovy and GraalVM for creating a static image.
-It turned out that Micronaut did not support GraalVM native images for groovy. In order to get this to work some more 
+It turned out that Micronaut did not support GraalVM native images for groovy. In order to get this to work some more
 hacking was necessary. See [`graal` package](../src/main/groovy/com/cloudogu/gitops/graal) and also the `native-image` stage in [`Dockerfile`](../Dockerfile).
 
 ### Graal package
@@ -274,7 +274,7 @@ Some things are a bit special for the playground:
 ### Create Graal native image config
 
 The `RUN java -agentlib:native-image-agent` instructions in `Dockerfile` execute the `playground.jar` with the agent attached.
-These runs create static image config files for some dynamic reflection things. 
+These runs create static image config files for some dynamic reflection things.
 These files are later picked up by the `native-image`.
 This is done to reduce the chance of `ClassNotFoundException`s, `MethodNotFoundException`s, etc. at runtime.
 
@@ -283,7 +283,7 @@ In the future we could further improve this by running unit test with the graal 
 However, this leads to some mysterious error `Class initialization of com.oracle.truffle.js.scriptengine.GraalJSEngineFactory failed.` 🤷‍♂️
 Also, a lot of failing test with `FileNotFoundException` (due to `user.dir`?).
 If more Exceptions should turn up in the future we might follow up on this.
-Then, we might want to add an env var that actually calls JGit (instead of the mock) in order to execute JGit code with 
+Then, we might want to add an env var that actually calls JGit (instead of the mock) in order to execute JGit code with
 the agent attached.
 ```shell
 ./mvnw test "-DargLine=-agentlib:native-image-agent=config-output-dir=conf" --fail-never
@@ -293,7 +293,7 @@ At the moment this does not seem to be necessary, though.
 ### JGit
 
 JGit seems to cause [a lot](https://bugs.eclipse.org/bugs/show_bug.cgi?id=546175) [of](https://github.com/quarkusio/quarkus/issues/21372) [trouble](https://github.com/miguelaferreira/issue-micronaut-graalvm-jgit) with GraalVM.  
-Unfortunately for the playground, JGit is a good choice: The only(?) actively developed native Java library for git. 
+Unfortunately for the playground, JGit is a good choice: The only(?) actively developed native Java library for git.
 In the long run, we want to get rid of the shell-outs and the `git` binary in the playground image in order to reduce
 attack surface and complexity. So we need JGit.
 
@@ -305,9 +305,9 @@ That's why we picked some classes into the Graal package (see this [package](../
 Those are picked up by `native-image` binary in `Dockerfile`.
 In addition, we had to add some more parameters (`initialize-at-run-time` and `-H:IncludeResourceBundles`) to `native-image`.
 
-For the moment this works and hopefully some day JGit will have support for GraalVM built-in. 
-Until then, there is a chance, that each upgrade of JGit causes new issues. If so, check if the code of the Quarkus 
-extension provides solutions. 🤞 Good luck 🍀. 
+For the moment this works and hopefully some day JGit will have support for GraalVM built-in.
+Until then, there is a chance, that each upgrade of JGit causes new issues. If so, check if the code of the Quarkus
+extension provides solutions. 🤞 Good luck 🍀.
 
 ### FAQ
 
@@ -323,6 +323,21 @@ to class 'java.util.function.Predicate'
 Implicit closure-to-SAM conversions will not always happen.
 You can configure an explicit list in [resources/proxy-config.json](../src/main/resources/proxy-config.json) and [resources/reflect-config.json](../src/main/resources/reflect-config.json).
 
+
+# Testing URL separator hyphens
+```bash
+docker run --rm -t  -u $(id -u) \
+    -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
+    -v $(pwd)/gitops-playground.yaml:/config/gitops-playground.yaml \
+    --net=host \
+   gitops-playground:dev --yes --argocd --base-url=http://localhost  --ingress-nginx --mail --monitoring --vault=dev --url-separator-hyphen
+
+# Create localhost entries with hyphens
+echo 127.0.0.1 $(kubectl get ingress -A  -o jsonpath='{.items[*].spec.rules[*].host}') | sudo tee -a /etc/hosts
+
+# Produce clickable links:
+kubectl get --all-namespaces ingress -o json 2> /dev/null | jq -r '.items[] | .spec.rules[] | .host as $host | .http.paths[] | ( "http://" + $host + .path )' | sort | grep -v ^/
+```
 
 # External registry for development
 
@@ -368,7 +383,7 @@ notary:
 
 Then install it like so:
 ```bash
-helm upgrade -i my-harbor harbor/harbor -f harbor-values.yaml --version 1.12.2 --namespace harbor --create-namespace
+helm upgrade -i my-harbor harbor/harbor -f harbor-values.yaml --version 1.14.2 --namespace harbor --create-namespace
 ```
 Once it's up and running either create your own private project or just set the existing `library` to private:
 ```bash
@@ -390,7 +405,7 @@ docker tag bitnami/nginx:1.25.1 localhost:30002/library/nginx:1.25.1
 docker push localhost:30002/library/nginx:1.25.1
 ```
 
-To make the registry credentials know to kubernetes, apply the following to *each* namespace where they are needed: 
+To make the registry credentials know to kubernetes, apply the following to *each* namespace where they are needed:
 
 ```bash
 kubectl create secret docker-registry regcred \
@@ -403,18 +418,110 @@ kubectl patch serviceaccount default -p '{"imagePullSecrets": [{"name": "regcred
 This will work for all pods that don't use their own ServiceAccount.
 That is, for most helm charts, you'll need to set an individual value.
 
+# Testing two registries
+
+## Very simple test
+* Start playground once,
+* then again with these parameters:  
+  `--registry-pull-url=localhost:30000 --registry-push-url=localhost:30000`
+* The petclinic pipelines should still run
+
+## Proper test
+
+* Start cluster:
+```shell
+# Stop other cluster, if necessary
+# k3d cluster stop gitops-playground
+scripts/init-cluster.sh --bind-ingress-port=80 --cluster-name=two-regs
+```
+* Setup harbor as stated [above](#external-registry-for-development), but with Port `30000`.  
+  Wait for harbor to startup: ` kubectl get pod -n harbor`  
+  Don't care about harbor `jobservice`
+* Create registries and base image:
+
+```bash
+operations=("Pull" "Push")
+
+for operation in "${operations[@]}"; do
+
+    # Convert the operation to lowercase for the project name and email
+    lower_operation=$(echo "$operation" | tr '[:upper:]' '[:lower:]')
+    
+    echo creating project $lower_operation
+    projectId=$(curl -is --fail 'http://localhost:30000/api/v2.0/projects' -X POST -u admin:Harbor12345    -H 'Content-Type: application/json' --data-raw "{\"project_name\":\"$lower_operation\",\"metadata\":{\"public\":\"false\"},\"storage_limit\":-1,\"registry_id\":null}" | grep -i 'Location:' | awk '{print $2}' | awk -F '/' '{print $NF}' | tr -d '[:space:]')
+
+    echo creating user $operation with PW ${operation}12345
+    curl -s  --fail 'http://localhost:30000/api/v2.0/users' -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"username\":\"$operation\",\"email\":\"$operation@example.com\",\"realname\":\"$operation example\",\"password\":\"${operation}12345\",\"comment\":null}"
+    
+	echo "Adding member $operation to project $lower_operation; ID=${projectId}"
+
+    curl  --fail "http://localhost:30000/api/v2.0/projects/${projectId}/members" -X POST -u admin:Harbor12345    -H 'Content-Type: application/json' --data-raw "{\"role_id\":4,\"member_user\":{\"username\":\"$operation\"}}"
+done
+
+skopeo copy docker://eclipse-temurin:11-jre-alpine --dest-creds Pull:Pull12345 --dest-tls-verify=false  docker://localhost:30000/pull/eclipse-temurin:11-jre-alpine
+```
+
+* Deploy playground:
+
+```bash
+docker run --rm -t  -u $(id -u)  \
+    -v ~/.config/k3d/kubeconfig-two-regs.yaml:/home/.kube/config \
+    -v $(pwd)/gitops-playground.yaml:/config/gitops-playground.yaml \
+    --net=host \
+  gitops-playground:dev -x --yes --argocd  --ingress-nginx --base-url=http://localhost  \
+  --registry-push-url=localhost:30000 \
+  --registry-push-path=push \
+  --registry-push-username=Push \
+  --registry-push-password=Push12345 \
+  --registry-pull-url=localhost:30000 \
+  --registry-pull-username=Pull \
+  --registry-pull-password=Pull12345 \
+  --petclinic-image=localhost:30000/pull/eclipse-temurin:11-jre-alpine 
+# Or with config file --config-file=/config/gitops-playground.yaml 
+```
+
+To make the registry credentials know to kubernetes, apply the following:
+
+```bash
+namespaces=("example-apps-production" "example-apps-staging")
+
+for namespace in "${namespaces[@]}"; do
+  kubectl create secret docker-registry regcred \
+  -n $namespace \
+  --docker-server=localhost:30000 \
+  --docker-username=Push \
+  --docker-password=Push12345
+  kubectl patch serviceaccount default -n $namespace -p '{"imagePullSecrets": [{"name": "regcred"}]}'
+done
+```
+
+The same using a config file looks like so:
+
+```yaml
+registry: 
+  pullUrl: localhost:30000
+  pullUsername: Pull
+  pullPassword: Pull12345
+  pushUrl: localhost:30000
+  pushUsername: Push
+  pushPassword: Push12345
+  pushPath: push
+images: 
+  petclinic: localhost:30000/pull/eclipse-temurin:11-jre-alpine
+```
+
 # Emulate an airgapped environment
 
 Let's set up our local playground to emulate an airgapped env, as some of our customers have.
 
 Note that with approach bellow, the whole k3d cluster is airgapped with one exception: the Jenkins agents can work around this.
-To be able to run the `docker` plugin in Jenkins (in a k3d cluster that only provides containerd) we mount the host's 
-docker socket into the agents. 
+To be able to run the `docker` plugin in Jenkins (in a k3d cluster that only provides containerd) we mount the host's
+docker socket into the agents.
 From there it can start containers which are not airgapped.
 So this approach is not suitable to test if the builds use any public images.
 One solution could be to apply the `iptables` rule mentioned bellow to `docker0` (not tested).
 
-The approach discussed here is suitable to check if the cluster tries to load anything from the internet, 
+The approach discussed here is suitable to check if the cluster tries to load anything from the internet,
 like images or helm charts.
 
 ## Setup cluster
@@ -440,12 +547,12 @@ You can switch to the airgapped context in your current shell like so:
 export KUBECONFIG=$HOME/.config/k3d/kubeconfig-airgapped-playground.yaml
 ```
 
-TODO also replace in `~/.kube/config` for more convenience. 
+TODO also replace in `~/.kube/config` for more convenience.
 In there, we need to be more careful, because there are other contexts. This makes it more difficult.
 
 ## Provide images needed by playground
 
-First, let's import necessary images into harbor using `skopeo`. 
+First, let's import necessary images into harbor using `skopeo`.
 With `skopeo`, this process is much easier than with `docker` because we don't need to pull the images first.
 You can get a list of images from a running playground that is not airgapped.
 
@@ -483,7 +590,7 @@ Note that even though the images are named `$K3D_NODE:30002/library/...`, these 
 
 ## Install the playground
 
-Don't disconnect from the internet yet, because 
+Don't disconnect from the internet yet, because
 
 * k3d needs some images itself, e.g. the `local-path-provisioner` (see Troubleshooting) which are only pulled on demand.
   In this case when the first PVC gets provisioned.
@@ -609,7 +716,7 @@ nft insert rule ip filter INPUT tcp dport 80 accept
 
 Locally:
 ````shell
-mvnp -DskipTests
+mvn package -DskipTests
 java -classpath target/gitops-playground-cli-0.1.jar org.codehaus.groovy.tools.GroovyStarter --main groovy.ui.GroovyMain \
   --classpath src/main/groovy src/main/groovy/com/cloudogu/gitops/cli/GenerateJsonSchema.groovy \
    | jq > docs/configuration.schema.json
@@ -624,3 +731,15 @@ docker run --rm --entrypoint java gitops-playground:dev -classpath /app/gitops-p
  --classpath /app/src/main/groovy /app/src/main/groovy/com/cloudogu/gitops/cli/GenerateJsonSchema.groovy \
  | jq > docs/configuration.schema.json
 ```
+
+## Releasing
+
+On `main` branch:
+
+````shell
+git tag -s x.y.z -m x.y.z
+git push --follow-tags
+````
+
+For now start a Jenkins Build of `main` manually.
+We might introduce tag builds in our Jenkins organization at a later stage.

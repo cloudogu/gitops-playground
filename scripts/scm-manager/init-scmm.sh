@@ -22,19 +22,12 @@ function initSCMM() {
   
   SCMM_HOST=$(getHost "${SCMM_URL}")
   SCMM_PROTOCOL=$(getProtocol "${SCMM_URL}")
-  
-  if [[ ${INTERNAL_SCMM} == true ]]; then
-    deployLocalScmmManager "${REMOTE_CLUSTER}" "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "${BASE_URL}"
-  fi
 
   setExternalHostnameIfNecessary 'SCMM' 'scmm-scm-manager' 'default'
   [[ "${SCMM_URL}" != *scm ]] && SCMM_URL=${SCMM_URL}/scm
 
-  # When running in k3d, SCMM_BASE_URL must be internal. Otherwise webhooks from SCMM->Jenkins will fail, as
-  # they contain repository URLs created with SCMM_BASE_URL. Jenkins uses the internal URL for repos. So match is only
-  # successful, when SCM also sends the Repo URLs using the internal URL
   configureScmmManager "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "${SCMM_URL}" "${JENKINS_URL_FOR_SCMM}" \
-    "${SCMM_URL_FOR_JENKINS}" "${INTERNAL_SCMM}" "${INSTALL_ARGOCD}"
+    "${SCMM_URL_FOR_JENKINS}" "${INSTALL_ARGOCD}"
 
   pushHelmChartRepo "3rd-party-dependencies/spring-boot-helm-chart"
   pushHelmChartRepoWithDependency "3rd-party-dependencies/spring-boot-helm-chart-with-dependency"
@@ -128,50 +121,14 @@ function setDefaultBranch() {
     "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/api/v2/config/git/${TARGET_REPO_SCMM}"
 }
 
-function deployLocalScmmManager() {
-
-  helm repo add scm-manager https://packages.scm-manager.org/repository/helm-v2-releases/
-  helm repo update scm-manager
-  helm upgrade -i scmm --values scm-manager/values.yaml \
-    $(scmmHelmSettingsForRemoteCluster) $(scmmIngress)\
-    --version ${SCMM_HELM_CHART_VERSION} scm-manager/scm-manager -n default \
-    --set extraArgs="{-Dscm.initialPassword=${SCMM_PASSWORD},-Dscm.initialUser=${SCMM_USERNAME}}"
-}
-
-function scmmIngress() {
-    if [[ -n "${BASE_URL}" ]]; then
-      if [[ $URL_SEPARATOR_HYPHEN == true ]]; then
-        local scmmHost="scmm-$(extractHost "${BASE_URL}")"
-      else
-        local scmmHost="scmm.$(extractHost "${BASE_URL}")"
-      fi
-    echo "--set ingress.enabled=true --set ingress.path=/ --set ingress.hosts[0]=${scmmHost}"
-    fi
-}
-
 function configureScmmManager() {
-  ADMIN_USERNAME=${1}
-  ADMIN_PASSWORD=${2}
-  SCMM_HOST=$(getHost ${3})
-  SCMM_PROTOCOL=$(getProtocol ${3})
-  SCMM_JENKINS_URL=${4}
-  # When running in k3d, SCMM_BASE_URL must be the internal URL. Otherwise webhooks from SCMM->Jenkins will fail, as
-  # They contain Repository URLs create with SCMM_BASE_URL. Jenkins uses the internal URL for repos. So match is only
-  # successful, when SCM also sends the Repo URLs using the internal URL
-  SCMM_BASE_URL=${5}
-  IS_LOCAL=${6}
-  INSTALL_ARGOCD="${7}"
-
   GITOPS_USERNAME="${NAME_PREFIX}gitops"
-  GITOPS_PASSWORD=${ADMIN_PASSWORD}
+  GITOPS_PASSWORD=${SCMM_PASSWORD}
 
   METRICS_USERNAME="${NAME_PREFIX}metrics"
-  METRICS_PASSWORD=${ADMIN_PASSWORD}
+  METRICS_PASSWORD=${SCMM_PASSWORD}
 
   waitForScmManager
-
-  SCMM_USER=${ADMIN_USERNAME}
-  SCMM_PWD=${ADMIN_PASSWORD}
 
   setConfig
 
@@ -242,7 +199,7 @@ function configureScmmManager() {
   sleep 1
   waitForScmManager
 
-  configJenkins "${SCMM_JENKINS_URL}"
+  configJenkins "${JENKINS_URL_FOR_SCMM}"
 }
 
 function addRepo() {
@@ -254,7 +211,7 @@ function addRepo() {
 
   STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X POST -H "Content-Type: application/vnd.scmm-repository+json;v=2" \
     --data "{\"name\":\"${NAME}\",\"namespace\":\"${NAMESPACE}\",\"type\":\"git\",\"description\":\"${DESCRIPTION}\",\"contextEntries\":{},\"_links\":{}}" \
-    "${SCMM_PROTOCOL}://${SCMM_USER}:${SCMM_PWD}@${SCMM_HOST}/api/v2/repositories/?initialize=true") && EXIT_STATUS=$? || EXIT_STATUS=$?
+    "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/api/v2/repositories/?initialize=true") && EXIT_STATUS=$? || EXIT_STATUS=$?
   if [ $EXIT_STATUS != 0 ]; then
     echo "Adding Repo failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
     exit $EXIT_STATUS
@@ -267,8 +224,8 @@ function setConfig() {
   printf 'Setting config'
 
   STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X PUT -H "Content-Type: application/vnd.scmm-config+json;v=2" \
-    --data "{\"proxyPassword\":null,\"proxyPort\":8080,\"proxyServer\":\"proxy.mydomain.com\",\"proxyUser\":null,\"enableProxy\":false,\"realmDescription\":\"SONIA :: SCM Manager\",\"disableGroupingGrid\":false,\"dateFormat\":\"YYYY-MM-DD HH:mm:ss\",\"anonymousAccessEnabled\":false,\"anonymousMode\":\"OFF\",\"baseUrl\":\"${SCMM_BASE_URL}\",\"forceBaseUrl\":false,\"loginAttemptLimit\":-1,\"proxyExcludes\":[],\"skipFailedAuthenticators\":false,\"pluginUrl\":\"https://plugin-center-api.scm-manager.org/api/v1/plugins/{version}?os={os}&arch={arch}\",\"loginAttemptLimitTimeout\":300,\"enabledXsrfProtection\":true,\"namespaceStrategy\":\"CustomNamespaceStrategy\",\"loginInfoUrl\":\"https://login-info.scm-manager.org/api/v1/login-info\",\"releaseFeedUrl\":\"https://scm-manager.org/download/rss.xml\",\"mailDomainName\":\"scm-manager.local\",\"adminGroups\":[],\"adminUsers\":[]}" \
-    "${SCMM_PROTOCOL}://${SCMM_USER}:${SCMM_PWD}@${SCMM_HOST}/api/v2/config") && EXIT_STATUS=$? || EXIT_STATUS=$?
+    --data "{\"proxyPassword\":null,\"proxyPort\":8080,\"proxyServer\":\"proxy.mydomain.com\",\"proxyUser\":null,\"enableProxy\":false,\"realmDescription\":\"SONIA :: SCM Manager\",\"disableGroupingGrid\":false,\"dateFormat\":\"YYYY-MM-DD HH:mm:ss\",\"anonymousAccessEnabled\":false,\"anonymousMode\":\"OFF\",\"baseUrl\":\"${SCMM_URL_FOR_JENKINS}\",\"forceBaseUrl\":false,\"loginAttemptLimit\":-1,\"proxyExcludes\":[],\"skipFailedAuthenticators\":false,\"pluginUrl\":\"https://plugin-center-api.scm-manager.org/api/v1/plugins/{version}?os={os}&arch={arch}\",\"loginAttemptLimitTimeout\":300,\"enabledXsrfProtection\":true,\"namespaceStrategy\":\"CustomNamespaceStrategy\",\"loginInfoUrl\":\"https://login-info.scm-manager.org/api/v1/login-info\",\"releaseFeedUrl\":\"https://scm-manager.org/download/rss.xml\",\"mailDomainName\":\"scm-manager.local\",\"adminGroups\":[],\"adminUsers\":[]}" \
+    "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/api/v2/config") && EXIT_STATUS=$? || EXIT_STATUS=$?
   if [ $EXIT_STATUS != 0 ]; then
     echo "Setting config failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
     exit $EXIT_STATUS
@@ -282,7 +239,7 @@ function addUser() {
 
   STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X POST -H "Content-Type: application/vnd.scmm-user+json;v=2" \
     --data "{\"name\":\"${1}\",\"displayName\":\"${1}\",\"mail\":\"${3}\",\"external\":false,\"password\":\"${2}\",\"active\":true,\"_links\":{}}" \
-    "${SCMM_PROTOCOL}://${SCMM_USER}:${SCMM_PWD}@${SCMM_HOST}/api/v2/users") && EXIT_STATUS=$? || EXIT_STATUS=$?
+    "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/api/v2/users") && EXIT_STATUS=$? || EXIT_STATUS=$?
   if [ $EXIT_STATUS != 0 ]; then
     echo "Adding User failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
     exit $EXIT_STATUS
@@ -296,7 +253,7 @@ function setPermission() {
 
   STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X POST -H "Content-Type: application/vnd.scmm-repositoryPermission+json" \
     --data "{\"name\":\"${3}\",\"role\":\"${4}\",\"verbs\":[],\"groupPermission\":false}" \
-    "${SCMM_PROTOCOL}://${SCMM_USER}:${SCMM_PWD}@${SCMM_HOST}/api/v2/repositories/${1}/${2}/permissions/") && EXIT_STATUS=$? || EXIT_STATUS=$?
+    "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/api/v2/repositories/${1}/${2}/permissions/") && EXIT_STATUS=$? || EXIT_STATUS=$?
   if [ $EXIT_STATUS != 0 ]; then
     echo "Setting Permission failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
     exit $EXIT_STATUS
@@ -310,7 +267,7 @@ function setPermissionForNamespace() {
 
   STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X POST -H "Content-Type: application/vnd.scmm-repositoryPermission+json;v=2" \
     --data "{\"name\":\"${2}\",\"role\":\"${3}\",\"verbs\":[],\"groupPermission\":false}" \
-    "${SCMM_PROTOCOL}://${SCMM_USER}:${SCMM_PWD}@${SCMM_HOST}/api/v2/namespaces/${1}/permissions/") && EXIT_STATUS=$? || EXIT_STATUS=$?
+    "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/api/v2/namespaces/${1}/permissions/") && EXIT_STATUS=$? || EXIT_STATUS=$?
   if [ $EXIT_STATUS != 0 ]; then
     echo "Setting Permission failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
     exit $EXIT_STATUS
@@ -324,7 +281,7 @@ function setPermissionForUser() {
 
   STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X PUT -H "Content-Type: application/vnd.scmm-permissionCollection+json;v=2" \
     --data "{\"permissions\":[\"${2}\"]}" \
-    "${SCMM_PROTOCOL}://${SCMM_USER}:${SCMM_PWD}@${SCMM_HOST}/api/v2/users/${1}/permissions") && EXIT_STATUS=$? || EXIT_STATUS=$?
+    "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/api/v2/users/${1}/permissions") && EXIT_STATUS=$? || EXIT_STATUS=$?
   if [ $EXIT_STATUS != 0 ]; then
     echo "Setting Permission failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
     exit $EXIT_STATUS
@@ -342,7 +299,7 @@ function installScmmPlugin() {
   printf 'Installing Plugin %s ... ' "${1}"
 
   STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X POST -H "accept: */*" --data "" \
-    "${SCMM_PROTOCOL}://${SCMM_USER}:${SCMM_PWD}@${SCMM_HOST}/api/v2/plugins/available/${1}/install${DO_RESTART}") && EXIT_STATUS=$? || EXIT_STATUS=$?
+    "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/api/v2/plugins/available/${1}/install${DO_RESTART}") && EXIT_STATUS=$? || EXIT_STATUS=$?
   if [ $EXIT_STATUS != 0 ]; then
     echo "Installing Plugin failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
     exit $EXIT_STATUS
@@ -356,23 +313,13 @@ function configJenkins() {
 
   STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X PUT -H 'Content-Type: application/json' \
     --data-raw "{\"disableRepositoryConfiguration\":false,\"disableMercurialTrigger\":false,\"disableGitTrigger\":false,\"disableEventTrigger\":false,\"url\":\"${1}\"}" \
-    "${SCMM_PROTOCOL}://${SCMM_USER}:${SCMM_PWD}@${SCMM_HOST}/api/v2/config/jenkins/") && EXIT_STATUS=$? || EXIT_STATUS=$?
+    "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/api/v2/config/jenkins/") && EXIT_STATUS=$? || EXIT_STATUS=$?
   if [ $EXIT_STATUS != 0 ]; then
     echo "Configuring Jenkins failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
     exit $EXIT_STATUS
   fi
 
   printStatus "${STATUS}"
-}
-
-function scmmHelmSettingsForRemoteCluster() {
-  if [[ $REMOTE_CLUSTER == true ]]; then
-    # Default clusters don't allow for node ports < 30.000, so just unset nodePort.
-    # A defined nodePort is not needed for remote cluster, where the externalIp is used for accessing SCMM
-    echo "--set service.nodePort="
-  else
-    echo "--set service.type=NodePort"
-  fi
 }
 
 function waitForScmManager() {

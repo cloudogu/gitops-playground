@@ -52,6 +52,9 @@ class ArgoCDTest {
                     password: ''
             ],
             images      : buildImages + [ petclinic  : 'petclinic-value' ],
+            registry: [
+                    twoRegistries: false,
+            ],
             repositories: [
                     springBootHelmChart: [
                             url: 'https://github.com/cloudogu/spring-boot-helm-chart.git',
@@ -125,7 +128,7 @@ class ArgoCDTest {
 
         k8sCommands.assertExecuted('kubectl create namespace argocd')
         k8sCommands.assertExecuted('kubectl create namespace monitoring')
-        k8sCommands.assertExecuted("kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/kube-prometheus-stack-42.0.3/charts/kube-prometheus-stack/crds/crd-servicemonitors.yaml")
+        k8sCommands.assertExecuted("kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/kube-prometheus-stack-42.0.3/charts/kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml")
 
         // check values.yaml
         List filesWithInternalSCMM = findFilesContaining(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), ArgoCD.SCMM_URL_INTERNAL)
@@ -503,6 +506,15 @@ class ArgoCDTest {
         assertArgoCdYamlPrefixes(ArgoCD.SCMM_URL_INTERNAL, '')
         assertJenkinsEnvironmentVariablesPrefixes('')
     }
+    
+    @Test
+    void 'Creates Jenkinsfiles for two registries'() {
+        config.registry['twoRegistries'] = true
+        createArgoCD().install()
+
+        assertJenkinsEnvironmentVariablesPrefixes('')
+        assertJenkinsfileRegistryCredentials()
+    }
 
     @Test
     void 'Pushes repos with name-prefix'() {
@@ -645,10 +657,28 @@ class ArgoCDTest {
     }
 
     private void assertJenkinsEnvironmentVariablesPrefixes(String prefix) {
+        List singleRegistryEnvVars = ["env.${prefix}REGISTRY_URL", "env.${prefix}REGISTRY_URL"]
+        List twoRegistriesEnvVars = ["env.${prefix}REGISTRY_PULL_URL", "env.${prefix}REGISTRY_PULL_PATH",
+                                   "env.${prefix}REGISTRY_PUSH_URL", "env.${prefix}REGISTRY_PUSH_PATH" ]
+        
         assertThat(new File(nginxHelmJenkinsRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).contains("env.${prefix}K8S_VERSION")
+        
         for (def petclinicRepo : petClinicRepos) {
-            assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).contains("env.${prefix}REGISTRY_URL")
-            assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).contains("env.${prefix}REGISTRY_PATH")
+            if (config.registry['twoRegistries']) {
+                twoRegistriesEnvVars.each { expectedEnvVar ->
+                    assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).contains(expectedEnvVar)
+                }
+                singleRegistryEnvVars.each { expectedEnvVar ->
+                    assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).doesNotContain(expectedEnvVar)
+                }
+            } else {
+                singleRegistryEnvVars.each { expectedEnvVar ->
+                    assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).contains(expectedEnvVar)
+                }
+                twoRegistriesEnvVars.each { expectedEnvVar ->
+                    assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).doesNotContain(expectedEnvVar)
+                }
+            }
         }
     }
 
@@ -710,6 +740,7 @@ class ArgoCDTest {
             def tmpDir = repo.absoluteLocalRepoTmpDir
             def jenkinsfile = new File(tmpDir, 'Jenkinsfile')
             assertThat(jenkinsfile).exists()
+            assertJenkinsfileRegistryCredentials()
 
             if (repo.scmmRepoTarget == 'argocd/petclinic-plain') {
                 assertBuildImagesInJenkinsfileReplaced(jenkinsfile)
@@ -782,6 +813,38 @@ class ArgoCDTest {
                 }
             } else {
                 fail("Unkown petclinic repo: $repo")
+            }
+        }
+    }
+
+    void assertJenkinsfileRegistryCredentials() {
+        List singleRegistryExpectedLines = [
+                'docker.withRegistry("http://${dockerRegistryBaseUrl}", dockerRegistryCredentials) {',
+                'String pathPrefix = !dockerRegistryPath?.trim() ? "" : "${dockerRegistryPath}/"',
+                'imageName = "${dockerRegistryBaseUrl}/${pathPrefix}${application}:${imageTag}"'
+        ]
+        List twoRegistriesExpectedLines = [ 
+                'String pathPrefix = !dockerRegistryPushPath?.trim() ? "" : "${dockerRegistryPushPath}/"',
+                'imageName = "${dockerRegistryPushBaseUrl}/${pathPrefix}${application}:${imageTag}"',
+                'docker.withRegistry("http://${dockerRegistryPullBaseUrl}", dockerRegistryPullCredentials) {',
+                'docker.withRegistry("http://${dockerRegistryPushBaseUrl}", dockerRegistryPushCredentials) {' ]
+        
+        for (def petclinicRepo : petClinicRepos) {
+            String jenkinsfile = new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text
+            if (config.registry['twoRegistries']) {
+                twoRegistriesExpectedLines.each { expectedEnvVar ->
+                    assertThat(jenkinsfile).contains(expectedEnvVar)
+                }
+                singleRegistryExpectedLines.each { expectedEnvVar ->
+                    assertThat(jenkinsfile).doesNotContain(expectedEnvVar)
+                }
+            } else {
+                singleRegistryExpectedLines.each { expectedEnvVar ->
+                    assertThat(jenkinsfile).contains(expectedEnvVar)
+                }
+                twoRegistriesExpectedLines.each { expectedEnvVar ->
+                    assertThat(jenkinsfile).doesNotContain(expectedEnvVar)
+                }
             }
         }
     }

@@ -40,6 +40,8 @@ class ApplicationConfiguratorTest {
             application: [:],
             registry   : [
                     url         : EXPECTED_REGISTRY_URL,
+                    pullUrl: "pull-$EXPECTED_REGISTRY_URL",
+                    pushUrl: "push-$EXPECTED_REGISTRY_URL",
                     internalPort: EXPECTED_REGISTRY_INTERNAL_PORT,
                     path        : null
             ],
@@ -74,7 +76,7 @@ class ApplicationConfiguratorTest {
         applicationConfigurator = new ApplicationConfigurator(networkingUtils, fileSystemUtils, new JsonSchemaValidator(new JsonSchemaGenerator()))
         testLogger = new TestLogger(applicationConfigurator.getClass())
         when(fileSystemUtils.getRootDir()).thenReturn("/test")
-        when(fileSystemUtils.getLineFromFile("/test/scm-manager/values.yaml", "nodePort:")).thenReturn("nodePort: 9091")
+        when(fileSystemUtils.getLineFromFile("/test/scm-manager/values.ftl.yaml", "nodePort:")).thenReturn("nodePort: 9091")
         when(fileSystemUtils.getLineFromFile("/test/jenkins/values.yaml", "nodePort:")).thenReturn("nodePort: 9090")
 
         when(networkingUtils.createUrl(anyString(), anyString(), anyString())).thenCallRealMethod()
@@ -95,6 +97,7 @@ class ApplicationConfiguratorTest {
         assertThat(actualConfig['registry']['url']).isEqualTo(EXPECTED_REGISTRY_URL)
         assertThat(actualConfig['registry']['path']).isEqualTo('')
         assertThat(actualConfig['registry']['internal']).isEqualTo(false)
+        assertThat(actualConfig['registry']['twoRegistries']).isEqualTo(true)
         
         assertThat(actualConfig['features']['argocd']['active']).isEqualTo(EXPECTED_ARGOCD)
 
@@ -246,6 +249,7 @@ images:
         assertThat(actualConfig.features['secrets']['vault']['url']).isEqualTo("http://vault.localhost")
         assertThat(actualConfig.features['exampleApps']['petclinic']['baseDomain']).isEqualTo("petclinic.localhost")
         assertThat(actualConfig.features['exampleApps']['nginx']['baseDomain']).isEqualTo("nginx.localhost")
+        assertThat(actualConfig.scmm['ingress']).isEqualTo("scmm.localhost")
     }
 
     @Test
@@ -266,6 +270,7 @@ images:
         assertThat(actualConfig.features['secrets']['vault']['url']).isEqualTo("http://vault-localhost")
         assertThat(actualConfig.features['exampleApps']['petclinic']['baseDomain']).isEqualTo("petclinic-localhost")
         assertThat(actualConfig.features['exampleApps']['nginx']['baseDomain']).isEqualTo("nginx-localhost")
+        assertThat(actualConfig.scmm['ingress']).isEqualTo("scmm-localhost")
     }
 
     @Test
@@ -350,8 +355,10 @@ images:
     }
     
     @Test
-    void "Registry: Sets url to internal when not set"() {
+    void "Registry: Sets to internal when no URL set"() {
         testConfig.registry['url'] = null
+        testConfig.registry['pullUrl'] = null
+        testConfig.registry['pushUrl'] = null
         
         Map actualConfig = applicationConfigurator.setConfig(testConfig)
         
@@ -359,7 +366,48 @@ images:
         assertThat(actualConfig['registry']['internalPort']).isEqualTo(EXPECTED_REGISTRY_INTERNAL_PORT)
         assertThat(actualConfig['registry']['internal']).isEqualTo(true)
     }
+    
+    @Test
+    void "Registry: Sets to external when single URL set"() {
+        testConfig.registry['pullUrl'] = null
+        testConfig.registry['pushUrl'] = null
+        
+        Map actualConfig = applicationConfigurator.setConfig(testConfig)
+        
+        assertThat(actualConfig['registry']['internal']).isEqualTo(false)
+    }
+    
+    @Test
+    void "Registry: Sets to external when pull and push URL set"() {
+        testConfig.registry['url'] = null
+        
+        Map actualConfig = applicationConfigurator.setConfig(testConfig)
+        
+        assertThat(actualConfig['registry']['internal']).isEqualTo(false)
+    }
+    
+    @Test
+    void "Registry: Fails when pushUrl is set but not pullUrl"() {
+        testConfig.registry['pullUrl'] = null
 
+        def exception = shouldFail(RuntimeException) {
+            applicationConfigurator.setConfig(testConfig)
+        }
+        assertThat(exception.message)
+                .isEqualTo("Always set pull AND push URL. pullUrl=, pushUrl=push-${EXPECTED_REGISTRY_URL}".toString())
+    }
+    
+    @Test
+    void "Registry: Fails when pullUrl is set but not pushUrl"() {
+        testConfig.registry['pushUrl'] = null
+
+        def exception = shouldFail(RuntimeException) {
+            applicationConfigurator.setConfig(testConfig)
+        }
+        assertThat(exception.message)
+                .isEqualTo("Always set pull AND push URL. pullUrl=pull-${EXPECTED_REGISTRY_URL}, pushUrl=".toString())
+    }
+    
     List<String> getAllFieldNames(Class clazz, String parentField = '', List<String> fieldNames = []) {
         clazz.declaredFields.each { field ->
             def currentField = parentField + field.name

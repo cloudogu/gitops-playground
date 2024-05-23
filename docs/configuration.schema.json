@@ -195,6 +195,48 @@
         }
       },
       "additionalProperties": false
+    },
+    "registry": {
+      "type": "object",
+      "properties": {
+        "internalPort": {
+          "type": "integer"
+        },
+        "password": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "pullPassword": {
+          "type": "string"
+        },
+        "pullUrl": {
+          "type": "string"
+        },
+        "pullUsername": {
+          "type": "string"
+        },
+        "pushPassword": {
+          "type": "string"
+        },
+        "pushPath": {
+          "type": "string"
+        },
+        "pushUrl": {
+          "type": "string"
+        },
+        "pushUsername": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "username": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false
