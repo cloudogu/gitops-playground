@@ -260,7 +260,7 @@ images:
         Map defaultConfig = applicationConfigurator.setConfig(almostEmptyConfig)
         
         def fields = getAllFieldNames(Schema.class).sort()
-        def keys = getAllKeys2(defaultConfig).sort()
+        def keys = getAllKeys(defaultConfig).sort()
 
         assertThat(fields).isSubsetOf(keys)
     }
@@ -458,11 +458,11 @@ images:
         return fieldNames
     }
 
-    List<String> getAllKeys2(Map map, String parentKey = '', List<String> keysList = []) {
+    List<String> getAllKeys(Map map, String parentKey = '', List<String> keysList = []) {
         map.each { key, value ->
             def currentKey = parentKey + key
-            if (value instanceof Map) {
-                getAllKeys2(value, currentKey + '.', keysList)
+            if (value instanceof Map && !value.isEmpty()) {
+                getAllKeys(value, currentKey + '.', keysList)
             } else {
                 keysList.add(currentKey)
             }
