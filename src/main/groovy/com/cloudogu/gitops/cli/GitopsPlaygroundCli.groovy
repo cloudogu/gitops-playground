@@ -76,7 +76,7 @@ class GitopsPlaygroundCli  implements Runnable {
     @Option(names = ['--insecure'], description = 'Sets insecure-mode in cURL which skips cert validation')
     private Boolean insecure
     @Option(names = ['--openshift'], description = 'Install with openshift compatibility')
-    private boolean openshift
+    private Boolean openshift
 
     // args group tool configuration
     @Option(names = ['--kubectl-image'], description = 'Sets image for kubectl')
@@ -175,29 +175,28 @@ class GitopsPlaygroundCli  implements Runnable {
     // args group ArgoCD operator
     @Option(names = ['--argocd'], description = 'Install ArgoCD ')
     private Boolean argocd
+    @Option(names = ['--argocd-operator'], description = 'Install ArgoCd via Operator')
+    private Boolean argocdOperator
     @Option(names = ['--argocd-url'], description = 'The URL where argocd is accessible. It has to be the full URL with http:// or https://')
     private String argocdUrl
     @Option(names = ['--argocd-email-from'], description = 'Notifications, define Argo CD sender email address')
     private String emailFrom
     @Option(names = ['--argocd-email-to-user'], description = 'Notifications, define Argo CD user / app-team recipient email address')
     private String emailToUser
-    @Option(names = ['--argocd-email-to-admin'], description = 'Notifications, define Argo CD admin recipient email address')
-    private String emailToAdmin
 
     // args group example apps
+    @Option(names = ['--argocd-email-to-admin'], description = 'Notifications, define Argo CD admin recipient email address')
+    private String emailToAdmin
     @Option(names = ['--petclinic-base-domain'], description = 'The domain under which a subdomain for all petclinic will be used.')
     private String petclinicBaseDomain
+
+    // args Ingress-Class
     @Option(names = ['--nginx-base-domain'], description = 'The domain under which a subdomain for all nginx applications will be used.')
     private String nginxBaseDomain
 
-    // args Ingress-Class
     @Option(names = ['--ingress-nginx'], description = 'Sets and enables Nginx Ingress Controller')
     private Boolean ingressNginx
 
-    @Option(names = ['--argocd-operator'], description = 'Install ArgoCd via Operator')
-    private boolean argocdOperator
-    @Option(names = ['--argocd-namespace'], description = 'Deploy ArgoCD into specific namespace')
-    private String argocdNamespace
 
     @Override
     void run() {
@@ -379,7 +378,6 @@ class GitopsPlaygroundCli  implements Runnable {
                                 active    : argocd,
                                 url       : argocdUrl,
                                 operator  : argocdOperator,
-                                namespace : argocdNamespace,
                                 emailFrom    : emailFrom,
                                 emailToUser  : emailToUser,
                                 emailToAdmin : emailToAdmin
