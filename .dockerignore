@@ -10,9 +10,9 @@
 !scm-manager/
 !scripts/jenkins/
 !scripts/scm-manager/
-!scripts/get-remote-url
 !scripts/utils.sh
 !scripts/apply-ng.sh
+!scripts/downloadHelmCharts.sh
 !.curlrc
 !LICENSE
 

@@ -71,6 +71,7 @@ class ScmManager extends Feature {
                 GIT_COMMITTER_EMAIL          : config.application['gitEmail'],
                 GIT_AUTHOR_NAME              : config.application['gitName'],
                 GIT_AUTHOR_EMAIL             : config.application['gitEmail'],
+                GITOPS_USERNAME              : config.scmm['gitOpsUsername'],
                 TRACE                        : config.application['trace'],
                 SCMM_URL                     : config.scmm['url'],
                 SCMM_USERNAME                : config.scmm['username'],

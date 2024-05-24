@@ -57,9 +57,11 @@ class RegistryTest {
         assertThat(parseActualYaml()['service']['type']).isEqualTo('NodePort')
         assertThat(helmCommands.actualCommands[0].trim()).isEqualTo(
                 'helm repo add registry https://charts.helm.sh/stable')
-        assertThat(helmCommands.actualCommands[1].trim()).isEqualTo(
-                'helm upgrade -i docker-registry registry/docker-registry --version 1.9.4' +
-                        " --values ${temporaryYamlFile} --namespace foo-default --create-namespace")
+        assertThat(helmCommands.actualCommands[1].trim()).startsWith(
+                'helm upgrade -i docker-registry registry/docker-registry --create-namespace')
+        assertThat(helmCommands.actualCommands[1].trim()).contains('--version 1.9.4')
+        assertThat(helmCommands.actualCommands[1].trim()).contains("--values ${temporaryYamlFile}")
+        assertThat(helmCommands.actualCommands[1].trim()).contains('--namespace foo-default')
         assertThat(k8sClient.commandExecutorForTest.actualCommands).isEmpty()
     }
 

@@ -54,6 +54,7 @@ class Schema {
 
      static class ApplicationSchema {
          boolean remote = false
+         boolean mirrorRepos = false
          boolean insecure = false
          boolean yes = false
          String username = ""

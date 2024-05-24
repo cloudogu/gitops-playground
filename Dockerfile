@@ -34,7 +34,7 @@ RUN mv $(ls -S target/*.jar | head -n 1) /app/gitops-playground.jar
 
 
 FROM alpine as downloader
-RUN apk add curl 
+RUN apk add curl grep
 # When updating, 
 # * also update the checksum found at https://dl.k8s.io/release/v${K8S_VERSION}/bin/linux/amd64/kubectl.sha256
 # * also update in init-cluster.sh. vars.tf, ApplicationConfigurator.groovy and apply.sh
@@ -43,8 +43,8 @@ RUN apk add curl
 ARG K8S_VERSION=1.29.1
 ARG KUBECTL_CHECKSUM=69ab3a931e826bf7ac14d38ba7ca637d66a6fcb1ca0e3333a2cafdf15482af9f
 # When updating, also update the checksum found at https://github.com/helm/helm/releases
-ARG HELM_VERSION=3.10.3
-ARG HELM_CHECKSUM=950439759ece902157cf915b209b8d694e6f675eaab5099fb7894f30eeaee9a2
+ARG HELM_VERSION=3.14.4
+ARG HELM_CHECKSUM=a5844ef2c38ef6ddf3b5a8f7d91e7e0e8ebc39a38bb3fc8013d629c1ef29c259
 # bash curl unzip required for Jenkins downloader
 RUN apk add --no-cache \
       gnupg \
@@ -53,10 +53,10 @@ RUN apk add --no-cache \
       bash curl unzip 
 
 RUN mkdir -p /dist/usr/local/bin
-ENV HOME=/dist/home
-RUN mkdir -p /dist/home
-RUN chmod a=rwx -R ${HOME}
+RUN mkdir -p /dist/home/.config
+RUN chmod a=rwx -R /dist/home
 
+ENV HOME=/tmp
 WORKDIR /tmp
 
 # Helm
@@ -69,6 +69,7 @@ RUN set -o pipefail && curl --location --fail --retry 20 --retry-connrefused --r
   https://raw.githubusercontent.com/helm/helm/main/KEYS | gpg --import
 RUN gpg --batch --verify helm.tar.gz.asc helm.tar.gz
 RUN mv linux-amd64/helm /dist/usr/local/bin
+ENV PATH=$PATH:/dist/usr/local/bin
 
 # Kubectl
 RUN curl --location --fail --retry 20 --retry-connrefused --retry-all-errors --output kubectl https://dl.k8s.io/release/v${K8S_VERSION}/bin/linux/amd64/kubectl
@@ -87,6 +88,11 @@ RUN git clone --bare https://github.com/cloudogu/ces-build-lib.git
 COPY scripts/jenkins/plugins /jenkins
 RUN /jenkins/download-plugins.sh /dist/gitops/jenkins-plugins
 
+COPY src/main/groovy/com/cloudogu/gitops/config/ApplicationConfigurator.groovy /tmp/
+COPY scripts/downloadHelmCharts.sh /tmp/
+RUN cd /dist/gitops && /tmp/downloadHelmCharts.sh /tmp/ApplicationConfigurator.groovy
+
+WORKDIR /tmp
 # Prepare local files for later stages
 COPY . /dist/app
 # Remove dev stuff
@@ -94,6 +100,7 @@ RUN rm -r /dist/app/.mvn
 RUN rm /dist/app/mvnw
 RUN rm /dist/app/pom.xml
 RUN rm /dist/app/compiler.groovy
+RUN cd /dist/app/scripts && rm downloadHelmCharts.sh apply-ng.sh
 # For dev image
 RUN mv /dist/app/src /src-without-graal && rm -r /src-without-graal/main/groovy/com/cloudogu/gitops/graal
 # Required to prevent Java exceptions resulting from AccessDeniedException by jgit when running arbitrary user
@@ -204,7 +211,8 @@ ENV HOME=/home \
     SPRING_PETCLINIC_REPO=/gitops/repos/spring-petclinic.git \
     GITOPS_BUILD_LIB_REPO=/gitops/repos/gitops-build-lib.git \
     CES_BUILD_LIB_REPO=/gitops/repos/ces-build-lib.git \
-    JENKINS_PLUGIN_FOLDER=/gitops/jenkins-plugins/
+    JENKINS_PLUGIN_FOLDER=/gitops/jenkins-plugins/ \
+    LOCAL_HELM_CHART_FOLDER=/gitops/charts/
 
 WORKDIR /app
 

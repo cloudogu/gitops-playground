@@ -42,7 +42,8 @@ class ArgoCDTest {
                     namePrefixForEnvVars: '',
                     gitName             : 'Cloudogu',
                     gitEmail            : 'hello@cloudogu.com',
-                    urlSeparatorHyphen : false,
+                    urlSeparatorHyphen  : false,
+                    mirrorRepos         : false
             ],
             scmm        : [
                     internal: true,
@@ -89,6 +90,7 @@ class ArgoCDTest {
                     monitoring : [
                             active: true,
                             helm  : [
+                                    chart: 'kube-prometheus-stack',
                                     version: '42.0.3'
                                     ]
                     ],
@@ -127,8 +129,6 @@ class ArgoCDTest {
         createArgoCD().install()
 
         k8sCommands.assertExecuted('kubectl create namespace argocd')
-        k8sCommands.assertExecuted('kubectl create namespace monitoring')
-        k8sCommands.assertExecuted("kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/kube-prometheus-stack-42.0.3/charts/kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml")
 
         // check values.yaml
         List filesWithInternalSCMM = findFilesContaining(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), ArgoCD.SCMM_URL_INTERNAL)
@@ -145,7 +145,7 @@ class ArgoCDTest {
         assertThat(helmCommands.actualCommands[1].trim()).isEqualTo(
                 "helm dependency build ${Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'argocd/')}".toString())
         assertThat(helmCommands.actualCommands[2].trim()).isEqualTo(
-                "helm upgrade -i argocd ${Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'argocd/')} --namespace argocd --create-namespace".toString())
+                "helm upgrade -i argocd ${Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'argocd/')} --create-namespace --namespace argocd".toString())
 
         // Check patched PW
         def patchCommand = k8sCommands.assertExecuted('kubectl patch secret argocd-secret -n argocd')
@@ -174,6 +174,15 @@ class ArgoCDTest {
         def yaml = parseActualYaml(namespacesYaml)
         assertThat(yaml[0]['metadata']['name']).isEqualTo('example-apps-staging')
         assertThat(yaml[1]['metadata']['name']).isEqualTo('example-apps-production')
+
+        Map repos = parseActualYaml(actualHelmValuesFile)['argo-cd']['configs']['repositories'] as Map
+        assertThat(repos['prometheus']['url']).isEqualTo('https://prometheus-community.github.io/helm-charts')
+
+        def clusterRessourcesYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/cluster-resources.yaml')
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains(
+                'https://prometheus-community.github.io/helm-charts')
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain(
+                'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack')
     }
 
     @Test
@@ -442,6 +451,50 @@ class ArgoCDTest {
     }
 
     @Test
+    void 'Prepares repos for air-gapped mode'() {
+        config['features']['monitoring']['active'] = false
+        config.application['mirrorRepos'] = true
+        
+        createArgoCD().install()
+
+        Map repos = parseActualYaml(actualHelmValuesFile)['argo-cd']['configs']['repositories'] as Map
+        assertThat(repos['prometheus']['url']).isEqualTo('http://scmm-scm-manager.default.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack')
+
+        def clusterRessourcesYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/cluster-resources.yaml')
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains(
+                'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack')
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain(
+                'https://prometheus-community.github.io/helm-charts')
+    }
+
+    @Test
+    void 'Applies Prometheus ServiceMonitor CRD from file before installing (air-gapped mode)'() {
+        config['features']['monitoring']['active'] = true
+        config.application['mirrorRepos'] = true
+
+        Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
+        config.application['localHelmChartFolder'] = rootChartsFolder.toString()
+
+        Path crdPath = rootChartsFolder.resolve('kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml')
+        Files.createDirectories(crdPath)
+
+        createArgoCD().install()
+
+        k8sCommands.assertExecuted('kubectl create namespace monitoring')
+        k8sCommands.assertExecuted("kubectl apply -f ${crdPath}")
+    }
+    
+    @Test
+    void 'Applies Prometheus ServiceMonitor CRD from GitHub before installing'() {
+        config['features']['monitoring']['active'] = true
+
+        createArgoCD().install()
+
+        k8sCommands.assertExecuted('kubectl create namespace monitoring')
+        k8sCommands.assertExecuted("kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/kube-prometheus-stack-42.0.3/charts/kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml")
+    }
+    
+    @Test
     void 'If urlSeparatorHyphen is set, ensure that hostnames are build correctly '() {
         config.application['remote'] = true
         config.features['exampleApps']['petclinic']['baseDomain'] = 'petclinic-local'
@@ -549,7 +602,7 @@ class ArgoCDTest {
   tag: latest
 """)
     }
-
+    
     private void assertArgoCdYamlPrefixes(String scmmUrl, String expectedPrefix) {
         assertAllYamlFiles(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), 'projects', 4) { Path file ->
             def yaml = parseActualYaml(file.toString())

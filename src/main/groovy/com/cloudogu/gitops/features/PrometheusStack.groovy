@@ -5,8 +5,13 @@ import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
+import groovy.yaml.YamlSlurper
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
+
+import java.nio.file.Path
+
+import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.RepoType
 
 @Slf4j
 @Singleton
@@ -22,12 +27,14 @@ class PrometheusStack extends Feature {
     private FileSystemUtils fileSystemUtils
     private DeploymentStrategy deployer
     private K8sClient k8sClient
+    private AirGappedUtils airGappedUtils
 
     PrometheusStack(
             Configuration config,
             FileSystemUtils fileSystemUtils,
             DeploymentStrategy deployer,
-            K8sClient k8sClient
+            K8sClient k8sClient,
+            AirGappedUtils airGappedUtils
     ) {
         this.deployer = deployer
         this.config = config.getConfig()
@@ -36,6 +43,7 @@ class PrometheusStack extends Feature {
         this.remoteCluster = this.config.application["remote"]
         this.fileSystemUtils = fileSystemUtils
         this.k8sClient = k8sClient
+        this.airGappedUtils = airGappedUtils
     }
 
     @Override
@@ -112,53 +120,71 @@ class PrometheusStack extends Feature {
         def helmConfig = config['features']['monitoring']['helm']
         setCustomImages(helmConfig, helmValuesYaml)
 
-        fileSystemUtils.writeYaml(helmValuesYaml, tmpHelmValues.toFile())
 
-        deployer.deployFeature(
-                helmConfig['repoURL'] as String,
-                'prometheusstack',
-                helmConfig['chart'] as String,
-                helmConfig['version'] as String,
-                'monitoring',
-                'kube-prometheus-stack',
-                tmpHelmValues
-        )
+        if (config.application['mirrorRepos']) {
+            log.debug("Mirroring repos: Deploying prometheus from local git repo")
+
+            def repoNamespaceAndName = airGappedUtils.mirrorHelmRepoToGit(config['features']['monitoring']['helm'] as Map)
+
+            String prometheusVersion =
+                    new YamlSlurper().parse(Path.of("${config.application['localHelmChartFolder']}/${helmConfig['chart']}",
+                    'Chart.yaml'))['version']
+            
+            deployer.deployFeature(
+                    "${scmmUri}/repo/${repoNamespaceAndName}",
+                    'prometheusstack',
+                    '.',
+                    prometheusVersion,
+                    'monitoring',
+                    'kube-prometheus-stack',
+                    tmpHelmValues, RepoType.GIT)
+        } else {
+            fileSystemUtils.writeYaml(helmValuesYaml, tmpHelmValues.toFile())
+    
+            deployer.deployFeature(
+                    helmConfig['repoURL'] as String,
+                    'prometheusstack',
+                    helmConfig['chart'] as String,
+                    helmConfig['version'] as String,
+                    'monitoring',
+                    'kube-prometheus-stack',
+                    tmpHelmValues)
+        }
     }
 
     private Map getScmmConfiguration() {
-        String protocol = 'http'
-        String host = 'scmm-scm-manager.default.svc.cluster.local'
-        String path = '/scm/api/v2/metrics/prometheus'
-        if (!config.scmm['internal']) {
-            URI uri = new URI((config.scmm['url'] as String) + path)
-            protocol = uri.scheme
-            host = uri.authority
-            path = uri.path
-        }
+        // Note that URI.resolve() seems to throw away the existing path. So we create a new URI object.
+        URI uri = new URI("${scmmUri}/api/v2/metrics/prometheus")
 
         return [
-                protocol: protocol,
-                host    : host,
-                path    : path
+                protocol: uri.scheme,
+                host    : uri.authority,
+                path    : uri.path
         ]
+    }
+    
+    private URI getScmmUri() {
+        if (config.scmm['internal']) {
+            new URI('http://scmm-scm-manager.default.svc.cluster.local/scm')
+        } else {
+            new URI("${config.scmm['url']}/scm")
+        }
     }
 
     private Map getJenkinsConfiguration() {
-        String protocol = 'http'
-        String host = 'jenkins.default.svc.cluster.local'
-        String path = '/prometheus'
-        if (!config.jenkins['internal']) {
-            URI uri = new URI((config.jenkins['url'] as String) + path)
-            protocol = uri.scheme
-            host = uri.authority
-            path = uri.path
+        String path = 'prometheus'
+        URI uri
+        if (config.jenkins['internal']) {
+            uri = new URI("http://jenkins.default.svc.cluster.local/${path}")
+        } else {
+            uri = new URI("${config.jenkins['url']}/${path}")
         }
 
         return [
                 metricsUsername: config.jenkins['metricsUsername'],
-                protocol       : protocol,
-                host           : host,
-                path           : path
+                protocol       : uri.scheme,
+                host           : uri.authority,
+                path           : uri.path
         ]
     }
 

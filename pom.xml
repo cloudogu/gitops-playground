@@ -24,6 +24,7 @@
     <exec.mainClass>com.cloudogu.gitops.cli.GitopsPlaygroundCliMain</exec.mainClass>
 
     <okhttpVersion>4.11.0</okhttpVersion>
+    <retrofitVersion>2.9.0</retrofitVersion>
     <groovy.version>4.0.12</groovy.version>
   </properties>
 
@@ -163,7 +164,14 @@
     <dependency>
       <groupId>com.squareup.retrofit2</groupId>
       <artifactId>retrofit</artifactId>
-      <version>2.9.0</version>
+      <version>${retrofitVersion}</version>
+    </dependency>
+    
+    <dependency>
+      <!-- Converts HTTP body objects from groovy to JSON -->
+      <groupId>com.squareup.retrofit2</groupId>
+      <artifactId>converter-jackson</artifactId>
+      <version>${retrofitVersion}</version>
     </dependency>
 
     <dependency>

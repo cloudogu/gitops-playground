@@ -3,10 +3,11 @@ package com.cloudogu.gitops.utils
 import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.scmm.ScmmRepo
 import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.lib.Ref
 import org.junit.jupiter.api.Test
 
 import static groovy.test.GroovyAssert.shouldFail
-import static org.assertj.core.api.Assertions.assertThat
+import static org.assertj.core.api.Assertions.assertThat 
 
 class ScmmRepoTest {
 
@@ -96,6 +97,13 @@ class ScmmRepoTest {
         def repo = createRepo('expectedRepoTarget')
         assertThat(repo.scmmRepoTarget).isEqualTo('abc-expectedRepoTarget')
     }
+    
+    @Test
+    void 'Creates repo without name-prefix when in namespace 3rd-party-deps'(){
+        config.application['namePrefix'] = 'abc-'
+        def repo = createRepo("${ScmmRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/foo")
+        assertThat(repo.scmmRepoTarget).isEqualTo("${ScmmRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/foo".toString())
+    }
 
     @Test
     void 'Clones and checks out main'() {
@@ -123,6 +131,33 @@ class ScmmRepoTest {
         assertThat(commits[0].authorIdent.name).isEqualTo('Cloudogu')
         assertThat(commits[0].committerIdent.emailAddress).isEqualTo('hello@cloudogu.com')
         assertThat(commits[0].committerIdent.name).isEqualTo("Cloudogu")
+
+        List<Ref> tags = Git.open(new File(repo.absoluteLocalRepoTmpDir)).tagList().call()
+        assertThat(tags.size()).isEqualTo(0)
+    }
+    
+    @Test
+    void 'pushes changes to remote directory with tag'() {
+        def repo = createRepo()
+        def expectedTag = '1.0'
+
+        repo.cloneRepo()
+        def readme = new File(repo.absoluteLocalRepoTmpDir, 'README.md')
+        readme.text = 'This text should be in the readme afterwards'
+        // Create existing tag to test for idempotence
+        Git.open(new File(repo.absoluteLocalRepoTmpDir)).tag().setName(expectedTag).call()
+        
+        repo.commitAndPush("The commit message", expectedTag)
+
+
+        List<Ref> tags = Git.open(new File(repo.absoluteLocalRepoTmpDir)).tagList().call()
+        assertThat(tags.size()).isEqualTo(1)
+        assertThat(tags[0].name).isEqualTo("refs/tags/$expectedTag".toString())
+        // It would be a good idea to check if the git tag is set on the commit. 
+        // However, it's extremely complicated with jgit
+        // The "official" example code throws an exception here: Ref peeledRef = repository.getRefDatabase().peel(ref)
+        // https://github.com/centic9/jgit-cookbook/blob/d923e18b2ce2e55761858fd2e8e402dd252e0766/src/main/java/org/dstadler/jgit/porcelain/ListTags.java
+        // 🤷
     }
 
     private ScmmRepo createRepo(String repoTarget = "dont-care-repo-target") {

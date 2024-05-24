@@ -37,7 +37,9 @@ class ApplicationConfiguratorTest {
     private FileSystemUtils fileSystemUtils
     private TestLogger testLogger
     Map testConfig = [
-            application: [:],
+            application: [
+                    localHelmChartFolder : 'someValue',
+            ],
             registry   : [
                     url         : EXPECTED_REGISTRY_URL,
                     pullUrl: "pull-$EXPECTED_REGISTRY_URL",
@@ -67,6 +69,13 @@ class ApplicationConfiguratorTest {
                             nginx    : [:],
                     ]
             ]
+    ]
+    
+    // We have to set this value using env vars, which makes tests complicated, so ignore it
+    Map almostEmptyConfig = [
+            application: [
+                    localHelmChartFolder : 'someValue',
+            ],
     ]
     
     @BeforeEach
@@ -155,7 +164,19 @@ class ApplicationConfiguratorTest {
         }
         assertThat(exception.message).isEqualTo('When setting jenkins URL, scmm URL must also be set and the other way round')
     }
-
+    
+    @Test
+    void 'Fails if monitoring local is not set'() {
+        testConfig['application']['localHelmChartFolder'] = ''
+        
+        def exception = shouldFail(RuntimeException) {
+            applicationConfigurator.setConfig(testConfig)
+        }
+        assertThat(exception.message).isEqualTo('Missing config for localHelmChartFolder.\n' +
+                'Either run inside the official container image or setting env var LOCAL_HELM_CHART_FOLDER=\'charts\' ' +
+                'after running \'scripts/downloadHelmCharts.sh\' from the repo')
+    }
+    
     @Test
     void "uses default localhost url for jenkins and scmm if nothing specified"() {
         testConfig.jenkins['url'] = ''
@@ -196,6 +217,8 @@ images:
   kubectl: "localhost:30000/kubectl"
   helm: "localhost:30000/helm"
         """
+
+        applicationConfigurator.setConfig(almostEmptyConfig)
         applicationConfigurator
                 .setConfig(configFile)
         def config = applicationConfigurator
@@ -224,7 +247,7 @@ images:
 
     @Test
     void "config file has only fields that are present in default values"() {
-        Map defaultConfig = applicationConfigurator.setConfig([:])
+        Map defaultConfig = applicationConfigurator.setConfig(almostEmptyConfig)
         
         def fields = getAllFieldNames(Schema.class).sort()
         def keys = getAllKeys2(defaultConfig).sort()

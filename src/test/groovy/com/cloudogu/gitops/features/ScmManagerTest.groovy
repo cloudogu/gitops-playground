@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test
 
 import java.nio.file.Path
 
-import static org.assertj.core.api.Assertions.assertThat 
+import static org.assertj.core.api.Assertions.assertThat
 
 class ScmManagerTest {
 
@@ -35,6 +35,7 @@ class ScmManagerTest {
                     ingress : 'scmm.localhost',
                     username: 'scmm-usr',
                     password: 'scmm-pw',
+                    gitOpsUsername: 'foo-gitops',
                     urlForJenkins : 'http://scmm4jenkins',
                     helm  : [
                             chart  : 'scm-manager-chart',
@@ -65,7 +66,7 @@ class ScmManagerTest {
                     ]
             ],
     ]
-    
+
     CommandExecutorForTest commandExecutor = new CommandExecutorForTest()
 
     File temporaryYamlFile
@@ -82,9 +83,11 @@ class ScmManagerTest {
         assertThat(parseActualYaml()['ingress']).isEqualTo([ enabled: true, path: '/', hosts: [ 'scmm.localhost'] ])
         assertThat(helmCommands.actualCommands[0].trim()).isEqualTo(
                 'helm repo add scm-manager https://packages.scm-manager.org/repository/helm-v2-releases/')
-        assertThat(helmCommands.actualCommands[1].trim()).isEqualTo(
-                'helm upgrade -i scmm scm-manager/scm-manager-chart --version 2.47.0' +
-                        " --values ${temporaryYamlFile} --namespace foo-default --create-namespace")
+        assertThat(helmCommands.actualCommands[1].trim()).startsWith(
+                'helm upgrade -i scmm scm-manager/scm-manager-chart --create-namespace')
+        assertThat(helmCommands.actualCommands[1].trim()).contains('--version 2.47.0')
+        assertThat(helmCommands.actualCommands[1].trim()).contains(" --values ${temporaryYamlFile}")
+        assertThat(helmCommands.actualCommands[1].trim()).contains('--namespace foo-default')
 
         def env = getEnvAsMap()
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
@@ -94,6 +97,7 @@ class ScmManagerTest {
         assertThat(env['GIT_COMMITTER_EMAIL']).isEqualTo('hello@cloudogu.com')
         assertThat(env['GIT_AUTHOR_NAME']).isEqualTo('Cloudogu')
         assertThat(env['GIT_AUTHOR_EMAIL']).isEqualTo('hello@cloudogu.com')
+        assertThat(env['GITOPS_USERNAME']).isEqualTo('foo-gitops')
         assertThat(env['TRACE']).isEqualTo('true')
         assertThat(env['SCMM_URL']).isEqualTo('http://scmm')
         assertThat(env['SCMM_USERNAME']).isEqualTo('scmm-usr')
@@ -116,9 +120,9 @@ class ScmManagerTest {
         config.application['remote'] = true
         config.scmm['ingress'] = ''
         createScmManager().install()
-        
+
         Map actualYaml = parseActualYaml() as Map
-        
+
         assertThat(actualYaml).doesNotContainKey('service')
         assertThat(actualYaml).doesNotContainKey('ingress')
     }
@@ -127,10 +131,10 @@ class ScmManagerTest {
     void 'Installs only if internal'() {
         config.scmm['internal'] = false
         createScmManager().install()
-        
+
         assertThat(temporaryYamlFile).isNull()
     }
-    
+
     protected Map<String, String> getEnvAsMap() {
         commandExecutor.environment.collectEntries { it.split('=') }
     }
@@ -139,7 +143,7 @@ class ScmManagerTest {
         def ys = new YamlSlurper()
         return ys.parse(temporaryYamlFile)
     }
-    
+
     private ScmManager createScmManager() {
         new ScmManager(new Configuration(config), commandExecutor,  new FileSystemUtils() {
             @Override

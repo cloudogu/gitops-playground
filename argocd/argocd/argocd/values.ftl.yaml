@@ -74,14 +74,21 @@ argo-cd:
         name: nginx-helm-umbrella
         url: ${scmm.baseUrl}/repo/${namePrefix}argocd/nginx-helm-umbrella
         <#if isInsecure>insecure: "true"</#if>
-      bitnami:
-        name: bitnami
-        type: helm
-        url: https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami
+<#if mirrorRepos>
+      prometheus:
+        name: prometheus
+        url: ${scmm.baseUrl}/repo/3rd-party-dependencies/kube-prometheus-stack
+        <#if isInsecure>insecure: "true"</#if>
+<#else>
       prometheus:
         name: prometheus-community
         type: helm
         url: https://prometheus-community.github.io/helm-charts
+</#if>
+      bitnami:
+        name: bitnami
+        type: helm
+        url: https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami
       codecentric:
         name: codecentric
         type: helm

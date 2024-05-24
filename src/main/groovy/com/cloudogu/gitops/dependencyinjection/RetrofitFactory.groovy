@@ -12,6 +12,7 @@ import jakarta.inject.Singleton
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
+import retrofit2.converter.jackson.JacksonConverterFactory
 
 @Factory
 class RetrofitFactory {
@@ -30,6 +31,8 @@ class RetrofitFactory {
         return new Retrofit.Builder()
                 .baseUrl(configuration.config.scmm['url'] as String + '/api/')
                 .client(okHttpClient)
+                 // Converts HTTP body objects from groovy to JSON
+                .addConverterFactory(JacksonConverterFactory.create())
                 .build()
     }
 

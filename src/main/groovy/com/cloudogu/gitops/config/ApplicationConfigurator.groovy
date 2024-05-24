@@ -83,6 +83,7 @@ class ApplicationConfigurator {
                     url     : '',
                     username: DEFAULT_ADMIN_USER,
                     password: DEFAULT_ADMIN_PW,
+                    gitOpsUsername : '', // Set dynamically
                     /* This corresponds to the "Base URL" in SCMM Settings.
                        We use the K8s service as default name here, to make the build on push feature (webhooks from SCMM to Jenkins that trigger builds) work in k3d.
                        The webhook contains repository URLs that start with the "Base URL" Setting of SCMM.
@@ -105,6 +106,9 @@ class ApplicationConfigurator {
             ],
             application: [
                     remote        : false,
+                    mirrorRepos     : false,
+                    // Take from env because the Dockerfile provides a local copy of the repo for air-gapped mode
+                    localHelmChartFolder: System.getenv('LOCAL_HELM_CHART_FOLDER'),
                     insecure      : false,
                     username      : DEFAULT_ADMIN_USER,
                     password      : DEFAULT_ADMIN_PW,
@@ -175,14 +179,9 @@ class ApplicationConfigurator {
                             grafanaEmailFrom : 'grafana@example.org',
                             grafanaEmailTo : 'infra@example.org',
                             helm  : [
-                                    /* Before allowing to override this via config, we have to change
-                                       ArgoCD.groovy to extract the monitoring CRD from the chart instead of applying 
-                                       from GitHub.
-                                        
-                                        First approach: 
-                                        helm template prometheus-community/kube-prometheus-stack --version XYZ --include-crds */
                                     chart  : 'kube-prometheus-stack',
                                     repoURL: 'https://prometheus-community.github.io/helm-charts',
+                                    /* When updating this make sure to also test if air-gapped mode still works */
                                     version: '58.2.1',
                                     grafanaImage: '',
                                     grafanaSidecarImage: '',
@@ -353,6 +352,8 @@ class ApplicationConfigurator {
     private void addScmmConfig(Map newConfig) {
         log.debug("Adding additional config for SCM-Manager")
 
+        newConfig.scmm['gitOpsUsername'] = "${this.config.application['namePrefix']}gitops"
+
         if (newConfig.scmm["url"]) {
             log.debug("Setting external scmm config")
             newConfig.scmm["internal"] = false
@@ -466,5 +467,12 @@ class ApplicationConfigurator {
                 !configToSet.scmm["url"] && configToSet.jenkins["url"]) {
             throw new RuntimeException('When setting jenkins URL, scmm URL must also be set and the other way round')
         }
+        if (!configToSet.application['localHelmChartFolder']) {
+            // This should only happen when run outside the image, i.e. during development
+            throw new RuntimeException("Missing config for localHelmChartFolder.\n" +
+                    "Either run inside the official container image or setting env var " +
+                    "LOCAL_HELM_CHART_FOLDER='charts' after running 'scripts/downloadHelmCharts.sh' from the repo")
+        }
+
     }
 }

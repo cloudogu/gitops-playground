@@ -13,7 +13,8 @@ class ApplicationTest {
                     password: "the-password"
             ],
             scmm: [
-                    internal: true
+                    internal: true,
+                    url: 'http://localhost'
             ],
             jenkins: [:]
     ]

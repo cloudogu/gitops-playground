@@ -122,7 +122,6 @@ function setDefaultBranch() {
 }
 
 function configureScmmManager() {
-  GITOPS_USERNAME="${NAME_PREFIX}gitops"
   GITOPS_PASSWORD=${SCMM_PASSWORD}
 
   METRICS_USERNAME="${NAME_PREFIX}metrics"
