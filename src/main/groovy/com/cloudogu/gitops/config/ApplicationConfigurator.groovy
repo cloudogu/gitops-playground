@@ -121,7 +121,8 @@ class ApplicationConfigurator {
                     baseUrl: null,
                     gitName: 'Cloudogu',
                     gitEmail: 'hello@cloudogu.com',
-                    urlSeparatorHyphen: false
+                    urlSeparatorHyphen: false,
+                    skipCrds : false,
             ],
             images     : [
                     kubectl    : "bitnami/kubectl:$K8S_VERSION",
