@@ -133,6 +133,8 @@ class GitopsPlaygroundCli  implements Runnable {
     private Boolean urlSeparatorHyphen
     @Option(names = ['--mirror-repos'], description = 'Changes the sources of deployed tools so they are not pulled from the internet, but are pulled from git and work in air-gapped environments.')
     private Boolean mirrorRepos
+    @Option(names = ['--skid-crds'], description = 'Skip installation of CRDs. This requires prior installation of CRDs')
+    private Boolean skipCrds
 
     // args group metrics
     @Option(names = ['--metrics', '--monitoring'], description = 'Installs the Kube-Prometheus-Stack. This includes Prometheus, the Prometheus operator, Grafana and some extra resources')
@@ -389,7 +391,8 @@ class GitopsPlaygroundCli  implements Runnable {
                         baseUrl : baseUrl,
                         gitName: gitName,
                         gitEmail: gitEmail,
-                        urlSeparatorHyphen : urlSeparatorHyphen
+                        urlSeparatorHyphen : urlSeparatorHyphen,
+                        skipCrds : skipCrds
                 ],
                 images     : [
                         kubectl    : kubectlImage,

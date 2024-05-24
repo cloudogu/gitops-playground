@@ -44,7 +44,8 @@ class ArgoCDTest {
                     gitName             : 'Cloudogu',
                     gitEmail            : 'hello@cloudogu.com',
                     urlSeparatorHyphen  : false,
-                    mirrorRepos         : false
+                    mirrorRepos         : false,
+                    skipCrds: false
             ],
             jenkins     : [
                     mavenCentralMirror: '',
@@ -187,6 +188,8 @@ class ArgoCDTest {
                 'https://prometheus-community.github.io/helm-charts')
         assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain(
                 'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack')
+
+        assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['crds']).isNull()
     }
 
     @Test
@@ -623,6 +626,16 @@ class ArgoCDTest {
   tag: latest
 """)
     }
+
+    @Test
+    void 'Skips CRDs for argo cd'() {
+        config.application['skipCrds'] = true
+
+        createArgoCD().install()
+
+        assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['crds']['install']).isEqualTo(false)
+    }
+
 
     @Test
     void 'Write maven mirror into jenkinsfiles'() {
