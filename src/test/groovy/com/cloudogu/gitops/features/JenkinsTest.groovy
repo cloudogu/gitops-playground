@@ -38,7 +38,8 @@ class JenkinsTest {
                     metricsPassword: 'metrics-pw',
                     helm           : [
                             version: '4.8.1'
-                    ]
+                    ],
+                    mavenCentralMirror: ''
             ],
             registry   : [
                     url     : 'reg-url',
@@ -111,6 +112,7 @@ class JenkinsTest {
         verify(globalPropertyManager, never()).setGlobalProperty(eq('MY_PREFIX_REGISTRY_PULL_PATH'), anyString())
         verify(globalPropertyManager, never()).setGlobalProperty(eq('MY_PREFIX_REGISTRY_PUSH_URL'), anyString())
         verify(globalPropertyManager, never()).setGlobalProperty(eq('MY_PREFIX_REGISTRY_PUSH_PATH'), anyString())
+        verify(globalPropertyManager, never()).setGlobalProperty(eq('MAVEN_CENTRAL_MIRROR'), anyString())
 
         verify(userManager).createUser('metrics-usr', 'metrics-pw')
         verify(userManager).grantPermission('metrics-usr', UserManager.Permissions.METRICS_VIEW)
@@ -180,11 +182,11 @@ class JenkinsTest {
     }
 
     @Test
-    void 'Does not set maven mirror'() {
-        config.jenkins['mavenCentralMirror'] = null
+    void 'Sets maven mirror '() {
+        config.jenkins['mavenCentralMirror'] = 'http://test'
         createJenkins().install()
 
-        verify(globalPropertyManager, never()).setGlobalProperty(eq('MAVEN_CENTRAL_MIRROR'), anyString())
+        verify(globalPropertyManager).setGlobalProperty(eq('MY_PREFIX_MAVEN_CENTRAL_MIRROR'), eq("http://test"))
     }
 
     protected Map<String, String> getEnvAsMap() {
