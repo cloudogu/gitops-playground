@@ -44,6 +44,7 @@ class Schema {
          String password = ""
          String metricsUsername = ""
          String metricsPassword = ""
+         String mavenCentralMirror = ""
     }
 
      static class ScmmSchema {

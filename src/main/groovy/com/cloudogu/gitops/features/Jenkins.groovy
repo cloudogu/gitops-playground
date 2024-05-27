@@ -79,6 +79,10 @@ class Jenkins extends Feature {
             globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_PATH", config.registry['path'] as String)
         }
 
+        if (config.jenkins['mavenCentralMirror']) {
+            globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}MAVEN_CENTRAL_MIRROR", config.jenkins['mavenCentralMirror'] as String)
+        }
+
         globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}K8S_VERSION", ApplicationConfigurator.K8S_VERSION)
 
         if (userManager.isUsingCasSecurityRealm()) {

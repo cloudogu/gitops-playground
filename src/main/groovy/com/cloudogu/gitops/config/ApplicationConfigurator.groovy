@@ -76,7 +76,8 @@ class ApplicationConfigurator {
                              - Also upgrade plugins. See docs/developers.md
                              */
                             version: '5.0.17'
-                    ]
+                    ],
+                    mavenCentralMirror: '',
             ],
             scmm       : [
                     internal: true, // Set dynamically
