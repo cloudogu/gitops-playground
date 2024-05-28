@@ -167,6 +167,7 @@ class ApplicationConfiguratorTest {
     
     @Test
     void 'Fails if monitoring local is not set'() {
+        testConfig['application']['mirrorRepos'] = true
         testConfig['application']['localHelmChartFolder'] = ''
         
         def exception = shouldFail(RuntimeException) {
@@ -175,6 +176,15 @@ class ApplicationConfiguratorTest {
         assertThat(exception.message).isEqualTo('Missing config for localHelmChartFolder.\n' +
                 'Either run inside the official container image or setting env var LOCAL_HELM_CHART_FOLDER=\'charts\' ' +
                 'after running \'scripts/downloadHelmCharts.sh\' from the repo')
+    }
+    
+    @Test
+    void 'Ignores empty localHemlChartFolder, if mirrorRepos is not set'() {
+        testConfig['application']['mirrorRepos'] = false
+        testConfig['application']['localHelmChartFolder'] = ''
+        
+        applicationConfigurator.setConfig(testConfig)
+        // no exceptions means success
     }
     
     @Test

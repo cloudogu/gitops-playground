@@ -468,7 +468,7 @@ class ApplicationConfigurator {
                 !configToSet.scmm["url"] && configToSet.jenkins["url"]) {
             throw new RuntimeException('When setting jenkins URL, scmm URL must also be set and the other way round')
         }
-        if (!configToSet.application['localHelmChartFolder']) {
+        if (configToSet.application['mirrorRepos'] && !configToSet.application['localHelmChartFolder']) {
             // This should only happen when run outside the image, i.e. during development
             throw new RuntimeException("Missing config for localHelmChartFolder.\n" +
                     "Either run inside the official container image or setting env var " +
