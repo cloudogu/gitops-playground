@@ -436,7 +436,7 @@ scripts/init-cluster.sh --bind-ingress-port=80 --cluster-name=two-regs
 ```
 * Setup harbor as stated [above](#external-registry-for-development), but with Port `30000`.  
   Wait for harbor to startup: ` kubectl get pod -n harbor`  
-  Don't care about harbor `jobservice`
+  Don't care about crashing harbor `jobservice`
 * Create registries and base image:
 
 ```bash
@@ -737,9 +737,17 @@ docker run --rm --entrypoint java gitops-playground:dev -classpath /app/gitops-p
 On `main` branch:
 
 ````shell
-git tag -s x.y.z -m x.y.z
+TAG=0.2.0
+
+git checkout main
+git pull
+git tag -s $TAG -m $TAG
 git push --follow-tags
+
+xdg-open https://ecosystem.cloudogu.com/jenkins/job/cloudogu-github/job/gitops-playground/job/main/build?delay=0sec
 ````
 
-For now start a Jenkins Build of `main` manually.
+For now, please start a Jenkins Build of `main` manually.  
 We might introduce tag builds in our Jenkins organization at a later stage.
+
+A GitHub release containing all merged PRs since the last release is create automatically via a [GitHub action](../.github/workflows/create-release.yml)

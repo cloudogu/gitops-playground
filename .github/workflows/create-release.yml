@@ -2,8 +2,7 @@ name: Create release
 
 on:
   push:
-    tags: # This will now trigger on all tags
-      - '*'
+    tags: [ '*' ]
 
 permissions:
   contents: write
