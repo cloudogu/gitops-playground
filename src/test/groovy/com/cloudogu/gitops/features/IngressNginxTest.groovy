@@ -67,7 +67,7 @@ class IngressNginxTest {
         config['features']['ingressNginx']['helm']['values'] = [
                 controller: [
                         replicaCount: 42,
-                        foo: 'bar',
+                        span: '7,5',
                    ]
         ]
 
@@ -75,7 +75,7 @@ class IngressNginxTest {
         def actual = parseActualYaml()
 
         assertThat((actual['controller']['replicaCount'])).isEqualTo(42)
-        assertThat((actual['controller']['foo'])).isEqualTo('bar')
+        assertThat((actual['controller']['span'])).isEqualTo('7,5')
     }
 
 

@@ -299,6 +299,28 @@ It can be enabled via the configfile or parameter `--ingress-nginx`.
 
 In order to make use of the ingress controller, it is recommended to use it in conjunction with [`--base-url`](#deploy-ingresses), which will create `Ingress` objects for all components of the GitOps playground.
 
+The ingress controller is based on the helm package `ingress-nginx` from the repository `https://kubernetes.github.io/ingress-nginx`
+Additional parameters from this Helm package's values.yaml file can be added to the installation through the gitops-playground configuration file, see section [config-file](#configuration-file) .
+
+Example:
+```yaml
+---
+features:
+  mail:
+    mailhog: false
+  monitoring:
+    active: false
+  ingressNginx:
+    active: true
+    helm:
+      values:
+        controller:
+          replicaCount: 4
+```
+In this Example we overided the default `controller.replicaCount` (default is 2).  
+This config file is merged with precedence over the default helmcharts values.yaml.
+
+
 
 ##### Deploy Ingresses
 
