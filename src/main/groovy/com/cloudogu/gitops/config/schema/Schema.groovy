@@ -154,5 +154,10 @@ class Schema {
 
     static class IngressNginxSchema {
         Boolean active = false
+        IngressNginxHelmSchema helm
+
+        static class IngressNginxHelmSchema {
+            Map<String, Object> values
+        }
     }
 }

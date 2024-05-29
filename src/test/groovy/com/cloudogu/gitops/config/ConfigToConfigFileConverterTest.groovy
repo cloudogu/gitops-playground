@@ -108,6 +108,7 @@ features:
       baseDomain: "base-domain"
   ingressNginx:
     active: true
+    helm: null
 """)
     }
 }

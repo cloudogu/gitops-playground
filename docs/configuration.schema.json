@@ -1,243 +1,252 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$defs": {
-    "BaseDomainSchema": {
-      "type": "object",
-      "properties": {
-        "baseDomain": {
-          "type": "string"
+  "$schema" : "https://json-schema.org/draft/2020-12/schema",
+  "$defs" : {
+    "BaseDomainSchema" : {
+      "type" : "object",
+      "properties" : {
+        "baseDomain" : {
+          "type" : "string"
         }
       },
-      "additionalProperties": false
+      "additionalProperties" : false
     }
   },
-  "type": "object",
-  "properties": {
-    "features": {
-      "type": "object",
-      "properties": {
-        "argocd": {
-          "type": "object",
-          "properties": {
-            "emailFrom": {
-              "type": "string"
+  "type" : "object",
+  "properties" : {
+    "features" : {
+      "type" : "object",
+      "properties" : {
+        "argocd" : {
+          "type" : "object",
+          "properties" : {
+            "emailFrom" : {
+              "type" : "string"
             },
-            "emailToAdmin": {
-              "type": "string"
+            "emailToAdmin" : {
+              "type" : "string"
             },
-            "emailToUser": {
-              "type": "string"
+            "emailToUser" : {
+              "type" : "string"
             },
-            "url": {
-              "type": "string"
+            "url" : {
+              "type" : "string"
             }
           },
-          "additionalProperties": false
+          "additionalProperties" : false
         },
-        "exampleApps": {
-          "type": "object",
-          "properties": {
-            "nginx": {
-              "$ref": "#/$defs/BaseDomainSchema"
+        "exampleApps" : {
+          "type" : "object",
+          "properties" : {
+            "nginx" : {
+              "$ref" : "#/$defs/BaseDomainSchema"
             },
-            "petclinic": {
-              "$ref": "#/$defs/BaseDomainSchema"
+            "petclinic" : {
+              "$ref" : "#/$defs/BaseDomainSchema"
             }
           },
-          "additionalProperties": false
+          "additionalProperties" : false
         },
-        "ingressNginx": {
-          "type": "object",
-          "properties": {
-            "active": {
-              "type": "boolean"
-            }
-          },
-          "additionalProperties": false
-        },
-        "mail": {
-          "type": "object",
-          "properties": {
-            "mailhog": {
-              "type": "boolean"
+        "ingressNginx" : {
+          "type" : "object",
+          "properties" : {
+            "active" : {
+              "type" : "boolean"
             },
-            "mailhogUrl": {
-              "type": "string"
-            },
-            "smtpAddress": {
-              "type": "string"
-            },
-            "smtpPassword": {
-              "type": "string"
-            },
-            "smtpPort": {
-              "type": "integer"
-            },
-            "smtpUser": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
-        },
-        "monitoring": {
-          "type": "object",
-          "properties": {
-            "active": {
-              "type": "boolean"
-            },
-            "grafanaEmailFrom": {
-              "type": "string"
-            },
-            "grafanaEmailTo": {
-              "type": "string"
-            },
-            "grafanaUrl": {
-              "type": "string"
-            },
-            "helm": {
-              "type": "object",
-              "properties": {
-                "grafanaImage": {
-                  "type": "string"
-                },
-                "grafanaSidecarImage": {
-                  "type": "string"
-                },
-                "prometheusConfigReloaderImage": {
-                  "type": "string"
-                },
-                "prometheusImage": {
-                  "type": "string"
-                },
-                "prometheusOperatorImage": {
-                  "type": "string"
+            "helm" : {
+              "type" : "object",
+              "properties" : {
+                "values" : {
+                  "type" : "object"
                 }
               },
-              "additionalProperties": false
+              "additionalProperties" : false
             }
           },
-          "additionalProperties": false
+          "additionalProperties" : false
         },
-        "secrets": {
-          "type": "object",
-          "properties": {
-            "externalSecrets": {
-              "type": "object",
-              "properties": {
-                "helm": {
-                  "type": "object",
-                  "properties": {
-                    "certControllerImage": {
-                      "type": "string"
+        "mail" : {
+          "type" : "object",
+          "properties" : {
+            "mailhog" : {
+              "type" : "boolean"
+            },
+            "mailhogUrl" : {
+              "type" : "string"
+            },
+            "smtpAddress" : {
+              "type" : "string"
+            },
+            "smtpPassword" : {
+              "type" : "string"
+            },
+            "smtpPort" : {
+              "type" : "integer"
+            },
+            "smtpUser" : {
+              "type" : "string"
+            }
+          },
+          "additionalProperties" : false
+        },
+        "monitoring" : {
+          "type" : "object",
+          "properties" : {
+            "active" : {
+              "type" : "boolean"
+            },
+            "grafanaEmailFrom" : {
+              "type" : "string"
+            },
+            "grafanaEmailTo" : {
+              "type" : "string"
+            },
+            "grafanaUrl" : {
+              "type" : "string"
+            },
+            "helm" : {
+              "type" : "object",
+              "properties" : {
+                "grafanaImage" : {
+                  "type" : "string"
+                },
+                "grafanaSidecarImage" : {
+                  "type" : "string"
+                },
+                "prometheusConfigReloaderImage" : {
+                  "type" : "string"
+                },
+                "prometheusImage" : {
+                  "type" : "string"
+                },
+                "prometheusOperatorImage" : {
+                  "type" : "string"
+                }
+              },
+              "additionalProperties" : false
+            }
+          },
+          "additionalProperties" : false
+        },
+        "secrets" : {
+          "type" : "object",
+          "properties" : {
+            "externalSecrets" : {
+              "type" : "object",
+              "properties" : {
+                "helm" : {
+                  "type" : "object",
+                  "properties" : {
+                    "certControllerImage" : {
+                      "type" : "string"
                     },
-                    "image": {
-                      "type": "string"
+                    "image" : {
+                      "type" : "string"
                     },
-                    "webhookImage": {
-                      "type": "string"
+                    "webhookImage" : {
+                      "type" : "string"
                     }
                   },
-                  "additionalProperties": false
+                  "additionalProperties" : false
                 }
               },
-              "additionalProperties": false
+              "additionalProperties" : false
             },
-            "vault": {
-              "type": "object",
-              "properties": {
-                "helm": {
-                  "type": "object",
-                  "properties": {
-                    "image": {
-                      "type": "string"
+            "vault" : {
+              "type" : "object",
+              "properties" : {
+                "helm" : {
+                  "type" : "object",
+                  "properties" : {
+                    "image" : {
+                      "type" : "string"
                     }
                   },
-                  "additionalProperties": false
+                  "additionalProperties" : false
                 },
-                "mode": {
-                  "type": "string"
+                "mode" : {
+                  "type" : "string"
                 },
-                "url": {
-                  "type": "string"
+                "url" : {
+                  "type" : "string"
                 }
               },
-              "additionalProperties": false
+              "additionalProperties" : false
             }
           },
-          "additionalProperties": false
+          "additionalProperties" : false
         }
       },
-      "additionalProperties": false
+      "additionalProperties" : false
     },
-    "images": {
-      "type": "object",
-      "properties": {
-        "helm": {
-          "type": "string"
+    "images" : {
+      "type" : "object",
+      "properties" : {
+        "helm" : {
+          "type" : "string"
         },
-        "helmKubeval": {
-          "type": "string"
+        "helmKubeval" : {
+          "type" : "string"
         },
-        "kubectl": {
-          "type": "string"
+        "kubectl" : {
+          "type" : "string"
         },
-        "kubeval": {
-          "type": "string"
+        "kubeval" : {
+          "type" : "string"
         },
-        "nginx": {
-          "type": "string"
+        "nginx" : {
+          "type" : "string"
         },
-        "petclinic": {
-          "type": "string"
+        "petclinic" : {
+          "type" : "string"
         },
-        "yamllint": {
-          "type": "string"
+        "yamllint" : {
+          "type" : "string"
         }
       },
-      "additionalProperties": false
+      "additionalProperties" : false
     },
-    "registry": {
-      "type": "object",
-      "properties": {
-        "internalPort": {
-          "type": "integer"
+    "registry" : {
+      "type" : "object",
+      "properties" : {
+        "internalPort" : {
+          "type" : "integer"
         },
-        "password": {
-          "type": "string"
+        "password" : {
+          "type" : "string"
         },
-        "path": {
-          "type": "string"
+        "path" : {
+          "type" : "string"
         },
-        "pullPassword": {
-          "type": "string"
+        "pullPassword" : {
+          "type" : "string"
         },
-        "pullUrl": {
-          "type": "string"
+        "pullUrl" : {
+          "type" : "string"
         },
-        "pullUsername": {
-          "type": "string"
+        "pullUsername" : {
+          "type" : "string"
         },
-        "pushPassword": {
-          "type": "string"
+        "pushPassword" : {
+          "type" : "string"
         },
-        "pushPath": {
-          "type": "string"
+        "pushPath" : {
+          "type" : "string"
         },
-        "pushUrl": {
-          "type": "string"
+        "pushUrl" : {
+          "type" : "string"
         },
-        "pushUsername": {
-          "type": "string"
+        "pushUsername" : {
+          "type" : "string"
         },
-        "url": {
-          "type": "string"
+        "url" : {
+          "type" : "string"
         },
-        "username": {
-          "type": "string"
+        "username" : {
+          "type" : "string"
         }
       },
-      "additionalProperties": false
+      "additionalProperties" : false
     }
   },
-  "additionalProperties": false
+  "additionalProperties" : false
 }
