@@ -55,7 +55,9 @@
             "helm" : {
               "type" : "object",
               "properties" : {
-                "values" : { }
+                "values" : {
+                  "type" : "object"
+                }
               },
               "additionalProperties" : false
             }

@@ -157,13 +157,7 @@ class Schema {
         IngressNginxHelmSchema helm
 
         static class IngressNginxHelmSchema {
-            /* Before we use this class as typed config we need to find a way to convert this to a map while keeping it 
-               an (unvalidated) object in the schema.json. Either one should work in the schema.json
-                "values": {}
-                 "values": { "type": "object", "additionalProperties": false }
-               But how to achieve this with SchemaGenerator?
-               This might work using JacksonModule for SchemaGenerator, @JsonDeserialize, etc. */
-            Object values
+            Map<String, Object> values
         }
     }
 }
