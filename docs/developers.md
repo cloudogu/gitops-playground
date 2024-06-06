@@ -125,7 +125,7 @@ Jenkins.instance.pluginManager.activePlugins.sort().each {
 * Running inside the container:
   * Build and run dev Container:
     ```shell
-    docker buildx build -t gitops-playground:dev --build-arg ENV=dev --progress=plain .
+    docker build -t gitops-playground:dev --build-arg ENV=dev --progress=plain --pull .
     docker run --rm -it -u $(id -u) -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
       --net=host gitops-playground:dev #params
      ```

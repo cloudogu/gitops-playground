@@ -5,7 +5,7 @@ ARG JDK_VERSION='17'
 # Set by the micronaut BOM, see pom.xml
 ARG GRAAL_VERSION='22.3.0'
 
-FROM alpine:3.17 as alpine
+FROM alpine:3 as alpine
 
 # Keep in sync with the version in pom.xml
 FROM ghcr.io/graalvm/graalvm-ce:ol8-java${JDK_VERSION}-${GRAAL_VERSION} AS graal
@@ -83,6 +83,13 @@ RUN git clone --bare https://github.com/cloudogu/spring-petclinic.git
 RUN git clone --bare https://github.com/cloudogu/spring-boot-helm-chart.git
 RUN git clone --bare https://github.com/cloudogu/gitops-build-lib.git
 RUN git clone --bare https://github.com/cloudogu/ces-build-lib.git
+
+# Avoid "fatal: detected dubious ownership in repository"
+# Once we migrate away from using git binary (e.g. in init-scmm.sh), we can remove this
+RUN cd /dist && for dir in $(find gitops/repos -type d  -maxdepth 1); do \
+        git config --global --add safe.directory /"$dir"; \
+    done
+RUN cp /tmp/.gitconfig /dist/home/.gitconfig
 
 # Download Jenkins Plugin
 COPY scripts/jenkins/plugins /jenkins
