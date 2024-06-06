@@ -133,7 +133,7 @@ class GitopsPlaygroundCli  implements Runnable {
     private Boolean urlSeparatorHyphen
     @Option(names = ['--mirror-repos'], description = 'Changes the sources of deployed tools so they are not pulled from the internet, but are pulled from git and work in air-gapped environments.')
     private Boolean mirrorRepos
-    @Option(names = ['--skid-crds'], description = 'Skip installation of CRDs. This requires prior installation of CRDs')
+    @Option(names = ['--skip-crds'], description = 'Skip installation of CRDs. This requires prior installation of CRDs')
     private Boolean skipCrds
 
     // args group metrics

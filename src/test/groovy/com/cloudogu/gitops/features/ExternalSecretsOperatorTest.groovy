@@ -20,6 +20,7 @@ class ExternalSecretsOperatorTest {
                     password: '123',
                     remote  : false,
                     namePrefix: "foo-",
+                    skipCrds : false
             ],
             features    : [
                     secrets   : [
@@ -56,6 +57,17 @@ class ExternalSecretsOperatorTest {
         assertThat(commandExecutor.actualCommands[1].trim()).contains('--version 0.6.0')
         assertThat(commandExecutor.actualCommands[1].trim()).contains("--values $temporaryYamlFile")
         assertThat(commandExecutor.actualCommands[1].trim()).contains('--namespace foo-secrets')
+        assertThat(parseActualStackYaml()['installCRDs']).isNull()
+
+    }
+
+    @Test
+    void 'Skips CRDs'() {
+        config.application['skipCrds'] = true
+
+        createExternalSecretsOperator().install()
+
+        assertThat(parseActualStackYaml()['installCRDs']).isEqualTo(false)
     }
 
     @Test
@@ -83,9 +95,10 @@ class ExternalSecretsOperatorTest {
         new ExternalSecretsOperator(
                 new Configuration(config),
                 new FileSystemUtils() {
+
                     @Override
-                    Path copyToTempDir(String filePath) {
-                        temporaryYamlFile = super.copyToTempDir(filePath)
+                    Path createTempFile() {
+                        temporaryYamlFile = super.createTempFile()
                         return temporaryYamlFile
                     }
                 },

@@ -37,7 +37,8 @@ class PrometheusStackTest {
                     password: '123',
                     remote  : false,
                     namePrefix: "foo-",
-                    mirrorRepos: false
+                    mirrorRepos: false,
+                    skipCrds: false
             ],
             features   : [
                     monitoring: [
@@ -362,6 +363,16 @@ policies:
                 'helm repo add prometheusstack https://prom'
                 'helm upgrade -i kube-prometheus-stack prometheusstack/kube-prometheus-stack --version 19.2.2' +
                         " --values ${temporaryYamlFile} --namespace foo-monitoring --create-namespace") */
+        assertThat(parseActualStackYaml()['crds']).isNull()
+    }
+
+    @Test
+    void 'Skips CRDs'() {
+        config.application['skipCrds'] = true
+
+        createStack().install()
+
+        assertThat(parseActualStackYaml()['crds']['enabled']).isEqualTo(false)
     }
     
     @Test
