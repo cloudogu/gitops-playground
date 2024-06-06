@@ -68,6 +68,7 @@ class PrometheusStack extends Feature {
                                 host: config.features['monitoring']['grafanaUrl'] ? new URL(config.features['monitoring']['grafanaUrl'] as String).host : ""
                         ]
                 ],
+                skipCrds : config.application['skipCrds'],
                 mail: [
                         active: config.features['mail']['active'],
                         smtpAddress : config.features['mail']['smtpAddress'],
@@ -198,7 +199,7 @@ class PrometheusStack extends Feature {
         setPrometheusConfigReloaderImage(helmConfig, helmValuesYaml)
     }
 
-    private void setPrometheusConfigReloaderImage(helmConfig, Map helmValuesYaml) {
+    private static void setPrometheusConfigReloaderImage(helmConfig, Map helmValuesYaml) {
         String prometheusConfigReloaderImage = helmConfig['prometheusConfigReloaderImage']
         if (prometheusConfigReloaderImage) {
             log.debug("Setting custom prometheus-config-reloader image as requested for prometheus-stack")
@@ -217,7 +218,7 @@ class PrometheusStack extends Feature {
         }
     }
 
-    private void setPrometheusOperatorImage(helmConfig, Map helmValuesYaml) {
+    private static void setPrometheusOperatorImage(helmConfig, Map helmValuesYaml) {
         String prometheusOperatorImage = helmConfig['prometheusOperatorImage']
         if (prometheusOperatorImage) {
             log.debug("Setting custom prometheus-operator image as requested for prometheus-stack")
@@ -234,7 +235,7 @@ class PrometheusStack extends Feature {
         }
     }
 
-    private void setPrometheusImage(helmConfig, Map helmValuesYaml) {
+    private static void setPrometheusImage(helmConfig, Map helmValuesYaml) {
         String prometheusImage = helmConfig['prometheusImage']
         if (prometheusImage) {
             log.debug("Setting custom prometheus-operator image as requested for prometheus-stack")
@@ -253,7 +254,7 @@ class PrometheusStack extends Feature {
         }
     }
 
-    private void setGrafanaSidecarImage(helmConfig, Map helmValuesYaml) {
+    private static void setGrafanaSidecarImage(helmConfig, Map helmValuesYaml) {
         String grafanaSidecarImage = helmConfig['grafanaSidecarImage']
         if (grafanaSidecarImage) {
             log.debug("Setting custom grafana-sidecar image as requested for prometheus-stack")
@@ -271,7 +272,7 @@ class PrometheusStack extends Feature {
         }
     }
 
-    private void setGrafanaImage(helmConfig, Map helmValuesYaml) {
+    private static void setGrafanaImage(helmConfig, Map helmValuesYaml) {
         String grafanaImage = helmConfig['grafanaImage']
         if (grafanaImage) {
             log.debug("Setting custom grafana image as requested for prometheus-stack")
