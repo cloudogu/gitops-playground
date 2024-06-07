@@ -102,7 +102,7 @@ class ApplicationConfigurator {
                     helm  : [
                             chart  : 'scm-manager',
                             repoURL: 'https://packages.scm-manager.org/repository/helm-v2-releases/',
-                            version: '3.1.0'
+                            version: '3.2.1'
                     ]
             ],
             application: [
