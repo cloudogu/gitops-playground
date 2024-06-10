@@ -107,6 +107,15 @@ function createCluster() {
             "-p ${BIND_INGRESS_PORT}:80@server:0:direct"
             )
     fi
+    
+    IFS=","
+    read -ra values <<< "$BIND_PORTS"
+    for portBinding in "${values[@]}"; do
+        K3D_ARGS+=(
+            "-p ${portBinding}@server:0:direct"
+            )
+    done
+    unset IFS
   fi
 
   echo "Creating cluster '${CLUSTER_NAME}'"
@@ -143,6 +152,7 @@ function printParameters() {
   echo "    | --bind-localhost=BOOLEAN   >> Bind the k3d container to host network. Exposes all k8s nodePorts to localhost. Defaults to true."
   echo "    | --bind-ingress-port=INT   >> Bind the ingress controller to this localhost port. Sets --bind-localhost=false. Defaults to empty."
   echo "    | --bind-registry-port=INT   >> Specify a custom port for the container registry to bind to localhost port. Only use this when port 30000 is blocked and --bind-localhost=true. Defaults to 30000 (default used by the playground)."
+  echo "    | --bind-ports=STRING   >> A comma, separated list of additional port bindings like 443:443,9090:9090. Ignored when --bind-localhost."
   echo
   echo " -x | --trace         >> Debug + Show each command executed (set -x)"
 }
@@ -190,6 +200,7 @@ readParameters() {
   BIND_INGRESS_PORT=""
   # Use default port for playground registry, because no parameter is required when applying
   BIND_REGISTRY_PORT="30000"
+  BIND_PORTS=""
   TRACE=false
 
   while [ $# -gt 0 ]; do
@@ -204,6 +215,8 @@ readParameters() {
       --bind-ingress-port*) BIND_INGRESS_PORT=$(get_longopt_value "--bind-ingress-port" "$@")
         if [[ "$1" == *"="* ]]; then shift; else shift 2; fi ;;
       --bind-registry-port*) BIND_REGISTRY_PORT=$(get_longopt_value "--bind-registry-port" "$@") 
+        if [[ "$1" == *"="* ]]; then shift; else shift 2; fi ;;
+      --bind-ports*) BIND_PORTS=$(get_longopt_value "--bind-ports" "$@"); 
         if [[ "$1" == *"="* ]]; then shift; else shift 2; fi ;;
       --) shift; break ;;
     *) break ;;
