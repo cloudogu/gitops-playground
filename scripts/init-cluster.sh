@@ -164,14 +164,21 @@ function confirm() {
 }
 
 get_longopt_value(){
-  # ensure $1 has the form --longopt=value
-  VALUE=$(echo "$1" | sed -e 's/^[^=]*=//')
+  # args
+  # 1='--expected'
+  # possibilities
+  # 2='--expected=value'
+  # or
+  # 2='--expected'
+  # 3='value'
+  
+  # check $2 has the form --longopt=value
+  VALUE=$(echo "$2" | sed -e 's/^[^=]*=//')
   if [ -z "$VALUE" ]; then
-    echo "missing value of paramater $2" >&2
+    echo "missing value of paramater $1" >&2
     exit 1
   elif [ "$VALUE" = "$1" ]; then
-    echo "missing value of paramater $2" >&2
-    exit 1
+    echo "$3"
   else
     echo "$VALUE"
   fi
@@ -187,12 +194,17 @@ readParameters() {
 
   while [ $# -gt 0 ]; do
     case "$1" in
-      -h | --help   )   printParameters; exit 0 ;;
-      --cluster-name*)   CLUSTER_NAME=$(get_longopt_value $1 "--cluster-name"); shift ;;
-      --bind-localhost*) BIND_LOCALHOST=$(get_longopt_value $1 "--bind-localhost"); shift ;;
-      --bind-ingress-port*) BIND_INGRESS_PORT=$(get_longopt_value $1 "--bind-ingress-port"); shift ;;
-      --bind-registry-port*) BIND_REGISTRY_PORT=$(get_longopt_value $1 "--bind-registry-port"); shift ;;
+      -h | --help   ) printParameters; exit 0 ;;
       -x | --trace    ) TRACE=true; shift ;;
+      --cluster-name*) CLUSTER_NAME=$(get_longopt_value "--cluster-name" "$@")
+        # Allow passing values with and without '=' 
+        if [[ "$1" == *"="* ]]; then shift; else shift 2; fi ;;
+      --bind-localhost*) BIND_LOCALHOST=$(get_longopt_value $1 "--bind-localhost")
+        if [[ "$1" == *"="* ]]; then shift; else shift 2; fi ;;
+      --bind-ingress-port*) BIND_INGRESS_PORT=$(get_longopt_value "--bind-ingress-port" "$@")
+        if [[ "$1" == *"="* ]]; then shift; else shift 2; fi ;;
+      --bind-registry-port*) BIND_REGISTRY_PORT=$(get_longopt_value "--bind-registry-port" "$@") 
+        if [[ "$1" == *"="* ]]; then shift; else shift 2; fi ;;
       --) shift; break ;;
     *) break ;;
     esac
