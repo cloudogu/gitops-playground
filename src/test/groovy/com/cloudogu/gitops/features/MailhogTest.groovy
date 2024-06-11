@@ -1,17 +1,25 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Configuration
-import com.cloudogu.gitops.features.deployment.HelmStrategy
+import com.cloudogu.gitops.features.deployment.DeploymentStrategy
+import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.HelmClient
+import com.cloudogu.gitops.utils.K8sClient
 import groovy.yaml.YamlSlurper
+import jakarta.inject.Provider
 import org.junit.jupiter.api.Test
+import org.mockito.ArgumentCaptor
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 
+import java.nio.file.Files
 import java.nio.file.Path
 
 import static org.assertj.core.api.Assertions.assertThat
+import static org.mockito.ArgumentMatchers.any
+import static org.mockito.Mockito.mock
+import static org.mockito.Mockito.verify
+import static org.mockito.Mockito.when
 
 class MailhogTest {
 
@@ -21,7 +29,8 @@ class MailhogTest {
                     password: '123',
                     remote  : false,
                     namePrefix: "foo-",
-                    podResources : false
+                    podResources : false,
+                    mirrorRepos: false
             ],
             scmm       : [
                     internal: true,
@@ -38,16 +47,18 @@ class MailhogTest {
                             mailhog: true,
                             helm  : [
                                     chart  : 'mailhog',
-                                    repoURL: 'https://codecentric.github.io/helm-charts',
+                                    repoURL: 'https://mailhog',
                                     version: '5.0.1',
                                     image: ''
                             ]
                     ]
             ],
     ]
-    CommandExecutorForTest commandExecutor = new CommandExecutorForTest()
-    HelmClient helmClient = new HelmClient(commandExecutor)
-    Path temporaryYamlFile
+    DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
+    AirGappedUtils airGappedUtils = mock(AirGappedUtils)
+    Path temporaryYamlFile = null
+    CommandExecutorForTest k8sCommandExecutor = new CommandExecutorForTest()
+    FileSystemUtils fileSystemUtils = new FileSystemUtils()
 
     @Test
     void "is disabled via active flag"() {
@@ -128,7 +139,7 @@ class MailhogTest {
 
         assertThat(parseActualYaml()['resources'] as Map).containsKeys('limits', 'requests')
     }
-    
+
     @Test
     void 'When argoCD enabled, mailhog is deployed natively via argoCD'() {
         config.features['argocd']['active'] = true
@@ -166,18 +177,59 @@ class MailhogTest {
         assertThat(parseActualYaml()['image']).isNull()
     }
 
+    @Test
+    void 'helm release is installed in air-gapped mode'() {
+        config.application['mirrorRepos'] = true
+        when(airGappedUtils.mirrorHelmRepoToGit(any(Map))).thenReturn('a/b')
+
+        Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
+        config.application['localHelmChartFolder'] = rootChartsFolder.toString()
+
+        Path SourceChart = rootChartsFolder.resolve('mailhog')
+        Files.createDirectories(SourceChart)
+
+        Map ChartYaml = [ version     : '1.2.3' ]
+        fileSystemUtils.writeYaml(ChartYaml, SourceChart.resolve('Chart.yaml').toFile())
+
+        createMailhog().install()
+
+        def helmConfig = ArgumentCaptor.forClass(Map)
+        verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
+        assertThat(helmConfig.value.chart).isEqualTo('mailhog')
+        assertThat(helmConfig.value.repoURL).isEqualTo('https://mailhog')
+        assertThat(helmConfig.value.version).isEqualTo('5.0.1')
+        verify(deploymentStrategy).deployFeature(
+                'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/a/b',
+                'mailhog', '.', '1.2.3','monitoring',
+                'mailhog', temporaryYamlFile, DeploymentStrategy.RepoType.GIT)
+    }
+
+    protected void assertMailhogInstalledImperativelyViaHelm() {
+
+        verify(deploymentStrategy).deployFeature(
+                'https://mailhog',
+                'mailhog', 'mailhog', '5.0.1', 'monitoring',
+                'mailhog', temporaryYamlFile)
+    }
+
     private Mailhog createMailhog() {
         // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
 
+        def configuration = new Configuration(config)
         new Mailhog(new Configuration(config), new FileSystemUtils() {
             @Override
             Path copyToTempDir(String filePath) {
-                def ret = super.copyToTempDir(filePath)
-                temporaryYamlFile = Path.of(ret.toString().replace(".ftl", "")) // Path after template invocation
-
+                Path ret = super.copyToTempDir(filePath)
+                temporaryYamlFile = Path.of(ret.toString().replace(".ftl", ""))
+                // Path after template invocation
                 return ret
             }
-        }, new HelmStrategy(new Configuration(config), helmClient))
+        }, deploymentStrategy, new K8sClient(k8sCommandExecutor, new FileSystemUtils(), new Provider<Configuration>() {
+            @Override
+            Configuration get() {
+                configuration
+            }
+        }), airGappedUtils)
     }
 
     private Map parseActualYaml() {
