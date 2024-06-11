@@ -253,6 +253,11 @@ class ArgoCD extends Feature {
             k8sClient.createNamespace('monitoring')
 
             def serviceMonitorCrdYaml
+
+            if (config['application']['skipCrds']) {
+                return
+            }
+
             if (config.application['mirrorRepos']) {
                 serviceMonitorCrdYaml = Path.of(
                         "${config.application['localHelmChartFolder']}/${config['features']['monitoring']['helm']['chart']}/charts/crds/crds/crd-servicemonitors.yaml"
@@ -356,6 +361,9 @@ class ArgoCD extends Feature {
                             emailFrom    : config.features['argocd']['emailFrom'],
                             emailToUser  : config.features['argocd']['emailToUser'],
                             emailToAdmin : config.features['argocd']['emailToAdmin']
+                    ],
+                    monitoring          : [
+                            active: config['features']['monitoring']['active']
                     ],
                     registry : [
                             twoRegistries: config.registry['twoRegistries']
