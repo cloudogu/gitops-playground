@@ -1,10 +1,12 @@
 package com.cloudogu.gitops.jenkins
 
 import groovy.json.JsonOutput
+    import groovy.util.logging.Slf4j
 import jakarta.inject.Singleton
 import okhttp3.FormBody
 import org.intellij.lang.annotations.Language
 
+@Slf4j
 @Singleton
 class JobManager {
     private ApiClient apiClient
@@ -46,6 +48,16 @@ class JobManager {
 
         if (result != 'null') {
             throw new RuntimeException("Could not delete job $name")
+        }
+    }
+
+    void startJob(String jobName) {
+
+        def response= apiClient.sendRequestWithCrumb(
+                "job/$jobName/build?delay=0sec", null)
+
+        if (response.code() != 200) {
+            log.warn("Could not trigger rebuild of Jenkins job: $jobName. StatusCode: ${response.code()}")
         }
     }
 }

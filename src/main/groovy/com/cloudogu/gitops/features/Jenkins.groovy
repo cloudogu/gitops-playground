@@ -124,5 +124,9 @@ class Jenkins extends Feature {
                         'credentials for accessing the docker-registry')
             }
         }
+
+        // after initial setup of jenkins, the example apps were not built. To automate this we crated this job
+        jobManger.startJob('example-apps')
+
     }
 }
