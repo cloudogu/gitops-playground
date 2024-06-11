@@ -636,6 +636,14 @@ class ArgoCDTest {
         assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['crds']['install']).isEqualTo(false)
     }
 
+    @Test
+    void 'disables serviceMonitor, when monitoring not active'() {
+        config['application']['skipCrds'] = true
+
+        createArgoCD().createMonitoringNamespaceAndCrd()
+
+        k8sCommands.assertNotExecuted('kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/')
+    }
 
     @Test
     void 'Write maven mirror into jenkinsfiles'() {

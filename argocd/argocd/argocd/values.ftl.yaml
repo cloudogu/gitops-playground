@@ -20,29 +20,33 @@ argo-cd:
       nodePortHttps: 9093
     metrics:
       enabled: true
+<#if monitoring.active == true>
       serviceMonitor:
         enabled: true
         namespace: ${namePrefix}monitoring
         selector:
           release: kube-prometheus-stack
-  
+</#if>
   controller:
     metrics:
       enabled: true
+<#if monitoring.active == true>
       serviceMonitor:
         enabled: true
         namespace: ${namePrefix}monitoring
         selector:
           release: kube-prometheus-stack
-  
+</#if>
   repoServer:
     metrics:
       enabled: true
+<#if monitoring.active == true>
       serviceMonitor:
         enabled: true
         namespace: ${namePrefix}monitoring
         selector:
           release: kube-prometheus-stack
+</#if>
   configs:
 
     # needed to enable deploying the Application ressource into other namespaces than argocd
