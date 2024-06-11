@@ -169,8 +169,8 @@ scripts/apply-ng.sh #params
 ## Running multiple instances on one machine
 
 Sometimes it makes sense to run more than one instance on your developer machine.
-For example, you might want to conduct multiple long-running tests in parallel or
-you might be interested to see how the latest stable version behaved in comparission to you local build.
+For example, you might want to conduct multiple long-running tests in parallel, or 
+you might be interested to see how the latest stable version behaved in comparison to you local build.
 
 You have to options to do this
 
@@ -201,8 +201,8 @@ This will work on linux only
 ```bash
 INSTANCE=3
 
-scripts/init-cluster.sh --bind-localhost=false \
-  --cluster-name="gitops-playground$INSTANCE" --bind-registry-port="3000$INSTANCE" 
+scripts/init-cluster.sh \
+  --cluster-name="gitops-playground$INSTANCE" --bind-ingress-port=- --bind-registry-port="3000$INSTANCE " 
 
 docker run --rm -t -u $(id -u) \
  -v "$HOME/.config/k3d/kubeconfig-gitops-playground$INSTANCE.yaml:/home/.kube/config" \
@@ -439,7 +439,7 @@ That is, for most helm charts, you'll need to set an individual value.
 ```shell
 # Stop other cluster, if necessary
 # k3d cluster stop gitops-playground
-scripts/init-cluster.sh --bind-ingress-port=80 --cluster-name=two-regs
+scripts/init-cluster.sh --cluster-name=two-regs
 ```
 * Setup harbor as stated [above](#external-registry-for-development), but with Port `30000`.  
   Wait for harbor to startup: ` kubectl get pod -n harbor`  
@@ -533,9 +533,8 @@ like images or helm charts.
 
 ### Setup cluster
 
-```
-scripts/init-cluster.sh --bind-localhost=false --cluster-name=airgapped-playground
-# This will start the cluster in its own network namespace, so no accessing via localhost from your machine
+```bash
+scripts/init-cluster.sh --cluster-name=airgapped-playground
 # Note that at this point the cluster is not yet airgapped
 
 # Get the "nodeport" IP

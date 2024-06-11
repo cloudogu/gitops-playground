@@ -64,7 +64,7 @@ function createCluster() {
 
   HOST_PORT_RANGE='8010-65535'
   K3D_ARGS=(
-    # Allow services to bind to ports < 30000 > 32xxx
+    # Allow services to bind to portBindings < 30000 > 32xxx
     "--k3s-arg=--kube-apiserver-arg=service-node-port-range=${HOST_PORT_RANGE}@server:0"
     # Used by Jenkins Agents pods
     '-v /var/run/docker.sock:/var/run/docker.sock@server:0'
@@ -101,11 +101,29 @@ function createCluster() {
     
     # Bind ingress port only when requested by parameter. 
     # On linux the pods can be reached without ingress via the k3d container's network address and the node port. 
-    if [[ -n "${BIND_INGRESS_PORT}" ]]; then
+    if [[ "${BIND_REGISTRY_PORT}" == '0' ]]; then
+      # User wants us to choose an arbitrary port.
+      # The port must then be passed when applying the playground as --base-url=localhost:PORT (printed after creation)
+      K3D_ARGS+=(
+       '-p 80@server:0:direct'
+      )
+    elif [[ "${BIND_INGRESS_PORT}" != '-' ]]; then
         # Note that 127.0.0.1:$BIND_INGRESS_PORT would be more secure, but then requests to localhost fail
         K3D_ARGS+=(
             "-p ${BIND_INGRESS_PORT}:80@server:0:direct"
             )
+    fi
+    
+    if [ -n "$BIND_PORTS" ]; then
+      IFS=","
+      read -ra portBindings <<< "$BIND_PORTS"
+      unset IFS
+      
+      for portBinding in "${portBindings[@]}"; do
+          K3D_ARGS+=(
+              "-p ${portBinding}@server:0:direct"
+              )
+      done
     fi
   fi
 
@@ -121,9 +139,13 @@ function createCluster() {
     echoHightlighted "Make sure to pass --internal-registry-port=${registryPort} when applying the playground."
   fi
   
-  if [[ -n "${BIND_INGRESS_PORT}" ]]; then
-    echo "Bound ingress port to localhost:${BIND_INGRESS_PORT}."
-    echoHightlighted "Make sure to pass a base-url, e.g. --ingress-nginx --base-url=http://localhost$(if [ "$BIND_INGRESS_PORT" -ne 80 ]; then echo ":${BIND_INGRESS_PORT}"; fi) when applying the playground."
+  if [[ "${BIND_INGRESS_PORT}" != '-' ]]; then
+    local ingressPort
+    ingressPort=$(docker inspect \
+      --format='{{ with (index .NetworkSettings.Ports "80/tcp") }}{{ (index . 0).HostPort }}{{ end }}' \
+       k3d-${CLUSTER_NAME}-server-0)
+    echo "Bound ingress port to localhost:${ingressPort}."
+    echoHightlighted "Make sure to pass a base-url, e.g. --ingress-nginx --base-url=http://localhost$(if [ "${ingressPort}" -ne 80 ]; then echo ":${ingressPort}"; fi) when applying the playground."
   fi
 
   # Write ~/.config/k3d/kubeconfig-${CLUSTER_NAME}.yaml
@@ -141,8 +163,9 @@ function printParameters() {
   echo "    | --cluster-name=STRING   >> Set your preferred cluster name to install k3d. Defaults to 'gitops-playground'."
   
   echo "    | --bind-localhost=BOOLEAN   >> Bind the k3d container to host network. Exposes all k8s nodePorts to localhost. Defaults to true."
-  echo "    | --bind-ingress-port=INT   >> Bind the ingress controller to this localhost port. Sets --bind-localhost=false. Defaults to empty."
+  echo "    | --bind-ingress-port=INT   >> Bind the ingress controller to this localhost port. Defaults to 80. Set to - to disable."
   echo "    | --bind-registry-port=INT   >> Specify a custom port for the container registry to bind to localhost port. Only use this when port 30000 is blocked and --bind-localhost=true. Defaults to 30000 (default used by the playground)."
+  echo "    | --bind-portBindings=STRING   >> A comma separated list of additional port bindings like 443:443,9090:9090. Ignored when --bind-localhost."
   echo
   echo " -x | --trace         >> Debug + Show each command executed (set -x)"
 }
@@ -164,14 +187,21 @@ function confirm() {
 }
 
 get_longopt_value(){
-  # ensure $1 has the form --longopt=value
-  VALUE=$(echo "$1" | sed -e 's/^[^=]*=//')
+  # args
+  # 1='--expected'
+  # possibilities
+  # 2='--expected=value'
+  # or
+  # 2='--expected'
+  # 3='value'
+  
+  # check $2 has the form --longopt=value
+  VALUE=$(echo "$2" | sed -e 's/^[^=]*=//')
   if [ -z "$VALUE" ]; then
-    echo "missing value of paramater $2" >&2
+    echo "missing value of paramater $1" >&2
     exit 1
   elif [ "$VALUE" = "$1" ]; then
-    echo "missing value of paramater $2" >&2
-    exit 1
+    echo "$3"
   else
     echo "$VALUE"
   fi
@@ -179,29 +209,31 @@ get_longopt_value(){
 
 readParameters() {
   CLUSTER_NAME=gitops-playground
-  BIND_LOCALHOST=true
-  BIND_INGRESS_PORT=""
+  BIND_LOCALHOST=false
+  BIND_INGRESS_PORT="80"
   # Use default port for playground registry, because no parameter is required when applying
   BIND_REGISTRY_PORT="30000"
+  BIND_PORTS=""
   TRACE=false
 
   while [ $# -gt 0 ]; do
     case "$1" in
-      -h | --help   )   printParameters; exit 0 ;;
-      --cluster-name*)   CLUSTER_NAME=$(get_longopt_value $1 "--cluster-name"); shift ;;
-      --bind-localhost*) BIND_LOCALHOST=$(get_longopt_value $1 "--bind-localhost"); shift ;;
-      --bind-ingress-port*) BIND_INGRESS_PORT=$(get_longopt_value $1 "--bind-ingress-port"); shift ;;
-      --bind-registry-port*) BIND_REGISTRY_PORT=$(get_longopt_value $1 "--bind-registry-port"); shift ;;
+      -h | --help   ) printParameters; exit 0 ;;
       -x | --trace    ) TRACE=true; shift ;;
+      --bind-localhost) BIND_LOCALHOST=true; shift ;;
+      --cluster-name*) CLUSTER_NAME=$(get_longopt_value "--cluster-name" "$@")
+        # Allow passing portBindings with and without '=' 
+        if [[ "$1" == *"="* ]]; then shift; else shift 2; fi ;;
+      --bind-ingress-port*) BIND_INGRESS_PORT=$(get_longopt_value "--bind-ingress-port" "$@")
+        if [[ "$1" == *"="* ]]; then shift; else shift 2; fi ;;
+      --bind-registry-port*) BIND_REGISTRY_PORT=$(get_longopt_value "--bind-registry-port" "$@") 
+        if [[ "$1" == *"="* ]]; then shift; else shift 2; fi ;;
+      --bind-ports*) BIND_PORTS=$(get_longopt_value "--bind-ports" "$@"); 
+        if [[ "$1" == *"="* ]]; then shift; else shift 2; fi ;;
       --) shift; break ;;
     *) break ;;
     esac
   done
-  
-  # bind-ingress-port takes precedence over bind-localhost  
-  if [[ -n "${BIND_INGRESS_PORT}" ]]; then
-    BIND_LOCALHOST=false
-  fi
 }
 
 function echoHightlighted() {

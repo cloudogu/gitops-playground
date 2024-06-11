@@ -54,13 +54,14 @@ or also add a `-v` and `chown` for `.kube/config`.
 `--cluster-name` - default: `gitops-playground`
 
 ### --bind-localhost
-`--bind-localhost=false` - does not bind to localhost. This only makes sense on Linux, as on Windows and Mac the  `host` network from Docker's perspective is not the localhost you can access from your browser. 
-When setting this to `true`, the URLs of the application will not be reachable via localhost but via the IP address of the k3d `server-0`
-docker container. Avoids port conflicts but is less convenient. We use this for our internal integration test in 
-[Jenkins](../Jenkinsfile), for example.
-For humans [`--bind-ingress-port`](#--bind-ingress-port) makes more sense.
+`--bind-localhost` - binds the cluster to the host network (`localhost`). This only makes sense on Linux, as on Windows and Mac the  `host` network from Docker's perspective is not the localhost you can access from your browser. 
+When using this argument, the URLs of the application will be reachable via localhost.
+e.g. `localhost:9092` for Argo CD.
+We used this for more convenience during development, before we introduced `--bind-ingress-port`. 
 
-Even with `--bind-localhost=true`, there still is one port that has to be bound to localhost: the registry port. 
+By now, using no arguments (which sets [`--bind-ingress-port=80`](#--bind-ingress-port)) makes more sense for most use cases.
+
+Even with `--bind-localhost`, there still is one port that has to be bound to localhost: the registry port. 
 For registries other than localhost or local ip addresses, docker will use HTTPS, leading to errors on `docker push` in the example application's Jenkins Jobs.
 Note that if you use this option and the registry's default port 30000 is already bound on localhost 
 (e.g. when starting more than one instance of the playground) you can overwrite it with `--bind-registry-port`.
@@ -69,26 +70,40 @@ Note that this port changes on every restart of the k3d container, rendering the
 
 This port has to be passed on when creating the playground via the `--internal-registry-port` parameter. For example: 
 
-In order to find out the IP address to access the services in the playground, the following docker command will do
-
-```shell
-$ docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' k3d-${CLUSTER_NAME}-server-0
-172.24.0.2
-# In this example you could reach Jenkins on http://172.24.0.2:9090
-```
-
-An easier alternative might be to use local ingresses with the `--bind-ingress-port` parameer.
-
 ### --bind-ingress-port
 
-Binds the ingress controller to this localhost port.
-Sets `--bind-localhost=false`.
-Defaults to empty, i.e. no port is bound.
+By default, ingress controller is bound to `localhost:80`, i.e. `localhost`.
+Can be disabled by setting `--bind-ingress-port=-` 
 
 This feature can be used for local ingresses which are the only way to run the playground on Windows and Mac, 
 reduce the risk of port conflicts and might be more convenient than using port numbers.
 
 See [README](../README.md) "Running on Windows or Mac" and "Local ingresses". 
+
+When there is a problem with the ingress controller, there are two options of reaching Argo CD, etc.
+
+#### Find the IP address of the k3d docker container 
+
+Find out the IP address to access the services in the playground, the following docker command will do
+
+```shell
+$ docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' k3d-${CLUSTER_NAME}-server-0
+172.24.0.2
+# In this example you could reach Argo CD on http://172.24.0.2:9092
+```
+
+#### Bind additional ports
+
+For example:
+
+```bash
+scripts/init-cluster.sh --bind-ports=9090:9090,9091:9091,9092:9092
+```
+
+After applying GOP, you can reach Argo CD on `localhost:9092`.  
+See [README](../README.md), `Example Applications` for the port numbers.
+
+
 
 ## Implementation details
 
@@ -96,12 +111,21 @@ The script basically starts a k3d cluster with a command such as this:
 
 ```shell
 k3d cluster create gitops-playground \
- --k3s-server-arg=--kube-apiserver-arg=service-node-port-range=8010-32767 \
- -v '/var/run/docker.sock:/var/run/docker.sock@server[0]' \
- -v '/etc/group:/etc/group@server[0]' \
- -v '/tmp:/tmp@server[0]' \
- --image=rancher/k3s:v1.21.2-k3s1 \
- --network=host
+  # Mount port for ingress
+  -p 80:80@server:0:direct \
+  # Pin image for reproducibility
+  --image=rancher/k3s:v1.29.1-k3s2 \
+  # Disable built-in ingress controller, because we want to use the same one locally and in prod
+  --k3s-arg=--disable=traefik@server:0 \
+  # Allow node ports < 30000
+  --k3s-arg=--kube-apiserver-arg=service-node-port-range=8010-65535@server:0 \
+  # Hacks to make Docker available in Jenkins
+  -v /var/run/docker.sock:/var/run/docker.sock@server:0 \
+  -v /etc/group:/etc/group@server:0 -v /tmp:/tmp@server:0 \
+  -p 30000:30000@server:0:direct
+
+# Write kubeconfig to ~/.config/k3d/kubeconfig-gitops-playground.yaml
+k3d kubeconfig write gitops-playground
 ```
 
 * Allows for binding to ports < 30000
@@ -109,7 +133,6 @@ k3d cluster create gitops-playground \
 * Mounts local /etc/group in order to find the docker group ID to allow access to the socket
 * Mounts /tmp for caching Jenkins builds (speeds up builds)
 * Pins the k8s version (reproducible behavior)
-* Runs k3d in host network namespace (convenience) -> URLs are bound to localhost
 
 A note on mounting the docker socket:
 
