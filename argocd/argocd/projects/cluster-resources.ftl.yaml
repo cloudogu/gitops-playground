@@ -15,14 +15,19 @@ spec:
       server: https://kubernetes.default.svc
   sourceRepos:
   - ${scmm.baseUrl}/repo/${namePrefix}argocd/cluster-resources
-  - https://codecentric.github.io/helm-charts
-  - https://charts.external-secrets.io
-  - https://helm.releases.hashicorp.com
-  - https://kubernetes.github.io/ingress-nginx
+
 <#if mirrorRepos>
   - ${scmm.baseUrl}/repo/3rd-party-dependencies/kube-prometheus-stack
+  - ${scmm.baseUrl}/repo/3rd-party-dependencies/mailhog
+  - ${scmm.baseUrl}/repo/3rd-party-dependencies/ingress-nginx
+  - ${scmm.baseUrl}/repo/3rd-party-dependencies/external-secrets
+  - ${scmm.baseUrl}/repo/3rd-party-dependencies/vault
 <#else>
   - https://prometheus-community.github.io/helm-charts
+  - https://codecentric.github.io/helm-charts
+  - https://kubernetes.github.io/ingress-nginx
+  - https://helm.releases.hashicorp.com
+  - https://charts.external-secrets.io
 </#if>
 
   # allow to only see application resources from the specified namespace

@@ -2,7 +2,7 @@
 set -o errexit -o nounset -o pipefail
 
 #charts=( 'monitoring' 'externalSecrets' 'vault' 'mailhog' 'ingressNginx' )
-charts=( 'monitoring' )
+charts=( 'monitoring' 'externalSecrets' 'vault' 'mailhog' 'ingressNginx')
 APPLICATION_CONFIGURATOR_GROOVY="${1:-src/main/groovy/com/cloudogu/gitops/config/ApplicationConfigurator.groovy}"
 
 tmpRepoFile="$(mktemp)"
@@ -17,7 +17,7 @@ for chart in "${charts[@]}"; do
   chart=$(echo "$chartDetails" | grep -oP "chart\s*:\s*'\K[^']+") 
   version=$(echo "$chartDetails" | grep -oP "version\s*:\s*'\K[^']+")
   
-  helm repo add "$chart" "$repo" --repository-config="${tmpRepoFile}" 
+  helm repo add "$chart" "$repo" --repository-config="${tmpRepoFile}"
   helm pull --untar --untardir ./charts "$chart/$chart" --version "$version" --repository-config="${tmpRepoFile}"
   # Note that keeping charts as tgx would need only 1/10 of storage
   # But untaring them in groovy would need additional libraries.
