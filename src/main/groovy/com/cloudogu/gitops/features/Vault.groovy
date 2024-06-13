@@ -56,7 +56,10 @@ class Vault extends Feature {
                 ],
                 injector: [
                         enabled: false
-                ],
+                ]
+        ]
+        if (config['application']['podResources']){
+            MapUtils.deepMerge([
                 server: [
                         resources: [
                                 limits: [
@@ -69,7 +72,8 @@ class Vault extends Feature {
                                 ]
                         ]
                 ]
-        ]
+            ], yaml)
+        }
 
         if (!config.application['remote']) {
             log.debug("Setting Vault service.type to NodePort since it is not running in a remote cluster")

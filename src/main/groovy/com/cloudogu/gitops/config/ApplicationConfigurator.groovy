@@ -117,6 +117,7 @@ class ApplicationConfigurator {
                     runningInsideK8s : false, // Set dynamically
                     clusterBindAddress : '', // Set dynamically
                     namePrefix    : '',
+                    podResources : false,
                     namePrefixForEnvVars    : '', // Set dynamically
                     baseUrl: null,
                     gitName: 'Cloudogu',

@@ -58,6 +58,7 @@ class PrometheusStack extends Feature {
 
         def tmpHelmValues = new TemplatingEngine().replaceTemplate(fileSystemUtils.copyToTempDir(HELM_VALUES_PATH).toFile(), [
                 namePrefix: namePrefix,
+                podResources: config.application['podResources'],
                 monitoring: [
                         grafanaEmailFrom: config.features['monitoring']['grafanaEmailFrom'] as String,
                         grafanaEmailTo: config.features['monitoring']['grafanaEmailTo'] as String,

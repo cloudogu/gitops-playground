@@ -61,6 +61,7 @@ class Schema {
          String username = ""
          String password = ""
          String namePrefix = ""
+         boolean podResources = false
          String gitName = ""
          String gitEmail = ""
          boolean urlSeparatorHyphen = false

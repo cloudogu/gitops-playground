@@ -34,7 +34,7 @@ extraVolumeMounts:
     readOnly: true
   </#if>
 
-
+<#if podResources == true>
 resources:
   limits:
     cpu: 1
@@ -42,3 +42,4 @@ resources:
   requests:
     cpu: 300m
     memory: 15Mi
+</#if>

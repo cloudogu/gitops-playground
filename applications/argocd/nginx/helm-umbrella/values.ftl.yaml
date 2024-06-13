@@ -5,6 +5,7 @@ nginx:
     nodePorts:
       http: 30026
     type: <#if isRemote>LoadBalancer<#else>NodePort</#if>
+<#if podResources == true>
   resources:
     limits:
       cpu: 100m
@@ -12,6 +13,7 @@ nginx:
     requests:
       cpu: 30m
       memory: 15Mi
+</#if>
 
 <#if exampleApps.nginx.baseDomain?has_content>
   ingress:

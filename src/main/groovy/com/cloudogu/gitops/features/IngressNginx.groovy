@@ -41,8 +41,8 @@ class IngressNginx extends Feature {
         
         def templatedMap = new YamlSlurper().parseText(
                 new TemplatingEngine().template(new File(HELM_VALUES_PATH),
-                    [:
-                       // once we introduce new parameters, we pass them to template here
+                    [
+                            podResources: config.application['podResources'],
                     ])) as Map
 
         def valuesFromConfig = config['features']['ingressNginx']['helm']['values'] as Map

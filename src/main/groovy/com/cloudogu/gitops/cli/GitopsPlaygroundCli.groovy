@@ -189,6 +189,8 @@ class GitopsPlaygroundCli  implements Runnable {
     String configMap
     @Option(names = ['--output-config-file'], description = 'Output current config as config file as much as possible')
     Boolean outputConfigFile
+    @Option(names = ['--pod-resources'], description = 'Write kubernetes resource requests and limits on each pod')
+    Boolean podResources
 
     // args group ArgoCD operator
     @Option(names = ['--argocd'], description = 'Install ArgoCD ')
@@ -383,6 +385,7 @@ class GitopsPlaygroundCli  implements Runnable {
                         password      : password,
                         pipeYes       : pipeYes,
                         namePrefix    : namePrefix,
+                        podResources : podResources,
                         baseUrl : baseUrl,
                         gitName: gitName,
                         gitEmail: gitEmail,

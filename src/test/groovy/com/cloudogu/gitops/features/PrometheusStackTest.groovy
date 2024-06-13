@@ -37,6 +37,7 @@ class PrometheusStackTest {
                     password: '123',
                     remote  : false,
                     namePrefix: "foo-",
+                    podResources : false,
                     mirrorRepos: false
             ],
             features   : [
@@ -362,6 +363,25 @@ policies:
                 'helm repo add prometheusstack https://prom'
                 'helm upgrade -i kube-prometheus-stack prometheusstack/kube-prometheus-stack --version 19.2.2' +
                         " --values ${temporaryYamlFile} --namespace foo-monitoring --create-namespace") */
+
+        def yaml = parseActualStackYaml()
+        assertThat(yaml['prometheusOperator'] as Map).doesNotContainKey('resources')
+        assertThat(yaml['grafana'] as Map).doesNotContainKey('resources')
+        assertThat(yaml['grafana']['sidecar'] as Map).doesNotContainKey('resources')
+        assertThat(yaml['prometheus']['prometheusSpec'] as Map).doesNotContainKey('resources')
+    }
+
+    @Test
+    void 'Sets pod resource limits and requests'() {
+        config.application['podResources'] = true
+
+        createStack().install()
+
+        def yaml = parseActualStackYaml()
+        assertThat(yaml['prometheusOperator']['resources'] as Map).containsKeys('limits', 'requests')
+        assertThat(yaml['grafana']['resources'] as Map)containsKeys('limits', 'requests')
+        assertThat(yaml['grafana']['sidecar']['resources'] as Map)containsKeys('limits', 'requests')
+        assertThat(yaml['prometheus']['prometheusSpec']['resources'] as Map)containsKeys('limits', 'requests')
     }
     
     @Test
@@ -410,8 +430,8 @@ policies:
         }), airGappedUtils)
     }
 
-    private parseActualStackYaml() {
+    private Map parseActualStackYaml() {
         def ys = new YamlSlurper()
-        return ys.parse(temporaryYamlFilePrometheus)
+        return ys.parse(temporaryYamlFilePrometheus) as Map
     }
 }

@@ -337,6 +337,7 @@ class ArgoCD extends Feature {
             repo.replaceTemplates(~/\.ftl/, [
                     namePrefix          : config.application['namePrefix'] as String,
                     namePrefixForEnvVars: config.application['namePrefixForEnvVars'] as String,
+                    podResources        : config.application['podResources'],
                     images              : config.images,
                     nginxImage          : config.images['nginx'] ? DockerImageParser.parse(config.images['nginx'] as String) : null,
                     isRemote            : config.application['remote'],
