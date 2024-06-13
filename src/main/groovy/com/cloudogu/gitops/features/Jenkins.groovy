@@ -125,7 +125,7 @@ class Jenkins extends Feature {
             }
         }
 
-        // after initial setup of jenkins, the example apps were not built. To automate this we crated this job
+        // Once everything is set up, start the jobs.
         jobManger.startJob('example-apps')
 
     }
