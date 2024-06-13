@@ -4,7 +4,6 @@ import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.*
 import groovy.yaml.YamlSlurper
-import jakarta.inject.Provider
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
 
@@ -29,10 +28,6 @@ class VaultTest {
             ],
             scmm       : [
                     internal: true,
-                    protocol: 'https',
-                    host: 'abc',
-                    username: '',
-                    password: ''
             ],
             features    : [
                     secrets   : [
@@ -41,7 +36,7 @@ class VaultTest {
                                     mode: 'prod',
                                     helm: [
                                             chart  : 'vault',
-                                            repoURL: 'https://vault',
+                                            repoURL: 'https://vault-reg',
                                             version: '42.23.0'
                                     ]
                             ],
@@ -52,7 +47,6 @@ class VaultTest {
             ],
     ]
     CommandExecutorForTest helmCommands = new CommandExecutorForTest()
-    CommandExecutorForTest k8sCommandExecutor = new CommandExecutorForTest()
     FileSystemUtils fileSystemUtils = new FileSystemUtils()
     DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
     AirGappedUtils airGappedUtils = mock(AirGappedUtils)
@@ -179,7 +173,7 @@ class VaultTest {
         Path temporaryYamlFilePath = temporaryYamlFile.toPath()
 
         verify(deploymentStrategy).deployFeature(
-              'https://vault',
+              'https://vault-reg',
               'vault',
               'vault',
               '42.23.0',
@@ -209,7 +203,7 @@ class VaultTest {
         def helmConfig = ArgumentCaptor.forClass(Map)
         verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
         assertThat(helmConfig.value.chart).isEqualTo('vault')
-        assertThat(helmConfig.value.repoURL).isEqualTo('https://vault')
+        assertThat(helmConfig.value.repoURL).isEqualTo('https://vault-reg')
         assertThat(helmConfig.value.version).isEqualTo('42.23.0')
         verify(deploymentStrategy).deployFeature(
                 'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/a/b',

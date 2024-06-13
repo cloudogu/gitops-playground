@@ -2,11 +2,9 @@ package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
-import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.HelmClient
 import com.cloudogu.gitops.utils.K8sClient
 import groovy.yaml.YamlSlurper
 import jakarta.inject.Provider
@@ -19,7 +17,6 @@ import java.nio.file.Path
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.mock
-import static org.mockito.Mockito.verify
 import static org.mockito.Mockito.verify
 import static org.mockito.Mockito.when
 
@@ -47,15 +44,14 @@ class ExternalSecretsOperatorTest {
                             externalSecrets: [
                                     helm: [
                                             chart  : 'external-secrets',
-                                            repoURL: 'https://external-secrets',
-                                            version: '0.25.0'
+                                            repoURL: 'https://charts.external-secrets.io',
+                                            version: '0.9.16'
                                     ]
                             ],
                     ]
             ],
     ]
     CommandExecutorForTest commandExecutor = new CommandExecutorForTest()
-
     CommandExecutorForTest k8sCommandExecutor = new CommandExecutorForTest()
     DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
     AirGappedUtils airGappedUtils = mock(AirGappedUtils)
@@ -73,13 +69,15 @@ class ExternalSecretsOperatorTest {
     void 'helm release is installed'() {
         createExternalSecretsOperator().install()
 
-        assertThat(commandExecutor.actualCommands[0].trim()).isEqualTo(
-                'helm repo add externalsecretsoperator https://charts.external-secrets.io')
-        assertThat(commandExecutor.actualCommands[1].trim()).startsWith(
-                'helm upgrade -i external-secrets externalsecretsoperator/external-secrets --create-namespace')
-        assertThat(commandExecutor.actualCommands[1].trim()).contains('--version 0.6.0')
-        assertThat(commandExecutor.actualCommands[1].trim()).contains("--values $temporaryYamlFile")
-        assertThat(commandExecutor.actualCommands[1].trim()).contains('--namespace foo-secrets')
+        verify(deploymentStrategy).deployFeature(
+                'https://charts.external-secrets.io',
+                'externalsecretsoperator',
+                'external-secrets',
+                '0.9.16',
+                'secrets',
+                'external-secrets',
+                temporaryYamlFile
+        )
 
         assertThat(parseActualStackYaml()).doesNotContainKeys('resources')
         assertThat(parseActualStackYaml()).doesNotContainKey('certController')
@@ -137,8 +135,8 @@ class ExternalSecretsOperatorTest {
         def helmConfig = ArgumentCaptor.forClass(Map)
         verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
         assertThat(helmConfig.value.chart).isEqualTo('external-secrets')
-        assertThat(helmConfig.value.repoURL).isEqualTo('https://external-secrets')
-        assertThat(helmConfig.value.version).isEqualTo('0.25.0')
+        assertThat(helmConfig.value.repoURL).isEqualTo('https://charts.external-secrets.io')
+        assertThat(helmConfig.value.version).isEqualTo('0.9.16')
         verify(deploymentStrategy).deployFeature(
                 'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/a/b',
                 'external-secrets', '.', '1.2.3','secrets',

@@ -4,10 +4,8 @@ import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.AirGappedUtils
-import com.cloudogu.gitops.utils.DockerImageParser
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
-import com.cloudogu.gitops.utils.MapUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
@@ -68,7 +66,7 @@ class Mailhog extends Feature {
                 passwordCrypt: bcryptMailhogPassword,
                 podResources: config.application['podResources'],
         ]).toPath()
-        Map helmValuesYaml = fileSystemUtils.readYaml(tmpHelmValues)
+
         def helmConfig = config['features']['mail']['helm']
 
         if (config.application['mirrorRepos']) {
@@ -89,8 +87,6 @@ class Mailhog extends Feature {
                     'mailhog',
                     tmpHelmValues, DeploymentStrategy.RepoType.GIT)
         } else {
-            fileSystemUtils.writeYaml(helmValuesYaml, tmpHelmValues.toFile())
-
             deployer.deployFeature(
                     helmConfig['repoURL'] as String,
                     'mailhog',

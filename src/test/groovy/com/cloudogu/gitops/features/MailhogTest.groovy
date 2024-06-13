@@ -34,10 +34,6 @@ class MailhogTest {
             ],
             scmm       : [
                     internal: true,
-                    protocol: 'https',
-                    host: 'abc',
-                    username: '',
-                    password: ''
             ],
             features    : [
                     argocd    : [
@@ -47,9 +43,8 @@ class MailhogTest {
                             mailhog: true,
                             helm  : [
                                     chart  : 'mailhog',
-                                    repoURL: 'https://mailhog',
+                                    repoURL: 'https://codecentric.github.io/helm-charts',
                                     version: '5.0.1',
-                                    image: ''
                             ]
                     ]
             ],
@@ -58,6 +53,7 @@ class MailhogTest {
     AirGappedUtils airGappedUtils = mock(AirGappedUtils)
     Path temporaryYamlFile = null
     CommandExecutorForTest k8sCommandExecutor = new CommandExecutorForTest()
+    CommandExecutorForTest commandExecutor = new CommandExecutorForTest()
     FileSystemUtils fileSystemUtils = new FileSystemUtils()
 
     @Test
@@ -121,12 +117,15 @@ class MailhogTest {
 
         createMailhog().install()
 
-        assertThat(commandExecutor.actualCommands[0].trim()).isEqualTo(
-                'helm repo add mailhog https://codecentric.github.io/helm-charts')
-        assertThat(commandExecutor.actualCommands[1].trim()).startsWith(
-                'helm upgrade -i mailhog mailhog/mailhog --create-namespace')
-        assertThat(commandExecutor.actualCommands[1].trim()).contains('--version 5.0.1')
-        assertThat(commandExecutor.actualCommands[1].trim()).contains('--namespace foo-monitoring')
+        verify(deploymentStrategy).deployFeature(
+                'https://codecentric.github.io/helm-charts',
+                'mailhog',
+                'mailhog',
+                '5.0.1',
+                'monitoring',
+                'mailhog',
+                temporaryYamlFile
+        )
 
         assertThat(parseActualYaml()).doesNotContainKey('resources')
     }
@@ -196,20 +195,12 @@ class MailhogTest {
         def helmConfig = ArgumentCaptor.forClass(Map)
         verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
         assertThat(helmConfig.value.chart).isEqualTo('mailhog')
-        assertThat(helmConfig.value.repoURL).isEqualTo('https://mailhog')
+        assertThat(helmConfig.value.repoURL).isEqualTo('https://codecentric.github.io/helm-charts')
         assertThat(helmConfig.value.version).isEqualTo('5.0.1')
         verify(deploymentStrategy).deployFeature(
                 'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/a/b',
                 'mailhog', '.', '1.2.3','monitoring',
                 'mailhog', temporaryYamlFile, DeploymentStrategy.RepoType.GIT)
-    }
-
-    protected void assertMailhogInstalledImperativelyViaHelm() {
-
-        verify(deploymentStrategy).deployFeature(
-                'https://mailhog',
-                'mailhog', 'mailhog', '5.0.1', 'monitoring',
-                'mailhog', temporaryYamlFile)
     }
 
     private Mailhog createMailhog() {

@@ -35,10 +35,6 @@ class IngressNginxTest {
             ],
             scmm       : [
                     internal: true,
-                    protocol: 'https',
-                    host: 'abc',
-                    username: '',
-                    password: ''
             ],
             features:[
                     ingressNginx: [
@@ -53,11 +49,10 @@ class IngressNginxTest {
             ],
     ]
 
-    DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
-
     CommandExecutorForTest k8sCommandExecutor = new CommandExecutorForTest()
     Path temporaryYamlFile
     FileSystemUtils fileSystemUtils = new FileSystemUtils()
+    DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
     AirGappedUtils airGappedUtils = mock(AirGappedUtils)
 
     @Test
@@ -129,7 +124,7 @@ class IngressNginxTest {
         def helmConfig = ArgumentCaptor.forClass(Map)
         verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
         assertThat(helmConfig.value.chart).isEqualTo('ingress-nginx')
-        assertThat(helmConfig.value.repoURL).isEqualTo('https://ingress-nginx')
+        assertThat(helmConfig.value.repoURL).isEqualTo('https://kubernetes.github.io/ingress-nginx')
         assertThat(helmConfig.value.version).isEqualTo('4.8.2')
         verify(deploymentStrategy).deployFeature(
                 'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/a/b',
