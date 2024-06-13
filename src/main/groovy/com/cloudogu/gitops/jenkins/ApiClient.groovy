@@ -43,13 +43,18 @@ class ApiClient {
         return response.body().string()
     }
 
-    // Default to empty body. Otherwise okhttp seems not to accept method POST
-    Response postRequestWithCrumb(String url, RequestBody postData = RequestBody.create(new byte[0], null)) {
+    Response postRequestWithCrumb(String url, RequestBody postData = null) {
         return sendRequestWithRetries {
             Request.Builder request = buildRequest(url)
                 .header("Jenkins-Crumb", getCrumb())
 
-            request.method("POST", postData)
+            if (postData != null) {
+                request.method("POST", postData)
+            } else {
+                // Explicitly set empty body. Otherwise okhttp sends GET
+                RequestBody emptyBody = RequestBody.create("", null)
+                request.method("POST", emptyBody)
+            }
 
             request.build()
         }
