@@ -34,14 +34,6 @@ function createJob() {
       exit $EXIT_STATUS
   fi
   
-  # Call "Scan now", triggering initialization of Job folder from SCMM Namespace
-  SCAN_STATUS=$(curlJenkins --fail -L -o /dev/null --write-out '%{http_code}' \
-        -X POST "${JENKINS_URL}/job/${JOB_NAME}/build?delay=0") && EXIT_STATUS=$? || EXIT_STATUS=$?
-  if [ $EXIT_STATUS != 0 ]
-    then
-      echo "WARNING: Initializing Jenkins Jobs failed with status code ${SCAN_STATUS}. Job folders might be empty."
-  fi
-
   printStatus "${STATUS}"
 }
 
