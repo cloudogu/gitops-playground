@@ -1,17 +1,26 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Configuration
-import com.cloudogu.gitops.features.deployment.HelmStrategy
+import com.cloudogu.gitops.features.deployment.DeploymentStrategy
+import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.HelmClient
 import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.yaml.YamlSlurper
+import jakarta.inject.Provider
 import org.junit.jupiter.api.Test
+import org.mockito.ArgumentCaptor
 
+import java.nio.file.Files
 import java.nio.file.Path
 
-import static org.assertj.core.api.Assertions.assertThat 
+import static org.assertj.core.api.Assertions.assertThat
+import static org.mockito.ArgumentMatchers.any
+import static org.mockito.Mockito.mock
+import static org.mockito.Mockito.verify
+import static org.mockito.Mockito.when
 
 class IngressNginxTest {
 
@@ -21,23 +30,29 @@ class IngressNginxTest {
                     password: '123',
                     remote  : false,
                     namePrefix: "foo-",
+                    mirrorRepos: false
+            ],
+            scmm       : [
+                    internal: true,
             ],
             features:[
                     ingressNginx: [
                             active: false,
                             helm  : [
                                     chart: 'ingress-nginx',
-                                    repoURL: 'https://kubernetes.github.io/ingress-nginx',
-                                    version: '4.8.2',
+                                    repoURL: 'https://ingress-nginx',
+                                    version: '4.9.1',
                                     values : [:]
                             ],
                     ],
             ],
     ]
 
-    CommandExecutorForTest commandExecutor = new CommandExecutorForTest()
-    HelmClient helmClient = new HelmClient(commandExecutor)
+    CommandExecutorForTest k8sCommandExecutor = new CommandExecutorForTest()
     Path temporaryYamlFile
+    FileSystemUtils fileSystemUtils = new FileSystemUtils()
+    DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
+    AirGappedUtils airGappedUtils = mock(AirGappedUtils)
 
     @Test
     void 'When Ingress-Nginx is enabled, ingressClassResource is set to true'() {
@@ -79,9 +94,38 @@ class IngressNginxTest {
     }
 
 
+    @Test
+    void 'helm release is installed in air-gapped mode'() {
+        config.features['ingressNginx']['active'] = true
+        config.application['mirrorRepos'] = true
+        when(airGappedUtils.mirrorHelmRepoToGit(any(Map))).thenReturn('a/b')
+
+        Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
+        config.application['localHelmChartFolder'] = rootChartsFolder.toString()
+
+        Path SourceChart = rootChartsFolder.resolve('ingress-nginx')
+        Files.createDirectories(SourceChart)
+
+        Map ChartYaml = [ version     : '1.2.3' ]
+        fileSystemUtils.writeYaml(ChartYaml, SourceChart.resolve('Chart.yaml').toFile())
+
+        createIngressNginx().install()
+
+        def helmConfig = ArgumentCaptor.forClass(Map)
+        verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
+        assertThat(helmConfig.value.chart).isEqualTo('ingress-nginx')
+        assertThat(helmConfig.value.repoURL).isEqualTo('https://ingress-nginx')
+        assertThat(helmConfig.value.version).isEqualTo('4.9.1')
+        verify(deploymentStrategy).deployFeature(
+                'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/a/b',
+                'ingress-nginx', '.', '1.2.3','ingress-nginx',
+                'ingress-nginx', temporaryYamlFile, DeploymentStrategy.RepoType.GIT)
+    }
+
     private IngressNginx createIngressNginx() {
         // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
 
+        def configuration = new Configuration(config)
         new IngressNginx(new Configuration(config), new FileSystemUtils() {
             @Override
             Path createTempFile() {
@@ -90,12 +134,16 @@ class IngressNginxTest {
 
                 return ret
             }
-        }, new HelmStrategy(new Configuration(config), helmClient))
+        }, deploymentStrategy, new K8sClient(k8sCommandExecutor, new FileSystemUtils(), new Provider<Configuration>() {
+            @Override
+            Configuration get() {
+                configuration
+            }
+        }), airGappedUtils)
     }
 
     private parseActualYaml() {
         def ys = new YamlSlurper()
         return ys.parse(temporaryYamlFile)
     }
-
 }
