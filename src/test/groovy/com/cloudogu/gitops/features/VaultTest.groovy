@@ -4,7 +4,6 @@ import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.*
 import groovy.yaml.YamlSlurper
-import jakarta.inject.Provider
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
 
@@ -29,10 +28,6 @@ class VaultTest {
             ],
             scmm       : [
                     internal: true,
-                    protocol: 'https',
-                    host: 'abc',
-                    username: '',
-                    password: ''
             ],
             features    : [
                     secrets   : [
@@ -42,7 +37,7 @@ class VaultTest {
                                     helm: [
                                             chart  : 'vault',
                                             repoURL: 'https://vault',
-                                            version: '42.23.0'
+                                            version: '0.25.0'
                                     ]
                             ],
                     ],
@@ -182,7 +177,7 @@ class VaultTest {
               'https://vault',
               'vault',
               'vault',
-              '42.23.0',
+              '0.25.0',
               'secrets',
               'vault',
               temporaryYamlFilePath
@@ -210,7 +205,7 @@ class VaultTest {
         verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
         assertThat(helmConfig.value.chart).isEqualTo('vault')
         assertThat(helmConfig.value.repoURL).isEqualTo('https://vault')
-        assertThat(helmConfig.value.version).isEqualTo('42.23.0')
+        assertThat(helmConfig.value.version).isEqualTo('0.25.0')
         verify(deploymentStrategy).deployFeature(
                 'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/a/b',
                 'vault', '.', '1.2.3','secrets',

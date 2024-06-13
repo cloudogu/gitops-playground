@@ -2,11 +2,9 @@ package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
-import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.HelmClient
 import com.cloudogu.gitops.utils.K8sClient
 import groovy.yaml.YamlSlurper
 import jakarta.inject.Provider
@@ -19,7 +17,6 @@ import java.nio.file.Path
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.mock
-import static org.mockito.Mockito.verify
 import static org.mockito.Mockito.verify
 import static org.mockito.Mockito.when
 
@@ -47,7 +44,7 @@ class ExternalSecretsOperatorTest {
                                     helm: [
                                             chart  : 'external-secrets',
                                             repoURL: 'https://external-secrets',
-                                            version: '0.25.0'
+                                            version: '0.9.16'
                                     ]
                             ],
                     ]
@@ -75,7 +72,7 @@ class ExternalSecretsOperatorTest {
                 'https://external-secrets',
                 'externalsecretsoperator',
                 'external-secrets',
-                '0.25.0',
+                '0.9.16',
                 'secrets',
                 'external-secrets',
                 temporaryYamlFile
@@ -123,7 +120,7 @@ class ExternalSecretsOperatorTest {
         verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
         assertThat(helmConfig.value.chart).isEqualTo('external-secrets')
         assertThat(helmConfig.value.repoURL).isEqualTo('https://external-secrets')
-        assertThat(helmConfig.value.version).isEqualTo('0.25.0')
+        assertThat(helmConfig.value.version).isEqualTo('0.9.16')
         verify(deploymentStrategy).deployFeature(
                 'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/a/b',
                 'external-secrets', '.', '1.2.3','secrets',

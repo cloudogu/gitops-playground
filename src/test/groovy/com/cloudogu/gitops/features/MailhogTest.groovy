@@ -33,10 +33,6 @@ class MailhogTest {
             ],
             scmm       : [
                     internal: true,
-                    protocol: 'https',
-                    host: 'abc',
-                    username: '',
-                    password: ''
             ],
             features    : [
                     argocd    : [
@@ -48,7 +44,6 @@ class MailhogTest {
                                     chart  : 'mailhog',
                                     repoURL: 'https://mailhog',
                                     version: '5.0.1',
-                                    image: ''
                             ]
                     ]
             ],

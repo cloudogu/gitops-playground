@@ -34,10 +34,6 @@ class IngressNginxTest {
             ],
             scmm       : [
                     internal: true,
-                    protocol: 'https',
-                    host: 'abc',
-                    username: '',
-                    password: ''
             ],
             features:[
                     ingressNginx: [
@@ -45,7 +41,7 @@ class IngressNginxTest {
                             helm  : [
                                     chart: 'ingress-nginx',
                                     repoURL: 'https://ingress-nginx',
-                                    version: '4.8.2',
+                                    version: '4.9.1',
                                     values : [:]
                             ],
                     ],
@@ -119,7 +115,7 @@ class IngressNginxTest {
         verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
         assertThat(helmConfig.value.chart).isEqualTo('ingress-nginx')
         assertThat(helmConfig.value.repoURL).isEqualTo('https://ingress-nginx')
-        assertThat(helmConfig.value.version).isEqualTo('4.8.2')
+        assertThat(helmConfig.value.version).isEqualTo('4.9.1')
         verify(deploymentStrategy).deployFeature(
                 'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/a/b',
                 'ingress-nginx', '.', '1.2.3','ingress-nginx',

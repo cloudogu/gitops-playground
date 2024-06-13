@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -o errexit -o nounset -o pipefail
 
-#charts=( 'monitoring' 'externalSecrets' 'vault' 'mailhog' 'ingressNginx' )
 charts=( 'monitoring' 'externalSecrets' 'vault' 'mailhog' 'ingressNginx')
 APPLICATION_CONFIGURATOR_GROOVY="${1:-src/main/groovy/com/cloudogu/gitops/config/ApplicationConfigurator.groovy}"
 
