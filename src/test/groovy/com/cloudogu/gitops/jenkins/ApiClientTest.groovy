@@ -60,12 +60,12 @@ class ApiClientTest {
         webServer.enqueue(new MockResponse())
 
         def client = new ApiClient(webServer.url('jenkins').toString(), 'admin', 'admin', new OkHttpClient())
-        client.sendRequestWithCrumb("foobar", null)
+        client.postRequestWithCrumb("foobar")
 
         assertThat(webServer.requestCount).isEqualTo(2)
         webServer.takeRequest() // crumb
         def request = webServer.takeRequest()
-        assertThat(request.method).isEqualTo("GET")
+        assertThat(request.method).isEqualTo("POST")
         assertThat(request.headers.get("Jenkins-Crumb")).isEqualTo("the-crumb")
     }
 
@@ -75,7 +75,7 @@ class ApiClientTest {
         webServer.enqueue(new MockResponse())
 
         def client = new ApiClient(webServer.url('jenkins').toString(), 'admin', 'admin', new OkHttpClient())
-        client.sendRequestWithCrumb("foobar", new FormBody.Builder().add('key', 'value with spaces').build())
+        client.postRequestWithCrumb("foobar", new FormBody.Builder().add('key', 'value with spaces').build())
 
         assertThat(webServer.requestCount).isEqualTo(2)
         webServer.takeRequest() // crumb

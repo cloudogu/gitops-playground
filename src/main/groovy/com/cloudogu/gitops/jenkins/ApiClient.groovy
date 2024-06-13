@@ -35,7 +35,7 @@ class ApiClient {
 
     String runScript(String code) {
         log.trace("Running groovy script in Jenkins: {}", code)
-        def response = sendRequestWithCrumb("scriptText", new FormBody.Builder().add("script", code).build())
+        def response = postRequestWithCrumb("scriptText", new FormBody.Builder().add("script", code).build())
         if (response.code() != 200) {
             throw new RuntimeException("Could not run script. Status code ${response.code()}")
         }
@@ -43,14 +43,13 @@ class ApiClient {
         return response.body().string()
     }
 
-    Response sendRequestWithCrumb(String url, FormBody postData) {
+    // Default to empty body. Otherwise okhttp seems not to accept method POST
+    Response postRequestWithCrumb(String url, RequestBody postData = RequestBody.create(new byte[0], null)) {
         return sendRequestWithRetries {
             Request.Builder request = buildRequest(url)
                 .header("Jenkins-Crumb", getCrumb())
 
-            if (postData != null) {
-                request.method("POST", postData)
-            }
+            request.method("POST", postData)
 
             request.build()
         }

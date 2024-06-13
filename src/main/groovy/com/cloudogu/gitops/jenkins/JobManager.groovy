@@ -14,7 +14,7 @@ class JobManager {
     }
 
     void createCredential(String jobName, String id, String username, String password, String description) {
-        def response = apiClient.sendRequestWithCrumb(
+        def response = apiClient.postRequestWithCrumb(
                 "job/$jobName/credentials/store/folder/domain/_/createCredentials",
                 new FormBody.Builder()
                         .add("json", JsonOutput.toJson([
@@ -51,8 +51,8 @@ class JobManager {
 
     void startJob(String jobName) {
 
-        def response= apiClient.sendRequestWithCrumb(
-                "job/$jobName/build?delay=0sec", null)
+        def response= apiClient.postRequestWithCrumb(
+                "job/$jobName/build?delay=0sec")
 
         if (response.code() != 200) {
             throw new RuntimeException("Could not trigger build of Jenkins job: $jobName. StatusCode: ${response.code()}")
