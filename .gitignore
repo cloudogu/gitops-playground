@@ -1,4 +1,5 @@
 .idea
+.run
 *.iml
 target
 # do not check in the workspace
@@ -17,3 +18,6 @@ terraform/account.json
 
 gitops-playground.jar
 jenkins-plugins
+
+# do not check in local config files
+*.gpt

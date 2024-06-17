@@ -37,7 +37,8 @@ class Mailhog extends Feature {
 
     @Override
     boolean isEnabled() {
-        return config.features['mail']['mailhog']
+//        return config.features['mail']['mailhog']
+        return false
     }
 
     @Override

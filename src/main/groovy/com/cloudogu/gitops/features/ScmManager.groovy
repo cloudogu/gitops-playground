@@ -38,7 +38,8 @@ class ScmManager extends Feature {
 
     @Override
     boolean isEnabled() {
-        return true // For now, we either deploy an internal or configure an external instance
+//        return true // For now, we either deploy an internal or configure an external instance
+        return false
     }
 
     @Override
