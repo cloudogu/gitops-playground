@@ -48,6 +48,7 @@ prometheusOperator:
     # MountVolume.SetUp failed for volume "tls-secret" : secret "...-kube-prometh-admission" not found
     # This can be worked around by disabling tls altogether
     enabled: false
+<#if podResources == true>
   resources:
     limits:
       cpu: 300m
@@ -55,6 +56,7 @@ prometheusOperator:
     requests:
       cpu: 20m
       memory: 40Mi
+</#if>
 kubelet:
   enabled: false
 kubeControllerManager:
@@ -88,6 +90,7 @@ grafana:
       #this needs to be added so that the label will become 'label: grafana_dashboards: "1"'
       labelValue: 1
       searchNamespace: "ALL"
+<#if podResources == true>
     resources:
       limits:
         cpu: 100m
@@ -95,6 +98,7 @@ grafana:
       requests:
         cpu: 35m
         memory: 65Mi
+</#if>
 <#if mail.active??>
   notifiers:
     notifiers.yaml:
@@ -146,16 +150,19 @@ grafana:
     GF_SMTP_HOST: mailhog.${namePrefix}monitoring.svc.cluster.local:1025
  </#if>
 </#if>
+<#if podResources == true>
   resources:
     limits:
-      cpu: 1
+      cpu: '1'
       memory: 140Mi
     requests:
       cpu: 350m
       memory: 70Mi
+</#if>
 
 prometheus:
   prometheusSpec:
+<#if podResources == true>
     resources:
       limits:
         cpu: 500m
@@ -163,6 +170,7 @@ prometheus:
       requests:
         cpu: 50m
         memory: 450Mi
+</#if>
     secrets:
       - prometheus-metrics-creds-scmm
       - prometheus-metrics-creds-jenkins

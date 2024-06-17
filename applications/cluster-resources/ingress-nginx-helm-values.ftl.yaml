@@ -10,11 +10,20 @@ controller:
     # https://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/#preserving-the-client-source-ip
     externalTrafficPolicy: Local
   replicaCount: 2
+<#if podResources == true>
   resources:
-    # Leave limits open for now, because our ingress controller is Single Point of failure
-    ##  limits:
-    ##    cpu: 100m
-    ##    memory: 90Mi
+    # Be generous to our Single Point of failure
+    limits:
+       cpu: '1'
+       memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 90Mi
+<#else>
+<#-- Explicitly set to null, because the chart sets requests by default
+     https://github.com/kubernetes/ingress-nginx/blob/helm-chart-4.9.1/charts/ingress-nginx/values.yaml#L361 -->
+  resources: null
+</#if>
   ingressClassResource:
     enabled: true
     default: true

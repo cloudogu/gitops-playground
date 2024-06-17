@@ -52,6 +52,7 @@ class Mailhog extends Feature {
                 isRemote: config.application['remote'],
                 username: username,
                 passwordCrypt: bcryptMailhogPassword,
+                podResources: config.application['podResources'],
         ]).toPath()
 
         def helmConfig = config['features']['mail']['helm']

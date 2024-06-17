@@ -82,7 +82,7 @@ class VaultTest {
     void 'does not use ingress by default'() {
         createVault().install()
 
-        assertThat((parseActualYaml()['server'] as Map)).doesNotContainKey('ingress')
+        assertThat(parseActualYaml()).doesNotContainKey('server')
     }
 
     @Test
@@ -119,6 +119,7 @@ class VaultTest {
         assertThat(actualVolumes[0]['configMap']['name']).isEqualTo(createdConfigMapName)
 
         assertThat(k8sClient.commandExecutorForTest.actualCommands[1]).contains('-n foo-secrets')
+        assertThat(actualYaml['server'] as Map).doesNotContainKey('resources')
     }
 
     @Test
@@ -138,8 +139,7 @@ class VaultTest {
         config['features']['secrets']['vault']['mode'] = 'prod'
         createVault().install()
 
-        def actualYaml = parseActualYaml()
-        assertThat((actualYaml as Map)['server'] as Map).doesNotContainKey('dev')
+        assertThat(parseActualYaml()).doesNotContainKey('server')
 
         assertThat(k8sClient.commandExecutorForTest.actualCommands).isEmpty()
     }
@@ -167,6 +167,16 @@ class VaultTest {
         assertThat(helmCommands.actualCommands[1].trim()).contains('--namespace foo-secrets')
     }
 
+    @Test
+    void 'Sets pod resource limits and requests'() {
+        config.application['podResources'] = true
+        
+        createVault().install()
+
+        def actualYaml = parseActualYaml()
+        assertThat(actualYaml['server']['resources'] as Map).containsKeys('limits', 'requests')
+    }
+
     private Vault createVault() {
         def fileSystemUtils = new FileSystemUtils() {
             @Override
@@ -181,8 +191,8 @@ class VaultTest {
         return vault
     }
 
-    private parseActualYaml() {
+    private Map parseActualYaml() {
         def ys = new YamlSlurper()
-        return ys.parse(temporaryYamlFile)
+        return ys.parse(temporaryYamlFile) as Map
     }
 }

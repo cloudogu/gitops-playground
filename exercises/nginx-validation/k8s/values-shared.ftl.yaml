@@ -21,6 +21,7 @@ serverBlock: |-
     }
   }
 
+<#if podResources == true>
 resources:
   limits:
     cpu: 100m
@@ -28,3 +29,5 @@ resources:
   requests:
     cpu: 30m
     memory: 15Mi
+
+</#if>

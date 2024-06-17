@@ -1,17 +1,16 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Configuration
-import com.cloudogu.gitops.features.deployment.HelmStrategy
-import com.cloudogu.gitops.utils.CommandExecutorForTest
+import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.HelmClient
-import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 
 import java.nio.file.Path
 
-import static org.assertj.core.api.Assertions.assertThat 
+import static org.assertj.core.api.Assertions.assertThat
+import static org.mockito.Mockito.mock
+import static org.mockito.Mockito.verify 
 
 class IngressNginxTest {
 
@@ -21,10 +20,11 @@ class IngressNginxTest {
                     password: '123',
                     remote  : false,
                     namePrefix: "foo-",
+                    podResources: false
             ],
             features:[
                     ingressNginx: [
-                            active: false,
+                            active: true,
                             helm  : [
                                     chart: 'ingress-nginx',
                                     repoURL: 'https://kubernetes.github.io/ingress-nginx',
@@ -35,21 +35,31 @@ class IngressNginxTest {
             ],
     ]
 
-    CommandExecutorForTest commandExecutor = new CommandExecutorForTest()
-    HelmClient helmClient = new HelmClient(commandExecutor)
+    DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
+
     Path temporaryYamlFile
 
     @Test
-    void 'When Ingress-Nginx is enabled, ingressClassResource is set to true'() {
-        config.features['ingressNginx']['active'] = true
-
+    void 'Helm release is installed'() {
         createIngressNginx().install()
 
-        def expected = new YamlSlurper().parseText(new TemplatingEngine().template(new File(IngressNginx.HELM_VALUES_PATH), [:]))
+        /* Assert one default value */
         def actual = parseActualYaml()
+        assertThat(actual['controller']['replicaCount']).isEqualTo(2)
+        
+        verify(deploymentStrategy).deployFeature('https://kubernetes.github.io/ingress-nginx', 'ingress-nginx',
+                'ingress-nginx', '4.8.2','ingress-nginx',
+                'ingress-nginx', temporaryYamlFile)
+        assertThat(parseActualYaml()['controller']['resources']).isNull()
+    }
+    
+    @Test
+    void 'Sets pod resource limits and requests'() {
+        config.application['podResources'] = true
 
-        assertThat(expected).isEqualTo(actual)
-        assertThat((actual['controller']['replicaCount'])).isEqualTo(2)
+        createIngressNginx().install()
+        
+        assertThat(parseActualYaml()['controller']['resources'] as Map).containsKeys('limits', 'requests')
     }
 
     @Test
@@ -63,7 +73,6 @@ class IngressNginxTest {
 
     @Test
     void 'additional helm values merged with default values'() {
-        config.features['ingressNginx']['active'] = true
         config['features']['ingressNginx']['helm']['values'] = [
                 controller: [
                         replicaCount: 42,
@@ -74,8 +83,8 @@ class IngressNginxTest {
         createIngressNginx().install()
         def actual = parseActualYaml()
 
-        assertThat((actual['controller']['replicaCount'])).isEqualTo(42)
-        assertThat((actual['controller']['span'])).isEqualTo('7,5')
+        assertThat(actual['controller']['replicaCount']).isEqualTo(42)
+        assertThat(actual['controller']['span']).isEqualTo('7,5')
     }
 
 
@@ -90,12 +99,12 @@ class IngressNginxTest {
 
                 return ret
             }
-        }, new HelmStrategy(new Configuration(config), helmClient))
+        }, deploymentStrategy)
     }
 
-    private parseActualYaml() {
+    private Map parseActualYaml() {
         def ys = new YamlSlurper()
-        return ys.parse(temporaryYamlFile)
+        return ys.parse(temporaryYamlFile) as Map
     }
 
 }

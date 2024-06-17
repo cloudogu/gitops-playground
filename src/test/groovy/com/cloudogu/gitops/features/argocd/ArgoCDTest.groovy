@@ -40,6 +40,7 @@ class ArgoCDTest {
                     username            : 'something',
                     namePrefix          : '',
                     namePrefixForEnvVars: '',
+                    podResources        : false,
                     gitName             : 'Cloudogu',
                     gitEmail            : 'hello@cloudogu.com',
                     urlSeparatorHyphen  : false,
@@ -417,12 +418,19 @@ class ArgoCDTest {
         assertThat(valuesYaml['service']['type']).isEqualTo('NodePort')
         assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-production.yaml')).doesNotContainKey('ingress')
         assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-staging.yaml')).doesNotContainKey('ingress')
-
+        assertThat(valuesYaml).doesNotContainKey('resources')
+        
         valuesYaml = parseActualYaml(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'apps/nginx-helm-umbrella/values.yaml')
         assertThat(valuesYaml['nginx']['service']['type']).isEqualTo('NodePort')
         assertThat(valuesYaml['nginx'] as Map).doesNotContainKey('ingress')
+        assertThat(valuesYaml['nginx'] as Map).doesNotContainKey('resources')
+        
         assertThat((parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[1]['spec']['type']))
                 .isEqualTo('NodePort')
+        assertThat((parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[0]['spec']['template']['spec']['containers'] as List)[0]['resources'])
+                .isNull()
+
+        assertThat(new File(nginxValidationRepo.absoluteLocalRepoTmpDir, '/k8s/values-shared.yaml').text).doesNotContain('resources:')
         
         // Assert Petclinic repo cloned
         verify(gitCloneMock).setURI('https://github.com/cloudogu/spring-petclinic.git')
@@ -521,7 +529,7 @@ class ArgoCDTest {
         assertThat((parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[2]['spec']['rules'] as List)[0]['host'])
                 .isEqualTo('broken-application-nginx-local')
         
-        assertPetClinicRepos('LoadBalancer', 'NodePort', 'petclinic-local', true)
+        assertPetClinicRepos('LoadBalancer', 'NodePort', 'petclinic-local')
     }
 
     @Test
@@ -621,12 +629,31 @@ class ArgoCDTest {
         config.jenkins['mavenCentralMirror'] = 'http://test'
         createArgoCD().install()
 
-
         for (def petclinicRepo : petClinicRepos) {
                 assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).contains(
                         'mvn.useMirrors([name: \'maven-central-mirror\', mirrorOf: \'central\', url:  env.MAVEN_CENTRAL_MIRROR])'
                 )
         }
+    }
+
+    @Test
+    void 'Sets pod resource limits and requests'() {
+        config.application['podResources'] = true
+
+        createArgoCD().install()
+
+        assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-shared.yaml')['resources'] as Map)
+                .containsKeys('limits', 'requests')
+
+        assertThat(parseActualYaml(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'apps/nginx-helm-umbrella/values.yaml')['nginx']['resources'] as Map)
+                .containsKeys('limits', 'requests')
+
+        assertThat(new File(nginxValidationRepo.absoluteLocalRepoTmpDir, '/k8s/values-shared.yaml').text).contains('limits:', 'resources:')
+
+        assertThat((parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[0]['spec']['template']['spec']['containers'] as List)[0]['resources'] as Map)
+                .containsKeys('limits', 'requests')
+        
+        assertPetClinicRepos('NodePort', 'LoadBalancer', '')
     }
 
     private void assertArgoCdYamlPrefixes(String scmmUrl, String expectedPrefix) {
@@ -813,7 +840,10 @@ class ArgoCDTest {
         }
     }
 
-    void assertPetClinicRepos(String expectedServiceType, String unexpectedServiceType, String ingressUrl, boolean separatorHyphen = false) {
+    void assertPetClinicRepos(String expectedServiceType, String unexpectedServiceType, String ingressUrl) {
+        boolean separatorHyphen = config.application['urlSeparatorHyphen']
+        boolean podResources = config.application['podResources'] 
+                
         for (ScmmRepo repo : petClinicRepos) {
 
             def tmpDir = repo.absoluteLocalRepoTmpDir
@@ -831,6 +861,18 @@ class ArgoCDTest {
 
                 assertThat(new File(tmpDir, 'k8s/production/service.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
                 assertThat(new File(tmpDir, 'k8s/staging/service.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
+                
+                if (podResources) {
+                    assertThat((parseActualYaml(tmpDir + '/k8s/production/deployment.yaml')['spec']['template']['spec']['containers'] as List)[0]['resources'] as Map)
+                            .containsKeys('limits', 'requests')
+                    assertThat((parseActualYaml(tmpDir + '/k8s/staging/deployment.yaml')['spec']['template']['spec']['containers'] as List)[0]['resources'] as Map)
+                            .containsKeys('limits', 'requests')
+                } else {
+                    assertThat((parseActualYaml(tmpDir + '/k8s/production/deployment.yaml')['spec']['template']['spec']['containers'] as List)[0] as Map)
+                            .doesNotContainKey('resources')
+                    assertThat((parseActualYaml(tmpDir + '/k8s/staging/deployment.yaml')['spec']['template']['spec']['containers'] as List)[0] as Map)
+                            .doesNotContainKey('resources')
+                } 
 
                 if (!ingressUrl) {
                     assertThat(new File(tmpDir, 'k8s/staging/ingress.yaml')).doesNotExist()
@@ -851,6 +893,13 @@ class ArgoCDTest {
                 assertBuildImagesInJenkinsfileReplaced(jenkinsfile)
                 assertThat(new File(tmpDir, 'k8s/values-shared.yaml').text).contains("type: ${expectedServiceType}")
                 assertThat(new File(tmpDir, 'k8s/values-shared.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
+
+                if (podResources) {
+                    assertThat(parseActualYaml(tmpDir + '/k8s/values-shared.yaml')['resources'] as Map).containsKeys('limits', 'requests')
+                } else {
+                    assertThat(parseActualYaml(tmpDir + '/k8s/values-shared.yaml')['resources']).isNull()
+                }
+
                 if (!ingressUrl) {
                     assertThat(parseActualYaml(tmpDir + '/k8s/values-shared.yaml')['ingress']['enabled']).isEqualTo(false)
                     assertThat(parseActualYaml(tmpDir + '/k8s/values-production.yaml')).doesNotContainKey('ingress')
@@ -873,6 +922,13 @@ class ArgoCDTest {
                 // Does not contain the gitops build lib call, so no build images to replace
                 assertThat(new File(tmpDir, 'k8s/values-shared.yaml').text).contains("type: ${expectedServiceType}")
                 assertThat(new File(tmpDir, 'k8s/values-shared.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
+
+                if (podResources) {
+                    assertThat(parseActualYaml(tmpDir + '/k8s/values-shared.yaml')['resources'] as Map).containsKeys('limits', 'requests')
+                } else {
+                    assertThat(parseActualYaml(tmpDir + '/k8s/values-shared.yaml')['resources']).isNull()
+                }
+                
                 if (!ingressUrl) {
                     assertThat(parseActualYaml(tmpDir + '/k8s/values-shared.yaml')['ingress']['enabled']).isEqualTo(false)
                     assertThat(parseActualYaml(tmpDir + '/k8s/values-production.yaml')).doesNotContainKey('ingress')

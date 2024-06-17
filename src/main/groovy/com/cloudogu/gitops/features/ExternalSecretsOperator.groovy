@@ -6,7 +6,9 @@ import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.DockerImageParser
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.MapUtils
+import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
+import groovy.yaml.YamlSlurper
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
 
@@ -17,6 +19,7 @@ class ExternalSecretsOperator extends Feature {
     private Map config
     private FileSystemUtils fileSystemUtils
     private DeploymentStrategy deployer
+    static final String HELM_VALUES_PATH = 'applications/cluster-resources/secrets/external-secrets/values.ftl.yaml'
 
     ExternalSecretsOperator(
             Configuration config,
@@ -36,8 +39,11 @@ class ExternalSecretsOperator extends Feature {
     @Override
     void enable() {
         def helmConfig = config['features']['secrets']['externalSecrets']['helm']
-        def helmValuesPath = fileSystemUtils.copyToTempDir('applications/cluster-resources/secrets/external-secrets/values.yaml')
-        def helmValuesYaml = fileSystemUtils.readYaml(helmValuesPath)
+        def helmValuesYaml = new YamlSlurper().parseText(
+                new TemplatingEngine().template(new File(HELM_VALUES_PATH), [
+                        podResources: config.application['podResources'],
+                ])) as Map
+
         if (helmConfig['image']) {
             log.debug("Setting custom ESO image as requested for external-secrets-operator")
             def image = DockerImageParser.parse(helmConfig['image'] as String)
@@ -72,7 +78,9 @@ class ExternalSecretsOperator extends Feature {
                     ]
             ], helmValuesYaml)
         }
-        fileSystemUtils.writeYaml(helmValuesYaml, helmValuesPath.toFile())
+
+        def tmpHelmValues = fileSystemUtils.createTempFile()
+        fileSystemUtils.writeYaml(helmValuesYaml, tmpHelmValues.toFile())
 
         deployer.deployFeature(
                 helmConfig['repoURL'] as String,
@@ -81,7 +89,7 @@ class ExternalSecretsOperator extends Feature {
                 helmConfig['version'] as String,
                 'secrets',
                 'external-secrets',
-                helmValuesPath
+                tmpHelmValues
         )
     }
 }

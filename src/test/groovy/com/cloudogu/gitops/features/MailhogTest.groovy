@@ -21,6 +21,7 @@ class MailhogTest {
                     password: '123',
                     remote  : false,
                     namePrefix: "foo-",
+                    podResources : false
             ],
             scmm       : [
                     internal: true,
@@ -85,7 +86,7 @@ class MailhogTest {
     void 'does not use ingress by default'() {
         createMailhog().install()
 
-        assertThat(parseActualYaml() as Map).doesNotContainKey('ingress')
+        assertThat(parseActualYaml()).doesNotContainKey('ingress')
     }
 
     @Test
@@ -109,9 +110,25 @@ class MailhogTest {
 
         createMailhog().install()
 
-        assertMailhogInstalledImperativelyViaHelm()
+        assertThat(commandExecutor.actualCommands[0].trim()).isEqualTo(
+                'helm repo add mailhog https://codecentric.github.io/helm-charts')
+        assertThat(commandExecutor.actualCommands[1].trim()).startsWith(
+                'helm upgrade -i mailhog mailhog/mailhog --create-namespace')
+        assertThat(commandExecutor.actualCommands[1].trim()).contains('--version 5.0.1')
+        assertThat(commandExecutor.actualCommands[1].trim()).contains('--namespace foo-monitoring')
+
+        assertThat(parseActualYaml()).doesNotContainKey('resources')
     }
 
+    @Test
+    void 'Sets pod resource limits and requests'() {
+        config.application['podResources'] = true
+
+        createMailhog().install()
+
+        assertThat(parseActualYaml()['resources'] as Map).containsKeys('limits', 'requests')
+    }
+    
     @Test
     void 'When argoCD enabled, mailhog is deployed natively via argoCD'() {
         config.features['argocd']['active'] = true
@@ -149,15 +166,6 @@ class MailhogTest {
         assertThat(parseActualYaml()['image']).isNull()
     }
 
-    protected void assertMailhogInstalledImperativelyViaHelm() {
-        assertThat(commandExecutor.actualCommands[0].trim()).isEqualTo(
-                'helm repo add mailhog https://codecentric.github.io/helm-charts')
-        assertThat(commandExecutor.actualCommands[1].trim()).startsWith(
-                'helm upgrade -i mailhog mailhog/mailhog --create-namespace')
-        assertThat(commandExecutor.actualCommands[1].trim()).contains('--version 5.0.1')
-        assertThat(commandExecutor.actualCommands[1].trim()).contains('--namespace foo-monitoring')
-    }
-
     private Mailhog createMailhog() {
         // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
 
@@ -172,8 +180,8 @@ class MailhogTest {
         }, new HelmStrategy(new Configuration(config), helmClient))
     }
 
-    private parseActualYaml() {
+    private Map parseActualYaml() {
         def ys = new YamlSlurper()
-        return ys.parse(temporaryYamlFile)
+        return ys.parse(temporaryYamlFile) as Map
     }
 }

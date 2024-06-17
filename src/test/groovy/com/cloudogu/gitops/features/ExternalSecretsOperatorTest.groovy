@@ -20,6 +20,7 @@ class ExternalSecretsOperatorTest {
                     password: '123',
                     remote  : false,
                     namePrefix: "foo-",
+                    podResources : false
             ],
             features    : [
                     secrets   : [
@@ -56,6 +57,10 @@ class ExternalSecretsOperatorTest {
         assertThat(commandExecutor.actualCommands[1].trim()).contains('--version 0.6.0')
         assertThat(commandExecutor.actualCommands[1].trim()).contains("--values $temporaryYamlFile")
         assertThat(commandExecutor.actualCommands[1].trim()).contains('--namespace foo-secrets')
+
+        assertThat(parseActualStackYaml()).doesNotContainKeys('resources')
+        assertThat(parseActualStackYaml()).doesNotContainKey('certController')
+        assertThat(parseActualStackYaml()).doesNotContainKey('webhook')
     }
 
     @Test
@@ -79,13 +84,25 @@ class ExternalSecretsOperatorTest {
         assertThat(valuesYaml['webhook']['image']['tag']).isEqualTo('v0.6.1')
     }
 
+    @Test
+    void 'Sets pod resource limits and requests'() {
+        config.application['podResources'] = true
+
+        createExternalSecretsOperator().install()
+
+        assertThat(parseActualStackYaml()['resources'] as Map).containsKeys('limits', 'requests')
+        assertThat(parseActualStackYaml()['webhook']['resources'] as Map).containsKeys('limits', 'requests')
+        assertThat(parseActualStackYaml()['certController']['resources'] as Map).containsKeys('limits', 'requests')
+    }
+
     private ExternalSecretsOperator createExternalSecretsOperator() {
         new ExternalSecretsOperator(
                 new Configuration(config),
                 new FileSystemUtils() {
+
                     @Override
-                    Path copyToTempDir(String filePath) {
-                        temporaryYamlFile = super.copyToTempDir(filePath)
+                    Path createTempFile() {
+                        temporaryYamlFile = super.createTempFile()
                         return temporaryYamlFile
                     }
                 },
@@ -93,8 +110,8 @@ class ExternalSecretsOperatorTest {
         )
     }
 
-    private parseActualStackYaml() {
+    private Map parseActualStackYaml() {
         def ys = new YamlSlurper()
-        return ys.parse(temporaryYamlFile)
+        return ys.parse(temporaryYamlFile) as Map
     }
 }
