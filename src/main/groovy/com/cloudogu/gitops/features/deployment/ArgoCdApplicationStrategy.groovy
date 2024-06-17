@@ -29,6 +29,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
     @Override
     void deployFeature(String repoURL, String repoName, String chart, String version, String namespace, String releaseName, Path helmValuesPath) {
         def namePrefix = config.application['namePrefix']
+        def shallCreateNamespace  = config.features['argocd']['operator'] ? "CreateNamespace=false" : "CreateNamespace=true"
 
         ScmmRepo clusterResourcesRepo = scmmRepoProvider.getRepo('argocd/cluster-resources')
         clusterResourcesRepo.cloneRepo()
@@ -71,8 +72,8 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
                                 syncOptions: [
                                         // So that we can apply very large resources (e.g. prometheus CRD)
                                         "ServerSideApply=true",
-                                        // Create namespaces for helm charts
-                                        "CreateNamespace=true"
+                                        // Create namespaces for helm charts (while not using the argocd-operater mode)
+                                        shallCreateNamespace
                                 ]
                         ]
                 ],
