@@ -162,6 +162,22 @@ grafana:
 
 prometheus:
   prometheusSpec:
+    # Find podMonitors, serviceMonitor, etc. in all namespaces
+    serviceMonitorNamespaceSelector:
+      matchLabels: {}
+    # With this, we don't need the label "release: kube-prometheus-stack" on the service monitor
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorNamespaceSelector:
+      matchLabels: {}
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleNamespaceSelector:
+      matchLabels: {}
+    ruleSelectorNilUsesHelmValues: false
+    scrapeConfigSelectorNilUsesHelmValues: false
+    probeNamespaceSelector:
+      matchLabels: {}
+    probeSelectorNilUsesHelmValues: false
+      
 <#if podResources == true>
     resources:
       limits:
