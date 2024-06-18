@@ -353,7 +353,7 @@ class ArgoCD extends Feature {
                     isRemote            : config.application['remote'],
                     isInsecure          : config.application['insecure'],
                     urlSeparatorHyphen  : config.application['urlSeparatorHyphen'],
-                    mirrorRepos           : config.application['mirrorRepos'],
+                    mirrorRepos         : config.application['mirrorRepos'],
                     skipCrds            : config.application['skipCrds'],
                     argocd              : [
                             // Note that passing the URL object here leads to problems in Graal Native image, see Git history
@@ -362,16 +362,14 @@ class ArgoCD extends Feature {
                             emailToUser  : config.features['argocd']['emailToUser'],
                             emailToAdmin : config.features['argocd']['emailToAdmin']
                     ],
-                    monitoring          : [
-                            active: config['features']['monitoring']['active']
-                    ],
                     registry : [
                             twoRegistries: config.registry['twoRegistries']
                     ],
                     monitoring          : [
                             grafana: [
                                     url: config.features['monitoring']['grafanaUrl'] ? new URL(config.features['monitoring']['grafanaUrl'] as String) : null,
-                            ]
+                            ],
+                            active: config['features']['monitoring']['active']
                     ],
                     mail: [
                             active: config.features['mail']['active'],
