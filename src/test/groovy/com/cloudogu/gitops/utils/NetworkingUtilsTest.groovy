@@ -22,7 +22,7 @@ class NetworkingUtilsTest {
         def internalNodeIp = "1.2.3.4"
         def localIp = "5.6.7.8"
         // getInternalNodeIp -> waitForNode()
-        k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', '', 0))
+        k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', 'node/something', 0))
         // getInternalNodeIp -> actual exec
         k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', internalNodeIp, 0))
         commandExecutor.enqueueOutput(new CommandExecutor.Output('', 
@@ -39,7 +39,7 @@ class NetworkingUtilsTest {
         assertThat(internalNodeIp).isNotEmpty()
         
         // getInternalNodeIp -> waitForNode(), don't care
-        k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', '', 0))
+        k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', 'node/something', 0))
         // getInternalNodeIp -> actual exec
         k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', internalNodeIp, 0))
 
@@ -52,7 +52,7 @@ class NetworkingUtilsTest {
     void 'clusterBindAddress: fails when no potential bind address'() {
         def internalNodeIp = ''
         // getInternalNodeIp -> waitForNode()
-        k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', '', 0))
+        k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', 'node/something', 0))
         // getInternalNodeIp -> actual exec
         k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', internalNodeIp, 0))
         commandExecutor.enqueueOutput(new CommandExecutor.Output('',
