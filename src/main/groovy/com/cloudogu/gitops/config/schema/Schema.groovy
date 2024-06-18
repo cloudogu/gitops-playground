@@ -58,6 +58,7 @@ class Schema {
          boolean mirrorRepos = false
          boolean insecure = false
          boolean yes = false
+         boolean openshift = false
          String username = ""
          String password = ""
          String namePrefix = ""
@@ -89,6 +90,7 @@ class Schema {
      static class ArgoCDSchema {
 //         boolean active = true // used in bash
          String url = ""
+         boolean argocdOperator = false
          String emailFrom = ""
          String emailToUser = ""
          String emailToAdmin = ""

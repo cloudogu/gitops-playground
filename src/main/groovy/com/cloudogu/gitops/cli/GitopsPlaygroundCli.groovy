@@ -20,7 +20,7 @@ import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 
 import static groovy.json.JsonOutput.prettyPrint
-import static groovy.json.JsonOutput.toJson 
+import static groovy.json.JsonOutput.toJson
 /**
  * Provides the entrypoint to the application as well as all config parameters.
  * When changing parameters, make sure to update the Schema for the config file as well
@@ -93,6 +93,8 @@ class GitopsPlaygroundCli  implements Runnable {
     private Boolean remote
     @Option(names = ['--insecure'], description = 'Sets insecure-mode in cURL which skips cert validation')
     private Boolean insecure
+    @Option(names = ['--openshift'], description = 'Install with openshift compatibility')
+    private Boolean openshift
 
     // args group tool configuration
     @Option(names = ['--kubectl-image'], description = 'Sets image for kubectl')
@@ -195,22 +197,25 @@ class GitopsPlaygroundCli  implements Runnable {
     // args group ArgoCD operator
     @Option(names = ['--argocd'], description = 'Install ArgoCD ')
     private Boolean argocd
+    @Option(names = ['--argocd-operator'], description = 'Install ArgoCd via Operator')
+    private Boolean argocdOperator
     @Option(names = ['--argocd-url'], description = 'The URL where argocd is accessible. It has to be the full URL with http:// or https://')
     private String argocdUrl
     @Option(names = ['--argocd-email-from'], description = 'Notifications, define Argo CD sender email address')
     private String emailFrom
     @Option(names = ['--argocd-email-to-user'], description = 'Notifications, define Argo CD user / app-team recipient email address')
     private String emailToUser
-    @Option(names = ['--argocd-email-to-admin'], description = 'Notifications, define Argo CD admin recipient email address')
-    private String emailToAdmin
 
     // args group example apps
+    @Option(names = ['--argocd-email-to-admin'], description = 'Notifications, define Argo CD admin recipient email address')
+    private String emailToAdmin
     @Option(names = ['--petclinic-base-domain'], description = 'The domain under which a subdomain for all petclinic will be used.')
     private String petclinicBaseDomain
+
+    // args Ingress-Class
     @Option(names = ['--nginx-base-domain'], description = 'The domain under which a subdomain for all nginx applications will be used.')
     private String nginxBaseDomain
 
-    // args Ingress-Class
     @Option(names = ['--ingress-nginx'], description = 'Sets and enables Nginx Ingress Controller')
     private Boolean ingressNginx
 
@@ -220,20 +225,20 @@ class GitopsPlaygroundCli  implements Runnable {
         setLogging()
         
         def context = createApplicationContext()
-        
+
         if (outputConfigFile) {
             println(context.getBean(ConfigToConfigFileConverter)
                     .convert(getConfig(context, true)))
             return
         }
-        
+
         def config = getConfig(context, false)
         context = context.registerSingleton(new Configuration(config))
         K8sClient k8sClient = context.getBean(K8sClient)
 
         if (destroy) {
             confirmOrExit "Destroying gitops playground in kubernetes cluster '${k8sClient.currentContext}'."
-            
+
             Destroyer destroyer = context.getBean(Destroyer)
             destroyer.destroy()
         } else {
@@ -250,16 +255,16 @@ class GitopsPlaygroundCli  implements Runnable {
         if (pipeYes) {
             return
         }
-        
+
         log.info("\n${message}\nContinue? y/n [n]")
-                
+
         def input = System.in.newReader().readLine()
-        
+
         if (input != 'y') {
-            System.exit(1) 
+            System.exit(1)
         }
     }
-    
+
     protected ApplicationContext createApplicationContext() {
         ApplicationContext.run()
     }
@@ -290,7 +295,7 @@ class GitopsPlaygroundCli  implements Runnable {
         rootLogger.detachAppender('STDOUT')
         PatternLayoutEncoder encoder = new PatternLayoutEncoder()
         // Remove less relevant details from log pattern
-        encoder.setPattern(defaultPattern 
+        encoder.setPattern(defaultPattern
                 .replaceAll(" \\S*%thread\\S* ", " ")
                 .replaceAll(" \\S*%logger\\S* ", " "))
         encoder.setContext(loggerContext)
@@ -376,6 +381,7 @@ class GitopsPlaygroundCli  implements Runnable {
                         password: scmmPassword
                 ],
                 application: [
+                        openshift     : openshift,
                         remote        : remote,
                         mirrorRepos     : mirrorRepos, 
                         insecure      : insecure,
@@ -404,6 +410,7 @@ class GitopsPlaygroundCli  implements Runnable {
                         argocd : [
                                 active    : argocd,
                                 url       : argocdUrl,
+                                operator  : argocdOperator,
                                 emailFrom    : emailFrom,
                                 emailToUser  : emailToUser,
                                 emailToAdmin : emailToAdmin
