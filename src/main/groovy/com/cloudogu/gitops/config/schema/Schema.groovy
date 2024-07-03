@@ -20,7 +20,16 @@ class Schema {
      ImagesSchema images
      FeaturesSchema features
 
+    static class HelmConfig {
+        // common values
+        String chart = ""
+        String repoURL = ""
+        String version = ""
+    }
+
      static class RegistrySchema {
+         // boolean internal = true
+         // boolean twoRegistries = false
          int internalPort
          String url = ""
          String path = ""
@@ -36,32 +45,48 @@ class Schema {
          String pushPath = ""
          String pushUsername = ""
          String pushPassword = ""
-    }
+         HelmConfig helm = new HelmConfig()
+     }
 
      static class JenkinsSchema {
+         // boolean internal = true
          String url = ""
          String username = ""
          String password = ""
+         // String urlForScmm = ""
          String metricsUsername = ""
          String metricsPassword = ""
+         HelmConfig helm = new HelmConfig()
          String mavenCentralMirror = ""
     }
 
      static class ScmmSchema {
+         // boolean internal = true
          String url = ""
          String username = ""
          String password = ""
-    }
+         // String gitOpsUsername = ""
+         // String urlForJenkins = ""
+         // String host = ""
+         // String protocol = ""
+         // String ingress = ""
+         HelmConfig helm = new HelmConfig()
+     }
 
      static class ApplicationSchema {
          boolean remote = false
          boolean mirrorRepos = false
+         String localHelmChartFolder = ""
          boolean insecure = false
-         boolean yes = false
          String username = ""
          String password = ""
+         boolean yes = false
+         // boolean runningInsideK8s = ""
+         // String clusterBindAddress = ""
          String namePrefix = ""
          boolean podResources = false
+         // String namePrefixForEnvVars = ""
+         String baseUrl = ""
          String gitName = ""
          String gitEmail = ""
          boolean urlSeparatorHyphen = false
@@ -82,12 +107,12 @@ class Schema {
          MailSchema mail
          MonitoringSchema monitoring
          SecretsSchema secrets
-         ExampleAppsSchema exampleApps
          IngressNginxSchema ingressNginx
+         ExampleAppsSchema exampleApps
     }
 
      static class ArgoCDSchema {
-//         boolean active = true // used in bash
+         boolean active = false
          String url = ""
          String emailFrom = ""
          String emailToUser = ""
@@ -95,22 +120,29 @@ class Schema {
     }
 
      static class MailSchema {
+         // boolean active = false
          boolean mailhog = false
          String mailhogUrl = ""
          String smtpAddress = ""
          Integer smtpPort = null
          String smtpUser = ""
          String smtpPassword = ""
-    }
+         String url = ""
+
+         MailHelmSchema helm = new MailHelmSchema()
+         static class MailHelmSchema extends HelmConfig {
+             String image = ""
+         }
+     }
 
      static class MonitoringSchema {
          boolean active = true
          String grafanaUrl = ""
-         MonitoringHelmSchema helm
          String grafanaEmailFrom = ""
          String grafanaEmailTo = ""
 
-         static class MonitoringHelmSchema {
+         MonitoringHelmSchema helm = new MonitoringHelmSchema()
+         static class MonitoringHelmSchema extends HelmConfig {
              String grafanaImage = ""
              String grafanaSidecarImage = ""
              String prometheusImage = ""
@@ -120,45 +152,45 @@ class Schema {
     }
 
      static class SecretsSchema {
-         VaultSchema vault
+         // boolean active = false
          ESOSchema externalSecrets
+         VaultSchema vault
+
+         static class ESOSchema {
+             ESOHelmSchema helm = new ESOHelmSchema()
+             static class ESOHelmSchema extends HelmConfig {
+                 String image = ""
+                 String certControllerImage = ""
+                 String webhookImage = ""
+             }
+         }
 
          static class VaultSchema {
              String mode = ""
              String url = ""
-             VaultHelmSchema helm
 
-             static class VaultHelmSchema {
+             VaultHelmSchema helm = new VaultHelmSchema()
+             static class VaultHelmSchema extends HelmConfig {
                  String image = ""
             }
-        }
-
-         static class ESOSchema {
-             ESOHelmSchema helm
-
-             static class ESOHelmSchema {
-                 String image = ""
-                 String certControllerImage = ""
-                 String webhookImage = ""
-            }
-        }
-    }
-
-     static class ExampleAppsSchema {
-         BaseDomainSchema petclinic
-         BaseDomainSchema nginx
-
-         static class BaseDomainSchema {
-             String baseDomain = ""
         }
     }
 
     static class IngressNginxSchema {
         Boolean active = false
-        IngressNginxHelmSchema helm
 
-        static class IngressNginxHelmSchema {
+        IngressNginxHelmSchema helm = new IngressNginxHelmSchema()
+        static class IngressNginxHelmSchema extends HelmConfig {
             Map<String, Object> values
+        }
+    }
+
+    static class ExampleAppsSchema {
+        BaseDomainSchema petclinic
+        BaseDomainSchema nginx
+
+        static class BaseDomainSchema {
+            String baseDomain = ""
         }
     }
 }

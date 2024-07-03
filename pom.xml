@@ -26,6 +26,7 @@
     <okhttpVersion>4.11.0</okhttpVersion>
     <retrofitVersion>2.9.0</retrofitVersion>
     <groovy.version>4.0.12</groovy.version>
+    <jsonschema.version>4.35.0</jsonschema.version>
   </properties>
 
   <dependencyManagement>
@@ -258,7 +259,12 @@
     <dependency>
       <groupId>com.github.victools</groupId>
       <artifactId>jsonschema-generator</artifactId>
-      <version>[4.21.0,5.0.0)</version>
+      <version>${jsonschema.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.github.victools</groupId>
+      <artifactId>jsonschema-module-jackson</artifactId>
+      <version>${jsonschema.version}</version>
     </dependency>
 
     <dependency>
