@@ -74,6 +74,10 @@ registry:
   pushPath: "pushPath"
   pushUsername: "pushUsername"
   pushPassword: "pushPassword"
+  helm:
+    chart: ""
+    repoURL: ""
+    version: ""
 images:
   kubectl: "kubectl-value"
   helm: "helm-value"
@@ -84,6 +88,7 @@ images:
   petclinic: "petclinic-value"
 features:
   argocd:
+    active: true
     url: ""
     emailFrom: ""
     emailToUser: ""
@@ -92,23 +97,39 @@ features:
   monitoring:
     active: true
     grafanaUrl: ""
-    helm: null
     grafanaEmailFrom: ""
     grafanaEmailTo: ""
+    helm:
+      chart: ""
+      repoURL: ""
+      version: ""
+      grafanaImage: ""
+      grafanaSidecarImage: ""
+      prometheusImage: ""
+      prometheusOperatorImage: ""
+      prometheusConfigReloaderImage: ""
   secrets:
+    externalSecrets: null
     vault:
       mode: ""
       url: ""
-      helm: null
-    externalSecrets: null
+      helm:
+        chart: ""
+        repoURL: ""
+        version: ""
+        image: ""
+  ingressNginx:
+    active: true
+    helm:
+      chart: ""
+      repoURL: ""
+      version: ""
+      values: null
   exampleApps:
     petclinic:
       baseDomain: "base-domain"
     nginx:
       baseDomain: "base-domain"
-  ingressNginx:
-    active: true
-    helm: null
 """)
     }
 }

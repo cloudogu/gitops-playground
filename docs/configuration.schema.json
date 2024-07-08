@@ -19,6 +19,9 @@
         "argocd" : {
           "type" : "object",
           "properties" : {
+            "active" : {
+              "type" : "boolean"
+            },
             "emailFrom" : {
               "type" : "string"
             },
@@ -55,8 +58,17 @@
             "helm" : {
               "type" : "object",
               "properties" : {
+                "chart" : {
+                  "type" : "string"
+                },
+                "repoURL" : {
+                  "type" : "string"
+                },
                 "values" : {
                   "type" : "object"
+                },
+                "version" : {
+                  "type" : "string"
                 }
               },
               "additionalProperties" : false
@@ -67,6 +79,24 @@
         "mail" : {
           "type" : "object",
           "properties" : {
+            "helm" : {
+              "type" : "object",
+              "properties" : {
+                "chart" : {
+                  "type" : "string"
+                },
+                "image" : {
+                  "type" : "string"
+                },
+                "repoURL" : {
+                  "type" : "string"
+                },
+                "version" : {
+                  "type" : "string"
+                }
+              },
+              "additionalProperties" : false
+            },
             "mailhog" : {
               "type" : "boolean"
             },
@@ -83,6 +113,9 @@
               "type" : "integer"
             },
             "smtpUser" : {
+              "type" : "string"
+            },
+            "url" : {
               "type" : "string"
             }
           },
@@ -106,6 +139,9 @@
             "helm" : {
               "type" : "object",
               "properties" : {
+                "chart" : {
+                  "type" : "string"
+                },
                 "grafanaImage" : {
                   "type" : "string"
                 },
@@ -119,6 +155,12 @@
                   "type" : "string"
                 },
                 "prometheusOperatorImage" : {
+                  "type" : "string"
+                },
+                "repoURL" : {
+                  "type" : "string"
+                },
+                "version" : {
                   "type" : "string"
                 }
               },
@@ -139,7 +181,16 @@
                     "certControllerImage" : {
                       "type" : "string"
                     },
+                    "chart" : {
+                      "type" : "string"
+                    },
                     "image" : {
+                      "type" : "string"
+                    },
+                    "repoURL" : {
+                      "type" : "string"
+                    },
+                    "version" : {
                       "type" : "string"
                     },
                     "webhookImage" : {
@@ -157,7 +208,16 @@
                 "helm" : {
                   "type" : "object",
                   "properties" : {
+                    "chart" : {
+                      "type" : "string"
+                    },
                     "image" : {
+                      "type" : "string"
+                    },
+                    "repoURL" : {
+                      "type" : "string"
+                    },
+                    "version" : {
                       "type" : "string"
                     }
                   },
@@ -208,6 +268,21 @@
     "registry" : {
       "type" : "object",
       "properties" : {
+        "helm" : {
+          "type" : "object",
+          "properties" : {
+            "chart" : {
+              "type" : "string"
+            },
+            "repoURL" : {
+              "type" : "string"
+            },
+            "version" : {
+              "type" : "string"
+            }
+          },
+          "additionalProperties" : false
+        },
         "internalPort" : {
           "type" : "integer"
         },
