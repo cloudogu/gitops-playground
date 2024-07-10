@@ -1,16 +1,24 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Configuration
-import com.cloudogu.gitops.features.deployment.HelmStrategy
+import com.cloudogu.gitops.features.deployment.DeploymentStrategy
+import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.HelmClient
+import com.cloudogu.gitops.utils.K8sClient
 import groovy.yaml.YamlSlurper
+import jakarta.inject.Provider
 import org.junit.jupiter.api.Test
+import org.mockito.ArgumentCaptor
 
+import java.nio.file.Files
 import java.nio.file.Path
 
 import static org.assertj.core.api.Assertions.assertThat
+import static org.mockito.ArgumentMatchers.any
+import static org.mockito.Mockito.mock
+import static org.mockito.Mockito.verify
+import static org.mockito.Mockito.when
 
 class ExternalSecretsOperatorTest {
 
@@ -20,7 +28,15 @@ class ExternalSecretsOperatorTest {
                     password: '123',
                     remote  : false,
                     namePrefix: "foo-",
-                    podResources : false
+                    podResources : false,
+                    mirrorRepos: false
+            ],
+            scmm       : [
+                    internal: true,
+                    protocol: 'https',
+                    host: 'abc',
+                    username: '',
+                    password: ''
             ],
             features    : [
                     secrets   : [
@@ -29,14 +45,17 @@ class ExternalSecretsOperatorTest {
                                     helm: [
                                             chart  : 'external-secrets',
                                             repoURL: 'https://charts.external-secrets.io',
-                                            version: '0.6.0'
+                                            version: '0.9.16'
                                     ]
                             ],
                     ]
             ],
     ]
     CommandExecutorForTest commandExecutor = new CommandExecutorForTest()
-    HelmClient helmClient = new HelmClient(commandExecutor)
+    CommandExecutorForTest k8sCommandExecutor = new CommandExecutorForTest()
+    DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
+    AirGappedUtils airGappedUtils = mock(AirGappedUtils)
+    FileSystemUtils fileSystemUtils = new FileSystemUtils()
     Path temporaryYamlFile
 
     @Test
@@ -50,13 +69,15 @@ class ExternalSecretsOperatorTest {
     void 'helm release is installed'() {
         createExternalSecretsOperator().install()
 
-        assertThat(commandExecutor.actualCommands[0].trim()).isEqualTo(
-                'helm repo add externalsecretsoperator https://charts.external-secrets.io')
-        assertThat(commandExecutor.actualCommands[1].trim()).startsWith(
-                'helm upgrade -i external-secrets externalsecretsoperator/external-secrets --create-namespace')
-        assertThat(commandExecutor.actualCommands[1].trim()).contains('--version 0.6.0')
-        assertThat(commandExecutor.actualCommands[1].trim()).contains("--values $temporaryYamlFile")
-        assertThat(commandExecutor.actualCommands[1].trim()).contains('--namespace foo-secrets')
+        verify(deploymentStrategy).deployFeature(
+                'https://charts.external-secrets.io',
+                'externalsecretsoperator',
+                'external-secrets',
+                '0.9.16',
+                'secrets',
+                'external-secrets',
+                temporaryYamlFile
+        )
 
         assertThat(parseActualStackYaml()).doesNotContainKeys('resources')
         assertThat(parseActualStackYaml()).doesNotContainKey('certController')
@@ -95,7 +116,36 @@ class ExternalSecretsOperatorTest {
         assertThat(parseActualStackYaml()['certController']['resources'] as Map).containsKeys('limits', 'requests')
     }
 
+    @Test
+    void 'helm release is installed in air-gapped mode'() {
+        config.application['mirrorRepos'] = true
+        when(airGappedUtils.mirrorHelmRepoToGit(any(Map))).thenReturn('a/b')
+
+        Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
+        config.application['localHelmChartFolder'] = rootChartsFolder.toString()
+
+        Path SourceChart = rootChartsFolder.resolve('external-secrets')
+        Files.createDirectories(SourceChart)
+
+        Map ChartYaml = [ version: '1.2.3' ]
+        fileSystemUtils.writeYaml(ChartYaml, SourceChart.resolve('Chart.yaml').toFile())
+
+        createExternalSecretsOperator().install()
+
+        def helmConfig = ArgumentCaptor.forClass(Map)
+        verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
+        assertThat(helmConfig.value.chart).isEqualTo('external-secrets')
+        assertThat(helmConfig.value.repoURL).isEqualTo('https://charts.external-secrets.io')
+        assertThat(helmConfig.value.version).isEqualTo('0.9.16')
+        verify(deploymentStrategy).deployFeature(
+                'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/a/b',
+                'external-secrets', '.', '1.2.3','secrets',
+                'external-secrets', temporaryYamlFile, DeploymentStrategy.RepoType.GIT)
+    }
+
+
     private ExternalSecretsOperator createExternalSecretsOperator() {
+        def configuration = new Configuration(config)
         new ExternalSecretsOperator(
                 new Configuration(config),
                 new FileSystemUtils() {
@@ -104,10 +154,13 @@ class ExternalSecretsOperatorTest {
                     Path createTempFile() {
                         temporaryYamlFile = super.createTempFile()
                         return temporaryYamlFile
-                    }
-                },
-                new HelmStrategy(new Configuration(config), helmClient)
-        )
+            }
+        }, deploymentStrategy, new K8sClient(k8sCommandExecutor, new FileSystemUtils(), new Provider<Configuration>() {
+            @Override
+            Configuration get() {
+                configuration
+            }
+        }), airGappedUtils)
     }
 
     private Map parseActualStackYaml() {

@@ -101,29 +101,40 @@ class AirGappedUtils {
         log.debug("Preparing repo ${scmmRepo.scmmRepoTarget} for air-gapped use: Changing Chart.yaml to resolve depencies locally")
 
         def chartYamlPath = Path.of(scmmRepo.absoluteLocalRepoTmpDir, 'Chart.yaml')
-        def chartLockPath = Path.of(scmmRepo.absoluteLocalRepoTmpDir, 'Chart.lock')
 
-        def ys = new YamlSlurper()
-        Map chartYaml = ys.parse(chartYamlPath) as Map
-        Map chartLock = ys.parse(chartLockPath) as Map
+        Map chartYaml = new YamlSlurper().parse(chartYamlPath) as Map
+        Map chartLock = parseChartLockIfExists(scmmRepo)
 
-        def dependencies = chartYaml['dependencies'] ?: []
-        (dependencies as List).each { chartYamlDep ->
-            // Resolve proper dependency version from Chart.lock, e.g. 5.18.* -> 5.18.1
-            def chartLockDep = findByName(chartLock.dependencies as List, chartYamlDep['name'] as String)
-            if (chartLockDep) {
-                chartYamlDep['version'] = chartLockDep['version']
-            } else if ((chartYamlDep['version'] as String).contains('*')) {
-                throw new RuntimeException("Unable to determine proper version for dependency " +
-                        "${chartYamlDep['name']} (version: ${chartYamlDep['version']}) from repo ${scmmRepo.scmmRepoTarget}")
-            }
+        List<Map> dependencies = chartYaml['dependencies'] as List<Map> ?: []
+        for (Map chartYamlDep : dependencies) {
+            resolveDependencyVersion(chartLock, chartYamlDep, scmmRepo)
 
             // Remove link to external repo, to force using local one
             chartYamlDep['repository'] = ''
         }
-
         fileSystemUtils.writeYaml(chartYaml, chartYamlPath.toFile())
         return chartYaml
+    }
+
+    private static Map parseChartLockIfExists(ScmmRepo scmmRepo) {
+        def chartLock = Path.of(scmmRepo.absoluteLocalRepoTmpDir, 'Chart.lock')
+        if (!chartLock.toFile().exists()) {
+            return [:]
+        }
+        new YamlSlurper().parse(chartLock) as Map
+    }
+
+    /**
+     * Resolve proper dependency version from Chart.lock, e.g. 5.18.* -> 5.18.1
+     */
+    private void resolveDependencyVersion(Map chartLock, Map chartYamlDep, ScmmRepo scmmRepo) {
+        def chartLockDep = findByName(chartLock.dependencies as List, chartYamlDep['name'] as String)
+        if (chartLockDep) {
+            chartYamlDep['version'] = chartLockDep['version']
+        } else if ((chartYamlDep['version'] as String).contains('*')) {
+            throw new RuntimeException("Unable to determine proper version for dependency " +
+                    "${chartYamlDep['name']} (version: ${chartYamlDep['version']}) from repo ${scmmRepo.scmmRepoTarget}")
+        }
     }
 
     Map findByName(List<Map> list, String name) {

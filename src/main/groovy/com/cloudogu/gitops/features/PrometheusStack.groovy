@@ -3,6 +3,7 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
+import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
@@ -121,6 +122,7 @@ class PrometheusStack extends Feature {
         def helmConfig = config['features']['monitoring']['helm']
         setCustomImages(helmConfig, helmValuesYaml)
 
+        fileSystemUtils.writeYaml(helmValuesYaml, tmpHelmValues.toFile())
 
         if (config.application['mirrorRepos']) {
             log.debug("Mirroring repos: Deploying prometheus from local git repo")
@@ -140,8 +142,7 @@ class PrometheusStack extends Feature {
                     'kube-prometheus-stack',
                     tmpHelmValues, RepoType.GIT)
         } else {
-            fileSystemUtils.writeYaml(helmValuesYaml, tmpHelmValues.toFile())
-    
+
             deployer.deployFeature(
                     helmConfig['repoURL'] as String,
                     'prometheusstack',

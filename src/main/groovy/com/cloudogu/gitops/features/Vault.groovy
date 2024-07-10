@@ -5,6 +5,7 @@ import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
+import groovy.yaml.YamlSlurper
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
 
@@ -22,17 +23,20 @@ class Vault extends Feature {
     private Path tmpHelmValues
     private K8sClient k8sClient
     private DeploymentStrategy deployer
+    private AirGappedUtils airGappedUtils
 
     Vault(
             Configuration config,
             FileSystemUtils fileSystemUtils,
             K8sClient k8sClient,
-            DeploymentStrategy deployer
+            DeploymentStrategy deployer,
+            AirGappedUtils airGappedUtils
     ) {
         this.deployer = deployer
         this.config = config.getConfig()
         this.fileSystemUtils = fileSystemUtils
         this.k8sClient = k8sClient
+        this.airGappedUtils = airGappedUtils
 
         tmpHelmValues = fileSystemUtils.createTempFile()
     }
@@ -172,14 +176,41 @@ class Vault extends Feature {
         log.trace("Helm yaml to be applied: ${yaml}")
         fileSystemUtils.writeYaml(yaml, tmpHelmValues.toFile())
 
-        deployer.deployFeature(
-                helmConfig['repoURL'] as String,
-                'vault',
-                helmConfig['chart'] as String,
-                helmConfig['version'] as String,
-                'secrets',
-                'vault',
-                tmpHelmValues
-        )
+        if (config.application['mirrorRepos']) {
+            log.debug("Mirroring repos: Deploying vault from local git repo")
+
+            def repoNamespaceAndName = airGappedUtils.mirrorHelmRepoToGit(config['features']['secrets']['vault']['helm'] as Map)
+
+            String vaultVersion =
+                    new YamlSlurper().parse(Path.of("${config.application['localHelmChartFolder']}/${helmConfig['chart']}",
+                            'Chart.yaml'))['version']
+
+            deployer.deployFeature(
+                    "${scmmUri}/repo/${repoNamespaceAndName}",
+                    "vault",
+                    '.',
+                    vaultVersion,
+                    'secrets',
+                    'vault',
+                    tmpHelmValues, DeploymentStrategy.RepoType.GIT
+            )
+        } else {
+            deployer.deployFeature(
+                    helmConfig['repoURL'] as String,
+                    'vault',
+                    helmConfig['chart'] as String,
+                    helmConfig['version'] as String,
+                    'secrets',
+                    'vault',
+                    tmpHelmValues
+            )
+        }
+    }
+    private URI getScmmUri() {
+        if (config.scmm['internal']) {
+            new URI('http://scmm-scm-manager.default.svc.cluster.local/scm')
+        } else {
+            new URI("${config.scmm['url']}/scm")
+        }
     }
 }
