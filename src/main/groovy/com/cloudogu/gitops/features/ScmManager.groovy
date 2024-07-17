@@ -77,6 +77,7 @@ class ScmManager extends Feature {
                 SCMM_USERNAME                : config.scmm['username'],
                 SCMM_PASSWORD                : config.scmm['password'],
                 JENKINS_URL                  : config.jenkins['url'],
+                INTERNAL_SCMM                : config.scmm['internal'],
                 JENKINS_URL_FOR_SCMM         : config.jenkins['urlForScmm'],
                 SCMM_URL_FOR_JENKINS         : config.scmm['urlForJenkins'],
                 // Used indirectly in utils.sh 😬

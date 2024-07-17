@@ -23,7 +23,10 @@ function initSCMM() {
   SCMM_HOST=$(getHost "${SCMM_URL}")
   SCMM_PROTOCOL=$(getProtocol "${SCMM_URL}")
 
-  setExternalHostnameIfNecessary 'SCMM' 'scmm-scm-manager' 'default'
+  if [[ ${INTERNAL_SCMM} == true ]]; then
+    setExternalHostnameIfNecessary 'SCMM' 'scmm-scm-manager' 'default'
+  fi
+  
   [[ "${SCMM_URL}" != *scm ]] && SCMM_URL=${SCMM_URL}/scm
 
   configureScmmManager "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "${SCMM_URL}" "${JENKINS_URL_FOR_SCMM}" \
