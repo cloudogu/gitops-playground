@@ -29,6 +29,7 @@ class ExternalSecretsOperatorTest {
                     remote  : false,
                     namePrefix: "foo-",
                     podResources : false,
+                    skipCrds : false,
                     mirrorRepos: false
             ],
             scmm       : [
@@ -36,7 +37,7 @@ class ExternalSecretsOperatorTest {
                     protocol: 'https',
                     host: 'abc',
                     username: '',
-                    password: ''
+                    password: '',
             ],
             features    : [
                     secrets   : [
@@ -82,8 +83,19 @@ class ExternalSecretsOperatorTest {
         assertThat(parseActualStackYaml()).doesNotContainKeys('resources')
         assertThat(parseActualStackYaml()).doesNotContainKey('certController')
         assertThat(parseActualStackYaml()).doesNotContainKey('webhook')
+
+        assertThat(parseActualStackYaml()['installCRDs']).isNull()
     }
 
+    @Test
+    void 'Skips CRDs'() {
+        config.application['skipCrds'] = true
+
+        createExternalSecretsOperator().install()
+
+        assertThat(parseActualStackYaml()['installCRDs']).isEqualTo(false)
+    }
+    
     @Test
     void 'helm release is installed with custom images'() {
         config['features']['secrets']['externalSecrets']['helm'] = [

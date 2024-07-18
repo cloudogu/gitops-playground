@@ -193,25 +193,7 @@ class ArgoCD extends Feature {
         log.debug("Creating namespace for argocd")
         k8sClient.createNamespace(argocdNamespace)
 
-        if (config['features']['monitoring']['active']) {
-            log.debug("Creating namespace for monitoring, so argocd can add its service monitors there")
-            k8sClient.createNamespace('monitoring')
-
-            def serviceMonitorCrdYaml
-            if (config.application['mirrorRepos']) {
-                serviceMonitorCrdYaml = Path.of(
-                        "${config.application['localHelmChartFolder']}/${config['features']['monitoring']['helm']['chart']}/charts/crds/crds/crd-servicemonitors.yaml"
-                ).toString()
-            } else {
-                serviceMonitorCrdYaml = 
-                        "https://raw.githubusercontent.com/prometheus-community/helm-charts/" +
-                                "kube-prometheus-stack-${config['features']['monitoring']['helm']['version']}/" +
-                                "charts/kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml"
-            }
-            log.debug("Applying ServiceMonitor CRD; Argo CD fails if it is not there. Chicken-egg-problem.\n" +
-                    "Applying from path ${serviceMonitorCrdYaml}")
-            k8sClient.applyYaml(serviceMonitorCrdYaml)
-        }
+        createMonitoringNamespaceAndCrd()
 
         log.debug("Creating repo credential secret that is used by argocd to access repos in SCM-Manager")
         // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo 
@@ -262,6 +244,32 @@ class ArgoCD extends Feature {
         // For development keeping it in helm makes it easier (e.g. for helm uninstall).
         k8sClient.delete('secret', 'argocd', 
                 new Tuple2('owner', 'helm'), new Tuple2('name', 'argocd'))
+    }
+
+    protected void createMonitoringNamespaceAndCrd() {
+        if (config['features']['monitoring']['active']) {
+            
+            log.debug("Creating namespace for monitoring, so argocd can add its service monitors there")
+            k8sClient.createNamespace('monitoring')
+
+            if (!config['application']['skipCrds']) {
+                def serviceMonitorCrdYaml
+                if (config.application['mirrorRepos']) {
+                    serviceMonitorCrdYaml = Path.of(
+                            "${config.application['localHelmChartFolder']}/${config['features']['monitoring']['helm']['chart']}/charts/crds/crds/crd-servicemonitors.yaml"
+                    ).toString()
+                } else {
+                    serviceMonitorCrdYaml =
+                            "https://raw.githubusercontent.com/prometheus-community/helm-charts/" +
+                                    "kube-prometheus-stack-${config['features']['monitoring']['helm']['version']}/" +
+                                    "charts/kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml"
+                }
+
+                log.debug("Applying ServiceMonitor CRD; Argo CD fails if it is not there. Chicken-egg-problem.\n" +
+                        "Applying from path ${serviceMonitorCrdYaml}")
+                k8sClient.applyYaml(serviceMonitorCrdYaml)
+            }
+        }
     }
 
     protected void prepareArgoCdRepo() {
@@ -343,7 +351,8 @@ class ArgoCD extends Feature {
                     isRemote            : config.application['remote'],
                     isInsecure          : config.application['insecure'],
                     urlSeparatorHyphen  : config.application['urlSeparatorHyphen'],
-                    mirrorRepos           : config.application['mirrorRepos'],
+                    mirrorRepos         : config.application['mirrorRepos'],
+                    skipCrds            : config.application['skipCrds'],
                     argocd              : [
                             // Note that passing the URL object here leads to problems in Graal Native image, see Git history
                             host: config.features['argocd']['url'] ? new URL(config.features['argocd']['url'] as String).host : "",
@@ -357,7 +366,8 @@ class ArgoCD extends Feature {
                     monitoring          : [
                             grafana: [
                                     url: config.features['monitoring']['grafanaUrl'] ? new URL(config.features['monitoring']['grafanaUrl'] as String) : null,
-                            ]
+                            ],
+                            active: config['features']['monitoring']['active']
                     ],
                     mail: [
                             active: config.features['mail']['active'],

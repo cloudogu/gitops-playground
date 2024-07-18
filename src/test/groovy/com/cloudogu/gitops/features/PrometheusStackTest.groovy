@@ -37,8 +37,9 @@ class PrometheusStackTest {
                     password: '123',
                     remote  : false,
                     namePrefix: "foo-",
+                    mirrorRepos: false,
                     podResources : false,
-                    mirrorRepos: false
+                    skipCrds: false
             ],
             features   : [
                     monitoring: [
@@ -369,8 +370,19 @@ policies:
         assertThat(yaml['grafana'] as Map).doesNotContainKey('resources')
         assertThat(yaml['grafana']['sidecar'] as Map).doesNotContainKey('resources')
         assertThat(yaml['prometheus']['prometheusSpec'] as Map).doesNotContainKey('resources')
+        
+        assertThat(yaml['crds']).isNull()
     }
 
+    @Test
+    void 'Skips CRDs'() {
+        config.application['skipCrds'] = true
+
+        createStack().install()
+
+        assertThat(parseActualStackYaml()['crds']['enabled']).isEqualTo(false)
+    }
+    
     @Test
     void 'Sets pod resource limits and requests'() {
         config.application['podResources'] = true

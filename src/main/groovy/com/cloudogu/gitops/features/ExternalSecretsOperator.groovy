@@ -49,10 +49,10 @@ class ExternalSecretsOperator extends Feature {
     @Override
     void enable() {
         def helmConfig = config['features']['secrets']['externalSecrets']['helm']
-        def helmValuesYaml = new YamlSlurper().parseText(
-                new TemplatingEngine().template(new File(HELM_VALUES_PATH), [
+        def helmValuesYaml = templateToMap(HELM_VALUES_PATH, [
                         podResources: config.application['podResources'],
-                ])) as Map
+                        skipCrds : config.application['skipCrds']
+                ])
 
         if (helmConfig['image']) {
             log.debug("Setting custom ESO image as requested for external-secrets-operator")
@@ -128,5 +128,15 @@ class ExternalSecretsOperator extends Feature {
         } else {
             new URI("${config.scmm['url']}/scm")
         }
+    }
+
+    Map templateToMap(String filePath, Map parameters) {
+        def hydratedString = new TemplatingEngine().template(new File(filePath), parameters)
+        
+        if (hydratedString.trim().isEmpty()) {
+            // Otherwise YamlSlurper returns an empty array, whereas we expect a Map
+            return [:]
+        } 
+        return new YamlSlurper().parseText(hydratedString) as Map
     }
 }

@@ -5,7 +5,7 @@ ARG JDK_VERSION='17'
 # Set by the micronaut BOM, see pom.xml
 ARG GRAAL_VERSION='22.3.0'
 
-FROM alpine:3.17 as alpine
+FROM alpine:3 as alpine
 
 # Keep in sync with the version in pom.xml
 FROM ghcr.io/graalvm/graalvm-ce:ol8-java${JDK_VERSION}-${GRAAL_VERSION} AS graal
@@ -66,8 +66,8 @@ RUN tar -xf helm.tar.gz
 # Without the two spaces the check fails!
 RUN echo "${HELM_CHECKSUM}  helm.tar.gz" | sha256sum -c
 RUN set -o pipefail && curl --location --fail --retry 20 --retry-connrefused --retry-all-errors \
-  https://raw.githubusercontent.com/helm/helm/main/KEYS | gpg --import
-RUN gpg --batch --verify helm.tar.gz.asc helm.tar.gz
+  https://raw.githubusercontent.com/helm/helm/main/KEYS | gpg --import --batch --no-default-keyring --keyring /tmp/keyring.gpg 
+RUN gpgv --keyring  /tmp/keyring.gpg  helm.tar.gz.asc helm.tar.gz
 RUN mv linux-amd64/helm /dist/usr/local/bin
 ENV PATH=$PATH:/dist/usr/local/bin
 
@@ -83,6 +83,13 @@ RUN git clone --bare https://github.com/cloudogu/spring-petclinic.git
 RUN git clone --bare https://github.com/cloudogu/spring-boot-helm-chart.git
 RUN git clone --bare https://github.com/cloudogu/gitops-build-lib.git
 RUN git clone --bare https://github.com/cloudogu/ces-build-lib.git
+
+# Avoid "fatal: detected dubious ownership in repository"
+# Once we migrate away from using git binary (e.g. in init-scmm.sh), we can remove this
+RUN cd /dist && for dir in $(find gitops/repos -type d  -maxdepth 1); do \
+        git config --global --add safe.directory /"$dir"; \
+    done
+RUN cp /tmp/.gitconfig /dist/home/.gitconfig
 
 # Download Jenkins Plugin
 COPY scripts/jenkins/plugins /jenkins
