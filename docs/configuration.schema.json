@@ -5,7 +5,8 @@
       "type" : "object",
       "properties" : {
         "baseDomain" : {
-          "type" : "string"
+          "type" : "string",
+          "description" : "The domain under which a subdomain for all petclinic will be used."
         }
       },
       "additionalProperties" : false
@@ -20,21 +21,27 @@
           "type" : "object",
           "properties" : {
             "active" : {
-              "type" : "boolean"
+              "type" : "boolean",
+              "description" : "Install ArgoCD"
             },
             "emailFrom" : {
-              "type" : "string"
+              "type" : "string",
+              "description" : "Notifications, define Argo CD sender email address"
             },
             "emailToAdmin" : {
-              "type" : "string"
+              "type" : "string",
+              "description" : "Notifications, define Argo CD admin recipient email address"
             },
             "emailToUser" : {
-              "type" : "string"
+              "type" : "string",
+              "description" : "Notifications, define Argo CD user / app-team recipient email address"
             },
             "url" : {
-              "type" : "string"
+              "type" : "string",
+              "description" : "The URL where argocd is accessible. It has to be the full URL with http:// or https://"
             }
           },
+          "description" : "Configuration Parameter for the ArgoCD Operator",
           "additionalProperties" : false
         },
         "exampleApps" : {
@@ -53,27 +60,32 @@
           "type" : "object",
           "properties" : {
             "active" : {
-              "type" : "boolean"
+              "type" : "boolean",
+              "description" : "Sets and enables Nginx Ingress Controller"
             },
             "helm" : {
               "type" : "object",
               "properties" : {
                 "chart" : {
-                  "type" : "string"
+                  "type" : "string",
+                  "description" : "Name of the Helm chart"
                 },
                 "repoURL" : {
-                  "type" : "string"
+                  "type" : "string",
+                  "description" : "Repository url from which the Helm chart should be obtained"
                 },
                 "values" : {
                   "type" : "object"
                 },
                 "version" : {
-                  "type" : "string"
+                  "type" : "string",
+                  "description" : "The version of the Helm chart to be installed"
                 }
               },
               "additionalProperties" : false
             }
           },
+          "description" : "Config parameter for the NGINX Ingress Controller",
           "additionalProperties" : false
         },
         "mail" : {
@@ -83,90 +95,113 @@
               "type" : "object",
               "properties" : {
                 "chart" : {
-                  "type" : "string"
+                  "type" : "string",
+                  "description" : "Name of the Helm chart"
                 },
                 "image" : {
                   "type" : "string"
                 },
                 "repoURL" : {
-                  "type" : "string"
+                  "type" : "string",
+                  "description" : "Repository url from which the Helm chart should be obtained"
                 },
                 "version" : {
-                  "type" : "string"
+                  "type" : "string",
+                  "description" : "The version of the Helm chart to be installed"
                 }
               },
               "additionalProperties" : false
             },
             "mailhog" : {
-              "type" : "boolean"
+              "type" : "boolean",
+              "description" : "Installs MailHog as Mail server."
             },
             "mailhogUrl" : {
-              "type" : "string"
+              "type" : "string",
+              "description" : "Sets url for MailHog"
             },
             "smtpAddress" : {
-              "type" : "string"
+              "type" : "string",
+              "description" : "Sets smtp port of external Mailserver"
             },
             "smtpPassword" : {
-              "type" : "string"
+              "type" : "string",
+              "description" : "Sets smtp password of external Mailserver"
             },
             "smtpPort" : {
-              "type" : "integer"
+              "type" : "integer",
+              "description" : "Sets smtp port of external Mailserver"
             },
             "smtpUser" : {
-              "type" : "string"
+              "type" : "string",
+              "description" : "Sets smtp username for external Mailserver"
             },
             "url" : {
               "type" : "string"
             }
           },
+          "description" : "Config Parameter for the internal Mail Server",
           "additionalProperties" : false
         },
         "monitoring" : {
           "type" : "object",
           "properties" : {
             "active" : {
-              "type" : "boolean"
+              "type" : "boolean",
+              "description" : "Installs the Kube-Prometheus-Stack. This includes Prometheus, the Prometheus operator, Grafana and some extra resources"
             },
             "grafanaEmailFrom" : {
-              "type" : "string"
+              "type" : "string",
+              "description" : "Notifications, define grafana alerts sender email address"
             },
             "grafanaEmailTo" : {
-              "type" : "string"
+              "type" : "string",
+              "description" : "Notifications, define grafana alerts recipient email address"
             },
             "grafanaUrl" : {
-              "type" : "string"
+              "type" : "string",
+              "description" : "Sets url for grafana"
             },
             "helm" : {
               "type" : "object",
               "properties" : {
                 "chart" : {
-                  "type" : "string"
+                  "type" : "string",
+                  "description" : "Name of the Helm chart"
                 },
                 "grafanaImage" : {
-                  "type" : "string"
+                  "type" : "string",
+                  "description" : "Sets image for grafana"
                 },
                 "grafanaSidecarImage" : {
-                  "type" : "string"
+                  "type" : "string",
+                  "description" : "Sets image for grafana's sidecar"
                 },
                 "prometheusConfigReloaderImage" : {
-                  "type" : "string"
+                  "type" : "string",
+                  "description" : "Sets image for prometheus-operator's config-reloader"
                 },
                 "prometheusImage" : {
-                  "type" : "string"
+                  "type" : "string",
+                  "description" : "Sets image for prometheus"
                 },
                 "prometheusOperatorImage" : {
-                  "type" : "string"
+                  "type" : "string",
+                  "description" : "Sets image for prometheus-operator"
                 },
                 "repoURL" : {
-                  "type" : "string"
+                  "type" : "string",
+                  "description" : "Repository url from which the Helm chart should be obtained"
                 },
                 "version" : {
-                  "type" : "string"
+                  "type" : "string",
+                  "description" : "The version of the Helm chart to be installed"
                 }
               },
               "additionalProperties" : false
             }
           },
+          "description" : "Config parameter for the Monitoring system (prometheus)",
           "additionalProperties" : false
         },
         "secrets" : {
@@ -179,58 +214,75 @@
                   "type" : "object",
                   "properties" : {
                     "certControllerImage" : {
-                      "type" : "string"
+                      "type" : "string",
+                      "description" : "Sets image for external secrets operator's controller"
                     },
                     "chart" : {
-                      "type" : "string"
+                      "type" : "string",
+                      "description" : "Name of the Helm chart"
                     },
                     "image" : {
-                      "type" : "string"
+                      "type" : "string",
+                      "description" : "Sets image for external secrets operator"
                     },
                     "repoURL" : {
-                      "type" : "string"
+                      "type" : "string",
+                      "description" : "Repository url from which the Helm chart should be obtained"
                     },
                     "version" : {
-                      "type" : "string"
+                      "type" : "string",
+                      "description" : "The version of the Helm chart to be installed"
                     },
                     "webhookImage" : {
-                      "type" : "string"
+                      "type" : "string",
+                      "description" : "Sets image for external secrets operator's webhook"
                     }
                   },
                   "additionalProperties" : false
                 }
               },
+              "description" : "Config parameter for the external secrets operator",
               "additionalProperties" : false
             },
             "vault" : {
-              "type" : "object",
-              "properties" : {
-                "helm" : {
-                  "type" : "object",
-                  "properties" : {
-                    "chart" : {
-                      "type" : "string"
+              "allOf" : [ {
+                "type" : "object",
+                "properties" : {
+                  "helm" : {
+                    "type" : "object",
+                    "properties" : {
+                      "chart" : {
+                        "type" : "string",
+                        "description" : "Name of the Helm chart"
+                      },
+                      "image" : {
+                        "type" : "string",
+                        "description" : "Sets image for vault"
+                      },
+                      "repoURL" : {
+                        "type" : "string",
+                        "description" : "Repository url from which the Helm chart should be obtained"
+                      },
+                      "version" : {
+                        "type" : "string",
+                        "description" : "The version of the Helm chart to be installed"
+                      }
                     },
-                    "image" : {
-                      "type" : "string"
-                    },
-                    "repoURL" : {
-                      "type" : "string"
-                    },
-                    "version" : {
-                      "type" : "string"
-                    }
+                    "additionalProperties" : false
                   },
-                  "additionalProperties" : false
+                  "mode" : {
+                    "type" : "string"
+                  },
+                  "url" : {
+                    "type" : "string",
+                    "description" : "Sets url for vault ui"
+                  }
                 },
-                "mode" : {
-                  "type" : "string"
-                },
-                "url" : {
-                  "type" : "string"
-                }
-              },
-              "additionalProperties" : false
+                "description" : "Config parameter for the secrets-vault",
+                "additionalProperties" : false
+              }, {
+                "description" : "Installs Hashicorp vault and the external secrets operator. Possible values: ${COMPLETION-CANDIDATES}"
+              } ]
             }
           },
           "additionalProperties" : false
@@ -242,25 +294,32 @@
       "type" : "object",
       "properties" : {
         "helm" : {
-          "type" : "string"
+          "type" : "string",
+          "description" : "Sets image for helm"
         },
         "helmKubeval" : {
-          "type" : "string"
+          "type" : "string",
+          "description" : "Sets image for helmkubeval"
         },
         "kubectl" : {
-          "type" : "string"
+          "type" : "string",
+          "description" : "Sets image for kubectl"
         },
         "kubeval" : {
-          "type" : "string"
+          "type" : "string",
+          "description" : "Sets image for kubeval"
         },
         "nginx" : {
-          "type" : "string"
+          "type" : "string",
+          "description" : "Sets image for nginx used in various applications"
         },
         "petclinic" : {
-          "type" : "string"
+          "type" : "string",
+          "description" : "Sets image for petclinic used in various applications"
         },
         "yamllint" : {
-          "type" : "string"
+          "type" : "string",
+          "description" : "Sets image for yamllint"
         }
       },
       "additionalProperties" : false
@@ -272,54 +331,71 @@
           "type" : "object",
           "properties" : {
             "chart" : {
-              "type" : "string"
+              "type" : "string",
+              "description" : "Name of the Helm chart"
             },
             "repoURL" : {
-              "type" : "string"
+              "type" : "string",
+              "description" : "Repository url from which the Helm chart should be obtained"
             },
             "version" : {
-              "type" : "string"
+              "type" : "string",
+              "description" : "The version of the Helm chart to be installed"
             }
           },
+          "description" : "Common config parameter for the Helm package manager. Currently Name of Char (chart), URl of Helm-Repository (repoURL) and Chart Version (version) are implemented",
           "additionalProperties" : false
         },
         "internalPort" : {
-          "type" : "integer"
+          "type" : "integer",
+          "description" : "Port of registry registry. Ignored when a registry*url params are set"
         },
         "password" : {
-          "type" : "string"
+          "type" : "string",
+          "description" : "Optional when --registry-url is set"
         },
         "path" : {
-          "type" : "string"
+          "type" : "string",
+          "description" : "Optional when --registry-url is set"
         },
         "pullPassword" : {
-          "type" : "string"
+          "type" : "string",
+          "description" : "Optional when --registry-pull-url is set"
         },
         "pullUrl" : {
-          "type" : "string"
+          "type" : "string",
+          "description" : "The url of your external pull-registry. Make sure to always use this with --registry-push-url"
         },
         "pullUsername" : {
-          "type" : "string"
+          "type" : "string",
+          "description" : "Optional when --registry-pull-url is set"
         },
         "pushPassword" : {
-          "type" : "string"
+          "type" : "string",
+          "description" : "Optional when --registry-push-url is set"
         },
         "pushPath" : {
-          "type" : "string"
+          "type" : "string",
+          "description" : "Optional when --registry-push-url is set"
         },
         "pushUrl" : {
-          "type" : "string"
+          "type" : "string",
+          "description" : "The url of your external pull-registry. Make sure to always use this with --registry-pull-url"
         },
         "pushUsername" : {
-          "type" : "string"
+          "type" : "string",
+          "description" : "Optional when --registry-push-url is set"
         },
         "url" : {
-          "type" : "string"
+          "type" : "string",
+          "description" : "The url of your external registry"
         },
         "username" : {
-          "type" : "string"
+          "type" : "string",
+          "description" : "Optional when --registry-url is set"
         }
       },
+      "description" : "Config Parameter for Regitry",
       "additionalProperties" : false
     }
   },
