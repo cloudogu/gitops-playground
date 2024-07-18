@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
-import com.cloudogu.gitops.config.DescriptionConstants
+import static com.cloudogu.gitops.config.DescriptionConstants.*
 
 import static groovy.json.JsonOutput.prettyPrint
 import static groovy.json.JsonOutput.toJson 
@@ -36,185 +36,185 @@ import static groovy.json.JsonOutput.toJson
 @Slf4j
 class GitopsPlaygroundCli  implements Runnable {
     // args group registry
-    @Option(names = ['--internal-registry-port'], description = DescriptionConstants.REGISTRY_INTERNAL_PORT_DESCRIPTION)
+    @Option(names = ['--internal-registry-port'], description = REGISTRY_INTERNAL_PORT_DESCRIPTION)
     private Integer internalRegistryPort
-    @Option(names = ['--registry-url'], description = DescriptionConstants.REGISTRY_URL_DESCRIPTION)
+    @Option(names = ['--registry-url'], description = REGISTRY_URL_DESCRIPTION)
     private String registryUrl
-    @Option(names = ['--registry-path'], description = DescriptionConstants.REGISTRY_PATH_DESCRIPTION)
+    @Option(names = ['--registry-path'], description = REGISTRY_PATH_DESCRIPTION)
     private String registryPath
-    @Option(names = ['--registry-username'], description = DescriptionConstants.REGISTRY_USERNAME_DESCRIPTION)
+    @Option(names = ['--registry-username'], description = REGISTRY_USERNAME_DESCRIPTION)
     private String registryUsername
-    @Option(names = ['--registry-password'], description = DescriptionConstants.REGISTRY_PASSWORD_DESCRIPTION)
+    @Option(names = ['--registry-password'], description = REGISTRY_PASSWORD_DESCRIPTION)
     private String registryPassword
-    @Option(names = ['--registry-pull-url'], description = DescriptionConstants.REGISTRY_PULL_URL_DESCRIPTION)
+    @Option(names = ['--registry-pull-url'], description = REGISTRY_PULL_URL_DESCRIPTION)
     private String registryPullUrl
-    @Option(names = ['--registry-pull-path'], description = DescriptionConstants.REGISTRY_PULL_PATH_DESCRIPTION)
+    @Option(names = ['--registry-pull-path'], description = REGISTRY_PULL_PATH_DESCRIPTION)
     private String registryPullPath
-    @Option(names = ['--registry-pull-username'], description = DescriptionConstants.REGISTRY_PULL_USERNAME_DESCRIPTION)
+    @Option(names = ['--registry-pull-username'], description = REGISTRY_PULL_USERNAME_DESCRIPTION)
     private String registryPullUsername
-    @Option(names = ['--registry-pull-password'], description = DescriptionConstants.REGISTRY_PULL_PASSWORD_DESCRIPTION)
+    @Option(names = ['--registry-pull-password'], description = REGISTRY_PULL_PASSWORD_DESCRIPTION)
     private String registryPullPassword
-    @Option(names = ['--registry-push-url'], description = DescriptionConstants.REGISTRY_PUSH_URL_DESCRIPTION)
+    @Option(names = ['--registry-push-url'], description = REGISTRY_PUSH_URL_DESCRIPTION)
     private String registryPushUrl
-    @Option(names = ['--registry-push-path'], description = DescriptionConstants.REGISTRY_PUSH_PATH_DESCRIPTION)
+    @Option(names = ['--registry-push-path'], description = REGISTRY_PUSH_PATH_DESCRIPTION)
     private String registryPushPath
-    @Option(names = ['--registry-push-username'], description = DescriptionConstants.REGISTRY_PUSH_USERNAME_DESCRIPTION)
+    @Option(names = ['--registry-push-username'], description = REGISTRY_PUSH_USERNAME_DESCRIPTION)
     private String registryPushUsername
-    @Option(names = ['--registry-push-password'], description = DescriptionConstants.REGISTRY_PUSH_PASSWORD_DESCRIPTION)
+    @Option(names = ['--registry-push-password'], description = REGISTRY_PUSH_PASSWORD_DESCRIPTION)
     private String registryPushPassword
 
     // args group jenkins
-    @Option(names = ['--jenkins-url'], description = DescriptionConstants.JENKINS_URL_DESCRIPTION)
+    @Option(names = ['--jenkins-url'], description = JENKINS_URL_DESCRIPTION)
     private String jenkinsUrl
-    @Option(names = ['--jenkins-username'], description = DescriptionConstants.JENKINS_USERNAME_DESCRIPTION)
+    @Option(names = ['--jenkins-username'], description = JENKINS_USERNAME_DESCRIPTION)
     private String jenkinsUsername
-    @Option(names = ['--jenkins-password'], description = DescriptionConstants.JENKINS_PASSWORD_DESCRIPTION)
+    @Option(names = ['--jenkins-password'], description = JENKINS_PASSWORD_DESCRIPTION)
     private String jenkinsPassword
-    @Option(names = ['--jenkins-metrics-username'], description = DescriptionConstants.JENKINS_METRICS_USERNAME_DESCRIPTION)
+    @Option(names = ['--jenkins-metrics-username'], description = JENKINS_METRICS_USERNAME_DESCRIPTION)
     private String jenkinsMetricsUsername
-    @Option(names = ['--jenkins-metrics-password'], description = DescriptionConstants.JENKINS_METRICS_PASSWORD_DESCRIPTION)
+    @Option(names = ['--jenkins-metrics-password'], description = JENKINS_METRICS_PASSWORD_DESCRIPTION)
     private String jenkinsMetricsPassword
-    @Option(names = ['--maven-central-mirror'], description = DescriptionConstants.MAVEN_CENTRAL_MIRROR_DESCRIPTION)
+    @Option(names = ['--maven-central-mirror'], description = MAVEN_CENTRAL_MIRROR_DESCRIPTION)
     private String mavenCentralMirror
 
     // args group scm
-    @Option(names = ['--scmm-url'], description = DescriptionConstants.SCMM_URL_DESCRIPTION)
+    @Option(names = ['--scmm-url'], description = SCMM_URL_DESCRIPTION)
     private String scmmUrl
-    @Option(names = ['--scmm-username'], description = DescriptionConstants.SCMM_USERNAME_DESCRIPTION)
+    @Option(names = ['--scmm-username'], description = SCMM_USERNAME_DESCRIPTION)
     private String scmmUsername
-    @Option(names = ['--scmm-password'], description = DescriptionConstants.SCMM_PASSWORD_DESCRIPTION)
+    @Option(names = ['--scmm-password'], description = SCMM_PASSWORD_DESCRIPTION)
     private String scmmPassword
 
     // args group remote
-    @Option(names = ['--remote'], description = DescriptionConstants.REMOTE_DESCRIPTION)
+    @Option(names = ['--remote'], description = REMOTE_DESCRIPTION)
     private Boolean remote
-    @Option(names = ['--insecure'], description = DescriptionConstants.INSECURE_DESCRIPTION)
+    @Option(names = ['--insecure'], description = INSECURE_DESCRIPTION)
     private Boolean insecure
 
     // args group tool configuration
-    @Option(names = ['--git-name'], description = DescriptionConstants.GIT_NAME_DESCRIPTION)
+    @Option(names = ['--git-name'], description = GIT_NAME_DESCRIPTION)
     private String gitName
-    @Option(names = ['--git-email'], description = DescriptionConstants.GIT_EMAIL_DESCRIPTION)
+    @Option(names = ['--git-email'], description = GIT_EMAIL_DESCRIPTION)
     private String gitEmail
-    @Option(names = ['--kubectl-image'], description = DescriptionConstants.KUBECTL_IMAGE_DESCRIPTION)
+    @Option(names = ['--kubectl-image'], description = KUBECTL_IMAGE_DESCRIPTION)
     private String kubectlImage
-    @Option(names = ['--helm-image'], description = DescriptionConstants.HELM_IMAGE_DESCRIPTION)
+    @Option(names = ['--helm-image'], description = HELM_IMAGE_DESCRIPTION)
     private String helmImage
-    @Option(names = ['--kubeval-image'], description = DescriptionConstants.KUBEVAL_IMAGE_DESCRIPTION)
+    @Option(names = ['--kubeval-image'], description = KUBEVAL_IMAGE_DESCRIPTION)
     private String kubevalImage
-    @Option(names = ['--helmkubeval-image'], description = DescriptionConstants.HELMKUBEVAL_IMAGE_DESCRIPTION)
+    @Option(names = ['--helmkubeval-image'], description = HELMKUBEVAL_IMAGE_DESCRIPTION)
     private String helmKubevalImage
-    @Option(names = ['--yamllint-image'], description = DescriptionConstants.YAMLLINT_IMAGE_DESCRIPTION)
+    @Option(names = ['--yamllint-image'], description = YAMLLINT_IMAGE_DESCRIPTION)
     private String yamllintImage
-    @Option(names = ['--grafana-image'], description = DescriptionConstants.GRAFANA_IMAGE_DESCRIPTION)
+    @Option(names = ['--grafana-image'], description = GRAFANA_IMAGE_DESCRIPTION)
     private String grafanaImage
-    @Option(names = ['--grafana-sidecar-image'], description = DescriptionConstants.GRAFANA_SIDECAR_IMAGE_DESCRIPTION)
+    @Option(names = ['--grafana-sidecar-image'], description = GRAFANA_SIDECAR_IMAGE_DESCRIPTION)
     private String grafanaSidecarImage
-    @Option(names = ['--prometheus-image'], description = DescriptionConstants.PROMETHEUS_IMAGE_DESCRIPTION)
+    @Option(names = ['--prometheus-image'], description = PROMETHEUS_IMAGE_DESCRIPTION)
     private String prometheusImage
-    @Option(names = ['--prometheus-operator-image'], description = DescriptionConstants.PROMETHEUS_OPERATOR_IMAGE_DESCRIPTION)
+    @Option(names = ['--prometheus-operator-image'], description = PROMETHEUS_OPERATOR_IMAGE_DESCRIPTION)
     private String prometheusOperatorImage
-    @Option(names = ['--prometheus-config-reloader-image'], description = DescriptionConstants.PROMETHEUS_CONFIG_RELOADER_IMAGE_DESCRIPTION)
+    @Option(names = ['--prometheus-config-reloader-image'], description = PROMETHEUS_CONFIG_RELOADER_IMAGE_DESCRIPTION)
     private String prometheusConfigReloaderImage
-    @Option(names = ['--external-secrets-image'], description = DescriptionConstants.EXTERNAL_SECRETS_IMAGE_DESCRIPTION)
+    @Option(names = ['--external-secrets-image'], description = EXTERNAL_SECRETS_IMAGE_DESCRIPTION)
     private String externalSecretsOperatorImage
-    @Option(names = ['--external-secrets-certcontroller-image'], description = DescriptionConstants.EXTERNAL_SECRETS_CERT_CONTROLLER_IMAGE_DESCRIPTION)
+    @Option(names = ['--external-secrets-certcontroller-image'], description = EXTERNAL_SECRETS_CERT_CONTROLLER_IMAGE_DESCRIPTION)
     private String externalSecretsOperatorCertControllerImage
-    @Option(names = ['--external-secrets-webhook-image'], description = DescriptionConstants.EXTERNAL_SECRETS_WEBHOOK_IMAGE_DESCRIPTION)
+    @Option(names = ['--external-secrets-webhook-image'], description = EXTERNAL_SECRETS_WEBHOOK_IMAGE_DESCRIPTION)
     private String externalSecretsOperatorWebhookImage
-    @Option(names = ['--vault-image'], description = DescriptionConstants.VAULT_IMAGE_DESCRIPTION)
+    @Option(names = ['--vault-image'], description = VAULT_IMAGE_DESCRIPTION)
     private String vaultImage
-    @Option(names = ['--nginx-image'], description = DescriptionConstants.NGINX_IMAGE_DESCRIPTION)
+    @Option(names = ['--nginx-image'], description = NGINX_IMAGE_DESCRIPTION)
     private String nginxImage
-    @Option(names = ['--petclinic-image'], description = DescriptionConstants.PETCLINIC_IMAGE_DESCRIPTION)
+    @Option(names = ['--petclinic-image'], description = PETCLINIC_IMAGE_DESCRIPTION)
     private String petClinicImage
-    @Option(names = ['--base-url'], description = DescriptionConstants.BASE_URL_DESCRIPTION)
+    @Option(names = ['--base-url'], description = BASE_URL_DESCRIPTION)
     private String baseUrl
-    @Option(names = ['--url-separator-hyphen'], description = DescriptionConstants.URL_SEPARATOR_HYPHEN_DESCRIPTION)
+    @Option(names = ['--url-separator-hyphen'], description = URL_SEPARATOR_HYPHEN_DESCRIPTION)
     private Boolean urlSeparatorHyphen
-    @Option(names = ['--mirror-repos'], description = DescriptionConstants.MIRROR_REPOS_DESCRIPTION)
+    @Option(names = ['--mirror-repos'], description = MIRROR_REPOS_DESCRIPTION)
     private Boolean mirrorRepos
-    @Option(names = ['--skip-crds'], description = DescriptionConstants.SKIP_CRDS_DESCRIPTION)
+    @Option(names = ['--skip-crds'], description = SKIP_CRDS_DESCRIPTION)
     private Boolean skipCrds
 
     // args group metrics
-    @Option(names = ['--metrics', '--monitoring'], description = DescriptionConstants.MONITORING_ENABLE_DESCRIPTION)
+    @Option(names = ['--metrics', '--monitoring'], description = MONITORING_ENABLE_DESCRIPTION)
     private Boolean monitoring
-    @Option(names = ['--grafana-url'], description = DescriptionConstants.GRAFANA_URL_DESCRIPTION)
+    @Option(names = ['--grafana-url'], description = GRAFANA_URL_DESCRIPTION)
     private String grafanaUrl
-    @Option(names = ['--grafana-email-from'], description = DescriptionConstants.GRAFANA_EMAIL_FROM_DESCRIPTION)
+    @Option(names = ['--grafana-email-from'], description = GRAFANA_EMAIL_FROM_DESCRIPTION)
     private String grafanaEmailFrom
-    @Option(names = ['--grafana-email-to'], description = DescriptionConstants.GRAFANA_EMAIL_TO_DESCRIPTION)
+    @Option(names = ['--grafana-email-to'], description = GRAFANA_EMAIL_TO_DESCRIPTION)
     private String grafanaEmailTo
 
     // args group vault / secrets
-    @Option(names = ['--vault'], description = DescriptionConstants.VAULT_ENABLE_DESCRIPTION)
+    @Option(names = ['--vault'], description = VAULT_ENABLE_DESCRIPTION)
     private VaultModes vault
     enum VaultModes { dev, prod }
-    @Option(names = ['--vault-url'], description = DescriptionConstants.VAULT_URL_DESCRIPTION)
+    @Option(names = ['--vault-url'], description = VAULT_URL_DESCRIPTION)
     private String vaultUrl
 
-    @Option(names = ['--mailhog-url'], description = DescriptionConstants.MAILHOG_URL_DESCRIPTION)
+    @Option(names = ['--mailhog-url'], description = MAILHOG_URL_DESCRIPTION)
     private String mailhogUrl
-    @Option(names = ['--mailhog', '--mail'], description = DescriptionConstants.MAILHOG_ENABLE_DESCRIPTION, scope = CommandLine.ScopeType.INHERIT)
+    @Option(names = ['--mailhog', '--mail'], description = MAILHOG_ENABLE_DESCRIPTION, scope = CommandLine.ScopeType.INHERIT)
     private Boolean mailhog
 
     // condition check dependent parameters of external Mailserver
-    @Option(names = ['--smtp-address'], description = DescriptionConstants.SMTP_ADDRESS_DESCRIPTION)
+    @Option(names = ['--smtp-address'], description = SMTP_ADDRESS_DESCRIPTION)
     private String smtpAddress
-    @Option(names = ['--smtp-port'], description = DescriptionConstants.SMTP_PORT_DESCRIPTION)
+    @Option(names = ['--smtp-port'], description = SMTP_PORT_DESCRIPTION)
     private Integer smtpPort
-    @Option(names = ['--smtp-user'], description = DescriptionConstants.SMTP_USER_DESCRIPTION)
+    @Option(names = ['--smtp-user'], description = SMTP_USER_DESCRIPTION)
     private String smtpUser
-    @Option(names = ['--smtp-password'], description = DescriptionConstants.SMTP_PASSWORD_DESCRIPTION)
+    @Option(names = ['--smtp-password'], description = SMTP_PASSWORD_DESCRIPTION)
     private String smtpPassword
 
     // args group debug
-    @Option(names = ['-d', '--debug'], description = DescriptionConstants.DEBUG_DESCRIPTION, scope = CommandLine.ScopeType.INHERIT)
+    @Option(names = ['-d', '--debug'], description = DEBUG_DESCRIPTION, scope = CommandLine.ScopeType.INHERIT)
     Boolean debug
-    @Option(names = ['-x', '--trace'], description = DescriptionConstants.TRACE_DESCRIPTION, scope = CommandLine.ScopeType.INHERIT)
+    @Option(names = ['-x', '--trace'], description = TRACE_DESCRIPTION, scope = CommandLine.ScopeType.INHERIT)
     Boolean trace
 
     // args group configuration
-    @Option(names = ['--username'], description = DescriptionConstants.USERNAME_DESCRIPTION)
+    @Option(names = ['--username'], description = USERNAME_DESCRIPTION)
     private String username
-    @Option(names = ['--password'], description = DescriptionConstants.PASSWORD_DESCRIPTION)
+    @Option(names = ['--password'], description = PASSWORD_DESCRIPTION)
     private String password
-    @Option(names = ['-y', '--yes'], description = DescriptionConstants.PIPE_YES_DESCRIPTION)
+    @Option(names = ['-y', '--yes'], description = PIPE_YES_DESCRIPTION)
     Boolean pipeYes
-    @Option(names = ['--name-prefix'], description = DescriptionConstants.NAME_PREFIX_DESCRIPTION)
+    @Option(names = ['--name-prefix'], description = NAME_PREFIX_DESCRIPTION)
     private String namePrefix
-    @Option(names = ['--destroy'], description = DescriptionConstants.DESTROY_DESCRIPTION)
+    @Option(names = ['--destroy'], description = DESTROY_DESCRIPTION)
     Boolean destroy
-    @Option(names = ['--config-file'], description = DescriptionConstants.CONFIG_FILE_DESCRIPTION)
+    @Option(names = ['--config-file'], description = CONFIG_FILE_DESCRIPTION)
     String configFile
-    @Option(names = ['--config-map'], description = DescriptionConstants.CONFIG_MAP_DESCRIPTION)
+    @Option(names = ['--config-map'], description = CONFIG_MAP_DESCRIPTION)
     String configMap
-    @Option(names = ['--output-config-file'], description = DescriptionConstants.OUTPUT_CONFIG_FILE_DESCRIPTION)
+    @Option(names = ['--output-config-file'], description = OUTPUT_CONFIG_FILE_DESCRIPTION)
     Boolean outputConfigFile
-    @Option(names = ['--pod-resources'], description = DescriptionConstants.POD_RESOURCES_DESCRIPTION)
+    @Option(names = ['--pod-resources'], description = POD_RESOURCES_DESCRIPTION)
     Boolean podResources
 
     // args group ArgoCD operator
-    @Option(names = ['--argocd'], description = DescriptionConstants.ARGOCD_ENABLE_DESCRIPTION)
+    @Option(names = ['--argocd'], description = ARGOCD_ENABLE_DESCRIPTION)
     private Boolean argocd
-    @Option(names = ['--argocd-url'], description = DescriptionConstants.ARGOCD_URL_DESCRIPTION)
+    @Option(names = ['--argocd-url'], description = ARGOCD_URL_DESCRIPTION)
     private String argocdUrl
-    @Option(names = ['--argocd-email-from'], description = DescriptionConstants.ARGOCD_EMAIL_FROM_DESCRIPTION)
+    @Option(names = ['--argocd-email-from'], description = ARGOCD_EMAIL_FROM_DESCRIPTION)
     private String emailFrom
-    @Option(names = ['--argocd-email-to-user'], description = DescriptionConstants.ARGOCD_EMAIL_TO_USER_DESCRIPTION)
+    @Option(names = ['--argocd-email-to-user'], description = ARGOCD_EMAIL_TO_USER_DESCRIPTION)
     private String emailToUser
-    @Option(names = ['--argocd-email-to-admin'], description = DescriptionConstants.ARGOCD_EMAIL_TO_ADMIN_DESCRIPTION)
+    @Option(names = ['--argocd-email-to-admin'], description = ARGOCD_EMAIL_TO_ADMIN_DESCRIPTION)
     private String emailToAdmin
 
     // args group example apps
-    @Option(names = ['--petclinic-base-domain'], description = DescriptionConstants.PETCLINIC_BASE_DOMAIN_DESCRIPTION)
+    @Option(names = ['--petclinic-base-domain'], description = PETCLINIC_BASE_DOMAIN_DESCRIPTION)
     private String petclinicBaseDomain
-    @Option(names = ['--nginx-base-domain'], description = DescriptionConstants.NGINX_BASE_DOMAIN_DESCRIPTION)
+    @Option(names = ['--nginx-base-domain'], description = NGINX_BASE_DOMAIN_DESCRIPTION)
     private String nginxBaseDomain
 
     // args Ingress-Class
-    @Option(names = ['--ingress-nginx'], description = DescriptionConstants.INGRESS_NGINX_ENABLE_DESCRIPTION)
+    @Option(names = ['--ingress-nginx'], description = INGRESS_NGINX_ENABLE_DESCRIPTION)
     private Boolean ingressNginx
 
 

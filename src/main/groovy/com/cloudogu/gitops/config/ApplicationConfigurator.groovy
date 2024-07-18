@@ -84,8 +84,6 @@ class ApplicationConfigurator {
                     url     : '',
                     username: DEFAULT_ADMIN_USER,
                     password: DEFAULT_ADMIN_PW,
-                    gitName: '',
-                    gitEmail: '',
                     gitOpsUsername : '', // Set dynamically
                     /* This corresponds to the "Base URL" in SCMM Settings.
                        We use the K8s service as default name here, to make the build on push feature (webhooks from SCMM to Jenkins that trigger builds) work in k3d.
