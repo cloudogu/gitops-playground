@@ -66,8 +66,8 @@ RUN tar -xf helm.tar.gz
 # Without the two spaces the check fails!
 RUN echo "${HELM_CHECKSUM}  helm.tar.gz" | sha256sum -c
 RUN set -o pipefail && curl --location --fail --retry 20 --retry-connrefused --retry-all-errors \
-  https://raw.githubusercontent.com/helm/helm/main/KEYS | gpg --import
-RUN gpg --batch --verify helm.tar.gz.asc helm.tar.gz
+  https://raw.githubusercontent.com/helm/helm/main/KEYS | gpg --import --batch --no-default-keyring --keyring /tmp/keyring.gpg 
+RUN gpgv --keyring  /tmp/keyring.gpg  helm.tar.gz.asc helm.tar.gz
 RUN mv linux-amd64/helm /dist/usr/local/bin
 ENV PATH=$PATH:/dist/usr/local/bin
 
