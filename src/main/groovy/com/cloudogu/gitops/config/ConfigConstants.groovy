@@ -9,7 +9,6 @@ interface ConfigConstants {
     String REGISTRY_USERNAME_DESCRIPTION = 'Optional when registry-url is set'
     String REGISTRY_PASSWORD_DESCRIPTION = 'Optional when registry-url is set'
     String REGISTRY_PULL_URL_DESCRIPTION = 'The url of your external pull-registry. Make sure to always use this with registry-push-url'
-    String REGISTRY_PULL_PATH_DESCRIPTION = 'Optional when --registry-pull-url is set'
     String REGISTRY_PULL_USERNAME_DESCRIPTION = 'Optional when registry-pull-url is set'
     String REGISTRY_PULL_PASSWORD_DESCRIPTION = 'Optional when registry-pull-url is set'
     String REGISTRY_PUSH_URL_DESCRIPTION = 'The url of your external pull-registry. Make sure to always use this with registry-pull-url'

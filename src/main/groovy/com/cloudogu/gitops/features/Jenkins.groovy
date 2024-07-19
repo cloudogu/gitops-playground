@@ -71,7 +71,6 @@ class Jenkins extends Feature {
         globalPropertyManager.setGlobalProperty('SCMM_URL', config.scmm['url'] as String)
         if (config.registry['twoRegistries']) {
             globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_PULL_URL", config.registry['pullUrl'] as String)
-            globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_PULL_PATH", config.registry['pullPath'] as String)
             globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_PUSH_URL", config.registry['pushUrl'] as String)
             globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_PUSH_PATH", config.registry['pushPath'] as String)
         } else {

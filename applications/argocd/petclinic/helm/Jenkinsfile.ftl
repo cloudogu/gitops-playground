@@ -6,7 +6,6 @@ String getConfigRepositoryPRBaseUrl() { env.SCMM_URL }
 String getConfigRepositoryPRRepo() { '${namePrefix}argocd/example-apps' }
 <#if registry.twoRegistries>
 String getDockerRegistryPullBaseUrl() { env.${namePrefixForEnvVars}REGISTRY_PULL_URL }
-String getDockerRegistryPullPath() { env.${namePrefixForEnvVars}REGISTRY_PULL_PATH }
 String getDockerRegistryPullCredentials() { 'registry-pull-user' }
 String getDockerRegistryPushBaseUrl() { env.${namePrefixForEnvVars}REGISTRY_PUSH_URL }
 String getDockerRegistryPushPath() { env.${namePrefixForEnvVars}REGISTRY_PUSH_PATH }

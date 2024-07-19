@@ -48,8 +48,6 @@ class GitopsPlaygroundCli  implements Runnable {
     private String registryPassword
     @Option(names = ['--registry-pull-url'], description = REGISTRY_PULL_URL_DESCRIPTION)
     private String registryPullUrl
-    @Option(names = ['--registry-pull-path'], description = REGISTRY_PULL_PATH_DESCRIPTION)
-    private String registryPullPath
     @Option(names = ['--registry-pull-username'], description = REGISTRY_PULL_USERNAME_DESCRIPTION)
     private String registryPullUsername
     @Option(names = ['--registry-pull-password'], description = REGISTRY_PULL_PASSWORD_DESCRIPTION)
@@ -357,7 +355,6 @@ class GitopsPlaygroundCli  implements Runnable {
                         username    : registryUsername,
                         password    : registryPassword,
                         pullUrl         : registryPullUrl,
-                        pullPath        : registryPullPath,
                         pullUsername    : registryPullUsername,
                         pullPassword    : registryPullPassword,
                         pushUrl         : registryPushUrl,
