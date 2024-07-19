@@ -4,7 +4,7 @@ package com.cloudogu.gitops.config.schema
 import com.fasterxml.jackson.annotation.JsonClassDescription
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 
-import static com.cloudogu.gitops.config.ConfigConstants.* 
+import static com.cloudogu.gitops.config.ConfigConstants.*
 
 /**
  * The schema for the configuration file.
@@ -15,8 +15,7 @@ import static com.cloudogu.gitops.config.ConfigConstants.*
  * When changing values make sure to
  * * recreate file configuration.schema.json using JsonSchemaGenerator (copy output into file an format using IDE)
  * * modify GitOpsPlaygroundCli and ApplicationConfigurator as well.
- * @see com.cloudogu.gitops.cli.GitopsPlaygroundCli
- * @see com.cloudogu.gitops.config.ApplicationConfigurator
+ * @see com.cloudogu.gitops.cli.GitopsPlaygroundCli* @see com.cloudogu.gitops.config.ApplicationConfigurator
  */
 class Schema {
     @JsonPropertyDescription(REGISTRY_DESCRIPTION)
@@ -24,9 +23,9 @@ class Schema {
     @JsonPropertyDescription(JENKINS_DESCRIPTION)
     JenkinsSchema jenkins
     @JsonPropertyDescription(SCMM_DESCRIPTION)
-    ScmmSchema scmm 
+    ScmmSchema scmm
     @JsonPropertyDescription(APPLICATION_DESCRIPTION)
-    ApplicationSchema application 
+    ApplicationSchema application
     @JsonPropertyDescription(IMAGES_DESCRIPTION)
     ImagesSchema images
     @JsonPropertyDescription(REPOSITORIES_DESCRIPTION)
@@ -78,51 +77,51 @@ class Schema {
         HelmConfig helm
     }
 
-     static class JenkinsSchema {
-         // boolean internal = true
-         @JsonPropertyDescription(JENKINS_URL_DESCRIPTION)
-         String url = ""
-         @JsonPropertyDescription(JENKINS_USERNAME_DESCRIPTION)
-         String username = ""
-         @JsonPropertyDescription(JENKINS_PASSWORD_DESCRIPTION)
-         String password = ""
-         // String urlForScmm = ""
-         @JsonPropertyDescription(JENKINS_METRICS_USERNAME_DESCRIPTION)
-         String metricsUsername = ""
-         @JsonPropertyDescription(JENKINS_METRICS_PASSWORD_DESCRIPTION)
-         String metricsPassword = ""
-         @JsonPropertyDescription(MAVEN_CENTRAL_MIRROR_DESCRIPTION)
-         String mavenCentralMirror = ""
+    static class JenkinsSchema {
+        // boolean internal = true
+        @JsonPropertyDescription(JENKINS_URL_DESCRIPTION)
+        String url = ""
+        @JsonPropertyDescription(JENKINS_USERNAME_DESCRIPTION)
+        String username = ""
+        @JsonPropertyDescription(JENKINS_PASSWORD_DESCRIPTION)
+        String password = ""
+        // String urlForScmm = ""
+        @JsonPropertyDescription(JENKINS_METRICS_USERNAME_DESCRIPTION)
+        String metricsUsername = ""
+        @JsonPropertyDescription(JENKINS_METRICS_PASSWORD_DESCRIPTION)
+        String metricsPassword = ""
+        @JsonPropertyDescription(MAVEN_CENTRAL_MIRROR_DESCRIPTION)
+        String mavenCentralMirror = ""
 
-         
-         @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
-         JenkinsHelmSchema helm
-         static class JenkinsHelmSchema {
-             // Once these can be used get rid of this class and use HelmConfig instead
-             // String chart = ""
-             // String repoURL = ""
-             @JsonPropertyDescription(HELM_CONFIG_VERSION_DESCRIPTION)
-             String version = ""
-         }
+
+        @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
+        JenkinsHelmSchema helm
+        static class JenkinsHelmSchema {
+            // Once these can be used get rid of this class and use HelmConfig instead
+            // String chart = ""
+            // String repoURL = ""
+            @JsonPropertyDescription(HELM_CONFIG_VERSION_DESCRIPTION)
+            String version = ""
+        }
     }
-    
-     static class ScmmSchema {
-         // boolean internal = true
-         @JsonPropertyDescription(SCMM_URL_DESCRIPTION)
-         String url = ""
-         @JsonPropertyDescription(SCMM_USERNAME_DESCRIPTION)
-         String username = ""
-         @JsonPropertyDescription(SCMM_PASSWORD_DESCRIPTION)
-         String password = ""
 
-         // String gitOpsUsername = ""
-         // String urlForJenkins = ""
-         // String host = ""
-         // String protocol = ""
-         // String ingress = ""
+    static class ScmmSchema {
+        // boolean internal = true
+        @JsonPropertyDescription(SCMM_URL_DESCRIPTION)
+        String url = ""
+        @JsonPropertyDescription(SCMM_USERNAME_DESCRIPTION)
+        String username = ""
+        @JsonPropertyDescription(SCMM_PASSWORD_DESCRIPTION)
+        String password = ""
 
-         HelmConfig helm
-     }
+        // String gitOpsUsername = ""
+        // String urlForJenkins = ""
+        // String host = ""
+        // String protocol = ""
+        // String ingress = ""
+
+        HelmConfig helm
+    }
 
     static class ApplicationSchema {
         // group remote
@@ -175,19 +174,19 @@ class Schema {
 
     static class ImagesSchema {
         @JsonPropertyDescription(KUBECTL_IMAGE_DESCRIPTION)
-         String kubectl = ""
+        String kubectl = ""
         @JsonPropertyDescription(HELM_IMAGE_DESCRIPTION)
-         String helm = ""
+        String helm = ""
         @JsonPropertyDescription(KUBEVAL_IMAGE_DESCRIPTION)
-         String kubeval = ""
+        String kubeval = ""
         @JsonPropertyDescription(HELMKUBEVAL_IMAGE_DESCRIPTION)
-         String helmKubeval = ""
+        String helmKubeval = ""
         @JsonPropertyDescription(YAMLLINT_IMAGE_DESCRIPTION)
-         String yamllint = ""
+        String yamllint = ""
         @JsonPropertyDescription(NGINX_IMAGE_DESCRIPTION)
-         String nginx = ""
+        String nginx = ""
         @JsonPropertyDescription(PETCLINIC_IMAGE_DESCRIPTION)
-         String petclinic = ""
+        String petclinic = ""
     }
 
     static class RepositoriesSchema {
@@ -205,120 +204,120 @@ class Schema {
         @JsonPropertyDescription(REPO_URL_DESCRIPTION)
         String url
     }
-    
+
     static class RepositorySchemaWithRef extends RepositorySchema {
         @JsonPropertyDescription(REPO_REF_DESCRIPTION)
         String ref
     }
 
     static class FeaturesSchema {
-         @JsonPropertyDescription(ARGOCD_DESCRIPTION)
-         ArgoCDSchema argocd
-         @JsonPropertyDescription(MAILHOG_DESCRIPTION)
-         MailSchema mail
-         @JsonPropertyDescription(MONITORING_DESCRIPTION)
-         MonitoringSchema monitoring
-         @JsonPropertyDescription(SECRETS_DESCRIPTION)
-         SecretsSchema secrets
-         @JsonPropertyDescription(INGRESS_NGINX_DESCRIPTION)
-         IngressNginxSchema ingressNginx
-         @JsonPropertyDescription(EXAMPLE_APPS_DESCRIPTION)
-         ExampleAppsSchema exampleApps
+        @JsonPropertyDescription(ARGOCD_DESCRIPTION)
+        ArgoCDSchema argocd
+        @JsonPropertyDescription(MAILHOG_DESCRIPTION)
+        MailSchema mail
+        @JsonPropertyDescription(MONITORING_DESCRIPTION)
+        MonitoringSchema monitoring
+        @JsonPropertyDescription(SECRETS_DESCRIPTION)
+        SecretsSchema secrets
+        @JsonPropertyDescription(INGRESS_NGINX_DESCRIPTION)
+        IngressNginxSchema ingressNginx
+        @JsonPropertyDescription(EXAMPLE_APPS_DESCRIPTION)
+        ExampleAppsSchema exampleApps
     }
 
-     static class ArgoCDSchema {
-         @JsonPropertyDescription(ARGOCD_ENABLE_DESCRIPTION)
-         boolean active = false
-         @JsonPropertyDescription(ARGOCD_URL_DESCRIPTION)
-         String url = ""
-         @JsonPropertyDescription(ARGOCD_EMAIL_FROM_DESCRIPTION)
-         String emailFrom = ""
-         @JsonPropertyDescription(ARGOCD_EMAIL_TO_USER_DESCRIPTION)
-         String emailToUser = ""
-         @JsonPropertyDescription(ARGOCD_EMAIL_TO_ADMIN_DESCRIPTION)
-         String emailToAdmin = ""
+    static class ArgoCDSchema {
+        @JsonPropertyDescription(ARGOCD_ENABLE_DESCRIPTION)
+        boolean active = false
+        @JsonPropertyDescription(ARGOCD_URL_DESCRIPTION)
+        String url = ""
+        @JsonPropertyDescription(ARGOCD_EMAIL_FROM_DESCRIPTION)
+        String emailFrom = ""
+        @JsonPropertyDescription(ARGOCD_EMAIL_TO_USER_DESCRIPTION)
+        String emailToUser = ""
+        @JsonPropertyDescription(ARGOCD_EMAIL_TO_ADMIN_DESCRIPTION)
+        String emailToAdmin = ""
     }
 
-     static class MailSchema {
-         // boolean active = false
-         @JsonPropertyDescription(MAILHOG_ENABLE_DESCRIPTION)
-         boolean mailhog = false
-         @JsonPropertyDescription(MAILHOG_URL_DESCRIPTION)
-         String mailhogUrl = ""
-         @JsonPropertyDescription(SMTP_ADDRESS_DESCRIPTION)
-         String smtpAddress = ""
-         @JsonPropertyDescription(SMTP_PORT_DESCRIPTION)
-         Integer smtpPort = null
-         @JsonPropertyDescription(SMTP_USER_DESCRIPTION)
-         String smtpUser = ""
-         @JsonPropertyDescription(SMTP_PASSWORD_DESCRIPTION)
-         String smtpPassword = ""
+    static class MailSchema {
+        // boolean active = false
+        @JsonPropertyDescription(MAILHOG_ENABLE_DESCRIPTION)
+        boolean mailhog = false
+        @JsonPropertyDescription(MAILHOG_URL_DESCRIPTION)
+        String mailhogUrl = ""
+        @JsonPropertyDescription(SMTP_ADDRESS_DESCRIPTION)
+        String smtpAddress = ""
+        @JsonPropertyDescription(SMTP_PORT_DESCRIPTION)
+        Integer smtpPort = null
+        @JsonPropertyDescription(SMTP_USER_DESCRIPTION)
+        String smtpUser = ""
+        @JsonPropertyDescription(SMTP_PASSWORD_DESCRIPTION)
+        String smtpPassword = ""
 
-         @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
-         MailHelmSchema helm
-         static class MailHelmSchema extends HelmConfig {
+        @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
+        MailHelmSchema helm
+        static class MailHelmSchema extends HelmConfig {
             @JsonPropertyDescription(HELM_CONFIG_IMAGE_DESCRIPTION)
             String image = ""
-         }
-     }
-
-     static class MonitoringSchema {
-         @JsonPropertyDescription(MONITORING_ENABLE_DESCRIPTION)
-         boolean active = true
-         @JsonPropertyDescription(GRAFANA_URL_DESCRIPTION)
-         String grafanaUrl = ""
-         @JsonPropertyDescription(GRAFANA_EMAIL_FROM_DESCRIPTION)
-         String grafanaEmailFrom = ""
-         @JsonPropertyDescription(GRAFANA_EMAIL_TO_DESCRIPTION)
-         String grafanaEmailTo = ""
-
-         @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
-         MonitoringHelmSchema helm
-         static class MonitoringHelmSchema extends HelmConfig {
-             @JsonPropertyDescription(GRAFANA_IMAGE_DESCRIPTION)
-             String grafanaImage = ""
-             @JsonPropertyDescription(GRAFANA_SIDECAR_IMAGE_DESCRIPTION)
-             String grafanaSidecarImage = ""
-             @JsonPropertyDescription(PROMETHEUS_IMAGE_DESCRIPTION)
-             String prometheusImage = ""
-             @JsonPropertyDescription(PROMETHEUS_OPERATOR_IMAGE_DESCRIPTION)
-             String prometheusOperatorImage = ""
-             @JsonPropertyDescription(PROMETHEUS_CONFIG_RELOADER_IMAGE_DESCRIPTION)
-             String prometheusConfigReloaderImage = ""
         }
     }
 
-     static class SecretsSchema {
-         // boolean active = false
-         @JsonPropertyDescription(ESO_DESCRIPTION)
-         ESOSchema externalSecrets
-         @JsonPropertyDescription(VAULT_DESCRIPTION)
-         VaultSchema vault
+    static class MonitoringSchema {
+        @JsonPropertyDescription(MONITORING_ENABLE_DESCRIPTION)
+        boolean active = true
+        @JsonPropertyDescription(GRAFANA_URL_DESCRIPTION)
+        String grafanaUrl = ""
+        @JsonPropertyDescription(GRAFANA_EMAIL_FROM_DESCRIPTION)
+        String grafanaEmailFrom = ""
+        @JsonPropertyDescription(GRAFANA_EMAIL_TO_DESCRIPTION)
+        String grafanaEmailTo = ""
 
-         static class ESOSchema {
-             @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
-             ESOHelmSchema helm
-             static class ESOHelmSchema extends HelmConfig {
-                 @JsonPropertyDescription(EXTERNAL_SECRETS_IMAGE_DESCRIPTION)
-                 String image = ""
-                 @JsonPropertyDescription(EXTERNAL_SECRETS_CERT_CONTROLLER_IMAGE_DESCRIPTION)
-                 String certControllerImage = ""
-                 @JsonPropertyDescription(EXTERNAL_SECRETS_WEBHOOK_IMAGE_DESCRIPTION)
-                 String webhookImage = ""
-             }
-         }
+        @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
+        MonitoringHelmSchema helm
+        static class MonitoringHelmSchema extends HelmConfig {
+            @JsonPropertyDescription(GRAFANA_IMAGE_DESCRIPTION)
+            String grafanaImage = ""
+            @JsonPropertyDescription(GRAFANA_SIDECAR_IMAGE_DESCRIPTION)
+            String grafanaSidecarImage = ""
+            @JsonPropertyDescription(PROMETHEUS_IMAGE_DESCRIPTION)
+            String prometheusImage = ""
+            @JsonPropertyDescription(PROMETHEUS_OPERATOR_IMAGE_DESCRIPTION)
+            String prometheusOperatorImage = ""
+            @JsonPropertyDescription(PROMETHEUS_CONFIG_RELOADER_IMAGE_DESCRIPTION)
+            String prometheusConfigReloaderImage = ""
+        }
+    }
 
-         static class VaultSchema {
-             @JsonPropertyDescription(VAULT_ENABLE_DESCRIPTION)
-             String mode = ""
-             @JsonPropertyDescription(VAULT_URL_DESCRIPTION)
-             String url = ""
+    static class SecretsSchema {
+        // boolean active = false
+        @JsonPropertyDescription(ESO_DESCRIPTION)
+        ESOSchema externalSecrets
+        @JsonPropertyDescription(VAULT_DESCRIPTION)
+        VaultSchema vault
 
-             @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
-             VaultHelmSchema helm
-             static class VaultHelmSchema extends HelmConfig {
-                 @JsonPropertyDescription(VAULT_IMAGE_DESCRIPTION)
-                 String image = ""
+        static class ESOSchema {
+            @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
+            ESOHelmSchema helm
+            static class ESOHelmSchema extends HelmConfig {
+                @JsonPropertyDescription(EXTERNAL_SECRETS_IMAGE_DESCRIPTION)
+                String image = ""
+                @JsonPropertyDescription(EXTERNAL_SECRETS_CERT_CONTROLLER_IMAGE_DESCRIPTION)
+                String certControllerImage = ""
+                @JsonPropertyDescription(EXTERNAL_SECRETS_WEBHOOK_IMAGE_DESCRIPTION)
+                String webhookImage = ""
+            }
+        }
+
+        static class VaultSchema {
+            @JsonPropertyDescription(VAULT_ENABLE_DESCRIPTION)
+            String mode = ""
+            @JsonPropertyDescription(VAULT_URL_DESCRIPTION)
+            String url = ""
+
+            @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
+            VaultHelmSchema helm
+            static class VaultHelmSchema extends HelmConfig {
+                @JsonPropertyDescription(VAULT_IMAGE_DESCRIPTION)
+                String image = ""
             }
         }
     }
@@ -330,7 +329,7 @@ class Schema {
         @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
         IngressNginxHelmSchema helm
         static class IngressNginxHelmSchema extends HelmConfig {
-           @JsonPropertyDescription(HELM_CONFIG_VALUES_DESCRIPTION)
+            @JsonPropertyDescription(HELM_CONFIG_VALUES_DESCRIPTION)
             Map<String, Object> values
         }
     }
