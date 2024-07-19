@@ -381,6 +381,7 @@ class GitopsPlaygroundCli  implements Runnable {
                 application: [
                         remote        : remote,
                         mirrorRepos     : mirrorRepos, 
+                        destroy : destroy,
                         insecure      : insecure,
                         debug         : debug,
                         trace         : trace,

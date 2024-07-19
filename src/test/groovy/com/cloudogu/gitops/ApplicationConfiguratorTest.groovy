@@ -19,10 +19,6 @@ import static org.mockito.Mockito.never
 import static org.mockito.Mockito.verify
 import static org.mockito.Mockito.when
 
-/**
- * If you would like to run this test in the IDE, add the following JVM options. The same is done in pom.xml
- * --add-opens java.base/java.util=ALL-UNNAMED
- */
 class ApplicationConfiguratorTest {
 
     static final String EXPECTED_REGISTRY_URL = 'http://my-reg'
@@ -257,6 +253,9 @@ images:
 
     @Test
     void "config file has only fields that are present in default values"() {
+        
+        // ⚠️ If you run into an endless loop in this test, you might have added a non-static class to Schema.grooy
+        
         Map defaultConfig = applicationConfigurator.setConfig(almostEmptyConfig)
         
         def fields = getAllFieldNames(Schema.class).sort()

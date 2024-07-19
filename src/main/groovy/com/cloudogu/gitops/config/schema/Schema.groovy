@@ -4,7 +4,7 @@ package com.cloudogu.gitops.config.schema
 import com.fasterxml.jackson.annotation.JsonClassDescription
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 
-import static com.cloudogu.gitops.config.DescriptionConstants.*
+import static com.cloudogu.gitops.config.DescriptionConstants.* 
 
 /**
  * The schema for the configuration file.
@@ -20,10 +20,11 @@ import static com.cloudogu.gitops.config.DescriptionConstants.*
  */
 class Schema {
      RegistrySchema registry
-//     JenkinsSchema jenkins // used in bash
-//     ScmmSchema scmm // used in bash
-//     ApplicationSchema application // used in bash
+     JenkinsSchema jenkins
+     ScmmSchema scmm 
+     ApplicationSchema application 
      ImagesSchema images
+     RepositoriesSchema repositories
      FeaturesSchema features
 
     @JsonClassDescription(HELM_DESCRIPTION)
@@ -69,7 +70,7 @@ class Schema {
         @JsonPropertyDescription(REGISTRY_PUSH_PASSWORD_DESCRIPTION)
         String pushPassword = ""
 
-        HelmConfig helm = new HelmConfig()
+        HelmConfig helm
     }
 
      @JsonClassDescription(JENKINS_DESCRIPTION)
@@ -89,7 +90,15 @@ class Schema {
          @JsonPropertyDescription(MAVEN_CENTRAL_MIRROR_DESCRIPTION)
          String mavenCentralMirror = ""
 
-         HelmConfig helm = new HelmConfig()
+         JenkinsHelmSchema helm
+         @JsonClassDescription(HELM_DESCRIPTION)
+         static class JenkinsHelmSchema {
+             // Once these can be used get rid of this class and use HelmConfig instead
+             // String chart = ""
+             // String repoURL = ""
+             @JsonPropertyDescription(HELM_VERSION_DESCRIPTION)
+             String version = ""
+         }
     }
     @JsonClassDescription(SCMM_DESCRIPTION)
      static class ScmmSchema {
@@ -107,7 +116,7 @@ class Schema {
          // String protocol = ""
          // String ingress = ""
 
-         HelmConfig helm = new HelmConfig()
+         HelmConfig helm
      }
 
     @JsonClassDescription(APPLICATION_DESCRIPTION)
@@ -131,6 +140,16 @@ class Schema {
         // String clusterBindAddress = ""
         @JsonPropertyDescription(NAME_PREFIX_DESCRIPTION)
         String namePrefix = ""
+
+        // Setting these in the config file makes little sense
+        // String configFile
+        // String configMap
+        // boolean outputConfigFile = false
+        // These can't be set because they are evaluated first thing on app start, before config file is read
+        // boolean debug = false
+        // boolean trace = false 
+        @JsonPropertyDescription(DESTROY_DESCRIPTION)
+        boolean destroy = false
         @JsonPropertyDescription(POD_RESOURCES_DESCRIPTION)
         boolean podResources = false
 
@@ -167,7 +186,22 @@ class Schema {
          String petclinic = ""
     }
 
-     static class FeaturesSchema {
+    static class RepositoriesSchema {
+        RepositorySchemaWithRef springBootHelmChart
+        RepositorySchemaWithRef springPetclinic
+        RepositorySchema gitopsBuildLib
+        RepositorySchema cesBuildLib
+    }
+
+    static class RepositorySchema {
+        String url
+    }
+    
+    static class RepositorySchemaWithRef extends RepositorySchema {
+        String ref
+    }
+
+    static class FeaturesSchema {
          @JsonPropertyDescription(ARGOCD_DESCRIPTION)
          ArgoCDSchema argocd
          @JsonPropertyDescription(MAILHOG_DESCRIPTION)
@@ -213,7 +247,7 @@ class Schema {
          String smtpPassword = ""
          String url = ""
 
-         MailHelmSchema helm = new MailHelmSchema()
+         MailHelmSchema helm
          static class MailHelmSchema extends HelmConfig {
              String image = ""
          }
@@ -230,7 +264,7 @@ class Schema {
          @JsonPropertyDescription(GRAFANA_EMAIL_TO_DESCRIPTION)
          String grafanaEmailTo = ""
 
-         MonitoringHelmSchema helm = new MonitoringHelmSchema()
+         MonitoringHelmSchema helm
          static class MonitoringHelmSchema extends HelmConfig {
              @JsonPropertyDescription(GRAFANA_IMAGE_DESCRIPTION)
              String grafanaImage = ""
@@ -253,7 +287,7 @@ class Schema {
 
          @JsonClassDescription(ESO_DESCRIPTION)
          static class ESOSchema {
-             ESOHelmSchema helm = new ESOHelmSchema()
+             ESOHelmSchema helm
              static class ESOHelmSchema extends HelmConfig {
                  @JsonPropertyDescription(EXTERNAL_SECRETS_IMAGE_DESCRIPTION)
                  String image = ""
@@ -270,7 +304,7 @@ class Schema {
              @JsonPropertyDescription(VAULT_URL_DESCRIPTION)
              String url = ""
 
-             VaultHelmSchema helm = new VaultHelmSchema()
+             VaultHelmSchema helm
              static class VaultHelmSchema extends HelmConfig {
                  @JsonPropertyDescription(VAULT_IMAGE_DESCRIPTION)
                  String image = ""
@@ -283,7 +317,7 @@ class Schema {
         @JsonPropertyDescription(INGRESS_NGINX_ENABLE_DESCRIPTION)
         Boolean active = false
 
-        IngressNginxHelmSchema helm = new IngressNginxHelmSchema()
+        IngressNginxHelmSchema helm
         static class IngressNginxHelmSchema extends HelmConfig {
             Map<String, Object> values
         }

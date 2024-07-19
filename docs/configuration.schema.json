@@ -10,10 +10,116 @@
         }
       },
       "additionalProperties" : false
+    },
+    "HelmConfig" : {
+      "type" : "object",
+      "properties" : {
+        "chart" : {
+          "type" : "string",
+          "description" : "Name of the Helm chart"
+        },
+        "repoURL" : {
+          "type" : "string",
+          "description" : "Repository url from which the Helm chart should be obtained"
+        },
+        "version" : {
+          "type" : "string",
+          "description" : "The version of the Helm chart to be installed"
+        }
+      },
+      "description" : "Common config parameter for the Helm package manager. Currently Name of Char (chart), URl of Helm-Repository (repoURL) and Chart Version (version) are implemented",
+      "additionalProperties" : false
+    },
+    "RepositorySchema" : {
+      "type" : "object",
+      "properties" : {
+        "url" : {
+          "type" : "string"
+        }
+      },
+      "additionalProperties" : false
+    },
+    "RepositorySchemaWithRef" : {
+      "type" : "object",
+      "properties" : {
+        "ref" : {
+          "type" : "string"
+        },
+        "url" : {
+          "type" : "string"
+        }
+      },
+      "additionalProperties" : false
     }
   },
   "type" : "object",
   "properties" : {
+    "application" : {
+      "type" : "object",
+      "properties" : {
+        "baseUrl" : {
+          "type" : "string",
+          "description" : "the external base url (TLD) for all tools, e.g. https://example.com or http://localhost:8080. The individual -url params for argocd, grafana, vault and mailhog take precedence."
+        },
+        "destroy" : {
+          "type" : "boolean",
+          "description" : "Unroll playground"
+        },
+        "gitEmail" : {
+          "type" : "string",
+          "description" : "Sets git author and committer email used for initial commits"
+        },
+        "gitName" : {
+          "type" : "string",
+          "description" : "Sets git author and committer name used for initial commits"
+        },
+        "insecure" : {
+          "type" : "boolean",
+          "description" : "Sets insecure-mode in cURL which skips cert validation"
+        },
+        "localHelmChartFolder" : {
+          "type" : "string"
+        },
+        "mirrorRepos" : {
+          "type" : "boolean",
+          "description" : "Changes the sources of deployed tools so they are not pulled from the internet, but are pulled from git and work in air-gapped environments."
+        },
+        "namePrefix" : {
+          "type" : "string",
+          "description" : "Set name-prefix for repos, jobs, namespaces"
+        },
+        "password" : {
+          "type" : "string",
+          "description" : "Set initial admin passwords"
+        },
+        "podResources" : {
+          "type" : "boolean",
+          "description" : "Write kubernetes resource requests and limits on each pod"
+        },
+        "remote" : {
+          "type" : "boolean",
+          "description" : "Expose services as LoadBalancers"
+        },
+        "skipCrds" : {
+          "type" : "boolean",
+          "description" : "Skip installation of CRDs. This requires prior installation of CRDs"
+        },
+        "urlSeparatorHyphen" : {
+          "type" : "boolean",
+          "description" : "Use hyphens instead of dots to separate application name from base-url"
+        },
+        "username" : {
+          "type" : "string",
+          "description" : "Set initial admin username"
+        },
+        "yes" : {
+          "type" : "boolean",
+          "description" : "Skip confirmation"
+        }
+      },
+      "description" : "Application configuration parameter for the GitOPS-Playground",
+      "additionalProperties" : false
+    },
     "features" : {
       "type" : "object",
       "properties" : {
@@ -324,20 +430,12 @@
       },
       "additionalProperties" : false
     },
-    "registry" : {
+    "jenkins" : {
       "type" : "object",
       "properties" : {
         "helm" : {
           "type" : "object",
           "properties" : {
-            "chart" : {
-              "type" : "string",
-              "description" : "Name of the Helm chart"
-            },
-            "repoURL" : {
-              "type" : "string",
-              "description" : "Repository url from which the Helm chart should be obtained"
-            },
             "version" : {
               "type" : "string",
               "description" : "The version of the Helm chart to be installed"
@@ -345,6 +443,40 @@
           },
           "description" : "Common config parameter for the Helm package manager. Currently Name of Char (chart), URl of Helm-Repository (repoURL) and Chart Version (version) are implemented",
           "additionalProperties" : false
+        },
+        "mavenCentralMirror" : {
+          "type" : "string",
+          "description" : "URL for maven mirror, used by applications built in Jenkins"
+        },
+        "metricsPassword" : {
+          "type" : "string",
+          "description" : "Mandatory when --jenkins-url is set and monitoring enabled"
+        },
+        "metricsUsername" : {
+          "type" : "string",
+          "description" : "Mandatory when --jenkins-url is set and monitoring enabled"
+        },
+        "password" : {
+          "type" : "string",
+          "description" : "Mandatory when --jenkins-url is set"
+        },
+        "url" : {
+          "type" : "string",
+          "description" : "The url of your external jenkins"
+        },
+        "username" : {
+          "type" : "string",
+          "description" : "Mandatory when --jenkins-url is set"
+        }
+      },
+      "description" : "Config Parameter for Jenkins CI/CD Pipeline Server",
+      "additionalProperties" : false
+    },
+    "registry" : {
+      "type" : "object",
+      "properties" : {
+        "helm" : {
+          "$ref" : "#/$defs/HelmConfig"
         },
         "internalPort" : {
           "type" : "integer",
@@ -396,6 +528,46 @@
         }
       },
       "description" : "Config Parameter for Regitry",
+      "additionalProperties" : false
+    },
+    "repositories" : {
+      "type" : "object",
+      "properties" : {
+        "cesBuildLib" : {
+          "$ref" : "#/$defs/RepositorySchema"
+        },
+        "gitopsBuildLib" : {
+          "$ref" : "#/$defs/RepositorySchema"
+        },
+        "springBootHelmChart" : {
+          "$ref" : "#/$defs/RepositorySchemaWithRef"
+        },
+        "springPetclinic" : {
+          "$ref" : "#/$defs/RepositorySchemaWithRef"
+        }
+      },
+      "additionalProperties" : false
+    },
+    "scmm" : {
+      "type" : "object",
+      "properties" : {
+        "helm" : {
+          "$ref" : "#/$defs/HelmConfig"
+        },
+        "password" : {
+          "type" : "string",
+          "description" : "Mandatory when --scmm-url is set"
+        },
+        "url" : {
+          "type" : "string",
+          "description" : "The host of your external scm-manager"
+        },
+        "username" : {
+          "type" : "string",
+          "description" : "Mandatory when --scmm-url is set"
+        }
+      },
+      "description" : "Config Parameter for SCMManager (Git repository Server, https://scm-manager.org/)",
       "additionalProperties" : false
     }
   },
