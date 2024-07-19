@@ -169,7 +169,6 @@ class ApplicationConfigurator {
                             smtpPort : '',
                             smtpUser : '',
                             smtpPassword : '', 
-                            url: '',
                             helm  : [
                                     chart  : 'mailhog',
                                     repoURL: 'https://codecentric.github.io/helm-charts',

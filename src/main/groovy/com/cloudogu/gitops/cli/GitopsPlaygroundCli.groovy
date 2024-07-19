@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
-import static com.cloudogu.gitops.config.DescriptionConstants.*
+import static com.cloudogu.gitops.config.ConfigConstants.*
 
 import static groovy.json.JsonOutput.prettyPrint
 import static groovy.json.JsonOutput.toJson 
@@ -208,9 +208,9 @@ class GitopsPlaygroundCli  implements Runnable {
     private String emailToAdmin
 
     // args group example apps
-    @Option(names = ['--petclinic-base-domain'], description = PETCLINIC_BASE_DOMAIN_DESCRIPTION)
+    @Option(names = ['--petclinic-base-domain'], description = EXAMPLE_APPS_DESCRIPTION)
     private String petclinicBaseDomain
-    @Option(names = ['--nginx-base-domain'], description = NGINX_BASE_DOMAIN_DESCRIPTION)
+    @Option(names = ['--nginx-base-domain'], description = EXAMPLE_APPS_DESCRIPTION)
     private String nginxBaseDomain
 
     // args Ingress-Class

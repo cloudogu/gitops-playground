@@ -108,7 +108,6 @@ class ConfigToConfigFileConverterTest {
                                 smtpPort : '1234',
                                 smtpUser : 'smptU',
                                 smtpPassword : 'smtpPassword',
-                                url: 'url',
                                 helm  : [
                                         chart  : 'mailhog',
                                         repoURL: 'https://codecentric.github.io/helm-charts',
@@ -260,7 +259,6 @@ features:
     smtpPort: 1234
     smtpUser: "smptU"
     smtpPassword: "smtpPassword"
-    url: "url"
     helm:
       chart: "mailhog"
       repoURL: "https://codecentric.github.io/helm-charts"
