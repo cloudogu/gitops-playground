@@ -116,7 +116,6 @@ class ApplicationConfigurator {
                     password      : DEFAULT_ADMIN_PW,
                     yes           : false,
                     runningInsideK8s : false, // Set dynamically
-                    clusterBindAddress : '', // Set dynamically
                     namePrefix    : '',
                     podResources : false,
                     namePrefixForEnvVars    : '', // Set dynamically
@@ -348,9 +347,6 @@ class ApplicationConfigurator {
             log.debug("installation is running in kubernetes.")
             newConfig.application["runningInsideK8s"] = true
         }
-        String clusterBindAddress = networkingUtils.findClusterBindAddress()
-        log.debug("Setting cluster bind Address: " + clusterBindAddress)
-        newConfig.application["clusterBindAddress"] = clusterBindAddress
     }
 
     private void addScmmConfig(Map newConfig) {
@@ -368,8 +364,8 @@ class ApplicationConfigurator {
         } else {
             log.debug("Setting internal configs for local single node cluster with internal scmm")
             def port = fileSystemUtils.getLineFromFile(fileSystemUtils.getRootDir() + "/scm-manager/values.ftl.yaml", "nodePort:").findAll(/\d+/)*.toString().get(0)
-            String cba = newConfig.application["clusterBindAddress"]
-            newConfig.scmm["url"] = networkingUtils.createUrl(cba, port, "/scm")
+            String clusterBindAddress = networkingUtils.findClusterBindAddress()
+            newConfig.scmm["url"] = networkingUtils.createUrl(clusterBindAddress, port, "/scm")
         }
 
         String scmmUrl = newConfig.scmm["url"]
@@ -396,8 +392,8 @@ class ApplicationConfigurator {
         } else {
             log.debug("Setting jenkins configs for local single node cluster with internal jenkins")
             def port = fileSystemUtils.getLineFromFile(fileSystemUtils.getRootDir() + "/jenkins/values.yaml", "nodePort:").findAll(/\d+/)*.toString().get(0)
-            String cba = newConfig.application["clusterBindAddress"]
-            newConfig.jenkins["url"] = networkingUtils.createUrl(cba, port)
+            String clusterBindAddress = networkingUtils.findClusterBindAddress()
+            newConfig.jenkins["url"] = networkingUtils.createUrl(clusterBindAddress, port)
         }
     }
 

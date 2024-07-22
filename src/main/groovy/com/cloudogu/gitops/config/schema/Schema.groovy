@@ -140,7 +140,6 @@ class Schema {
         @JsonPropertyDescription(PIPE_YES_DESCRIPTION)
         boolean yes = false
         // boolean runningInsideK8s = ""
-        // String clusterBindAddress = ""
         @JsonPropertyDescription(NAME_PREFIX_DESCRIPTION)
         String namePrefix = ""
 
