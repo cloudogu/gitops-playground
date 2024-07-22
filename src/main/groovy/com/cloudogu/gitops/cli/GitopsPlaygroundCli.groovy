@@ -179,7 +179,7 @@ class GitopsPlaygroundCli  implements Runnable {
     @Option(names = ['--password'], description = PASSWORD_DESCRIPTION)
     private String password
     @Option(names = ['-y', '--yes'], description = PIPE_YES_DESCRIPTION)
-    Boolean pipeYes
+    Boolean yes
     @Option(names = ['--name-prefix'], description = NAME_PREFIX_DESCRIPTION)
     private String namePrefix
     @Option(names = ['--destroy'], description = DESTROY_DESCRIPTION)
@@ -232,13 +232,13 @@ class GitopsPlaygroundCli  implements Runnable {
         context = context.registerSingleton(new Configuration(config))
         K8sClient k8sClient = context.getBean(K8sClient)
 
-        if (destroy) {
-            confirmOrExit "Destroying gitops playground in kubernetes cluster '${k8sClient.currentContext}'."
+        if (config['application']['destroy']) {
+            confirmOrExit "Destroying gitops playground in kubernetes cluster '${k8sClient.currentContext}'.", config
             
             Destroyer destroyer = context.getBean(Destroyer)
             destroyer.destroy()
         } else {
-            confirmOrExit "Applying gitops playground to kubernetes cluster '${k8sClient.currentContext}'."
+            confirmOrExit "Applying gitops playground to kubernetes cluster '${k8sClient.currentContext}'.", config
 
             Application app = context.getBean(Application)
             app.start()
@@ -247,8 +247,8 @@ class GitopsPlaygroundCli  implements Runnable {
         }
     }
 
-    private void confirmOrExit(String message) {
-        if (pipeYes) {
+    private void confirmOrExit(String message, Map config) {
+        if (config['application']['yes']) {
             return
         }
         
@@ -384,7 +384,7 @@ class GitopsPlaygroundCli  implements Runnable {
                         trace         : trace,
                         username      : username,
                         password      : password,
-                        pipeYes       : pipeYes,
+                        yes       : yes,
                         namePrefix    : namePrefix,
                         podResources : podResources,
                         baseUrl : baseUrl,
