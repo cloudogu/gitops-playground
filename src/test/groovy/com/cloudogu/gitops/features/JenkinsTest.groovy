@@ -48,7 +48,6 @@ class JenkinsTest {
                     password: 'reg-pw',
                     twoRegistries: false,
                     pullUrl: 'reg-pull-url',
-                    pullPath: 'reg-pull-path',
                     pullUsername    : 'reg-pull-usr',
                     pullPassword    : 'reg-pull-pw',
                     pushUrl: 'reg-push-url',
@@ -109,7 +108,6 @@ class JenkinsTest {
         verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_URL', 'reg-url')
         verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_PATH', 'reg-path')
         verify(globalPropertyManager, never()).setGlobalProperty(eq('MY_PREFIX_REGISTRY_PULL_URL'), anyString())
-        verify(globalPropertyManager, never()).setGlobalProperty(eq('MY_PREFIX_REGISTRY_PULL_PATH'), anyString())
         verify(globalPropertyManager, never()).setGlobalProperty(eq('MY_PREFIX_REGISTRY_PUSH_URL'), anyString())
         verify(globalPropertyManager, never()).setGlobalProperty(eq('MY_PREFIX_REGISTRY_PUSH_PATH'), anyString())
         verify(globalPropertyManager, never()).setGlobalProperty(eq('MAVEN_CENTRAL_MIRROR'), anyString())
@@ -130,7 +128,6 @@ class JenkinsTest {
                 anyString(), anyString(), anyString())
     }
 
-
     @Test
     void 'Handles two registries'() {
         config.registry['twoRegistries'] = true
@@ -138,7 +135,6 @@ class JenkinsTest {
         createJenkins().install()
         
         verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_PULL_URL', 'reg-pull-url')
-        verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_PULL_PATH', 'reg-pull-path')
         verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_PUSH_URL', 'reg-push-url')
         verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_PUSH_PATH', 'reg-push-path')
 

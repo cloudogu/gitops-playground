@@ -108,6 +108,7 @@ class ApplicationConfigurator {
             application: [
                     remote        : false,
                     mirrorRepos     : false,
+                    destroy       : false,
                     // Take from env because the Dockerfile provides a local copy of the repo for air-gapped mode
                     localHelmChartFolder: System.getenv('LOCAL_HELM_CHART_FOLDER'),
                     insecure      : false,
@@ -168,7 +169,6 @@ class ApplicationConfigurator {
                             smtpPort : '',
                             smtpUser : '',
                             smtpPassword : '', 
-                            url: '',
                             helm  : [
                                     chart  : 'mailhog',
                                     repoURL: 'https://codecentric.github.io/helm-charts',

@@ -119,17 +119,26 @@ RUN chmod +r /dist/root/ && chmod g+rw /dist/root/.config/jgit/
 FROM graal as native-image
 ENV MAVEN_OPTS='-Dmaven.repo.local=/mvn'
 RUN gu install native-image
+RUN microdnf install gnupg
 
 # Set up musl, in order to produce a static image compatible to alpine
 ARG RESULT_LIB="/musl"
-# TODO verify ASC?
-RUN mkdir ${RESULT_LIB} && \
-    curl -L -o musl.tar.gz https://more.musl.cc/10.2.1/x86_64-linux-musl/x86_64-linux-musl-native.tgz && \
-    tar -xvzf musl.tar.gz -C ${RESULT_LIB} --strip-components 1 && \
+ARG MUSL_VERSION=10.2.1
+ARG ZLIB_VERSION=1.3.1
+
+RUN mkdir ${RESULT_LIB}
+RUN curl --location --fail --retry 20 --retry-connrefused -o x86_64-linux-musl-native.tgz https://more.musl.cc/${MUSL_VERSION}/x86_64-linux-musl/x86_64-linux-musl-native.tgz
+RUN set -o pipefail && curl --location --fail --retry 20 --retry-connrefused https://more.musl.cc/10.2.1/x86_64-linux-musl/SHA512SUMS \
+    | grep 'x86_64-linux-musl-native.tgz' | sha512sum -c -
+RUN tar -xvzf x86_64-linux-musl-native.tgz -C ${RESULT_LIB} --strip-components 1 && \
     cp /usr/lib/gcc/x86_64-redhat-linux/8/libstdc++.a ${RESULT_LIB}/lib/
+
 ENV CC=/musl/bin/gcc
-RUN curl -L -o zlib.tar.gz https://github.com/madler/zlib/releases/download/v1.2.13/zlib-1.2.13.tar.gz && \
-    mkdir zlib && tar -xvzf zlib.tar.gz -C zlib --strip-components 1 && \
+RUN curl --location --fail --retry 20 --retry-connrefused -o zlib.tar.gz https://github.com/madler/zlib/releases/download/v${ZLIB_VERSION}/zlib-${ZLIB_VERSION}.tar.gz
+RUN curl --location --fail --retry 20 --retry-connrefused -o zlib.tar.gz.asc https://github.com/madler/zlib/releases/download/v${ZLIB_VERSION}/zlib-${ZLIB_VERSION}.tar.gz.asc
+RUN gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys 5ED46A6721D365587791E2AA783FCD8E58BCAFBA # madler@alumni.caltech.edu 
+RUN gpg --batch --verify zlib.tar.gz.asc zlib.tar.gz
+RUN mkdir zlib && tar -xvzf zlib.tar.gz -C zlib --strip-components 1 && \
     cd zlib && ./configure --static --prefix=/musl && \
     make && make install && \
     cd / && rm -rf /zlib && rm -f /zlib.tar.gz
@@ -149,9 +158,9 @@ COPY --from=maven-build /app/gitops-playground.jar /app/
 # Create Graal native image config
 RUN java -agentlib:native-image-agent=config-output-dir=conf/ -jar gitops-playground.jar || true
 # Run again with different params in order to avoid NoSuchMethodException with config file
-RUN echo 'features: {}' > config.yaml  && \
+RUN printf 'features:\n  exampleApps:\n    petclinic:\n      baseDomain: "base"' > config.yaml  && \
     java -agentlib:native-image-agent=config-merge-dir=conf/ -jar gitops-playground.jar \
-      --yes --config-file=config.yaml || true \
+      --yes --config-file=config.yaml || true
 # Run again with different params in order to avoid NoSuchMethodException with output-config file
 RUN java -agentlib:native-image-agent=config-merge-dir=conf/ -jar gitops-playground.jar \
       --yes  --output-config-file || true

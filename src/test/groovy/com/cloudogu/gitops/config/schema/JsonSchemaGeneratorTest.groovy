@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat
 class JsonSchemaGeneratorTest {
     @Test
     void 'test configuration schema is not ouf of date'() {
-        // slup and output to ensure consistent formatting
+        // slurp and output to ensure consistent formatting
         def slurper = new JsonSlurper()
         def output = new JsonOutput()
 
