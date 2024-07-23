@@ -75,7 +75,7 @@ class ApplicationConfigurator {
                              - Upgrade bash image in values.yaml and gid-grepper
                              - Also upgrade plugins. See docs/developers.md
                              */
-                            version: '5.0.17'
+                            version: '4.8.1'
                     ],
                     mavenCentralMirror: '',
             ],
