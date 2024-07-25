@@ -119,6 +119,8 @@ class JenkinsTest {
 
         verify(jobManger).createCredential('my-prefix-example-apps', 'scmm-user', 
                 'my-prefix-gitops', 'scmm-pw', 'credentials for accessing scm-manager')
+
+        verify(jobManger).startJob('example-apps')
         
         verify(jobManger).createCredential('my-prefix-example-apps', 'registry-user', 
                 'reg-usr', 'reg-pw', 'credentials for accessing the docker-registry')
@@ -166,6 +168,7 @@ class JenkinsTest {
         
         createJenkins().install()
         verify(jobManger, never()).createCredential(anyString(), anyString(), anyString(), anyString(), anyString())
+        verify(jobManger, never()).startJob(anyString())
     }
 
     @Test
