@@ -46,6 +46,9 @@ class IngressNginxTest {
                                     values : [:]
                             ],
                     ],
+                    monitoring: [
+                            active: false
+                    ]
             ],
     ]
 
@@ -67,6 +70,7 @@ class IngressNginxTest {
                 'ingress-nginx', '4.8.2','ingress-nginx',
                 'ingress-nginx', temporaryYamlFile)
         assertThat(parseActualYaml()['controller']['resources']).isNull()
+        assertThat(parseActualYaml()['controller']['metrics']).isNull()
     }
 
     @Test
@@ -132,7 +136,22 @@ class IngressNginxTest {
                 'ingress-nginx', temporaryYamlFile, DeploymentStrategy.RepoType.GIT)
     }
 
-    private IngressNginx createIngressNginx() {
+    @Test
+    void 'When Monitoring is enabled, ingress-nginx-helm-values yaml has metrics content'() {
+        config.features['ingressNginx']['active'] = true
+        config.features['monitoring']['active'] = true
+        config.application['namePrefix'] = "heliosphere"
+
+        createIngressNginx().install()
+
+        def actual = parseActualYaml()
+
+        assertThat(parseActualYaml()['controller']['metrics']['enabled']).isEqualTo(true)
+        assertThat(parseActualYaml()['controller']['metrics']['serviceMonitor']['enabled']).isEqualTo(true)
+        assertThat(parseActualYaml()['controller']['metrics']['serviceMonitor']['namespace']).isEqualTo("heliospheremonitoring")
+    }
+
+        private IngressNginx createIngressNginx() {
         // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
 
         def configuration = new Configuration(config)
