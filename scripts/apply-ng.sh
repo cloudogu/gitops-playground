@@ -6,7 +6,7 @@ PLAYGROUND_DIR="$(cd ${ABSOLUTE_BASEDIR} && cd .. && pwd)"
 
 function apply-ng() {
   groovy --classpath "$PLAYGROUND_DIR"/src/main/groovy \
-    "$PLAYGROUND_DIR"/src/main/groovy/com/cloudogu/gitops/cli/GitopsPlaygroundCliMain.groovy "$@"
+    "$PLAYGROUND_DIR"/src/main/groovy/com/cloudogu/gitops/cli/GitopsPlaygroundCliMainScripted.groovy "$@"
 }
 
 # Runs groovy files without needing groovy

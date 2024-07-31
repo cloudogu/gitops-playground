@@ -27,6 +27,10 @@ COPY src/main /app/src/main
 COPY compiler.groovy /app
 
 WORKDIR /app
+# Exclude entrypoints not needed in productive image 
+RUN cd /app/src/main/groovy/com/cloudogu/gitops/cli/ \
+    && rm GenerateJsonSchema.groovy \
+    && rm GitopsPlaygroundCliMainScripted.groovy
 # Build native image without micronaut
 RUN ./mvnw package -DskipTests
 # Use simple name for largest jar file -> Easier reuse in later stages
@@ -50,7 +54,7 @@ RUN apk add --no-cache \
       gnupg \
       outils-sha256 \
       git \
-      bash curl unzip 
+      bash curl unzip zip
 
 RUN mkdir -p /dist/usr/local/bin
 RUN mkdir -p /dist/home/.config
@@ -109,7 +113,21 @@ RUN rm /dist/app/pom.xml
 RUN rm /dist/app/compiler.groovy
 RUN cd /dist/app/scripts && rm downloadHelmCharts.sh apply-ng.sh
 # For dev image
-RUN mv /dist/app/src /src-without-graal && rm -r /src-without-graal/main/groovy/com/cloudogu/gitops/graal
+RUN mkdir /dist-dev
+# Remove uncessary code and allow changing code in dev mode, less secure, but the intention of the dev image
+# Execute bit is required to allow listing of dirs to everyone
+RUN mv /dist/app/src /dist-dev/src && \
+    chmod a=rwx -R /dist-dev/src && \
+    rm -r /dist-dev/src/main/groovy/com/cloudogu/gitops/graal
+# Remove our code from jar to avoid duplicate in dev image, 
+# but keep generated classes for depenency injection (e.g. $Application$Definition$Reference.class)
+COPY --from=maven-build /app/gitops-playground.jar /tmp/gitops-playground.jar
+RUN TEMP_DIR=$(mktemp -d) && \
+    unzip -q /tmp/gitops-playground.jar -d "$TEMP_DIR" && \
+    find "$TEMP_DIR/com/cloudogu/gitops" -type f ! -name '\$*' -delete && \
+    cd "$TEMP_DIR" && \
+    zip -q -r /dist-dev/gitops-playground.jar *
+
 # Required to prevent Java exceptions resulting from AccessDeniedException by jgit when running arbitrary user
 RUN mkdir -p /dist/root/.config/jgit
 RUN touch /dist/root/.config/jgit/config
@@ -196,9 +214,10 @@ ENTRYPOINT ["/app/apply-ng"]
 FROM eclipse-temurin:${JDK_VERSION}-jre-alpine as dev
 
 # apply-ng.sh is part of the dev image and allows trying changing groovy code inside the image for debugging
-COPY scripts/apply-ng.sh /app/scripts/
-COPY --from=maven-build /app/gitops-playground.jar /app/
-COPY --from=downloader /src-without-graal  /app/src
+# Allow changing code in dev mode, less secure, but the intention of the dev image
+COPY --chmod=777 scripts/apply-ng.sh /app/scripts/
+COPY --from=downloader /dist-dev /app
+
 # Allow initialization in final FROM ${ENV} stage
 USER 0
 # Avoids ERROR org.eclipse.jgit.util.FS - Cannot save config file 'FileBasedConfig[/app/?/.config/jgit/config]'
@@ -211,7 +230,7 @@ ENTRYPOINT [ "java", \
     "org.codehaus.groovy.tools.GroovyStarter", \
     "--main", "groovy.ui.GroovyMain", \
     "--classpath", "/app/src/main/groovy", \
-    "/app/src/main/groovy/com/cloudogu/gitops/cli/GitopsPlaygroundCliMain.groovy" ]
+    "/app/src/main/groovy/com/cloudogu/gitops/cli/GitopsPlaygroundCliMainScripted.groovy" ]
 
 # Pick final image according to build-arg
 FROM ${ENV}
