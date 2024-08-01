@@ -844,7 +844,11 @@ The user on the scm has to have privileges to:
 
 Set the parameter `--monitoring` so the [kube-prometheus-stack](https://github.com/prometheus-operator/kube-prometheus)
 via its [helm-chart](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack)
-is being deployed including Argo CD dashboards.
+is being deployed including dashboards for 
+- ArgoCD
+- Ingress Nginx Controller
+- SCMManager
+- Jenkins.
 
 This leads to the following tools to be exposed:
 
