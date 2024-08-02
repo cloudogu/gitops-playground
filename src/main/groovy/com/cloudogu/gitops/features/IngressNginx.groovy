@@ -54,7 +54,9 @@ class IngressNginx extends Feature {
                 new TemplatingEngine().template(new File(HELM_VALUES_PATH),
                     [
                             podResources:      config.application['podResources'],
-                            monitoringEnabled: config.features['monitoring']['active'],
+                            monitoring : [
+                                    active :   config.features['monitoring']['active']
+                            ],
                             namePrefix:        config.application['namePrefix'] as String,
                     ])) as Map
 

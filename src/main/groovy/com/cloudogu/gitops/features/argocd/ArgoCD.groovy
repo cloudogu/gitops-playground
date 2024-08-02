@@ -2,6 +2,7 @@ package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.features.PrometheusStack
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import com.cloudogu.gitops.utils.*
@@ -21,6 +22,7 @@ class ArgoCD extends Feature {
     static final String HELM_VALUES_PATH = 'argocd/values.yaml'
     static final String CHART_YAML_PATH = 'argocd/Chart.yaml'
     static final String SCMM_URL_INTERNAL = "http://scmm-scm-manager.default.svc.cluster.local/scm"
+
     private Map config
     private List<RepoInitializationAction> gitRepos = []
 
@@ -144,7 +146,7 @@ class ArgoCD extends Feature {
 
         if (!config.features['monitoring']['active']) {
             log.debug("Deleting unnecessary monitoring folder from cluster resources: ${clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
-            deleteDir clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/misc/monitoring'
+            deleteDir clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + PrometheusStack.MONITORING_RESOURCES_PATH
         }
 
         if (!config.scmm["internal"]) {
@@ -152,6 +154,11 @@ class ArgoCD extends Feature {
             log.debug("Configuring all yaml files in gitops repos to use the external scmm url: ${externalScmmUrl}")
             replaceFileContentInYamls(new File(clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()), SCMM_URL_INTERNAL, externalScmmUrl)
             replaceFileContentInYamls(new File(exampleAppsInitializationAction.repo.getAbsoluteLocalRepoTmpDir()), SCMM_URL_INTERNAL, externalScmmUrl)
+        }
+
+        if ((!config.features['ingressNginx']['active'])&&(config.features['monitoring']['active'])) {
+            deleteFile clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + PrometheusStack.MONITORING_RESOURCES_PATH + 'ingress-nginx-dashboard.yaml'
+            deleteFile clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + PrometheusStack.MONITORING_RESOURCES_PATH + 'ingress-nginx-dashboard-requests-handling.yaml'
         }
 
         fileSystemUtils.copyDirectory("${fileSystemUtils.rootDir}/applications/argocd/nginx/helm-umbrella",

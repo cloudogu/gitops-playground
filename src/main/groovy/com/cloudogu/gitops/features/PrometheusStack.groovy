@@ -20,7 +20,8 @@ import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.RepoTyp
 class PrometheusStack extends Feature {
 
     static final String HELM_VALUES_PATH = "applications/cluster-resources/monitoring/prometheus-stack-helm-values.ftl.yaml"
-    
+    static final String MONITORING_RESOURCES_PATH = '/misc/monitoring/'
+
     private Map config
     private boolean remoteCluster
     private String username

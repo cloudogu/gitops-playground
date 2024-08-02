@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.features.PrometheusStack
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -98,6 +99,9 @@ class ArgoCDTest {
                                     chart: 'kube-prometheus-stack',
                                     version: '42.0.3'
                                     ]
+                    ],
+                    ingressNginx : [
+                            active     : true
                     ],
                     secrets    : [
                             active: true,
@@ -230,14 +234,24 @@ class ArgoCDTest {
     void 'When monitoring disabled: Does not push path monitoring to cluster resources'() {
         config.features['monitoring']['active'] = false
         createArgoCD().install()
-        assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + "/monitoring")).doesNotExist()
-    }
+        assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + PrometheusStack.MONITORING_RESOURCES_PATH )).doesNotExist()
+     }
 
     @Test
     void 'When monitoring enabled: Does push path monitoring to cluster resources'() {
         config.features['monitoring']['active'] = true
         createArgoCD().install()
-        assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + "/misc/monitoring")).exists()
+        assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + PrometheusStack.MONITORING_RESOURCES_PATH )).exists()
+    }
+
+    @Test
+    void 'When ingressNginx disabled: Does not push monitoring dashboard resources'() {
+        config.features['monitoring']['active'] = true
+        config.features['ingressNginx']['active'] = false
+        createArgoCD().install()
+        assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + PrometheusStack.MONITORING_RESOURCES_PATH )).exists()
+        assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + "/misc/ingress-nginx-dashboard.yaml")).doesNotExist()
+        assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + "/misc/ingress-nginx-dashboard-requests-handling.yaml")).doesNotExist()
     }
 
     @Test
@@ -759,7 +773,7 @@ class ArgoCDTest {
             }
         }
 
-        assertAllYamlFiles(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), 'misc', 7) { Path it ->
+        assertAllYamlFiles(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), 'misc', 9) { Path it ->
             def yaml = parseActualYaml(it.toString())
             List yamlDocuments = yaml instanceof List ? yaml : [yaml]
             for (def document in yamlDocuments) {

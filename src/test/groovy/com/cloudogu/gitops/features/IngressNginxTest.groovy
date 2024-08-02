@@ -146,9 +146,9 @@ class IngressNginxTest {
 
         def actual = parseActualYaml()
 
-        assertThat(parseActualYaml()['controller']['metrics']['enabled']).isEqualTo(true)
-        assertThat(parseActualYaml()['controller']['metrics']['serviceMonitor']['enabled']).isEqualTo(true)
-        assertThat(parseActualYaml()['controller']['metrics']['serviceMonitor']['namespace']).isEqualTo("heliospheremonitoring")
+        assertThat(actual['controller']['metrics']['enabled']).isEqualTo(true)
+        assertThat(actual['controller']['metrics']['serviceMonitor']['enabled']).isEqualTo(true)
+        assertThat(actual['controller']['metrics']['serviceMonitor']['namespace']).isEqualTo("heliospheremonitoring")
     }
 
         private IngressNginx createIngressNginx() {
