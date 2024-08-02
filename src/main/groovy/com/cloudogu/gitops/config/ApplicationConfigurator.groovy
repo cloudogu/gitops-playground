@@ -49,8 +49,8 @@ class ApplicationConfigurator {
                     pushPassword    : '',
                     helm  : [
                             chart  : 'docker-registry',
-                            repoURL: 'https://charts.helm.sh/stable',
-                            version: '1.9.4'
+                            repoURL: 'https://helm.twun.io',
+                            version: '2.2.3'
                     ]
             ],
             jenkins    : [
