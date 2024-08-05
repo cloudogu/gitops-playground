@@ -3,7 +3,6 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
-import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
@@ -20,8 +19,7 @@ import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.RepoTyp
 class PrometheusStack extends Feature {
 
     static final String HELM_VALUES_PATH = "applications/cluster-resources/monitoring/prometheus-stack-helm-values.ftl.yaml"
-    static final String MONITORING_RESOURCES_PATH = '/misc/monitoring/'
-
+    
     private Map config
     private boolean remoteCluster
     private String username

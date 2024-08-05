@@ -847,6 +847,7 @@ via its [helm-chart](https://github.com/prometheus-community/helm-charts/tree/ma
 is being deployed including dashboards for 
 - ArgoCD
 - Ingress Nginx Controller
+- Prometheus
 - SCMManager
 - Jenkins.
 

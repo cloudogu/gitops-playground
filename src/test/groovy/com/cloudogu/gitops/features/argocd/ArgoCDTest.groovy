@@ -1,14 +1,10 @@
 package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.config.Configuration
-import com.cloudogu.gitops.features.PrometheusStack
 import com.cloudogu.gitops.scmm.ScmmRepo
-import com.cloudogu.gitops.utils.CommandExecutorForTest
-import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.HelmClient
-import com.cloudogu.gitops.utils.K8sClientForTest
-import com.cloudogu.gitops.utils.TestScmmRepoProvider
+import com.cloudogu.gitops.utils.*
 import groovy.io.FileType
+import groovy.json.JsonSlurper
 import groovy.yaml.YamlSlurper
 import org.eclipse.jgit.api.CheckoutCommand
 import org.eclipse.jgit.api.CloneCommand
@@ -21,6 +17,7 @@ import java.util.stream.Collectors
 
 import static org.assertj.core.api.Assertions.assertThat
 import static org.assertj.core.api.Assertions.fail
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.ArgumentMatchers.anyString
 import static org.mockito.Mockito.*
@@ -233,23 +230,47 @@ class ArgoCDTest {
     @Test
     void 'When monitoring disabled: Does not push path monitoring to cluster resources'() {
         config.features['monitoring']['active'] = false
+        
         createArgoCD().install()
-        assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + PrometheusStack.MONITORING_RESOURCES_PATH )).doesNotExist()
-     }
+        
+        assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + ArgoCD.MONITORING_RESOURCES_PATH )).doesNotExist()
+    }
 
     @Test
     void 'When monitoring enabled: Does push path monitoring to cluster resources'() {
         config.features['monitoring']['active'] = true
+        
         createArgoCD().install()
-        assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + PrometheusStack.MONITORING_RESOURCES_PATH )).exists()
+        
+        assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + ArgoCD.MONITORING_RESOURCES_PATH)).exists()
+
+        assertValidDashboards()
     }
 
+    void assertValidDashboards() {
+        Files.walk(Path.of(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir(), "/misc/monitoring/"))
+                .filter { it.toString() ==~ /.*-dashboard\.yaml/ }.each { Path path ->
+            def dashboardConfigMap = null
+
+            assertThatCode {
+                dashboardConfigMap = parseActualYaml(path.toString())
+            }.as("Invalid YAML in ${path.fileName}").doesNotThrowAnyException()
+
+            assertThat(dashboardConfigMap.data as Map).hasSize(1)
+                    .as('Expected only on dashboard json within map')
+            assertThatCode {
+                def dashboardJsonString = (dashboardConfigMap.data as Map).entrySet().first().value as String
+                new JsonSlurper().parseText(dashboardJsonString)
+            }.as("Invalid JSON in ${path.fileName}").doesNotThrowAnyException()
+        }
+    }
+    
     @Test
     void 'When ingressNginx disabled: Does not push monitoring dashboard resources'() {
         config.features['monitoring']['active'] = true
         config.features['ingressNginx']['active'] = false
         createArgoCD().install()
-        assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + PrometheusStack.MONITORING_RESOURCES_PATH )).exists()
+        assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + ArgoCD.MONITORING_RESOURCES_PATH )).exists()
         assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + "/misc/ingress-nginx-dashboard.yaml")).doesNotExist()
         assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + "/misc/ingress-nginx-dashboard-requests-handling.yaml")).doesNotExist()
     }
