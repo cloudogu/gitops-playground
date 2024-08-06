@@ -4,9 +4,6 @@ metadata:
   name: "argocd"
   namespace: "${namePrefix}argocd"
 spec:
-  sourceNamespaces:
-    - example-apps-staging
-    - example-apps-production
   applicationSet: {}
   notifications:
     enabled: true
@@ -66,16 +63,6 @@ spec:
     service:
       type: NodePort
     </#if>
-#  sso:
-#    dex:
-#      resources:
-#        limits:
-#          cpu: "500m"
-#          memory: "256Mi"
-#        requests:
-#          cpu: "250m"
-#          memory: "128Mi"
-#      openShiftOAuth: ${isOpenshift?c}
   initialRepositories: |
     - name: argocd
       url: ${scmm.baseUrl}/repo/${namePrefix}argocd/argocd
