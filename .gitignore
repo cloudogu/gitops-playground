@@ -18,6 +18,7 @@ terraform/account.json
 
 gitops-playground.jar
 jenkins-plugins
+/charts/
 
 # do not check in local config files
 *.gpt

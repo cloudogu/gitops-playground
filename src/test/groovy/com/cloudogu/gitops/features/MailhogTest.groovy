@@ -1,17 +1,25 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Configuration
-import com.cloudogu.gitops.features.deployment.HelmStrategy
+import com.cloudogu.gitops.features.deployment.DeploymentStrategy
+import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.HelmClient
+import com.cloudogu.gitops.utils.K8sClient
 import groovy.yaml.YamlSlurper
+import jakarta.inject.Provider
 import org.junit.jupiter.api.Test
+import org.mockito.ArgumentCaptor
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 
+import java.nio.file.Files
 import java.nio.file.Path
 
 import static org.assertj.core.api.Assertions.assertThat
+import static org.mockito.ArgumentMatchers.any
+import static org.mockito.Mockito.mock
+import static org.mockito.Mockito.verify
+import static org.mockito.Mockito.when
 
 class MailhogTest {
 
@@ -21,13 +29,11 @@ class MailhogTest {
                     password: '123',
                     remote  : false,
                     namePrefix: "foo-",
+                    podResources : false,
+                    mirrorRepos: false
             ],
             scmm       : [
                     internal: true,
-                    protocol: 'https',
-                    host: 'abc',
-                    username: '',
-                    password: ''
             ],
             features    : [
                     argocd    : [
@@ -39,14 +45,16 @@ class MailhogTest {
                                     chart  : 'mailhog',
                                     repoURL: 'https://codecentric.github.io/helm-charts',
                                     version: '5.0.1',
-                                    image: ''
                             ]
                     ]
             ],
     ]
+    DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
+    AirGappedUtils airGappedUtils = mock(AirGappedUtils)
+    Path temporaryYamlFile = null
+    CommandExecutorForTest k8sCommandExecutor = new CommandExecutorForTest()
     CommandExecutorForTest commandExecutor = new CommandExecutorForTest()
-    HelmClient helmClient = new HelmClient(commandExecutor)
-    Path temporaryYamlFile
+    FileSystemUtils fileSystemUtils = new FileSystemUtils()
 
     @Test
     void "is disabled via active flag"() {
@@ -85,7 +93,7 @@ class MailhogTest {
     void 'does not use ingress by default'() {
         createMailhog().install()
 
-        assertThat(parseActualYaml() as Map).doesNotContainKey('ingress')
+        assertThat(parseActualYaml()).doesNotContainKey('ingress')
     }
 
     @Test
@@ -109,7 +117,26 @@ class MailhogTest {
 
         createMailhog().install()
 
-        assertMailhogInstalledImperativelyViaHelm()
+        verify(deploymentStrategy).deployFeature(
+                'https://codecentric.github.io/helm-charts',
+                'mailhog',
+                'mailhog',
+                '5.0.1',
+                'monitoring',
+                'mailhog',
+                temporaryYamlFile
+        )
+
+        assertThat(parseActualYaml()).doesNotContainKey('resources')
+    }
+
+    @Test
+    void 'Sets pod resource limits and requests'() {
+        config.application['podResources'] = true
+
+        createMailhog().install()
+
+        assertThat(parseActualYaml()['resources'] as Map).containsKeys('limits', 'requests')
     }
 
     @Test
@@ -149,30 +176,55 @@ class MailhogTest {
         assertThat(parseActualYaml()['image']).isNull()
     }
 
-    protected void assertMailhogInstalledImperativelyViaHelm() {
-        assertThat(commandExecutor.actualCommands[0].trim()).isEqualTo(
-                'helm repo add mailhog https://codecentric.github.io/helm-charts')
-        assertThat(commandExecutor.actualCommands[1].trim()).isEqualTo(
-                'helm upgrade -i mailhog mailhog/mailhog --version 5.0.1' +
-                        " --values ${temporaryYamlFile} --namespace foo-monitoring --create-namespace")
+    @Test
+    void 'helm release is installed in air-gapped mode'() {
+        config.application['mirrorRepos'] = true
+        when(airGappedUtils.mirrorHelmRepoToGit(any(Map))).thenReturn('a/b')
+
+        Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
+        config.application['localHelmChartFolder'] = rootChartsFolder.toString()
+
+        Path SourceChart = rootChartsFolder.resolve('mailhog')
+        Files.createDirectories(SourceChart)
+
+        Map ChartYaml = [ version     : '1.2.3' ]
+        fileSystemUtils.writeYaml(ChartYaml, SourceChart.resolve('Chart.yaml').toFile())
+
+        createMailhog().install()
+
+        def helmConfig = ArgumentCaptor.forClass(Map)
+        verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
+        assertThat(helmConfig.value.chart).isEqualTo('mailhog')
+        assertThat(helmConfig.value.repoURL).isEqualTo('https://codecentric.github.io/helm-charts')
+        assertThat(helmConfig.value.version).isEqualTo('5.0.1')
+        verify(deploymentStrategy).deployFeature(
+                'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/a/b',
+                'mailhog', '.', '1.2.3','monitoring',
+                'mailhog', temporaryYamlFile, DeploymentStrategy.RepoType.GIT)
     }
 
     private Mailhog createMailhog() {
         // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
 
+        def configuration = new Configuration(config)
         new Mailhog(new Configuration(config), new FileSystemUtils() {
             @Override
             Path copyToTempDir(String filePath) {
-                def ret = super.copyToTempDir(filePath)
-                temporaryYamlFile = Path.of(ret.toString().replace(".ftl", "")) // Path after template invocation
-
+                Path ret = super.copyToTempDir(filePath)
+                temporaryYamlFile = Path.of(ret.toString().replace(".ftl", ""))
+                // Path after template invocation
                 return ret
             }
-        }, new HelmStrategy(new Configuration(config), helmClient))
+        }, deploymentStrategy, new K8sClient(k8sCommandExecutor, new FileSystemUtils(), new Provider<Configuration>() {
+            @Override
+            Configuration get() {
+                configuration
+            }
+        }), airGappedUtils)
     }
 
-    private parseActualYaml() {
+    private Map parseActualYaml() {
         def ys = new YamlSlurper()
-        return ys.parse(temporaryYamlFile)
+        return ys.parse(temporaryYamlFile) as Map
     }
 }

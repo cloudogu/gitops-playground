@@ -25,6 +25,35 @@ class K8sClientTest {
                 "kubectl create namespace foo-my-ns" +
                         " --dry-run=client -oyaml | kubectl apply -f-")
     }
+
+    @Test
+    void 'Gets internal nodeIp'() {
+        // waitForNode()
+        k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', 'node/k3d-gitops-playground-server-0', 0))
+        // getInternalNodeIp()
+        k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', '1.2.3.4', 0))
+
+        def actualNodeIp = k8sClient.getInternalNodeIp()
+        
+        assertThat(actualNodeIp).isEqualTo('1.2.3.4')
+        assertThat(commandExecutor.actualCommands[1]).isEqualTo(
+                "kubectl get node/k3d-gitops-playground-server-0 " +
+                        "--template='{{range .status.addresses}}{{ if eq .type \"InternalIP\" }}{{.address}}{{break}}{{end}}{{end}}'")
+    }
+
+    @Test
+    void 'Gets internal nodeIp after waiting for node'() {
+        // waitForNode()
+        k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', '', 0))
+        k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', '', 0))
+        k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', 'node/k3d-gitops-playground-server-0', 0))
+        // getInternalNodeIp()
+        k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', '1.2.3.4', 0))
+
+        def actualNodeIp = k8sClient.getInternalNodeIp()
+
+        assertThat(actualNodeIp).isEqualTo('1.2.3.4')
+    }
     
     @Test
     void 'Creates secret'() {

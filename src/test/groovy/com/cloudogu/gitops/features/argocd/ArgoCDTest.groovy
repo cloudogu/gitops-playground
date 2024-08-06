@@ -40,9 +40,15 @@ class ArgoCDTest {
                     username            : 'something',
                     namePrefix          : '',
                     namePrefixForEnvVars: '',
+                    podResources        : false,
                     gitName             : 'Cloudogu',
                     gitEmail            : 'hello@cloudogu.com',
-                    urlSeparatorHyphen : false,
+                    urlSeparatorHyphen  : false,
+                    mirrorRepos         : false,
+                    skipCrds: false
+            ],
+            jenkins     : [
+                    mavenCentralMirror: '',
             ],
             scmm        : [
                     internal: true,
@@ -89,6 +95,7 @@ class ArgoCDTest {
                     monitoring : [
                             active: true,
                             helm  : [
+                                    chart: 'kube-prometheus-stack',
                                     version: '42.0.3'
                                     ]
                     ],
@@ -127,8 +134,6 @@ class ArgoCDTest {
         createArgoCD().install()
 
         k8sCommands.assertExecuted('kubectl create namespace argocd')
-        k8sCommands.assertExecuted('kubectl create namespace monitoring')
-        k8sCommands.assertExecuted("kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/kube-prometheus-stack-42.0.3/charts/kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml")
 
         // check values.yaml
         List filesWithInternalSCMM = findFilesContaining(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), ArgoCD.SCMM_URL_INTERNAL)
@@ -145,7 +150,7 @@ class ArgoCDTest {
         assertThat(helmCommands.actualCommands[1].trim()).isEqualTo(
                 "helm dependency build ${Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'argocd/')}".toString())
         assertThat(helmCommands.actualCommands[2].trim()).isEqualTo(
-                "helm upgrade -i argocd ${Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'argocd/')} --namespace argocd --create-namespace".toString())
+                "helm upgrade -i argocd ${Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'argocd/')} --create-namespace --namespace argocd".toString())
 
         // Check patched PW
         def patchCommand = k8sCommands.assertExecuted('kubectl patch secret argocd-secret -n argocd')
@@ -174,6 +179,17 @@ class ArgoCDTest {
         def yaml = parseActualYaml(namespacesYaml)
         assertThat(yaml[0]['metadata']['name']).isEqualTo('example-apps-staging')
         assertThat(yaml[1]['metadata']['name']).isEqualTo('example-apps-production')
+
+        Map repos = parseActualYaml(actualHelmValuesFile)['argo-cd']['configs']['repositories'] as Map
+        assertThat(repos['prometheus']['url']).isEqualTo('https://prometheus-community.github.io/helm-charts')
+
+        def clusterRessourcesYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/cluster-resources.yaml')
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains(
+                'https://prometheus-community.github.io/helm-charts')
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain(
+                'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack')
+
+        assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['crds']).isNull()
     }
 
     @Test
@@ -405,12 +421,20 @@ class ArgoCDTest {
         assertThat(valuesYaml['service']['type']).isEqualTo('NodePort')
         assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-production.yaml')).doesNotContainKey('ingress')
         assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-staging.yaml')).doesNotContainKey('ingress')
-
-
+        assertThat(valuesYaml).doesNotContainKey('resources')
+        
         valuesYaml = parseActualYaml(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'apps/nginx-helm-umbrella/values.yaml')
         assertThat(valuesYaml['nginx']['service']['type']).isEqualTo('NodePort')
         assertThat(valuesYaml['nginx'] as Map).doesNotContainKey('ingress')
+        assertThat(valuesYaml['nginx'] as Map).doesNotContainKey('resources')
+        
+        assertThat((parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[1]['spec']['type']))
+                .isEqualTo('NodePort')
+        assertThat((parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[0]['spec']['template']['spec']['containers'] as List)[0]['resources'])
+                .isNull()
 
+        assertThat(new File(nginxValidationRepo.absoluteLocalRepoTmpDir, '/k8s/values-shared.yaml').text).doesNotContain('resources:')
+        
         // Assert Petclinic repo cloned
         verify(gitCloneMock).setURI('https://github.com/cloudogu/spring-petclinic.git')
         verify(setUriMock).setDirectory(remotePetClinicRepoTmpDir)
@@ -438,7 +462,56 @@ class ArgoCDTest {
         def valuesYaml = parseActualYaml(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'apps/nginx-helm-umbrella/values.yaml')
         assertThat(valuesYaml['nginx']['ingress']['hostname'] as String).isEqualTo('production.nginx-helm-umbrella.nginx.local')
 
+        assertThat((parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[2]['spec']['rules'] as List)[0]['host'])
+                .isEqualTo('broken-application.nginx.local')
+        assertThat((parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[1]['spec']['type']))
+                .isEqualTo('LoadBalancer')
+
         assertPetClinicRepos('LoadBalancer', 'NodePort', 'petclinic.local')
+    }
+
+    @Test
+    void 'Prepares repos for air-gapped mode'() {
+        config['features']['monitoring']['active'] = false
+        config.application['mirrorRepos'] = true
+
+        createArgoCD().install()
+
+        Map repos = parseActualYaml(actualHelmValuesFile)['argo-cd']['configs']['repositories'] as Map
+        assertThat(repos['prometheus']['url']).isEqualTo('http://scmm-scm-manager.default.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack')
+
+        def clusterRessourcesYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/cluster-resources.yaml')
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains(
+                'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack')
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain(
+                'https://prometheus-community.github.io/helm-charts')
+    }
+
+    @Test
+    void 'Applies Prometheus ServiceMonitor CRD from file before installing (air-gapped mode)'() {
+        config['features']['monitoring']['active'] = true
+        config.application['mirrorRepos'] = true
+
+        Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
+        config.application['localHelmChartFolder'] = rootChartsFolder.toString()
+
+        Path crdPath = rootChartsFolder.resolve('kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml')
+        Files.createDirectories(crdPath)
+
+        createArgoCD().install()
+
+        k8sCommands.assertExecuted('kubectl create namespace monitoring')
+        k8sCommands.assertExecuted("kubectl apply -f ${crdPath}")
+    }
+
+    @Test
+    void 'Applies Prometheus ServiceMonitor CRD from GitHub before installing'() {
+        config['features']['monitoring']['active'] = true
+
+        createArgoCD().install()
+
+        k8sCommands.assertExecuted('kubectl create namespace monitoring')
+        k8sCommands.assertExecuted("kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/kube-prometheus-stack-42.0.3/charts/kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml")
     }
 
     @Test
@@ -455,7 +528,11 @@ class ArgoCDTest {
 
         assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-production.yaml')['ingress']['hostname']).isEqualTo('production-nginx-helm-nginx-local')
         assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-staging.yaml')['ingress']['hostname']).isEqualTo('staging-nginx-helm-nginx-local')
-        assertPetClinicRepos('LoadBalancer', 'NodePort', 'petclinic-local', true)
+
+        assertThat((parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[2]['spec']['rules'] as List)[0]['host'])
+                .isEqualTo('broken-application-nginx-local')
+        
+        assertPetClinicRepos('LoadBalancer', 'NodePort', 'petclinic-local')
     }
 
     @Test
@@ -538,8 +615,8 @@ class ArgoCDTest {
         assertThat(image['tag']).isEqualTo('latest')
 
         yaml = parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')
-        def deployment = yaml[1]
-        assertThat(deployment['kind']).as("Did not correctly fetch deployment from broken-application.yaml").isEqualTo("Deployment(z)")
+        def deployment = yaml[0]
+        assertThat(deployment['kind']).as("Did not correctly fetch deployment from broken-application.yaml").isEqualTo("Deploymentz")
         assertThat((deployment['spec']['template']['spec']['containers'] as List)[0]['image']).isEqualTo('localhost:5000/nginx/nginx:latest')
 
         def yamlString = new File(nginxValidationRepo.absoluteLocalRepoTmpDir, '/k8s/values-shared.yaml').text
@@ -548,6 +625,56 @@ class ArgoCDTest {
   repository: nginx/nginx
   tag: latest
 """)
+    }
+
+    @Test
+    void 'Skips CRDs for argo cd'() {
+        config.application['skipCrds'] = true
+
+        createArgoCD().install()
+
+        assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['crds']['install']).isEqualTo(false)
+    }
+
+    @Test
+    void 'disables serviceMonitor, when monitoring not active'() {
+        config['application']['skipCrds'] = true
+
+        createArgoCD().createMonitoringNamespaceAndCrd()
+
+        k8sCommands.assertNotExecuted('kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/')
+    }
+
+    @Test
+    void 'Write maven mirror into jenkinsfiles'() {
+        config.jenkins['mavenCentralMirror'] = 'http://test'
+        createArgoCD().install()
+
+        for (def petclinicRepo : petClinicRepos) {
+                assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).contains(
+                        'mvn.useMirrors([name: \'maven-central-mirror\', mirrorOf: \'central\', url:  env.MAVEN_CENTRAL_MIRROR])'
+                )
+        }
+    }
+
+    @Test
+    void 'Sets pod resource limits and requests'() {
+        config.application['podResources'] = true
+
+        createArgoCD().install()
+
+        assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-shared.yaml')['resources'] as Map)
+                .containsKeys('limits', 'requests')
+
+        assertThat(parseActualYaml(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'apps/nginx-helm-umbrella/values.yaml')['nginx']['resources'] as Map)
+                .containsKeys('limits', 'requests')
+
+        assertThat(new File(nginxValidationRepo.absoluteLocalRepoTmpDir, '/k8s/values-shared.yaml').text).contains('limits:', 'resources:')
+
+        assertThat((parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[0]['spec']['template']['spec']['containers'] as List)[0]['resources'] as Map)
+                .containsKeys('limits', 'requests')
+        
+        assertPetClinicRepos('NodePort', 'LoadBalancer', '')
     }
 
     private void assertArgoCdYamlPrefixes(String scmmUrl, String expectedPrefix) {
@@ -658,8 +785,8 @@ class ArgoCDTest {
 
     private void assertJenkinsEnvironmentVariablesPrefixes(String prefix) {
         List singleRegistryEnvVars = ["env.${prefix}REGISTRY_URL", "env.${prefix}REGISTRY_URL"]
-        List twoRegistriesEnvVars = ["env.${prefix}REGISTRY_PULL_URL", "env.${prefix}REGISTRY_PULL_PATH",
-                                   "env.${prefix}REGISTRY_PUSH_URL", "env.${prefix}REGISTRY_PUSH_PATH" ]
+        List twoRegistriesEnvVars = ["env.${prefix}REGISTRY_PULL_URL", 
+                                     "env.${prefix}REGISTRY_PUSH_URL", "env.${prefix}REGISTRY_PUSH_PATH" ]
         
         assertThat(new File(nginxHelmJenkinsRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).contains("env.${prefix}K8S_VERSION")
         
@@ -734,7 +861,10 @@ class ArgoCDTest {
         }
     }
 
-    void assertPetClinicRepos(String expectedServiceType, String unexpectedServiceType, String ingressUrl, boolean separatorHyphen = false) {
+    void assertPetClinicRepos(String expectedServiceType, String unexpectedServiceType, String ingressUrl) {
+        boolean separatorHyphen = config.application['urlSeparatorHyphen']
+        boolean podResources = config.application['podResources'] 
+                
         for (ScmmRepo repo : petClinicRepos) {
 
             def tmpDir = repo.absoluteLocalRepoTmpDir
@@ -752,6 +882,18 @@ class ArgoCDTest {
 
                 assertThat(new File(tmpDir, 'k8s/production/service.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
                 assertThat(new File(tmpDir, 'k8s/staging/service.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
+                
+                if (podResources) {
+                    assertThat((parseActualYaml(tmpDir + '/k8s/production/deployment.yaml')['spec']['template']['spec']['containers'] as List)[0]['resources'] as Map)
+                            .containsKeys('limits', 'requests')
+                    assertThat((parseActualYaml(tmpDir + '/k8s/staging/deployment.yaml')['spec']['template']['spec']['containers'] as List)[0]['resources'] as Map)
+                            .containsKeys('limits', 'requests')
+                } else {
+                    assertThat((parseActualYaml(tmpDir + '/k8s/production/deployment.yaml')['spec']['template']['spec']['containers'] as List)[0] as Map)
+                            .doesNotContainKey('resources')
+                    assertThat((parseActualYaml(tmpDir + '/k8s/staging/deployment.yaml')['spec']['template']['spec']['containers'] as List)[0] as Map)
+                            .doesNotContainKey('resources')
+                } 
 
                 if (!ingressUrl) {
                     assertThat(new File(tmpDir, 'k8s/staging/ingress.yaml')).doesNotExist()
@@ -772,6 +914,13 @@ class ArgoCDTest {
                 assertBuildImagesInJenkinsfileReplaced(jenkinsfile)
                 assertThat(new File(tmpDir, 'k8s/values-shared.yaml').text).contains("type: ${expectedServiceType}")
                 assertThat(new File(tmpDir, 'k8s/values-shared.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
+
+                if (podResources) {
+                    assertThat(parseActualYaml(tmpDir + '/k8s/values-shared.yaml')['resources'] as Map).containsKeys('limits', 'requests')
+                } else {
+                    assertThat(parseActualYaml(tmpDir + '/k8s/values-shared.yaml')['resources']).isNull()
+                }
+
                 if (!ingressUrl) {
                     assertThat(parseActualYaml(tmpDir + '/k8s/values-shared.yaml')['ingress']['enabled']).isEqualTo(false)
                     assertThat(parseActualYaml(tmpDir + '/k8s/values-production.yaml')).doesNotContainKey('ingress')
@@ -794,6 +943,13 @@ class ArgoCDTest {
                 // Does not contain the gitops build lib call, so no build images to replace
                 assertThat(new File(tmpDir, 'k8s/values-shared.yaml').text).contains("type: ${expectedServiceType}")
                 assertThat(new File(tmpDir, 'k8s/values-shared.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
+
+                if (podResources) {
+                    assertThat(parseActualYaml(tmpDir + '/k8s/values-shared.yaml')['resources'] as Map).containsKeys('limits', 'requests')
+                } else {
+                    assertThat(parseActualYaml(tmpDir + '/k8s/values-shared.yaml')['resources']).isNull()
+                }
+                
                 if (!ingressUrl) {
                     assertThat(parseActualYaml(tmpDir + '/k8s/values-shared.yaml')['ingress']['enabled']).isEqualTo(false)
                     assertThat(parseActualYaml(tmpDir + '/k8s/values-production.yaml')).doesNotContainKey('ingress')

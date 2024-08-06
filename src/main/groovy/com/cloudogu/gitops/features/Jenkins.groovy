@@ -72,12 +72,15 @@ class Jenkins extends Feature {
         globalPropertyManager.setGlobalProperty('SCMM_URL', config.scmm['url'] as String)
         if (config.registry['twoRegistries']) {
             globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_PULL_URL", config.registry['pullUrl'] as String)
-            globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_PULL_PATH", config.registry['pullPath'] as String)
             globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_PUSH_URL", config.registry['pushUrl'] as String)
             globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_PUSH_PATH", config.registry['pushPath'] as String)
         } else {
             globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_URL", config.registry['url'] as String)
             globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_PATH", config.registry['path'] as String)
+        }
+
+        if (config.jenkins['mavenCentralMirror']) {
+            globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}MAVEN_CENTRAL_MIRROR", config.jenkins['mavenCentralMirror'] as String)
         }
 
         globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}K8S_VERSION", ApplicationConfigurator.K8S_VERSION)
@@ -120,6 +123,8 @@ class Jenkins extends Feature {
                         "${config.registry['password']}",
                         'credentials for accessing the docker-registry')
             }
+            // Once everything is set up, start the jobs.
+            jobManger.startJob('example-apps')
         }
     }
 }

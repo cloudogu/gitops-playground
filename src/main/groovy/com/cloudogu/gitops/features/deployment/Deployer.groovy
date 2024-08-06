@@ -20,11 +20,12 @@ class Deployer implements DeploymentStrategy {
     }
 
     @Override
-    void deployFeature(String repoURL, String repoName, String chart, String version, String namespace, String releaseName, Path helmValuesPath) {
+    void deployFeature(String repoURL, String repoName, String chartOrPath, String version, String namespace,
+                       String releaseName, Path helmValuesPath, RepoType repoType) {
         if (config.features['argocd']['active']) {
-            argoCdStrategy.deployFeature(repoURL, repoName, chart, version, namespace, releaseName, helmValuesPath)
+            argoCdStrategy.deployFeature(repoURL, repoName, chartOrPath, version, namespace, releaseName, helmValuesPath, repoType)
         } else {
-            helmStrategy.deployFeature(repoURL, repoName, chart, version, namespace, releaseName, helmValuesPath)
+            helmStrategy.deployFeature(repoURL, repoName, chartOrPath, version, namespace, releaseName, helmValuesPath, repoType)
         }
     }
 }

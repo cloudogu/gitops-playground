@@ -15,21 +15,32 @@ class HelmClient {
     }
 
     String addRepo(String repoName, String url) {
-        commandExecutor.execute("helm repo add ${repoName} ${url}").stdOut
+        helm(['repo', 'add', repoName, url ])
     }
     
     String dependencyBuild(String path) {
-        String command =  "helm dependency build ${path}"
-        commandExecutor.execute(command).stdOut
+        helm(['dependency', 'build', path ])
     }
     
     String upgrade(String release, String chartOrPath, Map args) {
-        String command =  "helm upgrade -i ${release} ${chartOrPath} " +
-                "${args.version? "--version ${args.version} " : ''}" +
-                "${args.values? "--values ${args.values} " : ''}" +
-                "${args.namespace? "--namespace ${args.namespace} " : ''}" +
-                '--create-namespace '
-        commandExecutor.execute(command).stdOut
+        helm(['upgrade', '-i', release, chartOrPath, '--create-namespace' ], args)
+    }
+    
+    String template(String release, String chartOrPath, Map args = [:]) {
+        helm(['template', release, chartOrPath ], args)
+    }
+    
+    private String helm(List<String> verbAndParams, Map args = [:]) {
+        List<String> command = ['helm'] + verbAndParams 
+        
+        for (entry in args) {
+            String key = entry.key
+            String value = entry.value
+            command += "--${key}".toString()
+            command += value
+        }
+
+        commandExecutor.execute(command as String[]).stdOut
     }
 
     String uninstall(String release, String namespace) {

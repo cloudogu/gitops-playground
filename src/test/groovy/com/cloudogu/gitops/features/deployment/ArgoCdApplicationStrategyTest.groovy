@@ -4,6 +4,7 @@ import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TestScmmRepoProvider
+import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 
 import static org.assertj.core.api.Assertions.assertThat
@@ -52,6 +53,20 @@ spec:
     - "ServerSideApply=true"
     - "CreateNamespace=true"
 """)
+    }
+    
+    @Test
+    void 'deploys feature using argo CD from git repo'() {
+        def strategy = createStrategy()
+        File valuesYaml = File.createTempFile('values', 'yaml')
+        strategy.deployFeature("repoURL", "repoName", "chartName", "version", 
+                "namespace", "releaseName", valuesYaml.toPath(), DeploymentStrategy.RepoType.GIT)
+
+        def argoCdApplicationYaml = new File("$localTempDir/argocd/releaseName.yaml")
+        def result = new YamlSlurper().parse(argoCdApplicationYaml)
+        def sources = result['spec']['sources'] as List
+        assertThat(sources[0] as Map).containsKey('path')
+        assertThat(sources[0] ['path']).isEqualTo('chartName')
     }
 
     private ArgoCdApplicationStrategy createStrategy() {

@@ -15,7 +15,8 @@ import static com.cloudogu.gitops.utils.MapUtils.*
 @Singleton
 class ApplicationConfigurator {
 
-    public static final String HELM_IMAGE = "ghcr.io/cloudogu/helm:3.10.3-1"
+    // When updating please also update in Dockerfile
+    public static final String HELM_IMAGE = "ghcr.io/cloudogu/helm:3.15.3-1"
     // When updating please also adapt in Dockerfile, vars.tf and init-cluster.sh
     public static final String K8S_VERSION = "1.29"
     public static final String DEFAULT_ADMIN_USER = 'admin'
@@ -75,14 +76,16 @@ class ApplicationConfigurator {
                              - Upgrade bash image in values.yaml and gid-grepper
                              - Also upgrade plugins. See docs/developers.md
                              */
-                            version: '5.0.17'
-                    ]
+                            version: '4.8.1'
+                    ],
+                    mavenCentralMirror: '',
             ],
             scmm       : [
                     internal: true, // Set dynamically
                     url     : '',
                     username: DEFAULT_ADMIN_USER,
                     password: DEFAULT_ADMIN_PW,
+                    gitOpsUsername : '', // Set dynamically
                     /* This corresponds to the "Base URL" in SCMM Settings.
                        We use the K8s service as default name here, to make the build on push feature (webhooks from SCMM to Jenkins that trigger builds) work in k3d.
                        The webhook contains repository URLs that start with the "Base URL" Setting of SCMM.
@@ -100,24 +103,29 @@ class ApplicationConfigurator {
                     helm  : [
                             chart  : 'scm-manager',
                             repoURL: 'https://packages.scm-manager.org/repository/helm-v2-releases/',
-                            version: '3.1.0'
+                            version: '3.2.1'
                     ]
             ],
             application: [
                     remote        : false,
+                    mirrorRepos     : false,
+                    destroy       : false,
+                    // Take from env because the Dockerfile provides a local copy of the repo for air-gapped mode
+                    localHelmChartFolder: System.getenv('LOCAL_HELM_CHART_FOLDER'),
                     insecure      : false,
                     openshift     : false,
                     username      : DEFAULT_ADMIN_USER,
                     password      : DEFAULT_ADMIN_PW,
                     yes           : false,
                     runningInsideK8s : false, // Set dynamically
-                    clusterBindAddress : '', // Set dynamically
                     namePrefix    : '',
+                    podResources : false,
                     namePrefixForEnvVars    : '', // Set dynamically
                     baseUrl: null,
                     gitName: 'Cloudogu',
                     gitEmail: 'hello@cloudogu.com',
-                    urlSeparatorHyphen: false
+                    urlSeparatorHyphen: false,
+                    skipCrds : false,
             ],
             images     : [
                     kubectl    : "bitnami/kubectl:$K8S_VERSION",
@@ -163,7 +171,6 @@ class ApplicationConfigurator {
                             smtpPort : '',
                             smtpUser : '',
                             smtpPassword : '', 
-                            url: '',
                             helm  : [
                                     chart  : 'mailhog',
                                     repoURL: 'https://codecentric.github.io/helm-charts',
@@ -177,14 +184,9 @@ class ApplicationConfigurator {
                             grafanaEmailFrom : 'grafana@example.org',
                             grafanaEmailTo : 'infra@example.org',
                             helm  : [
-                                    /* Before allowing to override this via config, we have to change
-                                       ArgoCD.groovy to extract the monitoring CRD from the chart instead of applying 
-                                       from GitHub.
-                                        
-                                        First approach: 
-                                        helm template prometheus-community/kube-prometheus-stack --version XYZ --include-crds */
                                     chart  : 'kube-prometheus-stack',
                                     repoURL: 'https://prometheus-community.github.io/helm-charts',
+                                    /* When updating this make sure to also test if air-gapped mode still works */
                                     version: '58.2.1',
                                     grafanaImage: '',
                                     grafanaSidecarImage: '',
@@ -221,8 +223,9 @@ class ApplicationConfigurator {
                             helm  : [
                                     chart: 'ingress-nginx',
                                     repoURL: 'https://kubernetes.github.io/ingress-nginx',
-                                    version: '4.9.1'
-                            ],
+                                    version: '4.9.1',
+                                    values: [:]
+                             ],
                     ],
                     exampleApps: [
                             petclinic: [
@@ -347,13 +350,12 @@ class ApplicationConfigurator {
             log.debug("installation is running in kubernetes.")
             newConfig.application["runningInsideK8s"] = true
         }
-        String clusterBindAddress = networkingUtils.findClusterBindAddress()
-        log.debug("Setting cluster bind Address: " + clusterBindAddress)
-        newConfig.application["clusterBindAddress"] = clusterBindAddress
     }
 
     private void addScmmConfig(Map newConfig) {
         log.debug("Adding additional config for SCM-Manager")
+
+        newConfig.scmm['gitOpsUsername'] = "${this.config.application['namePrefix']}gitops"
 
         if (newConfig.scmm["url"]) {
             log.debug("Setting external scmm config")
@@ -365,8 +367,8 @@ class ApplicationConfigurator {
         } else {
             log.debug("Setting internal configs for local single node cluster with internal scmm")
             def port = fileSystemUtils.getLineFromFile(fileSystemUtils.getRootDir() + "/scm-manager/values.ftl.yaml", "nodePort:").findAll(/\d+/)*.toString().get(0)
-            String cba = newConfig.application["clusterBindAddress"]
-            newConfig.scmm["url"] = networkingUtils.createUrl(cba, port, "/scm")
+            String clusterBindAddress = networkingUtils.findClusterBindAddress()
+            newConfig.scmm["url"] = networkingUtils.createUrl(clusterBindAddress, port, "/scm")
         }
 
         String scmmUrl = newConfig.scmm["url"]
@@ -393,8 +395,8 @@ class ApplicationConfigurator {
         } else {
             log.debug("Setting jenkins configs for local single node cluster with internal jenkins")
             def port = fileSystemUtils.getLineFromFile(fileSystemUtils.getRootDir() + "/jenkins/values.yaml", "nodePort:").findAll(/\d+/)*.toString().get(0)
-            String cba = newConfig.application["clusterBindAddress"]
-            newConfig.jenkins["url"] = networkingUtils.createUrl(cba, port)
+            String clusterBindAddress = networkingUtils.findClusterBindAddress()
+            newConfig.jenkins["url"] = networkingUtils.createUrl(clusterBindAddress, port)
         }
     }
 
@@ -468,5 +470,12 @@ class ApplicationConfigurator {
                 !configToSet.scmm["url"] && configToSet.jenkins["url"]) {
             throw new RuntimeException('When setting jenkins URL, scmm URL must also be set and the other way round')
         }
+        if (configToSet.application['mirrorRepos'] && !configToSet.application['localHelmChartFolder']) {
+            // This should only happen when run outside the image, i.e. during development
+            throw new RuntimeException("Missing config for localHelmChartFolder.\n" +
+                    "Either run inside the official container image or setting env var " +
+                    "LOCAL_HELM_CHART_FOLDER='charts' after running 'scripts/downloadHelmCharts.sh' from the repo")
+        }
+
     }
 }

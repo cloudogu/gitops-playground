@@ -24,7 +24,9 @@
     <exec.mainClass>com.cloudogu.gitops.cli.GitopsPlaygroundCliMain</exec.mainClass>
 
     <okhttpVersion>4.11.0</okhttpVersion>
+    <retrofitVersion>2.9.0</retrofitVersion>
     <groovy.version>4.0.12</groovy.version>
+    <jsonschema.version>4.35.0</jsonschema.version>
   </properties>
 
   <dependencyManagement>
@@ -139,7 +141,7 @@
       <groupId>org.eclipse.jgit</groupId>
       <artifactId>org.eclipse.jgit</artifactId>
       <!-- JGit is known to cause trouble with GraalVM. So when updating, keep calm and read the developers.md#JGit docs -->
-      <version>6.5.0.202303070854-r</version>
+      <version>6.6.1.202309021850-r</version>
     </dependency>
 
     <dependency>
@@ -163,7 +165,14 @@
     <dependency>
       <groupId>com.squareup.retrofit2</groupId>
       <artifactId>retrofit</artifactId>
-      <version>2.9.0</version>
+      <version>${retrofitVersion}</version>
+    </dependency>
+    
+    <dependency>
+      <!-- Converts HTTP body objects from groovy to JSON -->
+      <groupId>com.squareup.retrofit2</groupId>
+      <artifactId>converter-jackson</artifactId>
+      <version>${retrofitVersion}</version>
     </dependency>
 
     <dependency>
@@ -250,7 +259,12 @@
     <dependency>
       <groupId>com.github.victools</groupId>
       <artifactId>jsonschema-generator</artifactId>
-      <version>[4.21.0,5.0.0)</version>
+      <version>${jsonschema.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.github.victools</groupId>
+      <artifactId>jsonschema-module-jackson</artifactId>
+      <version>${jsonschema.version}</version>
     </dependency>
 
     <dependency>

@@ -6,7 +6,6 @@ String getScmManagerCredentials() { 'scmm-user' }
 String getConfigRepositoryPRBaseUrl() { env.SCMM_URL }
 <#if registry.twoRegistries>
 String getDockerRegistryPullBaseUrl() { env.${namePrefixForEnvVars}REGISTRY_PULL_URL }
-String getDockerRegistryPullPath() { env.${namePrefixForEnvVars}REGISTRY_PULL_PATH }
 String getDockerRegistryPullCredentials() { 'registry-pull-user' }
 String getDockerRegistryPushBaseUrl() { env.${namePrefixForEnvVars}REGISTRY_PUSH_URL }
 String getDockerRegistryPushPath() { env.${namePrefixForEnvVars}REGISTRY_PUSH_PATH }
@@ -18,7 +17,7 @@ String getDockerRegistryCredentials() { 'registry-user' }
 </#if>
 <#noparse>
 String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/3rd-party-dependencies/ces-build-lib" }
-String getCesBuildLibVersion() { '1.64.1' }
+String getCesBuildLibVersion() { '2.2.0' }
 String getGitOpsBuildLibRepo() { "${env.SCMM_URL}/repo/3rd-party-dependencies/gitops-build-lib" }
 String getGitOpsBuildLibVersion() { '0.4.0'}
 
@@ -32,6 +31,11 @@ properties([
 node {
 
     mvn = cesBuildLib.MavenWrapper.new(this)
+</#noparse>
+<#if jenkins.mavenCentralMirror?has_content>
+    mvn.useMirrors([name: 'maven-central-mirror', mirrorOf: 'central', url:  env.${namePrefixForEnvVars}MAVEN_CENTRAL_MIRROR])
+</#if>
+<#noparse>
 
     catchError {
 

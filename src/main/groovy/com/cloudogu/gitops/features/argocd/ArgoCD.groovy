@@ -58,7 +58,7 @@ class ArgoCD extends Feature {
 
         this.password = this.config.application["password"]
 
-        argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd');
+        argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd')
 
         clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources')
         gitRepos += clusterResourcesInitializationAction
@@ -306,6 +306,32 @@ class ArgoCD extends Feature {
         k8sClient.applyYaml(argocdRbacPath)
     }
 
+    protected void createMonitoringNamespaceAndCrd() {
+        if (config['features']['monitoring']['active']) {
+
+            log.debug("Creating namespace for monitoring, so argocd can add its service monitors there")
+            k8sClient.createNamespace('monitoring')
+
+            if (!config['application']['skipCrds']) {
+                def serviceMonitorCrdYaml
+                if (config.application['mirrorRepos']) {
+                    serviceMonitorCrdYaml = Path.of(
+                            "${config.application['localHelmChartFolder']}/${config['features']['monitoring']['helm']['chart']}/charts/crds/crds/crd-servicemonitors.yaml"
+                    ).toString()
+                } else {
+                    serviceMonitorCrdYaml =
+                            "https://raw.githubusercontent.com/prometheus-community/helm-charts/" +
+                                    "kube-prometheus-stack-${config['features']['monitoring']['helm']['version']}/" +
+                                    "charts/kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml"
+                }
+
+                log.debug("Applying ServiceMonitor CRD; Argo CD fails if it is not there. Chicken-egg-problem.\n" +
+                        "Applying from path ${serviceMonitorCrdYaml}")
+                k8sClient.applyYaml(serviceMonitorCrdYaml)
+            }
+        }
+    }
+
     protected void prepareArgoCdRepo() {
         String argocdConfigPath = this.config.features['argocd']['operator'] ? OPERATOR_CONFIG_PATH : HELM_VALUES_PATH;
         def argocdConfigFile = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), argocdConfigPath)
@@ -380,12 +406,15 @@ class ArgoCD extends Feature {
             repo.replaceTemplates(~/\.ftl/, [
                     namePrefix          : config.application['namePrefix'] as String,
                     namePrefixForEnvVars: config.application['namePrefixForEnvVars'] as String,
+                    podResources        : config.application['podResources'],
                     images              : config.images,
                     nginxImage          : config.images['nginx'] ? DockerImageParser.parse(config.images['nginx'] as String) : null,
                     isRemote            : config.application['remote'],
                     isInsecure          : config.application['insecure'],
                     isOpenshift         : config.application['openshift'],
                     urlSeparatorHyphen  : config.application['urlSeparatorHyphen'],
+                    mirrorRepos         : config.application['mirrorRepos'],
+                    skipCrds            : config.application['skipCrds'],
                     argocd              : [
                             // Note that passing the URL object here leads to problems in Graal Native image, see Git history
                             host: config.features['argocd']['url'] ? new URL(config.features['argocd']['url'] as String).host : "",
@@ -400,7 +429,8 @@ class ArgoCD extends Feature {
                     monitoring          : [
                             grafana: [
                                     url: config.features['monitoring']['grafanaUrl'] ? new URL(config.features['monitoring']['grafanaUrl'] as String) : null,
-                            ]
+                            ],
+                            active: config['features']['monitoring']['active']
                     ],
                     mail: [
                             active: config.features['mail']['active'],
@@ -419,6 +449,9 @@ class ArgoCD extends Feature {
                             baseUrl : config.scmm['internal'] ? 'http://scmm-scm-manager.default.svc.cluster.local/scm' : ScmmRepo.createScmmUrl(config),
                             host    : config.scmm['internal'] ? 'scmm-scm-manager.default.svc.cluster.local' : config.scmm['host'],
                             protocol: config.scmm['internal'] ? 'http' : config.scmm['protocol'],
+                    ],
+                    jenkins             : [
+                            mavenCentralMirror  : config.jenkins['mavenCentralMirror'],
                     ],
                     exampleApps         : [
                             petclinic: [

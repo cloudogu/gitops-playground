@@ -25,7 +25,7 @@ You can try the GitOps Playground on a local Kubernetes cluster by running a sin
 
 ```shell
 bash <(curl -s \
-  https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh) --bind-ingress-port=80 \
+  https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh) \
   && docker run --rm -t --pull=always -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     --net=host \
@@ -299,6 +299,25 @@ It can be enabled via the configfile or parameter `--ingress-nginx`.
 
 In order to make use of the ingress controller, it is recommended to use it in conjunction with [`--base-url`](#deploy-ingresses), which will create `Ingress` objects for all components of the GitOps playground.
 
+The ingress controller is based on the helm chart [`ingress-nginx`](https://kubernetes.github.io/ingress-nginx).
+
+Additional parameters from this chart's values.yaml file can be added to the installation through the gitops-playground [configuration file](#configuration-file).
+
+Example:
+```yaml
+features:
+  ingressNginx:
+    active: true
+    helm:
+      values:
+        controller:
+          replicaCount: 4
+```
+In this Example we override the default `controller.replicaCount` (GOP's default is 2).
+
+This config file is merged with precedence over the defaults set by 
+* [the GOP](applications/cluster-resources/ingress-nginx-helm-values.ftl.yaml) and
+* [the charts itself](https://github.com/kubernetes/ingress-nginx/blob/main/charts/ingress-nginx/values.yaml).
 
 ##### Deploy Ingresses
 
@@ -339,9 +358,8 @@ The ingresses can also be used when running the playground on your local machine
 * Ingresses are required [for running on Windows/Mac](#windows-or-mac).
 
 To use them locally, 
-* init your cluster (`init-cluster.sh`) with `--bind-ingress-port`, e.g. `80` or `8080`.
+* init your cluster (`init-cluster.sh`).
 * apply your playground with the following parameters  
-  (when using a port other than 80, append `:port`, e.g. `localhost:8080`): 
   * `--base-url=http://localhost` 
     * this is possible on Windows (tested on 11), Mac (tested on Ventura) or when using Linux with [systemd-resolved](https://www.freedesktop.org/software/systemd/man/systemd-resolved.service.html) (default in Ubuntu, not Debian)  
       As an alternative, you could add all `*.localhost` entries to your `hosts` file.  
@@ -352,6 +370,8 @@ To use them locally,
     * Then, you can reach argocd on `http://argocd.local.gd`, for example
 * Note that when using port 80, the URLs are shorter, but you run into issues because port 80 is regarded as a privileged port. 
   Java applications seem not to be able to reach `localhost:80` or even `127.0.0.1:80` (`NoRouteToHostException`)
+* You can change the port using `init-cluster.sh --bind-ingress-port=8080`.  
+  When you do, make sure to append the same port when applying the playground: `--base-url=http://localhost:8080`
 * If your setup requires you to bind to a specific interface, you can just pass it with e.g. `--bind-ingress-port=127.0.0.1:80`
 
 ##### Deploy GitOps operators
@@ -533,7 +553,7 @@ Recommendation: 16GB.
 
 ```bash
 bash <(curl -s \
-  https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh) --bind-ingress-port=80 \
+  https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh) \
   && docker run --rm -t --pull=always -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     --net=host \
@@ -542,7 +562,7 @@ bash <(curl -s \
 ```
 
 When you encounter errors with port 80 you might want to use e.g. 
-* `--bind-ingress-port=8080` and 
+* `init-cluster.sh) --bind-ingress-port=8080` and 
 * `--base-url=http://localhost:8080` instead.
 
 #### Windows Docker Desktop
@@ -1005,3 +1025,5 @@ Alternatively, you can trigger the deployment via ArgoCD's UI or CLI.
 ## Development
 
 See [docs/developers.md](docs/developers.md)
+
+

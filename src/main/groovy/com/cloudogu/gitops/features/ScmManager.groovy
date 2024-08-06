@@ -72,11 +72,13 @@ class ScmManager extends Feature {
                 GIT_COMMITTER_EMAIL          : config.application['gitEmail'],
                 GIT_AUTHOR_NAME              : config.application['gitName'],
                 GIT_AUTHOR_EMAIL             : config.application['gitEmail'],
+                GITOPS_USERNAME              : config.scmm['gitOpsUsername'],
                 TRACE                        : config.application['trace'],
                 SCMM_URL                     : config.scmm['url'],
                 SCMM_USERNAME                : config.scmm['username'],
                 SCMM_PASSWORD                : config.scmm['password'],
                 JENKINS_URL                  : config.jenkins['url'],
+                INTERNAL_SCMM                : config.scmm['internal'],
                 JENKINS_URL_FOR_SCMM         : config.jenkins['urlForScmm'],
                 SCMM_URL_FOR_JENKINS         : config.scmm['urlForJenkins'],
                 // Used indirectly in utils.sh 😬

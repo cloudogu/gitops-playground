@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.utils
 
 import freemarker.template.Configuration
+import freemarker.template.Template
 import freemarker.template.Version
 
 class TemplatingEngine {
@@ -27,6 +28,22 @@ class TemplatingEngine {
      * Executes template and writes to targetFile, keeping the template file.
      */
     File template(File templateFile, File targetFile, Map parameters) {
+        Template template = prepareTemplate(templateFile)
+        template.process(parameters, targetFile.newWriter())
+
+        return targetFile
+    }
+
+    String template(File templateFile, Map parameters) {
+        Template template = prepareTemplate(templateFile)
+
+        StringWriter writer = new StringWriter()
+        template.process(parameters, writer)
+        
+        return writer.toString()
+    }
+
+    protected Template prepareTemplate(File templateFile) {
         if (!templateFile.name.contains(".ftl")) {
             throw new RuntimeException("File must contain .ftl to be a template")
         }
@@ -34,8 +51,6 @@ class TemplatingEngine {
         engine.setDirectoryForTemplateLoading(templateFile.parentFile)
 
         def template = engine.getTemplate(templateFile.name)
-        template.process(parameters, targetFile.newWriter())
-        
-        return targetFile
+        template
     }
 }

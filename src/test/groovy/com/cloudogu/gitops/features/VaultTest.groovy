@@ -1,14 +1,20 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Configuration
-import com.cloudogu.gitops.features.deployment.HelmStrategy
+import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.*
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
+import org.mockito.ArgumentCaptor
 
+import java.nio.file.Files
 import java.nio.file.Path
 
 import static org.assertj.core.api.Assertions.assertThat
+import static org.mockito.ArgumentMatchers.any
+import static org.mockito.Mockito.mock
+import static org.mockito.Mockito.verify
+import static org.mockito.Mockito.when
 
 class VaultTest {
 
@@ -18,6 +24,10 @@ class VaultTest {
                     password: '123',
                     remote  : false,
                     namePrefix: "foo-",
+                    mirrorRepos: false
+            ],
+            scmm       : [
+                    internal: true,
             ],
             features    : [
                     secrets   : [
@@ -37,7 +47,9 @@ class VaultTest {
             ],
     ]
     CommandExecutorForTest helmCommands = new CommandExecutorForTest()
-    HelmClient helmClient = new HelmClient(helmCommands)
+    FileSystemUtils fileSystemUtils = new FileSystemUtils()
+    DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
+    AirGappedUtils airGappedUtils = mock(AirGappedUtils)
     K8sClientForTest k8sClient = new K8sClientForTest(config)
     File temporaryYamlFile
 
@@ -82,7 +94,7 @@ class VaultTest {
     void 'does not use ingress by default'() {
         createVault().install()
 
-        assertThat((parseActualYaml()['server'] as Map)).doesNotContainKey('ingress')
+        assertThat(parseActualYaml()).doesNotContainKey('server')
     }
 
     @Test
@@ -119,6 +131,7 @@ class VaultTest {
         assertThat(actualVolumes[0]['configMap']['name']).isEqualTo(createdConfigMapName)
 
         assertThat(k8sClient.commandExecutorForTest.actualCommands[1]).contains('-n foo-secrets')
+        assertThat(actualYaml['server'] as Map).doesNotContainKey('resources')
     }
 
     @Test
@@ -138,8 +151,7 @@ class VaultTest {
         config['features']['secrets']['vault']['mode'] = 'prod'
         createVault().install()
 
-        def actualYaml = parseActualYaml()
-        assertThat((actualYaml as Map)['server'] as Map).doesNotContainKey('dev')
+        assertThat(parseActualYaml()).doesNotContainKey('server')
 
         assertThat(k8sClient.commandExecutorForTest.actualCommands).isEmpty()
     }
@@ -158,29 +170,72 @@ class VaultTest {
     void 'helm release is installed'() {
         createVault().install()
 
-        assertThat(helmCommands.actualCommands[0].trim()).isEqualTo(
-                'helm repo add vault https://vault-reg')
-        assertThat(helmCommands.actualCommands[1].trim()).isEqualTo(
-                'helm upgrade -i vault vault/vault --version 42.23.0' +
-                        " --values ${temporaryYamlFile} --namespace foo-secrets --create-namespace")
+        Path temporaryYamlFilePath = temporaryYamlFile.toPath()
+
+        verify(deploymentStrategy).deployFeature(
+              'https://vault-reg',
+              'vault',
+              'vault',
+              '42.23.0',
+              'secrets',
+              'vault',
+              temporaryYamlFilePath
+      )
+    }
+
+    @Test
+    void 'helm release is installed in air-gapped mode'() {
+        config.application['mirrorRepos'] = true
+        when(airGappedUtils.mirrorHelmRepoToGit(any(Map))).thenReturn('a/b')
+
+        Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
+        config.application['localHelmChartFolder'] = rootChartsFolder.toString()
+
+        Path SourceChart = rootChartsFolder.resolve('vault')
+        Files.createDirectories(SourceChart)
+
+        Map ChartYaml = [ version: '1.2.3' ]
+        fileSystemUtils.writeYaml(ChartYaml, SourceChart.resolve('Chart.yaml').toFile())
+
+        createVault().install()
+
+        Path temporaryYamlFilePath = temporaryYamlFile.toPath()
+        def helmConfig = ArgumentCaptor.forClass(Map)
+        verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
+        assertThat(helmConfig.value.chart).isEqualTo('vault')
+        assertThat(helmConfig.value.repoURL).isEqualTo('https://vault-reg')
+        assertThat(helmConfig.value.version).isEqualTo('42.23.0')
+        verify(deploymentStrategy).deployFeature(
+                'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/a/b',
+                'vault', '.', '1.2.3','secrets',
+                'vault', temporaryYamlFilePath, DeploymentStrategy.RepoType.GIT)
+    }
+
+    @Test
+    void 'Sets pod resource limits and requests'() {
+        config.application['podResources'] = true
+        
+        createVault().install()
+
+        def actualYaml = parseActualYaml()
+        assertThat(actualYaml['server']['resources'] as Map).containsKeys('limits', 'requests')
     }
 
     private Vault createVault() {
-        def fileSystemUtils = new FileSystemUtils() {
+        // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
+
+        new Vault(new Configuration(config), new FileSystemUtils() {
             @Override
             Path createTempFile() {
                 def ret = super.createTempFile()
-                temporaryYamlFile = ret.toFile()
-
+                temporaryYamlFile = Path.of(ret.toString().replace(".ftl", "")).toFile()
                 return ret
             }
-        }
-        Vault vault = new Vault(new Configuration(config), fileSystemUtils, k8sClient, new HelmStrategy(new Configuration(config), helmClient))
-        return vault
+        },k8sClient,deploymentStrategy, airGappedUtils)
     }
 
-    private parseActualYaml() {
+    private Map parseActualYaml() {
         def ys = new YamlSlurper()
-        return ys.parse(temporaryYamlFile)
+        return ys.parse(temporaryYamlFile) as Map
     }
 }

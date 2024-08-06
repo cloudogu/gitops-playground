@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit
 
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
-import static org.mockito.ArgumentMatchers.any
+import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.*
 
 class GitopsPlaygroundCliTest {
@@ -95,17 +95,18 @@ class GitopsPlaygroundCliTest {
     void 'Outputs config file'() {
         def cli = new GitopsPlaygroundCliForTest()
         cli.outputConfigFile = true
-        cli.pipeYes = false // assures we don't ask when only putting out config
+        cli.yes = false // assures we don't ask when only putting out config
         cli.run()
 
         verify(applicationConfigurator).setConfig(any(Map), eq(true))
         verify(application, never()).start()
     }
+
     
     @Test
     void 'Returns error, when applying is not confirmed'() {
         def cli = new GitopsPlaygroundCliForTest()
-        cli.pipeYes = false
+        cli.yes = false
         
         int status = SystemLambda.catchSystemExit(() -> {
             writeViaSystemIn('something')
@@ -118,7 +119,7 @@ class GitopsPlaygroundCliTest {
     @Test
     void 'Runs when applying is confirmed'() {
         def cli = new GitopsPlaygroundCliForTest()
-        cli.pipeYes = false
+        cli.yes = false
         writeViaSystemIn('y')
         
         cli.run()
@@ -130,7 +131,7 @@ class GitopsPlaygroundCliTest {
     @Timeout(value = 2, unit = TimeUnit.SECONDS) // Avoids blocking if input is read by error
     void 'Runs without confirmation when yes parameter is set'() {
         def cli = new GitopsPlaygroundCliForTest()
-        cli.pipeYes = true
+        cli.yes = true
         cli.run()
 
         verify(application).start()
@@ -139,7 +140,7 @@ class GitopsPlaygroundCliTest {
     @Test
     void 'Returns error, when destroying is not confirmed'() {
         def cli = new GitopsPlaygroundCliForTest()
-        cli.pipeYes = false
+        cli.yes = false
         cli.destroy = true
         
         writeViaSystemIn('something')
@@ -154,7 +155,7 @@ class GitopsPlaygroundCliTest {
     @Test
     void 'Destroys when confirmed'() {
         def cli = new GitopsPlaygroundCliForTest()
-        cli.pipeYes = false
+        cli.yes = false
         cli.destroy = true
         
         writeViaSystemIn('y')
@@ -170,7 +171,7 @@ class GitopsPlaygroundCliTest {
     // Avoids blocking if input is read by error
     void 'Destroys without confirmation when yes parameter is set'() {
         def cli = new GitopsPlaygroundCliForTest()
-        cli.pipeYes = true
+        cli.yes = true
         cli.destroy = true
         cli.run()
 
@@ -223,7 +224,7 @@ class GitopsPlaygroundCliTest {
         ApplicationContext applicationContext = mock(ApplicationContext)
 
         GitopsPlaygroundCliForTest() {
-            pipeYes = true // avoids timeouts due to blocking stdin
+            yes = true // avoids timeouts due to blocking stdin
         }
 
         @Override
@@ -231,9 +232,16 @@ class GitopsPlaygroundCliTest {
             when(applicationContext.getBean(K8sClient)).thenReturn(k8sClient)
             when(applicationContext.registerSingleton(any())).thenReturn(applicationContext)
             when(applicationContext.getBean(Application)).thenReturn(application)
-            when(applicationContext.getBean(ApplicationConfigurator)).thenReturn(applicationConfigurator)
             when(applicationContext.getBean(Destroyer)).thenReturn(destroyer)
             when(applicationContext.getBean(ConfigToConfigFileConverter)).thenReturn(configFileConverter)
+            when(applicationContext.getBean(ApplicationConfigurator)).thenReturn(applicationConfigurator)
+            when(applicationConfigurator.setConfig(any(Map), anyBoolean())).thenReturn([
+                    application: [
+                            destroy: destroy,
+                            yes: yes
+                    ]
+            ])
+
             return applicationContext
         }
     }

@@ -38,7 +38,8 @@ class JenkinsTest {
                     metricsPassword: 'metrics-pw',
                     helm           : [
                             version: '4.8.1'
-                    ]
+                    ],
+                    mavenCentralMirror: ''
             ],
             registry   : [
                     url     : 'reg-url',
@@ -47,7 +48,6 @@ class JenkinsTest {
                     password: 'reg-pw',
                     twoRegistries: false,
                     pullUrl: 'reg-pull-url',
-                    pullPath: 'reg-pull-path',
                     pullUsername    : 'reg-pull-usr',
                     pullPassword    : 'reg-pull-pw',
                     pushUrl: 'reg-push-url',
@@ -108,10 +108,10 @@ class JenkinsTest {
         verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_URL', 'reg-url')
         verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_PATH', 'reg-path')
         verify(globalPropertyManager, never()).setGlobalProperty(eq('MY_PREFIX_REGISTRY_PULL_URL'), anyString())
-        verify(globalPropertyManager, never()).setGlobalProperty(eq('MY_PREFIX_REGISTRY_PULL_PATH'), anyString())
         verify(globalPropertyManager, never()).setGlobalProperty(eq('MY_PREFIX_REGISTRY_PUSH_URL'), anyString())
         verify(globalPropertyManager, never()).setGlobalProperty(eq('MY_PREFIX_REGISTRY_PUSH_PATH'), anyString())
-        
+        verify(globalPropertyManager, never()).setGlobalProperty(eq('MAVEN_CENTRAL_MIRROR'), anyString())
+
         verify(userManager).createUser('metrics-usr', 'metrics-pw')
         verify(userManager).grantPermission('metrics-usr', UserManager.Permissions.METRICS_VIEW)
 
@@ -119,6 +119,8 @@ class JenkinsTest {
 
         verify(jobManger).createCredential('my-prefix-example-apps', 'scmm-user', 
                 'my-prefix-gitops', 'scmm-pw', 'credentials for accessing scm-manager')
+
+        verify(jobManger).startJob('example-apps')
         
         verify(jobManger).createCredential('my-prefix-example-apps', 'registry-user', 
                 'reg-usr', 'reg-pw', 'credentials for accessing the docker-registry')
@@ -128,7 +130,6 @@ class JenkinsTest {
                 anyString(), anyString(), anyString())
     }
 
-
     @Test
     void 'Handles two registries'() {
         config.registry['twoRegistries'] = true
@@ -136,7 +137,6 @@ class JenkinsTest {
         createJenkins().install()
         
         verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_PULL_URL', 'reg-pull-url')
-        verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_PULL_PATH', 'reg-pull-path')
         verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_PUSH_URL', 'reg-push-url')
         verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_PUSH_PATH', 'reg-push-path')
 
@@ -168,6 +168,7 @@ class JenkinsTest {
         
         createJenkins().install()
         verify(jobManger, never()).createCredential(anyString(), anyString(), anyString(), anyString(), anyString())
+        verify(jobManger, never()).startJob(anyString())
     }
 
     @Test
@@ -177,6 +178,14 @@ class JenkinsTest {
 
         def env = getEnvAsMap()
         assertThat(env['BASE_URL']).isNotEqualTo('null')
+    }
+
+    @Test
+    void 'Sets maven mirror '() {
+        config.jenkins['mavenCentralMirror'] = 'http://test'
+        createJenkins().install()
+
+        verify(globalPropertyManager).setGlobalProperty(eq('MY_PREFIX_MAVEN_CENTRAL_MIRROR'), eq("http://test"))
     }
 
     protected Map<String, String> getEnvAsMap() {

@@ -16,6 +16,17 @@ auth:
   enabled: true
   fileName: auth.txt
   fileContents: "${username}:${passwordCrypt}"
+<#if mail.host?has_content>
+
+ingress:
+  enabled: true
+  hosts:
+    - host: ${mail.host}
+      paths:
+        - path: "/"
+          pathType: Prefix
+</#if>
+<#if podResources == true>
 
 resources:
   limits:
@@ -24,13 +35,4 @@ resources:
   requests:
     memory: 10Mi
     cpu: 20m
-  
-<#if mail.host?has_content>
-ingress:
-  enabled: true
-  hosts:
-    - host: ${mail.host}
-      paths:
-        - path: "/"
-          pathType: Prefix
 </#if>

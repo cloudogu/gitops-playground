@@ -43,7 +43,6 @@ class JsonSchemaValidatorTest {
         return ret.build()
     }
 
-
     @ParameterizedTest(name = "{0}")
     @MethodSource("validSchemas")
     void 'test valid schemas'(String description, Map schema) {

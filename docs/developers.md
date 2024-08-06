@@ -16,8 +16,10 @@ It provides workarounds or solutions for the given issues.
 - [Jenkins plugin installation issues](#jenkins-plugin-installation-issues)
   - [Solution](#solution)
 - [Local development](#local-development)
-  - [Provide `gitops-playground.jar` for scripts](#provide-gitops-playgroundjar-for-scripts)
 - [Development image](#development-image)
+- [Running multiple instances on one machine](#running-multiple-instances-on-one-machine)
+  - [Use a different ingress port](#use-a-different-ingress-port)
+  - [Access local docker network](#access-local-docker-network)
 - [Implicit + explicit dependencies](#implicit--explicit-dependencies)
 - [GraalVM](#graalvm)
   - [Graal package](#graal-package)
@@ -26,7 +28,11 @@ It provides workarounds or solutions for the given issues.
   - [JGit](#jgit)
   - [FAQ](#faq)
     - [SAM conversion problem](#sam-conversion-problem)
+- [Testing URL separator hyphens](#testing-url-separator-hyphens)
 - [External registry for development](#external-registry-for-development)
+- [Testing two registries](#testing-two-registries)
+  - [Very simple test](#very-simple-test)
+  - [Proper test](#proper-test)
 - [Emulate an airgapped environment](#emulate-an-airgapped-environment)
   - [Setup cluster](#setup-cluster)
   - [Provide images needed by playground](#provide-images-needed-by-playground)
@@ -36,6 +42,7 @@ It provides workarounds or solutions for the given issues.
   - [Using ingresses locally](#using-ingresses-locally)
     - [Troubleshooting](#troubleshooting-1)
 - [Generate schema.json](#generate-schemajson)
+- [Releasing](#releasing)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -118,7 +125,7 @@ Jenkins.instance.pluginManager.activePlugins.sort().each {
 * Running inside the container:
   * Build and run dev Container:
     ```shell
-    docker buildx build -t gitops-playground:dev --build-arg ENV=dev --progress=plain .
+    docker build -t gitops-playground:dev --build-arg ENV=dev --progress=plain --pull .
     docker run --rm -it -u $(id -u) -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
       --net=host gitops-playground:dev #params
      ```
@@ -162,8 +169,8 @@ scripts/apply-ng.sh #params
 ## Running multiple instances on one machine
 
 Sometimes it makes sense to run more than one instance on your developer machine.
-For example, you might want to conduct multiple long-running tests in parallel or
-you might be interested to see how the latest stable version behaved in comparission to you local build.
+For example, you might want to conduct multiple long-running tests in parallel, or 
+you might be interested to see how the latest stable version behaved in comparison to you local build.
 
 You have to options to do this
 
@@ -194,8 +201,8 @@ This will work on linux only
 ```bash
 INSTANCE=3
 
-scripts/init-cluster.sh --bind-localhost=false \
-  --cluster-name="gitops-playground$INSTANCE" --bind-registry-port="3000$INSTANCE" 
+scripts/init-cluster.sh \
+  --cluster-name="gitops-playground$INSTANCE" --bind-ingress-port=- --bind-registry-port="3000$INSTANCE " 
 
 docker run --rm -t -u $(id -u) \
  -v "$HOME/.config/k3d/kubeconfig-gitops-playground$INSTANCE.yaml:/home/.kube/config" \
@@ -324,7 +331,7 @@ Implicit closure-to-SAM conversions will not always happen.
 You can configure an explicit list in [resources/proxy-config.json](../src/main/resources/proxy-config.json) and [resources/reflect-config.json](../src/main/resources/reflect-config.json).
 
 
-# Testing URL separator hyphens
+## Testing URL separator hyphens
 ```bash
 docker run --rm -t  -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
@@ -339,7 +346,7 @@ echo 127.0.0.1 $(kubectl get ingress -A  -o jsonpath='{.items[*].spec.rules[*].h
 kubectl get --all-namespaces ingress -o json 2> /dev/null | jq -r '.items[] | .spec.rules[] | .host as $host | .http.paths[] | ( "http://" + $host + .path )' | sort | grep -v ^/
 ```
 
-# External registry for development
+## External registry for development
 
 If you need to emulate an "external", private registry with credentials, use the following.
 
@@ -418,25 +425,25 @@ kubectl patch serviceaccount default -p '{"imagePullSecrets": [{"name": "regcred
 This will work for all pods that don't use their own ServiceAccount.
 That is, for most helm charts, you'll need to set an individual value.
 
-# Testing two registries
+## Testing two registries
 
-## Very simple test
+### Very simple test
 * Start playground once,
 * then again with these parameters:  
   `--registry-pull-url=localhost:30000 --registry-push-url=localhost:30000`
 * The petclinic pipelines should still run
 
-## Proper test
+### Proper test
 
 * Start cluster:
 ```shell
 # Stop other cluster, if necessary
 # k3d cluster stop gitops-playground
-scripts/init-cluster.sh --bind-ingress-port=80 --cluster-name=two-regs
+scripts/init-cluster.sh --cluster-name=two-regs
 ```
 * Setup harbor as stated [above](#external-registry-for-development), but with Port `30000`.  
   Wait for harbor to startup: ` kubectl get pod -n harbor`  
-  Don't care about harbor `jobservice`
+  Don't care about crashing harbor `jobservice`
 * Create registries and base image:
 
 ```bash
@@ -510,7 +517,7 @@ images:
   petclinic: localhost:30000/pull/eclipse-temurin:11-jre-alpine
 ```
 
-# Emulate an airgapped environment
+## Emulate an airgapped environment
 
 Let's set up our local playground to emulate an airgapped env, as some of our customers have.
 
@@ -524,11 +531,10 @@ One solution could be to apply the `iptables` rule mentioned bellow to `docker0`
 The approach discussed here is suitable to check if the cluster tries to load anything from the internet,
 like images or helm charts.
 
-## Setup cluster
+### Setup cluster
 
-```
-scripts/init-cluster.sh --bind-localhost=false --cluster-name=airgapped-playground
-# This will start the cluster in its own network namespace, so no accessing via localhost from your machine
+```bash
+scripts/init-cluster.sh --cluster-name=airgapped-playground
 # Note that at this point the cluster is not yet airgapped
 
 # Get the "nodeport" IP
@@ -550,7 +556,7 @@ export KUBECONFIG=$HOME/.config/k3d/kubeconfig-airgapped-playground.yaml
 TODO also replace in `~/.kube/config` for more convenience.
 In there, we need to be more careful, because there are other contexts. This makes it more difficult.
 
-## Provide images needed by playground
+### Provide images needed by playground
 
 First, let's import necessary images into harbor using `skopeo`.
 With `skopeo`, this process is much easier than with `docker` because we don't need to pull the images first.
@@ -588,7 +594,7 @@ help because some pods follow the policy of always pulling the images.
 
 Note that even though the images are named `$K3D_NODE:30002/library/...`, these are available via `localhost:30002/library/...` in the k3d cluster.
 
-## Install the playground
+### Install the playground
 
 Don't disconnect from the internet yet, because
 
@@ -646,7 +652,7 @@ If you want to go online again, use `-D`
 sudo iptables -D FORWARD -j DROP -i $(ip -o -4 addr show | awk -v ip="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.Gateway}}{{end}}' k3d-airgapped-playground-server-0)" '$4 ~ ip {print $2}')
 ```
 
-## Notifications / E-Mail
+### Notifications / E-Mail
 
 Notifications are implemented via Mail.  
 Either internal MailHog or an external mail server can be used.
@@ -665,7 +671,7 @@ Here you can check if the configuration is implemented correctly and fire up a T
 
 For testing Argo CD, just uncomment some of the defaultTriggers in it's values.yaml and it will send a lot of emails.
 
-## Troubleshooting
+### Troubleshooting
 
 When stuck in `Pending` this might be due to volumes not being provisioned
 ```bash
@@ -674,7 +680,7 @@ NAME                                                         READY   STATUS     
 helper-pod-create-pvc-a3d2db89-5662-43c7-a945-22db6f52916d   0/1     ImagePullBackOff   0             72s
 ```
 
-## Using ingresses locally
+### Using ingresses locally
 
 For testing (or because it's more convenient than remembering node ports) ingresses can be used.
 For that, k3d provides its own ingress controller traefik.
@@ -704,7 +710,7 @@ The `base-domain` parameters lead to URLs in the following schema:
 `<stage>.<app-name>.<parameter>`, e.g.  
 `staging.nginx-helm.nginx.localhost`
 
-### Troubleshooting
+#### Troubleshooting
 
 When requests are denied, there might be problems with the iptables/nftables config on your host.
 Using nft insert, to make sure the rule is on top.
@@ -712,24 +718,27 @@ Using nft insert, to make sure the rule is on top.
 nft insert rule ip filter INPUT tcp dport 80 accept
 ```
 
-# Generate schema.json
+## Generate schema.json
 
-Locally:
+
+Run `GenerateJsonSchema.groovy` from your IDE.
+
+Or run build and run via maven and java:
+
 ````shell
 mvn package -DskipTests
 java -classpath target/gitops-playground-cli-0.1.jar org.codehaus.groovy.tools.GroovyStarter --main groovy.ui.GroovyMain \
-  --classpath src/main/groovy src/main/groovy/com/cloudogu/gitops/cli/GenerateJsonSchema.groovy \
-   | jq > docs/configuration.schema.json
+  --classpath src/main/groovy src/main/groovy/com/cloudogu/gitops/cli/GenerateJsonSchema.groovy
 ````
 
-Or via container:
+Or build and run the via docker:
 
 ```shell
 docker build -t gitops-playground:dev --build-arg ENV=dev  --progress=plain .
 docker run --rm --entrypoint java gitops-playground:dev -classpath /app/gitops-playground.jar \
  org.codehaus.groovy.tools.GroovyStarter --main groovy.ui.GroovyMain \
- --classpath /app/src/main/groovy /app/src/main/groovy/com/cloudogu/gitops/cli/GenerateJsonSchema.groovy \
- | jq > docs/configuration.schema.json
+ --classpath /app/src/main/groovy /app/src/main/groovy/com/cloudogu/gitops/cli/GenerateJsonSchema.groovy - \
+ > docs/configuration.schema.json
 ```
 
 ## Releasing
@@ -737,9 +746,17 @@ docker run --rm --entrypoint java gitops-playground:dev -classpath /app/gitops-p
 On `main` branch:
 
 ````shell
-git tag -s x.y.z -m x.y.z
+TAG=0.2.0
+
+git checkout main
+git pull
+git tag -s $TAG -m $TAG
 git push --follow-tags
+
+xdg-open https://ecosystem.cloudogu.com/jenkins/job/cloudogu-github/job/gitops-playground/job/main/build?delay=0sec
 ````
 
-For now start a Jenkins Build of `main` manually.
+For now, please start a Jenkins Build of `main` manually.  
 We might introduce tag builds in our Jenkins organization at a later stage.
+
+A GitHub release containing all merged PRs since the last release is create automatically via a [GitHub action](../.github/workflows/create-release.yml)

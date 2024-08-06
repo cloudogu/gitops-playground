@@ -35,7 +35,7 @@ class ApiClient {
 
     String runScript(String code) {
         log.trace("Running groovy script in Jenkins: {}", code)
-        def response = sendRequestWithCrumb("scriptText", new FormBody.Builder().add("script", code).build())
+        def response = postRequestWithCrumb("scriptText", new FormBody.Builder().add("script", code).build())
         if (response.code() != 200) {
             throw new RuntimeException("Could not run script. Status code ${response.code()}")
         }
@@ -43,13 +43,17 @@ class ApiClient {
         return response.body().string()
     }
 
-    Response sendRequestWithCrumb(String url, FormBody postData) {
+    Response postRequestWithCrumb(String url, RequestBody postData = null) {
         return sendRequestWithRetries {
             Request.Builder request = buildRequest(url)
                 .header("Jenkins-Crumb", getCrumb())
 
             if (postData != null) {
                 request.method("POST", postData)
+            } else {
+                // Explicitly set empty body. Otherwise okhttp sends GET
+                RequestBody emptyBody = RequestBody.create("", null)
+                request.method("POST", emptyBody)
             }
 
             request.build()

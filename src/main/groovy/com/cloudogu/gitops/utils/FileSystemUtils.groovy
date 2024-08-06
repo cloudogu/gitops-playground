@@ -163,4 +163,17 @@ class FileSystemUtils {
         builder yaml
         file.setText(builder.toString())
     }
+
+    void deleteFilesExcept(File parentPath, String ... fileOrFolderNamesToKeep) {
+        for(File file: parentPath.listFiles()) {
+            if (file.name in fileOrFolderNamesToKeep) {
+                continue
+            }
+            if (!file.isDirectory()) {
+                file.delete()
+            } else {
+                file.deleteDir()
+            }
+        }
+    }
 }

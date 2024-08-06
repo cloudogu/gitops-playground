@@ -28,21 +28,40 @@ class K8sClient {
     }
 
     String getInternalNodeIp() {
-        String foundNodeIp = "0.0.0.0"
         String node = waitForNode()
 
         // For k3d this is either the host's IP or the IP address of the k3d API server's container IP (when --bind-localhost=false)
         // Note that this might return multiple InternalIP (IPV4 and IPV6) - we assume the first one is IPV4 (break after first)
         String[] command = ["kubectl", "get", "$node", 
                             "--template='{{range .status.addresses}}{{ if eq .type \"InternalIP\" }}{{.address}}{{break}}{{end}}{{end}}'"]
-        foundNodeIp = commandExecutor.execute(command).stdOut
-        return foundNodeIp
+        return commandExecutor.execute(command).stdOut
     }
 
     private String waitForNode() {
         String[] command1 = ['kubectl', 'get', 'node', '-oname']
         String[] command2 = ['head', '-n1']
-        return commandExecutor.execute(command1, command2).stdOut
+
+        int maxTries = 120
+        int sleepMillis = 1000
+        int tryCount = 0
+        String output = ""
+
+        log.debug("Waiting for first node of the cluster to become ready")
+        while (output.isEmpty() && tryCount < maxTries) {
+            output = commandExecutor.execute(command1, command2).stdOut
+            
+            if (output.isEmpty()) {
+                tryCount++
+                log.debug("Still waiting for first node of the cluster to become ready (try $tryCount/$maxTries)")
+                sleep(sleepMillis)
+            }
+        }
+
+        if (output.isEmpty()) {
+            throw new RuntimeException("Back up waiting for first node of the cluster to become ready after $maxTries tries")
+        }
+        log.debug("First node of the cluster is ready: $output")
+        return output
     }
 
     String applyYaml(String yamlLocation) {

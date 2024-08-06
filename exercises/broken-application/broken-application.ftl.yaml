@@ -1,18 +1,5 @@
-apiVersion: v1
-kind: Service
-metadata:
-  name: broken-application
-spec:
-  type: LoadBalancer
-  ports:
-    - port: 80
-      targetPort: 8080
-      nodePort: 30046
-  selector:
-    app: broken-application
----
 apiVersion: apps/v1
-kind: Deployment(z)
+kind: Deploymentz
 metadata:
   name: broken-application
 spec:
@@ -30,6 +17,7 @@ spec:
           image: <#if nginxImage??>${nginxImage}<#else>bitnami/nginx:1.25.1</#if>
           ports:
             - containerPort: 8080
+<#if podResources == true>
           resources:
             limits:
               cpu: 100m
@@ -37,3 +25,50 @@ spec:
             requests:
               cpu: 30m
               memory: 15Mi
+</#if>
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: broken-application
+  labels:
+    app: broken-application
+spec:
+  type: <#if isRemote>LoadBalancer<#else>NodePort</#if>
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+      nodePort: 30046
+  selector:
+    app: broken-application
+
+<#if exampleApps.nginx.baseDomain?has_content>
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: broken-application
+  labels:
+    app: broken-application
+spec:
+  rules:
+    <#if urlSeparatorHyphen>
+    - host: broken-application-${exampleApps.nginx.baseDomain}
+    <#else>
+    - host: broken-application.${exampleApps.nginx.baseDomain}
+    </#if>
+      http:
+        paths:
+          - backend:
+              service:
+                name: broken-application
+                port:
+                  name: http
+            path: /
+            pathType: Prefix
+
+</#if>

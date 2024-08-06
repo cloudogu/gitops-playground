@@ -1,5 +1,10 @@
 # See possible values here: https://github.com/argoproj/argo-helm/blob/main/charts/argo-cd/values.yaml
 argo-cd:
+  
+<#if skipCrds==true>
+  crds:
+    install: false
+</#if>
 
   server:
 <#if argocd.host?has_content>
@@ -15,29 +20,33 @@ argo-cd:
       nodePortHttps: 9093
     metrics:
       enabled: true
+<#if monitoring.active == true>
       serviceMonitor:
         enabled: true
         namespace: ${namePrefix}monitoring
         selector:
           release: kube-prometheus-stack
-  
+</#if>
   controller:
     metrics:
       enabled: true
+<#if monitoring.active == true>
       serviceMonitor:
         enabled: true
         namespace: ${namePrefix}monitoring
         selector:
           release: kube-prometheus-stack
-  
+</#if>
   repoServer:
     metrics:
       enabled: true
+<#if monitoring.active == true>
       serviceMonitor:
         enabled: true
         namespace: ${namePrefix}monitoring
         selector:
           release: kube-prometheus-stack
+</#if>
   configs:
 
     # needed to enable deploying the Application ressource into other namespaces than argocd
@@ -74,14 +83,21 @@ argo-cd:
         name: nginx-helm-umbrella
         url: ${scmm.baseUrl}/repo/${namePrefix}argocd/nginx-helm-umbrella
         <#if isInsecure>insecure: "true"</#if>
-      bitnami:
-        name: bitnami
-        type: helm
-        url: https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami
+<#if mirrorRepos>
+      prometheus:
+        name: prometheus
+        url: ${scmm.baseUrl}/repo/3rd-party-dependencies/kube-prometheus-stack
+        <#if isInsecure>insecure: "true"</#if>
+<#else>
       prometheus:
         name: prometheus-community
         type: helm
         url: https://prometheus-community.github.io/helm-charts
+</#if>
+      bitnami:
+        name: bitnami
+        type: helm
+        url: https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami
       codecentric:
         name: codecentric
         type: helm
