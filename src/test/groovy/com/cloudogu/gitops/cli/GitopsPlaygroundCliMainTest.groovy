@@ -1,23 +1,19 @@
 package com.cloudogu.gitops.cli
 
-
 import com.github.stefanbirkner.systemlambda.SystemLambda
 import org.junit.jupiter.api.Test
-import picocli.CommandLine
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
-import picocli.CommandLine.ParseResult
 
-import static org.assertj.core.api.Assertions.assertThat
+import static org.assertj.core.api.Assertions.assertThat 
 
 class GitopsPlaygroundCliMainTest {
 
     @Test
     void 'application returns exit code 0 on success'() {
         def gitopsPlaygroundCliMain = new GitopsPlaygroundCliMain()
-        gitopsPlaygroundCliMain.commandClass = MockedCommand.class
         int status = SystemLambda.catchSystemExit(() -> {
-            gitopsPlaygroundCliMain.exec(['--mock'] as String[])
+            gitopsPlaygroundCliMain.exec(['--mock'] as String[], MockedCommand.class)
         })
 
         assertThat(status).isZero()
@@ -26,9 +22,8 @@ class GitopsPlaygroundCliMainTest {
     @Test
     void 'application returns exit code 1 on exception'() {
         def gitopsPlaygroundCliMain = new GitopsPlaygroundCliMain()
-        gitopsPlaygroundCliMain.commandClass = ThrowingCommand.class
         int status = SystemLambda.catchSystemExit(() -> {
-            gitopsPlaygroundCliMain.exec(['--mock'] as String[])
+            gitopsPlaygroundCliMain.exec(['--mock'] as String[], ThrowingCommand.class)
         })
 
         assertThat(status).isNotZero()

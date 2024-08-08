@@ -229,7 +229,8 @@ class GitopsPlaygroundCli  implements Runnable {
         }
         
         def config = getConfig(context, false)
-        context = context.registerSingleton(new Configuration(config))
+        register(context, new Configuration(config))
+        
         K8sClient k8sClient = context.getBean(K8sClient)
 
         if (config['application']['destroy']) {
@@ -245,6 +246,10 @@ class GitopsPlaygroundCli  implements Runnable {
 
             printWelcomeScreen()
         }
+    }
+
+    protected void register(ApplicationContext context, Configuration configuration) {
+        context.registerSingleton(configuration)
     }
 
     private void confirmOrExit(String message, Map config) {
