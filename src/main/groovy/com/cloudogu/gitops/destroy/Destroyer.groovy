@@ -5,15 +5,14 @@ import jakarta.inject.Singleton
 
 @Singleton
 @Slf4j
-class Destroyer implements DestructionHandler {
+class Destroyer {
 
-    private final List<DestructionHandler> destructionHandlers
+    final List<DestructionHandler> destructionHandlers
 
     Destroyer(List<DestructionHandler> destructionHandlers) {
         this.destructionHandlers = destructionHandlers
     }
 
-    @Override
     void destroy() {
         log.info("Start destroying")
         for (def handler in destructionHandlers) {
