@@ -67,7 +67,7 @@ RUN tar -xf helm.tar.gz
 RUN echo "${HELM_CHECKSUM}  helm.tar.gz" | sha256sum -c
 RUN set -o pipefail && curl --location --fail --retry 20 --retry-connrefused --retry-all-errors \
   https://raw.githubusercontent.com/helm/helm/main/KEYS | gpg --import --batch --no-default-keyring --keyring /tmp/keyring.gpg 
-RUN gpgv --keyring  /tmp/keyring.gpg  helm.tar.gz.asc helm.tar.gz
+RUN gpgv --keyring /tmp/keyring.gpg helm.tar.gz.asc helm.tar.gz
 RUN mv linux-amd64/helm /dist/usr/local/bin
 ENV PATH=$PATH:/dist/usr/local/bin
 
@@ -136,8 +136,13 @@ RUN tar -xvzf x86_64-linux-musl-native.tgz -C ${RESULT_LIB} --strip-components 1
 ENV CC=/musl/bin/gcc
 RUN curl --location --fail --retry 20 --retry-connrefused -o zlib.tar.gz https://github.com/madler/zlib/releases/download/v${ZLIB_VERSION}/zlib-${ZLIB_VERSION}.tar.gz
 RUN curl --location --fail --retry 20 --retry-connrefused -o zlib.tar.gz.asc https://github.com/madler/zlib/releases/download/v${ZLIB_VERSION}/zlib-${ZLIB_VERSION}.tar.gz.asc
-RUN gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys 5ED46A6721D365587791E2AA783FCD8E58BCAFBA # madler@alumni.caltech.edu 
-RUN gpg --batch --verify zlib.tar.gz.asc zlib.tar.gz
+# Use curl instead of "gpg --recv-keys" for more stable builds with retries
+# Key of the zlib maintainer: madler@alumni.caltech.edu
+ENV ZLIB_KEY=5ED46A6721D365587791E2AA783FCD8E58BCAFBA 
+RUN set -o pipefail && curl --silent --show-error --location --fail --retry 20 --retry-connrefused --retry-delay 5 \
+    "https://keys.openpgp.org/vks/v1/by-fingerprint/${ZLIB_KEY}" | \
+    gpg --import --batch --no-default-keyring --keyring /tmp/keyring.gpg
+RUN gpgv --keyring  /tmp/keyring.gpg zlib.tar.gz.asc zlib.tar.gz
 RUN mkdir zlib && tar -xvzf zlib.tar.gz -C zlib --strip-components 1 && \
     cd zlib && ./configure --static --prefix=/musl && \
     make && make install && \
