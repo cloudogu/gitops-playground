@@ -27,7 +27,7 @@ COPY src/main /app/src/main
 COPY compiler.groovy /app
 
 WORKDIR /app
-# Exclude entrypoints not needed in productive image 
+# Exclude code not needed in productive image 
 RUN cd /app/src/main/groovy/com/cloudogu/gitops/cli/ \
     && rm GenerateJsonSchema.groovy \
     && rm GitopsPlaygroundCliMainScripted.groovy
@@ -109,6 +109,7 @@ RUN rm -r /dist/app/.mvn
 RUN rm /dist/app/mvnw
 RUN rm /dist/app/pom.xml
 RUN rm /dist/app/compiler.groovy
+RUN rm -r /dist/app/src/test
 RUN cd /dist/app/scripts && rm downloadHelmCharts.sh apply-ng.sh
 # For dev image
 RUN mkdir /dist-dev
@@ -117,14 +118,9 @@ RUN mkdir /dist-dev
 RUN mv /dist/app/src /dist-dev/src && \
     chmod a=rwx -R /dist-dev/src && \
     rm -r /dist-dev/src/main/groovy/com/cloudogu/gitops/graal
-# Remove our code from jar to avoid duplicate in dev image, 
-# but keep generated classes for depenency injection (e.g. $Application$Definition$Reference.class)
-COPY --from=maven-build /app/gitops-playground.jar /tmp/gitops-playground.jar
-RUN TEMP_DIR=$(mktemp -d) && \
-    unzip -q /tmp/gitops-playground.jar -d "$TEMP_DIR" && \
-    find "$TEMP_DIR/com/cloudogu/gitops" -type f ! -name '\$*' -delete && \
-    cd "$TEMP_DIR" && \
-    zip -q -r /dist-dev/gitops-playground.jar *
+# Remove compiled GOP code from jar to avoid duplicate in dev image, allowing for scripting
+COPY --from=maven-build /app/gitops-playground.jar /dist-dev/gitops-playground.jar
+RUN zip -d /dist-dev/gitops-playground.jar 'com/cloudogu/gitops/*'
 
 # Required to prevent Java exceptions resulting from AccessDeniedException by jgit when running arbitrary user
 RUN mkdir -p /dist/root/.config/jgit
