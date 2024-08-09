@@ -57,22 +57,13 @@ class Schema {
         @JsonPropertyDescription(REGISTRY_PASSWORD_DESCRIPTION)
         String password = ""
         // Alternative: Use different registries, e.g. in air-gapped envs
-        // "Pull" registry for 3rd party images, e.g. base images
-        @JsonPropertyDescription(REGISTRY_PULL_URL_DESCRIPTION)
-        String pullUrl = ""
-        @JsonPropertyDescription(REGISTRY_PULL_USERNAME_DESCRIPTION)
-        String pullUsername = ""
-        @JsonPropertyDescription(REGISTRY_PULL_PASSWORD_DESCRIPTION)
-        String pullPassword = ""
-        // "Push" registry for writing application specific images
-        @JsonPropertyDescription(REGISTRY_PUSH_URL_DESCRIPTION)
-        String pushUrl = ""
-        @JsonPropertyDescription(REGISTRY_PUSH_PATH_DESCRIPTION)
-        String pushPath = ""
-        @JsonPropertyDescription(REGISTRY_PUSH_USERNAME_DESCRIPTION)
-        String pushUsername = ""
-        @JsonPropertyDescription(REGISTRY_PUSH_PASSWORD_DESCRIPTION)
-        String pushPassword = ""
+        // "Proxy" registry for 3rd party images, e.g. base images
+        @JsonPropertyDescription(REGISTRY_PROXY_URL_DESCRIPTION)
+        String proxyUrl = ""
+        @JsonPropertyDescription(REGISTRY_PROXY_USERNAME_DESCRIPTION)
+        String proxyUsername = ""
+        @JsonPropertyDescription(REGISTRY_PASSWORD_DESCRIPTION)
+        String proxyPassword = ""
 
         HelmConfig helm
     }
@@ -149,7 +140,7 @@ class Schema {
         // boolean outputConfigFile = false
         // These can't be set because they are evaluated first thing on app start, before config file is read
         // boolean debug = false
-        // boolean trace = false 
+        // boolean trace = false
         @JsonPropertyDescription(DESTROY_DESCRIPTION)
         boolean destroy = false
         @JsonPropertyDescription(POD_RESOURCES_DESCRIPTION)

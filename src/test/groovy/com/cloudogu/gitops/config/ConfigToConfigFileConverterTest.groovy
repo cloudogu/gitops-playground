@@ -17,13 +17,9 @@ class ConfigToConfigFileConverterTest {
                         path        : 'path',
                         username    : 'username',
                         password    : 'password',
-                        pullUrl         : 'pullUrl',
-                        pullUsername    : 'pullUsername',
-                        pullPassword    : 'pullPassword',
-                        pushUrl         : 'pushUrl',
-                        pushPath        : 'pushPath',
-                        pushUsername    : 'pushUsername',
-                        pushPassword    : 'pushPassword',
+                        proxyUrl         : 'proxyUrl',
+                        proxyUsername    : 'proxyUsername',
+                        proxyPassword    : 'proxyPassword',
                         helm  : [
                                 chart  : 'docker-registry',
                                 repoURL: 'https://charts.helm.sh/stable',
@@ -182,13 +178,9 @@ registry:
   path: "path"
   username: "username"
   password: "password"
-  pullUrl: "pullUrl"
-  pullUsername: "pullUsername"
-  pullPassword: "pullPassword"
-  pushUrl: "pushUrl"
-  pushPath: "pushPath"
-  pushUsername: "pushUsername"
-  pushPassword: "pushPassword"
+  proxyUrl: "proxyUrl"
+  proxyUsername: "proxyUsername"
+  proxyPassword: "proxyPassword"
   helm:
     chart: "docker-registry"
     repoURL: "https://charts.helm.sh/stable"

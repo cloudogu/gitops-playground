@@ -46,20 +46,14 @@ class GitopsPlaygroundCli  implements Runnable {
     private String registryUsername
     @Option(names = ['--registry-password'], description = REGISTRY_PASSWORD_DESCRIPTION)
     private String registryPassword
-    @Option(names = ['--registry-pull-url'], description = REGISTRY_PULL_URL_DESCRIPTION)
-    private String registryPullUrl
-    @Option(names = ['--registry-pull-username'], description = REGISTRY_PULL_USERNAME_DESCRIPTION)
-    private String registryPullUsername
-    @Option(names = ['--registry-pull-password'], description = REGISTRY_PULL_PASSWORD_DESCRIPTION)
-    private String registryPullPassword
-    @Option(names = ['--registry-push-url'], description = REGISTRY_PUSH_URL_DESCRIPTION)
-    private String registryPushUrl
-    @Option(names = ['--registry-push-path'], description = REGISTRY_PUSH_PATH_DESCRIPTION)
-    private String registryPushPath
-    @Option(names = ['--registry-push-username'], description = REGISTRY_PUSH_USERNAME_DESCRIPTION)
-    private String registryPushUsername
-    @Option(names = ['--registry-push-password'], description = REGISTRY_PUSH_PASSWORD_DESCRIPTION)
-    private String registryPushPassword
+    @Option(names = ['--registry-proxy-url'], description = 'The url of your external proxy-registry. Make sure to always use this with --registry-proxy-url')
+    private String registryProxyUrl
+    @Option(names = ['--registry-proxy-path'], description = 'Optional when --registry-proxy-url is set')
+    private String registryProxyPath
+    @Option(names = ['--registry-proxy-username'], description = 'Optional when --registry-proxy-url is set')
+    private String registryProxyUsername
+    @Option(names = ['--registry-proxy-password'], description = 'Optional when --registry-proxy-url is set')
+    private String registryProxyPassword
 
     // args group jenkins
     @Option(names = ['--jenkins-url'], description = JENKINS_URL_DESCRIPTION)
@@ -230,7 +224,7 @@ class GitopsPlaygroundCli  implements Runnable {
         
         def config = getConfig(context, false)
         register(context, new Configuration(config))
-        
+
         K8sClient k8sClient = context.getBean(K8sClient)
 
         if (config['application']['destroy']) {
@@ -359,13 +353,10 @@ class GitopsPlaygroundCli  implements Runnable {
                         path        : registryPath,
                         username    : registryUsername,
                         password    : registryPassword,
-                        pullUrl         : registryPullUrl,
-                        pullUsername    : registryPullUsername,
-                        pullPassword    : registryPullPassword,
-                        pushUrl         : registryPushUrl,
-                        pushPath        : registryPushPath,
-                        pushUsername    : registryPushUsername,
-                        pushPassword    : registryPushPassword,
+                        proxyUrl         : registryProxyUrl,
+                        proxyPath        : registryProxyPath,
+                        proxyUsername    : registryProxyUsername,
+                        proxyPassword    : registryProxyPassword,
                 ],
                 jenkins    : [
                         url     : jenkinsUrl,
@@ -461,8 +452,9 @@ class GitopsPlaygroundCli  implements Runnable {
                                 ]
                         ],
                         ingressNginx: [
-                               active: ingressNginx
+                               active: ingressNginx,
                         ],
+
                 ]
         ]
     }

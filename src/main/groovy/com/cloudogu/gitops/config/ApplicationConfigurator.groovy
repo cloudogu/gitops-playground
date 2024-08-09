@@ -39,15 +39,10 @@ class ApplicationConfigurator {
                     username    : '',
                     password    : '',
                     // Alternative: Use different registries, e.g. in air-gapped envs 
-                    // "Pull" registry for 3rd party images
-                    pullUrl         : '',
-                    pullUsername    : '',
-                    pullPassword    : '',
-                    // "Push" registry for writing application specific images
-                    pushUrl         : '',
-                    pushPath        : '',
-                    pushUsername    : '',
-                    pushPassword    : '',
+                    // "Proxy" registry for 3rd party images
+                    proxyUrl         : '',
+                    proxyUsername    : '',
+                    proxyPassword    : '',
                     helm  : [
                             chart  : 'docker-registry',
                             repoURL: 'https://helm.twun.io',
@@ -298,18 +293,11 @@ class ApplicationConfigurator {
     }
 
     private void addRegistryConfig(Map newConfig) {
-        if (newConfig.registry['pullUrl'] && newConfig.registry['pushUrl']) {
+        if (newConfig.registry['proxyUrl']) {
             newConfig.registry['twoRegistries'] = true
-        } else if (newConfig.registry['pullUrl'] && !newConfig.registry['pushUrl'] ||
-                newConfig.registry['pushUrl'] && !newConfig.registry['pullUrl']) {
-            throw new RuntimeException("Always set pull AND push URL. pullUrl=${newConfig.registry['pullUrl']}, pushUrl=${newConfig.registry['pushUrl']}")
         }
 
-        if (newConfig.registry['url'] && newConfig.registry['twoRegistries']) {
-            log.warn("Set both registry.url and registry.pullUrl/registry.pushUrl! Implicitly ignoring registry.url")
-        }
-
-        if (newConfig.registry['url'] || newConfig.registry['twoRegistries']) {
+        if (newConfig.registry['url']) {
             newConfig.registry['internal'] = false
         } else {
             /* Internal Docker registry must be on localhost. Otherwise docker will use HTTPS, leading to errors on 

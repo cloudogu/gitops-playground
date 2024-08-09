@@ -501,33 +501,17 @@
           "type" : "string",
           "description" : "Optional when registry-url is set"
         },
-        "pullPassword" : {
+        "proxyPassword" : {
           "type" : "string",
-          "description" : "Optional when registry-pull-url is set"
+          "description" : "Optional when registry-url is set"
         },
-        "pullUrl" : {
+        "proxyUrl" : {
           "type" : "string",
-          "description" : "The url of your external pull-registry. Make sure to always use this with registry-push-url"
+          "description" : "The url of your external proxy-registry. Make sure to always use this with registry-proxy-url"
         },
-        "pullUsername" : {
+        "proxyUsername" : {
           "type" : "string",
-          "description" : "Optional when registry-pull-url is set"
-        },
-        "pushPassword" : {
-          "type" : "string",
-          "description" : "Optional when registry-push-url is set"
-        },
-        "pushPath" : {
-          "type" : "string",
-          "description" : "Optional when registry-push-url is set"
-        },
-        "pushUrl" : {
-          "type" : "string",
-          "description" : "The url of your external pull-registry. Make sure to always use this with registry-pull-url"
-        },
-        "pushUsername" : {
-          "type" : "string",
-          "description" : "Optional when registry-push-url is set"
+          "description" : "Optional when registry-proxy-url is set"
         },
         "url" : {
           "type" : "string",
