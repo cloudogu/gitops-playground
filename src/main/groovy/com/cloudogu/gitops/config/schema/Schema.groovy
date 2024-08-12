@@ -169,6 +169,8 @@ class Schema {
         boolean mirrorRepos = false
         @JsonPropertyDescription(SKIP_CRDS_DESCRIPTION)
         boolean skipCrds = false
+        @JsonPropertyDescription(OPENSHIFT_DESCRIPTION)
+        boolean openshift = false
     }
 
     static class ImagesSchema {
@@ -235,6 +237,8 @@ class Schema {
         String emailToUser = ""
         @JsonPropertyDescription(ARGOCD_EMAIL_TO_ADMIN_DESCRIPTION)
         String emailToAdmin = ""
+        @JsonPropertyDescription(ARGOCD_OPERATOR_DESCRIPTION)
+        boolean argocdOperator = false
     }
 
     static class MailSchema {

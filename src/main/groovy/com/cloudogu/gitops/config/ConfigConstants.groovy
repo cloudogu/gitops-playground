@@ -70,6 +70,7 @@ interface ConfigConstants {
     String CES_BUILD_LIB_DESCRIPTION = 'Repo to pull the ces-build-lib, used in examples and exercises as depedency of the gitops-build-lib'
     String REPO_URL_DESCRIPTION = 'HTTP URL of the repo'
     String REPO_REF_DESCRIPTION = 'Ref of the repo to use, e.g. a tag, commit or branch'
+    String OPENSHIFT_DESCRIPTION = 'When set, openshift specific resources and configurations are applied'
     
 
     // group metrics
@@ -118,6 +119,7 @@ interface ConfigConstants {
     String ARGOCD_EMAIL_FROM_DESCRIPTION = 'Notifications, define Argo CD sender email address'
     String ARGOCD_EMAIL_TO_USER_DESCRIPTION = 'Notifications, define Argo CD user / app-team recipient email address'
     String ARGOCD_EMAIL_TO_ADMIN_DESCRIPTION = 'Notifications, define Argo CD admin recipient email address'
+    String ARGOCD_OPERATOR_DESCRIPTION = 'Install ArgoCD via an already running ArgoCD Operator'
 
     // group example apps
     String EXAMPLE_APPS_DESCRIPTION = 'Config parameters for the example apps and exercises'
