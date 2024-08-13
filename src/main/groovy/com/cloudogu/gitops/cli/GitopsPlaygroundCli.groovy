@@ -18,8 +18,8 @@ import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
-import static com.cloudogu.gitops.config.ConfigConstants.*
 
+import static com.cloudogu.gitops.config.ConfigConstants.*
 import static groovy.json.JsonOutput.prettyPrint
 import static groovy.json.JsonOutput.toJson 
 /**
@@ -29,12 +29,11 @@ import static groovy.json.JsonOutput.toJson
  * @see com.cloudogu.gitops.config.schema.Schema
  */
 @Command(
-        name = 'apply-ng',
-        description = 'CLI-tool to deploy gitops-playground.',
-        mixinStandardHelpOptions = true)
-
+        name = BINARY_NAME,
+        description = APP_DESCRIPTION)
 @Slf4j
 class GitopsPlaygroundCli  implements Runnable {
+    
     // args group registry
     @Option(names = ['--internal-registry-port'], description = REGISTRY_INTERNAL_PORT_DESCRIPTION)
     private Integer internalRegistryPort
@@ -166,6 +165,11 @@ class GitopsPlaygroundCli  implements Runnable {
     Boolean debug
     @Option(names = ['-x', '--trace'], description = TRACE_DESCRIPTION, scope = CommandLine.ScopeType.INHERIT)
     Boolean trace
+    @Option(names = ["-v", "--version"], help = true, description = "Display version and license info")
+    Boolean versionInfoRequested
+    @Option(names = ["-h", "--help"], usageHelp = true, description = "Display this help message")
+    @SuppressWarnings('unused') // needed to define annotation, "usageHelp" leads to hel being printed 
+    boolean usageHelpRequested
 
     // args group configuration
     @Option(names = ['--username'], description = USERNAME_DESCRIPTION)
@@ -182,7 +186,7 @@ class GitopsPlaygroundCli  implements Runnable {
     String configFile
     @Option(names = ['--config-map'], description = CONFIG_MAP_DESCRIPTION)
     String configMap
-    @Option(names = ['--output-config-file'], description = OUTPUT_CONFIG_FILE_DESCRIPTION)
+    @Option(names = ['--output-config-file'], description = OUTPUT_CONFIG_FILE_DESCRIPTION, help = true)
     Boolean outputConfigFile
     @Option(names = ['--pod-resources'], description = POD_RESOURCES_DESCRIPTION)
     Boolean podResources
@@ -213,6 +217,20 @@ class GitopsPlaygroundCli  implements Runnable {
     @Override
     void run() {
         setLogging()
+        
+        if (versionInfoRequested) {
+            
+            def versionName = Version.NAME.replace('\\n', '\n')
+            
+            if (versionName.trim().startsWith('(')) {
+                // When there is no git tag, print commit without parentheses
+                versionName = versionName.trim()
+                        .replace('(', '')
+                        .replace(')', '')
+            }
+            println "${APP_NAME} ${versionName}"
+            return
+        }
         
         def context = createApplicationContext()
         

@@ -1,6 +1,11 @@
 package com.cloudogu.gitops.config
 
 interface ConfigConstants {
+
+    public static final String BINARY_NAME = 'apply-ng'
+    public static final String APP_NAME = 'gitops-playground (GOP)'
+    public static final String APP_DESCRIPTION = 'CLI-tool to deploy gitops-playground.'
+    
     // group registry
     String REGISTRY_DESCRIPTION = 'Config parameters for Registry'
     String REGISTRY_INTERNAL_PORT_DESCRIPTION = 'Port of registry registry. Ignored when a registry*url params are set'
