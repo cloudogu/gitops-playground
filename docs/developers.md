@@ -746,14 +746,14 @@ docker run --rm --entrypoint java gitops-playground:dev -classpath /app/gitops-p
 On `main` branch:
 
 ````shell
-TAG=0.2.0
+TAG=0.5.0
 
 git checkout main
-git pull
-git tag -s $TAG -m $TAG
-git push --follow-tags
+[[ $? -eq 0 ]] && git pull
+[[ $? -eq 0 ]] && git tag -s $TAG -m $TAG
+[[ $? -eq 0 ]] && git push --follow-tags
 
-xdg-open https://ecosystem.cloudogu.com/jenkins/job/cloudogu-github/job/gitops-playground/job/main/build?delay=0sec
+[[ $? -eq 0 ]] && xdg-open https://ecosystem.cloudogu.com/jenkins/job/cloudogu-github/job/gitops-playground/job/main/build?delay=0sec
 ````
 
 For now, please start a Jenkins Build of `main` manually.  

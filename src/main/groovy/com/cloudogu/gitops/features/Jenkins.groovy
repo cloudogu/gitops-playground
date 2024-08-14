@@ -122,10 +122,8 @@ class Jenkins extends Feature {
                         "${config.registry['password']}",
                         'credentials for accessing the docker-registry')
             }
+            // Once everything is set up, start the jobs.
+            jobManger.startJob('example-apps')
         }
-
-        // Once everything is set up, start the jobs.
-        jobManger.startJob('example-apps')
-
     }
 }

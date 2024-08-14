@@ -27,6 +27,10 @@ COPY src/main /app/src/main
 COPY compiler.groovy /app
 
 WORKDIR /app
+# Exclude code not needed in productive image 
+RUN cd /app/src/main/groovy/com/cloudogu/gitops/cli/ \
+    && rm GenerateJsonSchema.groovy \
+    && rm GitopsPlaygroundCliMainScripted.groovy
 # Build native image without micronaut
 RUN ./mvnw package -DskipTests
 # Use simple name for largest jar file -> Easier reuse in later stages
@@ -50,7 +54,7 @@ RUN apk add --no-cache \
       gnupg \
       outils-sha256 \
       git \
-      bash curl unzip 
+      bash curl unzip zip
 
 RUN mkdir -p /dist/usr/local/bin
 RUN mkdir -p /dist/home/.config
@@ -67,7 +71,7 @@ RUN tar -xf helm.tar.gz
 RUN echo "${HELM_CHECKSUM}  helm.tar.gz" | sha256sum -c
 RUN set -o pipefail && curl --location --fail --retry 20 --retry-connrefused --retry-all-errors \
   https://raw.githubusercontent.com/helm/helm/main/KEYS | gpg --import --batch --no-default-keyring --keyring /tmp/keyring.gpg 
-RUN gpgv --keyring  /tmp/keyring.gpg  helm.tar.gz.asc helm.tar.gz
+RUN gpgv --keyring /tmp/keyring.gpg helm.tar.gz.asc helm.tar.gz
 RUN mv linux-amd64/helm /dist/usr/local/bin
 ENV PATH=$PATH:/dist/usr/local/bin
 
@@ -107,9 +111,19 @@ RUN rm -r /dist/app/.mvn
 RUN rm /dist/app/mvnw
 RUN rm /dist/app/pom.xml
 RUN rm /dist/app/compiler.groovy
+RUN rm -r /dist/app/src/test
 RUN cd /dist/app/scripts && rm downloadHelmCharts.sh apply-ng.sh
 # For dev image
-RUN mv /dist/app/src /src-without-graal && rm -r /src-without-graal/main/groovy/com/cloudogu/gitops/graal
+RUN mkdir /dist-dev
+# Remove uncessary code and allow changing code in dev mode, less secure, but the intention of the dev image
+# Execute bit is required to allow listing of dirs to everyone
+RUN mv /dist/app/src /dist-dev/src && \
+    chmod a=rwx -R /dist-dev/src && \
+    rm -r /dist-dev/src/main/groovy/com/cloudogu/gitops/graal
+# Remove compiled GOP code from jar to avoid duplicate in dev image, allowing for scripting
+COPY --from=maven-build /app/gitops-playground.jar /dist-dev/gitops-playground.jar
+RUN zip -d /dist-dev/gitops-playground.jar 'com/cloudogu/gitops/*'
+
 # Required to prevent Java exceptions resulting from AccessDeniedException by jgit when running arbitrary user
 RUN mkdir -p /dist/root/.config/jgit
 RUN touch /dist/root/.config/jgit/config
@@ -136,8 +150,13 @@ RUN tar -xvzf x86_64-linux-musl-native.tgz -C ${RESULT_LIB} --strip-components 1
 ENV CC=/musl/bin/gcc
 RUN curl --location --fail --retry 20 --retry-connrefused -o zlib.tar.gz https://github.com/madler/zlib/releases/download/v${ZLIB_VERSION}/zlib-${ZLIB_VERSION}.tar.gz
 RUN curl --location --fail --retry 20 --retry-connrefused -o zlib.tar.gz.asc https://github.com/madler/zlib/releases/download/v${ZLIB_VERSION}/zlib-${ZLIB_VERSION}.tar.gz.asc
-RUN gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys 5ED46A6721D365587791E2AA783FCD8E58BCAFBA # madler@alumni.caltech.edu 
-RUN gpg --batch --verify zlib.tar.gz.asc zlib.tar.gz
+# Use curl instead of "gpg --recv-keys" for more stable builds with retries
+# Key of the zlib maintainer: madler@alumni.caltech.edu
+ENV ZLIB_KEY=5ED46A6721D365587791E2AA783FCD8E58BCAFBA 
+RUN set -o pipefail && curl --silent --show-error --location --fail --retry 20 --retry-connrefused --retry-delay 5 \
+    "https://keys.openpgp.org/vks/v1/by-fingerprint/${ZLIB_KEY}" | \
+    gpg --import --batch --no-default-keyring --keyring /tmp/keyring.gpg
+RUN gpgv --keyring  /tmp/keyring.gpg zlib.tar.gz.asc zlib.tar.gz
 RUN mkdir zlib && tar -xvzf zlib.tar.gz -C zlib --strip-components 1 && \
     cd zlib && ./configure --static --prefix=/musl && \
     make && make install && \
@@ -196,9 +215,10 @@ ENTRYPOINT ["/app/apply-ng"]
 FROM eclipse-temurin:${JDK_VERSION}-jre-alpine as dev
 
 # apply-ng.sh is part of the dev image and allows trying changing groovy code inside the image for debugging
-COPY scripts/apply-ng.sh /app/scripts/
-COPY --from=maven-build /app/gitops-playground.jar /app/
-COPY --from=downloader /src-without-graal  /app/src
+# Allow changing code in dev mode, less secure, but the intention of the dev image
+COPY --chmod=777 scripts/apply-ng.sh /app/scripts/
+COPY --from=downloader /dist-dev /app
+
 # Allow initialization in final FROM ${ENV} stage
 USER 0
 # Avoids ERROR org.eclipse.jgit.util.FS - Cannot save config file 'FileBasedConfig[/app/?/.config/jgit/config]'
@@ -211,7 +231,7 @@ ENTRYPOINT [ "java", \
     "org.codehaus.groovy.tools.GroovyStarter", \
     "--main", "groovy.ui.GroovyMain", \
     "--classpath", "/app/src/main/groovy", \
-    "/app/src/main/groovy/com/cloudogu/gitops/cli/GitopsPlaygroundCliMain.groovy" ]
+    "/app/src/main/groovy/com/cloudogu/gitops/cli/GitopsPlaygroundCliMainScripted.groovy" ]
 
 # Pick final image according to build-arg
 FROM ${ENV}

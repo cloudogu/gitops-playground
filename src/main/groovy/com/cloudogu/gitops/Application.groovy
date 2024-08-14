@@ -8,7 +8,7 @@ import jakarta.inject.Singleton
 @Singleton
 class Application {
 
-    private final List<Feature> features
+    final List<Feature> features
 
     Application(
             List<Feature> features
