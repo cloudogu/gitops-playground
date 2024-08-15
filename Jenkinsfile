@@ -96,8 +96,8 @@ node('high-cpu') {
                                 docker.image(imageNames[0])
                                         .inside("-e KUBECONFIG=${env.WORKSPACE}/.kube/config " +
                                                 " --network=host --entrypoint=''") {
-                                            //sh "/app/apply-ng --yes --trace --internal-registry-port=${registryPort} " +
-                                             //       "--argocd --monitoring --vault=dev --ingress-nginx --mailhog"
+                                            sh "/app/apply-ng --yes --trace --internal-registry-port=${registryPort} " +
+                                                    "--argocd --monitoring --vault=dev --ingress-nginx --mailhog"
                                         }
                             }
                         }
@@ -122,7 +122,7 @@ node('high-cpu') {
                                 // removing m2 and grapes avoids issues where grapes primarily resolves local m2 and fails on missing versions
                                 sh "rm -rf .m2/"
                                 sh "rm -rf .groovy/grapes"
-                                //sh "groovy ./scripts/e2e.groovy --url http://${k3dAddress}:9090 --user admin --password admin --writeFailedLog --fail --retry 2"
+                                sh "groovy ./scripts/e2e.groovy --url http://${k3dAddress}:9090 --user admin --password admin --writeFailedLog --fail --retry 2"
                             }
                 }
 
