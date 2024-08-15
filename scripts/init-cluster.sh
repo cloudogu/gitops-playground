@@ -77,6 +77,19 @@ function createCluster() {
     # Disable traefik (we roll our own ingress-controller)
     '--k3s-arg=--disable=traefik@server:0'
   )
+    
+  REGISTRIES=""
+  if [[ -n "$DOCKER_IO_REGISTRY_MIRROR" ]]; then
+    REGISTRIES=$(cat <<EOF
+registries:
+     config: |
+        mirrors:
+          docker.io:
+              endpoint:
+                - "$DOCKER_IO_REGISTRY_MIRROR"
+EOF
+)
+  fi
 
   if [[ ${BIND_LOCALHOST} == 'true' ]]; then
     K3D_ARGS+=(
@@ -114,7 +127,7 @@ function createCluster() {
             )
     fi
     
-    if [ -n "$BIND_PORTS" ]; then
+    if [[ -n "$BIND_PORTS" ]]; then
       IFS=","
       read -ra portBindings <<< "$BIND_PORTS"
       unset IFS
@@ -134,6 +147,7 @@ function createCluster() {
   kind: Simple
   kubeAPI:
     hostIP: "127.0.0.1"
+  $REGISTRIES
 EOF
 
 
@@ -173,6 +187,8 @@ function printParameters() {
   echo "    | --bind-ingress-port=INT   >> Bind the ingress controller to this localhost port. Defaults to 80. Set to - to disable."
   echo "    | --bind-registry-port=INT   >> Specify a custom port for the container registry to bind to localhost port. Only use this when port 30000 is blocked and --bind-localhost=true. Defaults to 30000 (default used by the playground)."
   echo "    | --bind-portBindings=STRING   >> A comma separated list of additional port bindings like 443:443,9090:9090. Ignored when --bind-localhost."
+  
+  echo "    | --docker-io-registry-mirror=STRING   >> the hostname of a registry that mirrors DockerHub. Useful when encountering rate limits"
   echo
   echo " -x | --trace         >> Debug + Show each command executed (set -x)"
 }
@@ -221,6 +237,7 @@ readParameters() {
   # Use default port for playground registry, because no parameter is required when applying
   BIND_REGISTRY_PORT="30000"
   BIND_PORTS=""
+  DOCKER_IO_REGISTRY_MIRROR=""
   TRACE=false
 
   while [ $# -gt 0 ]; do
@@ -236,6 +253,8 @@ readParameters() {
       --bind-registry-port*) BIND_REGISTRY_PORT=$(get_longopt_value "--bind-registry-port" "$@") 
         if [[ "$1" == *"="* ]]; then shift; else shift 2; fi ;;
       --bind-ports*) BIND_PORTS=$(get_longopt_value "--bind-ports" "$@"); 
+        if [[ "$1" == *"="* ]]; then shift; else shift 2; fi ;;
+      --docker-io-registry-mirror*) DOCKER_IO_REGISTRY_MIRROR=$(get_longopt_value "--docker-io-registry-mirror" "$@"); 
         if [[ "$1" == *"="* ]]; then shift; else shift 2; fi ;;
       --) shift; break ;;
     *) break ;;
