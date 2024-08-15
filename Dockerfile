@@ -46,9 +46,8 @@ RUN apk add curl grep
 # https://kubernetes.io/blog/2022/12/12/kubernetes-release-artifact-signing/
 ARG K8S_VERSION=1.29.1
 ARG KUBECTL_CHECKSUM=69ab3a931e826bf7ac14d38ba7ca637d66a6fcb1ca0e3333a2cafdf15482af9f
-# When updating, also update the checksum found at https://github.com/helm/helm/releases
-ARG HELM_VERSION=3.14.4
-ARG HELM_CHECKSUM=a5844ef2c38ef6ddf3b5a8f7d91e7e0e8ebc39a38bb3fc8013d629c1ef29c259
+# When updating, also upgrade helm image in ApplicationConfigurator
+ARG HELM_VERSION=3.15.4
 # bash curl unzip required for Jenkins downloader
 RUN apk add --no-cache \
       gnupg \
@@ -67,8 +66,6 @@ WORKDIR /tmp
 RUN curl --location --fail --retry 20 --retry-connrefused --retry-all-errors --output helm.tar.gz https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz 
 RUN curl --location --fail --retry 20 --retry-connrefused --retry-all-errors --output helm.tar.gz.asc https://github.com/helm/helm/releases/download/v${HELM_VERSION}/helm-v${HELM_VERSION}-linux-amd64.tar.gz.asc
 RUN tar -xf helm.tar.gz
-# Without the two spaces the check fails!
-RUN echo "${HELM_CHECKSUM}  helm.tar.gz" | sha256sum -c
 RUN set -o pipefail && curl --location --fail --retry 20 --retry-connrefused --retry-all-errors \
   https://raw.githubusercontent.com/helm/helm/main/KEYS | gpg --import --batch --no-default-keyring --keyring /tmp/keyring.gpg 
 RUN gpgv --keyring /tmp/keyring.gpg helm.tar.gz.asc helm.tar.gz
@@ -77,6 +74,7 @@ ENV PATH=$PATH:/dist/usr/local/bin
 
 # Kubectl
 RUN curl --location --fail --retry 20 --retry-connrefused --retry-all-errors --output kubectl https://dl.k8s.io/release/v${K8S_VERSION}/bin/linux/amd64/kubectl
+# Without the two spaces the check fails!
 RUN echo "${KUBECTL_CHECKSUM}  kubectl" | sha256sum -c
 RUN chmod +x /tmp/kubectl
 RUN mv /tmp/kubectl /dist/usr/local/bin/kubectl
