@@ -150,6 +150,28 @@ You can apply the GitOps playground to
 * or almost any k8s cluster.  
   Note that if you want to deploy Jenkins inside the cluster, you either need Docker as container runtime or set Jenkins up to run its build on an agent that provides Docker.
 
+For the local cluster, you can avoid hitting DockerHub's rate limiting by using a mirror via the `--docker-io-registry-mirror` parameter.
+
+For example:
+
+```bash
+bash <(curl -s \
+    https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh) --docker-io-registry-mirror https://mirror.gcr.io
+```
+
+This parameter is passed on the containerd used by k3d. 
+
+In addition, the Jobs run by Jenkins are using the host's Docker daemon.  
+To avoid rate limits there, you might have to configure a mirror there as well.
+This can be done in the `/etc/docker/daemon.json` or in the config of Docker Desktop.
+
+For example:
+```json
+{
+  "registry-mirrors": ["https://mirror.gcr.io"]
+}
+```
+
 ### Apply playground
 
 You can apply the playground to your cluster using our container image `ghcr.io/cloudogu/gitops-playground`.  

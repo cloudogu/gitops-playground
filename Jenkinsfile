@@ -89,7 +89,7 @@ node('high-cpu') {
                                 String registryPort = sh(
                                         script: 'docker inspect ' +
                                                 '--format=\'{{ with (index .NetworkSettings.Ports "30000/tcp") }}{{ (index . 0).HostPort }}{{ end }}\' ' +
-                                                " k3d-${clusterName}-server-0",
+                                                " k3d-${clusterName}-serverlb",
                                         returnStdout: true
                                 ).trim()
 
