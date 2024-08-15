@@ -218,17 +218,10 @@ class GitopsPlaygroundCli  implements Runnable {
     void run() {
         setLogging()
         
+        def version = createVersionOutput()
+        
         if (versionInfoRequested) {
-            
-            def versionName = Version.NAME.replace('\\n', '\n')
-            
-            if (versionName.trim().startsWith('(')) {
-                // When there is no git tag, print commit without parentheses
-                versionName = versionName.trim()
-                        .replace('(', '')
-                        .replace(')', '')
-            }
-            println "${APP_NAME} ${versionName}"
+            println version
             return
         }
         
@@ -246,18 +239,31 @@ class GitopsPlaygroundCli  implements Runnable {
         K8sClient k8sClient = context.getBean(K8sClient)
 
         if (config['application']['destroy']) {
+            log.info version
             confirmOrExit "Destroying gitops playground in kubernetes cluster '${k8sClient.currentContext}'.", config
             
             Destroyer destroyer = context.getBean(Destroyer)
             destroyer.destroy()
         } else {
+            log.info version
             confirmOrExit "Applying gitops playground to kubernetes cluster '${k8sClient.currentContext}'.", config
-
             Application app = context.getBean(Application)
             app.start()
 
             printWelcomeScreen()
         }
+    }
+
+    protected String createVersionOutput() {
+        def versionName = Version.NAME.replace('\\n', '\n')
+
+        if (versionName.trim().startsWith('(')) {
+            // When there is no git tag, print commit without parentheses
+            versionName = versionName.trim()
+                    .replace('(', '')
+                    .replace(')', '')
+        }
+        return  "${APP_NAME} ${versionName}"
     }
 
     protected void register(ApplicationContext context, Configuration configuration) {
