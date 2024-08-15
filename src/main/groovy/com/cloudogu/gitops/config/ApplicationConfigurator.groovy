@@ -15,7 +15,8 @@ import static com.cloudogu.gitops.utils.MapUtils.*
 @Singleton
 class ApplicationConfigurator {
 
-    public static final String HELM_IMAGE = "ghcr.io/cloudogu/helm:3.10.3-1"
+    // When updating please also update in Dockerfile
+    public static final String HELM_IMAGE = "ghcr.io/cloudogu/helm:3.15.4-1"
     // When updating please also adapt in Dockerfile, vars.tf and init-cluster.sh
     public static final String K8S_VERSION = "1.29"
     public static final String DEFAULT_ADMIN_USER = 'admin'
