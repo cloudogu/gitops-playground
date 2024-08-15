@@ -47,7 +47,7 @@ RUN apk add curl grep
 ARG K8S_VERSION=1.29.1
 ARG KUBECTL_CHECKSUM=69ab3a931e826bf7ac14d38ba7ca637d66a6fcb1ca0e3333a2cafdf15482af9f
 # When updating, also upgrade helm image in ApplicationConfigurator
-ARG HELM_VERSION=3.15.3
+ARG HELM_VERSION=3.15.4
 # bash curl unzip required for Jenkins downloader
 RUN apk add --no-cache \
       gnupg \
@@ -68,7 +68,7 @@ RUN curl --location --fail --retry 20 --retry-connrefused --retry-all-errors --o
 RUN tar -xf helm.tar.gz
 RUN set -o pipefail && curl --location --fail --retry 20 --retry-connrefused --retry-all-errors \
   https://raw.githubusercontent.com/helm/helm/main/KEYS | gpg --import --batch --no-default-keyring --keyring /tmp/keyring.gpg 
-RUN gpgv --keyring  /tmp/keyring.gpg  helm.tar.gz.asc helm.tar.gz
+RUN gpgv --keyring /tmp/keyring.gpg helm.tar.gz.asc helm.tar.gz
 RUN mv linux-amd64/helm /dist/usr/local/bin
 ENV PATH=$PATH:/dist/usr/local/bin
 
@@ -148,8 +148,13 @@ RUN tar -xvzf x86_64-linux-musl-native.tgz -C ${RESULT_LIB} --strip-components 1
 ENV CC=/musl/bin/gcc
 RUN curl --location --fail --retry 20 --retry-connrefused -o zlib.tar.gz https://github.com/madler/zlib/releases/download/v${ZLIB_VERSION}/zlib-${ZLIB_VERSION}.tar.gz
 RUN curl --location --fail --retry 20 --retry-connrefused -o zlib.tar.gz.asc https://github.com/madler/zlib/releases/download/v${ZLIB_VERSION}/zlib-${ZLIB_VERSION}.tar.gz.asc
-RUN gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys 5ED46A6721D365587791E2AA783FCD8E58BCAFBA # madler@alumni.caltech.edu 
-RUN gpg --batch --verify zlib.tar.gz.asc zlib.tar.gz
+# Use curl instead of "gpg --recv-keys" for more stable builds with retries
+# Key of the zlib maintainer: madler@alumni.caltech.edu
+ENV ZLIB_KEY=5ED46A6721D365587791E2AA783FCD8E58BCAFBA 
+RUN set -o pipefail && curl --silent --show-error --location --fail --retry 20 --retry-connrefused --retry-delay 5 \
+    "https://keys.openpgp.org/vks/v1/by-fingerprint/${ZLIB_KEY}" | \
+    gpg --import --batch --no-default-keyring --keyring /tmp/keyring.gpg
+RUN gpgv --keyring  /tmp/keyring.gpg zlib.tar.gz.asc zlib.tar.gz
 RUN mkdir zlib && tar -xvzf zlib.tar.gz -C zlib --strip-components 1 && \
     cd zlib && ./configure --static --prefix=/musl && \
     make && make install && \
@@ -266,7 +271,7 @@ LABEL org.opencontainers.image.title="gitops-playground" \
       org.opencontainers.image.url="https://github.com/cloudogu/gitops-playground" \
       org.opencontainers.image.documentation="https://github.com/cloudogu/gitops-playground" \
       org.opencontainers.image.vendor="cloudogu" \
-      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.licenses="AGPL3.0" \
       org.opencontainers.image.description="Reproducible infrastructure to showcase GitOps workflows and evaluate different GitOps Operators" \
       org.opencontainers.image.version="${VCS_REF}" \
       org.opencontainers.image.created="${BUILD_DATE}" \
