@@ -69,7 +69,7 @@ RUN tar -xf helm.tar.gz
 RUN set -o pipefail && curl --location --fail --retry 20 --retry-connrefused --retry-all-errors \
   https://raw.githubusercontent.com/helm/helm/main/KEYS | gpg --import --batch --no-default-keyring --keyring /tmp/keyring.gpg 
 RUN gpgv --keyring  /tmp/keyring.gpg  helm.tar.gz.asc helm.tar.gz
-#RUN mv linux-amd64/helm /dist/usr/local/bin
+RUN mv linux-amd64/helm /dist/usr/local/bin
 ENV PATH=$PATH:/dist/usr/local/bin
 
 # Kubectl
@@ -99,7 +99,7 @@ RUN /jenkins/download-plugins.sh /dist/gitops/jenkins-plugins
 
 COPY src/main/groovy/com/cloudogu/gitops/config/ApplicationConfigurator.groovy /tmp/
 COPY scripts/downloadHelmCharts.sh /tmp/
-#RUN cd /dist/gitops && /tmp/downloadHelmCharts.sh /tmp/ApplicationConfigurator.groovy
+RUN cd /dist/gitops && /tmp/downloadHelmCharts.sh /tmp/ApplicationConfigurator.groovy
 
 WORKDIR /tmp
 # Prepare local files for later stages
