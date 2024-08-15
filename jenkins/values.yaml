@@ -4,7 +4,7 @@
 # For example:
 # $ curl -s https://download.docker.com/linux/debian/dists/bullseye/stable/binary-amd64/Packages  | grep -EA5 'Package\: docker-ce$' | grep Version | sort | uniq | tail -n1
 # Version: 5:27.1.1-1~debian.11~bullseye
-dockerClientVersion: 27.1.1
+dockerClientVersion: 27.1.2
 
 controller:
   image: "ghcr.io/cloudogu/jenkins-helm"
