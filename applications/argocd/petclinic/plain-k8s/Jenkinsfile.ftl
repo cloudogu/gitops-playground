@@ -62,7 +62,7 @@ node {
 </#noparse>
 <#if registry.twoRegistries>
 <#noparse>
-            docker.withRegistry("http://${dockerRegistryProxyBaseUrl}", dockerRegistryProxyCredentials) {
+            docker.withRegistry("https://${dockerRegistryProxyBaseUrl}", dockerRegistryProxyCredentials) {
                 image = docker.build(imageName, '.')
             }
 </#noparse>
@@ -73,7 +73,7 @@ node {
 </#if>
 <#noparse>
             if (isBuildSuccessful()) {
-                docker.withRegistry("http://${dockerRegistryBaseUrl}", dockerRegistryCredentials) {
+                docker.withRegistry("https://${dockerRegistryBaseUrl}", dockerRegistryCredentials) {
                     image.push()
                 }
             } else {
