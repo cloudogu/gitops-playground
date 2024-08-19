@@ -205,8 +205,7 @@ class ArgoCD extends Feature {
         log.debug("Creating namespaces")
         k8sClient.createNamespace(namespaceList)
 
-        log.debug("Applying ServiceMonitor CRD; Argo CD fails if it is not there. Chicken-egg-problem.")
-        k8sClient.applyYaml("https://raw.githubusercontent.com/prometheus-community/helm-charts/kube-prometheus-stack-${config['features']['monitoring']['helm']['version']}/charts/kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml")
+        createMonitoringCrd()
 
         log.debug("Creating repo credential secret that is used by argocd to access repos in SCM-Manager")
         // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo 
@@ -306,12 +305,8 @@ class ArgoCD extends Feature {
         k8sClient.applyYaml(argocdRbacPath)
     }
 
-    protected void createMonitoringNamespaceAndCrd() {
+    protected void createMonitoringCrd() {
         if (config['features']['monitoring']['active']) {
-
-            log.debug("Creating namespace for monitoring, so argocd can add its service monitors there")
-            k8sClient.createNamespace('monitoring')
-
             if (!config['application']['skipCrds']) {
                 def serviceMonitorCrdYaml
                 if (config.application['mirrorRepos']) {

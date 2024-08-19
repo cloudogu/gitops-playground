@@ -68,15 +68,42 @@ class K8sClient {
         commandExecutor.execute("kubectl apply -f $yamlLocation").stdOut
     }
 
-    /**
-     * Idempotent create, i.e. overwrites if exists.
-     */
+/**
+ * Creates a namespace if it does not exist. Fails completely on permission error.
+ *
+ * @param name The name of the namespace to create.
+ *
+ * @throws IllegalArgumentException if the name is null or empty.
+ * @throws RuntimeException if an error occurs while creating the namespace.
+ */
     void createNamespace(String name) {
-        def command1 = kubectl( 'create', 'namespace', "${getNamePrefix()}${name}")
-                .dryRunOutputYaml()
-                .build()
-        
-        commandExecutor.execute(command1, APPLY_FROM_STDIN)
+        if (name == null || name.trim().isEmpty()) {
+            throw new IllegalArgumentException("Namespace name must be provided and cannot be null or empty.");
+        }
+
+        String namespace = "${getNamePrefix()}${name}";
+
+        // Check if the namespace already exists
+        String[] checkNamespaceCommand = new Kubectl("get", "namespace", namespace).build();
+        CommandExecutor.Output checkNamespaceOutput = commandExecutor.execute(checkNamespaceCommand);
+
+        if (checkNamespaceOutput.exitCode == 0) {
+            log.debug("Namespace ${namespace} already exists.");
+            return;
+        }
+
+        log.debug("Namespace ${namespace} does not exist, proceeding to create.");
+
+        // Create the namespace
+        String[] createNamespaceCommand = new Kubectl("create", "namespace", namespace).build();
+        try {
+            CommandExecutor.Output createNamespaceOutput = commandExecutor.execute(createNamespaceCommand, APPLY_FROM_STDIN);
+            log.debug("Namespace ${namespace} created successfully.");
+        } catch (Exception e) {
+            String errorMessage = "Failed to create namespace ${namespace} (possibly due to insufficient permissions)";
+            log.error(errorMessage + ": " + e.getMessage());
+            throw new RuntimeException(errorMessage, e);
+        }
     }
 
     /**
