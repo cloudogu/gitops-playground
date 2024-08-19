@@ -149,7 +149,7 @@ class Schema {
         // boolean outputConfigFile = false
         // These can't be set because they are evaluated first thing on app start, before config file is read
         // boolean debug = false
-        // boolean trace = false 
+        // boolean trace = false
         @JsonPropertyDescription(DESTROY_DESCRIPTION)
         boolean destroy = false
         @JsonPropertyDescription(POD_RESOURCES_DESCRIPTION)
@@ -169,6 +169,8 @@ class Schema {
         boolean mirrorRepos = false
         @JsonPropertyDescription(SKIP_CRDS_DESCRIPTION)
         boolean skipCrds = false
+        @JsonPropertyDescription(OPENSHIFT_DESCRIPTION)
+        boolean openshift = false
     }
 
     static class ImagesSchema {
@@ -235,6 +237,8 @@ class Schema {
         String emailToUser = ""
         @JsonPropertyDescription(ARGOCD_EMAIL_TO_ADMIN_DESCRIPTION)
         String emailToAdmin = ""
+        @JsonPropertyDescription(ARGOCD_OPERATOR_DESCRIPTION)
+        boolean argocdOperator = false
     }
 
     static class MailSchema {

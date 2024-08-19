@@ -21,7 +21,7 @@ import picocli.CommandLine.Option
 import static com.cloudogu.gitops.config.ConfigConstants.*
 
 import static groovy.json.JsonOutput.prettyPrint
-import static groovy.json.JsonOutput.toJson 
+import static groovy.json.JsonOutput.toJson
 /**
  * Provides the entrypoint to the application as well as all config parameters.
  * When changing parameters, make sure to update the Schema for the config file as well
@@ -88,6 +88,8 @@ class GitopsPlaygroundCli  implements Runnable {
     private Boolean remote
     @Option(names = ['--insecure'], description = INSECURE_DESCRIPTION)
     private Boolean insecure
+    @Option(names = ['--openshift'], description = 'Install with openshift compatibility')
+    private Boolean openshift
 
     // args group tool configuration
     @Option(names = ['--git-name'], description = GIT_NAME_DESCRIPTION)
@@ -197,6 +199,9 @@ class GitopsPlaygroundCli  implements Runnable {
     @Option(names = ['--argocd'], description = ARGOCD_ENABLE_DESCRIPTION)
     private Boolean argocd
     @Option(names = ['--argocd-url'], description = ARGOCD_URL_DESCRIPTION)
+    @Option(names = ['--argocd-operator'], description = 'Install ArgoCd via Operator')
+    private Boolean argocdOperator
+    @Option(names = ['--argocd-url'], description = 'The URL where argocd is accessible. It has to be the full URL with http:// or https://')
     private String argocdUrl
     @Option(names = ['--argocd-email-from'], description = ARGOCD_EMAIL_FROM_DESCRIPTION)
     private String emailFrom
@@ -230,7 +235,7 @@ class GitopsPlaygroundCli  implements Runnable {
         
         def config = getConfig(context, false)
         register(context, new Configuration(config))
-        
+
         K8sClient k8sClient = context.getBean(K8sClient)
 
         if (config['application']['destroy']) {
@@ -381,8 +386,9 @@ class GitopsPlaygroundCli  implements Runnable {
                         password: scmmPassword
                 ],
                 application: [
+                        openshift     : openshift,
                         remote        : remote,
-                        mirrorRepos     : mirrorRepos, 
+                        mirrorRepos     : mirrorRepos,
                         destroy : destroy,
                         insecure      : insecure,
                         debug         : debug,
@@ -411,6 +417,7 @@ class GitopsPlaygroundCli  implements Runnable {
                         argocd : [
                                 active    : argocd,
                                 url       : argocdUrl,
+                                operator  : argocdOperator,
                                 emailFrom    : emailFrom,
                                 emailToUser  : emailToUser,
                                 emailToAdmin : emailToAdmin

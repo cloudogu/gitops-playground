@@ -43,7 +43,8 @@ class ExternalSecretsOperator extends Feature {
 
     @Override
     boolean isEnabled() {
-        return config.features['secrets']['active']
+//        return config.features['secrets']['active']
+        return false
     }
 
     @Override

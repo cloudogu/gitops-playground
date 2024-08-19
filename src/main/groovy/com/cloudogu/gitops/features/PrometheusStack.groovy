@@ -49,7 +49,8 @@ class PrometheusStack extends Feature {
 
     @Override
     boolean isEnabled() {
-        return config.features['monitoring']['active']
+//        return config.features['monitoring']['active']
+        return false
     }
 
     @Override

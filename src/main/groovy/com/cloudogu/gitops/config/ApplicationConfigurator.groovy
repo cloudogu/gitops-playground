@@ -113,6 +113,7 @@ class ApplicationConfigurator {
                     // Take from env because the Dockerfile provides a local copy of the repo for air-gapped mode
                     localHelmChartFolder: System.getenv('LOCAL_HELM_CHART_FOLDER'),
                     insecure      : false,
+                    openshift     : false,
                     username      : DEFAULT_ADMIN_USER,
                     password      : DEFAULT_ADMIN_PW,
                     yes           : false,
@@ -156,6 +157,7 @@ class ApplicationConfigurator {
             features   : [
                     argocd    : [
                             active    : false,
+                            operator  : false,
                             url       : '',
                             emailFrom : 'argocd@example.org',
                             emailToUser : 'app-team@example.org',

@@ -45,7 +45,8 @@ class Registry extends Feature {
 
     @Override
     boolean isEnabled() {
-        return config.registry['internal']
+//        return config.registry['internal']
+        return false
     }
 
     @Override
