@@ -169,6 +169,8 @@ class Schema {
         boolean mirrorRepos = false
         @JsonPropertyDescription(SKIP_CRDS_DESCRIPTION)
         boolean skipCrds = false
+        @JsonPropertyDescription(NAMESPACE_ISOLATION_DESCRIPTION)
+        boolean namespaceIsolation = false
     }
 
     static class ImagesSchema {

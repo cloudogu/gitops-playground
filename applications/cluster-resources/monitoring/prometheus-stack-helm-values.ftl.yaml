@@ -3,6 +3,12 @@ crds:
   enabled: false
 </#if>
 
+<#if namespaceIsolation == true>
+global:
+  rbac:
+    create: false
+</#if>
+
 # Note that many things are disabled here, because we want to start small, especially in airgapped envs where each image
 # has to be replicated individually
 defaultRules:

@@ -134,6 +134,8 @@ class GitopsPlaygroundCli  implements Runnable {
     private Boolean mirrorRepos
     @Option(names = ['--skip-crds'], description = SKIP_CRDS_DESCRIPTION)
     private Boolean skipCrds
+    @Option(names = ['--namespace-isolation'], description = NAMESPACE_ISOLATION_DESCRIPTION)
+    private Boolean namespaceIsolation
 
     // args group metrics
     @Option(names = ['--metrics', '--monitoring'], description = MONITORING_ENABLE_DESCRIPTION)
@@ -396,7 +398,8 @@ class GitopsPlaygroundCli  implements Runnable {
                         gitName: gitName,
                         gitEmail: gitEmail,
                         urlSeparatorHyphen : urlSeparatorHyphen,
-                        skipCrds : skipCrds
+                        skipCrds : skipCrds,
+                        namespaceIsolation: namespaceIsolation
                 ],
                 images     : [
                         kubectl    : kubectlImage,

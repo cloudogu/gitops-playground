@@ -2,10 +2,8 @@ package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
-import com.cloudogu.gitops.utils.AirGappedUtils
-import com.cloudogu.gitops.utils.CommandExecutorForTest
-import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.K8sClient
+import com.cloudogu.gitops.scmm.ScmmRepo
+import com.cloudogu.gitops.utils.*
 import groovy.yaml.YamlSlurper
 import jakarta.inject.Provider
 import org.junit.jupiter.api.Test
@@ -22,6 +20,9 @@ import static org.mockito.Mockito.*
 class PrometheusStackTest {
 
     Map config = [
+            registry   : [
+                    internal: true,
+                    ],
             scmm: [
                     internal: true,
                     host: '',
@@ -39,9 +40,15 @@ class PrometheusStackTest {
                     namePrefix: "foo-",
                     mirrorRepos: false,
                     podResources : false,
-                    skipCrds: false
+                    skipCrds: false,
+                    namespaceIsolation : false,
+                    gitName : 'Cloudogu',
+                    gitEmail : 'hello@cloudogu.com',
             ],
             features   : [
+                    argocd: [
+                            active: true
+                    ],
                     monitoring: [
                             active: true,
                             grafanaUrl: '',
@@ -52,6 +59,12 @@ class PrometheusStackTest {
                                     repoURL: 'https://prom',
                                     version: '19.2.2'
                             ]
+                    ],
+                    secrets: [
+                            active: true
+                    ],
+                    ingressNginx: [
+                            active: true
                     ],
                     mail   : [
                             mailhog: true,
@@ -67,6 +80,7 @@ class PrometheusStackTest {
     AirGappedUtils airGappedUtils = mock(AirGappedUtils)
     Path temporaryYamlFilePrometheus = null
     FileSystemUtils fileSystemUtils = new FileSystemUtils()
+    File clusterResourcesRepoDir
 
     @Test
     void "is disabled via active flag"() {
@@ -372,6 +386,7 @@ policies:
         assertThat(yaml['prometheus']['prometheusSpec'] as Map).doesNotContainKey('resources')
         
         assertThat(yaml['crds']).isNull()
+        assertThat( new File("$clusterResourcesRepoDir/misc/monitoring/rbac")).doesNotExist()
     }
 
     @Test
@@ -394,6 +409,26 @@ policies:
         assertThat(yaml['grafana']['resources'] as Map)containsKeys('limits', 'requests')
         assertThat(yaml['grafana']['sidecar']['resources'] as Map)containsKeys('limits', 'requests')
         assertThat(yaml['prometheus']['prometheusSpec']['resources'] as Map)containsKeys('limits', 'requests')
+    }
+    
+    @Test
+    void 'works with namespaceIsolation'() {
+        config.application['namespaceIsolation'] = true
+
+        def prometheusStack = createStack()
+        prometheusStack.install()
+        
+        def yaml = parseActualStackYaml()
+        assertThat(yaml['global']['rbac']['create']).isEqualTo(false)
+
+        List<String> expectedNamespaces = [ "foo-default", "foo-argocd", "foo-monitoring", "foo-ingress-nginx", "foo-example-apps-staging", "foo-example-apps-production", "foo-secrets"]
+        assertThat(prometheusStack.namespaceList.collect { it.toString() }).hasSameElementsAs(expectedNamespaces)
+        
+        for (String namespace : prometheusStack.namespaceList) {
+            def rbacYaml = new File("$clusterResourcesRepoDir/misc/monitoring/rbac/${namespace}.yaml")
+            assertThat(rbacYaml.text).contains("namespace: ${namespace}")
+            assertThat(rbacYaml.text).contains("    namespace: foo-monitoring")
+        }
     }
     
     @Test
@@ -427,6 +462,16 @@ policies:
         // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
 
         def configuration = new Configuration(config)
+        def repoProvider = new TestScmmRepoProvider(new Configuration(config), new FileSystemUtils()) {
+            @Override
+            ScmmRepo getRepo(String repoTarget) {
+                def repo = super.getRepo(repoTarget)
+                clusterResourcesRepoDir = new File(repo.getAbsoluteLocalRepoTmpDir())
+
+                return repo
+            }
+        }
+        
         new PrometheusStack(configuration, new FileSystemUtils() {
             @Override
             Path copyToTempDir(String filePath) {
@@ -439,7 +484,7 @@ policies:
             Configuration get() {
                 configuration
             }
-        }), airGappedUtils)
+        }), airGappedUtils, repoProvider)
     }
 
     private Map parseActualStackYaml() {

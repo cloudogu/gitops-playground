@@ -226,6 +226,7 @@ application:
   urlSeparatorHyphen: true
   mirrorRepos: true
   skipCrds: true
+  namespaceIsolation: false
 images:
   kubectl: "kubectl-value"
   helm: "helm-value"
