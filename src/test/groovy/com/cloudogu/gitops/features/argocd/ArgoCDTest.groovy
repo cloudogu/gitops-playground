@@ -722,7 +722,6 @@ class ArgoCDTest {
     }
 
     private static Map parseBuildImagesMapFromString(String text) {
-
         def startIndex = text.indexOf('buildImages')
         if (startIndex != -1) {
             def bracketCount = 0
@@ -743,11 +742,12 @@ class ArgoCDTest {
                 }
             }
 
-            def matchedText = text.substring(startIndex + 'buildImages:'.length(), endIndex).trim()
+            def matchedText = text.substring(startIndex + 'buildImages'.length(), endIndex).trim().replaceFirst(":", "")
 
-            def map = Eval.me(matchedText.replaceFirst(":", ""))as Map
+            def map = Eval.me(matchedText)
 
-            return map
+            return map as Map
+
         } else {
             return [:]
         }
@@ -908,16 +908,24 @@ class ArgoCDTest {
     }
 
     void assertBuildImagesInJenkinsfileReplaced(File jenkinsfile) {
+        if (config.registry['twoRegistries']) {
 
-        def actualBuildImages = parseBuildImagesMapFromString(jenkinsfile.text)
+            assertThat(jenkinsfile.text.count("dockerRegistryProxyCredentials")).isGreaterThan(5)
+        } else {
 
-        if (!actualBuildImages) {
-            fail("Missing build images in Jenkinsfile ${jenkinsfile}")
+            def actualBuildImages = parseBuildImagesMapFromString(jenkinsfile.text)
+
+            if (!actualBuildImages) {
+                fail("Missing build images in Jenkinsfile ${jenkinsfile}")
+            }
+
+
+            assertThat(buildImages.keySet()).containsExactlyInAnyOrderElementsOf(actualBuildImages.keySet())
+            for (Map.Entry image : buildImages as Map) {
+                assertThat(image.value).isEqualTo(actualBuildImages[image.key])
+            }
         }
-        assertThat(buildImages.keySet()).containsExactlyInAnyOrderElementsOf(actualBuildImages.keySet())
-        for (Map.Entry image : buildImages as Map) {
-            assertThat(image.value).isEqualTo(actualBuildImages[image.key])
-        }
+
     }
 
     void assertPetClinicRepos(String expectedServiceType, String unexpectedServiceType, String ingressUrl) {
