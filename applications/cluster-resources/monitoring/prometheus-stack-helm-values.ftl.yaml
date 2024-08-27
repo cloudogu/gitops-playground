@@ -1,3 +1,4 @@
+<#assign DockerImageParser=statics['com.cloudogu.gitops.utils.DockerImageParser']>
 <#if skipCrds == true>
 crds:
   enabled: false
@@ -68,6 +69,21 @@ prometheusOperator:
       cpu: 20m
       memory: 40Mi
 </#if>
+<#if config.features.monitoring.helm.prometheusOperatorImage?has_content>
+  <#assign operatorImageObject = DockerImageParser.parse(config.features.monitoring.helm.prometheusOperatorImage)>
+  image:
+    registry  : ${operatorImageObject.registry}
+    repository: ${operatorImageObject.repository}
+    tag       : ${operatorImageObject.tag}
+</#if>
+<#if config.features.monitoring.helm.prometheusConfigReloaderImage?has_content>
+<#assign reloaderImageObject = DockerImageParser.parse(config.features.monitoring.helm.prometheusConfigReloaderImage)>
+  prometheusConfigReloader:
+    image:
+        registry  : ${reloaderImageObject.registry}
+        repository: ${reloaderImageObject.repository}
+        tag       : ${reloaderImageObject.tag}
+</#if>
 kubelet:
   enabled: false
 kubeControllerManager:
@@ -86,15 +102,21 @@ alertmanager:
   enabled: false
 grafana:
   defaultDashboardsEnabled: false
-  adminUser: admin
-  adminPassword: admin
+  adminUser: ${config.application["username"]}
+  adminPassword: ${config.application["password"]}
   service:
-    type: NodePort
+    type: <#if remote>LoadBalancer<#else>NodePort</#if>
     nodePort: "9095"
 <#if monitoring.grafana.host?has_content>
   ingress:
     enabled: true
     hosts: [${monitoring.grafana.host}]
+</#if>
+<#if config.features.monitoring.helm.grafanaImage?has_content>
+<#assign grafanImageObject = DockerImageParser.parse(config.features.monitoring.helm.grafanaImage)>
+  image:
+    repository: ${grafanImageObject.registryAndRepositoryAsString}
+    tag       : ${grafanImageObject.tag}
 </#if>
   sidecar:
     dashboards:
@@ -109,6 +131,12 @@ grafana:
       requests:
         cpu: 35m
         memory: 65Mi
+</#if>
+<#if config.features.monitoring.helm.grafanaSidecarImage?has_content>
+<#assign sidecarImageObject = DockerImageParser.parse(config.features.monitoring.helm.grafanaSidecarImage)>
+    image:
+      repository: ${sidecarImageObject.registryAndRepositoryAsString}
+      tag       : ${sidecarImageObject.tag}
 </#if>
 <#if mail.active??>
   notifiers:
@@ -197,6 +225,13 @@ prometheus:
       requests:
         cpu: 50m
         memory: 450Mi
+</#if>
+<#if config.features.monitoring.helm.prometheusImage?has_content>
+<#assign prometheusImageObject = DockerImageParser.parse(config.features.monitoring.helm.prometheusImage)>
+    image:
+      registry  : ${prometheusImageObject.registry}
+      repository: ${prometheusImageObject.repository}
+      tag       : ${prometheusImageObject.tag}
 </#if>
     secrets:
       - prometheus-metrics-creds-scmm

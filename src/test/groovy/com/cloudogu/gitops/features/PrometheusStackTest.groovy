@@ -57,7 +57,12 @@ class PrometheusStackTest {
                             helm  : [
                                     chart  : 'kube-prometheus-stack',
                                     repoURL: 'https://prom',
-                                    version: '19.2.2'
+                                    version: '19.2.2',
+                                    grafanaImage: '',
+                                    grafanaSidecarImage: '',
+                                    prometheusImage: '',
+                                    prometheusOperatorImage: '',
+                                    prometheusConfigReloaderImage: '',
                             ]
                     ],
                     secrets: [
@@ -380,6 +385,9 @@ policies:
                         " --values ${temporaryYamlFile} --namespace foo-monitoring --create-namespace") */
 
         def yaml = parseActualStackYaml()
+        assertThat(yaml['grafana']['adminUser']).isEqualTo('abc')
+        assertThat(yaml['grafana']['adminPassword']).isEqualTo(123)
+        
         assertThat(yaml['prometheusOperator'] as Map).doesNotContainKey('resources')
         assertThat(yaml['grafana'] as Map).doesNotContainKey('resources')
         assertThat(yaml['grafana']['sidecar'] as Map).doesNotContainKey('resources')
@@ -474,9 +482,10 @@ policies:
         
         new PrometheusStack(configuration, new FileSystemUtils() {
             @Override
-            Path copyToTempDir(String filePath) {
-                Path ret = super.copyToTempDir(filePath)
+            Path createTempFile() {
+                def ret = super.createTempFile()
                 temporaryYamlFilePrometheus = Path.of(ret.toString().replace(".ftl", "")) // Path after template invocation
+
                 return ret
             }
         }, deploymentStrategy, new K8sClient(k8sCommandExecutor, new FileSystemUtils(), new Provider<Configuration>() {
