@@ -89,6 +89,8 @@ We recommend running this command as an unprivileged user, that is inside the [d
     - [3rd Party app (NGINX) with helm, templated in Jenkins](#3rd-party-app-nginx-with-helm-templated-in-jenkins)
     - [3rd Party app (NGINX) with helm, using Helm dependency mechanism](#3rd-party-app-nginx-with-helm-using-helm-dependency-mechanism)
 - [Development](#development)
+- [License](#license)
+- [Written Offer](#written-offer)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1053,4 +1055,41 @@ Alternatively, you can trigger the deployment via ArgoCD's UI or CLI.
 
 See [docs/developers.md](docs/developers.md)
 
+## License
+Copyright © 2020 - present Cloudogu GmbH
 
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, version 3.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License along with this program. If not, see https://www.gnu.org/licenses/.  
+
+See [LICENSE](LICENSE) for details.
+
+GitOps Playground© for use with  Argo™, Git™, Jenkins®, Kubernetes®, Grafana®, Prometheus®, Vault® and SCM-Manager 
+
+Argo™ is an unregistered trademark of The Linux Foundation®  
+Git™ is an unregistered trademark of Software Freedom Conservancy Inc.  
+Jenkins® is a registered trademark of LF Charities Inc.  
+Kubernetes® and the Kubernetes logo® are registered trademarks of The Linux Foundation®  
+K8s® is a registered trademark of The Linux Foundation®  
+The Grafana Labs Marks are trademarks of Grafana Labs, and are used with Grafana Labs’ permission. We are not affiliated with, endorsed or sponsored by Grafana Labs or its affiliates.  
+Prometheus® is a registered trademark of The Linux Foundation®  
+Vault® and the Vault logo® are registered trademarks of HashiCorp® (http://www.hashicorp.com/)  
+
+## Written Offer
+Written Offer for Source Code:
+
+Information on the license conditions and - if required by the license - on the source code is available free of charge on request.  
+However, some licenses require providing physical copies of the source or object code. If this is the case, you can request a copy of the source code. A small fee is charged for these services to cover the cost of physical distribution.
+
+To receive a copy of the source code, you can either submit a written request to
+
+Cloudogu GmbH  
+Garküche 1  
+38100 Braunschweig
+
+or you may email hello@cloudogu.com.
+
+Your request must be sent within three years from the date you received the software from Cloudogu that is the subject of your request or, in the case of source code licensed under the AGPL/GPL/LGPL v3, for as long as Cloudogu offers spare parts or customer support
+for the product, including the components or binaries that are the subject of your request.
