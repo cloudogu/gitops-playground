@@ -191,6 +191,7 @@ class ApplicationConfigurator {
                                     prometheusImage: '',
                                     prometheusOperatorImage: '',
                                     prometheusConfigReloaderImage: '',
+                                    values: [:]
                             ]
                     ],
                     secrets   : [

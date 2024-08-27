@@ -56,7 +56,7 @@ class PrometheusStack extends Feature {
     void enable() {
         def namePrefix = config.application['namePrefix']
 
-        def template = new TemplatingEngine().template(new File(HELM_VALUES_PATH), [
+        def templatedMap = new YamlSlurper().parseText(new TemplatingEngine().template(new File(HELM_VALUES_PATH), [
                 namePrefix        : namePrefix,
                 podResources      : config.application['podResources'],
                 monitoring        : [
@@ -83,9 +83,10 @@ class PrometheusStack extends Feature {
                 config: config,
                 // Allow for using static classes inside the templates
                 statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
-        ])
-        def helmValuesYaml = new YamlSlurper().parseText(
-                template) as Map
+        ])) as Map
+        
+        def valuesFromConfig = config['features']['monitoring']['helm']['values'] as Map
+        def mergedMap = MapUtils.deepMerge(valuesFromConfig, templatedMap)
 
         // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo
         k8sClient.createSecret(
@@ -127,7 +128,7 @@ class PrometheusStack extends Feature {
         }
 
         def tmpHelmValues = fileSystemUtils.createTempFile()
-        fileSystemUtils.writeYaml(helmValuesYaml, tmpHelmValues.toFile())
+        fileSystemUtils.writeYaml(mergedMap, tmpHelmValues.toFile())
 
         def helmConfig = config['features']['monitoring']['helm']
         if (config.application['mirrorRepos']) {

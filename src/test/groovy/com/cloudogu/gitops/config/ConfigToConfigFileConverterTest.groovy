@@ -274,6 +274,7 @@ features:
       chart: "kube-prometheus-stack"
       repoURL: "https://prometheus-community.github.io/helm-charts"
       version: "58.2.1"
+      values: null
       grafanaImage: "grafanaImage"
       grafanaSidecarImage: "grafanaSidecarImage"
       prometheusImage: "prometheusImage"

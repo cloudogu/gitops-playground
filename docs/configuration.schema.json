@@ -30,6 +30,9 @@
       "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors.",
       "additionalProperties" : false
     },
+    "Map(String,Object)" : {
+      "type" : "object"
+    },
     "RepositorySchema" : {
       "type" : "object",
       "properties" : {
@@ -192,7 +195,7 @@
                   "description" : "Repository url from which the Helm chart should be obtained"
                 },
                 "values" : {
-                  "type" : "object",
+                  "$ref" : "#/$defs/Map(String,Object)",
                   "description" : "Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration"
                 },
                 "version" : {
@@ -200,8 +203,8 @@
                   "description" : "The version of the Helm chart to be installed"
                 }
               },
-              "additionalProperties" : false,
-              "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
+              "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors.",
+              "additionalProperties" : false
             }
           },
           "additionalProperties" : false,
@@ -310,6 +313,10 @@
                 "repoURL" : {
                   "type" : "string",
                   "description" : "Repository url from which the Helm chart should be obtained"
+                },
+                "values" : {
+                  "$ref" : "#/$defs/Map(String,Object)",
+                  "description" : "Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration"
                 },
                 "version" : {
                   "type" : "string",
