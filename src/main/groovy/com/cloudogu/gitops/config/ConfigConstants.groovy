@@ -38,6 +38,7 @@ interface ConfigConstants {
     // group remote
     String REMOTE_DESCRIPTION = 'Expose services as LoadBalancers'
     String INSECURE_DESCRIPTION = 'Sets insecure-mode in cURL which skips cert validation'
+    String OPENSHIFT_DESCRIPTION = 'Install with openshift compatibility'
     String LOCAL_HELM_CHART_FOLDER_DESCRIPTION = 'A local folder (within the GOP image mostly) where the local mirrors of all helm charts are loaded from when mirror-Repos is active. This is mostly needed for development.'
 
     // group tool configuration

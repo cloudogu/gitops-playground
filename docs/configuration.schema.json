@@ -99,6 +99,10 @@
           "type" : "boolean",
           "description" : "Configure tools to explicitly work with the given namespaces only, and not cluster-wide. This way GOP can be installed without having cluster-admin permissions."
         },
+        "openshift" : {
+          "type" : "boolean",
+          "description" : "Install with openshift compatibility"
+        },
         "password" : {
           "type" : "string",
           "description" : "Set initial admin passwords"

@@ -37,6 +37,7 @@ class PrometheusStackTest {
                     username: 'abc',
                     password: '123',
                     remote  : false,
+                    openshift: false,
                     namePrefix: "foo-",
                     mirrorRepos: false,
                     podResources : false,
@@ -247,6 +248,7 @@ policies:
         createStack().install()
 
         assertThat(parseActualYaml()['grafana']['service']['type']).isEqualTo('LoadBalancer')
+        assertThat(parseActualYaml()['grafana']['service']['nodePort']).isNull()
     }
 
     @Test
@@ -265,6 +267,7 @@ policies:
         createStack().install()
 
         assertThat(parseActualYaml()['grafana']['service']['type']).isEqualTo('NodePort')
+        assertThat(parseActualYaml()['grafana']['service']['nodePort']).isEqualTo('9095')
     }
 
     @Test
@@ -337,7 +340,8 @@ policies:
         config['features']['monitoring']['helm']['grafanaImage'] = "localhost:5000/grafana/grafana:the-tag"
         createStack().install()
 
-        assertThat(parseActualYaml()['grafana']['image']['repository']).isEqualTo('localhost:5000/grafana/grafana')
+        assertThat(parseActualYaml()['grafana']['image']['registry']).isEqualTo('localhost:5000')
+        assertThat(parseActualYaml()['grafana']['image']['repository']).isEqualTo('grafana/grafana')
         assertThat(parseActualYaml()['grafana']['image']['tag']).isEqualTo('the-tag')
     }
 
@@ -346,7 +350,8 @@ policies:
         config['features']['monitoring']['helm']['grafanaSidecarImage'] = "localhost:5000/grafana/sidecar:the-tag"
         createStack().install()
 
-        assertThat(parseActualYaml()['grafana']['sidecar']['image']['repository']).isEqualTo('localhost:5000/grafana/sidecar')
+        assertThat(parseActualYaml()['grafana']['sidecar']['image']['registry']).isEqualTo('localhost:5000')
+        assertThat(parseActualYaml()['grafana']['sidecar']['image']['repository']).isEqualTo('grafana/sidecar')
         assertThat(parseActualYaml()['grafana']['sidecar']['image']['tag']).isEqualTo('the-tag')
     }
 
@@ -394,6 +399,20 @@ policies:
         assertThat(yaml['grafana']['sidecar'] as Map).doesNotContainKey('resources')
         assertThat(yaml['prometheus']['prometheusSpec'] as Map).doesNotContainKey('resources')
         
+        assertThat(yaml['prometheusOperator']['securityContext']).isNull()
+        assertThat(yaml['grafana']['securityContext']).isNull()
+        assertThat(yaml['prometheus']['prometheusSpec']['securityContext']).isNull()
+        
+        assertThat(yaml['kubeApiServer']).isNull()
+        
+        assertThat(yaml['prometheusOperator']['admissionWebhooks']['enabled']).isEqualTo(false)
+        assertThat(yaml['prometheusOperator']['tls']['enabled']).isEqualTo(false)
+        assertThat(yaml['prometheusOperator']['kubeletService']).isNull()
+        assertThat(yaml['prometheusOperator']['namespaces']).isNull()
+
+        assertThat(yaml['grafana']['rbac']).isNull()
+        assertThat(yaml['grafana']['sidecar']['dashboards']['searchNamespace']).isEqualTo('ALL')
+
         assertThat(yaml['crds']).isNull()
         assertThat( new File("$clusterResourcesRepoDir/misc/monitoring/rbac")).doesNotExist()
     }
@@ -415,9 +434,33 @@ policies:
 
         def yaml = parseActualYaml()
         assertThat(yaml['prometheusOperator']['resources'] as Map).containsKeys('limits', 'requests')
+        assertThat(yaml['prometheusOperator']['prometheusConfigReloader']['resources'] as Map).containsKeys('limits', 'requests')
         assertThat(yaml['grafana']['resources'] as Map)containsKeys('limits', 'requests')
         assertThat(yaml['grafana']['sidecar']['resources'] as Map)containsKeys('limits', 'requests')
         assertThat(yaml['prometheus']['prometheusSpec']['resources'] as Map)containsKeys('limits', 'requests')
+    }
+    
+    @Test
+    void 'works with openshift'() {
+        config.application['openshift'] = true
+
+        createStack().install()
+
+        def yaml = parseActualYaml()
+        assertThat(yaml['prometheusOperator']['securityContext']).isNotNull()
+        assertThat(yaml['prometheusOperator']['securityContext']['fsGroup']).isNull()
+        assertThat(yaml['prometheusOperator']['securityContext']['runAsGroup']).isNull()
+        assertThat(yaml['prometheusOperator']['securityContext']['runAsUser']).isNull()
+        
+        assertThat(yaml['grafana']['securityContext']).isNotNull()
+        assertThat(yaml['grafana']['securityContext']['fsGroup']).isEqualTo(1000740000)
+        assertThat(yaml['grafana']['securityContext']['runAsGroup']).isEqualTo(1000740000)
+        assertThat(yaml['grafana']['securityContext']['runAsUser']).isEqualTo(1000740000)
+        
+        assertThat(yaml['prometheus']['prometheusSpec']['securityContext']).isNotNull()
+        assertThat(yaml['prometheus']['prometheusSpec']['securityContext']['fsGroup']).isNull()
+        assertThat(yaml['prometheus']['prometheusSpec']['securityContext']['runAsGroup']).isNull()
+        assertThat(yaml['prometheus']['prometheusSpec']['securityContext']['runAsUser']).isNull()
     }
     
     @Test
@@ -438,6 +481,15 @@ policies:
             assertThat(rbacYaml.text).contains("namespace: ${namespace}")
             assertThat(rbacYaml.text).contains("    namespace: foo-monitoring")
         }
+        
+        assertThat(yaml['kubeApiServer']['enabled']).isEqualTo(false)
+        
+        assertThat(yaml['prometheusOperator']['kubeletService']['enabled']).isEqualTo(false)
+        assertThat(yaml['prometheusOperator']['namespaces']['releaseNamespace']).isEqualTo(false)
+        assertThat(yaml['prometheusOperator']['namespaces']['additional'] as List).hasSameElementsAs(expectedNamespaces)
+        
+        assertThat(yaml['grafana']['rbac']['namespaced']).isEqualTo(true)
+        assertThat(yaml['grafana']['sidecar']['dashboards']['searchNamespace']).isEqualTo('foo-monitoring')
     }
     
     @Test

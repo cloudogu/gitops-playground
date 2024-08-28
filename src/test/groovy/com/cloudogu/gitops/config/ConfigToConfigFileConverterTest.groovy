@@ -214,6 +214,7 @@ application:
   remote: true
   insecure: true
   localHelmChartFolder: "folder"
+  openshift: false
   username: "app-user"
   password: "app-pw"
   "yes": true

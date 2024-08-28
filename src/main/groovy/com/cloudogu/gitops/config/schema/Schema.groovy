@@ -137,7 +137,9 @@ class Schema {
         boolean insecure = false
         @JsonPropertyDescription(LOCAL_HELM_CHART_FOLDER_DESCRIPTION)
         String localHelmChartFolder = ""
-
+        @JsonPropertyDescription(OPENSHIFT_DESCRIPTION)
+        boolean openshift = false
+        
         // args group configuration
         @JsonPropertyDescription(USERNAME_DESCRIPTION)
         String username = ""

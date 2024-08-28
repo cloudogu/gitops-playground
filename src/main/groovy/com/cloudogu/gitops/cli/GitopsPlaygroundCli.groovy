@@ -88,6 +88,8 @@ class GitopsPlaygroundCli  implements Runnable {
     private Boolean remote
     @Option(names = ['--insecure'], description = INSECURE_DESCRIPTION)
     private Boolean insecure
+    @Option(names = ['--openshift'], description = OPENSHIFT_DESCRIPTION)
+    private Boolean openshift
 
     // args group tool configuration
     @Option(names = ['--git-name'], description = GIT_NAME_DESCRIPTION)
@@ -383,6 +385,7 @@ class GitopsPlaygroundCli  implements Runnable {
                         password: scmmPassword
                 ],
                 application: [
+                        openshift     : openshift,
                         remote        : remote,
                         mirrorRepos     : mirrorRepos, 
                         destroy : destroy,
