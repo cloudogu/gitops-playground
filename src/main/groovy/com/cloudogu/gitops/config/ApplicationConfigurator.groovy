@@ -73,10 +73,9 @@ class ApplicationConfigurator {
                             //repoURL: 'https://charts.jenkins.io',
                             /* When Upgrading helm chart, also upgrade controller.tag in jenkins/values.yaml
                             In addition:
-                             - Upgrade bash image in values.yaml and gid-grepper
                              - Also upgrade plugins. See docs/developers.md
                              */
-                            version: '5.0.17'
+                            version: '5.5.11'
                     ],
                     mavenCentralMirror: '',
             ],

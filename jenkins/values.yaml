@@ -11,7 +11,7 @@ controller:
     registry: ghcr.io
     repository: cloudogu/jenkins-helm
     # Use same version here as in ApplicationConfigurator.groovy (config.jenkins['helm']['version'])
-    tag: "5.1.0"
+    tag: "5.5.11"
   installPlugins: false
   
   # to prevent the jenkins-ui-test pod being created
@@ -61,7 +61,7 @@ controller:
       securityContext:
         runAsUser: 1000
       # Note: When upgrading, use same image as in gid-grepper for performance reasons
-      image: bash:5-alpine3.19
+      image: bash:5
       imagePullPolicy: "{{ .Values.controller.imagePullPolicy }}"
       command: [ "/usr/local/bin/bash", "-c" ]
       args:
