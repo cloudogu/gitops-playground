@@ -488,8 +488,8 @@ policies:
         assertThat(yaml['prometheusOperator']['namespaces']['releaseNamespace']).isEqualTo(false)
         assertThat(yaml['prometheusOperator']['namespaces']['additional'] as List).hasSameElementsAs(expectedNamespaces)
         
-        assertThat(yaml['grafana']['rbac']['namespaced']).isEqualTo(true)
-        assertThat(yaml['grafana']['sidecar']['dashboards']['searchNamespace']).isEqualTo('foo-monitoring')
+        assertThat(yaml['grafana']['rbac']['create']).isEqualTo(false)
+        assertThat(yaml['grafana']['sidecar']['dashboards']['searchNamespace']).isEqualTo(prometheusStack.namespaceList.join(','))
     }
     
     @Test
