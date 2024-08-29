@@ -238,7 +238,7 @@ class Schema {
         @JsonPropertyDescription(ARGOCD_EMAIL_TO_ADMIN_DESCRIPTION)
         String emailToAdmin = ""
         @JsonPropertyDescription(ARGOCD_OPERATOR_DESCRIPTION)
-        boolean argocdOperator = false
+        boolean operator = false
     }
 
     static class MailSchema {

@@ -198,10 +198,9 @@ class GitopsPlaygroundCli  implements Runnable {
     // args group ArgoCD operator
     @Option(names = ['--argocd'], description = ARGOCD_ENABLE_DESCRIPTION)
     private Boolean argocd
-    @Option(names = ['--argocd-url'], description = ARGOCD_URL_DESCRIPTION)
-    @Option(names = ['--argocd-operator'], description = 'Install ArgoCd via Operator')
+    @Option(names = ['--argocd-operator'], description = ARGOCD_OPERATOR_DESCRIPTION)
     private Boolean argocdOperator
-    @Option(names = ['--argocd-url'], description = 'The URL where argocd is accessible. It has to be the full URL with http:// or https://')
+    @Option(names = ['--argocd-url'], description = ARGOCD_URL_DESCRIPTION)
     private String argocdUrl
     @Option(names = ['--argocd-email-from'], description = ARGOCD_EMAIL_FROM_DESCRIPTION)
     private String emailFrom

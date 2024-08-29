@@ -203,7 +203,7 @@ class ArgoCD extends Feature {
         def namespaceList = getNamespaceList()
         
         log.debug("Creating namespaces")
-        k8sClient.createNamespace(namespaceList)
+        k8sClient.createNamespaces(namespaceList)
 
         createMonitoringCrd()
 
@@ -231,7 +231,7 @@ class ArgoCD extends Feature {
         }
 
         if(config.features['argocd']['operator']) {
-            deployWithOperator(namePrefix, "argocd")
+            deployWithOperator("argocd")
         } else {
             deployWithHelm(namePrefix, "argocd")
         }
@@ -241,12 +241,12 @@ class ArgoCD extends Feature {
         k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'applications/bootstrap.yaml').toString())
     }
 
-    private ArrayList<String> getNamespaceList() {
+    private static List<String> getNamespaceList() {
         def namespaceList = ["argocd", "monitoring", "ingress-nginx", "example-apps-staging", "example-apps-production", "secrets"]
-        namespaceList
+        return namespaceList
     }
 
-    private void deployWithHelm(namePrefix, argocdNamespace) {
+    private void deployWithHelm(namePrefix, String argocdNamespace) {
         // Install umbrella chart from folder
         String umbrellaChartPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'argocd/')
         // Even if the Chart.lock already contains the repo, we need to add it before resolving it
@@ -270,7 +270,7 @@ class ArgoCD extends Feature {
                 [stringData: ['admin.password': bcryptArgoCDPassword ] ])
     }
 
-    private void deployWithOperator(namePrefix, argocdNamespace) {
+    private void deployWithOperator(String argocdNamespace) {
         // Apply argocd yaml from operator folder
         String argocdConfigPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), OPERATOR_CONFIG_PATH)
         k8sClient.applyYaml(argocdConfigPath)
@@ -279,7 +279,7 @@ class ArgoCD extends Feature {
         // This can take some time, so we wait for the status of the custom resource to become "Available"
         k8sClient.waitForResourcePhase("argocd", "argocd", argocdNamespace, "Available")
 
-        if(!config.features['argocd']['openshift']) {
+        if(!config.application['openshift']) {
             // We need to patch the NodePrt of the Service, because the operator only supports setting type: NodePort but not the port itself
             log.debug("Patching NodePorts for 'argocd-server' Service in namespace '{}' to HTTP: 9092 and HTTPS: 9093", argocdNamespace);
             k8sClient.patchServiceNodePort("argocd-server", argocdNamespace, "http", 9092)

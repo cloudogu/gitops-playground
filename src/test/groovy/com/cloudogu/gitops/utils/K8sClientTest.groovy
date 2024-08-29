@@ -18,15 +18,6 @@ class K8sClientTest {
     CommandExecutorForTest commandExecutor =  k8sClient.commandExecutorForTest
 
     @Test
-    void 'Creates namespace'() {
-        k8sClient.createNamespace('my-ns')
-
-        assertThat(commandExecutor.actualCommands[0]).isEqualTo(
-                "kubectl create namespace foo-my-ns" +
-                        " --dry-run=client -oyaml | kubectl apply -f-")
-    }
-
-    @Test
     void 'Gets internal nodeIp'() {
         // waitForNode()
         k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', 'node/k3d-gitops-playground-server-0', 0))
@@ -254,8 +245,8 @@ class K8sClientTest {
         k8sClient.createNamespace('my-ns')
 
         // Assert that the correct kubectl command was issued to create the namespace
-        assertThat(commandExecutor.actualCommands[0]).isEqualTo(
-                "kubectl create namespace foo-my-ns --dry-run=client -oyaml | kubectl apply -f-")
+        assertThat(commandExecutor.actualCommands[1]).isEqualTo(
+                "kubectl create namespace foo-my-ns")
     }
 
     @Test
@@ -266,12 +257,14 @@ class K8sClientTest {
         // Attempt to create the namespace
         k8sClient.createNamespace('my-ns')
 
-        // Assert that no kubectl create command was issued
-        assertThat(commandExecutor.actualCommands).isEmpty()
+        // Assert that no kubectl create command was issued except 'kubectl get namespace foo-my-ns'
+        assertThat(commandExecutor.actualCommands.size()).is(1)
+        assertThat(commandExecutor.actualCommands[0]).isEqualTo(
+                "kubectl get namespace foo-my-ns")
     }
 
     @Test
-    void 'Throws IllegalArgumentException when namespace name is null'() {
+    void 'Throws IllegalArgumentException when namespace name for Creation is null'() {
         // Attempt to create a namespace with a null name
         def exception = shouldFail(IllegalArgumentException) {
             k8sClient.createNamespace(null)
@@ -282,7 +275,7 @@ class K8sClientTest {
     }
 
     @Test
-    void 'Throws IllegalArgumentException when namespace name is empty'() {
+    void 'Throws IllegalArgumentException when namespace name for Creation is empty'() {
         // Attempt to create a namespace with an empty name
         def exception = shouldFail(IllegalArgumentException) {
             k8sClient.createNamespace('')
@@ -293,9 +286,11 @@ class K8sClientTest {
     }
 
     @Test
-    void 'Throws RuntimeException when creation fails due to insufficient permissions'() {
+    void 'Throws RuntimeException when Namespace creation fails due to insufficient permissions'() {
+        // Simulate Namespace does not exist
+        commandExecutor.enqueueOutput(new CommandExecutor.Output('', '', 1))
         // Simulate a permission error during namespace creation
-        commandExecutor.enqueueOutput(new CommandExecutor.Output('', 'Error from server (Forbidden): namespaces is forbidden', 1))
+        commandExecutor.enqueueOutput(new CommandExecutor.Output('Error from server (Forbidden): namespaces is forbidden', '', 1))
 
         // Attempt to create the namespace
         def exception = shouldFail(RuntimeException) {
@@ -303,11 +298,13 @@ class K8sClientTest {
         }
 
         // Assert that the exception message is correct
-        assertThat(exception.message).contains("Failed to create namespace foo-my-ns (possibly due to insufficient permissions).")
+        assertThat(exception.message).contains("Failed to create namespace foo-my-ns (possibly due to insufficient permissions)")
     }
 
     @Test
     void 'Throws RuntimeException on unexpected error during namespace creation'() {
+        // Simulate Namespace does not exist
+        commandExecutor.enqueueOutput(new CommandExecutor.Output('', '', 1))
         // Simulate an unexpected error during namespace creation
         commandExecutor.enqueueOutput(new CommandExecutor.Output('', 'Unexpected error', 1))
 
@@ -317,7 +314,7 @@ class K8sClientTest {
         }
 
         // Assert that the exception message is correct
-        assertThat(exception.message).contains("Failed to create namespace foo-my-ns (possibly due to insufficient permissions).")
+        assertThat(exception.message).contains("Failed to create namespace foo-my-ns (possibly due to insufficient permissions)")
     }
 
     @Test
@@ -332,18 +329,18 @@ class K8sClientTest {
             ]
         }
     }'''
-        commandExecutor.enqueueOutput(new CommandExecutor.Output(serviceJson, '', 0))
+        commandExecutor.enqueueOutput(new CommandExecutor.Output('', serviceJson, 0))
 
         // Attempt to patch the nodePort
         k8sClient.patchServiceNodePort('my-service', 'my-namespace', 'https', 32000)
 
         // Assert that the correct kubectl patch command was issued
         assertThat(commandExecutor.actualCommands[1]).isEqualTo(
-                'kubectl patch service my-service -n my-namespace --type=json -p [{"op":"replace","path":"/spec/ports/1/nodePort","value":32000}]'
+                'kubectl patch service my-service -n foo-my-namespace --type json -p [{"op":"replace","path":"/spec/ports/1/nodePort","value":32000}]'
         )
     }
     @Test
-    void 'Throws IllegalArgumentException when serviceName is null'() {
+    void 'Throws IllegalArgumentException when serviceName is null in patchServiceNodePort'() {
         def exception = shouldFail(IllegalArgumentException) {
             k8sClient.patchServiceNodePort(null, 'my-namespace', 'https', 32000)
         }
@@ -352,7 +349,7 @@ class K8sClientTest {
     }
 
     @Test
-    void 'patchServiceNodePort Throws IllegalArgumentException when namespace is null'() {
+    void 'Throws IllegalArgumentException when namespace is null in patchServiceNodePort'() {
         def exception = shouldFail(IllegalArgumentException) {
             k8sClient.patchServiceNodePort('my-service', null, 'https', 32000)
         }
@@ -389,7 +386,7 @@ class K8sClientTest {
             ]
         }
     }'''
-        commandExecutor.enqueueOutput(new CommandExecutor.Output(serviceJson, '', 0))
+        commandExecutor.enqueueOutput(new CommandExecutor.Output('', serviceJson, 0))
 
         def exception = shouldFail(RuntimeException) {
             k8sClient.patchServiceNodePort('my-service', 'my-namespace', 'https', 32000)
@@ -399,7 +396,7 @@ class K8sClientTest {
     }
 
     @Test
-    void 'Throws RuntimeException when kubectl patch command fails'() {
+    void 'Throws RuntimeException when kubectl patch command fails on Service NodePort'() {
         // Simulate the output of the kubectl get service command
         def serviceJson = '''
     {
@@ -409,23 +406,23 @@ class K8sClientTest {
             ]
         }
     }'''
-        commandExecutor.enqueueOutput(new CommandExecutor.Output(serviceJson, '', 0))
+        commandExecutor.enqueueOutput(new CommandExecutor.Output('', serviceJson, 0))
 
         // Simulate a failure in the kubectl patch command
-        commandExecutor.enqueueOutput(new CommandExecutor.Output('', 'Error from server (Forbidden): services "my-service" is forbidden', 1))
+        commandExecutor.enqueueOutput(new CommandExecutor.Output('Error from server (Forbidden): services "my-service" is forbidden', '', 1))
 
         def exception = shouldFail(RuntimeException) {
             k8sClient.patchServiceNodePort('my-service', 'my-namespace', 'http', 32000)
         }
 
-        assertThat(exception.message).contains("Failed to patch service my-service")
+        assertThat(exception.message).contains("Executing command failed: kubectl patch service my-service -n foo-my-namespace --type json -p [{\"op\":\"replace\",\"path\":\"/spec/ports/0/nodePort\",\"value\":32000}]")
     }
 
     @Test
     void 'Waits successfully until the resource reaches the desired phase'() {
         // Simulate the resource initially being in a different phase and then reaching the desired phase
-        commandExecutor.enqueueOutput(new CommandExecutor.Output('Pending', '', 0))
-        commandExecutor.enqueueOutput(new CommandExecutor.Output('Running', '', 0))
+        commandExecutor.enqueueOutput(new CommandExecutor.Output('', 'Pending', 0))
+        commandExecutor.enqueueOutput(new CommandExecutor.Output('', 'Running', 0))
 
         // Attempt to wait for the resource to reach the desired phase
         k8sClient.waitForResourcePhase('pod', 'my-pod', 'my-namespace', 'Running')
@@ -433,7 +430,7 @@ class K8sClientTest {
         // Assert that the correct kubectl get command was issued and that the method returned successfully
         assertThat(commandExecutor.actualCommands).hasSize(2)
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
-                'kubectl get pod my-pod -n my-namespace -o jsonpath={.status.phase}')
+                'kubectl get pod my-pod -n foo-my-namespace -o jsonpath={.status.phase}')
     }
 
     @Test
@@ -475,7 +472,7 @@ class K8sClientTest {
     @Test
     void 'Throws IllegalArgumentException when timeoutSeconds is less than or equal to zero'() {
         def exception = shouldFail(IllegalArgumentException) {
-            k8sClient.waitForResourcePhase('pod', 'my-pod', 'my-namespace', 'Running', 0)
+            k8sClient.waitForResourcePhase('pod', 'my-pod', 'my-namespace', 'Running', 0, 1)
         }
 
         assertThat(exception.message).isEqualTo("Timeout and check interval must be greater than zero")
@@ -508,7 +505,7 @@ class K8sClientTest {
     @Test
     void 'Handles immediate success without retrying'() {
         // Simulate the resource already being in the desired phase
-        commandExecutor.enqueueOutput(new CommandExecutor.Output('Running', '', 0))
+        commandExecutor.enqueueOutput(new CommandExecutor.Output('', 'Running', 0))
 
         // Attempt to wait for the resource to reach the desired phase
         k8sClient.waitForResourcePhase('pod', 'my-pod', 'my-namespace', 'Running')
@@ -516,7 +513,7 @@ class K8sClientTest {
         // Assert that the command was executed only once and no retries occurred
         assertThat(commandExecutor.actualCommands).hasSize(1)
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
-                'kubectl get pod my-pod -n my-namespace -o jsonpath={.status.phase}')
+                'kubectl get pod my-pod -n foo-my-namespace -o jsonpath={.status.phase}')
     }
 
     private Map parseActualYaml(String pathToYamlFile) {
