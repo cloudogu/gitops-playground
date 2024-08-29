@@ -2,6 +2,7 @@ package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.scmm.ScmmRepo
+import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.HelmClient
@@ -34,6 +35,7 @@ class ArgoCDTest {
     ]
     Map config = [
             application : [
+                    openshift           : false,
                     remote              : false,
                     insecure            : false,
                     password            : '123',
@@ -79,6 +81,7 @@ class ArgoCDTest {
             ],
             features    : [
                     argocd     : [
+                            operator    : false,
                             active      : true,
                             configOnly  : true,
                             emailFrom   : 'argocd@example.org',
@@ -116,7 +119,7 @@ class ArgoCDTest {
             ]
     ]
 
-    CommandExecutorForTest k8sCommands
+    CommandExecutorForTest k8sCommands = new CommandExecutorForTest()
     CommandExecutorForTest helmCommands = new CommandExecutorForTest()
     ScmmRepo argocdRepo
     String actualHelmValuesFile
@@ -131,7 +134,12 @@ class ArgoCDTest {
 
     @Test
     void 'Installs argoCD'() {
-        createArgoCD().install()
+        def argocd = createArgoCD()
+
+        // Simulate argocd Namespace does not exist
+        k8sCommands.enqueueOutput(new CommandExecutor.Output('namespace not found', '', 1))
+
+        argocd.install()
 
         k8sCommands.assertExecuted('kubectl create namespace argocd')
 
@@ -500,7 +508,6 @@ class ArgoCDTest {
 
         createArgoCD().install()
 
-        k8sCommands.assertExecuted('kubectl create namespace monitoring')
         k8sCommands.assertExecuted("kubectl apply -f ${crdPath}")
     }
 
@@ -510,7 +517,6 @@ class ArgoCDTest {
 
         createArgoCD().install()
 
-        k8sCommands.assertExecuted('kubectl create namespace monitoring')
         k8sCommands.assertExecuted("kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/kube-prometheus-stack-42.0.3/charts/kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml")
     }
 
@@ -626,7 +632,6 @@ class ArgoCDTest {
   tag: latest
 """)
     }
-
     @Test
     void 'Skips CRDs for argo cd'() {
         config.application['skipCrds'] = true
@@ -1005,6 +1010,122 @@ class ArgoCDTest {
         }
     }
 
+    @Test
+    void 'Prepares ArgoCD repo with Operator configuration file'() {
+        def argocd = setupOperatorTest()
+
+        argocd.install()
+
+        def argocdConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH)
+        def rbacConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_RBAC_PATH)
+        
+        assertThat(argocdConfigPath.toFile()).exists()
+        assertThat(rbacConfigPath.toFile()).exists()
+
+        def yaml = parseActualYaml(argocdConfigPath.toFile().toString())
+        assertThat(yaml['apiVersion']).isEqualTo('argoproj.io/v1beta1')
+        assertThat(yaml['kind']).isEqualTo('ArgoCD')
+    }
+
+    @Test
+    void 'Deploys with operator without OpenShift configuration'() {
+        def argoCD = setupOperatorTest(openshift: false)
+        
+        argoCD.install()
+
+        def argocdConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH)
+        k8sCommands.assertExecuted("kubectl apply -f ${argocdConfigPath}")
+
+        def yaml = parseActualYaml(argocdConfigPath.toFile().toString())
+        assertThat(yaml['spec']['rbac']).isNull()
+        assertThat(yaml['spec']['server']['service']['type']).isEqualTo('NodePort')
+    }
+
+    @Test
+    void 'Deploys with operator with OpenShift configuration'() {
+        def argoCD = setupOperatorTest(openshift: true)
+        
+        argoCD.install()
+
+        def argocdConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH)
+        k8sCommands.assertExecuted("kubectl apply -f ${argocdConfigPath}")
+
+        def yaml = parseActualYaml(argocdConfigPath.toFile().toString())
+        assertThat(yaml['spec']['rbac']).isNotNull()
+        assertThat(yaml['spec']['server']['route']['enabled']).isEqualTo(true)
+
+        k8sCommands.assertNotExecuted("kubectl patch service argocd-server -n argocd")
+    }
+
+    @Test
+    void 'Creates all necessary namespaces'() {
+        def argoCD = createArgoCD()
+        simulateNamespaceCreation()
+
+        argoCD.install()
+
+        getNamespaceList().each { namespace ->
+            k8sCommands.assertExecuted("kubectl create namespace ${namespace}")
+        }
+    }
+
+    private ArgoCD setupOperatorTest(Map options = [:]) {
+        config.features['argocd']['operator'] = true
+        config.application['openshift'] = options.openshift ?: false
+
+        def argoCD = createArgoCD()
+
+        setupMockResponses()
+
+        return argoCD
+    }
+
+    private void setupMockResponses() {
+        k8sCommands.enqueueOutputs([
+                queueUpAllNamespacesExist(),
+                new CommandExecutor.Output('', '', 0), // Monitoring CRDs applied
+                new CommandExecutor.Output('', '', 0), // ArgoCD Secret applied
+                new CommandExecutor.Output('', '', 0), // Labeling ArgoCD Secret
+                new CommandExecutor.Output('', '', 0), // ArgoCD operator YAML applied
+                new CommandExecutor.Output('', 'Available', 0), // ArgoCD resource reached desired phase
+                new CommandExecutor.Output('', createServiceJson(), 0),
+                new CommandExecutor.Output('', '', 0),
+                new CommandExecutor.Output('', createServiceJson(), 0),
+                new CommandExecutor.Output('', '', 0)
+        ].flatten() as Queue<CommandExecutor.Output>)
+    }
+
+    private static String createServiceJson() {
+        return '''
+        {
+            "spec": {
+                "ports": [
+                    {"name": "http", "nodePort": 30000},
+                    {"name": "https", "nodePort": 30001}
+                ]
+            }
+        }'''
+    }
+
+    private void simulateNamespaceCreation() {
+        Queue<CommandExecutor.Output> outputs = new LinkedList<CommandExecutor.Output>()
+        getNamespaceList().each { namespace ->
+            outputs.add(new CommandExecutor.Output("${namespace} not found", "", 1))
+            outputs.add(new CommandExecutor.Output("${namespace} created", "", 0))
+        }
+        k8sCommands.enqueueOutputs(outputs)
+    }
+
+    private static Queue<CommandExecutor.Output> queueUpAllNamespacesExist() {
+        return new LinkedList<CommandExecutor.Output>(
+                getNamespaceList().collect { namespace -> new CommandExecutor.Output(namespace, "", 0) }
+        )
+    }
+
+    private static List<String> getNamespaceList() {
+        return ["argocd", "monitoring", "ingress-nginx", "example-apps-staging", "example-apps-production", "secrets"]
+    }
+
     class ArgoCDForTest extends ArgoCD {
         ArgoCDForTest(Map config, CommandExecutorForTest helmCommands) {
             super(new Configuration(config), new K8sClientForTest(config), new HelmClient(helmCommands), new FileSystemUtils(),
@@ -1027,3 +1148,4 @@ class ArgoCDTest {
         return ys.parse(yamlFile) as Map
     }
 }
+

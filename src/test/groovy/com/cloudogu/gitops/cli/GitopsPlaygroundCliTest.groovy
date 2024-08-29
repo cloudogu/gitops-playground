@@ -56,9 +56,13 @@ class GitopsPlaygroundCliTest {
         cli.configFile = 'abc'
         cli.run()
 
-        verify(applicationConfigurator).setConfig(any(Map), eq(false))
-        // Create internal config only once, avoids repetitive log outputs
+        // Verify the first interaction
         verify(applicationConfigurator).setConfig(eq(new File('abc')), eq(true))
+
+        // Verify the second interaction if any
+        verify(applicationConfigurator).setConfig(any(Map), eq(false))
+
+        // Check application starts
         verify(application).start()
     }
     

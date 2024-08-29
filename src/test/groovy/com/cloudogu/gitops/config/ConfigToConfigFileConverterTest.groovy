@@ -226,6 +226,7 @@ application:
   urlSeparatorHyphen: true
   mirrorRepos: true
   skipCrds: true
+  openshift: false
 images:
   kubectl: "kubectl-value"
   helm: "helm-value"
@@ -252,6 +253,7 @@ features:
     emailFrom: "argocd@example.org"
     emailToUser: "app-team@example.org"
     emailToAdmin: "infra@example.org"
+    operator: false
   mail:
     mailhog: false
     mailhogUrl: "mailhog-url"
