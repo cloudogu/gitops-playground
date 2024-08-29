@@ -6,11 +6,13 @@ import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
+import groovy.util.logging.Slf4j
 import jakarta.inject.Singleton
 
 import java.nio.file.Path
 
 @Singleton
+@Slf4j
 class ArgoCdApplicationStrategy implements DeploymentStrategy {
     private FileSystemUtils fileSystemUtils
     private Map config
@@ -30,13 +32,14 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
     @SuppressWarnings('GroovyGStringKey') // Using dynamic strings as keys seems an easy to read way to avoid more ifs
     void deployFeature(String repoURL, String repoName, String chartOrPath, String version, String namespace,
                        String releaseName, Path helmValuesPath, RepoType repoType) {
+        log.trace("Deploying helm chart via ArgoCD: ${releaseName}. Reading values from ${helmValuesPath}")
         def namePrefix = config.application['namePrefix']
 
         ScmmRepo clusterResourcesRepo = scmmRepoProvider.getRepo('argocd/cluster-resources')
         clusterResourcesRepo.cloneRepo()
 
         // Inline values from tmpHelmValues file into ArgoCD Application YAML
-        def inlineValues = helmValuesPath.text
+        def inlineValues = helmValuesPath.toFile().text
 
         // Write chart, repoURL and version into a ArgoCD Application YAML
 
