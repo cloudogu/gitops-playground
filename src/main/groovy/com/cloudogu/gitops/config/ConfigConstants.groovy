@@ -9,10 +9,9 @@ interface ConfigConstants {
     String REGISTRY_USERNAME_DESCRIPTION = 'Optional when registry-url is set'
     String REGISTRY_PASSWORD_DESCRIPTION = 'Optional when registry-url is set'
 
-    String REGISTRY_PROXY_URL_DESCRIPTION = 'The url of your external proxy-registry. Make sure to always use this with registry-proxy-url'
-    String REGISTRY_PROXY_PATH_DESCRIPTION = 'Optional when registry-proxy-url is set'
-    String REGISTRY_PROXY_USERNAME_DESCRIPTION = 'Optional when registry-proxy-url is set'
-    String REGISTRY_PROXY_PASSWORD_DESCRIPTION = 'Optional when registry-proxy-url is set'
+    String REGISTRY_PROXY_URL_DESCRIPTION = 'The url of your proxy-registry. Used in pipelines to authorize pull base images. Use in conjunction with petclinic base image.'
+    String REGISTRY_PROXY_USERNAME_DESCRIPTION = 'Use with registry-proxy-url, added to Jenkins as credentials.'
+    String REGISTRY_PROXY_PASSWORD_DESCRIPTION = 'Use with registry-proxy-url, added to Jenkins as credentials.'
 
     String FEATURES_DESCRIPTION = 'Config parameters for features or tools'
     

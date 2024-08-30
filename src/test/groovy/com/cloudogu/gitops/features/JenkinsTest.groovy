@@ -117,7 +117,7 @@ class JenkinsTest {
         verify(jobManger).startJob('example-apps')
 
         verify(jobManger).createCredential('my-prefix-example-apps', 'registry-user', 
-                'reg-usr', 'reg-pw', 'credentials for accessing the docker-registry')
+                'reg-usr', 'reg-pw', 'credentials for accessing the docker-registry for writing images built on jenkins')
         verify(jobManger, never()).createCredential(eq('my-prefix-example-apps'), eq('registry-proxy-user'),
                 anyString(), anyString(), anyString())
         verify(jobManger, never()).createCredential(eq('my-prefix-example-apps'), eq('registry-proxy-user'),
@@ -137,7 +137,7 @@ class JenkinsTest {
 
         verify(jobManger).createCredential('my-prefix-example-apps', 'registry-user',
                 'reg-usr', 'reg-pw',
-                'credentials for accessing the docker-registry')
+                'credentials for accessing the docker-registry for writing images built on jenkins')
         verify(jobManger).createCredential('my-prefix-example-apps', 'registry-proxy-user',
                 'reg-proxy-usr', 'reg-proxy-pw',
                 'credentials for accessing the docker-registry that contains 3rd party or base images')

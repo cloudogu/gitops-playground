@@ -26,7 +26,6 @@ class JenkinsDestructionHandler implements DestructionHandler {
         globalPropertyManager.deleteGlobalProperty("${configuration.getNamePrefixForEnvVars()}REGISTRY_URL")
         globalPropertyManager.deleteGlobalProperty("${configuration.getNamePrefixForEnvVars()}REGISTRY_PATH")
         globalPropertyManager.deleteGlobalProperty("${configuration.getNamePrefixForEnvVars()}REGISTRY_PROXY_URL")
-        globalPropertyManager.deleteGlobalProperty("${configuration.getNamePrefixForEnvVars()}REGISTRY_PROXY_PATH")
         globalPropertyManager.deleteGlobalProperty("${configuration.getNamePrefixForEnvVars()}K8S_VERSION")
     }
 }

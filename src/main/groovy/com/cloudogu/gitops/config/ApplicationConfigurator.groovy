@@ -295,6 +295,9 @@ class ApplicationConfigurator {
     private void addRegistryConfig(Map newConfig) {
         if (newConfig.registry['proxyUrl']) {
             newConfig.registry['twoRegistries'] = true
+            if (!newConfig.registry['proxyUsername'] || !newConfig.registry['proxyPassword'] ) {
+                throw new RuntimeException("Proxy URL needs to be used with proxy-username and proxy-password")
+            }
         }
 
         if (newConfig.registry['url']) {

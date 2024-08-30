@@ -10,8 +10,8 @@ String getDockerRegistryPath() { env.${namePrefixForEnvVars}REGISTRY_PATH }
 String getDockerRegistryCredentials() { 'registry-user' }
 
 <#if registry.twoRegistries>
-    String getDockerRegistryProxyCredentials() { 'registry-proxy-user' }
-    String getDockerRegistryProxyBaseUrl() { env.${namePrefixForEnvVars}REGISTRY_PROXY_URL }
+String getDockerRegistryProxyCredentials() { 'registry-proxy-user' }
+String getDockerRegistryProxyBaseUrl() { env.${namePrefixForEnvVars}REGISTRY_PROXY_URL }
 </#if>
 <#noparse>
 String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/3rd-party-dependencies/ces-build-lib/" }

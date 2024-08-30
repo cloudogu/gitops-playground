@@ -819,13 +819,13 @@ class ArgoCDTest {
     }
 
     private void assertJenkinsEnvironmentVariablesPrefixes(String prefix) {
-        List singleRegistryEnvVars = ["env.${prefix}REGISTRY_URL", "env.${prefix}REGISTRY_PATH"]
+        List defaultRegistryEnvVars = ["env.${prefix}REGISTRY_URL", "env.${prefix}REGISTRY_PATH"]
         List twoRegistriesEnvVars = ["env.${prefix}REGISTRY_PROXY_URL"]
 
         assertThat(new File(nginxHelmJenkinsRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).contains("env.${prefix}K8S_VERSION")
 
         for (def petclinicRepo : petClinicRepos) {
-            singleRegistryEnvVars.each { expectedEnvVar ->
+            defaultRegistryEnvVars.each { expectedEnvVar ->
                 assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).contains(expectedEnvVar)
             }
 

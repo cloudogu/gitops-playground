@@ -62,7 +62,7 @@ class Schema {
         String proxyUrl = ""
         @JsonPropertyDescription(REGISTRY_PROXY_USERNAME_DESCRIPTION)
         String proxyUsername = ""
-        @JsonPropertyDescription(REGISTRY_PASSWORD_DESCRIPTION)
+        @JsonPropertyDescription(REGISTRY_PROXY_PASSWORD_DESCRIPTION)
         String proxyPassword = ""
 
         HelmConfig helm

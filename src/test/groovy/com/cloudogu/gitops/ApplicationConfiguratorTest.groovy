@@ -39,6 +39,8 @@ class ApplicationConfiguratorTest {
             registry   : [
                     url         : EXPECTED_REGISTRY_URL,
                     proxyUrl: "proxy-$EXPECTED_REGISTRY_URL",
+                    proxyUsername: "proxy-user",
+                    proxyPassword: "proxy-pw",
                     internalPort: EXPECTED_REGISTRY_INTERNAL_PORT,
                     path        : null
             ],
@@ -413,6 +415,30 @@ images:
         Map actualConfig = applicationConfigurator.setConfig(testConfig)
         
         assertThat(actualConfig['registry']['internal']).isEqualTo(true)
+    }
+    
+    @Test
+    void "Registry: Fails when proxy but no username and password set"() {
+        def expectedException = 'Proxy URL needs to be used with proxy-username and proxy-password'
+        
+        testConfig.registry['proxyUsername'] = null
+        def exception = shouldFail(RuntimeException) {
+            applicationConfigurator.setConfig(testConfig)
+        }
+        assertThat(exception.message).isEqualTo(expectedException)
+        
+        testConfig.registry['proxyUsername'] = 'something'
+        testConfig.registry['proxyPassword'] = null
+        exception = shouldFail(RuntimeException) {
+            applicationConfigurator.setConfig(testConfig)
+        }
+        assertThat(exception.message).isEqualTo(expectedException)
+        
+        testConfig.registry['proxyUsername'] = null
+        exception = shouldFail(RuntimeException) {
+            applicationConfigurator.setConfig(testConfig)
+        }
+        assertThat(exception.message).isEqualTo(expectedException)
     }
     
     List<String> getAllFieldNames(Class clazz, String parentField = '', List<String> fieldNames = []) {

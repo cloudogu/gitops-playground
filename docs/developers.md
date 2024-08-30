@@ -427,18 +427,16 @@ That is, for most helm charts, you'll need to set an individual value.
 
 ## Testing two registries
 
-### Very simple test
+### Basic test
 * Start playground once,
 * then again with these parameters:  
-  `--registry-proxy-url=localhost:30000`
+  `--registry-url=localhost:30000 --registry-proxy-url=localhost:30000 --registry-proxy-username=Proxy --registry-proxy-password=Proxy12345`
 * The petclinic pipelines should still run
 
 ### Proper test
 
 * Start cluster:
 ```shell
-# Stop other cluster, if necessary
-# k3d cluster stop gitops-playground
 scripts/init-cluster.sh
 ```
 * Setup harbor as stated [above](#external-registry-for-development), but with Port `30000`.  
@@ -460,7 +458,7 @@ for operation in "${operations[@]}"; do
     echo creating user $operation with PW ${operation}12345
     curl -s  --fail 'http://localhost:30000/api/v2.0/users' -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"username\":\"$operation\",\"email\":\"$operation@example.com\",\"realname\":\"$operation example\",\"password\":\"${operation}12345\",\"comment\":null}"
     
-	echo "Adding member $operation to project $lower_operation; ID=${projectId}"
+    echo "Adding member $operation to project $lower_operation; ID=${projectId}"
 
     curl  --fail "http://localhost:30000/api/v2.0/projects/${projectId}/members" -X POST -u admin:Harbor12345    -H 'Content-Type: application/json' --data-raw "{\"role_id\":4,\"member_user\":{\"username\":\"$operation\"}}"
 done
@@ -473,8 +471,8 @@ skopeo copy docker://eclipse-temurin:11-jre-alpine --dest-creds Proxy:Proxy12345
 ```bash
 docker run --rm -t -u $(id -u)  \
    -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config  \
-    --net=host  \     
-    gitops-playground:tag \
+    --net=host  \
+    gitops-playground:dev \
     --yes --argocd --ingress-nginx --base-url=http://localhost \
     --registry-url=localhost:30000 \
     --registry-path=registry \

@@ -105,7 +105,7 @@ class Jenkins extends Feature {
                     "registry-user",
                     "${config.registry['username']}",
                     "${config.registry['password']}",
-                    'credentials for accessing the docker-registry')
+                    'credentials for accessing the docker-registry for writing images built on jenkins')
 
             if (config.registry['twoRegistries']) {
                 jobManger.createCredential(
