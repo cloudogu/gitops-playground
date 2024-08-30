@@ -100,7 +100,12 @@ class VaultTest {
     @Test
     void 'Dev mode can be enabled via config'() {
         config['features']['secrets']['vault']['mode'] = 'dev'
-        createVault().install()
+        def vault = createVault()
+
+        // Simulate that the namespace does not exist (kubectl get returns a non-zero exit code)
+        k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('Error from server (NotFound): namespaces "foo-secrets" not found', '', 1))
+
+        vault.install()
 
         def actualYaml = parseActualYaml()
         assertThat(actualYaml['server']['dev']['enabled']).isEqualTo(true)
@@ -123,14 +128,15 @@ class VaultTest {
         assertThat(actualVolumeMounts[0]['readOnly']).is(true)
         assertThat(actualPostStart[2] as String).contains(actualVolumeMounts[0]['mountPath'] as String + "/dev-post-start.sh")
 
-        assertThat(k8sClient.commandExecutorForTest.actualCommands).hasSize(2)
+        assertThat(k8sClient.commandExecutorForTest.actualCommands).hasSize(3)
 
-        assertThat(k8sClient.commandExecutorForTest.actualCommands[0]).contains('kubectl create namespace foo-secrets')
+        assertThat(k8sClient.commandExecutorForTest.actualCommands[0]).contains('kubectl get namespace foo-secrets')
+        assertThat(k8sClient.commandExecutorForTest.actualCommands[1]).contains('kubectl create namespace foo-secrets')
         
-        def createdConfigMapName = ((k8sClient.commandExecutorForTest.actualCommands[1] =~ /kubectl create configmap (\S*) .*/)[0] as List) [1]
+        def createdConfigMapName = ((k8sClient.commandExecutorForTest.actualCommands[2] =~ /kubectl create configmap (\S*) .*/)[0] as List) [1]
         assertThat(actualVolumes[0]['configMap']['name']).isEqualTo(createdConfigMapName)
 
-        assertThat(k8sClient.commandExecutorForTest.actualCommands[1]).contains('-n foo-secrets')
+        assertThat(k8sClient.commandExecutorForTest.actualCommands[2]).contains('-n foo-secrets')
         assertThat(actualYaml['server'] as Map).doesNotContainKey('resources')
     }
 
