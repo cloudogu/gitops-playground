@@ -99,6 +99,7 @@ spec:
       - "Event"
       clusters:
       - "https://kubernetes.default.svc"
+    # hier eventuell die ip des k8s api setzen, ansonsten löschen
       - "https://10.43.0.1:443"
     - apiGroups:
       - "apps"
