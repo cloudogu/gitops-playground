@@ -47,13 +47,9 @@ class JenkinsTest {
                     username: 'reg-usr',
                     password: 'reg-pw',
                     twoRegistries: false,
-                    pullUrl: 'reg-pull-url',
-                    pullUsername    : 'reg-pull-usr',
-                    pullPassword    : 'reg-pull-pw',
-                    pushUrl: 'reg-push-url',
-                    pushPath: 'reg-push-path',
-                    pushUsername    : 'reg-push-usr',
-                    pushPassword    : 'reg-push-pw',
+                    proxyUrl: 'reg-proxy-url',
+                    proxyUsername    : 'reg-proxy-usr',
+                    proxyPassword    : 'reg-proxy-pw',
             ],
             scmm       : [
                     url     : 'http://scmm',
@@ -104,12 +100,10 @@ class JenkinsTest {
 
         verify(globalPropertyManager).setGlobalProperty('SCMM_URL', 'http://scmm')
         verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_K8S_VERSION', ApplicationConfigurator.K8S_VERSION)
-        
+
         verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_URL', 'reg-url')
         verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_PATH', 'reg-path')
-        verify(globalPropertyManager, never()).setGlobalProperty(eq('MY_PREFIX_REGISTRY_PULL_URL'), anyString())
-        verify(globalPropertyManager, never()).setGlobalProperty(eq('MY_PREFIX_REGISTRY_PUSH_URL'), anyString())
-        verify(globalPropertyManager, never()).setGlobalProperty(eq('MY_PREFIX_REGISTRY_PUSH_PATH'), anyString())
+        verify(globalPropertyManager, never()).setGlobalProperty(eq('MY_PREFIX_REGISTRY_PROXY_URL'), anyString())
         verify(globalPropertyManager, never()).setGlobalProperty(eq('MAVEN_CENTRAL_MIRROR'), anyString())
 
         verify(userManager).createUser('metrics-usr', 'metrics-pw')
@@ -121,12 +115,12 @@ class JenkinsTest {
                 'my-prefix-gitops', 'scmm-pw', 'credentials for accessing scm-manager')
 
         verify(jobManger).startJob('example-apps')
-        
+
         verify(jobManger).createCredential('my-prefix-example-apps', 'registry-user', 
-                'reg-usr', 'reg-pw', 'credentials for accessing the docker-registry')
-        verify(jobManger, never()).createCredential(eq('my-prefix-example-apps'), eq('registry-pull-user'),
+                'reg-usr', 'reg-pw', 'credentials for accessing the docker-registry for writing images built on jenkins')
+        verify(jobManger, never()).createCredential(eq('my-prefix-example-apps'), eq('registry-proxy-user'),
                 anyString(), anyString(), anyString())
-        verify(jobManger, never()).createCredential(eq('my-prefix-example-apps'), eq('registry-push-user'),
+        verify(jobManger, never()).createCredential(eq('my-prefix-example-apps'), eq('registry-proxy-user'),
                 anyString(), anyString(), anyString())
     }
 
@@ -136,21 +130,17 @@ class JenkinsTest {
         
         createJenkins().install()
         
-        verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_PULL_URL', 'reg-pull-url')
-        verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_PUSH_URL', 'reg-push-url')
-        verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_PUSH_PATH', 'reg-push-path')
+        verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_PROXY_URL', 'reg-proxy-url')
 
-        verify(jobManger).createCredential('my-prefix-example-apps', 'registry-pull-user',
-                'reg-pull-usr', 'reg-pull-pw', 
+        verify(globalPropertyManager).setGlobalProperty(eq('MY_PREFIX_REGISTRY_URL'), anyString())
+        verify(globalPropertyManager).setGlobalProperty(eq('MY_PREFIX_REGISTRY_PATH'), anyString())
+
+        verify(jobManger).createCredential('my-prefix-example-apps', 'registry-user',
+                'reg-usr', 'reg-pw',
+                'credentials for accessing the docker-registry for writing images built on jenkins')
+        verify(jobManger).createCredential('my-prefix-example-apps', 'registry-proxy-user',
+                'reg-proxy-usr', 'reg-proxy-pw',
                 'credentials for accessing the docker-registry that contains 3rd party or base images')
-        verify(jobManger).createCredential('my-prefix-example-apps', 'registry-push-user',
-                'reg-push-usr', 'reg-push-pw', 
-                'credentials for accessing the docker-registry that contains images built on jenkins')
-
-        verify(globalPropertyManager, never()).setGlobalProperty(eq('MY_PREFIX_REGISTRY_URL'), anyString())
-        verify(globalPropertyManager, never()).setGlobalProperty(eq('MY_PREFIX_REGISTRY_PATH'), anyString())
-        verify(jobManger, never()).createCredential(eq('my-prefix-example-apps'), eq('registry-user'), 
-                anyString(), anyString(), anyString())
     }
     
     @Test

@@ -501,33 +501,17 @@
           "type" : "string",
           "description" : "Optional when registry-url is set"
         },
-        "pullPassword" : {
+        "proxyPassword" : {
           "type" : "string",
-          "description" : "Optional when registry-pull-url is set"
+          "description" : "Use with registry-proxy-url, added to Jenkins as credentials."
         },
-        "pullUrl" : {
+        "proxyUrl" : {
           "type" : "string",
-          "description" : "The url of your external pull-registry. Make sure to always use this with registry-push-url"
+          "description" : "The url of your proxy-registry. Used in pipelines to authorize pull base images. Use in conjunction with petclinic base image."
         },
-        "pullUsername" : {
+        "proxyUsername" : {
           "type" : "string",
-          "description" : "Optional when registry-pull-url is set"
-        },
-        "pushPassword" : {
-          "type" : "string",
-          "description" : "Optional when registry-push-url is set"
-        },
-        "pushPath" : {
-          "type" : "string",
-          "description" : "Optional when registry-push-url is set"
-        },
-        "pushUrl" : {
-          "type" : "string",
-          "description" : "The url of your external pull-registry. Make sure to always use this with registry-pull-url"
-        },
-        "pushUsername" : {
-          "type" : "string",
-          "description" : "Optional when registry-push-url is set"
+          "description" : "Use with registry-proxy-url, added to Jenkins as credentials."
         },
         "url" : {
           "type" : "string",
