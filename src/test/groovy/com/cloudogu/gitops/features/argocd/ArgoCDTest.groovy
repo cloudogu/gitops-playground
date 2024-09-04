@@ -1038,6 +1038,7 @@ class ArgoCDTest {
 
         def yaml = parseActualYaml(argocdConfigPath.toFile().toString())
         assertThat(yaml['spec']['rbac']).isNull()
+        assertThat(yaml['spec']['sso']).isNull()
         assertThat(yaml['spec']['server']['service']['type']).isEqualTo('NodePort')
     }
 
@@ -1051,6 +1052,9 @@ class ArgoCDTest {
         k8sCommands.assertExecuted("kubectl apply -f ${argocdConfigPath}")
 
         def yaml = parseActualYaml(argocdConfigPath.toFile().toString())
+        assertThat(yaml['spec']['sso']).isNotNull()
+        assertThat(yaml['spec']['sso']['dex']['openShiftOAuth']).isEqualTo(true)
+        assertThat(yaml['spec']['sso']['provider']).isEqualTo('dex')
         assertThat(yaml['spec']['rbac']).isNotNull()
         assertThat(yaml['spec']['server']['route']['enabled']).isEqualTo(true)
 
