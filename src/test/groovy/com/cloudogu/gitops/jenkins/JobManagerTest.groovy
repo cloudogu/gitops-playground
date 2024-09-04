@@ -116,4 +116,92 @@ class JobManagerTest {
 
         verify(client).runScript("print(Jenkins.instance.getItem('foo')?.delete())")
     }
+
+    @Test
+    void 'checks existing Job'() {
+        def server = new MockWebServer()
+        try {
+            server.enqueue(new MockResponse().setBody('{"crumb":"the-crumb"}'))
+            server.enqueue(new MockResponse().setResponseCode(200))
+            def jobManager = new JobManager(new ApiClient(server.url("jenkins").toString(), 'admin', 'admin', new OkHttpClient()))
+            
+            def exists = jobManager.jobExists('the-jobname')
+            
+            assertThat(exists).isEqualTo(true)
+            assertThat(server.requestCount).isEqualTo(2)
+            server.takeRequest() // crumb
+            def request = server.takeRequest()
+            assertThat(request.path).isEqualTo("/jenkins/job/the-jobname")
+        } finally {
+            server.shutdown()
+        }
+    }
+    
+    @Test
+    void 'checks non-existing Job'() {
+        def server = new MockWebServer()
+        try {
+            server.enqueue(new MockResponse().setBody('{"crumb":"the-crumb"}'))
+            server.enqueue(new MockResponse().setResponseCode(404))
+            def jobManager = new JobManager(new ApiClient(server.url("jenkins").toString(), 'admin', 'admin', new OkHttpClient()))
+            
+            def exists = jobManager.jobExists('the-jobname')
+            
+            assertThat(exists).isEqualTo(false)
+            assertThat(server.requestCount).isEqualTo(2)
+            server.takeRequest() // crumb
+            def request = server.takeRequest()
+            assertThat(request.path).isEqualTo("/jenkins/job/the-jobname")
+        } finally {
+            server.shutdown()
+        }
+    }
+
+    @Test
+    void 'creates Job'() {
+        def server = new MockWebServer()
+        try {
+            server.enqueue(new MockResponse().setBody('{"crumb":"the-crumb"}'))
+            server.enqueue(new MockResponse().setResponseCode(404))  // jobExists
+            server.enqueue(new MockResponse().setBody('{"crumb":"the-crumb"}'))
+            server.enqueue(new MockResponse().setResponseCode(200))
+            def jobManager = new JobManager(new ApiClient(server.url("jenkins").toString(), 'admin', 'admin', new OkHttpClient()))
+
+            def created = jobManager.createJob('the-jobname', 'http://scm', 'ns', 'creds')
+
+            assertThat(created).isEqualTo(true)
+            assertThat(server.requestCount).isEqualTo(4)
+            server.takeRequest() // crumb
+            server.takeRequest() // exists
+            server.takeRequest() // crumb
+            def request = server.takeRequest()
+            assertThat(request.path).isEqualTo("/jenkins/createItem?name=the-jobname")
+
+            def body = request.body.readUtf8()
+            assertThat(body).contains('<serverUrl>http://scm</serverUrl>')
+            assertThat(body).contains('<namespace>ns</namespace>')
+            assertThat(body).contains('<credentialsId>creds</credentialsId>')
+        } finally {
+            server.shutdown()
+        }
+    }
+    
+    @Test
+    void 'ignores existing Job'() {
+        def server = new MockWebServer()
+        try {
+            server.enqueue(new MockResponse().setBody('{"crumb":"the-crumb"}'))
+            server.enqueue(new MockResponse().setResponseCode(200))  // jobExists
+            def jobManager = new JobManager(new ApiClient(server.url("jenkins").toString(), 'admin', 'admin', new OkHttpClient()))
+
+            def created = jobManager.createJob('the-jobname', 'http://scm', 'ns', 'creds')
+
+            assertThat(created).isEqualTo(false)
+            assertThat(server.requestCount).isEqualTo(2)
+            server.takeRequest() // crumb
+            server.takeRequest() // exists
+        } finally {
+            server.shutdown()
+        }
+    }
 }
