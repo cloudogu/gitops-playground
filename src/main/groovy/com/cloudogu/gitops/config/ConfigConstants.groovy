@@ -139,6 +139,15 @@ interface ConfigConstants {
     String INGRESS_NGINX_DESCRIPTION = 'Config parameters for the NGINX Ingress Controller'
     String INGRESS_NGINX_ENABLE_DESCRIPTION = 'Sets and enables Nginx Ingress Controller'
 
+    // group CERTMANAGER
+    String CERTMANAGER_DESCRIPTION = 'Config parameters for the Cert Manager'
+    String CERTMANAGER_ENABLE_DESCRIPTION = 'Sets and enables Cert Manager'
+    String CERTMANAGER_IMAGE_DESCRIPTION = 'Sets image for Cert Manager'
+    String CERTMANAGER_WEBHOOK_IMAGE_DESCRIPTION = 'Sets webhook Image for Cert Manager'
+    String CERTMANAGER_CAINJECTOR_IMAGE_DESCRIPTION = 'Sets cainjector Image for Cert Manager'
+    String CERTMANAGER_ASCME_SOLVER_IMAGE_DESCRIPTION = 'Sets acmeSolver Image for Cert Manager'
+    String CERTMANAGER_STARTUP_API_CHECK_IMAGE_DESCRIPTION = 'Sets startupAPICheck Image for Cert Manager'
+
     // group helm
     String HELM_CONFIG_DESCRIPTION = 'Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors.'
     String HELM_CONFIG_CHART_DESCRIPTION = 'Name of the Helm chart'

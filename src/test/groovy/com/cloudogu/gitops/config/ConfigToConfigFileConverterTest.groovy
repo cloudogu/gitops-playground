@@ -169,6 +169,15 @@ class ConfigToConfigFileConverterTest {
                                         ]
                                 ],
                         ],
+                        certManager: [
+                                active: false,
+                                helm  : [
+                                        chart: 'cert-manager',
+                                        repoURL: 'https://charts.jetstack.io',
+                                        version: '1.15.3',
+                                        values: [:]
+                                ],
+                        ],
                         exampleApps: [
                                 petclinic: [
                                         baseDomain: 'base-domain'
@@ -315,6 +324,18 @@ features:
       values:
         a: "b"
       image: ""
+  certManager:
+    active: false
+    helm:
+      chart: "cert-manager"
+      repoURL: "https://charts.jetstack.io"
+      version: "1.15.3"
+      values: {}
+      image: ""
+      webhookImage: ""
+      cainjectorImage: ""
+      acmeSolverImage: ""
+      startupAPICheckImage: ""
   exampleApps:
     petclinic:
       baseDomain: "base-domain"

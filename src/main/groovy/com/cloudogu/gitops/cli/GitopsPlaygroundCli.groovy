@@ -57,7 +57,7 @@ class GitopsPlaygroundCli  implements Runnable {
     private String registryPasswordReadOnly
     @Option(names = ['--create-image-pull-secrets'], description = REGISTRY_CREATE_IMAGE_PULL_SECRETS_DESCRIPTION)
     private Boolean createImagePullSecrets
-    
+
     // args group jenkins
     @Option(names = ['--jenkins-url'], description = JENKINS_URL_DESCRIPTION)
     private String jenkinsUrl
@@ -230,6 +230,11 @@ class GitopsPlaygroundCli  implements Runnable {
     private Boolean ingressNginx
     @Option(names = ['--ingress-nginx-image'], description = HELM_CONFIG_IMAGE_DESCRIPTION)
     private String ingressNginxImage
+
+    // args certManager
+    @Option(names = ['--cert-manager'], description = CERTMANAGER_ENABLE_DESCRIPTION)
+    private Boolean certManager
+
 
     @Override
     void run() {
@@ -507,6 +512,9 @@ class GitopsPlaygroundCli  implements Runnable {
                                helm      : [
                                        image: ingressNginxImage
                                ]
+                        ],
+                        certManager: [
+                                active: certManager,
                         ],
 
                 ]
