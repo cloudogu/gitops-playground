@@ -105,6 +105,10 @@ argo-cd:
         name: codecentric
         type: helm
         url: https://codecentric.github.io/helm-charts
+      cert-manager:
+          name: cert-manager
+          type: helm
+          url:  https://charts.jetstack.io
       argo-helm-repo:
         type: helm
         url: https://argoproj.github.io/argo-helm

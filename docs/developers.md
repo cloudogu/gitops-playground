@@ -391,6 +391,7 @@ notary:
 
 Then install it like so:
 ```bash
+helm repo add harbor https://helm.goharbor.io
 helm upgrade -i my-harbor harbor/harbor -f harbor-values.yaml --version 1.14.2 --namespace harbor --create-namespace
 ```
 Once it's up and running either create your own private project or just set the existing `library` to private:
@@ -479,6 +480,11 @@ skopeo copy docker://quay.io/prometheus/prometheus:v2.51.2 --dest-creds Proxy:Pr
 skopeo copy docker://quay.io/prometheus-operator/prometheus-config-reloader:v0.73.2 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/prometheus-config-reloader
 skopeo copy docker://grafana/grafana:10.4.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/grafana
 skopeo copy docker://quay.io/kiwigrid/k8s-sidecar:1.27.4 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/k8s-sidecar
+# Cert Manager images
+skopeo copy docker://quay.io/jetstack/cert-manager-controller:v1.16.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/cert-manager-controller
+skopeo copy docker://quay.io/jetstack/cert-manager-cainjector:v1.16.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/cert-manager-cainjector
+skopeo copy docker://quay.io/jetstack/cert-manager-webhook:v1.16.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/cert-manager-webhook
+
 ```
 
 * Deploy playground:

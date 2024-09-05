@@ -22,12 +22,14 @@ spec:
   - ${scmm.baseUrl}/repo/3rd-party-dependencies/ingress-nginx
   - ${scmm.baseUrl}/repo/3rd-party-dependencies/external-secrets
   - ${scmm.baseUrl}/repo/3rd-party-dependencies/vault
+  - ${scmm.baseUrl}/repo/3rd-party-dependencies/cert-manager
 <#else>
   - https://prometheus-community.github.io/helm-charts
   - https://codecentric.github.io/helm-charts
   - https://kubernetes.github.io/ingress-nginx
   - https://helm.releases.hashicorp.com
   - https://charts.external-secrets.io
+  - https://charts.jetstack.io
 </#if>
 
   # allow to only see application resources from the specified namespace
