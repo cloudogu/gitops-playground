@@ -219,6 +219,15 @@ class ApplicationConfigurator {
                                     values: [:]
                              ],
                     ],
+                    cerManager: [
+                            active: false,
+                            helm  : [
+                                    chart: 'certManager',
+                                    repoURL: 'https://cert-manager.io/',
+                                    version: '4.9.1',
+                                    values: [:]
+                            ],
+                    ],
                     exampleApps: [
                             petclinic: [
                                     baseDomain: '',
