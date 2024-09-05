@@ -1,6 +1,7 @@
 //file:noinspection unused
 package com.cloudogu.gitops.config.schema
 
+import com.cloudogu.gitops.features.CertManager
 import com.fasterxml.jackson.annotation.JsonClassDescription
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 
@@ -211,6 +212,8 @@ class Schema {
         SecretsSchema secrets
         @JsonPropertyDescription(INGRESS_NGINX_DESCRIPTION)
         IngressNginxSchema ingressNginx
+        @JsonPropertyDescription(CERTMANAGER_DESCRIPTION)
+        CertManagerSchema certManager
         @JsonPropertyDescription(EXAMPLE_APPS_DESCRIPTION)
         ExampleAppsSchema exampleApps
     }
@@ -319,6 +322,18 @@ class Schema {
         @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
         IngressNginxHelmSchema helm
         static class IngressNginxHelmSchema extends HelmConfig {
+            @JsonPropertyDescription(HELM_CONFIG_VALUES_DESCRIPTION)
+            Map<String, Object> values
+        }
+    }
+
+    static class CertManagerSchema {
+        @JsonPropertyDescription(CERTMANAGER_ENABLE_DESCRIPTION)
+        boolean active = false
+
+        @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
+        CertManagerSchema helm
+        static class CertManagerHelmSchema extends HelmConfig {
             @JsonPropertyDescription(HELM_CONFIG_VALUES_DESCRIPTION)
             Map<String, Object> values
         }
