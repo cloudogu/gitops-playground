@@ -126,7 +126,7 @@ interface ConfigConstants {
     String INGRESS_NGINX_DESCRIPTION = 'Config parameters for the NGINX Ingress Controller'
     String INGRESS_NGINX_ENABLE_DESCRIPTION = 'Sets and enables Nginx Ingress Controller'
 
-    // group ingress-class
+    // group CERTMANAGER
     String CERTMANAGER_DESCRIPTION = 'Config parameters for the Cert Manager'
     String CERTMANAGER_ENABLE_DESCRIPTION = 'Sets and enables Cert Manager'
 

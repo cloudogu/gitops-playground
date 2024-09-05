@@ -332,10 +332,27 @@ class Schema {
         boolean active = false
 
         @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
-        CertManagerSchema helm
+        CertManagerHelmSchema helm
         static class CertManagerHelmSchema extends HelmConfig {
             @JsonPropertyDescription(HELM_CONFIG_VALUES_DESCRIPTION)
             Map<String, Object> values
+
+//            TODO descriptions anpassen
+            @JsonPropertyDescription(EXTERNAL_SECRETS_WEBHOOK_IMAGE_DESCRIPTION)
+            String image = ""
+
+            @JsonPropertyDescription(EXTERNAL_SECRETS_WEBHOOK_IMAGE_DESCRIPTION)
+            String webhookImage = ""
+
+            @JsonPropertyDescription(EXTERNAL_SECRETS_WEBHOOK_IMAGE_DESCRIPTION)
+            String cainjectorImage = ""
+
+            @JsonPropertyDescription(EXTERNAL_SECRETS_WEBHOOK_IMAGE_DESCRIPTION)
+            String acmeSolverImage = ""
+
+            @JsonPropertyDescription(EXTERNAL_SECRETS_WEBHOOK_IMAGE_DESCRIPTION)
+            String startupAPICheckImage = ""
+
         }
     }
 

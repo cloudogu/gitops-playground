@@ -210,7 +210,7 @@ class GitopsPlaygroundCli  implements Runnable {
     private Boolean ingressNginx
 
     // args certManager
-    @Option(names = ['--certManager'], description = CERTMANAGER_ENABLE_DESCRIPTION)
+    @Option(names = ['--cert-manager'], description = CERTMANAGER_ENABLE_DESCRIPTION)
     private Boolean certManager
 
 

@@ -4,6 +4,7 @@ import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.*
+import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 import io.micronaut.core.annotation.Order
@@ -48,23 +49,20 @@ class CertManager extends Feature {
 
         def templatedMap = new YamlSlurper().parseText(
                 new TemplatingEngine().template(new File(HELM_VALUES_PATH),
-                    [
-                            podResources:      config.application['podResources'],
-                            monitoring : [
-                                    active :   config.features['monitoring']['active']
-                            ],
-                            namePrefix:        config.application['namePrefix'] as String,
+                    [config: config,
+                     // Allow for using static classes inside the templates
+                     statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build()
+                             .getStaticModels()
                     ])) as Map
+
+
 
         def valuesFromConfig = config['features']['certManager']['helm']['values'] as Map
 
         def mergedMap = MapUtils.deepMerge(valuesFromConfig, templatedMap)
 
         def tmpHelmValues = fileSystemUtils.createTempFile()
-        // Note that YAML builder seems to use double quotes to escape strings. So for example:
-        // This:     log-format-upstream: '..."$request"...'
-        // Becomes:  log-format-upstream: "...\"$request\"..."
-        // Harder to read but same payload. Not sure if we can do something about it.
+
         fileSystemUtils.writeYaml(mergedMap, tmpHelmValues.toFile())
 
         def helmConfig = config['features']['certManager']['helm']

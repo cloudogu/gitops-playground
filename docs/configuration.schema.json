@@ -30,6 +30,9 @@
       "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors.",
       "additionalProperties" : false
     },
+    "Map(String,Object)" : {
+      "type" : "object"
+    },
     "RepositorySchema" : {
       "type" : "object",
       "properties" : {
@@ -154,6 +157,60 @@
           "additionalProperties" : false,
           "description" : "Configuration Parameter for the ArgoCD Operator"
         },
+        "certManager" : {
+          "type" : "object",
+          "properties" : {
+            "active" : {
+              "type" : "boolean",
+              "description" : "Sets and enables Cert Manager"
+            },
+            "helm" : {
+              "type" : "object",
+              "properties" : {
+                "acmeSolverImage" : {
+                  "type" : "string",
+                  "description" : "Sets image for external secrets operator's webhook"
+                },
+                "cainjectorImage" : {
+                  "type" : "string",
+                  "description" : "Sets image for external secrets operator's webhook"
+                },
+                "chart" : {
+                  "type" : "string",
+                  "description" : "Name of the Helm chart"
+                },
+                "image" : {
+                  "type" : "string",
+                  "description" : "Sets image for external secrets operator's webhook"
+                },
+                "repoURL" : {
+                  "type" : "string",
+                  "description" : "Repository url from which the Helm chart should be obtained"
+                },
+                "startupAPICheckImage" : {
+                  "type" : "string",
+                  "description" : "Sets image for external secrets operator's webhook"
+                },
+                "values" : {
+                  "$ref" : "#/$defs/Map(String,Object)",
+                  "description" : "Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration"
+                },
+                "version" : {
+                  "type" : "string",
+                  "description" : "The version of the Helm chart to be installed"
+                },
+                "webhookImage" : {
+                  "type" : "string",
+                  "description" : "Sets image for external secrets operator's webhook"
+                }
+              },
+              "additionalProperties" : false,
+              "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
+            }
+          },
+          "additionalProperties" : false,
+          "description" : "Config parameters for the Cert Manager"
+        },
         "exampleApps" : {
           "type" : "object",
           "properties" : {
@@ -188,7 +245,7 @@
                   "description" : "Repository url from which the Helm chart should be obtained"
                 },
                 "values" : {
-                  "type" : "object",
+                  "$ref" : "#/$defs/Map(String,Object)",
                   "description" : "Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration"
                 },
                 "version" : {

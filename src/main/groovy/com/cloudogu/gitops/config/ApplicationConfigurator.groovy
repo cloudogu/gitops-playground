@@ -224,7 +224,7 @@ class ApplicationConfigurator {
                             helm  : [
                                     chart: 'certManager',
                                     repoURL: 'https://cert-manager.io/',
-                                    version: '4.9.1',
+                                    version: '1.15.3',
                                     values: [:]
                             ],
                     ],
