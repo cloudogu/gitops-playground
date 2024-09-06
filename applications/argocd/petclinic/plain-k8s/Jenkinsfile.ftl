@@ -62,7 +62,7 @@ node {
 </#noparse>
 <#if registry.twoRegistries>
 <#noparse>
-            docker.withRegistry("http://${dockerRegistryProxyBaseUrl}", dockerRegistryProxyCredentials) {
+            docker.withRegistry("https://${dockerRegistryProxyBaseUrl}", dockerRegistryProxyCredentials) {
                 image = docker.build(imageName, '.')
             }
 </#noparse>
@@ -73,7 +73,7 @@ node {
 </#if>
 <#noparse>
             if (isBuildSuccessful()) {
-                docker.withRegistry("http://${dockerRegistryBaseUrl}", dockerRegistryCredentials) {
+                docker.withRegistry("https://${dockerRegistryBaseUrl}", dockerRegistryCredentials) {
                     image.push()
                 }
             } else {
@@ -125,7 +125,7 @@ node {
                         ]
                 ]
 <#noparse>
-                addSpecificGitOpsConfig(gitopsConfig)
+                gitopsConfig += createSpecificGitOpsConfig()
 
                 deployViaGitops(gitopsConfig)
             } else {
@@ -138,9 +138,9 @@ node {
     junit allowEmptyResults: true, testResults: '**/target/failsafe-reports/TEST-*.xml,**/target/surefire-reports/TEST-*.xml'
 }
 
-/** Initializations might not be needed in a real-world setup, but are necessary for GitOps playground */
-void addSpecificGitOpsConfig(gitopsConfig) {
-    gitopsConfig += [
+/** Initializations might not be needed in a real-world setup, but are necessary to work in an air-gapped env, for example */
+String createSpecificGitOpsConfig() {
+    [
         // In the GitOps playground, we're loading the build libs from our local SCM so it also works in an offline context
         // As the gitops-build-lib also uses the ces-build-lib we need to pass those parameters on.
         // If you can access the internet, you can rely on the defaults, which load the lib from GitHub.
@@ -155,11 +155,34 @@ void addSpecificGitOpsConfig(gitopsConfig) {
         // If you can access the internet, you can rely on the defaults, which load the images from public registries.
         buildImages          : [
 </#noparse>
+<#if registry.twoRegistries>
+            helm:       [
+                     image: '${images.helm}',
+                     credentialsId: dockerRegistryProxyCredentials
+            ],
+            kubectl:    [
+                    image: '${images.kubectl}',
+                    credentialsId: dockerRegistryProxyCredentials
+            ],
+            kubeval:    [
+                    image: '${images.kubeval}',
+                    credentialsId: dockerRegistryProxyCredentials
+            ],
+            helmKubeval: [
+                    image: '${images.helmKubeval}',
+                    credentialsId: dockerRegistryProxyCredentials
+            ],
+            yamllint:   [
+                    image: '${images.yamllint}',
+                    credentialsId: dockerRegistryProxyCredentials
+            ]
+<#else>
             helm: '${images.helm}',
             kubectl: '${images.kubectl}',
             kubeval: '${images.kubeval}',
             helmKubeval: '${images.helmKubeval}',
             yamllint: '${images.yamllint}'
+</#if>
 <#noparse>
         ]
     ]

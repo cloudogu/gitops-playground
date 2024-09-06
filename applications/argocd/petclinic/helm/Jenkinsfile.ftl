@@ -70,7 +70,7 @@ node {
 </#noparse>
 <#if registry.twoRegistries>
 <#noparse>
-            docker.withRegistry("http://${dockerRegistryProxyBaseUrl}", dockerRegistryProxyCredentials) {
+            docker.withRegistry("https://${dockerRegistryProxyBaseUrl}", dockerRegistryProxyCredentials) {
                 image = docker.build(imageName, '.')
             }
 </#noparse>
@@ -81,7 +81,7 @@ node {
 </#if>
 <#noparse>
             if (isBuildSuccessful()) {
-                docker.withRegistry("http://${dockerRegistryBaseUrl}", dockerRegistryCredentials) {
+                docker.withRegistry("https://${dockerRegistryBaseUrl}", dockerRegistryCredentials) {
                     image.push()
                 }
             } else {
@@ -109,11 +109,34 @@ node {
 </#noparse>
                         k8sVersion : env.${namePrefixForEnvVars}K8S_VERSION,
                         buildImages          : [
+<#if registry.twoRegistries>
+                                helm:       [
+                                        image: '${images.helm}',
+                                        credentialsId: dockerRegistryProxyCredentials
+                                ],
+                                kubectl:    [
+                                        image: '${images.kubectl}',
+                                        credentialsId: dockerRegistryProxyCredentials
+                                ],
+                                kubeval:    [
+                                        image: '${images.kubeval}',
+                                        credentialsId: dockerRegistryProxyCredentials
+                                ],
+                                helmKubeval: [
+                                        image: '${images.helmKubeval}',
+                                        credentialsId: dockerRegistryProxyCredentials
+                                ],
+                                yamllint:   [
+                                        image: '${images.yamllint}',
+                                        credentialsId: dockerRegistryProxyCredentials
+                                ]
+<#else>
                                 helm: '${images.helm}',
                                 kubectl: '${images.kubectl}',
                                 kubeval: '${images.kubeval}',
                                 helmKubeval: '${images.helmKubeval}',
                                 yamllint: '${images.yamllint}'
+</#if>
                         ],
                         deployments: [
                             sourcePath: 'k8s',
