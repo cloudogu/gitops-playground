@@ -1,0 +1,15 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-prometheus-scraping
+  namespace: ${namespace}
+spec:
+  podSelector: {}
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ${namePrefix}monitoring
+          podSelector:
+            matchLabels:
+              prometheus: kube-prometheus-stack-prometheus

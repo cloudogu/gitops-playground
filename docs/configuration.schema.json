@@ -99,6 +99,10 @@
           "type" : "boolean",
           "description" : "Configure tools to explicitly work with the given namespaces only, and not cluster-wide. This way GOP can be installed without having cluster-admin permissions."
         },
+        "netpols" : {
+          "type" : "boolean",
+          "description" : "Sets Network Policies"
+        },
         "openshift" : {
           "type" : "boolean",
           "description" : "Install with openshift compatibility"

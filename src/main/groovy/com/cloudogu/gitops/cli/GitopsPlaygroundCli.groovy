@@ -138,6 +138,8 @@ class GitopsPlaygroundCli  implements Runnable {
     private Boolean skipCrds
     @Option(names = ['--namespace-isolation'], description = NAMESPACE_ISOLATION_DESCRIPTION)
     private Boolean namespaceIsolation
+    @Option(names = ['--netpols'], description = NETPOLS)
+    private Boolean netpols
 
     // args group metrics
     @Option(names = ['--metrics', '--monitoring'], description = MONITORING_ENABLE_DESCRIPTION)
@@ -402,7 +404,8 @@ class GitopsPlaygroundCli  implements Runnable {
                         gitEmail: gitEmail,
                         urlSeparatorHyphen : urlSeparatorHyphen,
                         skipCrds : skipCrds,
-                        namespaceIsolation: namespaceIsolation
+                        namespaceIsolation: namespaceIsolation,
+                        netpols: netpols
                 ],
                 images     : [
                         kubectl    : kubectlImage,

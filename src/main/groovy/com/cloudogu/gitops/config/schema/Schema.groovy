@@ -179,6 +179,8 @@ class Schema {
         boolean skipCrds = false
         @JsonPropertyDescription(NAMESPACE_ISOLATION_DESCRIPTION)
         boolean namespaceIsolation = false
+        @JsonPropertyDescription(NETPOLS)
+        boolean netpols = false
     }
 
     static class ImagesSchema {
