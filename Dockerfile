@@ -5,12 +5,12 @@ ARG JDK_VERSION='17'
 # Set by the micronaut BOM, see pom.xml
 ARG GRAAL_VERSION='22.3.0'
 
-FROM alpine:3 as alpine
+FROM alpine:3 AS alpine
 
 # Keep in sync with the version in pom.xml
 FROM ghcr.io/graalvm/graalvm-ce:ol8-java${JDK_VERSION}-${GRAAL_VERSION} AS graal
 
-FROM graal as maven-cache
+FROM graal AS maven-cache
 ENV MAVEN_OPTS='-Dmaven.repo.local=/mvn'
 WORKDIR /app
 COPY .mvn/ /app/.mvn/
@@ -18,7 +18,7 @@ COPY mvnw /app/
 COPY pom.xml /app/
 RUN ./mvnw dependency:resolve-plugins dependency:go-offline -B 
 
-FROM graal as maven-build
+FROM graal AS maven-build
 ENV MAVEN_OPTS='-Dmaven.repo.local=/mvn'
 COPY --from=maven-cache /mvn/ /mvn/
 COPY --from=maven-cache /app/ /app
@@ -37,7 +37,7 @@ RUN ./mvnw package -DskipTests
 RUN mv $(ls -S target/*.jar | head -n 1) /app/gitops-playground.jar
 
 
-FROM alpine as downloader
+FROM alpine AS downloader
 RUN apk add curl grep
 # When updating, 
 # * also update the checksum found at https://dl.k8s.io/release/v${K8S_VERSION}/bin/linux/amd64/kubectl.sha256
@@ -128,7 +128,7 @@ RUN touch /dist/root/.config/jgit/config
 RUN chmod +r /dist/root/ && chmod g+rw /dist/root/.config/jgit/
 
 # This stage builds a static binary using graal VM. For details see docs/developers.md#GraalVM
-FROM graal as native-image
+FROM graal AS native-image
 ENV MAVEN_OPTS='-Dmaven.repo.local=/mvn'
 RUN gu install native-image
 RUN microdnf install gnupg
@@ -204,13 +204,13 @@ RUN native-image -Dgroovy.grape.enable=false \
 
 
 
-FROM alpine as prod
+FROM alpine AS prod
 # copy groovy cli binary from native-image stage
 COPY --from=native-image /app/apply-ng app/apply-ng
 ENTRYPOINT ["/app/apply-ng"]
 
 
-FROM eclipse-temurin:${JDK_VERSION}-jre-alpine as dev
+FROM eclipse-temurin:${JDK_VERSION}-jre-alpine AS dev
 
 # apply-ng.sh is part of the dev image and allows trying changing groovy code inside the image for debugging
 # Allow changing code in dev mode, less secure, but the intention of the dev image
