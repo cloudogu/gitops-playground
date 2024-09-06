@@ -25,6 +25,7 @@ COPY --from=maven-cache /app/ /app
 # Speed up build by not compiling tests
 COPY src/main /app/src/main
 COPY compiler.groovy /app
+COPY .git /app/.git
 
 WORKDIR /app
 # Exclude code not needed in productive image 
@@ -105,6 +106,7 @@ WORKDIR /tmp
 # Prepare local files for later stages
 COPY . /dist/app
 # Remove dev stuff
+RUN rm -r /dist/app/.git
 RUN rm -r /dist/app/.mvn
 RUN rm /dist/app/mvnw
 RUN rm /dist/app/pom.xml
@@ -118,9 +120,10 @@ RUN mkdir /dist-dev
 RUN mv /dist/app/src /dist-dev/src && \
     chmod a=rwx -R /dist-dev/src && \
     rm -r /dist-dev/src/main/groovy/com/cloudogu/gitops/graal
-# Remove compiled GOP code from jar to avoid duplicate in dev image, allowing for scripting
 COPY --from=maven-build /app/gitops-playground.jar /dist-dev/gitops-playground.jar
-RUN zip -d /dist-dev/gitops-playground.jar 'com/cloudogu/gitops/*'
+# Remove compiled GOP code from jar to avoid duplicate in dev image, allowing for scripting. 
+# Keep generated class Version, to avoid ClassNotFoundException.
+RUN zip -d /dist-dev/gitops-playground.jar 'com/cloudogu/gitops/*' -x com/cloudogu/gitops/cli/Version.class
 
 # Required to prevent Java exceptions resulting from AccessDeniedException by jgit when running arbitrary user
 RUN mkdir -p /dist/root/.config/jgit
