@@ -4,16 +4,14 @@ String getApplication() { "spring-petclinic-helm" }
 String getScmManagerCredentials() { 'scmm-user' }
 String getConfigRepositoryPRBaseUrl() { env.SCMM_URL }
 String getConfigRepositoryPRRepo() { '${namePrefix}argocd/example-apps' }
-<#if registry.twoRegistries>
-String getDockerRegistryPullBaseUrl() { env.${namePrefixForEnvVars}REGISTRY_PULL_URL }
-String getDockerRegistryPullCredentials() { 'registry-pull-user' }
-String getDockerRegistryPushBaseUrl() { env.${namePrefixForEnvVars}REGISTRY_PUSH_URL }
-String getDockerRegistryPushPath() { env.${namePrefixForEnvVars}REGISTRY_PUSH_PATH }
-String getDockerRegistryPushCredentials() { 'registry-push-user' }
-<#else>
+
 String getDockerRegistryBaseUrl() { env.${namePrefixForEnvVars}REGISTRY_URL }
 String getDockerRegistryPath() { env.${namePrefixForEnvVars}REGISTRY_PATH }
 String getDockerRegistryCredentials() { 'registry-user' }
+
+<#if registry.twoRegistries>
+String getDockerRegistryProxyBaseUrl() { env.${namePrefixForEnvVars}REGISTRY_PROXY_URL }
+String getDockerRegistryProxyCredentials() { 'registry-proxy-user' }
 </#if>
 
 <#noparse>
@@ -66,33 +64,24 @@ node {
         stage('Docker') {
             String imageTag = createImageTag()
 </#noparse>
+<#noparse>
+            String pathPrefix = !dockerRegistryPath?.trim() ? "" : "${dockerRegistryPath}/"
+            imageName = "${dockerRegistryBaseUrl}/${pathPrefix}${application}:${imageTag}"
+</#noparse>
 <#if registry.twoRegistries>
 <#noparse>
-            String pathPrefix = !dockerRegistryPushPath?.trim() ? "" : "${dockerRegistryPushPath}/"
-            imageName = "${dockerRegistryPushBaseUrl}/${pathPrefix}${application}:${imageTag}"
-            docker.withRegistry("http://${dockerRegistryPullBaseUrl}", dockerRegistryPullCredentials) {
+            docker.withRegistry("http://${dockerRegistryProxyBaseUrl}", dockerRegistryProxyCredentials) {
                 image = docker.build(imageName, '.')
             }
 </#noparse>
 <#else>
 <#noparse>
-            String pathPrefix = !dockerRegistryPath?.trim() ? "" : "${dockerRegistryPath}/"
-            imageName = "${dockerRegistryBaseUrl}/${pathPrefix}${application}:${imageTag}"
             image = docker.build(imageName, '.')
 </#noparse>
 </#if>
-
+<#noparse>
             if (isBuildSuccessful()) {
-<#if registry.twoRegistries>
-<#noparse>
-                docker.withRegistry("http://${dockerRegistryPushBaseUrl}", dockerRegistryPushCredentials) {
-</#noparse>
-<#else>
-<#noparse>
                 docker.withRegistry("http://${dockerRegistryBaseUrl}", dockerRegistryCredentials) {
-</#noparse>
-</#if>
-<#noparse>
                     image.push()
                 }
             } else {

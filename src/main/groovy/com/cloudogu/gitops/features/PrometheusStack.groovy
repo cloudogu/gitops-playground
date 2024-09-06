@@ -3,7 +3,6 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
-import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper

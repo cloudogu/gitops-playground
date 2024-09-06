@@ -38,8 +38,9 @@ class ApplicationConfiguratorTest {
             ],
             registry   : [
                     url         : EXPECTED_REGISTRY_URL,
-                    pullUrl: "pull-$EXPECTED_REGISTRY_URL",
-                    pushUrl: "push-$EXPECTED_REGISTRY_URL",
+                    proxyUrl: "proxy-$EXPECTED_REGISTRY_URL",
+                    proxyUsername: "proxy-user",
+                    proxyPassword: "proxy-pw",
                     internalPort: EXPECTED_REGISTRY_INTERNAL_PORT,
                     path        : null
             ],
@@ -389,8 +390,7 @@ images:
     @Test
     void "Registry: Sets to internal when no URL set"() {
         testConfig.registry['url'] = null
-        testConfig.registry['pullUrl'] = null
-        testConfig.registry['pushUrl'] = null
+        testConfig.registry['proxyUrl'] = null
         
         Map actualConfig = applicationConfigurator.setConfig(testConfig)
         
@@ -400,44 +400,45 @@ images:
     }
     
     @Test
-    void "Registry: Sets to external when single URL set"() {
-        testConfig.registry['pullUrl'] = null
-        testConfig.registry['pushUrl'] = null
-        
+    void "Registry: Sets to external when only registry URL set"() {
+        testConfig.registry['proxyUrl'] = null
+
         Map actualConfig = applicationConfigurator.setConfig(testConfig)
         
         assertThat(actualConfig['registry']['internal']).isEqualTo(false)
     }
     
     @Test
-    void "Registry: Sets to external when pull and push URL set"() {
+    void "Registry: Sets to internal when only proxy Url is set"() {
         testConfig.registry['url'] = null
-        
+
         Map actualConfig = applicationConfigurator.setConfig(testConfig)
         
-        assertThat(actualConfig['registry']['internal']).isEqualTo(false)
+        assertThat(actualConfig['registry']['internal']).isEqualTo(true)
     }
     
     @Test
-    void "Registry: Fails when pushUrl is set but not pullUrl"() {
-        testConfig.registry['pullUrl'] = null
-
+    void "Registry: Fails when proxy but no username and password set"() {
+        def expectedException = 'Proxy URL needs to be used with proxy-username and proxy-password'
+        
+        testConfig.registry['proxyUsername'] = null
         def exception = shouldFail(RuntimeException) {
             applicationConfigurator.setConfig(testConfig)
         }
-        assertThat(exception.message)
-                .isEqualTo("Always set pull AND push URL. pullUrl=, pushUrl=push-${EXPECTED_REGISTRY_URL}".toString())
-    }
-    
-    @Test
-    void "Registry: Fails when pullUrl is set but not pushUrl"() {
-        testConfig.registry['pushUrl'] = null
-
-        def exception = shouldFail(RuntimeException) {
+        assertThat(exception.message).isEqualTo(expectedException)
+        
+        testConfig.registry['proxyUsername'] = 'something'
+        testConfig.registry['proxyPassword'] = null
+        exception = shouldFail(RuntimeException) {
             applicationConfigurator.setConfig(testConfig)
         }
-        assertThat(exception.message)
-                .isEqualTo("Always set pull AND push URL. pullUrl=pull-${EXPECTED_REGISTRY_URL}, pushUrl=".toString())
+        assertThat(exception.message).isEqualTo(expectedException)
+        
+        testConfig.registry['proxyUsername'] = null
+        exception = shouldFail(RuntimeException) {
+            applicationConfigurator.setConfig(testConfig)
+        }
+        assertThat(exception.message).isEqualTo(expectedException)
     }
     
     List<String> getAllFieldNames(Class clazz, String parentField = '', List<String> fieldNames = []) {

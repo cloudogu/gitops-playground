@@ -7,36 +7,6 @@ function curlJenkins() {
     "$@"
 }
 
-function createJob() {
-  JOB_NAME=${1}
-
-  # shellcheck disable=SC2016
-  # we don't want to expand these variables in single quotes
-  JOB_CONFIG=$(env -i \
-               SCMM_NAMESPACE_JOB_SERVER_URL="${2}" \
-               SCMM_NAMESPACE_JOB_NAMESPACE="${3}" \
-               SCMM_NAMESPACE_JOB_CREDENTIALS_ID="${4}" \
-               envsubst '${SCMM_NAMESPACE_JOB_SERVER_URL},
-                         ${SCMM_NAMESPACE_JOB_NAMESPACE},
-                         ${SCMM_NAMESPACE_JOB_CREDENTIALS_ID}' \
-               < scripts/jenkins/namespaceJobTemplate.xml)
-
-  printf 'Creating job %s ... ' "${JOB_NAME}"
-
-  # Don't add --fail here, because if the job already exists we get a return code of 400
-  STATUS=$(curlJenkins -L -o /dev/null --write-out '%{http_code}' \
-           -X POST "${JENKINS_URL}/createItem?name=${JOB_NAME}" \
-           -H "Content-Type:text/xml" \
-           --data "${JOB_CONFIG}" ) && EXIT_STATUS=$? || EXIT_STATUS=$?
-  if [ $EXIT_STATUS != 0 ]
-    then
-      echo "Creating Job failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
-      exit $EXIT_STATUS
-  fi
-  
-  printStatus "${STATUS}"
-}
-
 function crumb() {
     
   RESPONSE=$(curl -s --cookie-jar /tmp/cookies \
