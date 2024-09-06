@@ -120,7 +120,8 @@ class ApplicationConfigurator {
                     gitEmail: 'hello@cloudogu.com',
                     urlSeparatorHyphen: false,
                     skipCrds : false,
-                    namespaceIsolation : false
+                    namespaceIsolation : false,
+                    netpols: false
             ],
             images     : [
                     kubectl    : "bitnami/kubectl:$K8S_VERSION",
