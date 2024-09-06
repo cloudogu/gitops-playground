@@ -416,7 +416,8 @@ class ArgoCD extends Feature {
                             isOperator   : config.features['argocd']['operator'],
                             emailFrom    : config.features['argocd']['emailFrom'],
                             emailToUser  : config.features['argocd']['emailToUser'],
-                            emailToAdmin : config.features['argocd']['emailToAdmin']
+                            emailToAdmin : config.features['argocd']['emailToAdmin'],
+                            resourceInclusionsCluster : getResourceInclusionsCluster()
                     ],
                     registry : [
                             twoRegistries: config.registry['twoRegistries']
@@ -457,6 +458,23 @@ class ArgoCD extends Feature {
                             ],
                     ]
             ])
+        }
+
+        private String getResourceInclusionsCluster() {
+            // Return early if NOT deploying via operator
+            if(config.features['argocd']['operator'] == false) {
+                return ""
+            }
+
+            try {
+                // Attempt to get the internal cluster URL from the config or environment variables
+                return config.application['internalKubernetesApiUrl'] ?: K8sClient.getInternalKubernetesApiServerAddress();
+            } catch (RuntimeException e) {
+                // Extend the exception message and throw a new RuntimeException
+                String extendedMessage = "Could not determine 'resourceInclusions.cluster' which is needed with argocd.operator=true. " +
+                        "Try setting 'application.internalKubernetesApiUrl' in the config to manually override.";
+                throw new RuntimeException(extendedMessage, e);
+            }
         }
 
         ScmmRepo getRepo() {

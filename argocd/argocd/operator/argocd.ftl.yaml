@@ -110,8 +110,7 @@ spec:
       - "Event"
       clusters:
       - "https://kubernetes.default.svc"
-    # hier eventuell die ip des k8s api setzen, ansonsten löschen
-      - "https://10.43.0.1:443"
+      - "${argocd.resourceInclusionsCluster}"
     - apiGroups:
       - "apps"
       kinds:
@@ -121,14 +120,14 @@ spec:
       - "DaemonSet"
       clusters:
       - "https://kubernetes.default.svc"
-      - "https://10.43.0.1:443"
+      - "${argocd.resourceInclusionsCluster}"
     - apiGroups:
       - "extensions"
       kinds:
       - "Ingress"
       clusters:
       - "https://kubernetes.default.svc"
-      - "https://10.43.0.1:443"
+      - "${argocd.resourceInclusionsCluster}"
     - apiGroups:
       - "networking.k8s.io"
       kinds:
@@ -136,7 +135,7 @@ spec:
       - "NetworkPolicy"
       clusters:
       - "https://kubernetes.default.svc"
-      - "https://10.43.0.1:443"
+      - "${argocd.resourceInclusionsCluster}"
     - apiGroups:
       - "argoproj.io"
       kinds:
@@ -145,7 +144,7 @@ spec:
       - "ApplicationSet"
       clusters:
       - "https://kubernetes.default.svc"
-      - "https://10.43.0.1:443"
+      - "${argocd.resourceInclusionsCluster}"
     <#if !isOpenshift>
     - apiGroups:
       - "route.openshift.io"
@@ -153,7 +152,7 @@ spec:
       - "Route"
       clusters:
       - "https://kubernetes.default.svc"
-      - "https://10.43.0.1:443"
+      - "${argocd.resourceInclusionsCluster}"
     </#if>
     - apiGroups:
       - "rbac.authorization.k8s.io"
@@ -162,7 +161,7 @@ spec:
       - "RoleBinding"
       clusters:
       - "https://kubernetes.default.svc"
-      - "https://10.43.0.1:443"
+      - "${argocd.resourceInclusionsCluster}"
     - apiGroups:
       - "external-secrets.io"
       kinds:
@@ -170,14 +169,14 @@ spec:
       - "ExternalSecret"
       clusters:
       - "https://kubernetes.default.svc"
-      - "https://10.43.0.1:443"
+      - "${argocd.resourceInclusionsCluster}"
     - apiGroups:
       - "argoproj.io"
       kinds:
       - "ArgoCD"
       clusters:
       - "https://kubernetes.default.svc"
-      - "https://10.43.0.1:443"
+      - "${argocd.resourceInclusionsCluster}"
     - apiGroups:
       - "monitoring.coreos.com"
       kinds:
@@ -190,12 +189,4 @@ spec:
       - "Probe"
       clusters:
       - "https://kubernetes.default.svc"
-      - "https://10.43.0.1:443"
-    - apiGroups:
-      - "storage.k8s.io"
-      kinds:
-      - "StorageClass"
-      - "PersistentVolumeClaim"
-      clusters:
-      - "https://kubernetes.default.svc"
-      - "https://10.43.0.1:443"
+      - "${argocd.resourceInclusionsCluster}"

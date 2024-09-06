@@ -263,16 +263,16 @@ class K8sClient {
     }
 
     /**
-     * Patches the nodePort of a specified port in a service.
-     *
-     * @param serviceName      The name of the service to patch.
-     * @param namespace        The namespace of the service.
-     * @param portName         The name of the port to patch.
-     * @param newNodePort      The new nodePort value to set.
-     *
-     * @throws IllegalArgumentException if name, namespace, portName, and nodePort are invalid.
-     * @throws RuntimeException if an error occurs while patching the service (i.e. portName not found).
-     */
+    * Patches the nodePort of a specified port in a service.
+    *
+    * @param serviceName      The name of the service to patch.
+    * @param namespace        The namespace of the service.
+    * @param portName         The name of the port to patch.
+    * @param newNodePort      The new nodePort value to set.
+    *
+    * @throws IllegalArgumentException if name, namespace, portName, and nodePort are invalid.
+    * @throws RuntimeException if an error occurs while patching the service (i.e. portName not found).
+    */
     void patchServiceNodePort(String serviceName, String namespace, String portName, int newNodePort) {
         if (!serviceName || !namespace || !portName || newNodePort <= 0) {
             throw new IllegalArgumentException("Service name, namespace, port name, and valid nodePort must be provided")
@@ -314,18 +314,18 @@ class K8sClient {
     }
 
     /**
-     * Waits until the specified resource reaches the desired phase.
-     *
-     * @param resourceType      The type of the Kubernetes resource (e.g., pod, deployment).
-     * @param resourceName      The name of the specific resource.
-     * @param namespace         The namespace of the resource.
-     * @param desiredPhase      The desired phase to wait for (e.g., Running, Succeeded).
-     * @param timeoutSeconds    The maximum time to wait for the desired phase in seconds.
-     * @param checkIntervalSeconds The interval between status checks in seconds.
-     *
-     * @throws IllegalArgumentException if Resource type, name, namespace, desired phase, Timeout and check interval are invalid.
-     * @throws RuntimeException if the desired phase is not reached within the timeout period.
-     */
+    * Waits until the specified resource reaches the desired phase.
+    *
+    * @param resourceType      The type of the Kubernetes resource (e.g., pod, deployment).
+    * @param resourceName      The name of the specific resource.
+    * @param namespace         The namespace of the resource.
+    * @param desiredPhase      The desired phase to wait for (e.g., Running, Succeeded).
+    * @param timeoutSeconds    The maximum time to wait for the desired phase in seconds.
+    * @param checkIntervalSeconds The interval between status checks in seconds.
+    *
+    * @throws IllegalArgumentException if Resource type, name, namespace, desired phase, Timeout and check interval are invalid.
+    * @throws RuntimeException if the desired phase is not reached within the timeout period.
+    */
     void waitForResourcePhase(String resourceType, String resourceName, String namespace, String desiredPhase, int timeoutSeconds, int checkIntervalSeconds) {
         if (!resourceType || !resourceName || !namespace || !desiredPhase) {
             throw new IllegalArgumentException("Resource type, name, namespace, and desired phase must be provided")
@@ -359,17 +359,35 @@ class K8sClient {
     }
 
     /**
-     * Waits for a specific resource to reach the desired phase with default timeout and interval.
-     *
-     * @param resourceType      The type of the Kubernetes resource (e.g., pod, deployment).
-     * @param resourceName      The name of the specific resource.
-     * @param namespace         The namespace of the resource.
-     * @param desiredPhase      The desired phase to wait for (e.g., Running, Succeeded).
-     *
-     * @see #waitForResourcePhase(String, String, String, String, int, int)
-     */
+    * Waits for a specific resource to reach the desired phase with default timeout and interval.
+    *
+    * @param resourceType      The type of the Kubernetes resource (e.g., pod, deployment).
+    * @param resourceName      The name of the specific resource.
+    * @param namespace         The namespace of the resource.
+    * @param desiredPhase      The desired phase to wait for (e.g., Running, Succeeded).
+    *
+    * @see #waitForResourcePhase(String, String, String, String, int, int)
+    */
     void waitForResourcePhase(String resourceType, String resourceName, String namespace, String desiredPhase) {
         waitForResourcePhase(resourceType, resourceName, namespace, desiredPhase, 60, 1)
+    }
+
+    /**
+    * Returns the internal Kubernetes API Server URL with IP and port using environment variables from inside a Pod.
+    *
+    * @return The URL with IP and port in the format "https://IP:PORT".
+    * @throws RuntimeException if the environment variables are not set, indicating that the code is likely not running inside a Kubernetes pod.
+    */
+    static String getInternalKubernetesApiServerAddress() {
+        String host = System.getenv("KUBERNETES_SERVICE_HOST")
+        String port = System.getenv("KUBERNETES_SERVICE_PORT")
+
+        if (!host || !port) {
+            throw new RuntimeException("Environment variables KUBERNETES_SERVICE_HOST or KUBERNETES_SERVICE_PORT are not set. " +
+                    "This likely means that the code is not running inside a Kubernetes pod.")
+        }
+
+        return "https://${host}:${port}"
     }
 
     @Immutable

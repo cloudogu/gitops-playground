@@ -21,9 +21,11 @@ import java.util.stream.Collectors
 
 import static org.assertj.core.api.Assertions.assertThat
 import static org.assertj.core.api.Assertions.fail
+import static groovy.test.GroovyAssert.shouldFail
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.ArgumentMatchers.anyString
 import static org.mockito.Mockito.*
+import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable
 
 class ArgoCDTest {
     Map buildImages = [
@@ -1062,6 +1064,149 @@ class ArgoCDTest {
     }
 
     @Test
+    void 'Correctly sets resourceInclusions cluster via ENVs'() {
+        def argoCD = setupOperatorTest()
+
+        // Set the config to have no internalKubernetesApiUrl
+        config.application['internalKubernetesApiUrl'] = null
+
+        withEnvironmentVariable("KUBERNETES_SERVICE_HOST", "100.125.0.1")
+                .and("KUBERNETES_SERVICE_PORT", "443")
+                .execute {
+                    argoCD.install()
+                }
+
+        def argocdConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH)
+        def yaml = parseActualYaml(argocdConfigPath.toFile().toString())
+
+        def expectedClusterUrl = "https://100.125.0.1:443"
+
+        // Retrieve and parse the resourceInclusions string into structured YAML
+        def resourceInclusionsString = yaml['spec']['resourceInclusions'] as String
+        def parsedResourceInclusions = new YamlSlurper().parseText(resourceInclusionsString)
+
+        // Iterate over the parsed resource inclusions and check the 'clusters' field
+        parsedResourceInclusions.each { resource ->
+            assertThat(resource as Map).containsKey('clusters')
+            assertThat(resource['clusters'] as List<String>).contains(expectedClusterUrl)
+        }
+    }
+
+
+    @Test
+    void 'Correctly sets resourceInclusions via config file'() {
+        def argoCD = setupOperatorTest()
+
+        // Set the config to a custom internalKubernetesApiUrl value
+        config.application['internalKubernetesApiUrl'] = 'https://192.168.0.1:6443'
+
+        argoCD.install()
+
+        def argocdConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH)
+        def yaml = parseActualYaml(argocdConfigPath.toFile().toString())
+
+        def expectedClusterUrl = 'https://192.168.0.1:6443'
+
+        // Retrieve and parse the resourceInclusions string into structured YAML
+        def resourceInclusionsString = yaml['spec']['resourceInclusions'] as String
+        def parsedResourceInclusions = new YamlSlurper().parseText(resourceInclusionsString)
+
+        // Iterate over the parsed resource inclusions and check the 'clusters' field
+        parsedResourceInclusions.each { resource ->
+            assertThat(resource as Map).containsKey('clusters')
+            assertThat(resource['clusters'] as List<String>).contains(expectedClusterUrl)
+        }
+    }
+
+    @Test
+    void 'Use ENVs if resourceInclusionsCluster is not set in config file'() {
+        def argoCD = setupOperatorTest()
+
+        // Set the config to have no internalKubernetesApiUrl
+        config.application['internalKubernetesApiUrl'] = null
+
+        // Set environment variables for Kubernetes API server
+        withEnvironmentVariable("KUBERNETES_SERVICE_HOST", "100.125.0.1")
+                .and("KUBERNETES_SERVICE_PORT", "443")
+                .execute {
+                    argoCD.install()
+                }
+
+        def argocdConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH)
+        def yaml = parseActualYaml(argocdConfigPath.toFile().toString())
+
+        def expectedClusterUrl = "https://100.125.0.1:443"
+
+        // Retrieve and parse the resourceInclusions string into structured YAML
+        def resourceInclusionsString = yaml['spec']['resourceInclusions'] as String
+        def parsedResourceInclusions = new YamlSlurper().parseText(resourceInclusionsString)
+
+        // Iterate over the parsed resource inclusions and check the 'clusters' field
+        parsedResourceInclusions.each { resource ->
+            assertThat(resource as Map).containsKey('clusters')
+            assertThat(resource['clusters'] as List<String>).contains(expectedClusterUrl)
+        }
+    }
+
+    @Test
+    void 'resourceInclusionsCluster from config file trumps ENVs'() {
+        def argoCD = setupOperatorTest()
+
+        // Set the config to a custom internalKubernetesApiUrl value
+        config.application['internalKubernetesApiUrl'] = 'https://192.168.0.1:6443'
+
+        // Set environment variables for Kubernetes API server
+        withEnvironmentVariable("KUBERNETES_SERVICE_HOST", "100.125.0.1")
+                .and("KUBERNETES_SERVICE_PORT", "443")
+                .execute {
+                    argoCD.install()
+                }
+
+        def argocdConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH)
+        def yaml = parseActualYaml(argocdConfigPath.toFile().toString())
+
+        def expectedClusterUrlFromConfig = "https://192.168.0.1:6443"
+
+        // Retrieve and parse the resourceInclusions string into structured YAML
+        def resourceInclusionsString = yaml['spec']['resourceInclusions'] as String
+        def parsedResourceInclusions = new YamlSlurper().parseText(resourceInclusionsString)
+
+        // Ensure that the clusters field uses the config value, not the env variables
+        parsedResourceInclusions.each { resource ->
+            assertThat(resource as Map).containsKey('clusters')
+            assertThat(resource['clusters'] as List<String>).contains(expectedClusterUrlFromConfig)
+            // Make sure the environment variable value does not appear
+            assertThat(resource['clusters'] as List<String>).doesNotContain("https://100.125.0.1:443")
+        }
+    }
+
+    @Test
+    void 'Throws exception with extended message when both config and ENVs are missing'() {
+        def argoCD = setupOperatorTest()
+
+        // Set the config to have no internalKubernetesApiUrl
+        config.application['internalKubernetesApiUrl'] = null
+
+        // Simulate the missing environment variables
+        def exception = shouldFail(RuntimeException) {
+            withEnvironmentVariable("KUBERNETES_SERVICE_HOST", null)
+                    .and("KUBERNETES_SERVICE_PORT", null)
+                    .execute {
+                        argoCD.install()
+                    }
+        }
+
+        // Check if the extended exception message is correct
+        assertThat(exception.message).contains("Could not determine 'resourceInclusions.cluster' which is needed with argocd.operator=true. " +
+                "Try setting 'application.internalKubernetesApiUrl' in the config to manually override.")
+
+        // Check if the original exception (from missing envs) is included
+        assertThat(exception.cause).isInstanceOf(RuntimeException)
+        assertThat(exception.cause.message).contains("Environment variables KUBERNETES_SERVICE_HOST or KUBERNETES_SERVICE_PORT are not set. " +
+                "This likely means that the code is not running inside a Kubernetes pod.")
+    }
+
+    @Test
     void 'Creates all necessary namespaces'() {
         def argoCD = createArgoCD()
         simulateNamespaceCreation()
@@ -1075,6 +1220,7 @@ class ArgoCDTest {
 
     private ArgoCD setupOperatorTest(Map options = [:]) {
         config.features['argocd']['operator'] = true
+        config.application['internalKubernetesApiUrl'] = 'https://192.168.0.1:6443'
         config.application['openshift'] = options.openshift ?: false
 
         def argoCD = createArgoCD()
