@@ -80,6 +80,10 @@
           "type" : "boolean",
           "description" : "Sets insecure-mode in cURL which skips cert validation"
         },
+        "internalKubernetesApiUrl":{
+          "type":"string",
+          "description":"Internal Kubernetes API Server URL https://IP:PORT (kubernetes.default.svc). Needed in argocd-operator resourceInclusions. Use this parameter if argocd.operator=true and NOT running inside a Pod (remote mode). Full URL needed, for example: https://100.125.0.1:443"
+        },
         "localHelmChartFolder" : {
           "type" : "string",
           "description" : "A local folder (within the GOP image mostly) where the local mirrors of all helm charts are loaded from when mirror-Repos is active. This is mostly needed for development."

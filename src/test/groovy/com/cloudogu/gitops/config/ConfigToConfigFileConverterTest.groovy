@@ -55,6 +55,7 @@ class ConfigToConfigFileConverterTest {
                         remote        : true,
                         insecure      : true,
                         localHelmChartFolder : "folder",
+                        internalKubernetesApiUrl: '',
                         username: 'app-user',
                         password: 'app-pw',
                         yes           : true,
@@ -214,6 +215,7 @@ application:
   remote: true
   insecure: true
   localHelmChartFolder: "folder"
+  internalKubernetesApiUrl: ""
   username: "app-user"
   password: "app-pw"
   "yes": true

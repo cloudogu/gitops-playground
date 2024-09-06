@@ -112,6 +112,7 @@ class ApplicationConfigurator {
                     destroy       : false,
                     // Take from env because the Dockerfile provides a local copy of the repo for air-gapped mode
                     localHelmChartFolder: System.getenv('LOCAL_HELM_CHART_FOLDER'),
+                    internalKubernetesApiUrl: '',
                     insecure      : false,
                     openshift     : false,
                     username      : DEFAULT_ADMIN_USER,
