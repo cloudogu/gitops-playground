@@ -125,7 +125,7 @@ node {
                         ]
                 ]
 <#noparse>
-                addSpecificGitOpsConfig(gitopsConfig)
+                gitopsConfig += createSpecificGitOpsConfig()
 
                 deployViaGitops(gitopsConfig)
             } else {
@@ -138,9 +138,9 @@ node {
     junit allowEmptyResults: true, testResults: '**/target/failsafe-reports/TEST-*.xml,**/target/surefire-reports/TEST-*.xml'
 }
 
-/** Initializations might not be needed in a real-world setup, but are necessary for GitOps playground */
-void addSpecificGitOpsConfig(gitopsConfig) {
-    gitopsConfig += [
+/** Initializations might not be needed in a real-world setup, but are necessary to work in an air-gapped env, for example */
+String createSpecificGitOpsConfig() {
+    [
         // In the GitOps playground, we're loading the build libs from our local SCM so it also works in an offline context
         // As the gitops-build-lib also uses the ces-build-lib we need to pass those parameters on.
         // If you can access the internet, you can rely on the defaults, which load the lib from GitHub.

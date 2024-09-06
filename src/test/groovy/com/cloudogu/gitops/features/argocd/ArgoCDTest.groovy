@@ -744,7 +744,9 @@ class ArgoCDTest {
 
             def matchedText = text.substring(startIndex + 'buildImages'.length(), endIndex).trim().replaceFirst(":", "")
 
-            def map = Eval.me(matchedText)
+            Binding binding = new Binding()
+            binding.setVariable('dockerRegistryProxyCredentials', 'dockerRegistryProxyCredentials')
+            def map =  new GroovyShell(binding).evaluate(matchedText)
 
             return map as Map
 
@@ -908,17 +910,17 @@ class ArgoCDTest {
     }
 
     void assertBuildImagesInJenkinsfileReplaced(File jenkinsfile) {
+        def actualBuildImages = parseBuildImagesMapFromString(jenkinsfile.text)
+        if (!actualBuildImages) {
+            fail("Missing build images in Jenkinsfile ${jenkinsfile}")
+        }
+        
         if (config.registry['twoRegistries']) {
-
-            assertThat(jenkinsfile.text.count("dockerRegistryProxyCredentials")).isGreaterThan(5)
-        } else {
-
-            def actualBuildImages = parseBuildImagesMapFromString(jenkinsfile.text)
-
-            if (!actualBuildImages) {
-                fail("Missing build images in Jenkinsfile ${jenkinsfile}")
+            for (Map.Entry image : actualBuildImages as Map) {
+                assertThat(image.value['image']).isEqualTo(buildImages[image.key])
+                assertThat(image.value['credentialsId']).isEqualTo('dockerRegistryProxyCredentials')
             }
-
+        } else {
 
             assertThat(buildImages.keySet()).containsExactlyInAnyOrderElementsOf(actualBuildImages.keySet())
             for (Map.Entry image : buildImages as Map) {

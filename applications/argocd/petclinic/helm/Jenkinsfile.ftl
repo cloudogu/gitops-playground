@@ -129,15 +129,15 @@ node {
                                 yamllint:   [
                                         image: '${images.yamllint}',
                                         credentialsId: dockerRegistryProxyCredentials
-                        ]
+                                ]
 <#else>
                                 helm: '${images.helm}',
                                 kubectl: '${images.kubectl}',
                                 kubeval: '${images.kubeval}',
                                 helmKubeval: '${images.helmKubeval}',
                                 yamllint: '${images.yamllint}'
-                        ],
 </#if>
+                        ],
                         deployments: [
                             sourcePath: 'k8s',
                             destinationRootPath: 'apps',
