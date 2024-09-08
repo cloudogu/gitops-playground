@@ -96,7 +96,11 @@ class ConfigToConfigFileConverterTest {
                                 url       : 'url-value',
                                 emailFrom : 'argocd@example.org',
                                 emailToUser : 'app-team@example.org',
-                                emailToAdmin : 'infra@example.org'
+                                emailToAdmin : 'infra@example.org',
+                                env: [
+                                        [name: "ENV_VAR_1", value: "value1"],
+                                        [name: "ENV_VAR_2", value: "value2"]
+                                ]
                         ],
                         mail   : [
                                 mailhog : false,
@@ -248,6 +252,11 @@ features:
     emailToUser: "app-team@example.org"
     emailToAdmin: "infra@example.org"
     operator: false
+    env:
+    - name: "ENV_VAR_1"
+      value: "value1"
+    - name: "ENV_VAR_2"
+      value: "value2"
   mail:
     mailhog: false
     mailhogUrl: "mailhog-url"

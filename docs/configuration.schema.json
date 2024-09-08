@@ -154,6 +154,13 @@
               "type" : "string",
               "description" : "Notifications, define Argo CD user / app-team recipient email address"
             },
+            "env": {
+              "description": "Pass a list of env vars to Argo CD components. Currently only works with operator",
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            },
             "operator" : {
               "type" : "boolean",
               "description" : "Install ArgoCD via an already running ArgoCD Operator"
