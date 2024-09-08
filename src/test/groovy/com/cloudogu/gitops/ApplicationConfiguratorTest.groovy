@@ -105,6 +105,8 @@ class ApplicationConfiguratorTest {
         assertThat(actualConfig['registry']['twoRegistries']).isEqualTo(true)
         
         assertThat(actualConfig['features']['argocd']['active']).isEqualTo(EXPECTED_ARGOCD)
+        assertThat(actualConfig['features']['argocd']['env']).isEqualTo([])
+
 
         assertThat(actualConfig['jenkins']['url']).isEqualTo(EXPECTED_JENKINS_URL)
         assertThat(actualConfig['jenkins']['internal']).isEqualTo(false)
@@ -439,7 +441,85 @@ images:
         assertThat(exception.message)
                 .isEqualTo("Always set pull AND push URL. pullUrl=pull-${EXPECTED_REGISTRY_URL}, pushUrl=".toString())
     }
-    
+
+    @Test
+    void "validateEnvConfig allows valid env entries"() {
+        testConfig.features['argocd']['operator'] = true
+        testConfig.features['argocd']['env'] = [
+                [name: "ENV_VAR_1", value: "value1"],
+                [name: "ENV_VAR_2", value: "value2"]
+        ]
+
+        // No exception should be thrown
+        applicationConfigurator.setConfig(testConfig)
+    }
+
+    @Test
+    void "validateEnvConfig throws exception for missing 'name' in env entry"() {
+        testConfig.features['argocd']['operator'] = true
+        testConfig.features['argocd']['env'] = [
+                [name: "ENV_VAR_1", value: "value1"],
+                [value: "value2"]  // Missing 'name'
+        ]
+
+        def exception = shouldFail(IllegalArgumentException) {
+            applicationConfigurator.setConfig(testConfig)
+        }
+
+        assertThat(exception.message).contains("Each env variable must be a map with 'name' and 'value'")
+    }
+
+    @Test
+    void "validateEnvConfig throws exception for missing 'value' in env entry"() {
+        testConfig.features['argocd']['operator'] = true
+        testConfig.features['argocd']['env'] = [
+                [name: "ENV_VAR_1", value: "value1"],
+                [name: "ENV_VAR_2"]  // Missing 'value'
+        ]
+
+        def exception = shouldFail(IllegalArgumentException) {
+            applicationConfigurator.setConfig(testConfig)
+        }
+
+        assertThat(exception.message).contains("Each env variable must be a map with 'name' and 'value'")
+    }
+
+    @Test
+    void "validateEnvConfig throws exception for non-map env entry"() {
+        testConfig.features['argocd']['operator'] = true
+        testConfig.features['argocd']['env'] = [
+                [name: "ENV_VAR_1", value: "value1"],
+                "invalid_entry"  // Invalid entry
+        ]
+
+        def exception = shouldFail(IllegalArgumentException) {
+            applicationConfigurator.setConfig(testConfig)
+        }
+
+        assertThat(exception.message).contains("Each env variable must be a map with 'name' and 'value'")
+    }
+
+    @Test
+    void "validateEnvConfig allows empty env list"() {
+        testConfig.features['argocd']['operator'] = true
+        testConfig.features['argocd']['env'] = []
+
+        // No exception should be thrown
+        applicationConfigurator.setConfig(testConfig)
+    }
+
+    @Test
+    void "validateEnvConfig skips validation when operator is false"() {
+        testConfig.features['argocd']['operator'] = false
+        testConfig.features['argocd']['env'] = [
+                [name: "ENV_VAR_1", value: "value1"],
+                [value: "value2"]  // Invalid entry, but should be ignored
+        ]
+
+        // No exception should be thrown
+        applicationConfigurator.setConfig(testConfig)
+    }
+
     List<String> getAllFieldNames(Class clazz, String parentField = '', List<String> fieldNames = []) {
         clazz.declaredFields.each { field ->
             def currentField = parentField + field.name

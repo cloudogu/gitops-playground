@@ -4,9 +4,25 @@ metadata:
   name: "argocd"
   namespace: "${namePrefix}argocd"
 spec:
+  <#if argocd.env?has_content>
+  applicationSet:
+    env:
+    <#list argocd.env as envVar>
+      - name: ${envVar.name}
+        value: ${envVar.value}
+    </#list>
+  <#else>
   applicationSet: {}
+  </#if>
   notifications:
     enabled: true
+    <#if argocd.env?has_content>
+    env:
+    <#list argocd.env as envVar>
+      - name: ${envVar.name}
+        value: ${envVar.value}
+    </#list>
+    </#if>
   controller:
     resources:
       limits:
@@ -15,6 +31,13 @@ spec:
       requests:
         cpu: "250m"
         memory: "1024Mi"
+    <#if argocd.env?has_content>
+    env:
+    <#list argocd.env as envVar>
+      - name: ${envVar.name}
+        value: ${envVar.value}
+    </#list>
+    </#if>
   ha:
     enabled: false
     resources:
@@ -51,6 +74,13 @@ spec:
       requests:
         cpu: "250m"
         memory: "128Mi"
+    <#if argocd.env?has_content>
+    env:
+    <#list argocd.env as envVar>
+      - name: ${envVar.name}
+        value: ${envVar.value}
+    </#list>
+    </#if>
   repo:
     resources:
       limits:
@@ -59,6 +89,13 @@ spec:
       requests:
         cpu: "250m"
         memory: "256Mi"
+    <#if argocd.env?has_content>
+    env:
+    <#list argocd.env as envVar>
+      - name: ${envVar.name}
+        value: ${envVar.value}
+    </#list>
+    </#if>
   server:
     resources:
       limits:
@@ -67,6 +104,13 @@ spec:
       requests:
         cpu: "125m"
         memory: "128Mi"
+    <#if argocd.env?has_content>
+    env:
+    <#list argocd.env as envVar>
+      - name: ${envVar.name}
+        value: ${envVar.value}
+    </#list>
+    </#if>
     route:
       enabled: ${isOpenshift?c}
     host: "${argocd.host}"

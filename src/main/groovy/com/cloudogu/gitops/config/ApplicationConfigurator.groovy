@@ -159,6 +159,7 @@ class ApplicationConfigurator {
                     argocd    : [
                             active    : false,
                             operator  : false,
+                            env : [],
                             url       : '',
                             emailFrom : 'argocd@example.org',
                             emailToUser : 'app-team@example.org',
@@ -478,5 +479,22 @@ class ApplicationConfigurator {
                     "LOCAL_HELM_CHART_FOLDER='charts' after running 'scripts/downloadHelmCharts.sh' from the repo")
         }
 
+        validateEnvConfig(configToSet)
+    }
+
+    // Validate that the env list has proper maps with 'name' and 'value'
+    private static void validateEnvConfig(Map configToSet) {
+        // Exit early if not in operator mode or if env list is empty
+        if (configToSet.features['argocd']['operator'] != true || !configToSet.features['argocd']['env']) {
+            return
+        }
+
+        List<Map> env = configToSet.features['argocd']['env'] as List<Map>
+
+        env.each { map ->
+            if (!(map instanceof Map) || !map.containsKey('name') || !map.containsKey('value')) {
+                throw new IllegalArgumentException("Each env variable must be a map with 'name' and 'value'. Invalid entry found: $map")
+            }
+        }
     }
 }

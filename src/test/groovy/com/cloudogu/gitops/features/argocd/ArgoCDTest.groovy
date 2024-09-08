@@ -1207,6 +1207,83 @@ class ArgoCDTest {
     }
 
     @Test
+    void 'Sets env variables in ArgoCD components when provided'() {
+        def argoCD = setupOperatorTest()
+
+        // Set environment variables for ArgoCD
+        config.features['argocd']['env'] = [
+                [name: "ENV_VAR_1", value: "value1"],
+                [name: "ENV_VAR_2", value: "value2"]
+        ]
+
+        argoCD.install()
+
+        def argocdConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH)
+        def yaml = parseActualYaml(argocdConfigPath.toFile().toString())
+
+        def expectedEnv = [
+                [name: "ENV_VAR_1", value: "value1"],
+                [name: "ENV_VAR_2", value: "value2"]
+        ]
+
+        // Check that the env variables are added to the relevant components
+        assertThat(yaml['spec']['applicationSet']['env']).isEqualTo(expectedEnv)
+        assertThat(yaml['spec']['notifications']['env']).isEqualTo(expectedEnv)
+        assertThat(yaml['spec']['controller']['env']).isEqualTo(expectedEnv)
+        assertThat(yaml['spec']['redis']['env']).isEqualTo(expectedEnv)
+        assertThat(yaml['spec']['repo']['env']).isEqualTo(expectedEnv)
+        assertThat(yaml['spec']['server']['env']).isEqualTo(expectedEnv)
+    }
+
+    @Test
+    void 'Does not set env variables when none are provided'() {
+        def argoCD = setupOperatorTest()
+
+        // Ensure env is an empty list (default)
+        config.features['argocd']['env'] = []
+
+        argoCD.install()
+
+        def argocdConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH)
+        def yaml = parseActualYaml(argocdConfigPath.toFile().toString())
+
+        // Check that the env variables are not present
+        assertThat(yaml['spec']['applicationSet'] as Map).doesNotContainKey('env')
+        assertThat(yaml['spec']['notifications'] as Map).doesNotContainKey('env')
+        assertThat(yaml['spec']['controller'] as Map).doesNotContainKey('env')
+        assertThat(yaml['spec']['redis'] as Map).doesNotContainKey('env')
+        assertThat(yaml['spec']['repo'] as Map).doesNotContainKey('env')
+        assertThat(yaml['spec']['server'] as Map).doesNotContainKey('env')
+    }
+
+    @Test
+    void 'Sets single env variable in ArgoCD components when provided'() {
+        def argoCD = setupOperatorTest()
+
+        // Set a single environment variable for ArgoCD
+        config.features['argocd']['env'] = [
+                [name: "ENV_VAR_SINGLE", value: "singleValue"]
+        ]
+
+        argoCD.install()
+
+        def argocdConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH)
+        def yaml = parseActualYaml(argocdConfigPath.toFile().toString())
+
+        def expectedEnv = [
+                [name: "ENV_VAR_SINGLE", value: "singleValue"]
+        ]
+
+        // Check that the single env variable is added to the relevant components
+        assertThat(yaml['spec']['applicationSet']['env']).isEqualTo(expectedEnv)
+        assertThat(yaml['spec']['notifications']['env']).isEqualTo(expectedEnv)
+        assertThat(yaml['spec']['controller']['env']).isEqualTo(expectedEnv)
+        assertThat(yaml['spec']['redis']['env']).isEqualTo(expectedEnv)
+        assertThat(yaml['spec']['repo']['env']).isEqualTo(expectedEnv)
+        assertThat(yaml['spec']['server']['env']).isEqualTo(expectedEnv)
+    }
+
+    @Test
     void 'Creates all necessary namespaces'() {
         def argoCD = createArgoCD()
         simulateNamespaceCreation()
