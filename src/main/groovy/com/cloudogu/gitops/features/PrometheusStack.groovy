@@ -3,7 +3,10 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
+import com.cloudogu.gitops.scmm.ScmmRepo
+import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import com.cloudogu.gitops.utils.*
+import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 import io.micronaut.core.annotation.Order
@@ -19,31 +22,29 @@ import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.RepoTyp
 class PrometheusStack extends Feature {
 
     static final String HELM_VALUES_PATH = "applications/cluster-resources/monitoring/prometheus-stack-helm-values.ftl.yaml"
+    static final String RBAC_NAMESPACE_ISOLATION_TEMPLATE = 'applications/cluster-resources/monitoring/rbac/namespace-isolation-rbac.ftl.yaml'
     
     private Map config
-    private boolean remoteCluster
-    private String username
-    private String password
     private FileSystemUtils fileSystemUtils
     private DeploymentStrategy deployer
     private K8sClient k8sClient
     private AirGappedUtils airGappedUtils
+    ScmmRepoProvider scmmRepoProvider
 
     PrometheusStack(
             Configuration config,
             FileSystemUtils fileSystemUtils,
             DeploymentStrategy deployer,
             K8sClient k8sClient,
-            AirGappedUtils airGappedUtils
+            AirGappedUtils airGappedUtils,
+            ScmmRepoProvider scmmRepoProvider
     ) {
         this.deployer = deployer
         this.config = config.getConfig()
-        this.username = this.config.application["username"]
-        this.password = this.config.application["password"]
-        this.remoteCluster = this.config.application["remote"]
         this.fileSystemUtils = fileSystemUtils
         this.k8sClient = k8sClient
         this.airGappedUtils = airGappedUtils
+        this.scmmRepoProvider = scmmRepoProvider
     }
 
     @Override
@@ -53,53 +54,46 @@ class PrometheusStack extends Feature {
 
     @Override
     void enable() {
-        // Note that some specific configuration steps are implemented in ArgoCD
         def namePrefix = config.application['namePrefix']
 
-        def tmpHelmValues = new TemplatingEngine().replaceTemplate(fileSystemUtils.copyToTempDir(HELM_VALUES_PATH).toFile(), [
-                namePrefix: namePrefix,
-                podResources: config.application['podResources'],
-                monitoring: [
+        def templatedMap = new YamlSlurper().parseText(new TemplatingEngine().template(new File(HELM_VALUES_PATH), [
+                namePrefix        : namePrefix,
+                podResources      : config.application['podResources'],
+                monitoring        : [
                         grafanaEmailFrom: config.features['monitoring']['grafanaEmailFrom'] as String,
-                        grafanaEmailTo: config.features['monitoring']['grafanaEmailTo'] as String,
-                        grafana: [
+                        grafanaEmailTo  : config.features['monitoring']['grafanaEmailTo'] as String,
+                        grafana         : [
                                 // Note that passing the URL object here leads to problems in Graal Native image, see Git history
                                 host: config.features['monitoring']['grafanaUrl'] ? new URL(config.features['monitoring']['grafanaUrl'] as String).host : ""
                         ]
                 ],
-                skipCrds : config.application['skipCrds'],
-                mail: [
-                        active: config.features['mail']['active'],
+                remote: config.application["remote"],
+                skipCrds          : config.application['skipCrds'],
+                namespaceIsolation: config.application['namespaceIsolation'],
+                namespaces        : namespaceList,
+                mail              : [
+                        active      : config.features['mail']['active'],
                         smtpAddress : config.features['mail']['smtpAddress'],
-                        smtpPort : config.features['mail']['smtpPort'],
-                        smtpUser : config.features['mail']['smtpUser'],
-                        smtpPassword : config.features['mail']['smtpPassword']
+                        smtpPort    : config.features['mail']['smtpPort'],
+                        smtpUser    : config.features['mail']['smtpUser'],
+                        smtpPassword: config.features['mail']['smtpPassword']
                 ],
-                scmm: getScmmConfiguration(),
-                jenkins: getJenkinsConfiguration()
-        ]).toPath()
-        Map helmValuesYaml = fileSystemUtils.readYaml(tmpHelmValues)
-
-        if (remoteCluster) {
-            log.debug("Setting grafana service.type to LoadBalancer since it is running in a remote cluster")
-            helmValuesYaml['grafana']['service']['type'] = 'LoadBalancer'
-        }
-
-        if (username != null && username != "admin") {
-            log.debug("Setting grafana username")
-            helmValuesYaml['grafana']['adminUser'] = username
-        }
-        if (password != null && password != "admin") {
-            log.debug("Setting grafana password")
-            helmValuesYaml['grafana']['adminPassword'] = password
-        }
+                scmm              : getScmmConfiguration(),
+                jenkins           : getJenkinsConfiguration(),
+                config: config,
+                // Allow for using static classes inside the templates
+                statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
+        ])) as Map
+        
+        def valuesFromConfig = config['features']['monitoring']['helm']['values'] as Map
+        def mergedMap = MapUtils.deepMerge(valuesFromConfig, templatedMap)
 
         // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo
         k8sClient.createSecret(
                 'generic',
                 'prometheus-metrics-creds-scmm',
                 'monitoring',
-                new Tuple2('password', password)
+                new Tuple2('password', config.application["password"])
         )
 
         k8sClient.createSecret(
@@ -119,11 +113,24 @@ class PrometheusStack extends Feature {
             )
         }
 
+        if (config.application['namespaceIsolation']) {
+            ScmmRepo clusterResourcesRepo = scmmRepoProvider.getRepo('argocd/cluster-resources')
+            clusterResourcesRepo.cloneRepo()
+
+            for (String namespace : namespaceList) {
+                def rbacYaml = new TemplatingEngine().template(new File(RBAC_NAMESPACE_ISOLATION_TEMPLATE),
+                        [namespace: namespace, 
+                         namePrefix: namePrefix])
+                clusterResourcesRepo.writeFile("misc/monitoring/rbac/${namespace}.yaml", rbacYaml)
+            }
+
+            clusterResourcesRepo.commitAndPush("Add namespace-isolated RBAC for PrometheusStack")
+        }
+
+        def tmpHelmValues = fileSystemUtils.createTempFile()
+        fileSystemUtils.writeYaml(mergedMap, tmpHelmValues.toFile())
+
         def helmConfig = config['features']['monitoring']['helm']
-        setCustomImages(helmConfig, helmValuesYaml)
-
-        fileSystemUtils.writeYaml(helmValuesYaml, tmpHelmValues.toFile())
-
         if (config.application['mirrorRepos']) {
             log.debug("Mirroring repos: Deploying prometheus from local git repo")
 
@@ -152,6 +159,27 @@ class PrometheusStack extends Feature {
                     'kube-prometheus-stack',
                     tmpHelmValues)
         }
+    }
+
+    protected List getNamespaceList() {
+        def namespaces = []
+        def namePrefix = config.application['namePrefix']
+        if (config.features['argocd']['active']) {
+            namespaces.addAll("${namePrefix}argocd", "${namePrefix}example-apps-staging", "${namePrefix}example-apps-production")
+        }
+        if (config.features['monitoring']['active']) { // Ignore mailhog here, because it does not expose metrics
+            namespaces.addAll("${namePrefix}monitoring")
+        }
+        if (config.features['secrets']['active']) {
+            namespaces.addAll("${namePrefix}secrets")
+        }
+        if (config.features['ingressNginx']['active']) {
+            namespaces.addAll("${namePrefix}ingress-nginx")
+        }
+        if (config.registry['internal'] || config.scmm['internal'] || config.jenkins['internal']) {
+            namespaces.addAll("${namePrefix}default")
+        }
+        return namespaces
     }
 
     private Map getScmmConfiguration() {
@@ -188,102 +216,5 @@ class PrometheusStack extends Feature {
                 host           : uri.authority,
                 path           : uri.path
         ]
-    }
-
-    private void setCustomImages(helmConfig, Map helmValuesYaml) {
-        setGrafanaImage(helmConfig, helmValuesYaml)
-        setGrafanaSidecarImage(helmConfig, helmValuesYaml)
-        setPrometheusImage(helmConfig, helmValuesYaml)
-        setPrometheusOperatorImage(helmConfig, helmValuesYaml)
-        setPrometheusConfigReloaderImage(helmConfig, helmValuesYaml)
-    }
-
-    private static void setPrometheusConfigReloaderImage(helmConfig, Map helmValuesYaml) {
-        String prometheusConfigReloaderImage = helmConfig['prometheusConfigReloaderImage']
-        if (prometheusConfigReloaderImage) {
-            log.debug("Setting custom prometheus-config-reloader image as requested for prometheus-stack")
-            def image = DockerImageParser.parse(prometheusConfigReloaderImage)
-            MapUtils.deepMerge([
-                    prometheusOperator: [
-                            prometheusConfigReloader: [
-                                    image: [
-                                            registry  : image.registry,
-                                            repository: image.repository,
-                                            tag       : image.tag
-                                    ]
-                            ]
-                    ]
-            ], helmValuesYaml)
-        }
-    }
-
-    private static void setPrometheusOperatorImage(helmConfig, Map helmValuesYaml) {
-        String prometheusOperatorImage = helmConfig['prometheusOperatorImage']
-        if (prometheusOperatorImage) {
-            log.debug("Setting custom prometheus-operator image as requested for prometheus-stack")
-            def image = DockerImageParser.parse(prometheusOperatorImage)
-            MapUtils.deepMerge([
-                    prometheusOperator: [
-                            image: [
-                                    registry: image.registry,
-                                    repository: image.repository,
-                                    tag       : image.tag
-                            ]
-                    ]
-            ], helmValuesYaml)
-        }
-    }
-
-    private static void setPrometheusImage(helmConfig, Map helmValuesYaml) {
-        String prometheusImage = helmConfig['prometheusImage']
-        if (prometheusImage) {
-            log.debug("Setting custom prometheus-operator image as requested for prometheus-stack")
-            def image = DockerImageParser.parse(prometheusImage)
-            MapUtils.deepMerge([
-                    prometheus: [
-                            prometheusSpec: [
-                                    image: [
-                                            registry: image.registry,
-                                            repository: image.repository,
-                                            tag       : image.tag
-                                    ]
-                            ]
-                    ]
-            ], helmValuesYaml)
-        }
-    }
-
-    private static void setGrafanaSidecarImage(helmConfig, Map helmValuesYaml) {
-        String grafanaSidecarImage = helmConfig['grafanaSidecarImage']
-        if (grafanaSidecarImage) {
-            log.debug("Setting custom grafana-sidecar image as requested for prometheus-stack")
-            def image = DockerImageParser.parse(grafanaSidecarImage)
-            MapUtils.deepMerge([
-                    grafana: [
-                            sidecar: [
-                                    image: [
-                                            repository: image.getRegistryAndRepositoryAsString(),
-                                            tag       : image.tag
-                                    ]
-                            ]
-                    ]
-            ], helmValuesYaml)
-        }
-    }
-
-    private static void setGrafanaImage(helmConfig, Map helmValuesYaml) {
-        String grafanaImage = helmConfig['grafanaImage']
-        if (grafanaImage) {
-            log.debug("Setting custom grafana image as requested for prometheus-stack")
-            def image = DockerImageParser.parse(grafanaImage)
-            MapUtils.deepMerge([
-                    grafana: [
-                            image: [
-                                    repository: image.getRegistryAndRepositoryAsString(),
-                                    tag       : image.tag
-                            ]
-                    ]
-            ], helmValuesYaml)
-        }
     }
 }

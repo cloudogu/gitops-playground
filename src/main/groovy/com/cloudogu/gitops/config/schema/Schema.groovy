@@ -1,5 +1,5 @@
 //file:noinspection unused
-package com.cloudogu.gitops.config.schema
+package com.cloudogu.gitops.config.schema 
 
 import com.fasterxml.jackson.annotation.JsonClassDescription
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
@@ -41,6 +41,12 @@ class Schema {
         String repoURL = ""
         @JsonPropertyDescription(HELM_CONFIG_VERSION_DESCRIPTION)
         String version = ""
+    }
+    
+    @JsonClassDescription(HELM_CONFIG_DESCRIPTION)
+    static class HelmConfigWithValues extends HelmConfig {
+        @JsonPropertyDescription(HELM_CONFIG_VALUES_DESCRIPTION)
+        Map<String, Object> values
     }
 
     static class RegistrySchema {
@@ -122,7 +128,9 @@ class Schema {
         boolean insecure = false
         @JsonPropertyDescription(LOCAL_HELM_CHART_FOLDER_DESCRIPTION)
         String localHelmChartFolder = ""
-
+        @JsonPropertyDescription(OPENSHIFT_DESCRIPTION)
+        boolean openshift = false
+        
         // args group configuration
         @JsonPropertyDescription(USERNAME_DESCRIPTION)
         String username = ""
@@ -160,6 +168,8 @@ class Schema {
         boolean mirrorRepos = false
         @JsonPropertyDescription(SKIP_CRDS_DESCRIPTION)
         boolean skipCrds = false
+        @JsonPropertyDescription(NAMESPACE_ISOLATION_DESCRIPTION)
+        boolean namespaceIsolation = false
     }
 
     static class ImagesSchema {
@@ -263,7 +273,7 @@ class Schema {
 
         @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
         MonitoringHelmSchema helm
-        static class MonitoringHelmSchema extends HelmConfig {
+        static class MonitoringHelmSchema extends HelmConfigWithValues {
             @JsonPropertyDescription(GRAFANA_IMAGE_DESCRIPTION)
             String grafanaImage = ""
             @JsonPropertyDescription(GRAFANA_SIDECAR_IMAGE_DESCRIPTION)
@@ -316,12 +326,7 @@ class Schema {
         @JsonPropertyDescription(INGRESS_NGINX_ENABLE_DESCRIPTION)
         boolean active = false
 
-        @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
-        IngressNginxHelmSchema helm
-        static class IngressNginxHelmSchema extends HelmConfig {
-            @JsonPropertyDescription(HELM_CONFIG_VALUES_DESCRIPTION)
-            Map<String, Object> values
-        }
+        HelmConfigWithValues helm
     }
 
     static class ExampleAppsSchema {

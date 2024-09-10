@@ -40,6 +40,7 @@ interface ConfigConstants {
     // group remote
     String REMOTE_DESCRIPTION = 'Expose services as LoadBalancers'
     String INSECURE_DESCRIPTION = 'Sets insecure-mode in cURL which skips cert validation'
+    String OPENSHIFT_DESCRIPTION = 'Install with openshift compatibility'
     String LOCAL_HELM_CHART_FOLDER_DESCRIPTION = 'A local folder (within the GOP image mostly) where the local mirrors of all helm charts are loaded from when mirror-Repos is active. This is mostly needed for development.'
 
     // group tool configuration
@@ -65,6 +66,7 @@ interface ConfigConstants {
     String BASE_URL_DESCRIPTION = 'the external base url (TLD) for all tools, e.g. https://example.com or http://localhost:8080. The individual -url params for argocd, grafana, vault and mailhog take precedence.'
     String URL_SEPARATOR_HYPHEN_DESCRIPTION = 'Use hyphens instead of dots to separate application name from base-url'
     String SKIP_CRDS_DESCRIPTION = 'Skip installation of CRDs. This requires prior installation of CRDs'
+    String NAMESPACE_ISOLATION_DESCRIPTION = 'Configure tools to explicitly work with the given namespaces only, and not cluster-wide. This way GOP can be installed without having cluster-admin permissions.'
     String MIRROR_REPOS_DESCRIPTION = 'Changes the sources of deployed tools so they are not pulled from the internet, but are pulled from git and work in air-gapped environments.'
     String SPRING_BOOT_HELM_CHART_DESCRIPTION = 'Repo to pull the generic Spring Boot Helm chart, used in examples and exercises'
     String SPRING_PETCLINIC_DESCRIPTION = 'Repo to pull the Spring Petclinic, used in examples and exercises'

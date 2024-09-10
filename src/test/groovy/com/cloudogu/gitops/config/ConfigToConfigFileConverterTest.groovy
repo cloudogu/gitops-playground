@@ -206,6 +206,7 @@ application:
   remote: true
   insecure: true
   localHelmChartFolder: "folder"
+  openshift: false
   username: "app-user"
   password: "app-pw"
   "yes": true
@@ -218,6 +219,7 @@ application:
   urlSeparatorHyphen: true
   mirrorRepos: true
   skipCrds: true
+  namespaceIsolation: false
 images:
   kubectl: "kubectl-value"
   helm: "helm-value"
@@ -265,6 +267,7 @@ features:
       chart: "kube-prometheus-stack"
       repoURL: "https://prometheus-community.github.io/helm-charts"
       version: "58.2.1"
+      values: null
       grafanaImage: "grafanaImage"
       grafanaSidecarImage: "grafanaSidecarImage"
       prometheusImage: "prometheusImage"

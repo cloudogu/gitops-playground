@@ -81,6 +81,8 @@ class GitopsPlaygroundCli  implements Runnable {
     private Boolean remote
     @Option(names = ['--insecure'], description = INSECURE_DESCRIPTION)
     private Boolean insecure
+    @Option(names = ['--openshift'], description = OPENSHIFT_DESCRIPTION)
+    private Boolean openshift
 
     // args group tool configuration
     @Option(names = ['--git-name'], description = GIT_NAME_DESCRIPTION)
@@ -127,6 +129,8 @@ class GitopsPlaygroundCli  implements Runnable {
     private Boolean mirrorRepos
     @Option(names = ['--skip-crds'], description = SKIP_CRDS_DESCRIPTION)
     private Boolean skipCrds
+    @Option(names = ['--namespace-isolation'], description = NAMESPACE_ISOLATION_DESCRIPTION)
+    private Boolean namespaceIsolation
 
     // args group metrics
     @Option(names = ['--metrics', '--monitoring'], description = MONITORING_ENABLE_DESCRIPTION)
@@ -396,6 +400,7 @@ class GitopsPlaygroundCli  implements Runnable {
                         password: scmmPassword
                 ],
                 application: [
+                        openshift     : openshift,
                         remote        : remote,
                         mirrorRepos     : mirrorRepos, 
                         destroy : destroy,
@@ -411,7 +416,8 @@ class GitopsPlaygroundCli  implements Runnable {
                         gitName: gitName,
                         gitEmail: gitEmail,
                         urlSeparatorHyphen : urlSeparatorHyphen,
-                        skipCrds : skipCrds
+                        skipCrds : skipCrds,
+                        namespaceIsolation: namespaceIsolation
                 ],
                 images     : [
                         kubectl    : kubectlImage,
