@@ -24,6 +24,10 @@ class K8sClientTest {
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
                 "kubectl create namespace foo-my-ns" +
                         " --dry-run=client -oyaml | kubectl apply -f-")
+
+        assertThat(commandExecutor.actualCommands[1]).contains(
+                "kubectl label namespace foo-my-ns name=foo-my-ns" +
+                        " --dry-run=client -oyaml | kubectl apply -f-")
     }
 
     @Test

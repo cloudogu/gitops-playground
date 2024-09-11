@@ -45,6 +45,7 @@ class PrometheusStackTest {
                     namespaceIsolation : false,
                     gitName : 'Cloudogu',
                     gitEmail : 'hello@cloudogu.com',
+                    netpols : false,
             ],
             features   : [
                     argocd: [
@@ -491,7 +492,19 @@ policies:
         assertThat(yaml['grafana']['rbac']['namespaced']).isEqualTo(true)
         assertThat(yaml['grafana']['sidecar']['dashboards']['searchNamespace']).isEqualTo('foo-monitoring')
     }
-    
+
+    @Test
+    void 'network policies are created for prometheus'() {
+        config.application['netpols'] = true
+        def prometheusStack = createStack()
+        prometheusStack.install()
+
+        for (String namespace : prometheusStack.namespaceList) {
+            def netPolsYaml = new File("$clusterResourcesRepoDir/misc/monitoring/netpols/${namespace}.yaml")
+            assertThat(netPolsYaml.text).contains("namespace: ${namespace}")
+        }
+    }
+
     @Test
     void 'helm releases are installed in air-gapped mode'() {
         config.application['mirrorRepos'] = true
