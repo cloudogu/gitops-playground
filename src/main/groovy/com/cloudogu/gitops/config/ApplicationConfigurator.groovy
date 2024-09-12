@@ -140,7 +140,7 @@ class ApplicationConfigurator {
                     ],
                     springPetclinic: [
                             url: System.getenv('SPRING_PETCLINIC_REPO') ?: 'https://github.com/cloudogu/spring-petclinic.git',
-                            ref: '32c8653'
+                            ref: 'b0e0d18'
                     ],
                     gitopsBuildLib: [
                             url: System.getenv('GITOPS_BUILD_LIB_REPO') ?: 'https://github.com/cloudogu/gitops-build-lib.git',
@@ -181,9 +181,10 @@ class ApplicationConfigurator {
                             grafanaEmailTo : 'infra@example.org',
                             helm  : [
                                     chart  : 'kube-prometheus-stack',
-                                    repoURL: 'https://prometheus-community.github.io/helm-charts',
+                                    /* When changing the chart, note that Argo CD also applies the CRDs from GitHub. */
+                                    repoURL: 'https://schnatterer.github.io/prom-helm-charts',
                                     /* When updating this make sure to also test if air-gapped mode still works */
-                                    version: '58.2.1',
+                                    version: '63.0.0',
                                     grafanaImage: '',
                                     grafanaSidecarImage: '',
                                     prometheusImage: '',
