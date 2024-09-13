@@ -9,7 +9,7 @@ spec:
     - from:
         - namespaceSelector:
             matchLabels:
-              name: ${namePrefix}monitoring
+              kubernetes.io/metadata.name: ${namePrefix}monitoring
           podSelector:
             matchLabels:
               prometheus: kube-prometheus-stack-prometheus

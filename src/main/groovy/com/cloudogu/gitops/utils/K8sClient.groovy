@@ -74,14 +74,9 @@ class K8sClient {
                 .dryRunOutputYaml()
                 .build()
 
-        def command2 = kubectl( 'label', 'namespace', "${getNamePrefix()}${name}" ,
-                "name=${getNamePrefix()}${name}")
-                .dryRunOutputYaml()
-                .build()
-
         commandExecutor.execute(command1, APPLY_FROM_STDIN)
-        commandExecutor.execute(command2, APPLY_FROM_STDIN)
     }
+
     /**
      * Idempotent create, i.e. overwrites if exists.
      */
