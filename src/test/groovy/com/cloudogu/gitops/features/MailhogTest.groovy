@@ -5,9 +5,8 @@ import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.K8sClient
+import com.cloudogu.gitops.utils.K8sClientForTest
 import groovy.yaml.YamlSlurper
-import jakarta.inject.Provider
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
@@ -17,31 +16,33 @@ import java.nio.file.Path
 
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.any
-import static org.mockito.Mockito.mock
-import static org.mockito.Mockito.verify
-import static org.mockito.Mockito.when
+import static org.mockito.Mockito.*
 
 class MailhogTest {
 
     Map config = [
+            registry   : [
+                    createImagePullSecret: false,
+                    twoRegistries        : false
+            ],
             application: [
-                    username: 'abc',
-                    password: '123',
-                    remote  : false,
-                    namePrefix: "foo-",
-                    podResources : false,
-                    mirrorRepos: false
+                    username    : 'abc',
+                    password    : '123',
+                    remote      : false,
+                    namePrefix  : "foo-",
+                    podResources: false,
+                    mirrorRepos : false
             ],
             scmm       : [
                     internal: true,
             ],
-            features    : [
-                    argocd    : [
+            features   : [
+                    argocd: [
                             active: false,
                     ],
-                    mail      : [
+                    mail  : [
                             mailhog: true,
-                            helm  : [
+                            helm   : [
                                     chart  : 'mailhog',
                                     repoURL: 'https://codecentric.github.io/helm-charts',
                                     version: '5.0.1',
@@ -53,8 +54,8 @@ class MailhogTest {
     AirGappedUtils airGappedUtils = mock(AirGappedUtils)
     Path temporaryYamlFile = null
     CommandExecutorForTest k8sCommandExecutor = new CommandExecutorForTest()
-    CommandExecutorForTest commandExecutor = new CommandExecutorForTest()
     FileSystemUtils fileSystemUtils = new FileSystemUtils()
+    K8sClientForTest k8sClient = new K8sClientForTest(config)
 
     @Test
     void "is disabled via active flag"() {
@@ -110,7 +111,7 @@ class MailhogTest {
         assertThat(new BCryptPasswordEncoder().matches(expectedPassword, actualPasswordBcrypted)).isTrue()
                 .withFailMessage("Expected password does not match actual hash")
     }
-    
+
     @Test
     void 'When argocd disabled, mailhog is deployed imperatively via helm'() {
         config.features['argocd']['active'] = false
@@ -128,6 +129,7 @@ class MailhogTest {
         )
 
         assertThat(parseActualYaml()).doesNotContainKey('resources')
+        assertThat(parseActualYaml()).doesNotContainKey('imagePullSecrets')
     }
 
     @Test
@@ -145,31 +147,23 @@ class MailhogTest {
 
         createMailhog().install()
     }
-    
+
     @Test
     void 'Allows overriding the image'() {
-        config['features']['mail']['helm']['image'] = 'abc'
-
-        createMailhog().install()
-        assertThat(parseActualYaml()['image']['repository']).isEqualTo('abc')
-    }
-    
-    @Test
-    void 'Allows overriding the image with tag'() {
         config['features']['mail']['helm']['image'] = 'abc:42'
-        
+
         createMailhog().install()
         assertThat(parseActualYaml()['image']['repository']).isEqualTo('abc')
         assertThat(parseActualYaml()['image']['tag']).isEqualTo(42)
     }
-    
+
     @Test
     void 'Image is optional'() {
         config['features']['mail']['helm']['image'] = ''
 
         createMailhog().install()
         assertThat(parseActualYaml()['image']).isNull()
-        
+
         config['features']['mail']['helm']['image'] = null
 
         createMailhog().install()
@@ -187,7 +181,7 @@ class MailhogTest {
         Path SourceChart = rootChartsFolder.resolve('mailhog')
         Files.createDirectories(SourceChart)
 
-        Map ChartYaml = [ version     : '1.2.3' ]
+        Map ChartYaml = [version: '1.2.3']
         fileSystemUtils.writeYaml(ChartYaml, SourceChart.resolve('Chart.yaml').toFile())
 
         createMailhog().install()
@@ -199,14 +193,29 @@ class MailhogTest {
         assertThat(helmConfig.value.version).isEqualTo('5.0.1')
         verify(deploymentStrategy).deployFeature(
                 'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/a/b',
-                'mailhog', '.', '1.2.3','monitoring',
+                'mailhog', '.', '1.2.3', 'monitoring',
                 'mailhog', temporaryYamlFile, DeploymentStrategy.RepoType.GIT)
+    }
+
+    @Test
+    void 'deploys image pull secrets for proxy registry'() {
+        config['registry']['createImagePullSecrets'] = true
+        config['registry']['twoRegistries'] = true
+        config['registry']['proxyUrl'] = 'proxy-url'
+        config['registry']['proxyUsername'] = 'proxy-user'
+        config['registry']['proxyPassword'] = 'proxy-pw'
+        
+        createMailhog().install()
+        
+        k8sClient.commandExecutorForTest.assertExecuted(
+                'kubectl create secret docker-registry proxy-registry -n foo-monitoring' +
+                ' --docker-server proxy-url --docker-username proxy-user --docker-password proxy-pw')
+        assertThat(parseActualYaml()['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
     }
 
     private Mailhog createMailhog() {
         // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
 
-        def configuration = new Configuration(config)
         new Mailhog(new Configuration(config), new FileSystemUtils() {
             @Override
             Path copyToTempDir(String filePath) {
@@ -215,12 +224,7 @@ class MailhogTest {
                 // Path after template invocation
                 return ret
             }
-        }, deploymentStrategy, new K8sClient(k8sCommandExecutor, new FileSystemUtils(), new Provider<Configuration>() {
-            @Override
-            Configuration get() {
-                configuration
-            }
-        }), airGappedUtils)
+        }, deploymentStrategy, k8sClient, airGappedUtils)
     }
 
     private Map parseActualYaml() {

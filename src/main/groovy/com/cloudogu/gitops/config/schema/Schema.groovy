@@ -1,11 +1,10 @@
 //file:noinspection unused
-package com.cloudogu.gitops.config.schema 
+package com.cloudogu.gitops.config.schema
 
 import com.fasterxml.jackson.annotation.JsonClassDescription
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 
-import static com.cloudogu.gitops.config.ConfigConstants.*
-
+import static com.cloudogu.gitops.config.ConfigConstants.* 
 /**
  * The schema for the configuration file.
  * It is used to validate the passed yaml file.
@@ -70,6 +69,13 @@ class Schema {
         String proxyUsername = ""
         @JsonPropertyDescription(REGISTRY_PROXY_PASSWORD_DESCRIPTION)
         String proxyPassword = ""
+        // Alternative set of credentials for url, used only for image pull secrets
+        @JsonPropertyDescription(REGISTRY_USERNAME_RO_DESCRIPTION)
+        String readOnlyUsername
+        @JsonPropertyDescription(REGISTRY_PASSWORD_RO_DESCRIPTION)
+        String readOnlyPassword
+        @JsonPropertyDescription(REGISTRY_CREATE_IMAGE_PULL_SECRETS_DESCRIPTION)
+        Boolean createImagePullSecrets
 
         HelmConfig helm
     }
@@ -215,7 +221,7 @@ class Schema {
     static class FeaturesSchema {
         @JsonPropertyDescription(ARGOCD_DESCRIPTION)
         ArgoCDSchema argocd
-        @JsonPropertyDescription(MAILHOG_DESCRIPTION)
+        @JsonPropertyDescription(MAIL_DESCRIPTION)
         MailSchema mail
         @JsonPropertyDescription(MONITORING_DESCRIPTION)
         MonitoringSchema monitoring

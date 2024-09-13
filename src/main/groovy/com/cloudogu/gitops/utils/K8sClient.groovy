@@ -76,7 +76,7 @@ class K8sClient {
 
         commandExecutor.execute(command1, APPLY_FROM_STDIN)
     }
-
+    
     /**
      * Idempotent create, i.e. overwrites if exists.
      */
@@ -87,6 +87,21 @@ class K8sClient {
                 .dryRunOutputYaml()
                 .build()
         
+        commandExecutor.execute(command1, APPLY_FROM_STDIN)
+    }
+
+    /**
+     * Idempotent create, i.e. overwrites if exists.
+     */
+    void createImagePullSecret(String name, String namespace = '', String host, String user, String password) {
+        def command1 = kubectl( 'create', 'secret', 'docker-registry', name)
+                .namespace(namespace)
+                .mandatory('--docker-server', host)
+                .mandatory('--docker-username', user)
+                .mandatory('--docker-password', password)
+                .dryRunOutputYaml()
+                .build()
+
         commandExecutor.execute(command1, APPLY_FROM_STDIN)
     }
     
@@ -134,6 +149,7 @@ class K8sClient {
         // We're using a patch file here, instead of a patch JSON (--patch), because of quoting issues
         // ERROR c.c.gitops.utils.CommandExecutor - Stderr: error: unable to parse "'{\"stringData\":": yaml: found unexpected end of stream
         File patchYaml = File.createTempFile('gitops-playground-patch-yaml', '')
+        log.trace("Writing patch YAML: ${yaml}")
         fileSystemUtils.writeYaml(yaml, patchYaml)
 
         //  kubectl patch secret argocd-secret -p '{"stringData": { "admin.password": "'"${bcryptArgoCDPassword}"'"}}' || true

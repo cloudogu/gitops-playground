@@ -40,6 +40,8 @@ class DockerImageParser {
 
     static Image parse(String image) {
         if (!image.contains(":")) {
+            // Most helm charts expect an explicit image tag, otherwise they use the version set by the app.
+            // This will likely be unexpected so force using a tag
             throw new RuntimeException("Cannot set image '$image' due to missing tag. Must be the format '\$repository:\$tag'")
         }
 

@@ -4,11 +4,10 @@ import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.AirGappedUtils
-import com.cloudogu.gitops.utils.DockerImageParser
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
-import com.cloudogu.gitops.utils.MapUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
+import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 import io.micronaut.core.annotation.Order
@@ -20,12 +19,15 @@ import java.nio.file.Path
 @Singleton
 @Order(400)
 class ExternalSecretsOperator extends Feature {
+    
+    static final String HELM_VALUES_PATH = 'applications/cluster-resources/secrets/external-secrets/values.ftl.yaml'
+    static final String NAMESPACE = 'secrets'
+    
     private Map config
     private FileSystemUtils fileSystemUtils
     private DeploymentStrategy deployer
     private K8sClient k8sClient
     private AirGappedUtils airGappedUtils
-    static final String HELM_VALUES_PATH = 'applications/cluster-resources/secrets/external-secrets/values.ftl.yaml'
 
     ExternalSecretsOperator(
             Configuration config,
@@ -48,46 +50,19 @@ class ExternalSecretsOperator extends Feature {
 
     @Override
     void enable() {
+
+        if (config.registry['createImagePullSecrets'] && config.registry['twoRegistries']) {
+            k8sClient.createImagePullSecret('proxy-registry', NAMESPACE, config.registry['proxyUrl'] as String,
+                    config.registry['proxyUsername'] as String,
+                    config.registry['proxyPassword'] as String)
+        }
+
         def helmConfig = config['features']['secrets']['externalSecrets']['helm']
         def helmValuesYaml = templateToMap(HELM_VALUES_PATH, [
-                        podResources: config.application['podResources'],
-                        skipCrds : config.application['skipCrds']
+                        config: config,
+                        // Allow for using static classes inside the templates
+                        statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
                 ])
-
-        if (helmConfig['image']) {
-            log.debug("Setting custom ESO image as requested for external-secrets-operator")
-            def image = DockerImageParser.parse(helmConfig['image'] as String)
-            MapUtils.deepMerge([
-                    image: [
-                            repository: image.getRegistryAndRepositoryAsString(),
-                            tag       : image.tag
-                    ]
-            ], helmValuesYaml)
-        }
-        if (helmConfig['certControllerImage']) {
-            log.debug("Setting custom cert-controller image as requested for external-secrets-operator")
-            def image = DockerImageParser.parse(helmConfig['certControllerImage'] as String)
-            MapUtils.deepMerge([
-                    certController: [
-                            image: [
-                                    repository: image.getRegistryAndRepositoryAsString(),
-                                    tag       : image.tag
-                            ]
-                    ]
-            ], helmValuesYaml)
-        }
-        if (helmConfig['webhookImage']) {
-            log.debug("Setting custom webhook image as requested for external-secrets-operator")
-            def image = DockerImageParser.parse(helmConfig['webhookImage'] as String)
-            MapUtils.deepMerge([
-                    webhook: [
-                            image: [
-                                    repository: image.getRegistryAndRepositoryAsString(),
-                                    tag       : image.tag
-                            ]
-                    ]
-            ], helmValuesYaml)
-        }
 
         def tmpHelmValues = fileSystemUtils.createTempFile()
         fileSystemUtils.writeYaml(helmValuesYaml, tmpHelmValues.toFile())
@@ -106,7 +81,7 @@ class ExternalSecretsOperator extends Feature {
                     "external-secrets",
                     '.',
                     externalSecretsVersion,
-                    'secrets',
+                    NAMESPACE,
                     'external-secrets',
                     tmpHelmValues, DeploymentStrategy.RepoType.GIT
             )
@@ -116,7 +91,7 @@ class ExternalSecretsOperator extends Feature {
                 "externalsecretsoperator",
                 helmConfig['chart'] as String,
                 helmConfig['version'] as String,
-                'secrets',
+                NAMESPACE,
                 'external-secrets',
                 tmpHelmValues
             )

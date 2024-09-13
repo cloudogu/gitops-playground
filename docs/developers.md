@@ -465,6 +465,9 @@ for operation in "${operations[@]}"; do
 done
 
 skopeo copy docker://eclipse-temurin:11-jre-alpine --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/eclipse-temurin:11-jre-alpine
+skopeo copy docker://ghcr.io/cloudogu/mailhog:v1.0.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/mailhog
+skopeo copy docker://ghcr.io/external-secrets/external-secrets:v0.9.16 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/eso
+skopeo copy docker://hashicorp/vault:1.14.0  --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/vault
 ```
 
 * Deploy playground:
@@ -475,6 +478,8 @@ docker run --rm -t -u $(id -u)  \
     --net=host  \
     gitops-playground:dev \
     --yes --argocd --ingress-nginx --base-url=http://localhost \
+    --vault=dev --monitoring --mailhog \
+    --create-image-pull-secrets \
     --registry-url=localhost:30000 \
     --registry-path=registry \
     --registry-username=Registry  \
@@ -482,24 +487,14 @@ docker run --rm -t -u $(id -u)  \
     --registry-proxy-url=localhost:30000 \
     --registry-proxy-username=Proxy \
     --registry-proxy-password=Proxy12345 \
-    --petclinic-image=localhost:30000/proxy/eclipse-temurin:11-jre-alpine 
+    --petclinic-image=localhost:30000/proxy/eclipse-temurin:11-jre-alpine \
+    --mailhog-image=localhost:30000/proxy/mailhog:latest \
+    --vault-image=localhost:30000/proxy/vault:latest \
+    --external-secrets-image=localhost:30000/proxy/eso:latest \
+    --external-secrets-certcontroller-image=localhost:30000/proxy/eso:latest \
+    --external-secrets-webhook-image=localhost:30000/proxy/eso:latest
 
 # Or with config file --config-file=/config/gitops-playground.yaml 
-```
-
-To make the registry credentials know to kubernetes, apply the following:
-
-```bash
-namespaces=("example-apps-production" "example-apps-staging")
-
-for namespace in "${namespaces[@]}"; do
-  kubectl create secret docker-registry regcred \
-  -n $namespace \
-  --docker-server=localhost:30000 \
-  --docker-username=Registry\
-  --docker-password=Registry12345
-  kubectl patch serviceaccount default -n $namespace -p '{"imagePullSecrets": [{"name": "regcred"}]}'
-done
 ```
 
 The same using a config file looks like so:
@@ -513,6 +508,7 @@ registry:
   registryUsername: Registry
   registryPassword: Registry12345
   registryPath: Registry
+  createImagePullSecrets: true
 images: 
   petclinic: localhost:30000/proxy/eclipse-temurin:11-jre-alpine
 ```

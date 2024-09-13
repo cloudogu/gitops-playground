@@ -45,15 +45,19 @@ class GitopsPlaygroundCli  implements Runnable {
     private String registryUsername
     @Option(names = ['--registry-password'], description = REGISTRY_PASSWORD_DESCRIPTION)
     private String registryPassword
-    @Option(names = ['--registry-proxy-url'], description = 'The url of your external proxy-registry. Make sure to always use this with --registry-proxy-url')
+    @Option(names = ['--registry-proxy-url'], description = REGISTRY_PROXY_URL_DESCRIPTION)
     private String registryProxyUrl
-    @Option(names = ['--registry-proxy-path'], description = 'Optional when --registry-proxy-url is set')
-    private String registryProxyPath
-    @Option(names = ['--registry-proxy-username'], description = 'Optional when --registry-proxy-url is set')
+    @Option(names = ['--registry-proxy-username'], description = REGISTRY_PROXY_USERNAME_DESCRIPTION)
     private String registryProxyUsername
-    @Option(names = ['--registry-proxy-password'], description = 'Optional when --registry-proxy-url is set')
+    @Option(names = ['--registry-proxy-password'], description = REGISTRY_PROXY_PASSWORD_DESCRIPTION)
     private String registryProxyPassword
-
+    @Option(names = ['--registry-username-read-only'], description = REGISTRY_USERNAME_RO_DESCRIPTION)
+    private String registryUsernameReadOnly
+    @Option(names = ['--registry-password-read-only'], description = REGISTRY_PASSWORD_RO_DESCRIPTION)
+    private String registryPasswordReadOnly
+    @Option(names = ['--create-image-pull-secrets'], description = REGISTRY_CREATE_IMAGE_PULL_SECRETS_DESCRIPTION)
+    private Boolean createImagePullSecrets
+    
     // args group jenkins
     @Option(names = ['--jenkins-url'], description = JENKINS_URL_DESCRIPTION)
     private String jenkinsUrl
@@ -155,6 +159,8 @@ class GitopsPlaygroundCli  implements Runnable {
     private String mailhogUrl
     @Option(names = ['--mailhog', '--mail'], description = MAILHOG_ENABLE_DESCRIPTION, scope = CommandLine.ScopeType.INHERIT)
     private Boolean mailhog
+    @Option(names = ['--mailhog-image'], description = HELM_CONFIG_IMAGE_DESCRIPTION)
+    private String mailhogImage
 
     // condition check dependent parameters of external Mailserver
     @Option(names = ['--smtp-address'], description = SMTP_ADDRESS_DESCRIPTION)
@@ -384,9 +390,11 @@ class GitopsPlaygroundCli  implements Runnable {
                         username    : registryUsername,
                         password    : registryPassword,
                         proxyUrl         : registryProxyUrl,
-                        proxyPath        : registryProxyPath,
                         proxyUsername    : registryProxyUsername,
                         proxyPassword    : registryProxyPassword,
+                        readOnlyUsername    : registryUsernameReadOnly,
+                        readOnlyPassword    : registryPasswordReadOnly,
+                        createImagePullSecrets: createImagePullSecrets
                 ],
                 jenkins    : [
                         url     : jenkinsUrl,
@@ -445,7 +453,10 @@ class GitopsPlaygroundCli  implements Runnable {
                                 smtpAddress : smtpAddress,
                                 smtpPort : smtpPort,
                                 smtpUser : smtpUser,
-                                smtpPassword : smtpPassword
+                                smtpPassword : smtpPassword,
+                                helm      : [
+                                        image: mailhogImage
+                                        ]
                         ],
                         exampleApps: [
                                 petclinic: [
