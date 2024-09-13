@@ -43,6 +43,9 @@ class ApplicationConfigurator {
                     proxyUrl         : '',
                     proxyUsername    : '',
                     proxyPassword    : '',
+                    readOnlyUsername : '',
+                    readOnlyPassword : '',
+                    createImagePullSecrets: false,
                     helm  : [
                             chart  : 'docker-registry',
                             repoURL: 'https://helm.twun.io',
@@ -316,6 +319,14 @@ class ApplicationConfigurator {
                Allow overriding the port, in case multiple playground instance run on a single host in different 
                k3d clusters. */
             newConfig.registry['url'] = "localhost:${newConfig.registry['internalPort']}"
+        }
+        
+        if (newConfig.registry['createImagePullSecrets']) {
+            String username = newConfig.registry['readOnlyUsername'] ?: newConfig.registry['username']
+            String password = newConfig.registry['readOnlyPassword'] ?: newConfig.registry['password']
+            if (!username || !password) {
+                throw new RuntimeException("createImagePullSecrets needs to be used with either registry username and password or the readOnly variants")
+            }
         }
     }
 

@@ -5,9 +5,8 @@ import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.K8sClient
+import com.cloudogu.gitops.utils.K8sClientForTest
 import groovy.yaml.YamlSlurper
-import jakarta.inject.Provider
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
 
@@ -16,9 +15,7 @@ import java.nio.file.Path
 
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.any
-import static org.mockito.Mockito.mock
-import static org.mockito.Mockito.verify
-import static org.mockito.Mockito.when
+import static org.mockito.Mockito.*
 
 class ExternalSecretsOperatorTest {
 
@@ -31,6 +28,9 @@ class ExternalSecretsOperatorTest {
                     podResources : false,
                     skipCrds : false,
                     mirrorRepos: false
+            ],
+            registry: [
+                    createImagePullSecrets: false
             ],
             scmm       : [
                     internal: true,
@@ -53,7 +53,7 @@ class ExternalSecretsOperatorTest {
             ],
     ]
     CommandExecutorForTest commandExecutor = new CommandExecutorForTest()
-    CommandExecutorForTest k8sCommandExecutor = new CommandExecutorForTest()
+    K8sClientForTest k8sClient = new K8sClientForTest(config)
     DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
     AirGappedUtils airGappedUtils = mock(AirGappedUtils)
     FileSystemUtils fileSystemUtils = new FileSystemUtils()
@@ -80,11 +80,12 @@ class ExternalSecretsOperatorTest {
                 temporaryYamlFile
         )
 
-        assertThat(parseActualStackYaml()).doesNotContainKeys('resources')
-        assertThat(parseActualStackYaml()).doesNotContainKey('certController')
-        assertThat(parseActualStackYaml()).doesNotContainKey('webhook')
+        assertThat(parseActualYaml()).doesNotContainKeys('resources')
+        assertThat(parseActualYaml()).doesNotContainKey('imagePullSecrets')
+        assertThat(parseActualYaml()).doesNotContainKey('certController')
+        assertThat(parseActualYaml()).doesNotContainKey('webhook')
 
-        assertThat(parseActualStackYaml()['installCRDs']).isNull()
+        assertThat(parseActualYaml()['installCRDs']).isNull()
     }
 
     @Test
@@ -93,7 +94,7 @@ class ExternalSecretsOperatorTest {
 
         createExternalSecretsOperator().install()
 
-        assertThat(parseActualStackYaml()['installCRDs']).isEqualTo(false)
+        assertThat(parseActualYaml()['installCRDs']).isEqualTo(false)
     }
     
     @Test
@@ -106,7 +107,7 @@ class ExternalSecretsOperatorTest {
         createExternalSecretsOperator().install()
 
 
-        def valuesYaml = parseActualStackYaml()
+        def valuesYaml = parseActualYaml()
         assertThat(valuesYaml['image']['repository']).isEqualTo('localhost:5000/external-secrets/external-secrets')
         assertThat(valuesYaml['image']['tag']).isEqualTo('v0.6.1')
 
@@ -123,9 +124,9 @@ class ExternalSecretsOperatorTest {
 
         createExternalSecretsOperator().install()
 
-        assertThat(parseActualStackYaml()['resources'] as Map).containsKeys('limits', 'requests')
-        assertThat(parseActualStackYaml()['webhook']['resources'] as Map).containsKeys('limits', 'requests')
-        assertThat(parseActualStackYaml()['certController']['resources'] as Map).containsKeys('limits', 'requests')
+        assertThat(parseActualYaml()['resources'] as Map).containsKeys('limits', 'requests')
+        assertThat(parseActualYaml()['webhook']['resources'] as Map).containsKeys('limits', 'requests')
+        assertThat(parseActualYaml()['certController']['resources'] as Map).containsKeys('limits', 'requests')
     }
 
     @Test
@@ -155,9 +156,30 @@ class ExternalSecretsOperatorTest {
                 'external-secrets', temporaryYamlFile, DeploymentStrategy.RepoType.GIT)
     }
 
+    @Test
+    void 'deploys image pull secrets for proxy registry'() {
+        config['registry']['createImagePullSecrets'] = true
+        config['registry']['twoRegistries'] = true
+        config['registry']['proxyUrl'] = 'proxy-url'
+        config['registry']['proxyUsername'] = 'proxy-user'
+        config['registry']['proxyPassword'] = 'proxy-pw'
+        config['registry']['proxyPassword'] = 'proxy-pw'
+        config['features']['secrets']['externalSecrets']['helm'] = [
+                certControllerImage: 'some:thing',
+                webhookImage       : 'some:thing'
+        ]
+        
+        createExternalSecretsOperator().install()
+
+        k8sClient.commandExecutorForTest.assertExecuted(
+                'kubectl create secret docker-registry proxy-registry -n foo-secrets' +
+                        ' --docker-server proxy-url --docker-username proxy-user --docker-password proxy-pw')
+        assertThat(parseActualYaml()['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
+        assertThat(parseActualYaml()['certController']['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
+        assertThat(parseActualYaml()['webhook']['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
+    }
 
     private ExternalSecretsOperator createExternalSecretsOperator() {
-        def configuration = new Configuration(config)
         new ExternalSecretsOperator(
                 new Configuration(config),
                 new FileSystemUtils() {
@@ -167,15 +189,10 @@ class ExternalSecretsOperatorTest {
                         temporaryYamlFile = super.createTempFile()
                         return temporaryYamlFile
             }
-        }, deploymentStrategy, new K8sClient(k8sCommandExecutor, new FileSystemUtils(), new Provider<Configuration>() {
-            @Override
-            Configuration get() {
-                configuration
-            }
-        }), airGappedUtils)
+        }, deploymentStrategy, k8sClient, airGappedUtils)
     }
 
-    private Map parseActualStackYaml() {
+    private Map parseActualYaml() {
         def ys = new YamlSlurper()
         return ys.parse(temporaryYamlFile) as Map
     }

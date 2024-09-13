@@ -24,7 +24,11 @@ class VaultTest {
                     password: '123',
                     remote  : false,
                     namePrefix: "foo-",
-                    mirrorRepos: false
+                    mirrorRepos: false,
+                    podResources: false
+            ],
+            registry: [
+                    createImagePullSecrets: false
             ],
             scmm       : [
                     internal: true,
@@ -82,6 +86,8 @@ class VaultTest {
     @Test
     void 'uses ingress if enabled'() {
         config['features']['secrets']['vault']['url'] = 'http://vault.local'
+        // Also set image to make sure ingress and image work at the same time under the server block
+        config['features']['secrets']['vault']['helm']['image'] = 'localhost:5000/hashicorp/vault:1.12.0'
         createVault().install()
 
 
@@ -181,6 +187,8 @@ class VaultTest {
               'vault',
               temporaryYamlFilePath
       )
+        
+        assertThat(parseActualYaml()).doesNotContainKey('global')
     }
 
     @Test
@@ -219,6 +227,22 @@ class VaultTest {
 
         def actualYaml = parseActualYaml()
         assertThat(actualYaml['server']['resources'] as Map).containsKeys('limits', 'requests')
+    }
+
+    @Test
+    void 'deploys image pull secrets for proxy registry'() {
+        config['registry']['createImagePullSecrets'] = true
+        config['registry']['twoRegistries'] = true
+        config['registry']['proxyUrl'] = 'proxy-url'
+        config['registry']['proxyUsername'] = 'proxy-user'
+        config['registry']['proxyPassword'] = 'proxy-pw'
+
+        createVault().install()
+
+        k8sClient.commandExecutorForTest.assertExecuted(
+                'kubectl create secret docker-registry proxy-registry -n foo-secrets' +
+                        ' --docker-server proxy-url --docker-username proxy-user --docker-password proxy-pw')
+        assertThat(parseActualYaml()['global']['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
     }
 
     private Vault createVault() {

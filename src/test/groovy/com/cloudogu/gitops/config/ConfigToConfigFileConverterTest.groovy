@@ -20,6 +20,9 @@ class ConfigToConfigFileConverterTest {
                         proxyUrl         : 'proxyUrl',
                         proxyUsername    : 'proxyUsername',
                         proxyPassword    : 'proxyPassword',
+                        readOnlyUsername: 'roUser',
+                        readOnlyPassword: 'roPw',
+                        createImagePullSecrets: true,
                         helm  : [
                                 chart  : 'docker-registry',
                                 repoURL: 'https://charts.helm.sh/stable',
@@ -187,6 +190,9 @@ registry:
   proxyUrl: "proxyUrl"
   proxyUsername: "proxyUsername"
   proxyPassword: "proxyPassword"
+  readOnlyUsername: "roUser"
+  readOnlyPassword: "roPw"
+  createImagePullSecrets: true
   helm:
     chart: "docker-registry"
     repoURL: "https://charts.helm.sh/stable"

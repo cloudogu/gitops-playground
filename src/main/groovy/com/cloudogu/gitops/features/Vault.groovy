@@ -4,6 +4,7 @@ import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.*
+import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 import io.micronaut.core.annotation.Order
@@ -16,7 +17,8 @@ import java.nio.file.Path
 @Order(500)
 class Vault extends Feature {
     static final String VAULT_START_SCRIPT_PATH = '/applications/cluster-resources/secrets/vault/dev-post-start.ftl.sh'
-
+    static final String HELM_VALUES_PATH = 'applications/cluster-resources/secrets/vault/values.ftl.yaml'
+    static final String NAMESPACE = 'secrets'
 
     private Map config
     private FileSystemUtils fileSystemUtils
@@ -50,68 +52,21 @@ class Vault extends Feature {
     void enable() {
         // Note that some specific configuration steps are implemented in ArgoCD
 
+        if (config.registry['createImagePullSecrets'] && config.registry['twoRegistries']) {
+            k8sClient.createImagePullSecret('proxy-registry', NAMESPACE, config.registry['proxyUrl'] as String,
+                    config.registry['proxyUsername'] as String,
+                    config.registry['proxyPassword'] as String)
+        }
+        
         def helmConfig = config['features']['secrets']['vault']['helm']
 
-        Map yaml = [
-                ui: [
-                        enabled: true,
-                        serviceType: "LoadBalancer",
-                        externalPort: 80
-                ],
-                injector: [
-                        enabled: false
-                ]
-        ]
-        if (config['application']['podResources']){
-            MapUtils.deepMerge([
-                server: [
-                        resources: [
-                                limits: [
-                                        memory: '200Mi',
-                                        cpu: '500m'
-                                ],
-                                requests: [
-                                        memory: '100Mi',
-                                        cpu: '50m'
-                                ]
-                        ]
-                ]
-            ], yaml)
-        }
-
-        if (!config.application['remote']) {
-            log.debug("Setting Vault service.type to NodePort since it is not running in a remote cluster")
-            yaml['ui']['serviceType'] = 'NodePort'
-            yaml['ui']['serviceNodePort'] = 8200
-        }
-
-        if (config.features['secrets']['vault']['url']) {
-            def url = new URL(config.features['secrets']['vault']['url'] as String)
-            MapUtils.deepMerge([
-                   server: [
-                           ingress: [
-                                   enabled: true,
-                                   hosts: [
-                                           [host: url.host],
-                                   ],
-                           ]
-                   ]
-            ], yaml)
-        }
-
-        if (helmConfig['image']) {
-            log.debug("Setting custom image as requested for vault")
-            def image = DockerImageParser.parse(helmConfig['image'] as String)
-            MapUtils.deepMerge([
-                    server: [
-                            image: [
-
-                                    repository: image.getRegistryAndRepositoryAsString(),
-                                    tag       : image.tag
-                            ]
-                    ]
-            ], yaml)
-        }
+        def yaml =  new YamlSlurper().parseText(
+                new TemplatingEngine().template(new File(HELM_VALUES_PATH), [
+                url: config.features['secrets']['vault']['url'] ? new URL(config.features['secrets']['vault']['url'] as String) : null,
+                config: config,
+                // Allow for using static classes inside the templates
+                statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
+            ])) as Map
 
         String vaultMode = config['features']['secrets']['vault']['mode']
         if (vaultMode == 'dev') {

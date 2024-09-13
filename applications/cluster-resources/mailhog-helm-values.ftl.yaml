@@ -1,9 +1,14 @@
-<#if image?has_content>
+<#assign DockerImageParser=statics['com.cloudogu.gitops.utils.DockerImageParser']>
+<#if config.features.mail.helm.image?has_content>
+<#assign imageObject = DockerImageParser.parse(config.features.mail.helm.image)>
 image:
-  repository: ${image?split(":")[0]}
-  <#if image?contains(":")>
-  tag: ${image?split(":")[1]}
-  </#if>
+  repository: ${imageObject.registryAndRepositoryAsString}
+<#if imageObject.tag?has_content>  tag: ${imageObject.tag}</#if>
+</#if>
+
+<#if config.registry.createImagePullSecrets?has_content && config.registry.twoRegistries?has_content>
+imagePullSecrets: 
+ - name: proxy-registry
 </#if>
 
 service:

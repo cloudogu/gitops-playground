@@ -7,6 +7,7 @@ import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.TemplatingEngine
+import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 import io.micronaut.core.annotation.Order
@@ -21,6 +22,7 @@ import java.nio.file.Path
 class Mailhog extends Feature {
 
     static final String HELM_VALUES_PATH = "applications/cluster-resources/mailhog-helm-values.ftl.yaml"
+    static final String NAMESPACE = 'monitoring'
 
     private Map config
     private String username
@@ -54,17 +56,26 @@ class Mailhog extends Feature {
 
     @Override
     void enable() {
+        
+        if (config.registry['createImagePullSecrets'] && config.registry['twoRegistries']) {
+            k8sClient.createImagePullSecret('proxy-registry', NAMESPACE, config.registry['proxyUrl'] as String,
+                    config.registry['proxyUsername'] as String,
+                    config.registry['proxyPassword'] as String)
+        }
+        
         String bcryptMailhogPassword = BCrypt.hashpw(password, BCrypt.gensalt(4))
         def tmpHelmValues = new TemplatingEngine().replaceTemplate(fileSystemUtils.copyToTempDir(HELM_VALUES_PATH).toFile(), [
                 mail         : [
                         // Note that passing the URL object here leads to problems in Graal Native image, see Git history
                         host: config.features['mail']['mailhogUrl'] ? new URL(config.features['mail']['mailhogUrl'] as String).host : "",
                 ],
-                image        : config['features']['mail']['helm']['image'] as String,
                 isRemote     : config.application['remote'],
                 username     : username,
                 passwordCrypt: bcryptMailhogPassword,
                 podResources: config.application['podResources'],
+                config : config,
+                // Allow for using static classes inside the templates
+                statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
         ]).toPath()
 
         def helmConfig = config['features']['mail']['helm']
@@ -83,7 +94,7 @@ class Mailhog extends Feature {
                     'mailhog',
                     '.',
                     mailhogVersion,
-                    'monitoring',
+                    NAMESPACE,
                     'mailhog',
                     tmpHelmValues, DeploymentStrategy.RepoType.GIT)
         } else {
@@ -92,7 +103,7 @@ class Mailhog extends Feature {
                     'mailhog',
                     helmConfig['chart'] as String,
                     helmConfig['version'] as String,
-                    'monitoring',
+                    NAMESPACE,
                     'mailhog',
                     tmpHelmValues)
         }
