@@ -131,7 +131,7 @@ class GitopsPlaygroundCli  implements Runnable {
     private Boolean skipCrds
     @Option(names = ['--namespace-isolation'], description = NAMESPACE_ISOLATION_DESCRIPTION)
     private Boolean namespaceIsolation
-    @Option(names = ['--netpols'], description = NETPOLS)
+    @Option(names = ['--netpols'], description = NETPOLS_DESCRIPTION)
     private Boolean netpols
 
     // args group metrics

@@ -73,8 +73,6 @@ class IngressNginx extends Feature {
 
         def helmConfig = config['features']['ingressNginx']['helm']
 
-        k8sClient.createNamespace("ingress-nginx")
-
         if (config.application['mirrorRepos']) {
             log.debug("Mirroring repos: Deploying IngressNginx from local git repo")
 
