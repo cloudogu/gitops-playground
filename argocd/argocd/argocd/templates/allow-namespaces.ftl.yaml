@@ -1,0 +1,45 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-argocd-access-mailhog
+  namespace: ${namePrefix}monitoring
+spec:
+  podSelector:
+      matchLabels:
+          app: mailhog
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: argocd
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: argocd-notifications-controller
+      ports:
+        - protocol: TCP
+          port: 1025
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-argocd-access-scmm
+  namespace: ${namePrefix}default
+spec:
+  podSelector:
+    matchLabels:
+      app: scm-manager
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: argocd
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: argocd-repo-server
+      ports:
+        - protocol: TCP
+          port: 8080
