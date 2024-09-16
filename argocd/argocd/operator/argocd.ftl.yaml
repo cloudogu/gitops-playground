@@ -4,18 +4,31 @@ metadata:
   name: "argocd"
   namespace: "${namePrefix}argocd"
 spec:
-  <#if argocd.env?has_content>
   applicationSet:
+    enabled: true
+    resources:
+      limits:
+        cpu: '2'
+        memory: 1Gi
+      requests:
+        cpu: 250m
+        memory: 512Mi
+    <#if argocd.env?has_content>
     env:
     <#list argocd.env as envVar>
       - name: ${envVar.name}
         value: ${envVar.value}
     </#list>
-  <#else>
-  applicationSet: {}
-  </#if>
+    </#if>
   notifications:
     enabled: true
+    resources:
+      limits:
+        cpu: 100m
+        memory: 128Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
     <#if argocd.env?has_content>
     env:
     <#list argocd.env as envVar>
@@ -74,13 +87,6 @@ spec:
       requests:
         cpu: "250m"
         memory: "128Mi"
-    <#if argocd.env?has_content>
-    env:
-    <#list argocd.env as envVar>
-      - name: ${envVar.name}
-        value: ${envVar.value}
-    </#list>
-    </#if>
   repo:
     resources:
       limits:
@@ -189,7 +195,7 @@ spec:
       clusters:
       - "https://kubernetes.default.svc"
       - "${argocd.resourceInclusionsCluster}"
-    <#if !isOpenshift>
+    <#if isOpenshift>
     - apiGroups:
       - "route.openshift.io"
       kinds:

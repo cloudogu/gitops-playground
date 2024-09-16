@@ -5,6 +5,26 @@ metadata:
   name: argocd
 rules:
   - apiGroups:
+      - "route.openshift.io"
+    resources:
+      - routes
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - namespaces
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
       - ""
     resources:
       - secrets
@@ -13,6 +33,7 @@ rules:
       - services
       - serviceaccounts
       - pods
+      - pods/log
       - events
     verbs:
       - create

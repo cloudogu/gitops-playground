@@ -80,9 +80,9 @@
           "type" : "boolean",
           "description" : "Sets insecure-mode in cURL which skips cert validation"
         },
-        "internalKubernetesApiUrl":{
-          "type":"string",
-          "description":"Internal Kubernetes API Server URL https://IP:PORT (kubernetes.default.svc). Needed in argocd-operator resourceInclusions. Use this parameter if argocd.operator=true and NOT running inside a Pod (remote mode). Full URL needed, for example: https://100.125.0.1:443"
+        "internalKubernetesApiUrl" : {
+          "type" : "string",
+          "description" : "Internal Kubernetes API Server URL https://IP:PORT (kubernetes.default.svc). Needed in argocd-operator resourceInclusions. Use this parameter if argocd.operator=true and NOT running inside a Pod (remote mode). Full URL needed, for example: https://100.125.0.1:443"
         },
         "localHelmChartFolder" : {
           "type" : "string",
@@ -154,11 +154,11 @@
               "type" : "string",
               "description" : "Notifications, define Argo CD user / app-team recipient email address"
             },
-            "env": {
-              "description": "Pass a list of env vars to Argo CD components. Currently only works with operator",
-              "type": "array",
-              "items": {
-                "type": "object"
+            "env" : {
+              "description" : "Pass a list of env vars to Argo CD components. Currently only works with operator",
+              "type" : "array",
+              "items" : {
+                "type" : "object"
               }
             },
             "operator" : {
