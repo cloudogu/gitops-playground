@@ -334,7 +334,12 @@ class Schema {
         @JsonPropertyDescription(INGRESS_NGINX_ENABLE_DESCRIPTION)
         boolean active = false
 
-        HelmConfigWithValues helm
+        @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
+        IngressNginxHelmSchema helm
+        static class IngressNginxHelmSchema extends HelmConfigWithValues {
+            @JsonPropertyDescription(HELM_CONFIG_IMAGE_DESCRIPTION)
+            String image = ""
+        }
     }
 
     static class ExampleAppsSchema {

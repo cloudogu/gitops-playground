@@ -198,6 +198,10 @@
                   "type" : "string",
                   "description" : "Name of the Helm chart"
                 },
+                "image" : {
+                  "type" : "string",
+                  "description" : "The image of the Helm chart to be installed"
+                },
                 "repoURL" : {
                   "type" : "string",
                   "description" : "Repository url from which the Helm chart should be obtained"
@@ -211,8 +215,8 @@
                   "description" : "The version of the Helm chart to be installed"
                 }
               },
-              "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors.",
-              "additionalProperties" : false
+              "additionalProperties" : false,
+              "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
             }
           },
           "additionalProperties" : false,
@@ -507,7 +511,7 @@
       "properties" : {
         "createImagePullSecrets" : {
           "type" : "boolean",
-          "description" : "Create image pull secrets for registry and proxy-registry for all GOP namespaces and helm charts. Use this if your cluster is not auto-provisioned with credentials for your private registries or if you configure individual helm images to be pulled from the proxy-registry that requires authentication."
+          "description" : "Create image pull secrets for registry and proxy-registry for all GOP namespaces and helm charts. Uses proxy-username, read-only-username or registry-username (in this order).  Use this if your cluster is not auto-provisioned with credentials for your private registries or if you configure individual helm images to be pulled from the proxy-registry that requires authentication."
         },
         "helm" : {
           "$ref" : "#/$defs/HelmConfig"
