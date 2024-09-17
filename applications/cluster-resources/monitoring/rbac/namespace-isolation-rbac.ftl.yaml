@@ -165,3 +165,33 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
   name: kube-prometheus-stack-prometheus
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kube-prometheus-stack-grafana
+  namespace: ${namespace}
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+      - secrets
+    verbs:
+      - get
+      - watch
+      - list
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kube-prometheus-stack-grafana
+  namespace: ${namespace}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: kube-prometheus-stack-grafana
+subjects:
+  - kind: ServiceAccount
+    name: kube-prometheus-stack-grafana
+    namespace: ${namePrefix}monitoring

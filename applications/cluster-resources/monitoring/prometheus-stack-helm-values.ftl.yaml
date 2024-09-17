@@ -144,11 +144,9 @@ grafana:
       runAsUser: 1000740000
 </#if>
 <#if namespaceIsolation == true>
-  # For now, Grafana will only search for configMaps in its own namespace.
-  # In the future, we could deploy a least-privilege RBAC roleBindings for Grafana's SA, similar to prometheus.
-  # Then we would also add a list of NS to sidecar.dashboards.searchNamespace
   rbac:
-    namespaced: true
+    # We add the roles and role bindings to each namespace manually
+    create: false
 </#if>
   defaultDashboardsEnabled: false
   adminUser: ${config.application["username"]}
@@ -175,7 +173,7 @@ grafana:
       # This needs to be added so that the label will become 'label: grafana_dashboards: "1"'
       labelValue: 1
 <#if namespaceIsolation == true>
-      searchNamespace: "${namePrefix}monitoring"
+      searchNamespace: <#list namespaces as namespace>${namespace}<#if namespace_has_next>,</#if></#list>
 <#else>
       searchNamespace: "ALL"
 </#if>
