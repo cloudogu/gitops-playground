@@ -12,12 +12,14 @@ trait FeatureWithImage {
     final Logger log = LoggerFactory.getLogger(this.class)
     
     void createImagePullSecret() {
-        if (config.registry['createImagePullSecrets'] && config.registry['twoRegistries']) {
+        if (config.registry['createImagePullSecrets']) {
             log.trace("Creating image pull secret 'proxy-registry' in namespace ${namespace}" as String)
+            String url = config.registry['proxyUrl'] ?: config.registry['url']
+            String user = config.registry['proxyUsername'] ?: config.registry['readOnlyUsername'] ?: config.registry['username']
+            String password = config.registry['proxyPassword'] ?: config.registry['readOnlyPassword'] ?: config.registry['password']
+            
             k8sClient.createNamespace(namespace)
-            k8sClient.createImagePullSecret('proxy-registry', namespace, config.registry['proxyUrl'] as String,
-                    config.registry['proxyUsername'] as String,
-                    config.registry['proxyPassword'] as String)
+            k8sClient.createImagePullSecret('proxy-registry', namespace, url, user, password)
         }
     }
     

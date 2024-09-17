@@ -3,7 +3,6 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.AirGappedUtils
-import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClientForTest
 import groovy.yaml.YamlSlurper
@@ -22,8 +21,7 @@ class MailhogTest {
 
     Map config = [
             registry   : [
-                    createImagePullSecret: false,
-                    twoRegistries        : false
+                    createImagePullSecrets: false,
             ],
             application: [
                     username    : 'abc',
@@ -53,7 +51,6 @@ class MailhogTest {
     DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
     AirGappedUtils airGappedUtils = mock(AirGappedUtils)
     Path temporaryYamlFile = null
-    CommandExecutorForTest k8sCommandExecutor = new CommandExecutorForTest()
     FileSystemUtils fileSystemUtils = new FileSystemUtils()
     K8sClientForTest k8sClient = new K8sClientForTest(config)
 
@@ -200,7 +197,6 @@ class MailhogTest {
     @Test
     void 'deploys image pull secrets for proxy registry'() {
         config['registry']['createImagePullSecrets'] = true
-        config['registry']['twoRegistries'] = true
         config['registry']['proxyUrl'] = 'proxy-url'
         config['registry']['proxyUsername'] = 'proxy-user'
         config['registry']['proxyPassword'] = 'proxy-pw'

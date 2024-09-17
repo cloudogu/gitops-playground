@@ -487,7 +487,7 @@ skopeo copy docker://quay.io/kiwigrid/k8s-sidecar:1.27.4 --dest-creds Proxy:Prox
 docker run --rm -t -u $(id -u)  \
    -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config  \
     --net=host  \
-    gitops-playground:dev \
+    gitops-playground:dev -x \
     --yes --argocd --ingress-nginx --base-url=http://localhost \
     --vault=dev --monitoring --mailhog \
     --create-image-pull-secrets \

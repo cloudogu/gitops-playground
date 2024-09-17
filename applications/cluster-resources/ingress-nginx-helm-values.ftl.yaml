@@ -1,5 +1,5 @@
 <#assign DockerImageParser=statics['com.cloudogu.gitops.utils.DockerImageParser']>
-<#if config.registry.createImagePullSecrets?has_content && config.registry.twoRegistries?has_content>
+<#if config.registry.createImagePullSecrets == true>
 imagePullSecrets:
   - name: proxy-registry
 

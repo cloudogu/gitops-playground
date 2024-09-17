@@ -57,7 +57,7 @@ class Vault extends Feature implements FeatureWithImage {
 
         def yaml =  new YamlSlurper().parseText(
                 new TemplatingEngine().template(new File(HELM_VALUES_PATH), [
-                url: config.features['secrets']['vault']['url'] ? new URL(config.features['secrets']['vault']['url'] as String) : null,
+                host: config.features['secrets']['vault']['url'] ? new URL(config.features['secrets']['vault']['url'] as String).host : "",
                 config: config,
                 // Allow for using static classes inside the templates
                 statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()

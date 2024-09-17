@@ -45,7 +45,7 @@ class ContentTest {
     }
 
     @Test
-    void 'deploys image pull secrets for proxy registry'() {
+    void 'deploys additional image pull secrets for proxy registry'() {
         config['registry']['createImagePullSecrets'] = true
         config['registry']['twoRegistries'] = true
         config['registry']['proxyUrl'] = 'proxy-url'
