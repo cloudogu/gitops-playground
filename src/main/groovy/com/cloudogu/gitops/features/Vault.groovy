@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
+import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.*
@@ -15,15 +16,16 @@ import java.nio.file.Path
 @Slf4j
 @Singleton
 @Order(500)
-class Vault extends Feature {
+class Vault extends Feature implements FeatureWithImage {
     static final String VAULT_START_SCRIPT_PATH = '/applications/cluster-resources/secrets/vault/dev-post-start.ftl.sh'
     static final String HELM_VALUES_PATH = 'applications/cluster-resources/secrets/vault/values.ftl.yaml'
-    static final String NAMESPACE = 'secrets'
-
-    private Map config
+    
+    String namespace = 'secrets'
+    Map config
+    K8sClient k8sClient
+    
     private FileSystemUtils fileSystemUtils
     private Path tmpHelmValues
-    private K8sClient k8sClient
     private DeploymentStrategy deployer
     private AirGappedUtils airGappedUtils
 
@@ -51,13 +53,6 @@ class Vault extends Feature {
     @Override
     void enable() {
         // Note that some specific configuration steps are implemented in ArgoCD
-
-        if (config.registry['createImagePullSecrets'] && config.registry['twoRegistries']) {
-            k8sClient.createImagePullSecret('proxy-registry', NAMESPACE, config.registry['proxyUrl'] as String,
-                    config.registry['proxyUsername'] as String,
-                    config.registry['proxyPassword'] as String)
-        }
-        
         def helmConfig = config['features']['secrets']['vault']['helm']
 
         def yaml =  new YamlSlurper().parseText(
@@ -145,7 +140,7 @@ class Vault extends Feature {
                     "vault",
                     '.',
                     vaultVersion,
-                    'secrets',
+                    namespace,
                     'vault',
                     tmpHelmValues, DeploymentStrategy.RepoType.GIT
             )
@@ -155,7 +150,7 @@ class Vault extends Feature {
                     'vault',
                     helmConfig['chart'] as String,
                     helmConfig['version'] as String,
-                    'secrets',
+                    namespace,
                     'vault',
                     tmpHelmValues
             )
