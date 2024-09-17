@@ -59,7 +59,7 @@ class ArgoCDTest {
             images      : buildImages + [petclinic: 'petclinic-value'],
             registry    : [
                     twoRegistries: false,
-                    createImagePullSecrets : false
+                    createImagePullSecrets: false
             ],
             repositories: [
                     springBootHelmChart: [

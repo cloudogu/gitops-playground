@@ -232,7 +232,6 @@ class VaultTest {
     @Test
     void 'deploys image pull secrets for proxy registry'() {
         config['registry']['createImagePullSecrets'] = true
-        config['registry']['twoRegistries'] = true
         config['registry']['proxyUrl'] = 'proxy-url'
         config['registry']['proxyUsername'] = 'proxy-user'
         config['registry']['proxyPassword'] = 'proxy-pw'

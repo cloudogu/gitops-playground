@@ -3,7 +3,6 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.AirGappedUtils
-import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClientForTest
 import groovy.yaml.YamlSlurper
@@ -52,7 +51,6 @@ class IngressNginxTest {
             ],
     ]
 
-    CommandExecutorForTest k8sCommandExecutor = new CommandExecutorForTest()
     Path temporaryYamlFile
     FileSystemUtils fileSystemUtils = new FileSystemUtils()
     DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
@@ -169,7 +167,6 @@ class IngressNginxTest {
     @Test
     void 'deploys image pull secrets for proxy registry'() {
         config['registry']['createImagePullSecrets'] = true
-        config['registry']['twoRegistries'] = true
         config['registry']['proxyUrl'] = 'proxy-url'
         config['registry']['proxyUsername'] = 'proxy-user'
         config['registry']['proxyPassword'] = 'proxy-pw'

@@ -5,7 +5,7 @@ image:
   repository: ${imageObject.registryAndRepositoryAsString}
 <#if imageObject.tag?has_content>  tag: ${imageObject.tag}</#if>
 </#if>
-<#if config.registry.createImagePullSecrets?has_content && config.registry.twoRegistries?has_content>
+<#if config.registry.createImagePullSecrets == true>
 
 imagePullSecrets: 
  - name: proxy-registry
