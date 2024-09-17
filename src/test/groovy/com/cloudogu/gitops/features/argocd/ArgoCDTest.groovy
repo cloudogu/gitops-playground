@@ -59,6 +59,7 @@ class ArgoCDTest {
             images      : buildImages + [petclinic: 'petclinic-value'],
             registry    : [
                     twoRegistries: false,
+                    createImagePullSecrets : false
             ],
             repositories: [
                     springBootHelmChart: [
@@ -645,14 +646,17 @@ class ArgoCDTest {
         config.images['nginx'] = 'localhost:5000/nginx/nginx:latest'
         createArgoCD().install()
 
-        def yaml = parseActualYaml(nginxHelmJenkinsRepo.absoluteLocalRepoTmpDir + '/k8s/values-shared.yaml')
-        def image = yaml['image']
+        def image = parseActualYaml(nginxHelmJenkinsRepo.absoluteLocalRepoTmpDir + '/k8s/values-shared.yaml')['image']
         assertThat(image['registry']).isEqualTo('localhost:5000')
         assertThat(image['repository']).isEqualTo('nginx/nginx')
         assertThat(image['tag']).isEqualTo('latest')
 
-        yaml = parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')
-        def deployment = yaml[0]
+        image = parseActualYaml(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'apps/nginx-helm-umbrella/values.yaml')['nginx']['image']
+        assertThat(image['registry']).isEqualTo('localhost:5000')
+        assertThat(image['repository']).isEqualTo('nginx/nginx')
+        assertThat(image['tag']).isEqualTo('latest')
+        
+        def deployment = parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[0]
         assertThat(deployment['kind']).as("Did not correctly fetch deployment from broken-application.yaml").isEqualTo("Deploymentz")
         assertThat((deployment['spec']['template']['spec']['containers'] as List)[0]['image']).isEqualTo('localhost:5000/nginx/nginx:latest')
 
@@ -664,6 +668,32 @@ class ArgoCDTest {
 """)
     }
 
+    @Test
+    void 'Sets image pull secrets for nginx'() {
+        config['registry']['createImagePullSecrets'] = true
+        config['registry']['twoRegistries'] = true
+        config['registry']['proxyUrl'] = 'proxy-url'
+        config['registry']['proxyUsername'] = 'proxy-user'
+        config['registry']['proxyPassword'] = 'proxy-pw'
+        
+        createArgoCD().install()
+
+        assertThat(parseActualYaml(nginxHelmJenkinsRepo.absoluteLocalRepoTmpDir + '/k8s/values-shared.yaml')['global']['imagePullSecrets'])
+                .isEqualTo(['proxy-registry'])
+        
+        assertThat(parseActualYaml(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'apps/nginx-helm-umbrella/values.yaml')['nginx']['global']['imagePullSecrets'])
+                .isEqualTo(['proxy-registry'])
+        
+        def deployment = parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[0]
+        assertThat(deployment['spec']['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
+
+        assertThat(new File(nginxValidationRepo.absoluteLocalRepoTmpDir, '/k8s/values-shared.yaml').text)
+                .contains("""global:
+  imagePullSecrets:
+    - proxy-registry
+""")
+    }
+    
     @Test
     void 'Skips CRDs for argo cd'() {
         config.application['skipCrds'] = true

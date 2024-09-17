@@ -5,9 +5,8 @@ import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.K8sClient
+import com.cloudogu.gitops.utils.K8sClientForTest
 import groovy.yaml.YamlSlurper
-import jakarta.inject.Provider
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
 
@@ -30,6 +29,9 @@ class IngressNginxTest {
                     mirrorRepos: false,
                     netpols: false
             ],
+            registry: [
+                    createImagePullSecrets: false
+            ],
             scmm       : [
                     internal: true,
             ],
@@ -40,6 +42,7 @@ class IngressNginxTest {
                                     chart: 'ingress-nginx',
                                     repoURL: 'https://kubernetes.github.io/ingress-nginx',
                                     version: '4.8.2',
+                                    image: '',
                                     values : [:]
                             ],
                     ],
@@ -54,6 +57,7 @@ class IngressNginxTest {
     FileSystemUtils fileSystemUtils = new FileSystemUtils()
     DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
     AirGappedUtils airGappedUtils = mock(AirGappedUtils)
+    K8sClientForTest k8sClient = new K8sClientForTest(config)
 
     @Test
     void 'Helm release is installed'() {
@@ -69,6 +73,8 @@ class IngressNginxTest {
         assertThat(parseActualYaml()['controller']['resources']).isNull()
         assertThat(parseActualYaml()['controller']['metrics']).isNull()
         assertThat(parseActualYaml()['controller']['networkPolicy']).isNull()
+        assertThat(parseActualYaml()).doesNotContainKey('imagePullSecrets')
+
     }
 
     @Test
@@ -160,10 +166,37 @@ class IngressNginxTest {
         assertThat(actual['controller']['networkPolicy']['enabled']).isEqualTo(true)
     }
 
+    @Test
+    void 'deploys image pull secrets for proxy registry'() {
+        config['registry']['createImagePullSecrets'] = true
+        config['registry']['twoRegistries'] = true
+        config['registry']['proxyUrl'] = 'proxy-url'
+        config['registry']['proxyUsername'] = 'proxy-user'
+        config['registry']['proxyPassword'] = 'proxy-pw'
+
+        createIngressNginx().install()
+
+        k8sClient.commandExecutorForTest.assertExecuted(
+                'kubectl create secret docker-registry proxy-registry -n foo-ingress-nginx' +
+                        ' --docker-server proxy-url --docker-username proxy-user --docker-password proxy-pw')
+        assertThat(parseActualYaml()['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
+    }
+
+    @Test
+    void 'Allows overriding the image'() {
+        config['features']['ingressNginx']['helm']['image'] = 'localhost/abc:v42'
+
+        createIngressNginx().install()
+
+        def yaml = parseActualYaml()
+        assertThat(yaml['controller']['image']['repository']).isEqualTo('localhost/abc')
+        assertThat(yaml['controller']['image']['tag']).isEqualTo('v42')
+        assertThat(yaml['controller']['image']['digest']).isNull()
+    }
+    
     private IngressNginx createIngressNginx() {
         // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
 
-        def configuration = new Configuration(config)
         new IngressNginx(new Configuration(config), new FileSystemUtils() {
             @Override
             Path createTempFile() {
@@ -172,12 +205,7 @@ class IngressNginxTest {
 
                 return ret
             }
-        }, deploymentStrategy, new K8sClient(k8sCommandExecutor, new FileSystemUtils(), new Provider<Configuration>() {
-            @Override
-            Configuration get() {
-                configuration
-            }
-        }), airGappedUtils)
+        }, deploymentStrategy, k8sClient, airGappedUtils)
     }
 
     private Map parseActualYaml() {

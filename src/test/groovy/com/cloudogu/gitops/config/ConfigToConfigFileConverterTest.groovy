@@ -314,6 +314,7 @@ features:
       version: "4.9.1"
       values:
         a: "b"
+      image: ""
   exampleApps:
     petclinic:
       baseDomain: "base-domain"

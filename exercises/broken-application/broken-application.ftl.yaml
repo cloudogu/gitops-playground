@@ -7,6 +7,10 @@ spec:
   selector:
     matchLabels:
       app: broken-application
+<#if config.registry.createImagePullSecrets?has_content && config.registry.twoRegistries?has_content>
+  imagePullSecrets:
+    - name: proxy-registry
+</#if>
   template:
     metadata:
       labels:

@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
+import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.scmm.ScmmRepo
@@ -19,18 +20,20 @@ import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.RepoTyp
 @Slf4j
 @Singleton
 @Order(300)
-class PrometheusStack extends Feature {
+class PrometheusStack extends Feature implements FeatureWithImage {
 
     static final String HELM_VALUES_PATH = "applications/cluster-resources/monitoring/prometheus-stack-helm-values.ftl.yaml"
     static final String RBAC_NAMESPACE_ISOLATION_TEMPLATE = 'applications/cluster-resources/monitoring/rbac/namespace-isolation-rbac.ftl.yaml'
     static final String NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE = 'applications/cluster-resources/monitoring/netpols/prometheus-allow-scraping.ftl.yaml'
-    
-    private Map config
+
+    String namespace = 'monitoring'
+    Map config
+    K8sClient k8sClient
+
+    ScmmRepoProvider scmmRepoProvider
     private FileSystemUtils fileSystemUtils
     private DeploymentStrategy deployer
-    private K8sClient k8sClient
     private AirGappedUtils airGappedUtils
-    ScmmRepoProvider scmmRepoProvider
 
     PrometheusStack(
             Configuration config,
@@ -118,22 +121,22 @@ class PrometheusStack extends Feature {
             ScmmRepo clusterResourcesRepo = scmmRepoProvider.getRepo('argocd/cluster-resources')
             clusterResourcesRepo.cloneRepo()
             String commitText=""
-            for (String namespace : namespaceList) {
+            for (String currentNamespace : namespaceList) {
 
                 if(config.application['namespaceIsolation']) {
                     def rbacYaml = new TemplatingEngine().template(new File(RBAC_NAMESPACE_ISOLATION_TEMPLATE),
-                            [namespace : namespace,
+                        [namespace: currentNamespace, 
                              namePrefix: namePrefix])
-                    clusterResourcesRepo.writeFile("misc/monitoring/rbac/${namespace}.yaml", rbacYaml)
+                    clusterResourcesRepo.writeFile("misc/monitoring/rbac/${currentNamespace}.yaml", rbacYaml)
                     commitText+="Add namespace-isolated RBAC for PrometheusStack. "
                 }
 
                 if (config.application['netpols']) {
                     def netpolsYaml = new TemplatingEngine().template(new File(NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE),
-                            [namespace : namespace,
+                            [namespace : currentNamespace,
                              namePrefix: namePrefix])
 
-                    clusterResourcesRepo.writeFile("misc/monitoring/netpols/${namespace}.yaml", netpolsYaml)
+                    clusterResourcesRepo.writeFile("misc/monitoring/netpols/${currentNamespace}.yaml", netpolsYaml)
                     commitText+="Network Policies allowing Prometheus scraping in namespaces"
                 }
             }
@@ -159,7 +162,7 @@ class PrometheusStack extends Feature {
                     'prometheusstack',
                     '.',
                     prometheusVersion,
-                    'monitoring',
+                    namespace,
                     'kube-prometheus-stack',
                     tmpHelmValues, RepoType.GIT)
         } else {
@@ -169,7 +172,7 @@ class PrometheusStack extends Feature {
                     'prometheusstack',
                     helmConfig['chart'] as String,
                     helmConfig['version'] as String,
-                    'monitoring',
+                    namespace,
                     'kube-prometheus-stack',
                     tmpHelmValues)
         }

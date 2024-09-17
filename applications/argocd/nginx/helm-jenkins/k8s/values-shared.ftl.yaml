@@ -4,6 +4,12 @@ image:
   repository: ${nginxImage.repository}
   tag: ${nginxImage.tag}
 </#if>
+<#if config.registry.createImagePullSecrets?has_content && config.registry.twoRegistries?has_content>
+
+global:
+  imagePullSecrets:
+    - proxy-registry
+</#if>
 service:
   ports:
     http: 80
