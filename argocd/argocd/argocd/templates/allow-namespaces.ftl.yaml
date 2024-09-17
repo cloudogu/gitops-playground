@@ -1,3 +1,6 @@
+<#noparse>
+{{- if .Values.allowNamespaces }}
+</#noparse>
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -43,3 +46,7 @@ spec:
       ports:
         - protocol: TCP
           port: 8080
+---
+<#noparse>
+{{- end }}
+</#noparse>

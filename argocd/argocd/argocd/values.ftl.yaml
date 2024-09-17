@@ -1,12 +1,15 @@
 # See possible values here: https://github.com/argoproj/argo-helm/blob/main/charts/argo-cd/values.yaml
 argo-cd:
-  
 <#if skipCrds==true>
   crds:
     install: false
 </#if>
+  
+<#if netpols==true>
+allowNamespaces: true
+</#if>
 
-  server:
+server:
 <#if argocd.host?has_content>
     ingress:
       enabled: true
