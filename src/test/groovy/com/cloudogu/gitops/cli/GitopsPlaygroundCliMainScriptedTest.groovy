@@ -83,7 +83,7 @@ class GitopsPlaygroundCliMainScriptedTest {
                 .enableAnnotationInfo()
                 .scan().withCloseable { scanResult ->
             scanResult.getAllClasses().each { ClassInfo classInfo ->
-                if (classInfo.name.endsWith("Test")) {
+                if (classInfo.name.endsWith("Test") || classInfo.isAbstract()) {
                     return
                 }
 

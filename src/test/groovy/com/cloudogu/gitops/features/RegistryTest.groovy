@@ -18,14 +18,13 @@ class RegistryTest {
 
     Map config = [
             registry   : [
-                    internal              : true,
-                    url                   : 'reg-url',
-                    path                  : 'reg-path',
-                    username              : 'reg-user',
-                    password              : 'reg-pw',
-                    internalPort          : ApplicationConfigurator.DEFAULT_REGISTRY_PORT,
-                    createImagePullSecrets: false,
-                    helm                  : [
+                    internal    : true,
+                    url         : '',
+                    path        : '',
+                    username    : '',
+                    password    : '',
+                    internalPort: ApplicationConfigurator.DEFAULT_REGISTRY_PORT,
+                    helm        : [
                             chart  : 'docker-registry',
                             repoURL: 'https://charts.helm.sh/stable',
                             version: '1.9.4'
@@ -41,7 +40,7 @@ class RegistryTest {
     File temporaryYamlFile
 
     @Test
-    void 'does not deploy internal registry, when external registry is configured'() {
+    void 'is disabled when external registry is configured'() {
         config.registry['internal'] = false
 
         createRegistry().install()
@@ -75,66 +74,7 @@ class RegistryTest {
 
         assertThat(k8sClient.commandExecutorForTest.actualCommands[0]).contains("--node-port $expectedNodePort")
     }
-
-    @Test
-    void 'deploys image pull secrets'() {
-        config['registry']['createImagePullSecrets'] = true
-
-        createRegistry().install()
-
-        assertRegistrySecrets('reg-user', 'reg-pw')
-    }
-
-    @Test
-    void 'deploys image pull secrets from read-only vars'() {
-        config['registry']['createImagePullSecrets'] = true
-        config['registry']['readOnlyUsername'] = 'other-user'
-        config['registry']['readOnlyPassword'] = 'other-pw'
-
-        createRegistry().install()
-
-        assertRegistrySecrets('other-user', 'other-pw')
-
-    }
-
-    @Test
-    void 'deploys image pull secrets for proxy registry'() {
-        config['registry']['createImagePullSecrets'] = true
-        config['registry']['twoRegistries'] = true
-        config['registry']['proxyUrl'] = 'proxy-url'
-        config['registry']['proxyUsername'] = 'proxy-user'
-        config['registry']['proxyPassword'] = 'proxy-pw'
-
-        createRegistry().install()
-
-        assertRegistrySecrets('reg-user', 'reg-pw')
-
-        k8sClient.commandExecutorForTest.assertExecuted(
-                'kubectl create secret docker-registry proxy-registry -n foo-example-apps-staging' +
-                        ' --docker-server proxy-url --docker-username proxy-user --docker-password proxy-pw')
-        k8sClient.commandExecutorForTest.assertExecuted(
-                'kubectl create secret docker-registry proxy-registry -n foo-example-apps-production' +
-                        ' --docker-server proxy-url --docker-username proxy-user --docker-password proxy-pw')
-
-    }
-
-    private void assertRegistrySecrets(String regUser, String regPw) {
-        List expectedNamespaces = ["foo-example-apps-staging", "foo-example-apps-production"]
-        expectedNamespaces.each {
-
-            k8sClient.commandExecutorForTest.assertExecuted(
-                    "kubectl create secret docker-registry registry -n ${it}" +
-                            " --docker-server reg-url --docker-username $regUser --docker-password ${regPw}" +
-                            ' --dry-run=client -oyaml | kubectl apply -f-')
-
-            def patchCommand = k8sClient.commandExecutorForTest.assertExecuted(
-                    "kubectl patch serviceaccount default -n ${it}")
-            String patchFile = (patchCommand =~ /--patch-file=([\S]+)/)?.findResult { (it as List)[1] }
-            assertThat(parseActualYaml(new File(patchFile))['imagePullSecrets'] as List).hasSize(1)
-            assertThat((parseActualYaml(new File(patchFile))['imagePullSecrets'] as List)[0] as Map).containsEntry('name', 'registry')
-        }
-    }
-
+    
     private Registry createRegistry() {
         // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
 
@@ -149,8 +89,8 @@ class RegistryTest {
         }, k8sClient, new HelmStrategy(new Configuration(config), helmClient))
     }
 
-    private parseActualYaml(File pathToYamlFile = temporaryYamlFile) {
+    private parseActualYaml() {
         def ys = new YamlSlurper()
-        return ys.parse(pathToYamlFile)
+        return ys.parse(temporaryYamlFile)
     }
 }
