@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
+import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.AirGappedUtils
@@ -19,18 +20,19 @@ import java.nio.file.Path
 @Slf4j
 @Singleton
 @Order(200)
-class Mailhog extends Feature {
+class Mailhog extends Feature implements FeatureWithImage {
 
     static final String HELM_VALUES_PATH = "applications/cluster-resources/mailhog-helm-values.ftl.yaml"
-    static final String NAMESPACE = 'monitoring'
 
-    private Map config
+    String namespace = 'monitoring'
+    Map config
+    K8sClient k8sClient
+    
     private String username
     private String password
     private FileSystemUtils fileSystemUtils
     private DeploymentStrategy deployer
     private AirGappedUtils airGappedUtils
-    private K8sClient k8sClient
 
     Mailhog(
             Configuration config,
@@ -56,12 +58,6 @@ class Mailhog extends Feature {
 
     @Override
     void enable() {
-        
-        if (config.registry['createImagePullSecrets'] && config.registry['twoRegistries']) {
-            k8sClient.createImagePullSecret('proxy-registry', NAMESPACE, config.registry['proxyUrl'] as String,
-                    config.registry['proxyUsername'] as String,
-                    config.registry['proxyPassword'] as String)
-        }
         
         String bcryptMailhogPassword = BCrypt.hashpw(password, BCrypt.gensalt(4))
         def tmpHelmValues = new TemplatingEngine().replaceTemplate(fileSystemUtils.copyToTempDir(HELM_VALUES_PATH).toFile(), [
@@ -94,7 +90,7 @@ class Mailhog extends Feature {
                     'mailhog',
                     '.',
                     mailhogVersion,
-                    NAMESPACE,
+                    namespace,
                     'mailhog',
                     tmpHelmValues, DeploymentStrategy.RepoType.GIT)
         } else {
@@ -103,7 +99,7 @@ class Mailhog extends Feature {
                     'mailhog',
                     helmConfig['chart'] as String,
                     helmConfig['version'] as String,
-                    NAMESPACE,
+                    namespace,
                     'mailhog',
                     tmpHelmValues)
         }

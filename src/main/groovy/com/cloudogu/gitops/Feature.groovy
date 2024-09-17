@@ -8,6 +8,11 @@ abstract class Feature {
     boolean install() {
         if (isEnabled()) {
             log.info("Installing Feature ${getClass().getSimpleName()}")
+            
+            if (this instanceof FeatureWithImage) {
+                (this as FeatureWithImage).createImagePullSecret()
+            }
+
             enable()
             return true
         } else {

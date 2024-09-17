@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
+import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.AirGappedUtils
@@ -18,15 +19,16 @@ import java.nio.file.Path
 @Slf4j
 @Singleton
 @Order(400)
-class ExternalSecretsOperator extends Feature {
+class ExternalSecretsOperator extends Feature implements FeatureWithImage {
     
     static final String HELM_VALUES_PATH = 'applications/cluster-resources/secrets/external-secrets/values.ftl.yaml'
-    static final String NAMESPACE = 'secrets'
     
-    private Map config
+    String namespace = 'secrets'
+    Map config
+    K8sClient k8sClient
+    
     private FileSystemUtils fileSystemUtils
     private DeploymentStrategy deployer
-    private K8sClient k8sClient
     private AirGappedUtils airGappedUtils
 
     ExternalSecretsOperator(
@@ -50,12 +52,6 @@ class ExternalSecretsOperator extends Feature {
 
     @Override
     void enable() {
-
-        if (config.registry['createImagePullSecrets'] && config.registry['twoRegistries']) {
-            k8sClient.createImagePullSecret('proxy-registry', NAMESPACE, config.registry['proxyUrl'] as String,
-                    config.registry['proxyUsername'] as String,
-                    config.registry['proxyPassword'] as String)
-        }
 
         def helmConfig = config['features']['secrets']['externalSecrets']['helm']
         def helmValuesYaml = templateToMap(HELM_VALUES_PATH, [
@@ -81,7 +77,7 @@ class ExternalSecretsOperator extends Feature {
                     "external-secrets",
                     '.',
                     externalSecretsVersion,
-                    NAMESPACE,
+                    namespace,
                     'external-secrets',
                     tmpHelmValues, DeploymentStrategy.RepoType.GIT
             )
@@ -91,7 +87,7 @@ class ExternalSecretsOperator extends Feature {
                 "externalsecretsoperator",
                 helmConfig['chart'] as String,
                 helmConfig['version'] as String,
-                NAMESPACE,
+                    namespace,
                 'external-secrets',
                 tmpHelmValues
             )
