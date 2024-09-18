@@ -43,7 +43,8 @@ class ArgoCDTest {
                     gitEmail            : 'hello@cloudogu.com',
                     urlSeparatorHyphen  : false,
                     mirrorRepos         : false,
-                    skipCrds            : false
+                    skipCrds: false,
+                    netpols: false
             ],
             jenkins     : [
                     mavenCentralMirror: '',
@@ -712,6 +713,16 @@ class ArgoCDTest {
         assertPetClinicRepos('NodePort', 'LoadBalancer', '')
     }
 
+    @Test
+    void 'ArgoCD with active network policies'(){
+        config.application['netpols'] = true
+
+        createArgoCD().install()
+
+        assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir(), '/argocd/templates/allow-namespaces.yaml').text.contains("namespace: monitoring"))
+        assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir(), '/argocd/templates/allow-namespaces.yaml').text.contains("namespace: default"))
+    }
+    
     @Test
     void 'set credentials for BuildImages'() {
         config.registry['twoRegistries'] = true

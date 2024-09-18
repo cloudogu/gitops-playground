@@ -4,12 +4,8 @@ argo-cd:
   crds:
     install: false
 </#if>
-  
-<#if netpols==true>
-allowNamespaces: true
-</#if>
 
-server:
+  server:
 <#if argocd.host?has_content>
     ingress:
       enabled: true

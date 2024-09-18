@@ -299,6 +299,11 @@ class ArgoCD extends Feature {
                     "argocdUrl: https://localhost:9092", "argocdUrl: ${config.features["argocd"]["url"]}")
         }
 
+        if (!config.application["netpols"]) {
+            log.debug("Deleting argocd netpols.")
+            deleteFile argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/argocd/templates/allow-namespaces.yaml'
+        }
+
         argocdRepoInitializationAction.repo.commitAndPush("Initial Commit")
     }
 
