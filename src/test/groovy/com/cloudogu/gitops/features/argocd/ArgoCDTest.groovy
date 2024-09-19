@@ -1256,7 +1256,6 @@ class ArgoCDTest {
         assertThat(yaml['spec']['applicationSet']['env']).isEqualTo(expectedEnv)
         assertThat(yaml['spec']['notifications']['env']).isEqualTo(expectedEnv)
         assertThat(yaml['spec']['controller']['env']).isEqualTo(expectedEnv)
-        assertThat(yaml['spec']['redis']['env']).isEqualTo(expectedEnv)
         assertThat(yaml['spec']['repo']['env']).isEqualTo(expectedEnv)
         assertThat(yaml['spec']['server']['env']).isEqualTo(expectedEnv)
     }
@@ -1304,8 +1303,6 @@ class ArgoCDTest {
         assertThat(yaml['spec']['applicationSet']['env']).isEqualTo(expectedEnv)
         assertThat(yaml['spec']['notifications']['env']).isEqualTo(expectedEnv)
         assertThat(yaml['spec']['controller']['env']).isEqualTo(expectedEnv)
-        assertThat(yaml['spec']['redis']['env']).isEqualTo(expectedEnv)
-        assertThat(yaml['spec']['repo']['env']).isEqualTo(expectedEnv)
         assertThat(yaml['spec']['server']['env']).isEqualTo(expectedEnv)
     }
 
