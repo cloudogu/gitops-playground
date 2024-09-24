@@ -39,7 +39,6 @@ node('high-cpu') {
                 }
 
                 stage('Build cli') {
-                if()
                     // Read Java version from Dockerfile (DRY)
                     String jdkVersion = sh(returnStdout: true, script:
                             'grep -r \'ARG JDK_VERSION\' Dockerfile | sed "s/.*JDK_VERSION=\'\\(.*\\)\'.*/\\1/" ').trim()

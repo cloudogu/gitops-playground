@@ -440,6 +440,10 @@
           "type" : "string",
           "description" : "Sets image for kubeval"
         },
+        "maven" : {
+          "type" : "string",
+          "description" : "Sets image for maven"
+        },
         "nginx" : {
           "type" : "string",
           "description" : "Sets image for nginx used in various applications"

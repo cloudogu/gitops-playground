@@ -99,6 +99,8 @@ class GitopsPlaygroundCli  implements Runnable {
     private String helmKubevalImage
     @Option(names = ['--yamllint-image'], description = YAMLLINT_IMAGE_DESCRIPTION)
     private String yamllintImage
+    @Option(names = ['--maven-image'], description = MAVEN_IMAGE_DESCRIPTION)
+    private String mavenImage
     @Option(names = ['--grafana-image'], description = GRAFANA_IMAGE_DESCRIPTION)
     private String grafanaImage
     @Option(names = ['--grafana-sidecar-image'], description = GRAFANA_SIDECAR_IMAGE_DESCRIPTION)
@@ -427,6 +429,7 @@ class GitopsPlaygroundCli  implements Runnable {
                         yamllint   : yamllintImage,
                         nginx      : nginxImage,
                         petclinic  : petClinicImage,
+                        maven      : mavenImage
                 ],
                 features    : [
                         argocd : [

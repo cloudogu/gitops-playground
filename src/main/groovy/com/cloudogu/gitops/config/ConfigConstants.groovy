@@ -52,6 +52,7 @@ interface ConfigConstants {
     String KUBEVAL_IMAGE_DESCRIPTION = 'Sets image for kubeval'
     String HELMKUBEVAL_IMAGE_DESCRIPTION = 'Sets image for helmkubeval'
     String YAMLLINT_IMAGE_DESCRIPTION = 'Sets image for yamllint'
+    String MAVEN_IMAGE_DESCRIPTION = 'Sets image for maven'
     String GRAFANA_IMAGE_DESCRIPTION = 'Sets image for grafana'
     String GRAFANA_SIDECAR_IMAGE_DESCRIPTION = 'Sets image for grafana\'s sidecar'
     String PROMETHEUS_IMAGE_DESCRIPTION = 'Sets image for prometheus'

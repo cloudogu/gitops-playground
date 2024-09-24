@@ -37,9 +37,18 @@ properties([
 ])
 
 node {
-
-    mvn = cesBuildLib.MavenWrapper.new(this)
 </#noparse>
+<#if images.maven?has_content>
+    <#if registry.twoRegistries>
+        mvn = cesBuildLib.MavenInDocker.new(this, '${config.images.maven}', dockerRegistryProxyCredentials)
+    <#else>
+        mvn = cesBuildLib.MavenInDocker.new(this, '${config.images.maven}')
+    </#if>
+<#else>
+    mvn = cesBuildLib.MavenWrapper.new(this)
+</#if>
+
+
 <#if jenkins.mavenCentralMirror?has_content>
     mvn.useMirrors([name: 'maven-central-mirror', mirrorOf: 'central', url:  env.${namePrefixForEnvVars}MAVEN_CENTRAL_MIRROR])
 </#if>

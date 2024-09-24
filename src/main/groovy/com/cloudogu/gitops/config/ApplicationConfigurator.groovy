@@ -73,6 +73,9 @@ class ApplicationConfigurator {
                             version: '5.5.11'
                     ],
                     mavenCentralMirror: '',
+                    additionalEnv:  [
+                                    ADDITIONAL_DOCKER_RUN_ARGS: '-u0:0'
+                    ]
             ],
             scmm       : [
                     internal: true, // Set dynamically
@@ -128,10 +131,10 @@ class ApplicationConfigurator {
                     helm       : HELM_IMAGE,
                     kubeval    : HELM_IMAGE,
                     helmKubeval: HELM_IMAGE,
-                    yamllint   : "cytopia/yamllint:1.25-0.7",
+                    yamllint   : "cytopia/yamllint:1.25-0.9",
                     nginx      : null,
-                    petclinic   : 'eclipse-temurin:11-jre-alpine',
-                    maven: null
+                    petclinic  : 'eclipse-temurin:11-jre-alpine',
+                    maven      : ''
             ],
             repositories : [
                     springBootHelmChart: [
