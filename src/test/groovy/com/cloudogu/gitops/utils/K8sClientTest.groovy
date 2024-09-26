@@ -24,6 +24,7 @@ class K8sClientTest {
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
                 "kubectl create namespace foo-my-ns" +
                         " --dry-run=client -oyaml | kubectl apply -f-")
+
     }
 
     @Test

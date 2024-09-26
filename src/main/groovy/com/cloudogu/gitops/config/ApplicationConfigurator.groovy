@@ -120,7 +120,8 @@ class ApplicationConfigurator {
                     gitEmail: 'hello@cloudogu.com',
                     urlSeparatorHyphen: false,
                     skipCrds : false,
-                    namespaceIsolation : false
+                    namespaceIsolation : false,
+                    netpols: false
             ],
             images     : [
                     kubectl    : "bitnami/kubectl:$K8S_VERSION",
@@ -140,7 +141,7 @@ class ApplicationConfigurator {
                     ],
                     springPetclinic: [
                             url: System.getenv('SPRING_PETCLINIC_REPO') ?: 'https://github.com/cloudogu/spring-petclinic.git',
-                            ref: '32c8653'
+                            ref: 'b0e0d18'
                     ],
                     gitopsBuildLib: [
                             url: System.getenv('GITOPS_BUILD_LIB_REPO') ?: 'https://github.com/cloudogu/gitops-build-lib.git',

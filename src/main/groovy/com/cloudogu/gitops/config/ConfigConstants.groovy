@@ -74,7 +74,7 @@ interface ConfigConstants {
     String CES_BUILD_LIB_DESCRIPTION = 'Repo to pull the ces-build-lib, used in examples and exercises as depedency of the gitops-build-lib'
     String REPO_URL_DESCRIPTION = 'HTTP URL of the repo'
     String REPO_REF_DESCRIPTION = 'Ref of the repo to use, e.g. a tag, commit or branch'
-    
+    String NETPOLS_DESCRIPTION = 'Sets Network Policies'
 
     // group metrics
     String MONITORING_DESCRIPTION = 'Config parameters for the Monitoring system (prometheus)'

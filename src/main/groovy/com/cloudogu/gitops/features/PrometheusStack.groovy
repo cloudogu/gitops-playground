@@ -23,6 +23,7 @@ class PrometheusStack extends Feature {
 
     static final String HELM_VALUES_PATH = "applications/cluster-resources/monitoring/prometheus-stack-helm-values.ftl.yaml"
     static final String RBAC_NAMESPACE_ISOLATION_TEMPLATE = 'applications/cluster-resources/monitoring/rbac/namespace-isolation-rbac.ftl.yaml'
+    static final String NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE = 'applications/cluster-resources/monitoring/netpols/prometheus-allow-scraping.ftl.yaml'
     
     private Map config
     private FileSystemUtils fileSystemUtils
@@ -113,18 +114,31 @@ class PrometheusStack extends Feature {
             )
         }
 
-        if (config.application['namespaceIsolation']) {
+        if (config.application['namespaceIsolation'] || config.application['netpols']) {
             ScmmRepo clusterResourcesRepo = scmmRepoProvider.getRepo('argocd/cluster-resources')
             clusterResourcesRepo.cloneRepo()
-
+            String commitText=""
             for (String namespace : namespaceList) {
-                def rbacYaml = new TemplatingEngine().template(new File(RBAC_NAMESPACE_ISOLATION_TEMPLATE),
-                        [namespace: namespace, 
-                         namePrefix: namePrefix])
-                clusterResourcesRepo.writeFile("misc/monitoring/rbac/${namespace}.yaml", rbacYaml)
+
+                if(config.application['namespaceIsolation']) {
+                    def rbacYaml = new TemplatingEngine().template(new File(RBAC_NAMESPACE_ISOLATION_TEMPLATE),
+                            [namespace : namespace,
+                             namePrefix: namePrefix])
+                    clusterResourcesRepo.writeFile("misc/monitoring/rbac/${namespace}.yaml", rbacYaml)
+                    commitText+="Add namespace-isolated RBAC for PrometheusStack. "
+                }
+
+                if (config.application['netpols']) {
+                    def netpolsYaml = new TemplatingEngine().template(new File(NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE),
+                            [namespace : namespace,
+                             namePrefix: namePrefix])
+
+                    clusterResourcesRepo.writeFile("misc/monitoring/netpols/${namespace}.yaml", netpolsYaml)
+                    commitText+="Network Policies allowing Prometheus scraping in namespaces"
+                }
             }
 
-            clusterResourcesRepo.commitAndPush("Add namespace-isolated RBAC for PrometheusStack")
+            clusterResourcesRepo.commitAndPush(commitText)
         }
 
         def tmpHelmValues = fileSystemUtils.createTempFile()

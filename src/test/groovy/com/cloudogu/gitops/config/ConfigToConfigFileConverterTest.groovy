@@ -63,6 +63,8 @@ class ConfigToConfigFileConverterTest {
                         urlSeparatorHyphen: true,
                         mirrorRepos     : true,
                         skipCrds : true,
+                        namespaceIsolation : false,
+                        netpols : false
                 ],
                 images     : [
                         kubectl    : 'kubectl-value',
@@ -220,6 +222,7 @@ application:
   mirrorRepos: true
   skipCrds: true
   namespaceIsolation: false
+  netpols: false
 images:
   kubectl: "kubectl-value"
   helm: "helm-value"
