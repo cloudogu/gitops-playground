@@ -27,7 +27,8 @@ class IngressNginxTest {
                     remote  : false,
                     namePrefix: "foo-",
                     podResources: false,
-                    mirrorRepos: false
+                    mirrorRepos: false,
+                    netpols: false
             ],
             scmm       : [
                     internal: true,
@@ -67,6 +68,7 @@ class IngressNginxTest {
                 'ingress-nginx', temporaryYamlFile)
         assertThat(parseActualYaml()['controller']['resources']).isNull()
         assertThat(parseActualYaml()['controller']['metrics']).isNull()
+        assertThat(parseActualYaml()['controller']['networkPolicy']).isNull()
     }
 
     @Test
@@ -145,6 +147,17 @@ class IngressNginxTest {
         assertThat(actual['controller']['metrics']['enabled']).isEqualTo(true)
         assertThat(actual['controller']['metrics']['serviceMonitor']['enabled']).isEqualTo(true)
         assertThat(actual['controller']['metrics']['serviceMonitor']['namespace']).isEqualTo("heliospheremonitoring")
+    }
+
+    @Test
+    void 'Activates network policies'(){
+        config.application['netpols'] = true
+
+        createIngressNginx().install()
+
+        def actual = parseActualYaml()
+
+        assertThat(actual['controller']['networkPolicy']['enabled']).isEqualTo(true)
     }
 
     private IngressNginx createIngressNginx() {

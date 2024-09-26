@@ -5,6 +5,7 @@ import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import com.cloudogu.gitops.utils.*
+import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
@@ -408,7 +409,10 @@ class ArgoCD extends Feature {
                             nginx    : [
                                     baseDomain: config.features['exampleApps']['nginx']['baseDomain']
                             ],
-                    ]
+                    ],
+                    config: config,
+                    // Allow for using static classes inside the templates
+                    statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
             ])
         }
 

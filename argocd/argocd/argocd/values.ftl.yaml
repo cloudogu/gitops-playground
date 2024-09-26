@@ -4,7 +4,11 @@ argo-cd:
   crds:
     install: false
 </#if>
-
+<#if config.application.netpols == true>
+  global:
+    networkPolicy:
+      create: true
+</#if>
   server:
 <#if argocd.host?has_content>
     ingress:
