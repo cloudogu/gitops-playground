@@ -6,7 +6,7 @@ metadata:
 spec:
   podSelector:
       matchLabels:
-          app: mailhog
+        app.kubernetes.io/name: mailhog
   policyTypes:
     - Ingress
   ingress:
