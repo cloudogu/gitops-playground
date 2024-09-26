@@ -337,20 +337,20 @@ class Schema {
             @JsonPropertyDescription(HELM_CONFIG_VALUES_DESCRIPTION)
             Map<String, Object> values
 
-//            TODO descriptions anpassen
-            @JsonPropertyDescription(EXTERNAL_SECRETS_WEBHOOK_IMAGE_DESCRIPTION)
+//            TODO descriptions angepasst
+            @JsonPropertyDescription(CERTMANAGER_IMAGE_DESCRIPTION)
             String image = ""
 
-            @JsonPropertyDescription(EXTERNAL_SECRETS_WEBHOOK_IMAGE_DESCRIPTION)
+            @JsonPropertyDescription(CERTMANAGER_WEBHOOK_IMAGE_DESCRIPTION)
             String webhookImage = ""
 
-            @JsonPropertyDescription(EXTERNAL_SECRETS_WEBHOOK_IMAGE_DESCRIPTION)
+            @JsonPropertyDescription(CERTMANAGER_CAINJECTOR_IMAGE_DESCRIPTION)
             String cainjectorImage = ""
 
-            @JsonPropertyDescription(EXTERNAL_SECRETS_WEBHOOK_IMAGE_DESCRIPTION)
+            @JsonPropertyDescription(CERTMANAGER_ASCME_SOLVER_IMAGE_DESCRIPTION)
             String acmeSolverImage = ""
 
-            @JsonPropertyDescription(EXTERNAL_SECRETS_WEBHOOK_IMAGE_DESCRIPTION)
+            @JsonPropertyDescription(CERTMANAGER_STARTUP_API_CHECK_IMAGE_DESCRIPTION)
             String startupAPICheckImage = ""
 
         }

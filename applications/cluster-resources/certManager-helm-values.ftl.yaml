@@ -35,5 +35,37 @@ crds:
     repository: ${imageObject.registryAndRepositoryAsString}
     tag: ${imageObject.tag}
 </#if>
-<#--TODO for other 4 images-->
 
+<#--TODO for other 4 images added-->
+
+<#--webhookImage-->
+<#if config.features.certManager.helm.webhookImage?has_content>
+  <#assign imageObject = DockerImageParser.parse(config.features.certManager.helm.webhookImage)>
+  image:
+  repository: ${imageObject.registryAndRepositoryAsString}
+  tag: ${imageObject.tag}
+</#if>
+
+<#--cainjectorImage-->
+<#if config.features.certManager.helm.cainjectorImage?has_content>
+  <#assign imageObject = DockerImageParser.parse(config.features.certManager.helm.cainjectorImage)>
+  image:
+  repository: ${imageObject.registryAndRepositoryAsString}
+  tag: ${imageObject.tag}
+</#if>
+
+<#--acmeSolverImage-->
+<#if config.features.certManager.helm.acmeSolverImage?has_content>
+  <#assign imageObject = DockerImageParser.parse(config.features.certManager.helm.acmeSolverImage)>
+  image:
+  repository: ${imageObject.registryAndRepositoryAsString}
+  tag: ${imageObject.tag}
+</#if>
+
+<#--startupAPICheckImage-->
+<#if config.features.certManager.helm.startupAPICheckImage?has_content>
+  <#assign imageObject = DockerImageParser.parse(config.features.certManager.helm.startupAPICheckImage)>
+  image:
+  repository: ${imageObject.registryAndRepositoryAsString}
+  tag: ${imageObject.tag}
+</#if>

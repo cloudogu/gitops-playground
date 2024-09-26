@@ -219,7 +219,7 @@ class ApplicationConfigurator {
                                     values: [:]
                              ],
                     ],
-                    cerManager: [
+                    certManager: [
                             active: false,
                             helm  : [
                                     chart: 'certManager',
