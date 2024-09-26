@@ -2,7 +2,7 @@
 
 # See https://github.com/rancher/k3d/releases
 # This variable is also read in Jenkinsfile
-K3D_VERSION=5.6.0
+K3D_VERSION=5.7.4
 # When updating please also adapt in Dockerfile, vars.tf and ApplicationConfigurator.groovy
 K8S_VERSION=1.29.8
 K3S_VERSION="rancher/k3s:v${K8S_VERSION}-k3s1"
@@ -142,7 +142,7 @@ EOF
 
   echo "Creating cluster '${CLUSTER_NAME}'"
   #k3d cluster create ${CLUSTER_NAME} ${K3D_ARGS[*]} >/dev/null
-  cat <<EOF | k3d cluster create ${CLUSTER_NAME} ${K3D_ARGS[*]} --config - > /dev/null
+  cat <<EOF | k3d cluster create ${CLUSTER_NAME} ${K3D_ARGS[*]}  --no-rollback --config - > /dev/null
   apiVersion: k3d.io/v1alpha5
   kind: Simple
   kubeAPI:
