@@ -1,5 +1,0 @@
-# Right now there is no fix in helm, and it is likely not exploitable via our image, 
-# so ignore issue for some time to be able to continue development 
-# https://github.com/helm/helm/issues/13218
-# The mean time between the last 10 helm releases is about three weeks. Lets hope for the best.
-CVE-2024-41110 exp:2024-08-26
