@@ -69,13 +69,12 @@ class Jenkins extends Feature {
         ])
 
         globalPropertyManager.setGlobalProperty('SCMM_URL', config.scmm['url'] as String)
+
+        globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_URL", config.registry['url'] as String)
+        globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_PATH", config.registry['path'] as String)
+
         if (config.registry['twoRegistries']) {
-            globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_PULL_URL", config.registry['pullUrl'] as String)
-            globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_PUSH_URL", config.registry['pushUrl'] as String)
-            globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_PUSH_PATH", config.registry['pushPath'] as String)
-        } else {
-            globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_URL", config.registry['url'] as String)
-            globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_PATH", config.registry['path'] as String)
+            globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_PROXY_URL", config.registry['proxyUrl'] as String)
         }
 
         if (config.jenkins['mavenCentralMirror']) {
@@ -101,26 +100,21 @@ class Jenkins extends Feature {
                     "${config.scmm['password']}",
                     'credentials for accessing scm-manager')
 
+            jobManger.createCredential(
+                    "${config.application['namePrefix']}example-apps",
+                    "registry-user",
+                    "${config.registry['username']}",
+                    "${config.registry['password']}",
+                    'credentials for accessing the docker-registry for writing images built on jenkins')
+
             if (config.registry['twoRegistries']) {
                 jobManger.createCredential(
                         "${config.application['namePrefix']}example-apps",
-                        "registry-pull-user",
-                        "${config.registry['pullUsername']}",
-                        "${config.registry['pullPassword']}",
+                        "registry-proxy-user",
+                        "${config.registry['proxyUsername']}",
+                        "${config.registry['proxyPassword']}",
                         'credentials for accessing the docker-registry that contains 3rd party or base images')
-                jobManger.createCredential(
-                        "${config.application['namePrefix']}example-apps",
-                        "registry-push-user",
-                        "${config.registry['pushUsername']}",
-                        "${config.registry['pushPassword']}",
-                        'credentials for accessing the docker-registry that contains images built on jenkins')
-            } else {
-                jobManger.createCredential(
-                        "${config.application['namePrefix']}example-apps",
-                        "registry-user",
-                        "${config.registry['username']}",
-                        "${config.registry['password']}",
-                        'credentials for accessing the docker-registry')
+
             }
             // Once everything is set up, start the jobs.
             jobManger.startJob('example-apps')

@@ -22,3 +22,12 @@
 !mvnw
 !.mvn
 !compiler.groovy
+
+# Including .git is risky, but required so maven can read the build number. At least keep it to a minium.
+!.git/HEAD
+!.git/refs/heads
+!.git/refs/tags
+!.git/objects
+# .git/objects/ is needed to get current commit, but pack contains most files, but should not be needed. 
+# However, on Jenkins we still run into:  Missing unknown 8a948f.. so ignore for now 🤷‍
+# .git/objects/pack

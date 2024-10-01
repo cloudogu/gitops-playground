@@ -8,6 +8,7 @@ import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.MapUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
+import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 import io.micronaut.core.annotation.Order
@@ -53,7 +54,14 @@ class IngressNginx extends Feature {
         def templatedMap = new YamlSlurper().parseText(
                 new TemplatingEngine().template(new File(HELM_VALUES_PATH),
                     [
-                            podResources: config.application['podResources'],
+                            podResources:      config.application['podResources'],
+                            monitoring : [
+                                    active :   config.features['monitoring']['active']
+                            ],
+                            namePrefix:        config.application['namePrefix'] as String,
+                            config: config,
+                            // Allow for using static classes inside the templates
+                            statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
                     ])) as Map
 
         def valuesFromConfig = config['features']['ingressNginx']['helm']['values'] as Map

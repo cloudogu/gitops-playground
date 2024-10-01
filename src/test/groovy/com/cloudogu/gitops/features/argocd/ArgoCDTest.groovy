@@ -2,13 +2,9 @@ package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.scmm.ScmmRepo
-import com.cloudogu.gitops.utils.CommandExecutor
-import com.cloudogu.gitops.utils.CommandExecutorForTest
-import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.HelmClient
-import com.cloudogu.gitops.utils.K8sClientForTest
-import com.cloudogu.gitops.utils.TestScmmRepoProvider
+import com.cloudogu.gitops.utils.*
 import groovy.io.FileType
+import groovy.json.JsonSlurper
 import groovy.yaml.YamlSlurper
 import org.eclipse.jgit.api.CheckoutCommand
 import org.eclipse.jgit.api.CloneCommand
@@ -21,6 +17,7 @@ import java.util.stream.Collectors
 
 import static org.assertj.core.api.Assertions.assertThat
 import static org.assertj.core.api.Assertions.fail
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode
 import static groovy.test.GroovyAssert.shouldFail
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.ArgumentMatchers.anyString
@@ -49,7 +46,8 @@ class ArgoCDTest {
                     gitEmail            : 'hello@cloudogu.com',
                     urlSeparatorHyphen  : false,
                     mirrorRepos         : false,
-                    skipCrds: false
+                    skipCrds: false,
+                    netpols: false
             ],
             jenkins     : [
                     mavenCentralMirror: '',
@@ -61,8 +59,8 @@ class ArgoCDTest {
                     username: '',
                     password: ''
             ],
-            images      : buildImages + [ petclinic  : 'petclinic-value' ],
-            registry: [
+            images      : buildImages + [petclinic: 'petclinic-value'],
+            registry    : [
                     twoRegistries: false,
             ],
             repositories: [
@@ -82,7 +80,7 @@ class ArgoCDTest {
                     ]
             ],
             features    : [
-                    argocd     : [
+                    argocd      : [
                             operator    : false,
                             active      : true,
                             configOnly  : true,
@@ -90,27 +88,30 @@ class ArgoCDTest {
                             emailToUser : 'app-team@example.org',
                             emailToAdmin: 'infra@example.org'
                     ],
-                    mail       : [
+                    mail        : [
                             mailhog     : true,
                             smtpAddress : '',
                             smtpPort    : '',
                             smtpUser    : '',
                             smtpPassword: ''
                     ],
-                    monitoring : [
+                    monitoring  : [
                             active: true,
                             helm  : [
-                                    chart: 'kube-prometheus-stack',
+                                    chart  : 'kube-prometheus-stack',
                                     version: '42.0.3'
-                                    ]
+                            ]
                     ],
-                    secrets    : [
+                    ingressNginx: [
+                            active: true
+                    ],
+                    secrets     : [
                             active: true,
                             vault : [
                                     url: ''
                             ]
                     ],
-                    exampleApps: [
+                    exampleApps : [
                             petclinic: [
                                     baseDomain: ''
                             ],
@@ -200,6 +201,7 @@ class ArgoCDTest {
                 'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack')
 
         assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['crds']).isNull()
+        assertThat(parseActualYaml(actualHelmValuesFile)['global']).isNull()
     }
 
     @Test
@@ -239,15 +241,49 @@ class ArgoCDTest {
     @Test
     void 'When monitoring disabled: Does not push path monitoring to cluster resources'() {
         config.features['monitoring']['active'] = false
+
         createArgoCD().install()
-        assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + "/monitoring")).doesNotExist()
+
+        assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + ArgoCD.MONITORING_RESOURCES_PATH)).doesNotExist()
     }
 
     @Test
     void 'When monitoring enabled: Does push path monitoring to cluster resources'() {
         config.features['monitoring']['active'] = true
+
         createArgoCD().install()
-        assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + "/misc/monitoring")).exists()
+
+        assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + ArgoCD.MONITORING_RESOURCES_PATH)).exists()
+
+        assertValidDashboards()
+    }
+
+    void assertValidDashboards() {
+        Files.walk(Path.of(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir(), "/misc/monitoring/"))
+                .filter { it.toString() ==~ /.*-dashboard\.yaml/ }.each { Path path ->
+            def dashboardConfigMap = null
+
+            assertThatCode {
+                dashboardConfigMap = parseActualYaml(path.toString())
+            }.as("Invalid YAML in ${path.fileName}").doesNotThrowAnyException()
+
+            assertThat(dashboardConfigMap.data as Map).hasSize(1)
+                    .as('Expected only on dashboard json within map')
+            assertThatCode {
+                def dashboardJsonString = (dashboardConfigMap.data as Map).entrySet().first().value as String
+                new JsonSlurper().parseText(dashboardJsonString)
+            }.as("Invalid JSON in ${path.fileName}").doesNotThrowAnyException()
+        }
+    }
+
+    @Test
+    void 'When ingressNginx disabled: Does not push monitoring dashboard resources'() {
+        config.features['monitoring']['active'] = true
+        config.features['ingressNginx']['active'] = false
+        createArgoCD().install()
+        assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + ArgoCD.MONITORING_RESOURCES_PATH)).exists()
+        assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + "/misc/ingress-nginx-dashboard.yaml")).doesNotExist()
+        assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + "/misc/ingress-nginx-dashboard-requests-handling.yaml")).doesNotExist()
     }
 
     @Test
@@ -364,7 +400,7 @@ class ArgoCDTest {
                 parseActualYaml(actualHelmValuesFile)['argo-cd']['notifications']['notifiers']['service.email'] as String)
 
         k8sCommands.assertNotExecuted('kubectl create secret generic argocd-notifications-secret')
-        
+
         assertThat(serviceEmail['host']).isEqualTo("smtp.example.com")
         assertThat(serviceEmail as Map).doesNotContainKey('port')
         assertThat(serviceEmail as Map).doesNotContainKey('username')
@@ -432,19 +468,19 @@ class ArgoCDTest {
         assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-production.yaml')).doesNotContainKey('ingress')
         assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-staging.yaml')).doesNotContainKey('ingress')
         assertThat(valuesYaml).doesNotContainKey('resources')
-        
+
         valuesYaml = parseActualYaml(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'apps/nginx-helm-umbrella/values.yaml')
         assertThat(valuesYaml['nginx']['service']['type']).isEqualTo('NodePort')
         assertThat(valuesYaml['nginx'] as Map).doesNotContainKey('ingress')
         assertThat(valuesYaml['nginx'] as Map).doesNotContainKey('resources')
-        
+
         assertThat((parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[1]['spec']['type']))
                 .isEqualTo('NodePort')
         assertThat((parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[0]['spec']['template']['spec']['containers'] as List)[0]['resources'])
                 .isNull()
 
         assertThat(new File(nginxValidationRepo.absoluteLocalRepoTmpDir, '/k8s/values-shared.yaml').text).doesNotContain('resources:')
-        
+
         // Assert Petclinic repo cloned
         verify(gitCloneMock).setURI('https://github.com/cloudogu/spring-petclinic.git')
         verify(setUriMock).setDirectory(remotePetClinicRepoTmpDir)
@@ -539,7 +575,7 @@ class ArgoCDTest {
 
         assertThat((parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[2]['spec']['rules'] as List)[0]['host'])
                 .isEqualTo('broken-application-nginx-local')
-        
+
         assertPetClinicRepos('LoadBalancer', 'NodePort', 'petclinic-local')
     }
 
@@ -591,7 +627,7 @@ class ArgoCDTest {
         assertArgoCdYamlPrefixes(ArgoCD.SCMM_URL_INTERNAL, '')
         assertJenkinsEnvironmentVariablesPrefixes('')
     }
-    
+
     @Test
     void 'Creates Jenkinsfiles for two registries'() {
         config.registry['twoRegistries'] = true
@@ -658,9 +694,9 @@ class ArgoCDTest {
         createArgoCD().install()
 
         for (def petclinicRepo : petClinicRepos) {
-                assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).contains(
-                        'mvn.useMirrors([name: \'maven-central-mirror\', mirrorOf: \'central\', url:  env.MAVEN_CENTRAL_MIRROR])'
-                )
+            assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).contains(
+                    'mvn.useMirrors([name: \'maven-central-mirror\', mirrorOf: \'central\', url:  env.MAVEN_CENTRAL_MIRROR])'
+            )
         }
     }
 
@@ -680,8 +716,63 @@ class ArgoCDTest {
 
         assertThat((parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[0]['spec']['template']['spec']['containers'] as List)[0]['resources'] as Map)
                 .containsKeys('limits', 'requests')
-        
+
         assertPetClinicRepos('NodePort', 'LoadBalancer', '')
+    }
+
+    @Test
+    void 'ArgoCD with active network policies'(){
+        config.application['netpols'] = true
+
+        createArgoCD().install()
+
+        assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['global']['networkPolicy']['create']).isEqualTo(true)
+        assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir(), '/argocd/values.yaml').text.contains("namespace: monitoring"))
+        assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir(), '/argocd/templates/allow-namespaces.yaml').text.contains("namespace: monitoring"))
+        assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir(), '/argocd/templates/allow-namespaces.yaml').text.contains("namespace: default"))
+    }
+    
+    @Test
+    void 'set credentials for BuildImages'() {
+        config.registry['twoRegistries'] = true
+
+        createArgoCD().install()
+
+        assertPetClinicRepos('NodePort', 'LoadBalancer', '')
+    }
+
+    private static Map parseBuildImagesMapFromString(String text) {
+        def startIndex = text.indexOf('buildImages')
+        if (startIndex != -1) {
+            def bracketCount = 0
+            def inBrackets = false
+            def endIndex = startIndex
+
+            for (i in startIndex..text.length() - 1) {
+                if (text[i] == '[') {
+                    bracketCount++
+                    inBrackets = true
+                } else if (text[i] == ']') {
+                    bracketCount--
+                }
+
+                if (inBrackets && bracketCount == 0) {
+                    endIndex = i + 1
+                    break
+                }
+            }
+
+            def matchedText = text.substring(startIndex + 'buildImages'.length(), endIndex).trim().replaceFirst(":", "")
+
+            Binding binding = new Binding()
+            binding.setVariable('dockerRegistryProxyCredentials', 'dockerRegistryProxyCredentials')
+            def map =  new GroovyShell(binding).evaluate(matchedText)
+
+            return map as Map
+
+        } else {
+            return [:]
+        }
     }
 
     private void assertArgoCdYamlPrefixes(String scmmUrl, String expectedPrefix) {
@@ -766,7 +857,7 @@ class ArgoCDTest {
             }
         }
 
-        assertAllYamlFiles(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), 'misc', 7) { Path it ->
+        assertAllYamlFiles(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), 'misc', 9) { Path it ->
             def yaml = parseActualYaml(it.toString())
             List yamlDocuments = yaml instanceof List ? yaml : [yaml]
             for (def document in yamlDocuments) {
@@ -791,24 +882,21 @@ class ArgoCDTest {
     }
 
     private void assertJenkinsEnvironmentVariablesPrefixes(String prefix) {
-        List singleRegistryEnvVars = ["env.${prefix}REGISTRY_URL", "env.${prefix}REGISTRY_URL"]
-        List twoRegistriesEnvVars = ["env.${prefix}REGISTRY_PULL_URL", 
-                                     "env.${prefix}REGISTRY_PUSH_URL", "env.${prefix}REGISTRY_PUSH_PATH" ]
-        
+        List defaultRegistryEnvVars = ["env.${prefix}REGISTRY_URL", "env.${prefix}REGISTRY_PATH"]
+        List twoRegistriesEnvVars = ["env.${prefix}REGISTRY_PROXY_URL"]
+
         assertThat(new File(nginxHelmJenkinsRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).contains("env.${prefix}K8S_VERSION")
-        
+
         for (def petclinicRepo : petClinicRepos) {
+            defaultRegistryEnvVars.each { expectedEnvVar ->
+                assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).contains(expectedEnvVar)
+            }
+
             if (config.registry['twoRegistries']) {
                 twoRegistriesEnvVars.each { expectedEnvVar ->
                     assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).contains(expectedEnvVar)
                 }
-                singleRegistryEnvVars.each { expectedEnvVar ->
-                    assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).doesNotContain(expectedEnvVar)
-                }
             } else {
-                singleRegistryEnvVars.each { expectedEnvVar ->
-                    assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).contains(expectedEnvVar)
-                }
                 twoRegistriesEnvVars.each { expectedEnvVar ->
                     assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).doesNotContain(expectedEnvVar)
                 }
@@ -842,36 +930,30 @@ class ArgoCDTest {
     }
 
     void assertBuildImagesInJenkinsfileReplaced(File jenkinsfile) {
-        def actualBuildImages = ''
-        def insideBuildImagesBlock = false
-
-        jenkinsfile.eachLine { line ->
-            if (line =~ /\s*buildImages\s*:\s*\[/) {
-                insideBuildImagesBlock = true
-                return
-            }
-
-            if (insideBuildImagesBlock) {
-                actualBuildImages += "${line.trim()}\n"
-
-                if (line =~ /]/) {
-                    insideBuildImagesBlock = false
-                }
-            }
-        }
+        def actualBuildImages = parseBuildImagesMapFromString(jenkinsfile.text)
         if (!actualBuildImages) {
             fail("Missing build images in Jenkinsfile ${jenkinsfile}")
         }
+        
+        if (config.registry['twoRegistries']) {
+            for (Map.Entry image : actualBuildImages as Map) {
+                assertThat(image.value['image']).isEqualTo(buildImages[image.key])
+                assertThat(image.value['credentialsId']).isEqualTo('dockerRegistryProxyCredentials')
+            }
+        } else {
 
-        for (Map.Entry image : buildImages as Map) {
-            assertThat(actualBuildImages).contains("${image.key}: '${image.value}'")
+            assertThat(buildImages.keySet()).containsExactlyInAnyOrderElementsOf(actualBuildImages.keySet())
+            for (Map.Entry image : buildImages as Map) {
+                assertThat(image.value).isEqualTo(actualBuildImages[image.key])
+            }
         }
+
     }
 
     void assertPetClinicRepos(String expectedServiceType, String unexpectedServiceType, String ingressUrl) {
         boolean separatorHyphen = config.application['urlSeparatorHyphen']
-        boolean podResources = config.application['podResources'] 
-                
+        boolean podResources = config.application['podResources']
+
         for (ScmmRepo repo : petClinicRepos) {
 
             def tmpDir = repo.absoluteLocalRepoTmpDir
@@ -881,15 +963,15 @@ class ArgoCDTest {
 
             if (repo.scmmRepoTarget == 'argocd/petclinic-plain') {
                 assertBuildImagesInJenkinsfileReplaced(jenkinsfile)
-                
+
                 assertThat(new File(tmpDir, 'Dockerfile').text).startsWith('FROM petclinic-value')
-                
+
                 assertThat(new File(tmpDir, 'k8s/production/service.yaml').text).contains("type: ${expectedServiceType}")
                 assertThat(new File(tmpDir, 'k8s/staging/service.yaml').text).contains("type: ${expectedServiceType}")
 
                 assertThat(new File(tmpDir, 'k8s/production/service.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
                 assertThat(new File(tmpDir, 'k8s/staging/service.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
-                
+
                 if (podResources) {
                     assertThat((parseActualYaml(tmpDir + '/k8s/production/deployment.yaml')['spec']['template']['spec']['containers'] as List)[0]['resources'] as Map)
                             .containsKeys('limits', 'requests')
@@ -900,7 +982,7 @@ class ArgoCDTest {
                             .doesNotContainKey('resources')
                     assertThat((parseActualYaml(tmpDir + '/k8s/staging/deployment.yaml')['spec']['template']['spec']['containers'] as List)[0] as Map)
                             .doesNotContainKey('resources')
-                } 
+                }
 
                 if (!ingressUrl) {
                     assertThat(new File(tmpDir, 'k8s/staging/ingress.yaml')).doesNotExist()
@@ -956,7 +1038,7 @@ class ArgoCDTest {
                 } else {
                     assertThat(parseActualYaml(tmpDir + '/k8s/values-shared.yaml')['resources']).isNull()
                 }
-                
+
                 if (!ingressUrl) {
                     assertThat(parseActualYaml(tmpDir + '/k8s/values-shared.yaml')['ingress']['enabled']).isEqualTo(false)
                     assertThat(parseActualYaml(tmpDir + '/k8s/values-production.yaml')).doesNotContainKey('ingress')
@@ -981,30 +1063,25 @@ class ArgoCDTest {
     }
 
     void assertJenkinsfileRegistryCredentials() {
-        List singleRegistryExpectedLines = [
-                'docker.withRegistry("http://${dockerRegistryBaseUrl}", dockerRegistryCredentials) {',
+        List defaultRegistryExpectedLines = [
                 'String pathPrefix = !dockerRegistryPath?.trim() ? "" : "${dockerRegistryPath}/"',
                 'imageName = "${dockerRegistryBaseUrl}/${pathPrefix}${application}:${imageTag}"'
         ]
-        List twoRegistriesExpectedLines = [ 
-                'String pathPrefix = !dockerRegistryPushPath?.trim() ? "" : "${dockerRegistryPushPath}/"',
-                'imageName = "${dockerRegistryPushBaseUrl}/${pathPrefix}${application}:${imageTag}"',
-                'docker.withRegistry("http://${dockerRegistryPullBaseUrl}", dockerRegistryPullCredentials) {',
-                'docker.withRegistry("http://${dockerRegistryPushBaseUrl}", dockerRegistryPushCredentials) {' ]
-        
+        List twoRegistriesExpectedLines = [
+                'docker.withRegistry("https://${dockerRegistryProxyBaseUrl}", dockerRegistryProxyCredentials) {']
+
         for (def petclinicRepo : petClinicRepos) {
             String jenkinsfile = new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text
+
+            defaultRegistryExpectedLines.each { expectedEnvVar ->
+                assertThat(jenkinsfile).contains(expectedEnvVar)
+            }
+
             if (config.registry['twoRegistries']) {
                 twoRegistriesExpectedLines.each { expectedEnvVar ->
                     assertThat(jenkinsfile).contains(expectedEnvVar)
                 }
-                singleRegistryExpectedLines.each { expectedEnvVar ->
-                    assertThat(jenkinsfile).doesNotContain(expectedEnvVar)
-                }
             } else {
-                singleRegistryExpectedLines.each { expectedEnvVar ->
-                    assertThat(jenkinsfile).contains(expectedEnvVar)
-                }
                 twoRegistriesExpectedLines.each { expectedEnvVar ->
                     assertThat(jenkinsfile).doesNotContain(expectedEnvVar)
                 }
@@ -1371,5 +1448,6 @@ class ArgoCDTest {
         def ys = new YamlSlurper()
         return ys.parse(yamlFile) as Map
     }
+
 }
 

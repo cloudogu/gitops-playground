@@ -17,13 +17,9 @@ class ConfigToConfigFileConverterTest {
                         path        : 'path',
                         username    : 'username',
                         password    : 'password',
-                        pullUrl         : 'pullUrl',
-                        pullUsername    : 'pullUsername',
-                        pullPassword    : 'pullPassword',
-                        pushUrl         : 'pushUrl',
-                        pushPath        : 'pushPath',
-                        pushUsername    : 'pushUsername',
-                        pushPassword    : 'pushPassword',
+                        proxyUrl         : 'proxyUrl',
+                        proxyUsername    : 'proxyUsername',
+                        proxyPassword    : 'proxyPassword',
                         helm  : [
                                 chart  : 'docker-registry',
                                 repoURL: 'https://charts.helm.sh/stable',
@@ -68,6 +64,8 @@ class ConfigToConfigFileConverterTest {
                         urlSeparatorHyphen: true,
                         mirrorRepos     : true,
                         skipCrds : true,
+                        namespaceIsolation : false,
+                        netpols : false
                 ],
                 images     : [
                         kubectl    : 'kubectl-value',
@@ -187,13 +185,9 @@ registry:
   path: "path"
   username: "username"
   password: "password"
-  pullUrl: "pullUrl"
-  pullUsername: "pullUsername"
-  pullPassword: "pullPassword"
-  pushUrl: "pushUrl"
-  pushPath: "pushPath"
-  pushUsername: "pushUsername"
-  pushPassword: "pushPassword"
+  proxyUrl: "proxyUrl"
+  proxyUsername: "proxyUsername"
+  proxyPassword: "proxyPassword"
   helm:
     chart: "docker-registry"
     repoURL: "https://charts.helm.sh/stable"
@@ -232,6 +226,8 @@ application:
   urlSeparatorHyphen: true
   mirrorRepos: true
   skipCrds: true
+  namespaceIsolation: false
+  netpols: false
   openshift: false
 images:
   kubectl: "kubectl-value"
@@ -286,6 +282,7 @@ features:
       chart: "kube-prometheus-stack"
       repoURL: "https://prometheus-community.github.io/helm-charts"
       version: "58.2.1"
+      values: null
       grafanaImage: "grafanaImage"
       grafanaSidecarImage: "grafanaSidecarImage"
       prometheusImage: "prometheusImage"

@@ -1,6 +1,11 @@
 package com.cloudogu.gitops.config
 
 interface ConfigConstants {
+
+    public static final String BINARY_NAME = 'apply-ng'
+    public static final String APP_NAME = 'gitops-playground (GOP)'
+    public static final String APP_DESCRIPTION = 'CLI-tool to deploy gitops-playground.'
+    
     // group registry
     String REGISTRY_DESCRIPTION = 'Config parameters for Registry'
     String REGISTRY_INTERNAL_PORT_DESCRIPTION = 'Port of registry registry. Ignored when a registry*url params are set'
@@ -8,13 +13,10 @@ interface ConfigConstants {
     String REGISTRY_PATH_DESCRIPTION = 'Optional when registry-url is set'
     String REGISTRY_USERNAME_DESCRIPTION = 'Optional when registry-url is set'
     String REGISTRY_PASSWORD_DESCRIPTION = 'Optional when registry-url is set'
-    String REGISTRY_PULL_URL_DESCRIPTION = 'The url of your external pull-registry. Make sure to always use this with registry-push-url'
-    String REGISTRY_PULL_USERNAME_DESCRIPTION = 'Optional when registry-pull-url is set'
-    String REGISTRY_PULL_PASSWORD_DESCRIPTION = 'Optional when registry-pull-url is set'
-    String REGISTRY_PUSH_URL_DESCRIPTION = 'The url of your external pull-registry. Make sure to always use this with registry-pull-url'
-    String REGISTRY_PUSH_PATH_DESCRIPTION = 'Optional when registry-push-url is set'
-    String REGISTRY_PUSH_USERNAME_DESCRIPTION = 'Optional when registry-push-url is set'
-    String REGISTRY_PUSH_PASSWORD_DESCRIPTION = 'Optional when registry-push-url is set'
+
+    String REGISTRY_PROXY_URL_DESCRIPTION = 'The url of your proxy-registry. Used in pipelines to authorize pull base images. Use in conjunction with petclinic base image.'
+    String REGISTRY_PROXY_USERNAME_DESCRIPTION = 'Use with registry-proxy-url, added to Jenkins as credentials.'
+    String REGISTRY_PROXY_PASSWORD_DESCRIPTION = 'Use with registry-proxy-url, added to Jenkins as credentials.'
 
     String FEATURES_DESCRIPTION = 'Config parameters for features or tools'
     
@@ -65,6 +67,7 @@ interface ConfigConstants {
     String BASE_URL_DESCRIPTION = 'the external base url (TLD) for all tools, e.g. https://example.com or http://localhost:8080. The individual -url params for argocd, grafana, vault and mailhog take precedence.'
     String URL_SEPARATOR_HYPHEN_DESCRIPTION = 'Use hyphens instead of dots to separate application name from base-url'
     String SKIP_CRDS_DESCRIPTION = 'Skip installation of CRDs. This requires prior installation of CRDs'
+    String NAMESPACE_ISOLATION_DESCRIPTION = 'Configure tools to explicitly work with the given namespaces only, and not cluster-wide. This way GOP can be installed without having cluster-admin permissions.'
     String MIRROR_REPOS_DESCRIPTION = 'Changes the sources of deployed tools so they are not pulled from the internet, but are pulled from git and work in air-gapped environments.'
     String SPRING_BOOT_HELM_CHART_DESCRIPTION = 'Repo to pull the generic Spring Boot Helm chart, used in examples and exercises'
     String SPRING_PETCLINIC_DESCRIPTION = 'Repo to pull the Spring Petclinic, used in examples and exercises'
@@ -72,6 +75,7 @@ interface ConfigConstants {
     String CES_BUILD_LIB_DESCRIPTION = 'Repo to pull the ces-build-lib, used in examples and exercises as depedency of the gitops-build-lib'
     String REPO_URL_DESCRIPTION = 'HTTP URL of the repo'
     String REPO_REF_DESCRIPTION = 'Ref of the repo to use, e.g. a tag, commit or branch'
+    String NETPOLS_DESCRIPTION = 'Sets Network Policies'
     String OPENSHIFT_DESCRIPTION = 'When set, openshift specific resources and configurations are applied'
     
 

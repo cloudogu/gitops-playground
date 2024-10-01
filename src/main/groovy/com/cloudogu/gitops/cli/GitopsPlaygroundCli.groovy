@@ -18,8 +18,8 @@ import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
-import static com.cloudogu.gitops.config.ConfigConstants.*
 
+import static com.cloudogu.gitops.config.ConfigConstants.*
 import static groovy.json.JsonOutput.prettyPrint
 import static groovy.json.JsonOutput.toJson
 /**
@@ -29,12 +29,11 @@ import static groovy.json.JsonOutput.toJson
  * @see com.cloudogu.gitops.config.schema.Schema
  */
 @Command(
-        name = 'apply-ng',
-        description = 'CLI-tool to deploy gitops-playground.',
-        mixinStandardHelpOptions = true)
-
+        name = BINARY_NAME,
+        description = APP_DESCRIPTION)
 @Slf4j
 class GitopsPlaygroundCli  implements Runnable {
+    
     // args group registry
     @Option(names = ['--internal-registry-port'], description = REGISTRY_INTERNAL_PORT_DESCRIPTION)
     private Integer internalRegistryPort
@@ -46,20 +45,14 @@ class GitopsPlaygroundCli  implements Runnable {
     private String registryUsername
     @Option(names = ['--registry-password'], description = REGISTRY_PASSWORD_DESCRIPTION)
     private String registryPassword
-    @Option(names = ['--registry-pull-url'], description = REGISTRY_PULL_URL_DESCRIPTION)
-    private String registryPullUrl
-    @Option(names = ['--registry-pull-username'], description = REGISTRY_PULL_USERNAME_DESCRIPTION)
-    private String registryPullUsername
-    @Option(names = ['--registry-pull-password'], description = REGISTRY_PULL_PASSWORD_DESCRIPTION)
-    private String registryPullPassword
-    @Option(names = ['--registry-push-url'], description = REGISTRY_PUSH_URL_DESCRIPTION)
-    private String registryPushUrl
-    @Option(names = ['--registry-push-path'], description = REGISTRY_PUSH_PATH_DESCRIPTION)
-    private String registryPushPath
-    @Option(names = ['--registry-push-username'], description = REGISTRY_PUSH_USERNAME_DESCRIPTION)
-    private String registryPushUsername
-    @Option(names = ['--registry-push-password'], description = REGISTRY_PUSH_PASSWORD_DESCRIPTION)
-    private String registryPushPassword
+    @Option(names = ['--registry-proxy-url'], description = 'The url of your external proxy-registry. Make sure to always use this with --registry-proxy-url')
+    private String registryProxyUrl
+    @Option(names = ['--registry-proxy-path'], description = 'Optional when --registry-proxy-url is set')
+    private String registryProxyPath
+    @Option(names = ['--registry-proxy-username'], description = 'Optional when --registry-proxy-url is set')
+    private String registryProxyUsername
+    @Option(names = ['--registry-proxy-password'], description = 'Optional when --registry-proxy-url is set')
+    private String registryProxyPassword
 
     // args group jenkins
     @Option(names = ['--jenkins-url'], description = JENKINS_URL_DESCRIPTION)
@@ -88,7 +81,7 @@ class GitopsPlaygroundCli  implements Runnable {
     private Boolean remote
     @Option(names = ['--insecure'], description = INSECURE_DESCRIPTION)
     private Boolean insecure
-    @Option(names = ['--openshift'], description = 'Install with openshift compatibility')
+    @Option(names = ['--openshift'], description = OPENSHIFT_DESCRIPTION)
     private Boolean openshift
 
     // args group tool configuration
@@ -136,6 +129,10 @@ class GitopsPlaygroundCli  implements Runnable {
     private Boolean mirrorRepos
     @Option(names = ['--skip-crds'], description = SKIP_CRDS_DESCRIPTION)
     private Boolean skipCrds
+    @Option(names = ['--namespace-isolation'], description = NAMESPACE_ISOLATION_DESCRIPTION)
+    private Boolean namespaceIsolation
+    @Option(names = ['--netpols'], description = NETPOLS_DESCRIPTION)
+    private Boolean netpols
 
     // args group metrics
     @Option(names = ['--metrics', '--monitoring'], description = MONITORING_ENABLE_DESCRIPTION)
@@ -174,6 +171,11 @@ class GitopsPlaygroundCli  implements Runnable {
     Boolean debug
     @Option(names = ['-x', '--trace'], description = TRACE_DESCRIPTION, scope = CommandLine.ScopeType.INHERIT)
     Boolean trace
+    @Option(names = ["-v", "--version"], help = true, description = "Display version and license info")
+    Boolean versionInfoRequested
+    @Option(names = ["-h", "--help"], usageHelp = true, description = "Display this help message")
+    @SuppressWarnings('unused') // needed to define annotation, "usageHelp" leads to hel being printed 
+    boolean usageHelpRequested
 
     // args group configuration
     @Option(names = ['--username'], description = USERNAME_DESCRIPTION)
@@ -190,7 +192,7 @@ class GitopsPlaygroundCli  implements Runnable {
     String configFile
     @Option(names = ['--config-map'], description = CONFIG_MAP_DESCRIPTION)
     String configMap
-    @Option(names = ['--output-config-file'], description = OUTPUT_CONFIG_FILE_DESCRIPTION)
+    @Option(names = ['--output-config-file'], description = OUTPUT_CONFIG_FILE_DESCRIPTION, help = true)
     Boolean outputConfigFile
     @Option(names = ['--pod-resources'], description = POD_RESOURCES_DESCRIPTION)
     Boolean podResources
@@ -224,6 +226,13 @@ class GitopsPlaygroundCli  implements Runnable {
     void run() {
         setLogging()
         
+        def version = createVersionOutput()
+        
+        if (versionInfoRequested) {
+            println version
+            return
+        }
+        
         def context = createApplicationContext()
         
         if (outputConfigFile) {
@@ -238,18 +247,31 @@ class GitopsPlaygroundCli  implements Runnable {
         K8sClient k8sClient = context.getBean(K8sClient)
 
         if (config['application']['destroy']) {
+            log.info version
             confirmOrExit "Destroying gitops playground in kubernetes cluster '${k8sClient.currentContext}'.", config
             
             Destroyer destroyer = context.getBean(Destroyer)
             destroyer.destroy()
         } else {
+            log.info version
             confirmOrExit "Applying gitops playground to kubernetes cluster '${k8sClient.currentContext}'.", config
-
             Application app = context.getBean(Application)
             app.start()
 
             printWelcomeScreen()
         }
+    }
+
+    protected String createVersionOutput() {
+        def versionName = Version.NAME.replace('\\n', '\n')
+
+        if (versionName.trim().startsWith('(')) {
+            // When there is no git tag, print commit without parentheses
+            versionName = versionName.trim()
+                    .replace('(', '')
+                    .replace(')', '')
+        }
+        return  "${APP_NAME} ${versionName}"
     }
 
     protected void register(ApplicationContext context, Configuration configuration) {
@@ -363,13 +385,10 @@ class GitopsPlaygroundCli  implements Runnable {
                         path        : registryPath,
                         username    : registryUsername,
                         password    : registryPassword,
-                        pullUrl         : registryPullUrl,
-                        pullUsername    : registryPullUsername,
-                        pullPassword    : registryPullPassword,
-                        pushUrl         : registryPushUrl,
-                        pushPath        : registryPushPath,
-                        pushUsername    : registryPushUsername,
-                        pushPassword    : registryPushPassword,
+                        proxyUrl         : registryProxyUrl,
+                        proxyPath        : registryProxyPath,
+                        proxyUsername    : registryProxyUsername,
+                        proxyPassword    : registryProxyPassword,
                 ],
                 jenkins    : [
                         url     : jenkinsUrl,
@@ -401,7 +420,9 @@ class GitopsPlaygroundCli  implements Runnable {
                         gitName: gitName,
                         gitEmail: gitEmail,
                         urlSeparatorHyphen : urlSeparatorHyphen,
-                        skipCrds : skipCrds
+                        skipCrds : skipCrds,
+                        namespaceIsolation: namespaceIsolation,
+                        netpols: netpols
                 ],
                 images     : [
                         kubectl    : kubectlImage,
@@ -467,8 +488,9 @@ class GitopsPlaygroundCli  implements Runnable {
                                 ]
                         ],
                         ingressNginx: [
-                               active: ingressNginx
+                               active: ingressNginx,
                         ],
+
                 ]
         ]
     }

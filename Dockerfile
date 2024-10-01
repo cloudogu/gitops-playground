@@ -5,12 +5,12 @@ ARG JDK_VERSION='17'
 # Set by the micronaut BOM, see pom.xml
 ARG GRAAL_VERSION='22.3.0'
 
-FROM alpine:3 as alpine
+FROM alpine:3 AS alpine
 
 # Keep in sync with the version in pom.xml
 FROM ghcr.io/graalvm/graalvm-ce:ol8-java${JDK_VERSION}-${GRAAL_VERSION} AS graal
 
-FROM graal as maven-cache
+FROM graal AS maven-cache
 ENV MAVEN_OPTS='-Dmaven.repo.local=/mvn'
 WORKDIR /app
 COPY .mvn/ /app/.mvn/
@@ -18,13 +18,14 @@ COPY mvnw /app/
 COPY pom.xml /app/
 RUN ./mvnw dependency:resolve-plugins dependency:go-offline -B 
 
-FROM graal as maven-build
+FROM graal AS maven-build
 ENV MAVEN_OPTS='-Dmaven.repo.local=/mvn'
 COPY --from=maven-cache /mvn/ /mvn/
 COPY --from=maven-cache /app/ /app
 # Speed up build by not compiling tests
 COPY src/main /app/src/main
 COPY compiler.groovy /app
+COPY .git /app/.git
 
 WORKDIR /app
 # Exclude code not needed in productive image 
@@ -37,15 +38,15 @@ RUN ./mvnw package -DskipTests
 RUN mv $(ls -S target/*.jar | head -n 1) /app/gitops-playground.jar
 
 
-FROM alpine as downloader
+FROM alpine AS downloader
 RUN apk add curl grep
 # When updating, 
 # * also update the checksum found at https://dl.k8s.io/release/v${K8S_VERSION}/bin/linux/amd64/kubectl.sha256
 # * also update in init-cluster.sh. vars.tf, ApplicationConfigurator.groovy and apply.sh
 # When upgrading to 1.26 we can verify the kubectl signature with cosign!
 # https://kubernetes.io/blog/2022/12/12/kubernetes-release-artifact-signing/
-ARG K8S_VERSION=1.29.1
-ARG KUBECTL_CHECKSUM=69ab3a931e826bf7ac14d38ba7ca637d66a6fcb1ca0e3333a2cafdf15482af9f
+ARG K8S_VERSION=1.29.8
+ARG KUBECTL_CHECKSUM=038454e0d79748aab41668f44ca6e4ac8affd1895a94f592b9739a0ae2a5f06a
 # When updating, also upgrade helm image in ApplicationConfigurator
 ARG HELM_VERSION=3.15.4
 # bash curl unzip required for Jenkins downloader
@@ -105,6 +106,7 @@ WORKDIR /tmp
 # Prepare local files for later stages
 COPY . /dist/app
 # Remove dev stuff
+RUN rm -r /dist/app/.git
 RUN rm -r /dist/app/.mvn
 RUN rm /dist/app/mvnw
 RUN rm /dist/app/pom.xml
@@ -118,9 +120,10 @@ RUN mkdir /dist-dev
 RUN mv /dist/app/src /dist-dev/src && \
     chmod a=rwx -R /dist-dev/src && \
     rm -r /dist-dev/src/main/groovy/com/cloudogu/gitops/graal
-# Remove compiled GOP code from jar to avoid duplicate in dev image, allowing for scripting
 COPY --from=maven-build /app/gitops-playground.jar /dist-dev/gitops-playground.jar
-RUN zip -d /dist-dev/gitops-playground.jar 'com/cloudogu/gitops/*'
+# Remove compiled GOP code from jar to avoid duplicate in dev image, allowing for scripting. 
+# Keep generated class Version, to avoid ClassNotFoundException.
+RUN zip -d /dist-dev/gitops-playground.jar 'com/cloudogu/gitops/*' -x com/cloudogu/gitops/cli/Version.class
 
 # Required to prevent Java exceptions resulting from AccessDeniedException by jgit when running arbitrary user
 RUN mkdir -p /dist/root/.config/jgit
@@ -128,7 +131,7 @@ RUN touch /dist/root/.config/jgit/config
 RUN chmod +r /dist/root/ && chmod g+rw /dist/root/.config/jgit/
 
 # This stage builds a static binary using graal VM. For details see docs/developers.md#GraalVM
-FROM graal as native-image
+FROM graal AS native-image
 ENV MAVEN_OPTS='-Dmaven.repo.local=/mvn'
 RUN gu install native-image
 RUN microdnf install gnupg
@@ -204,13 +207,13 @@ RUN native-image -Dgroovy.grape.enable=false \
 
 
 
-FROM alpine as prod
+FROM alpine AS prod
 # copy groovy cli binary from native-image stage
 COPY --from=native-image /app/apply-ng app/apply-ng
 ENTRYPOINT ["/app/apply-ng"]
 
 
-FROM eclipse-temurin:${JDK_VERSION}-jre-alpine as dev
+FROM eclipse-temurin:${JDK_VERSION}-jre-alpine AS dev
 
 # apply-ng.sh is part of the dev image and allows trying changing groovy code inside the image for debugging
 # Allow changing code in dev mode, less secure, but the intention of the dev image

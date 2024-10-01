@@ -20,14 +20,41 @@
     <packaging>jar</packaging>
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
-    <mockitoVersion>4.8.0</mockitoVersion>
     <exec.mainClass>com.cloudogu.gitops.cli.GitopsPlaygroundCliMain</exec.mainClass>
-
+    
+    <!--suppress UnresolvedMavenProperty -->
+    <!-- git is provided by git-commit-id-maven-plugin -->
+    <versionName>${git.tags} (${git.commit.id.abbrev})\n${project.licenses[0].comments}\n${project.licenses[0].name}\n${project.licenses[0].url}</versionName>
+    
+    <versionNameVersion>2.2.0</versionNameVersion>
+    <mockitoVersion>4.8.0</mockitoVersion>
     <okhttpVersion>4.11.0</okhttpVersion>
     <retrofitVersion>2.9.0</retrofitVersion>
     <groovy.version>4.0.12</groovy.version>
     <jsonschema.version>4.35.0</jsonschema.version>
   </properties>
+
+  <scm>
+    <connection>scm:git:https://github.com/cloudogu/gitops-playground.git</connection>
+    <developerConnection>scm:git:git@github.com:cloudogu/gitops-playground.git</developerConnection>
+    <url>https://github.com/cloudogu/gitops-playground</url>
+  </scm>
+
+  <licenses>
+    <license>
+      <name>GNU AFFERO GENERAL PUBLIC LICENSE, Version 3</name>
+      <comments>Copyright 2020 - present Cloudogu GmbH</comments>
+      <url>https://github.com/cloudogu/gitops-playground/blob/main/LICENSE</url>
+    </license>
+  </licenses>
+
+  <inceptionYear>2020</inceptionYear>
+
+  <organization>
+    <name>Cloudogu GmbH</name>
+    <url>https://www.cloudogu.com/</url>
+  </organization>
+
 
   <dependencyManagement>
     <dependencies>
@@ -279,6 +306,14 @@
       </exclusions>
     </dependency>
 
+    <dependency>
+      <groupId>com.cloudogu.versionName</groupId>
+      <artifactId>processor</artifactId>
+      <version>${versionNameVersion}</version>
+      <!-- This dependency is only necessary during compile time -->
+      <scope>provided</scope>
+    </dependency>
+
     <!-- GraalVM only -->
     <dependency>
       <groupId>org.graalvm.nativeimage</groupId>
@@ -366,7 +401,42 @@
       </plugin>
 
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.9.0</version>
+        <configuration>
+          <annotationProcessorPaths>
+            <path>
+              <groupId>com.cloudogu.versionName</groupId>
+              <artifactId>processor</artifactId>
+              <version>${versionNameVersion}</version>
+            </path>
+          </annotationProcessorPaths>
+          <compilerArgs>
+            <arg>-AversionName=${versionName}</arg>
+          </compilerArgs>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>io.github.git-commit-id</groupId>
+        <artifactId>git-commit-id-maven-plugin</artifactId>
+        <version>9.0.1</version>
+        <executions>
+          <execution>
+            <id>get-the-git-infos</id>
+            <goals>
+              <goal>revision</goal>
+            </goals>
+            <phase>initialize</phase>
+          </execution>
+        </executions>
+        <configuration>
+          <includeOnlyProperties>
+            <includeOnlyProperty>^git.tags$</includeOnlyProperty>
+            <includeOnlyProperty>^git.commit.id.abbrev$</includeOnlyProperty>
+          </includeOnlyProperties>
+        </configuration>
       </plugin>
 
       <plugin>

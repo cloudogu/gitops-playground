@@ -4,17 +4,16 @@ String getApplication() { 'spring-petclinic-plain' }
 String getConfigRepositoryPRRepo() { '${namePrefix}argocd/example-apps' }
 String getScmManagerCredentials() { 'scmm-user' }
 String getConfigRepositoryPRBaseUrl() { env.SCMM_URL }
-<#if registry.twoRegistries>
-String getDockerRegistryPullBaseUrl() { env.${namePrefixForEnvVars}REGISTRY_PULL_URL }
-String getDockerRegistryPullCredentials() { 'registry-pull-user' }
-String getDockerRegistryPushBaseUrl() { env.${namePrefixForEnvVars}REGISTRY_PUSH_URL }
-String getDockerRegistryPushPath() { env.${namePrefixForEnvVars}REGISTRY_PUSH_PATH }
-String getDockerRegistryPushCredentials() { 'registry-push-user' }
-<#else>
+
 String getDockerRegistryBaseUrl() { env.${namePrefixForEnvVars}REGISTRY_URL }
 String getDockerRegistryPath() { env.${namePrefixForEnvVars}REGISTRY_PATH }
 String getDockerRegistryCredentials() { 'registry-user' }
+
+<#if registry.twoRegistries>
+String getDockerRegistryProxyBaseUrl() { env.${namePrefixForEnvVars}REGISTRY_PROXY_URL }
+String getDockerRegistryProxyCredentials() { 'registry-proxy-user' }
 </#if>
+
 <#noparse>
 String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/3rd-party-dependencies/ces-build-lib" }
 String getCesBuildLibVersion() { '2.2.0' }
@@ -57,33 +56,24 @@ node {
         stage('Docker') {
             String imageTag = createImageTag()
 </#noparse>
+<#noparse>
+            String pathPrefix = !dockerRegistryPath?.trim() ? "" : "${dockerRegistryPath}/"
+            imageName = "${dockerRegistryBaseUrl}/${pathPrefix}${application}:${imageTag}"
+</#noparse>
 <#if registry.twoRegistries>
 <#noparse>
-            String pathPrefix = !dockerRegistryPushPath?.trim() ? "" : "${dockerRegistryPushPath}/"
-            imageName = "${dockerRegistryPushBaseUrl}/${pathPrefix}${application}:${imageTag}"
-            docker.withRegistry("http://${dockerRegistryPullBaseUrl}", dockerRegistryPullCredentials) {
+            docker.withRegistry("https://${dockerRegistryProxyBaseUrl}", dockerRegistryProxyCredentials) {
                 image = docker.build(imageName, '.')
             }
 </#noparse>
 <#else>
 <#noparse>
-            String pathPrefix = !dockerRegistryPath?.trim() ? "" : "${dockerRegistryPath}/"
-                imageName = "${dockerRegistryBaseUrl}/${pathPrefix}${application}:${imageTag}"
-                image = docker.build(imageName, '.')
+            image = docker.build(imageName, '.')
 </#noparse>
 </#if>
-
+<#noparse>
             if (isBuildSuccessful()) {
-<#if registry.twoRegistries>
-<#noparse>
-                        docker.withRegistry("http://${dockerRegistryPushBaseUrl}", dockerRegistryPushCredentials) {
-</#noparse>
-<#else>
-<#noparse>
-                docker.withRegistry("http://${dockerRegistryBaseUrl}", dockerRegistryCredentials) {
-</#noparse>
-</#if>
-<#noparse>
+                docker.withRegistry("https://${dockerRegistryBaseUrl}", dockerRegistryCredentials) {
                     image.push()
                 }
             } else {
@@ -135,8 +125,8 @@ node {
                         ]
                 ]
 <#noparse>
-                addSpecificGitOpsConfig(gitopsConfig)
-                
+                gitopsConfig += createSpecificGitOpsConfig()
+
                 deployViaGitops(gitopsConfig)
             } else {
                 echo 'Skipping deploy, because build not successful or not on main branch'
@@ -148,28 +138,51 @@ node {
     junit allowEmptyResults: true, testResults: '**/target/failsafe-reports/TEST-*.xml,**/target/surefire-reports/TEST-*.xml'
 }
 
-/** Initializations might not be needed in a real-world setup, but are necessary for GitOps playground */
-void addSpecificGitOpsConfig(gitopsConfig) {
-    gitopsConfig += [
+/** Initializations might not be needed in a real-world setup, but are necessary to work in an air-gapped env, for example */
+String createSpecificGitOpsConfig() {
+    [
         // In the GitOps playground, we're loading the build libs from our local SCM so it also works in an offline context
         // As the gitops-build-lib also uses the ces-build-lib we need to pass those parameters on.
         // If you can access the internet, you can rely on the defaults, which load the lib from GitHub.
         cesBuildLibRepo: cesBuildLibRepo,
         cesBuildLibVersion: cesBuildLibVersion,
         cesBuildLibCredentialsId: scmManagerCredentials,
-        
-        
-        // The GitOps playground provides parameters for overwriting the build images used by gitops-build-lib, so 
+
+
+        // The GitOps playground provides parameters for overwriting the build images used by gitops-build-lib, so
         // it also works in an offline context.
         // Those parameters overwrite the following parameters.
         // If you can access the internet, you can rely on the defaults, which load the images from public registries.
         buildImages          : [
 </#noparse>
+<#if registry.twoRegistries>
+            helm:       [
+                     image: '${images.helm}',
+                     credentialsId: dockerRegistryProxyCredentials
+            ],
+            kubectl:    [
+                    image: '${images.kubectl}',
+                    credentialsId: dockerRegistryProxyCredentials
+            ],
+            kubeval:    [
+                    image: '${images.kubeval}',
+                    credentialsId: dockerRegistryProxyCredentials
+            ],
+            helmKubeval: [
+                    image: '${images.helmKubeval}',
+                    credentialsId: dockerRegistryProxyCredentials
+            ],
+            yamllint:   [
+                    image: '${images.yamllint}',
+                    credentialsId: dockerRegistryProxyCredentials
+            ]
+<#else>
             helm: '${images.helm}',
             kubectl: '${images.kubectl}',
             kubeval: '${images.kubeval}',
             helmKubeval: '${images.helmKubeval}',
             yamllint: '${images.yamllint}'
+</#if>
 <#noparse>
         ]
     ]
@@ -193,7 +206,7 @@ def loadLibraries() {
     // @Library(["github.com/cloudogu/ces-build-lib@${cesBuildLibVersion}", "github.com/cloudogu/gitops-build-lib@${gitOpsBuildLibRepo}"]) _
     //import com.cloudogu.ces.cesbuildlib.*
     //import com.cloudogu.ces.gitopsbuildlib.*
-    
+
     cesBuildLib = library(identifier: "ces-build-lib@${cesBuildLibVersion}",
             retriever: modernSCM([$class: 'GitSCMSource', remote: cesBuildLibRepo, credentialsId: scmManagerCredentials])
     ).com.cloudogu.ces.cesbuildlib

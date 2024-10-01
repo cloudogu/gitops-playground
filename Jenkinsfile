@@ -3,8 +3,8 @@
 import com.cloudogu.ces.cesbuildlib.*
 
 String getDockerRegistryBaseUrl() { 'ghcr.io' }
-
 String getDockerImageName() { 'cloudogu/gitops-playground' }
+String getTrivyVersion() { '0.55.0'}
 
 properties([
         // Dont keep builds forever to preserve space
@@ -89,7 +89,7 @@ node('high-cpu') {
                                 String registryPort = sh(
                                         script: 'docker inspect ' +
                                                 '--format=\'{{ with (index .NetworkSettings.Ports "30000/tcp") }}{{ (index . 0).HostPort }}{{ end }}\' ' +
-                                                " k3d-${clusterName}-server-0",
+                                                " k3d-${clusterName}-serverlb",
                                         returnStdout: true
                                 ).trim()
 
@@ -207,7 +207,8 @@ def scanForCriticalVulns(String imageName, String fileName){
     trivyConfig = [
             imageName      : imageName,
             severity       : ['CRITICAL'],
-            additionalFlags: '--ignore-unfixed'
+            additionalFlags: '--ignore-unfixed',
+            trivyVersion: trivyVersion
     ]
 
     def vulns = findVulnerabilitiesWithTrivy(trivyConfig)
@@ -221,7 +222,8 @@ def scanForCriticalVulns(String imageName, String fileName){
 
 def scanForAllVulns(String imageName, String fileName){
     trivyConfig = [
-            imageName      : imageName
+            imageName      : imageName,
+            trivyVersion: trivyVersion
     ]
 
     def vulns = findVulnerabilitiesWithTrivy(trivyConfig)

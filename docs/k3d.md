@@ -114,7 +114,7 @@ k3d cluster create gitops-playground \
   # Mount port for ingress
   -p 80:80@server:0:direct \
   # Pin image for reproducibility
-  --image=rancher/k3s:v1.29.1-k3s2 \
+  --image=rancher/k3s:v1.29.8-k3s2 \
   # Disable built-in ingress controller, because we want to use the same one locally and in prod
   --k3s-arg=--disable=traefik@server:0 \
   # Allow node ports < 30000

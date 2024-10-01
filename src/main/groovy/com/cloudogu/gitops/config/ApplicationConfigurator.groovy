@@ -39,15 +39,10 @@ class ApplicationConfigurator {
                     username    : '',
                     password    : '',
                     // Alternative: Use different registries, e.g. in air-gapped envs 
-                    // "Pull" registry for 3rd party images
-                    pullUrl         : '',
-                    pullUsername    : '',
-                    pullPassword    : '',
-                    // "Push" registry for writing application specific images
-                    pushUrl         : '',
-                    pushPath        : '',
-                    pushUsername    : '',
-                    pushPassword    : '',
+                    // "Proxy" registry for 3rd party images
+                    proxyUrl         : '',
+                    proxyUsername    : '',
+                    proxyPassword    : '',
                     helm  : [
                             chart  : 'docker-registry',
                             repoURL: 'https://helm.twun.io',
@@ -73,10 +68,9 @@ class ApplicationConfigurator {
                             //repoURL: 'https://charts.jenkins.io',
                             /* When Upgrading helm chart, also upgrade controller.tag in jenkins/values.yaml
                             In addition:
-                             - Upgrade bash image in values.yaml and gid-grepper
                              - Also upgrade plugins. See docs/developers.md
                              */
-                            version: '4.8.1'
+                            version: '5.5.11'
                     ],
                     mavenCentralMirror: '',
             ],
@@ -127,6 +121,8 @@ class ApplicationConfigurator {
                     gitEmail: 'hello@cloudogu.com',
                     urlSeparatorHyphen: false,
                     skipCrds : false,
+                    namespaceIsolation : false,
+                    netpols: false
             ],
             images     : [
                     kubectl    : "bitnami/kubectl:$K8S_VERSION",
@@ -146,7 +142,7 @@ class ApplicationConfigurator {
                     ],
                     springPetclinic: [
                             url: System.getenv('SPRING_PETCLINIC_REPO') ?: 'https://github.com/cloudogu/spring-petclinic.git',
-                            ref: '32c8653'
+                            ref: 'b0e0d18'
                     ],
                     gitopsBuildLib: [
                             url: System.getenv('GITOPS_BUILD_LIB_REPO') ?: 'https://github.com/cloudogu/gitops-build-lib.git',
@@ -195,6 +191,7 @@ class ApplicationConfigurator {
                                     prometheusImage: '',
                                     prometheusOperatorImage: '',
                                     prometheusConfigReloaderImage: '',
+                                    values: [:]
                             ]
                     ],
                     secrets   : [
@@ -303,18 +300,14 @@ class ApplicationConfigurator {
     }
 
     private void addRegistryConfig(Map newConfig) {
-        if (newConfig.registry['pullUrl'] && newConfig.registry['pushUrl']) {
+        if (newConfig.registry['proxyUrl']) {
             newConfig.registry['twoRegistries'] = true
-        } else if (newConfig.registry['pullUrl'] && !newConfig.registry['pushUrl'] ||
-                newConfig.registry['pushUrl'] && !newConfig.registry['pullUrl']) {
-            throw new RuntimeException("Always set pull AND push URL. pullUrl=${newConfig.registry['pullUrl']}, pushUrl=${newConfig.registry['pushUrl']}")
+            if (!newConfig.registry['proxyUsername'] || !newConfig.registry['proxyPassword'] ) {
+                throw new RuntimeException("Proxy URL needs to be used with proxy-username and proxy-password")
+            }
         }
 
-        if (newConfig.registry['url'] && newConfig.registry['twoRegistries']) {
-            log.warn("Set both registry.url and registry.pullUrl/registry.pushUrl! Implicitly ignoring registry.url")
-        }
-
-        if (newConfig.registry['url'] || newConfig.registry['twoRegistries']) {
+        if (newConfig.registry['url']) {
             newConfig.registry['internal'] = false
         } else {
             /* Internal Docker registry must be on localhost. Otherwise docker will use HTTPS, leading to errors on 

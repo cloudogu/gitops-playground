@@ -6,8 +6,6 @@ import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
-import com.cloudogu.gitops.utils.HelmClient
-import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.yaml.YamlSlurper
 import jakarta.inject.Provider
 import org.junit.jupiter.api.Test
@@ -18,9 +16,7 @@ import java.nio.file.Path
 
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.any
-import static org.mockito.Mockito.mock
-import static org.mockito.Mockito.verify
-import static org.mockito.Mockito.when
+import static org.mockito.Mockito.*
 
 class IngressNginxTest {
 
@@ -31,7 +27,8 @@ class IngressNginxTest {
                     remote  : false,
                     namePrefix: "foo-",
                     podResources: false,
-                    mirrorRepos: false
+                    mirrorRepos: false,
+                    netpols: false
             ],
             scmm       : [
                     internal: true,
@@ -46,6 +43,9 @@ class IngressNginxTest {
                                     values : [:]
                             ],
                     ],
+                    monitoring: [
+                            active: false
+                    ]
             ],
     ]
 
@@ -67,6 +67,8 @@ class IngressNginxTest {
                 'ingress-nginx', '4.8.2','ingress-nginx',
                 'ingress-nginx', temporaryYamlFile)
         assertThat(parseActualYaml()['controller']['resources']).isNull()
+        assertThat(parseActualYaml()['controller']['metrics']).isNull()
+        assertThat(parseActualYaml()['controller']['networkPolicy']).isNull()
     }
 
     @Test
@@ -130,6 +132,32 @@ class IngressNginxTest {
                 'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/a/b',
                 'ingress-nginx', '.', '1.2.3','ingress-nginx',
                 'ingress-nginx', temporaryYamlFile, DeploymentStrategy.RepoType.GIT)
+    }
+
+    @Test
+    void 'When Monitoring is enabled, metrics are enabled'() {
+        config.features['ingressNginx']['active'] = true
+        config.features['monitoring']['active'] = true
+        config.application['namePrefix'] = "heliosphere"
+
+        createIngressNginx().install()
+
+        def actual = parseActualYaml()
+
+        assertThat(actual['controller']['metrics']['enabled']).isEqualTo(true)
+        assertThat(actual['controller']['metrics']['serviceMonitor']['enabled']).isEqualTo(true)
+        assertThat(actual['controller']['metrics']['serviceMonitor']['namespace']).isEqualTo("heliospheremonitoring")
+    }
+
+    @Test
+    void 'Activates network policies'(){
+        config.application['netpols'] = true
+
+        createIngressNginx().install()
+
+        def actual = parseActualYaml()
+
+        assertThat(actual['controller']['networkPolicy']['enabled']).isEqualTo(true)
     }
 
     private IngressNginx createIngressNginx() {

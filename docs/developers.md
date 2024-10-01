@@ -31,8 +31,9 @@ It provides workarounds or solutions for the given issues.
 - [Testing URL separator hyphens](#testing-url-separator-hyphens)
 - [External registry for development](#external-registry-for-development)
 - [Testing two registries](#testing-two-registries)
-  - [Very simple test](#very-simple-test)
+  - [Basic test](#basic-test)
   - [Proper test](#proper-test)
+- [Testing Network Policies locally](#testing-network-policies-locally)
 - [Emulate an airgapped environment](#emulate-an-airgapped-environment)
   - [Setup cluster](#setup-cluster)
   - [Provide images needed by playground](#provide-images-needed-by-playground)
@@ -427,19 +428,17 @@ That is, for most helm charts, you'll need to set an individual value.
 
 ## Testing two registries
 
-### Very simple test
+### Basic test
 * Start playground once,
 * then again with these parameters:  
-  `--registry-pull-url=localhost:30000 --registry-push-url=localhost:30000`
+  `--registry-url=localhost:30000 --registry-proxy-url=localhost:30000 --registry-proxy-username=Proxy --registry-proxy-password=Proxy12345`
 * The petclinic pipelines should still run
 
 ### Proper test
 
 * Start cluster:
 ```shell
-# Stop other cluster, if necessary
-# k3d cluster stop gitops-playground
-scripts/init-cluster.sh --cluster-name=two-regs
+scripts/init-cluster.sh
 ```
 * Setup harbor as stated [above](#external-registry-for-development), but with Port `30000`.  
   Wait for harbor to startup: ` kubectl get pod -n harbor`  
@@ -447,7 +446,7 @@ scripts/init-cluster.sh --cluster-name=two-regs
 * Create registries and base image:
 
 ```bash
-operations=("Pull" "Push")
+operations=("Proxy" "Registry")
 
 for operation in "${operations[@]}"; do
 
@@ -460,30 +459,31 @@ for operation in "${operations[@]}"; do
     echo creating user $operation with PW ${operation}12345
     curl -s  --fail 'http://localhost:30000/api/v2.0/users' -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"username\":\"$operation\",\"email\":\"$operation@example.com\",\"realname\":\"$operation example\",\"password\":\"${operation}12345\",\"comment\":null}"
     
-	echo "Adding member $operation to project $lower_operation; ID=${projectId}"
+    echo "Adding member $operation to project $lower_operation; ID=${projectId}"
 
     curl  --fail "http://localhost:30000/api/v2.0/projects/${projectId}/members" -X POST -u admin:Harbor12345    -H 'Content-Type: application/json' --data-raw "{\"role_id\":4,\"member_user\":{\"username\":\"$operation\"}}"
 done
 
-skopeo copy docker://eclipse-temurin:11-jre-alpine --dest-creds Pull:Pull12345 --dest-tls-verify=false  docker://localhost:30000/pull/eclipse-temurin:11-jre-alpine
+skopeo copy docker://eclipse-temurin:11-jre-alpine --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/eclipse-temurin:11-jre-alpine
 ```
 
 * Deploy playground:
 
 ```bash
-docker run --rm -t  -u $(id -u)  \
-    -v ~/.config/k3d/kubeconfig-two-regs.yaml:/home/.kube/config \
-    -v $(pwd)/gitops-playground.yaml:/config/gitops-playground.yaml \
-    --net=host \
-  gitops-playground:dev -x --yes --argocd  --ingress-nginx --base-url=http://localhost  \
-  --registry-push-url=localhost:30000 \
-  --registry-push-path=push \
-  --registry-push-username=Push \
-  --registry-push-password=Push12345 \
-  --registry-pull-url=localhost:30000 \
-  --registry-pull-username=Pull \
-  --registry-pull-password=Pull12345 \
-  --petclinic-image=localhost:30000/pull/eclipse-temurin:11-jre-alpine 
+docker run --rm -t -u $(id -u)  \
+   -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config  \
+    --net=host  \
+    gitops-playground:dev \
+    --yes --argocd --ingress-nginx --base-url=http://localhost \
+    --registry-url=localhost:30000 \
+    --registry-path=registry \
+    --registry-username=Registry  \
+    --registry-password=Registry12345 \
+    --registry-proxy-url=localhost:30000 \
+    --registry-proxy-username=Proxy \
+    --registry-proxy-password=Proxy12345 \
+    --petclinic-image=localhost:30000/proxy/eclipse-temurin:11-jre-alpine 
+
 # Or with config file --config-file=/config/gitops-playground.yaml 
 ```
 
@@ -496,8 +496,8 @@ for namespace in "${namespaces[@]}"; do
   kubectl create secret docker-registry regcred \
   -n $namespace \
   --docker-server=localhost:30000 \
-  --docker-username=Push \
-  --docker-password=Push12345
+  --docker-username=Registry\
+  --docker-password=Registry12345
   kubectl patch serviceaccount default -n $namespace -p '{"imagePullSecrets": [{"name": "regcred"}]}'
 done
 ```
@@ -506,15 +506,72 @@ The same using a config file looks like so:
 
 ```yaml
 registry: 
-  pullUrl: localhost:30000
-  pullUsername: Pull
-  pullPassword: Pull12345
-  pushUrl: localhost:30000
-  pushUsername: Push
-  pushPassword: Push12345
-  pushPath: push
+  proxyUrl: localhost:30000
+  proxyUsername: Proxy
+  proxyPassword: Proxy12345
+  registryUrl: localhost:30000
+  registryUsername: Registry
+  registryPassword: Registry12345
+  registryPath: Registry
 images: 
-  petclinic: localhost:30000/pull/eclipse-temurin:11-jre-alpine
+  petclinic: localhost:30000/proxy/eclipse-temurin:11-jre-alpine
+```
+## Testing Network Policies locally
+
+The first increment of our `--netpols` feature is intended to be used on openshift and with an external Cloudogu Ecosystem.
+
+That's why we need to initialize our local cluster with some netpols for everything to work.
+* The `default` namespace needs to be accesible from outside the cluster (so GOP apply via `docker run` has access)
+* Emulate OpenShift default netPols: allow network communication inside namespaces and access by ingress controller 
+
+After the cluster is initialized and before GOP is applied, do the following:
+
+```bash
+k apply --namespace "$ns" -f- <<EOF
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: allow-all-ingress
+  namespace: default
+spec:
+  podSelector: {}
+  ingress:
+  - {}
+EOF
+
+for ns in default example-apps-production example-apps-staging monitoring secrets; do
+  k create ns $ns -oyaml --dry-run=client | k apply -f-
+  k apply --namespace "$ns" -f- <<EOF
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: allow-from-ingress-controller
+spec:
+  podSelector: {}  
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: controller
+              app.kubernetes.io/instance: ingress-nginx
+              app.kubernetes.io/name: ingress-nginx
+---
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: allow-from-same-namespace
+  annotations:
+    description: Allow connections inside the same namespace
+spec:
+  podSelector: {}
+  ingress:
+    - from:
+        - podSelector: {}
+EOF
+done
 ```
 
 ## Emulate an airgapped environment
@@ -746,14 +803,14 @@ docker run --rm --entrypoint java gitops-playground:dev -classpath /app/gitops-p
 On `main` branch:
 
 ````shell
-TAG=0.2.0
+TAG=0.5.0
 
 git checkout main
-git pull
-git tag -s $TAG -m $TAG
-git push --follow-tags
+[[ $? -eq 0 ]] && git pull
+[[ $? -eq 0 ]] && git tag -s $TAG -m $TAG
+[[ $? -eq 0 ]] && git push --follow-tags
 
-xdg-open https://ecosystem.cloudogu.com/jenkins/job/cloudogu-github/job/gitops-playground/job/main/build?delay=0sec
+[[ $? -eq 0 ]] && xdg-open https://ecosystem.cloudogu.com/jenkins/job/cloudogu-github/job/gitops-playground/job/main/build?delay=0sec
 ````
 
 For now, please start a Jenkins Build of `main` manually.  

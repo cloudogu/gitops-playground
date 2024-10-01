@@ -2,10 +2,10 @@
 
 # See https://github.com/rancher/k3d/releases
 # This variable is also read in Jenkinsfile
-K3D_VERSION=5.6.0
+K3D_VERSION=5.7.4
 # When updating please also adapt in Dockerfile, vars.tf and ApplicationConfigurator.groovy
-K8S_VERSION=1.29.1
-K3S_VERSION="rancher/k3s:v${K8S_VERSION}-k3s2"
+K8S_VERSION=1.29.8
+K3S_VERSION="rancher/k3s:v${K8S_VERSION}-k3s1"
 
 set -o errexit
 set -o nounset
@@ -77,6 +77,19 @@ function createCluster() {
     # Disable traefik (we roll our own ingress-controller)
     '--k3s-arg=--disable=traefik@server:0'
   )
+    
+  REGISTRIES=""
+  if [[ -n "$DOCKER_IO_REGISTRY_MIRROR" ]]; then
+    REGISTRIES=$(cat <<EOF
+registries:
+     config: |
+        mirrors:
+          docker.io:
+              endpoint:
+                - "$DOCKER_IO_REGISTRY_MIRROR"
+EOF
+)
+  fi
 
   if [[ ${BIND_LOCALHOST} == 'true' ]]; then
     K3D_ARGS+=(
@@ -89,52 +102,60 @@ function createCluster() {
       # Internal Docker registry must be on localhost. Otherwise docker will use HTTPS, leading to errors on docker push 
       # in the example application's Jenkins Jobs.
       K3D_ARGS+=(
-        "-p ${BIND_REGISTRY_PORT}:30000@server:0:direct"
+        # Note that binding to 127.0.0.1 (instead of the default 0.0.0.0, i.e. ALL networks) is much more secure!
+        "-p 127.0.0.1:${BIND_REGISTRY_PORT}:30000@server:0"
       )
     else
       # User wants us to choose an arbitrary port.
       # The port must then be passed when applying the playground as --internal-registry-port (printed after creation)
       K3D_ARGS+=(
-       '-p 30000@server:0:direct'
+       '-p 127.0.0.1::30000@server:0'
       )
     fi
     
     # Bind ingress port only when requested by parameter. 
     # On linux the pods can be reached without ingress via the k3d container's network address and the node port. 
-    if [[ "${BIND_REGISTRY_PORT}" == '0' ]]; then
+    if [[ "${BIND_INGRESS_PORT}" == '0' ]]; then
       # User wants us to choose an arbitrary port.
       # The port must then be passed when applying the playground as --base-url=localhost:PORT (printed after creation)
       K3D_ARGS+=(
-       '-p 80@server:0:direct'
+       '-p 127.0.0.1::80@server:0'
       )
     elif [[ "${BIND_INGRESS_PORT}" != '-' ]]; then
-        # Note that 127.0.0.1:$BIND_INGRESS_PORT would be more secure, but then requests to localhost fail
         K3D_ARGS+=(
-            "-p ${BIND_INGRESS_PORT}:80@server:0:direct"
+            "-p 127.0.0.1:${BIND_INGRESS_PORT}:80@server:0"
             )
     fi
     
-    if [ -n "$BIND_PORTS" ]; then
+    if [[ -n "$BIND_PORTS" ]]; then
       IFS=","
       read -ra portBindings <<< "$BIND_PORTS"
       unset IFS
       
       for portBinding in "${portBindings[@]}"; do
           K3D_ARGS+=(
-              "-p ${portBinding}@server:0:direct"
+              "-p 127.0.0.1:${portBinding}@server:0"
               )
       done
     fi
   fi
 
   echo "Creating cluster '${CLUSTER_NAME}'"
-  k3d cluster create ${CLUSTER_NAME} ${K3D_ARGS[*]} >/dev/null
-  
+  #k3d cluster create ${CLUSTER_NAME} ${K3D_ARGS[*]} >/dev/null
+  cat <<EOF | k3d cluster create ${CLUSTER_NAME} ${K3D_ARGS[*]}  --no-rollback --config - > /dev/null
+  apiVersion: k3d.io/v1alpha5
+  kind: Simple
+  kubeAPI:
+    hostIP: "127.0.0.1"
+  $REGISTRIES
+EOF
+
+
   if [[ ${BIND_REGISTRY_PORT} != '30000' ]]; then
     local registryPort
     registryPort=$(docker inspect \
       --format='{{ with (index .NetworkSettings.Ports "30000/tcp") }}{{ (index . 0).HostPort }}{{ end }}' \
-       k3d-${CLUSTER_NAME}-server-0)
+       k3d-${CLUSTER_NAME}-serverlb)
     echo "Bound internal registry port 30000 to localhost port ${registryPort}."
     echoHightlighted "Make sure to pass --internal-registry-port=${registryPort} when applying the playground."
   fi
@@ -143,7 +164,7 @@ function createCluster() {
     local ingressPort
     ingressPort=$(docker inspect \
       --format='{{ with (index .NetworkSettings.Ports "80/tcp") }}{{ (index . 0).HostPort }}{{ end }}' \
-       k3d-${CLUSTER_NAME}-server-0)
+       k3d-${CLUSTER_NAME}-serverlb)
     echo "Bound ingress port to localhost:${ingressPort}."
     echoHightlighted "Make sure to pass a base-url, e.g. --ingress-nginx --base-url=http://localhost$(if [ "${ingressPort}" -ne 80 ]; then echo ":${ingressPort}"; fi) when applying the playground."
   fi
@@ -166,6 +187,8 @@ function printParameters() {
   echo "    | --bind-ingress-port=INT   >> Bind the ingress controller to this localhost port. Defaults to 80. Set to - to disable."
   echo "    | --bind-registry-port=INT   >> Specify a custom port for the container registry to bind to localhost port. Only use this when port 30000 is blocked and --bind-localhost=true. Defaults to 30000 (default used by the playground)."
   echo "    | --bind-portBindings=STRING   >> A comma separated list of additional port bindings like 443:443,9090:9090. Ignored when --bind-localhost."
+  
+  echo "    | --docker-io-registry-mirror=STRING   >> the hostname of a registry that mirrors DockerHub. Useful when encountering rate limits"
   echo
   echo " -x | --trace         >> Debug + Show each command executed (set -x)"
 }
@@ -214,6 +237,7 @@ readParameters() {
   # Use default port for playground registry, because no parameter is required when applying
   BIND_REGISTRY_PORT="30000"
   BIND_PORTS=""
+  DOCKER_IO_REGISTRY_MIRROR=""
   TRACE=false
 
   while [ $# -gt 0 ]; do
@@ -229,6 +253,8 @@ readParameters() {
       --bind-registry-port*) BIND_REGISTRY_PORT=$(get_longopt_value "--bind-registry-port" "$@") 
         if [[ "$1" == *"="* ]]; then shift; else shift 2; fi ;;
       --bind-ports*) BIND_PORTS=$(get_longopt_value "--bind-ports" "$@"); 
+        if [[ "$1" == *"="* ]]; then shift; else shift 2; fi ;;
+      --docker-io-registry-mirror*) DOCKER_IO_REGISTRY_MIRROR=$(get_longopt_value "--docker-io-registry-mirror" "$@"); 
         if [[ "$1" == *"="* ]]; then shift; else shift 2; fi ;;
       --) shift; break ;;
     *) break ;;
