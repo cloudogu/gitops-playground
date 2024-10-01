@@ -122,7 +122,16 @@ node('high-cpu') {
                                 // removing m2 and grapes avoids issues where grapes primarily resolves local m2 and fails on missing versions
                                 sh "rm -rf .m2/"
                                 sh "rm -rf .groovy/grapes"
-                                sh "groovy ./scripts/e2e.groovy --url http://${k3dAddress}:9090 --user admin --password admin --writeFailedLog --fail --retry 2"
+                                int ret = sh(returnStatus: true, 
+                                        script: "groovy ./scripts/e2e.groovy --url http://${k3dAddress}:9090 --user admin --password admin --writeFailedLog --fail --retry 2")
+                                
+                                if (ret > 0 ) {
+                                    if (fileExists('playground-logs-of-failed-jobs')) {
+                                        archiveArtifacts artifacts: 'playground-logs-of-failed-jobs/*.log'
+                                    }
+                                    unstable "Integration tests failed, see logs appended to jobs and cluster status in logs"
+                                    sh "docker exec -it k3d-${clusterName}-server-0 kubectl get all -A"
+                                }
                             }
                 }
 
@@ -170,11 +179,6 @@ node('high-cpu') {
         }
 
         stage('Stop k3d') {
-            // saving log artifacts is handled here since the failure of the integration test step leads directly here.
-            if (fileExists('playground-logs-of-failed-jobs')) {
-                archiveArtifacts artifacts: 'playground-logs-of-failed-jobs/*.log'
-            }
-
             if (clusterName) {
                 // Don't fail build if cleaning up fails
                 withEnv(["PATH=${WORKSPACE}/.local/bin:${PATH}"]) {
