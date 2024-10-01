@@ -208,14 +208,12 @@ def buildImage(String imageName, String additionalBuildArgs = '') {
 }
 
 def scanForCriticalVulns(String imageName, String fileName){
-    trivyConfig = [
-            imageName      : imageName,
+    def additionalTrivyConfig = [
             severity       : ['CRITICAL'],
             additionalFlags: '--ignore-unfixed',
-            trivyVersion: trivyVersion
     ]
 
-    def vulns = findVulnerabilitiesWithTrivy(trivyConfig)
+    def vulns = trivy(imageName, additionalTrivyConfig)
 
     if (vulns.size() > 0) {
         writeFile(file: ".trivy/${fileName}.json", encoding: "UTF-8", text: readFile(file: '.trivy/trivyOutput.json', encoding: "UTF-8"))
@@ -225,17 +223,25 @@ def scanForCriticalVulns(String imageName, String fileName){
 }
 
 def scanForAllVulns(String imageName, String fileName){
-    trivyConfig = [
-            imageName      : imageName,
-            trivyVersion: trivyVersion
-    ]
-
-    def vulns = findVulnerabilitiesWithTrivy(trivyConfig)
+    def vulns = trivy(imageName)
 
     if (vulns.size() > 0) {
         writeFile(file: ".trivy/${fileName}.json", encoding: "UTF-8", text: readFile(file: '.trivy/trivyOutput.json', encoding: "UTF-8"))
         archiveArtifacts artifacts: ".trivy/${fileName}.json"
     }
+}
+
+def trivy(String imageName, Map additionalTrivyConfig = [:]) {
+    def trivyConfig = [
+            imageName      : imageName,
+            trivyVersion   : trivyVersion,
+            additionalFlags: ''
+    ]
+    trivyConfig.putAll(additionalTrivyConfig)
+    trivyConfig.additionalFlags += ' --db-repository public.ecr.aws/aquasecurity/trivy-db'
+    trivyConfig.additionalFlags += ' --java-db-repository public.ecr.aws/aquasecurity/trivy-java-db'
+
+    findVulnerabilitiesWithTrivy(trivyConfig)
 }
 
 def startK3d(clusterName) {
