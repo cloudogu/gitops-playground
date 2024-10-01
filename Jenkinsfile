@@ -97,7 +97,7 @@ node('high-cpu') {
                                         .inside("-e KUBECONFIG=${env.WORKSPACE}/.kube/config " +
                                                 " --network=host --entrypoint=''") {
                                             sh "/app/apply-ng --yes --trace --internal-registry-port=${registryPort} " +
-                                                    "--argocd --monitoring --vault=dev --ingress-nginx --mailhog --mirror-repos"
+                                                    "--argocd --monitoring --vault=dev --ingress-nginx  --base-url=http://localhost --mailhog --mirror-repos"
                                         }
                             }
                         }

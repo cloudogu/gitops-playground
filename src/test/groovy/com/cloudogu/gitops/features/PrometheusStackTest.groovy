@@ -5,7 +5,6 @@ import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.utils.*
 import groovy.yaml.YamlSlurper
-import jakarta.inject.Provider
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
 
@@ -22,7 +21,8 @@ class PrometheusStackTest {
     Map config = [
             registry   : [
                     internal: true,
-                    ],
+                    createImagePullSecrets: false
+            ],
             scmm: [
                     internal: true,
                     host: '',
@@ -83,7 +83,8 @@ class PrometheusStackTest {
                     ]
             ],
     ]
-    CommandExecutorForTest k8sCommandExecutor = new CommandExecutorForTest()
+    K8sClientForTest k8sClient = new K8sClientForTest(config)
+    CommandExecutorForTest k8sCommandExecutor = k8sClient.commandExecutorForTest
     DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
     AirGappedUtils airGappedUtils = mock(AirGappedUtils)
     Path temporaryYamlFilePrometheus = null
@@ -361,8 +362,8 @@ policies:
         config['features']['monitoring']['helm']['prometheusImage'] = "localhost:5000/prometheus/prometheus:v1"
         config['features']['monitoring']['helm']['prometheusOperatorImage'] = "localhost:5000/prometheus-operator/prometheus-operator:v2"
         config['features']['monitoring']['helm']['prometheusConfigReloaderImage'] = "localhost:5000/prometheus-operator/prometheus-config-reloader:v3"
-        createStack().install()
 
+        createStack().install()
 
         def actualYaml = parseActualYaml()
         assertThat(actualYaml['prometheus']['prometheusSpec']['image']['registry']).isEqualTo('localhost:5000')
@@ -376,6 +377,21 @@ policies:
         assertThat(actualYaml['prometheusOperator']['prometheusConfigReloader']['image']['tag']).isEqualTo('v3')
     }
 
+    @Test
+    void 'deploys image pull secrets for proxy registry'() {
+        config['registry']['createImagePullSecrets'] = true
+        config['registry']['proxyUrl'] = 'proxy-url'
+        config['registry']['proxyUsername'] = 'proxy-user'
+        config['registry']['proxyPassword'] = 'proxy-pw'
+
+        createStack().install()
+
+        k8sClient.commandExecutorForTest.assertExecuted(
+                'kubectl create secret docker-registry proxy-registry -n foo-monitoring' +
+                        ' --docker-server proxy-url --docker-username proxy-user --docker-password proxy-pw')
+        assertThat(parseActualYaml()['global']['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
+    }
+    
     @Test
     void 'helm release is installed'() {
         createStack().install()
@@ -410,6 +426,7 @@ policies:
         assertThat(yaml['prometheusOperator']['tls']['enabled']).isEqualTo(false)
         assertThat(yaml['prometheusOperator']['kubeletService']).isNull()
         assertThat(yaml['prometheusOperator']['namespaces']).isNull()
+        assertThat(yaml).doesNotContainKey('global')
 
         assertThat(yaml['grafana']['rbac']).isNull()
         assertThat(yaml['grafana']['sidecar']['dashboards']['searchNamespace']).isEqualTo('ALL')
@@ -570,12 +587,7 @@ policies:
 
                 return ret
             }
-        }, deploymentStrategy, new K8sClient(k8sCommandExecutor, new FileSystemUtils(), new Provider<Configuration>() {
-            @Override
-            Configuration get() {
-                configuration
-            }
-        }), airGappedUtils, repoProvider)
+        }, deploymentStrategy, k8sClient, airGappedUtils, repoProvider)
     }
 
     private Map parseActualYaml() {
