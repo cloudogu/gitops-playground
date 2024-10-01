@@ -31,8 +31,9 @@ It provides workarounds or solutions for the given issues.
 - [Testing URL separator hyphens](#testing-url-separator-hyphens)
 - [External registry for development](#external-registry-for-development)
 - [Testing two registries](#testing-two-registries)
-  - [Very simple test](#very-simple-test)
+  - [Basic test](#basic-test)
   - [Proper test](#proper-test)
+- [Testing Network Policies locally](#testing-network-policies-locally)
 - [Emulate an airgapped environment](#emulate-an-airgapped-environment)
   - [Setup cluster](#setup-cluster)
   - [Provide images needed by playground](#provide-images-needed-by-playground)
@@ -514,6 +515,63 @@ registry:
   registryPath: Registry
 images: 
   petclinic: localhost:30000/proxy/eclipse-temurin:11-jre-alpine
+```
+## Testing Network Policies locally
+
+The first increment of our `--netpols` feature is intended to be used on openshift and with an external Cloudogu Ecosystem.
+
+That's why we need to initialize our local cluster with some netpols for everything to work.
+* The `default` namespace needs to be accesible from outside the cluster (so GOP apply via `docker run` has access)
+* Emulate OpenShift default netPols: allow network communication inside namespaces and access by ingress controller 
+
+After the cluster is initialized and before GOP is applied, do the following:
+
+```bash
+k apply --namespace "$ns" -f- <<EOF
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: allow-all-ingress
+  namespace: default
+spec:
+  podSelector: {}
+  ingress:
+  - {}
+EOF
+
+for ns in default example-apps-production example-apps-staging monitoring secrets; do
+  k create ns $ns -oyaml --dry-run=client | k apply -f-
+  k apply --namespace "$ns" -f- <<EOF
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: allow-from-ingress-controller
+spec:
+  podSelector: {}  
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: controller
+              app.kubernetes.io/instance: ingress-nginx
+              app.kubernetes.io/name: ingress-nginx
+---
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: allow-from-same-namespace
+  annotations:
+    description: Allow connections inside the same namespace
+spec:
+  podSelector: {}
+  ingress:
+    - from:
+        - podSelector: {}
+EOF
+done
 ```
 
 ## Emulate an airgapped environment

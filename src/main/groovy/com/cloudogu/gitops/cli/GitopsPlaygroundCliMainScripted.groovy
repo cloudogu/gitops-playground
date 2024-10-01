@@ -116,7 +116,7 @@ class GitopsPlaygroundCliMainScripted {
                         new ArgoCD(config, k8sClient, helmClient, fileSystemUtils, scmmRepoProvider),
                         new IngressNginx(config, fileSystemUtils, deployer, k8sClient, airGappedUtils),
                         new Mailhog(config, fileSystemUtils, deployer, k8sClient, airGappedUtils),
-                        new PrometheusStack(config, fileSystemUtils, deployer, k8sClient, airGappedUtils),
+                        new PrometheusStack(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, scmmRepoProvider),
                         new ExternalSecretsOperator(config, fileSystemUtils, deployer, k8sClient, airGappedUtils),
                         new Vault(config, fileSystemUtils, k8sClient, deployer, airGappedUtils)
                 ]))

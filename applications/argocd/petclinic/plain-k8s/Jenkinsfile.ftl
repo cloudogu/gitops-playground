@@ -62,7 +62,7 @@ node {
 </#noparse>
 <#if registry.twoRegistries>
 <#noparse>
-            docker.withRegistry("http://${dockerRegistryProxyBaseUrl}", dockerRegistryProxyCredentials) {
+            docker.withRegistry("https://${dockerRegistryProxyBaseUrl}", dockerRegistryProxyCredentials) {
                 image = docker.build(imageName, '.')
             }
 </#noparse>
@@ -73,7 +73,7 @@ node {
 </#if>
 <#noparse>
             if (isBuildSuccessful()) {
-                docker.withRegistry("http://${dockerRegistryBaseUrl}", dockerRegistryCredentials) {
+                docker.withRegistry("https://${dockerRegistryBaseUrl}", dockerRegistryCredentials) {
                     image.push()
                 }
             } else {
@@ -126,6 +126,7 @@ node {
                 ]
 <#noparse>
                 gitopsConfig += createSpecificGitOpsConfig()
+
                 deployViaGitops(gitopsConfig)
             } else {
                 echo 'Skipping deploy, because build not successful or not on main branch'
@@ -154,11 +155,34 @@ String createSpecificGitOpsConfig() {
         // If you can access the internet, you can rely on the defaults, which load the images from public registries.
         buildImages          : [
 </#noparse>
+<#if registry.twoRegistries>
+            helm:       [
+                     image: '${images.helm}',
+                     credentialsId: dockerRegistryProxyCredentials
+            ],
+            kubectl:    [
+                    image: '${images.kubectl}',
+                    credentialsId: dockerRegistryProxyCredentials
+            ],
+            kubeval:    [
+                    image: '${images.kubeval}',
+                    credentialsId: dockerRegistryProxyCredentials
+            ],
+            helmKubeval: [
+                    image: '${images.helmKubeval}',
+                    credentialsId: dockerRegistryProxyCredentials
+            ],
+            yamllint:   [
+                    image: '${images.yamllint}',
+                    credentialsId: dockerRegistryProxyCredentials
+            ]
+<#else>
             helm: '${images.helm}',
             kubectl: '${images.kubectl}',
             kubeval: '${images.kubeval}',
             helmKubeval: '${images.helmKubeval}',
             yamllint: '${images.yamllint}'
+</#if>
 <#noparse>
         ]
     ]

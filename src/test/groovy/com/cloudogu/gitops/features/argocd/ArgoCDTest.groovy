@@ -46,7 +46,8 @@ class ArgoCDTest {
                     gitEmail            : 'hello@cloudogu.com',
                     urlSeparatorHyphen  : false,
                     mirrorRepos         : false,
-                    skipCrds            : false
+                    skipCrds: false,
+                    netpols: false
             ],
             jenkins     : [
                     mavenCentralMirror: '',
@@ -200,6 +201,7 @@ class ArgoCDTest {
                 'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack')
 
         assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['crds']).isNull()
+        assertThat(parseActualYaml(actualHelmValuesFile)['global']).isNull()
     }
 
     @Test
@@ -718,6 +720,61 @@ class ArgoCDTest {
         assertPetClinicRepos('NodePort', 'LoadBalancer', '')
     }
 
+    @Test
+    void 'ArgoCD with active network policies'(){
+        config.application['netpols'] = true
+
+        createArgoCD().install()
+
+        assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['global']['networkPolicy']['create']).isEqualTo(true)
+        assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir(), '/argocd/values.yaml').text.contains("namespace: monitoring"))
+        assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir(), '/argocd/templates/allow-namespaces.yaml').text.contains("namespace: monitoring"))
+        assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir(), '/argocd/templates/allow-namespaces.yaml').text.contains("namespace: default"))
+    }
+    
+    @Test
+    void 'set credentials for BuildImages'() {
+        config.registry['twoRegistries'] = true
+
+        createArgoCD().install()
+
+        assertPetClinicRepos('NodePort', 'LoadBalancer', '')
+    }
+
+    private static Map parseBuildImagesMapFromString(String text) {
+        def startIndex = text.indexOf('buildImages')
+        if (startIndex != -1) {
+            def bracketCount = 0
+            def inBrackets = false
+            def endIndex = startIndex
+
+            for (i in startIndex..text.length() - 1) {
+                if (text[i] == '[') {
+                    bracketCount++
+                    inBrackets = true
+                } else if (text[i] == ']') {
+                    bracketCount--
+                }
+
+                if (inBrackets && bracketCount == 0) {
+                    endIndex = i + 1
+                    break
+                }
+            }
+
+            def matchedText = text.substring(startIndex + 'buildImages'.length(), endIndex).trim().replaceFirst(":", "")
+
+            Binding binding = new Binding()
+            binding.setVariable('dockerRegistryProxyCredentials', 'dockerRegistryProxyCredentials')
+            def map =  new GroovyShell(binding).evaluate(matchedText)
+
+            return map as Map
+
+        } else {
+            return [:]
+        }
+    }
+
     private void assertArgoCdYamlPrefixes(String scmmUrl, String expectedPrefix) {
         assertAllYamlFiles(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), 'projects', 4) { Path file ->
             def yaml = parseActualYaml(file.toString())
@@ -873,30 +930,24 @@ class ArgoCDTest {
     }
 
     void assertBuildImagesInJenkinsfileReplaced(File jenkinsfile) {
-        def actualBuildImages = ''
-        def insideBuildImagesBlock = false
-
-        jenkinsfile.eachLine { line ->
-            if (line =~ /\s*buildImages\s*:\s*\[/) {
-                insideBuildImagesBlock = true
-                return
-            }
-
-            if (insideBuildImagesBlock) {
-                actualBuildImages += "${line.trim()}\n"
-
-                if (line =~ /]/) {
-                    insideBuildImagesBlock = false
-                }
-            }
-        }
+        def actualBuildImages = parseBuildImagesMapFromString(jenkinsfile.text)
         if (!actualBuildImages) {
             fail("Missing build images in Jenkinsfile ${jenkinsfile}")
         }
+        
+        if (config.registry['twoRegistries']) {
+            for (Map.Entry image : actualBuildImages as Map) {
+                assertThat(image.value['image']).isEqualTo(buildImages[image.key])
+                assertThat(image.value['credentialsId']).isEqualTo('dockerRegistryProxyCredentials')
+            }
+        } else {
 
-        for (Map.Entry image : buildImages as Map) {
-            assertThat(actualBuildImages).contains("${image.key}: '${image.value}'")
+            assertThat(buildImages.keySet()).containsExactlyInAnyOrderElementsOf(actualBuildImages.keySet())
+            for (Map.Entry image : buildImages as Map) {
+                assertThat(image.value).isEqualTo(actualBuildImages[image.key])
+            }
         }
+
     }
 
     void assertPetClinicRepos(String expectedServiceType, String unexpectedServiceType, String ingressUrl) {
@@ -1017,7 +1068,7 @@ class ArgoCDTest {
                 'imageName = "${dockerRegistryBaseUrl}/${pathPrefix}${application}:${imageTag}"'
         ]
         List twoRegistriesExpectedLines = [
-                'docker.withRegistry("http://${dockerRegistryProxyBaseUrl}", dockerRegistryProxyCredentials) {']
+                'docker.withRegistry("https://${dockerRegistryProxyBaseUrl}", dockerRegistryProxyCredentials) {']
 
         for (def petclinicRepo : petClinicRepos) {
             String jenkinsfile = new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text
@@ -1397,5 +1448,6 @@ class ArgoCDTest {
         def ys = new YamlSlurper()
         return ys.parse(yamlFile) as Map
     }
+
 }
 

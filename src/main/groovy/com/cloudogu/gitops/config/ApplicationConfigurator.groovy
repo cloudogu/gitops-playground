@@ -121,6 +121,8 @@ class ApplicationConfigurator {
                     gitEmail: 'hello@cloudogu.com',
                     urlSeparatorHyphen: false,
                     skipCrds : false,
+                    namespaceIsolation : false,
+                    netpols: false
             ],
             images     : [
                     kubectl    : "bitnami/kubectl:$K8S_VERSION",
@@ -190,6 +192,7 @@ class ApplicationConfigurator {
                                     prometheusImage: '',
                                     prometheusOperatorImage: '',
                                     prometheusConfigReloaderImage: '',
+                                    values: [:]
                             ]
                     ],
                     secrets   : [

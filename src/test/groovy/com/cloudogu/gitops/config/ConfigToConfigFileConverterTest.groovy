@@ -64,6 +64,8 @@ class ConfigToConfigFileConverterTest {
                         urlSeparatorHyphen: true,
                         mirrorRepos     : true,
                         skipCrds : true,
+                        namespaceIsolation : false,
+                        netpols : false
                 ],
                 images     : [
                         kubectl    : 'kubectl-value',
@@ -224,6 +226,8 @@ application:
   urlSeparatorHyphen: true
   mirrorRepos: true
   skipCrds: true
+  namespaceIsolation: false
+  netpols: false
   openshift: false
 images:
   kubectl: "kubectl-value"
@@ -278,6 +282,7 @@ features:
       chart: "kube-prometheus-stack"
       repoURL: "https://prometheus-community.github.io/helm-charts"
       version: "58.2.1"
+      values: null
       grafanaImage: "grafanaImage"
       grafanaSidecarImage: "grafanaSidecarImage"
       prometheusImage: "prometheusImage"
