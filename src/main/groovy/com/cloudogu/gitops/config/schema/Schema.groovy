@@ -2,7 +2,6 @@
 package com.cloudogu.gitops.config.schema
 
 
-import com.fasterxml.jackson.annotation.JsonClassDescription
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 
 import static com.cloudogu.gitops.config.ConfigConstants.* 
@@ -33,7 +32,6 @@ class Schema {
     @JsonPropertyDescription(FEATURES_DESCRIPTION)
     FeaturesSchema features
 
-    @JsonClassDescription(HELM_CONFIG_DESCRIPTION)
     static class HelmConfig {
         @JsonPropertyDescription(HELM_CONFIG_CHART_DESCRIPTION)
         String chart = ""
@@ -42,8 +40,7 @@ class Schema {
         @JsonPropertyDescription(HELM_CONFIG_VERSION_DESCRIPTION)
         String version = ""
     }
-    
-    @JsonClassDescription(HELM_CONFIG_DESCRIPTION)
+
     static class HelmConfigWithValues extends HelmConfig {
         @JsonPropertyDescription(HELM_CONFIG_VALUES_DESCRIPTION)
         Map<String, Object> values
@@ -125,6 +122,7 @@ class Schema {
         // String protocol = ""
         // String ingress = ""
 
+        @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
         HelmConfig helm
     }
 
