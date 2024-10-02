@@ -122,6 +122,9 @@ class ConfigToConfigFileConverterTest {
                                         chart  : 'kube-prometheus-stack',
                                         repoURL: 'https://prometheus-community.github.io/helm-charts',
                                         version: '58.2.1',
+                                        values: [
+                                                a: 'b'
+                                        ],
                                         grafanaImage: 'grafanaImage',
                                         grafanaSidecarImage: 'grafanaSidecarImage',
                                         prometheusImage: 'prometheusImage',
@@ -270,7 +273,8 @@ features:
       chart: "kube-prometheus-stack"
       repoURL: "https://prometheus-community.github.io/helm-charts"
       version: "58.2.1"
-      values: null
+      values:
+        a: "b"
       grafanaImage: "grafanaImage"
       grafanaSidecarImage: "grafanaSidecarImage"
       prometheusImage: "prometheusImage"
