@@ -38,8 +38,18 @@ properties([
 
 node {
 
-    mvn = cesBuildLib.MavenWrapper.new(this)
 </#noparse>
+
+<#if images.maven?has_content>
+  <#if registry.twoRegistries>
+      mvn = cesBuildLib.MavenInDocker.new(this, '${images.maven}', dockerRegistryProxyCredentials)
+  <#else>
+      mvn = cesBuildLib.MavenInDocker.new(this, '${images.maven}')
+  </#if>
+<#else>
+    mvn = cesBuildLib.MavenWrapper.new(this)
+</#if>
+
 <#if jenkins.mavenCentralMirror?has_content>
     mvn.useMirrors([name: 'maven-central-mirror', mirrorOf: 'central', url:  env.${namePrefixForEnvVars}MAVEN_CENTRAL_MIRROR])
 </#if>
@@ -129,13 +139,18 @@ node {
                                 yamllint:   [
                                         image: '${images.yamllint}',
                                         credentialsId: dockerRegistryProxyCredentials
+                                ],
+                                maven:   [
+                                        image: '${images.maven}',
+                                        credentialsId: dockerRegistryProxyCredentials
                                 ]
 <#else>
                                 helm: '${images.helm}',
                                 kubectl: '${images.kubectl}',
                                 kubeval: '${images.kubeval}',
                                 helmKubeval: '${images.helmKubeval}',
-                                yamllint: '${images.yamllint}'
+                                yamllint: '${images.yamllint}',
+                                maven: '${images.maven}'
 </#if>
                         ],
                         deployments: [

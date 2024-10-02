@@ -465,6 +465,7 @@ def gitopsConfig = [
             kubeval: 'ghcr.io/cloudogu/helm:3.10.3-1',
             helmKubeval: 'ghcr.io/cloudogu/helm:3.10.3-1',
             yamllint: 'cytopia/yamllint:1.25-0.7'
+            maven: 'maven:3.5.0-jdk-8'
     ],...
 ```
 
@@ -475,6 +476,7 @@ To override each image in all the applications you can use following parameters:
 * `--kubeval-image someRegistry/someImage:1.0.0`
 * `--helmkubeval-image someRegistry/someImage:1.0.0`
 * `--yamllint-image someRegistry/someImage:1.0.0`
+* `--maven-image someRegistry/someImage:1.0.0`
 
 ###### Tools and Exercises
 
