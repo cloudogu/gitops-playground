@@ -1,16 +1,14 @@
 #!/usr/bin/env bash
 set -o errexit -o nounset -o pipefail
-
-charts=( 'monitoring' 'externalSecrets' 'vault' 'mailhog' 'ingressNginx')
-APPLICATION_CONFIGURATOR_GROOVY="${1:-src/main/groovy/com/cloudogu/gitops/config/ApplicationConfigurator.groovy}"
+charts=( 'kube-prometheus-stack' 'external-secrets' 'vault' 'mailhog' 'ingress-nginx')
+CONFIG="${1:-src/main/groovy/com/cloudogu/gitops/config/schema/Schema.groovy}"
 
 tmpRepoFile="$(mktemp)"
 
 mkdir -p charts
 
 for chart in "${charts[@]}"; do
-  chartDetails=$(grep -EA10 "${chart}.*:" "${APPLICATION_CONFIGURATOR_GROOVY}" \
-  | grep -m1 -EA5 'helm.*:')
+  chartDetails=$(grep -m1 -EA3 "chart.*:.*${chart}" "${CONFIG}")
   
   repo=$(echo "$chartDetails"  | grep -oP "repoURL\s*:\s*'\K[^']+")
   chart=$(echo "$chartDetails" | grep -oP "chart\s*:\s*'\K[^']+") 
