@@ -1,5 +1,7 @@
 package com.cloudogu.gitops.config.schema
 
+
+import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.github.victools.jsonschema.generator.*
 import com.github.victools.jsonschema.module.jackson.JacksonModule
@@ -16,6 +18,12 @@ class JsonSchemaGenerator {
                         // We use this to allow inline helm values without having to validate them
                         .with(Option.MAP_VALUES_AS_ADDITIONAL_PROPERTIES)
                         .with(new JacksonModule( /* no options for now */))
+        // Apply the rule to include only fields with @JsonProperty annotation
+        configBuilder.forFields()
+                .withIgnoreCheck((FieldScope field) -> {
+                    // Only include fields that are annotated with @JsonProperty
+                    return field.getAnnotation(JsonPropertyDescription) == null
+                })
 
         SchemaGenerator generator = new SchemaGenerator(configBuilder.build())
 
