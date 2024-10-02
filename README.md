@@ -450,7 +450,7 @@ Note that you can get a free CES demo instance set up with a Kubernetes Cluster 
 --registry-password="$( cat account.json | sed 's/"/\\"/g' )" 
 ```
 
-##### Override default images 
+##### Override default images
 
 ###### gitops-build-lib
 
@@ -486,6 +486,7 @@ Images used by various tools and exercises can be configured using the following
 * `--external-secrets-webhook-image someRegistry/someImage:1.0.0`
 * `--vault-image someRegistry/someImage:1.0.0`
 * `--nginx-image someRegistry/someImage:1.0.0`
+* `--maven-image someRegistry/someImage:1.0.0`
 
 Note that specifying a tag is mandatory.  
   
