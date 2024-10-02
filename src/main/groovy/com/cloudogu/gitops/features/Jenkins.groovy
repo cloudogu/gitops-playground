@@ -70,6 +70,12 @@ class Jenkins extends Feature {
 
         globalPropertyManager.setGlobalProperty('SCMM_URL', config.scmm['url'] as String)
 
+        if (config.jenkins['additionalEnvs'] instanceof Map && config.jenkins['additionalEnvs'] != null) {
+            for (entry in ((Map)config.jenkins['additionalEnvs']).entrySet()) {
+                globalPropertyManager.setGlobalProperty(entry.key.toString(), entry.value.toString())
+            }
+        }
+
         globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_URL", config.registry['url'] as String)
         globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_PATH", config.registry['path'] as String)
 

@@ -459,6 +459,13 @@
     "jenkins" : {
       "type" : "object",
       "properties" : {
+        "additionalEnvs" : {
+          "type" : "object",
+          "additionalProperties" : {
+            "type" : "string"
+          },
+          "description" : "Set additional environments to Jenkins"
+        },
         "helm" : {
           "type" : "object",
           "properties" : {

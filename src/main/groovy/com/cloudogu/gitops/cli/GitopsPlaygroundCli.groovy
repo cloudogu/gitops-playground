@@ -67,6 +67,8 @@ class GitopsPlaygroundCli  implements Runnable {
     private String jenkinsMetricsPassword
     @Option(names = ['--maven-central-mirror'], description = MAVEN_CENTRAL_MIRROR_DESCRIPTION)
     private String mavenCentralMirror
+    @Option(names = ["--additional-envs"], description = ADDITIONAL_ENVS_DESCRIPTION, split = " ", required = false)
+    Map<String, String> additionalEnvs
 
     // args group scm
     @Option(names = ['--scmm-url'], description = SCMM_URL_DESCRIPTION)
@@ -393,6 +395,7 @@ class GitopsPlaygroundCli  implements Runnable {
                         metricsUsername: jenkinsMetricsUsername,
                         metricsPassword: jenkinsMetricsPassword,
                         mavenCentralMirror: mavenCentralMirror,
+                        additionalEnvs : additionalEnvs,
                 ],
                 scmm       : [
                         url     : scmmUrl,
