@@ -15,7 +15,7 @@ String getDockerRegistryProxyBaseUrl() { env.${namePrefixForEnvVars}REGISTRY_PRO
 </#if>
 <#noparse>
 String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/3rd-party-dependencies/ces-build-lib/" }
-String getCesBuildLibVersion() { '2.2.0' }
+String getCesBuildLibVersion() { '2.5.0' }
 String getHelmChartRepository() { "${env.SCMM_URL}/repo/3rd-party-dependencies/spring-boot-helm-chart-with-dependency" }
 String getHelmChartVersion() { "1.0.0" }
 String getMainBranch() { 'main' }

@@ -832,6 +832,8 @@ See [parameters](#additional-parameters) for examples.
 * `--jenkins-username`,
 * `--jenkins-password`
 
+To apply additional global environments for jenkins you can use `--jenkins-additional-envs "KEY1=value1,KEY2=value2"` parameter.
+
 Note that the [example applications](#example-applications) pipelines will only run on a Jenkins that uses agents that provide
 a docker host. That is, Jenkins must be able to run e.g. `docker ps` successfully on the agent.
 
