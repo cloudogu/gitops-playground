@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.config
 
 import com.cloudogu.gitops.config.schema.JsonSchemaValidator
+import com.cloudogu.gitops.config.schema.Schema
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
 import com.fasterxml.jackson.databind.JsonNode
@@ -9,275 +10,50 @@ import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 import jakarta.inject.Singleton
 
-import static com.cloudogu.gitops.utils.MapUtils.*
+import static com.cloudogu.gitops.utils.MapUtils.deepMerge
 
 @Slf4j
 @Singleton
 class ApplicationConfigurator {
 
-    // When updating please also update in Dockerfile
-    public static final String HELM_IMAGE = "ghcr.io/cloudogu/helm:3.15.4-1"
-    // When updating please also adapt in Dockerfile, vars.tf and init-cluster.sh
-    public static final String K8S_VERSION = "1.29"
-    public static final String DEFAULT_ADMIN_USER = 'admin'
-    public static final String DEFAULT_ADMIN_PW = 'admin'
-    public static final String DEFAULT_REGISTRY_PORT = '30000'
-    /**
-     * When changing values make sure to modify GitOpsPlaygroundCli and Schema as well
-     * @see com.cloudogu.gitops.cli.GitopsPlaygroundCli
-     * @see com.cloudogu.gitops.config.schema.Schema
-     */
-    // This is deliberately non-static, so as to allow getenv() to work with GraalVM static images
-    private final Map DEFAULT_VALUES = makeDeeplyImmutable([
-            registry   : [
-                    internal: true, // Set dynamically
-                    twoRegistries: false, // Set dynamically
-                    internalPort: DEFAULT_REGISTRY_PORT,
-                    // Single registry
-                    url         : '',
-                    path        : '',
-                    username    : '',
-                    password    : '',
-                    // Alternative: Use different registries, e.g. in air-gapped envs
-                    // "Proxy" registry for 3rd party images
-                    proxyUrl         : '',
-                    proxyUsername    : '',
-                    proxyPassword    : '',
-                    readOnlyUsername : '',
-                    readOnlyPassword : '',
-                    createImagePullSecrets: false,
-                    helm  : [
-                            chart  : 'docker-registry',
-                            repoURL: 'https://helm.twun.io',
-                            version: '2.2.3'
-                    ]
-            ],
-            jenkins    : [
-                    internal: true, // Set dynamically
-                    url     : '',
-                    username: DEFAULT_ADMIN_USER,
-                    password: DEFAULT_ADMIN_PW,
-                    /* This is the URL configured in SCMM inside the Jenkins Plugin, e.g. at http://scmm.localhost/scm/admin/settings/jenkins
-                      We use the K8s service as default name here, because it is the only option:
-                      "jenkins.localhost" will not work inside the Pods and k3d-container IP + Port (e.g. 172.x.y.z:9090) will not work on Windows and MacOS.
-
-                      For production we overwrite this when config.jenkins["url"] is set.
-                      See addJenkinsConfig() and the comment at scmm.urlForJenkins */
-                    urlForScmm: "http://jenkins", // Set dynamically
-                    metricsUsername: 'metrics',
-                    metricsPassword: 'metrics',
-                    helm  : [
-                            //chart  : 'jenkins',
-                            //repoURL: 'https://charts.jenkins.io',
-                            /* When Upgrading helm chart, also upgrade controller.tag in jenkins/values.yaml
-                            In addition:
-                             - Also upgrade plugins. See docs/developers.md
-                             */
-                            version: '5.5.11'
-                    ],
-                    mavenCentralMirror: '',
-                    jenkinsAdditionalEnvs:  [:]
-            ],
-            scmm       : [
-                    internal: true, // Set dynamically
-                    url     : '',
-                    username: DEFAULT_ADMIN_USER,
-                    password: DEFAULT_ADMIN_PW,
-                    gitOpsUsername : '', // Set dynamically
-                    /* This corresponds to the "Base URL" in SCMM Settings.
-                       We use the K8s service as default name here, to make the build on push feature (webhooks from SCMM to Jenkins that trigger builds) work in k3d.
-                       The webhook contains repository URLs that start with the "Base URL" Setting of SCMM.
-                       Jenkins checks these repo URLs and triggers all builds that match repo URLs.
-                       In k3d, we have to define the repos in Jenkins using the K8s Service name, because they are the only option.
-                       "scmm.localhost" will not work inside the Pods and k3d-container IP + Port (e.g. 172.x.y.z:9091) will not work on Windows and MacOS.
-                       So, we have to use the matching URL in SCMM as well.
-
-                       For production we overwrite this when config.scmm["url"] is set.
-                       See addScmmConfig() */
-                    urlForJenkins : 'http://scmm-scm-manager/scm', // set dynamically
-                    host : '', // Set dynamically
-                    protocol : '', // Set dynamically
-                    ingress : '', // Set dynamically
-                    helm  : [
-                            chart  : 'scm-manager',
-                            repoURL: 'https://packages.scm-manager.org/repository/helm-v2-releases/',
-                            version: '3.2.1'
-                    ]
-            ],
-            application: [
-                    remote        : false,
-                    mirrorRepos     : false,
-                    destroy       : false,
-                    // Take from env because the Dockerfile provides a local copy of the repo for air-gapped mode
-                    localHelmChartFolder: System.getenv('LOCAL_HELM_CHART_FOLDER'),
-                    insecure      : false,
-                    openshift     : false,
-                    username      : DEFAULT_ADMIN_USER,
-                    password      : DEFAULT_ADMIN_PW,
-                    yes           : false,
-                    runningInsideK8s : false, // Set dynamically
-                    namePrefix    : '',
-                    podResources : false,
-                    namePrefixForEnvVars    : '', // Set dynamically
-                    baseUrl: null,
-                    gitName: 'Cloudogu',
-                    gitEmail: 'hello@cloudogu.com',
-                    urlSeparatorHyphen: false,
-                    skipCrds : false,
-                    namespaceIsolation : false,
-                    netpols: false
-            ],
-            images     : [
-                    kubectl    : "bitnami/kubectl:$K8S_VERSION",
-                    // cloudogu/helm also contains kubeval and helm kubeval plugin. Using the same image makes builds faster
-                    helm       : HELM_IMAGE,
-                    kubeval    : HELM_IMAGE,
-                    helmKubeval: HELM_IMAGE,
-                    yamllint   : "cytopia/yamllint:1.25-0.7",
-                    nginx      : null,
-                    petclinic  : 'eclipse-temurin:11-jre-alpine',
-                    maven      : null
-            ],
-            repositories : [
-                    springBootHelmChart: [
-                            // Take from env or use default because the Dockerfile provides a local copy of the repo
-                            url: System.getenv('SPRING_BOOT_HELM_CHART_REPO') ?: 'https://github.com/cloudogu/spring-boot-helm-chart.git',
-                            ref: '0.3.2'
-                    ],
-                    springPetclinic: [
-                            url: System.getenv('SPRING_PETCLINIC_REPO') ?: 'https://github.com/cloudogu/spring-petclinic.git',
-                            ref: 'b0e0d18'
-                    ],
-                    gitopsBuildLib: [
-                            url: System.getenv('GITOPS_BUILD_LIB_REPO') ?: 'https://github.com/cloudogu/gitops-build-lib.git',
-                    ],
-                    cesBuildLib: [
-                            url: System.getenv('CES_BUILD_LIB_REPO') ?: 'https://github.com/cloudogu/ces-build-lib.git',
-                    ]
-            ],
-            features   : [
-                    argocd    : [
-                            active    : false,
-                            url       : '',
-                            emailFrom : 'argocd@example.org',
-                            emailToUser : 'app-team@example.org',
-                            emailToAdmin : 'infra@example.org'
-                    ],
-                    mail   : [
-                            active: false, // set dynamically
-                            mailhog : false,
-                            mailhogUrl : '',
-                            smtpAddress: '',
-                            smtpPort : '',
-                            smtpUser : '',
-                            smtpPassword : '',
-                            helm  : [
-                                    chart  : 'mailhog',
-                                    repoURL: 'https://codecentric.github.io/helm-charts',
-                                    version: '5.0.1',
-                                    image: 'ghcr.io/cloudogu/mailhog:v1.0.1'
-                            ]
-                    ],
-                    monitoring: [
-                            active: false,
-                            grafanaUrl: '',
-                            grafanaEmailFrom : 'grafana@example.org',
-                            grafanaEmailTo : 'infra@example.org',
-                            helm  : [
-                                    chart  : 'kube-prometheus-stack',
-                                    repoURL: 'https://prometheus-community.github.io/helm-charts',
-                                    /* When updating this make sure to also test if air-gapped mode still works */
-                                    version: '58.2.1',
-                                    grafanaImage: '',
-                                    grafanaSidecarImage: '',
-                                    prometheusImage: '',
-                                    prometheusOperatorImage: '',
-                                    prometheusConfigReloaderImage: '',
-                                    values: [:]
-                            ]
-                    ],
-                    secrets   : [
-                            active         : false, // Set dynamically
-                            externalSecrets: [
-                                    helm: [
-                                            chart  : 'external-secrets',
-                                            repoURL: 'https://charts.external-secrets.io',
-                                            version: '0.9.16',
-                                            image  : '',
-                                            certControllerImage: '',
-                                            webhookImage: ''
-                                    ]
-                            ],
-                            vault          : [
-                                    mode: '',
-                                    url: '',
-                                    helm: [
-                                            chart  : 'vault',
-                                            repoURL: 'https://helm.releases.hashicorp.com',
-                                            version: '0.25.0',
-                                            image: '',
-                                    ]
-                            ]
-                    ],
-                    ingressNginx: [
-                            active: false,
-                            helm  : [
-                                    chart: 'ingress-nginx',
-                                    repoURL: 'https://kubernetes.github.io/ingress-nginx',
-                                    version: '4.11.2',
-                                    image: '',
-                                    values: [:]
-                            ],
-                    ],
-                    certManager: [
-                            active: false,
-                            helm  : [
-                                    chart: 'cert-manager',
-                                    repoURL: 'https://charts.jetstack.io',
-                                    version: '1.16.1',
-                                    values: [:],
-                                    image: '',
-                                    acmeSolverImage: '',
-                                    cainjectorImage: '',
-                                    startupAPICheckImage: '',
-                                    webhookImage: ''
-                            ],
-                    ],
-                    exampleApps: [
-                            petclinic: [
-                                    baseDomain: '',
-                            ],
-                            nginx    : [
-                                    baseDomain: '',
-                            ],
-                    ]
-            ]
-    ])
-
-    private Map config
+    private Schema config
     private NetworkingUtils networkingUtils
     private FileSystemUtils fileSystemUtils
     private JsonSchemaValidator schemaValidator
 
     ApplicationConfigurator(NetworkingUtils networkingUtils, FileSystemUtils fileSystemUtils, JsonSchemaValidator schemaValidator) {
         this.schemaValidator = schemaValidator
-        this.config = DEFAULT_VALUES
+        this.config = new Schema()
         this.networkingUtils = networkingUtils
         this.fileSystemUtils = fileSystemUtils
     }
-
+    //TODO
+//    certManager: [
+//    active: false,
+//    helm  : [
+//    chart: 'cert-manager',
+//    repoURL: 'https://charts.jetstack.io',
+//    version: '1.16.1',
+//    values: [:],
+//    image: '',
+//    acmeSolverImage: '',
+//    cainjectorImage: '',
+//    startupAPICheckImage: '',
+//    webhookImage: ''
+//    ],
+//    ],
     /**
-     * Sets config internally and als returns it, fluent interface
+     * Sets config internally and also returns it, fluent interface
      */
     Map setConfig(Map configToSet, boolean skipInternalConfig = false) {
-        Map newConfig = deepCopy(config)
+        Map newConfig = config.toMap()
         deepMerge(configToSet, newConfig)
 
         validate(newConfig)
         
         if (skipInternalConfig) {
-            config = makeDeeplyImmutable(newConfig)
-            return config
+            config = Schema.fromMap(newConfig)
+            return newConfig
         }
         
         addAdditionalApplicationConfig(newConfig)
@@ -310,10 +86,9 @@ class ApplicationConfigurator {
         }
 
         evaluateBaseUrl(newConfig)
-        
-        config = makeDeeplyImmutable(newConfig)
 
-        return config
+        config = Schema.fromMap(newConfig)
+        return newConfig
     }
 
     private void addRegistryConfig(Map newConfig) {
@@ -375,7 +150,7 @@ class ApplicationConfigurator {
     private void addScmmConfig(Map newConfig) {
         log.debug("Adding additional config for SCM-Manager")
 
-        newConfig.scmm['gitOpsUsername'] = "${this.config.application['namePrefix']}gitops"
+        newConfig.scmm['gitOpsUsername'] = "${config.application.namePrefix}gitops"
 
         if (newConfig.scmm["url"]) {
             log.debug("Setting external scmm config")

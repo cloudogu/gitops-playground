@@ -2,8 +2,14 @@
 package com.cloudogu.gitops.config.schema
 
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
+import com.fasterxml.jackson.core.JsonGenerator
+import com.fasterxml.jackson.databind.JsonSerializer
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.SerializerProvider
+import com.fasterxml.jackson.databind.module.SimpleModule
 
 import static com.cloudogu.gitops.config.ConfigConstants.*
+
 /**
  * The global configuration object.
  *
@@ -161,7 +167,7 @@ class Schema {
 
         @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
         HelmConfig helm = new HelmConfig(
-                chart  : 'scm-manager',
+                chart: 'scm-manager',
                 repoURL: 'https://packages.scm-manager.org/repository/helm-v2-releases/',
                 version: '3.2.1')
     }
@@ -174,9 +180,10 @@ class Schema {
         // String configFile
         // String configMap
         // boolean outputConfigFile = false
-        // These can't be set because they are evaluated first thing on app start, before config file is read
-        // boolean debug = false
-        // boolean trace = false
+        // These cannot be set via config file but might be read by features at runtime
+        // e.g. to make legacy bash files output trace
+        boolean debug = false
+        boolean trace = false
 
         @JsonPropertyDescription(REMOTE_DESCRIPTION)
         boolean remote = false
@@ -319,8 +326,8 @@ class Schema {
         String smtpPassword = ""
 
         @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
-        MailHelmSchema helm  = new MailHelmSchema(
-                chart  : 'mailhog',
+        MailHelmSchema helm = new MailHelmSchema(
+                chart: 'mailhog',
                 repoURL: 'https://codecentric.github.io/helm-charts',
                 version: '5.0.1')
         static class MailHelmSchema extends HelmConfig {
@@ -341,7 +348,7 @@ class Schema {
 
         @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
         MonitoringHelmSchema helm = new MonitoringHelmSchema(
-                chart  : 'kube-prometheus-stack',
+                chart: 'kube-prometheus-stack',
                 repoURL: 'https://prometheus-community.github.io/helm-charts',
                 /* When updating this make sure to also test if air-gapped mode still works */
                 version: '58.2.1'
@@ -371,7 +378,7 @@ class Schema {
         static class ESOSchema {
             @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
             ESOHelmSchema helm = new ESOHelmSchema(
-                    chart  : 'external-secrets',
+                    chart: 'external-secrets',
                     repoURL: 'https://charts.external-secrets.io',
                     version: '0.9.16'
             )
@@ -393,7 +400,7 @@ class Schema {
 
             @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
             VaultHelmSchema helm = new VaultHelmSchema(
-                    chart  : 'vault',
+                    chart: 'vault',
                     repoURL: 'https://helm.releases.hashicorp.com',
                     version: '0.25.0'
             )
@@ -407,7 +414,6 @@ class Schema {
     static class IngressNginxSchema {
         @JsonPropertyDescription(INGRESS_NGINX_ENABLE_DESCRIPTION)
         boolean active = false
-
         @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
         IngressNginxHelmSchema helm = new IngressNginxHelmSchema(
                 chart: 'ingress-nginx',
@@ -458,5 +464,21 @@ class Schema {
             @JsonPropertyDescription(BASE_DOMAIN_DESCRIPTION)
             String baseDomain = ""
         }
+    }
+
+    private static final ObjectMapper objectMapper = new ObjectMapper()
+            .registerModule(new SimpleModule().addSerializer(GString, new JsonSerializer<GString>() {
+                @Override
+                void serialize(GString value, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
+                    jsonGenerator.writeString(value.toString())
+                }
+            }))
+
+    static Schema fromMap(Map map) {
+        objectMapper.convertValue(map, Schema)
+    }
+
+    Map toMap() {
+        objectMapper.convertValue(this, Map)
     }
 }

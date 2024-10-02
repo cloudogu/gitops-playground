@@ -98,9 +98,9 @@ RUN cp /tmp/.gitconfig /dist/home/.gitconfig
 COPY scripts/jenkins/plugins /jenkins
 RUN /jenkins/download-plugins.sh /dist/gitops/jenkins-plugins
 
-COPY src/main/groovy/com/cloudogu/gitops/config/ApplicationConfigurator.groovy /tmp/
+COPY src/main/groovy/com/cloudogu/gitops/config/schema/Schema.groovy /tmp/
 COPY scripts/downloadHelmCharts.sh /tmp/
-RUN cd /dist/gitops && /tmp/downloadHelmCharts.sh /tmp/ApplicationConfigurator.groovy
+RUN cd /dist/gitops && /tmp/downloadHelmCharts.sh /tmp/Schema.groovy
 
 WORKDIR /tmp
 # Prepare local files for later stages

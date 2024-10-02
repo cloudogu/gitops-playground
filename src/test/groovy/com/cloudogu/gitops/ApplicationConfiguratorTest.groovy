@@ -3,14 +3,11 @@ package com.cloudogu.gitops
 import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.schema.JsonSchemaGenerator
 import com.cloudogu.gitops.config.schema.JsonSchemaValidator
-import com.cloudogu.gitops.config.schema.Schema
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
 import com.cloudogu.gitops.utils.TestLogger
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-
-import java.lang.reflect.Modifier
 
 import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable
 import static groovy.test.GroovyAssert.shouldFail
@@ -249,31 +246,6 @@ images:
     }
 
     @Test
-    void "config is deeply immutable"() {
-        // Avoids failing due to compile static 🤷‍♂️
-        ApplicationConfigurator configurator = applicationConfigurator
-        shouldFail(UnsupportedOperationException) {
-            configurator.config['application']['remote'] = true
-        }
-        shouldFail(UnsupportedOperationException) {
-            configurator.setConfig(testConfig)['application']['remote'] = true
-        }
-    }
-
-    @Test
-    void "config file has only fields that are present in default values"() {
-
-        // ⚠️ If you run into an endless loop in this test, you might have added a non-static class to Schema.grooy
-
-        Map defaultConfig = applicationConfigurator.setConfig(almostEmptyConfig)
-
-        def fields = getAllFieldNames(Schema.class).sort()
-        def keys = getAllKeys(defaultConfig).sort()
-
-        assertThat(fields).isSubsetOf(keys)
-    }
-    
-    @Test
     void "base url: evaluates for all tools"() {
         testConfig.application['baseUrl'] = 'http://localhost'
         
@@ -447,37 +419,5 @@ images:
             applicationConfigurator.setConfig(testConfig)
         }
         assertThat(exception.message).isEqualTo(expectedException)
-    }
-    
-    List<String> getAllFieldNames(Class clazz, String parentField = '', List<String> fieldNames = []) {
-        clazz.declaredFields.each { field ->
-            if (Modifier.isStatic(field.modifiers) && Modifier.isFinal(field.modifiers)) {
-                return
-            }
-            def currentField = parentField + field.name
-            if (field.type instanceof Class
-                    && !field.type.isArray()
-                    && field.type.name.startsWith(Schema.class.getPackageName())) {
-                println "nested class $field.type, $currentField + '.', $fieldNames"
-                getAllFieldNames(field.type, currentField + '.', fieldNames)
-            } else {
-                if (!field.name.startsWith('_') && !field.name.startsWith('$') && field.name != 'metaClass') {
-                    fieldNames.add(currentField)
-                }
-            }
-        }
-        return fieldNames
-    }
-
-    List<String> getAllKeys(Map map, String parentKey = '', List<String> keysList = []) {
-        map.each { key, value ->
-            def currentKey = parentKey + key
-            if (value instanceof Map && !value.isEmpty()) {
-                getAllKeys(value, currentKey + '.', keysList)
-            } else {
-                keysList.add(currentKey)
-            }
-        }
-        return keysList
     }
 }
