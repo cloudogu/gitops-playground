@@ -20,6 +20,7 @@ rules:
       - ""
     resources:
       - namespaces
+      - pods/log
     verbs:
       - get
       - list
@@ -33,7 +34,6 @@ rules:
       - services
       - serviceaccounts
       - pods
-      - pods/log
       - events
     verbs:
       - create
