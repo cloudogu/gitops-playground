@@ -1,11 +1,10 @@
 //file:noinspection unused
-package com.cloudogu.gitops.config.schema 
+package com.cloudogu.gitops.config.schema
 
-import com.fasterxml.jackson.annotation.JsonClassDescription
+
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 
-import static com.cloudogu.gitops.config.ConfigConstants.*
-
+import static com.cloudogu.gitops.config.ConfigConstants.* 
 /**
  * The schema for the configuration file.
  * It is used to validate the passed yaml file.
@@ -33,7 +32,6 @@ class Schema {
     @JsonPropertyDescription(FEATURES_DESCRIPTION)
     FeaturesSchema features
 
-    @JsonClassDescription(HELM_CONFIG_DESCRIPTION)
     static class HelmConfig {
         @JsonPropertyDescription(HELM_CONFIG_CHART_DESCRIPTION)
         String chart = ""
@@ -43,7 +41,6 @@ class Schema {
         String version = ""
     }
     
-    @JsonClassDescription(HELM_CONFIG_DESCRIPTION)
     static class HelmConfigWithValues extends HelmConfig {
         @JsonPropertyDescription(HELM_CONFIG_VALUES_DESCRIPTION)
         Map<String, Object> values
@@ -71,6 +68,7 @@ class Schema {
         @JsonPropertyDescription(REGISTRY_PROXY_PASSWORD_DESCRIPTION)
         String proxyPassword = ""
 
+        @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
         HelmConfig helm
     }
 
@@ -117,6 +115,7 @@ class Schema {
         // String protocol = ""
         // String ingress = ""
 
+        @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
         HelmConfig helm
     }
 
@@ -327,7 +326,7 @@ class Schema {
     static class IngressNginxSchema {
         @JsonPropertyDescription(INGRESS_NGINX_ENABLE_DESCRIPTION)
         boolean active = false
-
+        @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
         HelmConfigWithValues helm
     }
 
