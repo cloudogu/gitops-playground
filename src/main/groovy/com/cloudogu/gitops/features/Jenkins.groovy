@@ -1,8 +1,8 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
-import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.config.schema.Schema
 import com.cloudogu.gitops.jenkins.GlobalPropertyManager
 import com.cloudogu.gitops.jenkins.JobManager
 import com.cloudogu.gitops.jenkins.PrometheusConfigurator
@@ -87,7 +87,7 @@ class Jenkins extends Feature {
             globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}MAVEN_CENTRAL_MIRROR", config.jenkins['mavenCentralMirror'] as String)
         }
 
-        globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}K8S_VERSION", ApplicationConfigurator.K8S_VERSION)
+        globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}K8S_VERSION", Schema.K8S_VERSION)
 
         if (userManager.isUsingCasSecurityRealm()) {
             log.trace("Using CAS Security Realm. Must not create user.")

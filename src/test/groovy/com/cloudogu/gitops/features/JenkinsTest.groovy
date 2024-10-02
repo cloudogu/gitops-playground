@@ -1,7 +1,8 @@
 package com.cloudogu.gitops.features
 
-import com.cloudogu.gitops.config.ApplicationConfigurator
+
 import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.config.schema.Schema
 import com.cloudogu.gitops.jenkins.GlobalPropertyManager
 import com.cloudogu.gitops.jenkins.JobManager
 import com.cloudogu.gitops.jenkins.PrometheusConfigurator
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.Test
 
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.anyString
+import static org.mockito.ArgumentMatchers.eq
 import static org.mockito.Mockito.*
 
 class JenkinsTest {
@@ -99,7 +101,7 @@ class JenkinsTest {
         assertThat(env['INSTALL_ARGOCD']).isEqualTo('true')
 
         verify(globalPropertyManager).setGlobalProperty('SCMM_URL', 'http://scmm')
-        verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_K8S_VERSION', ApplicationConfigurator.K8S_VERSION)
+        verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_K8S_VERSION', Schema.K8S_VERSION)
 
         verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_URL', 'reg-url')
         verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_PATH', 'reg-path')

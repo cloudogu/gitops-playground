@@ -1,7 +1,8 @@
 package com.cloudogu.gitops.features
 
-import com.cloudogu.gitops.config.ApplicationConfigurator
+
 import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.config.schema.Schema
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -12,7 +13,7 @@ import org.junit.jupiter.api.Test
 
 import java.nio.file.Path
 
-import static org.assertj.core.api.Assertions.assertThat
+import static org.assertj.core.api.Assertions.assertThat 
 
 class RegistryTest {
 
@@ -23,7 +24,7 @@ class RegistryTest {
                     path        : '',
                     username    : '',
                     password    : '',
-                    internalPort: ApplicationConfigurator.DEFAULT_REGISTRY_PORT,
+                    internalPort: Schema.DEFAULT_REGISTRY_PORT,
                     helm        : [
                             chart  : 'docker-registry',
                             repoURL: 'https://charts.helm.sh/stable',
@@ -53,7 +54,7 @@ class RegistryTest {
     void 'is installed'() {
         createRegistry().install()
 
-        assertThat(parseActualYaml()['service']['nodePort']).isEqualTo(ApplicationConfigurator.DEFAULT_REGISTRY_PORT)
+        assertThat(parseActualYaml()['service']['nodePort']).isEqualTo(Schema.DEFAULT_REGISTRY_PORT)
         assertThat(parseActualYaml()['service']['type']).isEqualTo('NodePort')
         assertThat(helmCommands.actualCommands[0].trim()).isEqualTo(
                 'helm repo add registry https://charts.helm.sh/stable')
@@ -67,7 +68,7 @@ class RegistryTest {
 
     @Test
     void 'creates an additional service when different port is set'() {
-        def expectedNodePort = ApplicationConfigurator.DEFAULT_REGISTRY_PORT as int + 1
+        def expectedNodePort = Schema.DEFAULT_REGISTRY_PORT as int + 1
         config['registry']['internalPort'] = expectedNodePort
 
         createRegistry().install()

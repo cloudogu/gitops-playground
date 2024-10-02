@@ -10,14 +10,13 @@ import com.cloudogu.gitops.utils.TestLogger
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
+import java.lang.reflect.Modifier
+
 import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.anyString
-import static org.mockito.Mockito.mock
-import static org.mockito.Mockito.never
-import static org.mockito.Mockito.verify
-import static org.mockito.Mockito.when
+import static org.mockito.Mockito.*
 
 class ApplicationConfiguratorTest {
 
@@ -452,6 +451,9 @@ images:
     
     List<String> getAllFieldNames(Class clazz, String parentField = '', List<String> fieldNames = []) {
         clazz.declaredFields.each { field ->
+            if (Modifier.isStatic(field.modifiers) && Modifier.isFinal(field.modifiers)) {
+                return
+            }
             def currentField = parentField + field.name
             if (field.type instanceof Class
                     && !field.type.isArray()
