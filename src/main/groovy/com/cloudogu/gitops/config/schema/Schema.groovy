@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.JsonSerializer
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.module.SimpleModule
+import groovy.transform.Immutable
 
 import static com.cloudogu.gitops.config.ConfigConstants.*
 
@@ -24,6 +25,7 @@ import static com.cloudogu.gitops.config.ConfigConstants.*
  * * modify GitOpsPlaygroundCli as well.
  * @see com.cloudogu.gitops.cli.GitopsPlaygroundCli* @see com.cloudogu.gitops.config.ApplicationConfigurator
  */
+@Immutable
 class Schema {
 
     // When updating please also update in Dockerfile
@@ -49,7 +51,8 @@ class Schema {
     @JsonPropertyDescription(FEATURES_DESCRIPTION)
     FeaturesSchema features = new FeaturesSchema()
 
-    static class HelmConfig {
+    /* Non-immutable type allowing for extension */
+    static class BaseHelmConfig {
         @JsonPropertyDescription(HELM_CONFIG_CHART_DESCRIPTION)
         String chart = ""
         @JsonPropertyDescription(HELM_CONFIG_REPO_URL_DESCRIPTION)
@@ -58,11 +61,19 @@ class Schema {
         String version = ""
     }
 
-    static class HelmConfigWithValues extends HelmConfig {
+    @Immutable
+    static class HelmConfig extends BaseHelmConfig {}
+
+    /* Non-immutable type allowing for extension */
+    static class BaseHelmConfigWithValues extends BaseHelmConfig {
         @JsonPropertyDescription(HELM_CONFIG_VALUES_DESCRIPTION)
         Map<String, Object> values = [:]
     }
 
+    @Immutable
+    static class HelmConfigWithValues extends BaseHelmConfigWithValues {}
+
+    @Immutable
     static class RegistrySchema {
         boolean internal = true
         boolean twoRegistries = false
@@ -100,6 +111,7 @@ class Schema {
                 version: '2.2.3')
     }
 
+    @Immutable
     static class JenkinsSchema {
         Boolean internal = true
         /* This is the URL configured in SCMM inside the Jenkins Plugin, e.g. at http://scmm.localhost/scm/admin/settings/jenkins
@@ -127,6 +139,7 @@ class Schema {
 
         @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
         JenkinsHelmSchema helm = new JenkinsHelmSchema()
+        @Immutable
         static class JenkinsHelmSchema {
             // Once these can be used get rid of this class and use HelmConfig instead
             // String chart = "jenkins"
@@ -140,19 +153,20 @@ class Schema {
         }
     }
 
+    @Immutable
     static class ScmmSchema {
         Boolean internal = true
         String gitOpsUsername = ""
         /* This corresponds to the "Base URL" in SCMM Settings.
-   We use the K8s service as default name here, to make the build on push feature (webhooks from SCMM to Jenkins that trigger builds) work in k3d.
-   The webhook contains repository URLs that start with the "Base URL" Setting of SCMM.
-   Jenkins checks these repo URLs and triggers all builds that match repo URLs.
-   In k3d, we have to define the repos in Jenkins using the K8s Service name, because they are the only option.
-   "scmm.localhost" will not work inside the Pods and k3d-container IP + Port (e.g. 172.x.y.z:9091) will not work on Windows and MacOS.
-   So, we have to use the matching URL in SCMM as well.
+           We use the K8s service as default name here, to make the build on push feature (webhooks from SCMM to Jenkins that trigger builds) work in k3d.
+           The webhook contains repository URLs that start with the "Base URL" Setting of SCMM.
+           Jenkins checks these repo URLs and triggers all builds that match repo URLs.
+           In k3d, we have to define the repos in Jenkins using the K8s Service name, because they are the only option.
+           "scmm.localhost" will not work inside the Pods and k3d-container IP + Port (e.g. 172.x.y.z:9091) will not work on Windows and MacOS.
+           So, we have to use the matching URL in SCMM as well.
 
-   For production we overwrite this when config.scmm["url"] is set.
-   See addScmmConfig() */
+           For production we overwrite this when config.scmm["url"] is set.
+           See addScmmConfig() */
         String urlForJenkins = 'http://scmm-scm-manager/scm'
         String host = ""
         String protocol = ""
@@ -172,6 +186,7 @@ class Schema {
                 version: '3.2.1')
     }
 
+    @Immutable
     static class ApplicationSchema {
         Boolean runningInsideK8s = false
         String namePrefixForEnvVars = ""
@@ -226,6 +241,7 @@ class Schema {
         boolean netpols = false
     }
 
+    @Immutable
     static class ImagesSchema {
         @JsonPropertyDescription(KUBECTL_IMAGE_DESCRIPTION)
         String kubectl = "bitnami/kubectl:$K8S_VERSION"
@@ -246,6 +262,7 @@ class Schema {
         String maven = null
     }
 
+    @Immutable
     static class RepositoriesSchema {
         @JsonPropertyDescription(SPRING_BOOT_HELM_CHART_DESCRIPTION)
         RepositorySchemaWithRef springBootHelmChart = new RepositorySchemaWithRef(
@@ -268,16 +285,21 @@ class Schema {
         )
     }
 
-    static class RepositorySchema {
+    static class BaseRepositorySchema {
         @JsonPropertyDescription(REPO_URL_DESCRIPTION)
         String url = ''
     }
 
-    static class RepositorySchemaWithRef extends RepositorySchema {
+    @Immutable
+    static class RepositorySchema extends BaseRepositorySchema {}
+
+    @Immutable
+    static class RepositorySchemaWithRef extends BaseRepositorySchema {
         @JsonPropertyDescription(REPO_REF_DESCRIPTION)
         String ref = ''
     }
 
+    @Immutable
     static class FeaturesSchema {
         @JsonPropertyDescription(ARGOCD_DESCRIPTION)
         ArgoCDSchema argocd = new ArgoCDSchema()
@@ -296,6 +318,7 @@ class Schema {
         ExampleAppsSchema exampleApps = new ExampleAppsSchema()
     }
 
+    @Immutable
     static class ArgoCDSchema {
         @JsonPropertyDescription(ARGOCD_ENABLE_DESCRIPTION)
         boolean active = false
@@ -309,6 +332,7 @@ class Schema {
         String emailToAdmin = 'infra@example.org'
     }
 
+    @Immutable
     static class MailSchema {
         boolean active = false
 
@@ -330,12 +354,14 @@ class Schema {
                 chart: 'mailhog',
                 repoURL: 'https://codecentric.github.io/helm-charts',
                 version: '5.0.1')
-        static class MailHelmSchema extends HelmConfig {
+        @Immutable
+        static class MailHelmSchema extends BaseHelmConfig {
             @JsonPropertyDescription(HELM_CONFIG_IMAGE_DESCRIPTION)
             String image = 'ghcr.io/cloudogu/mailhog:v1.0.1'
         }
     }
 
+    @Immutable
     static class MonitoringSchema {
         @JsonPropertyDescription(MONITORING_ENABLE_DESCRIPTION)
         boolean active = false
@@ -347,13 +373,16 @@ class Schema {
         String grafanaEmailTo = 'infra@example.org'
 
         @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
+        @SuppressWarnings('GroovyAssignabilityCheck') // Because of values
         MonitoringHelmSchema helm = new MonitoringHelmSchema(
                 chart: 'kube-prometheus-stack',
                 repoURL: 'https://prometheus-community.github.io/helm-charts',
                 /* When updating this make sure to also test if air-gapped mode still works */
-                version: '58.2.1'
+                version: '58.2.1',
+                values: [:] // Otherwise values is null 🤷‍♂️
         )
-        static class MonitoringHelmSchema extends HelmConfigWithValues {
+        @Immutable
+        static class MonitoringHelmSchema extends BaseHelmConfigWithValues {
             @JsonPropertyDescription(GRAFANA_IMAGE_DESCRIPTION)
             String grafanaImage = ""
             @JsonPropertyDescription(GRAFANA_SIDECAR_IMAGE_DESCRIPTION)
@@ -367,6 +396,7 @@ class Schema {
         }
     }
 
+    @Immutable
     static class SecretsSchema {
         boolean active = false
 
@@ -375,6 +405,7 @@ class Schema {
         @JsonPropertyDescription(VAULT_DESCRIPTION)
         VaultSchema vault = new VaultSchema()
 
+        @Immutable
         static class ESOSchema {
             @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
             ESOHelmSchema helm = new ESOHelmSchema(
@@ -382,7 +413,8 @@ class Schema {
                     repoURL: 'https://charts.external-secrets.io',
                     version: '0.9.16'
             )
-            static class ESOHelmSchema extends HelmConfig {
+            @Immutable
+            static class ESOHelmSchema extends BaseHelmConfig {
                 @JsonPropertyDescription(EXTERNAL_SECRETS_IMAGE_DESCRIPTION)
                 String image = ""
                 @JsonPropertyDescription(EXTERNAL_SECRETS_CERT_CONTROLLER_IMAGE_DESCRIPTION)
@@ -392,6 +424,7 @@ class Schema {
             }
         }
 
+        @Immutable
         static class VaultSchema {
             @JsonPropertyDescription(VAULT_ENABLE_DESCRIPTION)
             String mode = ""
@@ -404,13 +437,15 @@ class Schema {
                     repoURL: 'https://helm.releases.hashicorp.com',
                     version: '0.25.0'
             )
-            static class VaultHelmSchema extends HelmConfig {
+            @Immutable
+            static class VaultHelmSchema extends BaseHelmConfig {
                 @JsonPropertyDescription(VAULT_IMAGE_DESCRIPTION)
                 String image = ""
             }
         }
     }
 
+    @Immutable
     static class IngressNginxSchema {
         @JsonPropertyDescription(INGRESS_NGINX_ENABLE_DESCRIPTION)
         boolean active = false
@@ -420,7 +455,8 @@ class Schema {
                 repoURL: 'https://kubernetes.github.io/ingress-nginx',
                 version: '4.9.1'
         )
-        static class IngressNginxHelmSchema extends HelmConfigWithValues {
+        @Immutable
+        static class IngressNginxHelmSchema extends BaseHelmConfigWithValues {
             @JsonPropertyDescription(HELM_CONFIG_IMAGE_DESCRIPTION)
             String image = ""
         }
@@ -454,12 +490,14 @@ class Schema {
         }
     }
 
+    @Immutable
     static class ExampleAppsSchema {
         @JsonPropertyDescription(PETCLINIC_DESCRIPTION)
         ExampleAppSchema petclinic = new ExampleAppSchema()
         @JsonPropertyDescription(NGINX_DESCRIPTION)
         ExampleAppSchema nginx = new ExampleAppSchema()
 
+        @Immutable
         static class ExampleAppSchema {
             @JsonPropertyDescription(BASE_DOMAIN_DESCRIPTION)
             String baseDomain = ""
