@@ -2,7 +2,6 @@ package com.cloudogu.gitops.cli
 
 import com.cloudogu.gitops.Application
 import com.cloudogu.gitops.config.ApplicationConfigurator
-import com.cloudogu.gitops.config.ConfigToConfigFileConverter
 import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.config.schema.JsonSchemaGenerator
 import com.cloudogu.gitops.config.schema.JsonSchemaValidator
@@ -52,7 +51,6 @@ class GitopsPlaygroundCliMainScripted {
                             new NetworkingUtils(new K8sClient(new CommandExecutor(), new FileSystemUtils(), null), new CommandExecutor()),
                             new FileSystemUtils(),
                             new JsonSchemaValidator(new JsonSchemaGenerator())))
-            context.registerSingleton(new ConfigToConfigFileConverter())
             return context
         }
 
