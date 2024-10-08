@@ -45,50 +45,45 @@ class ApplicationConfigurator {
     /**
      * Sets config internally and also returns it, fluent interface
      */
-    Map setConfig(Map configToSet, boolean skipInternalConfig = false) {
+    Schema setConfig(Map configToSet, boolean skipInternalConfig = false) {
         Map newConfig = config.toMap()
         deepMerge(configToSet, newConfig)
 
         validate(newConfig)
         
-        if (skipInternalConfig) {
-            config = Schema.fromMap(newConfig)
-            return newConfig
-        }
-        
-        addAdditionalApplicationConfig(newConfig)
-        
+        if (!skipInternalConfig) {
+            addAdditionalApplicationConfig(newConfig)
 
-        addScmmConfig(newConfig)
-        addJenkinsConfig(newConfig)
+            addScmmConfig(newConfig)
+            addJenkinsConfig(newConfig)
 
-
-        String namePrefix = newConfig.application['namePrefix']
-        if (namePrefix) {
-            if (!namePrefix.endsWith('-')) {
-                newConfig.application['namePrefix'] = "${namePrefix}-"
+            String namePrefix = newConfig.application['namePrefix']
+            if (namePrefix) {
+                if (!namePrefix.endsWith('-')) {
+                    newConfig.application['namePrefix'] = "${namePrefix}-"
+                }
+                newConfig.application['namePrefixForEnvVars'] ="${(newConfig.application['namePrefix'] as String).toUpperCase().replace('-', '_')}"
             }
-            newConfig.application['namePrefixForEnvVars'] ="${(newConfig.application['namePrefix'] as String).toUpperCase().replace('-', '_')}"
-        }
 
-        addRegistryConfig(newConfig)
+            addRegistryConfig(newConfig)
+
+            if (newConfig['features']['secrets']['vault']['mode'])
+                newConfig['features']['secrets']['active'] = true
+            if (newConfig['features']['mail']['smtpAddress'] || newConfig['features']['mail']['mailhog'])
+                newConfig['features']['mail']['active'] = true
+            if (newConfig['features']['mail']['smtpAddress'] && newConfig['features']['mail']['mailhog']) {
+                newConfig['features']['mail']['mailhog'] = false
+                log.warn("Enabled both external Mailserver and MailHog! Implicitly deactivating MailHog")
+            }
+            if (newConfig['features']['ingressNginx']['active'] && !newConfig['application']['baseUrl']) {
+                log.warn("Ingress-controller is activated without baseUrl parameter. Services will not be accessible by hostnames. To avoid this use baseUrl with ingress. ")
+            }
+
+            evaluateBaseUrl(newConfig)
+        }
         
-        if (newConfig['features']['secrets']['vault']['mode'])
-            newConfig['features']['secrets']['active'] = true
-        if (newConfig['features']['mail']['smtpAddress'] || newConfig['features']['mail']['mailhog'])
-            newConfig['features']['mail']['active'] = true
-        if (newConfig['features']['mail']['smtpAddress'] && newConfig['features']['mail']['mailhog']) {
-            newConfig['features']['mail']['mailhog'] = false
-            log.warn("Enabled both external Mailserver and MailHog! Implicitly deactivating MailHog")
-        }
-        if (newConfig['features']['ingressNginx']['active'] && !newConfig['application']['baseUrl']) {
-            log.warn("Ingress-controller is activated without baseUrl parameter. Services will not be accessible by hostnames. To avoid this use baseUrl with ingress. ")
-        }
-
-        evaluateBaseUrl(newConfig)
-
         config = Schema.fromMap(newConfig)
-        return newConfig
+        return config
     }
 
     private void addRegistryConfig(Map newConfig) {
@@ -120,7 +115,7 @@ class ApplicationConfigurator {
         }
     }
 
-    Map setConfig(File configFile, boolean skipInternalConfig = false) {
+    Schema setConfig(File configFile, boolean skipInternalConfig = false) {
         def map = new YamlSlurper().parse(configFile)
         if (!(map instanceof Map)) {
             throw new RuntimeException("Could not parse YAML as map: $map")
@@ -130,7 +125,7 @@ class ApplicationConfigurator {
         return setConfig(map as Map, skipInternalConfig)
     }
 
-    Map setConfig(String configFile, boolean skipInternalConfig = false) {
+    Schema setConfig(String configFile, boolean skipInternalConfig = false) {
         def map = new YamlSlurper().parseText(configFile)
         if (!(map instanceof Map)) {
             throw new RuntimeException("Could not parse YAML as map: $map")

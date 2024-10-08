@@ -93,33 +93,33 @@ class ApplicationConfiguratorTest {
         when(networkingUtils.getProtocol("http://localhost:9091/scm")).thenReturn("http")
         when(networkingUtils.getHost("http://localhost:9091/scm")).thenReturn("localhost:9091/scm")
 
-        Map actualConfig = applicationConfigurator.setConfig(testConfig)
+        def actualConfig = applicationConfigurator.setConfig(testConfig)
 
-        assertThat(actualConfig['registry']['internalPort']).isEqualTo(EXPECTED_REGISTRY_INTERNAL_PORT)
-        assertThat(actualConfig['registry']['url']).isEqualTo(EXPECTED_REGISTRY_URL)
-        assertThat(actualConfig['registry']['path']).isEqualTo('')
-        assertThat(actualConfig['registry']['internal']).isEqualTo(false)
-        assertThat(actualConfig['registry']['twoRegistries']).isEqualTo(true)
+        assertThat(actualConfig.registry.internalPort).isEqualTo(EXPECTED_REGISTRY_INTERNAL_PORT)
+        assertThat(actualConfig.registry.url).isEqualTo(EXPECTED_REGISTRY_URL)
+        assertThat(actualConfig.registry.path).isEqualTo('')
+        assertThat(actualConfig.registry.internal).isEqualTo(false)
+        assertThat(actualConfig.registry.twoRegistries).isEqualTo(true)
         
-        assertThat(actualConfig['features']['argocd']['active']).isEqualTo(EXPECTED_ARGOCD)
+        assertThat(actualConfig.features.argocd.active).isEqualTo(EXPECTED_ARGOCD)
 
-        assertThat(actualConfig['jenkins']['url']).isEqualTo(EXPECTED_JENKINS_URL)
-        assertThat(actualConfig['jenkins']['internal']).isEqualTo(false)
+        assertThat(actualConfig.jenkins.url).isEqualTo(EXPECTED_JENKINS_URL)
+        assertThat(actualConfig.jenkins.internal).isEqualTo(false)
         
-        assertThat(actualConfig['features']['secrets']['vault']['mode']).isEqualTo(EXPECTED_VAULT_MODE)
+        assertThat(actualConfig.features.secrets.vault.mode).isEqualTo(EXPECTED_VAULT_MODE)
         // Default value
-        assertThat(actualConfig['features']['secrets']['externalSecrets']).isNotNull()
+        assertThat(actualConfig.features.secrets.externalSecrets).isNotNull()
         // Dynamic vaule (depends on vault mode)
-        assertThat(actualConfig['features']['secrets']['active']).isEqualTo(true)
+        assertThat(actualConfig.features.secrets.active).isEqualTo(true)
     }
     
     @Test
     void "Is able to skip setting internal config"() {
-        Map actualConfig = applicationConfigurator.setConfig(testConfig, true)
+        def actualConfig = applicationConfigurator.setConfig(testConfig, true)
 
         verify(networkingUtils, never()).findClusterBindAddress()
         // Dynamic vaule (depends on vault mode)
-        assertThat(actualConfig['features']['secrets']['active']).isEqualTo(false)
+        assertThat(actualConfig.features.secrets.active).isEqualTo(false)
     }
     
 
@@ -129,7 +129,7 @@ class ApplicationConfiguratorTest {
         testConfig.scmm['url'] = ''
 
         withEnvironmentVariable("KUBERNETES_SERVICE_HOST", "127.0.0.1").execute {
-            Map actualConfig = applicationConfigurator.setConfig(testConfig)
+            def actualConfig = applicationConfigurator.setConfig(testConfig)
 
             assertThat(actualConfig.scmm['url']).isEqualTo("http://scmm-scm-manager.default.svc.cluster.local:80/scm")
             assertThat(actualConfig.jenkins['url']).isEqualTo("http://jenkins.default.svc.cluster.local:80")
@@ -194,7 +194,7 @@ class ApplicationConfiguratorTest {
         testConfig.jenkins['url'] = ''
         testConfig.scmm['url'] = ''
 
-        Map actualConfig = applicationConfigurator.setConfig(testConfig)
+        def actualConfig = applicationConfigurator.setConfig(testConfig)
 
         assertThat(actualConfig.scmm['url']).isEqualTo("http://localhost:9091/scm")
         assertThat(actualConfig.jenkins['url']).isEqualTo("http://localhost:9090")
@@ -203,20 +203,20 @@ class ApplicationConfiguratorTest {
     @Test
     void "Certain properties are read from env"() {
         withEnvironmentVariable('SPRING_BOOT_HELM_CHART_REPO', 'value1').execute {
-            Map actualConfig = new ApplicationConfigurator(networkingUtils, fileSystemUtils, new JsonSchemaValidator(new JsonSchemaGenerator())).setConfig(testConfig)
-            assertThat(actualConfig['repositories']['springBootHelmChart']['url']).isEqualTo('value1')
+            def actualConfig = new ApplicationConfigurator(networkingUtils, fileSystemUtils, new JsonSchemaValidator(new JsonSchemaGenerator())).setConfig(testConfig)
+            assertThat(actualConfig.repositories.springBootHelmChart.url).isEqualTo('value1')
         }
         withEnvironmentVariable('SPRING_PETCLINIC_REPO', 'value2').execute {
-            Map actualConfig = new ApplicationConfigurator(networkingUtils, fileSystemUtils, new JsonSchemaValidator(new JsonSchemaGenerator())).setConfig(testConfig)
-            assertThat(actualConfig['repositories']['springPetclinic']['url']).isEqualTo('value2')
+            def actualConfig = new ApplicationConfigurator(networkingUtils, fileSystemUtils, new JsonSchemaValidator(new JsonSchemaGenerator())).setConfig(testConfig)
+            assertThat(actualConfig.repositories.springPetclinic.url).isEqualTo('value2')
         }
         withEnvironmentVariable('GITOPS_BUILD_LIB_REPO', 'value3').execute {
-            Map actualConfig = new ApplicationConfigurator(networkingUtils, fileSystemUtils, new JsonSchemaValidator(new JsonSchemaGenerator())).setConfig(testConfig)
-            assertThat(actualConfig['repositories']['gitopsBuildLib']['url']).isEqualTo('value3')
+            def actualConfig = new ApplicationConfigurator(networkingUtils, fileSystemUtils, new JsonSchemaValidator(new JsonSchemaGenerator())).setConfig(testConfig)
+            assertThat(actualConfig.repositories.gitopsBuildLib.url).isEqualTo('value3')
         }
         withEnvironmentVariable('CES_BUILD_LIB_REPO', 'value4').execute {
-            Map actualConfig = new ApplicationConfigurator(networkingUtils, fileSystemUtils, new JsonSchemaValidator(new JsonSchemaGenerator())).setConfig(testConfig)
-            assertThat(actualConfig['repositories']['cesBuildLib']['url']).isEqualTo('value4')
+            def actualConfig = new ApplicationConfigurator(networkingUtils, fileSystemUtils, new JsonSchemaValidator(new JsonSchemaGenerator())).setConfig(testConfig)
+            assertThat(actualConfig.repositories.cesBuildLib.url).isEqualTo('value4')
         }
     }
 
@@ -254,7 +254,7 @@ images:
         testConfig.features['monitoring']['active'] = true
         testConfig.features['secrets']['active'] = true
 
-        Map actualConfig = applicationConfigurator.setConfig(testConfig)
+        def actualConfig = applicationConfigurator.setConfig(testConfig)
 
         assertThat(actualConfig.features['argocd']['url']).isEqualTo("http://argocd.localhost")
         assertThat(actualConfig.features['mail']['mailhogUrl']).isEqualTo("http://mailhog.localhost")
@@ -275,7 +275,7 @@ images:
         testConfig.features['monitoring']['active'] = true
         testConfig.features['secrets']['active'] = true
 
-        Map actualConfig = applicationConfigurator.setConfig(testConfig)
+        def actualConfig = applicationConfigurator.setConfig(testConfig)
 
         assertThat(actualConfig.features['argocd']['url']).isEqualTo("http://argocd-localhost")
         assertThat(actualConfig.features['mail']['mailhogUrl']).isEqualTo("http://mailhog-localhost")
@@ -291,7 +291,7 @@ images:
         testConfig.application['baseUrl'] = 'http://localhost:8080'
         testConfig.features['argocd']['active'] = true
 
-        Map actualConfig = applicationConfigurator.setConfig(testConfig)
+        def actualConfig = applicationConfigurator.setConfig(testConfig)
 
         assertThat(actualConfig.features['argocd']['url']).isEqualTo("http://argocd.localhost:8080")
     }
@@ -302,7 +302,7 @@ images:
         testConfig.features['argocd']['active'] = true
         testConfig.application['urlSeparatorHyphen'] = true
 
-        Map actualConfig = applicationConfigurator.setConfig(testConfig)
+        def actualConfig = applicationConfigurator.setConfig(testConfig)
 
         assertThat(actualConfig.features['argocd']['url']).isEqualTo("http://argocd-localhost:6502")
     }
@@ -315,7 +315,7 @@ images:
         testConfig.features['monitoring']['active'] = false
         testConfig.features['secrets']['active'] = false
 
-        Map actualConfig = applicationConfigurator.setConfig(testConfig)
+        def actualConfig = applicationConfigurator.setConfig(testConfig)
 
         assertThat(actualConfig.features['argocd']['url']).isEqualTo("")
         assertThat(actualConfig.features['mail']['mailhogUrl']).isEqualTo("")
@@ -339,7 +339,7 @@ images:
         testConfig.features['exampleApps']['petclinic']['baseDomain'] = 'petclinic'
         testConfig.features['exampleApps']['nginx']['baseDomain'] = 'nginx'
 
-        Map actualConfig = applicationConfigurator.setConfig(testConfig)
+        def actualConfig = applicationConfigurator.setConfig(testConfig)
 
         assertThat(actualConfig.features['argocd']['url']).isEqualTo("argocd")
         assertThat(actualConfig.features['mail']['mailhogUrl']).isEqualTo("mailhog")
@@ -353,7 +353,7 @@ images:
     void "Sets namePrefix"() {
         testConfig.application['namePrefix'] = 'my-prefix'
 
-        Map actualConfig = applicationConfigurator.setConfig(testConfig)
+        def actualConfig = applicationConfigurator.setConfig(testConfig)
         assertThat(actualConfig.application['namePrefix'].toString()).isEqualTo('my-prefix-')
         assertThat(actualConfig.application['namePrefixForEnvVars'].toString()).isEqualTo('MY_PREFIX_')
     }
@@ -362,7 +362,7 @@ images:
     void "Sets namePrefix when ending in hyphen"() {
         testConfig.application['namePrefix'] = 'my-prefix-'
 
-        Map actualConfig = applicationConfigurator.setConfig(testConfig)
+        def actualConfig = applicationConfigurator.setConfig(testConfig)
         assertThat(actualConfig.application['namePrefix'].toString()).isEqualTo('my-prefix-')
         assertThat(actualConfig.application['namePrefixForEnvVars'].toString()).isEqualTo('MY_PREFIX_')
     }
@@ -372,29 +372,29 @@ images:
         testConfig.registry['url'] = null
         testConfig.registry['proxyUrl'] = null
         
-        Map actualConfig = applicationConfigurator.setConfig(testConfig)
+        def actualConfig = applicationConfigurator.setConfig(testConfig)
         
-        assertThat(actualConfig['registry']['url'].toString()).isEqualTo('localhost:33333')
-        assertThat(actualConfig['registry']['internalPort']).isEqualTo(EXPECTED_REGISTRY_INTERNAL_PORT)
-        assertThat(actualConfig['registry']['internal']).isEqualTo(true)
+        assertThat(actualConfig.registry.url.toString()).isEqualTo('localhost:33333')
+        assertThat(actualConfig.registry.internalPort).isEqualTo(EXPECTED_REGISTRY_INTERNAL_PORT)
+        assertThat(actualConfig.registry.internal).isEqualTo(true)
     }
     
     @Test
     void "Registry: Sets to external when only registry URL set"() {
         testConfig.registry['proxyUrl'] = null
 
-        Map actualConfig = applicationConfigurator.setConfig(testConfig)
+        def actualConfig = applicationConfigurator.setConfig(testConfig)
         
-        assertThat(actualConfig['registry']['internal']).isEqualTo(false)
+        assertThat(actualConfig.registry.internal).isEqualTo(false)
     }
     
     @Test
     void "Registry: Sets to internal when only proxy Url is set"() {
         testConfig.registry['url'] = null
 
-        Map actualConfig = applicationConfigurator.setConfig(testConfig)
+        def actualConfig = applicationConfigurator.setConfig(testConfig)
         
-        assertThat(actualConfig['registry']['internal']).isEqualTo(true)
+        assertThat(actualConfig.registry.internal).isEqualTo(true)
     }
     
     @Test

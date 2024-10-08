@@ -1,6 +1,6 @@
 package com.cloudogu.gitops.config
 
-
+import com.cloudogu.gitops.config.schema.Schema
 import org.junit.jupiter.api.Test
 
 import static org.assertj.core.api.Assertions.assertThat
@@ -10,7 +10,7 @@ class ConfigToConfigFileConverterTest {
     void 'converts config map to yaml'() {
         def converter = new ConfigToConfigFileConverter()
 
-        def config = converter.convert([
+        def config = converter.convert(Schema.fromMap([
                 registry   : [
                         internalPort: 123,
                         url         : 'url',
@@ -190,7 +190,7 @@ class ConfigToConfigFileConverterTest {
                                 ]
                         ],
                 ]
-        ])
+        ]))
 
         assertThat(config).isEqualTo("""---
 registry:
