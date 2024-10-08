@@ -241,8 +241,8 @@ class GitopsPlaygroundCli  implements Runnable {
             println(config.toYaml(false))
             return
         }
-        
-        register(context, new Configuration(config.toMap()))
+
+        register(context, config)
 
         K8sClient k8sClient = context.getBean(K8sClient)
 
@@ -274,8 +274,12 @@ class GitopsPlaygroundCli  implements Runnable {
         return  "${APP_NAME} ${versionName}"
     }
 
-    protected void register(ApplicationContext context, Configuration configuration) {
+    /** Can be used as a hook by child classes */
+    protected Configuration register(ApplicationContext context, Schema config) {
+        context.registerSingleton(config)
+        def configuration = new Configuration(config.toMap())
         context.registerSingleton(configuration)
+        return configuration
     }
 
     private void confirmOrExit(String message, Schema config) {
