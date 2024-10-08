@@ -7,6 +7,7 @@ import ch.qos.logback.core.ConsoleAppender
 import com.cloudogu.gitops.Application
 import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.ConfigToConfigFileConverter
+import com.cloudogu.gitops.config.schema.Schema
 import com.cloudogu.gitops.destroy.Destroyer
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.K8sClient
@@ -235,13 +236,11 @@ class GitopsPlaygroundCliTest {
             when(applicationContext.getBean(Destroyer)).thenReturn(destroyer)
             when(applicationContext.getBean(ConfigToConfigFileConverter)).thenReturn(configFileConverter)
             when(applicationContext.getBean(ApplicationConfigurator)).thenReturn(applicationConfigurator)
-            when(applicationConfigurator.setConfig(any(Map), anyBoolean())).thenReturn([
-                    application: [
+            when(applicationConfigurator.setConfig(any(Map), anyBoolean())).thenReturn(new Schema(
+                    application: new Schema.ApplicationSchema(
                             destroy: destroy,
-                            yes: yes
-                    ]
-            ])
-
+                            yes: yes)))
+            
             return applicationContext
         }
     }
