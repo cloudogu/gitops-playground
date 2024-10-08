@@ -115,6 +115,7 @@ node('high-cpu') {
                             returnStdout: true
                     ).trim()
 
+                    int ret=0
                     new Docker(this).image(groovyImage)
                     // Avoids errors ("unable to resolve class") probably due to missing HOME for container in JVM.
                             .mountJenkinsUser()
@@ -122,17 +123,17 @@ node('high-cpu') {
                                 // removing m2 and grapes avoids issues where grapes primarily resolves local m2 and fails on missing versions
                                 sh "rm -rf .m2/"
                                 sh "rm -rf .groovy/grapes"
-                                int ret = sh(returnStatus: true, 
+                                ret = sh(returnStatus: true, 
                                         script: "groovy ./scripts/e2e.groovy --url http://${k3dAddress}:9090 --user admin --password admin --writeFailedLog --fail --retry 2")
-                                
-                                if (ret > 0 ) {
-                                    if (fileExists('playground-logs-of-failed-jobs')) {
-                                        archiveArtifacts artifacts: 'playground-logs-of-failed-jobs/*.log'
-                                    }
-                                    unstable "Integration tests failed, see logs appended to jobs and cluster status in logs"
-                                    sh "docker exec -it k3d-${clusterName}-server-0 kubectl get all -A"
-                                }
                             }
+
+                    if (ret > 0 ) {
+                        if (fileExists('playground-logs-of-failed-jobs')) {
+                            archiveArtifacts artifacts: 'playground-logs-of-failed-jobs/*.log'
+                        }
+                        unstable "Integration tests failed, see logs appended to jobs and cluster status in logs"
+                        sh "docker exec k3d-${clusterName}-server-0 kubectl get all -A"
+                    }
                 }
 
                 stage('Push image') {
