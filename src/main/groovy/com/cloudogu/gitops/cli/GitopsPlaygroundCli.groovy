@@ -10,6 +10,7 @@ import com.cloudogu.gitops.Application
 import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.ConfigToConfigFileConverter
 import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.config.schema.Schema
 import com.cloudogu.gitops.destroy.Destroyer
 import com.cloudogu.gitops.utils.K8sClient
 import groovy.util.logging.Slf4j
@@ -244,7 +245,7 @@ class GitopsPlaygroundCli  implements Runnable {
         }
         
         def config = getConfig(context, false)
-        register(context, new Configuration(config))
+        register(context, new Configuration(config.toMap()))
 
         K8sClient k8sClient = context.getBean(K8sClient)
 
@@ -280,8 +281,8 @@ class GitopsPlaygroundCli  implements Runnable {
         context.registerSingleton(configuration)
     }
 
-    private void confirmOrExit(String message, Map config) {
-        if (config['application']['yes']) {
+    private void confirmOrExit(String message, Schema config) {
+        if (config.application.yes) {
             return
         }
         
@@ -337,7 +338,7 @@ class GitopsPlaygroundCli  implements Runnable {
         rootLogger.addAppender(appender)
     }
 
-    private Map getConfig(ApplicationContext appContext, boolean skipInternalConfig) {
+    private Schema getConfig(ApplicationContext appContext, boolean skipInternalConfig) {
         if (configFile && configMap) {
             throw new RuntimeException("Cannot provide --config-file and --config-map at the same time.")
         }
@@ -352,7 +353,7 @@ class GitopsPlaygroundCli  implements Runnable {
             applicationConfigurator.setConfig(configValues, true)
         }
 
-        Map config = applicationConfigurator.setConfig(parseOptionsIntoConfig(), skipInternalConfig)
+        def config = applicationConfigurator.setConfig(parseOptionsIntoConfig(), skipInternalConfig)
 
         log.debug("Actual config: ${prettyPrint(toJson(config))}")
 

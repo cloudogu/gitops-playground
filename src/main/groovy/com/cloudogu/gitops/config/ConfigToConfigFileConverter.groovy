@@ -15,7 +15,7 @@ import jakarta.inject.Singleton
  */
 @Singleton
 class ConfigToConfigFileConverter {
-    String convert(Map config) {
+    String convert(Schema config) {
 
         new YAMLMapper()
                 .registerModule(new SimpleModule().setSerializerModifier(new BeanSerializerModifier() {
@@ -24,8 +24,6 @@ class ConfigToConfigFileConverter {
                         beanProperties.findAll { writer -> writer.getAnnotation(JsonPropertyDescription) != null }
                     }
                 }))
-                .writeValueAsString(
-                        Schema.fromMap(config)
-                )
+                .writeValueAsString(config)
     }
 }
