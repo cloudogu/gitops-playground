@@ -8,7 +8,6 @@ import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.ConsoleAppender
 import com.cloudogu.gitops.Application
 import com.cloudogu.gitops.config.ApplicationConfigurator
-import com.cloudogu.gitops.config.ConfigToConfigFileConverter
 import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.config.schema.Schema
 import com.cloudogu.gitops.destroy.Destroyer
@@ -20,9 +19,7 @@ import picocli.CommandLine
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 
-import static com.cloudogu.gitops.config.ConfigConstants.*
-import static groovy.json.JsonOutput.prettyPrint
-import static groovy.json.JsonOutput.toJson 
+import static com.cloudogu.gitops.config.ConfigConstants.* 
 /**
  * Provides the entrypoint to the application as well as all config parameters.
  * When changing parameters, make sure to update the Schema for the config file as well
@@ -267,13 +264,13 @@ class GitopsPlaygroundCli  implements Runnable {
         
         def context = createApplicationContext()
         
+        def config = getConfig(context)
+        
         if (outputConfigFile) {
-            println(context.getBean(ConfigToConfigFileConverter)
-                    .convert(getConfig(context, true)))
+            println(config.toYaml(false))
             return
         }
         
-        def config = getConfig(context, false)
         register(context, new Configuration(config.toMap()))
 
         K8sClient k8sClient = context.getBean(K8sClient)
@@ -367,7 +364,7 @@ class GitopsPlaygroundCli  implements Runnable {
         rootLogger.addAppender(appender)
     }
 
-    private Schema getConfig(ApplicationContext appContext, boolean skipInternalConfig) {
+    private Schema getConfig(ApplicationContext appContext) {
         if (configFile && configMap) {
             throw new RuntimeException("Cannot provide --config-file and --config-map at the same time.")
         }
@@ -382,9 +379,9 @@ class GitopsPlaygroundCli  implements Runnable {
             applicationConfigurator.setConfig(configValues, true)
         }
 
-        def config = applicationConfigurator.setConfig(parseOptionsIntoConfig(), skipInternalConfig)
+        def config = applicationConfigurator.setConfig(parseOptionsIntoConfig())
 
-        log.debug("Actual config: ${prettyPrint(toJson(config))}")
+        log.debug("Actual config: ${config.toYaml(true)}")
 
         return config
     }

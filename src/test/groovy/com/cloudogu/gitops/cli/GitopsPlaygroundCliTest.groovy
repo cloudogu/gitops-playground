@@ -6,8 +6,8 @@ import ch.qos.logback.classic.encoder.PatternLayoutEncoder
 import ch.qos.logback.core.ConsoleAppender
 import com.cloudogu.gitops.Application
 import com.cloudogu.gitops.config.ApplicationConfigurator
-import com.cloudogu.gitops.config.ConfigToConfigFileConverter
 import com.cloudogu.gitops.config.schema.Schema
+import static com.cloudogu.gitops.config.schema.Schema.*
 import com.cloudogu.gitops.destroy.Destroyer
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.K8sClient
@@ -34,7 +34,6 @@ class GitopsPlaygroundCliTest {
     Application application = mock(Application)
     ApplicationConfigurator applicationConfigurator = mock(ApplicationConfigurator)
     Destroyer destroyer = mock(Destroyer)
-    ConfigToConfigFileConverter configFileConverter = mock(ConfigToConfigFileConverter)
     
     @AfterEach
     void setup() {
@@ -47,7 +46,7 @@ class GitopsPlaygroundCliTest {
         def cli = new GitopsPlaygroundCliForTest()
         cli.run()
 
-        verify(applicationConfigurator).setConfig(any(Map), eq(false))
+        verify(applicationConfigurator).setConfig(any(Map))
         verify(application).start()
     }
 
@@ -57,7 +56,7 @@ class GitopsPlaygroundCliTest {
         cli.configFile = 'abc'
         cli.run()
 
-        verify(applicationConfigurator).setConfig(any(Map), eq(false))
+        verify(applicationConfigurator).setConfig(any(Map))
         // Create internal config only once, avoids repetitive log outputs
         verify(applicationConfigurator).setConfig(eq(new File('abc')), eq(true))
         verify(application).start()
@@ -72,7 +71,7 @@ class GitopsPlaygroundCliTest {
         cli.configMap = 'abc'
         cli.run()
 
-        verify(applicationConfigurator).setConfig(any(Map), eq(false))
+        verify(applicationConfigurator).setConfig(any(Map))
         // Create internal config only once, avoids repetitive log outputs
         verify(applicationConfigurator).setConfig(eq('config map'), eq(true))
         verify(application).start()
@@ -99,7 +98,7 @@ class GitopsPlaygroundCliTest {
         cli.yes = false // assures we don't ask when only putting out config
         cli.run()
 
-        verify(applicationConfigurator).setConfig(any(Map), eq(true))
+        verify(applicationConfigurator).setConfig(any(Map))
         verify(application, never()).start()
     }
 
@@ -234,10 +233,9 @@ class GitopsPlaygroundCliTest {
             when(applicationContext.registerSingleton(any())).thenReturn(applicationContext)
             when(applicationContext.getBean(Application)).thenReturn(application)
             when(applicationContext.getBean(Destroyer)).thenReturn(destroyer)
-            when(applicationContext.getBean(ConfigToConfigFileConverter)).thenReturn(configFileConverter)
             when(applicationContext.getBean(ApplicationConfigurator)).thenReturn(applicationConfigurator)
-            when(applicationConfigurator.setConfig(any(Map), anyBoolean())).thenReturn(new Schema(
-                    application: new Schema.ApplicationSchema(
+            when(applicationConfigurator.setConfig(any(Map))).thenReturn(new Schema(
+                    application: new ApplicationSchema(
                             destroy: destroy,
                             yes: yes)))
             

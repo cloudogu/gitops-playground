@@ -3,10 +3,15 @@ package com.cloudogu.gitops.config.schema
 
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import com.fasterxml.jackson.core.JsonGenerator
+import com.fasterxml.jackson.databind.BeanDescription
 import com.fasterxml.jackson.databind.JsonSerializer
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.SerializationConfig
 import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.module.SimpleModule
+import com.fasterxml.jackson.databind.ser.BeanPropertyWriter
+import com.fasterxml.jackson.databind.ser.BeanSerializerModifier
+import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 import groovy.transform.Immutable
 
 import static com.cloudogu.gitops.config.ConfigConstants.*
@@ -518,5 +523,24 @@ class Schema {
 
     Map toMap() {
         objectMapper.convertValue(this, Map)
+    }
+    
+    String toYaml(boolean includeInternals) {
+        createYamlMapper(includeInternals)
+                .writeValueAsString(this)
+    }
+
+    private static YAMLMapper createYamlMapper(boolean includeInternals) {
+        if (!includeInternals) {
+            new YAMLMapper()
+                    .registerModule(new SimpleModule().setSerializerModifier(new BeanSerializerModifier() {
+                        @Override
+                        List<BeanPropertyWriter> changeProperties(SerializationConfig serializationConfig, BeanDescription beanDesc, List<BeanPropertyWriter> beanProperties) {
+                            beanProperties.findAll { writer -> writer.getAnnotation(JsonPropertyDescription) != null }
+                        }
+                    })) as YAMLMapper
+        } else {
+            new YAMLMapper()
+        }
     }
 }
