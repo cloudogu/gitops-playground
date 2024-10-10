@@ -1,10 +1,7 @@
 package com.cloudogu.gitops.cli
 
 import com.cloudogu.gitops.Application
-import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.Configuration
-import com.cloudogu.gitops.config.schema.JsonSchemaGenerator
-import com.cloudogu.gitops.config.schema.JsonSchemaValidator
 import com.cloudogu.gitops.config.schema.Schema
 import com.cloudogu.gitops.dependencyinjection.HttpClientFactory
 import com.cloudogu.gitops.dependencyinjection.JenkinsFactory
@@ -43,23 +40,8 @@ class GitopsPlaygroundCliMainScripted {
     static class GitopsPlaygroundCliScripted extends GitopsPlaygroundCli {
 
         @Override
-        protected ApplicationContext createApplicationContext() {
-            ApplicationContext context = super.createApplicationContext()
-
-            // Create ApplicationConfigurator to get started
-            context.registerSingleton(
-                    new ApplicationConfigurator(
-                            new NetworkingUtils(new K8sClient(new CommandExecutor(), new FileSystemUtils(), null), new CommandExecutor()),
-                            new FileSystemUtils(),
-                            new JsonSchemaValidator(new JsonSchemaGenerator())))
-            return context
-        }
-
-        @Override
-        protected Configuration register(ApplicationContext context, Schema config) {
-            def configuration = super.register(context, config)
-
-            // After config is set, create all other beans
+        protected Configuration register(Schema config, ApplicationContext context) {
+            def configuration = super.register(config, context)
 
             def fileSystemUtils = new FileSystemUtils()
             def executor = new CommandExecutor()

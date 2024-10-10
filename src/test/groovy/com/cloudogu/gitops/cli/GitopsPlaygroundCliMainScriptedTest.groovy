@@ -32,13 +32,13 @@ class GitopsPlaygroundCliMainScriptedTest {
 
     /**
      * This test makes sure that we don't forget to add new {@link Feature} classes to 
-     * {@link GitopsPlaygroundCliMainScripted.GitopsPlaygroundCliScripted#register(io.micronaut.context.ApplicationContext, com.cloudogu.gitops.config.schema.Schema)}
+     * {@link GitopsPlaygroundCliMainScripted.GitopsPlaygroundCliScripted#register(com.cloudogu.gitops.config.schema.Schema, io.micronaut.context.ApplicationContext)}
      * so they also work in the dev image.
      */
     @Test
     void 'all Feature classes are instantiated in the correct order'() {
         gitopsPlaygroundCliScripted.createApplicationContext()
-        gitopsPlaygroundCliScripted.register(applicationContext, config)
+        gitopsPlaygroundCliScripted.register(config, applicationContext)
 
         List<String> actualClasses = applicationContext.getBean(Application).features
                 .collect { it.class.simpleName }
@@ -53,7 +53,7 @@ class GitopsPlaygroundCliMainScriptedTest {
         config = new Schema(config.properties + [application: new ApplicationSchema(destroy: true)])
 
         gitopsPlaygroundCliScripted.createApplicationContext()
-        gitopsPlaygroundCliScripted.register(applicationContext, config)
+        gitopsPlaygroundCliScripted.register(config, applicationContext)
 
         List<String> actualClasses = applicationContext.getBean(Destroyer).destructionHandlers
                 .collect { it.class.simpleName }

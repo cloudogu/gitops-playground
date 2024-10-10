@@ -352,25 +352,18 @@
       <plugin>
         <groupId>org.codehaus.gmavenplus</groupId>
         <artifactId>gmavenplus-plugin</artifactId>
-        <version>1.13.1</version>
+        <version>4.0.1</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>execute</goal>
+            </goals>
+          </execution>
+        </executions>
         <configuration>
           <configScript>compiler.groovy</configScript>
           <targetBytecode>17</targetBytecode>
         </configuration>
-        <executions>
-          <execution>
-            <goals>
-              <goal>addSources</goal>
-              <goal>generateStubs</goal>
-              <goal>compile</goal>
-              <goal>removeStubs</goal>
-              <goal>addTestSources</goal>
-              <goal>generateTestStubs</goal>
-              <goal>compileTests</goal>
-              <goal>removeTestStubs</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
 
       <!--  Since some dependencies are signed, and we have an uber jar, there will be some security conflicts.
@@ -412,6 +405,7 @@
               <version>${versionNameVersion}</version>
             </path>
           </annotationProcessorPaths>
+          
           <compilerArgs>
             <arg>-AversionName=${versionName}</arg>
           </compilerArgs>

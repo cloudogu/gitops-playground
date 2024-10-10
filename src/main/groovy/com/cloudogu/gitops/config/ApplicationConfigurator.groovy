@@ -1,29 +1,18 @@
 package com.cloudogu.gitops.config
 
-import com.cloudogu.gitops.config.schema.JsonSchemaValidator
 import com.cloudogu.gitops.config.schema.Schema
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
 import groovy.util.logging.Slf4j
-import groovy.yaml.YamlSlurper
-import jakarta.inject.Singleton
-
-import static com.cloudogu.gitops.utils.MapUtils.deepMerge
 
 @Slf4j
-@Singleton
 class ApplicationConfigurator {
 
-    private Schema config
     private NetworkingUtils networkingUtils
     private FileSystemUtils fileSystemUtils
-    private JsonSchemaValidator schemaValidator
 
-    ApplicationConfigurator(NetworkingUtils networkingUtils, FileSystemUtils fileSystemUtils, JsonSchemaValidator schemaValidator) {
-        this.schemaValidator = schemaValidator
-        this.config = new Schema()
+    ApplicationConfigurator(NetworkingUtils networkingUtils = new NetworkingUtils(), 
+                            FileSystemUtils fileSystemUtils = new FileSystemUtils()) {
         this.networkingUtils = networkingUtils
         this.fileSystemUtils = fileSystemUtils
     }
@@ -43,47 +32,42 @@ class ApplicationConfigurator {
 //    ],
 //    ],
     /**
-     * Sets config internally and also returns it, fluent interface
+     * Sets dynamic fields and validates params 
      */
-    Schema setConfig(Map configToSet, boolean skipInternalConfig = false) {
-        Map newConfig = config.toMap()
-        deepMerge(configToSet, newConfig)
+    Schema initAndValidateConfig(Map newConfig) {
 
         validate(newConfig)
         
-        if (!skipInternalConfig) {
-            addAdditionalApplicationConfig(newConfig)
+        addAdditionalApplicationConfig(newConfig)
 
-            addScmmConfig(newConfig)
-            addJenkinsConfig(newConfig)
+        addScmmConfig(newConfig)
+        addJenkinsConfig(newConfig)
 
-            String namePrefix = newConfig.application['namePrefix']
-            if (namePrefix) {
-                if (!namePrefix.endsWith('-')) {
-                    newConfig.application['namePrefix'] = "${namePrefix}-"
-                }
-                newConfig.application['namePrefixForEnvVars'] ="${(newConfig.application['namePrefix'] as String).toUpperCase().replace('-', '_')}"
+        String namePrefix = newConfig.application['namePrefix']
+        if (namePrefix) {
+            if (!namePrefix.endsWith('-')) {
+                newConfig.application['namePrefix'] = "${namePrefix}-"
             }
-
-            addRegistryConfig(newConfig)
-
-            if (newConfig['features']['secrets']['vault']['mode'])
-                newConfig['features']['secrets']['active'] = true
-            if (newConfig['features']['mail']['smtpAddress'] || newConfig['features']['mail']['mailhog'])
-                newConfig['features']['mail']['active'] = true
-            if (newConfig['features']['mail']['smtpAddress'] && newConfig['features']['mail']['mailhog']) {
-                newConfig['features']['mail']['mailhog'] = false
-                log.warn("Enabled both external Mailserver and MailHog! Implicitly deactivating MailHog")
-            }
-            if (newConfig['features']['ingressNginx']['active'] && !newConfig['application']['baseUrl']) {
-                log.warn("Ingress-controller is activated without baseUrl parameter. Services will not be accessible by hostnames. To avoid this use baseUrl with ingress. ")
-            }
-
-            evaluateBaseUrl(newConfig)
+            newConfig.application['namePrefixForEnvVars'] ="${(newConfig.application['namePrefix'] as String).toUpperCase().replace('-', '_')}"
         }
+
+        addRegistryConfig(newConfig)
+
+        if (newConfig['features']['secrets']['vault']['mode'])
+            newConfig['features']['secrets']['active'] = true
+        if (newConfig['features']['mail']['smtpAddress'] || newConfig['features']['mail']['mailhog'])
+            newConfig['features']['mail']['active'] = true
+        if (newConfig['features']['mail']['smtpAddress'] && newConfig['features']['mail']['mailhog']) {
+            newConfig['features']['mail']['mailhog'] = false
+            log.warn("Enabled both external Mailserver and MailHog! Implicitly deactivating MailHog")
+        }
+        if (newConfig['features']['ingressNginx']['active'] && !newConfig['application']['baseUrl']) {
+            log.warn("Ingress-controller is activated without baseUrl parameter. Services will not be accessible by hostnames. To avoid this use baseUrl with ingress. ")
+        }
+
+        evaluateBaseUrl(newConfig)
         
-        config = Schema.fromMap(newConfig)
-        return config
+        return Schema.fromMap(newConfig)
     }
 
     private void addRegistryConfig(Map newConfig) {
@@ -115,26 +99,6 @@ class ApplicationConfigurator {
         }
     }
 
-    Schema setConfig(File configFile, boolean skipInternalConfig = false) {
-        def map = new YamlSlurper().parse(configFile)
-        if (!(map instanceof Map)) {
-            throw new RuntimeException("Could not parse YAML as map: $map")
-        }
-        schemaValidator.validate(new ObjectMapper().convertValue(map, JsonNode))
-
-        return setConfig(map as Map, skipInternalConfig)
-    }
-
-    Schema setConfig(String configFile, boolean skipInternalConfig = false) {
-        def map = new YamlSlurper().parseText(configFile)
-        if (!(map instanceof Map)) {
-            throw new RuntimeException("Could not parse YAML as map: $map")
-        }
-        schemaValidator.validate(new ObjectMapper().convertValue(map, JsonNode))
-
-        return setConfig(map as Map, skipInternalConfig)
-    }
-
     private void addAdditionalApplicationConfig(Map newConfig) {
         if (System.getenv("KUBERNETES_SERVICE_HOST")) {
             log.debug("installation is running in kubernetes.")
@@ -145,7 +109,7 @@ class ApplicationConfigurator {
     private void addScmmConfig(Map newConfig) {
         log.debug("Adding additional config for SCM-Manager")
 
-        newConfig.scmm['gitOpsUsername'] = "${config.application.namePrefix}gitops"
+        newConfig.scmm['gitOpsUsername'] = "${newConfig.application['namePrefix']}gitops"
 
         if (newConfig.scmm["url"]) {
             log.debug("Setting external scmm config")

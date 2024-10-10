@@ -1,56 +1,56 @@
 {
   "$schema" : "https://json-schema.org/draft/2020-12/schema",
   "$defs" : {
-    "ExampleAppSchema" : {
-      "type" : "object",
+    "ExampleAppSchema-nullable" : {
+      "type" : [ "object", "null" ],
       "properties" : {
         "baseDomain" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "The domain under which a subdomain these applications will be made available"
         }
       },
       "additionalProperties" : false
     },
-    "HelmConfig" : {
-      "type" : "object",
+    "HelmConfig-nullable" : {
+      "type" : [ "object", "null" ],
       "properties" : {
         "chart" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "Name of the Helm chart"
         },
         "repoURL" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "Repository url from which the Helm chart should be obtained"
         },
         "version" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "The version of the Helm chart to be installed"
         }
       },
       "additionalProperties" : false
     },
-    "Map(String,Object)" : {
-      "type" : "object"
+    "Map(String,Object)-nullable" : {
+      "type" : [ "object", "null" ]
     },
-    "RepositorySchema" : {
-      "type" : "object",
+    "RepositorySchema-nullable" : {
+      "type" : [ "object", "null" ],
       "properties" : {
         "url" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "HTTP URL of the repo"
         }
       },
       "additionalProperties" : false
     },
-    "RepositorySchemaWithRef" : {
-      "type" : "object",
+    "RepositorySchemaWithRef-nullable" : {
+      "type" : [ "object", "null" ],
       "properties" : {
         "ref" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "Ref of the repo to use, e.g. a tag, commit or branch"
         },
         "url" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "HTTP URL of the repo"
         }
       },
@@ -60,78 +60,78 @@
   "type" : "object",
   "properties" : {
     "application" : {
-      "type" : "object",
+      "type" : [ "object", "null" ],
       "properties" : {
         "baseUrl" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "the external base url (TLD) for all tools, e.g. https://example.com or http://localhost:8080. The individual -url params for argocd, grafana, vault and mailhog take precedence."
         },
         "destroy" : {
-          "type" : "boolean",
+          "type" : [ "boolean", "null" ],
           "description" : "Unroll playground"
         },
         "gitEmail" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "Sets git author and committer email used for initial commits"
         },
         "gitName" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "Sets git author and committer name used for initial commits"
         },
         "insecure" : {
-          "type" : "boolean",
+          "type" : [ "boolean", "null" ],
           "description" : "Sets insecure-mode in cURL which skips cert validation"
         },
         "localHelmChartFolder" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "A local folder (within the GOP image mostly) where the local mirrors of all helm charts are loaded from when mirror-Repos is active. This is mostly needed for development."
         },
         "mirrorRepos" : {
-          "type" : "boolean",
+          "type" : [ "boolean", "null" ],
           "description" : "Changes the sources of deployed tools so they are not pulled from the internet, but are pulled from git and work in air-gapped environments."
         },
         "namePrefix" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "Set name-prefix for repos, jobs, namespaces"
         },
         "namespaceIsolation" : {
-          "type" : "boolean",
+          "type" : [ "boolean", "null" ],
           "description" : "Configure tools to explicitly work with the given namespaces only, and not cluster-wide. This way GOP can be installed without having cluster-admin permissions."
         },
         "netpols" : {
-          "type" : "boolean",
+          "type" : [ "boolean", "null" ],
           "description" : "Sets Network Policies"
         },
         "openshift" : {
-          "type" : "boolean",
+          "type" : [ "boolean", "null" ],
           "description" : "Install with openshift compatibility"
         },
         "password" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "Set initial admin passwords"
         },
         "podResources" : {
-          "type" : "boolean",
+          "type" : [ "boolean", "null" ],
           "description" : "Write kubernetes resource requests and limits on each pod"
         },
         "remote" : {
-          "type" : "boolean",
+          "type" : [ "boolean", "null" ],
           "description" : "Expose services as LoadBalancers"
         },
         "skipCrds" : {
-          "type" : "boolean",
+          "type" : [ "boolean", "null" ],
           "description" : "Skip installation of CRDs. This requires prior installation of CRDs"
         },
         "urlSeparatorHyphen" : {
-          "type" : "boolean",
+          "type" : [ "boolean", "null" ],
           "description" : "Use hyphens instead of dots to separate application name from base-url"
         },
         "username" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "Set initial admin username"
         },
         "yes" : {
-          "type" : "boolean",
+          "type" : [ "boolean", "null" ],
           "description" : "Skip confirmation"
         }
       },
@@ -139,29 +139,29 @@
       "description" : "Application configuration parameter for GOP"
     },
     "features" : {
-      "type" : "object",
+      "type" : [ "object", "null" ],
       "properties" : {
         "argocd" : {
-          "type" : "object",
+          "type" : [ "object", "null" ],
           "properties" : {
             "active" : {
-              "type" : "boolean",
+              "type" : [ "boolean", "null" ],
               "description" : "Install ArgoCD"
             },
             "emailFrom" : {
-              "type" : "string",
+              "type" : [ "string", "null" ],
               "description" : "Notifications, define Argo CD sender email address"
             },
             "emailToAdmin" : {
-              "type" : "string",
+              "type" : [ "string", "null" ],
               "description" : "Notifications, define Argo CD admin recipient email address"
             },
             "emailToUser" : {
-              "type" : "string",
+              "type" : [ "string", "null" ],
               "description" : "Notifications, define Argo CD user / app-team recipient email address"
             },
             "url" : {
-              "type" : "string",
+              "type" : [ "string", "null" ],
               "description" : "The URL where argocd is accessible. It has to be the full URL with http:// or https://"
             }
           },
@@ -223,14 +223,14 @@
           "description" : "Config parameters for the Cert Manager"
         },
         "exampleApps" : {
-          "type" : "object",
+          "type" : [ "object", "null" ],
           "properties" : {
             "nginx" : {
-              "$ref" : "#/$defs/ExampleAppSchema",
+              "$ref" : "#/$defs/ExampleAppSchema-nullable",
               "description" : "Config parameters for the NGINX example apps apps and exercises"
             },
             "petclinic" : {
-              "$ref" : "#/$defs/ExampleAppSchema",
+              "$ref" : "#/$defs/ExampleAppSchema-nullable",
               "description" : "Config parameters for the petclinic example apps apps and exercises"
             }
           },
@@ -238,33 +238,33 @@
           "description" : "Config parameters for the example apps and exercises"
         },
         "ingressNginx" : {
-          "type" : "object",
+          "type" : [ "object", "null" ],
           "properties" : {
             "active" : {
-              "type" : "boolean",
+              "type" : [ "boolean", "null" ],
               "description" : "Sets and enables Nginx Ingress Controller"
             },
             "helm" : {
-              "type" : "object",
+              "type" : [ "object", "null" ],
               "properties" : {
                 "chart" : {
-                  "type" : "string",
+                  "type" : [ "string", "null" ],
                   "description" : "Name of the Helm chart"
                 },
                 "image" : {
-                  "type" : "string",
+                  "type" : [ "string", "null" ],
                   "description" : "The image of the Helm chart to be installed"
                 },
                 "repoURL" : {
-                  "type" : "string",
+                  "type" : [ "string", "null" ],
                   "description" : "Repository url from which the Helm chart should be obtained"
                 },
                 "values" : {
-                  "$ref" : "#/$defs/Map(String,Object)",
+                  "$ref" : "#/$defs/Map(String,Object)-nullable",
                   "description" : "Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration"
                 },
                 "version" : {
-                  "type" : "string",
+                  "type" : [ "string", "null" ],
                   "description" : "The version of the Helm chart to be installed"
                 }
               },
@@ -276,25 +276,25 @@
           "description" : "Config parameters for the NGINX Ingress Controller"
         },
         "mail" : {
-          "type" : "object",
+          "type" : [ "object", "null" ],
           "properties" : {
             "helm" : {
-              "type" : "object",
+              "type" : [ "object", "null" ],
               "properties" : {
                 "chart" : {
-                  "type" : "string",
+                  "type" : [ "string", "null" ],
                   "description" : "Name of the Helm chart"
                 },
                 "image" : {
-                  "type" : "string",
+                  "type" : [ "string", "null" ],
                   "description" : "The image of the Helm chart to be installed"
                 },
                 "repoURL" : {
-                  "type" : "string",
+                  "type" : [ "string", "null" ],
                   "description" : "Repository url from which the Helm chart should be obtained"
                 },
                 "version" : {
-                  "type" : "string",
+                  "type" : [ "string", "null" ],
                   "description" : "The version of the Helm chart to be installed"
                 }
               },
@@ -302,27 +302,27 @@
               "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
             },
             "mailhog" : {
-              "type" : "boolean",
+              "type" : [ "boolean", "null" ],
               "description" : "Installs MailHog as Mail server."
             },
             "mailhogUrl" : {
-              "type" : "string",
+              "type" : [ "string", "null" ],
               "description" : "Sets url for MailHog"
             },
             "smtpAddress" : {
-              "type" : "string",
+              "type" : [ "string", "null" ],
               "description" : "Sets smtp port of external Mailserver"
             },
             "smtpPassword" : {
-              "type" : "string",
+              "type" : [ "string", "null" ],
               "description" : "Sets smtp password of external Mailserver"
             },
             "smtpPort" : {
-              "type" : "integer",
+              "type" : [ "integer", "null" ],
               "description" : "Sets smtp port of external Mailserver"
             },
             "smtpUser" : {
-              "type" : "string",
+              "type" : [ "string", "null" ],
               "description" : "Sets smtp username for external Mailserver"
             }
           },
@@ -330,61 +330,61 @@
           "description" : "Config parameters for mail servers"
         },
         "monitoring" : {
-          "type" : "object",
+          "type" : [ "object", "null" ],
           "properties" : {
             "active" : {
-              "type" : "boolean",
+              "type" : [ "boolean", "null" ],
               "description" : "Installs the Kube-Prometheus-Stack. This includes Prometheus, the Prometheus operator, Grafana and some extra resources"
             },
             "grafanaEmailFrom" : {
-              "type" : "string",
+              "type" : [ "string", "null" ],
               "description" : "Notifications, define grafana alerts sender email address"
             },
             "grafanaEmailTo" : {
-              "type" : "string",
+              "type" : [ "string", "null" ],
               "description" : "Notifications, define grafana alerts recipient email address"
             },
             "grafanaUrl" : {
-              "type" : "string",
+              "type" : [ "string", "null" ],
               "description" : "Sets url for grafana"
             },
             "helm" : {
-              "type" : "object",
+              "type" : [ "object", "null" ],
               "properties" : {
                 "chart" : {
-                  "type" : "string",
+                  "type" : [ "string", "null" ],
                   "description" : "Name of the Helm chart"
                 },
                 "grafanaImage" : {
-                  "type" : "string",
+                  "type" : [ "string", "null" ],
                   "description" : "Sets image for grafana"
                 },
                 "grafanaSidecarImage" : {
-                  "type" : "string",
+                  "type" : [ "string", "null" ],
                   "description" : "Sets image for grafana's sidecar"
                 },
                 "prometheusConfigReloaderImage" : {
-                  "type" : "string",
+                  "type" : [ "string", "null" ],
                   "description" : "Sets image for prometheus-operator's config-reloader"
                 },
                 "prometheusImage" : {
-                  "type" : "string",
+                  "type" : [ "string", "null" ],
                   "description" : "Sets image for prometheus"
                 },
                 "prometheusOperatorImage" : {
-                  "type" : "string",
+                  "type" : [ "string", "null" ],
                   "description" : "Sets image for prometheus-operator"
                 },
                 "repoURL" : {
-                  "type" : "string",
+                  "type" : [ "string", "null" ],
                   "description" : "Repository url from which the Helm chart should be obtained"
                 },
                 "values" : {
-                  "$ref" : "#/$defs/Map(String,Object)",
+                  "$ref" : "#/$defs/Map(String,Object)-nullable",
                   "description" : "Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration"
                 },
                 "version" : {
-                  "type" : "string",
+                  "type" : [ "string", "null" ],
                   "description" : "The version of the Helm chart to be installed"
                 }
               },
@@ -396,36 +396,36 @@
           "description" : "Config parameters for the Monitoring system (prometheus)"
         },
         "secrets" : {
-          "type" : "object",
+          "type" : [ "object", "null" ],
           "properties" : {
             "externalSecrets" : {
-              "type" : "object",
+              "type" : [ "object", "null" ],
               "properties" : {
                 "helm" : {
-                  "type" : "object",
+                  "type" : [ "object", "null" ],
                   "properties" : {
                     "certControllerImage" : {
-                      "type" : "string",
+                      "type" : [ "string", "null" ],
                       "description" : "Sets image for external secrets operator's controller"
                     },
                     "chart" : {
-                      "type" : "string",
+                      "type" : [ "string", "null" ],
                       "description" : "Name of the Helm chart"
                     },
                     "image" : {
-                      "type" : "string",
+                      "type" : [ "string", "null" ],
                       "description" : "Sets image for external secrets operator"
                     },
                     "repoURL" : {
-                      "type" : "string",
+                      "type" : [ "string", "null" ],
                       "description" : "Repository url from which the Helm chart should be obtained"
                     },
                     "version" : {
-                      "type" : "string",
+                      "type" : [ "string", "null" ],
                       "description" : "The version of the Helm chart to be installed"
                     },
                     "webhookImage" : {
-                      "type" : "string",
+                      "type" : [ "string", "null" ],
                       "description" : "Sets image for external secrets operator's webhook"
                     }
                   },
@@ -437,25 +437,25 @@
               "description" : "Config parameters for the external secrets operator"
             },
             "vault" : {
-              "type" : "object",
+              "type" : [ "object", "null" ],
               "properties" : {
                 "helm" : {
-                  "type" : "object",
+                  "type" : [ "object", "null" ],
                   "properties" : {
                     "chart" : {
-                      "type" : "string",
+                      "type" : [ "string", "null" ],
                       "description" : "Name of the Helm chart"
                     },
                     "image" : {
-                      "type" : "string",
+                      "type" : [ "string", "null" ],
                       "description" : "Sets image for vault"
                     },
                     "repoURL" : {
-                      "type" : "string",
+                      "type" : [ "string", "null" ],
                       "description" : "Repository url from which the Helm chart should be obtained"
                     },
                     "version" : {
-                      "type" : "string",
+                      "type" : [ "string", "null" ],
                       "description" : "The version of the Helm chart to be installed"
                     }
                   },
@@ -463,11 +463,16 @@
                   "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
                 },
                 "mode" : {
-                  "type" : "string",
+                  "anyOf" : [ {
+                    "type" : "null"
+                  }, {
+                    "type" : "string",
+                    "enum" : [ "dev", "prod" ]
+                  } ],
                   "description" : "Installs Hashicorp vault and the external secrets operator. Possible values: dev, prod."
                 },
                 "url" : {
-                  "type" : "string",
+                  "type" : [ "string", "null" ],
                   "description" : "Sets url for vault ui"
                 }
               },
@@ -483,38 +488,38 @@
       "description" : "Config parameters for features or tools"
     },
     "images" : {
-      "type" : "object",
+      "type" : [ "object", "null" ],
       "properties" : {
         "helm" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "Sets image for helm"
         },
         "helmKubeval" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "Sets image for helmkubeval"
         },
         "kubectl" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "Sets image for kubectl"
         },
         "kubeval" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "Sets image for kubeval"
         },
         "maven" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "Sets image for maven"
         },
         "nginx" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "Sets image for nginx used in various applications"
         },
         "petclinic" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "Sets image for petclinic used in various applications"
         },
         "yamllint" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "Sets image for yamllint"
         }
       },
@@ -522,48 +527,48 @@
       "description" : "Config params for images that do not belong to specific features"
     },
     "jenkins" : {
-      "type" : "object",
+      "type" : [ "object", "null" ],
       "properties" : {
+        "additionalEnvs" : {
+          "type" : [ "object", "null" ],
+          "additionalProperties" : {
+            "type" : "string"
+          },
+          "description" : "Set additional environments to Jenkins"
+        },
         "helm" : {
-          "type" : "object",
+          "type" : [ "object", "null" ],
           "properties" : {
             "version" : {
-              "type" : "string",
+              "type" : [ "string", "null" ],
               "description" : "The version of the Helm chart to be installed"
             }
           },
           "additionalProperties" : false,
           "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
         },
-        "jenkinsAdditionalEnvs" : {
-          "type" : "object",
-          "additionalProperties" : {
-            "type" : "string"
-          },
-          "description" : "Set additional environments to Jenkins"
-        },
         "mavenCentralMirror" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "URL for maven mirror, used by applications built in Jenkins"
         },
         "metricsPassword" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "Mandatory when jenkins-url is set and monitoring enabled"
         },
         "metricsUsername" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "Mandatory when jenkins-url is set and monitoring enabled"
         },
         "password" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "Mandatory when jenkins-url is set"
         },
         "url" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "The url of your external jenkins"
         },
         "username" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "Mandatory when jenkins-url is set"
         }
       },
@@ -571,54 +576,54 @@
       "description" : "Config parameters for Jenkins CI/CD Pipeline Server"
     },
     "registry" : {
-      "type" : "object",
+      "type" : [ "object", "null" ],
       "properties" : {
         "createImagePullSecrets" : {
-          "type" : "boolean",
+          "type" : [ "boolean", "null" ],
           "description" : "Create image pull secrets for registry and proxy-registry for all GOP namespaces and helm charts. Uses proxy-username, read-only-username or registry-username (in this order).  Use this if your cluster is not auto-provisioned with credentials for your private registries or if you configure individual helm images to be pulled from the proxy-registry that requires authentication."
         },
         "helm" : {
-          "$ref" : "#/$defs/HelmConfig",
+          "$ref" : "#/$defs/HelmConfig-nullable",
           "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
         },
         "internalPort" : {
-          "type" : "integer",
+          "type" : [ "integer", "null" ],
           "description" : "Port of registry registry. Ignored when a registry*url params are set"
         },
         "password" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "Optional when registry-url is set"
         },
         "path" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "Optional when registry-url is set"
         },
         "proxyPassword" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "Use with registry-proxy-url, added to Jenkins as credentials and created as pull secrets, when create-image-pull-secrets is set."
         },
         "proxyUrl" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "The url of your proxy-registry. Used in pipelines to authorize pull base images. Use in conjunction with petclinic base image. Used in helm charts when create-image-pull-secrets is set. Use in conjunction with helm.*image fields."
         },
         "proxyUsername" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "Use with registry-proxy-url, added to Jenkins as credentials and created as pull secrets, when create-image-pull-secrets is set."
         },
         "readOnlyPassword" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "Optional alternative password for registry-url with read-only permissions that is used when create-image-pull-secrets is set."
         },
         "readOnlyUsername" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "Optional alternative username for registry-url with read-only permissions that is used when create-image-pull-secrets is set."
         },
         "url" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "The url of your external registry, used for pushing images"
         },
         "username" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "Optional when registry-url is set"
         }
       },
@@ -626,22 +631,22 @@
       "description" : "Config parameters for Registry"
     },
     "repositories" : {
-      "type" : "object",
+      "type" : [ "object", "null" ],
       "properties" : {
         "cesBuildLib" : {
-          "$ref" : "#/$defs/RepositorySchema",
+          "$ref" : "#/$defs/RepositorySchema-nullable",
           "description" : "Repo to pull the ces-build-lib, used in examples and exercises as depedency of the gitops-build-lib"
         },
         "gitopsBuildLib" : {
-          "$ref" : "#/$defs/RepositorySchema",
+          "$ref" : "#/$defs/RepositorySchema-nullable",
           "description" : "Repo to pull the gitops-build-lib, used in examples and exercises"
         },
         "springBootHelmChart" : {
-          "$ref" : "#/$defs/RepositorySchemaWithRef",
+          "$ref" : "#/$defs/RepositorySchemaWithRef-nullable",
           "description" : "Repo to pull the generic Spring Boot Helm chart, used in examples and exercises"
         },
         "springPetclinic" : {
-          "$ref" : "#/$defs/RepositorySchemaWithRef",
+          "$ref" : "#/$defs/RepositorySchemaWithRef-nullable",
           "description" : "Repo to pull the Spring Petclinic, used in examples and exercises"
         }
       },
@@ -649,22 +654,22 @@
       "description" : "Config params for repositories used within GOP"
     },
     "scmm" : {
-      "type" : "object",
+      "type" : [ "object", "null" ],
       "properties" : {
         "helm" : {
-          "$ref" : "#/$defs/HelmConfig",
+          "$ref" : "#/$defs/HelmConfig-nullable",
           "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
         },
         "password" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "Mandatory when scmm-url is set"
         },
         "url" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "The host of your external scm-manager"
         },
         "username" : {
-          "type" : "string",
+          "type" : [ "string", "null" ],
           "description" : "Mandatory when scmm-url is set"
         }
       },
