@@ -72,8 +72,9 @@ class ConfigToConfigFileConverterTest {
                         kubeval    : 'kubeval-value',
                         helmKubeval: 'helmKubeval-value',
                         yamllint   : 'yamllint-value',
-                        nginx: 'nginx-value',
-                        petclinic : 'petclinic-value'
+                        nginx      : 'nginx-value',
+                        petclinic  : 'petclinic-value',
+                        maven      : 'maven-value'
                 ],
                 repositories : [
                         springBootHelmChart: [
@@ -231,6 +232,7 @@ images:
   yamllint: "yamllint-value"
   nginx: "nginx-value"
   petclinic: "petclinic-value"
+  maven: "maven-value"
 repositories:
   springBootHelmChart:
     url: "springboot-url"
