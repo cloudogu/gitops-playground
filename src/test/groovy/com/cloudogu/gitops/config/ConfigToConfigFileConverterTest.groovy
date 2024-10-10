@@ -36,6 +36,8 @@ class ConfigToConfigFileConverterTest {
                         helm  : [
                                 version: '5.0.17'
                         ],
+                        additionalEnvs: [:]
+
                 ],
                 scmm       : [
                         url     : 'scmm-url',
@@ -196,6 +198,7 @@ jenkins:
   mavenCentralMirror: "mirror"
   helm:
     version: "5.0.17"
+  additionalEnvs: []
 scmm:
   url: "scmm-url"
   username: "scmm-user"

@@ -73,6 +73,7 @@ class ApplicationConfigurator {
                             version: '5.5.11'
                     ],
                     mavenCentralMirror: '',
+                    additionalEnvs:  [:]
             ],
             scmm       : [
                     internal: true, // Set dynamically
