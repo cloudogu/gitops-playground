@@ -7,25 +7,23 @@ import ch.qos.logback.core.ConsoleAppender
 import com.cloudogu.gitops.Application
 import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.schema.Schema
-import static com.cloudogu.gitops.config.schema.Schema.*
 import com.cloudogu.gitops.destroy.Destroyer
-import com.cloudogu.gitops.utils.CommandExecutor
-import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.K8sClientForTest
-import com.github.stefanbirkner.systemlambda.SystemLambda
 import io.micronaut.context.ApplicationContext
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
+import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
 import org.slf4j.LoggerFactory
 
 import java.util.concurrent.TimeUnit
 
-import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
-import static org.mockito.ArgumentMatchers.*
+import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*
-
+// Avoids blocking if input is read by error
+@Timeout(value = 2, unit = TimeUnit.SECONDS)
 class GitopsPlaygroundCliTest {
 
     static final String ORIGINAL_LOGGING_PATTERN = loggingEncoder.pattern
@@ -44,61 +42,18 @@ class GitopsPlaygroundCliTest {
     @Test
     void 'Starts regularly'() {
         def cli = new GitopsPlaygroundCliForTest()
-        cli.run()
+        cli.run('--yes')
 
-        verify(applicationConfigurator).setConfig(any(Map))
-        verify(application).start()
-    }
-
-    @Test
-    void 'Starts with config file'() {
-        def cli = new GitopsPlaygroundCliForTest()
-        cli.configFile = 'abc'
-        cli.run()
-
-        verify(applicationConfigurator).setConfig(any(Map))
-        // Create internal config only once, avoids repetitive log outputs
-        verify(applicationConfigurator).setConfig(eq(new File('abc')), eq(true))
+        verify(applicationConfigurator).initAndValidateConfig(any(Map))
         verify(application).start()
     }
     
     @Test
-    void 'Starts with config map'() {
-        k8sClient.commandExecutorForTest.enqueueOutput(
-                new CommandExecutor.Output('', 'config map', 0))
-        
-        def cli = new GitopsPlaygroundCliForTest()
-        cli.configMap = 'abc'
-        cli.run()
-
-        verify(applicationConfigurator).setConfig(any(Map))
-        // Create internal config only once, avoids repetitive log outputs
-        verify(applicationConfigurator).setConfig(eq('config map'), eq(true))
-        verify(application).start()
-    }
-
-    @Test
-    void 'Fails when config map and config file are set'() {
-        def cli = new GitopsPlaygroundCliForTest()
-        cli.configMap = 'abc'
-        cli.configFile = 'def'
-        
-        def exception = shouldFail(RuntimeException) {
-            cli.run()
-        }
-        
-        assertThat(exception.message).isEqualTo('Cannot provide --config-file and --config-map at the same time.')
-    }
-
-    @Test
-    @Timeout(value = 2, unit = TimeUnit.SECONDS) // Avoids blocking if input is read by error
     void 'Outputs config file'() {
         def cli = new GitopsPlaygroundCliForTest()
-        cli.outputConfigFile = true
-        cli.yes = false // assures we don't ask when only putting out config
-        cli.run()
+        cli.run('--output-config-file')
 
-        verify(applicationConfigurator).setConfig(any(Map))
+        verify(applicationConfigurator).initAndValidateConfig(any(Map))
         verify(application, never()).start()
     }
 
@@ -106,20 +61,15 @@ class GitopsPlaygroundCliTest {
     @Test
     void 'Returns error, when applying is not confirmed'() {
         def cli = new GitopsPlaygroundCliForTest()
-        cli.yes = false
-        
-        int status = SystemLambda.catchSystemExit(() -> {
-            writeViaSystemIn('something')
-            cli.run()
-        })
+        writeViaSystemIn('something')
+        def status = cli.run()
 
-        assertThat(status).isNotZero()
+        assertThat(status).isEqualTo(ReturnCode.NOT_CONFIRMED)
     }
 
     @Test
     void 'Runs when applying is confirmed'() {
         def cli = new GitopsPlaygroundCliForTest()
-        cli.yes = false
         writeViaSystemIn('y')
         
         cli.run()
@@ -128,11 +78,9 @@ class GitopsPlaygroundCliTest {
     }
 
     @Test
-    @Timeout(value = 2, unit = TimeUnit.SECONDS) // Avoids blocking if input is read by error
     void 'Runs without confirmation when yes parameter is set'() {
         def cli = new GitopsPlaygroundCliForTest()
-        cli.yes = true
-        cli.run()
+        cli.run('--yes')
 
         verify(application).start()
     }
@@ -140,40 +88,30 @@ class GitopsPlaygroundCliTest {
     @Test
     void 'Returns error, when destroying is not confirmed'() {
         def cli = new GitopsPlaygroundCliForTest()
-        cli.yes = false
-        cli.destroy = true
         
         writeViaSystemIn('something')
         
-        int status = SystemLambda.catchSystemExit(() -> {
-            cli.run()
-        })
+        def status = cli.run('--destroy')
 
-        assertThat(status).isNotZero()
+        assertThat(status).isEqualTo(ReturnCode.NOT_CONFIRMED)
     }
 
     @Test
     void 'Destroys when confirmed'() {
         def cli = new GitopsPlaygroundCliForTest()
-        cli.yes = false
-        cli.destroy = true
         
         writeViaSystemIn('y')
         
-        cli.run()
+        cli.run '--destroy'
 
         verify(destroyer).destroy()
         verify(application, never()).start()
     }
 
     @Test
-    @Timeout(value = 2, unit = TimeUnit.SECONDS)
-    // Avoids blocking if input is read by error
     void 'Destroys without confirmation when yes parameter is set'() {
         def cli = new GitopsPlaygroundCliForTest()
-        cli.yes = true
-        cli.destroy = true
-        cli.run()
+        cli.run('--destroy', '--yes')
 
         verify(destroyer).destroy()
     }
@@ -181,7 +119,7 @@ class GitopsPlaygroundCliTest {
     @Test
     void 'sets simplified logging pattern'() {
         def cli = new GitopsPlaygroundCliForTest()
-        cli.run()
+        cli.run('--yes')
 
         assertThat(getLoggingPattern()).doesNotContain('%logger', '%thread')
     }
@@ -189,8 +127,7 @@ class GitopsPlaygroundCliTest {
     @Test
     void 'keeps simplified logging pattern when trace is enabled'() {
         def cli = new GitopsPlaygroundCliForTest()
-        cli.trace = true
-        cli.run()
+        cli.run('--trace','--yes')
 
         assertThat(getLoggingPattern()).contains('%logger', '%thread')
     }
@@ -198,10 +135,36 @@ class GitopsPlaygroundCliTest {
     @Test
     void 'keeps simplified logging pattern when debug is enabled'() {
         def cli = new GitopsPlaygroundCliForTest()
-        cli.debug = true
-        cli.run()
+        cli.run('--debug', '--yes')
 
         assertThat(getLoggingPattern()).contains('%logger', '%thread')
+    }
+
+    @Test
+    void 'cli overwrites config file'() {
+        /* TODO
+        def configFile = File.createTempFile("gitops-playground", '.yaml')
+        configFile.deleteOnExit()
+        configFile.text = """
+images:
+  kubectl: "localhost:30000/kubectl"
+  helm: "localhost:30000/helm"
+        """
+
+        applicationConfigurator.setConfig(almostEmptyConfig)
+        applicationConfigurator
+                .setConfig(configFile)
+        def config = applicationConfigurator
+                .setConfig([
+                        images: [
+                                kubectl: null, // do not overwrite default value
+                                helm   : "localhost:30000/cli/helm",
+                        ]
+                ])
+
+        assertThat(config['images']['kubectl']).isEqualTo('localhost:30000/kubectl')
+        assertThat(config['images']['helm']).isEqualTo('localhost:30000/cli/helm')
+        */
     }
     
     static String getLoggingPattern() {
@@ -224,20 +187,20 @@ class GitopsPlaygroundCliTest {
         ApplicationContext applicationContext = mock(ApplicationContext)
 
         GitopsPlaygroundCliForTest() {
-            yes = true // avoids timeouts due to blocking stdin
-        }
+            super(GitopsPlaygroundCliTest.this.k8sClient, GitopsPlaygroundCliTest.this.applicationConfigurator)
 
+            when(applicationConfigurator.initAndValidateConfig(any(Map))).thenAnswer(new Answer<Schema>() {
+                @Override
+                Schema answer(InvocationOnMock invocation) throws Throwable {
+                    invocation.getArgument(0)
+                }
+            })
+        }
+        
         @Override
         protected ApplicationContext createApplicationContext() {
-            when(applicationContext.getBean(K8sClient)).thenReturn(k8sClient)
-            when(applicationContext.registerSingleton(any())).thenReturn(applicationContext)
             when(applicationContext.getBean(Application)).thenReturn(application)
             when(applicationContext.getBean(Destroyer)).thenReturn(destroyer)
-            when(applicationContext.getBean(ApplicationConfigurator)).thenReturn(applicationConfigurator)
-            when(applicationConfigurator.setConfig(any(Map))).thenReturn(new Schema(
-                    application: new ApplicationSchema(
-                            destroy: destroy,
-                            yes: yes)))
             
             return applicationContext
         }

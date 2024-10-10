@@ -406,6 +406,7 @@
                 },
                 "mode" : {
                   "type" : "string",
+                  "enum" : [ "dev", "prod" ],
                   "description" : "Installs Hashicorp vault and the external secrets operator. Possible values: dev, prod."
                 },
                 "url" : {

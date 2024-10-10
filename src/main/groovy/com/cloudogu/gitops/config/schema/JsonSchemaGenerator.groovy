@@ -1,15 +1,12 @@
 package com.cloudogu.gitops.config.schema
 
-
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.github.victools.jsonschema.generator.*
-import com.github.victools.jsonschema.module.jackson.JacksonModule
-import jakarta.inject.Singleton
+import com.github.victools.jsonschema.module.jackson.JacksonModule 
 
-@Singleton
 class JsonSchemaGenerator {
-    ObjectNode createSchema() {
+    static ObjectNode createSchema() {
         SchemaGeneratorConfigBuilder configBuilder = 
                 new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2020_12, OptionPreset.PLAIN_JSON)
                         // Make the schema strict: Only allow our fields, warn when additional fields are passed

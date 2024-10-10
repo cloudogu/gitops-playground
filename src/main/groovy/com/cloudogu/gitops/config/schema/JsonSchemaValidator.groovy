@@ -1,20 +1,17 @@
 package com.cloudogu.gitops.config.schema
 
 import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.networknt.schema.JsonSchemaFactory
-import com.networknt.schema.SpecVersionDetector
-import jakarta.inject.Singleton
+import com.networknt.schema.SpecVersionDetector 
 
-@Singleton
 class JsonSchemaValidator {
-    private final JsonSchemaGenerator schemaGenerator
 
-    JsonSchemaValidator(JsonSchemaGenerator schemaGenerator) {
-        this.schemaGenerator = schemaGenerator
-    }
-
-    void validate(JsonNode json) {
-        def schemaNode = schemaGenerator.createSchema()
+    private static ObjectMapper objectMapper = new ObjectMapper()
+    
+    static void validate(Map yaml) {
+        def json = objectMapper.convertValue(yaml, JsonNode)
+        def schemaNode = JsonSchemaGenerator.createSchema()
         def schema = JsonSchemaFactory.getInstance(SpecVersionDetector.detect(schemaNode)).getSchema(schemaNode)
 
         def validationMessages = schema.validate(json)
