@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 
-import static org.assertj.core.api.Assertions.assertThat 
+import static org.assertj.core.api.Assertions.assertThat
 
 class GitopsPlaygroundCliMainTest {
 
@@ -28,7 +28,7 @@ class GitopsPlaygroundCliMainTest {
 
         assertThat(status).isNotZero()
     }
-    
+
     @Test
     void 'application returns exit code != 0 on invalid param'() {
         int status = SystemLambda.catchSystemExit(() -> {
@@ -37,24 +37,26 @@ class GitopsPlaygroundCliMainTest {
 
         assertThat(status).isNotZero()
     }
-    
+
     static class ThrowingCommand extends MockedCommand {
         @Override
-        void run() {
+        ReturnCode run(String[] args) {
             throw new RuntimeException("mock")
         }
     }
 
-    @SuppressWarnings('unused') // Used for annotations
-    static class MockedCommand implements Runnable {
-        
+    @SuppressWarnings('unused')
+    // Used for annotations
+    static class MockedCommand extends GitopsPlaygroundCli {
+
         @Override
-        void run() {
+        ReturnCode run(String[] args) {
+            return ReturnCode.SUCCESS
         }
 
         @Command
         void mockedCommand() {}
-        
+
         @Option(names = ['--mock'])
         private boolean mock
     }
