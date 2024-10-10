@@ -134,10 +134,6 @@ function configureJenkins() {
   # Since safeRestart can take time until it really restarts jenkins, we will sleep here before querying jenkins status.
   sleep 5
   waitForJenkins
-  
-    if [[ $INSTALL_ARGOCD == true ]]; then
-      createJob "${NAME_PREFIX}example-apps" "${SCMM_URL}" "${NAME_PREFIX}argocd" "scmm-user"
-    fi
 }
 
 initJenkins "$@"
