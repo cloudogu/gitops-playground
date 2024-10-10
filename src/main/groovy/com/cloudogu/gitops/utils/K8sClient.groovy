@@ -372,24 +372,6 @@ class K8sClient {
         waitForResourcePhase(resourceType, resourceName, namespace, desiredPhase, 60, 1)
     }
 
-    /**
-    * Returns the internal Kubernetes API Server URL with IP and port using environment variables from inside a Pod.
-    *
-    * @return The URL with IP and port in the format "https://IP:PORT".
-    * @throws RuntimeException if the environment variables are not set, indicating that the code is likely not running inside a Kubernetes pod.
-    */
-    static String getInternalKubernetesApiServerAddress() {
-        String host = System.getenv("KUBERNETES_SERVICE_HOST")
-        String port = System.getenv("KUBERNETES_SERVICE_PORT")
-
-        if (!host || !port) {
-            throw new RuntimeException("Environment variables KUBERNETES_SERVICE_HOST or KUBERNETES_SERVICE_PORT are not set. " +
-                    "This likely means that the code is not running inside a Kubernetes pod.")
-        }
-
-        return "https://${host}:${port}"
-    }
-
     @Immutable
     static class CustomResource {
         String namespace
