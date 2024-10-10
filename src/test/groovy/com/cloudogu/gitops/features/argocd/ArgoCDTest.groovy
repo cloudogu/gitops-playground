@@ -28,7 +28,8 @@ class ArgoCDTest {
             helm       : 'helm-value',
             kubeval    : 'kubeval-value',
             helmKubeval: 'helmKubeval-value',
-            yamllint   : 'yamllint-value'
+            yamllint   : 'yamllint-value',
+            maven      : 'maven-value'
     ]
     Map config = [
             application : [
@@ -734,6 +735,8 @@ class ArgoCDTest {
 
         assertPetClinicRepos('NodePort', 'LoadBalancer', '')
     }
+
+
 
     private static Map parseBuildImagesMapFromString(String text) {
         def startIndex = text.indexOf('buildImages')
