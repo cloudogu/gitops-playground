@@ -297,6 +297,11 @@ class ArgoCD extends Feature {
         // The Operator uses an extra secret to store the admin Password, which is not bcrypted
         k8sClient.patch('secret', 'argocd-cluster', argocdNamespace,
                 [stringData: ['admin.password': password ] ])
+        // In newer Versions ArgoCD Operator uses the password in argocd-cluster secret only as generated initial password
+        // but we want to set our own admin password so we set the password in both Secret for consistency
+        String bcryptArgoCDPassword = BCrypt.hashpw(password, BCrypt.gensalt(4))
+        k8sClient.patch('secret', 'argocd-secret', 'argocd',
+                [stringData: ['admin.password': bcryptArgoCDPassword ] ])
 
         log.debug("Updating managed namespaces in ArgoCD configuration secret.")
         // The ArgoCD instance installed via an operator only manages its deployment namespace.
@@ -430,7 +435,7 @@ class ArgoCD extends Feature {
                             emailFrom    : config.features['argocd']['emailFrom'],
                             emailToUser  : config.features['argocd']['emailToUser'],
                             emailToAdmin : config.features['argocd']['emailToAdmin'],
-                            resourceInclusionsCluster : getResourceInclusionsCluster()
+                            resourceInclusionsCluster : config.features['argocd']['resourceInclusionsCluster']
                     ],
                     registry : [
                             twoRegistries: config.registry['twoRegistries']
@@ -474,23 +479,6 @@ class ArgoCD extends Feature {
                     // Allow for using static classes inside the templates
                     statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
             ])
-        }
-
-        private String getResourceInclusionsCluster() {
-            // Return early if NOT deploying via operator
-            if(config.features['argocd']['operator'] == false) {
-                return ""
-            }
-
-            try {
-                // Attempt to get the internal cluster URL from the config or environment variables
-                return config.application['internalKubernetesApiUrl'] ?: K8sClient.getInternalKubernetesApiServerAddress();
-            } catch (RuntimeException e) {
-                // Extend the exception message and throw a new RuntimeException
-                String extendedMessage = "Could not determine 'resourceInclusions.cluster' which is needed with argocd.operator=true. " +
-                        "Try setting 'application.internalKubernetesApiUrl' in the config to manually override.";
-                throw new RuntimeException(extendedMessage, e);
-            }
         }
 
         ScmmRepo getRepo() {

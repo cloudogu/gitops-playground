@@ -517,66 +517,6 @@ class K8sClientTest {
                 'kubectl get pod my-pod -n foo-my-namespace -o jsonpath={.status.phase}')
     }
 
-    @Test
-    void 'Returns IP and port when environment variables are set'() {
-        // Set environment variables for KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT
-        withEnvironmentVariable("KUBERNETES_SERVICE_HOST", "100.125.0.1")
-                .and("KUBERNETES_SERVICE_PORT", "443")
-                .execute {
-                    def actualAddress = k8sClient.getInternalKubernetesApiServerAddress()
-
-                    assertThat(actualAddress).isEqualTo("https://100.125.0.1:443")
-                }
-    }
-
-    @Test
-    void 'Throws RuntimeException when KUBERNETES_SERVICE_HOST is missing'() {
-        // Set environment variable for KUBERNETES_SERVICE_PORT only
-        withEnvironmentVariable("KUBERNETES_SERVICE_PORT", "443")
-                .execute {
-                    def exception = shouldFail(RuntimeException) {
-                        k8sClient.getInternalKubernetesApiServerAddress()
-                    }
-
-                    assertThat(exception.message).isEqualTo(
-                            "Environment variables KUBERNETES_SERVICE_HOST or KUBERNETES_SERVICE_PORT are not set. " +
-                                    "This likely means that the code is not running inside a Kubernetes pod."
-                    )
-                }
-    }
-
-    @Test
-    void 'Throws RuntimeException when KUBERNETES_SERVICE_PORT is missing'() {
-        // Set environment variable for KUBERNETES_SERVICE_HOST only
-        withEnvironmentVariable("KUBERNETES_SERVICE_HOST", "100.125.0.1")
-                .execute {
-                    def exception = shouldFail(RuntimeException) {
-                        k8sClient.getInternalKubernetesApiServerAddress()
-                    }
-
-                    assertThat(exception.message).isEqualTo(
-                            "Environment variables KUBERNETES_SERVICE_HOST or KUBERNETES_SERVICE_PORT are not set. " +
-                                    "This likely means that the code is not running inside a Kubernetes pod."
-                    )
-                }
-    }
-
-    @Test
-    void 'Throws RuntimeException when both environment variables are missing'() {
-        // Execute without setting any environment variables
-        withEnvironmentVariable("DUMMY", "DUMMY")
-                .execute {
-                    def exception = shouldFail(RuntimeException) {
-                        k8sClient.getInternalKubernetesApiServerAddress()
-                    }
-
-                    assertThat(exception.message).isEqualTo(
-                            "Environment variables KUBERNETES_SERVICE_HOST or KUBERNETES_SERVICE_PORT are not set. " +
-                                    "This likely means that the code is not running inside a Kubernetes pod."
-                    )
-                }
-    }
-
     private Map parseActualYaml(String pathToYamlFile) {
         File yamlFile = new File(pathToYamlFile)
         def ys = new YamlSlurper()

@@ -213,7 +213,6 @@ application:
   remote: true
   insecure: true
   localHelmChartFolder: "folder"
-  internalKubernetesApiUrl: ""
   username: "app-user"
   password: "app-pw"
   "yes": true
@@ -261,6 +260,7 @@ features:
       value: "value1"
     - name: "ENV_VAR_2"
       value: "value2"
+    resourceInclusionsCluster: ""
   mail:
     mailhog: false
     mailhogUrl: "mailhog-url"
