@@ -41,10 +41,9 @@ spec:
     targetRevision: "version"
     helm:
       releaseName: "releaseName"
-      values: |2
-
-        param1: value1
-        param2: value2
+      valuesObject:
+        param1: "value1"
+        param2: "value2"
   syncPolicy:
     automated:
       prune: true

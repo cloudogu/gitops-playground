@@ -1,13 +1,10 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
+import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
-import com.cloudogu.gitops.utils.AirGappedUtils
-import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.K8sClient
-import com.cloudogu.gitops.utils.MapUtils
-import com.cloudogu.gitops.utils.TemplatingEngine
+import com.cloudogu.gitops.utils.*
 import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
@@ -19,15 +16,17 @@ import java.nio.file.Path
 @Slf4j
 @Singleton
 @Order(150)
-class IngressNginx extends Feature {
+class IngressNginx extends Feature implements FeatureWithImage {
 
     static final String HELM_VALUES_PATH = "applications/cluster-resources/ingress-nginx-helm-values.ftl.yaml"
 
-    private Map config
+    String namespace = 'ingress-nginx'
+    Map config
+    K8sClient k8sClient
+    
     private FileSystemUtils fileSystemUtils
     private DeploymentStrategy deployer
     private AirGappedUtils airGappedUtils
-    private K8sClient k8sClient
 
     IngressNginx(
             Configuration config,
@@ -54,11 +53,6 @@ class IngressNginx extends Feature {
         def templatedMap = new YamlSlurper().parseText(
                 new TemplatingEngine().template(new File(HELM_VALUES_PATH),
                     [
-                            podResources:      config.application['podResources'],
-                            monitoring : [
-                                    active :   config.features['monitoring']['active']
-                            ],
-                            namePrefix:        config.application['namePrefix'] as String,
                             config: config,
                             // Allow for using static classes inside the templates
                             statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
@@ -91,7 +85,7 @@ class IngressNginx extends Feature {
                     'ingress-nginx',
                     '.',
                     ingressNginxVersion,
-                    'ingress-nginx',
+                    namespace,
                     'ingress-nginx',
                     tmpHelmValues, DeploymentStrategy.RepoType.GIT)
         } else {
@@ -100,7 +94,7 @@ class IngressNginx extends Feature {
                     'ingress-nginx',
                     helmConfig['chart'] as String,
                     helmConfig['version'] as String,
-                    'ingress-nginx',
+                    namespace,
                     'ingress-nginx',
                     tmpHelmValues
             )

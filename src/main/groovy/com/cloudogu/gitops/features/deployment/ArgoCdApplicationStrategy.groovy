@@ -7,6 +7,7 @@ import com.cloudogu.gitops.utils.FileSystemUtils
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 import groovy.util.logging.Slf4j
+import groovy.yaml.YamlSlurper
 import jakarta.inject.Singleton
 
 import java.nio.file.Path
@@ -39,7 +40,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
         clusterResourcesRepo.cloneRepo()
 
         // Inline values from tmpHelmValues file into ArgoCD Application YAML
-        def inlineValues = helmValuesPath.toFile().text
+        def inlineValues = new YamlSlurper().parse(helmValuesPath.toFile())
 
         // Write chart, repoURL and version into a ArgoCD Application YAML
 
@@ -64,7 +65,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
                                         targetRevision                     : version,
                                         helm                               : [
                                                 releaseName: releaseName,
-                                                values: inlineValues
+                                                valuesObject: inlineValues
                                         ],
                                 ],
                         ],

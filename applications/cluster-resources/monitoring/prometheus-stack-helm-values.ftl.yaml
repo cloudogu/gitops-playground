@@ -4,14 +4,21 @@ crds:
   enabled: false
 </#if>
 
-<#if namespaceIsolation == true>
+<#if namespaceIsolation == true || config.registry.createImagePullSecrets == true>
 global:
+  <#if config.registry.createImagePullSecrets == true>
+  imagePullSecrets:
+    - name: proxy-registry
+  </#if>
+<#if namespaceIsolation == true>
+
   rbac:
     # Avoids creation of ClusterRole, which do not need here
     create: false
 kubeApiServer:
   # Don't scrape ApiServer to avoid 403 in prometheus targets due to lacking RBAC in isolated mode
   enabled: false
+</#if>
 </#if>
 
 # Note that many things are disabled here, because we want to start small, especially in airgapped envs where each image
