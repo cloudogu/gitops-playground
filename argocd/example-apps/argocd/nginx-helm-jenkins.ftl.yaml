@@ -1,8 +1,13 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
+<#if argocd.isOperator>
+  name: nginx-helm-jenkins-staging
+  namespace: ${namePrefix}argocd
+<#else>
   name: nginx-helm-jenkins
   namespace: ${namePrefix}example-apps-staging
+</#if>
 spec:
   destination:
     namespace: ${namePrefix}example-apps-staging
@@ -24,8 +29,13 @@ spec:
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
+<#if argocd.isOperator>
   name: nginx-helm-jenkins-production
+  namespace: ${namePrefix}argocd
+<#else>
+  name: nginx-helm-jenkins
   namespace: ${namePrefix}example-apps-production
+</#if>
 spec:
   destination:
     namespace: ${namePrefix}example-apps-production

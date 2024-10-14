@@ -3,8 +3,13 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
+<#if argocd.isOperator>
+  name: misc-example-apps-production
+  namespace: ${namePrefix}argocd
+<#else>
   name: misc
   namespace: ${namePrefix}example-apps-production
+</#if>
 spec:
   project: example-apps
   destination:

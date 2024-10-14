@@ -136,8 +136,6 @@ class Schema {
         boolean insecure = false
         @JsonPropertyDescription(LOCAL_HELM_CHART_FOLDER_DESCRIPTION)
         String localHelmChartFolder = ""
-        @JsonPropertyDescription(OPENSHIFT_DESCRIPTION)
-        boolean openshift = false
         
         // args group configuration
         @JsonPropertyDescription(USERNAME_DESCRIPTION)
@@ -180,6 +178,8 @@ class Schema {
         boolean namespaceIsolation = false
         @JsonPropertyDescription(NETPOLS_DESCRIPTION)
         boolean netpols = false
+        @JsonPropertyDescription(OPENSHIFT_DESCRIPTION)
+        boolean openshift = false
     }
 
     static class ImagesSchema {
@@ -250,6 +250,12 @@ class Schema {
         String emailToUser = ""
         @JsonPropertyDescription(ARGOCD_EMAIL_TO_ADMIN_DESCRIPTION)
         String emailToAdmin = ""
+        @JsonPropertyDescription(ARGOCD_OPERATOR_DESCRIPTION)
+        boolean operator = false
+        @JsonPropertyDescription(ARGOCD_ENV_DESCRIPTION)
+        List<Map> env
+        @JsonPropertyDescription(ARGOCD_RESOURCE_INCLUSIONS_CLUSTER)
+        String resourceInclusionsCluster = ""
     }
 
     static class MailSchema {

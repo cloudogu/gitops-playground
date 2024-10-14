@@ -821,3 +821,54 @@ For now, please start a Jenkins Build of `main` manually.
 We might introduce tag builds in our Jenkins organization at a later stage.
 
 A GitHub release containing all merged PRs since the last release is create automatically via a [GitHub action](../.github/workflows/create-release.yml)
+
+## Installing ArgoCD Operator
+
+This guide provides instructions for developers to install the ArgoCD Operator locally. Installing the operator can be non-trivial, especially when deploying it without certain dependencies like cert-manager. This guide simplifies the process by providing a single script that you can copy and paste to set up the operator in your local environment.
+
+### Prerequisites:
+
+Ensure you have the following installed on your system:
+
+- Git: For cloning the repository. 
+- Patch: To apply modifications to the codebase. 
+- Kubectl: To interact with your Kubernetes cluster. 
+- Kustomize: Included with kubectl version ≥1.14.
+
+### Installation Script
+
+Copy the following script, paste it into your Terminal and execute it.
+
+```shell
+git clone https://github.com/argoproj-labs/argocd-operator && \
+cd argocd-operator && \
+git checkout release-0.11 && \
+
+# Disable webhook by commenting out lines in config/default/kustomization.yaml
+sed -i 's|^- ../webhook|# - ../webhook|' config/default/kustomization.yaml && \
+sed -i 's|^- path: manager_webhook_patch.yaml|# - path: manager_webhook_patch.yaml|' config/default/kustomization.yaml && \
+
+# Change the image tag from v0.11.1 to v0.11.0 in config/manager/kustomization.yaml
+sed -i 's|newTag: v0.11.1|newTag: v0.11.0|' config/manager/kustomization.yaml && \
+
+# Install Prometheus CRDs
+kubectl create -f https://raw.githubusercontent.com/prometheus-community/helm-charts/main/charts/kube-prometheus-stack/charts/crds/crds/crd-alertmanagerconfigs.yaml || true && \
+kubectl create -f https://raw.githubusercontent.com/prometheus-community/helm-charts/main/charts/kube-prometheus-stack/charts/crds/crds/crd-alertmanagers.yaml || true && \
+kubectl create -f https://raw.githubusercontent.com/prometheus-community/helm-charts/main/charts/kube-prometheus-stack/charts/crds/crds/crd-podmonitors.yaml || true && \
+kubectl create -f https://raw.githubusercontent.com/prometheus-community/helm-charts/main/charts/kube-prometheus-stack/charts/crds/crds/crd-probes.yaml || true && \
+kubectl create -f https://raw.githubusercontent.com/prometheus-community/helm-charts/main/charts/kube-prometheus-stack/charts/crds/crds/crd-prometheuses.yaml || true && \
+kubectl create -f https://raw.githubusercontent.com/prometheus-community/helm-charts/main/charts/kube-prometheus-stack/charts/crds/crds/crd-prometheusrules.yaml || true && \
+kubectl create -f https://raw.githubusercontent.com/prometheus-community/helm-charts/main/charts/kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml || true && \
+kubectl create -f https://raw.githubusercontent.com/prometheus-community/helm-charts/main/charts/kube-prometheus-stack/charts/crds/crds/crd-thanosrulers.yaml || true && \
+
+# Install ArgoCD Operator CRDs and components
+kubectl kustomize config/default | kubectl create -f - || true
+```
+
+### Steps in depth
+
+1. Clone the repository from GitHub and switch to the release-0.11 branch.
+2. Apply a patch that disables the Cert-Manager webhooks by commenting out certain sections in the kustomization.yaml file in the default configuration. The ArgoCD Operator fails at startup if this webhook is not disabled and no cert-manager is present in the cluster.
+3. The patch also changes the image tag in the kustomization.yaml file located in the manager directory from version v0.11.1 to v0.11.0. The Version v0.11.1 does not exist in the Repository anymore, but is referenced in the Kustomization.
+4. Install the Prometheus CRDs. These Custom Resource Definitions are necessary for monitoring the operator and will prevent a successful startup if not present. 
+5. Install the ArgoCD Operator CRDs and components using kubectl kustomize.

@@ -2,6 +2,7 @@ package com.cloudogu.gitops.config
 
 import com.cloudogu.gitops.config.schema.JsonSchemaValidator
 import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.NetworkingUtils
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -158,10 +159,13 @@ class ApplicationConfigurator {
             features   : [
                     argocd    : [
                             active    : false,
+                            operator  : false,
+                            env : [],
                             url       : '',
                             emailFrom : 'argocd@example.org',
                             emailToUser : 'app-team@example.org',
-                            emailToAdmin : 'infra@example.org'
+                            emailToAdmin : 'infra@example.org',
+                            resourceInclusionsCluster: ''
                     ],
                     mail   : [
                             active: false, // set dynamically
@@ -310,6 +314,10 @@ class ApplicationConfigurator {
         }
 
         evaluateBaseUrl(newConfig)
+
+        validateEnvConfig(newConfig)
+
+        setResourceInclusionsCluster(newConfig)
         
         config = makeDeeplyImmutable(newConfig)
 
@@ -496,6 +504,77 @@ class ApplicationConfigurator {
                     "Either run inside the official container image or setting env var " +
                     "LOCAL_HELM_CHART_FOLDER='charts' after running 'scripts/downloadHelmCharts.sh' from the repo")
         }
+    }
 
+    // Validate that the env list has proper maps with 'name' and 'value'
+    private static void validateEnvConfig(Map configToSet) {
+        // Exit early if not in operator mode or if env list is empty
+        if (!configToSet.features['argocd']['operator'] || !configToSet.features['argocd']['env']) {
+            log.debug("Skipping features.argocd.env validation: operator mode is disabled or env list is empty.")
+            return
+        }
+
+        List<Map> env = configToSet.features['argocd']['env'] as List<Map>
+
+        log.info("Validating env list in features.argocd.env with {} entries.", env.size())
+
+        env.each { map ->
+            if (!(map instanceof Map) || !map.containsKey('name') || !map.containsKey('value')) {
+                throw new IllegalArgumentException("Each env variable in features.argocd.env must be a map with 'name' and 'value'. Invalid entry found: $map")
+            }
+        }
+
+        log.info("Env list validation for features.argocd.env completed successfully.")
+    }
+
+    private void setResourceInclusionsCluster(Map configToSet) {
+        // Return early if NOT deploying via operator
+        if (configToSet.features['argocd']['operator'] == false) {
+            log.debug("ArgoCD operator is not enabled. Skipping features.argocd.resourceInclusionsCluster setup.")
+            return
+        }
+
+        log.info("Starting setup of features.argocd.resourceInclusionsCluster for ArgoCD Operator")
+
+        String url = configToSet.features['argocd']['resourceInclusionsCluster']
+
+        // If features.argocd.resourceInclusionsCluster is set in the config, validate if it's a proper URL and return
+        if (url) {
+            try {
+                // Attempt to create a URL object to validate it
+                log.debug("Validating user-provided features.argocd.resourceInclusionsCluster URL: {}", url)
+                new URL(url)
+                log.info("Found valid URL in features.argocd.resourceInclusionsCluster: {}", url)
+                return
+            } catch (MalformedURLException e) {
+                throw new IllegalArgumentException("Invalid URL for 'features.argocd.resourceInclusionsCluster': $url. ", e)
+            }
+        }
+
+        // If features.argocd.resourceInclusionsCluster is not set, attempt to determine it via Kubernetes ENVs
+        log.debug("Attempting to set features.argocd.resourceInclusionsCluster via Kubernetes ENV variables.")
+
+        String host = System.getenv("KUBERNETES_SERVICE_HOST")
+        String port = System.getenv("KUBERNETES_SERVICE_PORT")
+
+        String errorMessage = "Could not determine 'features.argocd.resourceInclusionsCluster' which is required when argocd.operator=true. " +
+                "Ensure Kubernetes environment variables 'KUBERNETES_SERVICE_HOST' and 'KUBERNETES_SERVICE_PORT' are set properly. " +
+                "Alternatively, try setting 'features.argocd.resourceInclusionsCluster' in the config to manually override."
+
+        if (!host || !port) {
+            throw new RuntimeException(errorMessage)
+        }
+
+        String internalClusterUrl = "https://${host}:${port}"
+        log.debug("Constructed internal Kubernetes API Server URL: {}", internalClusterUrl)
+
+        // Validate the constructed URL
+        try {
+            new URL(internalClusterUrl)
+            configToSet.features['argocd']['resourceInclusionsCluster'] = internalClusterUrl
+            log.info("Successfully set features.argocd.resourceInclusionsCluster via Kubernetes ENV to: {}", internalClusterUrl)
+        } catch (MalformedURLException e) {
+            throw new RuntimeException(errorMessage, e)
+        }
     }
 }

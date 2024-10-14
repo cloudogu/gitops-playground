@@ -57,6 +57,7 @@ class ConfigToConfigFileConverterTest {
                         remote        : true,
                         insecure      : true,
                         localHelmChartFolder : "folder",
+                        internalKubernetesApiUrl: '',
                         username: 'app-user',
                         password: 'app-pw',
                         yes           : true,
@@ -104,7 +105,11 @@ class ConfigToConfigFileConverterTest {
                                 url       : 'url-value',
                                 emailFrom : 'argocd@example.org',
                                 emailToUser : 'app-team@example.org',
-                                emailToAdmin : 'infra@example.org'
+                                emailToAdmin : 'infra@example.org',
+                                env: [
+                                        [name: "ENV_VAR_1", value: "value1"],
+                                        [name: "ENV_VAR_2", value: "value2"]
+                                ]
                         ],
                         mail   : [
                                 mailhog : false,
@@ -229,7 +234,6 @@ application:
   remote: true
   insecure: true
   localHelmChartFolder: "folder"
-  openshift: false
   username: "app-user"
   password: "app-pw"
   "yes": true
@@ -244,6 +248,7 @@ application:
   skipCrds: true
   namespaceIsolation: false
   netpols: false
+  openshift: false
 images:
   kubectl: "kubectl-value"
   helm: "helm-value"
@@ -271,6 +276,13 @@ features:
     emailFrom: "argocd@example.org"
     emailToUser: "app-team@example.org"
     emailToAdmin: "infra@example.org"
+    operator: false
+    env:
+    - name: "ENV_VAR_1"
+      value: "value1"
+    - name: "ENV_VAR_2"
+      value: "value2"
+    resourceInclusionsCluster: ""
   mail:
     mailhog: false
     mailhogUrl: "mailhog-url"
