@@ -23,6 +23,10 @@ spec:
   sourceNamespaces:
     - '${namePrefix}example-apps-staging'
     - '${namePrefix}example-apps-production'
+    <#if argocd.isOperator>
+    - '${namePrefix}argocd'
+    </#if>
+
 
   # Allow all namespaced-scoped resources to be created
   namespaceResourceWhitelist:

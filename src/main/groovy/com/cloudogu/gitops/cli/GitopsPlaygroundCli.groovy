@@ -21,7 +21,7 @@ import picocli.CommandLine.Option
 
 import static com.cloudogu.gitops.config.ConfigConstants.*
 import static groovy.json.JsonOutput.prettyPrint
-import static groovy.json.JsonOutput.toJson 
+import static groovy.json.JsonOutput.toJson
 /**
  * Provides the entrypoint to the application as well as all config parameters.
  * When changing parameters, make sure to update the Schema for the config file as well
@@ -200,6 +200,8 @@ class GitopsPlaygroundCli  implements Runnable {
     // args group ArgoCD operator
     @Option(names = ['--argocd'], description = ARGOCD_ENABLE_DESCRIPTION)
     private Boolean argocd
+    @Option(names = ['--argocd-operator'], description = ARGOCD_OPERATOR_DESCRIPTION)
+    private Boolean argocdOperator
     @Option(names = ['--argocd-url'], description = ARGOCD_URL_DESCRIPTION)
     private String argocdUrl
     @Option(names = ['--argocd-email-from'], description = ARGOCD_EMAIL_FROM_DESCRIPTION)
@@ -404,7 +406,7 @@ class GitopsPlaygroundCli  implements Runnable {
                 application: [
                         openshift     : openshift,
                         remote        : remote,
-                        mirrorRepos     : mirrorRepos, 
+                        mirrorRepos     : mirrorRepos,
                         destroy : destroy,
                         insecure      : insecure,
                         debug         : debug,
@@ -435,6 +437,7 @@ class GitopsPlaygroundCli  implements Runnable {
                         argocd : [
                                 active    : argocd,
                                 url       : argocdUrl,
+                                operator  : argocdOperator,
                                 emailFrom    : emailFrom,
                                 emailToUser  : emailToUser,
                                 emailToAdmin : emailToAdmin

@@ -115,7 +115,7 @@ class JenkinsTest {
                 'my-prefix-gitops', 'scmm-pw', 'credentials for accessing scm-manager')
 
         verify(jobManger).startJob('example-apps')
-
+        
         verify(jobManger).createCredential('my-prefix-example-apps', 'registry-user', 
                 'reg-usr', 'reg-pw', 'credentials for accessing the docker-registry for writing images built on jenkins')
         verify(jobManger, never()).createCredential(eq('my-prefix-example-apps'), eq('registry-proxy-user'),
