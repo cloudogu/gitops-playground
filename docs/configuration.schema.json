@@ -103,8 +103,8 @@
           "description" : "Sets Network Policies"
         },
         "openshift" : {
-          "type" : [ "boolean", "null" ],
-          "description" : "Install with openshift compatibility"
+          "type" : "boolean",
+          "description" : "When set, openshift specific resources and configurations are applied"
         },
         "password" : {
           "type" : [ "string", "null" ],
@@ -159,6 +159,21 @@
             "emailToUser" : {
               "type" : [ "string", "null" ],
               "description" : "Notifications, define Argo CD user / app-team recipient email address"
+            },
+            "env" : {
+              "description" : "Pass a list of env vars to Argo CD components. Currently only works with operator",
+              "type" : "array",
+              "items" : {
+                "type" : "object"
+              }
+            },
+            "operator" : {
+              "type" : "boolean",
+              "description" : "Install ArgoCD via an already running ArgoCD Operator"
+            },
+            "resourceInclusionsCluster" : {
+              "type" : "string",
+              "description" : "Internal Kubernetes API Server URL https://IP:PORT (kubernetes.default.svc). Needed in argocd-operator resourceInclusions. Use this parameter if argocd.operator=true and NOT running inside a Pod (remote mode). Full URL needed, for example: https://100.125.0.1:443"
             },
             "url" : {
               "type" : [ "string", "null" ],

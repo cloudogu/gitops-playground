@@ -11,6 +11,10 @@ class CommandExecutorForTest extends CommandExecutor {
     void enqueueOutput(Output output) {
         outputs.add(output)
     }
+
+    void enqueueOutputs(Queue<Output> outputsQueue) {
+        outputs.addAll(outputsQueue)
+    }
     
     // This is actually only set when an env is passed to CommandExecutor
     List<GString> environment = [] 
@@ -18,8 +22,13 @@ class CommandExecutorForTest extends CommandExecutor {
     @Override
     protected Output getOutput(Process proc, String command, boolean failOnError) {
         actualCommands += command
+        Output output = outputs.poll() ?: new Output('', '', 0)
 
-        return outputs.poll() ?: new Output('', '', 0)
+        if (failOnError && output.exitCode > 0) {
+            throw new RuntimeException("Executing command failed: ${command}")
+        }
+
+        return output
     }
 
     @Override

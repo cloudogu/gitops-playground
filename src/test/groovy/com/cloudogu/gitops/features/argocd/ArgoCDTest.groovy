@@ -18,9 +18,11 @@ import java.util.stream.Collectors
 import static org.assertj.core.api.Assertions.assertThat
 import static org.assertj.core.api.Assertions.fail
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode
+import static groovy.test.GroovyAssert.shouldFail
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.ArgumentMatchers.anyString
 import static org.mockito.Mockito.*
+import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable
 
 class ArgoCDTest {
     Map buildImages = [
@@ -32,6 +34,7 @@ class ArgoCDTest {
     ]
     Config config = Config.fromMap(
             application : [
+                    openshift           : false,
                     remote              : false,
                     insecure            : false,
                     password            : '123',
@@ -66,10 +69,13 @@ class ArgoCDTest {
             ],
             features    : [
                     argocd      : [
+                            operator    : false,
                             active      : true,
+                            configOnly  : true,
                             emailFrom   : 'argocd@example.org',
                             emailToUser : 'app-team@example.org',
-                            emailToAdmin: 'infra@example.org'
+                            emailToAdmin: 'infra@example.org',
+                            resourceInclusionsCluster: ''
                     ],
                     mail        : [
                             mailhog     : true,
@@ -91,7 +97,7 @@ class ArgoCDTest {
             ]
     )
 
-    CommandExecutorForTest k8sCommands
+    CommandExecutorForTest k8sCommands = new CommandExecutorForTest()
     CommandExecutorForTest helmCommands = new CommandExecutorForTest()
     ScmmRepo argocdRepo
     String actualHelmValuesFile
@@ -106,7 +112,12 @@ class ArgoCDTest {
 
     @Test
     void 'Installs argoCD'() {
-        createArgoCD().install()
+        def argocd = createArgoCD()
+
+        // Simulate argocd Namespace does not exist
+        k8sCommands.enqueueOutput(new CommandExecutor.Output('namespace not found', '', 1))
+
+        argocd.install()
 
         k8sCommands.assertExecuted('kubectl create namespace argocd')
 
@@ -512,7 +523,6 @@ class ArgoCDTest {
 
         createArgoCD().install()
 
-        k8sCommands.assertExecuted('kubectl create namespace monitoring')
         k8sCommands.assertExecuted("kubectl apply -f ${crdPath}")
     }
 
@@ -522,7 +532,6 @@ class ArgoCDTest {
 
         createArgoCD().install()
 
-        k8sCommands.assertExecuted('kubectl create namespace monitoring')
         k8sCommands.assertExecuted("kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/kube-prometheus-stack-42.0.3/charts/kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml")
     }
 
@@ -609,6 +618,7 @@ class ArgoCDTest {
     void 'Pushes repos with name-prefix'() {
         config.application.namePrefix = 'abc-'
         config.application.namePrefixForEnvVars = 'ABC_'
+
         createArgoCD().install()
 
         assertArgoCdYamlPrefixes(ArgoCD.SCMM_URL_INTERNAL, 'abc-')
@@ -641,7 +651,6 @@ class ArgoCDTest {
   tag: latest
 """)
     }
-
     @Test
     void 'Sets image pull secrets for nginx'() {
         config.registry.createImagePullSecrets = true
@@ -681,7 +690,7 @@ class ArgoCDTest {
     void 'disables serviceMonitor, when monitoring not active'() {
         config.application.skipCrds = true
 
-        createArgoCD().createMonitoringNamespaceAndCrd()
+        createArgoCD().createMonitoringCrd()
 
         k8sCommands.assertNotExecuted('kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/')
     }
@@ -1118,6 +1127,258 @@ class ArgoCDTest {
         }
     }
 
+    @Test
+    void 'Prepares ArgoCD repo with Operator configuration file'() {
+        def argocd = setupOperatorTest()
+
+        argocd.install()
+
+        def argocdConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH)
+        def rbacConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_RBAC_PATH)
+
+        assertThat(argocdConfigPath.toFile()).exists()
+        assertThat(rbacConfigPath.toFile()).exists()
+
+        def yaml = parseActualYaml(argocdConfigPath.toFile().toString())
+        assertThat(yaml['apiVersion']).isEqualTo('argoproj.io/v1beta1')
+        assertThat(yaml['kind']).isEqualTo('ArgoCD')
+    }
+
+    @Test
+    void 'Deploys with operator without OpenShift configuration'() {
+        def argoCD = setupOperatorTest(openshift: false)
+
+        argoCD.install()
+
+        def argocdConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH)
+        k8sCommands.assertExecuted("kubectl apply -f ${argocdConfigPath}")
+
+        def yaml = parseActualYaml(argocdConfigPath.toFile().toString())
+        assertThat(yaml['spec']['rbac']).isNull()
+        assertThat(yaml['spec']['sso']).isNull()
+        assertThat(yaml['spec']['server']['service']['type']).isEqualTo('NodePort')
+    }
+
+    @Test
+    void 'Deploys with operator with OpenShift configuration'() {
+        def argoCD = setupOperatorTest(openshift: true)
+
+        argoCD.install()
+
+        def argocdConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH)
+        k8sCommands.assertExecuted("kubectl apply -f ${argocdConfigPath}")
+
+        def yaml = parseActualYaml(argocdConfigPath.toFile().toString())
+        assertThat(yaml['spec']['sso']).isNotNull()
+        assertThat(yaml['spec']['sso']['dex']['openShiftOAuth']).isEqualTo(true)
+        assertThat(yaml['spec']['sso']['provider']).isEqualTo('dex')
+        assertThat(yaml['spec']['rbac']).isNotNull()
+        assertThat(yaml['spec']['server']['route']['enabled']).isEqualTo(true)
+
+        k8sCommands.assertNotExecuted("kubectl patch service argocd-server -n argocd")
+    }
+
+    @Test
+    void 'Correctly sets resourceInclusions from config'() {
+        def argoCD = setupOperatorTest()
+
+        // Set the config to a custom resourceInclusionsCluster value
+        config.features['argocd']['resourceInclusionsCluster'] = 'https://192.168.0.1:6443'
+
+        argoCD.install()
+
+        def argocdConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH)
+        def yaml = parseActualYaml(argocdConfigPath.toFile().toString())
+
+        def expectedClusterUrl = 'https://192.168.0.1:6443'
+
+        // Retrieve and parse the resourceInclusions string into structured YAML
+        def resourceInclusionsString = yaml['spec']['resourceInclusions'] as String
+        def parsedResourceInclusions = new YamlSlurper().parseText(resourceInclusionsString)
+
+        // Iterate over the parsed resource inclusions and check the 'clusters' field
+        parsedResourceInclusions.each { resource ->
+            assertThat(resource as Map).containsKey('clusters')
+            assertThat(resource['clusters'] as List<String>).contains(expectedClusterUrl)
+        }
+    }
+
+    @Test
+    void 'resourceInclusionsCluster from config file trumps ENVs'() {
+        def argoCD = setupOperatorTest()
+
+        // Set the config to a custom internalKubernetesApiUrl value
+        config.application['internalKubernetesApiUrl'] = 'https://192.168.0.1:6443'
+
+        // Set environment variables for Kubernetes API server
+        withEnvironmentVariable("KUBERNETES_SERVICE_HOST", "100.125.0.1")
+                .and("KUBERNETES_SERVICE_PORT", "443")
+                .execute {
+                    argoCD.install()
+                }
+
+        def argocdConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH)
+        def yaml = parseActualYaml(argocdConfigPath.toFile().toString())
+
+        def expectedClusterUrlFromConfig = "https://192.168.0.1:6443"
+
+        // Retrieve and parse the resourceInclusions string into structured YAML
+        def resourceInclusionsString = yaml['spec']['resourceInclusions'] as String
+        def parsedResourceInclusions = new YamlSlurper().parseText(resourceInclusionsString)
+
+        // Ensure that the clusters field uses the config value, not the env variables
+        parsedResourceInclusions.each { resource ->
+            assertThat(resource as Map).containsKey('clusters')
+            assertThat(resource['clusters'] as List<String>).contains(expectedClusterUrlFromConfig)
+            // Make sure the environment variable value does not appear
+            assertThat(resource['clusters'] as List<String>).doesNotContain("https://100.125.0.1:443")
+        }
+    }
+
+    @Test
+    void 'Sets env variables in ArgoCD components when provided'() {
+        def argoCD = setupOperatorTest()
+
+        // Set environment variables for ArgoCD
+        config.features['argocd']['env'] = [
+                [name: "ENV_VAR_1", value: "value1"],
+                [name: "ENV_VAR_2", value: "value2"]
+        ]
+
+        argoCD.install()
+
+        def argocdConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH)
+        def yaml = parseActualYaml(argocdConfigPath.toFile().toString())
+
+        def expectedEnv = [
+                [name: "ENV_VAR_1", value: "value1"],
+                [name: "ENV_VAR_2", value: "value2"]
+        ]
+
+        // Check that the env variables are added to the relevant components
+        assertThat(yaml['spec']['applicationSet']['env']).isEqualTo(expectedEnv)
+        assertThat(yaml['spec']['notifications']['env']).isEqualTo(expectedEnv)
+        assertThat(yaml['spec']['controller']['env']).isEqualTo(expectedEnv)
+        assertThat(yaml['spec']['repo']['env']).isEqualTo(expectedEnv)
+        assertThat(yaml['spec']['server']['env']).isEqualTo(expectedEnv)
+    }
+
+    @Test
+    void 'Does not set env variables when none are provided'() {
+        def argoCD = setupOperatorTest()
+
+        // Ensure env is an empty list (default)
+        config.features['argocd']['env'] = []
+
+        argoCD.install()
+
+        def argocdConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH)
+        def yaml = parseActualYaml(argocdConfigPath.toFile().toString())
+
+        // Check that the env variables are not present
+        assertThat(yaml['spec']['applicationSet'] as Map).doesNotContainKey('env')
+        assertThat(yaml['spec']['notifications'] as Map).doesNotContainKey('env')
+        assertThat(yaml['spec']['controller'] as Map).doesNotContainKey('env')
+        assertThat(yaml['spec']['redis'] as Map).doesNotContainKey('env')
+        assertThat(yaml['spec']['repo'] as Map).doesNotContainKey('env')
+        assertThat(yaml['spec']['server'] as Map).doesNotContainKey('env')
+    }
+
+    @Test
+    void 'Sets single env variable in ArgoCD components when provided'() {
+        def argoCD = setupOperatorTest()
+
+        // Set a single environment variable for ArgoCD
+        config.features['argocd']['env'] = [
+                [name: "ENV_VAR_SINGLE", value: "singleValue"]
+        ]
+
+        argoCD.install()
+
+        def argocdConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH)
+        def yaml = parseActualYaml(argocdConfigPath.toFile().toString())
+
+        def expectedEnv = [
+                [name: "ENV_VAR_SINGLE", value: "singleValue"]
+        ]
+
+        // Check that the single env variable is added to the relevant components
+        assertThat(yaml['spec']['applicationSet']['env']).isEqualTo(expectedEnv)
+        assertThat(yaml['spec']['notifications']['env']).isEqualTo(expectedEnv)
+        assertThat(yaml['spec']['controller']['env']).isEqualTo(expectedEnv)
+        assertThat(yaml['spec']['server']['env']).isEqualTo(expectedEnv)
+    }
+
+    @Test
+    void 'Creates all necessary namespaces'() {
+        def argoCD = createArgoCD()
+        simulateNamespaceCreation()
+
+        argoCD.install()
+
+        getNamespaceList().each { namespace ->
+            k8sCommands.assertExecuted("kubectl create namespace ${namespace}")
+        }
+    }
+
+    private ArgoCD setupOperatorTest(Map options = [:]) {
+        config.features['argocd']['operator'] = true
+        config.features['argocd']['resourceInclusionsCluster'] = 'https://192.168.0.1:6443'
+        config.application['openshift'] = options.openshift ?: false
+
+        def argoCD = createArgoCD()
+
+        setupMockResponses()
+
+        return argoCD
+    }
+
+    private void setupMockResponses() {
+        k8sCommands.enqueueOutputs([
+                queueUpAllNamespacesExist(),
+                new CommandExecutor.Output('', '', 0), // Monitoring CRDs applied
+                new CommandExecutor.Output('', '', 0), // ArgoCD Secret applied
+                new CommandExecutor.Output('', '', 0), // Labeling ArgoCD Secret
+                new CommandExecutor.Output('', '', 0), // ArgoCD operator YAML applied
+                new CommandExecutor.Output('', 'Available', 0), // ArgoCD resource reached desired phase
+                new CommandExecutor.Output('', createServiceJson(), 0),
+                new CommandExecutor.Output('', '', 0),
+                new CommandExecutor.Output('', createServiceJson(), 0),
+                new CommandExecutor.Output('', '', 0)
+        ].flatten() as Queue<CommandExecutor.Output>)
+    }
+
+    private static String createServiceJson() {
+        return '''
+        {
+            "spec": {
+                "ports": [
+                    {"name": "http", "nodePort": 30000},
+                    {"name": "https", "nodePort": 30001}
+                ]
+            }
+        }'''
+    }
+
+    private void simulateNamespaceCreation() {
+        Queue<CommandExecutor.Output> outputs = new LinkedList<CommandExecutor.Output>()
+        getNamespaceList().each { namespace ->
+            outputs.add(new CommandExecutor.Output("${namespace} not found", "", 1))
+            outputs.add(new CommandExecutor.Output("${namespace} created", "", 0))
+        }
+        k8sCommands.enqueueOutputs(outputs)
+    }
+
+    private static Queue<CommandExecutor.Output> queueUpAllNamespacesExist() {
+        return new LinkedList<CommandExecutor.Output>(
+                getNamespaceList().collect { namespace -> new CommandExecutor.Output(namespace, "", 0) }
+        )
+    }
+
+    private static List<String> getNamespaceList() {
+        return ["argocd", "monitoring", "ingress-nginx", "example-apps-staging", "example-apps-production", "secrets"]
+    }
+
     class ArgoCDForTest extends ArgoCD {
         ArgoCDForTest(Config config, CommandExecutorForTest helmCommands) {
             super(config, new K8sClientForTest(config), new HelmClient(helmCommands), new FileSystemUtils(),
@@ -1141,3 +1402,4 @@ class ArgoCDTest {
     }
 
 }
+

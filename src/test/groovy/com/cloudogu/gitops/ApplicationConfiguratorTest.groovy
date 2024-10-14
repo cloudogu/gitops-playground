@@ -13,7 +13,7 @@ import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.anyString
 import static org.mockito.Mockito.mock
-import static org.mockito.Mockito.when 
+import static org.mockito.Mockito.when
 
 class ApplicationConfiguratorTest {
 
@@ -95,12 +95,18 @@ class ApplicationConfiguratorTest {
         assertThat(actualConfig.jenkins.url).isEqualTo(EXPECTED_JENKINS_URL)
         assertThat(actualConfig.jenkins.internal).isEqualTo(false)
         
+        assertThat(actualConfig['features']['argocd']['active']).isEqualTo(EXPECTED_ARGOCD)
+        assertThat(actualConfig['features']['argocd']['env']).isEqualTo([])
+
+
+        assertThat(actualConfig['jenkins']['url']).isEqualTo(EXPECTED_JENKINS_URL)
+        assertThat(actualConfig['jenkins']['internal']).isEqualTo(false)
         assertThat(actualConfig.features.secrets.vault.mode).isEqualTo(EXPECTED_VAULT_MODE)
-        
+
         // Dynamic value (depends on vault mode)
         assertThat(actualConfig.features.secrets.active).isEqualTo(true)
     }
-    
+
     @Test
     void "uses k8s services for jenkins and scmm if running as k8s job"() {
         testConfig.jenkins['url'] = ''
@@ -152,7 +158,7 @@ class ApplicationConfiguratorTest {
     @Test
     void 'Fails if createImagePullSecrets is used without secrets'() {
         testConfig['registry']['createImagePullSecrets'] = true
-        
+
         def exception = shouldFail(RuntimeException) {
             applicationConfigurator.initAndValidateConfig(Config.fromMap(testConfig))
         }
@@ -374,5 +380,217 @@ class ApplicationConfiguratorTest {
             applicationConfigurator.initAndValidateConfig(Config.fromMap(testConfig))
         }
         assertThat(exception.message).isEqualTo(expectedException)
+    }
+
+    @Test
+    void "validateEnvConfig allows valid env entries"() {
+        testConfig.features['argocd']['operator'] = true
+        testConfig.features['argocd']['resourceInclusionsCluster'] = 'https://100.125.0.1:443'
+        testConfig.features['argocd']['env'] = [
+                [name: "ENV_VAR_1", value: "value1"],
+                [name: "ENV_VAR_2", value: "value2"]
+        ]
+
+        // No exception should be thrown
+        applicationConfigurator.setConfig(testConfig)
+    }
+
+    @Test
+    void "validateEnvConfig throws exception for missing 'name' in env entry"() {
+        testConfig.features['argocd']['operator'] = true
+        testConfig.features['argocd']['resourceInclusionsCluster'] = 'https://100.125.0.1:443'
+        testConfig.features['argocd']['env'] = [
+                [name: "ENV_VAR_1", value: "value1"],
+                [value: "value2"]  // Missing 'name'
+        ]
+
+        def exception = shouldFail(IllegalArgumentException) {
+            applicationConfigurator.setConfig(testConfig)
+        }
+
+        assertThat(exception.message).contains("Each env variable in features.argocd.env must be a map with 'name' and 'value'. Invalid entry found: [value:value2]")
+    }
+
+    @Test
+    void "validateEnvConfig throws exception for missing 'value' in env entry"() {
+        testConfig.features['argocd']['operator'] = true
+        testConfig.features['argocd']['resourceInclusionsCluster'] = 'https://100.125.0.1:443'
+        testConfig.features['argocd']['env'] = [
+                [name: "ENV_VAR_1", value: "value1"],
+                [name: "ENV_VAR_2"]  // Missing 'value'
+        ]
+
+        def exception = shouldFail(IllegalArgumentException) {
+            applicationConfigurator.setConfig(testConfig)
+        }
+
+        assertThat(exception.message).contains("Each env variable in features.argocd.env must be a map with 'name' and 'value'. Invalid entry found: [name:ENV_VAR_2]")
+    }
+
+    @Test
+    void "validateEnvConfig throws exception for non-map env entry"() {
+        testConfig.features['argocd']['operator'] = true
+        testConfig.features['argocd']['resourceInclusionsCluster'] = 'https://100.125.0.1:443'
+        testConfig.features['argocd']['env'] = [
+                [name: "ENV_VAR_1", value: "value1"],
+                "invalid_entry"  // Invalid entry
+        ]
+
+        def exception = shouldFail(IllegalArgumentException) {
+            applicationConfigurator.setConfig(testConfig)
+        }
+
+        assertThat(exception.message).contains("Each env variable in features.argocd.env must be a map with 'name' and 'value'. Invalid entry found: invalid_entry")
+    }
+
+    @Test
+    void "validateEnvConfig allows empty env list"() {
+        testConfig.features['argocd']['operator'] = true
+        testConfig.features['argocd']['resourceInclusionsCluster'] = 'https://100.125.0.1:443'
+        testConfig.features['argocd']['env'] = []
+
+        // No exception should be thrown
+        applicationConfigurator.setConfig(testConfig)
+    }
+
+    @Test
+    void "validateEnvConfig skips validation when operator is false"() {
+        testConfig.features['argocd']['operator'] = false
+        testConfig.features['argocd']['env'] = [
+                [name: "ENV_VAR_1", value: "value1"],
+                [value: "value2"]  // Invalid entry, but should be ignored
+        ]
+
+        // No exception should be thrown
+        applicationConfigurator.setConfig(testConfig)
+    }
+
+    @Test
+    void "should skip resourceInclusionsCluster setup when ArgoCD operator is not enabled"() {
+        testConfig.features['argocd']['operator'] = false
+
+        // Calling the method should not make any changes to the config
+        applicationConfigurator.setConfig(testConfig)
+
+        assertThat(testLogger.getLogs().search("ArgoCD operator is not enabled. Skipping features.argocd.resourceInclusionsCluster setup."))
+                .isNotEmpty()
+    }
+
+    @Test
+    void "should validate and accept user-provided valid resourceInclusionsCluster URL"() {
+        testConfig.features['argocd']['operator'] = true
+        testConfig.features['argocd']['resourceInclusionsCluster'] = "https://valid-url.com"
+
+        // Calling the method should accept the valid URL and not throw any exception
+        applicationConfigurator.setConfig(testConfig)
+
+        assertThat(testConfig.features['argocd']['resourceInclusionsCluster']).isEqualTo("https://valid-url.com")
+        assertThat(testLogger.getLogs().search("Validating user-provided features.argocd.resourceInclusionsCluster URL: https://valid-url.com"))
+                .isNotEmpty()
+        assertThat(testLogger.getLogs().search("Found valid URL in features.argocd.resourceInclusionsCluster: https://valid-url.com"))
+                .isNotEmpty()
+    }
+
+    @Test
+    void "should throw exception for user-provided invalid resourceInclusionsCluster URL"() {
+        testConfig.features['argocd']['operator'] = true
+        testConfig.features['argocd']['resourceInclusionsCluster'] = "invalid-url"
+
+        def exception = shouldFail(IllegalArgumentException) {
+            applicationConfigurator.setConfig(testConfig)
+        }
+
+        assertThat(exception.message).contains("Invalid URL for 'features.argocd.resourceInclusionsCluster': invalid-url.")
+    }
+
+    @Test
+    void "should set resourceInclusionsCluster using Kubernetes ENV variables when not provided by user"() {
+        testConfig.features['argocd']['operator'] = true
+        testConfig.features['argocd']['resourceInclusionsCluster'] = null
+
+        // Set Kubernetes ENV variables
+        withEnvironmentVariable("KUBERNETES_SERVICE_HOST", "127.0.0.1")
+                .and("KUBERNETES_SERVICE_PORT", "6443")
+                .execute {
+                    Map actualConfig = applicationConfigurator.setConfig(testConfig)
+
+                    assertThat(actualConfig.features['argocd']['resourceInclusionsCluster']).isEqualTo("https://127.0.0.1:6443")
+
+                    assertThat(testLogger.getLogs().search("Successfully set features.argocd.resourceInclusionsCluster via Kubernetes ENV to: https://127.0.0.1:6443"))
+                            .isNotEmpty()
+                }
+    }
+
+    @Test
+    void "should throw exception when Kubernetes ENV variables are not set and resourceInclusionsCluster is null"() {
+        testConfig.features['argocd']['operator'] = true
+        testConfig.features['argocd']['resourceInclusionsCluster'] = null
+
+        def exception = shouldFail(RuntimeException) {
+            applicationConfigurator.setConfig(testConfig)
+        }
+
+        assertThat(exception.message).contains("Could not determine 'features.argocd.resourceInclusionsCluster' which is required when argocd.operator=true. Ensure Kubernetes environment variables 'KUBERNETES_SERVICE_HOST' and 'KUBERNETES_SERVICE_PORT' are set properly.")
+    }
+
+    @Test
+    void "should throw exception when Kubernetes ENV variables are not set and resourceInclusionsCluster is empty"() {
+        testConfig.features['argocd']['operator'] = true
+        testConfig.features['argocd']['resourceInclusionsCluster'] = ''
+
+        def exception = shouldFail(RuntimeException) {
+            applicationConfigurator.setConfig(testConfig)
+        }
+
+        assertThat(exception.message).contains("Could not determine 'features.argocd.resourceInclusionsCluster' which is required when argocd.operator=true. Ensure Kubernetes environment variables 'KUBERNETES_SERVICE_HOST' and 'KUBERNETES_SERVICE_PORT' are set properly.")
+    }
+
+    @Test
+    void "should throw exception for invalid Kubernetes constructed URL"() {
+        // Set ArgoCD operator to true
+        testConfig.features['argocd']['operator'] = true
+        testConfig.features['argocd']['resourceInclusionsCluster'] = null
+
+        // Set invalid Kubernetes ENV variables
+        withEnvironmentVariable("KUBERNETES_SERVICE_HOST", "invalid_host")
+                .and("KUBERNETES_SERVICE_PORT", "not_a_port")
+                .execute {
+                    def exception = shouldFail(RuntimeException) {
+                        applicationConfigurator.setConfig(testConfig)
+                    }
+
+                    assertThat(exception.message).contains("Could not determine 'features.argocd.resourceInclusionsCluster' which is required when argocd.operator=true.")
+                }
+
+        assertThat(testLogger.getLogs().search("Constructed internal Kubernetes API Server URL: https://invalid_host:not_a_port")).isNotEmpty()
+    }
+
+    List<String> getAllFieldNames(Class clazz, String parentField = '', List<String> fieldNames = []) {
+        clazz.declaredFields.each { field ->
+            def currentField = parentField + field.name
+            if (field.type instanceof Class
+                    && !field.type.isArray()
+                    && field.type.name.startsWith(Schema.class.getPackageName())) {
+                println "nested class $field.type, $currentField + '.', $fieldNames"
+                getAllFieldNames(field.type, currentField + '.', fieldNames)
+            } else {
+                if (!field.name.startsWith('_') && !field.name.startsWith('$') && field.name != 'metaClass') {
+                    fieldNames.add(currentField)
+                }
+            }
+        }
+        return fieldNames
+    }
+
+    List<String> getAllKeys(Map map, String parentKey = '', List<String> keysList = []) {
+        map.each { key, value ->
+            def currentKey = parentKey + key
+            if (value instanceof Map && !value.isEmpty()) {
+                getAllKeys(value, currentKey + '.', keysList)
+            } else {
+                keysList.add(currentKey)
+            }
+        }
+        return keysList
     }
 }

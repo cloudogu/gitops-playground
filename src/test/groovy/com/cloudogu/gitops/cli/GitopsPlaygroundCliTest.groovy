@@ -8,6 +8,7 @@ import com.cloudogu.gitops.Application
 import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.destroy.Destroyer
+import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.K8sClient
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 import io.micronaut.context.ApplicationContext
@@ -52,7 +53,38 @@ class GitopsPlaygroundCliTest {
         verify(applicationConfigurator).initAndValidateConfig(any(Config))
         verify(application).start()
     }
+
+    @Test
+    void 'Starts with config file'() {
+        def cli = new GitopsPlaygroundCliForTest()
+        cli.configFile = 'abc'
+        cli.run()
+
+        // Verify the first interaction
+        verify(applicationConfigurator).setConfig(eq(new File('abc')), eq(true))
+
+        // Verify the second interaction if any
+        verify(applicationConfigurator).setConfig(any(Map), eq(false))
+
+        // Check application starts
+        verify(application).start()
+    }
     
+    @Test
+    void 'Starts with config map'() {
+        k8sClient.commandExecutorForTest.enqueueOutput(
+                new CommandExecutor.Output('', 'config map', 0))
+        
+        def cli = new GitopsPlaygroundCliForTest()
+        cli.configMap = 'abc'
+        cli.run()
+
+        verify(applicationConfigurator).setConfig(any(Map), eq(false))
+        // Create internal config only once, avoids repetitive log outputs
+        verify(applicationConfigurator).setConfig(eq('config map'), eq(true))
+        verify(application).start()
+    }
+
     @Test
     void 'Outputs config file'() {
         def status = cli.run('--output-config-file')

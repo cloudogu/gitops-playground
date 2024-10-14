@@ -45,7 +45,6 @@ interface ConfigConstants {
     // group remote
     String REMOTE_DESCRIPTION = 'Expose services as LoadBalancers'
     String INSECURE_DESCRIPTION = 'Sets insecure-mode in cURL which skips cert validation'
-    String OPENSHIFT_DESCRIPTION = 'Install with openshift compatibility'
     String LOCAL_HELM_CHART_FOLDER_DESCRIPTION = 'A local folder (within the GOP image mostly) where the local mirrors of all helm charts are loaded from when mirror-Repos is active. This is mostly needed for development.'
 
     // group tool configuration
@@ -81,6 +80,8 @@ interface ConfigConstants {
     String REPO_URL_DESCRIPTION = 'HTTP URL of the repo'
     String REPO_REF_DESCRIPTION = 'Ref of the repo to use, e.g. a tag, commit or branch'
     String NETPOLS_DESCRIPTION = 'Sets Network Policies'
+    String OPENSHIFT_DESCRIPTION = 'When set, openshift specific resources and configurations are applied'
+    
 
     // group metrics
     String MONITORING_DESCRIPTION = 'Config parameters for the Monitoring system (prometheus)'
@@ -128,6 +129,10 @@ interface ConfigConstants {
     String ARGOCD_EMAIL_FROM_DESCRIPTION = 'Notifications, define Argo CD sender email address'
     String ARGOCD_EMAIL_TO_USER_DESCRIPTION = 'Notifications, define Argo CD user / app-team recipient email address'
     String ARGOCD_EMAIL_TO_ADMIN_DESCRIPTION = 'Notifications, define Argo CD admin recipient email address'
+    String ARGOCD_OPERATOR_DESCRIPTION = 'Install ArgoCD via an already running ArgoCD Operator'
+    String ARGOCD_ENV_DESCRIPTION = 'Pass a list of env vars to Argo CD components. Currently only works with operator'
+    String ARGOCD_RESOURCE_INCLUSIONS_CLUSTER = 'Internal Kubernetes API Server URL https://IP:PORT (kubernetes.default.svc). Needed in argocd-operator resourceInclusions. Use this parameter if argocd.operator=true and NOT running inside a Pod (remote mode). Full URL needed, for example: https://100.125.0.1:443'
+
 
     // group example apps
     String EXAMPLE_APPS_DESCRIPTION = 'Config parameters for the example apps and exercises'

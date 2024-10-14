@@ -5,6 +5,7 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TestScmmRepoProvider
+import com.fasterxml.jackson.annotation.JsonFormat
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 
@@ -69,20 +70,59 @@ spec:
         assertThat(sources[0]['path']).isEqualTo('chartName')
     }
 
-    private ArgoCdApplicationStrategy createStrategy() {
-        Config config = new Config(
-                application: new Config.ApplicationSchema(
-                        namePrefix: 'foo-',
-                        gitName: 'Cloudogu',
-                        gitEmail: 'hello@cloudogu.com'
-                ),
-                scmm: new Config.ScmmSchema(
-                        username: "dont-care-username",
-                        password: "dont-care-password",
-                        protocol: "https",
-                        host: "localhost"
-                )
-        )
+    @Test
+    void 'deploys feature with argocdOperator true, setting CreateNamespace to false'() {
+        def strategy = createStrategy(true)
+        File valuesYaml = File.createTempFile('values', 'yaml')
+        valuesYaml.text = """
+    param1: value1
+    param2: value2
+    """
+        strategy.deployFeature("repoURL", "repoName", "chartName", "version",
+                "namespace", "releaseName", valuesYaml.toPath())
+
+        def argoCdApplicationYaml = new File("$localTempDir/argocd/releaseName.yaml")
+        assertThat(argoCdApplicationYaml.text).contains("CreateNamespace=false")
+    }
+
+    @Test
+    void 'deploys feature with argocdOperator false, setting CreateNamespace to true'() {
+        def strategy = createStrategy(false)
+        File valuesYaml = File.createTempFile('values', 'yaml')
+        valuesYaml.text = """
+    param1: value1
+    param2: value2
+    """
+        strategy.deployFeature("repoURL", "repoName", "chartName", "version",
+                "namespace", "releaseName", valuesYaml.toPath())
+
+        def argoCdApplicationYaml = new File("$localTempDir/argocd/releaseName.yaml")
+        assertThat(argoCdApplicationYaml.text).contains("CreateNamespace=true")
+    }
+
+    private ArgoCdApplicationStrategy createStrategy(boolean argocdOperator = false) {
+        private ArgoCdApplicationStrategy createStrategy() {
+
+        }
+            Config config = new Config(
+                    application: new Config.ApplicationSchema(
+                            namePrefix: 'foo-',
+                            gitName: 'Cloudogu',
+                            gitEmail: 'hello@cloudogu.com'
+                    ),
+                    scmm: new Config.ScmmSchema(
+                            username: "dont-care-username",
+                            password: "dont-care-password",
+                            protocol: "https",
+                            host: "localhost"
+                    ),
+                    //TODO
+                    features: new Config.FeaturesSchema(
+                            argocd: new ArgoCDSchema(
+                                    operator: argocdOperator
+                            )
+                    )
+            )
 
 
 

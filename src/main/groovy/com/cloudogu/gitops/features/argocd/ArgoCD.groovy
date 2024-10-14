@@ -2,7 +2,6 @@ package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
-
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import com.cloudogu.gitops.utils.*
@@ -21,6 +20,8 @@ import java.nio.file.Path
 @Order(100)
 class ArgoCD extends Feature {
     static final String HELM_VALUES_PATH = 'argocd/values.yaml'
+    static final String OPERATOR_CONFIG_PATH = 'operator/argocd.yaml'
+    static final String OPERATOR_RBAC_PATH = 'operator/rbac'
     static final String CHART_YAML_PATH = 'argocd/Chart.yaml'
     static final String SCMM_URL_INTERNAL = 'http://scmm-scm-manager.default.svc.cluster.local/scm'
     static final String MONITORING_RESOURCES_PATH = '/misc/monitoring/'
@@ -142,6 +143,17 @@ class ArgoCD extends Feature {
     private void prepareGitOpsRepos() {
 
         if (!config.features.secrets.active) {
+        if(config.features['argocd']['operator']) {
+            log.debug("Deleting unnecessary argocd (argocd helm variant) folder from argocd repo: ${argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
+            deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/argocd'
+            log.debug("Deleting unnecessary namespaces resources from clusterResources repo: ${clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
+            deleteFile clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/misc/namespaces.yaml'
+        } else {
+            log.debug("Deleting unnecessary operator (argocd operator variant) folder from argocd repo: ${argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
+            deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/operator'
+        }
+
+        if (!config.features['secrets']['active']) {
             log.debug("Deleting unnecessary secrets folder from cluster resources: ${clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
             deleteDir clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/misc/secrets'
         }
@@ -195,12 +207,12 @@ class ArgoCD extends Feature {
         prepareArgoCdRepo()
 
         def namePrefix = config.application.namePrefix
-        def argocdNamespace = 'argocd'
+        def namespaceList = getNamespaceList()
         
-        log.debug('Creating namespace for argocd')
-        k8sClient.createNamespace(argocdNamespace)
+        log.debug("Creating namespaces")
+        k8sClient.createNamespaces(namespaceList)
 
-        createMonitoringNamespaceAndCrd()
+        createMonitoringCrd()
 
         log.debug('Creating repo credential secret that is used by argocd to access repos in SCM-Manager')
         // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo 
@@ -225,7 +237,23 @@ class ArgoCD extends Feature {
             )
         }
 
+        if(config.features['argocd']['operator']) {
+            deployWithOperator("argocd")
+        } else {
+            deployWithHelm(namePrefix, "argocd")
+        }
 
+        // Bootstrap root application
+        k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'projects/argocd.yaml').toString())
+        k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'applications/bootstrap.yaml').toString())
+    }
+
+    private static List<String> getNamespaceList() {
+        def namespaceList = ["argocd", "monitoring", "ingress-nginx", "example-apps-staging", "example-apps-production", "secrets"]
+        return namespaceList
+    }
+
+    private void deployWithHelm(namePrefix, String argocdNamespace) {
         // Install umbrella chart from folder
         String umbrellaChartPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'argocd/')
         // Even if the Chart.lock already contains the repo, we need to add it before resolving it
@@ -235,22 +263,18 @@ class ArgoCD extends Feature {
         helmClient.addRepo('argo', helmDependencies[0]['repository'] as String)
         helmClient.dependencyBuild(umbrellaChartPath)
         helmClient.upgrade('argocd', umbrellaChartPath, [namespace: "${namePrefix}${argocdNamespace}"])
-         
-        log.debug("Setting new argocd admin password")
-        // Set admin password imperatively here instead of values.yaml, because we don't want it to show in git repo 
-        String bcryptArgoCDPassword = BCrypt.hashpw(password, BCrypt.gensalt(4))
-        k8sClient.patch('secret', 'argocd-secret', 'argocd', 
-                [stringData: ['admin.password': bcryptArgoCDPassword ] ])
-
-        // Bootstrap root application
-        k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'projects/argocd.yaml').toString())
-        k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'applications/bootstrap.yaml').toString())
 
         // Delete helm-argo secrets to decouple from helm.
         // This does not delete Argo from the cluster, but you can no longer modify argo directly with helm
         // For development keeping it in helm makes it easier (e.g. for helm uninstall).
-        k8sClient.delete('secret', 'argocd', 
+        k8sClient.delete('secret', 'argocd',
                 new Tuple2('owner', 'helm'), new Tuple2('name', 'argocd'))
+
+        log.debug("Setting new argocd admin password")
+        // Set admin password imperatively here instead of values.yaml, because we don't want it to show in git repo
+        String bcryptArgoCDPassword = BCrypt.hashpw(password, BCrypt.gensalt(4))
+        k8sClient.patch('secret', 'argocd-secret', 'argocd',
+                [stringData: ['admin.password': bcryptArgoCDPassword ] ])
     }
 
     protected void createMonitoringNamespaceAndCrd() {
@@ -260,6 +284,49 @@ class ArgoCD extends Feature {
             k8sClient.createNamespace('monitoring')
 
             if (!config.application.skipCrds) {
+    private void deployWithOperator(String argocdNamespace) {
+        // Apply argocd yaml from operator folder
+        String argocdConfigPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), OPERATOR_CONFIG_PATH)
+        k8sClient.applyYaml(argocdConfigPath)
+
+        // ArgoCD is not installed until the ArgoCD-Operator did his job.
+        // This can take some time, so we wait for the status of the custom resource to become "Available"
+        k8sClient.waitForResourcePhase("argocd", "argocd", argocdNamespace, "Available")
+
+        if(!config.application['openshift']) {
+            // We need to patch the NodePrt of the Service, because the operator only supports setting type: NodePort but not the port itself
+            log.debug("Patching NodePorts for 'argocd-server' Service in namespace '{}' to HTTP: 9092 and HTTPS: 9093", argocdNamespace);
+            k8sClient.patchServiceNodePort("argocd-server", argocdNamespace, "http", 9092)
+            k8sClient.patchServiceNodePort("argocd-server", argocdNamespace, "https", 9093)
+        }
+
+        log.debug("Setting new argocd admin password")
+        // Set admin password imperatively here instead of operator/argocd.yaml, because we don't want it to show in git repo
+        // The Operator uses an extra secret to store the admin Password, which is not bcrypted
+        k8sClient.patch('secret', 'argocd-cluster', argocdNamespace,
+                [stringData: ['admin.password': password ] ])
+        // In newer Versions ArgoCD Operator uses the password in argocd-cluster secret only as generated initial password
+        // but we want to set our own admin password so we set the password in both Secret for consistency
+        String bcryptArgoCDPassword = BCrypt.hashpw(password, BCrypt.gensalt(4))
+        k8sClient.patch('secret', 'argocd-secret', 'argocd',
+                [stringData: ['admin.password': bcryptArgoCDPassword ] ])
+
+        log.debug("Updating managed namespaces in ArgoCD configuration secret.")
+        // The ArgoCD instance installed via an operator only manages its deployment namespace.
+        // To manage additional namespaces, we need to update the 'argocd-default-cluster-config' secret with all managed namespaces.
+        def namespaceList = getNamespaceList()
+        k8sClient.patch('secret', 'argocd-default-cluster-config', argocdNamespace,
+                [stringData: ['namespaces': namespaceList.join(',') ] ])
+
+        log.debug("Add RBAC permissions for ArgoCD in all managed namespaces.")
+        // Apply rbac yamls from operator/rbac folder
+        String argocdRbacPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), OPERATOR_RBAC_PATH)
+        k8sClient.applyYaml(argocdRbacPath)
+    }
+
+    protected void createMonitoringCrd() {
+        if (config['features']['monitoring']['active']) {
+            if (!config['application']['skipCrds']) {
                 def serviceMonitorCrdYaml
                 if (config.application.mirrorRepos) {
                     serviceMonitorCrdYaml = Path.of(
@@ -280,7 +347,8 @@ class ArgoCD extends Feature {
     }
 
     protected void prepareArgoCdRepo() {
-        def tmpHelmValues = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), HELM_VALUES_PATH)
+        String argocdConfigPath = this.config.features['argocd']['operator'] ? OPERATOR_CONFIG_PATH : HELM_VALUES_PATH;
+        def argocdConfigFile = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), argocdConfigPath)
 
         argocdRepoInitializationAction.initLocalRepo()
 
@@ -292,13 +360,13 @@ class ArgoCD extends Feature {
 
         if (!config.application.remote) {
             log.debug("Setting argocd service.type to NodePort since it is not running in a remote cluster")
-            fileSystemUtils.replaceFileContent(tmpHelmValues.toString(), "LoadBalancer", "NodePort")
+            fileSystemUtils.replaceFileContent(argocdConfigFile.toString(), "LoadBalancer", "NodePort")
         }
 
-        if (config.features.argocd.url) {
-            log.debug('Setting argocd url for notifications')
-            fileSystemUtils.replaceFileContent(tmpHelmValues.toString(), 
-                    "argocdUrl: https://localhost:9092", "argocdUrl: ${config.features.argocd.url}")
+        if (config.features["argocd"]["url"]) {
+            log.debug("Setting argocd url for notifications")
+            fileSystemUtils.replaceFileContent(argocdConfigFile.toString(),
+                    "argocdUrl: https://localhost:9092", "argocdUrl: ${config.features["argocd"]["url"]}")
         }
 
         if (!config.application.netpols) {
@@ -359,19 +427,23 @@ class ArgoCD extends Feature {
                     namePrefixForEnvVars: config.application.namePrefixForEnvVars ,
                     podResources        : config.application.podResources,
                     images              : config.images,
-                    nginxImage          : config.images.nginx ? DockerImageParser.parse(config.images.nginx) : null,
-                    isRemote            : config.application.remote,
-                    isInsecure          : config.application.insecure,
-                    urlSeparatorHyphen  : config.application.urlSeparatorHyphen,
-                    mirrorRepos         : config.application.mirrorRepos,
-                    skipCrds            : config.application.skipCrds,
-                    netpols             : config.application.netpols,
+                    nginxImage          : config.images['nginx'] ? DockerImageParser.parse(config.images['nginx'] as String) : null,
+                    isRemote            : config.application['remote'],
+                    isInsecure          : config.application['insecure'],
+                    isOpenshift         : config.application['openshift'],
+                    urlSeparatorHyphen  : config.application['urlSeparatorHyphen'],
+                    mirrorRepos         : config.application['mirrorRepos'],
+                    skipCrds            : config.application['skipCrds'],
+                    netpols             : config.application['netpols'],
                     argocd              : [
                             // Note that passing the URL object here leads to problems in Graal Native image, see Git history
-                            host: config.features.argocd.url ? new URL(config.features.argocd.url).host : null,
-                            emailFrom    : config.features.argocd.emailFrom,
-                            emailToUser  : config.features.argocd.emailToUser,
-                            emailToAdmin : config.features.argocd.emailToAdmin
+                            host: config.features['argocd']['url'] ? new URL(config.features['argocd']['url'] as String).host : "",
+                            env : config.features['argocd']['env'],
+                            isOperator   : config.features['argocd']['operator'],
+                            emailFrom    : config.features['argocd']['emailFrom'],
+                            emailToUser  : config.features['argocd']['emailToUser'],
+                            emailToAdmin : config.features['argocd']['emailToAdmin'],
+                            resourceInclusionsCluster : config.features['argocd']['resourceInclusionsCluster']
                     ],
                     registry : [
                             twoRegistries: config.registry.twoRegistries

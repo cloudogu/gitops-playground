@@ -20,6 +20,9 @@ import io.micronaut.context.ApplicationContext
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
 
+import static com.cloudogu.gitops.config.ConfigConstants.*
+import static groovy.json.JsonOutput.prettyPrint
+import static groovy.json.JsonOutput.toJson
 import static com.cloudogu.gitops.config.ConfigConstants.APP_NAME
 import static com.cloudogu.gitops.utils.MapUtils.deepMerge
 
