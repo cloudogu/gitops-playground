@@ -1,6 +1,6 @@
 package com.cloudogu.gitops.config
 
-import com.fasterxml.jackson.annotation.JsonIgnore
+
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.databind.*
@@ -10,8 +10,8 @@ import com.fasterxml.jackson.databind.ser.BeanSerializerModifier
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 import groovy.transform.MapConstructor
 import jakarta.inject.Singleton
-import picocli.CommandLine.Mixin
 import picocli.CommandLine.Command
+import picocli.CommandLine.Mixin
 import picocli.CommandLine.Option
 
 import static com.cloudogu.gitops.config.ConfigConstants.*
@@ -246,6 +246,8 @@ class Config {
     static class ApplicationSchema {
         Boolean runningInsideK8s = false
         String namePrefixForEnvVars = ''
+        String internalKubernetesApiUrl = ''
+        String localHelmChartFolder = System.getenv('LOCAL_HELM_CHART_FOLDER')
 
         @Option(names = ['--config-file'], description = CONFIG_FILE_DESCRIPTION)
         String configFile = ''
@@ -277,11 +279,6 @@ class Config {
         @Option(names = ['--insecure'], description = INSECURE_DESCRIPTION)
         @JsonPropertyDescription(INSECURE_DESCRIPTION)
         Boolean insecure = false
-
-        // TODO only for dev, can we remove this from config file?
-        // Take from env because the Dockerfile provides a local copy of the repo for air-gapped mode
-        @JsonPropertyDescription(LOCAL_HELM_CHART_FOLDER_DESCRIPTION)
-        String localHelmChartFolder = System.getenv('LOCAL_HELM_CHART_FOLDER')
 
         @Option(names = ['--openshift'], description = OPENSHIFT_DESCRIPTION)
         @JsonPropertyDescription(OPENSHIFT_DESCRIPTION)
@@ -442,14 +439,22 @@ class Config {
     }
 
     static class ArgoCDSchema {
+        Boolean configOnly = false
 
         @Option(names = ['--argocd'], description = ARGOCD_ENABLE_DESCRIPTION)
         @JsonPropertyDescription(ARGOCD_ENABLE_DESCRIPTION)
         Boolean active = false
 
+        @Option(names = ['--argocd-operator'], description = ARGOCD_OPERATOR_DESCRIPTION)
+        @JsonPropertyDescription(ARGOCD_OPERATOR_DESCRIPTION)
+        Boolean operator = false
+
         @Option(names = ['--argocd-url'], description = ARGOCD_URL_DESCRIPTION)
         @JsonPropertyDescription(ARGOCD_URL_DESCRIPTION)
         String url = ''
+
+        @JsonPropertyDescription(ARGOCD_ENV_DESCRIPTION)
+        List<Map<String, String>> env
 
         @Option(names = ['--argocd-email-from'], description = ARGOCD_EMAIL_FROM_DESCRIPTION)
         @JsonPropertyDescription(ARGOCD_EMAIL_FROM_DESCRIPTION)
@@ -462,6 +467,10 @@ class Config {
         @Option(names = ['--argocd-email-to-admin'], description = ARGOCD_EMAIL_TO_ADMIN_DESCRIPTION)
         @JsonPropertyDescription(ARGOCD_EMAIL_TO_ADMIN_DESCRIPTION)
         String emailToAdmin = 'infra@example.org'
+
+        @Option(names = ['--argocd-resource-inclusions-cluster'], description = ARGOCD_RESOURCE_INCLUSIONS_CLUSTER)
+        @JsonPropertyDescription(ARGOCD_RESOURCE_INCLUSIONS_CLUSTER)
+        String resourceInclusionsCluster = ''
 
     }
 

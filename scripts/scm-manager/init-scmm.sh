@@ -194,7 +194,7 @@ function configureScmmManager() {
   installScmmPlugin "scm-jenkins-plugin" "false"
   installScmmPlugin "scm-readme-plugin" "false"
   installScmmPlugin "scm-webhook-plugin" "false"
-  installScmmPlugin "scm-ci-plugin" "true"
+  installScmmPlugin "scm-ci-plugin" "false"
   installScmmPlugin "scm-metrics-prometheus-plugin" "true"
 
   # We have to wait 1 second to ensure that the restart is really initiated
