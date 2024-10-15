@@ -153,6 +153,17 @@ class JenkinsTest {
     }
 
     @Test
+    void 'Global property is set for additional envs'() {
+
+        config.jenkins['jenkinsAdditionalEnvs'] = [
+                ADDITIONAL_DOCKER_RUN_ARGS: '-u0:0'
+        ]
+
+        createJenkins().install()
+        verify(globalPropertyManager).setGlobalProperty(eq('ADDITIONAL_DOCKER_RUN_ARGS'), eq('-u0:0'))
+    }
+
+    @Test
     void 'Does not create create user if CAS security realm is used'() {
         config.features['argocd']['active'] = false
         

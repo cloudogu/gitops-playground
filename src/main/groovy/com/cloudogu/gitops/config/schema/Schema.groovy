@@ -89,7 +89,8 @@ class Schema {
         String metricsPassword = ""
         @JsonPropertyDescription(MAVEN_CENTRAL_MIRROR_DESCRIPTION)
         String mavenCentralMirror = ""
-
+        @JsonPropertyDescription(JENKINS_ADDITIONAL_ENVS_DESCRIPTION)
+        Map<String, String> jenkinsAdditionalEnvs = [:]
 
         @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
         JenkinsHelmSchema helm

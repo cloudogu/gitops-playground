@@ -6,9 +6,9 @@ String getConfigRepositoryPRBaseUrl() { env.SCMM_URL }
 String getConfigRepositoryPRRepo() { '${namePrefix}argocd/example-apps' }
 <#noparse>
 String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/3rd-party-dependencies/ces-build-lib/" }
-String getCesBuildLibVersion() { '1.64.1' }
+String getCesBuildLibVersion() { '2.5.0' }
 String getGitOpsBuildLibRepo() { "${env.SCMM_URL}/repo/3rd-party-dependencies/gitops-build-lib" }
-String getGitOpsBuildLibVersion() { '0.4.0'}
+String getGitOpsBuildLibVersion() { '0.7.0'}
 String getHelmChartRepository() { "https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami" }
 String getHelmChartName() { "nginx" }
 String getHelmChartVersion() { "13.2.21" }

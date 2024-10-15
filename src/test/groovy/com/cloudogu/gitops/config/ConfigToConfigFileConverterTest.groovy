@@ -36,6 +36,9 @@ class ConfigToConfigFileConverterTest {
                         helm  : [
                                 version: '5.0.17'
                         ],
+                        jenkinsAdditionalEnvs: [
+                                a: 'b'
+                        ],
                 ],
                 scmm       : [
                         url     : 'scmm-url',
@@ -194,6 +197,8 @@ jenkins:
   metricsUsername: "metricsUsername"
   metricsPassword: "metricsUsername"
   mavenCentralMirror: "mirror"
+  jenkinsAdditionalEnvs:
+    a: "b"
   helm:
     version: "5.0.17"
 scmm:
