@@ -69,7 +69,37 @@ spec:
         assertThat(sources[0] ['path']).isEqualTo('chartName')
     }
 
-    private ArgoCdApplicationStrategy createStrategy() {
+    @Test
+    void 'deploys feature with argocdOperator true, setting CreateNamespace to false'() {
+        def strategy = createStrategy(true)
+        File valuesYaml = File.createTempFile('values', 'yaml')
+        valuesYaml.text = """
+    param1: value1
+    param2: value2
+    """
+        strategy.deployFeature("repoURL", "repoName", "chartName", "version",
+                "namespace", "releaseName", valuesYaml.toPath())
+
+        def argoCdApplicationYaml = new File("$localTempDir/argocd/releaseName.yaml")
+        assertThat(argoCdApplicationYaml.text).contains("CreateNamespace=false")
+    }
+
+    @Test
+    void 'deploys feature with argocdOperator false, setting CreateNamespace to true'() {
+        def strategy = createStrategy(false)
+        File valuesYaml = File.createTempFile('values', 'yaml')
+        valuesYaml.text = """
+    param1: value1
+    param2: value2
+    """
+        strategy.deployFeature("repoURL", "repoName", "chartName", "version",
+                "namespace", "releaseName", valuesYaml.toPath())
+
+        def argoCdApplicationYaml = new File("$localTempDir/argocd/releaseName.yaml")
+        assertThat(argoCdApplicationYaml.text).contains("CreateNamespace=true")
+    }
+
+    private ArgoCdApplicationStrategy createStrategy(boolean argocdOperator = false) {
         Map config = [
                 scmm: [
                         internal: false,
@@ -82,6 +112,11 @@ spec:
                         namePrefix : 'foo-',
                         gitName    : 'Cloudogu',
                         gitEmail   : 'hello@cloudogu.com'
+                ],
+                features: [
+                        argocd: [
+                                operator: argocdOperator
+                        ]
                 ]
         ]
 

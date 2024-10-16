@@ -1,0 +1,242 @@
+apiVersion: argoproj.io/v1beta1
+kind: ArgoCD
+metadata:
+  name: "argocd"
+  namespace: "${namePrefix}argocd"
+spec:
+  applicationSet:
+    enabled: true
+    resources:
+      limits:
+        cpu: '2'
+        memory: 1Gi
+      requests:
+        cpu: 250m
+        memory: 512Mi
+    <#if argocd.env?has_content>
+    env:
+    <#list argocd.env as envVar>
+      - name: ${envVar.name}
+        value: ${envVar.value}
+    </#list>
+    </#if>
+  notifications:
+    enabled: true
+    resources:
+      limits:
+        cpu: 100m
+        memory: 128Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+    <#if argocd.env?has_content>
+    env:
+    <#list argocd.env as envVar>
+      - name: ${envVar.name}
+        value: ${envVar.value}
+    </#list>
+    </#if>
+  controller:
+    resources:
+      limits:
+        cpu: "2000m"
+        memory: "2048Mi"
+      requests:
+        cpu: "250m"
+        memory: "1024Mi"
+    <#if argocd.env?has_content>
+    env:
+    <#list argocd.env as envVar>
+      - name: ${envVar.name}
+        value: ${envVar.value}
+    </#list>
+    </#if>
+  ha:
+    enabled: false
+    resources:
+      limits:
+        cpu: "500m"
+        memory: "256Mi"
+      requests:
+        cpu: "250m"
+        memory: "128Mi"
+  <#if isOpenshift>
+  sso:
+    dex:
+      openShiftOAuth: true
+      resources:
+        limits:
+          cpu: 500m
+          memory: 256Mi
+        requests:
+          cpu: 250m
+          memory: 128Mi
+    provider: dex
+  rbac:
+    defaultPolicy: ''
+    policy: |
+      g, system:cluster-admins, role:admin
+      g, platform-admin, role:admin
+    scopes: '[groups]'
+  </#if>
+  redis:
+    resources:
+      limits:
+        cpu: "500m"
+        memory: "256Mi"
+      requests:
+        cpu: "250m"
+        memory: "128Mi"
+  repo:
+    resources:
+      limits:
+        cpu: "1000m"
+        memory: "1024Mi"
+      requests:
+        cpu: "250m"
+        memory: "256Mi"
+    <#if argocd.env?has_content>
+    env:
+    <#list argocd.env as envVar>
+      - name: ${envVar.name}
+        value: ${envVar.value}
+    </#list>
+    </#if>
+  server:
+    resources:
+      limits:
+        cpu: "500m"
+        memory: "256Mi"
+      requests:
+        cpu: "125m"
+        memory: "128Mi"
+    <#if argocd.env?has_content>
+    env:
+    <#list argocd.env as envVar>
+      - name: ${envVar.name}
+        value: ${envVar.value}
+    </#list>
+    </#if>
+    route:
+      enabled: ${isOpenshift?c}
+    host: "${argocd.host}"
+    <#if !isOpenshift>
+    service:
+      type: NodePort
+    </#if>
+  initialRepositories: |
+    - name: argocd
+      url: ${scmm.baseUrl}/repo/${namePrefix}argocd/argocd
+    - name: example-apps
+      url: ${scmm.baseUrl}/repo/${namePrefix}argocd/example-apps
+    - name: cluster-resources
+      url: ${scmm.baseUrl}/repo/${namePrefix}argocd/cluster-resources
+    - name: nginx-helm-jenkins
+      url: ${scmm.baseUrl}/repo/${namePrefix}argocd/nginx-helm-jenkins
+    - name: nginx-helm-umbrella
+      url: ${scmm.baseUrl}/repo/${namePrefix}argocd/nginx-helm-umbrella
+    - name: bitnami
+      type: helm
+      url: https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami
+    - name: prometheus-community
+      type: helm
+      url: https://prometheus-community.github.io/helm-charts
+    - name: codecentric
+      type: helm
+      url: https://codecentric.github.io/helm-charts
+    - name: ingress-nginx
+      type: helm
+      url: https://kubernetes.github.io/ingress-nginx
+  resourceInclusions: |
+    - apiGroups:
+      - ""
+      kinds:
+      - "Secret"
+      - "ConfigMap"
+      - "PersistentVolumeClaim"
+      - "Service"
+      - "ServiceAccount"
+      - "Pod"
+      - "Event"
+      clusters:
+      - "https://kubernetes.default.svc"
+      - "${argocd.resourceInclusionsCluster}"
+    - apiGroups:
+      - "apps"
+      kinds:
+      - "Deployment"
+      - "ReplicaSet"
+      - "StatefulSet"
+      - "DaemonSet"
+      clusters:
+      - "https://kubernetes.default.svc"
+      - "${argocd.resourceInclusionsCluster}"
+    - apiGroups:
+      - "extensions"
+      kinds:
+      - "Ingress"
+      clusters:
+      - "https://kubernetes.default.svc"
+      - "${argocd.resourceInclusionsCluster}"
+    - apiGroups:
+      - "networking.k8s.io"
+      kinds:
+      - "Ingress"
+      - "NetworkPolicy"
+      clusters:
+      - "https://kubernetes.default.svc"
+      - "${argocd.resourceInclusionsCluster}"
+    - apiGroups:
+      - "argoproj.io"
+      kinds:
+      - "Application"
+      - "AppProject"
+      - "ApplicationSet"
+      clusters:
+      - "https://kubernetes.default.svc"
+      - "${argocd.resourceInclusionsCluster}"
+    <#if isOpenshift>
+    - apiGroups:
+      - "route.openshift.io"
+      kinds:
+      - "Route"
+      clusters:
+      - "https://kubernetes.default.svc"
+      - "${argocd.resourceInclusionsCluster}"
+    </#if>
+    - apiGroups:
+      - "rbac.authorization.k8s.io"
+      kinds:
+      - "Role"
+      - "RoleBinding"
+      clusters:
+      - "https://kubernetes.default.svc"
+      - "${argocd.resourceInclusionsCluster}"
+    - apiGroups:
+      - "external-secrets.io"
+      kinds:
+      - "SecretStore"
+      - "ExternalSecret"
+      clusters:
+      - "https://kubernetes.default.svc"
+      - "${argocd.resourceInclusionsCluster}"
+    - apiGroups:
+      - "argoproj.io"
+      kinds:
+      - "ArgoCD"
+      clusters:
+      - "https://kubernetes.default.svc"
+      - "${argocd.resourceInclusionsCluster}"
+    - apiGroups:
+      - "monitoring.coreos.com"
+      kinds:
+      - "Alertmanager"
+      - "AlertmanagerConfig"
+      - "Prometheus"
+      - "PrometheusRule"
+      - "ServiceMonitor"
+      - "PodMonitor"
+      - "Probe"
+      clusters:
+      - "https://kubernetes.default.svc"
+      - "${argocd.resourceInclusionsCluster}"
