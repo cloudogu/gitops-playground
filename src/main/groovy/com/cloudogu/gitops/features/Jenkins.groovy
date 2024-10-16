@@ -99,15 +99,24 @@ class Jenkins extends Feature {
         prometheusConfigurator.enableAuthentication()
 
         if (config.features['argocd']['active']) {
+
+            String jobName = "${config.application['namePrefix']}example-apps"
+            def credentialId = "scmm-user"
+            
+            jobManger.createJob(jobName, 
+                    config.scmm['urlForJenkins'] as String,
+                    "${config.application['namePrefix']}argocd",
+                    credentialId)
+
             jobManger.createCredential(
-                    "${config.application['namePrefix']}example-apps",
-                    "scmm-user",
+                    jobName,
+                    credentialId,
                     "${config.application['namePrefix']}gitops",
                     "${config.scmm['password']}",
                     'credentials for accessing scm-manager')
 
             jobManger.createCredential(
-                    "${config.application['namePrefix']}example-apps",
+                    jobName,
                     "registry-user",
                     "${config.registry['username']}",
                     "${config.registry['password']}",
@@ -123,7 +132,7 @@ class Jenkins extends Feature {
 
             }
             // Once everything is set up, start the jobs.
-            jobManger.startJob('example-apps')
+            jobManger.startJob(jobName)
         }
     }
 }
