@@ -695,6 +695,35 @@ class ArgoCDTest {
     }
 
     @Test
+    void 'use custom maven image'() {
+        config.images['maven'] = 'maven:latest'
+
+        createArgoCD().install()
+
+        for (def petclinicRepo : petClinicRepos) {
+            if (petclinicRepo.scmmRepoTarget.contains('argocd/petclinic-plain')) {
+                assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).contains('mvn = cesBuildLib.MavenInDocker.new(this, \'maven:latest\')')
+            }
+        }
+    }
+
+    @Test
+    void 'use maven with proxy registry and credentials'() {
+        config.images['maven'] = 'latest'
+        config.registry['twoRegistries'] = true
+
+        createArgoCD().install()
+
+        for (def petclinicRepo : petClinicRepos) {
+            if (petclinicRepo.scmmRepoTarget.contains('argocd/petclinic-plain')) {
+                assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).contains('mvn = cesBuildLib.MavenInDocker.new(this, \'latest\', dockerRegistryProxyCredentials)')
+            }
+        }
+
+    }
+
+
+    @Test
     void 'Sets pod resource limits and requests'() {
         config.application['podResources'] = true
 
@@ -734,6 +763,8 @@ class ArgoCDTest {
 
         assertPetClinicRepos('NodePort', 'LoadBalancer', '')
     }
+
+
 
     private static Map parseBuildImagesMapFromString(String text) {
         def startIndex = text.indexOf('buildImages')

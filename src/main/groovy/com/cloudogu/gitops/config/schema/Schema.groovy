@@ -190,6 +190,8 @@ class Schema {
         String nginx = ""
         @JsonPropertyDescription(PETCLINIC_IMAGE_DESCRIPTION)
         String petclinic = ""
+        @JsonPropertyDescription(MAVEN_IMAGE_DESCRIPTION)
+        String maven = ""
     }
 
     static class RepositoriesSchema {
