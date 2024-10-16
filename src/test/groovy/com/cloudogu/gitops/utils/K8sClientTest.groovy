@@ -74,6 +74,26 @@ class K8sClientTest {
                 "kubectl create secret generic my-secret --from-literal key1=value1 --dry-run=client -oyaml" +
                         " | kubectl apply -f-")
     }
+    
+    @Test
+    void 'Creates imagePullSecret without namespace'() {
+        k8sClient.createImagePullSecret('my-reg', 'host', 'user', 'pw')
+
+        assertThat(commandExecutor.actualCommands[0]).isEqualTo(
+                'kubectl create secret docker-registry my-reg' +
+                ' --docker-server host --docker-username user --docker-password pw' +
+                ' --dry-run=client -oyaml | kubectl apply -f-')
+    }
+    
+    @Test
+    void 'Creates imagePullSecret'() {
+        k8sClient.createImagePullSecret('my-reg', 'ns', 'host', 'user', 'pw')
+
+        assertThat(commandExecutor.actualCommands[0]).isEqualTo(
+                'kubectl create secret docker-registry my-reg -n foo-ns' +
+                ' --docker-server host --docker-username user --docker-password pw' +
+                ' --dry-run=client -oyaml | kubectl apply -f-')
+    }
 
     @Test
     void 'Creates no secret when literals are missing'() {

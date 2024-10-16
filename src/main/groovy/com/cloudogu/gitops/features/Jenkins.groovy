@@ -15,7 +15,7 @@ import jakarta.inject.Singleton
 
 @Slf4j
 @Singleton
-@Order(90)
+@Order(70)
 class Jenkins extends Feature {
 
     private Map config

@@ -42,7 +42,8 @@ class CommandExecutorForTest extends CommandExecutor {
         def actualCommand = actualCommands.find {
             it.startsWith(commandStartsWith)
         }
-        assertThat(actualCommand).as("Expected command to have been executed, but was not: ${commandStartsWith}")
+        assertThat(actualCommand).as("Expected command to have been executed, but was not:\n${commandStartsWith}.\n" +
+                "Actual commands:\n${actualCommands.join('\n')}")
                 .isNotNull()
         return actualCommand
     }

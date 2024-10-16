@@ -9,14 +9,18 @@ interface ConfigConstants {
     // group registry
     String REGISTRY_DESCRIPTION = 'Config parameters for Registry'
     String REGISTRY_INTERNAL_PORT_DESCRIPTION = 'Port of registry registry. Ignored when a registry*url params are set'
-    String REGISTRY_URL_DESCRIPTION = 'The url of your external registry'
+    String REGISTRY_URL_DESCRIPTION = 'The url of your external registry, used for pushing images'
     String REGISTRY_PATH_DESCRIPTION = 'Optional when registry-url is set'
     String REGISTRY_USERNAME_DESCRIPTION = 'Optional when registry-url is set'
     String REGISTRY_PASSWORD_DESCRIPTION = 'Optional when registry-url is set'
 
-    String REGISTRY_PROXY_URL_DESCRIPTION = 'The url of your proxy-registry. Used in pipelines to authorize pull base images. Use in conjunction with petclinic base image.'
-    String REGISTRY_PROXY_USERNAME_DESCRIPTION = 'Use with registry-proxy-url, added to Jenkins as credentials.'
-    String REGISTRY_PROXY_PASSWORD_DESCRIPTION = 'Use with registry-proxy-url, added to Jenkins as credentials.'
+    String REGISTRY_PROXY_URL_DESCRIPTION = 'The url of your proxy-registry. Used in pipelines to authorize pull base images. Use in conjunction with petclinic base image. Used in helm charts when create-image-pull-secrets is set. Use in conjunction with helm.*image fields.'
+    String REGISTRY_PROXY_USERNAME_DESCRIPTION = 'Use with registry-proxy-url, added to Jenkins as credentials and created as pull secrets, when create-image-pull-secrets is set.'
+    String REGISTRY_PROXY_PASSWORD_DESCRIPTION = 'Use with registry-proxy-url, added to Jenkins as credentials and created as pull secrets, when create-image-pull-secrets is set.'
+    
+    String REGISTRY_USERNAME_RO_DESCRIPTION = 'Optional alternative username for registry-url with read-only permissions that is used when create-image-pull-secrets is set.'
+    String REGISTRY_PASSWORD_RO_DESCRIPTION = 'Optional alternative password for registry-url with read-only permissions that is used when create-image-pull-secrets is set.'
+    String REGISTRY_CREATE_IMAGE_PULL_SECRETS_DESCRIPTION = 'Create image pull secrets for registry and proxy-registry for all GOP namespaces and helm charts. Uses proxy-username, read-only-username or registry-username (in this order).  Use this if your cluster is not auto-provisioned with credentials for your private registries or if you configure individual helm images to be pulled from the proxy-registry that requires authentication.'
 
     String FEATURES_DESCRIPTION = 'Config parameters for features or tools'
     
@@ -92,7 +96,7 @@ interface ConfigConstants {
     String VAULT_ENABLE_DESCRIPTION = "Installs Hashicorp vault and the external secrets operator. Possible values: dev, prod."
     String VAULT_URL_DESCRIPTION = 'Sets url for vault ui'
 
-    String MAILHOG_DESCRIPTION = 'Config parameters for the internal Mail Server'
+    String MAIL_DESCRIPTION = 'Config parameters for mail servers'
     String MAILHOG_URL_DESCRIPTION = 'Sets url for MailHog'
     String MAILHOG_ENABLE_DESCRIPTION = 'Installs MailHog as Mail server.'
 

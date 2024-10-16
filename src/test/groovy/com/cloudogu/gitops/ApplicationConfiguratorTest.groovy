@@ -174,6 +174,15 @@ class ApplicationConfiguratorTest {
                 'Either run inside the official container image or setting env var LOCAL_HELM_CHART_FOLDER=\'charts\' ' +
                 'after running \'scripts/downloadHelmCharts.sh\' from the repo')
     }
+
+    @Test
+    void 'Fails if createImagePullSecrets is used without secrets'() {
+        testConfig['registry']['createImagePullSecrets'] = true
+        def exception = shouldFail(RuntimeException) {
+            applicationConfigurator.setConfig(testConfig)
+        }
+        assertThat(exception.message).isEqualTo('createImagePullSecrets needs to be used with either registry username and password or the readOnly variants')
+    }
     
     @Test
     void 'Ignores empty localHemlChartFolder, if mirrorRepos is not set'() {
