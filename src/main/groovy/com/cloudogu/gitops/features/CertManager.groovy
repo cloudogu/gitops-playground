@@ -50,9 +50,11 @@ class CertManager extends Feature {
         def templatedMap = new YamlSlurper().parseText(
                 new TemplatingEngine().template(new File(HELM_VALUES_PATH),
                     [config: config,
+                     podResources: config.application['podResources'],
+                     skipCrds: config.application['skipCrds'],
                      // Allow for using static classes inside the templates
                      statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build()
-                             .getStaticModels()
+                             .getStaticModels(),
                     ])) as Map
 
 
@@ -62,11 +64,11 @@ class CertManager extends Feature {
         def mergedMap = MapUtils.deepMerge(valuesFromConfig, templatedMap)
 
         def tmpHelmValues = fileSystemUtils.createTempFile()
-
         fileSystemUtils.writeYaml(mergedMap, tmpHelmValues.toFile())
 
-        def helmConfig = config['features']['certManager']['helm']
+        //k8sClient.createNamespace("cert-manager")
 
+        def helmConfig = config['features']['certManager']['helm']
         if (config.application['mirrorRepos']) {
             log.debug("Mirroring repos: Deploying certManager from local git repo")
 
@@ -78,20 +80,21 @@ class CertManager extends Feature {
 
             deployer.deployFeature(
                     "${scmmUri}/repo/${repoNamespaceAndName}",
-                    'certManager',
+                    'cert-manager',
                     '.',
                     certManagerVersion,
-                    'certManager',
-                    'certManager',
+                    'cert-manager',
+                    'cert-manager',
                     tmpHelmValues, DeploymentStrategy.RepoType.GIT)
         } else {
             deployer.deployFeature(
                     helmConfig['repoURL'] as String,
-                    'certManager',
+
+                    'cert-manager',
                     helmConfig['chart'] as String,
                     helmConfig['version'] as String,
-                    'certManager',
-                    'certManager',
+                    'cert-manager',
+                    'cert-manager',
                     tmpHelmValues
             )
         }

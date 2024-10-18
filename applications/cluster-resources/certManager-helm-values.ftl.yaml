@@ -25,7 +25,7 @@ webhook:
       cpu: 20m
       memory: 30Mi
 </#if>
-<#if skipCRDs != true>
+<#if skipCrds != true>
 crds:
   enabled: true
 </#if>

@@ -222,8 +222,8 @@ class ApplicationConfigurator {
                     certManager: [
                             active: false,
                             helm  : [
-                                    chart: 'certManager',
-                                    repoURL: 'https://cert-manager.io/',
+                                    chart: 'cert-manager',
+                                    repoURL: 'https://charts.jetstack.io',
                                     version: '1.15.3',
                                     values: [:]
                             ],
