@@ -229,6 +229,20 @@ class ApplicationConfigurator {
                                     values: [:]
                              ],
                     ],
+                    certManager: [
+                            active: false,
+                            helm  : [
+                                    chart: 'cert-manager',
+                                    repoURL: 'https://charts.jetstack.io',
+                                    version: '1.16.1',
+                                    values: [:],
+                                    acmeSolverImage: '',
+                                    cainjectorImage: '',
+                                    image: '',
+                                    startupAPICheckImage: '',
+                                    webhookImage: ''
+                            ],
+                    ],
                     exampleApps: [
                             petclinic: [
                                     baseDomain: '',

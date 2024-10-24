@@ -263,11 +263,11 @@ images:
 
     @Test
     void "config file has only fields that are present in default values"() {
-        
+
         // ⚠️ If you run into an endless loop in this test, you might have added a non-static class to Schema.grooy
-        
+
         Map defaultConfig = applicationConfigurator.setConfig(almostEmptyConfig)
-        
+
         def fields = getAllFieldNames(Schema.class).sort()
         def keys = getAllKeys(defaultConfig).sort()
 

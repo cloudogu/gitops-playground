@@ -28,6 +28,7 @@ spec:
   - https://kubernetes.github.io/ingress-nginx
   - https://helm.releases.hashicorp.com
   - https://charts.external-secrets.io
+  - https://charts.jetstack.io
 </#if>
 
   # allow to only see application resources from the specified namespace

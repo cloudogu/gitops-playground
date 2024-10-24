@@ -1,6 +1,7 @@
 //file:noinspection unused
 package com.cloudogu.gitops.config.schema
 
+import com.cloudogu.gitops.features.CertManager
 import com.fasterxml.jackson.annotation.JsonClassDescription
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 
@@ -232,6 +233,8 @@ class Schema {
         SecretsSchema secrets
         @JsonPropertyDescription(INGRESS_NGINX_DESCRIPTION)
         IngressNginxSchema ingressNginx
+        @JsonPropertyDescription(CERTMANAGER_DESCRIPTION)
+        CertManagerSchema certManager
         @JsonPropertyDescription(EXAMPLE_APPS_DESCRIPTION)
         ExampleAppsSchema exampleApps
     }
@@ -342,6 +345,34 @@ class Schema {
         static class IngressNginxHelmSchema extends HelmConfigWithValues {
             @JsonPropertyDescription(HELM_CONFIG_IMAGE_DESCRIPTION)
             String image = ""
+        }
+    }
+
+    static class CertManagerSchema {
+        @JsonPropertyDescription(CERTMANAGER_ENABLE_DESCRIPTION)
+        boolean active = false
+
+        @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
+        CertManagerHelmSchema helm
+        static class CertManagerHelmSchema extends HelmConfig {
+            @JsonPropertyDescription(HELM_CONFIG_VALUES_DESCRIPTION)
+            Map<String, Object> values
+
+            @JsonPropertyDescription(CERTMANAGER_IMAGE_DESCRIPTION)
+            String image = ""
+
+            @JsonPropertyDescription(CERTMANAGER_WEBHOOK_IMAGE_DESCRIPTION)
+            String webhookImage = ""
+
+            @JsonPropertyDescription(CERTMANAGER_CAINJECTOR_IMAGE_DESCRIPTION)
+            String cainjectorImage = ""
+
+            @JsonPropertyDescription(CERTMANAGER_ASCME_SOLVER_IMAGE_DESCRIPTION)
+            String acmeSolverImage = ""
+
+            @JsonPropertyDescription(CERTMANAGER_STARTUP_API_CHECK_IMAGE_DESCRIPTION)
+            String startupAPICheckImage = ""
+
         }
     }
 

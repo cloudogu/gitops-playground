@@ -1,0 +1,83 @@
+<#assign DockerImageParser=statics['com.cloudogu.gitops.utils.DockerImageParser']>
+<#if config.application.podResources == true>
+resources:
+  limits:
+     cpu: '1'
+     memory: 400Mi
+  requests:
+    cpu: 30m
+    memory: 400Mi
+</#if>
+<#if config.application.skipCrds != true>
+crds:
+  enabled: true
+</#if>
+
+<#if config.features.certManager.helm.image?has_content>
+<#assign imageObject = DockerImageParser.parse(config.features.certManager.helm.image)>
+image:
+  registry: ${imageObject.registry}
+  repository: ${imageObject.repository}
+  tag: ${imageObject.tag}
+</#if>
+
+<#--webhookImage-->
+<#if config.application.podResources == true || config.features.certManager.helm.webhookImage?has_content>
+webhook:
+  <#if config.application.podResources == true>
+  resources:
+    limits:
+      cpu: '1'
+      memory: 30Mi
+    requests:
+      cpu: 20m
+      memory: 30Mi
+  </#if>
+  <#if config.features.certManager.helm.webhookImage?has_content>
+    <#assign imageObject = DockerImageParser.parse(config.features.certManager.helm.webhookImage)>
+  image:
+    registry: ${imageObject.registry}
+    repository: ${imageObject.repository}
+    tag: ${imageObject.tag}
+  </#if>
+</#if>
+<#--cainjectorImage-->
+<#if config.application.podResources == true || config.features.certManager.helm.cainjectorImage?has_content>
+cainjector:
+  <#if config.application.podResources >
+  resources:
+    limits:
+      cpu: '1'
+      memory: 400Mi
+    requests:
+      cpu: 30m
+      memory: 400Mi
+  </#if>
+  <#if config.features.certManager.helm.cainjectorImage?has_content>
+    <#assign imageObject = DockerImageParser.parse(config.features.certManager.helm.cainjectorImage)>
+  image:
+    registry: ${imageObject.registry}
+    repository: ${imageObject.repository}
+    tag: ${imageObject.tag}
+  </#if>
+</#if>
+
+<#--acmeSolverImage-->
+<#if config.features.certManager.helm.acmeSolverImage?has_content>
+  <#assign imageObject = DockerImageParser.parse(config.features.certManager.helm.acmeSolverImage)>
+acmesolver:
+  image:
+    registry: ${imageObject.registry}
+    repository: ${imageObject.repository}
+    tag: ${imageObject.tag}
+</#if>
+
+<#--startupAPICheckImage-->
+<#if config.features.certManager.helm.startupAPICheckImage?has_content>
+  <#assign imageObject = DockerImageParser.parse(config.features.certManager.helm.startupAPICheckImage)>
+startupapicheck:
+  image:
+    registry: ${imageObject.registry}
+    repository: ${imageObject.repository}
+    tag: ${imageObject.tag}
+</#if>
