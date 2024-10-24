@@ -234,7 +234,7 @@ class ApplicationConfigurator {
                             helm  : [
                                     chart: 'cert-manager',
                                     repoURL: 'https://charts.jetstack.io',
-                                    version: '1.15.3',
+                                    version: '1.16.1',
                                     values: [:],
                                     acmeSolverImage: '',
                                     cainjectorImage: '',

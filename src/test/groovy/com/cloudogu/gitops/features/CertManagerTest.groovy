@@ -19,7 +19,7 @@ import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*
 
 class CertManagerTest {
-
+    String chartVersion = "1.16.1"
     Map config = [
             application: [
                     username: 'abc',
@@ -29,6 +29,9 @@ class CertManagerTest {
                     podResources: false,
                     mirrorRepos: false,
                     skipCrds: false
+            ],
+            registry: [
+                    createImagePullSecrets: false
             ],
             scmm       : [
                     internal: true,
@@ -40,11 +43,17 @@ class CertManagerTest {
 
                     certManager: [
                             active: true,
+
                             helm  : [
                                     chart: 'cert-manager',
                                     repoURL: 'https://charts.jetstack.io',
-                                    version: '1.15.3',
-                                    values: [:]
+                                    version: chartVersion,
+                                    values: [:],
+                                    image: '',
+                                    webhookImage: '',
+                                    cainjectorImage: '',
+                                    acmeSolverImage: '',
+                                    startupAPICheckImage: '',
                             ],
                     ],
             ],
@@ -61,16 +70,29 @@ class CertManagerTest {
         createCertManager().install()
 
         /* Assert one default value */
-        def actual = parseActualYaml()
+//        def actual = parseActualYaml()
 
         verify(deploymentStrategy).deployFeature('https://charts.jetstack.io', 'cert-manager',
-                'cert-manager', '1.15.3','cert-manager',
+                'cert-manager', chartVersion,'cert-manager',
                 'cert-manager', temporaryYamlFile)
 
     }
 
     @Test
+    void 'Set cert manager image'() {
+        config.application['skipCrds'] = false
+        config.features['certManager']['helm']['image'] = "this.is.my.registry/this.is.my.repository/cert-manager-controller:latest"
+
+        createCertManager().install()
+
+        assertThat(parseActualYaml()['image']['registry'] as String).isEqualTo('this.is.my.registry')
+        assertThat(parseActualYaml()['image']['repository'] as String).isEqualTo('this.is.my.repository/cert-manager-controller')
+        assertThat(parseActualYaml()['image']['tag'] as String).isEqualTo('latest')
+    }
+
+    @Test
     void 'Sets pod resource limits and requests'() {
+
         config.application['podResources'] = true
 
         createCertManager().install()
@@ -79,6 +101,7 @@ class CertManagerTest {
         assertThat(parseActualYaml()['cainjector']['resources']as Map).containsKeys('limits', 'requests')
         assertThat(parseActualYaml()['webhook']['resources']as Map).containsKeys('limits', 'requests')
     }
+
 
     @Test
     void "is disabled via active flag"() {
@@ -101,7 +124,7 @@ class CertManagerTest {
         Path SourceChart = rootChartsFolder.resolve('cert-manager')
         Files.createDirectories(SourceChart)
 
-        Map ChartYaml = [ version     : '1.15.3' ]
+        Map ChartYaml = [ version     : chartVersion ]
         fileSystemUtils.writeYaml(ChartYaml, SourceChart.resolve('Chart.yaml').toFile())
 
         createCertManager().install()
@@ -110,10 +133,10 @@ class CertManagerTest {
         verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
         assertThat(helmConfig.value.chart).isEqualTo('cert-manager')
         assertThat(helmConfig.value.repoURL).isEqualTo('https://charts.jetstack.io')
-        assertThat(helmConfig.value.version).isEqualTo('1.15.3')
+        assertThat(helmConfig.value.version).isEqualTo(chartVersion)
         verify(deploymentStrategy).deployFeature(
                 'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/a/b',
-                'cert-manager', '.', '1.15.3','cert-manager',
+                'cert-manager', '.', chartVersion,'cert-manager',
                 'cert-manager', temporaryYamlFile, DeploymentStrategy.RepoType.GIT)
     }
 

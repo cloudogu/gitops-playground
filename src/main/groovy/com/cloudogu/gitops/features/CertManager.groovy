@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
+import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.*
@@ -15,15 +16,16 @@ import java.nio.file.Path
 @Slf4j
 @Singleton
 @Order(160)
-class CertManager extends Feature {
+class CertManager extends Feature implements FeatureWithImage{
 
     static final String HELM_VALUES_PATH = "applications/cluster-resources/certManager-helm-values.ftl.yaml"
 
-    private Map config
     private FileSystemUtils fileSystemUtils
     private DeploymentStrategy deployer
     private AirGappedUtils airGappedUtils
-    private K8sClient k8sClient
+    final K8sClient k8sClient
+    final Map config
+    final String namespace ="cert-manager"
 
     CertManager(
             Configuration config,
@@ -104,4 +106,5 @@ class CertManager extends Feature {
             new URI("${config.scmm['url']}/scm")
         }
     }
+
 }

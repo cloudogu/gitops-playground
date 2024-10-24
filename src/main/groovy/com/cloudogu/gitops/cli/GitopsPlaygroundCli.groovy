@@ -235,6 +235,23 @@ class GitopsPlaygroundCli  implements Runnable {
     @Option(names = ['--cert-manager'], description = CERTMANAGER_ENABLE_DESCRIPTION)
     private Boolean certManager
 
+    @Option(names = ['--cert-manager-image'], description = CERTMANAGER_IMAGE_DESCRIPTION)
+    private String certManagerImage
+
+    @Option(names = ['--cert-manager-webhook-image'], description = CERTMANAGER_WEBHOOK_IMAGE_DESCRIPTION)
+    private String webhookImage
+
+    @Option(names = ['--cert-manager-cainjector-image'], description = CERTMANAGER_CAINJECTOR_IMAGE_DESCRIPTION)
+    private String cainjectorImage
+
+    @Option(names = ['--cert-manager-acme-solver-image'], description = CERTMANAGER_ASCME_SOLVER_IMAGE_DESCRIPTION)
+    private String acmeSolverImage
+
+    @Option(names = ['--cert-manager-startup-api-check-image'], description = CERTMANAGER_STARTUP_API_CHECK_IMAGE_DESCRIPTION)
+    private Boolean startupAPICheckImage
+
+
+
 
     @Override
     void run() {
@@ -515,6 +532,13 @@ class GitopsPlaygroundCli  implements Runnable {
                         ],
                         certManager: [
                                 active: certManager,
+                                helm: [
+                                    image: certManagerImage,
+                                    webhookImage: webhookImage,
+                                    cainjectorImage: cainjectorImage,
+                                    acmeSolverImage: acmeSolverImage,
+                                    startupAPICheckImage: startupAPICheckImage
+                                ]
                         ],
 
                 ]

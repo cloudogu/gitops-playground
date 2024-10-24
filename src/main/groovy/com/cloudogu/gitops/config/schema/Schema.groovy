@@ -358,7 +358,6 @@ class Schema {
             @JsonPropertyDescription(HELM_CONFIG_VALUES_DESCRIPTION)
             Map<String, Object> values
 
-//            TODO descriptions angepasst
             @JsonPropertyDescription(CERTMANAGER_IMAGE_DESCRIPTION)
             String image = ""
 
