@@ -123,7 +123,7 @@ node('high-cpu') {
                                 // removing m2 and grapes avoids issues where grapes primarily resolves local m2 and fails on missing versions
                                 sh "rm -rf .m2/"
                                 sh "rm -rf .groovy/grapes"
-                                ret = sh(returnStatus: true, 
+                                ret = sh(returnStatus: true,
                                         script: "groovy ./scripts/e2e.groovy --url http://${k3dAddress}:9090 --user admin --password admin --writeFailedLog --fail --retry 2")
                             }
 
@@ -133,6 +133,8 @@ node('high-cpu') {
                         }
                         unstable "Integration tests failed, see logs appended to jobs and cluster status in logs"
                         sh "docker exec k3d-${clusterName}-server-0 kubectl get all -A"
+                        printIntegrationTestLogs(clusterName,'app=scm-manager')
+                        printIntegrationTestLogs(clusterName,'app.kubernetes.io/name=jenkins')
                     }
                 }
 
@@ -243,6 +245,12 @@ def trivy(String imageName, Map additionalTrivyConfig = [:]) {
     trivyConfig.additionalFlags += ' --java-db-repository public.ecr.aws/aquasecurity/trivy-java-db'
 
     findVulnerabilitiesWithTrivy(trivyConfig)
+}
+
+def printIntegrationTestLogs(String clusterName, String appSelector){
+    def filename=appSelector.split("=")
+    sh "docker exec k3d-${clusterName}-server-0 kubectl logs -n default -l ${appSelector} --tail=-1 > ${filename[1]}.log || true"
+    archiveArtifacts artifacts: "${filename[1]}.log"
 }
 
 def startK3d(clusterName) {
