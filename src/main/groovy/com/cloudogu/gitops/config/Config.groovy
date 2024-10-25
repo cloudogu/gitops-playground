@@ -1,5 +1,6 @@
-package com.cloudogu.gitops.config.schema
+package com.cloudogu.gitops.config
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.databind.*
@@ -8,6 +9,7 @@ import com.fasterxml.jackson.databind.ser.BeanPropertyWriter
 import com.fasterxml.jackson.databind.ser.BeanSerializerModifier
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 import groovy.transform.MapConstructor
+import jakarta.inject.Singleton
 import picocli.CommandLine.Mixin
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
@@ -20,8 +22,8 @@ import static picocli.CommandLine.ScopeType
  *
  * Also used to create the schema for the configuration file or map, which is used to validate the passed YAML file.
  *
- * Note that all properties marked with
- * * {@link JsonPropertyDescription} (written into the Schema for config file and config map)
+ * Note that all properties marked with 
+ * * {@link JsonPropertyDescription} (written into the Config for config file and config map)
  * * {@link Option} (CLI Options)
  *
  * are external properties that can be changed by the user.
@@ -33,11 +35,16 @@ import static picocli.CommandLine.ScopeType
  * Make sure not to forget {@link Mixin} at sub types that contain CLI {@link Option}s. Otherwise they are ignored by
  * picocli.
  *
+ * Default values
+ * - Boolean is set to false
+ * - String uses empty string, because of too many null checks in freemarker and usages.
+ *
  * @see com.cloudogu.gitops.cli.GitopsPlaygroundCli - initializes from file, and CLI
  */
+@Singleton
 @MapConstructor(noArg = true, includeSuperProperties = true, includeFields = true)
 @Command(name = BINARY_NAME, description = APP_DESCRIPTION)
-class Schema {
+class Config {
 
     // When updating please also update in Dockerfile
     public static final String HELM_IMAGE = "ghcr.io/cloudogu/helm:3.15.4-1"
@@ -76,11 +83,11 @@ class Schema {
 
     static class HelmConfig {
         @JsonPropertyDescription(HELM_CONFIG_CHART_DESCRIPTION)
-        String chart = ""
+        String chart = ''
         @JsonPropertyDescription(HELM_CONFIG_REPO_URL_DESCRIPTION)
-        String repoURL = ""
+        String repoURL = ''
         @JsonPropertyDescription(HELM_CONFIG_VERSION_DESCRIPTION)
-        String version = ""
+        String version = ''
     }
 
     static class HelmConfigWithValues extends HelmConfig {
@@ -89,8 +96,8 @@ class Schema {
     }
 
     static class RegistrySchema {
-        boolean internal = true
-        boolean twoRegistries = false
+        Boolean internal = true
+        Boolean twoRegistries = false
 
         @Option(names = ['--internal-registry-port'], description = REGISTRY_INTERNAL_PORT_DESCRIPTION)
         @JsonPropertyDescription(REGISTRY_INTERNAL_PORT_DESCRIPTION)
@@ -98,42 +105,44 @@ class Schema {
 
         @Option(names = ['--registry-url'], description = REGISTRY_URL_DESCRIPTION)
         @JsonPropertyDescription(REGISTRY_URL_DESCRIPTION)
-        String url = ""
+        String url = ''
 
         @Option(names = ['--registry-path'], description = REGISTRY_PATH_DESCRIPTION)
         @JsonPropertyDescription(REGISTRY_PATH_DESCRIPTION)
-        String path = ""
+        String path = ''
 
         @Option(names = ['--registry-username'], description = REGISTRY_USERNAME_DESCRIPTION)
         @JsonPropertyDescription(REGISTRY_USERNAME_DESCRIPTION)
-        String username = ""
+        String username = ''
 
         @Option(names = ['--registry-password'], description = REGISTRY_PASSWORD_DESCRIPTION)
         @JsonPropertyDescription(REGISTRY_PASSWORD_DESCRIPTION)
-        String password = ""
+        String password = ''
 
         // Alternative: Use different registries, e.g. in air-gapped envs
         // "Proxy" registry for 3rd party images, e.g. base images
         @Option(names = ['--registry-proxy-url'], description = REGISTRY_PROXY_URL_DESCRIPTION)
         @JsonPropertyDescription(REGISTRY_PROXY_URL_DESCRIPTION)
-        String proxyUrl = ""
+        String proxyUrl = ''
 
         @Option(names = ['--registry-proxy-username'], description = REGISTRY_PROXY_PASSWORD_DESCRIPTION)
         @JsonPropertyDescription(REGISTRY_PROXY_USERNAME_DESCRIPTION)
-        String proxyUsername = ""
+        String proxyUsername = ''
 
         @Option(names = ['--registry-proxy-password'], description = 'Optional when --registry-proxy-url is set')
         @JsonPropertyDescription(REGISTRY_PROXY_PASSWORD_DESCRIPTION)
-        String proxyPassword = ""
+        String proxyPassword = ''
 
         // Alternative set of credentials for url, used only for image pull secrets
         @Option(names = ['--registry-username-read-only'], description = REGISTRY_USERNAME_RO_DESCRIPTION)
         @JsonPropertyDescription(REGISTRY_USERNAME_RO_DESCRIPTION)
         String readOnlyUsername = ''
 
+        @Option(names = ['--registry-password-read-only'], description = REGISTRY_PASSWORD_RO_DESCRIPTION)
         @JsonPropertyDescription(REGISTRY_PASSWORD_RO_DESCRIPTION)
         String readOnlyPassword = ''
 
+        @Option(names = ['--create-image-pull-secrets'], description = REGISTRY_CREATE_IMAGE_PULL_SECRETS_DESCRIPTION)
         @JsonPropertyDescription(REGISTRY_CREATE_IMAGE_PULL_SECRETS_DESCRIPTION)
         Boolean createImagePullSecrets = false
 
@@ -156,7 +165,7 @@ class Schema {
 
         @Option(names = ['--jenkins-url'], description = JENKINS_URL_DESCRIPTION)
         @JsonPropertyDescription(JENKINS_URL_DESCRIPTION)
-        String url = ""
+        String url = ''
 
         @Option(names = ['--jenkins-username'], description = JENKINS_USERNAME_DESCRIPTION)
         @JsonPropertyDescription(JENKINS_USERNAME_DESCRIPTION)
@@ -176,7 +185,7 @@ class Schema {
 
         @Option(names = ['--maven-central-mirror'], description = MAVEN_CENTRAL_MIRROR_DESCRIPTION)
         @JsonPropertyDescription(MAVEN_CENTRAL_MIRROR_DESCRIPTION)
-        String mavenCentralMirror = ""
+        String mavenCentralMirror = ''
 
         @Option(names = ["--jenkins-additional-envs"], description = JENKINS_ADDITIONAL_ENVS_DESCRIPTION, split = ",", required = false)
         @JsonPropertyDescription(JENKINS_ADDITIONAL_ENVS_DESCRIPTION)
@@ -199,7 +208,7 @@ class Schema {
 
     static class ScmmSchema {
         Boolean internal = true
-        String gitOpsUsername = ""
+        String gitOpsUsername = ''
         /* This corresponds to the "Base URL" in SCMM Settings.
            We use the K8s service as default name here, to make the build on push feature (webhooks from SCMM to Jenkins that trigger builds) work in k3d.
            The webhook contains repository URLs that start with the "Base URL" Setting of SCMM.
@@ -211,13 +220,13 @@ class Schema {
            For production we overwrite this when config.scmm["url"] is set.
            See addScmmConfig() */
         String urlForJenkins = 'http://scmm-scm-manager/scm'
-        String host = ""
-        String protocol = ""
-        String ingress = ""
+        String host = ''
+        String protocol = ''
+        String ingress = ''
 
         @Option(names = ['--scmm-url'], description = SCMM_URL_DESCRIPTION)
         @JsonPropertyDescription(SCMM_URL_DESCRIPTION)
-        String url = ""
+        String url = ''
 
         @Option(names = ['--scmm-username'], description = SCMM_USERNAME_DESCRIPTION)
         @JsonPropertyDescription(SCMM_USERNAME_DESCRIPTION)
@@ -259,7 +268,7 @@ class Schema {
         // We define or own --version, so we need to define our own help param.
         // The param itself is not used, "usageHelp = true" leads to hel being printed
         @Option(names = ["-h", "--help"], usageHelp = true, description = "Display this help message")
-        Boolean usageHelpRequested
+        Boolean usageHelpRequested = false
 
         @Option(names = ['--remote'], description = REMOTE_DESCRIPTION)
         @JsonPropertyDescription(REMOTE_DESCRIPTION)
@@ -292,7 +301,7 @@ class Schema {
 
         @Option(names = ['--name-prefix'], description = NAME_PREFIX_DESCRIPTION)
         @JsonPropertyDescription(NAME_PREFIX_DESCRIPTION)
-        String namePrefix = ""
+        String namePrefix = ''
 
         @Option(names = ['--destroy'], description = DESTROY_DESCRIPTION)
         @JsonPropertyDescription(DESTROY_DESCRIPTION)
@@ -312,7 +321,7 @@ class Schema {
 
         @Option(names = ['--base-url'], description = BASE_URL_DESCRIPTION)
         @JsonPropertyDescription(BASE_URL_DESCRIPTION)
-        String baseUrl = null
+        String baseUrl = ''
 
         @Option(names = ['--url-separator-hyphen'], description = URL_SEPARATOR_HYPHEN_DESCRIPTION)
         @JsonPropertyDescription(URL_SEPARATOR_HYPHEN_DESCRIPTION)
@@ -359,16 +368,15 @@ class Schema {
 
         @Option(names = ['--nginx-image'], description = NGINX_IMAGE_DESCRIPTION)
         @JsonPropertyDescription(NGINX_IMAGE_DESCRIPTION)
-        String nginx = null
+        String nginx = ''
 
         @Option(names = ['--petclinic-image'], description = PETCLINIC_IMAGE_DESCRIPTION)
         @JsonPropertyDescription(PETCLINIC_IMAGE_DESCRIPTION)
         String petclinic = 'eclipse-temurin:11-jre-alpine'
 
         @Option(names = ['--maven-image'], description = MAVEN_IMAGE_DESCRIPTION)
-        private String mavenImage
         @JsonPropertyDescription(MAVEN_IMAGE_DESCRIPTION)
-        String maven = null
+        String maven = ''
     }
 
     static class RepositoriesSchema {
@@ -424,11 +432,13 @@ class Schema {
         @Mixin
         @JsonPropertyDescription(INGRESS_NGINX_DESCRIPTION)
         IngressNginxSchema ingressNginx = new IngressNginxSchema()
-        @JsonPropertyDescription(CERTMANAGER_DESCRIPTION)
-        CertManagerSchema certManager
-        IngressNginxSchema ingressNginx = new IngressNginxSchema()
+
         @JsonPropertyDescription(EXAMPLE_APPS_DESCRIPTION)
         ExampleAppsSchema exampleApps = new ExampleAppsSchema()
+
+        @Mixin
+        @JsonPropertyDescription(CERTMANAGER_DESCRIPTION)
+        CertManagerSchema certManager = new CertManagerSchema()
     }
 
     static class ArgoCDSchema {
@@ -439,7 +449,7 @@ class Schema {
 
         @Option(names = ['--argocd-url'], description = ARGOCD_URL_DESCRIPTION)
         @JsonPropertyDescription(ARGOCD_URL_DESCRIPTION)
-        String url = ""
+        String url = ''
 
         @Option(names = ['--argocd-email-from'], description = ARGOCD_EMAIL_FROM_DESCRIPTION)
         @JsonPropertyDescription(ARGOCD_EMAIL_FROM_DESCRIPTION)
@@ -452,6 +462,7 @@ class Schema {
         @Option(names = ['--argocd-email-to-admin'], description = ARGOCD_EMAIL_TO_ADMIN_DESCRIPTION)
         @JsonPropertyDescription(ARGOCD_EMAIL_TO_ADMIN_DESCRIPTION)
         String emailToAdmin = 'infra@example.org'
+
     }
 
     static class MailSchema {
@@ -463,11 +474,11 @@ class Schema {
 
         @Option(names = ['--mailhog-url'], description = MAILHOG_URL_DESCRIPTION)
         @JsonPropertyDescription(MAILHOG_URL_DESCRIPTION)
-        String mailhogUrl = ""
+        String mailhogUrl = ''
 
         @Option(names = ['--smtp-address'], description = SMTP_ADDRESS_DESCRIPTION)
         @JsonPropertyDescription(SMTP_ADDRESS_DESCRIPTION)
-        String smtpAddress = ""
+        String smtpAddress = ''
 
         @Option(names = ['--smtp-port'], description = SMTP_PORT_DESCRIPTION)
         @JsonPropertyDescription(SMTP_PORT_DESCRIPTION)
@@ -475,17 +486,19 @@ class Schema {
 
         @Option(names = ['--smtp-user'], description = SMTP_USER_DESCRIPTION)
         @JsonPropertyDescription(SMTP_USER_DESCRIPTION)
-        String smtpUser = ""
+        String smtpUser = ''
 
         @Option(names = ['--smtp-password'], description = SMTP_PASSWORD_DESCRIPTION)
         @JsonPropertyDescription(SMTP_PASSWORD_DESCRIPTION)
-        String smtpPassword = ""
+        String smtpPassword = ''
 
         @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
+        @Mixin
         MailHelmSchema helm = new MailHelmSchema(
                 chart: 'mailhog',
                 repoURL: 'https://codecentric.github.io/helm-charts',
                 version: '5.0.1')
+
         static class MailHelmSchema extends HelmConfig {
             @Option(names = ['--mailhog-image'], description = HELM_CONFIG_IMAGE_DESCRIPTION)
             @JsonPropertyDescription(HELM_CONFIG_IMAGE_DESCRIPTION)
@@ -500,7 +513,7 @@ class Schema {
 
         @Option(names = ['--grafana-url'], description = GRAFANA_URL_DESCRIPTION)
         @JsonPropertyDescription(GRAFANA_URL_DESCRIPTION)
-        String grafanaUrl = ""
+        String grafanaUrl = ''
 
         @Option(names = ['--grafana-email-from'], description = GRAFANA_EMAIL_FROM_DESCRIPTION)
         @JsonPropertyDescription(GRAFANA_EMAIL_FROM_DESCRIPTION)
@@ -510,8 +523,10 @@ class Schema {
         @JsonPropertyDescription(GRAFANA_EMAIL_TO_DESCRIPTION)
         String grafanaEmailTo = 'infra@example.org'
 
+        @Mixin
         @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
-        @SuppressWarnings('GroovyAssignabilityCheck') // Because of values
+        @SuppressWarnings('GroovyAssignabilityCheck')
+        // Because of values
         MonitoringHelmSchema helm = new MonitoringHelmSchema(
                 chart: 'kube-prometheus-stack',
                 repoURL: 'https://prometheus-community.github.io/helm-charts',
@@ -522,23 +537,23 @@ class Schema {
         static class MonitoringHelmSchema extends HelmConfigWithValues {
             @Option(names = ['--grafana-image'], description = GRAFANA_IMAGE_DESCRIPTION)
             @JsonPropertyDescription(GRAFANA_IMAGE_DESCRIPTION)
-            String grafanaImage = ""
+            String grafanaImage = ''
 
             @Option(names = ['--grafana-sidecar-image'], description = GRAFANA_SIDECAR_IMAGE_DESCRIPTION)
             @JsonPropertyDescription(GRAFANA_SIDECAR_IMAGE_DESCRIPTION)
-            String grafanaSidecarImage = ""
+            String grafanaSidecarImage = ''
 
             @Option(names = ['--prometheus-image'], description = PROMETHEUS_IMAGE_DESCRIPTION)
             @JsonPropertyDescription(PROMETHEUS_IMAGE_DESCRIPTION)
-            String prometheusImage = ""
+            String prometheusImage = ''
 
             @Option(names = ['--prometheus-operator-image'], description = PROMETHEUS_OPERATOR_IMAGE_DESCRIPTION)
             @JsonPropertyDescription(PROMETHEUS_OPERATOR_IMAGE_DESCRIPTION)
-            String prometheusOperatorImage = ""
+            String prometheusOperatorImage = ''
 
             @Option(names = ['--prometheus-config-reloader-image'], description = PROMETHEUS_CONFIG_RELOADER_IMAGE_DESCRIPTION)
             @JsonPropertyDescription(PROMETHEUS_CONFIG_RELOADER_IMAGE_DESCRIPTION)
-            String prometheusConfigReloaderImage = ""
+            String prometheusConfigReloaderImage = ''
         }
     }
 
@@ -565,15 +580,15 @@ class Schema {
             static class ESOHelmSchema extends HelmConfig {
                 @Option(names = ['--external-secrets-image'], description = EXTERNAL_SECRETS_IMAGE_DESCRIPTION)
                 @JsonPropertyDescription(EXTERNAL_SECRETS_IMAGE_DESCRIPTION)
-                String image = ""
+                String image = ''
 
                 @Option(names = ['--external-secrets-certcontroller-image'], description = EXTERNAL_SECRETS_CERT_CONTROLLER_IMAGE_DESCRIPTION)
                 @JsonPropertyDescription(EXTERNAL_SECRETS_CERT_CONTROLLER_IMAGE_DESCRIPTION)
-                String certControllerImage = ""
+                String certControllerImage = ''
 
                 @Option(names = ['--external-secrets-webhook-image'], description = EXTERNAL_SECRETS_WEBHOOK_IMAGE_DESCRIPTION)
                 @JsonPropertyDescription(EXTERNAL_SECRETS_WEBHOOK_IMAGE_DESCRIPTION)
-                String webhookImage = ""
+                String webhookImage = ''
             }
         }
 
@@ -584,8 +599,9 @@ class Schema {
 
             @Option(names = ['--vault-url'], description = VAULT_URL_DESCRIPTION)
             @JsonPropertyDescription(VAULT_URL_DESCRIPTION)
-            String url = ""
+            String url = ''
 
+            @Mixin
             @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
             VaultHelmSchema helm = new VaultHelmSchema(
                     chart: 'vault',
@@ -595,7 +611,7 @@ class Schema {
             static class VaultHelmSchema extends HelmConfig {
                 @Option(names = ['--vault-image'], description = VAULT_IMAGE_DESCRIPTION)
                 @JsonPropertyDescription(VAULT_IMAGE_DESCRIPTION)
-                String image = ""
+                String image = ''
             }
         }
     }
@@ -606,43 +622,53 @@ class Schema {
         @JsonPropertyDescription(INGRESS_NGINX_ENABLE_DESCRIPTION)
         Boolean active = false
 
+        @Mixin
         @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
         IngressNginxHelmSchema helm = new IngressNginxHelmSchema(
                 chart: 'ingress-nginx',
                 repoURL: 'https://kubernetes.github.io/ingress-nginx',
-                version: '4.9.1'
+                version: '4.11.3'
         )
         static class IngressNginxHelmSchema extends HelmConfigWithValues {
             @Option(names = ['--ingress-nginx-image'], description = HELM_CONFIG_IMAGE_DESCRIPTION)
             @JsonPropertyDescription(HELM_CONFIG_IMAGE_DESCRIPTION)
-            String image = ""
+            String image = ''
         }
     }
 
     static class CertManagerSchema {
+        @Option(names = ['--cert-manager'], description = CERTMANAGER_ENABLE_DESCRIPTION)
         @JsonPropertyDescription(CERTMANAGER_ENABLE_DESCRIPTION)
         Boolean active = false
 
+        @Mixin
         @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
-        CertManagerHelmSchema helm
-        static class CertManagerHelmSchema extends HelmConfig {
-            @JsonPropertyDescription(HELM_CONFIG_VALUES_DESCRIPTION)
-            Map<String, Object> values
+        CertManagerHelmSchema helm = new CertManagerHelmSchema(
+                chart: 'cert-manager',
+                repoURL: 'https://charts.jetstack.io',
+                version: '1.16.1'
+        )
+        static class CertManagerHelmSchema extends HelmConfigWithValues {
 
+            @Option(names = ['--cert-manager-image'], description = CERTMANAGER_IMAGE_DESCRIPTION)
             @JsonPropertyDescription(CERTMANAGER_IMAGE_DESCRIPTION)
-            String image = ""
+            String image = ''
 
+            @Option(names = ['--cert-manager-webhook-image'], description = CERTMANAGER_WEBHOOK_IMAGE_DESCRIPTION)
             @JsonPropertyDescription(CERTMANAGER_WEBHOOK_IMAGE_DESCRIPTION)
-            String webhookImage = ""
+            String webhookImage = ''
 
+            @Option(names = ['--cert-manager-cainjector-image'], description = CERTMANAGER_CAINJECTOR_IMAGE_DESCRIPTION)
             @JsonPropertyDescription(CERTMANAGER_CAINJECTOR_IMAGE_DESCRIPTION)
-            String cainjectorImage = ""
+            String cainjectorImage = ''
 
+            @Option(names = ['--cert-manager-acme-solver-image'], description = CERTMANAGER_ACME_SOLVER_IMAGE_DESCRIPTION)
             @JsonPropertyDescription(CERTMANAGER_ACME_SOLVER_IMAGE_DESCRIPTION)
-            String acmeSolverImage = ""
+            String acmeSolverImage = ''
 
+            @Option(names = ['--cert-manager-startup-api-check-image'], description = CERTMANAGER_STARTUP_API_CHECK_IMAGE_DESCRIPTION)
             @JsonPropertyDescription(CERTMANAGER_STARTUP_API_CHECK_IMAGE_DESCRIPTION)
-            String startupAPICheckImage = ""
+            String startupAPICheckImage = ''
 
         }
     }
@@ -655,11 +681,13 @@ class Schema {
 
         static class ExampleAppSchema {
             @JsonPropertyDescription(BASE_DOMAIN_DESCRIPTION)
-            String baseDomain = ""
+            String baseDomain = ''
         }
     }
 
-    static enum VaultMode { dev, prod }
+    static enum VaultMode {
+        dev, prod
+    }
 
     private static final ObjectMapper objectMapper = new ObjectMapper()
             .registerModule(new SimpleModule().addSerializer(GString, new JsonSerializer<GString>() {
@@ -669,14 +697,14 @@ class Schema {
                 }
             }))
 
-    static Schema fromMap(Map map) {
-        objectMapper.convertValue(map, Schema)
+    static Config fromMap(Map map) {
+        objectMapper.convertValue(map, Config)
     }
 
     Map toMap() {
         objectMapper.convertValue(this, Map)
     }
-    
+
     String toYaml(boolean includeInternals) {
         createYamlMapper(includeInternals)
                 .writeValueAsString(this)

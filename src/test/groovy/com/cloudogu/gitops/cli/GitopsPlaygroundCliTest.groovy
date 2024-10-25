@@ -6,7 +6,7 @@ import ch.qos.logback.classic.encoder.PatternLayoutEncoder
 import ch.qos.logback.core.ConsoleAppender
 import com.cloudogu.gitops.Application
 import com.cloudogu.gitops.config.ApplicationConfigurator
-import com.cloudogu.gitops.config.schema.Schema
+import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.destroy.Destroyer
 import com.cloudogu.gitops.utils.K8sClient
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
@@ -49,7 +49,7 @@ class GitopsPlaygroundCliTest {
         def status = cli.run('--yes')
 
         assertThat(status).isEqualTo(ReturnCode.SUCCESS)
-        verify(applicationConfigurator).initAndValidateConfig(any(Map))
+        verify(applicationConfigurator).initAndValidateConfig(any(Config))
         verify(application).start()
     }
     
@@ -58,7 +58,7 @@ class GitopsPlaygroundCliTest {
         def status = cli.run('--output-config-file')
 
         assertThat(status).isEqualTo(ReturnCode.SUCCESS)
-        verify(applicationConfigurator).initAndValidateConfig(any(Map))
+        verify(applicationConfigurator).initAndValidateConfig(any(Config))
         verify(application, never()).start()
     }
     
@@ -68,11 +68,20 @@ class GitopsPlaygroundCliTest {
         def status = cli.run('--version')
 
         assertThat(status).isEqualTo(ReturnCode.SUCCESS)
-        verify(applicationConfigurator).initAndValidateConfig(any(Map))
+        verify(applicationConfigurator).initAndValidateConfig(any(Config))
         verify(application, never()).start()
     }
 
-    
+    @Test
+    void 'Outputs help'() {
+        def cli = new GitopsPlaygroundCliForTest()
+        def status = cli.run('--help')
+
+        assertThat(status).isEqualTo(ReturnCode.SUCCESS)
+        verify(applicationConfigurator).initAndValidateConfig(any(Config))
+        verify(application, never()).start()
+    }
+
     @Test
     void 'Returns error, when applying is not confirmed'() {
         writeViaSystemIn('something')
@@ -156,7 +165,7 @@ class GitopsPlaygroundCliTest {
         def exception = shouldFail(RuntimeException) {
             cli.run("--config-file=${configFile}", '--yes' )
         }
-        assertThat(exception.message).contains('Configuration file invalid')
+        assertThat(exception.message).contains('Config file invalid')
     }
 
     @Test
@@ -166,7 +175,7 @@ class GitopsPlaygroundCliTest {
         def exception = shouldFail(RuntimeException) {
             cli.run('--config-map=my-config', '--yes' )
         }
-        assertThat(exception.message).contains('Configuration file invalid')
+        assertThat(exception.message).contains('Config file invalid')
     }
     
     @Test
@@ -195,7 +204,8 @@ class GitopsPlaygroundCliTest {
         assertThat(cli.lastSchema.application.password).isEqualTo('filePw')
         assertThat(cli.lastSchema.application.namePrefix).isEqualTo('cmPref')
     }
-    
+
+
     static String getLoggingPattern() {
         loggingEncoder.pattern
     }
@@ -218,18 +228,19 @@ class GitopsPlaygroundCliTest {
     
     class GitopsPlaygroundCliForTest extends GitopsPlaygroundCli {
         ApplicationContext applicationContext = mock(ApplicationContext)
-        Schema lastSchema = null
+        Config lastSchema = null
 
         GitopsPlaygroundCliForTest() {
             super(GitopsPlaygroundCliTest.this.k8sClient, GitopsPlaygroundCliTest.this.applicationConfigurator)
 
-            when(applicationConfigurator.initAndValidateConfig(any(Map))).thenAnswer(new Answer<Schema>() {
+            when(applicationConfigurator.initAndValidateConfig(any(Config))).thenAnswer(new Answer<Config>() {
                 @Override
-                Schema answer(InvocationOnMock invocation) throws Throwable {
+                Config answer(InvocationOnMock invocation) throws Throwable {
                     lastSchema = invocation.getArgument(0)
                     return lastSchema
                 }
             })
+
         }
         
         @Override

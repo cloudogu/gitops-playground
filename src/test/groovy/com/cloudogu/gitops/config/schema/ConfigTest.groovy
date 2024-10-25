@@ -1,12 +1,13 @@
 package com.cloudogu.gitops.config.schema
 
+import com.cloudogu.gitops.config.Config
 import org.junit.jupiter.api.Test
 
 import static org.assertj.core.api.Assertions.assertThat
-import static com.cloudogu.gitops.config.schema.Schema.*
+import static com.cloudogu.gitops.config.Config.*
 
-class SchemaTest {
-    Schema testConfig = new Schema(registry: new RegistrySchema(
+class ConfigTest {
+    Config testConfig = new Config(registry: new RegistrySchema(
             twoRegistries: true,
             internalPort: 123))
 
@@ -35,13 +36,14 @@ registry:
     
     @Test
     void 'creates from schema overwriting only Map values, ignoring null values'() {
-        def expectedValues = new Schema(application: new ApplicationSchema(
+        Config expectedValues = new Config(
+                application: new ApplicationSchema(
                 // Overwrites a default String
-                username: 'myUser',
-                // Overwrites a default Boolean
-                yes: true,
-                // Sets an otherwise empty string
-                namePrefix: 'aPrefix'),
+                        username: 'myUser',
+                        // Overwrites a default Boolean
+                        yes: true,
+                        // Sets an otherwise empty string
+                        namePrefix: "aPrefix"),
                 // Overwrites a default Integer
                 registry: new RegistrySchema(internalPort: 42))
         

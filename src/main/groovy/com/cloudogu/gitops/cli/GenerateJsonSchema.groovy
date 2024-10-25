@@ -5,11 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import io.micronaut.context.ApplicationContext 
 /**
- * Generates the JSON Schema for the configuration file and prints it to docs/configuration.schema.json.
+ * Generates the JSON Config for the configuration file and prints it to docs/configuration.schema.json.
  * Passing '-' as parameter prints the schema to stdout
  * JsonSchemaGeneratorTest ensures that this is updated.
  *
- * @see com.cloudogu.gitops.config.schema.Schema
+ * @see com.cloudogu.gitops.config.Config
  */
 class GenerateJsonSchema {
     static void main(String[] args) {

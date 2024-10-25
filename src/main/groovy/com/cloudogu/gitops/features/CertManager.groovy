@@ -2,7 +2,8 @@ package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.FeatureWithImage
-import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.config.Config
+
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.*
 import freemarker.template.DefaultObjectWrapperBuilder
@@ -24,18 +25,18 @@ class CertManager extends Feature implements FeatureWithImage{
     private DeploymentStrategy deployer
     private AirGappedUtils airGappedUtils
     final K8sClient k8sClient
-    final Map config
+    final Config config
     final String namespace ="cert-manager"
 
     CertManager(
-            Configuration config,
+            Config config,
             FileSystemUtils fileSystemUtils,
             DeploymentStrategy deployer,
             K8sClient k8sClient,
             AirGappedUtils airGappedUtils
     ) {
         this.deployer = deployer
-        this.config = config.getConfig()
+        this.config = config
         this.fileSystemUtils = fileSystemUtils
         this.k8sClient = k8sClient
         this.airGappedUtils = airGappedUtils
@@ -43,7 +44,7 @@ class CertManager extends Feature implements FeatureWithImage{
 
     @Override
     boolean isEnabled() {
-        return config.features['certManager']['active']
+        return config.features.certManager.active
     }
 
     @Override
@@ -59,23 +60,21 @@ class CertManager extends Feature implements FeatureWithImage{
 
 
 
-        def valuesFromConfig = config['features']['certManager']['helm']['values'] as Map
+        def valuesFromConfig = config.features.certManager.helm.values
 
         def mergedMap = MapUtils.deepMerge(valuesFromConfig, templatedMap)
 
         def tmpHelmValues = fileSystemUtils.createTempFile()
         fileSystemUtils.writeYaml(mergedMap, tmpHelmValues.toFile())
 
-        //k8sClient.createNamespace("cert-manager")
-
-        def helmConfig = config['features']['certManager']['helm']
-        if (config.application['mirrorRepos']) {
+        def helmConfig = config.features.certManager.helm
+        if (config.application.mirrorRepos) {
             log.debug("Mirroring repos: Deploying certManager from local git repo")
 
-            def repoNamespaceAndName = airGappedUtils.mirrorHelmRepoToGit(config['features']['certManager']['helm'] as Map)
+            def repoNamespaceAndName = airGappedUtils.mirrorHelmRepoToGit(config.features.certManager.helm)
 
             String certManagerVersion =
-                    new YamlSlurper().parse(Path.of("${config.application['localHelmChartFolder']}/${helmConfig['chart']}",
+                    new YamlSlurper().parse(Path.of("${config.application.localHelmChartFolder}/${helmConfig.chart}",
                             'Chart.yaml'))['version']
 
             deployer.deployFeature(
@@ -88,10 +87,10 @@ class CertManager extends Feature implements FeatureWithImage{
                     tmpHelmValues, DeploymentStrategy.RepoType.GIT)
         } else {
             deployer.deployFeature(
-                    helmConfig['repoURL'] as String,
+                    helmConfig.repoURL,
                     'cert-manager',
-                    helmConfig['chart'] as String,
-                    helmConfig['version'] as String,
+                    helmConfig.chart,
+                    helmConfig.version,
                     'cert-manager',
                     'cert-manager',
                     tmpHelmValues
@@ -99,10 +98,10 @@ class CertManager extends Feature implements FeatureWithImage{
         }
     }
     private URI getScmmUri() {
-        if (config.scmm['internal']) {
+        if (config.scmm.internal) {
             new URI('http://scmm-scm-manager.default.svc.cluster.local/scm')
         } else {
-            new URI("${config.scmm['url']}/scm")
+            new URI("${config.scmm.url}/scm")
         }
     }
 

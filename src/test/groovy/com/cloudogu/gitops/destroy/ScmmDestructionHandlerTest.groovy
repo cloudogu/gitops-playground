@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.destroy
 
-import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.config.Config
+
 import com.cloudogu.gitops.scmm.api.RepositoryApi
 import com.cloudogu.gitops.scmm.api.UsersApi
 import okhttp3.mockwebserver.MockResponse
@@ -32,7 +33,7 @@ class ScmmDestructionHandlerTest {
 
     @Test
     void 'destroys all'() {
-        def destructionHandler = new ScmmDestructionHandler(new Configuration([application: [namePrefix: 'foo-']]), retrofit.create(UsersApi), retrofit.create(RepositoryApi))
+        def destructionHandler = new ScmmDestructionHandler(Config.fromMap( [application: [namePrefix: 'foo-']]), retrofit.create(UsersApi), retrofit.create(RepositoryApi))
 
         for (def i = 0; i < 1 /* user */ + 13 /* repositories */; i++) {
             mockWebServer.enqueue(new MockResponse().setResponseCode(204))

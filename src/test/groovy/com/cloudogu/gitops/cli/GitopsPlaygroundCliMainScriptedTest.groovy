@@ -2,7 +2,7 @@ package com.cloudogu.gitops.cli
 
 import com.cloudogu.gitops.Application
 import com.cloudogu.gitops.Feature
-import com.cloudogu.gitops.config.schema.Schema
+import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.destroy.Destroyer
 import com.cloudogu.gitops.destroy.DestructionHandler
 import io.github.classgraph.ClassGraph
@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test
 
 import static org.assertj.core.api.Assertions.assertThat
 import static org.assertj.core.api.Fail.fail
-import static com.cloudogu.gitops.config.schema.Schema.*
+import static com.cloudogu.gitops.config.Config.*
 
 /**
  * It is difficult to test if *all* classes are instantiated.
@@ -25,14 +25,14 @@ class GitopsPlaygroundCliMainScriptedTest {
 
     ApplicationContext applicationContext
     GitopsPlaygroundCliScriptedForTest gitopsPlaygroundCliScripted = new GitopsPlaygroundCliScriptedForTest()
-    Schema config = new Schema(
+    Config config = new Config(
             jenkins: new JenkinsSchema(url: 'http://jenkins'),
             scmm: new ScmmSchema(url: 'http://scmm')
     )
 
     /**
      * This test makes sure that we don't forget to add new {@link Feature} classes to 
-     * {@link GitopsPlaygroundCliMainScripted.GitopsPlaygroundCliScripted#register(com.cloudogu.gitops.config.schema.Schema, io.micronaut.context.ApplicationContext)}
+     * {@link GitopsPlaygroundCliMainScripted.GitopsPlaygroundCliScripted#register(Config, io.micronaut.context.ApplicationContext)}
      * so they also work in the dev image.
      */
     @Test
@@ -50,7 +50,7 @@ class GitopsPlaygroundCliMainScriptedTest {
 
     @Test
     void 'all DestructionHandlers are instantiated in the correct order'() {
-        config = new Schema(config.properties + [application: new ApplicationSchema(destroy: true)])
+        config = new Config(config.properties + [application: new ApplicationSchema(destroy: true)])
 
         gitopsPlaygroundCliScripted.createApplicationContext()
         gitopsPlaygroundCliScripted.register(config, applicationContext)

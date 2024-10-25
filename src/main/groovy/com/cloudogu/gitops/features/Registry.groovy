@@ -1,7 +1,7 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
-import com.cloudogu.gitops.config.schema.Schema
+import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -22,14 +22,14 @@ class Registry extends Feature {
      */
     public static final String CONTAINER_PORT = '5000'
     
-    private Schema config
+    private Config config
     private DeploymentStrategy deployer
     private FileSystemUtils fileSystemUtils
     private Path tmpHelmValues
     private K8sClient k8sClient
 
     Registry(
-            Schema config,
+            Config config,
             FileSystemUtils fileSystemUtils,
             K8sClient k8sClient,
             // For now we deploy imperatively using helm to avoid order problems. In future we could deploy via argocd.
@@ -54,14 +54,14 @@ class Registry extends Feature {
         
         Map yaml = [
                 service: [
-                        nodePort: Schema.DEFAULT_REGISTRY_PORT,
+                        nodePort: Config.DEFAULT_REGISTRY_PORT,
                         type: 'NodePort'
                 ]
         ]
         log.trace("Helm yaml to be applied: ${yaml}")
         fileSystemUtils.writeYaml(yaml, tmpHelmValues.toFile())
         
-        if (config.registry.internalPort != Schema.DEFAULT_REGISTRY_PORT) {
+        if (config.registry.internalPort != Config.DEFAULT_REGISTRY_PORT) {
             /* Add additional node port
                30000 is needed as a static by docker via port mapping of k3d, e.g. 32769 -> 30000 on server-0 container
                See "-p 30000" in init-cluster.sh

@@ -1,8 +1,6 @@
 package com.cloudogu.gitops.features
 
-
-import com.cloudogu.gitops.config.Configuration
-import com.cloudogu.gitops.config.schema.Schema
+import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -10,11 +8,10 @@ import com.cloudogu.gitops.utils.HelmClient
 import com.cloudogu.gitops.utils.K8sClientForTest
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
-
 import java.nio.file.Path
 
 import static org.assertj.core.api.Assertions.assertThat
-import static com.cloudogu.gitops.config.schema.Schema.*
+import static com.cloudogu.gitops.config.Config.*
 
 class RegistryTest {
 
@@ -60,12 +57,11 @@ class RegistryTest {
     }
 
     private Registry createRegistry(RegistrySchema registryConfig = new RegistrySchema()) {
-        def config = new Schema(
+        def config = new Config(
                 application: new ApplicationSchema(namePrefix: 'foo-'),
                 registry: registryConfig
         )
-        Map configMap = config.toMap()
-        k8sClient = new K8sClientForTest(configMap)
+        k8sClient = new K8sClientForTest(config)
         helmCommands = new CommandExecutorForTest()
         helmClient = new HelmClient(helmCommands)
 
@@ -78,7 +74,7 @@ class RegistryTest {
 
                 return ret
             }
-        }, k8sClient, new HelmStrategy(new Configuration(configMap), helmClient))
+        }, k8sClient, new HelmStrategy(config, helmClient))
     }
 
     private parseActualYaml() {

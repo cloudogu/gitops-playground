@@ -1,7 +1,8 @@
 package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.Feature
-import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.config.Config
+
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import com.cloudogu.gitops.utils.*
@@ -21,10 +22,10 @@ import java.nio.file.Path
 class ArgoCD extends Feature {
     static final String HELM_VALUES_PATH = 'argocd/values.yaml'
     static final String CHART_YAML_PATH = 'argocd/Chart.yaml'
-    static final String SCMM_URL_INTERNAL = "http://scmm-scm-manager.default.svc.cluster.local/scm"
+    static final String SCMM_URL_INTERNAL = 'http://scmm-scm-manager.default.svc.cluster.local/scm'
     static final String MONITORING_RESOURCES_PATH = '/misc/monitoring/'
 
-    private Map config
+    private Config config
     private List<RepoInitializationAction> gitRepos = []
 
     private String password
@@ -45,19 +46,19 @@ class ArgoCD extends Feature {
     private ScmmRepoProvider repoProvider
 
     ArgoCD(
-            Configuration config,
+            Config config,
             K8sClient k8sClient,
             HelmClient helmClient,
             FileSystemUtils fileSystemUtils,
             ScmmRepoProvider repoProvider
     ) {
         this.repoProvider = repoProvider
-        this.config = config.getConfig()
+        this.config = config
         this.k8sClient = k8sClient
         this.helmClient = helmClient
         this.fileSystemUtils = fileSystemUtils
 
-        this.password = this.config.application["password"]
+        this.password = this.config.application.password
 
         argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd')
 
@@ -94,12 +95,12 @@ class ArgoCD extends Feature {
 
     @Override
     boolean isEnabled() {
-        config.features['argocd']['active']
+        config.features.argocd.active
     }
 
     @Override
     void enable() {
-        log.debug("Cloning Repositories")
+        log.debug('Cloning Repositories')
         cloneRemotePetclinicRepo()
         
         gitRepos.forEach( repoInitializationAction -> {
@@ -113,21 +114,21 @@ class ArgoCD extends Feature {
         preparePetClinicRepos()
 
         gitRepos.forEach( repoInitializationAction -> {
-            repoInitializationAction.repo.commitAndPush("Initial Commit")
+            repoInitializationAction.repo.commitAndPush('Initial Commit')
         })
 
-        log.debug("Installing Argo CD")
+        log.debug('Installing Argo CD')
         installArgoCd()
     }
 
     private void cloneRemotePetclinicRepo() {
-        log.debug("Cloning petclinic base repo, revision ${config.repositories['springPetclinic']['ref']}," +
-                " from ${config.repositories['springPetclinic']['url']}")
+        log.debug("Cloning petclinic base repo, revision ${config.repositories.springPetclinic.ref}," +
+                " from ${config.repositories.springPetclinic.url}")
         Git git = gitClone()
-                .setURI(config.repositories['springPetclinic']['url'].toString())
+                .setURI(config.repositories.springPetclinic.url.toString())
                 .setDirectory(remotePetClinicRepoTmpDir)
                 .call()
-        git.checkout().setName(config.repositories['springPetclinic']['ref'].toString()).call()
+        git.checkout().setName(config.repositories.springPetclinic.ref.toString()).call()
         log.debug('Finished cloning petclinic base repo')
     }
 
@@ -140,20 +141,20 @@ class ArgoCD extends Feature {
 
     private void prepareGitOpsRepos() {
 
-        if (!config.features['secrets']['active']) {
+        if (!config.features.secrets.active) {
             log.debug("Deleting unnecessary secrets folder from cluster resources: ${clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
             deleteDir clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/misc/secrets'
         }
 
-        if (!config.features['monitoring']['active']) {
+        if (!config.features.monitoring.active) {
             log.debug("Deleting unnecessary monitoring folder from cluster resources: ${clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
             deleteDir clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + MONITORING_RESOURCES_PATH
-        } else if (!config.features['ingressNginx']['active']) {
+        } else if (!config.features.ingressNginx.active) {
             deleteFile clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + MONITORING_RESOURCES_PATH + 'ingress-nginx-dashboard.yaml'
             deleteFile clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + MONITORING_RESOURCES_PATH + 'ingress-nginx-dashboard-requests-handling.yaml'
         }
 
-        if (!config.scmm["internal"]) {
+        if (!config.scmm.internal) {
             String externalScmmUrl = ScmmRepo.createScmmUrl(config)
             log.debug("Configuring all yaml files in gitops repos to use the external scmm url: ${externalScmmUrl}")
             replaceFileContentInYamls(new File(clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()), SCMM_URL_INTERNAL, externalScmmUrl)
@@ -166,7 +167,7 @@ class ArgoCD extends Feature {
     }
 
     private void prepareApplicationNginxHelmJenkins() {
-        if (!config.features['secrets']['active']) {
+        if (!config.features.secrets.active) {
             // External Secrets are not needed in example
             deleteFile nginxHelmJenkinsInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/k8s/staging/external-secret.yaml'
             deleteFile nginxHelmJenkinsInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/k8s/production/external-secret.yaml'
@@ -184,7 +185,7 @@ class ArgoCD extends Feature {
             new TemplatingEngine().template(
                     new File("${fileSystemUtils.getRootDir()}/applications/argocd/petclinic/Dockerfile.ftl"),
                     new File("${tmpDir}/Dockerfile"),
-                    [ baseImage: config['images']['petclinic'] as String ]
+                    [ baseImage: config.images.petclinic as String ]
             )
         }
     }
@@ -193,34 +194,34 @@ class ArgoCD extends Feature {
         
         prepareArgoCdRepo()
 
-        def namePrefix = config.application['namePrefix']
+        def namePrefix = config.application.namePrefix
         def argocdNamespace = 'argocd'
         
-        log.debug("Creating namespace for argocd")
+        log.debug('Creating namespace for argocd')
         k8sClient.createNamespace(argocdNamespace)
 
         createMonitoringNamespaceAndCrd()
 
-        log.debug("Creating repo credential secret that is used by argocd to access repos in SCM-Manager")
+        log.debug('Creating repo credential secret that is used by argocd to access repos in SCM-Manager')
         // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo 
         def repoTemplateSecretName = 'argocd-repo-creds-scmm'
-        String scmmUrlForArgoCD = config.scmm["internal"] ? SCMM_URL_INTERNAL : ScmmRepo.createScmmUrl(config)
+        String scmmUrlForArgoCD = config.scmm.internal ? SCMM_URL_INTERNAL : ScmmRepo.createScmmUrl(config)
         k8sClient.createSecret('generic', repoTemplateSecretName, 'argocd',
                 new Tuple2('url', scmmUrlForArgoCD),
                 new Tuple2('username', "${namePrefix}gitops"),
-                new Tuple2('password', config.scmm['password'])
+                new Tuple2('password', config.scmm.password)
         )
 
         k8sClient.label('secret', repoTemplateSecretName,'argocd',
                 new Tuple2(' argocd.argoproj.io/secret-type', 'repo-creds'))
 
-        if (config.features['mail']['smtpUser'] || config.features['mail']['smtpPassword']) {
+        if (config.features.mail.smtpUser || config.features.mail.smtpPassword) {
             k8sClient.createSecret(
                     'generic',
                     'argocd-notifications-secret',
                     'argocd',
-                    new Tuple2('email-username', config.features['mail']['smtpUser']),
-                    new Tuple2('email-password', config.features['mail']['smtpPassword'])
+                    new Tuple2('email-username', config.features.mail.smtpUser),
+                    new Tuple2('email-password', config.features.mail.smtpPassword)
             )
         }
 
@@ -253,21 +254,21 @@ class ArgoCD extends Feature {
     }
 
     protected void createMonitoringNamespaceAndCrd() {
-        if (config['features']['monitoring']['active']) {
+        if (config.features.monitoring.active) {
             
             log.debug("Creating namespace for monitoring, so argocd can add its service monitors there")
             k8sClient.createNamespace('monitoring')
 
-            if (!config['application']['skipCrds']) {
+            if (!config.application.skipCrds) {
                 def serviceMonitorCrdYaml
-                if (config.application['mirrorRepos']) {
+                if (config.application.mirrorRepos) {
                     serviceMonitorCrdYaml = Path.of(
-                            "${config.application['localHelmChartFolder']}/${config['features']['monitoring']['helm']['chart']}/charts/crds/crds/crd-servicemonitors.yaml"
+                            "${config.application.localHelmChartFolder}/${config.features.monitoring.helm.chart}/charts/crds/crds/crd-servicemonitors.yaml"
                     ).toString()
                 } else {
                     serviceMonitorCrdYaml =
                             "https://raw.githubusercontent.com/prometheus-community/helm-charts/" +
-                                    "kube-prometheus-stack-${config['features']['monitoring']['helm']['version']}/" +
+                                    "kube-prometheus-stack-${config.features.monitoring.helm.version}/" +
                                     "charts/kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml"
                 }
 
@@ -283,24 +284,24 @@ class ArgoCD extends Feature {
 
         argocdRepoInitializationAction.initLocalRepo()
 
-        if (!config.scmm["internal"]) {
+        if (!config.scmm.internal) {
             String externalScmmUrl = ScmmRepo.createScmmUrl(config)
             log.debug("Configuring all yaml files in argocd repo to use the external scmm url: ${externalScmmUrl}")
             replaceFileContentInYamls(new File(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()), SCMM_URL_INTERNAL, externalScmmUrl)
         }
 
-        if (!config.application["remote"]) {
+        if (!config.application.remote) {
             log.debug("Setting argocd service.type to NodePort since it is not running in a remote cluster")
             fileSystemUtils.replaceFileContent(tmpHelmValues.toString(), "LoadBalancer", "NodePort")
         }
 
-        if (config.features["argocd"]["url"]) {
-            log.debug("Setting argocd url for notifications")
+        if (config.features.argocd.url) {
+            log.debug('Setting argocd url for notifications')
             fileSystemUtils.replaceFileContent(tmpHelmValues.toString(), 
-                    "argocdUrl: https://localhost:9092", "argocdUrl: ${config.features["argocd"]["url"]}")
+                    "argocdUrl: https://localhost:9092", "argocdUrl: ${config.features.argocd.url}")
         }
 
-        if (!config.application["netpols"]) {
+        if (!config.application.netpols) {
             log.debug("Deleting argocd netpols.")
             deleteFile argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/argocd/templates/allow-namespaces.yaml'
         }
@@ -335,9 +336,9 @@ class ArgoCD extends Feature {
     static class RepoInitializationAction {
         private ScmmRepo repo
         private String copyFromDirectory
-        private Map config
+        private Config config
 
-        RepoInitializationAction(Map config, ScmmRepo repo, String copyFromDirectory) {
+        RepoInitializationAction(Config config, ScmmRepo repo, String copyFromDirectory) {
             this.config = config
             this.repo = repo
             this.copyFromDirectory = copyFromDirectory
@@ -354,60 +355,60 @@ class ArgoCD extends Feature {
 
         void replaceTemplates() {
             repo.replaceTemplates(~/\.ftl/, [
-                    namePrefix          : config.application['namePrefix'] as String,
-                    namePrefixForEnvVars: config.application['namePrefixForEnvVars'] as String,
-                    podResources        : config.application['podResources'],
+                    namePrefix          : config.application.namePrefix,
+                    namePrefixForEnvVars: config.application.namePrefixForEnvVars ,
+                    podResources        : config.application.podResources,
                     images              : config.images,
-                    nginxImage          : config.images['nginx'] ? DockerImageParser.parse(config.images['nginx'] as String) : null,
-                    isRemote            : config.application['remote'],
-                    isInsecure          : config.application['insecure'],
-                    urlSeparatorHyphen  : config.application['urlSeparatorHyphen'],
-                    mirrorRepos         : config.application['mirrorRepos'],
-                    skipCrds            : config.application['skipCrds'],
-                    netpols             : config.application['netpols'],
+                    nginxImage          : config.images.nginx ? DockerImageParser.parse(config.images.nginx) : null,
+                    isRemote            : config.application.remote,
+                    isInsecure          : config.application.insecure,
+                    urlSeparatorHyphen  : config.application.urlSeparatorHyphen,
+                    mirrorRepos         : config.application.mirrorRepos,
+                    skipCrds            : config.application.skipCrds,
+                    netpols             : config.application.netpols,
                     argocd              : [
                             // Note that passing the URL object here leads to problems in Graal Native image, see Git history
-                            host: config.features['argocd']['url'] ? new URL(config.features['argocd']['url'] as String).host : "",
-                            emailFrom    : config.features['argocd']['emailFrom'],
-                            emailToUser  : config.features['argocd']['emailToUser'],
-                            emailToAdmin : config.features['argocd']['emailToAdmin']
+                            host: config.features.argocd.url ? new URL(config.features.argocd.url).host : null,
+                            emailFrom    : config.features.argocd.emailFrom,
+                            emailToUser  : config.features.argocd.emailToUser,
+                            emailToAdmin : config.features.argocd.emailToAdmin
                     ],
                     registry : [
-                            twoRegistries: config.registry['twoRegistries']
+                            twoRegistries: config.registry.twoRegistries
                     ],
                     monitoring          : [
                             grafana: [
-                                    url: config.features['monitoring']['grafanaUrl'] ? new URL(config.features['monitoring']['grafanaUrl'] as String) : null,
+                                    url: config.features.monitoring.grafanaUrl ? new URL(config.features.monitoring.grafanaUrl) : null,
                             ],
-                            active: config['features']['monitoring']['active']
+                            active: config.features.monitoring.active
                     ],
                     mail: [
-                            active: config.features['mail']['active'],
-                            smtpAddress : config.features['mail']['smtpAddress'],
-                            smtpPort : config.features['mail']['smtpPort'],
-                            smtpUser : config.features['mail']['smtpUser'],
-                            smtpPassword : config.features['mail']['smtpPassword']
+                            active: config.features.mail.active,
+                            smtpAddress : config.features.mail.smtpAddress,
+                            smtpPort : config.features.mail.smtpPort,
+                            smtpUser : config.features.mail.smtpUser,
+                            smtpPassword : config.features.mail.smtpPassword
                     ],
                     secrets             : [
-                            active: config.features['secrets']['active'],
+                            active: config.features.secrets.active,
                             vault : [
-                                    url: config.features['secrets']['vault']['url'] ? new URL(config.features['secrets']['vault']['url'] as String) : null,
+                                    url: config.features.secrets.vault.url ? new URL(config.features.secrets.vault.url) : null,
                             ],
                     ],
                     scmm                : [
-                            baseUrl : config.scmm['internal'] ? 'http://scmm-scm-manager.default.svc.cluster.local/scm' : ScmmRepo.createScmmUrl(config),
-                            host    : config.scmm['internal'] ? 'scmm-scm-manager.default.svc.cluster.local' : config.scmm['host'],
-                            protocol: config.scmm['internal'] ? 'http' : config.scmm['protocol'],
+                            baseUrl : config.scmm.internal ? 'http://scmm-scm-manager.default.svc.cluster.local/scm' : ScmmRepo.createScmmUrl(config),
+                            host    : config.scmm.internal ? 'scmm-scm-manager.default.svc.cluster.local' : config.scmm.host,
+                            protocol: config.scmm.internal ? 'http' : config.scmm.protocol,
                     ],
                     jenkins             : [
-                            mavenCentralMirror  : config.jenkins['mavenCentralMirror'],
+                            mavenCentralMirror  : config.jenkins.mavenCentralMirror,
                     ],
                     exampleApps         : [
                             petclinic: [
-                                    baseDomain: config.features['exampleApps']['petclinic']['baseDomain']
+                                    baseDomain: config.features.exampleApps.petclinic.baseDomain
                             ],
                             nginx    : [
-                                    baseDomain: config.features['exampleApps']['nginx']['baseDomain']
+                                    baseDomain: config.features.exampleApps.nginx.baseDomain
                             ],
                     ],
                     config: config,

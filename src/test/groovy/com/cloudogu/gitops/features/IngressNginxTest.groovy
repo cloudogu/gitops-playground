@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.features
 
-import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.config.Config
+
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -8,7 +9,6 @@ import com.cloudogu.gitops.utils.K8sClientForTest
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
-
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -18,44 +18,20 @@ import static org.mockito.Mockito.*
 
 class IngressNginxTest {
 
-    Map config = [
-            application: [
-                    username: 'abc',
-                    password: '123',
-                    remote  : false,
-                    namePrefix: "foo-",
-                    podResources: false,
-                    mirrorRepos: false,
-                    netpols: false
-            ],
-            registry: [
-                    createImagePullSecrets: false
-            ],
-            scmm       : [
-                    internal: true,
-            ],
-            features:[
-                    ingressNginx: [
-                            active: true,
-                            helm  : [
-                                    chart: 'ingress-nginx',
-                                    repoURL: 'https://kubernetes.github.io/ingress-nginx',
-                                    version: '4.8.2',
-                                    image: '',
-                                    values : [:]
-                            ],
-                    ],
-                    monitoring: [
-                            active: false
-                    ]
-            ],
-    ]
-
+    // setting default config values with ingress nginx active
+    Config config = new Config(
+            application: new Config.ApplicationSchema(
+                    namePrefix: 'foo-'),
+            features: new Config.FeaturesSchema(
+                    ingressNginx: new Config.IngressNginxSchema(
+                            active: true)
+            ))
     Path temporaryYamlFile
     FileSystemUtils fileSystemUtils = new FileSystemUtils()
     DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
     AirGappedUtils airGappedUtils = mock(AirGappedUtils)
     K8sClientForTest k8sClient = new K8sClientForTest(config)
+
 
     @Test
     void 'Helm release is installed'() {
@@ -66,7 +42,7 @@ class IngressNginxTest {
         assertThat(actual['controller']['replicaCount']).isEqualTo(2)
 
         verify(deploymentStrategy).deployFeature('https://kubernetes.github.io/ingress-nginx', 'ingress-nginx',
-                'ingress-nginx', '4.8.2','ingress-nginx',
+                'ingress-nginx', '4.11.3','ingress-nginx',
                 'ingress-nginx', temporaryYamlFile)
         assertThat(parseActualYaml()['controller']['resources']).isNull()
         assertThat(parseActualYaml()['controller']['metrics']).isNull()
@@ -77,7 +53,7 @@ class IngressNginxTest {
 
     @Test
     void 'Sets pod resource limits and requests'() {
-        config.application['podResources'] = true
+        config.application.podResources = true
 
         createIngressNginx().install()
 
@@ -86,7 +62,7 @@ class IngressNginxTest {
 
     @Test
     void 'When Ingress-Nginx is not enabled, ingress-nginx-helm-values yaml has no content'() {
-        config.features['ingressNginx']['active'] = false
+        config.features.ingressNginx.active = false
 
         createIngressNginx().install()
 
@@ -95,7 +71,7 @@ class IngressNginxTest {
 
     @Test
     void 'additional helm values merged with default values'() {
-        config['features']['ingressNginx']['helm']['values'] = [
+        config.features.ingressNginx.helm.values = [
                 controller: [
                         replicaCount: 42,
                         span: '7,5',
@@ -112,12 +88,11 @@ class IngressNginxTest {
 
     @Test
     void 'helm release is installed in air-gapped mode'() {
-        config.features['ingressNginx']['active'] = true
-        config.application['mirrorRepos'] = true
-        when(airGappedUtils.mirrorHelmRepoToGit(any(Map))).thenReturn('a/b')
+        config.application.mirrorRepos = true
+        when(airGappedUtils.mirrorHelmRepoToGit(any(Config.HelmConfig))).thenReturn('a/b')
 
         Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
-        config.application['localHelmChartFolder'] = rootChartsFolder.toString()
+        config.application.localHelmChartFolder = rootChartsFolder.toString()
 
         Path SourceChart = rootChartsFolder.resolve('ingress-nginx')
         Files.createDirectories(SourceChart)
@@ -127,11 +102,11 @@ class IngressNginxTest {
 
         createIngressNginx().install()
 
-        def helmConfig = ArgumentCaptor.forClass(Map)
+        def helmConfig = ArgumentCaptor.forClass(Config.HelmConfig)
         verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
         assertThat(helmConfig.value.chart).isEqualTo('ingress-nginx')
         assertThat(helmConfig.value.repoURL).isEqualTo('https://kubernetes.github.io/ingress-nginx')
-        assertThat(helmConfig.value.version).isEqualTo('4.8.2')
+        assertThat(helmConfig.value.version).isEqualTo('4.11.3')
         verify(deploymentStrategy).deployFeature(
                 'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/a/b',
                 'ingress-nginx', '.', '1.2.3','ingress-nginx',
@@ -140,9 +115,8 @@ class IngressNginxTest {
 
     @Test
     void 'When Monitoring is enabled, metrics are enabled'() {
-        config.features['ingressNginx']['active'] = true
-        config.features['monitoring']['active'] = true
-        config.application['namePrefix'] = "heliosphere"
+        config.features.monitoring.active = true
+        config.application.namePrefix = "heliosphere"
 
         createIngressNginx().install()
 
@@ -155,7 +129,7 @@ class IngressNginxTest {
 
     @Test
     void 'Activates network policies'(){
-        config.application['netpols'] = true
+        config.application.netpols = true
 
         createIngressNginx().install()
 
@@ -166,10 +140,10 @@ class IngressNginxTest {
 
     @Test
     void 'deploys image pull secrets for proxy registry'() {
-        config['registry']['createImagePullSecrets'] = true
-        config['registry']['proxyUrl'] = 'proxy-url'
-        config['registry']['proxyUsername'] = 'proxy-user'
-        config['registry']['proxyPassword'] = 'proxy-pw'
+        config.registry.createImagePullSecrets = true
+        config.registry.proxyUrl = 'proxy-url'
+        config.registry.proxyUsername = 'proxy-user'
+        config.registry.proxyPassword = 'proxy-pw'
 
         createIngressNginx().install()
 
@@ -181,7 +155,7 @@ class IngressNginxTest {
 
     @Test
     void 'Allows overriding the image'() {
-        config['features']['ingressNginx']['helm']['image'] = 'localhost/abc:v42'
+        config.features.ingressNginx.helm.image = 'localhost/abc:v42'
 
         createIngressNginx().install()
 
@@ -193,8 +167,7 @@ class IngressNginxTest {
     
     private IngressNginx createIngressNginx() {
         // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
-
-        new IngressNginx(new Configuration(config), new FileSystemUtils() {
+        new IngressNginx(config, new FileSystemUtils() {
             @Override
             Path createTempFile() {
                 def ret = super.createTempFile()

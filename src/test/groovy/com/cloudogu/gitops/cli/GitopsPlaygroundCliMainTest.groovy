@@ -32,7 +32,9 @@ class GitopsPlaygroundCliMainTest {
     @Test
     void 'application returns exit code != 0 on invalid param'() {
         int status = SystemLambda.catchSystemExit(() -> {
-            GitopsPlaygroundCliMain.main(['--parameter-that-doesnt-exist'] as String[])
+            GitopsPlaygroundCliMain.main(['--parameter-that-doesnt-exist ',
+                                          '--debug' // avoids changing default log pattern
+            ] as String[])
         })
 
         assertThat(status).isNotZero()

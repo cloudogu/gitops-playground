@@ -9,7 +9,7 @@ import java.util.stream.Stream
 
 import static groovy.test.GroovyAssert.shouldFail 
 
-class JsonSchemaValidatorTest {
+class JsonConfigValidatorTest {
     static Stream<Arguments> validSchemas() {
         Stream.Builder<Arguments> ret = Stream.builder()
 

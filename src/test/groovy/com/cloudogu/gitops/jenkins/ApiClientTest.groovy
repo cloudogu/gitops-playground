@@ -1,7 +1,8 @@
 package com.cloudogu.gitops.jenkins
 
 import com.cloudogu.gitops.common.MockWebServerHttpsFactory
-import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.config.Config
+
 import io.micronaut.context.ApplicationContext
 import okhttp3.FormBody
 import okhttp3.JavaNetCookieJar
@@ -101,10 +102,12 @@ class ApiClientTest {
         webServer.start()
 
         def apiClient = ApplicationContext.run()
-                .registerSingleton(new Configuration([
-                        application: [ insecure: true ],
-                        jenkins: [ url: webServer.url("jenkins"), username: "admin", password: "admin" ]
-                ]))
+                .registerSingleton(new Config(
+                        application: new Config.ApplicationSchema(
+                                insecure: true),
+                        jenkins: new Config.JenkinsSchema(
+                                url: webServer.url("jenkins"), username: "admin", password: "admin")
+                ))
                 .getBean(ApiClient)
 
         def result = apiClient.runScript("println('ok')")

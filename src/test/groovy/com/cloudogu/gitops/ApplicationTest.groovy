@@ -1,23 +1,22 @@
 package com.cloudogu.gitops
 
-import com.cloudogu.gitops.config.Configuration
-import com.cloudogu.gitops.config.schema.Schema
+
+import com.cloudogu.gitops.config.Config
 import io.micronaut.context.ApplicationContext
 import org.junit.jupiter.api.Test
 
 import static org.assertj.core.api.Assertions.assertThat
-import static com.cloudogu.gitops.config.schema.Schema.*
+import static com.cloudogu.gitops.config.Config.*
 
 class ApplicationTest {
 
-    Schema config = new Schema(
+    Config config = new Config(
             scmm: new ScmmSchema(url: 'http://localhost'))
 
     @Test
     void 'feature\'s ordering is correct'() {
         def application = ApplicationContext.run()
                 .registerSingleton(config)
-                .registerSingleton(new Configuration(config.toMap()))
                 .getBean(Application)
         def features = application.features.collect { it.class.simpleName }
 

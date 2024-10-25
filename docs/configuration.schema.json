@@ -166,52 +166,52 @@
             }
           },
           "additionalProperties" : false,
-          "description" : "Configuration Parameter for the ArgoCD Operator"
+          "description" : "Config Parameter for the ArgoCD Operator"
         },
         "certManager" : {
-          "type" : "object",
+          "type" : [ "object", "null" ],
           "properties" : {
             "active" : {
-              "type" : "boolean",
+              "type" : [ "boolean", "null" ],
               "description" : "Sets and enables Cert Manager"
             },
             "helm" : {
-              "type" : "object",
+              "type" : [ "object", "null" ],
               "properties" : {
                 "acmeSolverImage" : {
-                  "type" : "string",
+                  "type" : [ "string", "null" ],
                   "description" : "Sets acmeSolver Image for Cert Manager"
                 },
                 "cainjectorImage" : {
-                  "type" : "string",
+                  "type" : [ "string", "null" ],
                   "description" : "Sets cainjector Image for Cert Manager"
                 },
                 "chart" : {
-                  "type" : "string",
+                  "type" : [ "string", "null" ],
                   "description" : "Name of the Helm chart"
                 },
                 "image" : {
-                  "type" : "string",
+                  "type" : [ "string", "null" ],
                   "description" : "Sets image for Cert Manager"
                 },
                 "repoURL" : {
-                  "type" : "string",
+                  "type" : [ "string", "null" ],
                   "description" : "Repository url from which the Helm chart should be obtained"
                 },
                 "startupAPICheckImage" : {
-                  "type" : "string",
+                  "type" : [ "string", "null" ],
                   "description" : "Sets startupAPICheck Image for Cert Manager"
                 },
                 "values" : {
-                  "$ref" : "#/$defs/Map(String,Object)",
+                  "$ref" : "#/$defs/Map(String,Object)-nullable",
                   "description" : "Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration"
                 },
                 "version" : {
-                  "type" : "string",
+                  "type" : [ "string", "null" ],
                   "description" : "The version of the Helm chart to be installed"
                 },
                 "webhookImage" : {
-                  "type" : "string",
+                  "type" : [ "string", "null" ],
                   "description" : "Sets webhook Image for Cert Manager"
                 }
               },

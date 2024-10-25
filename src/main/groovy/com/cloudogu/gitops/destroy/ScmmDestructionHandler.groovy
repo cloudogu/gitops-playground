@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.destroy
 
-import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.config.Config
+
 import com.cloudogu.gitops.scmm.api.RepositoryApi
 import com.cloudogu.gitops.scmm.api.UsersApi
 import io.micronaut.core.annotation.Order
@@ -11,15 +12,15 @@ import jakarta.inject.Singleton
 class ScmmDestructionHandler implements DestructionHandler {
     private UsersApi usersApi
     private RepositoryApi repositoryApi
-    private Configuration configuration
+    private Config config
 
     ScmmDestructionHandler(
-            Configuration configuration,
+            Config config,
             UsersApi usersApi,
             RepositoryApi repositoryApi
     ) {
         this.usersApi = usersApi
-        this.configuration = configuration
+        this.config = config
         this.repositoryApi = repositoryApi
     }
 
@@ -42,7 +43,7 @@ class ScmmDestructionHandler implements DestructionHandler {
     }
 
     private void deleteRepository(String namespace, String repository, boolean prefixNamespace = true) {
-        def namePrefix = prefixNamespace ? getNamePrefix() : ''
+        def namePrefix = prefixNamespace ? config.application.namePrefix : ''
         def response = repositoryApi.delete("${namePrefix}$namespace", repository).execute()
 
         if (response.code() != 204) {
@@ -51,14 +52,10 @@ class ScmmDestructionHandler implements DestructionHandler {
     }
 
     private void deleteUser(String name) {
-        def response = usersApi.delete("${getNamePrefix()}$name").execute()
+        def response = usersApi.delete("${config.application.namePrefix}$name").execute()
 
         if (response.code() != 204) {
             throw new RuntimeException("Could not delete user $name (${response.code()} ${response.message()}): ${response.errorBody().string()}")
         }
-    }
-
-    private String getNamePrefix() {
-        return configuration.getNamePrefix()
     }
 }

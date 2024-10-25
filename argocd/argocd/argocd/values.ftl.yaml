@@ -125,14 +125,14 @@ argo-cd:
     # secrets are created dynamically in groovy, so they are not stored in git
     secret:
       create: false
-    enabled: <#if mail.active??>true<#else>false</#if>
+    enabled: <#if mail.active == true>true<#else>false</#if>
     argocdUrl: https://localhost:9092
-<#if mail.active??>
+<#if mail.active?? && mail.active>
     notifiers:
       service.email: |
       <#if mail.smtpAddress?has_content>
         host: ${mail.smtpAddress}
-        <#if mail.smtpPort?has_content>port: ${mail.smtpPort}</#if>
+        <#if mail.smtpPort??>port: ${mail.smtpPort?c}</#if>
         <#if mail.smtpUser?has_content>username: $email-username</#if>
         <#if mail.smtpPassword?has_content>password: $email-password</#if>
       <#else>

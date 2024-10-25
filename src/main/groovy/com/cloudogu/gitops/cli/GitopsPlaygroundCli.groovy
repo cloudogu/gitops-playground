@@ -8,9 +8,8 @@ import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.ConsoleAppender
 import com.cloudogu.gitops.Application
 import com.cloudogu.gitops.config.ApplicationConfigurator
-import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.config.schema.JsonSchemaValidator
-import com.cloudogu.gitops.config.schema.Schema
+import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.destroy.Destroyer
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -23,11 +22,12 @@ import picocli.CommandLine
 
 import static com.cloudogu.gitops.config.ConfigConstants.APP_NAME
 import static com.cloudogu.gitops.utils.MapUtils.deepMerge
+
 /**
  * Provides the entrypoint to the application as well as all config parameters.
- * When changing parameters, make sure to update the Schema for the config file as well
+ * When changing parameters, make sure to update the Config for the config file as well
  *
- * @see com.cloudogu.gitops.config.schema.Schema
+ * @see Config
  */
 @Slf4j
 class GitopsPlaygroundCli {
@@ -47,11 +47,17 @@ class GitopsPlaygroundCli {
         def config = readConfigs(args)
         def version = createVersionOutput()
 
+        // if help is requested picocli help is used and printed by execute automatically
+        if (config.application.usageHelpRequested) {
+            new CommandLine(config).execute(args)
+            return ReturnCode.SUCCESS
+        }
+
         if (config.application.versionInfoRequested) {
             println version
             return ReturnCode.SUCCESS
         }
-        
+
         if (config.application.outputConfigFile) {
             println(config.toYaml(false))
             return ReturnCode.SUCCESS
@@ -65,7 +71,7 @@ class GitopsPlaygroundCli {
             if (!confirm("Destroying gitops playground in kubernetes cluster '${k8sClient.currentContext}'.", config)) {
                 return ReturnCode.NOT_CONFIRMED
             }
-            
+
             Destroyer destroyer = context.getBean(Destroyer)
             destroyer.destroy()
         } else {
@@ -91,25 +97,23 @@ class GitopsPlaygroundCli {
                     .replace('(', '')
                     .replace(')', '')
         }
-        return  "${APP_NAME} ${versionName}"
+        return "${APP_NAME} ${versionName}"
     }
 
     /** Can be used as a hook by child classes */
-    @SuppressWarnings('GrMethodMayBeStatic') // static methods cannot be overridden
-    protected Configuration register(Schema config, ApplicationContext context) {
+    @SuppressWarnings('GrMethodMayBeStatic')
+    // static methods cannot be overridden
+    protected void register(Config config, ApplicationContext context) {
         context.registerSingleton(config)
-        def configuration = new Configuration(config.toMap())
-        context.registerSingleton(configuration)
-        return configuration
     }
 
-    private static boolean confirm(String message, Schema config) {
+    private static boolean confirm(String message, Config config) {
         if (config.application.yes) {
             return true
         }
-        
+
         log.info("\n${message}\nContinue? y/n [n]")
-                
+
         def input = System.in.newReader().readLine()
 
         return input == 'y'
@@ -149,7 +153,7 @@ class GitopsPlaygroundCli {
         rootLogger.detachAppender('STDOUT')
         PatternLayoutEncoder encoder = new PatternLayoutEncoder()
         // Remove less relevant details from log pattern
-        encoder.setPattern(defaultPattern 
+        encoder.setPattern(defaultPattern
                 .replaceAll(" \\S*%thread\\S* ", " ")
                 .replaceAll(" \\S*%logger\\S* ", " "))
         encoder.setContext(loggerContext)
@@ -162,9 +166,9 @@ class GitopsPlaygroundCli {
         rootLogger.addAppender(appender)
     }
 
-    private Schema readConfigs(String[] args) {
+    private Config readConfigs(String[] args) {
         log.debug("Reading initial CLI params")
-        def cliParams = new Schema()
+        def cliParams = new Config()
         new CommandLine(cliParams).parseArgs(args)
 
         String configFilePath = cliParams.application.configFile
@@ -185,18 +189,18 @@ class GitopsPlaygroundCli {
         }
 
         // Last one takes precedence
-        def configPrecedence = [ configMap, configFile ]
+        def configPrecedence = [configMap, configFile]
         Map mergedConfigs = [:]
         configPrecedence.each {
             deepMerge(it, mergedConfigs)
         }
 
         log.debug("Writing CLI params into config")
-        def mergedConfig = Schema.fromMap(mergedConfigs)
+        Config mergedConfig = Config.fromMap(mergedConfigs)
+        //Schema newConfig = Config.fromMap(deepMerge(configToSet, config.toMap()))
         new CommandLine(mergedConfig).parseArgs(args)
 
-        // TODO make it write to Schema directly? No more immutable then.
-        mergedConfig = applicationConfigurator.initAndValidateConfig(mergedConfig.toMap())
+        mergedConfig = applicationConfigurator.initAndValidateConfig(mergedConfig)
 
         log.debug("Actual config: ${mergedConfig.toYaml(true)}")
 

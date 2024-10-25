@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.destroy
 
-import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.config.Config
+
 import io.micronaut.context.ApplicationContext
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
@@ -9,7 +10,7 @@ class DestroyerDependencyInjectionTest {
     @Test
     void 'can create bean'() {
         def destroyer = ApplicationContext.run()
-                .registerSingleton(new Configuration([
+                .registerSingleton(Config.fromMap( [
                         scmm: [
                                 url: 'http://localhost:9091/scm',
                                 username: 'admin',

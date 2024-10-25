@@ -1,6 +1,6 @@
 package com.cloudogu.gitops.destroy
 
-import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -17,11 +17,11 @@ class ArgoCDDestructionHandler implements DestructionHandler {
     private K8sClient k8sClient
     private ScmmRepoProvider repoProvider
     private HelmClient helmClient
-    private Configuration configuration
+    private Config config
     private FileSystemUtils fileSystemUtils
 
     ArgoCDDestructionHandler(
-            Configuration configuration,
+            Config config,
             K8sClient k8sClient,
             ScmmRepoProvider repoProvider,
             HelmClient helmClient,
@@ -30,7 +30,7 @@ class ArgoCDDestructionHandler implements DestructionHandler {
         this.k8sClient = k8sClient
         this.repoProvider = repoProvider
         this.helmClient = helmClient
-        this.configuration = configuration
+        this.config = config
         this.fileSystemUtils = fileSystemUtils
     }
 
@@ -87,7 +87,7 @@ class ArgoCDDestructionHandler implements DestructionHandler {
 
     void installArgoCDViaHelm(ScmmRepo repo) {
         // this is a hack to be able to uninstall using helm
-        def namePrefix = configuration.getNamePrefix()
+        def namePrefix = config.application.namePrefix
 
         // Install umbrella chart from folder
         String umbrellaChartPath = Path.of(repo.getAbsoluteLocalRepoTmpDir(), 'argocd/')

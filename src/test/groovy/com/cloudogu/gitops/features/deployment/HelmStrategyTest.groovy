@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.features.deployment
 
-import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.config.Config
+
 import com.cloudogu.gitops.utils.HelmClient
 import org.junit.jupiter.api.Test
 
@@ -40,6 +41,6 @@ class HelmStrategyTest {
     }
     
     protected HelmStrategy createStrategy() {
-        new HelmStrategy(new Configuration([application: [namePrefix: "foo-"]]), helmClient)
+        new HelmStrategy(new Config([application: [namePrefix: "foo-"]]), helmClient)
     }
 }

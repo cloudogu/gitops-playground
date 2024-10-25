@@ -8,7 +8,9 @@ class TemplatingEngine {
     private Configuration engine
 
     TemplatingEngine(Configuration engine = null) {
-        this.engine = engine ?: new Configuration(new Version("2.3.32"))
+        def configuration = new Configuration(new Version("2.3.32"))
+        this.engine = engine ?: configuration
+        this.engine.setSharedVariable("nullToEmpty", '');
     }
 
     /**
