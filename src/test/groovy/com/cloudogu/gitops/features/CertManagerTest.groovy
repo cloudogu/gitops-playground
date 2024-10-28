@@ -22,37 +22,36 @@ class CertManagerTest {
     String chartVersion = "1.16.1"
     Map config = [
             application: [
-                    username: 'abc',
-                    password: '123',
-                    remote  : false,
-                    namePrefix: "foo-",
+                    username    : 'abc',
+                    password    : '123',
+                    remote      : false,
+                    namePrefix  : "foo-",
                     podResources: false,
-                    mirrorRepos: false,
-                    skipCrds: false
+                    mirrorRepos : false,
+                    skipCrds    : false
             ],
-            registry: [
+            registry   : [
                     createImagePullSecrets: false
             ],
             scmm       : [
                     internal: true,
             ],
-            features:[
-                    monitoring: [
+            features   : [
+                    monitoring : [
                             active: false
                     ],
 
                     certManager: [
                             active: true,
-
                             helm  : [
-                                    chart: 'cert-manager',
-                                    repoURL: 'https://charts.jetstack.io',
-                                    version: chartVersion,
-                                    values: [:],
-                                    image: '',
-                                    webhookImage: '',
-                                    cainjectorImage: '',
-                                    acmeSolverImage: '',
+                                    chart               : 'cert-manager',
+                                    repoURL             : 'https://charts.jetstack.io',
+                                    version             : chartVersion,
+                                    values              : [:],
+                                    image               : '',
+                                    webhookImage        : '',
+                                    cainjectorImage     : '',
+                                    acmeSolverImage     : '',
                                     startupAPICheckImage: '',
                             ],
                     ],
@@ -69,38 +68,21 @@ class CertManagerTest {
     void 'Helm release is installed'() {
         createCertManager().install()
 
-        /* Assert one default value */
-//        def actual = parseActualYaml()
-
         verify(deploymentStrategy).deployFeature('https://charts.jetstack.io', 'cert-manager',
-                'cert-manager', chartVersion,'cert-manager',
+                'cert-manager', chartVersion, 'cert-manager',
                 'cert-manager', temporaryYamlFile)
-
-    }
-
-    @Test
-    void 'Set cert manager image'() {
-        config.application['skipCrds'] = false
-        config.features['certManager']['helm']['image'] = "this.is.my.registry:30000/this.is.my.repository/cert-manager-controller:latest"
-
-        createCertManager().install()
-
-        assertThat(parseActualYaml()['image']['repository'] as String).isEqualTo('this.is.my.registry:30000/this.is.my.repository/cert-manager-controller')
-        assertThat(parseActualYaml()['image']['tag'] as String).isEqualTo('latest')
     }
 
     @Test
     void 'Sets pod resource limits and requests'() {
-
         config.application['podResources'] = true
 
         createCertManager().install()
 
-        assertThat(parseActualYaml()['resources']as Map).containsKeys('limits', 'requests')
-        assertThat(parseActualYaml()['cainjector']['resources']as Map).containsKeys('limits', 'requests')
-        assertThat(parseActualYaml()['webhook']['resources']as Map).containsKeys('limits', 'requests')
+        assertThat(parseActualYaml()['resources'] as Map).containsKeys('limits', 'requests')
+        assertThat(parseActualYaml()['cainjector']['resources'] as Map).containsKeys('limits', 'requests')
+        assertThat(parseActualYaml()['webhook']['resources'] as Map).containsKeys('limits', 'requests')
     }
-
 
     @Test
     void "is disabled via active flag"() {
@@ -109,11 +91,8 @@ class CertManagerTest {
         assertThat(temporaryYamlFile).isNull()
     }
 
-
-
     @Test
     void 'helm release is installed in air-gapped mode'() {
-        config.features['certManager']['active'] = true
         config.application['mirrorRepos'] = true
         when(airGappedUtils.mirrorHelmRepoToGit(any(Map))).thenReturn('a/b')
 
@@ -123,7 +102,7 @@ class CertManagerTest {
         Path SourceChart = rootChartsFolder.resolve('cert-manager')
         Files.createDirectories(SourceChart)
 
-        Map ChartYaml = [ version     : chartVersion ]
+        Map ChartYaml = [version: chartVersion]
         fileSystemUtils.writeYaml(ChartYaml, SourceChart.resolve('Chart.yaml').toFile())
 
         createCertManager().install()
@@ -137,7 +116,7 @@ class CertManagerTest {
         // important check: repoUrl is overridden with our values.
         verify(deploymentStrategy).deployFeature(
                 'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/a/b',
-                'cert-manager', '.', chartVersion,'cert-manager',
+                'cert-manager', '.', chartVersion, 'cert-manager',
                 'cert-manager', temporaryYamlFile, DeploymentStrategy.RepoType.GIT)
     }
 
@@ -145,7 +124,6 @@ class CertManagerTest {
     void 'check images are overriddes'() {
 
         // Prep
-        config.features['certManager']['active'] = true
         config.application['mirrorRepos'] = true
         // test values
         config.features['certManager']['helm']['image'] = "this.is.my.registry:30000/this.is.my.repository/myImage:1"
@@ -160,32 +138,30 @@ class CertManagerTest {
         Path SourceChart = rootChartsFolder.resolve('cert-manager')
         Files.createDirectories(SourceChart)
 
-        Map ChartYaml = [ version     : chartVersion ]
+        Map ChartYaml = [version: chartVersion]
         fileSystemUtils.writeYaml(ChartYaml, SourceChart.resolve('Chart.yaml').toFile())
         createCertManager().install()
 
         def templateFile = parseActualYaml()
 
-
         // Cert-Manager
         assertThat(parseActualYaml()['image']['repository'] as String).isEqualTo('this.is.my.registry:30000/this.is.my.repository/myImage')
         assertThat(parseActualYaml()['image']['tag'] as String).isEqualTo('1')
-                // myWebhook
+        // myWebhook
         assertThat(parseActualYaml()['webhook']['image']['repository'] as String).isEqualTo('this.is.my.registry:30000/this.is.my.repository/myWebhook')
         assertThat(parseActualYaml()['webhook']['image']['tag'] as String).isEqualTo('2')
-                // cainjectorImage
+        // cainjectorImage
         assertThat(parseActualYaml()['cainjector']['image']['repository'] as String).isEqualTo('this.is.my.registry:30000/this.is.my.repository/myCainjectorImage')
         assertThat(parseActualYaml()['cainjector']['image']['tag'] as String).isEqualTo('3')
-                // myWebhook
+        // myWebhook
         assertThat(parseActualYaml()['acmesolver']['image']['repository'] as String).isEqualTo('this.is.my.registry:30000/this.is.my.repository/myAcmeSolverImage')
         assertThat(parseActualYaml()['acmesolver']['image']['tag'] as String).isEqualTo('4')
-                // myWebhook
+        // myWebhook
         assertThat(parseActualYaml()['startupapicheck']['image']['repository'] as String).isEqualTo('this.is.my.registry:30000/this.is.my.repository/myStartupAPICheckImage')
         assertThat(parseActualYaml()['startupapicheck']['image']['tag'] as String).isEqualTo('5')
 
-
-
     }
+
     private CertManager createCertManager() {
         // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
 

@@ -38,7 +38,7 @@ class ApplicationConfigurator {
                     path        : '',
                     username    : '',
                     password    : '',
-                    // Alternative: Use different registries, e.g. in air-gapped envs 
+                    // Alternative: Use different registries, e.g. in air-gapped envs
                     // "Proxy" registry for 3rd party images
                     proxyUrl         : '',
                     proxyUsername    : '',
@@ -60,8 +60,8 @@ class ApplicationConfigurator {
                     /* This is the URL configured in SCMM inside the Jenkins Plugin, e.g. at http://scmm.localhost/scm/admin/settings/jenkins
                       We use the K8s service as default name here, because it is the only option:
                       "jenkins.localhost" will not work inside the Pods and k3d-container IP + Port (e.g. 172.x.y.z:9090) will not work on Windows and MacOS.
-                      
-                      For production we overwrite this when config.jenkins["url"] is set. 
+
+                      For production we overwrite this when config.jenkins["url"] is set.
                       See addJenkinsConfig() and the comment at scmm.urlForJenkins */
                     urlForScmm: "http://jenkins", // Set dynamically
                     metricsUsername: 'metrics',
@@ -87,12 +87,12 @@ class ApplicationConfigurator {
                     /* This corresponds to the "Base URL" in SCMM Settings.
                        We use the K8s service as default name here, to make the build on push feature (webhooks from SCMM to Jenkins that trigger builds) work in k3d.
                        The webhook contains repository URLs that start with the "Base URL" Setting of SCMM.
-                       Jenkins checks these repo URLs and triggers all builds that match repo URLs. 
+                       Jenkins checks these repo URLs and triggers all builds that match repo URLs.
                        In k3d, we have to define the repos in Jenkins using the K8s Service name, because they are the only option.
                        "scmm.localhost" will not work inside the Pods and k3d-container IP + Port (e.g. 172.x.y.z:9091) will not work on Windows and MacOS.
                        So, we have to use the matching URL in SCMM as well.
-                       
-                       For production we overwrite this when config.scmm["url"] is set. 
+
+                       For production we overwrite this when config.scmm["url"] is set.
                        See addScmmConfig() */
                     urlForJenkins : 'http://scmm-scm-manager/scm', // set dynamically
                     host : '', // Set dynamically
@@ -170,7 +170,7 @@ class ApplicationConfigurator {
                             smtpAddress: '',
                             smtpPort : '',
                             smtpUser : '',
-                            smtpPassword : '', 
+                            smtpPassword : '',
                             helm  : [
                                     chart  : 'mailhog',
                                     repoURL: 'https://codecentric.github.io/helm-charts',
@@ -227,7 +227,7 @@ class ApplicationConfigurator {
                                     version: '4.11.2',
                                     image: '',
                                     values: [:]
-                             ],
+                            ],
                     ],
                     certManager: [
                             active: false,
@@ -236,9 +236,9 @@ class ApplicationConfigurator {
                                     repoURL: 'https://charts.jetstack.io',
                                     version: '1.16.1',
                                     values: [:],
+                                    image: '',
                                     acmeSolverImage: '',
                                     cainjectorImage: '',
-                                    image: '',
                                     startupAPICheckImage: '',
                                     webhookImage: ''
                             ],
@@ -253,7 +253,7 @@ class ApplicationConfigurator {
                     ]
             ]
     ])
-    
+
     private Map config
     private NetworkingUtils networkingUtils
     private FileSystemUtils fileSystemUtils

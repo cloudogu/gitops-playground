@@ -174,7 +174,7 @@ class ConfigToConfigFileConverterTest {
                                 helm  : [
                                         chart: 'cert-manager',
                                         repoURL: 'https://charts.jetstack.io',
-                                        version: '1.15.3',
+                                        version: '1.16.1',
                                         values: [:]
                                 ],
                         ],
@@ -329,7 +329,7 @@ features:
     helm:
       chart: "cert-manager"
       repoURL: "https://charts.jetstack.io"
-      version: "1.15.3"
+      version: "1.16.1"
       values: {}
       image: ""
       webhookImage: ""

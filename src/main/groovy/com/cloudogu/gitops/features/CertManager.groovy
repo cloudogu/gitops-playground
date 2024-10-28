@@ -89,7 +89,6 @@ class CertManager extends Feature implements FeatureWithImage{
         } else {
             deployer.deployFeature(
                     helmConfig['repoURL'] as String,
-
                     'cert-manager',
                     helmConfig['chart'] as String,
                     helmConfig['version'] as String,

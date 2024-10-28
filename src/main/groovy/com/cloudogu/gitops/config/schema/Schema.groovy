@@ -1,7 +1,7 @@
 //file:noinspection unused
 package com.cloudogu.gitops.config.schema
 
-import com.cloudogu.gitops.features.CertManager
+
 import com.fasterxml.jackson.annotation.JsonClassDescription
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 
@@ -350,7 +350,7 @@ class Schema {
 
     static class CertManagerSchema {
         @JsonPropertyDescription(CERTMANAGER_ENABLE_DESCRIPTION)
-        boolean active = false
+        Boolean active = false
 
         @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
         CertManagerHelmSchema helm
@@ -367,7 +367,7 @@ class Schema {
             @JsonPropertyDescription(CERTMANAGER_CAINJECTOR_IMAGE_DESCRIPTION)
             String cainjectorImage = ""
 
-            @JsonPropertyDescription(CERTMANAGER_ASCME_SOLVER_IMAGE_DESCRIPTION)
+            @JsonPropertyDescription(CERTMANAGER_ACME_SOLVER_IMAGE_DESCRIPTION)
             String acmeSolverImage = ""
 
             @JsonPropertyDescription(CERTMANAGER_STARTUP_API_CHECK_IMAGE_DESCRIPTION)

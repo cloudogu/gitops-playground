@@ -145,7 +145,7 @@ interface ConfigConstants {
     String CERTMANAGER_IMAGE_DESCRIPTION = 'Sets image for Cert Manager'
     String CERTMANAGER_WEBHOOK_IMAGE_DESCRIPTION = 'Sets webhook Image for Cert Manager'
     String CERTMANAGER_CAINJECTOR_IMAGE_DESCRIPTION = 'Sets cainjector Image for Cert Manager'
-    String CERTMANAGER_ASCME_SOLVER_IMAGE_DESCRIPTION = 'Sets acmeSolver Image for Cert Manager'
+    String CERTMANAGER_ACME_SOLVER_IMAGE_DESCRIPTION = 'Sets acmeSolver Image for Cert Manager'
     String CERTMANAGER_STARTUP_API_CHECK_IMAGE_DESCRIPTION = 'Sets startupAPICheck Image for Cert Manager'
 
     // group helm
