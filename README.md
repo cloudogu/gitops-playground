@@ -8,7 +8,7 @@ Creates a complete GitOps-based operational stack on your Kubernetes clusters:
 * Notifications/Alerts: Grafana and ArgoCD can be predefined with either an external mailserver or [MailHog](https://github.com/mailhog/MailHog) for demo purposes.
 * Pipelines: Example applications using [Jenkins](#jenkins) with the [gitops-build-lib](https://github.com/cloudogu/gitops-build-lib) and [SCM-Manager](#scm-manager)
 * Ingress Controller: [ingress-nginx](https://github.com/kubernetes/ingress-nginx/)
-* Certificate Management: (planned)
+* Certificate Management: [cert-manager](#certificate-management)
 * Runs on: 
   * local cluster (try it [with only one command](#tldr)), 
   * in the public cloud, 
@@ -551,6 +551,20 @@ Set the parameter `--vault=[dev|prod]` to enable deployment of secret management
 secrets operator.
 See [Secrets management tools](#secrets-managment-tools) for details.
 
+##### Certificate Management
+Is implemented by cert-manager. 
+Set the parameter `--cert-manager` to enable cert-manager.
+For custom images use this parameters to override defaults:
+- --cert-manager-image 
+- --cert-manager-webhook-image 
+- --cert-manager-cainjector-image 
+- --cert-manager-acme-solver-image
+- --cert-manager-startup-api-check-image
+
+i.e.
+```
+--cert-manager-image someRegistry/cert-manager-controller:latest
+``` 
 ### Remove playground
 
 For k3d, you can just `k3d cluster delete gitops-playground`. This will delete the whole cluster.
