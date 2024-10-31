@@ -120,15 +120,13 @@ class PrometheusStack extends Feature implements FeatureWithImage {
         if (config.application['namespaceIsolation'] || config.application['netpols']) {
             ScmmRepo clusterResourcesRepo = scmmRepoProvider.getRepo('argocd/cluster-resources')
             clusterResourcesRepo.cloneRepo()
-            String commitText=""
             for (String currentNamespace : namespaceList) {
 
-                if(config.application['namespaceIsolation']) {
+                if (config.application['namespaceIsolation']) {
                     def rbacYaml = new TemplatingEngine().template(new File(RBAC_NAMESPACE_ISOLATION_TEMPLATE),
-                        [namespace: currentNamespace, 
+                            [namespace : currentNamespace,
                              namePrefix: namePrefix])
                     clusterResourcesRepo.writeFile("misc/monitoring/rbac/${currentNamespace}.yaml", rbacYaml)
-                    commitText+="Add namespace-isolated RBAC for PrometheusStack. "
                 }
 
                 if (config.application['netpols']) {
@@ -137,11 +135,9 @@ class PrometheusStack extends Feature implements FeatureWithImage {
                              namePrefix: namePrefix])
 
                     clusterResourcesRepo.writeFile("misc/monitoring/netpols/${currentNamespace}.yaml", netpolsYaml)
-                    commitText+="Network Policies allowing Prometheus scraping in namespaces"
                 }
             }
-
-            clusterResourcesRepo.commitAndPush(commitText)
+            clusterResourcesRepo.commitAndPush('Adding namespace-isolated RBAC and network policies if enabled.')
         }
 
         def tmpHelmValues = fileSystemUtils.createTempFile()
