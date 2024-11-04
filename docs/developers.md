@@ -589,7 +589,7 @@ That's why we need to initialize our local cluster with some netpols for everyth
 After the cluster is initialized and before GOP is applied, do the following:
 
 ```bash
-# When using harbor, do teh same for namespace harbor
+# When using harbor, do the same for namespace harbor
 k apply -f- <<EOF
 kind: NetworkPolicy
 apiVersion: networking.k8s.io/v1
