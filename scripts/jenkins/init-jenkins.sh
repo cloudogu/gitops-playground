@@ -71,12 +71,42 @@ function jenkinsHelmSettingsForLocalCluster() {
 # Enable access for the Jenkins Agents Pods to the docker socket  
 function setAgentGidOrUid() {
   # Try to find out the group ID (GID) of the docker group
-  kubectl apply -f jenkins/tmp-docker-gid-grepper.yaml >/dev/null
-  until kubectl get po --field-selector=status.phase=Running | grep tmp-docker-gid-grepper >/dev/null; do
-    sleep 1
-  done
 
-  local DOCKER_GID=$(kubectl exec tmp-docker-gid-grepper -- cat /etc/group | grep docker | cut -d: -f3)
+  # Note: When upgrading "image" bellow, 
+  # use same image as in initContainer create-agent-working-dir (values.yaml) for performance reasons
+  local DOCKER_GID=$(kubectl run $RANDOM \
+    --image=irrelevant \
+    --restart=Never -ti \
+    --overrides='
+     {
+       "spec": {
+         "containers": [
+           {
+             "name": "tmp-docker-gid-grepper",
+             "image": "bash:5",
+             "args": ["cat", "/etc/group"],
+             "volumeMounts": [
+               {
+                 "name": "group",
+                 "mountPath": "/etc/group",
+                 "readOnly": true
+               }
+             ]
+           }
+         ],
+         "nodeSelector": {
+           "node": "jenkins"
+         },
+         "volumes": [
+           {
+             "name": "group",
+             "hostPath": {
+               "path": "/etc/group"
+             }
+           }
+         ]
+       }
+     }' | grep docker | cut -d: -f3)
   if [[ -n "${DOCKER_GID}" ]]; then
     echo "--set agent.runAsGroup=$DOCKER_GID"
   else

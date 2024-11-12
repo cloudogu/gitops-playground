@@ -60,7 +60,7 @@ controller:
     - name: create-agent-working-dir
       securityContext:
         runAsUser: 1000
-      # Note: When upgrading, use same image as in gid-grepper for performance reasons
+      # Note: When upgrading, use same image as in gid-grepper (init-jenkins.sh) for performance reasons
       image: bash:5
       imagePullPolicy: "{{ .Values.controller.imagePullPolicy }}"
       command: [ "/usr/local/bin/bash", "-c" ]
