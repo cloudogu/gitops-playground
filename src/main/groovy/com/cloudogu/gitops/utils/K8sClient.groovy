@@ -1,5 +1,7 @@
 package com.cloudogu.gitops.utils
 
+import groovy.json.JsonBuilder
+import groovy.json.JsonSlurper
 import com.cloudogu.gitops.config.Config
 import groovy.transform.Immutable
 import groovy.util.logging.Slf4j
@@ -81,7 +83,7 @@ class K8sClient {
             throw new IllegalArgumentException("Namespace name must be provided and cannot be null or empty.");
         }
 
-        String namespace = "${getNamePrefix()}${name}";
+        String namespace = "${configProvider.get().application.namePrefix}${name}";
 
         // Check if the namespace already exists based on exitCode
         String[] checkNamespaceCommand = new Kubectl("get", "namespace", namespace).build();
@@ -265,12 +267,6 @@ class K8sClient {
             output.stdOut = '(current context not set)'
         }
         return output.stdOut
-    }
-
-    private String getNamePrefix() {
-        def config = configurationProvider.get().config
-
-        return config.application['namePrefix'] as String
     }
 
     Kubectl kubectl(String ... args) {

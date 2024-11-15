@@ -81,7 +81,6 @@ interface ConfigConstants {
     String REPO_REF_DESCRIPTION = 'Ref of the repo to use, e.g. a tag, commit or branch'
     String NETPOLS_DESCRIPTION = 'Sets Network Policies'
     String OPENSHIFT_DESCRIPTION = 'When set, openshift specific resources and configurations are applied'
-    
 
     // group metrics
     String MONITORING_DESCRIPTION = 'Config parameters for the Monitoring system (prometheus)'
@@ -132,7 +131,6 @@ interface ConfigConstants {
     String ARGOCD_OPERATOR_DESCRIPTION = 'Install ArgoCD via an already running ArgoCD Operator'
     String ARGOCD_ENV_DESCRIPTION = 'Pass a list of env vars to Argo CD components. Currently only works with operator'
     String ARGOCD_RESOURCE_INCLUSIONS_CLUSTER = 'Internal Kubernetes API Server URL https://IP:PORT (kubernetes.default.svc). Needed in argocd-operator resourceInclusions. Use this parameter if argocd.operator=true and NOT running inside a Pod (remote mode). Full URL needed, for example: https://100.125.0.1:443'
-
 
     // group example apps
     String EXAMPLE_APPS_DESCRIPTION = 'Config parameters for the example apps and exercises'

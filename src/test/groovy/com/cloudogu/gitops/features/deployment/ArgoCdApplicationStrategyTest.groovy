@@ -101,9 +101,6 @@ spec:
     }
 
     private ArgoCdApplicationStrategy createStrategy(boolean argocdOperator = false) {
-        private ArgoCdApplicationStrategy createStrategy() {
-
-        }
             Config config = new Config(
                     application: new Config.ApplicationSchema(
                             namePrefix: 'foo-',
@@ -116,9 +113,8 @@ spec:
                             protocol: "https",
                             host: "localhost"
                     ),
-                    //TODO
                     features: new Config.FeaturesSchema(
-                            argocd: new ArgoCDSchema(
+                            argocd: new Config.ArgoCDSchema(
                                     operator: argocdOperator
                             )
                     )

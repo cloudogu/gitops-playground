@@ -27,7 +27,7 @@ import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*
 
 // Avoids blocking if input is read by error
-@Timeout(value = 5, unit = TimeUnit.SECONDS)
+@Timeout(value = 10, unit = TimeUnit.SECONDS)
 class GitopsPlaygroundCliTest {
 
     static final String ORIGINAL_LOGGING_PATTERN = loggingEncoder.pattern
@@ -56,15 +56,15 @@ class GitopsPlaygroundCliTest {
 
     @Test
     void 'Starts with config file'() {
-        def cli = new GitopsPlaygroundCliForTest()
-        cli.configFile = 'abc'
-        cli.run()
+        String pathToConfigFile = "./src/test/resources/testMainConfig.yaml"
+
+        assertThat(new File(pathToConfigFile).isFile()).withFailMessage("config file for test do not exists anymore.").isTrue()
+
+        def status = cli.run('--config-file=' + pathToConfigFile)
+        assertThat(status).isEqualTo(ReturnCode.SUCCESS)
 
         // Verify the first interaction
-        verify(applicationConfigurator).setConfig(eq(new File('abc')), eq(true))
-
-        // Verify the second interaction if any
-        verify(applicationConfigurator).setConfig(any(Map), eq(false))
+        verify(applicationConfigurator).initAndValidateConfig(any(Config))
 
         // Check application starts
         verify(application).start()
@@ -72,16 +72,13 @@ class GitopsPlaygroundCliTest {
     
     @Test
     void 'Starts with config map'() {
-        k8sClient.commandExecutorForTest.enqueueOutput(
-                new CommandExecutor.Output('', 'config map', 0))
-        
-        def cli = new GitopsPlaygroundCliForTest()
-        cli.configMap = 'abc'
-        cli.run()
+        when(k8sClient.getConfigMap('my-config', 'config.yaml')).thenReturn('{"application": {"yes": true}}')
 
-        verify(applicationConfigurator).setConfig(any(Map), eq(false))
-        // Create internal config only once, avoids repetitive log outputs
-        verify(applicationConfigurator).setConfig(eq('config map'), eq(true))
+        def status = cli.run("--config-map=my-config")
+
+        assertThat(status).isEqualTo(ReturnCode.SUCCESS)
+        // ensure init is called with Config
+        verify(applicationConfigurator).initAndValidateConfig(any(Config))
         verify(application).start()
     }
 

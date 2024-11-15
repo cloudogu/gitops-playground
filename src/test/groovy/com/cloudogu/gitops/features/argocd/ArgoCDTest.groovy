@@ -18,7 +18,6 @@ import java.util.stream.Collectors
 import static org.assertj.core.api.Assertions.assertThat
 import static org.assertj.core.api.Assertions.fail
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode
-import static groovy.test.GroovyAssert.shouldFail
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.ArgumentMatchers.anyString
 import static org.mockito.Mockito.*
@@ -1183,7 +1182,7 @@ class ArgoCDTest {
         def argoCD = setupOperatorTest()
 
         // Set the config to a custom resourceInclusionsCluster value
-        config.features['argocd']['resourceInclusionsCluster'] = 'https://192.168.0.1:6443'
+        config.features.argocd.resourceInclusionsCluster = 'https://192.168.0.1:6443'
 
         argoCD.install()
 
@@ -1208,7 +1207,7 @@ class ArgoCDTest {
         def argoCD = setupOperatorTest()
 
         // Set the config to a custom internalKubernetesApiUrl value
-        config.application['internalKubernetesApiUrl'] = 'https://192.168.0.1:6443'
+        config.application.internalKubernetesApiUrl = 'https://192.168.0.1:6443'
 
         // Set environment variables for Kubernetes API server
         withEnvironmentVariable("KUBERNETES_SERVICE_HOST", "100.125.0.1")
@@ -1240,10 +1239,10 @@ class ArgoCDTest {
         def argoCD = setupOperatorTest()
 
         // Set environment variables for ArgoCD
-        config.features['argocd']['env'] = [
+        config.features.argocd.env = [
                 [name: "ENV_VAR_1", value: "value1"],
                 [name: "ENV_VAR_2", value: "value2"]
-        ]
+        ] as Map
 
         argoCD.install()
 
@@ -1268,7 +1267,7 @@ class ArgoCDTest {
         def argoCD = setupOperatorTest()
 
         // Ensure env is an empty list (default)
-        config.features['argocd']['env'] = []
+        config.features.argocd.env = [:]
 
         argoCD.install()
 
@@ -1289,9 +1288,9 @@ class ArgoCDTest {
         def argoCD = setupOperatorTest()
 
         // Set a single environment variable for ArgoCD
-        config.features['argocd']['env'] = [
+        config.features.argocd.env = [
                 [name: "ENV_VAR_SINGLE", value: "singleValue"]
-        ]
+        ] as Map
 
         argoCD.install()
 
@@ -1322,9 +1321,9 @@ class ArgoCDTest {
     }
 
     private ArgoCD setupOperatorTest(Map options = [:]) {
-        config.features['argocd']['operator'] = true
-        config.features['argocd']['resourceInclusionsCluster'] = 'https://192.168.0.1:6443'
-        config.application['openshift'] = options.openshift ?: false
+        config.features.argocd.operator = true
+        config.features.argocd.resourceInclusionsCluster = 'https://192.168.0.1:6443'
+        config.application.openshift = options.openshift ?: false
 
         def argoCD = createArgoCD()
 
