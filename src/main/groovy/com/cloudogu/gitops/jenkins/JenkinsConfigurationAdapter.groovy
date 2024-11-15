@@ -1,16 +1,16 @@
 package com.cloudogu.gitops.jenkins
 
-import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.config.Config
 import jakarta.inject.Singleton
 
 @Singleton
 class JenkinsConfigurationAdapter extends JenkinsConfiguration {
-    JenkinsConfigurationAdapter(Configuration configuration) {
+    JenkinsConfigurationAdapter(Config config) {
         super(
-                configuration.config.jenkins['url'] as String,
-                configuration.config.jenkins['username'] as String,
-                configuration.config.jenkins['password'] as String,
-                configuration.config.application['insecure'] as Boolean
+                config.jenkins.url,
+                config.jenkins.username,
+                config.jenkins.password,
+                config.application.insecure
         )
     }
 }

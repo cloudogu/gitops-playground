@@ -1,16 +1,15 @@
 package com.cloudogu.gitops.utils
 
 import groovy.util.logging.Slf4j
-import jakarta.inject.Singleton
 
 @Slf4j
-@Singleton
 class NetworkingUtils {
 
     private K8sClient k8sClient
     private CommandExecutor commandExecutor
 
-    NetworkingUtils(K8sClient k8sClient, CommandExecutor commandExecutor) {
+    NetworkingUtils(K8sClient k8sClient = new K8sClient(new CommandExecutor(), new FileSystemUtils(), null),
+                    CommandExecutor commandExecutor = new CommandExecutor()) {
         this.k8sClient = k8sClient
         this.commandExecutor = commandExecutor
     }

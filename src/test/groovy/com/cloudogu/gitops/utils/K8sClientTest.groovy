@@ -1,6 +1,6 @@
 package com.cloudogu.gitops.utils
 
-
+import com.cloudogu.gitops.config.Config
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 
@@ -9,12 +9,9 @@ import static org.assertj.core.api.Assertions.assertThat
 
 class K8sClientTest {
 
-    Map config = [
-            application: [
-                    namePrefix: "foo-"
-            ]
-    ]
-    K8sClientForTest k8sClient = new K8sClientForTest(config)
+    Config config = new Config(application: new Config.ApplicationSchema(namePrefix: "foo-"))
+
+    K8sClientForTest k8sClient = new K8sClientForTest( config)
     CommandExecutorForTest commandExecutor =  k8sClient.commandExecutorForTest
 
     @Test
@@ -102,6 +99,17 @@ class K8sClientTest {
         }
         assertThat(exception.message).isEqualTo('Missing values for parameter \'--from-literal\' in command \'kubectl create secret generic my-secret\'')
     }
+
+    @Test
+    void 'Ensure in secret creation, nullable String become empty string'() {
+
+        def secret = k8sClient.createSecret("generic", "very-secret", new Tuple2('isnullbecomeempty', null))
+
+        assertThat(commandExecutor.actualCommands[0]).isEqualTo(
+                "kubectl create secret generic very-secret --from-literal isnullbecomeempty= --dry-run=client -oyaml" +
+                        " | kubectl apply -f-")
+    }
+
 
     @Test
     void 'Creates configmap from file'() {

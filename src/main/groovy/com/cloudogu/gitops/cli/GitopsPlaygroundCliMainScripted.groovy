@@ -1,11 +1,7 @@
 package com.cloudogu.gitops.cli
 
 import com.cloudogu.gitops.Application
-import com.cloudogu.gitops.config.ApplicationConfigurator
-import com.cloudogu.gitops.config.ConfigToConfigFileConverter
-import com.cloudogu.gitops.config.Configuration
-import com.cloudogu.gitops.config.schema.JsonSchemaGenerator
-import com.cloudogu.gitops.config.schema.JsonSchemaValidator
+import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.dependencyinjection.HttpClientFactory
 import com.cloudogu.gitops.dependencyinjection.JenkinsFactory
 import com.cloudogu.gitops.dependencyinjection.RetrofitFactory
@@ -42,31 +38,14 @@ class GitopsPlaygroundCliMainScripted {
 
     static class GitopsPlaygroundCliScripted extends GitopsPlaygroundCli {
 
-        @Override
-        protected ApplicationContext createApplicationContext() {
-            ApplicationContext context = super.createApplicationContext()
-
-            // Create ApplicationConfigurator to get started
-            context.registerSingleton(
-                    new ApplicationConfigurator(
-                            new NetworkingUtils(new K8sClient(new CommandExecutor(), new FileSystemUtils(), null), new CommandExecutor()),
-                            new FileSystemUtils(),
-                            new JsonSchemaValidator(new JsonSchemaGenerator())))
-            context.registerSingleton(new ConfigToConfigFileConverter())
-            return context
-        }
-
-        @Override
-        protected void register(ApplicationContext context, Configuration config) {
-            super.register(context, config)
-
-            // After config is set, create all other beans
+        protected void register(Config config, ApplicationContext context) {
+            super.register(config, context)
 
             def fileSystemUtils = new FileSystemUtils()
             def executor = new CommandExecutor()
-            def k8sClient = new K8sClient(executor, fileSystemUtils, new Provider<Configuration>() {
+            def k8sClient = new K8sClient(executor, fileSystemUtils, new Provider<Config>() {
                 @Override
-                Configuration get() {
+                Config get() {
                     return config
                 }
             })
@@ -94,7 +73,7 @@ class GitopsPlaygroundCliMainScripted {
 
             context.registerSingleton(k8sClient)
             
-            if (config.config['application']['destroy']) {
+            if (config.application.destroy) {
                 context.registerSingleton(new Destroyer([
                         new ArgoCDDestructionHandler(config, k8sClient, scmmRepoProvider, helmClient, fileSystemUtils),
                         new ScmmDestructionHandler(config, retrofitFactory.usersApi(retrofit), retrofitFactory.repositoryApi(retrofit)),
@@ -113,10 +92,10 @@ class GitopsPlaygroundCliMainScripted {
                         new Jenkins(config, executor, fileSystemUtils, new GlobalPropertyManager(jenkinsApiClient),
                                 new JobManager(jenkinsApiClient), new UserManager(jenkinsApiClient),
                                 new PrometheusConfigurator(jenkinsApiClient)),
-                        new Content(config,k8sClient),
+                        new Content(config, k8sClient),
                         new ArgoCD(config, k8sClient, helmClient, fileSystemUtils, scmmRepoProvider),
                         new IngressNginx(config, fileSystemUtils, deployer, k8sClient, airGappedUtils),
-                        new CertManager(config,fileSystemUtils, deployer, k8sClient, airGappedUtils),
+                        new CertManager(config, fileSystemUtils, deployer, k8sClient, airGappedUtils),
                         new Mailhog(config, fileSystemUtils, deployer, k8sClient, airGappedUtils),
                         new PrometheusStack(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, scmmRepoProvider),
                         new ExternalSecretsOperator(config, fileSystemUtils, deployer, k8sClient, airGappedUtils),

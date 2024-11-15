@@ -1,13 +1,12 @@
 package com.cloudogu.gitops.features
 
-import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.utils.*
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
-
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -17,72 +16,55 @@ import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*
 
 class PrometheusStackTest {
-
-    Map config = [
-            registry   : [
+    Config config = new Config(
+            registry: new Config.RegistrySchema(
                     internal: true,
                     createImagePullSecrets: false
-            ],
-            scmm: [
+            ),
+            scmm: new Config.ScmmSchema(
                     internal: true,
                     host: '',
                     protocol: 'http',
-            ],
-            jenkins: [
-                    internal: true,
+            ),
+            jenkins: new Config.JenkinsSchema(internal: true,
                     metricsUsername: 'metrics',
-                    metricsPassword: 'metrics',
-            ],
-            application: [
+                    metricsPassword: 'metrics',),
+            application: new Config.ApplicationSchema(
                     username: 'abc',
                     password: '123',
-                    remote  : false,
+                    remote: false,
                     openshift: false,
                     namePrefix: "foo-",
                     mirrorRepos: false,
-                    podResources : false,
+                    podResources: false,
                     skipCrds: false,
-                    namespaceIsolation : false,
-                    gitName : 'Cloudogu',
-                    gitEmail : 'hello@cloudogu.com',
-                    netpols : false,
-            ],
-            features   : [
-                    argocd: [
-                            active: true
-                    ],
-                    monitoring: [
+                    namespaceIsolation: false,
+                    gitName: 'Cloudogu',
+                    gitEmail: 'hello@cloudogu.com',
+                    netpols: false
+            ),
+            features: new Config.FeaturesSchema(
+                    argocd: new Config.ArgoCDSchema(active: true),
+                    monitoring: new Config.MonitoringSchema(
                             active: true,
                             grafanaUrl: '',
                             grafanaEmailFrom: 'grafana@example.org',
                             grafanaEmailTo: 'infra@example.org',
-                            helm  : [
-                                    chart  : 'kube-prometheus-stack',
+                            helm: new Config.MonitoringSchema.MonitoringHelmSchema(
+                                    chart: 'kube-prometheus-stack',
                                     repoURL: 'https://prom',
                                     version: '19.2.2',
-                                    values : [:],
-                                    grafanaImage: '',
-                                    grafanaSidecarImage: '',
-                                    prometheusImage: '',
-                                    prometheusOperatorImage: '',
-                                    prometheusConfigReloaderImage: '',
-                            ]
-                    ],
-                    secrets: [
-                            active: true
-                    ],
-                    ingressNginx: [
-                            active: true
-                    ],
-                    mail   : [
+
+                            )),
+                    secrets: new Config.SecretsSchema(active: true),
+                    ingressNginx: new Config.IngressNginxSchema(active: true),
+                    mail: new Config.MailSchema(
                             mailhog: true,
-                            smtpAddress : '',
-                            smtpPort : '',
-                            smtpUser : '',
-                            smtpPassword : ''
-                    ]
-            ],
-    ]
+                    ),
+
+            ),
+    )
+
     K8sClientForTest k8sClient = new K8sClientForTest(config)
     CommandExecutorForTest k8sCommandExecutor = k8sClient.commandExecutorForTest
     DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
@@ -93,7 +75,7 @@ class PrometheusStackTest {
 
     @Test
     void "is disabled via active flag"() {
-        config['features']['monitoring']['active'] = false
+        config.features.monitoring.active = false
         createStack().install()
         assertThat(temporaryYamlFilePrometheus).isNull()
         assertThat(k8sCommandExecutor.actualCommands).isEmpty()
@@ -102,23 +84,26 @@ class PrometheusStackTest {
 
     @Test
     void 'When mailhog disabled: Does not include mail configurations into cluster resources'() {
-        config.features['mail']['mailhog'] = false
+        config.features.mail.active = null // user should not do this in real.
+        config.features.mail.mailhog = false
         createStack().install()
-        assertThat(parseActualYaml()['grafana']['notifiers']).isNull()
+
+        def yaml = parseActualYaml()
+        assertThat(yaml['grafana']['notifiers']).isNull()
     }
 
     @Test
     void 'When mailhog enabled: Includes mail configurations into cluster resources'() {
-        config.features['mail']['active'] = true
+        config.features.mail.active = true
         createStack().install()
         assertThat(parseActualYaml()['grafana']['notifiers']).isNotNull()
     }
 
     @Test
     void "When Email Addresses is set"() {
-        config.features['mail']['active'] = true
-        config.features['monitoring']['grafanaEmailFrom'] = 'grafana@example.com'
-        config.features['monitoring']['grafanaEmailTo'] = 'infra@example.com'
+        config.features.mail.active = true
+        config.features.monitoring.grafanaEmailFrom = 'grafana@example.com'
+        config.features.monitoring.grafanaEmailTo = 'infra@example.com'
         createStack().install()
 
         def notifiersYaml = parseActualYaml()['grafana']['notifiers']['notifiers.yaml']['notifiers']['settings'] as List
@@ -128,7 +113,7 @@ class PrometheusStackTest {
 
     @Test
     void "When Email Addresses is NOT set"() {
-        config.features['mail']['active'] = true
+        config.features.mail.active = true
         createStack().install()
 
         def notifiersYaml = parseActualYaml()['grafana']['notifiers']['notifiers.yaml']['notifiers']['settings'] as List
@@ -138,16 +123,17 @@ class PrometheusStackTest {
 
     @Test
     void 'When external Mailserver is set'() {
-        config.features['mail']['active'] = true
-        config.features['mail']['smtpAddress'] = 'smtp.example.com'
-        config.features['mail']['smtpPort'] = '1010110'
-        config.features['monitoring']['grafanaEmailTo'] = 'grafana@example.com'   // needed to check that yaml is inserted correctly
+        config.features.mail.active = true
+        config.features.mail.smtpAddress = 'smtp.example.com'
+        config.features.mail.smtpPort = 1010110
+        config.features.monitoring.grafanaEmailTo = 'grafana@example.com'
+        // needed to check that yaml is inserted correctly
 
         createStack().install()
         def contactPointsYaml = parseActualYaml()
 
         assertThat(contactPointsYaml['grafana']['alerting']['contactpoints.yaml']).isEqualTo(new YamlSlurper().parseText(
-"""
+                """
 apiVersion: 1
 contactPoints:
 - orgId: 1
@@ -157,12 +143,12 @@ contactPoints:
   - uid: email1
     type: email
     settings:
-      addresses: ${config.features['monitoring']['grafanaEmailTo']}
+      addresses: ${config.features.monitoring.grafanaEmailTo}
 """
-                )
+        )
         )
         assertThat(contactPointsYaml['grafana']['alerting']['notification-policies.yaml']).isEqualTo(new YamlSlurper().parseText(
-'''
+                '''
 apiVersion: 1
 policies:
 - orgId: 1
@@ -179,21 +165,21 @@ policies:
 
     @Test
     void 'When external Mailserver is set with user'() {
-        config.features['mail']['active'] = true
-        config.features['mail']['smtpAddress'] = 'smtp.example.com'
-        config.features['mail']['smtpUser'] = 'mailserver@example.com'
+        config.features.mail.active = true
+        config.features.mail.smtpAddress = 'smtp.example.com'
+        config.features.mail.smtpUser = 'mailserver@example.com'
 
         createStack().install()
-        
+
         assertThat(parseActualYaml()['grafana']['smtp']['existingSecret']).isEqualTo('grafana-email-secret')
         k8sCommandExecutor.assertExecuted('kubectl create secret generic grafana-email-secret -n foo-monitoring --from-literal user=mailserver@example.com --from-literal password=')
     }
 
     @Test
     void 'When external Mailserver is set with password'() {
-        config.features['mail']['active'] = true
-        config.features['mail']['smtpAddress'] = 'smtp.example.com'
-        config.features['mail']['smtpPassword'] = '1101ABCabc&/+*~'
+        config.features.mail.active = true
+        config.features.mail.smtpAddress = 'smtp.example.com'
+        config.features.mail.smtpPassword = '1101ABCabc&/+*~'
 
         createStack().install()
         assertThat(parseActualYaml()['grafana']['smtp']['existingSecret']).isEqualTo('grafana-email-secret')
@@ -202,8 +188,8 @@ policies:
 
     @Test
     void 'When external Mailserver is set without user and password'() {
-        config.features['mail']['active'] = true
-        config.features['mail']['smtpAddress'] = 'smtp.example.com'
+        config.features.mail.active = true
+        config.features.mail.smtpAddress = 'smtp.example.com'
 
         createStack().install()
 
@@ -211,13 +197,13 @@ policies:
         assertThat(parseActualYaml()['grafana']['smtp']).isNull()
         k8sCommandExecutor.assertNotExecuted('kubectl create secret generic grafana-email-secret')
     }
-    
+
     @Test
     void 'Check if kubernetes secret will be created when external emailservers credential is set'() {
-        config.features['mail']['active'] = true
-        config.features['mail']['smtpAddress'] = 'smtp.example.com'
-        config.features['mail']['smtpUser'] = 'grafana@example.com'
-        config.features['mail']['smtpPassword'] = '1101ABCabc&/+*~'
+        config.features.mail.active = true
+        config.features.mail.smtpAddress = 'smtp.example.com'
+        config.features.mail.smtpUser = 'grafana@example.com'
+        config.features.mail.smtpPassword = '1101ABCabc&/+*~'
 
         createStack().install()
 
@@ -226,18 +212,19 @@ policies:
 
     @Test
     void 'When external Mailserver is set without port'() {
-        config.features['mail']['active'] = true
-        config.features['mail']['smtpAddress'] = 'smtp.example.com'
+        config.features.mail.active = true
+        config.features.mail.smtpAddress = 'smtp.example.com'
 
         createStack().install()
         def contactPointsYaml = parseActualYaml()
-        
+
         assertThat(contactPointsYaml['grafana']['env']['GF_SMTP_HOST']).isEqualTo('smtp.example.com')
     }
 
     @Test
     void 'When external Mailserver is NOT set'() {
-        config.features['mail']['mailhog'] = false
+        config.features.mail.active = null // user should not do this in real.
+        config.features.mail.mailhog = false
         createStack().install()
         def contactPointsYaml = parseActualYaml()
 
@@ -246,7 +233,7 @@ policies:
 
     @Test
     void "service type LoadBalancer when run remotely"() {
-        config['application']['remote'] = true
+        config.application.remote = true
         createStack().install()
 
         assertThat(parseActualYaml()['grafana']['service']['type']).isEqualTo('LoadBalancer')
@@ -255,8 +242,8 @@ policies:
 
     @Test
     void "configures admin user if requested"() {
-        config['application']['username'] = "my-user"
-        config['application']['password'] = "hunter2"
+        config.application.username = "my-user"
+        config.application.password = "hunter2"
         createStack().install()
 
         assertThat(parseActualYaml()['grafana']['adminUser']).isEqualTo('my-user')
@@ -265,7 +252,7 @@ policies:
 
     @Test
     void 'service type NodePort when not run remotely'() {
-        config['application']['remote'] = false
+        config.application.remote = false
         createStack().install()
 
         assertThat(parseActualYaml()['grafana']['service']['type']).isEqualTo('NodePort')
@@ -274,7 +261,7 @@ policies:
 
     @Test
     void 'uses ingress if enabled'() {
-        config['features']['monitoring']['grafanaUrl'] = 'http://grafana.local'
+        config.features.monitoring.grafanaUrl = 'http://grafana.local'
         createStack().install()
 
 
@@ -292,8 +279,8 @@ policies:
 
     @Test
     void 'uses remote scmm url if requested'() {
-        config.scmm["internal"] = false
-        config.scmm["url"] = 'https://localhost:9091/prefix'
+        config.scmm.internal = false
+        config.scmm.url = 'https://localhost:9091/prefix'
         createStack().install()
 
 
@@ -339,7 +326,7 @@ policies:
 
     @Test
     void "configures custom image for grafana"() {
-        config['features']['monitoring']['helm']['grafanaImage'] = "localhost:5000/grafana/grafana:the-tag"
+        config.features.monitoring.helm.grafanaImage = "localhost:5000/grafana/grafana:the-tag"
         createStack().install()
 
         assertThat(parseActualYaml()['grafana']['image']['registry']).isEqualTo('localhost:5000')
@@ -349,7 +336,7 @@ policies:
 
     @Test
     void "configures custom image for grafana-sidecar"() {
-        config['features']['monitoring']['helm']['grafanaSidecarImage'] = "localhost:5000/grafana/sidecar:the-tag"
+        config.features.monitoring.helm.grafanaSidecarImage = "localhost:5000/grafana/sidecar:the-tag"
         createStack().install()
 
         assertThat(parseActualYaml()['grafana']['sidecar']['image']['registry']).isEqualTo('localhost:5000')
@@ -359,9 +346,9 @@ policies:
 
     @Test
     void "configures custom image for prometheus and operator"() {
-        config['features']['monitoring']['helm']['prometheusImage'] = "localhost:5000/prometheus/prometheus:v1"
-        config['features']['monitoring']['helm']['prometheusOperatorImage'] = "localhost:5000/prometheus-operator/prometheus-operator:v2"
-        config['features']['monitoring']['helm']['prometheusConfigReloaderImage'] = "localhost:5000/prometheus-operator/prometheus-config-reloader:v3"
+        config.features.monitoring.helm.prometheusImage = "localhost:5000/prometheus/prometheus:v1"
+        config.features.monitoring.helm.prometheusOperatorImage = "localhost:5000/prometheus-operator/prometheus-operator:v2"
+        config.features.monitoring.helm.prometheusConfigReloaderImage = "localhost:5000/prometheus-operator/prometheus-config-reloader:v3"
 
         createStack().install()
 
@@ -379,10 +366,10 @@ policies:
 
     @Test
     void 'deploys image pull secrets for proxy registry'() {
-        config['registry']['createImagePullSecrets'] = true
-        config['registry']['proxyUrl'] = 'proxy-url'
-        config['registry']['proxyUsername'] = 'proxy-user'
-        config['registry']['proxyPassword'] = 'proxy-pw'
+        config.registry.createImagePullSecrets = true
+        config.registry.proxyUrl = 'proxy-url'
+        config.registry.proxyUsername = 'proxy-user'
+        config.registry.proxyPassword = 'proxy-pw'
 
         createStack().install()
 
@@ -391,7 +378,7 @@ policies:
                         ' --docker-server proxy-url --docker-username proxy-user --docker-password proxy-pw')
         assertThat(parseActualYaml()['global']['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
     }
-    
+
     @Test
     void 'helm release is installed'() {
         createStack().install()
@@ -399,10 +386,10 @@ policies:
         assertThat(k8sCommandExecutor.actualCommands[0].trim()).isEqualTo(
                 'kubectl create secret generic prometheus-metrics-creds-scmm -n foo-monitoring --from-literal password=123 --dry-run=client -oyaml | kubectl apply -f-')
 
-        verify(deploymentStrategy).deployFeature('https://prom', 'prometheusstack', 
-                'kube-prometheus-stack', '19.2.2','monitoring',
+        verify(deploymentStrategy).deployFeature('https://prom', 'prometheusstack',
+                'kube-prometheus-stack', '19.2.2', 'monitoring',
                 'kube-prometheus-stack', temporaryYamlFilePrometheus)
-        /* This corresponds to 
+        /* This corresponds to
                 'helm repo add prometheusstack https://prom'
                 'helm upgrade -i kube-prometheus-stack prometheusstack/kube-prometheus-stack --version 19.2.2' +
                         " --values ${temporaryYamlFile} --namespace foo-monitoring --create-namespace") */
@@ -410,18 +397,18 @@ policies:
         def yaml = parseActualYaml()
         assertThat(yaml['grafana']['adminUser']).isEqualTo('abc')
         assertThat(yaml['grafana']['adminPassword']).isEqualTo(123)
-        
+
         assertThat(yaml['prometheusOperator'] as Map).doesNotContainKey('resources')
         assertThat(yaml['grafana'] as Map).doesNotContainKey('resources')
         assertThat(yaml['grafana']['sidecar'] as Map).doesNotContainKey('resources')
         assertThat(yaml['prometheus']['prometheusSpec'] as Map).doesNotContainKey('resources')
-        
+
         assertThat(yaml['prometheusOperator']['securityContext']).isNull()
         assertThat(yaml['grafana']['securityContext']).isNull()
         assertThat(yaml['prometheus']['prometheusSpec']['securityContext']).isNull()
-        
+
         assertThat(yaml['kubeApiServer']).isNull()
-        
+
         assertThat(yaml['prometheusOperator']['admissionWebhooks']['enabled']).isEqualTo(false)
         assertThat(yaml['prometheusOperator']['tls']['enabled']).isEqualTo(false)
         assertThat(yaml['prometheusOperator']['kubeletService']).isNull()
@@ -432,35 +419,35 @@ policies:
         assertThat(yaml['grafana']['sidecar']['dashboards']['searchNamespace']).isEqualTo('ALL')
 
         assertThat(yaml['crds']).isNull()
-        assertThat( new File("$clusterResourcesRepoDir/misc/monitoring/rbac")).doesNotExist()
+        assertThat(new File("$clusterResourcesRepoDir/misc/monitoring/rbac")).doesNotExist()
     }
 
     @Test
     void 'Skips CRDs'() {
-        config.application['skipCrds'] = true
+        config.application.skipCrds = true
 
         createStack().install()
 
         assertThat(parseActualYaml()['crds']['enabled']).isEqualTo(false)
     }
-    
+
     @Test
     void 'Sets pod resource limits and requests'() {
-        config.application['podResources'] = true
+        config.application.podResources = true
 
         createStack().install()
 
         def yaml = parseActualYaml()
         assertThat(yaml['prometheusOperator']['resources'] as Map).containsKeys('limits', 'requests')
         assertThat(yaml['prometheusOperator']['prometheusConfigReloader']['resources'] as Map).containsKeys('limits', 'requests')
-        assertThat(yaml['grafana']['resources'] as Map)containsKeys('limits', 'requests')
-        assertThat(yaml['grafana']['sidecar']['resources'] as Map)containsKeys('limits', 'requests')
-        assertThat(yaml['prometheus']['prometheusSpec']['resources'] as Map)containsKeys('limits', 'requests')
+        assertThat(yaml['grafana']['resources'] as Map) containsKeys('limits', 'requests')
+        assertThat(yaml['grafana']['sidecar']['resources'] as Map) containsKeys('limits', 'requests')
+        assertThat(yaml['prometheus']['prometheusSpec']['resources'] as Map) containsKeys('limits', 'requests')
     }
-    
+
     @Test
     void 'works with openshift'() {
-        config.application['openshift'] = true
+        config.application.openshift = true
 
         createStack().install()
 
@@ -469,50 +456,50 @@ policies:
         assertThat(yaml['prometheusOperator']['securityContext']['fsGroup']).isNull()
         assertThat(yaml['prometheusOperator']['securityContext']['runAsGroup']).isNull()
         assertThat(yaml['prometheusOperator']['securityContext']['runAsUser']).isNull()
-        
+
         assertThat(yaml['grafana']['securityContext']).isNotNull()
         assertThat(yaml['grafana']['securityContext']['fsGroup']).isEqualTo(1000740000)
         assertThat(yaml['grafana']['securityContext']['runAsGroup']).isEqualTo(1000740000)
         assertThat(yaml['grafana']['securityContext']['runAsUser']).isEqualTo(1000740000)
-        
+
         assertThat(yaml['prometheus']['prometheusSpec']['securityContext']).isNotNull()
         assertThat(yaml['prometheus']['prometheusSpec']['securityContext']['fsGroup']).isNull()
         assertThat(yaml['prometheus']['prometheusSpec']['securityContext']['runAsGroup']).isNull()
         assertThat(yaml['prometheus']['prometheusSpec']['securityContext']['runAsUser']).isNull()
     }
-    
+
     @Test
     void 'works with namespaceIsolation'() {
-        config.application['namespaceIsolation'] = true
+        config.application.namespaceIsolation = true
 
         def prometheusStack = createStack()
         prometheusStack.install()
-        
+
         def yaml = parseActualYaml()
         assertThat(yaml['global']['rbac']['create']).isEqualTo(false)
 
-        List<String> expectedNamespaces = [ "foo-default", "foo-argocd", "foo-monitoring", "foo-ingress-nginx", "foo-example-apps-staging", "foo-example-apps-production", "foo-secrets"]
+        List<String> expectedNamespaces = ["foo-default", "foo-argocd", "foo-monitoring", "foo-ingress-nginx", "foo-example-apps-staging", "foo-example-apps-production", "foo-secrets"]
         assertThat(prometheusStack.namespaceList.collect { it.toString() }).hasSameElementsAs(expectedNamespaces)
-        
+
         for (String namespace : prometheusStack.namespaceList) {
             def rbacYaml = new File("$clusterResourcesRepoDir/misc/monitoring/rbac/${namespace}.yaml")
             assertThat(rbacYaml.text).contains("namespace: ${namespace}")
             assertThat(rbacYaml.text).contains("    namespace: foo-monitoring")
         }
-        
+
         assertThat(yaml['kubeApiServer']['enabled']).isEqualTo(false)
-        
+
         assertThat(yaml['prometheusOperator']['kubeletService']['enabled']).isEqualTo(false)
         assertThat(yaml['prometheusOperator']['namespaces']['releaseNamespace']).isEqualTo(false)
         assertThat(yaml['prometheusOperator']['namespaces']['additional'] as List).hasSameElementsAs(expectedNamespaces)
-        
+
         assertThat(yaml['grafana']['rbac']['create']).isEqualTo(false)
         assertThat(yaml['grafana']['sidecar']['dashboards']['searchNamespace']).isEqualTo(prometheusStack.namespaceList.join(','))
     }
 
     @Test
     void 'network policies are created for prometheus'() {
-        config.application['netpols'] = true
+        config.application.netpols = true
         def prometheusStack = createStack()
         prometheusStack.install()
 
@@ -524,37 +511,37 @@ policies:
 
     @Test
     void 'helm releases are installed in air-gapped mode'() {
-        config.application['mirrorRepos'] = true
-        when(airGappedUtils.mirrorHelmRepoToGit(any(Map))).thenReturn('a/b')
+        config.application.mirrorRepos = true
+        when(airGappedUtils.mirrorHelmRepoToGit(any(Config.HelmConfig))).thenReturn('a/b')
 
         Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
-        config.application['localHelmChartFolder'] = rootChartsFolder.toString()
+        config.application.localHelmChartFolder = rootChartsFolder.toString()
 
         Path prometheusSourceChart = rootChartsFolder.resolve('kube-prometheus-stack')
         Files.createDirectories(prometheusSourceChart)
-        
-        Map prometheusChartYaml = [ version     : '1.2.3' ]
+
+        Map prometheusChartYaml = [version: '1.2.3']
         fileSystemUtils.writeYaml(prometheusChartYaml, prometheusSourceChart.resolve('Chart.yaml').toFile())
 
         createStack().install()
 
-        def helmConfig = ArgumentCaptor.forClass(Map)
+        def helmConfig = ArgumentCaptor.forClass(Config.HelmConfig)
         verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
         assertThat(helmConfig.value.chart).isEqualTo('kube-prometheus-stack')
         assertThat(helmConfig.value.repoURL).isEqualTo('https://prom')
         assertThat(helmConfig.value.version).isEqualTo('19.2.2')
         verify(deploymentStrategy).deployFeature(
-                'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/a/b', 
-                'prometheusstack', '.', '1.2.3','monitoring',
+                'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/a/b',
+                'prometheusstack', '.', '1.2.3', 'monitoring',
                 'kube-prometheus-stack', temporaryYamlFilePrometheus, RepoType.GIT)
     }
 
     @Test
     void 'Merges additional helm values merged with default values'() {
-        config['features']['monitoring']['helm']['values'] = [
+        config.features.monitoring.helm.values = [
                 key: [
                         some: 'thing',
-                        one: 1
+                        one : 1
                 ]
         ]
 
@@ -568,8 +555,8 @@ policies:
     private PrometheusStack createStack() {
         // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
 
-        def configuration = new Configuration(config)
-        def repoProvider = new TestScmmRepoProvider(new Configuration(config), new FileSystemUtils()) {
+        def configuration = config
+        def repoProvider = new TestScmmRepoProvider(config, new FileSystemUtils()) {
             @Override
             ScmmRepo getRepo(String repoTarget) {
                 def repo = super.getRepo(repoTarget)
@@ -578,12 +565,13 @@ policies:
                 return repo
             }
         }
-        
+
         new PrometheusStack(configuration, new FileSystemUtils() {
             @Override
             Path createTempFile() {
                 def ret = super.createTempFile()
-                temporaryYamlFilePrometheus = Path.of(ret.toString().replace(".ftl", "")) // Path after template invocation
+                temporaryYamlFilePrometheus = Path.of(ret.toString().replace(".ftl", ""))
+                // Path after template invocation
 
                 return ret
             }

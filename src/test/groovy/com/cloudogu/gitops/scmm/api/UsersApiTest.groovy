@@ -1,14 +1,13 @@
 package com.cloudogu.gitops.scmm.api
 
 import com.cloudogu.gitops.common.MockWebServerHttpsFactory
-import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.config.Config
 import io.micronaut.context.ApplicationContext
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import retrofit2.Retrofit
-
 import javax.net.ssl.SSLHandshakeException
 
 import static groovy.test.GroovyAssert.shouldFail
@@ -27,10 +26,12 @@ class UsersApiTest {
         webServer.useHttps(MockWebServerHttpsFactory.createSocketFactory().sslSocketFactory(), false)
 
         def retrofit = ApplicationContext.run()
-                .registerSingleton(new Configuration([
-                        application: [ insecure: true ],
-                        scmm: [ url: webServer.url("scm"), username: "admin", password: "admin" ]
-                ]))
+                .registerSingleton(new Config(
+                        application: new Config.ApplicationSchema(
+                                insecure: true),
+                        scmm: new Config.ScmmSchema(
+                                url: webServer.url("scm"), username: "admin", password: "admin")
+                ))
                 .getBean(Retrofit)
 
         def usersApi = retrofit.create(UsersApi)
@@ -45,10 +46,12 @@ class UsersApiTest {
         webServer.useHttps(MockWebServerHttpsFactory.createSocketFactory().sslSocketFactory(), false)
 
         def retrofit = ApplicationContext.run()
-                .registerSingleton(new Configuration([
-                        application: [ insecure: false ],
-                        scmm: [ url: webServer.url("scm"), username: "admin", password: "admin" ]
-                ]))
+                .registerSingleton(new Config(
+                        application: new Config.ApplicationSchema(
+                                insecure: false),
+                        scmm: new Config.ScmmSchema(
+                                url: webServer.url("scm"), username: "admin", password: "admin")
+                ))
                 .getBean(Retrofit)
 
         def usersApi = retrofit.create(UsersApi)

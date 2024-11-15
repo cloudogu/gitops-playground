@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.features.deployment
 
-import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.config.Config
+
 import io.micronaut.context.annotation.Primary
 import jakarta.inject.Singleton
 
@@ -9,14 +10,14 @@ import java.nio.file.Path
 @Singleton
 @Primary
 class Deployer implements DeploymentStrategy {
-    private Map config
+    private Config config
     private ArgoCdApplicationStrategy argoCdStrategy
     private HelmStrategy helmStrategy
 
-    Deployer(Configuration config, ArgoCdApplicationStrategy argoCdStrategy, HelmStrategy helmStrategy) {
+    Deployer(Config config, ArgoCdApplicationStrategy argoCdStrategy, HelmStrategy helmStrategy) {
         this.helmStrategy = helmStrategy
         this.argoCdStrategy = argoCdStrategy
-        this.config = config.getConfig()
+        this.config = config
     }
 
     @Override

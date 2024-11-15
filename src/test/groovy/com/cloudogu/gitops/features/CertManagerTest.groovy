@@ -1,16 +1,14 @@
 package com.cloudogu.gitops.features
 
-import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.config.Config
+
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.AirGappedUtils
-import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.K8sClient
+import com.cloudogu.gitops.utils.K8sClientForTest
 import groovy.yaml.YamlSlurper
-import jakarta.inject.Provider
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
-
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -20,45 +18,19 @@ import static org.mockito.Mockito.*
 
 class CertManagerTest {
     String chartVersion = "1.16.1"
-    Map config = [
-            application: [
-                    username    : 'abc',
-                    password    : '123',
-                    remote      : false,
-                    namePrefix  : "foo-",
-                    podResources: false,
-                    mirrorRepos : false,
-                    skipCrds    : false
-            ],
-            registry   : [
-                    createImagePullSecrets: false
-            ],
-            scmm       : [
-                    internal: true,
-            ],
+    Config config = Config.fromMap([
             features   : [
-                    monitoring : [
-                            active: false
-                    ],
-
                     certManager: [
                             active: true,
                             helm  : [
                                     chart               : 'cert-manager',
                                     repoURL             : 'https://charts.jetstack.io',
                                     version             : chartVersion,
-                                    values              : [:],
-                                    image               : '',
-                                    webhookImage        : '',
-                                    cainjectorImage     : '',
-                                    acmeSolverImage     : '',
-                                    startupAPICheckImage: '',
                             ],
                     ],
             ],
-    ]
+    ])
 
-    CommandExecutorForTest k8sCommandExecutor = new CommandExecutorForTest()
     Path temporaryYamlFile
     FileSystemUtils fileSystemUtils = new FileSystemUtils()
     DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
@@ -75,7 +47,7 @@ class CertManagerTest {
 
     @Test
     void 'Sets pod resource limits and requests'() {
-        config.application['podResources'] = true
+        config.application.podResources = true
 
         createCertManager().install()
 
@@ -86,18 +58,18 @@ class CertManagerTest {
 
     @Test
     void "is disabled via active flag"() {
-        config['features']['certManager']['active'] = false
+        config.features.certManager.active = false
         createCertManager().install()
         assertThat(temporaryYamlFile).isNull()
     }
 
     @Test
     void 'helm release is installed in air-gapped mode'() {
-        config.application['mirrorRepos'] = true
-        when(airGappedUtils.mirrorHelmRepoToGit(any(Map))).thenReturn('a/b')
+        config.application.mirrorRepos = true
+        when(airGappedUtils.mirrorHelmRepoToGit(any(Config.HelmConfig))).thenReturn('a/b')
 
         Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
-        config.application['localHelmChartFolder'] = rootChartsFolder.toString()
+        config.application.localHelmChartFolder = rootChartsFolder.toString()
 
         Path SourceChart = rootChartsFolder.resolve('cert-manager')
         Files.createDirectories(SourceChart)
@@ -107,7 +79,7 @@ class CertManagerTest {
 
         createCertManager().install()
 
-        def helmConfig = ArgumentCaptor.forClass(Map)
+        def helmConfig = ArgumentCaptor.forClass(Config.HelmConfig)
         verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
         assertThat(helmConfig.value.chart).isEqualTo('cert-manager')
         // check existing value, but its not used in deploy.
@@ -124,16 +96,16 @@ class CertManagerTest {
     void 'check images are overriddes'() {
 
         // Prep
-        config.application['mirrorRepos'] = true
+        config.application.mirrorRepos = true
         // test values
-        config.features['certManager']['helm']['image'] = "this.is.my.registry:30000/this.is.my.repository/myImage:1"
-        config.features['certManager']['helm']['webhookImage'] = "this.is.my.registry:30000/this.is.my.repository/myWebhook:2"
-        config.features['certManager']['helm']['cainjectorImage'] = "this.is.my.registry:30000/this.is.my.repository/myCainjectorImage:3"
-        config.features['certManager']['helm']['acmeSolverImage'] = "this.is.my.registry:30000/this.is.my.repository/myAcmeSolverImage:4"
-        config.features['certManager']['helm']['startupAPICheckImage'] = "this.is.my.registry:30000/this.is.my.repository/myStartupAPICheckImage:5"
-        when(airGappedUtils.mirrorHelmRepoToGit(any(Map))).thenReturn('a/b')
+        config.features.certManager.helm.image = "this.is.my.registry:30000/this.is.my.repository/myImage:1"
+        config.features.certManager.helm.webhookImage = "this.is.my.registry:30000/this.is.my.repository/myWebhook:2"
+        config.features.certManager.helm.cainjectorImage = "this.is.my.registry:30000/this.is.my.repository/myCainjectorImage:3"
+        config.features.certManager.helm.acmeSolverImage = "this.is.my.registry:30000/this.is.my.repository/myAcmeSolverImage:4"
+        config.features.certManager.helm.startupAPICheckImage = "this.is.my.registry:30000/this.is.my.repository/myStartupAPICheckImage:5"
+        when(airGappedUtils.mirrorHelmRepoToGit(any(Config.HelmConfig))).thenReturn('a/b')
         Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
-        config.application['localHelmChartFolder'] = rootChartsFolder.toString()
+        config.application.localHelmChartFolder = rootChartsFolder.toString()
 
         Path SourceChart = rootChartsFolder.resolve('cert-manager')
         Files.createDirectories(SourceChart)
@@ -164,9 +136,7 @@ class CertManagerTest {
 
     private CertManager createCertManager() {
         // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
-
-        def configuration = new Configuration(config)
-        new CertManager(new Configuration(config), new FileSystemUtils() {
+        new CertManager(config, new FileSystemUtils() {
             @Override
             Path createTempFile() {
                 def ret = super.createTempFile()
@@ -174,12 +144,7 @@ class CertManagerTest {
 
                 return ret
             }
-        }, deploymentStrategy, new K8sClient(k8sCommandExecutor, new FileSystemUtils(), new Provider<Configuration>() {
-            @Override
-            Configuration get() {
-                configuration
-            }
-        }), airGappedUtils)
+        }, deploymentStrategy, new K8sClientForTest(config), airGappedUtils)
     }
 
     private Map parseActualYaml() {

@@ -1,6 +1,6 @@
 package com.cloudogu.gitops.utils
 
-import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import com.cloudogu.gitops.scmm.api.Permission
@@ -10,22 +10,21 @@ import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 import jakarta.inject.Singleton
 import retrofit2.Response
-
 import java.nio.file.Path
 
 @Slf4j
 @Singleton
 class AirGappedUtils {
 
-    private Map config
+    private Config config
     private ScmmRepoProvider repoProvider
     private RepositoryApi repositoryApi
     private FileSystemUtils fileSystemUtils
     private HelmClient helmClient
 
-    AirGappedUtils(Configuration config, ScmmRepoProvider repoProvider, RepositoryApi repositoryApi, 
+    AirGappedUtils(Config config, ScmmRepoProvider repoProvider, RepositoryApi repositoryApi,
                    FileSystemUtils fileSystemUtils, HelmClient helmClient) {
-        this.config = config.getConfig()
+        this.config = config
         this.repoProvider = repoProvider
         this.repositoryApi = repositoryApi
         this.fileSystemUtils = fileSystemUtils
@@ -39,15 +38,15 @@ class AirGappedUtils {
      * 
      * @return the repo namespace and name
      */
-    String mirrorHelmRepoToGit(Map helmConfig) {
-        String repoName = helmConfig['chart']
+    String mirrorHelmRepoToGit(Config.HelmConfig helmConfig) {
+        String repoName = helmConfig.chart
         String namespace = ScmmRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES
         def repoNamespaceAndName = "${namespace}/${repoName}"
-        def localHelmChartFolder = "${config.application['localHelmChartFolder']}/${repoName}"
+        def localHelmChartFolder = "${config.application.localHelmChartFolder}/${repoName}"
 
         validateChart(repoNamespaceAndName, localHelmChartFolder, repoName)
 
-        createRepo(namespace, repoName,"Mirror of Helm chart $repoName from ${helmConfig['repoURL']}")
+        createRepo(namespace, repoName,"Mirror of Helm chart $repoName from ${helmConfig.repoURL}")
 
         ScmmRepo repo = repoProvider.getRepo(repoNamespaceAndName)
         repo.cloneRepo()
@@ -61,7 +60,7 @@ class AirGappedUtils {
         new File(repo.absoluteLocalRepoTmpDir, 'Chart.lock').delete()
 
         repo.commitAndPush("Chart ${chartYaml.name}, version: ${chartYaml.version}\n\n" +
-                "Source: ${helmConfig['repoURL']}\n" +
+                "Source: ${helmConfig.repoURL}\n" +
                 "Dependencies localized to run in air-gapped environments", chartYaml.version as String)
         return repoNamespaceAndName
     }
@@ -82,7 +81,7 @@ class AirGappedUtils {
         def createResponse = repositoryApi.create(repo, true).execute()
         handleResponse(createResponse, repo)
 
-        def permission = new Permission(config.scmm['gitOpsUsername'] as String, Permission.Role.WRITE)
+        def permission = new Permission(config.scmm.gitOpsUsername as String, Permission.Role.WRITE)
         def permissionResponse = repositoryApi.createPermission(namespace, repoName, permission).execute()
         handleResponse(permissionResponse, permission, "for repo $namespace/$repoName")
     }
@@ -105,12 +104,12 @@ class AirGappedUtils {
         Map chartYaml = new YamlSlurper().parse(chartYamlPath) as Map
         Map chartLock = parseChartLockIfExists(scmmRepo)
 
-        List<Map> dependencies = chartYaml['dependencies'] as List<Map> ?: []
+        List<Map> dependencies = chartYaml.dependencies as List<Map> ?: []
         for (Map chartYamlDep : dependencies) {
             resolveDependencyVersion(chartLock, chartYamlDep, scmmRepo)
 
             // Remove link to external repo, to force using local one
-            chartYamlDep['repository'] = ''
+            chartYamlDep.repository = ''
         }
         fileSystemUtils.writeYaml(chartYaml, chartYamlPath.toFile())
         return chartYaml
@@ -128,12 +127,12 @@ class AirGappedUtils {
      * Resolve proper dependency version from Chart.lock, e.g. 5.18.* -> 5.18.1
      */
     private void resolveDependencyVersion(Map chartLock, Map chartYamlDep, ScmmRepo scmmRepo) {
-        def chartLockDep = findByName(chartLock.dependencies as List, chartYamlDep['name'] as String)
+        def chartLockDep = findByName(chartLock.dependencies as List, chartYamlDep.name as String)
         if (chartLockDep) {
-            chartYamlDep['version'] = chartLockDep['version']
-        } else if ((chartYamlDep['version'] as String).contains('*')) {
+            chartYamlDep.version = chartLockDep.version
+        } else if ((chartYamlDep.version as String).contains('*')) {
             throw new RuntimeException("Unable to determine proper version for dependency " +
-                    "${chartYamlDep['name']} (version: ${chartYamlDep['version']}) from repo ${scmmRepo.scmmRepoTarget}")
+                    "${chartYamlDep.name} (version: ${chartYamlDep.version}) from repo ${scmmRepo.scmmRepoTarget}")
         }
     }
 
@@ -142,7 +141,7 @@ class AirGappedUtils {
         // Note that list.find{} does not work in GraalVM native image: 
         // UnsupportedFeatureError: Runtime reflection is not supported
         list.stream()
-                .filter(map -> map['name'] == name)
+                .filter(map -> map.name == name)
                 .findFirst().orElse([:])
     }
 }

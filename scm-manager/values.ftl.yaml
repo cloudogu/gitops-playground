@@ -7,7 +7,7 @@ extraEnv: |
     - name: SCM_WEBAPP_INITIALPASSWORD
       value: "${password}"
 
-<#if !remote>
+<#if remote?? && !remote>
 service:
   nodePort: 9091
   type: NodePort

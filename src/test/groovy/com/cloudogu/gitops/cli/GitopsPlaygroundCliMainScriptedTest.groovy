@@ -2,7 +2,7 @@ package com.cloudogu.gitops.cli
 
 import com.cloudogu.gitops.Application
 import com.cloudogu.gitops.Feature
-import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.destroy.Destroyer
 import com.cloudogu.gitops.destroy.DestructionHandler
 import io.github.classgraph.ClassGraph
@@ -12,7 +12,9 @@ import io.micronaut.core.annotation.Order
 import org.junit.jupiter.api.Test
 
 import static org.assertj.core.api.Assertions.assertThat
-import static org.assertj.core.api.Fail.fail 
+import static org.assertj.core.api.Fail.fail
+import static com.cloudogu.gitops.config.Config.*
+
 /**
  * It is difficult to test if *all* classes are instantiated.
  * Except for edge cases like outputConfigFile or delete,
@@ -23,31 +25,20 @@ class GitopsPlaygroundCliMainScriptedTest {
 
     ApplicationContext applicationContext
     GitopsPlaygroundCliScriptedForTest gitopsPlaygroundCliScripted = new GitopsPlaygroundCliScriptedForTest()
-    Configuration config = new Configuration(
-            application: [
-                    baseUrl: 'http://localhost',
-            ],
-            jenkins: [
-                    url: 'http://jenkins',
-            ],
-            registry: [:],
-            scmm: [
-                    url: 'http://scmm',
-            ],
-            features: [
-                    argocd: [:]
-            ],
+    Config config = new Config(
+            jenkins: new JenkinsSchema(url: 'http://jenkins'),
+            scmm: new ScmmSchema(url: 'http://scmm')
     )
-    
+
     /**
      * This test makes sure that we don't forget to add new {@link Feature} classes to 
-     * {@link GitopsPlaygroundCliMainScripted.GitopsPlaygroundCliScripted#register(io.micronaut.context.ApplicationContext, com.cloudogu.gitops.config.Configuration)}
+     * {@link GitopsPlaygroundCliMainScripted.GitopsPlaygroundCliScripted#register(Config, io.micronaut.context.ApplicationContext)}
      * so they also work in the dev image.
      */
     @Test
     void 'all Feature classes are instantiated in the correct order'() {
         gitopsPlaygroundCliScripted.createApplicationContext()
-        gitopsPlaygroundCliScripted.register(applicationContext, config)
+        gitopsPlaygroundCliScripted.register(config, applicationContext)
 
         List<String> actualClasses = applicationContext.getBean(Application).features
                 .collect { it.class.simpleName }
@@ -59,10 +50,10 @@ class GitopsPlaygroundCliMainScriptedTest {
 
     @Test
     void 'all DestructionHandlers are instantiated in the correct order'() {
-        config.config['application']['destroy'] = true
-        
+        config = new Config(config.properties + [application: new ApplicationSchema(destroy: true)])
+
         gitopsPlaygroundCliScripted.createApplicationContext()
-        gitopsPlaygroundCliScripted.register(applicationContext, config)
+        gitopsPlaygroundCliScripted.register(config, applicationContext)
 
         List<String> actualClasses = applicationContext.getBean(Destroyer).destructionHandlers
                 .collect { it.class.simpleName }

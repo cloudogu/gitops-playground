@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.utils
 
-import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.config.Config
+
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.scmm.api.Permission
 import com.cloudogu.gitops.scmm.api.Repository
@@ -25,27 +26,27 @@ import static org.mockito.Mockito.*
 
 class AirGappedUtilsTest {
 
-    Map config = [
-            application: [
+    Config config = new Config(
+            application: new Config.ApplicationSchema(
                     localHelmChartFolder : '',
                     gitName : 'Cloudogu',
                     gitEmail : 'hello@cloudogu.com',
-            ],
-            scmm: [
+            ),
+            scmm: new Config.ScmmSchema(
                     username: 'scmm-usr',
                     password: 'scmm-pw',
                     gitOpsUsername: 'foo-gitops'
-            ]
-    ]
-    
-    Map helmConfig = [
+            )
+    )
+
+    Config.HelmConfig helmConfig = new Config.HelmConfig( [
             chart  : 'kube-prometheus-stack',
             repoURL: 'https://kube-prometheus-stack-repo-url',
             version: '58.2.1'
-    ]
+    ])
     
     Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
-    TestScmmRepoProvider scmmRepoProvider = new TestScmmRepoProvider(new Configuration(config), new FileSystemUtils())
+    TestScmmRepoProvider scmmRepoProvider = new TestScmmRepoProvider(config, new FileSystemUtils())
     FileSystemUtils fileSystemUtils = new FileSystemUtils()
     RepositoryApi repositoryApi = mock(RepositoryApi)
     HelmClient helmClient = mock(HelmClient)
@@ -224,7 +225,7 @@ class AirGappedUtilsTest {
         }
         fileSystemUtils.writeYaml(chartLock, sourceChart.resolve('Chart.lock').toFile())
 
-        config.application['localHelmChartFolder'] = rootChartsFolder.toString()
+        config.application.localHelmChartFolder = rootChartsFolder.toString()
     }
 
     protected void assertAirGapped() {
@@ -285,6 +286,6 @@ class AirGappedUtilsTest {
     }
 
     AirGappedUtils createAirGappedUtils() {
-        new AirGappedUtils(new Configuration(config), scmmRepoProvider, repositoryApi, fileSystemUtils, helmClient)
+        new AirGappedUtils(config, scmmRepoProvider, repositoryApi, fileSystemUtils, helmClient)
     }
 }

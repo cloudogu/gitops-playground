@@ -1,16 +1,17 @@
 package com.cloudogu.gitops.utils
 
-import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.config.Config
+
 import jakarta.inject.Provider
 
 class K8sClientForTest extends K8sClient {
     CommandExecutorForTest commandExecutorForTest
     
-    K8sClientForTest(Map config, CommandExecutorForTest commandExecutor = new CommandExecutorForTest()) {
-        super(commandExecutor, new FileSystemUtils(), new Provider<Configuration>() {
+    K8sClientForTest(Config config, CommandExecutorForTest commandExecutor = new CommandExecutorForTest()) {
+        super(commandExecutor, new FileSystemUtils(), new Provider<Config>() {
             @Override
-            Configuration get() {
-                new Configuration(config)
+            Config get() {
+                return config
             }
         })
         commandExecutorForTest = commandExecutor

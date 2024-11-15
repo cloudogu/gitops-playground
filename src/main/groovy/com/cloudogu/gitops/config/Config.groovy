@@ -1,0 +1,726 @@
+package com.cloudogu.gitops.config
+
+import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.annotation.JsonPropertyDescription
+import com.fasterxml.jackson.core.JsonGenerator
+import com.fasterxml.jackson.databind.*
+import com.fasterxml.jackson.databind.module.SimpleModule
+import com.fasterxml.jackson.databind.ser.BeanPropertyWriter
+import com.fasterxml.jackson.databind.ser.BeanSerializerModifier
+import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
+import groovy.transform.MapConstructor
+import jakarta.inject.Singleton
+import picocli.CommandLine.Mixin
+import picocli.CommandLine.Command
+import picocli.CommandLine.Option
+
+import static com.cloudogu.gitops.config.ConfigConstants.*
+import static picocli.CommandLine.ScopeType
+
+/**
+ * The global configuration object.
+ *
+ * Also used to create the schema for the configuration file or map, which is used to validate the passed YAML file.
+ *
+ * Note that all properties marked with 
+ * * {@link JsonPropertyDescription} (written into the Config for config file and config map)
+ * * {@link Option} (CLI Options)
+ *
+ * are external properties that can be changed by the user.
+ * All other properties are internal.
+ *
+ * When changing values make sure to recreate file configuration.schema.json using JsonSchemaGenerator
+ * (copy output into file an format using IDE).
+ *
+ * Make sure not to forget {@link Mixin} at sub types that contain CLI {@link Option}s. Otherwise they are ignored by
+ * picocli.
+ *
+ * Default values
+ * - Boolean is set to false
+ * - String uses empty string, because of too many null checks in freemarker and usages.
+ *
+ * @see com.cloudogu.gitops.cli.GitopsPlaygroundCli - initializes from file, and CLI
+ */
+@Singleton
+@MapConstructor(noArg = true, includeSuperProperties = true, includeFields = true)
+@Command(name = BINARY_NAME, description = APP_DESCRIPTION)
+class Config {
+
+    // When updating please also update in Dockerfile
+    public static final String HELM_IMAGE = "ghcr.io/cloudogu/helm:3.15.4-1"
+    // When updating please also adapt in Dockerfile, vars.tf and init-cluster.sh
+    public static final String K8S_VERSION = "1.29"
+    public static final String DEFAULT_ADMIN_USER = 'admin'
+    public static final String DEFAULT_ADMIN_PW = 'admin'
+    public static final int DEFAULT_REGISTRY_PORT = 30000
+
+    @JsonPropertyDescription(REGISTRY_DESCRIPTION)
+    @Mixin
+    RegistrySchema registry = new RegistrySchema()
+
+    @JsonPropertyDescription(JENKINS_DESCRIPTION)
+    @Mixin
+    JenkinsSchema jenkins = new JenkinsSchema()
+
+    @JsonPropertyDescription(SCMM_DESCRIPTION)
+    @Mixin
+    ScmmSchema scmm = new ScmmSchema()
+
+    @JsonPropertyDescription(APPLICATION_DESCRIPTION)
+    @Mixin
+    ApplicationSchema application = new ApplicationSchema()
+
+    @JsonPropertyDescription(IMAGES_DESCRIPTION)
+    @Mixin
+    ImagesSchema images = new ImagesSchema()
+
+    @JsonPropertyDescription(REPOSITORIES_DESCRIPTION)
+    RepositoriesSchema repositories = new RepositoriesSchema()
+
+    @JsonPropertyDescription(FEATURES_DESCRIPTION)
+    @Mixin
+    FeaturesSchema features = new FeaturesSchema()
+
+    static class HelmConfig {
+        @JsonPropertyDescription(HELM_CONFIG_CHART_DESCRIPTION)
+        String chart = ''
+        @JsonPropertyDescription(HELM_CONFIG_REPO_URL_DESCRIPTION)
+        String repoURL = ''
+        @JsonPropertyDescription(HELM_CONFIG_VERSION_DESCRIPTION)
+        String version = ''
+    }
+
+    static class HelmConfigWithValues extends HelmConfig {
+        @JsonPropertyDescription(HELM_CONFIG_VALUES_DESCRIPTION)
+        Map<String, Object> values = [:]
+    }
+
+    static class RegistrySchema {
+        Boolean internal = true
+        Boolean twoRegistries = false
+
+        @Option(names = ['--internal-registry-port'], description = REGISTRY_INTERNAL_PORT_DESCRIPTION)
+        @JsonPropertyDescription(REGISTRY_INTERNAL_PORT_DESCRIPTION)
+        Integer internalPort = DEFAULT_REGISTRY_PORT
+
+        @Option(names = ['--registry-url'], description = REGISTRY_URL_DESCRIPTION)
+        @JsonPropertyDescription(REGISTRY_URL_DESCRIPTION)
+        String url = ''
+
+        @Option(names = ['--registry-path'], description = REGISTRY_PATH_DESCRIPTION)
+        @JsonPropertyDescription(REGISTRY_PATH_DESCRIPTION)
+        String path = ''
+
+        @Option(names = ['--registry-username'], description = REGISTRY_USERNAME_DESCRIPTION)
+        @JsonPropertyDescription(REGISTRY_USERNAME_DESCRIPTION)
+        String username = ''
+
+        @Option(names = ['--registry-password'], description = REGISTRY_PASSWORD_DESCRIPTION)
+        @JsonPropertyDescription(REGISTRY_PASSWORD_DESCRIPTION)
+        String password = ''
+
+        // Alternative: Use different registries, e.g. in air-gapped envs
+        // "Proxy" registry for 3rd party images, e.g. base images
+        @Option(names = ['--registry-proxy-url'], description = REGISTRY_PROXY_URL_DESCRIPTION)
+        @JsonPropertyDescription(REGISTRY_PROXY_URL_DESCRIPTION)
+        String proxyUrl = ''
+
+        @Option(names = ['--registry-proxy-username'], description = REGISTRY_PROXY_PASSWORD_DESCRIPTION)
+        @JsonPropertyDescription(REGISTRY_PROXY_USERNAME_DESCRIPTION)
+        String proxyUsername = ''
+
+        @Option(names = ['--registry-proxy-password'], description = 'Optional when --registry-proxy-url is set')
+        @JsonPropertyDescription(REGISTRY_PROXY_PASSWORD_DESCRIPTION)
+        String proxyPassword = ''
+
+        // Alternative set of credentials for url, used only for image pull secrets
+        @Option(names = ['--registry-username-read-only'], description = REGISTRY_USERNAME_RO_DESCRIPTION)
+        @JsonPropertyDescription(REGISTRY_USERNAME_RO_DESCRIPTION)
+        String readOnlyUsername = ''
+
+        @Option(names = ['--registry-password-read-only'], description = REGISTRY_PASSWORD_RO_DESCRIPTION)
+        @JsonPropertyDescription(REGISTRY_PASSWORD_RO_DESCRIPTION)
+        String readOnlyPassword = ''
+
+        @Option(names = ['--create-image-pull-secrets'], description = REGISTRY_CREATE_IMAGE_PULL_SECRETS_DESCRIPTION)
+        @JsonPropertyDescription(REGISTRY_CREATE_IMAGE_PULL_SECRETS_DESCRIPTION)
+        Boolean createImagePullSecrets = false
+
+        @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
+        HelmConfig helm = new HelmConfig(
+                chart: 'docker-registry',
+                repoURL: 'https://helm.twun.io',
+                version: '2.2.3')
+    }
+
+    static class JenkinsSchema {
+        Boolean internal = true
+        /* This is the URL configured in SCMM inside the Jenkins Plugin, e.g. at http://scmm.localhost/scm/admin/settings/jenkins
+          We use the K8s service as default name here, because it is the only option:
+          "jenkins.localhost" will not work inside the Pods and k3d-container IP + Port (e.g. 172.x.y.z:9090) will not work on Windows and MacOS.
+
+          For production we overwrite this when config.jenkins["url"] is set.
+          See addJenkinsConfig() and the comment at scmm.urlForJenkins */
+        String urlForScmm = "http://jenkins"
+
+        @Option(names = ['--jenkins-url'], description = JENKINS_URL_DESCRIPTION)
+        @JsonPropertyDescription(JENKINS_URL_DESCRIPTION)
+        String url = ''
+
+        @Option(names = ['--jenkins-username'], description = JENKINS_USERNAME_DESCRIPTION)
+        @JsonPropertyDescription(JENKINS_USERNAME_DESCRIPTION)
+        String username = DEFAULT_ADMIN_USER
+
+        @Option(names = ['--jenkins-password'], description = JENKINS_PASSWORD_DESCRIPTION)
+        @JsonPropertyDescription(JENKINS_PASSWORD_DESCRIPTION)
+        String password = DEFAULT_ADMIN_PW
+
+        @Option(names = ['--jenkins-metrics-username'], description = JENKINS_METRICS_USERNAME_DESCRIPTION)
+        @JsonPropertyDescription(JENKINS_METRICS_USERNAME_DESCRIPTION)
+        String metricsUsername = "metrics"
+
+        @Option(names = ['--jenkins-metrics-password'], description = JENKINS_METRICS_PASSWORD_DESCRIPTION)
+        @JsonPropertyDescription(JENKINS_METRICS_PASSWORD_DESCRIPTION)
+        String metricsPassword = "metrics"
+
+        @Option(names = ['--maven-central-mirror'], description = MAVEN_CENTRAL_MIRROR_DESCRIPTION)
+        @JsonPropertyDescription(MAVEN_CENTRAL_MIRROR_DESCRIPTION)
+        String mavenCentralMirror = ''
+
+        @Option(names = ["--jenkins-additional-envs"], description = JENKINS_ADDITIONAL_ENVS_DESCRIPTION, split = ",", required = false)
+        @JsonPropertyDescription(JENKINS_ADDITIONAL_ENVS_DESCRIPTION)
+        Map<String, String> additionalEnvs = [:]
+
+        @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
+        JenkinsHelmSchema helm = new JenkinsHelmSchema()
+        static class JenkinsHelmSchema {
+            // Once these can be used get rid of this class and use HelmConfig instead
+            // String chart = "jenkins"
+            // String repoURL = "https://charts.jenkins.io"
+            /* When Upgrading helm chart, also upgrade controller.tag in jenkins/values.yaml
+            In addition:
+             - Also upgrade plugins. See docs/developers.md
+             */
+            @JsonPropertyDescription(HELM_CONFIG_VERSION_DESCRIPTION)
+            String version = '5.5.11'
+        }
+    }
+
+    static class ScmmSchema {
+        Boolean internal = true
+        String gitOpsUsername = ''
+        /* This corresponds to the "Base URL" in SCMM Settings.
+           We use the K8s service as default name here, to make the build on push feature (webhooks from SCMM to Jenkins that trigger builds) work in k3d.
+           The webhook contains repository URLs that start with the "Base URL" Setting of SCMM.
+           Jenkins checks these repo URLs and triggers all builds that match repo URLs.
+           In k3d, we have to define the repos in Jenkins using the K8s Service name, because they are the only option.
+           "scmm.localhost" will not work inside the Pods and k3d-container IP + Port (e.g. 172.x.y.z:9091) will not work on Windows and MacOS.
+           So, we have to use the matching URL in SCMM as well.
+
+           For production we overwrite this when config.scmm["url"] is set.
+           See addScmmConfig() */
+        String urlForJenkins = 'http://scmm-scm-manager/scm'
+        String host = ''
+        String protocol = ''
+        String ingress = ''
+
+        @Option(names = ['--scmm-url'], description = SCMM_URL_DESCRIPTION)
+        @JsonPropertyDescription(SCMM_URL_DESCRIPTION)
+        String url = ''
+
+        @Option(names = ['--scmm-username'], description = SCMM_USERNAME_DESCRIPTION)
+        @JsonPropertyDescription(SCMM_USERNAME_DESCRIPTION)
+        String username = DEFAULT_ADMIN_USER
+
+        @Option(names = ['--scmm-password'], description = SCMM_PASSWORD_DESCRIPTION)
+        @JsonPropertyDescription(SCMM_PASSWORD_DESCRIPTION)
+        String password = DEFAULT_ADMIN_PW
+
+        @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
+        HelmConfig helm = new HelmConfig(
+                chart: 'scm-manager',
+                repoURL: 'https://packages.scm-manager.org/repository/helm-v2-releases/',
+                version: '3.2.1')
+    }
+
+    static class ApplicationSchema {
+        Boolean runningInsideK8s = false
+        String namePrefixForEnvVars = ''
+
+        @Option(names = ['--config-file'], description = CONFIG_FILE_DESCRIPTION)
+        String configFile = ''
+
+        @Option(names = ['--config-map'], description = CONFIG_MAP_DESCRIPTION)
+        String configMap = ''
+
+        @Option(names = ['-d', '--debug'], description = DEBUG_DESCRIPTION, scope = ScopeType.INHERIT)
+        Boolean debug
+
+        @Option(names = ['-x', '--trace'], description = TRACE_DESCRIPTION, scope = ScopeType.INHERIT)
+        Boolean trace
+
+        @Option(names = ['--output-config-file'], description = OUTPUT_CONFIG_FILE_DESCRIPTION, help = true)
+        Boolean outputConfigFile = false
+
+        @Option(names = ["-v", "--version"], help = true, description = "Display version and license info")
+        Boolean versionInfoRequested = false
+
+        // We define or own --version, so we need to define our own help param.
+        // The param itself is not used, "usageHelp = true" leads to hel being printed
+        @Option(names = ["-h", "--help"], usageHelp = true, description = "Display this help message")
+        Boolean usageHelpRequested = false
+
+        @Option(names = ['--remote'], description = REMOTE_DESCRIPTION)
+        @JsonPropertyDescription(REMOTE_DESCRIPTION)
+        Boolean remote = false
+
+        @Option(names = ['--insecure'], description = INSECURE_DESCRIPTION)
+        @JsonPropertyDescription(INSECURE_DESCRIPTION)
+        Boolean insecure = false
+
+        // TODO only for dev, can we remove this from config file?
+        // Take from env because the Dockerfile provides a local copy of the repo for air-gapped mode
+        @JsonPropertyDescription(LOCAL_HELM_CHART_FOLDER_DESCRIPTION)
+        String localHelmChartFolder = System.getenv('LOCAL_HELM_CHART_FOLDER')
+
+        @Option(names = ['--openshift'], description = OPENSHIFT_DESCRIPTION)
+        @JsonPropertyDescription(OPENSHIFT_DESCRIPTION)
+        Boolean openshift = false
+
+        @Option(names = ['--username'], description = USERNAME_DESCRIPTION)
+        @JsonPropertyDescription(USERNAME_DESCRIPTION)
+        String username = DEFAULT_ADMIN_USER
+
+        @Option(names = ['--password'], description = PASSWORD_DESCRIPTION)
+        @JsonPropertyDescription(PASSWORD_DESCRIPTION)
+        String password = DEFAULT_ADMIN_PW
+
+        @Option(names = ['-y', '--yes'], description = PIPE_YES_DESCRIPTION)
+        @JsonPropertyDescription(PIPE_YES_DESCRIPTION)
+        Boolean yes = false
+
+        @Option(names = ['--name-prefix'], description = NAME_PREFIX_DESCRIPTION)
+        @JsonPropertyDescription(NAME_PREFIX_DESCRIPTION)
+        String namePrefix = ''
+
+        @Option(names = ['--destroy'], description = DESTROY_DESCRIPTION)
+        @JsonPropertyDescription(DESTROY_DESCRIPTION)
+        Boolean destroy = false
+
+        @Option(names = ['--pod-resources'], description = POD_RESOURCES_DESCRIPTION)
+        @JsonPropertyDescription(POD_RESOURCES_DESCRIPTION)
+        Boolean podResources = false
+
+        @Option(names = ['--git-name'], description = GIT_NAME_DESCRIPTION)
+        @JsonPropertyDescription(GIT_NAME_DESCRIPTION)
+        String gitName = 'Cloudogu'
+
+        @Option(names = ['--git-email'], description = GIT_EMAIL_DESCRIPTION)
+        @JsonPropertyDescription(GIT_EMAIL_DESCRIPTION)
+        String gitEmail = 'hello@cloudogu.com'
+
+        @Option(names = ['--base-url'], description = BASE_URL_DESCRIPTION)
+        @JsonPropertyDescription(BASE_URL_DESCRIPTION)
+        String baseUrl = ''
+
+        @Option(names = ['--url-separator-hyphen'], description = URL_SEPARATOR_HYPHEN_DESCRIPTION)
+        @JsonPropertyDescription(URL_SEPARATOR_HYPHEN_DESCRIPTION)
+        Boolean urlSeparatorHyphen = false
+
+        @Option(names = ['--mirror-repos'], description = MIRROR_REPOS_DESCRIPTION)
+        @JsonPropertyDescription(MIRROR_REPOS_DESCRIPTION)
+        Boolean mirrorRepos = false
+
+        @Option(names = ['--skip-crds'], description = SKIP_CRDS_DESCRIPTION)
+        @JsonPropertyDescription(SKIP_CRDS_DESCRIPTION)
+        Boolean skipCrds = false
+
+        @Option(names = ['--namespace-isolation'], description = NAMESPACE_ISOLATION_DESCRIPTION)
+        @JsonPropertyDescription(NAMESPACE_ISOLATION_DESCRIPTION)
+        Boolean namespaceIsolation = false
+
+        @Option(names = ['--netpols'], description = NETPOLS_DESCRIPTION)
+        @JsonPropertyDescription(NETPOLS_DESCRIPTION)
+        Boolean netpols = false
+    }
+
+    static class ImagesSchema {
+        @Option(names = ['--kubectl-image'], description = KUBECTL_IMAGE_DESCRIPTION)
+        @JsonPropertyDescription(KUBECTL_IMAGE_DESCRIPTION)
+        String kubectl = "bitnami/kubectl:$K8S_VERSION"
+
+        // cloudogu/helm also contains kubeval and helm kubeval plugin. Using the same image makes builds faster
+        @Option(names = ['--helm-image'], description = HELM_IMAGE_DESCRIPTION)
+        @JsonPropertyDescription(HELM_IMAGE_DESCRIPTION)
+        String helm = HELM_IMAGE
+
+        @Option(names = ['--kubeval-image'], description = KUBEVAL_IMAGE_DESCRIPTION)
+        @JsonPropertyDescription(KUBEVAL_IMAGE_DESCRIPTION)
+        String kubeval = HELM_IMAGE
+
+        @Option(names = ['--helmkubeval-image'], description = HELMKUBEVAL_IMAGE_DESCRIPTION)
+        @JsonPropertyDescription(HELMKUBEVAL_IMAGE_DESCRIPTION)
+        String helmKubeval = HELM_IMAGE
+
+        @Option(names = ['--yamllint-image'], description = YAMLLINT_IMAGE_DESCRIPTION)
+        @JsonPropertyDescription(YAMLLINT_IMAGE_DESCRIPTION)
+        String yamllint = "cytopia/yamllint:1.25-0.7"
+
+        @Option(names = ['--nginx-image'], description = NGINX_IMAGE_DESCRIPTION)
+        @JsonPropertyDescription(NGINX_IMAGE_DESCRIPTION)
+        String nginx = ''
+
+        @Option(names = ['--petclinic-image'], description = PETCLINIC_IMAGE_DESCRIPTION)
+        @JsonPropertyDescription(PETCLINIC_IMAGE_DESCRIPTION)
+        String petclinic = 'eclipse-temurin:11-jre-alpine'
+
+        @Option(names = ['--maven-image'], description = MAVEN_IMAGE_DESCRIPTION)
+        @JsonPropertyDescription(MAVEN_IMAGE_DESCRIPTION)
+        String maven = ''
+    }
+
+    static class RepositoriesSchema {
+        @JsonPropertyDescription(SPRING_BOOT_HELM_CHART_DESCRIPTION)
+        RepositorySchemaWithRef springBootHelmChart = new RepositorySchemaWithRef(
+                // Take from env or use default because the Dockerfile provides a local copy of the repo
+                url: System.getenv('SPRING_BOOT_HELM_CHART_REPO') ?: 'https://github.com/cloudogu/spring-boot-helm-chart.git',
+                ref: '0.3.2'
+        )
+        @JsonPropertyDescription(SPRING_PETCLINIC_DESCRIPTION)
+        RepositorySchemaWithRef springPetclinic = new RepositorySchemaWithRef(
+                url: System.getenv('SPRING_PETCLINIC_REPO') ?: 'https://github.com/cloudogu/spring-petclinic.git',
+                ref: 'b0e0d18'
+        )
+        @JsonPropertyDescription(GITOPS_BUILD_LIB_DESCRIPTION)
+        RepositorySchema gitopsBuildLib = new RepositorySchema(
+                url: System.getenv('GITOPS_BUILD_LIB_REPO') ?: 'https://github.com/cloudogu/gitops-build-lib.git'
+        )
+        @JsonPropertyDescription(CES_BUILD_LIB_DESCRIPTION)
+        RepositorySchema cesBuildLib = new RepositorySchema(
+                url: System.getenv('CES_BUILD_LIB_REPO') ?: 'https://github.com/cloudogu/ces-build-lib.git'
+        )
+    }
+
+    static class RepositorySchema {
+        @JsonPropertyDescription(REPO_URL_DESCRIPTION)
+        String url = ''
+    }
+
+    static class RepositorySchemaWithRef extends RepositorySchema {
+        @JsonPropertyDescription(REPO_REF_DESCRIPTION)
+        String ref = ''
+    }
+
+    static class FeaturesSchema {
+
+        @Mixin
+        @JsonPropertyDescription(ARGOCD_DESCRIPTION)
+        ArgoCDSchema argocd = new ArgoCDSchema()
+
+        @Mixin
+        @JsonPropertyDescription(MAIL_DESCRIPTION)
+        MailSchema mail = new MailSchema()
+
+        @Mixin
+        @JsonPropertyDescription(MONITORING_DESCRIPTION)
+        MonitoringSchema monitoring = new MonitoringSchema()
+
+        @Mixin
+        @JsonPropertyDescription(SECRETS_DESCRIPTION)
+        SecretsSchema secrets = new SecretsSchema()
+
+        @Mixin
+        @JsonPropertyDescription(INGRESS_NGINX_DESCRIPTION)
+        IngressNginxSchema ingressNginx = new IngressNginxSchema()
+
+        @JsonPropertyDescription(EXAMPLE_APPS_DESCRIPTION)
+        ExampleAppsSchema exampleApps = new ExampleAppsSchema()
+
+        @Mixin
+        @JsonPropertyDescription(CERTMANAGER_DESCRIPTION)
+        CertManagerSchema certManager = new CertManagerSchema()
+    }
+
+    static class ArgoCDSchema {
+
+        @Option(names = ['--argocd'], description = ARGOCD_ENABLE_DESCRIPTION)
+        @JsonPropertyDescription(ARGOCD_ENABLE_DESCRIPTION)
+        Boolean active = false
+
+        @Option(names = ['--argocd-url'], description = ARGOCD_URL_DESCRIPTION)
+        @JsonPropertyDescription(ARGOCD_URL_DESCRIPTION)
+        String url = ''
+
+        @Option(names = ['--argocd-email-from'], description = ARGOCD_EMAIL_FROM_DESCRIPTION)
+        @JsonPropertyDescription(ARGOCD_EMAIL_FROM_DESCRIPTION)
+        String emailFrom = 'argocd@example.org'
+
+        @Option(names = ['--argocd-email-to-user'], description = ARGOCD_EMAIL_TO_USER_DESCRIPTION)
+        @JsonPropertyDescription(ARGOCD_EMAIL_TO_USER_DESCRIPTION)
+        String emailToUser = 'app-team@example.org'
+
+        @Option(names = ['--argocd-email-to-admin'], description = ARGOCD_EMAIL_TO_ADMIN_DESCRIPTION)
+        @JsonPropertyDescription(ARGOCD_EMAIL_TO_ADMIN_DESCRIPTION)
+        String emailToAdmin = 'infra@example.org'
+
+    }
+
+    static class MailSchema {
+        @Option(names = ['--mailhog', '--mail'], description = MAILHOG_ENABLE_DESCRIPTION, scope = ScopeType.INHERIT)
+        Boolean active = false
+
+        @JsonPropertyDescription(MAILHOG_ENABLE_DESCRIPTION)
+        Boolean mailhog = false
+
+        @Option(names = ['--mailhog-url'], description = MAILHOG_URL_DESCRIPTION)
+        @JsonPropertyDescription(MAILHOG_URL_DESCRIPTION)
+        String mailhogUrl = ''
+
+        @Option(names = ['--smtp-address'], description = SMTP_ADDRESS_DESCRIPTION)
+        @JsonPropertyDescription(SMTP_ADDRESS_DESCRIPTION)
+        String smtpAddress = ''
+
+        @Option(names = ['--smtp-port'], description = SMTP_PORT_DESCRIPTION)
+        @JsonPropertyDescription(SMTP_PORT_DESCRIPTION)
+        Integer smtpPort = null
+
+        @Option(names = ['--smtp-user'], description = SMTP_USER_DESCRIPTION)
+        @JsonPropertyDescription(SMTP_USER_DESCRIPTION)
+        String smtpUser = ''
+
+        @Option(names = ['--smtp-password'], description = SMTP_PASSWORD_DESCRIPTION)
+        @JsonPropertyDescription(SMTP_PASSWORD_DESCRIPTION)
+        String smtpPassword = ''
+
+        @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
+        @Mixin
+        MailHelmSchema helm = new MailHelmSchema(
+                chart: 'mailhog',
+                repoURL: 'https://codecentric.github.io/helm-charts',
+                version: '5.0.1')
+
+        static class MailHelmSchema extends HelmConfig {
+            @Option(names = ['--mailhog-image'], description = HELM_CONFIG_IMAGE_DESCRIPTION)
+            @JsonPropertyDescription(HELM_CONFIG_IMAGE_DESCRIPTION)
+            String image = 'ghcr.io/cloudogu/mailhog:v1.0.1'
+        }
+    }
+
+    static class MonitoringSchema {
+        @Option(names = ['--metrics', '--monitoring'], description = MONITORING_ENABLE_DESCRIPTION)
+        @JsonPropertyDescription(MONITORING_ENABLE_DESCRIPTION)
+        Boolean active = false
+
+        @Option(names = ['--grafana-url'], description = GRAFANA_URL_DESCRIPTION)
+        @JsonPropertyDescription(GRAFANA_URL_DESCRIPTION)
+        String grafanaUrl = ''
+
+        @Option(names = ['--grafana-email-from'], description = GRAFANA_EMAIL_FROM_DESCRIPTION)
+        @JsonPropertyDescription(GRAFANA_EMAIL_FROM_DESCRIPTION)
+        String grafanaEmailFrom = 'grafana@example.org'
+
+        @Option(names = ['--grafana-email-to'], description = GRAFANA_EMAIL_TO_DESCRIPTION)
+        @JsonPropertyDescription(GRAFANA_EMAIL_TO_DESCRIPTION)
+        String grafanaEmailTo = 'infra@example.org'
+
+        @Mixin
+        @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
+        @SuppressWarnings('GroovyAssignabilityCheck')
+        // Because of values
+        MonitoringHelmSchema helm = new MonitoringHelmSchema(
+                chart: 'kube-prometheus-stack',
+                repoURL: 'https://prometheus-community.github.io/helm-charts',
+                /* When updating this make sure to also test if air-gapped mode still works */
+                version: '58.2.1',
+                values: [:] // Otherwise values is null 🤷‍♂️
+        )
+        static class MonitoringHelmSchema extends HelmConfigWithValues {
+            @Option(names = ['--grafana-image'], description = GRAFANA_IMAGE_DESCRIPTION)
+            @JsonPropertyDescription(GRAFANA_IMAGE_DESCRIPTION)
+            String grafanaImage = ''
+
+            @Option(names = ['--grafana-sidecar-image'], description = GRAFANA_SIDECAR_IMAGE_DESCRIPTION)
+            @JsonPropertyDescription(GRAFANA_SIDECAR_IMAGE_DESCRIPTION)
+            String grafanaSidecarImage = ''
+
+            @Option(names = ['--prometheus-image'], description = PROMETHEUS_IMAGE_DESCRIPTION)
+            @JsonPropertyDescription(PROMETHEUS_IMAGE_DESCRIPTION)
+            String prometheusImage = ''
+
+            @Option(names = ['--prometheus-operator-image'], description = PROMETHEUS_OPERATOR_IMAGE_DESCRIPTION)
+            @JsonPropertyDescription(PROMETHEUS_OPERATOR_IMAGE_DESCRIPTION)
+            String prometheusOperatorImage = ''
+
+            @Option(names = ['--prometheus-config-reloader-image'], description = PROMETHEUS_CONFIG_RELOADER_IMAGE_DESCRIPTION)
+            @JsonPropertyDescription(PROMETHEUS_CONFIG_RELOADER_IMAGE_DESCRIPTION)
+            String prometheusConfigReloaderImage = ''
+        }
+    }
+
+    static class SecretsSchema {
+        Boolean active = false
+
+        @Mixin
+        @JsonPropertyDescription(ESO_DESCRIPTION)
+        ESOSchema externalSecrets = new ESOSchema()
+
+        @Mixin
+        @JsonPropertyDescription(VAULT_DESCRIPTION)
+        VaultSchema vault = new VaultSchema()
+
+        static class ESOSchema {
+
+            @Mixin
+            @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
+            ESOHelmSchema helm = new ESOHelmSchema(
+                    chart: 'external-secrets',
+                    repoURL: 'https://charts.external-secrets.io',
+                    version: '0.9.16'
+            )
+            static class ESOHelmSchema extends HelmConfig {
+                @Option(names = ['--external-secrets-image'], description = EXTERNAL_SECRETS_IMAGE_DESCRIPTION)
+                @JsonPropertyDescription(EXTERNAL_SECRETS_IMAGE_DESCRIPTION)
+                String image = ''
+
+                @Option(names = ['--external-secrets-certcontroller-image'], description = EXTERNAL_SECRETS_CERT_CONTROLLER_IMAGE_DESCRIPTION)
+                @JsonPropertyDescription(EXTERNAL_SECRETS_CERT_CONTROLLER_IMAGE_DESCRIPTION)
+                String certControllerImage = ''
+
+                @Option(names = ['--external-secrets-webhook-image'], description = EXTERNAL_SECRETS_WEBHOOK_IMAGE_DESCRIPTION)
+                @JsonPropertyDescription(EXTERNAL_SECRETS_WEBHOOK_IMAGE_DESCRIPTION)
+                String webhookImage = ''
+            }
+        }
+
+        static class VaultSchema {
+            @Option(names = ['--vault'], description = VAULT_ENABLE_DESCRIPTION)
+            @JsonPropertyDescription(VAULT_ENABLE_DESCRIPTION)
+            VaultMode mode
+
+            @Option(names = ['--vault-url'], description = VAULT_URL_DESCRIPTION)
+            @JsonPropertyDescription(VAULT_URL_DESCRIPTION)
+            String url = ''
+
+            @Mixin
+            @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
+            VaultHelmSchema helm = new VaultHelmSchema(
+                    chart: 'vault',
+                    repoURL: 'https://helm.releases.hashicorp.com',
+                    version: '0.25.0'
+            )
+            static class VaultHelmSchema extends HelmConfig {
+                @Option(names = ['--vault-image'], description = VAULT_IMAGE_DESCRIPTION)
+                @JsonPropertyDescription(VAULT_IMAGE_DESCRIPTION)
+                String image = ''
+            }
+        }
+    }
+
+    static class IngressNginxSchema {
+
+        @Option(names = ['--ingress-nginx'], description = INGRESS_NGINX_ENABLE_DESCRIPTION)
+        @JsonPropertyDescription(INGRESS_NGINX_ENABLE_DESCRIPTION)
+        Boolean active = false
+
+        @Mixin
+        @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
+        IngressNginxHelmSchema helm = new IngressNginxHelmSchema(
+                chart: 'ingress-nginx',
+                repoURL: 'https://kubernetes.github.io/ingress-nginx',
+                version: '4.11.3'
+        )
+        static class IngressNginxHelmSchema extends HelmConfigWithValues {
+            @Option(names = ['--ingress-nginx-image'], description = HELM_CONFIG_IMAGE_DESCRIPTION)
+            @JsonPropertyDescription(HELM_CONFIG_IMAGE_DESCRIPTION)
+            String image = ''
+        }
+    }
+
+    static class CertManagerSchema {
+        @Option(names = ['--cert-manager'], description = CERTMANAGER_ENABLE_DESCRIPTION)
+        @JsonPropertyDescription(CERTMANAGER_ENABLE_DESCRIPTION)
+        Boolean active = false
+
+        @Mixin
+        @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
+        CertManagerHelmSchema helm = new CertManagerHelmSchema(
+                chart: 'cert-manager',
+                repoURL: 'https://charts.jetstack.io',
+                version: '1.16.1'
+        )
+        static class CertManagerHelmSchema extends HelmConfigWithValues {
+
+            @Option(names = ['--cert-manager-image'], description = CERTMANAGER_IMAGE_DESCRIPTION)
+            @JsonPropertyDescription(CERTMANAGER_IMAGE_DESCRIPTION)
+            String image = ''
+
+            @Option(names = ['--cert-manager-webhook-image'], description = CERTMANAGER_WEBHOOK_IMAGE_DESCRIPTION)
+            @JsonPropertyDescription(CERTMANAGER_WEBHOOK_IMAGE_DESCRIPTION)
+            String webhookImage = ''
+
+            @Option(names = ['--cert-manager-cainjector-image'], description = CERTMANAGER_CAINJECTOR_IMAGE_DESCRIPTION)
+            @JsonPropertyDescription(CERTMANAGER_CAINJECTOR_IMAGE_DESCRIPTION)
+            String cainjectorImage = ''
+
+            @Option(names = ['--cert-manager-acme-solver-image'], description = CERTMANAGER_ACME_SOLVER_IMAGE_DESCRIPTION)
+            @JsonPropertyDescription(CERTMANAGER_ACME_SOLVER_IMAGE_DESCRIPTION)
+            String acmeSolverImage = ''
+
+            @Option(names = ['--cert-manager-startup-api-check-image'], description = CERTMANAGER_STARTUP_API_CHECK_IMAGE_DESCRIPTION)
+            @JsonPropertyDescription(CERTMANAGER_STARTUP_API_CHECK_IMAGE_DESCRIPTION)
+            String startupAPICheckImage = ''
+
+        }
+    }
+
+    static class ExampleAppsSchema {
+        @JsonPropertyDescription(PETCLINIC_DESCRIPTION)
+        ExampleAppSchema petclinic = new ExampleAppSchema()
+        @JsonPropertyDescription(NGINX_DESCRIPTION)
+        ExampleAppSchema nginx = new ExampleAppSchema()
+
+        static class ExampleAppSchema {
+            @JsonPropertyDescription(BASE_DOMAIN_DESCRIPTION)
+            String baseDomain = ''
+        }
+    }
+
+    static enum VaultMode {
+        dev, prod
+    }
+
+    private static final ObjectMapper objectMapper = new ObjectMapper()
+            .registerModule(new SimpleModule().addSerializer(GString, new JsonSerializer<GString>() {
+                @Override
+                void serialize(GString value, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
+                    jsonGenerator.writeString(value.toString())
+                }
+            }))
+
+    static Config fromMap(Map map) {
+        objectMapper.convertValue(map, Config)
+    }
+
+    Map toMap() {
+        objectMapper.convertValue(this, Map)
+    }
+
+    String toYaml(boolean includeInternals) {
+        createYamlMapper(includeInternals)
+                .writeValueAsString(this)
+    }
+
+    private static YAMLMapper createYamlMapper(boolean includeInternals) {
+        if (!includeInternals) {
+            new YAMLMapper()
+                    .registerModule(new SimpleModule().setSerializerModifier(new BeanSerializerModifier() {
+                        @Override
+                        List<BeanPropertyWriter> changeProperties(SerializationConfig serializationConfig, BeanDescription beanDesc, List<BeanPropertyWriter> beanProperties) {
+                            beanProperties.findAll { writer -> writer.getAnnotation(JsonPropertyDescription) != null }
+                        }
+                    })) as YAMLMapper
+        } else {
+            new YAMLMapper()
+        }
+    }
+}

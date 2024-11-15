@@ -2,7 +2,8 @@ package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.FeatureWithImage
-import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.config.Config
+
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -25,7 +26,7 @@ class Mailhog extends Feature implements FeatureWithImage {
     static final String HELM_VALUES_PATH = "applications/cluster-resources/mailhog-helm-values.ftl.yaml"
 
     String namespace = 'monitoring'
-    Map config
+    Config config
     K8sClient k8sClient
     
     private String username
@@ -35,16 +36,16 @@ class Mailhog extends Feature implements FeatureWithImage {
     private AirGappedUtils airGappedUtils
 
     Mailhog(
-            Configuration config,
+            Config config,
             FileSystemUtils fileSystemUtils,
             DeploymentStrategy deployer,
             K8sClient k8sClient,
             AirGappedUtils airGappedUtils
     ) {
         this.deployer = deployer
-        this.config = config.getConfig()
-        this.username = this.config.application["username"]
-        this.password = this.config.application["password"]
+        this.config = config
+        this.username = this.config.application.username
+        this.password = this.config.application.password
         this.k8sClient = k8sClient
         this.fileSystemUtils = fileSystemUtils
         this.airGappedUtils = airGappedUtils
@@ -53,7 +54,7 @@ class Mailhog extends Feature implements FeatureWithImage {
 
     @Override
     boolean isEnabled() {
-        return config.features['mail']['mailhog']
+        return config.features.mail.mailhog
     }
 
     @Override
@@ -63,26 +64,26 @@ class Mailhog extends Feature implements FeatureWithImage {
         def tmpHelmValues = new TemplatingEngine().replaceTemplate(fileSystemUtils.copyToTempDir(HELM_VALUES_PATH).toFile(), [
                 mail         : [
                         // Note that passing the URL object here leads to problems in Graal Native image, see Git history
-                        host: config.features['mail']['mailhogUrl'] ? new URL(config.features['mail']['mailhogUrl'] as String).host : "",
+                        host: config.features.mail.mailhogUrl ? new URL(config.features.mail.mailhogUrl ).host : "",
                 ],
-                isRemote     : config.application['remote'],
+                isRemote     : config.application.remote,
                 username     : username,
                 passwordCrypt: bcryptMailhogPassword,
-                podResources: config.application['podResources'],
+                podResources: config.application.podResources,
                 config : config,
                 // Allow for using static classes inside the templates
                 statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
         ]).toPath()
 
-        def helmConfig = config['features']['mail']['helm']
+        def helmConfig = config.features.mail.helm
 
-        if (config.application['mirrorRepos']) {
+        if (config.application.mirrorRepos) {
             log.debug("Mirroring repos: Deploying mailhog from local git repo")
 
-            def repoNamespaceAndName = airGappedUtils.mirrorHelmRepoToGit(config['features']['mail']['helm'] as Map)
+            def repoNamespaceAndName = airGappedUtils.mirrorHelmRepoToGit(config.features.mail.helm as Config.HelmConfig)
 
             String mailhogVersion =
-                    new YamlSlurper().parse(Path.of("${config.application['localHelmChartFolder']}/${helmConfig['chart']}",
+                    new YamlSlurper().parse(Path.of("${config.application.localHelmChartFolder}/${helmConfig.chart}",
                             'Chart.yaml'))['version']
 
             deployer.deployFeature(
@@ -95,10 +96,10 @@ class Mailhog extends Feature implements FeatureWithImage {
                     tmpHelmValues, DeploymentStrategy.RepoType.GIT)
         } else {
             deployer.deployFeature(
-                    helmConfig['repoURL'] as String,
+                    helmConfig.repoURL ,
                     'mailhog',
-                    helmConfig['chart'] as String,
-                    helmConfig['version'] as String,
+                    helmConfig.chart ,
+                    helmConfig.version ,
                     namespace,
                     'mailhog',
                     tmpHelmValues)
@@ -106,10 +107,10 @@ class Mailhog extends Feature implements FeatureWithImage {
     }
 
     private URI getScmmUri() {
-        if (config.scmm['internal']) {
+        if (config.scmm.internal) {
             new URI('http://scmm-scm-manager.default.svc.cluster.local/scm')
         } else {
-            new URI("${config.scmm['url']}/scm")
+            new URI("${config.scmm.url}/scm")
         }
     }
 }

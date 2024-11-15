@@ -1,17 +1,7 @@
-package com.cloudogu.gitops.utils
-
-import groovy.json.JsonSlurper
-
-import static groovy.json.JsonOutput.toJson
+package com.cloudogu.gitops.utils 
 
 class MapUtils {
     
-    static Map deepCopy(Map input) {
-        // Lazy mans deep map copy 😬
-        String json = toJson(input)
-        return (Map) new JsonSlurper().parseText(json)
-    }
-
     static Map deepMerge(Map src, Map target) {
         src.forEach(
                 (key, value) -> { if (value != null) target.merge(key, value, (oldVal, newVal) -> {
@@ -26,14 +16,5 @@ class MapUtils {
                 })
                 })
         return target
-    }
-
-    static Map makeDeeplyImmutable(Map map) {
-        map.forEach((key, value) -> {
-            if (value instanceof Map) {
-                map[key] = Collections.unmodifiableMap(value)
-            }
-        })
-        return Collections.unmodifiableMap(map)
     }
 }
