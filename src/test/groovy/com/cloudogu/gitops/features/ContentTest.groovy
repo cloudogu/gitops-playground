@@ -1,6 +1,8 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.utils.CommandExecutor
+import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.K8sClientForTest
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
@@ -21,7 +23,8 @@ class ContentTest {
                     namePrefix: "foo-",
             ],
     ]
-    K8sClientForTest k8sClient = new K8sClientForTest(config)
+    CommandExecutorForTest k8sCommands = new CommandExecutorForTest()
+    K8sClientForTest k8sClient = new K8sClientForTest(config, k8sCommands)
 
 
     @Test
@@ -51,6 +54,15 @@ class ContentTest {
         config['registry']['proxyUrl'] = 'proxy-url'
         config['registry']['proxyUsername'] = 'proxy-user'
         config['registry']['proxyPassword'] = 'proxy-pw'
+
+        // Simulate argocd Namespace does not exist
+        k8sCommands.enqueueOutput(new CommandExecutor.Output('namespace not found', '', 1)) // Namespace not exit
+        k8sCommands.enqueueOutput(new CommandExecutor.Output('', '', 0)) // other kubectl
+        k8sCommands.enqueueOutput(new CommandExecutor.Output('', '', 0)) // other kubectl
+        k8sCommands.enqueueOutput(new CommandExecutor.Output('', '', 0)) // other kubectl
+        k8sCommands.enqueueOutput(new CommandExecutor.Output('', '', 0)) // other kubectl
+        k8sCommands.enqueueOutput(new CommandExecutor.Output('', '', 1)) // Namespace not exit
+
 
         createContent().install()
 
@@ -92,4 +104,6 @@ class ContentTest {
         def ys = new YamlSlurper()
         return ys.parse(pathToYamlFile)
     }
+
+
 }
