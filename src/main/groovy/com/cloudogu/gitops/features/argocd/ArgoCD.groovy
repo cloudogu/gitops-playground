@@ -243,22 +243,6 @@ class ArgoCD extends Feature {
             deployWithHelm(namePrefix, "argocd")
         }
 
-        // Install umbrella chart from folder
-        String umbrellaChartPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'argocd/')
-        // Even if the Chart.lock already contains the repo, we need to add it before resolving it
-        // See https://github.com/helm/helm/issues/8036#issuecomment-872502901
-        List helmDependencies = fileSystemUtils.readYaml(
-                Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), CHART_YAML_PATH))['dependencies']
-        helmClient.addRepo('argo', helmDependencies[0]['repository'] as String)
-        helmClient.dependencyBuild(umbrellaChartPath)
-        helmClient.upgrade('argocd', umbrellaChartPath, [namespace: "${namePrefix}${argocdNamespace}"])
-
-        log.debug("Setting new argocd admin password")
-        // Set admin password imperatively here instead of values.yaml, because we don't want it to show in git repo
-        String bcryptArgoCDPassword = BCrypt.hashpw(password, BCrypt.gensalt(4))
-        k8sClient.patch('secret', 'argocd-secret', 'argocd',
-                [stringData: ['admin.password': bcryptArgoCDPassword ] ])
-
         // Bootstrap root application
         k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'projects/argocd.yaml').toString())
         k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'applications/bootstrap.yaml').toString())

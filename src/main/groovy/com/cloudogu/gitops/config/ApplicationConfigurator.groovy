@@ -224,7 +224,7 @@ class ApplicationConfigurator {
     }
 
     // Validate that the env list has proper maps with 'name' and 'value'
-    private static void validateEnvConfig(Map configToSet) {
+    private static void validateEnvConfig(Config configToSet) {
         // Exit early if not in operator mode or if env list is empty
         if (!configToSet.features['argocd']['operator'] || !configToSet.features['argocd']['env']) {
             log.debug("Skipping features.argocd.env validation: operator mode is disabled or env list is empty.")
@@ -244,7 +244,7 @@ class ApplicationConfigurator {
         log.info("Env list validation for features.argocd.env completed successfully.")
     }
 
-    private void setResourceInclusionsCluster(Map configToSet) {
+    private void setResourceInclusionsCluster(Config configToSet) {
         // Return early if NOT deploying via operator
         if (configToSet.features['argocd']['operator'] == false) {
             log.debug("ArgoCD operator is not enabled. Skipping features.argocd.resourceInclusionsCluster setup.")
