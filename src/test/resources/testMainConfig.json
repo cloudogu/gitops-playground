@@ -1,0 +1,205 @@
+{
+  "registry": {
+    "internal": true,
+    "twoRegistries": false,
+    "internalPort": "30000",
+    "url": "",
+    "path": "",
+    "username": "",
+    "password": "",
+    "proxyUrl": "",
+    "proxyUsername": "",
+    "proxyPassword": "",
+    "readOnlyUsername": "",
+    "readOnlyPassword": "",
+    "createImagePullSecrets": false,
+    "helm": {
+      "chart": "docker-registry",
+      "repoURL": "https://helm.twun.io",
+      "version": "2.2.3"
+    }
+  },
+  "jenkins": {
+    "internal": true,
+    "url": "",
+    "username": "admin",
+    "password": "admin",
+    "urlForScmm": "http://jenkins",
+    "metricsUsername": "metrics",
+    "metricsPassword": "metrics",
+    "helm": {
+      "version": "5.5.11"
+    },
+    "mavenCentralMirror": "",
+    "jenkinsAdditionalEnvs": {
+
+    }
+  },
+  "scmm": {
+    "internal": true,
+    "url": "",
+    "username": "admin",
+    "password": "admin",
+    "gitOpsUsername": "",
+    "urlForJenkins": "http://scmm-scm-manager/scm",
+    "host": "",
+    "protocol": "",
+    "ingress": "",
+    "helm": {
+      "chart": "scm-manager",
+      "repoURL": "https://packages.scm-manager.org/repository/helm-v2-releases/",
+      "version": "3.2.1"
+    }
+  },
+  "application": {
+    "remote": false,
+    "mirrorRepos": false,
+    "destroy": false,
+    "localHelmChartFolder": null,
+    "insecure": false,
+    "openshift": false,
+    "username": "admin",
+    "password": "admin",
+    "yes": true,
+    "runningInsideK8s": false,
+    "namePrefix": "",
+    "podResources": false,
+    "namePrefixForEnvVars": "",
+    "baseUrl": "http://localhost",
+    "gitName": "Cloudogu",
+    "gitEmail": "hello@cloudogu.com",
+    "urlSeparatorHyphen": false,
+    "skipCrds": false,
+    "namespaceIsolation": false,
+    "netpols": false,
+    "trace": true
+  },
+  "images": {
+    "kubectl": "bitnami/kubectl:1.29",
+    "helm": "ghcr.io/cloudogu/helm:3.15.4-1",
+    "kubeval": "ghcr.io/cloudogu/helm:3.15.4-1",
+    "helmKubeval": "ghcr.io/cloudogu/helm:3.15.4-1",
+    "yamllint": "cytopia/yamllint:1.25-0.7",
+    "nginx": null,
+    "petclinic": "eclipse-temurin:11-jre-alpine",
+    "maven": null
+  },
+  "repositories": {
+    "springBootHelmChart": {
+      "url": "https://github.com/cloudogu/spring-boot-helm-chart.git",
+      "ref": "0.3.2"
+    },
+    "springPetclinic": {
+      "url": "https://github.com/cloudogu/spring-petclinic.git",
+      "ref": "b0e0d18"
+    },
+    "gitopsBuildLib": {
+      "url": "https://github.com/cloudogu/gitops-build-lib.git"
+    },
+    "cesBuildLib": {
+      "url": "https://github.com/cloudogu/ces-build-lib.git"
+    }
+  },
+  "features": {
+    "argocd": {
+      "active": true,
+      "url": "",
+      "emailFrom": "argocd@example.org",
+      "emailToUser": "app-team@example.org",
+      "emailToAdmin": "infra@example.org"
+    },
+    "mail": {
+      "active": false,
+      "mailhog": false,
+      "mailhogUrl": "",
+      "smtpAddress": "",
+      "smtpPort": "",
+      "smtpUser": "",
+      "smtpPassword": "",
+      "helm": {
+        "chart": "mailhog",
+        "repoURL": "https://codecentric.github.io/helm-charts",
+        "version": "5.0.1",
+        "image": "ghcr.io/cloudogu/mailhog:v1.0.1"
+      }
+    },
+    "monitoring": {
+      "active": false,
+      "grafanaUrl": "",
+      "grafanaEmailFrom": "grafana@example.org",
+      "grafanaEmailTo": "infra@example.org",
+      "helm": {
+        "chart": "kube-prometheus-stack",
+        "repoURL": "https://prometheus-community.github.io/helm-charts",
+        "version": "58.2.1",
+        "grafanaImage": "",
+        "grafanaSidecarImage": "",
+        "prometheusImage": "",
+        "prometheusOperatorImage": "",
+        "prometheusConfigReloaderImage": "",
+        "values": {
+
+        }
+      }
+    },
+    "secrets": {
+      "active": false,
+      "externalSecrets": {
+        "helm": {
+          "chart": "external-secrets",
+          "repoURL": "https://charts.external-secrets.io",
+          "version": "0.9.16",
+          "image": "",
+          "certControllerImage": "",
+          "webhookImage": ""
+        }
+      },
+      "vault": {
+        "mode": "",
+        "url": "",
+        "helm": {
+          "chart": "vault",
+          "repoURL": "https://helm.releases.hashicorp.com",
+          "version": "0.25.0",
+          "image": ""
+        }
+      }
+    },
+    "ingressNginx": {
+      "active": true,
+      "helm": {
+        "chart": "ingress-nginx",
+        "repoURL": "https://kubernetes.github.io/ingress-nginx",
+        "version": "4.11.2",
+        "image": "",
+        "values": {
+
+        }
+      }
+    },
+    "certManager": {
+      "active": false,
+      "helm": {
+        "chart": "cert-manager",
+        "repoURL": "https://charts.jetstack.io",
+        "version": "1.16.1",
+        "values": {
+
+        },
+        "image": "",
+        "acmeSolverImage": "",
+        "cainjectorImage": "",
+        "startupAPICheckImage": "",
+        "webhookImage": ""
+      }
+    },
+    "exampleApps": {
+      "petclinic": {
+        "baseDomain": ""
+      },
+      "nginx": {
+        "baseDomain": ""
+      }
+    }
+  }
+}

@@ -98,9 +98,9 @@ RUN cp /tmp/.gitconfig /dist/home/.gitconfig
 COPY scripts/jenkins/plugins /jenkins
 RUN /jenkins/download-plugins.sh /dist/gitops/jenkins-plugins
 
-COPY src/main/groovy/com/cloudogu/gitops/config/ApplicationConfigurator.groovy /tmp/
+COPY src/main/groovy/com/cloudogu/gitops/config/Config.groovy /tmp/
 COPY scripts/downloadHelmCharts.sh /tmp/
-RUN cd /dist/gitops && /tmp/downloadHelmCharts.sh /tmp/ApplicationConfigurator.groovy
+RUN cd /dist/gitops && /tmp/downloadHelmCharts.sh /tmp/Config.groovy
 
 WORKDIR /tmp
 # Prepare local files for later stages
@@ -178,9 +178,9 @@ COPY --from=maven-build /app/gitops-playground.jar /app/
 # Create Graal native image config
 RUN java -agentlib:native-image-agent=config-output-dir=conf/ -jar gitops-playground.jar || true
 # Run again with different params in order to avoid NoSuchMethodException with config file
-RUN printf 'features:\n  exampleApps:\n    petclinic:\n      baseDomain: "base"' > config.yaml  && \
+RUN printf 'application:\n  \"yes\": true\nfeatures:\n  secrets:\n    vault:\n      mode: "dev"\n  exampleApps:\n    petclinic:\n      baseDomain: ""' > config.yaml  && \
     java -agentlib:native-image-agent=config-merge-dir=conf/ -jar gitops-playground.jar \
-      --yes --config-file=config.yaml || true
+      --trace --config-file=config.yaml || true
 # Run again with different params in order to avoid NoSuchMethodException with output-config file
 RUN java -agentlib:native-image-agent=config-merge-dir=conf/ -jar gitops-playground.jar \
       --yes  --output-config-file || true

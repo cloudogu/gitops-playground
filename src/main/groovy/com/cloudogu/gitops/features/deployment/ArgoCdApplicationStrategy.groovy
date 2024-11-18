@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.features.deployment
 
-import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.config.Config
+
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -16,17 +17,17 @@ import java.nio.file.Path
 @Slf4j
 class ArgoCdApplicationStrategy implements DeploymentStrategy {
     private FileSystemUtils fileSystemUtils
-    private Map config
+    private Config config
     private final ScmmRepoProvider scmmRepoProvider
 
     ArgoCdApplicationStrategy(
-            Configuration config,
+            Config config,
             FileSystemUtils fileSystemUtils,
             ScmmRepoProvider scmmRepoProvider
     ) {
         this.scmmRepoProvider = scmmRepoProvider
         this.fileSystemUtils = fileSystemUtils
-        this.config = config.getConfig()
+        this.config = config
     }
 
     @Override
@@ -34,7 +35,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
     void deployFeature(String repoURL, String repoName, String chartOrPath, String version, String namespace,
                        String releaseName, Path helmValuesPath, RepoType repoType) {
         log.trace("Deploying helm chart via ArgoCD: ${releaseName}. Reading values from ${helmValuesPath}")
-        def namePrefix = config.application['namePrefix']
+        def namePrefix = config.application.namePrefix
         def shallCreateNamespace  = config.features['argocd']['operator'] ? "CreateNamespace=false" : "CreateNamespace=true"
 
         ScmmRepo clusterResourcesRepo = scmmRepoProvider.getRepo('argocd/cluster-resources')

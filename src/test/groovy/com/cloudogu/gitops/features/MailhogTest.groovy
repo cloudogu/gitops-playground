@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.features
 
-import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.config.Config
+
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -9,7 +10,6 @@ import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
-
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -19,35 +19,14 @@ import static org.mockito.Mockito.*
 
 class MailhogTest {
 
-    Map config = [
-            registry   : [
-                    createImagePullSecrets: false,
-            ],
-            application: [
-                    username    : 'abc',
-                    password    : '123',
-                    remote      : false,
-                    namePrefix  : "foo-",
-                    podResources: false,
-                    mirrorRepos : false
-            ],
-            scmm       : [
-                    internal: true,
-            ],
-            features   : [
-                    argocd: [
-                            active: false,
-                    ],
-                    mail  : [
-                            mailhog: true,
-                            helm   : [
-                                    chart  : 'mailhog',
-                                    repoURL: 'https://codecentric.github.io/helm-charts',
-                                    version: '5.0.1',
-                            ]
-                    ]
-            ],
-    ]
+    Config config = new Config(
+            application: new Config.ApplicationSchema(
+                    namePrefix: "foo-"),
+            features: new Config.FeaturesSchema(
+                    mail: new Config.MailSchema(
+                            mailhog: true)
+            ))
+
     DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
     AirGappedUtils airGappedUtils = mock(AirGappedUtils)
     Path temporaryYamlFile = null
@@ -56,14 +35,14 @@ class MailhogTest {
 
     @Test
     void "is disabled via active flag"() {
-        config['features']['mail']['mailhog'] = false
+        config.features.mail.mailhog = false
         createMailhog().install()
         assertThat(temporaryYamlFile).isNull()
     }
 
     @Test
     void 'service type LoadBalancer when run remotely'() {
-        config['application']['remote'] = true
+        config.application.remote = true
         createMailhog().install()
 
         assertThat(parseActualYaml()['service']['type']).isEqualTo('LoadBalancer')
@@ -71,7 +50,7 @@ class MailhogTest {
 
     @Test
     void 'service type NodePort when not run remotely'() {
-        config['application']['remote'] = false
+        config.application.remote = false
         createMailhog().install()
 
         assertThat(parseActualYaml()['service']['type']).isEqualTo('NodePort')
@@ -79,7 +58,7 @@ class MailhogTest {
 
     @Test
     void 'uses ingress if enabled'() {
-        config.features['mail']['mailhogUrl'] = 'http://mailhog.local'
+        config.features.mail.mailhogUrl = 'http://mailhog.local'
         createMailhog().install()
 
         def ingressYaml = parseActualYaml()['ingress']
@@ -98,8 +77,8 @@ class MailhogTest {
     void 'Password and username can be changed'() {
         String expectedUsername = 'user42'
         String expectedPassword = '12345'
-        config['application']['username'] = expectedUsername
-        config['application']['password'] = expectedPassword
+        config.application.username = expectedUsername
+        config.application.password = expectedPassword
         createMailhog().install()
 
         String fileContents = parseActualYaml()['auth']['fileContents']
@@ -111,7 +90,7 @@ class MailhogTest {
 
     @Test
     void 'When argocd disabled, mailhog is deployed imperatively via helm'() {
-        config.features['argocd']['active'] = false
+        config.features.argocd.active = false
 
         createMailhog().install()
 
@@ -131,7 +110,7 @@ class MailhogTest {
 
     @Test
     void 'Sets pod resource limits and requests'() {
-        config.application['podResources'] = true
+        config.application.podResources = true
 
         createMailhog().install()
 
@@ -140,14 +119,14 @@ class MailhogTest {
 
     @Test
     void 'When argoCD enabled, mailhog is deployed natively via argoCD'() {
-        config.features['argocd']['active'] = true
+        config.features.argocd.active = true
 
         createMailhog().install()
     }
 
     @Test
     void 'Allows overriding the image'() {
-        config['features']['mail']['helm']['image'] = 'abc:42'
+        config.features.mail.helm.image = 'abc:42'
 
         createMailhog().install()
         assertThat(parseActualYaml()['image']['repository']).isEqualTo('abc')
@@ -156,12 +135,12 @@ class MailhogTest {
 
     @Test
     void 'Image is optional'() {
-        config['features']['mail']['helm']['image'] = ''
+        config.features.mail.helm.image = ''
 
         createMailhog().install()
         assertThat(parseActualYaml()['image']).isNull()
 
-        config['features']['mail']['helm']['image'] = null
+        config.features.mail.helm.image = null
 
         createMailhog().install()
         assertThat(parseActualYaml()['image']).isNull()
@@ -169,11 +148,11 @@ class MailhogTest {
 
     @Test
     void 'helm release is installed in air-gapped mode'() {
-        config.application['mirrorRepos'] = true
-        when(airGappedUtils.mirrorHelmRepoToGit(any(Map))).thenReturn('a/b')
+        config.application.mirrorRepos = true
+        when(airGappedUtils.mirrorHelmRepoToGit(any(Config.HelmConfig))).thenReturn('a/b')
 
         Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
-        config.application['localHelmChartFolder'] = rootChartsFolder.toString()
+        config.application.localHelmChartFolder = rootChartsFolder.toString()
 
         Path SourceChart = rootChartsFolder.resolve('mailhog')
         Files.createDirectories(SourceChart)
@@ -183,7 +162,7 @@ class MailhogTest {
 
         createMailhog().install()
 
-        def helmConfig = ArgumentCaptor.forClass(Map)
+        def helmConfig = ArgumentCaptor.forClass(Config.HelmConfig)
         verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
         assertThat(helmConfig.value.chart).isEqualTo('mailhog')
         assertThat(helmConfig.value.repoURL).isEqualTo('https://codecentric.github.io/helm-charts')
@@ -196,23 +175,23 @@ class MailhogTest {
 
     @Test
     void 'deploys image pull secrets for proxy registry'() {
-        config['registry']['createImagePullSecrets'] = true
-        config['registry']['proxyUrl'] = 'proxy-url'
-        config['registry']['proxyUsername'] = 'proxy-user'
-        config['registry']['proxyPassword'] = 'proxy-pw'
-        
+        config.registry.createImagePullSecrets = true
+        config.registry.proxyUrl = 'proxy-url'
+        config.registry.proxyUsername = 'proxy-user'
+        config.registry.proxyPassword = 'proxy-pw'
+
         createMailhog().install()
-        
+
         k8sClient.commandExecutorForTest.assertExecuted(
                 'kubectl create secret docker-registry proxy-registry -n foo-monitoring' +
-                ' --docker-server proxy-url --docker-username proxy-user --docker-password proxy-pw')
+                        ' --docker-server proxy-url --docker-username proxy-user --docker-password proxy-pw')
         assertThat(parseActualYaml()['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
     }
 
     private Mailhog createMailhog() {
         // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
 
-        new Mailhog(new Configuration(config), new FileSystemUtils() {
+        new Mailhog(config, new FileSystemUtils() {
             @Override
             Path copyToTempDir(String filePath) {
                 Path ret = super.copyToTempDir(filePath)

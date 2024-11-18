@@ -2,7 +2,8 @@ package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.FeatureWithImage
-import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.config.Config
+
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.*
 import freemarker.template.DefaultObjectWrapperBuilder
@@ -21,7 +22,7 @@ class IngressNginx extends Feature implements FeatureWithImage {
     static final String HELM_VALUES_PATH = "applications/cluster-resources/ingress-nginx-helm-values.ftl.yaml"
 
     String namespace = 'ingress-nginx'
-    Map config
+    Config config
     K8sClient k8sClient
     
     private FileSystemUtils fileSystemUtils
@@ -29,14 +30,14 @@ class IngressNginx extends Feature implements FeatureWithImage {
     private AirGappedUtils airGappedUtils
 
     IngressNginx(
-            Configuration config,
+            Config config,
             FileSystemUtils fileSystemUtils,
             DeploymentStrategy deployer,
             K8sClient k8sClient,
             AirGappedUtils airGappedUtils
     ) {
         this.deployer = deployer
-        this.config = config.getConfig()
+        this.config = config
         this.fileSystemUtils = fileSystemUtils
         this.k8sClient = k8sClient
         this.airGappedUtils = airGappedUtils
@@ -44,7 +45,7 @@ class IngressNginx extends Feature implements FeatureWithImage {
 
     @Override
     boolean isEnabled() {
-        return config.features['ingressNginx']['active']
+        return config.features.ingressNginx.active
     }
 
     @Override
@@ -58,7 +59,7 @@ class IngressNginx extends Feature implements FeatureWithImage {
                             statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
                     ])) as Map
 
-        def valuesFromConfig = config['features']['ingressNginx']['helm']['values'] as Map
+        def valuesFromConfig = config.features.ingressNginx.helm.values
 
         def mergedMap = MapUtils.deepMerge(valuesFromConfig, templatedMap)
 
@@ -69,15 +70,15 @@ class IngressNginx extends Feature implements FeatureWithImage {
         // Harder to read but same payload. Not sure if we can do something about it.
         fileSystemUtils.writeYaml(mergedMap, tmpHelmValues.toFile())
 
-        def helmConfig = config['features']['ingressNginx']['helm']
+        def helmConfig = config.features.ingressNginx.helm
 
-        if (config.application['mirrorRepos']) {
+        if (config.application.mirrorRepos) {
             log.debug("Mirroring repos: Deploying IngressNginx from local git repo")
 
-            def repoNamespaceAndName = airGappedUtils.mirrorHelmRepoToGit(config['features']['ingressNginx']['helm'] as Map)
+            def repoNamespaceAndName = airGappedUtils.mirrorHelmRepoToGit(config.features.ingressNginx.helm as Config.HelmConfig)
 
             String ingressNginxVersion =
-                    new YamlSlurper().parse(Path.of("${config.application['localHelmChartFolder']}/${helmConfig['chart']}",
+                    new YamlSlurper().parse(Path.of("${config.application.localHelmChartFolder}/${helmConfig.chart}",
                             'Chart.yaml'))['version']
 
             deployer.deployFeature(
@@ -90,10 +91,10 @@ class IngressNginx extends Feature implements FeatureWithImage {
                     tmpHelmValues, DeploymentStrategy.RepoType.GIT)
         } else {
             deployer.deployFeature(
-                    helmConfig['repoURL'] as String,
+                    helmConfig.repoURL as String,
                     'ingress-nginx',
-                    helmConfig['chart'] as String,
-                    helmConfig['version'] as String,
+                    helmConfig.chart as String,
+                    helmConfig.version as String,
                     namespace,
                     'ingress-nginx',
                     tmpHelmValues
@@ -101,10 +102,10 @@ class IngressNginx extends Feature implements FeatureWithImage {
         }
     }
     private URI getScmmUri() {
-        if (config.scmm['internal']) {
+        if (config.scmm.internal) {
             new URI('http://scmm-scm-manager.default.svc.cluster.local/scm')
         } else {
-            new URI("${config.scmm['url']}/scm")
+            new URI("${config.scmm.url}/scm")
         }
     }
 }

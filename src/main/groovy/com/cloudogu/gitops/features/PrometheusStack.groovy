@@ -2,7 +2,8 @@ package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.FeatureWithImage
-import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.config.Config
+
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.scmm.ScmmRepoProvider
@@ -27,7 +28,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
     static final String NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE = 'applications/cluster-resources/monitoring/netpols/prometheus-allow-scraping.ftl.yaml'
 
     String namespace = 'monitoring'
-    Map config
+    Config config
     K8sClient k8sClient
 
     ScmmRepoProvider scmmRepoProvider
@@ -36,7 +37,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
     private AirGappedUtils airGappedUtils
 
     PrometheusStack(
-            Configuration config,
+            Config config,
             FileSystemUtils fileSystemUtils,
             DeploymentStrategy deployer,
             K8sClient k8sClient,
@@ -44,7 +45,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
             ScmmRepoProvider scmmRepoProvider
     ) {
         this.deployer = deployer
-        this.config = config.getConfig()
+        this.config = config
         this.fileSystemUtils = fileSystemUtils
         this.k8sClient = k8sClient
         this.airGappedUtils = airGappedUtils
@@ -53,34 +54,34 @@ class PrometheusStack extends Feature implements FeatureWithImage {
 
     @Override
     boolean isEnabled() {
-        return config.features['monitoring']['active']
+        return config.features.monitoring.active
     }
 
     @Override
     void enable() {
-        def namePrefix = config.application['namePrefix']
+        def namePrefix = config.application.namePrefix
 
         def templatedMap = new YamlSlurper().parseText(new TemplatingEngine().template(new File(HELM_VALUES_PATH), [
                 namePrefix        : namePrefix,
-                podResources      : config.application['podResources'],
+                podResources      : config.application.podResources,
                 monitoring        : [
-                        grafanaEmailFrom: config.features['monitoring']['grafanaEmailFrom'] as String,
-                        grafanaEmailTo  : config.features['monitoring']['grafanaEmailTo'] as String,
+                        grafanaEmailFrom: config.features.monitoring.grafanaEmailFrom,
+                        grafanaEmailTo  : config.features.monitoring.grafanaEmailTo,
                         grafana         : [
                                 // Note that passing the URL object here leads to problems in Graal Native image, see Git history
-                                host: config.features['monitoring']['grafanaUrl'] ? new URL(config.features['monitoring']['grafanaUrl'] as String).host : ""
+                                host: config.features.monitoring.grafanaUrl ? new URL(config.features.monitoring.grafanaUrl ).host : ""
                         ]
                 ],
-                remote: config.application["remote"],
-                skipCrds          : config.application['skipCrds'],
-                namespaceIsolation: config.application['namespaceIsolation'],
+                remote: config.application.remote,
+                skipCrds          : config.application.skipCrds,
+                namespaceIsolation: config.application.namespaceIsolation,
                 namespaces        : namespaceList,
                 mail              : [
-                        active      : config.features['mail']['active'],
-                        smtpAddress : config.features['mail']['smtpAddress'],
-                        smtpPort    : config.features['mail']['smtpPort'],
-                        smtpUser    : config.features['mail']['smtpUser'],
-                        smtpPassword: config.features['mail']['smtpPassword']
+                        active      : config.features.mail.active,
+                        smtpAddress : config.features.mail.smtpAddress,
+                        smtpPort    : config.features.mail.smtpPort,
+                        smtpUser    : config.features.mail.smtpUser,
+                        smtpPassword: config.features.mail.smtpPassword
                 ],
                 scmm              : getScmmConfiguration(),
                 jenkins           : getJenkinsConfiguration(),
@@ -89,7 +90,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
                 statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
         ])) as Map
         
-        def valuesFromConfig = config['features']['monitoring']['helm']['values'] as Map
+        def valuesFromConfig = config.features.monitoring.helm.values
         def mergedMap = MapUtils.deepMerge(valuesFromConfig, templatedMap)
 
         // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo
@@ -97,39 +98,39 @@ class PrometheusStack extends Feature implements FeatureWithImage {
                 'generic',
                 'prometheus-metrics-creds-scmm',
                 'monitoring',
-                new Tuple2('password', config.application["password"])
+                new Tuple2('password', config.application.password)
         )
 
         k8sClient.createSecret(
                 'generic',
                 'prometheus-metrics-creds-jenkins',
                 'monitoring',
-                new Tuple2('password', config.jenkins['metricsPassword']),
+                new Tuple2('password', config.jenkins.metricsPassword),
         )
 
-        if (config.features['mail']['smtpUser'] || config.features['mail']['smtpPassword']) {
+        if (config.features.mail.smtpUser || config.features.mail.smtpPassword) {
             k8sClient.createSecret(
                     'generic',
                     'grafana-email-secret',
                     'monitoring',
-                    new Tuple2('user', config.features['mail']['smtpUser']),
-                    new Tuple2('password', config.features['mail']['smtpPassword'])
+                    new Tuple2('user', config.features.mail.smtpUser),
+                    new Tuple2('password', config.features.mail.smtpPassword)
             )
         }
 
-        if (config.application['namespaceIsolation'] || config.application['netpols']) {
+        if (config.application.namespaceIsolation || config.application.netpols) {
             ScmmRepo clusterResourcesRepo = scmmRepoProvider.getRepo('argocd/cluster-resources')
             clusterResourcesRepo.cloneRepo()
             for (String currentNamespace : namespaceList) {
 
-                if (config.application['namespaceIsolation']) {
+                if(config.application.namespaceIsolation) {
                     def rbacYaml = new TemplatingEngine().template(new File(RBAC_NAMESPACE_ISOLATION_TEMPLATE),
                             [namespace : currentNamespace,
                              namePrefix: namePrefix])
                     clusterResourcesRepo.writeFile("misc/monitoring/rbac/${currentNamespace}.yaml", rbacYaml)
                 }
 
-                if (config.application['netpols']) {
+                if (config.application.netpols) {
                     def netpolsYaml = new TemplatingEngine().template(new File(NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE),
                             [namespace : currentNamespace,
                              namePrefix: namePrefix])
@@ -143,14 +144,14 @@ class PrometheusStack extends Feature implements FeatureWithImage {
         def tmpHelmValues = fileSystemUtils.createTempFile()
         fileSystemUtils.writeYaml(mergedMap, tmpHelmValues.toFile())
 
-        def helmConfig = config['features']['monitoring']['helm']
-        if (config.application['mirrorRepos']) {
+        def helmConfig = config.features.monitoring.helm
+        if (config.application.mirrorRepos) {
             log.debug("Mirroring repos: Deploying prometheus from local git repo")
 
-            def repoNamespaceAndName = airGappedUtils.mirrorHelmRepoToGit(config['features']['monitoring']['helm'] as Map)
+            def repoNamespaceAndName = airGappedUtils.mirrorHelmRepoToGit(config.features.monitoring.helm as Config.HelmConfig)
 
             String prometheusVersion =
-                    new YamlSlurper().parse(Path.of("${config.application['localHelmChartFolder']}/${helmConfig['chart']}",
+                    new YamlSlurper().parse(Path.of("${config.application.localHelmChartFolder}/${helmConfig.chart}",
                     'Chart.yaml'))['version']
             
             deployer.deployFeature(
@@ -164,10 +165,10 @@ class PrometheusStack extends Feature implements FeatureWithImage {
         } else {
 
             deployer.deployFeature(
-                    helmConfig['repoURL'] as String,
+                    helmConfig.repoURL,
                     'prometheusstack',
-                    helmConfig['chart'] as String,
-                    helmConfig['version'] as String,
+                    helmConfig.chart,
+                    helmConfig.version,
                     namespace,
                     'kube-prometheus-stack',
                     tmpHelmValues)
@@ -176,20 +177,20 @@ class PrometheusStack extends Feature implements FeatureWithImage {
 
     protected List getNamespaceList() {
         def namespaces = []
-        def namePrefix = config.application['namePrefix']
-        if (config.features['argocd']['active']) {
+        def namePrefix = config.application.namePrefix
+        if (config.features.argocd.active) {
             namespaces.addAll("${namePrefix}argocd", "${namePrefix}example-apps-staging", "${namePrefix}example-apps-production")
         }
-        if (config.features['monitoring']['active']) { // Ignore mailhog here, because it does not expose metrics
+        if (config.features.monitoring.active) { // Ignore mailhog here, because it does not expose metrics
             namespaces.addAll("${namePrefix}monitoring")
         }
-        if (config.features['secrets']['active']) {
+        if (config.features.secrets.active) {
             namespaces.addAll("${namePrefix}secrets")
         }
-        if (config.features['ingressNginx']['active']) {
+        if (config.features.ingressNginx.active) {
             namespaces.addAll("${namePrefix}ingress-nginx")
         }
-        if (config.registry['internal'] || config.scmm['internal'] || config.jenkins['internal']) {
+        if (config.registry.internal || config.scmm.internal || config.jenkins.internal) {
             namespaces.addAll("${namePrefix}default")
         }
         return namespaces
@@ -207,24 +208,24 @@ class PrometheusStack extends Feature implements FeatureWithImage {
     }
     
     private URI getScmmUri() {
-        if (config.scmm['internal']) {
+        if (config.scmm.internal) {
             new URI('http://scmm-scm-manager.default.svc.cluster.local/scm')
         } else {
-            new URI("${config.scmm['url']}/scm")
+            new URI("${config.scmm.url}/scm")
         }
     }
 
     private Map getJenkinsConfiguration() {
         String path = 'prometheus'
         URI uri
-        if (config.jenkins['internal']) {
+        if (config.jenkins.internal) {
             uri = new URI("http://jenkins.default.svc.cluster.local/${path}")
         } else {
-            uri = new URI("${config.jenkins['url']}/${path}")
+            uri = new URI("${config.jenkins.url}/${path}")
         }
 
         return [
-                metricsUsername: config.jenkins['metricsUsername'],
+                metricsUsername: config.jenkins.metricsUsername,
                 protocol       : uri.scheme,
                 host           : uri.authority,
                 path           : uri.path

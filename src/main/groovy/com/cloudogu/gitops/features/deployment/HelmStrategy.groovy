@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.features.deployment
 
-import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.config.Config
+
 import com.cloudogu.gitops.utils.HelmClient
 import jakarta.inject.Singleton
 
@@ -9,10 +10,10 @@ import java.nio.file.Path
 @Singleton
 class HelmStrategy implements DeploymentStrategy {
     private HelmClient helmClient
-    private Map config
+    private Config config
 
-    HelmStrategy(Configuration config, HelmClient helmClient) {
-        this.config = config.getConfig()
+    HelmStrategy(Config config, HelmClient helmClient) {
+        this.config = config
         this.helmClient = helmClient
     }
 
@@ -26,7 +27,7 @@ class HelmStrategy implements DeploymentStrategy {
                     "Repo URL: ${repoURL}")
         }
         
-        def namePrefix = config.application['namePrefix']
+        def namePrefix = config.application.namePrefix
 
         helmClient.addRepo(repoName, repoURL)
         helmClient.upgrade(releaseName, "$repoName/$chartOrPath",

@@ -1,12 +1,12 @@
 package com.cloudogu.gitops.features
 
-import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.config.Config
+
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.*
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
-
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -18,38 +18,17 @@ import static org.mockito.Mockito.when
 
 class VaultTest {
 
-    Map config = [
-            application: [
-                    username: 'abc',
-                    password: '123',
-                    remote  : false,
-                    namePrefix: "foo-",
-                    mirrorRepos: false,
-                    podResources: false
-            ],
-            registry: [
-                    createImagePullSecrets: false
-            ],
-            scmm       : [
-                    internal: true,
-            ],
-            features    : [
-                    secrets   : [
-                            active         : true,
-                            vault: [
-                                    mode: 'prod',
-                                    helm: [
-                                            chart  : 'vault',
-                                            repoURL: 'https://vault-reg',
-                                            version: '42.23.0'
-                                    ]
-                            ],
-                    ],
-                    argocd    : [
-                            active: true
-                    ]
-            ],
-    ]
+    Config config = new Config(
+            application: new Config.ApplicationSchema(
+                    namePrefix: 'foo-',
+            ),
+            features: new Config.FeaturesSchema(
+                    secrets: new Config.SecretsSchema(
+                            active: true,
+                    )
+            )
+    )
+
     CommandExecutorForTest helmCommands = new CommandExecutorForTest()
     FileSystemUtils fileSystemUtils = new FileSystemUtils()
     DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
@@ -59,7 +38,7 @@ class VaultTest {
 
     @Test
     void 'is disabled via active flag'() {
-        config['features']['secrets']['active'] = false
+        config.features.secrets.active = false
         createVault().install()
         assertThat(helmCommands.actualCommands).isEmpty()
         assertThat(k8sClient.commandExecutorForTest.actualCommands).isEmpty()
@@ -67,7 +46,6 @@ class VaultTest {
 
     @Test
     void 'when not run remotely, set node port'() {
-        config['application']['remote'] = false
         createVault().install()
 
         assertThat(parseActualYaml()['ui']['serviceType']).isEqualTo('NodePort')
@@ -76,7 +54,7 @@ class VaultTest {
 
     @Test
     void 'when run remotely, use service type loadbalancer'() {
-        config['application']['remote'] = true
+        config.application.remote = true
         createVault().install()
 
         assertThat(parseActualYaml()['ui']['serviceType']).isEqualTo('LoadBalancer')
@@ -85,11 +63,10 @@ class VaultTest {
 
     @Test
     void 'uses ingress if enabled'() {
-        config['features']['secrets']['vault']['url'] = 'http://vault.local'
+        config.features.secrets.vault.url = 'http://vault.local'
         // Also set image to make sure ingress and image work at the same time under the server block
-        config['features']['secrets']['vault']['helm']['image'] = 'localhost:5000/hashicorp/vault:1.12.0'
+        config.features.secrets.vault.helm.image = 'localhost:5000/hashicorp/vault:1.12.0'
         createVault().install()
-
 
         def ingressYaml = parseActualYaml()['server']['ingress']
         assertThat(ingressYaml['enabled']).isEqualTo(true)
@@ -105,7 +82,11 @@ class VaultTest {
 
     @Test
     void 'Dev mode can be enabled via config'() {
-        config['features']['secrets']['vault']['mode'] = 'dev'
+        config.features.secrets.vault.mode = 'dev'
+        config.application.username = 'abc'
+        config.application.password = '123'
+        config.features.argocd.active = true
+
         def vault = createVault()
 
         // Simulate that the namespace does not exist (kubectl get returns a non-zero exit code)
@@ -117,7 +98,7 @@ class VaultTest {
         assertThat(actualYaml['server']['dev']['enabled']).isEqualTo(true)
 
         assertThat(actualYaml['server']['dev']['devRootToken']).isNotEqualTo('root')
-        assertThat(actualYaml['server']['dev']['devRootToken']).isNotEqualTo(config['application']['password'])
+        assertThat(actualYaml['server']['dev']['devRootToken']).isNotEqualTo(config.application.password)
 
         List actualPostStart = (List) actualYaml['server']['postStart']
         assertThat(actualPostStart[0]).isEqualTo('/bin/sh')
@@ -138,8 +119,8 @@ class VaultTest {
 
         assertThat(k8sClient.commandExecutorForTest.actualCommands[0]).contains('kubectl get namespace foo-secrets')
         assertThat(k8sClient.commandExecutorForTest.actualCommands[1]).contains('kubectl create namespace foo-secrets')
-        
-        def createdConfigMapName = ((k8sClient.commandExecutorForTest.actualCommands[2] =~ /kubectl create configmap (\S*) .*/)[0] as List) [1]
+
+        def createdConfigMapName = ((k8sClient.commandExecutorForTest.actualCommands[2] =~ /kubectl create configmap (\S*) .*/)[0] as List)[1]
         assertThat(actualVolumes[0]['configMap']['name']).isEqualTo(createdConfigMapName)
 
         assertThat(k8sClient.commandExecutorForTest.actualCommands[2]).contains('-n foo-secrets')
@@ -148,8 +129,9 @@ class VaultTest {
 
     @Test
     void 'Dev mode can be enabled via config with argoCD disabled'() {
-        config['features']['secrets']['vault']['mode'] = 'dev'
-        config['features']['argocd']['active'] = false
+        config.features.secrets.vault.mode = 'dev'
+        config.application.username = 'abc'
+        config.application.password = '123'
         createVault().install()
 
         def actualYaml = parseActualYaml()
@@ -160,7 +142,7 @@ class VaultTest {
 
     @Test
     void 'Prod mode can be enabled'() {
-        config['features']['secrets']['vault']['mode'] = 'prod'
+        config.features.secrets.vault.mode = 'prod'
         createVault().install()
 
         assertThat(parseActualYaml()).doesNotContainKey('server')
@@ -170,7 +152,7 @@ class VaultTest {
 
     @Test
     void 'custom image is used'() {
-        config['features']['secrets']['vault']['helm']['image'] = 'localhost:5000/hashicorp/vault:1.12.0'
+        config.features.secrets.vault.helm.image = 'localhost:5000/hashicorp/vault:1.12.0'
         createVault().install()
 
         def actualYaml = parseActualYaml()
@@ -180,55 +162,66 @@ class VaultTest {
 
     @Test
     void 'helm release is installed'() {
+        config.features.secrets.vault.helm = new Config.SecretsSchema.VaultSchema.VaultHelmSchema(
+                chart: 'vault',
+                repoURL: 'https://vault-reg',
+                version: '42.23.0'
+        )
         createVault().install()
 
         Path temporaryYamlFilePath = temporaryYamlFile.toPath()
 
         verify(deploymentStrategy).deployFeature(
-              'https://vault-reg',
-              'vault',
-              'vault',
-              '42.23.0',
-              'secrets',
-              'vault',
-              temporaryYamlFilePath
-      )
-        
+                'https://vault-reg',
+                'vault',
+                'vault',
+                '42.23.0',
+                'secrets',
+                'vault',
+                temporaryYamlFilePath
+        )
+
         assertThat(parseActualYaml()).doesNotContainKey('global')
     }
 
     @Test
     void 'helm release is installed in air-gapped mode'() {
-        config.application['mirrorRepos'] = true
-        when(airGappedUtils.mirrorHelmRepoToGit(any(Map))).thenReturn('a/b')
+        config.application.mirrorRepos = true
+        config.features.secrets.vault.helm = new Config.SecretsSchema.VaultSchema.VaultHelmSchema(
+                chart: 'vault',
+                repoURL: 'https://vault-reg',
+                version: '42.23.0'
+        )
+
+        when(airGappedUtils.mirrorHelmRepoToGit(any(Config.HelmConfig))).thenReturn('a/b')
 
         Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
-        config.application['localHelmChartFolder'] = rootChartsFolder.toString()
+        config.application.localHelmChartFolder = rootChartsFolder.toString()
 
         Path SourceChart = rootChartsFolder.resolve('vault')
         Files.createDirectories(SourceChart)
 
-        Map ChartYaml = [ version: '1.2.3' ]
+        Map ChartYaml = [version: '1.2.3']
         fileSystemUtils.writeYaml(ChartYaml, SourceChart.resolve('Chart.yaml').toFile())
 
         createVault().install()
 
         Path temporaryYamlFilePath = temporaryYamlFile.toPath()
-        def helmConfig = ArgumentCaptor.forClass(Map)
+        def helmConfig = ArgumentCaptor.forClass(Config.HelmConfig)
         verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
         assertThat(helmConfig.value.chart).isEqualTo('vault')
         assertThat(helmConfig.value.repoURL).isEqualTo('https://vault-reg')
         assertThat(helmConfig.value.version).isEqualTo('42.23.0')
         verify(deploymentStrategy).deployFeature(
                 'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/a/b',
-                'vault', '.', '1.2.3','secrets',
+                'vault', '.', '1.2.3', 'secrets',
                 'vault', temporaryYamlFilePath, DeploymentStrategy.RepoType.GIT)
     }
 
     @Test
     void 'Sets pod resource limits and requests'() {
-        config.application['podResources'] = true
-        
+        config.application.podResources = true
+
         createVault().install()
 
         def actualYaml = parseActualYaml()
@@ -237,10 +230,10 @@ class VaultTest {
 
     @Test
     void 'deploys image pull secrets for proxy registry'() {
-        config['registry']['createImagePullSecrets'] = true
-        config['registry']['proxyUrl'] = 'proxy-url'
-        config['registry']['proxyUsername'] = 'proxy-user'
-        config['registry']['proxyPassword'] = 'proxy-pw'
+        config.registry.createImagePullSecrets = true
+        config.registry.proxyUrl = 'proxy-url'
+        config.registry.proxyUsername = 'proxy-user'
+        config.registry.proxyPassword = 'proxy-pw'
 
         createVault().install()
 
@@ -253,14 +246,14 @@ class VaultTest {
     private Vault createVault() {
         // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
 
-        new Vault(new Configuration(config), new FileSystemUtils() {
+        new Vault(config, new FileSystemUtils() {
             @Override
             Path createTempFile() {
                 def ret = super.createTempFile()
                 temporaryYamlFile = Path.of(ret.toString().replace(".ftl", "")).toFile()
                 return ret
             }
-        },k8sClient,deploymentStrategy, airGappedUtils)
+        }, k8sClient, deploymentStrategy, airGappedUtils)
     }
 
     private Map parseActualYaml() {

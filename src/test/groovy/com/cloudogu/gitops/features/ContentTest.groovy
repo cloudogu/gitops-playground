@@ -1,35 +1,31 @@
 package com.cloudogu.gitops.features
 
-import com.cloudogu.gitops.config.Configuration
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.CommandExecutorForTest
+import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.utils.K8sClientForTest
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 
-import static org.assertj.core.api.Assertions.assertThat 
+import static org.assertj.core.api.Assertions.assertThat
 
 class ContentTest {
 
-    Map config = [
-            registry   : [
-                    url                   : 'reg-url',
-                    path                  : 'reg-path',
-                    username              : 'reg-user',
-                    password              : 'reg-pw',
-                    createImagePullSecrets: false,
-            ],
-            application: [
-                    namePrefix: "foo-",
-            ],
-    ]
+    Config config = new Config(
+            application: new Config.ApplicationSchema(
+                    namePrefix: 'foo-'),
+            registry: new Config.RegistrySchema(
+                    url: 'reg-url',
+                    path: 'reg-path',
+                    username: 'reg-user',
+                    password: 'reg-pw',
+                    createImagePullSecrets: false,))
     CommandExecutorForTest k8sCommands = new CommandExecutorForTest()
     K8sClientForTest k8sClient = new K8sClientForTest(config, k8sCommands)
 
-
     @Test
     void 'deploys image pull secrets'() {
-        config['registry']['createImagePullSecrets'] = true
+        config.registry.createImagePullSecrets = true
 
         createContent().install()
 
@@ -38,9 +34,9 @@ class ContentTest {
 
     @Test
     void 'deploys image pull secrets from read-only vars'() {
-        config['registry']['createImagePullSecrets'] = true
-        config['registry']['readOnlyUsername'] = 'other-user'
-        config['registry']['readOnlyPassword'] = 'other-pw'
+        config.registry.createImagePullSecrets = true
+        config.registry.readOnlyUsername = 'other-user'
+        config.registry.readOnlyPassword = 'other-pw'
 
         createContent().install()
 
@@ -49,11 +45,11 @@ class ContentTest {
 
     @Test
     void 'deploys additional image pull secrets for proxy registry'() {
-        config['registry']['createImagePullSecrets'] = true
-        config['registry']['twoRegistries'] = true
-        config['registry']['proxyUrl'] = 'proxy-url'
-        config['registry']['proxyUsername'] = 'proxy-user'
-        config['registry']['proxyPassword'] = 'proxy-pw'
+        config.registry.createImagePullSecrets = true
+        config.registry.twoRegistries = true
+        config.registry.proxyUrl = 'proxy-url'
+        config.registry.proxyUsername = 'proxy-user'
+        config.registry.proxyPassword = 'proxy-pw'
 
         // Simulate argocd Namespace does not exist
         k8sCommands.enqueueOutput(new CommandExecutor.Output('namespace not found', '', 1)) // Namespace not exit
@@ -97,7 +93,7 @@ class ContentTest {
     }
 
     private Content createContent() {
-        new Content(new Configuration(config), k8sClient)
+        new Content(config, k8sClient)
     }
 
     private parseActualYaml(File pathToYamlFile) {

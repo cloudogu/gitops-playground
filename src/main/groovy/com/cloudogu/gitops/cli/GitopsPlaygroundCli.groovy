@@ -8,291 +8,83 @@ import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.ConsoleAppender
 import com.cloudogu.gitops.Application
 import com.cloudogu.gitops.config.ApplicationConfigurator
-import com.cloudogu.gitops.config.ConfigToConfigFileConverter
-import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.config.schema.JsonSchemaValidator
+import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.destroy.Destroyer
+import com.cloudogu.gitops.utils.CommandExecutor
+import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
 import groovy.util.logging.Slf4j
+import groovy.yaml.YamlSlurper
 import io.micronaut.context.ApplicationContext
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
-import picocli.CommandLine.Command
-import picocli.CommandLine.Option
 
-import static com.cloudogu.gitops.config.ConfigConstants.*
-import static groovy.json.JsonOutput.prettyPrint
-import static groovy.json.JsonOutput.toJson
+import static com.cloudogu.gitops.config.ConfigConstants.APP_NAME
+import static com.cloudogu.gitops.utils.MapUtils.deepMerge
 /**
  * Provides the entrypoint to the application as well as all config parameters.
- * When changing parameters, make sure to update the Schema for the config file as well
+ * When changing parameters, make sure to update the Config for the config file as well
  *
- * @see com.cloudogu.gitops.config.schema.Schema
+ * @see Config
  */
-@Command(
-        name = BINARY_NAME,
-        description = APP_DESCRIPTION)
 @Slf4j
-class GitopsPlaygroundCli  implements Runnable {
-    
-    // args group registry
-    @Option(names = ['--internal-registry-port'], description = REGISTRY_INTERNAL_PORT_DESCRIPTION)
-    private Integer internalRegistryPort
-    @Option(names = ['--registry-url'], description = REGISTRY_URL_DESCRIPTION)
-    private String registryUrl
-    @Option(names = ['--registry-path'], description = REGISTRY_PATH_DESCRIPTION)
-    private String registryPath
-    @Option(names = ['--registry-username'], description = REGISTRY_USERNAME_DESCRIPTION)
-    private String registryUsername
-    @Option(names = ['--registry-password'], description = REGISTRY_PASSWORD_DESCRIPTION)
-    private String registryPassword
-    @Option(names = ['--registry-proxy-url'], description = REGISTRY_PROXY_URL_DESCRIPTION)
-    private String registryProxyUrl
-    @Option(names = ['--registry-proxy-username'], description = REGISTRY_PROXY_USERNAME_DESCRIPTION)
-    private String registryProxyUsername
-    @Option(names = ['--registry-proxy-password'], description = REGISTRY_PROXY_PASSWORD_DESCRIPTION)
-    private String registryProxyPassword
-    @Option(names = ['--registry-username-read-only'], description = REGISTRY_USERNAME_RO_DESCRIPTION)
-    private String registryUsernameReadOnly
-    @Option(names = ['--registry-password-read-only'], description = REGISTRY_PASSWORD_RO_DESCRIPTION)
-    private String registryPasswordReadOnly
-    @Option(names = ['--create-image-pull-secrets'], description = REGISTRY_CREATE_IMAGE_PULL_SECRETS_DESCRIPTION)
-    private Boolean createImagePullSecrets
+class GitopsPlaygroundCli {
 
-    // args group jenkins
-    @Option(names = ['--jenkins-url'], description = JENKINS_URL_DESCRIPTION)
-    private String jenkinsUrl
-    @Option(names = ['--jenkins-username'], description = JENKINS_USERNAME_DESCRIPTION)
-    private String jenkinsUsername
-    @Option(names = ['--jenkins-password'], description = JENKINS_PASSWORD_DESCRIPTION)
-    private String jenkinsPassword
-    @Option(names = ['--jenkins-metrics-username'], description = JENKINS_METRICS_USERNAME_DESCRIPTION)
-    private String jenkinsMetricsUsername
-    @Option(names = ['--jenkins-metrics-password'], description = JENKINS_METRICS_PASSWORD_DESCRIPTION)
-    private String jenkinsMetricsPassword
-    @Option(names = ['--maven-central-mirror'], description = MAVEN_CENTRAL_MIRROR_DESCRIPTION)
-    private String mavenCentralMirror
-    @Option(names = ["--jenkins-additional-envs"], description = JENKINS_ADDITIONAL_ENVS_DESCRIPTION, split = ",", required = false)
-    Map<String, String> jenkinsAdditionalEnvs
+    K8sClient k8sClient
+    ApplicationConfigurator applicationConfigurator
 
-    // args group scm
-    @Option(names = ['--scmm-url'], description = SCMM_URL_DESCRIPTION)
-    private String scmmUrl
-    @Option(names = ['--scmm-username'], description = SCMM_USERNAME_DESCRIPTION)
-    private String scmmUsername
-    @Option(names = ['--scmm-password'], description = SCMM_PASSWORD_DESCRIPTION)
-    private String scmmPassword
+    GitopsPlaygroundCli(K8sClient k8sClient = new K8sClient(new CommandExecutor(), new FileSystemUtils(), null),
+                        ApplicationConfigurator applicationConfigurator = new ApplicationConfigurator()) {
+        this.k8sClient = k8sClient
+        this.applicationConfigurator = applicationConfigurator
+    }
 
-    // args group remote
-    @Option(names = ['--remote'], description = REMOTE_DESCRIPTION)
-    private Boolean remote
-    @Option(names = ['--insecure'], description = INSECURE_DESCRIPTION)
-    private Boolean insecure
-    @Option(names = ['--openshift'], description = OPENSHIFT_DESCRIPTION)
-    private Boolean openshift
+    ReturnCode run(String[] args) {
+        setLogging(args)
 
-    // args group tool configuration
-    @Option(names = ['--git-name'], description = GIT_NAME_DESCRIPTION)
-    private String gitName
-    @Option(names = ['--git-email'], description = GIT_EMAIL_DESCRIPTION)
-    private String gitEmail
-    @Option(names = ['--kubectl-image'], description = KUBECTL_IMAGE_DESCRIPTION)
-    private String kubectlImage
-    @Option(names = ['--helm-image'], description = HELM_IMAGE_DESCRIPTION)
-    private String helmImage
-    @Option(names = ['--kubeval-image'], description = KUBEVAL_IMAGE_DESCRIPTION)
-    private String kubevalImage
-    @Option(names = ['--helmkubeval-image'], description = HELMKUBEVAL_IMAGE_DESCRIPTION)
-    private String helmKubevalImage
-    @Option(names = ['--yamllint-image'], description = YAMLLINT_IMAGE_DESCRIPTION)
-    private String yamllintImage
-    @Option(names = ['--maven-image'], description = MAVEN_IMAGE_DESCRIPTION)
-    private String mavenImage
-    @Option(names = ['--grafana-image'], description = GRAFANA_IMAGE_DESCRIPTION)
-    private String grafanaImage
-    @Option(names = ['--grafana-sidecar-image'], description = GRAFANA_SIDECAR_IMAGE_DESCRIPTION)
-    private String grafanaSidecarImage
-    @Option(names = ['--prometheus-image'], description = PROMETHEUS_IMAGE_DESCRIPTION)
-    private String prometheusImage
-    @Option(names = ['--prometheus-operator-image'], description = PROMETHEUS_OPERATOR_IMAGE_DESCRIPTION)
-    private String prometheusOperatorImage
-    @Option(names = ['--prometheus-config-reloader-image'], description = PROMETHEUS_CONFIG_RELOADER_IMAGE_DESCRIPTION)
-    private String prometheusConfigReloaderImage
-    @Option(names = ['--external-secrets-image'], description = EXTERNAL_SECRETS_IMAGE_DESCRIPTION)
-    private String externalSecretsOperatorImage
-    @Option(names = ['--external-secrets-certcontroller-image'], description = EXTERNAL_SECRETS_CERT_CONTROLLER_IMAGE_DESCRIPTION)
-    private String externalSecretsOperatorCertControllerImage
-    @Option(names = ['--external-secrets-webhook-image'], description = EXTERNAL_SECRETS_WEBHOOK_IMAGE_DESCRIPTION)
-    private String externalSecretsOperatorWebhookImage
-    @Option(names = ['--vault-image'], description = VAULT_IMAGE_DESCRIPTION)
-    private String vaultImage
-    @Option(names = ['--nginx-image'], description = NGINX_IMAGE_DESCRIPTION)
-    private String nginxImage
-    @Option(names = ['--petclinic-image'], description = PETCLINIC_IMAGE_DESCRIPTION)
-    private String petClinicImage
-    @Option(names = ['--base-url'], description = BASE_URL_DESCRIPTION)
-    private String baseUrl
-    @Option(names = ['--url-separator-hyphen'], description = URL_SEPARATOR_HYPHEN_DESCRIPTION)
-    private Boolean urlSeparatorHyphen
-    @Option(names = ['--mirror-repos'], description = MIRROR_REPOS_DESCRIPTION)
-    private Boolean mirrorRepos
-    @Option(names = ['--skip-crds'], description = SKIP_CRDS_DESCRIPTION)
-    private Boolean skipCrds
-    @Option(names = ['--namespace-isolation'], description = NAMESPACE_ISOLATION_DESCRIPTION)
-    private Boolean namespaceIsolation
-    @Option(names = ['--netpols'], description = NETPOLS_DESCRIPTION)
-    private Boolean netpols
-
-    // args group metrics
-    @Option(names = ['--metrics', '--monitoring'], description = MONITORING_ENABLE_DESCRIPTION)
-    private Boolean monitoring
-    @Option(names = ['--grafana-url'], description = GRAFANA_URL_DESCRIPTION)
-    private String grafanaUrl
-    @Option(names = ['--grafana-email-from'], description = GRAFANA_EMAIL_FROM_DESCRIPTION)
-    private String grafanaEmailFrom
-    @Option(names = ['--grafana-email-to'], description = GRAFANA_EMAIL_TO_DESCRIPTION)
-    private String grafanaEmailTo
-
-    // args group vault / secrets
-    @Option(names = ['--vault'], description = VAULT_ENABLE_DESCRIPTION)
-    private VaultModes vault
-    enum VaultModes { dev, prod }
-    @Option(names = ['--vault-url'], description = VAULT_URL_DESCRIPTION)
-    private String vaultUrl
-
-    @Option(names = ['--mailhog-url'], description = MAILHOG_URL_DESCRIPTION)
-    private String mailhogUrl
-    @Option(names = ['--mailhog', '--mail'], description = MAILHOG_ENABLE_DESCRIPTION, scope = CommandLine.ScopeType.INHERIT)
-    private Boolean mailhog
-    @Option(names = ['--mailhog-image'], description = HELM_CONFIG_IMAGE_DESCRIPTION)
-    private String mailhogImage
-
-    // condition check dependent parameters of external Mailserver
-    @Option(names = ['--smtp-address'], description = SMTP_ADDRESS_DESCRIPTION)
-    private String smtpAddress
-    @Option(names = ['--smtp-port'], description = SMTP_PORT_DESCRIPTION)
-    private Integer smtpPort
-    @Option(names = ['--smtp-user'], description = SMTP_USER_DESCRIPTION)
-    private String smtpUser
-    @Option(names = ['--smtp-password'], description = SMTP_PASSWORD_DESCRIPTION)
-    private String smtpPassword
-
-    // args group debug
-    @Option(names = ['-d', '--debug'], description = DEBUG_DESCRIPTION, scope = CommandLine.ScopeType.INHERIT)
-    Boolean debug
-    @Option(names = ['-x', '--trace'], description = TRACE_DESCRIPTION, scope = CommandLine.ScopeType.INHERIT)
-    Boolean trace
-    @Option(names = ["-v", "--version"], help = true, description = "Display version and license info")
-    Boolean versionInfoRequested
-    @Option(names = ["-h", "--help"], usageHelp = true, description = "Display this help message")
-    @SuppressWarnings('unused') // needed to define annotation, "usageHelp" leads to hel being printed 
-    boolean usageHelpRequested
-
-    // args group configuration
-    @Option(names = ['--username'], description = USERNAME_DESCRIPTION)
-    private String username
-    @Option(names = ['--password'], description = PASSWORD_DESCRIPTION)
-    private String password
-    @Option(names = ['-y', '--yes'], description = PIPE_YES_DESCRIPTION)
-    Boolean yes
-    @Option(names = ['--name-prefix'], description = NAME_PREFIX_DESCRIPTION)
-    private String namePrefix
-    @Option(names = ['--destroy'], description = DESTROY_DESCRIPTION)
-    Boolean destroy
-    @Option(names = ['--config-file'], description = CONFIG_FILE_DESCRIPTION)
-    String configFile
-    @Option(names = ['--config-map'], description = CONFIG_MAP_DESCRIPTION)
-    String configMap
-    @Option(names = ['--output-config-file'], description = OUTPUT_CONFIG_FILE_DESCRIPTION, help = true)
-    Boolean outputConfigFile
-    @Option(names = ['--pod-resources'], description = POD_RESOURCES_DESCRIPTION)
-    Boolean podResources
-
-    // args group ArgoCD operator
-    @Option(names = ['--argocd'], description = ARGOCD_ENABLE_DESCRIPTION)
-    private Boolean argocd
-    @Option(names = ['--argocd-operator'], description = ARGOCD_OPERATOR_DESCRIPTION)
-    private Boolean argocdOperator
-    @Option(names = ['--argocd-url'], description = ARGOCD_URL_DESCRIPTION)
-    private String argocdUrl
-    @Option(names = ['--argocd-email-from'], description = ARGOCD_EMAIL_FROM_DESCRIPTION)
-    private String emailFrom
-    @Option(names = ['--argocd-email-to-user'], description = ARGOCD_EMAIL_TO_USER_DESCRIPTION)
-    private String emailToUser
-    @Option(names = ['--argocd-email-to-admin'], description = ARGOCD_EMAIL_TO_ADMIN_DESCRIPTION)
-    private String emailToAdmin
-
-    // args group example apps
-    @Option(names = ['--petclinic-base-domain'], description = EXAMPLE_APPS_DESCRIPTION)
-    private String petclinicBaseDomain
-    @Option(names = ['--nginx-base-domain'], description = EXAMPLE_APPS_DESCRIPTION)
-    private String nginxBaseDomain
-
-    // args Ingress-Class
-    @Option(names = ['--ingress-nginx'], description = INGRESS_NGINX_ENABLE_DESCRIPTION)
-    private Boolean ingressNginx
-    @Option(names = ['--ingress-nginx-image'], description = HELM_CONFIG_IMAGE_DESCRIPTION)
-    private String ingressNginxImage
-
-    // args certManager
-    @Option(names = ['--cert-manager'], description = CERTMANAGER_ENABLE_DESCRIPTION)
-    private Boolean certManager
-
-    @Option(names = ['--cert-manager-image'], description = CERTMANAGER_IMAGE_DESCRIPTION)
-    private String certManagerImage
-
-    @Option(names = ['--cert-manager-webhook-image'], description = CERTMANAGER_WEBHOOK_IMAGE_DESCRIPTION)
-    private String webhookImage
-
-    @Option(names = ['--cert-manager-cainjector-image'], description = CERTMANAGER_CAINJECTOR_IMAGE_DESCRIPTION)
-    private String cainjectorImage
-
-    @Option(names = ['--cert-manager-acme-solver-image'], description = CERTMANAGER_ACME_SOLVER_IMAGE_DESCRIPTION)
-    private String acmeSolverImage
-
-    @Option(names = ['--cert-manager-startup-api-check-image'], description = CERTMANAGER_STARTUP_API_CHECK_IMAGE_DESCRIPTION)
-    private String startupAPICheckImage
-
-
-
-
-    @Override
-    void run() {
-        setLogging()
-        
+        def config = readConfigs(args)
         def version = createVersionOutput()
-        
-        if (versionInfoRequested) {
+
+        // if help is requested picocli help is used and printed by execute automatically
+        if (config.application.usageHelpRequested) {
+            new CommandLine(config).execute(args)
+            return ReturnCode.SUCCESS
+        }
+
+        if (config.application.versionInfoRequested) {
             println version
-            return
+            return ReturnCode.SUCCESS
         }
-        
+
+        if (config.application.outputConfigFile) {
+            println(config.toYaml(false))
+            return ReturnCode.SUCCESS
+        }
+
         def context = createApplicationContext()
-        
-        if (outputConfigFile) {
-            println(context.getBean(ConfigToConfigFileConverter)
-                    .convert(getConfig(context, true)))
-            return
-        }
-        
-        def config = getConfig(context, false)
-        register(context, new Configuration(config))
+        register(config, context)
 
-        K8sClient k8sClient = context.getBean(K8sClient)
-
-        if (config['application']['destroy']) {
+        if (config.application.destroy) {
             log.info version
-            confirmOrExit "Destroying gitops playground in kubernetes cluster '${k8sClient.currentContext}'.", config
-            
+            if (!confirm("Destroying gitops playground in kubernetes cluster '${k8sClient.currentContext}'.", config)) {
+                return ReturnCode.NOT_CONFIRMED
+            }
+
             Destroyer destroyer = context.getBean(Destroyer)
             destroyer.destroy()
         } else {
             log.info version
-            confirmOrExit "Applying gitops playground to kubernetes cluster '${k8sClient.currentContext}'.", config
+            if (!confirm("Applying gitops playground to kubernetes cluster '${k8sClient.currentContext}'.", config)) {
+                return ReturnCode.NOT_CONFIRMED
+            }
             Application app = context.getBean(Application)
             app.start()
 
             printWelcomeScreen()
         }
+
+        return ReturnCode.SUCCESS
     }
 
     protected String createVersionOutput() {
@@ -304,39 +96,44 @@ class GitopsPlaygroundCli  implements Runnable {
                     .replace('(', '')
                     .replace(')', '')
         }
-        return  "${APP_NAME} ${versionName}"
+        return "${APP_NAME} ${versionName}"
     }
 
-    protected void register(ApplicationContext context, Configuration configuration) {
-        context.registerSingleton(configuration)
+    /** Can be used as a hook by child classes */
+    @SuppressWarnings('GrMethodMayBeStatic')
+    // static methods cannot be overridden
+    protected void register(Config config, ApplicationContext context) {
+        context.registerSingleton(config)
     }
 
-    private void confirmOrExit(String message, Map config) {
-        if (config['application']['yes']) {
-            return
+    private static boolean confirm(String message, Config config) {
+        if (config.application.yes) {
+            return true
         }
-        
+
         log.info("\n${message}\nContinue? y/n [n]")
-                
+
         def input = System.in.newReader().readLine()
-        
-        if (input != 'y') {
-            System.exit(1) 
-        }
+
+        return input == 'y'
     }
-    
+
+    /** Can be used as a hook by tests */
     protected ApplicationContext createApplicationContext() {
         ApplicationContext.run()
     }
 
-    void setLogging() {
+    private void setLogging(String[] args) {
         Logger logger = (Logger) LoggerFactory.getLogger("com.cloudogu.gitops")
-        if (trace) {
+        if (args.contains('--trace') || args.contains('-x')) {
             log.info("Setting loglevel to trace")
             logger.setLevel(Level.TRACE)
-        } else if (debug) {
-            log.info("Setting loglevel to debug")
+            // log levels can be set via picocli.trace sys env - defaults to 'WARN'
+            System.setProperty("picocli.trace", "DEBUG")
+        } else if (args.contains('--debug') || args.contains('-d')) {
+            System.setProperty("picocli.trace", "INFO")
             logger.setLevel(Level.DEBUG)
+            log.info("Setting loglevel to debug")
         } else {
             setSimpleLogPattern()
         }
@@ -355,7 +152,7 @@ class GitopsPlaygroundCli  implements Runnable {
         rootLogger.detachAppender('STDOUT')
         PatternLayoutEncoder encoder = new PatternLayoutEncoder()
         // Remove less relevant details from log pattern
-        encoder.setPattern(defaultPattern 
+        encoder.setPattern(defaultPattern
                 .replaceAll(" \\S*%thread\\S* ", " ")
                 .replaceAll(" \\S*%logger\\S* ", " "))
         encoder.setContext(loggerContext)
@@ -368,26 +165,54 @@ class GitopsPlaygroundCli  implements Runnable {
         rootLogger.addAppender(appender)
     }
 
-    private Map getConfig(ApplicationContext appContext, boolean skipInternalConfig) {
-        if (configFile && configMap) {
-            throw new RuntimeException("Cannot provide --config-file and --config-map at the same time.")
+    private Config readConfigs(String[] args) {
+        log.debug("Reading initial CLI params")
+        def cliParams = new Config()
+        new CommandLine(cliParams).parseArgs(args)
+
+        String configFilePath = cliParams.application.configFile
+        String configMapName = cliParams.application.configMap
+
+        Map configFile = [:]
+        Map configMap = [:]
+
+        if (configFilePath) {
+            log.debug("Reading config file ${configFilePath}")
+            configFile = validateConfig(new File(configFilePath).text)
         }
 
-        ApplicationConfigurator applicationConfigurator = appContext.getBean(ApplicationConfigurator)
-        if (configFile) {
-            applicationConfigurator.setConfig(new File(configFile), true)
-        } else if (configMap) {
-            def k8sClient = appContext.getBean(K8sClient)
-            def configValues = k8sClient.getConfigMap(configMap, 'config.yaml')
-
-            applicationConfigurator.setConfig(configValues, true)
+        if (configMapName) {
+            log.debug("Reading config map ${configMapName}")
+            def configValues = k8sClient.getConfigMap(configMapName, 'config.yaml')
+            configMap = validateConfig(configValues)
         }
 
-        Map config = applicationConfigurator.setConfig(parseOptionsIntoConfig(), skipInternalConfig)
+        // Last one takes precedence
+        def configPrecedence = [configMap, configFile]
+        Map mergedConfigs = [:]
+        configPrecedence.each {
+            deepMerge(it, mergedConfigs)
+        }
 
-        log.debug("Actual config: ${prettyPrint(toJson(config))}")
+        log.debug("Writing CLI params into config")
+        Config mergedConfig = Config.fromMap(mergedConfigs)
+        //Schema newConfig = Config.fromMap(deepMerge(configToSet, config.toMap()))
+        new CommandLine(mergedConfig).parseArgs(args)
 
-        return config
+        mergedConfig = applicationConfigurator.initAndValidateConfig(mergedConfig)
+
+        log.debug("Actual config: ${mergedConfig.toYaml(true)}")
+
+        return mergedConfig
+    }
+
+    private static Map validateConfig(String configValues) {
+        def map = new YamlSlurper().parseText(configValues)
+        if (!(map instanceof Map)) {
+            throw new RuntimeException("Could not parse YAML as map: $map")
+        }
+        JsonSchemaValidator.validate(map as Map)
+        return map as Map
     }
 
     void printWelcomeScreen() {
@@ -407,144 +232,5 @@ class GitopsPlaygroundCli  implements Runnable {
   | Please be aware, Jenkins and Argo CD may take some time to build and deploy all apps.
   |----------------------------------------------------------------------------------------------|
 '''
-    }
-
-    private Map parseOptionsIntoConfig() {
-
-        return [
-                registry   : [
-                        internalPort: internalRegistryPort,
-                        url         : registryUrl,
-                        path        : registryPath,
-                        username    : registryUsername,
-                        password    : registryPassword,
-                        proxyUrl         : registryProxyUrl,
-                        proxyUsername    : registryProxyUsername,
-                        proxyPassword    : registryProxyPassword,
-                        readOnlyUsername    : registryUsernameReadOnly,
-                        readOnlyPassword    : registryPasswordReadOnly,
-                        createImagePullSecrets: createImagePullSecrets
-                ],
-                jenkins    : [
-                        url     : jenkinsUrl,
-                        username: jenkinsUsername,
-                        password: jenkinsPassword,
-                        metricsUsername: jenkinsMetricsUsername,
-                        metricsPassword: jenkinsMetricsPassword,
-                        mavenCentralMirror: mavenCentralMirror,
-                        jenkinsAdditionalEnvs: jenkinsAdditionalEnvs,
-                ],
-                scmm       : [
-                        url     : scmmUrl,
-                        username: scmmUsername,
-                        password: scmmPassword
-                ],
-                application: [
-                        openshift     : openshift,
-                        remote        : remote,
-                        mirrorRepos     : mirrorRepos,
-                        destroy : destroy,
-                        insecure      : insecure,
-                        debug         : debug,
-                        trace         : trace,
-                        username      : username,
-                        password      : password,
-                        yes       : yes,
-                        namePrefix    : namePrefix,
-                        podResources : podResources,
-                        baseUrl : baseUrl,
-                        gitName: gitName,
-                        gitEmail: gitEmail,
-                        urlSeparatorHyphen : urlSeparatorHyphen,
-                        skipCrds : skipCrds,
-                        namespaceIsolation: namespaceIsolation,
-                        netpols: netpols
-                ],
-                images     : [
-                        kubectl    : kubectlImage,
-                        helm       : helmImage,
-                        kubeval    : kubevalImage,
-                        helmKubeval: helmKubevalImage,
-                        yamllint   : yamllintImage,
-                        nginx      : nginxImage,
-                        petclinic  : petClinicImage,
-                        maven      : mavenImage
-                ],
-                features    : [
-                        argocd : [
-                                active    : argocd,
-                                url       : argocdUrl,
-                                operator  : argocdOperator,
-                                emailFrom    : emailFrom,
-                                emailToUser  : emailToUser,
-                                emailToAdmin : emailToAdmin
-                        ],
-                        mail: [
-                                mailhog: mailhog,
-                                mailhogUrl : mailhogUrl,
-                                smtpAddress : smtpAddress,
-                                smtpPort : smtpPort,
-                                smtpUser : smtpUser,
-                                smtpPassword : smtpPassword,
-                                helm      : [
-                                        image: mailhogImage
-                                        ]
-                        ],
-                        exampleApps: [
-                                petclinic: [
-                                        baseDomain: petclinicBaseDomain,
-                                ],
-                                nginx    : [
-                                        baseDomain: nginxBaseDomain,
-                                ],
-                        ],
-                        monitoring : [
-                                active    : monitoring,
-                                grafanaUrl: grafanaUrl,
-                                grafanaEmailFrom : grafanaEmailFrom,
-                                grafanaEmailTo   : grafanaEmailTo,
-                                helm      : [
-                                        grafanaImage: grafanaImage,
-                                        grafanaSidecarImage: grafanaSidecarImage,
-                                        prometheusImage: prometheusImage,
-                                        prometheusOperatorImage: prometheusOperatorImage,
-                                        prometheusConfigReloaderImage: prometheusConfigReloaderImage,
-                                ]
-                        ],
-                        secrets : [
-                                vault : [
-                                        mode : vault,
-                                        url: vaultUrl,
-                                        helm: [
-                                                image: vaultImage
-                                        ]
-                                ],
-                                externalSecrets: [
-                                        helm: [
-                                                image              : externalSecretsOperatorImage,
-                                                certControllerImage: externalSecretsOperatorCertControllerImage,
-                                                webhookImage       : externalSecretsOperatorWebhookImage
-                                        ]
-                                ]
-                        ],
-                        ingressNginx: [
-                               active: ingressNginx,
-                               helm      : [
-                                       image: ingressNginxImage
-                               ]
-                        ],
-                        certManager: [
-                                active: certManager,
-                                helm: [
-                                    image: certManagerImage,
-                                    webhookImage: webhookImage,
-                                    cainjectorImage: cainjectorImage,
-                                    acmeSolverImage: acmeSolverImage,
-                                    startupAPICheckImage: startupAPICheckImage
-                                ]
-                        ],
-
-                ]
-        ]
     }
 }

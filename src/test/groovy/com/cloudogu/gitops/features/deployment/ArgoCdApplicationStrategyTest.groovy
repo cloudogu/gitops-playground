@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.features.deployment
 
-import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.config.Config
+
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TestScmmRepoProvider
@@ -20,7 +21,7 @@ class ArgoCdApplicationStrategyTest {
 param1: value1
 param2: value2
 """
-        strategy.deployFeature("repoURL", "repoName", "chartName", "version", 
+        strategy.deployFeature("repoURL", "repoName", "chartName", "version",
                 "namespace", "releaseName", valuesYaml.toPath())
 
         def argoCdApplicationYaml = new File("$localTempDir/argocd/releaseName.yaml")
@@ -53,19 +54,19 @@ spec:
     - "CreateNamespace=true"
 """)
     }
-    
+
     @Test
     void 'deploys feature using argo CD from git repo'() {
         def strategy = createStrategy()
         File valuesYaml = File.createTempFile('values', 'yaml')
-        strategy.deployFeature("repoURL", "repoName", "chartName", "version", 
+        strategy.deployFeature("repoURL", "repoName", "chartName", "version",
                 "namespace", "releaseName", valuesYaml.toPath(), DeploymentStrategy.RepoType.GIT)
 
         def argoCdApplicationYaml = new File("$localTempDir/argocd/releaseName.yaml")
         def result = new YamlSlurper().parse(argoCdApplicationYaml)
         def sources = result['spec']['sources'] as List
         assertThat(sources[0] as Map).containsKey('path')
-        assertThat(sources[0] ['path']).isEqualTo('chartName')
+        assertThat(sources[0]['path']).isEqualTo('chartName')
     }
 
     @Test
@@ -99,28 +100,30 @@ spec:
     }
 
     private ArgoCdApplicationStrategy createStrategy(boolean argocdOperator = false) {
-        Map config = [
-                scmm: [
-                        internal: false,
+        Config config = new Config(
+                application: new Config.ApplicationSchema(
+                        namePrefix: 'foo-',
+                        gitName: 'Cloudogu',
+                        gitEmail: 'hello@cloudogu.com'
+                ),
+                scmm: new Config.ScmmSchema(
                         username: "dont-care-username",
                         password: "dont-care-password",
                         protocol: "https",
                         host: "localhost"
-                ],
-                application: [
-                        namePrefix : 'foo-',
-                        gitName    : 'Cloudogu',
-                        gitEmail   : 'hello@cloudogu.com'
-                ],
+                ),
+// TODO: convert
                 features: [
                         argocd: [
                                 operator: argocdOperator
                         ]
-                ]
-        ]
+                        ]
+
+                )
 
 
-        def repoProvider = new TestScmmRepoProvider(new Configuration(config), new FileSystemUtils()) {
+
+        def repoProvider = new TestScmmRepoProvider(config, new FileSystemUtils()) {
             @Override
             ScmmRepo getRepo(String repoTarget) {
                 def repo = super.getRepo(repoTarget)
@@ -130,6 +133,6 @@ spec:
             }
         }
 
-        return new ArgoCdApplicationStrategy(new Configuration(config), new FileSystemUtils(), repoProvider)
+        return new ArgoCdApplicationStrategy(config, new FileSystemUtils(), repoProvider)
     }
 }

@@ -1,315 +1,54 @@
 package com.cloudogu.gitops.config
 
-import com.cloudogu.gitops.config.schema.JsonSchemaValidator
+
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.NetworkingUtils
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
 import groovy.util.logging.Slf4j
-import groovy.yaml.YamlSlurper
-import jakarta.inject.Singleton
-
-import static com.cloudogu.gitops.utils.MapUtils.*
 
 @Slf4j
-@Singleton
 class ApplicationConfigurator {
 
-    // When updating please also update in Dockerfile
-    public static final String HELM_IMAGE = "ghcr.io/cloudogu/helm:3.15.4-1"
-    // When updating please also adapt in Dockerfile, vars.tf and init-cluster.sh
-    public static final String K8S_VERSION = "1.29"
-    public static final String DEFAULT_ADMIN_USER = 'admin'
-    public static final String DEFAULT_ADMIN_PW = 'admin'
-    public static final String DEFAULT_REGISTRY_PORT = '30000'
-    /**
-     * When changing values make sure to modify GitOpsPlaygroundCli and Schema as well
-     * @see com.cloudogu.gitops.cli.GitopsPlaygroundCli
-     * @see com.cloudogu.gitops.config.schema.Schema
-     */
-    // This is deliberately non-static, so as to allow getenv() to work with GraalVM static images
-    private final Map DEFAULT_VALUES = makeDeeplyImmutable([
-            registry   : [
-                    internal: true, // Set dynamically
-                    twoRegistries: false, // Set dynamically
-                    internalPort: DEFAULT_REGISTRY_PORT,
-                    // Single registry
-                    url         : '',
-                    path        : '',
-                    username    : '',
-                    password    : '',
-                    // Alternative: Use different registries, e.g. in air-gapped envs
-                    // "Proxy" registry for 3rd party images
-                    proxyUrl         : '',
-                    proxyUsername    : '',
-                    proxyPassword    : '',
-                    readOnlyUsername : '',
-                    readOnlyPassword : '',
-                    createImagePullSecrets: false,
-                    helm  : [
-                            chart  : 'docker-registry',
-                            repoURL: 'https://helm.twun.io',
-                            version: '2.2.3'
-                    ]
-            ],
-            jenkins    : [
-                    internal: true, // Set dynamically
-                    url     : '',
-                    username: DEFAULT_ADMIN_USER,
-                    password: DEFAULT_ADMIN_PW,
-                    /* This is the URL configured in SCMM inside the Jenkins Plugin, e.g. at http://scmm.localhost/scm/admin/settings/jenkins
-                      We use the K8s service as default name here, because it is the only option:
-                      "jenkins.localhost" will not work inside the Pods and k3d-container IP + Port (e.g. 172.x.y.z:9090) will not work on Windows and MacOS.
-
-                      For production we overwrite this when config.jenkins["url"] is set.
-                      See addJenkinsConfig() and the comment at scmm.urlForJenkins */
-                    urlForScmm: "http://jenkins", // Set dynamically
-                    metricsUsername: 'metrics',
-                    metricsPassword: 'metrics',
-                    helm  : [
-                            //chart  : 'jenkins',
-                            //repoURL: 'https://charts.jenkins.io',
-                            /* When Upgrading helm chart, also upgrade controller.tag in jenkins/values.yaml
-                            In addition:
-                             - Also upgrade plugins. See docs/developers.md
-                             */
-                            version: '5.5.11'
-                    ],
-                    mavenCentralMirror: '',
-                    jenkinsAdditionalEnvs:  [:]
-            ],
-            scmm       : [
-                    internal: true, // Set dynamically
-                    url     : '',
-                    username: DEFAULT_ADMIN_USER,
-                    password: DEFAULT_ADMIN_PW,
-                    gitOpsUsername : '', // Set dynamically
-                    /* This corresponds to the "Base URL" in SCMM Settings.
-                       We use the K8s service as default name here, to make the build on push feature (webhooks from SCMM to Jenkins that trigger builds) work in k3d.
-                       The webhook contains repository URLs that start with the "Base URL" Setting of SCMM.
-                       Jenkins checks these repo URLs and triggers all builds that match repo URLs.
-                       In k3d, we have to define the repos in Jenkins using the K8s Service name, because they are the only option.
-                       "scmm.localhost" will not work inside the Pods and k3d-container IP + Port (e.g. 172.x.y.z:9091) will not work on Windows and MacOS.
-                       So, we have to use the matching URL in SCMM as well.
-
-                       For production we overwrite this when config.scmm["url"] is set.
-                       See addScmmConfig() */
-                    urlForJenkins : 'http://scmm-scm-manager/scm', // set dynamically
-                    host : '', // Set dynamically
-                    protocol : '', // Set dynamically
-                    ingress : '', // Set dynamically
-                    helm  : [
-                            chart  : 'scm-manager',
-                            repoURL: 'https://packages.scm-manager.org/repository/helm-v2-releases/',
-                            version: '3.2.1'
-                    ]
-            ],
-            application: [
-                    remote        : false,
-                    mirrorRepos     : false,
-                    destroy       : false,
-                    // Take from env because the Dockerfile provides a local copy of the repo for air-gapped mode
-                    localHelmChartFolder: System.getenv('LOCAL_HELM_CHART_FOLDER'),
-                    insecure      : false,
-                    openshift     : false,
-                    username      : DEFAULT_ADMIN_USER,
-                    password      : DEFAULT_ADMIN_PW,
-                    yes           : false,
-                    runningInsideK8s : false, // Set dynamically
-                    namePrefix    : '',
-                    podResources : false,
-                    namePrefixForEnvVars    : '', // Set dynamically
-                    baseUrl: null,
-                    gitName: 'Cloudogu',
-                    gitEmail: 'hello@cloudogu.com',
-                    urlSeparatorHyphen: false,
-                    skipCrds : false,
-                    namespaceIsolation : false,
-                    netpols: false
-            ],
-            images     : [
-                    kubectl    : "bitnami/kubectl:$K8S_VERSION",
-                    // cloudogu/helm also contains kubeval and helm kubeval plugin. Using the same image makes builds faster
-                    helm       : HELM_IMAGE,
-                    kubeval    : HELM_IMAGE,
-                    helmKubeval: HELM_IMAGE,
-                    yamllint   : "cytopia/yamllint:1.25-0.7",
-                    nginx      : null,
-                    petclinic  : 'eclipse-temurin:11-jre-alpine',
-                    maven      : null
-            ],
-            repositories : [
-                    springBootHelmChart: [
-                            // Take from env or use default because the Dockerfile provides a local copy of the repo
-                            url: System.getenv('SPRING_BOOT_HELM_CHART_REPO') ?: 'https://github.com/cloudogu/spring-boot-helm-chart.git',
-                            ref: '0.3.2'
-                    ],
-                    springPetclinic: [
-                            url: System.getenv('SPRING_PETCLINIC_REPO') ?: 'https://github.com/cloudogu/spring-petclinic.git',
-                            ref: 'b0e0d18'
-                    ],
-                    gitopsBuildLib: [
-                            url: System.getenv('GITOPS_BUILD_LIB_REPO') ?: 'https://github.com/cloudogu/gitops-build-lib.git',
-                    ],
-                    cesBuildLib: [
-                            url: System.getenv('CES_BUILD_LIB_REPO') ?: 'https://github.com/cloudogu/ces-build-lib.git',
-                    ]
-            ],
-            features   : [
-                    argocd    : [
-                            active    : false,
-                            operator  : false,
-                            env : [],
-                            url       : '',
-                            emailFrom : 'argocd@example.org',
-                            emailToUser : 'app-team@example.org',
-                            emailToAdmin : 'infra@example.org',
-                            resourceInclusionsCluster: ''
-                    ],
-                    mail   : [
-                            active: false, // set dynamically
-                            mailhog : false,
-                            mailhogUrl : '',
-                            smtpAddress: '',
-                            smtpPort : '',
-                            smtpUser : '',
-                            smtpPassword : '',
-                            helm  : [
-                                    chart  : 'mailhog',
-                                    repoURL: 'https://codecentric.github.io/helm-charts',
-                                    version: '5.0.1',
-                                    image: 'ghcr.io/cloudogu/mailhog:v1.0.1'
-                            ]
-                    ],
-                    monitoring: [
-                            active: false,
-                            grafanaUrl: '',
-                            grafanaEmailFrom : 'grafana@example.org',
-                            grafanaEmailTo : 'infra@example.org',
-                            helm  : [
-                                    chart  : 'kube-prometheus-stack',
-                                    repoURL: 'https://prometheus-community.github.io/helm-charts',
-                                    /* When updating this make sure to also test if air-gapped mode still works */
-                                    version: '58.2.1',
-                                    grafanaImage: '',
-                                    grafanaSidecarImage: '',
-                                    prometheusImage: '',
-                                    prometheusOperatorImage: '',
-                                    prometheusConfigReloaderImage: '',
-                                    values: [:]
-                            ]
-                    ],
-                    secrets   : [
-                            active         : false, // Set dynamically
-                            externalSecrets: [
-                                    helm: [
-                                            chart  : 'external-secrets',
-                                            repoURL: 'https://charts.external-secrets.io',
-                                            version: '0.9.16',
-                                            image  : '',
-                                            certControllerImage: '',
-                                            webhookImage: ''
-                                    ]
-                            ],
-                            vault          : [
-                                    mode: '',
-                                    url: '',
-                                    helm: [
-                                            chart  : 'vault',
-                                            repoURL: 'https://helm.releases.hashicorp.com',
-                                            version: '0.25.0',
-                                            image: '',
-                                    ]
-                            ]
-                    ],
-                    ingressNginx: [
-                            active: false,
-                            helm  : [
-                                    chart: 'ingress-nginx',
-                                    repoURL: 'https://kubernetes.github.io/ingress-nginx',
-                                    version: '4.11.2',
-                                    image: '',
-                                    values: [:]
-                            ],
-                    ],
-                    certManager: [
-                            active: false,
-                            helm  : [
-                                    chart: 'cert-manager',
-                                    repoURL: 'https://charts.jetstack.io',
-                                    version: '1.16.1',
-                                    values: [:],
-                                    image: '',
-                                    acmeSolverImage: '',
-                                    cainjectorImage: '',
-                                    startupAPICheckImage: '',
-                                    webhookImage: ''
-                            ],
-                    ],
-                    exampleApps: [
-                            petclinic: [
-                                    baseDomain: '',
-                            ],
-                            nginx    : [
-                                    baseDomain: '',
-                            ],
-                    ]
-            ]
-    ])
-
-    private Map config
     private NetworkingUtils networkingUtils
     private FileSystemUtils fileSystemUtils
-    private JsonSchemaValidator schemaValidator
 
-    ApplicationConfigurator(NetworkingUtils networkingUtils, FileSystemUtils fileSystemUtils, JsonSchemaValidator schemaValidator) {
-        this.schemaValidator = schemaValidator
-        this.config = DEFAULT_VALUES
+    ApplicationConfigurator(NetworkingUtils networkingUtils = new NetworkingUtils(),
+                            FileSystemUtils fileSystemUtils = new FileSystemUtils()) {
         this.networkingUtils = networkingUtils
         this.fileSystemUtils = fileSystemUtils
     }
 
     /**
-     * Sets config internally and als returns it, fluent interface
+     * Sets dynamic fields and validates params
      */
-    Map setConfig(Map configToSet, boolean skipInternalConfig = false) {
-        Map newConfig = deepCopy(config)
-        deepMerge(configToSet, newConfig)
+    Config initAndValidateConfig(Config newConfig) {
 
         validate(newConfig)
-        
-        if (skipInternalConfig) {
-            config = makeDeeplyImmutable(newConfig)
-            return config
-        }
-        
+
         addAdditionalApplicationConfig(newConfig)
-        
 
         addScmmConfig(newConfig)
         addJenkinsConfig(newConfig)
 
-
-        String namePrefix = newConfig.application['namePrefix']
+        String namePrefix = newConfig.application.namePrefix
         if (namePrefix) {
             if (!namePrefix.endsWith('-')) {
-                newConfig.application['namePrefix'] = "${namePrefix}-"
+                newConfig.application.namePrefix = "${namePrefix}-"
             }
-            newConfig.application['namePrefixForEnvVars'] ="${(newConfig.application['namePrefix'] as String).toUpperCase().replace('-', '_')}"
+            newConfig.application.namePrefixForEnvVars ="${(newConfig.application.namePrefix as String).toUpperCase().replace('-', '_')}"
         }
 
         addRegistryConfig(newConfig)
-        
-        if (newConfig['features']['secrets']['vault']['mode'])
-            newConfig['features']['secrets']['active'] = true
-        if (newConfig['features']['mail']['smtpAddress'] || newConfig['features']['mail']['mailhog'])
-            newConfig['features']['mail']['active'] = true
-        if (newConfig['features']['mail']['smtpAddress'] && newConfig['features']['mail']['mailhog']) {
-            newConfig['features']['mail']['mailhog'] = false
+
+        if (newConfig.features.secrets.vault.mode)
+            newConfig.features.secrets.active = true
+        if (newConfig.features.mail.smtpAddress || newConfig.features.mail.mailhog)
+            newConfig.features.mail.active = true
+        if (newConfig.features.mail.smtpAddress && newConfig.features.mail.mailhog) {
+            newConfig.features.mail.mailhog = false
             log.warn("Enabled both external Mailserver and MailHog! Implicitly deactivating MailHog")
         }
-        if (newConfig['features']['ingressNginx']['active'] && !newConfig['application']['baseUrl']) {
+        if (newConfig.features.ingressNginx.active && !newConfig.application.baseUrl) {
             log.warn("Ingress-controller is activated without baseUrl parameter. Services will not be accessible by hostnames. To avoid this use baseUrl with ingress. ")
         }
 
@@ -318,22 +57,20 @@ class ApplicationConfigurator {
         validateEnvConfig(newConfig)
 
         setResourceInclusionsCluster(newConfig)
-        
-        config = makeDeeplyImmutable(newConfig)
 
-        return config
+        return newConfig
     }
 
-    private void addRegistryConfig(Map newConfig) {
-        if (newConfig.registry['proxyUrl']) {
-            newConfig.registry['twoRegistries'] = true
-            if (!newConfig.registry['proxyUsername'] || !newConfig.registry['proxyPassword'] ) {
+    private void addRegistryConfig(Config newConfig) {
+        if (newConfig.registry.proxyUrl) {
+            newConfig.registry.twoRegistries = true
+            if (!newConfig.registry.proxyUsername || !newConfig.registry.proxyPassword ) {
                 throw new RuntimeException("Proxy URL needs to be used with proxy-username and proxy-password")
             }
         }
 
-        if (newConfig.registry['url']) {
-            newConfig.registry['internal'] = false
+        if (newConfig.registry.url) {
+            newConfig.registry.internal = false
         } else {
             /* Internal Docker registry must be on localhost. Otherwise docker will use HTTPS, leading to errors on 
                docker push in the example application's Jenkins Jobs.
@@ -341,131 +78,111 @@ class ApplicationConfigurator {
                So, always use localhost.
                Allow overriding the port, in case multiple playground instance run on a single host in different 
                k3d clusters. */
-            newConfig.registry['url'] = "localhost:${newConfig.registry['internalPort']}"
+            newConfig.registry.url = "localhost:${newConfig.registry.internalPort}"
         }
         
-        if (newConfig.registry['createImagePullSecrets']) {
-            String username = newConfig.registry['readOnlyUsername'] ?: newConfig.registry['username']
-            String password = newConfig.registry['readOnlyPassword'] ?: newConfig.registry['password']
+        if (newConfig.registry.createImagePullSecrets) {
+            String username = newConfig.registry.readOnlyUsername ?: newConfig.registry.username
+            String password = newConfig.registry.readOnlyPassword ?: newConfig.registry.password
             if (!username || !password) {
                 throw new RuntimeException("createImagePullSecrets needs to be used with either registry username and password or the readOnly variants")
             }
         }
     }
 
-    Map setConfig(File configFile, boolean skipInternalConfig = false) {
-        def map = new YamlSlurper().parse(configFile)
-        if (!(map instanceof Map)) {
-            throw new RuntimeException("Could not parse YAML as map: $map")
-        }
-        schemaValidator.validate(new ObjectMapper().convertValue(map, JsonNode))
-
-        return setConfig(map as Map, skipInternalConfig)
-    }
-
-    Map setConfig(String configFile, boolean skipInternalConfig = false) {
-        def map = new YamlSlurper().parseText(configFile)
-        if (!(map instanceof Map)) {
-            throw new RuntimeException("Could not parse YAML as map: $map")
-        }
-        schemaValidator.validate(new ObjectMapper().convertValue(map, JsonNode))
-
-        return setConfig(map as Map, skipInternalConfig)
-    }
-
-    private void addAdditionalApplicationConfig(Map newConfig) {
+    private void addAdditionalApplicationConfig(Config newConfig) {
         if (System.getenv("KUBERNETES_SERVICE_HOST")) {
             log.debug("installation is running in kubernetes.")
-            newConfig.application["runningInsideK8s"] = true
+            newConfig.application.runningInsideK8s = true
         }
     }
 
-    private void addScmmConfig(Map newConfig) {
+    private void addScmmConfig(Config newConfig) {
         log.debug("Adding additional config for SCM-Manager")
 
-        newConfig.scmm['gitOpsUsername'] = "${this.config.application['namePrefix']}gitops"
+        newConfig.scmm.gitOpsUsername = "${newConfig.application.namePrefix}gitops"
 
-        if (newConfig.scmm["url"]) {
+        if (newConfig.scmm.url) {
             log.debug("Setting external scmm config")
-            newConfig.scmm["internal"] = false
-            newConfig.scmm["urlForJenkins"] = newConfig.scmm["url"]
-        } else if (newConfig.application["runningInsideK8s"]) {
+            newConfig.scmm.internal = false
+            newConfig.scmm.urlForJenkins = newConfig.scmm.url
+        } else if (newConfig.application.runningInsideK8s) {
             log.debug("Setting scmm url to k8s service, since installation is running inside k8s")
-            newConfig.scmm["url"] = networkingUtils.createUrl("scmm-scm-manager.default.svc.cluster.local", "80", "/scm")
+            newConfig.scmm.url = networkingUtils.createUrl("scmm-scm-manager.default.svc.cluster.local", "80", "/scm")
         } else {
             log.debug("Setting internal configs for local single node cluster with internal scmm")
             def port = fileSystemUtils.getLineFromFile(fileSystemUtils.getRootDir() + "/scm-manager/values.ftl.yaml", "nodePort:").findAll(/\d+/)*.toString().get(0)
             String clusterBindAddress = networkingUtils.findClusterBindAddress()
-            newConfig.scmm["url"] = networkingUtils.createUrl(clusterBindAddress, port, "/scm")
+            newConfig.scmm.url = networkingUtils.createUrl(clusterBindAddress, port, "/scm")
         }
 
-        String scmmUrl = newConfig.scmm["url"]
+        String scmmUrl = newConfig.scmm.url
         log.debug("Getting host and protocol from scmmUrl: " + scmmUrl)
-        newConfig.scmm["host"] = networkingUtils.getHost(scmmUrl)
-        newConfig.scmm["protocol"] = networkingUtils.getProtocol(scmmUrl)
+        newConfig.scmm.host = networkingUtils.getHost(scmmUrl)
+        newConfig.scmm.protocol = networkingUtils.getProtocol(scmmUrl)
 
         // We probably could get rid of some of the complexity by refactoring url, host and ingress into a single var
-        if (newConfig.application['baseUrl']) {
-            newConfig.scmm['ingress'] = new URL(injectSubdomain('scmm',
-                    newConfig.application['baseUrl'] as String, newConfig.application['urlSeparatorHyphen'] as Boolean)).host
+        if (newConfig.application.baseUrl) {
+            newConfig.scmm.ingress = new URL(injectSubdomain('scmm',
+                    newConfig.application.baseUrl as String, newConfig.application.urlSeparatorHyphen as Boolean)).host
         }
     }
 
-    private void addJenkinsConfig(Map newConfig) {
+    private void addJenkinsConfig(Config newConfig) {
         log.debug("Adding additional config for Jenkins")
-        if (newConfig.jenkins["url"]) {
+        if (newConfig.jenkins.url) {
             log.debug("Setting external jenkins config")
-            newConfig.jenkins["internal"] = false
-            newConfig.jenkins["urlForScmm"] = newConfig.jenkins["url"] 
-        } else if (newConfig.application["runningInsideK8s"]) {
+            newConfig.jenkins.internal = false
+            newConfig.jenkins.urlForScmm = newConfig.jenkins.url
+        } else if (newConfig.application.runningInsideK8s) {
             log.debug("Setting jenkins url to k8s service, since installation is running inside k8s")
-            newConfig.jenkins["url"] = networkingUtils.createUrl("jenkins.default.svc.cluster.local", "80")
+            newConfig.jenkins.url = networkingUtils.createUrl("jenkins.default.svc.cluster.local", "80")
         } else {
             log.debug("Setting jenkins configs for local single node cluster with internal jenkins")
             def port = fileSystemUtils.getLineFromFile(fileSystemUtils.getRootDir() + "/jenkins/values.yaml", "nodePort:").findAll(/\d+/)*.toString().get(0)
             String clusterBindAddress = networkingUtils.findClusterBindAddress()
-            newConfig.jenkins["url"] = networkingUtils.createUrl(clusterBindAddress, port)
+            newConfig.jenkins.url = networkingUtils.createUrl(clusterBindAddress, port)
         }
     }
 
-    private void evaluateBaseUrl(Map newConfig) {
-        String baseUrl = newConfig.application['baseUrl']
+    private void evaluateBaseUrl(Config newConfig) {
+        String baseUrl = newConfig.application.baseUrl
         if (baseUrl) {
             log.debug("Base URL set, adapting to individual tools")
-            def argocd = newConfig.features['argocd']
-            def mail = newConfig.features['mail']
-            def monitoring = newConfig.features['monitoring']
-            def vault = newConfig.features['secrets']['vault']
-            boolean urlSeparatorHyphen = newConfig.application['urlSeparatorHyphen']
+            def argocd = newConfig.features.argocd
+            def mail = newConfig.features.mail
+            def monitoring = newConfig.features.monitoring
+            def vault = newConfig.features.secrets.vault
+            boolean urlSeparatorHyphen = newConfig.application.urlSeparatorHyphen
 
-            if (argocd['active'] && !argocd['url']) {
-                argocd['url'] = injectSubdomain('argocd', baseUrl, urlSeparatorHyphen)
-                log.debug("Setting URL ${argocd['url']}")
+            if (argocd.active && !argocd.url) {
+                argocd.url = injectSubdomain('argocd', baseUrl, urlSeparatorHyphen)
+                log.debug("Setting URL ${argocd.url}")
             }
-            if (mail['mailhog'] && !mail['mailhogUrl']) {
-                mail['mailhogUrl'] = injectSubdomain('mailhog', baseUrl, urlSeparatorHyphen)
-                log.debug("Setting URL ${mail['mailhogUrl']}")
+            if (mail.mailhog && !mail.mailhogUrl) {
+                mail.mailhogUrl = injectSubdomain('mailhog', baseUrl, urlSeparatorHyphen)
+                log.debug("Setting URL ${mail.mailhogUrl}")
             }
-            if (monitoring['active'] && !monitoring['grafanaUrl']) {
-                monitoring['grafanaUrl'] = injectSubdomain('grafana', baseUrl, urlSeparatorHyphen)
-                log.debug("Setting URL ${monitoring['grafanaUrl']}")
+            if (monitoring.active && !monitoring.grafanaUrl) {
+                monitoring.grafanaUrl = injectSubdomain('grafana', baseUrl, urlSeparatorHyphen)
+                log.debug("Setting URL ${monitoring.grafanaUrl}")
             }
-            if ( newConfig.features['secrets']['active'] && !vault['url']) {
-                vault['url'] = injectSubdomain('vault', baseUrl, urlSeparatorHyphen)
-                log.debug("Setting URL ${vault['url']}")
+            if ( newConfig.features.secrets.active && !vault.url) {
+                vault.url = injectSubdomain('vault', baseUrl, urlSeparatorHyphen)
+                log.debug("Setting URL ${vault.url}")
             }
             
-            if (!newConfig.features['exampleApps']['petclinic']['baseDomain']) {
+            if (!newConfig.features.exampleApps.petclinic.baseDomain) {
                 // This param only requires the host / domain
-                newConfig.features['exampleApps']['petclinic']['baseDomain'] =
+                newConfig.features.exampleApps.petclinic.baseDomain =
                         new URL(injectSubdomain('petclinic', baseUrl, urlSeparatorHyphen)).host
-                log.debug("Setting URL ${newConfig.features['exampleApps']['petclinic']['baseDomain']}")
+                log.debug("Setting URL ${newConfig.features.exampleApps.petclinic.baseDomain}")
             }
-            if (!newConfig.features['exampleApps']['nginx']['baseDomain']) {
+            if (!newConfig.features.exampleApps.nginx.baseDomain) {
                 // This param only requires the host / domain
-                newConfig.features['exampleApps']['nginx']['baseDomain'] =
+                newConfig.features.exampleApps.nginx.baseDomain =
                         new URL(injectSubdomain('nginx', baseUrl, urlSeparatorHyphen)).host
-                log.debug("Setting URL ${newConfig.features['exampleApps']['nginx']['baseDomain']}")
+                log.debug("Setting URL ${newConfig.features.exampleApps.nginx.baseDomain}")
             }
         }
     }
@@ -493,12 +210,12 @@ class ApplicationConfigurator {
         return newUrl
     }
 
-    private void validate(Map configToSet) {
-        if (configToSet.scmm["url"] && !configToSet.jenkins["url"] ||
-                !configToSet.scmm["url"] && configToSet.jenkins["url"]) {
+    private void validate(Config configToSet) {
+        if (configToSet.scmm.url && !configToSet.jenkins.url ||
+                !configToSet.scmm.url && configToSet.jenkins.url) {
             throw new RuntimeException('When setting jenkins URL, scmm URL must also be set and the other way round')
         }
-        if (configToSet.application['mirrorRepos'] && !configToSet.application['localHelmChartFolder']) {
+        if (configToSet.application.mirrorRepos && !configToSet.application.localHelmChartFolder) {
             // This should only happen when run outside the image, i.e. during development
             throw new RuntimeException("Missing config for localHelmChartFolder.\n" +
                     "Either run inside the official container image or setting env var " +

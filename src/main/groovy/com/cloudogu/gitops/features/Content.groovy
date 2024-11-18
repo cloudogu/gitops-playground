@@ -1,7 +1,8 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
-import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.config.Config
+
 import com.cloudogu.gitops.utils.K8sClient
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
@@ -12,14 +13,14 @@ import jakarta.inject.Singleton
 @Order(80)
 class Content extends Feature {
 
-    Map config
+    Config config
     K8sClient k8sClient
     
     Content(
-            Configuration config,
+            Config config,
             K8sClient k8sClient
     ) {
-        this.config = config.getConfig()
+        this.config = config
         this.k8sClient = k8sClient
     }
 
@@ -31,29 +32,29 @@ class Content extends Feature {
 
     @Override
     void enable() {
-        if (config.registry['createImagePullSecrets']) {
-            String registryUsername = config.registry['readOnlyUsername'] ?: config.registry['username']
-            String registryPassword = config.registry['readOnlyPassword'] ?: config.registry['password']
+        if (config.registry.createImagePullSecrets) {
+            String registryUsername = config.registry.readOnlyUsername ?: config.registry.username
+            String registryPassword = config.registry.readOnlyPassword ?: config.registry.password
 
             // Name prefix is added by k8sClient
             List exampleAppNamespaces = [ "example-apps-staging", "example-apps-production"]
             exampleAppNamespaces.each {
-                def namespace = it as String
+                def namespace = it
                 def registrySecretName = 'registry'
 
                 k8sClient.createNamespace(it)
                         
                 k8sClient.createImagePullSecret(registrySecretName, namespace,
-                        config.registry['url'] as String /* Only domain matters, path would be ignored */,
+                        config.registry.url /* Only domain matters, path would be ignored */,
                         registryUsername, registryPassword)
 
                 k8sClient.patch('serviceaccount', 'default', namespace,
                         [ imagePullSecrets: [ [name: registrySecretName] ]])
 
-                if (config.registry['twoRegistries']) {
+                if (config.registry.twoRegistries) {
                     k8sClient.createImagePullSecret('proxy-registry', namespace,
-                            config.registry['proxyUrl'] as String, config.registry['proxyUsername'] as String,
-                            config.registry['proxyPassword'] as String)
+                            config.registry.proxyUrl, config.registry.proxyUsername,
+                            config.registry.proxyPassword)
                 }
             }
         }

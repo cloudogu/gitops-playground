@@ -1,30 +1,31 @@
 package com.cloudogu.gitops.utils
 
-import com.cloudogu.gitops.config.Configuration
 import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
+import com.cloudogu.gitops.config.Config
 import groovy.transform.Immutable
 import groovy.util.logging.Slf4j
+import jakarta.inject.Inject
 import jakarta.inject.Provider
 import jakarta.inject.Singleton
 
 @Slf4j
 @Singleton
 class K8sClient {
-    private static final String[] APPLY_FROM_STDIN = [ 'kubectl', 'apply', '-f-' ]
+    private static final String[] APPLY_FROM_STDIN = ['kubectl', 'apply', '-f-']
 
     private CommandExecutor commandExecutor
     private FileSystemUtils fileSystemUtils
-    private Provider<Configuration> configurationProvider
+    private Provider<Config> configProvider
 
     K8sClient(
             CommandExecutor commandExecutor,
             FileSystemUtils fileSystemUtils,
-            Provider<Configuration> configurationProvider // This is lazy to enable bootstrapping the configuration
+            Provider<Config> configProvider
     ) {
         this.fileSystemUtils = fileSystemUtils
-        this.configurationProvider = configurationProvider
         this.commandExecutor = commandExecutor
+        this.configProvider = configProvider;
     }
 
     String getInternalNodeIp() {
@@ -32,7 +33,7 @@ class K8sClient {
 
         // For k3d this is either the host's IP or the IP address of the k3d API server's container IP (when --bind-localhost=false)
         // Note that this might return multiple InternalIP (IPV4 and IPV6) - we assume the first one is IPV4 (break after first)
-        String[] command = ["kubectl", "get", "$node", 
+        String[] command = ["kubectl", "get", "$node",
                             "--template='{{range .status.addresses}}{{ if eq .type \"InternalIP\" }}{{.address}}{{break}}{{end}}{{end}}'"]
         return commandExecutor.execute(command).stdOut
     }
@@ -49,7 +50,7 @@ class K8sClient {
         log.debug("Waiting for first node of the cluster to become ready")
         while (output.isEmpty() && tryCount < maxTries) {
             output = commandExecutor.execute(command1, command2).stdOut
-            
+
             if (output.isEmpty()) {
                 tryCount++
                 log.debug("Still waiting for first node of the cluster to become ready (try $tryCount/$maxTries)")
@@ -82,7 +83,7 @@ class K8sClient {
             throw new IllegalArgumentException("Namespace name must be provided and cannot be null or empty.");
         }
 
-        String namespace = "${getNamePrefix()}${name}";
+        String namespace = "${configProvider.get().application.namePrefix}${name}";
 
         // Check if the namespace already exists based on exitCode
         String[] checkNamespaceCommand = new Kubectl("get", "namespace", namespace).build();
@@ -121,17 +122,17 @@ class K8sClient {
             createNamespace(name)
         }
     }
-    
+
     /**
      * Idempotent create, i.e. overwrites if exists.
      */
     void createSecret(String type, String name, String namespace = '', Tuple2... literals) {
-        def command1 = kubectl( 'create', 'secret', type, name)
+        def command1 = kubectl('create', 'secret', type, name)
                 .namespace(namespace)
                 .addAllMandatory('--from-literal', literals)
                 .dryRunOutputYaml()
                 .build()
-        
+
         commandExecutor.execute(command1, APPLY_FROM_STDIN)
     }
 
@@ -139,7 +140,7 @@ class K8sClient {
      * Idempotent create, i.e. overwrites if exists.
      */
     void createImagePullSecret(String name, String namespace = '', String host, String user, String password) {
-        def command1 = kubectl( 'create', 'secret', 'docker-registry', name)
+        def command1 = kubectl('create', 'secret', 'docker-registry', name)
                 .namespace(namespace)
                 .mandatory('--docker-server', host)
                 .mandatory('--docker-username', user)
@@ -149,7 +150,7 @@ class K8sClient {
 
         commandExecutor.execute(command1, APPLY_FROM_STDIN)
     }
-    
+
     /**
      * Idempotent create, i.e. overwrites if exists.
      */
@@ -162,10 +163,10 @@ class K8sClient {
 
         commandExecutor.execute(command1, APPLY_FROM_STDIN)
     }
-    
+
     /**
      * Idempotent create, i.e. overwrites if exists.
-     * 
+     *
      * @param tcp Port pairs can be specified as '<port>:<targetPort>'.
      */
     void createServiceNodePort(String name, String tcp, String nodePort = '', String namespace = '') {
@@ -175,22 +176,22 @@ class K8sClient {
                 .optional('--node-port', nodePort)
                 .dryRunOutputYaml()
                 .build()
-        
+
         commandExecutor.execute(command1, APPLY_FROM_STDIN)
     }
 
-    void label(String resource, String name, String namespace  = '', Tuple2... keyValues) {
+    void label(String resource, String name, String namespace = '', Tuple2... keyValues) {
         if (!keyValues) {
             throw new RuntimeException("Missing key-value-pairs")
         }
         String command =
-                "kubectl label ${resource} ${name}${namespace ? " -n ${getNamePrefix()}${namespace}" : ''} " +
+                "kubectl label ${resource} ${name}${namespace ? " -n ${configProvider.get().application.namePrefix}${namespace}" : ''} " +
                         '--overwrite ' + // Make idempotent
-                        keyValues.collect { "${it.v1}=${it.v2}"}.join(' ')
+                        keyValues.collect { "${it.v1}=${it.v2}" }.join(' ')
         commandExecutor.execute(command)
     }
 
-    void patch(String resource, String name, String namespace  = '', String type = '', Map yaml) {
+    void patch(String resource, String name, String namespace = '', String type = '', Map yaml) {
         // We're using a patch file here, instead of a patch JSON (--patch), because of quoting issues
         // ERROR c.c.gitops.utils.CommandExecutor - Stderr: error: unable to parse "'{\"stringData\":": yaml: found unexpected end of stream
         File patchYaml = File.createTempFile('gitops-playground-patch-yaml', '')
@@ -199,28 +200,28 @@ class K8sClient {
 
         //  kubectl patch secret argocd-secret -p '{"stringData": { "admin.password": "'"${bcryptArgoCDPassword}"'"}}' || true
         String command =
-                "kubectl patch ${resource} ${name}${namespace ? " -n ${getNamePrefix()}${namespace}" : ''}" +
-                        (type ? " --type=$type" : '')+
+                "kubectl patch ${resource} ${name}${namespace ? " -n ${configProvider.get().application.namePrefix}${namespace}" : ''}" +
+                        (type ? " --type=$type" : '') +
                         " --patch-file=${patchYaml.absolutePath}"
         commandExecutor.execute(command)
     }
 
-    void delete(String resource, String namespace  = '', Tuple2... selectors) {
+    void delete(String resource, String namespace = '', Tuple2... selectors) {
         if (!selectors) {
             throw new RuntimeException("Missing selectors")
         }
         // kubectl delete secret -n argocd -l owner=helm,name=argocd
         String command =
-                "kubectl delete ${resource}${namespace ? " -n ${getNamePrefix()}${namespace}" : ''}" +
+                "kubectl delete ${resource}${namespace ? " -n ${configProvider.get().application.namePrefix}${namespace}" : ''}" +
                         ' --ignore-not-found=true ' + // Make idempotent
-                        selectors.collect { "--selector=${it.v1}=${it.v2}"}.join(' ')
+                        selectors.collect { "--selector=${it.v1}=${it.v2}" }.join(' ')
 
         commandExecutor.execute(command)
     }
 
     void delete(String resource, String namespace, String name) {
         String command =
-                "kubectl delete ${resource}${namespace ? " -n ${getNamePrefix()}${namespace}" : ''}" +
+                "kubectl delete ${resource}${namespace ? " -n ${configProvider.get().application.namePrefix}${namespace}" : ''}" +
                         " $name" +
                         ' --ignore-not-found=true ' // Make idempotent
 
@@ -238,15 +239,15 @@ class K8sClient {
         result.stdOut.split("\n").collect {
             def parts = it.split(",")
 
-            def prefix = getNamePrefix()
-            assert(parts[0].startsWith(prefix))
+            def prefix = configProvider.get().application.namePrefix
+            assert (parts[0].startsWith(prefix))
 
             return new CustomResource(parts[0].substring(prefix.length()), parts[1])
         }
     }
 
     String getConfigMap(String mapName, String key) {
-        String[] command = ["kubectl", "get", "configmap", mapName, "-o", "jsonpath={.data['"+key.replace(".", "\\.")+"']}"]
+        String[] command = ["kubectl", "get", "configmap", mapName, "-o", "jsonpath={.data['" + key.replace(".", "\\.") + "']}"]
         def result = commandExecutor.execute(command, false)
         if (result.exitCode != 0) {
             throw new RuntimeException("Could not fetch configmap $mapName: ${result.stdErr}")
@@ -258,7 +259,7 @@ class K8sClient {
 
         return result.stdOut
     }
-    
+
     String getCurrentContext() {
         // When running inside a pod this might fail
         def output = commandExecutor.execute('kubectl config current-context', false)
@@ -266,12 +267,6 @@ class K8sClient {
             output.stdOut = '(current context not set)'
         }
         return output.stdOut
-    }
-
-    protected String getNamePrefix() {
-        def config = configurationProvider.get().config
-
-        return config.application['namePrefix'] as String
     }
 
     Kubectl kubectl(String ... args) {
@@ -393,24 +388,24 @@ class K8sClient {
         String namespace
         String name
     }
-    
+
     private class Kubectl {
-        private List<String> command = [ 'kubectl' ]
-        
-        Kubectl(String ... args) {
+        private List<String> command = ['kubectl']
+
+        Kubectl(String... args) {
             command.addAll(args)
         }
-        
+
         Kubectl namespace(String namespace) {
             if (namespace) {
-                this.command += ['-n', getNamePrefix() + namespace ]
+                this.command += ['-n', configProvider.get().application.namePrefix + namespace]
             }
             return this
         }
 
         Kubectl mandatory(String paramName, String value) {
             // Here we could assert that value != null. For historical reasons we don't, for now.
-            this.command += [paramName, value ]
+            this.command += [paramName, value]
             return this
         }
 
@@ -418,24 +413,25 @@ class K8sClient {
             if (!values) {
                 throw new RuntimeException("Missing values for parameter '${paramName}' in command '${command.join(' ')}'")
             }
-            values.each {command += [ paramName, "${it.v1}=${it.v2}".toString() ] }
+            values.each { command += [paramName, "${it.v1}=${it.v2 ? it.v2 : ''}".toString()] }
             return this
         }
 
         Kubectl optional(String paramName, String value) {
             if (value) {
-                this.command += [paramName, value ]
+                this.command += [paramName, value]
             }
             return this
         }
-        
+
         Kubectl dryRunOutputYaml() {
-            this.command += [ '--dry-run=client', '-oyaml' ]
+            this.command += ['--dry-run=client', '-oyaml']
             return this
         }
-        
+
         String[] build() {
             this.command
         }
     }
+
 }

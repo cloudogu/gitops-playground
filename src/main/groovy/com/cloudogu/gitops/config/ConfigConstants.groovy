@@ -117,13 +117,13 @@ interface ConfigConstants {
     String PIPE_YES_DESCRIPTION = 'Skip confirmation'
     String NAME_PREFIX_DESCRIPTION = 'Set name-prefix for repos, jobs, namespaces'
     String DESTROY_DESCRIPTION = 'Unroll playground'
-    String CONFIG_FILE_DESCRIPTION = 'Configuration using a config file'
+    String CONFIG_FILE_DESCRIPTION = 'Config file for the application'
     String CONFIG_MAP_DESCRIPTION = 'Kubernetes configuration map. Should contain a key `config.yaml`.'
     String OUTPUT_CONFIG_FILE_DESCRIPTION = 'Output current config as config file as much as possible'
     String POD_RESOURCES_DESCRIPTION = 'Write kubernetes resource requests and limits on each pod'
 
     // group ArgoCD Operator
-    String ARGOCD_DESCRIPTION = 'Configuration Parameter for the ArgoCD Operator'
+    String ARGOCD_DESCRIPTION = 'Config Parameter for the ArgoCD Operator'
     String ARGOCD_ENABLE_DESCRIPTION = 'Install ArgoCD'
     String ARGOCD_URL_DESCRIPTION = 'The URL where argocd is accessible. It has to be the full URL with http:// or https://'
     String ARGOCD_EMAIL_FROM_DESCRIPTION = 'Notifications, define Argo CD sender email address'

@@ -1,8 +1,8 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
-import com.cloudogu.gitops.config.ApplicationConfigurator
-import com.cloudogu.gitops.config.Configuration
+
+import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.jenkins.GlobalPropertyManager
 import com.cloudogu.gitops.jenkins.JobManager
 import com.cloudogu.gitops.jenkins.PrometheusConfigurator
@@ -18,7 +18,7 @@ import jakarta.inject.Singleton
 @Order(70)
 class Jenkins extends Feature {
 
-    private Map config
+    private Config config
     private CommandExecutor commandExecutor
     private FileSystemUtils fileSystemUtils
     private GlobalPropertyManager globalPropertyManager
@@ -27,7 +27,7 @@ class Jenkins extends Feature {
     private PrometheusConfigurator prometheusConfigurator
 
     Jenkins(
-            Configuration config,
+            Config config,
             CommandExecutor commandExecutor,
             FileSystemUtils fileSystemUtils,
             GlobalPropertyManager globalPropertyManager,
@@ -35,7 +35,7 @@ class Jenkins extends Feature {
             UserManager userManager,
             PrometheusConfigurator prometheusConfigurator
     ) {
-        this.config = config.getConfig()
+        this.config = config
         this.commandExecutor = commandExecutor
         this.fileSystemUtils = fileSystemUtils
         this.globalPropertyManager = globalPropertyManager
@@ -52,87 +52,95 @@ class Jenkins extends Feature {
     @Override
     void enable() {
         commandExecutor.execute("${fileSystemUtils.rootDir}/scripts/jenkins/init-jenkins.sh", [
-                TRACE                     : config.application['trace'],
-                INTERNAL_JENKINS          : config.jenkins['internal'],
-                JENKINS_HELM_CHART_VERSION: config.jenkins['helm']['version'],
-                JENKINS_URL               : config.jenkins['url'],
-                JENKINS_USERNAME          : config.jenkins['username'],
-                JENKINS_PASSWORD          : config.jenkins['password'],
-                REMOTE_CLUSTER            : config.application['remote'],
-                BASE_URL                  : config.application['baseUrl'] ? config.application['baseUrl'] : '',
-                SCMM_URL                  : config.scmm['urlForJenkins'],
-                SCMM_PASSWORD             : config.scmm['password'],
-                INSTALL_ARGOCD            : config.features['argocd']['active'],
-                NAME_PREFIX               : config.application['namePrefix'],
-                INSECURE                  : config.application['insecure'],
-                URL_SEPARATOR_HYPHEN      : config.application['urlSeparatorHyphen']
+                TRACE                     : config.application.trace,
+                INTERNAL_JENKINS          : config.jenkins.internal,
+                JENKINS_HELM_CHART_VERSION: config.jenkins.helm.version,
+                JENKINS_URL               : config.jenkins.url,
+                JENKINS_USERNAME          : config.jenkins.username,
+                JENKINS_PASSWORD          : config.jenkins.password,
+                REMOTE_CLUSTER            : config.application.remote,
+                BASE_URL                  : config.application.baseUrl ? config.application.baseUrl : '',
+                SCMM_URL                  : config.scmm.urlForJenkins,
+                SCMM_PASSWORD             : config.scmm.password,
+                INSTALL_ARGOCD            : config.features.argocd.active,
+                NAME_PREFIX               : config.application.namePrefix,
+                INSECURE                  : config.application.insecure,
+                URL_SEPARATOR_HYPHEN      : config.application.urlSeparatorHyphen
         ])
 
-        globalPropertyManager.setGlobalProperty('SCMM_URL', config.scmm['url'] as String)
+        if (config.registry.url) {
+            globalPropertyManager.setGlobalProperty('SCMM_URL', config.scmm.url)
 
-        if (config.jenkins['jenkinsAdditionalEnvs']) {
-            for (entry in (config.jenkins['jenkinsAdditionalEnvs'] as Map).entrySet()) {
-                globalPropertyManager.setGlobalProperty(entry.key.toString(), entry.value.toString())
+            if (config.jenkins.additionalEnvs) {
+                for (entry in (config.jenkins.additionalEnvs as Map).entrySet()) {
+                    globalPropertyManager.setGlobalProperty(entry.key.toString(), entry.value.toString())
+                }
             }
-        }
 
-        globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_URL", config.registry['url'] as String)
-        globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_PATH", config.registry['path'] as String)
+            if (config.registry.url) {
+                globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}REGISTRY_URL", config.registry.url)
+            }
 
-        if (config.registry['twoRegistries']) {
-            globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}REGISTRY_PROXY_URL", config.registry['proxyUrl'] as String)
-        }
+            if (config.registry.path) {
+                globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}REGISTRY_PATH", config.registry.path)
+            }
 
-        if (config.jenkins['mavenCentralMirror']) {
-            globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}MAVEN_CENTRAL_MIRROR", config.jenkins['mavenCentralMirror'] as String)
-        }
+            if (config.registry.twoRegistries) {
+                globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}REGISTRY_PROXY_URL", config.registry.proxyUrl)
+            }
 
-        globalPropertyManager.setGlobalProperty("${config.application['namePrefixForEnvVars']}K8S_VERSION", ApplicationConfigurator.K8S_VERSION)
+            if (config.jenkins.mavenCentralMirror) {
+                globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}MAVEN_CENTRAL_MIRROR", config.jenkins.mavenCentralMirror)
+            }
 
-        if (userManager.isUsingCasSecurityRealm()) {
-            log.trace("Using CAS Security Realm. Must not create user.")
-        } else {
-            userManager.createUser(config.jenkins['metricsUsername'] as String, config.jenkins['metricsPassword'] as String)
-        }
-        userManager.grantPermission(config.jenkins['metricsUsername'] as String, UserManager.Permissions.METRICS_VIEW)
+            globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}K8S_VERSION", Config.K8S_VERSION)
 
-        prometheusConfigurator.enableAuthentication()
+            if (userManager.isUsingCasSecurityRealm()) {
+                log.trace("Using CAS Security Realm. Must not create user.")
+            } else {
+                userManager.createUser(config.jenkins.metricsUsername, config.jenkins.metricsPassword)
+            }
 
-        if (config.features['argocd']['active']) {
+            userManager.grantPermission(config.jenkins.metricsUsername, UserManager.Permissions.METRICS_VIEW)
 
-            String jobName = "${config.application['namePrefix']}example-apps"
-            def credentialId = "scmm-user"
-            
-            jobManger.createJob(jobName, 
-                    config.scmm['urlForJenkins'] as String,
-                    "${config.application['namePrefix']}argocd",
-                    credentialId)
+            prometheusConfigurator.enableAuthentication()
 
-            jobManger.createCredential(
-                    jobName,
-                    credentialId,
-                    "${config.application['namePrefix']}gitops",
-                    "${config.scmm['password']}",
-                    'credentials for accessing scm-manager')
+            if (config.features.argocd.active) {
 
-            jobManger.createCredential(
-                    jobName,
-                    "registry-user",
-                    "${config.registry['username']}",
-                    "${config.registry['password']}",
-                    'credentials for accessing the docker-registry for writing images built on jenkins')
+                String jobName = "${config.application.namePrefix}example-apps"
+                def credentialId = "scmm-user"
 
-            if (config.registry['twoRegistries']) {
+                jobManger.createJob(jobName,
+                        config.scmm.urlForJenkins,
+                        "${config.application.namePrefix}argocd",
+                        credentialId)
+
                 jobManger.createCredential(
-                        "${config.application['namePrefix']}example-apps",
-                        "registry-proxy-user",
-                        "${config.registry['proxyUsername']}",
-                        "${config.registry['proxyPassword']}",
-                        'credentials for accessing the docker-registry that contains 3rd party or base images')
+                        jobName,
+                        credentialId,
+                        "${config.application.namePrefix}gitops",
+                        "${config.scmm.password}",
+                        'credentials for accessing scm-manager')
 
+                jobManger.createCredential(
+                        jobName,
+                        "registry-user",
+                        "${config.registry.username}",
+                        "${config.registry.password}",
+                        'credentials for accessing the docker-registry for writing images built on jenkins')
+
+                if (config.registry.twoRegistries) {
+                    jobManger.createCredential(
+                            "${config.application.namePrefix}example-apps",
+                            "registry-proxy-user",
+                            "${config.registry.proxyUsername}",
+                            "${config.registry.proxyPassword}",
+                            'credentials for accessing the docker-registry that contains 3rd party or base images')
+
+                }
+                // Once everything is set up, start the jobs.
+                jobManger.startJob(jobName)
             }
-            // Once everything is set up, start the jobs.
-            jobManger.startJob(jobName)
         }
     }
 }

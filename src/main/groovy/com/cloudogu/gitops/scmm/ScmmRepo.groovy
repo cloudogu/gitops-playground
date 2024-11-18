@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.scmm
 
+import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.scmm.jgit.InsecureCredentialProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
@@ -30,21 +31,19 @@ class ScmmRepo {
     private String gitName
     private String gitEmail
 
-
-    ScmmRepo(Map config, String scmmRepoTarget, FileSystemUtils fileSystemUtils) {
+    ScmmRepo(Config config, String scmmRepoTarget, FileSystemUtils fileSystemUtils) {
         def tmpDir = File.createTempDir()
         tmpDir.deleteOnExit()
-
-        this.username =  config.scmm["internal"] ? config.application["username"] : config.scmm["username"]
-        this.password = config.scmm["internal"] ? config.application["password"] : config.scmm["password"]
-        this.scmmUrl = "${config.scmm["protocol"]}://${config.scmm["host"]}"
+        this.username =  config.scmm.internal ? config.application.username : config.scmm.username
+        this.password = config.scmm.internal ? config.application.password : config.scmm.password
+        this.scmmUrl = "${config.scmm.protocol}://${config.scmm.host}"
         this.scmmRepoTarget =  scmmRepoTarget.startsWith(NAMESPACE_3RD_PARTY_DEPENDENCIES) ? scmmRepoTarget : 
-                "${config.application['namePrefix']}${scmmRepoTarget}"
+                "${config.application.namePrefix}${scmmRepoTarget}"
         this.absoluteLocalRepoTmpDir = tmpDir.absolutePath
         this.fileSystemUtils = fileSystemUtils
-        this.insecure = config.application['insecure']
-        this.gitName = config.application['gitName']
-        this.gitEmail = config.application['gitEmail']
+        this.insecure = config.application.insecure
+        this.gitName = config.application.gitName
+        this.gitEmail = config.application.gitEmail
     }
 
     String getAbsoluteLocalRepoTmpDir() {
@@ -55,8 +54,8 @@ class ScmmRepo {
         return scmmRepoTarget
     }
 
-    static String createScmmUrl(Map config) {
-        return "${config.scmm["protocol"]}://${config.scmm["host"]}"
+    static String createScmmUrl(Config config) {
+        return "${config.scmm.protocol}://${config.scmm.host}"
     }
 
     void cloneRepo() {

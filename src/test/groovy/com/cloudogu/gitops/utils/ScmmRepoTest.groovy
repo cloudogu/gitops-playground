@@ -1,30 +1,28 @@
 package com.cloudogu.gitops.utils
 
-import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.config.Config
+
 import com.cloudogu.gitops.scmm.ScmmRepo
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Ref
 import org.junit.jupiter.api.Test
 
 import static groovy.test.GroovyAssert.shouldFail
-import static org.assertj.core.api.Assertions.assertThat 
+import static org.assertj.core.api.Assertions.assertThat
 
 class ScmmRepoTest {
 
-    Map config = [
-            scmm: [
-                internal: false,
+    Config config = new Config(
+            application: new Config.ApplicationSchema(
+                    gitName: "Cloudogu",
+                    gitEmail: "hello@cloudogu.com",)
+            ,
+            scmm: new Config.ScmmSchema(
                     username: "dont-care-username",
                     password: "dont-care-password",
                     protocol: "https",
-                    host: "localhost",
-            ],
-            application: [
-                    namePrefix : '',
-                    gitName: "Cloudogu",
-                    gitEmail: "hello@cloudogu.com",
-            ],
-    ]
+                    host: "localhost"
+            ))
 
     @Test
     void "writes file"() {
@@ -86,21 +84,21 @@ class ScmmRepoTest {
     }
 
     @Test
-    void 'Creates repo with empty name-prefix'(){
+    void 'Creates repo with empty name-prefix'() {
         def repo = createRepo('expectedRepoTarget')
         assertThat(repo.scmmRepoTarget).isEqualTo('expectedRepoTarget')
     }
 
     @Test
-    void 'Creates repo with name-prefix'(){
-        config.application['namePrefix'] = 'abc-'
+    void 'Creates repo with name-prefix'() {
+        config.application.namePrefix = 'abc-'
         def repo = createRepo('expectedRepoTarget')
         assertThat(repo.scmmRepoTarget).isEqualTo('abc-expectedRepoTarget')
     }
-    
+
     @Test
-    void 'Creates repo without name-prefix when in namespace 3rd-party-deps'(){
-        config.application['namePrefix'] = 'abc-'
+    void 'Creates repo without name-prefix when in namespace 3rd-party-deps'() {
+        config.application.namePrefix = 'abc-'
         def repo = createRepo("${ScmmRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/foo")
         assertThat(repo.scmmRepoTarget).isEqualTo("${ScmmRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/foo".toString())
     }
@@ -135,7 +133,7 @@ class ScmmRepoTest {
         List<Ref> tags = Git.open(new File(repo.absoluteLocalRepoTmpDir)).tagList().call()
         assertThat(tags.size()).isEqualTo(0)
     }
-    
+
     @Test
     void 'pushes changes to remote directory with tag'() {
         def repo = createRepo()
@@ -146,7 +144,7 @@ class ScmmRepoTest {
         readme.text = 'This text should be in the readme afterwards'
         // Create existing tag to test for idempotence
         Git.open(new File(repo.absoluteLocalRepoTmpDir)).tag().setName(expectedTag).call()
-        
+
         repo.commitAndPush("The commit message", expectedTag)
 
 
@@ -161,6 +159,6 @@ class ScmmRepoTest {
     }
 
     private ScmmRepo createRepo(String repoTarget = "dont-care-repo-target") {
-        return new TestScmmRepoProvider(new Configuration(config), new FileSystemUtils()).getRepo(repoTarget)
+        return new TestScmmRepoProvider(config, new FileSystemUtils()).getRepo(repoTarget)
     }
 }

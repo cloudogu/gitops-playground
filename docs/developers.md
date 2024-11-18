@@ -135,7 +135,7 @@ Jenkins.instance.pluginManager.activePlugins.sort().each {
     `JENKINS_PLUGIN_FOLDER=$(pwd) java -classpath .. # See above`.  
     A working combination of plugins be extracted from the image:
       ```bash
-      id=$(docker create ghcr.io/cloudogu/gitops-playground)
+      id=$(docker create --pull=always ghcr.io/cloudogu/gitops-playground)
       docker cp $id:/gitops/jenkins-plugins .
       docker rm -v $id
       ```

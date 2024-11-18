@@ -1,6 +1,6 @@
 package com.cloudogu.gitops.utils
 
-import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import org.apache.commons.io.FileUtils
@@ -9,13 +9,13 @@ import org.eclipse.jgit.api.Git
 class TestScmmRepoProvider extends ScmmRepoProvider {
     Map<String, ScmmRepo> repos = [:]
     
-    TestScmmRepoProvider(Configuration configuration, FileSystemUtils fileSystemUtils) {
-        super(configuration, fileSystemUtils)
+    TestScmmRepoProvider(Config config, FileSystemUtils fileSystemUtils) {
+        super(config, fileSystemUtils)
     }
 
     @Override
     ScmmRepo getRepo(String repoTarget) {
-        ScmmRepo repo = new ScmmRepo(configuration.config, repoTarget, fileSystemUtils) {
+        ScmmRepo repo = new ScmmRepo(config, repoTarget, fileSystemUtils) {
             @Override
             protected String getGitRepositoryUrl() {
                 def tempDir = File.createTempDir('gitops-playground-repocopy')

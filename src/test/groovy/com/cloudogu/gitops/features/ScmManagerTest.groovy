@@ -1,33 +1,29 @@
 package com.cloudogu.gitops.features
 
-
-import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.HelmClient
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
-
 import java.nio.file.Path
 
 import static org.assertj.core.api.Assertions.assertThat
 
 class ScmManagerTest {
 
-    Map config = [
-            application: [
+    Config config = new Config(
+            application: new Config.ApplicationSchema(
                     username  : 'abc',
                     password  : '123',
-                    remote    : false,
-                    namePrefix: "foo-",
+                    namePrefix: 'foo-',
                     trace     : true,
-                    //baseUrl : 'http://localhost',
                     insecure : false,
                     gitName : 'Cloudogu',
                     gitEmail : 'hello@cloudogu.com',
-            ],
-            scmm       : [
+            ),
+            scmm: new Config.ScmmSchema(
                     url: 'http://scmm',
                     internal: true,
                     protocol: 'https',
@@ -37,36 +33,30 @@ class ScmManagerTest {
                     password: 'scmm-pw',
                     gitOpsUsername: 'foo-gitops',
                     urlForJenkins : 'http://scmm4jenkins',
-                    helm  : [
+                    helm  : new Config.HelmConfig(
                             chart  : 'scm-manager-chart',
                             version: '2.47.0',
                             repoURL: 'https://packages.scm-manager.org/repository/helm-v2-releases/',
-                    ]
-            ],
-            jenkins    : [
+                    )
+            ),
+            jenkins: new Config.JenkinsSchema(
                     internal       : true,
                     url            : 'http://jenkins',
-                    urlForScmm     : 'http://jenkins4scm',
-            ],
-            features   : [
-                    argocd: [
-                            active: true,
-                    ]
-            ],
-            repositories : [
-                    springBootHelmChart: [
+                    urlForScmm     : 'http://jenkins4scm'
+            ),
+            repositories: new Config.RepositoriesSchema(
+                    springBootHelmChart: new Config.RepositorySchemaWithRef(
                             url: 'springBootHelmChartUrl',
                             ref: '1.2.3'
-                    ],
-                    gitopsBuildLib: [
-                            url: 'gitopsBuildLibUrl'
-                    ],
-                    cesBuildLib: [
+                    ),
+                    gitopsBuildLib: new Config.RepositorySchema(
+                             url: 'gitopsBuildLibUrl'
+                    ),
+                    cesBuildLib: new Config.RepositorySchema(
                             url: 'cesBuildLibUrl'
-                    ]
-            ],
-    ]
-
+                    )
+            )
+    )
     CommandExecutorForTest commandExecutor = new CommandExecutorForTest()
 
     File temporaryYamlFile
@@ -75,6 +65,9 @@ class ScmManagerTest {
 
     @Test
     void 'Installs SCMM and calls script with proper params'() {
+        config.scmm.username = 'scmm-usr'
+        config.features.ingressNginx.active = true
+        config.features.argocd.active = true
         createScmManager().install()
 
         assertThat(parseActualYaml()['extraEnv'] as String).contains('SCM_WEBAPP_INITIALUSER\n  value: "scmm-usr"')
@@ -90,7 +83,7 @@ class ScmManagerTest {
         assertThat(helmCommands.actualCommands[1].trim()).contains('--namespace foo-default')
 
         def env = getEnvAsMap()
-        assertThat(commandExecutor.actualCommands[0]).isEqualTo(
+        assertThat(commandExecutor.actualCommands[0] as String).isEqualTo(
                 "${System.getProperty('user.dir')}/scripts/scm-manager/init-scmm.sh" as String)
 
         assertThat(env['GIT_COMMITTER_NAME']).isEqualTo('Cloudogu')
@@ -117,8 +110,8 @@ class ScmManagerTest {
 
     @Test
     void 'Sets service and host only if enabled'() {
-        config.application['remote'] = true
-        config.scmm['ingress'] = ''
+        config.application.remote = true
+        config.scmm.ingress = ''
         createScmManager().install()
 
         Map actualYaml = parseActualYaml() as Map
@@ -129,7 +122,7 @@ class ScmManagerTest {
 
     @Test
     void 'Installs only if internal'() {
-        config.scmm['internal'] = false
+        config.scmm.internal = false
         createScmManager().install()
 
         assertThat(temporaryYamlFile).isNull()
@@ -145,13 +138,13 @@ class ScmManagerTest {
     }
 
     private ScmManager createScmManager() {
-        new ScmManager(new Configuration(config), commandExecutor,  new FileSystemUtils() {
+        new ScmManager(config, commandExecutor,  new FileSystemUtils() {
             @Override
             Path copyToTempDir(String filePath) {
                 Path ret = super.copyToTempDir(filePath)
                 temporaryYamlFile = Path.of(ret.toString().replace(".ftl", "")).toFile() // Path after template invocation
                 return ret
             }
-        },  new HelmStrategy(new Configuration(config), helmClient))
+        },  new HelmStrategy(config, helmClient))
     }
 }

@@ -1,16 +1,15 @@
 package com.cloudogu.gitops.config.schema
 
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
+
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 
 import java.util.stream.Stream
 
-import static groovy.test.GroovyAssert.shouldFail
+import static groovy.test.GroovyAssert.shouldFail 
 
-class JsonSchemaValidatorTest {
+class JsonConfigValidatorTest {
     static Stream<Arguments> validSchemas() {
         Stream.Builder<Arguments> ret = Stream.builder()
 
@@ -46,9 +45,8 @@ class JsonSchemaValidatorTest {
     @ParameterizedTest(name = "{0}")
     @MethodSource("validSchemas")
     void 'test valid schemas'(String description, Map schema) {
-        def validator = new JsonSchemaValidator(new JsonSchemaGenerator())
 
-        validator.validate(new ObjectMapper().convertValue(schema, JsonNode))
+        JsonSchemaValidator.validate(schema)
     }
 
     static Stream<Arguments> invalidSchemas() {
@@ -84,14 +82,11 @@ class JsonSchemaValidatorTest {
         return ret.build()
     }
 
-
     @ParameterizedTest(name = "{0}")
     @MethodSource("invalidSchemas")
     void 'test invalid schemas'(String description, Map schema) {
-        def validator = new JsonSchemaValidator(new JsonSchemaGenerator())
-
         shouldFail(RuntimeException) {
-            validator.validate(new ObjectMapper().convertValue(schema, JsonNode))
+            JsonSchemaValidator.validate(schema)
         }
     }
 }

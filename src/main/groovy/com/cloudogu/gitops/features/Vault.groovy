@@ -2,7 +2,8 @@ package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.FeatureWithImage
-import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.config.Config
+
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.*
 import freemarker.template.DefaultObjectWrapperBuilder
@@ -21,7 +22,7 @@ class Vault extends Feature implements FeatureWithImage {
     static final String HELM_VALUES_PATH = 'applications/cluster-resources/secrets/vault/values.ftl.yaml'
     
     String namespace = 'secrets'
-    Map config
+    Config config
     K8sClient k8sClient
     
     private FileSystemUtils fileSystemUtils
@@ -30,14 +31,14 @@ class Vault extends Feature implements FeatureWithImage {
     private AirGappedUtils airGappedUtils
 
     Vault(
-            Configuration config,
+            Config config,
             FileSystemUtils fileSystemUtils,
             K8sClient k8sClient,
             DeploymentStrategy deployer,
             AirGappedUtils airGappedUtils
     ) {
         this.deployer = deployer
-        this.config = config.getConfig()
+        this.config = config
         this.fileSystemUtils = fileSystemUtils
         this.k8sClient = k8sClient
         this.airGappedUtils = airGappedUtils
@@ -47,40 +48,40 @@ class Vault extends Feature implements FeatureWithImage {
 
     @Override
     boolean isEnabled() {
-        return config.features['secrets']['active']
+        return config.features.secrets.active
     }
 
     @Override
     void enable() {
         // Note that some specific configuration steps are implemented in ArgoCD
-        def helmConfig = config['features']['secrets']['vault']['helm']
+        def helmConfig = config.features.secrets.vault.helm
 
         def yaml =  new YamlSlurper().parseText(
                 new TemplatingEngine().template(new File(HELM_VALUES_PATH), [
-                host: config.features['secrets']['vault']['url'] ? new URL(config.features['secrets']['vault']['url'] as String).host : "",
+                host: config.features.secrets.vault.url ? new URL(config.features.secrets.vault.url as String).host : '',
                 config: config,
                 // Allow for using static classes inside the templates
                 statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
             ])) as Map
 
-        String vaultMode = config['features']['secrets']['vault']['mode']
+        String vaultMode = config.features.secrets.vault.mode
         if (vaultMode == 'dev') {
-            log.debug("WARNING! Vault dev mode is enabled! In this mode, Vault runs entirely in-memory\n" +
-                    "and starts unsealed with a single unseal key. ")
+            log.debug('WARNING! Vault dev mode is enabled! In this mode, Vault runs entirely in-memory\n' +
+                    'and starts unsealed with a single unseal key. ')
             
             // Create config map from init script
             // Init script creates/authorizes secrets, users, service accounts, etc.
             def vaultPostStartConfigMap = 'vault-dev-post-start'
             def vaultPostStartVolume = 'dev-post-start'
 
-            def namePrefix = config.application['namePrefix']
+            def namePrefix = config.application.namePrefix
 
             def templatedFile = fileSystemUtils.copyToTempDir(fileSystemUtils.getRootDir() + VAULT_START_SCRIPT_PATH)
             def postStartScript = new TemplatingEngine().replaceTemplate(templatedFile.toFile(), [namePrefix: namePrefix])
             
-            log.debug("Creating namespace for vault, so it can add its secrets there")
-            k8sClient.createNamespace("secrets")
-            k8sClient.createConfigMapFromFile(vaultPostStartConfigMap, "secrets", postStartScript.absolutePath)
+            log.debug('Creating namespace for vault, so it can add its secrets there')
+            k8sClient.createNamespace('secrets')
+            k8sClient.createConfigMapFromFile(vaultPostStartConfigMap, 'secrets', postStartScript.absolutePath)
 
             MapUtils.deepMerge(
                     [
@@ -113,9 +114,9 @@ class Vault extends Feature implements FeatureWithImage {
                                     postStart: [
                                             '/bin/sh',
                                             '-c',
-                                                "USERNAME=${config['application']['username']} " +
-                                                "PASSWORD=${config['application']['password']} " +
-                                                "ARGOCD=${config.features['argocd']['active']} " +
+                                                "USERNAME=${config.application.username} "  +
+                                                "PASSWORD=${config.application.password} " +
+                                                "ARGOCD=${config.features.argocd.active} " +
                                                     // Write script output to file for easier debugging
                                                     "/var/opt/scripts/${postStartScript.name} 2>&1 | tee /tmp/dev-post-start.log"
                                     ],
@@ -126,18 +127,18 @@ class Vault extends Feature implements FeatureWithImage {
         log.trace("Helm yaml to be applied: ${yaml}")
         fileSystemUtils.writeYaml(yaml, tmpHelmValues.toFile())
 
-        if (config.application['mirrorRepos']) {
-            log.debug("Mirroring repos: Deploying vault from local git repo")
+        if (config.application.mirrorRepos) {
+            log.debug('Mirroring repos: Deploying vault from local git repo')
 
-            def repoNamespaceAndName = airGappedUtils.mirrorHelmRepoToGit(config['features']['secrets']['vault']['helm'] as Map)
+            def repoNamespaceAndName = airGappedUtils.mirrorHelmRepoToGit(config.features.secrets.vault.helm as Config.HelmConfig)
 
             String vaultVersion =
-                    new YamlSlurper().parse(Path.of("${config.application['localHelmChartFolder']}/${helmConfig['chart']}",
+                    new YamlSlurper().parse(Path.of(config.application.localHelmChartFolder+'/'+ helmConfig.chart,
                             'Chart.yaml'))['version']
 
             deployer.deployFeature(
                     "${scmmUri}/repo/${repoNamespaceAndName}",
-                    "vault",
+                    'vault',
                     '.',
                     vaultVersion,
                     namespace,
@@ -146,10 +147,10 @@ class Vault extends Feature implements FeatureWithImage {
             )
         } else {
             deployer.deployFeature(
-                    helmConfig['repoURL'] as String,
+                    helmConfig.repoURL,
                     'vault',
-                    helmConfig['chart'] as String,
-                    helmConfig['version'] as String,
+                    helmConfig.chart,
+                    helmConfig.version,
                     namespace,
                     'vault',
                     tmpHelmValues
@@ -157,10 +158,10 @@ class Vault extends Feature implements FeatureWithImage {
         }
     }
     private URI getScmmUri() {
-        if (config.scmm['internal']) {
+        if (config.scmm.internal) {
             new URI('http://scmm-scm-manager.default.svc.cluster.local/scm')
         } else {
-            new URI("${config.scmm['url']}/scm")
+            new URI("${config.scmm.url}/scm")
         }
     }
 }

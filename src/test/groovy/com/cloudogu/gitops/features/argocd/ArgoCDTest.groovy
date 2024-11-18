@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.features.argocd
 
-import com.cloudogu.gitops.config.Configuration
+import com.cloudogu.gitops.config.Config
+
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.utils.*
 import groovy.io.FileType
@@ -10,7 +11,6 @@ import org.eclipse.jgit.api.CheckoutCommand
 import org.eclipse.jgit.api.CloneCommand
 import org.junit.jupiter.api.Test
 import org.springframework.security.crypto.bcrypt.BCrypt
-
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.stream.Collectors
@@ -32,7 +32,7 @@ class ArgoCDTest {
             helmKubeval: 'helmKubeval-value',
             yamllint   : 'yamllint-value'
     ]
-    Map config = [
+    Config config = Config.fromMap(
             application : [
                     openshift           : false,
                     remote              : false,
@@ -41,29 +41,16 @@ class ArgoCDTest {
                     username            : 'something',
                     namePrefix          : '',
                     namePrefixForEnvVars: '',
-                    podResources        : false,
                     gitName             : 'Cloudogu',
                     gitEmail            : 'hello@cloudogu.com',
-                    urlSeparatorHyphen  : false,
-                    mirrorRepos         : false,
-                    skipCrds: false,
-                    netpols: false
-            ],
-            jenkins     : [
-                    mavenCentralMirror: '',
+
             ],
             scmm        : [
                     internal: true,
                     protocol: 'https',
                     host    : 'abc',
-                    username: '',
-                    password: ''
             ],
             images      : buildImages + [petclinic: 'petclinic-value'],
-            registry    : [
-                    twoRegistries: false,
-                    createImagePullSecrets: false
-            ],
             repositories: [
                     springBootHelmChart: [
                             url: 'https://github.com/cloudogu/spring-boot-helm-chart.git',
@@ -84,7 +71,6 @@ class ArgoCDTest {
                     argocd      : [
                             operator    : false,
                             active      : true,
-                            configOnly  : true,
                             emailFrom   : 'argocd@example.org',
                             emailToUser : 'app-team@example.org',
                             emailToAdmin: 'infra@example.org',
@@ -92,10 +78,6 @@ class ArgoCDTest {
                     ],
                     mail        : [
                             mailhog     : true,
-                            smtpAddress : '',
-                            smtpPort    : '',
-                            smtpUser    : '',
-                            smtpPassword: ''
                     ],
                     monitoring  : [
                             active: true,
@@ -109,20 +91,10 @@ class ArgoCDTest {
                     ],
                     secrets     : [
                             active: true,
-                            vault : [
-                                    url: ''
-                            ]
-                    ],
-                    exampleApps : [
-                            petclinic: [
-                                    baseDomain: ''
-                            ],
-                            nginx    : [
-                                    baseDomain: ''
-                            ]
+
                     ]
             ]
-    ]
+    )
 
     CommandExecutorForTest k8sCommands = new CommandExecutorForTest()
     CommandExecutorForTest helmCommands = new CommandExecutorForTest()
@@ -168,7 +140,7 @@ class ArgoCDTest {
         // Check patched PW
         def patchCommand = k8sCommands.assertExecuted('kubectl patch secret argocd-secret -n argocd')
         String patchFile = (patchCommand =~ /--patch-file=([\S]+)/)?.findResult { (it as List)[1] }
-        assertThat(BCrypt.checkpw(config['application']['password'] as String,
+        assertThat(BCrypt.checkpw(config.application.password as String,
                 parseActualYaml(patchFile)['stringData']['admin.password'] as String))
                 .as("Password hash missmatch").isTrue()
 
@@ -208,9 +180,9 @@ class ArgoCDTest {
 
     @Test
     void 'Installs argoCD for remote and external Scmm'() {
-        config.application['remote'] = true
-        config.scmm['internal'] = false
-        config.features['argocd']['url'] = 'https://argo.cd'
+        config.application.remote = true
+        config.scmm.internal = false
+        config.features.argocd.url = 'https://argo.cd'
 
         createArgoCD().install()
         List filesWithInternalSCMM = findFilesContaining(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), ArgoCD.SCMM_URL_INTERNAL)
@@ -227,7 +199,7 @@ class ArgoCDTest {
 
     @Test
     void 'disables tls verification when using --insecure'() {
-        config.application['insecure'] = true
+        config.application.insecure = true
 
         createArgoCD().install()
 
@@ -242,7 +214,7 @@ class ArgoCDTest {
 
     @Test
     void 'When monitoring disabled: Does not push path monitoring to cluster resources'() {
-        config.features['monitoring']['active'] = false
+        config.features.monitoring.active = false
 
         createArgoCD().install()
 
@@ -251,7 +223,7 @@ class ArgoCDTest {
 
     @Test
     void 'When monitoring enabled: Does push path monitoring to cluster resources'() {
-        config.features['monitoring']['active'] = true
+        config.features.monitoring.active = true
 
         createArgoCD().install()
 
@@ -280,8 +252,8 @@ class ArgoCDTest {
 
     @Test
     void 'When ingressNginx disabled: Does not push monitoring dashboard resources'() {
-        config.features['monitoring']['active'] = true
-        config.features['ingressNginx']['active'] = false
+        config.features.monitoring.active = true
+        config.features.ingressNginx.active = false
         createArgoCD().install()
         assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + ArgoCD.MONITORING_RESOURCES_PATH)).exists()
         assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + "/misc/ingress-nginx-dashboard.yaml")).doesNotExist()
@@ -290,7 +262,9 @@ class ArgoCDTest {
 
     @Test
     void 'When mailhog disabled: Does not include mail configurations into cluster resources'() {
-        config.features['mail']['mailhog'] = null
+
+        config.features.mail.active = false
+        config.features.mail.mailhog = false
         createArgoCD().install()
         def valuesYaml = parseActualYaml(actualHelmValuesFile)
         assertThat(valuesYaml['argo-cd']['notifications']['enabled']).isEqualTo(false)
@@ -299,7 +273,7 @@ class ArgoCDTest {
 
     @Test
     void 'When mailhog enabled: Includes mail configurations into cluster resources'() {
-        config.features['mail']['active'] = true
+        config.features.mail.active = true
         createArgoCD().install()
         def valuesYaml = parseActualYaml(actualHelmValuesFile)
         assertThat(valuesYaml['argo-cd']['notifications']['enabled']).isEqualTo(true)
@@ -308,10 +282,10 @@ class ArgoCDTest {
 
     @Test
     void 'When emailaddress is set: Include given email addresses into configurations'() {
-        config.features['mail']['active'] = true
-        config.features['argocd']['emailFrom'] = 'argocd@example.com'
-        config.features['argocd']['emailToUser'] = 'app-team@example.com'
-        config.features['argocd']['emailToAdmin'] = 'argocd@example.com'
+        config.features.mail.active = true
+        config.features.argocd.emailFrom = 'argocd@example.com'
+        config.features.argocd.emailToUser = 'app-team@example.com'
+        config.features.argocd.emailToAdmin = 'argocd@example.com'
         createArgoCD().install()
         def valuesYaml = parseActualYaml(actualHelmValuesFile)
         def clusterRessourcesYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/cluster-resources.yaml')
@@ -328,7 +302,7 @@ class ArgoCDTest {
 
     @Test
     void 'When emailaddress is NOT set: Use default email addresses in configurations'() {
-        config.features['mail']['active'] = true
+        config.features.mail.active = true
 
         createArgoCD().install()
         def valuesYaml = parseActualYaml(actualHelmValuesFile)
@@ -346,56 +320,56 @@ class ArgoCDTest {
 
     @Test
     void 'When external Mailserver is set'() {
-        config.features['mail']['active'] = true
-        config.features['mail']['smtpAddress'] = 'smtp.example.com'
-        config.features['mail']['smtpPort'] = '1010110'
-        config.features['mail']['smtpUser'] = 'argo@example.com'
-        config.features['mail']['smtpPassword'] = '1101:ABCabc&/+*~'
+        config.features.mail.active = true
+        config.features.mail.smtpAddress = 'smtp.example.com'
+        config.features.mail.smtpPort = 1010110
+        config.features.mail.smtpUser = 'argo@example.com'
+        config.features.mail.smtpPassword = '1101:ABCabc&/+*~'
 
         createArgoCD().install()
         def serviceEmail = new YamlSlurper().parseText(
                 parseActualYaml(actualHelmValuesFile)['argo-cd']['notifications']['notifiers']['service.email'] as String)
 
-        assertThat(serviceEmail['host']).isEqualTo(config.features['mail']['smtpAddress'])
-        assertThat(serviceEmail['port'] as String).isEqualTo(config.features['mail']['smtpPort'])
+        assertThat(serviceEmail['host']).isEqualTo(config.features.mail.smtpAddress)
+        assertThat(serviceEmail['port'] ).isEqualTo(config.features.mail.smtpPort)
         // username and password are both linked to the k8s secret. Secrets will be created at runtime, in this test
         assertThat(serviceEmail['username']).isEqualTo('$email-username')
         assertThat(serviceEmail['password']).isEqualTo('$email-password')
 
         def createMailSecretCommand = k8sCommands.assertExecuted('kubectl create secret generic argocd-notifications-secret -n argocd')
-        assertThat(createMailSecretCommand).contains('email-username', config.features['mail']['smtpUser'] as CharSequence)
-        assertThat(createMailSecretCommand).contains('email-password', config.features['mail']['smtpPassword'] as CharSequence)
+        assertThat(createMailSecretCommand).contains('email-username', config.features.mail.smtpUser as CharSequence)
+        assertThat(createMailSecretCommand).contains('email-password', config.features.mail.smtpPassword as CharSequence)
     }
 
     @Test
     void 'When external emailservers username is set, check if kubernetes secret will be created'() {
-        config.features['mail']['active'] = true
-        config.features['mail']['smtpAddress'] = 'smtp.example.com'
-        config.features['mail']['smtpUser'] = 'argo@example.com'
+        config.features.mail.active = true
+        config.features.mail.smtpAddress = 'smtp.example.com'
+        config.features.mail.smtpUser = 'argo@example.com'
 
         createArgoCD().install()
 
         def createMailSecretCommand = k8sCommands.assertExecuted('kubectl create secret generic argocd-notifications-secret -n argocd')
-        assertThat(createMailSecretCommand).contains('email-username', config.features['mail']['smtpUser'] as CharSequence)
+        assertThat(createMailSecretCommand).contains('email-username', config.features.mail.smtpUser as CharSequence)
     }
 
     @Test
     void 'When external emailservers password is set, check if kubernetes secret will be created'() {
-        config.features['mail']['active'] = true
-        config.features['mail']['smtpAddress'] = 'smtp.example.com'
-        config.features['mail']['smtpPassword'] = '1101:ABCabc&/+*~'
+        config.features.mail.active = true
+        config.features.mail.smtpAddress = 'smtp.example.com'
+        config.features.mail.smtpPassword = '1101:ABCabc&/+*~'
 
         createArgoCD().install()
 
         def createMailSecretCommand = k8sCommands.assertExecuted('kubectl create secret generic argocd-notifications-secret -n argocd')
-        assertThat(createMailSecretCommand).contains('email-password', config.features['mail']['smtpPassword'] as CharSequence)
+        assertThat(createMailSecretCommand).contains('email-password', config.features.mail.smtpPassword as CharSequence)
     }
 
 
     @Test
     void 'When external Mailserver is set without port, user, password'() {
-        config.features['mail']['active'] = true
-        config.features['mail']['smtpAddress'] = 'smtp.example.com'
+        config.features.mail.active = true
+        config.features.mail.smtpAddress = 'smtp.example.com'
 
         createArgoCD().install()
         def serviceEmail = new YamlSlurper().parseText(
@@ -411,7 +385,7 @@ class ArgoCDTest {
 
     @Test
     void 'When external Mailserver is NOT set'() {
-        config.features['mail']['active'] = true
+        config.features.mail.active = true
         createArgoCD().install()
         def valuesYaml = parseActualYaml(actualHelmValuesFile)
 
@@ -436,7 +410,7 @@ class ArgoCDTest {
 
     @Test
     void 'When vault disabled: Does not push ExternalSecret and not mount into example app'() {
-        config.features['secrets']['active'] = false
+        config.features.secrets.active = false
         createArgoCD().install()
         def valuesYaml = new YamlSlurper().parse(Path.of nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir(), 'k8s/values-shared.yaml')
         assertThat((valuesYaml['extraVolumeMounts'] as List)).hasSize(1)
@@ -450,14 +424,14 @@ class ArgoCDTest {
 
     @Test
     void 'When vault disabled: Does not push path "secrets" to cluster resources'() {
-        config.features['secrets']['active'] = false
+        config.features.secrets.active = false
         createArgoCD().install()
         assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + "/misc/secrets")).doesNotExist()
     }
 
     @Test
     void 'Pushes example repos for local'() {
-        config.application['remote'] = false
+        config.application.remote = false
 
         def setUriMock = mock(CloneCommand.class, RETURNS_DEEP_STUBS)
         def checkoutMock = mock(CheckoutCommand.class, RETURNS_DEEP_STUBS)
@@ -493,9 +467,9 @@ class ArgoCDTest {
 
     @Test
     void 'Pushes example repos for remote'() {
-        config.application['remote'] = true
-        config.features['exampleApps']['petclinic']['baseDomain'] = 'petclinic.local'
-        config.features['exampleApps']['nginx']['baseDomain'] = 'nginx.local'
+        config.application.remote = true
+        config.features.exampleApps.petclinic.baseDomain = 'petclinic.local'
+        config.features.exampleApps.nginx.baseDomain = 'nginx.local'
 
         createArgoCD().install()
 
@@ -520,8 +494,8 @@ class ArgoCDTest {
 
     @Test
     void 'Prepares repos for air-gapped mode'() {
-        config['features']['monitoring']['active'] = false
-        config.application['mirrorRepos'] = true
+        config.features.monitoring.active = false
+        config.application.mirrorRepos = true
 
         createArgoCD().install()
 
@@ -537,11 +511,11 @@ class ArgoCDTest {
 
     @Test
     void 'Applies Prometheus ServiceMonitor CRD from file before installing (air-gapped mode)'() {
-        config['features']['monitoring']['active'] = true
-        config.application['mirrorRepos'] = true
+        config.features.monitoring.active = true
+        config.application.mirrorRepos = true
 
         Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
-        config.application['localHelmChartFolder'] = rootChartsFolder.toString()
+        config.application.localHelmChartFolder = rootChartsFolder.toString()
 
         Path crdPath = rootChartsFolder.resolve('kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml')
         Files.createDirectories(crdPath)
@@ -553,7 +527,7 @@ class ArgoCDTest {
 
     @Test
     void 'Applies Prometheus ServiceMonitor CRD from GitHub before installing'() {
-        config['features']['monitoring']['active'] = true
+        config.features.monitoring.active = true
 
         createArgoCD().install()
 
@@ -562,10 +536,10 @@ class ArgoCDTest {
 
     @Test
     void 'If urlSeparatorHyphen is set, ensure that hostnames are build correctly '() {
-        config.application['remote'] = true
-        config.features['exampleApps']['petclinic']['baseDomain'] = 'petclinic-local'
-        config.features['exampleApps']['nginx']['baseDomain'] = 'nginx-local'
-        config.application['urlSeparatorHyphen'] = true
+        config.application.remote = true
+        config.features.exampleApps.petclinic.baseDomain = 'petclinic-local'
+        config.features.exampleApps.nginx.baseDomain = 'nginx-local'
+        config.application.urlSeparatorHyphen = true
 
         createArgoCD().install()
 
@@ -583,10 +557,10 @@ class ArgoCDTest {
 
     @Test
     void 'If urlSeparatorHyphen is NOT set, ensure that hostnames are build correctly '() {
-        config.application['remote'] = true
-        config.features['exampleApps']['petclinic']['baseDomain'] = 'petclinic.local'
-        config.features['exampleApps']['nginx']['baseDomain'] = 'nginx.local'
-        config.application['urlSeparatorHyphen'] = false
+        config.application.remote = true
+        config.features.exampleApps.petclinic.baseDomain = 'petclinic.local'
+        config.features.exampleApps.nginx.baseDomain = 'nginx.local'
+        config.application.urlSeparatorHyphen = false
 
         createArgoCD().install()
 
@@ -609,7 +583,7 @@ class ArgoCDTest {
 
     @Test
     void 'For external SCMM: Use external address in gitops repos'() {
-        config.scmm['internal'] = false
+        config.scmm.internal = false
         createArgoCD().install()
         List filesWithInternalSCMM = findFilesContaining(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), ArgoCD.SCMM_URL_INTERNAL)
         assertThat(filesWithInternalSCMM).isEmpty()
@@ -632,7 +606,7 @@ class ArgoCDTest {
 
     @Test
     void 'Creates Jenkinsfiles for two registries'() {
-        config.registry['twoRegistries'] = true
+        config.registry.twoRegistries = true
         createArgoCD().install()
 
         assertJenkinsEnvironmentVariablesPrefixes('')
@@ -641,9 +615,8 @@ class ArgoCDTest {
 
     @Test
     void 'Pushes repos with name-prefix'() {
-        config.application['namePrefix'] = 'abc-'
-        config.application['namePrefixForEnvVars'] = 'ABC_'
-
+        config.application.namePrefix = 'abc-'
+        config.application.namePrefixForEnvVars = 'ABC_'
         createArgoCD().install()
 
         assertArgoCdYamlPrefixes(ArgoCD.SCMM_URL_INTERNAL, 'abc-')
@@ -652,7 +625,7 @@ class ArgoCDTest {
 
     @Test
     void 'configures custom nginx image'() {
-        config.images['nginx'] = 'localhost:5000/nginx/nginx:latest'
+        config.images.nginx = 'localhost:5000/nginx/nginx:latest'
         createArgoCD().install()
 
         def image = parseActualYaml(nginxHelmJenkinsRepo.absoluteLocalRepoTmpDir + '/k8s/values-shared.yaml')['image']
@@ -678,11 +651,11 @@ class ArgoCDTest {
     }
     @Test
     void 'Sets image pull secrets for nginx'() {
-        config['registry']['createImagePullSecrets'] = true
-        config['registry']['twoRegistries'] = true
-        config['registry']['proxyUrl'] = 'proxy-url'
-        config['registry']['proxyUsername'] = 'proxy-user'
-        config['registry']['proxyPassword'] = 'proxy-pw'
+        config.registry.createImagePullSecrets = true
+        config.registry.twoRegistries = true
+        config.registry.proxyUrl = 'proxy-url'
+        config.registry.proxyUsername = 'proxy-user'
+        config.registry.proxyPassword = 'proxy-pw'
         
         createArgoCD().install()
 
@@ -704,7 +677,7 @@ class ArgoCDTest {
     
     @Test
     void 'Skips CRDs for argo cd'() {
-        config.application['skipCrds'] = true
+        config.application.skipCrds = true
 
         createArgoCD().install()
 
@@ -713,7 +686,7 @@ class ArgoCDTest {
 
     @Test
     void 'disables serviceMonitor, when monitoring not active'() {
-        config['application']['skipCrds'] = true
+        config.application.skipCrds = true
 
         createArgoCD().createMonitoringCrd()
 
@@ -722,7 +695,7 @@ class ArgoCDTest {
 
     @Test
     void 'Write maven mirror into jenkinsfiles'() {
-        config.jenkins['mavenCentralMirror'] = 'http://test'
+        config.jenkins.mavenCentralMirror = 'http://test'
         createArgoCD().install()
 
         for (def petclinicRepo : petClinicRepos) {
@@ -734,7 +707,7 @@ class ArgoCDTest {
 
     @Test
     void 'use custom maven image'() {
-        config.images['maven'] = 'maven:latest'
+        config.images.maven = 'maven:latest'
 
         createArgoCD().install()
 
@@ -747,8 +720,8 @@ class ArgoCDTest {
 
     @Test
     void 'use maven with proxy registry and credentials'() {
-        config.images['maven'] = 'latest'
-        config.registry['twoRegistries'] = true
+        config.images.maven = 'latest'
+        config.registry.twoRegistries = true
 
         createArgoCD().install()
 
@@ -763,7 +736,7 @@ class ArgoCDTest {
 
     @Test
     void 'Sets pod resource limits and requests'() {
-        config.application['podResources'] = true
+        config.application.podResources = true
 
         createArgoCD().install()
 
@@ -783,7 +756,7 @@ class ArgoCDTest {
 
     @Test
     void 'ArgoCD with active network policies'(){
-        config.application['netpols'] = true
+        config.application.netpols = true
 
         createArgoCD().install()
 
@@ -795,7 +768,7 @@ class ArgoCDTest {
     
     @Test
     void 'set credentials for BuildImages'() {
-        config.registry['twoRegistries'] = true
+        config.registry.twoRegistries = true
 
         createArgoCD().install()
 
@@ -998,7 +971,7 @@ class ArgoCDTest {
             fail("Missing build images in Jenkinsfile ${jenkinsfile}")
         }
         
-        if (config.registry['twoRegistries']) {
+        if (config.registry.twoRegistries) {
             for (Map.Entry image : actualBuildImages as Map) {
                 assertThat(image.value['image']).isEqualTo(buildImages[image.key])
                 assertThat(image.value['credentialsId']).isEqualTo('dockerRegistryProxyCredentials')
@@ -1014,8 +987,8 @@ class ArgoCDTest {
     }
 
     void assertPetClinicRepos(String expectedServiceType, String unexpectedServiceType, String ingressUrl) {
-        boolean separatorHyphen = config.application['urlSeparatorHyphen']
-        boolean podResources = config.application['podResources']
+        boolean separatorHyphen = config.application.urlSeparatorHyphen
+        boolean podResources = config.application.podResources
 
         for (ScmmRepo repo : petClinicRepos) {
 
@@ -1160,7 +1133,7 @@ class ArgoCDTest {
 
         def argocdConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH)
         def rbacConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_RBAC_PATH)
-        
+
         assertThat(argocdConfigPath.toFile()).exists()
         assertThat(rbacConfigPath.toFile()).exists()
 
@@ -1172,7 +1145,7 @@ class ArgoCDTest {
     @Test
     void 'Deploys with operator without OpenShift configuration'() {
         def argoCD = setupOperatorTest(openshift: false)
-        
+
         argoCD.install()
 
         def argocdConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH)
@@ -1405,9 +1378,9 @@ class ArgoCDTest {
     }
 
     class ArgoCDForTest extends ArgoCD {
-        ArgoCDForTest(Map config, CommandExecutorForTest helmCommands) {
-            super(new Configuration(config), new K8sClientForTest(config), new HelmClient(helmCommands), new FileSystemUtils(),
-                    new TestScmmRepoProvider(new Configuration(config), new FileSystemUtils()))
+        ArgoCDForTest(Config config, CommandExecutorForTest helmCommands) {
+            super(config, new K8sClientForTest(config), new HelmClient(helmCommands), new FileSystemUtils(),
+                    new TestScmmRepoProvider(config, new FileSystemUtils()))
         }
 
         @Override
