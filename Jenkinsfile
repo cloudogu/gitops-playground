@@ -127,12 +127,16 @@ node('high-cpu') {
                                         script: "groovy ./scripts/e2e.groovy --url http://${k3dAddress}:9090 --user admin --password admin --writeFailedLog --fail --retry 2")
                             }
 
-                    if (ret > 0 ) {
+                    if (ret > 0) {
                         if (fileExists('playground-logs-of-failed-jobs')) {
                             archiveArtifacts artifacts: 'playground-logs-of-failed-jobs/*.log'
                         }
                         unstable "Integration tests failed, see logs appended to jobs and cluster status in logs"
-                        sh "docker exec k3d-${clusterName}-server-0 kubectl get all -A"
+                        
+                        kubectlToFile(clusterName,"allPods.txt","get all -A")
+                        
+                        printIntegrationTestLogs(clusterName,'app=scm-manager')
+                        printIntegrationTestLogs(clusterName,'app.kubernetes.io/name=jenkins')
                     }
                 }
 
@@ -243,6 +247,20 @@ def trivy(String imageName, Map additionalTrivyConfig = [:]) {
     trivyConfig.additionalFlags += ' --java-db-repository public.ecr.aws/aquasecurity/trivy-java-db'
 
     findVulnerabilitiesWithTrivy(trivyConfig)
+
+}
+
+def printIntegrationTestLogs(String clusterName, String appSelector, String namespace = 'default'){
+    def filename=appSelector.split("=")
+
+    kubectlToFile(clusterName, "${filename[1]}.log", "logs -n ${namespace} -l ${appSelector} --tail=-1")
+    kubectlToFile(clusterName, "${filename[1]}-previous.log", "logs -n ${namespace} -l ${appSelector} --tail=-1 -p")
+    kubectlToFile(clusterName, "${filename[1]}-describe.txt", "describe pods -n ${namespace} -l ${appSelector}")
+}
+
+void kubectlToFile(String clusterName, String filename, String command) {
+    sh "docker exec k3d-${clusterName}-server-0 kubectl ${command} | tee ${filename}"
+    archiveArtifacts artifacts: "${filename}", allowEmptyArchive: true
 }
 
 def startK3d(clusterName) {
