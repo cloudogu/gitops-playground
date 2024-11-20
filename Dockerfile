@@ -183,10 +183,6 @@ RUN java -agentlib:native-image-agent=config-output-dir=conf/ -jar gitops-playgr
 RUN cat <<EOF > config.yaml
 application:
   "yes": true
-scmm:
-  url: http://irrelvant
-jenkins:
-  url: http://irrelvant
 features:
   secrets:
     vault:
