@@ -170,16 +170,32 @@ RUN microdnf install iproute
 
 WORKDIR /app
 
-# Copy only binaries, not jenkins plugins. Avoids having to rebuild native image only plugin changes
+# Copy only binaries and code, not jenkins plugins. Avoids having to rebuild native image only plugin changes
 COPY --from=downloader /dist/usr/ /usr/
+COPY --from=downloader /dist/app/ /app/
 # copy only resources that we need to compile the binary
 COPY --from=maven-build /app/gitops-playground.jar /app/
 
 # Create Graal native image config
 RUN java -agentlib:native-image-agent=config-output-dir=conf/ -jar gitops-playground.jar || true
-# Run again with different params in order to avoid NoSuchMethodException with config file
-RUN printf 'application:\n  \"yes\": true\nfeatures:\n  secrets:\n    vault:\n      mode: "dev"\n  exampleApps:\n    petclinic:\n      baseDomain: ""' > config.yaml  && \
-    java -agentlib:native-image-agent=config-merge-dir=conf/ -jar gitops-playground.jar \
+# Run again with different params in order to avoid NoSuchMethodException with config file and Schema
+# This command should process the whole initialiaztion without errors and fail on installation of first feature
+RUN cat <<EOF > config.yaml
+application:
+  "yes": true
+scmm:
+  url: http://irrelvant
+jenkins:
+  url: http://irrelvant
+features:
+  secrets:
+    vault:
+      mode: "dev"
+  exampleApps:
+    petclinic:
+      baseDomain: ""
+EOF
+RUN java -agentlib:native-image-agent=config-merge-dir=conf/ -jar gitops-playground.jar \
       --trace --config-file=config.yaml || true
 # Run again with different params in order to avoid NoSuchMethodException with output-config file
 RUN java -agentlib:native-image-agent=config-merge-dir=conf/ -jar gitops-playground.jar \
