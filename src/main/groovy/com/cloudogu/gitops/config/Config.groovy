@@ -1,6 +1,5 @@
 package com.cloudogu.gitops.config
 
-import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.databind.*
@@ -531,7 +530,7 @@ class Config {
                 chart: 'kube-prometheus-stack',
                 repoURL: 'https://prometheus-community.github.io/helm-charts',
                 /* When updating this make sure to also test if air-gapped mode still works */
-                version: '58.2.1',
+                version: '66.2.1',
                 values: [:] // Otherwise values is null 🤷‍♂️
         )
         static class MonitoringHelmSchema extends HelmConfigWithValues {

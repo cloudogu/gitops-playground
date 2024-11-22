@@ -518,18 +518,22 @@ skopeo copy docker://ghcr.io/external-secrets/external-secrets:v0.9.16 --dest-cr
 skopeo copy docker://hashicorp/vault:1.14.0 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/vault
 skopeo copy docker://bitnami/nginx:1.23.3-debian-11-r8 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/nginx
 skopeo copy docker://registry.k8s.io/ingress-nginx/controller:v1.9.6 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/ingress-nginx
-skopeo copy docker://quay.io/prometheus-operator/prometheus-operator:v0.73.2 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/prometheus-operator
+
+# Monitoring
 # Using latest will lead to failure with
 # k describe prometheus -n monitoring
 #  Message:               initializing PrometheusRules failed: failed to parse version: Invalid character(s) found in major number "0latest"
-skopeo copy docker://quay.io/prometheus/prometheus:v2.51.2 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/prometheus:v2.51.2
-skopeo copy docker://quay.io/prometheus-operator/prometheus-config-reloader:v0.73.2 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/prometheus-config-reloader
-skopeo copy docker://grafana/grafana:10.4.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/grafana
-skopeo copy docker://quay.io/kiwigrid/k8s-sidecar:1.27.4 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/k8s-sidecar
+skopeo copy docker://quay.io/prometheus/prometheus:v2.55.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/prometheus:v2.55.1
+skopeo copy docker://quay.io/prometheus-operator/prometheus-operator:v0.78.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/prometheus-operator
+skopeo copy docker://quay.io/prometheus-operator/prometheus-config-reloader:v0.78.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/prometheus-config-reloader
+skopeo copy docker://docker.io/grafana/grafana:11.3.0 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/grafana
+skopeo copy docker://quay.io/kiwigrid/k8s-sidecar:1.28.0 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/k8s-sidecar
+
 # Cert Manager images
 skopeo copy docker://quay.io/jetstack/cert-manager-controller:v1.16.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/cert-manager-controller
 skopeo copy docker://quay.io/jetstack/cert-manager-cainjector:v1.16.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/cert-manager-cainjector
 skopeo copy docker://quay.io/jetstack/cert-manager-webhook:v1.16.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/cert-manager-webhook
+
 # Needed for the builds to work with proxy-registry
 skopeo copy docker://bitnami/kubectl:1.29 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/bitnami/kubectl:1.29
 skopeo copy docker://eclipse-temurin:11-jre-alpine --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/eclipse-temurin:11-jre-alpine
@@ -570,7 +574,7 @@ docker run --rm -t -u $(id -u) \
     --cert-manager-image=localhost:30000/proxy/cert-manager-controller:latest \
     --cert-manager-webhook-image=localhost:30000/proxy/cert-manager-webhook:latest \
     --cert-manager-cainjector-image=localhost:30000/proxy/cert-manager-cainjector:latest \
-    --prometheus-image=localhost:30000/proxy/prometheus:v2.51.2 \
+    --prometheus-image=localhost:30000/proxy/prometheus:v2.55.1 \
     --prometheus-operator-image=localhost:30000/proxy/prometheus-operator:latest \
     --prometheus-config-reloader-image=localhost:30000/proxy/prometheus-config-reloader:latest \
     --grafana-image=localhost:30000/proxy/grafana:latest \
