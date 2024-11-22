@@ -437,36 +437,82 @@ That is, for most helm charts, you'll need to set an individual value.
 
 ### Proper test
 
-* Start cluster:
+**Some hints before getting started**
+
+* Follow these steps in order
+* Important: Harbor has to be set up after initializing the cluster, but before installing GOP.  
+  Otherwise GOP deploys its own registry, leading to port conflicts:  
+  `Service "harbor" is invalid: spec.ports[0].nodePort: Invalid value: 30000: provided port is already allocated`
+* By default, `docker run` relies on the `gitops-playground:dev` image.  
+  See [here](#Local-development) how to build it, or change `GOP_IMAGE` bellow to e.g. `ghcr.io/cloudogu/gitops-playground`
+
+**Setup**
+
+* Start cluster and deploy harbor (same setup as [above](#external-registry-for-development), but with Port `30000`)
+
 ```shell
 scripts/init-cluster.sh
+helm repo add harbor https://helm.goharbor.io
+helm upgrade -i my-harbor harbor/harbor --version 1.14.2 --namespace harbor --create-namespace  --values - <<EOF
+expose:
+  type: nodePort
+  nodePort:
+    ports:
+      http:
+        nodePort: 30000
+  tls:
+    enabled: false
+externalURL: http://localhost:30000
+internalTLS:
+  enabled: false
+chartMuseum:
+  enabled: false
+clair:
+  enabled: false
+trivy:
+  enabled: false
+notary:
+  enabled: false
+EOF
 ```
-* Setup harbor as stated [above](#external-registry-for-development), but with Port `30000`.  
-  Wait for harbor to startup: ` kubectl get pod -n harbor`  
-  Don't care about crashing harbor `jobservice`
+
 * Create registries and base image:
 
 ```bash
+# Hit the API to see when harbor is ready
+until curl -s -o /dev/null -w "%{http_code}" http://localhost:30000/api/v2.0/projects | grep -q "200"; do
+    echo "Waiting for harbor"
+    sleep 1
+done
+
+declare -A roles
+roles['maintainer']='4'
+roles['limited-guest']='5'
+
 operations=("Proxy" "Registry")
+readOnlyUser='RegistryRead'
 
 for operation in "${operations[@]}"; do
 
     # Convert the operation to lowercase for the project name and email
     lower_operation=$(echo "$operation" | tr '[:upper:]' '[:lower:]')
     
-    echo creating project $lower_operation
-    projectId=$(curl -is --fail 'http://localhost:30000/api/v2.0/projects' -X POST -u admin:Harbor12345    -H 'Content-Type: application/json' --data-raw "{\"project_name\":\"$lower_operation\",\"metadata\":{\"public\":\"false\"},\"storage_limit\":-1,\"registry_id\":null}" | grep -i 'Location:' | awk '{print $2}' | awk -F '/' '{print $NF}' | tr -d '[:space:]')
+    echo "creating project ${lower_operation}"
+    projectId=$(curl -is --fail 'http://localhost:30000/api/v2.0/projects' -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"project_name\":\"$lower_operation\",\"metadata\":{\"public\":\"false\"},\"storage_limit\":-1,\"registry_id\":null}" | grep -i 'Location:' | awk '{print $2}' | awk -F '/' '{print $NF}' | tr -d '[:space:]')
 
-    echo creating user $operation with PW ${operation}12345
+    echo creating user ${operation} with PW ${operation}12345
     curl -s  --fail 'http://localhost:30000/api/v2.0/users' -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"username\":\"$operation\",\"email\":\"$operation@example.com\",\"realname\":\"$operation example\",\"password\":\"${operation}12345\",\"comment\":null}"
     
-    echo "Adding member $operation to project $lower_operation; ID=${projectId}"
-
-    curl  --fail "http://localhost:30000/api/v2.0/projects/${projectId}/members" -X POST -u admin:Harbor12345    -H 'Content-Type: application/json' --data-raw "{\"role_id\":4,\"member_user\":{\"username\":\"$operation\"}}"
+    echo "Adding member ${operation} to project ${lower_operation}; ID=${projectId}"
+    curl --fail "http://localhost:30000/api/v2.0/projects/${projectId}/members" -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"role_id\":${roles['maintainer']},\"member_user\":{\"username\":\"$operation\"}}"
 done
 
+echo "creating user ${readOnlyUser} with PW ${readOnlyUser}12345"
+curl -s  --fail 'http://localhost:30000/api/v2.0/users' -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"username\":\"$readOnlyUser\",\"email\":\"$readOnlyUser@example.com\",\"realname\":\"$readOnlyUser example\",\"password\":\"${readOnlyUser}12345\",\"comment\":null}"
+echo "Adding member ${readOnlyUser} to project proxy; ID=${projectId}"
+curl  --fail "http://localhost:30000/api/v2.0/projects/${projectId}/members" -X POST -u admin:Harbor12345 -H 'Content-Type: application/json' --data-raw "{\"role_id\":${roles['limited-guest']},\"member_user\":{\"username\":\"${readOnlyUser}\"}}"
+
 # When updating the container image versions note that all images of a chart are listed at artifact hub on the right hand side under "Containers Images"
-skopeo copy docker://eclipse-temurin:11-jre-alpine --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/eclipse-temurin:11-jre-alpine
 skopeo copy docker://ghcr.io/cloudogu/mailhog:v1.0.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/mailhog
 skopeo copy docker://ghcr.io/external-secrets/external-secrets:v0.9.16 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/external-secrets
 skopeo copy docker://hashicorp/vault:1.14.0 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/vault
@@ -484,26 +530,35 @@ skopeo copy docker://quay.io/kiwigrid/k8s-sidecar:1.27.4 --dest-creds Proxy:Prox
 skopeo copy docker://quay.io/jetstack/cert-manager-controller:v1.16.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/cert-manager-controller
 skopeo copy docker://quay.io/jetstack/cert-manager-cainjector:v1.16.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/cert-manager-cainjector
 skopeo copy docker://quay.io/jetstack/cert-manager-webhook:v1.16.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/cert-manager-webhook
-
+# Needed for the builds to work with proxy-registry
+skopeo copy docker://bitnami/kubectl:1.29 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/bitnami/kubectl:1.29
+skopeo copy docker://eclipse-temurin:11-jre-alpine --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/eclipse-temurin:11-jre-alpine
+skopeo copy docker://ghcr.io/cloudogu/helm:3.16.1-1  --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/helm:latest 
 ```
 
 * Deploy playground:
 
 ```bash
-docker run --rm -t -u $(id -u)  \
-   -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config  \
-    --net=host  \
-    gitops-playground:dev -x \
+GOP_IMAGE=gitops-playground:dev # Non-local alternative: ghcr.io/cloudogu/gitops-playground
+
+docker run --rm -t -u $(id -u) \
+   -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
+    --net=host \
+    ${GOP_IMAGE} -x \
     --yes --argocd --ingress-nginx --base-url=http://localhost \
-    --vault=dev --monitoring --mailhog \
+    --vault=dev --monitoring --mailhog --cert-manager \
     --create-image-pull-secrets \
     --registry-url=localhost:30000 \
     --registry-path=registry \
-    --registry-username=Registry  \
+    --registry-username=Registry \
     --registry-password=Registry12345 \
     --registry-proxy-url=localhost:30000 \
     --registry-proxy-username=Proxy \
     --registry-proxy-password=Proxy12345 \
+    --registry-username-read-only=RegistryRead \
+    --registry-password-read-only=RegistryRead12345 \
+    --kubectl-image=localhost:30000/proxy/bitnami/kubectl:1.29 \
+    --helm-image=localhost:30000/proxy/helm:latest \
     --petclinic-image=localhost:30000/proxy/eclipse-temurin:11-jre-alpine \
     --mailhog-image=localhost:30000/proxy/mailhog:latest \
     --vault-image=localhost:30000/proxy/vault:latest \
@@ -512,11 +567,14 @@ docker run --rm -t -u $(id -u)  \
     --external-secrets-webhook-image=localhost:30000/proxy/external-secrets:latest \
     --nginx-image=localhost:30000/proxy/nginx:latest \
     --ingress-nginx-image=localhost:30000/proxy/ingress-nginx:latest \
+    --cert-manager-image=localhost:30000/proxy/cert-manager-controller:latest \
+    --cert-manager-webhook-image=localhost:30000/proxy/cert-manager-webhook:latest \
+    --cert-manager-cainjector-image=localhost:30000/proxy/cert-manager-cainjector:latest \
     --prometheus-image=localhost:30000/proxy/prometheus:v2.51.2 \
     --prometheus-operator-image=localhost:30000/proxy/prometheus-operator:latest \
     --prometheus-config-reloader-image=localhost:30000/proxy/prometheus-config-reloader:latest \
     --grafana-image=localhost:30000/proxy/grafana:latest \
-    --grafana-sidecar-image=localhost:30000/proxy/k8s-sidecar:latest 
+    --grafana-sidecar-image=localhost:30000/proxy/k8s-sidecar:latest \
 # Or with config file --config-file=/config/gitops-playground.yaml 
 ```
 
@@ -531,7 +589,8 @@ That's why we need to initialize our local cluster with some netpols for everyth
 After the cluster is initialized and before GOP is applied, do the following:
 
 ```bash
-k apply --namespace "$ns" -f- <<EOF
+# When using harbor, do the same for namespace harbor
+k apply -f- <<EOF
 kind: NetworkPolicy
 apiVersion: networking.k8s.io/v1
 metadata:
