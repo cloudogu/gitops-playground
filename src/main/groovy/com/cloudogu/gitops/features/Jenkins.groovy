@@ -1,7 +1,6 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
-
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.jenkins.GlobalPropertyManager
 import com.cloudogu.gitops.jenkins.JobManager

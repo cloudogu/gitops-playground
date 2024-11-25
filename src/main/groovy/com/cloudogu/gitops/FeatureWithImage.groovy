@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory
 trait FeatureWithImage {
 
     final Logger log = LoggerFactory.getLogger(this.class)
-    
+
     void createImagePullSecret() {
         if (config.registry.createImagePullSecrets) {
 
@@ -19,13 +19,15 @@ trait FeatureWithImage {
             String url = config.registry.proxyUrl ?: config.registry.url
             String user = config.registry.proxyUsername ?: config.registry.readOnlyUsername ?: config.registry.username
             String password = config.registry.proxyPassword ?: config.registry.readOnlyPassword ?: config.registry.password
-            
+
             k8sClient.createNamespace(namespace)
             k8sClient.createImagePullSecret('proxy-registry', namespace, url, user, password)
         }
     }
-    
+
     abstract String getNamespace()
+
     abstract K8sClient getK8sClient()
+
     abstract Config getConfig()
 }

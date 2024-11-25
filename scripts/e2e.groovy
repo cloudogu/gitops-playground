@@ -45,7 +45,7 @@ class E2E {
             while (buildFutures.any { !it.isDone() }) {
                 // check if there is a build which is done and has failed status
                 Future<PipelineResult> resultFuture = buildFutures.find { it.isDone() && it.get().getBuild().getResult().name() == "FAILURE" }
-                if (resultFuture != null){
+                if (resultFuture != null) {
                     //if retries are set, start the failed build new and delete the old one
                     if (resultFuture.get().retry > 0) {
                         //write log of failed build to fs
@@ -55,7 +55,7 @@ class E2E {
                         int newRetry = resultFuture.get().retry - 1
                         buildFutures.add(executor.run(js, resultFuture.get().getJob(), newRetry))
                         buildFutures.remove(resultFuture)
-                      // if abortonfail is true and no more retries left then kill the process
+                        // if abortonfail is true and no more retries left then kill the process
                     } else if (configuration.abortOnFail) {
                         //write log of failed build to fs
                         if (configuration.writeFailedLog) {
@@ -82,7 +82,7 @@ class E2E {
 
         } catch (Exception err) {
             System.err << "Unexpected error during execution of gitops playground e2e:\n"
-            err.printStackTrace(System.err);
+            err.printStackTrace(System.err)
             System.exit 1
         }
     }
@@ -90,9 +90,9 @@ class E2E {
     static void writeBuildLogToFile(BuildWithDetails buildDetails) {
         String directoryName = "playground-logs-of-failed-jobs/"
 
-        File directory = new File(directoryName);
+        File directory = new File(directoryName)
         if (!directory.exists()) {
-            directory.mkdir();
+            directory.mkdir()
         }
 
         File f = new File(directoryName + buildDetails.getFullDisplayName() + ".log")
@@ -168,8 +168,8 @@ class JenkinsHandler {
     FolderJob waitForNamespaceJob(JenkinsServer server, Job job) {
         // Scanning namespace takes several seconds to complete. Example:
         // [Wed Sep 08 13:52:35 CEST 2021] Finished organization scan. Scan took 13 sec
-        int count = 0;
-        int maxTries = 20;
+        int count = 0
+        int maxTries = 20
         FolderJob folderJob = server.getFolderJob(job).get()
         while (folderJob.getJobs().size() == 0) {
             println "Folder ${job.name} does not contain jobs. Waiting ${count + 1} / ${maxTries}..."

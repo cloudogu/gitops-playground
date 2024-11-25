@@ -21,7 +21,7 @@ class Registry extends Feature {
      * Local container port of the registry within the pod
      */
     public static final String CONTAINER_PORT = '5000'
-    
+
     private Config config
     private DeploymentStrategy deployer
     private FileSystemUtils fileSystemUtils
@@ -51,27 +51,27 @@ class Registry extends Feature {
     void enable() {
 
         def helmConfig = config.registry.helm
-        
+
         Map yaml = [
                 service: [
                         nodePort: Config.DEFAULT_REGISTRY_PORT,
-                        type: 'NodePort'
+                        type    : 'NodePort'
                 ]
         ]
         log.trace("Helm yaml to be applied: ${yaml}")
         fileSystemUtils.writeYaml(yaml, tmpHelmValues.toFile())
-        
+
         if (config.registry.internalPort != Config.DEFAULT_REGISTRY_PORT) {
             /* Add additional node port
                30000 is needed as a static by docker via port mapping of k3d, e.g. 32769 -> 30000 on server-0 container
                See "-p 30000" in init-cluster.sh
                e.g 32769 is needed so the kubelet can access the image inside the server-0 container
              */
-            k8sClient.createServiceNodePort('docker-registry-internal-port', 
+            k8sClient.createServiceNodePort('docker-registry-internal-port',
                     CONTAINER_PORT, config.registry.internalPort.toString(),
                     'default')
         }
-        
+
         deployer.deployFeature(
                 helmConfig.repoURL,
                 'registry',

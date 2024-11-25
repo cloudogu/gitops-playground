@@ -2,21 +2,21 @@ persistence:
   size: 1Gi
 
 extraEnv: |
-    - name: SCM_WEBAPP_INITIALUSER
-      value: "${username}"
-    - name: SCM_WEBAPP_INITIALPASSWORD
-      value: "${password}"
-
-<#if remote?? && !remote>
+  - name: SCM_WEBAPP_INITIALUSER
+    value: "${username}"
+  - name: SCM_WEBAPP_INITIALPASSWORD
+    value: "${password}"
+  
+  <#if remote?? && !remote>
 service:
   nodePort: 9091
   type: NodePort
-</#if>
+  </#if>
   
-<#if host?has_content>
+  <#if host?has_content>
 ingress:
   enabled: true
   path: /
   hosts:
     - ${host}
-</#if>
+  </#if>

@@ -1,38 +1,38 @@
-<#if nginxImage??>
-image:
-  registry: ${nginxImage.registry}
-  repository: ${nginxImage.repository}
-  tag: ${nginxImage.tag}
-</#if>
-<#if config.registry.createImagePullSecrets == true>
-global:
-  imagePullSecrets:
-    - proxy-registry
-</#if>
-service:
-  ports:
-    http: 80
+  <#if nginxImage??>
+  image:
+    registry: ${nginxImage.registry}
+    repository: ${nginxImage.repository}
+    tag: ${nginxImage.tag}
+    </#if>
+    <#if config.registry.createImagePullSecrets == true>
+  global:
+    imagePullSecrets:
+      - proxy-registry
+    </#if>
+  service:
+    ports:
+      http: 80
 
-staticSiteConfigmap: exercise-index-nginx
+  staticSiteConfigmap: exercise-index-nginx
 
-extraEnvVars:
-  - name: LOG_LEVEL
-      value: debug
-serverBlock: |-
-  server {
-    listen 0.0.0.0:8080;
-    location /hi {
-      return 200 "hello!";
+  extraEnvVars:
+    - name: LOG_LEVEL
+        value: debug
+  serverBlock: |-
+    server {
+      listen 0.0.0.0:8080;
+      location /hi {
+        return 200 "hello!";
+      }
     }
-  }
+    
+    <#if podResources == true>
+  resources:
+    limits:
+      cpu: 100m
+      memory: 30Mi
+    requests:
+      cpu: 30m
+      memory: 15Mi
 
-<#if podResources == true>
-resources:
-  limits:
-    cpu: 100m
-    memory: 30Mi
-  requests:
-    cpu: 30m
-    memory: 15Mi
-
-</#if>
+    </#if>

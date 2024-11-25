@@ -5,7 +5,8 @@
     <properties>
         <jenkins.branch.OrganizationChildHealthMetricsProperty>
             <templates>
-                <com.cloudbees.hudson.plugins.folder.health.WorstChildHealthMetric plugin="cloudbees-folder@6.942.vb_43318a_156b_2">
+                <com.cloudbees.hudson.plugins.folder.health.WorstChildHealthMetric
+                        plugin="cloudbees-folder@6.942.vb_43318a_156b_2">
                     <nonRecursive>false</nonRecursive>
                 </com.cloudbees.hudson.plugins.folder.health.WorstChildHealthMetric>
             </templates>
@@ -15,7 +16,8 @@
         </jenkins.branch.OrganizationChildOrphanedItemsProperty>
         <jenkins.branch.OrganizationChildTriggersProperty>
             <templates>
-                <com.cloudbees.hudson.plugins.folder.computed.PeriodicFolderTrigger plugin="cloudbees-folder@6.942.vb_43318a_156b_2">
+                <com.cloudbees.hudson.plugins.folder.computed.PeriodicFolderTrigger
+                        plugin="cloudbees-folder@6.942.vb_43318a_156b_2">
                     <spec>H H/4 * * *</spec>
                     <interval>86400000</interval>
                 </com.cloudbees.hudson.plugins.folder.computed.PeriodicFolderTrigger>
@@ -37,14 +39,16 @@
     <icon class="jenkins.branch.MetadataActionFolderIcon">
         <owner class="jenkins.branch.OrganizationFolder" reference="../.."/>
     </icon>
-    <orphanedItemStrategy class="com.cloudbees.hudson.plugins.folder.computed.DefaultOrphanedItemStrategy" plugin="cloudbees-folder@6.942.vb_43318a_156b_2">
+    <orphanedItemStrategy class="com.cloudbees.hudson.plugins.folder.computed.DefaultOrphanedItemStrategy"
+                          plugin="cloudbees-folder@6.942.vb_43318a_156b_2">
         <pruneDeadBranches>true</pruneDeadBranches>
         <daysToKeep>-1</daysToKeep>
         <numToKeep>-1</numToKeep>
         <abortBuilds>false</abortBuilds>
     </orphanedItemStrategy>
     <triggers>
-        <com.cloudbees.hudson.plugins.folder.computed.PeriodicFolderTrigger plugin="cloudbees-folder@6.942.vb_43318a_156b_2">
+        <com.cloudbees.hudson.plugins.folder.computed.PeriodicFolderTrigger
+                plugin="cloudbees-folder@6.942.vb_43318a_156b_2">
             <spec>H H/4 * * *</spec>
             <interval>86400000</interval>
         </com.cloudbees.hudson.plugins.folder.computed.PeriodicFolderTrigger>
@@ -68,7 +72,8 @@
         </com.cloudogu.scmmanager.scm.ScmManagerNavigator>
     </navigators>
     <projectFactories>
-        <org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProjectFactory plugin="workflow-multibranch@795.ve0cb_1f45ca_9a_">
+        <org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProjectFactory
+                plugin="workflow-multibranch@795.ve0cb_1f45ca_9a_">
             <scriptPath>Jenkinsfile</scriptPath>
         </org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProjectFactory>
     </projectFactories>

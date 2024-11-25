@@ -16,14 +16,13 @@ Bases on [this template](https://adr.github.io/madr/examples.html).
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-
 ## Using jsonschema-generator to generate a schema for config file
 
 `com.github.victools:jsonschema-generator`
 
 ### Context and Problem Statement
 
-We want to provide the possibility to configure the problem with a configuration file 
+We want to provide the possibility to configure the problem with a configuration file
 rather than command line parameters.
 This configuration file should be easy to use and hard to misuse.
 Thus, we want to provide IDE autocompletion and error messages for typos.
@@ -43,13 +42,14 @@ There are several option for schema generation:
 ### Decision Outcome
 
 #### by hand
+
 Creating the schema handwritten is cumbersome and prone to errors.
 Especially considering common options that are relevant for most/all values (e.g. `additionalProperties`).
 
 #### saasquatch/json-schema-inferrer
 
 It is officially linked at https://json-schema.org/implementations.html#schema-generators.
-However, deriving the schema from data is prone to error. 
+However, deriving the schema from data is prone to error.
 Especially if we support union types such as `null|string`.
 
 #### victools/jsonschema-generator
@@ -66,7 +66,7 @@ However, there are no plans to support Jackson 3.
 
 #### fxg42/groovyschema
 
-It is a tool written in Groovy. 
+It is a tool written in Groovy.
 However, defining the schema is very close to writing it by hand as it only offers an
 API on top of an untyped map representing the JSON schema.
 Furthermore, latest commits date back 9 years.
@@ -75,7 +75,6 @@ Furthermore, latest commits date back 9 years.
 
 We decided to use `victools/jsonschema-generator` as it integrates well with libraries we already include,
 opens the possibility to use it for future work and is officially linked at json-schema.org.
-
 
 ## Using Retrofit as API client for SCM-Manager
 
@@ -100,17 +99,18 @@ The client generator for groovy does not support basic authentication needed for
 The java generator needs various dependencies that we would need to introduce into the project.
 Both have mediocre support for specifying a base url at runtime.
 
-Hand rolling an API based on HTTP requires a lot of effort not only initially, but for every resource added to the client.
+Hand rolling an API based on HTTP requires a lot of effort not only initially, but for every resource added to the
+client.
 
 Retrofit offers a declarative approach to define API clients.
 Furthermore, it has first-class support for specifying a base url.
-Retrofit uses reflection to generate the client. 
+Retrofit uses reflection to generate the client.
 As a result, we need to configure GraalVM appropriately.
 
 We decided to use Retrofit due to its small footprint and because we already integrated OkHttp.
 Additionally, creating an API endpoint in Retrofit requires little effort.
 
-## Using Templating Mechanism for Generating Repositories 
+## Using Templating Mechanism for Generating Repositories
 
 ### Context and Problem Statement
 
@@ -122,7 +122,7 @@ In the past, we used the following mechanisms:
 * Building a `Map`, then transforming into YAML and writing to file
 
 Having various mechanisms spread across the codebase is difficult to find.
-Furthermore, having baseline files, which will be modified out of band, can trick the reader 
+Furthermore, having baseline files, which will be modified out of band, can trick the reader
 into thinking that file's content is final.
 
 ### Considered Options
@@ -133,7 +133,7 @@ We need to template YAML files as well as Jenkinsfiles.
 * Groovy Templating
 * [Micronaut-compatible Library](https://micronaut-projects.github.io/micronaut-views/latest/guide/#templates)
 
-Micronaut aims to be compatible with groovy and graal. 
+Micronaut aims to be compatible with groovy and graal.
 
 ### Decision Outcome
 
@@ -160,28 +160,33 @@ templating engine.
 
 We decided to use **Apache Freemarker**
 
-
 ## Deploying Cluster Resources with Argo CD using inline YAML
 
 ### Context and Problem Statement
 
 There are multiple options for deploying cluster resources as Helm charts with Argo CD.
 
-Having the `values.yaml` as a first-class file (as opposed to inline YAML in the `Application`) has advantages, e.g. 
+Having the `values.yaml` as a first-class file (as opposed to inline YAML in the `Application`) has advantages, e.g.
+
 * it's easier to handle than inline YAML, e.g. for local testing without Argo CD.
 * It would also suit our repo structure better (`argocd` folder -> `Application` YAML; `apps` folder -> `values.yaml`).
 
 ### Considered Options
 
-* Umbrella Charts: Likely [no support for using credentials](https://github.com/argoproj/argo-cd/issues/7104#issuecomment-995366406).  
-  In addition, no support for [Charts from Git](https://github.com/helm/helm/issues/9461). For the latter, there [is a helm plugin](https://github.com/aslafy-z/helm-git),
+* Umbrella Charts:
+  Likely [no support for using credentials](https://github.com/argoproj/argo-cd/issues/7104#issuecomment-995366406).  
+  In addition, no support for [Charts from Git](https://github.com/helm/helm/issues/9461). For the latter,
+  there [is a helm plugin](https://github.com/aslafy-z/helm-git),
   but [installing Helm plugins into Argo CD](https://github.com/argoproj/argo-cd/blob/v2.6.7/docs/user-guide/helm.md#helm-plugins)
-  would make things too complex for our taste. Also using 3rd-party-plugins is always a risk, in terms of security and maintenance.
-* Multi-source `Application`s: These are the solution we have been waiting for, but as of argo CD 2.7 they're still in beta.
-  We experienced some limitations with multi-source apps in the UI and therefore refrain from using multi source repos in production at this point.
+  would make things too complex for our taste. Also using 3rd-party-plugins is always a risk, in terms of security and
+  maintenance.
+* Multi-source `Application`s: These are the solution we have been waiting for, but as of argo CD 2.7 they're still in
+  beta.
+  We experienced some limitations with multi-source apps in the UI and therefore refrain from using multi source repos
+  in production at this point.
 * `values.yaml` inlined into Argo CD `Application` is the only alternative
 
 ### Decision Outcome
 
-We decided  to use Argo CD `Application`s with inlined `values.yaml` because it's the only other options. 
+We decided to use Argo CD `Application`s with inlined `values.yaml` because it's the only other options.
 We hope to change to multi-source `Applications` once they are generally available.

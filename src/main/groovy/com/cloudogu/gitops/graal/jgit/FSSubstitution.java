@@ -13,7 +13,7 @@ public final class FSSubstitution {
 
     /**
      * The original method caches the user.home property during build time.
-     *
+     * <p>
      * TODO: Find a way to call userHomeImpl() instead and cache the result
      */
     @Substitute

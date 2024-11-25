@@ -50,7 +50,7 @@ public class GroovyApplicationRegistrationFeature implements Feature {
                 .enableAnnotationInfo()
                 .acceptPackages(CLASS_GRAPH_APP_SCAN_PACKAGES);
 
-            gradleSourceRepackClassGraph.verbose();
+        gradleSourceRepackClassGraph.verbose();
 
         try (ScanResult scanResult = gradleSourceRepackClassGraph.scan()) {
             registerGeneratedClosureClasses(scanResult, true);

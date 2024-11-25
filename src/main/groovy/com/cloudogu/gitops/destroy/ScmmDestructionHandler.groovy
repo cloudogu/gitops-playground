@@ -1,7 +1,6 @@
 package com.cloudogu.gitops.destroy
 
 import com.cloudogu.gitops.config.Config
-
 import com.cloudogu.gitops.scmm.api.RepositoryApi
 import com.cloudogu.gitops.scmm.api.UsersApi
 import io.micronaut.core.annotation.Order

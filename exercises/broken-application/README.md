@@ -7,5 +7,5 @@ Try applying `broken-application.yaml` with `kubectl`:
 kubectl apply -f broken-application.yaml
 ```
 
-When you resolved all errors, you should be able to access the application. 
+When you resolved all errors, you should be able to access the application.
 Look into the service definition on how to access it.

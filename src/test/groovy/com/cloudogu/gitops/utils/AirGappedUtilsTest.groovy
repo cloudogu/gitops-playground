@@ -1,7 +1,6 @@
 package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
-
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.scmm.api.Permission
 import com.cloudogu.gitops.scmm.api.Repository
@@ -28,9 +27,9 @@ class AirGappedUtilsTest {
 
     Config config = new Config(
             application: new Config.ApplicationSchema(
-                    localHelmChartFolder : '',
-                    gitName : 'Cloudogu',
-                    gitEmail : 'hello@cloudogu.com',
+                    localHelmChartFolder: '',
+                    gitName: 'Cloudogu',
+                    gitEmail: 'hello@cloudogu.com',
             ),
             scmm: new Config.ScmmSchema(
                     username: 'scmm-usr',
@@ -39,12 +38,12 @@ class AirGappedUtilsTest {
             )
     )
 
-    Config.HelmConfig helmConfig = new Config.HelmConfig( [
+    Config.HelmConfig helmConfig = new Config.HelmConfig([
             chart  : 'kube-prometheus-stack',
             repoURL: 'https://kube-prometheus-stack-repo-url',
             version: '58.2.1'
     ])
-    
+
     Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
     TestScmmRepoProvider scmmRepoProvider = new TestScmmRepoProvider(config, new FileSystemUtils())
     FileSystemUtils fileSystemUtils = new FileSystemUtils()
@@ -60,7 +59,7 @@ class AirGappedUtilsTest {
         when(repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(response)
 
         def actualRepoNamespaceAndName = createAirGappedUtils().mirrorHelmRepoToGit(helmConfig)
-        
+
         assertThat(actualRepoNamespaceAndName).isEqualTo(
                 "${ScmmRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/kube-prometheus-stack".toString())
         assertAirGapped()
@@ -87,7 +86,7 @@ class AirGappedUtilsTest {
         ScmmRepo prometheusRepo = scmmRepoProvider.repos['3rd-party-dependencies/kube-prometheus-stack']
         def actualPrometheusChartYaml = new YamlSlurper().parse(Path.of(prometheusRepo.absoluteLocalRepoTmpDir, 'Chart.yaml'))
 
-        def dependencies = actualPrometheusChartYaml['dependencies'] 
+        def dependencies = actualPrometheusChartYaml['dependencies']
         assertThat(dependencies).isNull()
     }
 
@@ -102,7 +101,7 @@ class AirGappedUtilsTest {
         def exception = shouldFail(RuntimeException) {
             createAirGappedUtils().mirrorHelmRepoToGit(helmConfig)
         }
-        
+
         assertThat(exception.getMessage()).isEqualTo(
                 "Helm chart in folder ${rootChartsFolder}/kube-prometheus-stack seems invalid.".toString())
         assertThat(exception.getCause()).isSameAs(expectedException)
@@ -183,10 +182,10 @@ class AirGappedUtilsTest {
                 name        : 'kube-prometheus-stack-chart',
                 dependencies: [
                         [
-                                condition: 'crds.enabled',
-                                name: 'crds',
+                                condition : 'crds.enabled',
+                                name      : 'crds',
                                 repository: '',
-                                version: '0.0.0'
+                                version   : '0.0.0'
                         ],
                         [
                                 condition : 'grafana.enabled',
@@ -196,7 +195,7 @@ class AirGappedUtilsTest {
                         ]
                 ]
         ]
-        
+
         if (dependencies != null) {
             if (dependencies.isEmpty()) {
                 prometheusChartYaml.remove('dependencies')
@@ -204,21 +203,21 @@ class AirGappedUtilsTest {
                 prometheusChartYaml.dependencies = dependencies
             }
         }
-        
+
         fileSystemUtils.writeYaml(prometheusChartYaml, sourceChart.resolve('Chart.yaml').toFile())
 
-        if(chartLock == null) {
+        if (chartLock == null) {
             chartLock = [
                     dependencies: [
                             [
-                                    name: 'crds',
+                                    name      : 'crds',
                                     repository: "",
-                                    version: '0.0.0'
+                                    version   : '0.0.0'
                             ],
                             [
-                                    name: 'grafana',
+                                    name      : 'grafana',
                                     repository: 'https://grafana.github.io/helm-charts',
-                                    version: '7.3.9'
+                                    version   : '7.3.9'
                             ]
                     ]
             ]

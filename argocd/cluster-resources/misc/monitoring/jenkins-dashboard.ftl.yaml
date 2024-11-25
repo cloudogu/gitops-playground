@@ -5,7 +5,7 @@ metadata:
   namespace: ${namePrefix}monitoring
   labels:
     grafana_dashboard: "1"
-<#noparse>
+  <#noparse>
 data:
   jenkins-dashboard.json: |-
     {
@@ -1592,5 +1592,5 @@ data:
         "version": 5,
         "weekStart": ""
     }
-</#noparse>
+  </#noparse>
 

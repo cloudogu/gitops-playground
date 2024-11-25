@@ -46,7 +46,7 @@ class ApiClient {
     Response postRequestWithCrumb(String url, RequestBody postData = null) {
         return sendRequestWithRetries {
             Request.Builder request = buildRequest(url)
-                .header("Jenkins-Crumb", getCrumb())
+                    .header("Jenkins-Crumb", getCrumb())
 
             if (postData != null) {
                 request.method("POST", postData)

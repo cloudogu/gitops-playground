@@ -7,29 +7,29 @@ spec:
   selector:
     matchLabels:
       app: broken-application
-<#if config.registry.createImagePullSecrets == true>
-  imagePullSecrets:
-    - name: proxy-registry
-</#if>
-  template:
-    metadata:
-      labels:
-        app: broken-application
-    spec:
-      containers:
-        - name: broken-application
-          image: <#if nginxImage??>${nginxImage}<#else>bitnami/nginx:1.25.1</#if>
-          ports:
-            - containerPort: 8080
-<#if podResources == true>
-          resources:
-            limits:
-              cpu: 100m
-              memory: 30Mi
-            requests:
-              cpu: 30m
-              memory: 15Mi
-</#if>
+  <#if config.registry.createImagePullSecrets == true>
+imagePullSecrets:
+  - name: proxy-registry
+  </#if>
+template:
+  metadata:
+    labels:
+      app: broken-application
+  spec:
+    containers:
+      - name: broken-application
+        image: <#if nginxImage??>${nginxImage}<#else>bitnami/nginx:1.25.1</#if>
+        ports:
+          - containerPort: 8080
+  <#if podResources == true>
+resources:
+  limits:
+    cpu: 100m
+    memory: 30Mi
+  requests:
+    cpu: 30m
+    memory: 15Mi
+  </#if>
 
 ---
 
@@ -49,7 +49,7 @@ spec:
   selector:
     app: broken-application
 
-<#if exampleApps.nginx.baseDomain?has_content>
+  <#if exampleApps.nginx.baseDomain?has_content>
 ---
 
 apiVersion: networking.k8s.io/v1
@@ -60,19 +60,19 @@ metadata:
     app: broken-application
 spec:
   rules:
-    <#if urlSeparatorHyphen>
-    - host: broken-application-${exampleApps.nginx.baseDomain}
-    <#else>
-    - host: broken-application.${exampleApps.nginx.baseDomain}
-    </#if>
-      http:
-        paths:
-          - backend:
-              service:
-                name: broken-application
-                port:
-                  name: http
-            path: /
-            pathType: Prefix
+      <#if urlSeparatorHyphen>
+        - host: broken-application-${exampleApps.nginx.baseDomain}
+        <#else>
+        - host: broken-application.${exampleApps.nginx.baseDomain}
+        </#if>
+        http:
+          paths:
+            - backend:
+                service:
+                  name: broken-application
+                  port:
+                    name: http
+              path: /
+              pathType: Prefix
 
-</#if>
+  </#if>

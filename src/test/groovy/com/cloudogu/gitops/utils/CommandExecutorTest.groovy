@@ -7,7 +7,7 @@ import static org.assertj.core.api.Assertions.assertThat
 class CommandExecutorTest {
 
     CommandExecutorForTest commandExecutor = new CommandExecutorForTest()
-    
+
     @Test
     void aggregatesEnvironment() {
         def additionalEnv = [someKey: 'someValue']

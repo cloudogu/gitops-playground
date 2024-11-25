@@ -1,7 +1,6 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Config
-
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.CommandExecutorForTest
@@ -10,6 +9,7 @@ import com.cloudogu.gitops.utils.K8sClientForTest
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
+
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -72,7 +72,7 @@ class ExternalSecretsOperatorTest {
 
     @Test
     void 'helm release is installed with custom images'() {
-        config.features.secrets.externalSecrets.helm =  new Config.SecretsSchema.ESOSchema.ESOHelmSchema([
+        config.features.secrets.externalSecrets.helm = new Config.SecretsSchema.ESOSchema.ESOHelmSchema([
                 image              : 'localhost:5000/external-secrets/external-secrets:v0.6.1',
                 certControllerImage: 'localhost:5000/external-secrets/external-secrets-certcontroller:v0.6.1',
                 webhookImage       : 'localhost:5000/external-secrets/external-secrets-webhook:v0.6.1'
@@ -136,7 +136,7 @@ class ExternalSecretsOperatorTest {
         config.registry.proxyUsername = 'proxy-user'
         config.registry.proxyPassword = 'proxy-pw'
         config.registry.proxyPassword = 'proxy-pw'
-        config.features.secrets.externalSecrets.helm = new Config.SecretsSchema.ESOSchema.ESOHelmSchema( [
+        config.features.secrets.externalSecrets.helm = new Config.SecretsSchema.ESOSchema.ESOHelmSchema([
                 certControllerImage: 'some:thing',
                 webhookImage       : 'some:thing'
         ])

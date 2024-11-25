@@ -23,7 +23,7 @@ class RetryInterceptor implements Interceptor {
 
     @Override
     Response intercept(@NotNull Chain chain) throws IOException {
-        def i = 0;
+        def i = 0
         Response response = null
         do {
             try {
@@ -41,20 +41,20 @@ class RetryInterceptor implements Interceptor {
             response?.close()
             Thread.sleep(waitPeriodInMs)
             ++i
-        } while(i < retries)
+        } while (i < retries)
 
         return response
     }
 
     private List<Integer> getStatusCodesToRetry() {
         return [
-            // list of codes if from curl --retry
-            408, // Request Timeout
-            429, // Too Many Requests
-            500, // Internal Server Error
-            502, // Bad Gateway
-            503, // Service Unavailable
-            504, // Gateway Timeout
+                // list of codes if from curl --retry
+                408, // Request Timeout
+                429, // Too Many Requests
+                500, // Internal Server Error
+                502, // Bad Gateway
+                503, // Service Unavailable
+                504, // Gateway Timeout
         ]
     }
 }

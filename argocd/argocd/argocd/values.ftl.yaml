@@ -1,240 +1,240 @@
 # See possible values here: https://github.com/argoproj/argo-helm/blob/main/charts/argo-cd/values.yaml
 argo-cd:
-<#if skipCrds==true>
-  crds:
-    install: false
-</#if>
-<#if config.application.netpols == true>
-  global:
-    networkPolicy:
-      create: true
-</#if>
-  server:
-<#if argocd.host?has_content>
-    ingress:
-      enabled: true
-      hostname: ${argocd.host}
-</#if>
+  <#if skipCrds==true>
+crds:
+  install: false
+  </#if>
+  <#if config.application.netpols == true>
+global:
+  networkPolicy:
+    create: true
+  </#if>
+server:
+  <#if argocd.host?has_content>
+ingress:
+  enabled: true
+  hostname: ${argocd.host}
+  </#if>
 
-    service:
-      type: LoadBalancer
-      # Is ignored when type is LoadBalancer. For local cluster we change the service type to NodePort
-      nodePortHttp: 9092
-      nodePortHttps: 9093
-    metrics:
-      enabled: true
-<#if monitoring.active == true>
-      serviceMonitor:
-        enabled: true
-        namespace: ${namePrefix}monitoring
-        selector:
-          release: kube-prometheus-stack
-</#if>
-  controller:
-    metrics:
-      enabled: true
-<#if monitoring.active == true>
-      serviceMonitor:
-        enabled: true
-        namespace: ${namePrefix}monitoring
-        selector:
-          release: kube-prometheus-stack
-</#if>
-  repoServer:
-    metrics:
-      enabled: true
-<#if monitoring.active == true>
-      serviceMonitor:
-        enabled: true
-        namespace: ${namePrefix}monitoring
-        selector:
-          release: kube-prometheus-stack
-</#if>
-  configs:
+service:
+  type: LoadBalancer
+  # Is ignored when type is LoadBalancer. For local cluster we change the service type to NodePort
+  nodePortHttp: 9092
+  nodePortHttps: 9093
+metrics:
+  enabled: true
+  <#if monitoring.active == true>
+serviceMonitor:
+  enabled: true
+  namespace: ${namePrefix}monitoring
+  selector:
+    release: kube-prometheus-stack
+  </#if>
+controller:
+  metrics:
+    enabled: true
+  <#if monitoring.active == true>
+serviceMonitor:
+  enabled: true
+  namespace: ${namePrefix}monitoring
+  selector:
+    release: kube-prometheus-stack
+  </#if>
+repoServer:
+  metrics:
+    enabled: true
+  <#if monitoring.active == true>
+serviceMonitor:
+  enabled: true
+  namespace: ${namePrefix}monitoring
+  selector:
+    release: kube-prometheus-stack
+  </#if>
+configs:
 
-    # needed to enable deploying the Application ressource into other namespaces than argocd
-    # Unfortunately, as of argocd 2.6 this leads to failing notifications 
-    # https://github.com/argoproj/argo-cd/issues/11252
-    params:
-      application.namespaces: "*"
-      server.insecure: true # tls terminated in ingress
+  # needed to enable deploying the Application ressource into other namespaces than argocd
+  # Unfortunately, as of argocd 2.6 this leads to failing notifications
+  # https://github.com/argoproj/argo-cd/issues/11252
+  params:
+    application.namespaces: "*"
+    server.insecure: true # tls terminated in ingress
 
-    # Repo credential templates are created dynamically in groovy, so they are not stored in git
-    #credentialTemplates:
-    #  scmm:
-    #    url: http://scmm-scm-manager.default.svc.cluster.local
-    #    username: gitops
-    #    password: ...
-    repositories:
-      argocd:
-        name: argocd
-        url: ${scmm.baseUrl}/repo/${namePrefix}argocd/argocd
-        <#if isInsecure>insecure: "true"</#if>
-      example-apps:
-        name: example-apps
-        url: ${scmm.baseUrl}/repo/${namePrefix}argocd/example-apps
-        <#if isInsecure>insecure: "true"</#if>
-      cluster-resources:
-        name: cluster-resources
-        url: ${scmm.baseUrl}/repo/${namePrefix}argocd/cluster-resources
-        <#if isInsecure>insecure: "true"</#if>
-      nginx-helm-jenkins:
-        name: nginx-helm-jenkins
-        url: ${scmm.baseUrl}/repo/${namePrefix}argocd/nginx-helm-jenkins
-        <#if isInsecure>insecure: "true"</#if>
-      nginx-helm-umbrella:
-        name: nginx-helm-umbrella
-        url: ${scmm.baseUrl}/repo/${namePrefix}argocd/nginx-helm-umbrella
-        <#if isInsecure>insecure: "true"</#if>
-<#if mirrorRepos>
-      prometheus:
-        name: prometheus
-        url: ${scmm.baseUrl}/repo/3rd-party-dependencies/kube-prometheus-stack
-        <#if isInsecure>insecure: "true"</#if>
-<#else>
-      prometheus:
-        name: prometheus-community
-        type: helm
-        url: https://prometheus-community.github.io/helm-charts
-</#if>
-      bitnami:
-        name: bitnami
-        type: helm
-        url: https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami
-      codecentric:
-        name: codecentric
-        type: helm
-        url: https://codecentric.github.io/helm-charts
-      cert-manager:
-          name: cert-manager
-          type: helm
-          url:  https://charts.jetstack.io
-      argo-helm-repo:
-        type: helm
-        url: https://argoproj.github.io/argo-helm
-        name: argocd
-      ingress-nginx:
-        type: helm
-        url: https://kubernetes.github.io/ingress-nginx
-        name: ingress-nginx
+  # Repo credential templates are created dynamically in groovy, so they are not stored in git
+  #credentialTemplates:
+  #  scmm:
+  #    url: http://scmm-scm-manager.default.svc.cluster.local
+  #    username: gitops
+  #    password: ...
+  repositories:
+    argocd:
+      name: argocd
+      url: ${scmm.baseUrl}/repo/${namePrefix}argocd/argocd
+      <#if isInsecure>insecure: "true"</#if>
+    example-apps:
+      name: example-apps
+      url: ${scmm.baseUrl}/repo/${namePrefix}argocd/example-apps
+      <#if isInsecure>insecure: "true"</#if>
+    cluster-resources:
+      name: cluster-resources
+      url: ${scmm.baseUrl}/repo/${namePrefix}argocd/cluster-resources
+      <#if isInsecure>insecure: "true"</#if>
+    nginx-helm-jenkins:
+      name: nginx-helm-jenkins
+      url: ${scmm.baseUrl}/repo/${namePrefix}argocd/nginx-helm-jenkins
+      <#if isInsecure>insecure: "true"</#if>
+    nginx-helm-umbrella:
+      name: nginx-helm-umbrella
+      url: ${scmm.baseUrl}/repo/${namePrefix}argocd/nginx-helm-umbrella
+      <#if isInsecure>insecure: "true"</#if>
+  <#if mirrorRepos>
+prometheus:
+  name: prometheus
+  url: ${scmm.baseUrl}/repo/3rd-party-dependencies/kube-prometheus-stack
+  <#if isInsecure>insecure: "true"</#if>
+  <#else>
+prometheus:
+  name: prometheus-community
+  type: helm
+  url: https://prometheus-community.github.io/helm-charts
+  </#if>
+bitnami:
+  name: bitnami
+  type: helm
+  url: https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami
+codecentric:
+  name: codecentric
+  type: helm
+  url: https://codecentric.github.io/helm-charts
+cert-manager:
+  name: cert-manager
+  type: helm
+  url: https://charts.jetstack.io
+argo-helm-repo:
+  type: helm
+  url: https://argoproj.github.io/argo-helm
+  name: argocd
+ingress-nginx:
+  type: helm
+  url: https://kubernetes.github.io/ingress-nginx
+  name: ingress-nginx
 
-    cm:
-      timeout.reconciliation: 15s
+cm:
+  timeout.reconciliation: 15s
 
-  notifications:
-    # secrets are created dynamically in groovy, so they are not stored in git
-    secret:
-      create: false
-    enabled: <#if mail.active == true>true<#else>false</#if>
-    argocdUrl: https://localhost:9092
-<#if mail.active?? && mail.active>
-    notifiers:
-      service.email: |
-      <#if mail.smtpAddress?has_content>
-        host: ${mail.smtpAddress}
-        <#if mail.smtpPort??>port: ${mail.smtpPort?c}</#if>
-        <#if mail.smtpUser?has_content>username: $email-username</#if>
-        <#if mail.smtpPassword?has_content>password: $email-password</#if>
-      <#else>
-        host: mailhog.${namePrefix}monitoring.svc.cluster.local
-        port: 1025
-      </#if>
-        from: ${argocd.emailFrom}
-<#noparse>
-    templates:
-      template.app-deployed: |
-        email:
-          subject: New version of an application {{.app.metadata.name}} is up and running.
-        message: |
-          Application {{.app.metadata.name}} is now running new version of deployments manifests.
-      template.app-health-degraded: |
-        email:
-          subject: Application {{.app.metadata.name}} has degraded.
-        message: |
-          Application {{.app.metadata.name}} has degraded.
-          Application details: {{.context.argocdUrl}}/applications/{{.app.metadata.name}}.
-      template.app-sync-failed: |
-        email:
-          subject: Failed to sync application {{.app.metadata.name}}.
-        message: |
-          The sync operation of application {{.app.metadata.name}} has failed at {{.app.status.operationState.finishedAt}} with the following error: {{.app.status.operationState.message}}
-          Sync operation details are available at: {{.context.argocdUrl}}/applications/{{.app.metadata.name}}?operation=true .
-      template.app-sync-running: |
-        email:
-          subject: Start syncing application {{.app.metadata.name}}.
-        message: |
-          The sync operation of application {{.app.metadata.name}} has started at {{.app.status.operationState.startedAt}}.
-          Sync operation details are available at: {{.context.argocdUrl}}/applications/{{.app.metadata.name}}?operation=true .
-      template.app-sync-status-unknown: |
-        email:
-          subject: Application {{.app.metadata.name}} sync status is 'Unknown'
-        message: |
-          Application {{.app.metadata.name}} sync is 'Unknown'.
-          Application details: {{.context.argocdUrl}}/applications/{{.app.metadata.name}}.
-          {{range $c := .app.status.conditions}}
-              * {{$c.message}}
-          {{end}}
-      template.app-sync-succeeded: |
-        email:
-          subject: Application {{.app.metadata.name}} has been successfully synced.
-        message: |
-          Application {{.app.metadata.name}} has been successfully synced at {{.app.status.operationState.finishedAt}}.
-          Sync operation details are available at: {{.context.argocdUrl}}/applications/{{.app.metadata.name}}?operation=true .
-      template.app-sync-status-longer-10s: |
-        email:
-          subject: Application {{.app.metadata.name}} is too long in sync status.
-        message: |
-          The Application {{.app.metadata.name}} is now longer than 10 seconds in sync status. This may be because one of its resources resides in a SyncFailed status.
-          Sync operation details are available at: {{.context.argocdUrl}}/applications/{{.app.metadata.name}}?operation=true .
-    triggers:
-      # default triggers are mapped to AppProject with only one annotation: https://argo-cd.readthedocs.io/en/stable/operator-manual/notifications/triggers/#default-triggers
-      # It is recommended to write this annotation directly to AppProjects and not to Applications, to avoid duplicate code.
-      # We only alert on bad cases
-      defaultTriggers: |
-        - on-deleted
-        - on-health-degraded
-        - on-sync-failed
-      # - on-sync-status-unknown # Is triggered everytime SCM is down for a couple of minutes. Leads to  a lot of spam by every application.
-      # - on-sync-running
-      # - on-sync-succeeded
-      # - on-created
-      # - on-deployed
-      
-      trigger.on-deployed: |
-        - description: Application is synced and healthy. Triggered once per commit.
-          oncePer: app.status.sync.revision
-          send:
-          - app-deployed
-          when: app.status.operationState.phase in ['Succeeded'] and app.status.health.status == 'Healthy'
-      trigger.on-health-degraded: |
-        - description: Application has degraded
-          send:
-          - app-health-degraded
-          when: app.status.health.status == 'Degraded'
-      trigger.on-sync-failed: |
-        - description: Application syncing has failed
-          send:
-          - app-sync-failed
-          when: app.status.operationState.phase in ['Error', 'Failed']
-      trigger.on-sync-running: |
-        - description: Application is being synced
-          send:
-          - app-sync-running
-          when: app.status.operationState.phase in ['Running']
-      trigger.on-sync-status-unknown: |
-        - description: Application status is 'Unknown'
-          send:
-          - app-sync-status-unknown
-          when: app.status.sync.status == 'Unknown'
-      trigger.on-sync-succeeded: |
-        - description: Application syncing has succeeded
-          send:
-          - app-sync-succeeded
-          when: app.status.operationState.phase in ['Succeeded']
-      trigger.on-sync-status-longer-10s: |
-        - description: Application syncing is longer than 10 seconds
-          send:
-          - app-sync-status-longer-10s
-          when: app.status.operationState.phase in ['Running'] and time.Now().Sub(time.Parse(app.status.operationState.startedAt)).Seconds() >= 10
-</#noparse>
-</#if>
+notifications:
+  # secrets are created dynamically in groovy, so they are not stored in git
+  secret:
+    create: false
+  enabled: <#if mail.active == true>true<#else>false</#if>
+  argocdUrl: https://localhost:9092
+  <#if mail.active?? && mail.active>
+notifiers:
+  service.email: |
+  <#if mail.smtpAddress?has_content>
+  host: ${mail.smtpAddress}
+  <#if mail.smtpPort??>port: ${mail.smtpPort?c}</#if>
+  <#if mail.smtpUser?has_content>username: $email-username</#if>
+  <#if mail.smtpPassword?has_content>password: $email-password</#if>
+  <#else>
+  host: mailhog.${namePrefix}monitoring.svc.cluster.local
+  port: 1025
+  </#if>
+  from: ${argocd.emailFrom}
+  <#noparse>
+templates:
+  template.app-deployed: |
+    email:
+      subject: New version of an application {{.app.metadata.name}} is up and running.
+    message: |
+      Application {{.app.metadata.name}} is now running new version of deployments manifests.
+  template.app-health-degraded: |
+    email:
+      subject: Application {{.app.metadata.name}} has degraded.
+    message: |
+      Application {{.app.metadata.name}} has degraded.
+      Application details: {{.context.argocdUrl}}/applications/{{.app.metadata.name}}.
+  template.app-sync-failed: |
+    email:
+      subject: Failed to sync application {{.app.metadata.name}}.
+    message: |
+      The sync operation of application {{.app.metadata.name}} has failed at {{.app.status.operationState.finishedAt}} with the following error: {{.app.status.operationState.message}}
+      Sync operation details are available at: {{.context.argocdUrl}}/applications/{{.app.metadata.name}}?operation=true .
+  template.app-sync-running: |
+    email:
+      subject: Start syncing application {{.app.metadata.name}}.
+    message: |
+      The sync operation of application {{.app.metadata.name}} has started at {{.app.status.operationState.startedAt}}.
+      Sync operation details are available at: {{.context.argocdUrl}}/applications/{{.app.metadata.name}}?operation=true .
+  template.app-sync-status-unknown: |
+    email:
+      subject: Application {{.app.metadata.name}} sync status is 'Unknown'
+    message: |
+      Application {{.app.metadata.name}} sync is 'Unknown'.
+      Application details: {{.context.argocdUrl}}/applications/{{.app.metadata.name}}.
+      {{range $c := .app.status.conditions}}
+          * {{$c.message}}
+      {{end}}
+  template.app-sync-succeeded: |
+    email:
+      subject: Application {{.app.metadata.name}} has been successfully synced.
+    message: |
+      Application {{.app.metadata.name}} has been successfully synced at {{.app.status.operationState.finishedAt}}.
+      Sync operation details are available at: {{.context.argocdUrl}}/applications/{{.app.metadata.name}}?operation=true .
+  template.app-sync-status-longer-10s: |
+    email:
+      subject: Application {{.app.metadata.name}} is too long in sync status.
+    message: |
+      The Application {{.app.metadata.name}} is now longer than 10 seconds in sync status. This may be because one of its resources resides in a SyncFailed status.
+      Sync operation details are available at: {{.context.argocdUrl}}/applications/{{.app.metadata.name}}?operation=true .
+triggers:
+  # default triggers are mapped to AppProject with only one annotation: https://argo-cd.readthedocs.io/en/stable/operator-manual/notifications/triggers/#default-triggers
+  # It is recommended to write this annotation directly to AppProjects and not to Applications, to avoid duplicate code.
+  # We only alert on bad cases
+  defaultTriggers: |
+    - on-deleted
+    - on-health-degraded
+    - on-sync-failed
+  # - on-sync-status-unknown # Is triggered everytime SCM is down for a couple of minutes. Leads to  a lot of spam by every application.
+  # - on-sync-running
+  # - on-sync-succeeded
+  # - on-created
+  # - on-deployed
+
+  trigger.on-deployed: |
+    - description: Application is synced and healthy. Triggered once per commit.
+      oncePer: app.status.sync.revision
+      send:
+      - app-deployed
+      when: app.status.operationState.phase in ['Succeeded'] and app.status.health.status == 'Healthy'
+  trigger.on-health-degraded: |
+    - description: Application has degraded
+      send:
+      - app-health-degraded
+      when: app.status.health.status == 'Degraded'
+  trigger.on-sync-failed: |
+    - description: Application syncing has failed
+      send:
+      - app-sync-failed
+      when: app.status.operationState.phase in ['Error', 'Failed']
+  trigger.on-sync-running: |
+    - description: Application is being synced
+      send:
+      - app-sync-running
+      when: app.status.operationState.phase in ['Running']
+  trigger.on-sync-status-unknown: |
+    - description: Application status is 'Unknown'
+      send:
+      - app-sync-status-unknown
+      when: app.status.sync.status == 'Unknown'
+  trigger.on-sync-succeeded: |
+    - description: Application syncing has succeeded
+      send:
+      - app-sync-succeeded
+      when: app.status.operationState.phase in ['Succeeded']
+  trigger.on-sync-status-longer-10s: |
+    - description: Application syncing is longer than 10 seconds
+      send:
+      - app-sync-status-longer-10s
+      when: app.status.operationState.phase in ['Running'] and time.Now().Sub(time.Parse(app.status.operationState.startedAt)).Seconds() >= 10
+  </#noparse>
+  </#if>

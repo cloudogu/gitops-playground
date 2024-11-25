@@ -2,7 +2,6 @@ package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
-
 import com.cloudogu.gitops.utils.K8sClient
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
@@ -15,7 +14,7 @@ class Content extends Feature {
 
     Config config
     K8sClient k8sClient
-    
+
     Content(
             Config config,
             K8sClient k8sClient
@@ -37,19 +36,19 @@ class Content extends Feature {
             String registryPassword = config.registry.readOnlyPassword ?: config.registry.password
 
             // Name prefix is added by k8sClient
-            List exampleAppNamespaces = [ "example-apps-staging", "example-apps-production"]
+            List exampleAppNamespaces = ["example-apps-staging", "example-apps-production"]
             exampleAppNamespaces.each {
                 def namespace = it
                 def registrySecretName = 'registry'
 
                 k8sClient.createNamespace(it)
-                        
+
                 k8sClient.createImagePullSecret(registrySecretName, namespace,
                         config.registry.url /* Only domain matters, path would be ignored */,
                         registryUsername, registryPassword)
 
                 k8sClient.patch('serviceaccount', 'default', namespace,
-                        [ imagePullSecrets: [ [name: registrySecretName] ]])
+                        [imagePullSecrets: [[name: registrySecretName]]])
 
                 if (config.registry.twoRegistries) {
                     k8sClient.createImagePullSecret('proxy-registry', namespace,

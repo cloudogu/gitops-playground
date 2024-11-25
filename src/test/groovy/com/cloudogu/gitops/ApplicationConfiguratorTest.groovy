@@ -28,47 +28,47 @@ class ApplicationConfiguratorTest {
     private NetworkingUtils networkingUtils
     private FileSystemUtils fileSystemUtils
     private TestLogger testLogger
-    Config testConfig = Config.fromMap( [
+    Config testConfig = Config.fromMap([
             application: [
-                    localHelmChartFolder : 'someValue',
+                    localHelmChartFolder: 'someValue',
             ],
             registry   : [
-                    url         : EXPECTED_REGISTRY_URL,
-                    proxyUrl: "proxy-$EXPECTED_REGISTRY_URL",
+                    url          : EXPECTED_REGISTRY_URL,
+                    proxyUrl     : "proxy-$EXPECTED_REGISTRY_URL",
                     proxyUsername: "proxy-user",
                     proxyPassword: "proxy-pw",
-                    internalPort: EXPECTED_REGISTRY_INTERNAL_PORT,
+                    internalPort : EXPECTED_REGISTRY_INTERNAL_PORT,
             ],
             jenkins    : [
-                    url     : EXPECTED_JENKINS_URL
-                    ],
+                    url: EXPECTED_JENKINS_URL
+            ],
             scmm       : [
-                    url     : EXPECTED_SCMM_URL,
-                    ],
-            features    : [
-                    secrets : [
-                            vault : [
-                                    mode : EXPECTED_VAULT_MODE
+                    url: EXPECTED_SCMM_URL,
+            ],
+            features   : [
+                    secrets     : [
+                            vault: [
+                                    mode: EXPECTED_VAULT_MODE
                             ]
                     ],
-                    argocd: [:],
-                    mail: [:],
-                    monitoring: [:],
+                    argocd      : [:],
+                    mail        : [:],
+                    monitoring  : [:],
                     ingressNginx: [:],
-                    exampleApps: [
+                    exampleApps : [
                             petclinic: [:],
                             nginx    : [:],
                     ]
             ]
     ])
-    
+
     // We have to set this value using env vars, which makes tests complicated, so ignore it
     Config almostEmptyConfig = Config.fromMap([
             application: [
-                    localHelmChartFolder : 'someValue',
+                    localHelmChartFolder: 'someValue',
             ],
     ])
-    
+
     @BeforeEach
     void setup() {
         networkingUtils = mock(NetworkingUtils.class)
@@ -95,7 +95,7 @@ class ApplicationConfiguratorTest {
 
         assertThat(actualConfig.jenkins.url).isEqualTo(EXPECTED_JENKINS_URL)
         assertThat(actualConfig.jenkins.internal).isEqualTo(false)
-        
+
         assertThat(actualConfig.features.argocd.active).isEqualTo(EXPECTED_ARGOCD)
         assertThat(actualConfig.features.argocd.env).isEqualTo([:])
 
@@ -130,23 +130,23 @@ class ApplicationConfiguratorTest {
         }
         assertThat(exception.message).isEqualTo('When setting jenkins URL, scmm URL must also be set and the other way round')
     }
-    
+
     @Test
     void 'Fails if jenkins is external and scmm is internal'() {
         testConfig.jenkins.url = 'external'
         testConfig.scmm.url = ''
-        
+
         def exception = shouldFail(RuntimeException) {
             applicationConfigurator.initAndValidateConfig((testConfig))
         }
         assertThat(exception.message).isEqualTo('When setting jenkins URL, scmm URL must also be set and the other way round')
     }
-    
+
     @Test
     void 'Fails if monitoring local is not set'() {
         testConfig.application.mirrorRepos = true
         testConfig.application.localHelmChartFolder = ''
-        
+
         def exception = shouldFail(RuntimeException) {
             applicationConfigurator.initAndValidateConfig((testConfig))
         }
@@ -164,16 +164,16 @@ class ApplicationConfiguratorTest {
         }
         assertThat(exception.message).isEqualTo('createImagePullSecrets needs to be used with either registry username and password or the readOnly variants')
     }
-    
+
     @Test
     void 'Ignores empty localHemlChartFolder, if mirrorRepos is not set'() {
         testConfig.application.mirrorRepos = false
         testConfig.application.localHelmChartFolder = ''
-        
+
         applicationConfigurator.initAndValidateConfig((testConfig))
         // no exceptions means success
     }
-    
+
     @Test
     void "uses default localhost url for jenkins and scmm if nothing specified"() {
         testConfig.jenkins.url = ''
@@ -209,7 +209,7 @@ class ApplicationConfiguratorTest {
     @Test
     void "base url: evaluates for all tools"() {
         testConfig.application.baseUrl = 'http://localhost'
-        
+
         testConfig.features.argocd.active = true
         testConfig.features.mail.mailhog = true
         testConfig.features.monitoring.active = true
@@ -328,54 +328,54 @@ class ApplicationConfiguratorTest {
         assertThat(actualConfig.application.namePrefix).isEqualTo('my-prefix-')
         assertThat(actualConfig.application.namePrefixForEnvVars).isEqualTo('MY_PREFIX_')
     }
-    
+
     @Test
     void "Registry: Sets to internal when no URL set"() {
         testConfig.registry.url = null
         testConfig.registry.proxyUrl = null
-        
+
         def actualConfig = applicationConfigurator.initAndValidateConfig((testConfig))
-        
+
         assertThat(actualConfig.registry.url).isEqualTo('localhost:33333')
         assertThat(actualConfig.registry.internalPort).isEqualTo(EXPECTED_REGISTRY_INTERNAL_PORT)
         assertThat(actualConfig.registry.internal).isEqualTo(true)
     }
-    
+
     @Test
     void "Registry: Sets to external when only registry URL set"() {
         testConfig.registry.proxyUrl = null
 
         def actualConfig = applicationConfigurator.initAndValidateConfig((testConfig))
-        
+
         assertThat(actualConfig.registry.internal).isEqualTo(false)
     }
-    
+
     @Test
     void "Registry: Sets to internal when only proxy Url is set"() {
         testConfig.registry.url = null
 
         def actualConfig = applicationConfigurator.initAndValidateConfig((testConfig))
-        
+
         assertThat(actualConfig.registry.internal).isEqualTo(true)
     }
-    
+
     @Test
     void "Registry: Fails when proxy but no username and password set"() {
         def expectedException = 'Proxy URL needs to be used with proxy-username and proxy-password'
-        
+
         testConfig.registry.proxyUsername = null
         def exception = shouldFail(RuntimeException) {
             applicationConfigurator.initAndValidateConfig((testConfig))
         }
         assertThat(exception.message).isEqualTo(expectedException)
-        
+
         testConfig.registry.proxyUsername = 'something'
         testConfig.registry.proxyPassword = null
         exception = shouldFail(RuntimeException) {
             applicationConfigurator.initAndValidateConfig((testConfig))
         }
         assertThat(exception.message).isEqualTo(expectedException)
-        
+
         testConfig.registry.proxyUsername = null
         exception = shouldFail(RuntimeException) {
             applicationConfigurator.initAndValidateConfig((testConfig))

@@ -1,7 +1,6 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Config
-
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -10,6 +9,7 @@ import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
+
 import java.nio.file.Files
 import java.nio.file.Path
 

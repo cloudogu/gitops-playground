@@ -3,7 +3,7 @@ package com.cloudogu.gitops
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.K8sClientForTest
-import org.junit.jupiter.api.Test 
+import org.junit.jupiter.api.Test
 
 class FeatureTest {
     Config config = new Config(
@@ -12,7 +12,7 @@ class FeatureTest {
 
     )
 
-    K8sClientForTest k8sClient = new K8sClientForTest( config)
+    K8sClientForTest k8sClient = new K8sClientForTest(config)
 
     @Test
     void 'Image pull secrets are create automatically'() {
@@ -27,7 +27,7 @@ class FeatureTest {
         config.registry.password = 'pw'
 
         createFeatureWithImage().install()
-        
+
         k8sClient.commandExecutorForTest.assertExecuted(
                 'kubectl create secret docker-registry proxy-registry -n foo-my-ns' +
                         ' --docker-server proxy-url --docker-username proxy-user --docker-password proxy-pw')
@@ -51,12 +51,12 @@ class FeatureTest {
         config.registry.password = 'pw'
 
         createFeatureWithImage().install()
-        
+
         k8sClient.commandExecutorForTest.assertExecuted(
                 'kubectl create secret docker-registry proxy-registry -n foo-my-ns' +
                         ' --docker-server url --docker-username ROuser --docker-password ROpw')
     }
-    
+
     @Test
     void 'Image pull secrets: Falls back to using credentials and URL '() {
         config.registry.createImagePullSecrets = true
@@ -65,7 +65,7 @@ class FeatureTest {
         config.registry.password = 'pw'
 
         createFeatureWithImage().install()
-        
+
         k8sClient.commandExecutorForTest.assertExecuted(
                 'kubectl create secret docker-registry proxy-registry -n foo-my-ns' +
                         ' --docker-server url --docker-username user --docker-password pw')

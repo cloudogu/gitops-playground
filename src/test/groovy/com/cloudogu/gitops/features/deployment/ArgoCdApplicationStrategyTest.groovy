@@ -1,11 +1,9 @@
 package com.cloudogu.gitops.features.deployment
 
 import com.cloudogu.gitops.config.Config
-
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TestScmmRepoProvider
-import com.fasterxml.jackson.annotation.JsonFormat
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 
@@ -101,25 +99,24 @@ spec:
     }
 
     private ArgoCdApplicationStrategy createStrategy(boolean argocdOperator = false) {
-            Config config = new Config(
-                    application: new Config.ApplicationSchema(
-                            namePrefix: 'foo-',
-                            gitName: 'Cloudogu',
-                            gitEmail: 'hello@cloudogu.com'
-                    ),
-                    scmm: new Config.ScmmSchema(
-                            username: "dont-care-username",
-                            password: "dont-care-password",
-                            protocol: "https",
-                            host: "localhost"
-                    ),
-                    features: new Config.FeaturesSchema(
-                            argocd: new Config.ArgoCDSchema(
-                                    operator: argocdOperator
-                            )
-                    )
-            )
-
+        Config config = new Config(
+                application: new Config.ApplicationSchema(
+                        namePrefix: 'foo-',
+                        gitName: 'Cloudogu',
+                        gitEmail: 'hello@cloudogu.com'
+                ),
+                scmm: new Config.ScmmSchema(
+                        username: "dont-care-username",
+                        password: "dont-care-password",
+                        protocol: "https",
+                        host: "localhost"
+                ),
+                features: new Config.FeaturesSchema(
+                        argocd: new Config.ArgoCDSchema(
+                                operator: argocdOperator
+                        )
+                )
+        )
 
 
         def repoProvider = new TestScmmRepoProvider(config, new FileSystemUtils()) {

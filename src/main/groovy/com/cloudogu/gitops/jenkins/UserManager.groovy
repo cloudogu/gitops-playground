@@ -15,7 +15,7 @@ class UserManager {
 
     void createUser(String username, String password) {
         log.debug("Add user $username to jenkins")
-        
+
         @Language("Groovy")
         def script = """
             def realm = Jenkins.getInstance().getSecurityRealm()
@@ -23,7 +23,7 @@ class UserManager {
 
             print(user)
         """
-        
+
         def result = apiClient.runScript(script)
 
         if (result != username) {
@@ -52,7 +52,8 @@ class UserManager {
         """
         def result = apiClient.runScript(script)
 
-        if (result !in ["true", "false"]) { // Both are valid return values for Set.add(). true == was already in set, false == was not already in set
+        if (result !in ["true", "false"]) {
+            // Both are valid return values for Set.add(). true == was already in set, false == was not already in set
             throw new RuntimeException("Failed to add permission $permission to $username: $result")
         }
     }
@@ -91,7 +92,8 @@ class UserManager {
         METRICS_VIEW("jenkins.metrics.api.Metrics.VIEW")
 
         private final String value
-        Permissions(String value){
+
+        Permissions(String value) {
             this.value = value
         }
 

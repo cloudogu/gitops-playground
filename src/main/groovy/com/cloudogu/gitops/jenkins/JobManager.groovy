@@ -29,7 +29,7 @@ class JobManager {
                                         username   : username,
                                         password   : password,
                                         description: description,
-                                        $class    : "com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl",
+                                        $class     : "com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl",
                                 ]
                         ]))
                         .build()
@@ -66,13 +66,13 @@ class JobManager {
         }
         return true
     }
-    
+
     boolean jobExists(String name) {
-        def response= apiClient.postRequestWithCrumb("job/$name")
+        def response = apiClient.postRequestWithCrumb("job/$name")
 
         return response.code() == 200
     }
-    
+
     void deleteJob(String name) {
         if (name.contains("'")) {
             throw new RuntimeException('Job name cannot contain quotes.')
@@ -89,7 +89,7 @@ class JobManager {
 
     void startJob(String jobName) {
 
-        def response= apiClient.postRequestWithCrumb(
+        def response = apiClient.postRequestWithCrumb(
                 "job/$jobName/build?delay=0sec")
 
         if (response.code() != 200) {

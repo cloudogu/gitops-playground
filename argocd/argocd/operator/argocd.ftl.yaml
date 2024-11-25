@@ -16,8 +16,8 @@ spec:
     <#if argocd.env?has_content>
     env:
     <#list argocd.env as envVar>
-      - name: ${envVar.name}
-        value: ${envVar.value}
+    - name: ${envVar.name}
+    value: ${envVar.value}
     </#list>
     </#if>
   notifications:
@@ -32,8 +32,8 @@ spec:
     <#if argocd.env?has_content>
     env:
     <#list argocd.env as envVar>
-      - name: ${envVar.name}
-        value: ${envVar.value}
+    - name: ${envVar.name}
+    value: ${envVar.value}
     </#list>
     </#if>
   controller:
@@ -47,8 +47,8 @@ spec:
     <#if argocd.env?has_content>
     env:
     <#list argocd.env as envVar>
-      - name: ${envVar.name}
-        value: ${envVar.value}
+    - name: ${envVar.name}
+    value: ${envVar.value}
     </#list>
     </#if>
   ha:
@@ -98,8 +98,8 @@ spec:
     <#if argocd.env?has_content>
     env:
     <#list argocd.env as envVar>
-      - name: ${envVar.name}
-        value: ${envVar.value}
+    - name: ${envVar.name}
+    value: ${envVar.value}
     </#list>
     </#if>
   server:
@@ -113,8 +113,8 @@ spec:
     <#if argocd.env?has_content>
     env:
     <#list argocd.env as envVar>
-      - name: ${envVar.name}
-        value: ${envVar.value}
+    - name: ${envVar.name}
+    value: ${envVar.value}
     </#list>
     </#if>
     route:

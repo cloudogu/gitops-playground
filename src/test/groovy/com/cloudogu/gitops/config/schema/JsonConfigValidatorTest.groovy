@@ -7,7 +7,7 @@ import org.junit.jupiter.params.provider.MethodSource
 
 import java.util.stream.Stream
 
-import static groovy.test.GroovyAssert.shouldFail 
+import static groovy.test.GroovyAssert.shouldFail
 
 class JsonConfigValidatorTest {
     static Stream<Arguments> validSchemas() {
@@ -19,16 +19,16 @@ class JsonConfigValidatorTest {
 
         ret.add(Arguments.of("defined images", [
                 images: [
-                        kubectl: "localhost:30000/kubectl",
-                        helm: "localhost:30000/helm",
+                        kubectl : "localhost:30000/kubectl",
+                        helm    : "localhost:30000/helm",
                         yamllint: "localhost:30000/yamllint",
-                        nginx: "localhost:30000/nginx",
+                        nginx   : "localhost:30000/nginx",
                 ]
         ]))
 
         ret.add(Arguments.of("multiple values", [
                 features: [
-                        argocd: [
+                        argocd     : [
                                 url: "http://localhost/argocd"
                         ],
                         exampleApps: [
@@ -60,13 +60,13 @@ class JsonConfigValidatorTest {
 
         ret.add(Arguments.of("invalid additional key within registry", [
                 registry: [
-                        url: "",
+                        url          : "",
                         unexpectedKey: "this should error"
                 ]
         ]))
 
         ret.add(Arguments.of("invalid additional key on root level", [
-                registry: [
+                registry     : [
                         url: "",
                 ],
                 unexpectedKey: "this should not exist"
@@ -74,7 +74,7 @@ class JsonConfigValidatorTest {
 
         ret.add(Arguments.of("specifying dynamic value", [
                 application: [
-                        namePrefix: "prefix",
+                        namePrefix          : "prefix",
                         namePrefixForEnvVars: "prefix"
                 ],
         ]))

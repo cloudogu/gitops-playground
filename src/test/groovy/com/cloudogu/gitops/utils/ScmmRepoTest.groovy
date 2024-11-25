@@ -1,7 +1,6 @@
 package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
-
 import com.cloudogu.gitops.scmm.ScmmRepo
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Ref

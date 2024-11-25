@@ -25,10 +25,10 @@ import org.graalvm.nativeimage.hosted.Feature;
 
 /**
  * Source: <a href="https://github.com/croz-ltd/klokwrk-project/tree/57202c58b792aff5f47e4c9033f91e5a31f100cc">...</a>
- * 
+ * <p>
  * Programmatically registers default Groovy methods (accessed by reflection) and {@code groovy.lang.Closure} extending classes from {@code org.codehaus.groovy.runtime} package with Graal native
  * image compiler.
- *
+ * <p>
  * Programmatically registers default Groovy methods classes from {@code org.codehaus.groovy.runtime} package with Graal native image compiler.
  * <p/>
  * Default groovy method classes are all {@code org.codehaus.groovy.runtime.dgm$number.class} classes.
@@ -49,7 +49,7 @@ public class GroovyDgmClassesRegistrationFeature implements Feature {
                 .enableClassInfo()
                 .acceptPackages(groovyRuntimePackage);
 
-            groovyRuntimeClassGraph.verbose();
+        groovyRuntimeClassGraph.verbose();
 
         try (ScanResult scanResult = groovyRuntimeClassGraph.scan()) {
             registerDefaultGroovyMethods(scanResult, true);

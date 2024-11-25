@@ -19,6 +19,6 @@ class Permission {
     }
 
     enum Role {
-        READ, WRITE,OWNER
+        READ, WRITE, OWNER
     }
 }

@@ -15,24 +15,24 @@ class HelmClient {
     }
 
     String addRepo(String repoName, String url) {
-        helm(['repo', 'add', repoName, url ])
+        helm(['repo', 'add', repoName, url])
     }
-    
+
     String dependencyBuild(String path) {
-        helm(['dependency', 'build', path ])
+        helm(['dependency', 'build', path])
     }
-    
+
     String upgrade(String release, String chartOrPath, Map args) {
-        helm(['upgrade', '-i', release, chartOrPath, '--create-namespace' ], args)
+        helm(['upgrade', '-i', release, chartOrPath, '--create-namespace'], args)
     }
-    
+
     String template(String release, String chartOrPath, Map args = [:]) {
-        helm(['template', release, chartOrPath ], args)
+        helm(['template', release, chartOrPath], args)
     }
-    
+
     private String helm(List<String> verbAndParams, Map args = [:]) {
-        List<String> command = ['helm'] + verbAndParams 
-        
+        List<String> command = ['helm'] + verbAndParams
+
         for (entry in args) {
             String key = entry.key
             String value = entry.value

@@ -5,8 +5,8 @@ metadata:
   namespace: ${namePrefix}monitoring
 spec:
   podSelector:
-      matchLabels:
-        app.kubernetes.io/name: mailhog
+    matchLabels:
+      app.kubernetes.io/name: mailhog
   policyTypes:
     - Ingress
   ingress:

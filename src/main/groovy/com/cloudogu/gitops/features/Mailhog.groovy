@@ -3,7 +3,6 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Config
-
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -28,7 +27,7 @@ class Mailhog extends Feature implements FeatureWithImage {
     String namespace = 'monitoring'
     Config config
     K8sClient k8sClient
-    
+
     private String username
     private String password
     private FileSystemUtils fileSystemUtils
@@ -59,20 +58,20 @@ class Mailhog extends Feature implements FeatureWithImage {
 
     @Override
     void enable() {
-        
+
         String bcryptMailhogPassword = BCrypt.hashpw(password, BCrypt.gensalt(4))
         def tmpHelmValues = new TemplatingEngine().replaceTemplate(fileSystemUtils.copyToTempDir(HELM_VALUES_PATH).toFile(), [
                 mail         : [
                         // Note that passing the URL object here leads to problems in Graal Native image, see Git history
-                        host: config.features.mail.mailhogUrl ? new URL(config.features.mail.mailhogUrl ).host : "",
+                        host: config.features.mail.mailhogUrl ? new URL(config.features.mail.mailhogUrl).host : "",
                 ],
                 isRemote     : config.application.remote,
                 username     : username,
                 passwordCrypt: bcryptMailhogPassword,
-                podResources: config.application.podResources,
-                config : config,
+                podResources : config.application.podResources,
+                config       : config,
                 // Allow for using static classes inside the templates
-                statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
+                statics      : new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
         ]).toPath()
 
         def helmConfig = config.features.mail.helm
@@ -96,10 +95,10 @@ class Mailhog extends Feature implements FeatureWithImage {
                     tmpHelmValues, DeploymentStrategy.RepoType.GIT)
         } else {
             deployer.deployFeature(
-                    helmConfig.repoURL ,
+                    helmConfig.repoURL,
                     'mailhog',
-                    helmConfig.chart ,
-                    helmConfig.version ,
+                    helmConfig.chart,
+                    helmConfig.version,
                     namespace,
                     'mailhog',
                     tmpHelmValues)

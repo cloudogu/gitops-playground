@@ -2,7 +2,6 @@ package com.cloudogu.gitops.jenkins
 
 import com.cloudogu.gitops.common.MockWebServerHttpsFactory
 import com.cloudogu.gitops.config.Config
-
 import io.micronaut.context.ApplicationContext
 import okhttp3.FormBody
 import okhttp3.JavaNetCookieJar
@@ -131,7 +130,7 @@ class ApiClientTest {
         webServer.setDispatcher { request ->
             switch (request.path) {
                 case "/jenkins/crumbIssuer/api/json":
-                    return new MockResponse().setBody('{"crumb": "'+crumbQueue.poll()+'", "crumbRequestField": "Jenkins-Crumb"}')
+                    return new MockResponse().setBody('{"crumb": "' + crumbQueue.poll() + '", "crumbRequestField": "Jenkins-Crumb"}')
                 case "/jenkins/scriptText":
                     def isInvalidCrumb = request.getHeader('Jenkins-Crumb') == 'the-invalid-crumb'
                     def body = !isInvalidCrumb ? 'ok' : '{"servlet":"Stapler", "message":"No valid crumb was included in the request", "url":"/scriptText", "status":"403"}'

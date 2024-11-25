@@ -10,6 +10,7 @@ import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 import jakarta.inject.Singleton
 import retrofit2.Response
+
 import java.nio.file.Path
 
 @Slf4j
@@ -35,7 +36,7 @@ class AirGappedUtils {
      * In air-gapped mode, the chart's dependencies can't be resolved.
      * As helm does not provide an option for changing them interactively, we push the charts into a separate repo. 
      * We alter these repos to resolve dependencies locally from SCM.
-     * 
+     *
      * @return the repo namespace and name
      */
     String mirrorHelmRepoToGit(Config.HelmConfig helmConfig) {
@@ -46,7 +47,7 @@ class AirGappedUtils {
 
         validateChart(repoNamespaceAndName, localHelmChartFolder, repoName)
 
-        createRepo(namespace, repoName,"Mirror of Helm chart $repoName from ${helmConfig.repoURL}")
+        createRepo(namespace, repoName, "Mirror of Helm chart $repoName from ${helmConfig.repoURL}")
 
         ScmmRepo repo = repoProvider.getRepo(repoNamespaceAndName)
         repo.cloneRepo()

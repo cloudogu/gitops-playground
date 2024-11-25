@@ -94,7 +94,7 @@ class JobManagerTest {
         }
         assertThat(exception.getMessage()).isEqualTo('Job name cannot contain quotes.')
     }
-    
+
     @Test
     void 'throws when job deletion fails'() {
         def client = mock(ApiClient)
@@ -124,9 +124,9 @@ class JobManagerTest {
             server.enqueue(new MockResponse().setBody('{"crumb":"the-crumb"}'))
             server.enqueue(new MockResponse().setResponseCode(200))
             def jobManager = new JobManager(new ApiClient(server.url("jenkins").toString(), 'admin', 'admin', new OkHttpClient()))
-            
+
             def exists = jobManager.jobExists('the-jobname')
-            
+
             assertThat(exists).isEqualTo(true)
             assertThat(server.requestCount).isEqualTo(2)
             server.takeRequest() // crumb
@@ -136,7 +136,7 @@ class JobManagerTest {
             server.shutdown()
         }
     }
-    
+
     @Test
     void 'checks non-existing Job'() {
         def server = new MockWebServer()
@@ -144,9 +144,9 @@ class JobManagerTest {
             server.enqueue(new MockResponse().setBody('{"crumb":"the-crumb"}'))
             server.enqueue(new MockResponse().setResponseCode(404))
             def jobManager = new JobManager(new ApiClient(server.url("jenkins").toString(), 'admin', 'admin', new OkHttpClient()))
-            
+
             def exists = jobManager.jobExists('the-jobname')
-            
+
             assertThat(exists).isEqualTo(false)
             assertThat(server.requestCount).isEqualTo(2)
             server.takeRequest() // crumb
@@ -185,7 +185,7 @@ class JobManagerTest {
             server.shutdown()
         }
     }
-    
+
     @Test
     void 'ignores existing Job'() {
         def server = new MockWebServer()

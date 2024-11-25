@@ -4,9 +4,9 @@ metadata:
   name: default
   namespace: ${namePrefix}argocd
   annotations:
-<#if mail.active?? && mail.active>
-    notifications.argoproj.io/subscribe.email: ${argocd.emailToAdmin}
-</#if>
+  <#if mail.active?? && mail.active>
+notifications.argoproj.io/subscribe.email: ${argocd.emailToAdmin}
+  </#if>
 spec:
   description: Default fallback AppProject if none other is specified. Is not allowed to do anything.
   clusterResourceWhitelist:

@@ -5,12 +5,12 @@ String getConfigRepositoryPRRepo() { '${namePrefix}argocd/example-apps' }
 String getScmManagerCredentials() { 'scmm-user' }
 String getConfigRepositoryPRBaseUrl() { env.SCMM_URL }
 
-String getDockerRegistryBaseUrl() { env.${namePrefixForEnvVars}REGISTRY_URL }
-String getDockerRegistryPath() { env.${namePrefixForEnvVars}REGISTRY_PATH }
+String getDockerRegistryBaseUrl() { env.${namePrefixForEnvVars} }
+String getDockerRegistryPath() { env.${namePrefixForEnvVars} }
 String getDockerRegistryCredentials() { 'registry-user' }
 
 <#if registry.twoRegistries>
-String getDockerRegistryProxyBaseUrl() { env.${namePrefixForEnvVars}REGISTRY_PROXY_URL }
+String getDockerRegistryProxyBaseUrl() { env.${namePrefixForEnvVars} }
 String getDockerRegistryProxyCredentials() { 'registry-proxy-user' }
 </#if>
 
@@ -18,7 +18,7 @@ String getDockerRegistryProxyCredentials() { 'registry-proxy-user' }
 String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/3rd-party-dependencies/ces-build-lib" }
 String getCesBuildLibVersion() { '2.5.0' }
 String getGitOpsBuildLibRepo() { "${env.SCMM_URL}/repo/3rd-party-dependencies/gitops-build-lib" }
-String getGitOpsBuildLibVersion() { '0.7.0'}
+String getGitOpsBuildLibVersion() { '0.7.0' }
 
 loadLibraries()
 
@@ -42,7 +42,7 @@ node {
 </#if>
 
 <#if jenkins.mavenCentralMirror?has_content>
-    mvn.useMirrors([name: 'maven-central-mirror', mirrorOf: 'central', url:  env.${namePrefixForEnvVars}MAVEN_CENTRAL_MIRROR])
+    mvn.useMirrors([name: 'maven-central-mirror', mirrorOf: 'central', url: env.${namePrefixForEnvVars}])
 </#if>
 <#noparse>
 
@@ -71,15 +71,15 @@ node {
             imageName = "${dockerRegistryBaseUrl}/${pathPrefix}${application}:${imageTag}"
 </#noparse>
 <#if registry.twoRegistries>
-<#noparse>
+    <#noparse>
             docker.withRegistry("https://${dockerRegistryProxyBaseUrl}", dockerRegistryProxyCredentials) {
                 image = docker.build(imageName, '.')
             }
-</#noparse>
+    </#noparse>
 <#else>
-<#noparse>
+    <#noparse>
             image = docker.build(imageName, '.')
-</#noparse>
+    </#noparse>
 </#if>
 <#noparse>
             if (isBuildSuccessful()) {
@@ -95,43 +95,43 @@ node {
             if (isBuildSuccessful() && env.BRANCH_NAME in ['main']) {
 
                 def gitopsConfig = [
-                        scm: [
+                        scm                    : [
                                 provider     : 'SCMManager',
                                 credentialsId: scmManagerCredentials,
                                 baseUrl      : configRepositoryPRBaseUrl,
-                                repositoryUrl   : configRepositoryPRRepo,
+                                repositoryUrl: configRepositoryPRRepo,
                         ],
-                        application: application,
-                        gitopsTool: 'ARGO',
+                        application            : application,
+                        gitopsTool             : 'ARGO',
                         folderStructureStrategy: 'ENV_PER_APP',
 </#noparse>
-                        k8sVersion : env.${namePrefixForEnvVars}K8S_VERSION,
-                        deployments: [
-                                sourcePath: 'k8s',
+                        k8sVersion             : env.${namePrefixForEnvVars},
+                        deployments            : [
+                                sourcePath         : 'k8s',
                                 destinationRootPath: 'apps',
-                                plain: [
+                                plain              : [
                                         updateImages: [
-                                                [ filename: 'deployment.yaml',
-                                                  containerName: application,
-                                                  imageName: imageName ]
+                                                [filename     : 'deployment.yaml',
+                                                 containerName: application,
+                                                 imageName    : imageName]
                                         ]
                                 ]
                         ],
-                        fileConfigmaps: [
+                        fileConfigmaps         : [
                                 // Showcase for gitops-build-lib: Convert file into a config map
                                 [
-                                        name : 'messages',
-                                        sourceFilePath : '../src/main/resources/messages/messages.properties',
-                                        stage: ['staging', 'production']
+                                        name          : 'messages',
+                                        sourceFilePath: '../src/main/resources/messages/messages.properties',
+                                        stage         : ['staging', 'production']
                                 ]
                         ],
-                        stages: [
-                                staging: [
-                                        namespace: '${namePrefix}example-apps-staging',
-                                        deployDirectly: true ],
+                        stages                 : [
+                                staging   : [
+                                        namespace     : '${namePrefix}example-apps-staging',
+                                        deployDirectly: true],
                                 production: [
-                                        namespace: '${namePrefix}example-apps-production',
-                                        deployDirectly: false ],
+                                        namespace     : '${namePrefix}example-apps-production',
+                                        deployDirectly: false],
                         ]
                 ]
 <#noparse>
@@ -139,8 +139,8 @@ node {
 
                 deployViaGitops(gitopsConfig)
             } else {
-                echo 'Skipping deploy, because build not successful or not on main branch'
-            }
+    echo 'Skipping deploy, because build not successful or not on main branch'
+}
         }
     }
 
@@ -154,8 +154,8 @@ String createSpecificGitOpsConfig() {
         // In the GitOps playground, we're loading the build libs from our local SCM so it also works in an offline context
         // As the gitops-build-lib also uses the ces-build-lib we need to pass those parameters on.
         // If you can access the internet, you can rely on the defaults, which load the lib from GitHub.
-        cesBuildLibRepo: cesBuildLibRepo,
-        cesBuildLibVersion: cesBuildLibVersion,
+        cesBuildLibRepo         : cesBuildLibRepo,
+        cesBuildLibVersion      : cesBuildLibVersion,
         cesBuildLibCredentialsId: scmManagerCredentials,
 
 
@@ -163,35 +163,35 @@ String createSpecificGitOpsConfig() {
         // it also works in an offline context.
         // Those parameters overwrite the following parameters.
         // If you can access the internet, you can rely on the defaults, which load the images from public registries.
-        buildImages          : [
+        buildImages             : [
 </#noparse>
 <#if registry.twoRegistries>
-            helm:       [
-                     image: '${images.helm}',
-                     credentialsId: dockerRegistryProxyCredentials
-            ],
-            kubectl:    [
-                    image: '${images.kubectl}',
+            helm       : [
+                    image        : '${images.helm}',
                     credentialsId: dockerRegistryProxyCredentials
             ],
-            kubeval:    [
-                    image: '${images.kubeval}',
+            kubectl    : [
+                    image        : '${images.kubectl}',
+                    credentialsId: dockerRegistryProxyCredentials
+            ],
+            kubeval    : [
+                    image        : '${images.kubeval}',
                     credentialsId: dockerRegistryProxyCredentials
             ],
             helmKubeval: [
-                    image: '${images.helmKubeval}',
+                    image        : '${images.helmKubeval}',
                     credentialsId: dockerRegistryProxyCredentials
             ],
-            yamllint:   [
-                    image: '${images.yamllint}',
+            yamllint   : [
+                    image        : '${images.yamllint}',
                     credentialsId: dockerRegistryProxyCredentials
             ]
 <#else>
-            helm: '${images.helm}',
-            kubectl: '${images.kubectl}',
-            kubeval: '${images.kubeval}',
+            helm       : '${images.helm}',
+            kubectl    : '${images.kubectl}',
+            kubeval    : '${images.kubeval}',
             helmKubeval: '${images.helmKubeval}',
-            yamllint: '${images.yamllint}'
+            yamllint   : '${images.yamllint}'
 </#if>
 <#noparse>
         ]

@@ -5,13 +5,13 @@ String getScmManagerCredentials() { 'scmm-user' }
 String getConfigRepositoryPRBaseUrl() { env.SCMM_URL }
 String getConfigRepositoryPRRepo() { '${namePrefix}argocd/example-apps' }
 
-String getDockerRegistryBaseUrl() { env.${namePrefixForEnvVars}REGISTRY_URL }
-String getDockerRegistryPath() { env.${namePrefixForEnvVars}REGISTRY_PATH }
+String getDockerRegistryBaseUrl() { env.${namePrefixForEnvVars} }
+String getDockerRegistryPath() { env.${namePrefixForEnvVars} }
 String getDockerRegistryCredentials() { 'registry-user' }
 
 <#if registry.twoRegistries>
 String getDockerRegistryProxyCredentials() { 'registry-proxy-user' }
-String getDockerRegistryProxyBaseUrl() { env.${namePrefixForEnvVars}REGISTRY_PROXY_URL }
+String getDockerRegistryProxyBaseUrl() { env.${namePrefixForEnvVars} }
 </#if>
 <#noparse>
 String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/3rd-party-dependencies/ces-build-lib/" }
@@ -34,7 +34,7 @@ node {
     mvn = cesBuildLib.MavenWrapper.new(this)
 </#noparse>
 <#if jenkins.mavenCentralMirror?has_content>
-    mvn.useMirrors([name: 'maven-central-mirror', mirrorOf: 'central', url:  env.${namePrefixForEnvVars}MAVEN_CENTRAL_MIRROR])
+    mvn.useMirrors([name: 'maven-central-mirror', mirrorOf: 'central', url: env.${namePrefixForEnvVars}])
 </#if>
 <#noparse>
 
@@ -63,24 +63,24 @@ node {
             imageName = "${dockerRegistryBaseUrl}/${pathPrefix}${application}:${imageTag}"
 </#noparse>
 <#if registry.twoRegistries>
-<#noparse>
+    <#noparse>
             docker.withRegistry("https://${dockerRegistryProxyBaseUrl}", dockerRegistryProxyCredentials) {
                 image = docker.build(imageName, '.')
             }
-</#noparse>
+    </#noparse>
 <#else>
-<#noparse>
+    <#noparse>
             image = docker.build(imageName, '.')
-</#noparse>
+    </#noparse>
 </#if>
 <#noparse>
                 if (isBuildSuccessful()) {
                     docker.withRegistry("https://${dockerRegistryBaseUrl}", dockerRegistryCredentials) {
                         image.push()
+                    }
+                } else {
+                    echo 'Skipping docker push, because build not successful'
                 }
-            } else {
-                echo 'Skipping docker push, because build not successful'
-            }
         }
 
         stage('Deploy') {

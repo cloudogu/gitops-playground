@@ -1,42 +1,42 @@
-<#assign DockerImageParser=statics['com.cloudogu.gitops.utils.DockerImageParser']>
-<#if config.features.mail.helm.image?has_content>
-<#assign imageObject = DockerImageParser.parse(config.features.mail.helm.image)>
-image:
-  repository: ${imageObject.registryAndRepositoryAsString}
-<#if imageObject.tag?has_content>  tag: ${imageObject.tag}</#if>
-</#if>
-<#if config.registry.createImagePullSecrets == true>
+  <#assign DockerImageParser=statics['com.cloudogu.gitops.utils.DockerImageParser']>
+    <#if config.features.mail.helm.image?has_content>
+    <#assign imageObject = DockerImageParser.parse(config.features.mail.helm.image)>
+  image:
+    repository: ${imageObject.registryAndRepositoryAsString}
+  <#if imageObject.tag?has_content>  tag: ${imageObject.tag}</#if>
+    </#if>
+    <#if config.registry.createImagePullSecrets == true>
 
-imagePullSecrets: 
- - name: proxy-registry
-</#if>
-service:
-  type: <#if isRemote>LoadBalancer<#else>NodePort</#if>
-  port:
-    http: 80
-  nodePort:
-    http: "9094"
-auth:
-  enabled: true
-  fileName: auth.txt
-  fileContents: "${username}:${passwordCrypt}"
-<#if mail.host?has_content>
+  imagePullSecrets:
+    - name: proxy-registry
+    </#if>
+  service:
+    type: <#if isRemote>LoadBalancer<#else>NodePort</#if>
+    port:
+      http: 80
+    nodePort:
+      http: "9094"
+  auth:
+    enabled: true
+    fileName: auth.txt
+    fileContents: "${username}:${passwordCrypt}"
+    <#if mail.host?has_content>
 
-ingress:
-  enabled: true
-  hosts:
-    - host: ${mail.host}
-      paths:
-        - path: "/"
-          pathType: Prefix
-</#if>
-<#if podResources == true>
+  ingress:
+    enabled: true
+    hosts:
+      - host: ${mail.host}
+        paths:
+          - path: "/"
+            pathType: Prefix
+    </#if>
+    <#if podResources == true>
 
-resources:
-  limits:
-    memory: 20Mi
-    cpu: 500m
-  requests:
-    memory: 10Mi
-    cpu: 20m
-</#if>
+  resources:
+    limits:
+      memory: 20Mi
+      cpu: 500m
+    requests:
+      memory: 10Mi
+      cpu: 20m
+    </#if>

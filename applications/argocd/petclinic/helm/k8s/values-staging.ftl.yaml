@@ -2,13 +2,13 @@ service:
   port: 80
   nodePort: 30022
 
-<#if exampleApps.petclinic.baseDomain?has_content>
+  <#if exampleApps.petclinic.baseDomain?has_content>
 ingress:
   hosts:
-    <#if urlSeparatorHyphen>
-    - host: staging-petclinic-helm-${exampleApps.petclinic.baseDomain}
-    <#else>
-    - host: staging.petclinic-helm.${exampleApps.petclinic.baseDomain}
-    </#if>
-      paths: ['/']
-</#if>
+      <#if urlSeparatorHyphen>
+        - host: staging-petclinic-helm-${exampleApps.petclinic.baseDomain}
+        <#else>
+        - host: staging.petclinic-helm.${exampleApps.petclinic.baseDomain}
+        </#if>
+        paths: [ '/' ]
+  </#if>

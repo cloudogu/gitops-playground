@@ -3,7 +3,6 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Config
-
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.scmm.ScmmRepoProvider
@@ -69,10 +68,10 @@ class PrometheusStack extends Feature implements FeatureWithImage {
                         grafanaEmailTo  : config.features.monitoring.grafanaEmailTo,
                         grafana         : [
                                 // Note that passing the URL object here leads to problems in Graal Native image, see Git history
-                                host: config.features.monitoring.grafanaUrl ? new URL(config.features.monitoring.grafanaUrl ).host : ""
+                                host: config.features.monitoring.grafanaUrl ? new URL(config.features.monitoring.grafanaUrl).host : ""
                         ]
                 ],
-                remote: config.application.remote,
+                remote            : config.application.remote,
                 skipCrds          : config.application.skipCrds,
                 namespaceIsolation: config.application.namespaceIsolation,
                 namespaces        : namespaceList,
@@ -85,11 +84,11 @@ class PrometheusStack extends Feature implements FeatureWithImage {
                 ],
                 scmm              : getScmmConfiguration(),
                 jenkins           : getJenkinsConfiguration(),
-                config: config,
+                config            : config,
                 // Allow for using static classes inside the templates
-                statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
+                statics           : new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
         ])) as Map
-        
+
         def valuesFromConfig = config.features.monitoring.helm.values
         def mergedMap = MapUtils.deepMerge(valuesFromConfig, templatedMap)
 
@@ -123,7 +122,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
             clusterResourcesRepo.cloneRepo()
             for (String currentNamespace : namespaceList) {
 
-                if(config.application.namespaceIsolation) {
+                if (config.application.namespaceIsolation) {
                     def rbacYaml = new TemplatingEngine().template(new File(RBAC_NAMESPACE_ISOLATION_TEMPLATE),
                             [namespace : currentNamespace,
                              namePrefix: namePrefix])
@@ -152,8 +151,8 @@ class PrometheusStack extends Feature implements FeatureWithImage {
 
             String prometheusVersion =
                     new YamlSlurper().parse(Path.of("${config.application.localHelmChartFolder}/${helmConfig.chart}",
-                    'Chart.yaml'))['version']
-            
+                            'Chart.yaml'))['version']
+
             deployer.deployFeature(
                     "${scmmUri}/repo/${repoNamespaceAndName}",
                     'prometheusstack',
@@ -206,7 +205,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
                 path    : uri.path
         ]
     }
-    
+
     private URI getScmmUri() {
         if (config.scmm.internal) {
             new URI('http://scmm-scm-manager.default.svc.cluster.local/scm')

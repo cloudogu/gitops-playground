@@ -3,7 +3,8 @@ package com.cloudogu.gitops.cli
 import com.cloudogu.gitops.config.schema.JsonSchemaGenerator
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
-import io.micronaut.context.ApplicationContext 
+import io.micronaut.context.ApplicationContext
+
 /**
  * Generates the JSON Config for the configuration file and prints it to docs/configuration.schema.json.
  * Passing '-' as parameter prints the schema to stdout

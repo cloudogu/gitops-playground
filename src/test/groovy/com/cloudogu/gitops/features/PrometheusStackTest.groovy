@@ -7,6 +7,7 @@ import com.cloudogu.gitops.utils.*
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
+
 import java.nio.file.Files
 import java.nio.file.Path
 

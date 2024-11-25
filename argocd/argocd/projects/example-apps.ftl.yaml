@@ -4,19 +4,19 @@ metadata:
   name: example-apps
   namespace: ${namePrefix}argocd
   annotations:
-<#if mail.active?? && mail.active>
-     notifications.argoproj.io/subscribe.email: ${argocd.emailToUser}
-</#if>
+  <#if mail.active?? && mail.active>
+notifications.argoproj.io/subscribe.email: ${argocd.emailToUser}
+  </#if>
 spec:
   description: Contains examples of end-user applications
   destinations:
-  - namespace: ${namePrefix}example-apps-production
-    server: https://kubernetes.default.svc
-  - namespace: ${namePrefix}example-apps-staging
-    server: https://kubernetes.default.svc
+    - namespace: ${namePrefix}example-apps-production
+      server: https://kubernetes.default.svc
+    - namespace: ${namePrefix}example-apps-staging
+      server: https://kubernetes.default.svc
   sourceRepos:
-  - ${scmm.baseUrl}/repo/${namePrefix}argocd/example-apps
-  - ${scmm.baseUrl}/repo/${namePrefix}argocd/nginx-helm-umbrella
+    - ${scmm.baseUrl}/repo/${namePrefix}argocd/example-apps
+    - ${scmm.baseUrl}/repo/${namePrefix}argocd/nginx-helm-umbrella
   
   
   # allow to only see application resources from the specified namespace

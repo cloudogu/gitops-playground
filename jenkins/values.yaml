@@ -80,7 +80,7 @@ controller:
           rm docker.tgz;
           find docker -type f -not -name 'docker' -delete;
           # Delete containerd, etc. We only need the docker CLI
-          # Note: "wget -O- | tar" leads to the folder being owned by root, even when creating it beforehand?!
+        # Note: "wget -O- | tar" leads to the folder being owned by root, even when creating it beforehand?!
         # That's
       volumeMounts:
         - name: host-tmp

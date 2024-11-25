@@ -1,7 +1,6 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Config
-
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -9,6 +8,7 @@ import com.cloudogu.gitops.utils.K8sClientForTest
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
+
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -19,13 +19,13 @@ import static org.mockito.Mockito.*
 class CertManagerTest {
     String chartVersion = "1.16.1"
     Config config = Config.fromMap([
-            features   : [
+            features: [
                     certManager: [
                             active: true,
                             helm  : [
-                                    chart               : 'cert-manager',
-                                    repoURL             : 'https://charts.jetstack.io',
-                                    version             : chartVersion,
+                                    chart  : 'cert-manager',
+                                    repoURL: 'https://charts.jetstack.io',
+                                    version: chartVersion,
                             ],
                     ],
             ],

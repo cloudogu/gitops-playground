@@ -10,7 +10,7 @@ class TemplatingEngine {
     TemplatingEngine(Configuration engine = null) {
         def configuration = new Configuration(new Version("2.3.32"))
         this.engine = engine ?: configuration
-        this.engine.setSharedVariable("nullToEmpty", '');
+        this.engine.setSharedVariable("nullToEmpty", '')
     }
 
     /**
@@ -41,7 +41,7 @@ class TemplatingEngine {
 
         StringWriter writer = new StringWriter()
         template.process(parameters, writer)
-        
+
         return writer.toString()
     }
 

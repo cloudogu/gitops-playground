@@ -4,9 +4,9 @@ metadata:
   name: argocd
   namespace: ${namePrefix}argocd
   annotations:
-<#if mail.active?? && mail.active>
-    notifications.argoproj.io/subscribe.email: ${argocd.emailToAdmin}
-</#if>
+  <#if mail.active?? && mail.active>
+notifications.argoproj.io/subscribe.email: ${argocd.emailToAdmin}
+  </#if>
 spec:
   description: AppProject for ArgoCD-specific applications.
   destinations:

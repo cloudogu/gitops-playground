@@ -2,7 +2,6 @@ package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
-
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.utils.CommandExecutor
@@ -49,9 +48,9 @@ class ScmManager extends Feature {
             def helmConfig = config.scmm.helm
 
             def tmpHelmValues = new TemplatingEngine().replaceTemplate(fileSystemUtils.copyToTempDir(HELM_VALUES_PATH).toFile(), [
-                    host  : config.scmm.ingress,
-                    remote: config.application.remote,
-                    username:  config.scmm.username,
+                    host    : config.scmm.ingress,
+                    remote  : config.application.remote,
+                    username: config.scmm.username,
                     password: config.scmm.password
             ]).toPath()
 

@@ -6,14 +6,13 @@ import org.junit.jupiter.api.Test
 
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
-import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable
 
 class K8sClientTest {
 
     Config config = new Config(application: new Config.ApplicationSchema(namePrefix: "foo-"))
 
-    K8sClientForTest k8sClient = new K8sClientForTest( config)
-    CommandExecutorForTest commandExecutor =  k8sClient.commandExecutorForTest
+    K8sClientForTest k8sClient = new K8sClientForTest(config)
+    CommandExecutorForTest commandExecutor = k8sClient.commandExecutorForTest
 
     @Test
     void 'Gets internal nodeIp'() {
@@ -23,7 +22,7 @@ class K8sClientTest {
         k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', '1.2.3.4', 0))
 
         def actualNodeIp = k8sClient.getInternalNodeIp()
-        
+
         assertThat(actualNodeIp).isEqualTo('1.2.3.4')
         assertThat(commandExecutor.actualCommands[1]).isEqualTo(
                 "kubectl get node/k3d-gitops-playground-server-0 " +
@@ -43,7 +42,7 @@ class K8sClientTest {
 
         assertThat(actualNodeIp).isEqualTo('1.2.3.4')
     }
-    
+
     @Test
     void 'Creates secret'() {
         k8sClient.createSecret('generic', 'my-secret', 'my-ns',
@@ -62,25 +61,25 @@ class K8sClientTest {
                 "kubectl create secret generic my-secret --from-literal key1=value1 --dry-run=client -oyaml" +
                         " | kubectl apply -f-")
     }
-    
+
     @Test
     void 'Creates imagePullSecret without namespace'() {
         k8sClient.createImagePullSecret('my-reg', 'host', 'user', 'pw')
 
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
                 'kubectl create secret docker-registry my-reg' +
-                ' --docker-server host --docker-username user --docker-password pw' +
-                ' --dry-run=client -oyaml | kubectl apply -f-')
+                        ' --docker-server host --docker-username user --docker-password pw' +
+                        ' --dry-run=client -oyaml | kubectl apply -f-')
     }
-    
+
     @Test
     void 'Creates imagePullSecret'() {
         k8sClient.createImagePullSecret('my-reg', 'ns', 'host', 'user', 'pw')
 
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
                 'kubectl create secret docker-registry my-reg -n foo-ns' +
-                ' --docker-server host --docker-username user --docker-password pw' +
-                ' --dry-run=client -oyaml | kubectl apply -f-')
+                        ' --docker-server host --docker-username user --docker-password pw' +
+                        ' --dry-run=client -oyaml | kubectl apply -f-')
     }
 
     @Test
@@ -110,7 +109,7 @@ class K8sClientTest {
                 "kubectl create configmap my-map -n foo-my-ns --from-file /file --dry-run=client -oyaml" +
                         " | kubectl apply -f-")
     }
-    
+
     @Test
     void 'Creates configmap without namespace'() {
         k8sClient.createConfigMapFromFile('my-map', '/file')
@@ -123,7 +122,7 @@ class K8sClientTest {
     @Test
     void 'Creates service type nodePort'() {
         k8sClient.createServiceNodePort('my-svc', '42:23', '32000', 'my-ns')
-        
+
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
                 'kubectl create service nodeport my-svc -n foo-my-ns --tcp 42:23 --node-port 32000' +
                         ' --dry-run=client -oyaml | kubectl apply -f-')
@@ -193,7 +192,7 @@ class K8sClientTest {
     void 'Deletes'() {
         k8sClient.delete('secret', 'my-ns',
                 new Tuple2('key1', 'value1'), new Tuple2('key2', 'value2'))
-        
+
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
                 "kubectl delete secret -n foo-my-ns --ignore-not-found=true --selector=key1=value1 --selector=key2=value2")
     }
@@ -248,20 +247,20 @@ class K8sClientTest {
         }
         assertThat(exception.message).isEqualTo('Could not fetch file.yaml within config-map the-map')
     }
-    
+
     @Test
     void 'returns current context'() {
         def expectedOutput = 'k3d-something'
         commandExecutor.enqueueOutput(new CommandExecutor.Output('', expectedOutput, 0))
-        
+
         assertThat(k8sClient.currentContext).isEqualTo(expectedOutput)
     }
-    
+
     @Test
     void 'returns useful information, even if current context is not set'() {
         def expectedOutput = ''
         commandExecutor.enqueueOutput(new CommandExecutor.Output('error: current-context is not set', expectedOutput, 1))
-        
+
         assertThat(k8sClient.currentContext).isEqualTo('(current context not set)')
     }
 
@@ -368,6 +367,7 @@ class K8sClientTest {
                 'kubectl patch service my-service -n foo-my-namespace --type json -p [{"op":"replace","path":"/spec/ports/1/nodePort","value":32000}]'
         )
     }
+
     @Test
     void 'Throws IllegalArgumentException when serviceName is null in patchServiceNodePort'() {
         def exception = shouldFail(IllegalArgumentException) {

@@ -5,17 +5,21 @@ Creates a complete GitOps-based operational stack on your Kubernetes clusters:
 * Deployment: GitOps via Argo CD with a ready-to-use [repo structure](#argocd)
 * Monitoring: [Prometheus and Grafana](#monitoring-tools)
 * Secrets Management:  [Vault and External Secrets Operator](#secrets-management-tools)
-* Notifications/Alerts: Grafana and ArgoCD can be predefined with either an external mailserver or [MailHog](https://github.com/mailhog/MailHog) for demo purposes.
-* Pipelines: Example applications using [Jenkins](#jenkins) with the [gitops-build-lib](https://github.com/cloudogu/gitops-build-lib) and [SCM-Manager](#scm-manager)
+* Notifications/Alerts: Grafana and ArgoCD can be predefined with either an external mailserver
+  or [MailHog](https://github.com/mailhog/MailHog) for demo purposes.
+* Pipelines: Example applications using [Jenkins](#jenkins) with
+  the [gitops-build-lib](https://github.com/cloudogu/gitops-build-lib) and [SCM-Manager](#scm-manager)
 * Ingress Controller: [ingress-nginx](https://github.com/kubernetes/ingress-nginx/)
 * Certificate Management: [cert-manager](#certificate-management)
-* Runs on: 
-  * local cluster (try it [with only one command](#tldr)), 
-  * in the public cloud, 
-  * and even air-gapped environments (work in progress).
+* Runs on:
+    * local cluster (try it [with only one command](#tldr)),
+    * in the public cloud,
+    * and even air-gapped environments (work in progress).
 
-The gitops-playground is derived from our experiences in [consulting](https://cloudogu.com/en/consulting/?mtm_campaign=gitops-playground&mtm_kwd=consulting&mtm_source=github&mtm_medium=link),
-operating the [myCloudogu platform](https://my.cloudogu.com/) and is used in our [GitOps trainings for both Flux and ArgoCD](https://platform.cloudogu.com/en/trainings/gitops-continuous-operations/?mtm_campaign=gitops-playground&mtm_kwd=training&mtm_source=github&mtm_medium=link).  
+The gitops-playground is derived from our experiences
+in [consulting](https://cloudogu.com/en/consulting/?mtm_campaign=gitops-playground&mtm_kwd=consulting&mtm_source=github&mtm_medium=link),
+operating the [myCloudogu platform](https://my.cloudogu.com/) and is used in
+our [GitOps trainings for both Flux and ArgoCD](https://platform.cloudogu.com/en/trainings/gitops-continuous-operations/?mtm_campaign=gitops-playground&mtm_kwd=training&mtm_source=github&mtm_medium=link).
 
 ![Playground features](docs/gitops-playground-features.drawio.svg)
 
@@ -38,7 +42,8 @@ There you might have to use `--base-url=http://local.gd` (see [local ingresses](
 
 See the list of [applications](#applications) to get started.
 
-We recommend running this command as an unprivileged user, that is inside the [docker group](https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user).
+We recommend running this command as an unprivileged user, that is inside
+the [docker group](https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user).
 
 ## Table of contents
 
@@ -48,46 +53,46 @@ We recommend running this command as an unprivileged user, that is inside the [d
 
 - [What is the GitOps Playground?](#what-is-the-gitops-playground)
 - [Installation](#installation)
-  - [Overview](#overview)
-  - [Create Cluster](#create-cluster)
-  - [Apply playground](#apply-playground)
-    - [Apply via Docker (local cluster)](#apply-via-docker-local-cluster)
-    - [Apply via kubectl (remote cluster)](#apply-via-kubectl-remote-cluster)
-    - [Additional parameters](#additional-parameters)
-      - [Configuration file](#configuration-file)
-      - [Deploy Ingress Controller](#deploy-ingress-controller)
-      - [Deploy Ingresses](#deploy-ingresses)
-      - [Deploy GitOps operators](#deploy-gitops-operators)
-      - [Deploy with local Cloudogu Ecosystem](#deploy-with-local-cloudogu-ecosystem)
-      - [Deploy with productive Cloudogu Ecosystem and GCR](#deploy-with-productive-cloudogu-ecosystem-and-gcr)
-      - [Override default images](#override-default-images)
-      - [Argo CD-Notifications](#argo-cd-notifications)
-      - [Monitoring](#monitoring)
-      - [Mail server](#mail-server)
-      - [MailHog](#mailhog)
-      - [External Mailserver](#external-mailserver)
-      - [Secrets Management](#secrets-management)
-  - [Remove playground](#remove-playground)
-  - [Running on Windows or Mac](#running-on-windows-or-mac)
-    - [Mac and Windows WSL](#mac-and-windows-wsl)
-    - [Windows Docker Desktop](#windows-docker-desktop)
+    - [Overview](#overview)
+    - [Create Cluster](#create-cluster)
+    - [Apply playground](#apply-playground)
+        - [Apply via Docker (local cluster)](#apply-via-docker-local-cluster)
+        - [Apply via kubectl (remote cluster)](#apply-via-kubectl-remote-cluster)
+        - [Additional parameters](#additional-parameters)
+            - [Configuration file](#configuration-file)
+            - [Deploy Ingress Controller](#deploy-ingress-controller)
+            - [Deploy Ingresses](#deploy-ingresses)
+            - [Deploy GitOps operators](#deploy-gitops-operators)
+            - [Deploy with local Cloudogu Ecosystem](#deploy-with-local-cloudogu-ecosystem)
+            - [Deploy with productive Cloudogu Ecosystem and GCR](#deploy-with-productive-cloudogu-ecosystem-and-gcr)
+            - [Override default images](#override-default-images)
+            - [Argo CD-Notifications](#argo-cd-notifications)
+            - [Monitoring](#monitoring)
+            - [Mail server](#mail-server)
+            - [MailHog](#mailhog)
+            - [External Mailserver](#external-mailserver)
+            - [Secrets Management](#secrets-management)
+    - [Remove playground](#remove-playground)
+    - [Running on Windows or Mac](#running-on-windows-or-mac)
+        - [Mac and Windows WSL](#mac-and-windows-wsl)
+        - [Windows Docker Desktop](#windows-docker-desktop)
 - [Stack](#stack)
-  - [Credentials](#credentials)
-  - [Argo CD](#argo-cd)
-    - [Why not use argocd-autopilot?](#why-not-use-argocd-autopilot)
-    - [cluster-resources](#cluster-resources)
-  - [Jenkins](#jenkins)
-  - [SCM-Manager](#scm-manager)
-  - [Monitoring tools](#monitoring-tools)
-  - [Secrets Management Tools](#secrets-management-tools)
-    - [dev mode](#dev-mode)
-    - [prod mode](#prod-mode)
-    - [Example app](#example-app)
-  - [Example Applications](#example-applications)
-    - [PetClinic with plain k8s resources](#petclinic-with-plain-k8s-resources)
-    - [PetClinic with helm](#petclinic-with-helm)
-    - [3rd Party app (NGINX) with helm, templated in Jenkins](#3rd-party-app-nginx-with-helm-templated-in-jenkins)
-    - [3rd Party app (NGINX) with helm, using Helm dependency mechanism](#3rd-party-app-nginx-with-helm-using-helm-dependency-mechanism)
+    - [Credentials](#credentials)
+    - [Argo CD](#argo-cd)
+        - [Why not use argocd-autopilot?](#why-not-use-argocd-autopilot)
+        - [cluster-resources](#cluster-resources)
+    - [Jenkins](#jenkins)
+    - [SCM-Manager](#scm-manager)
+    - [Monitoring tools](#monitoring-tools)
+    - [Secrets Management Tools](#secrets-management-tools)
+        - [dev mode](#dev-mode)
+        - [prod mode](#prod-mode)
+        - [Example app](#example-app)
+    - [Example Applications](#example-applications)
+        - [PetClinic with plain k8s resources](#petclinic-with-plain-k8s-resources)
+        - [PetClinic with helm](#petclinic-with-helm)
+        - [3rd Party app (NGINX) with helm, templated in Jenkins](#3rd-party-app-nginx-with-helm-templated-in-jenkins)
+        - [3rd Party app (NGINX) with helm, using Helm dependency mechanism](#3rd-party-app-nginx-with-helm-using-helm-dependency-mechanism)
 - [Development](#development)
 - [License](#license)
 - [Written Offer](#written-offer)
@@ -98,7 +103,8 @@ We recommend running this command as an unprivileged user, that is inside the [d
 
 The GitOps Playground provides a reproducible environment for setting up a GitOps-Stack.
 It provides an image for automatically setting up a Kubernetes Cluster including CI-server (Jenkins),
-source code management (SCM-Manager), Monitoring and Alerting (Prometheus, Grafana, MailHog), Secrets Management (Hashicorp
+source code management (SCM-Manager), Monitoring and Alerting (Prometheus, Grafana, MailHog), Secrets Management (
+Hashicorp
 Vault and External Secrets Operator) and of course Argo CD as GitOps operator.
 
 The playground also deploys a number of [example applications](#example-applications).
@@ -106,11 +112,13 @@ The playground also deploys a number of [example applications](#example-applicat
 The GitOps Playground lowers the barriers for operating your application on Kubernetes using GitOps.
 It creates a complete GitOps-based operational stack on your Kubernetes clusters.
 No need to read lots of books and operator
-docs, getting familiar with CLIs, ponder about GitOps Repository folder structures and promotion to different environments, etc.  
+docs, getting familiar with CLIs, ponder about GitOps Repository folder structures and promotion to different
+environments, etc.  
 The GitOps Playground is a pre-configured environment to see GitOps in motion, including more advanced use cases like
 notifications, monitoring and secret management.
 
-In addition to creating an operational stack in production, you can run the playground locally, for learning and developing new features. 
+In addition to creating an operational stack in production, you can run the playground locally, for learning and
+developing new features.
 
 We aim to be compatible with various environments, e.g. OpenShift and in an air-gapped network.
 The support for these is *work in progress*.
@@ -120,28 +128,32 @@ The support for these is *work in progress*.
 There a several options for running the GitOps playground
 
 * on a local k3d cluster
-  Works best on Linux, but is possible on [Windows and Mac](#windows-or-mac). 
+  Works best on Linux, but is possible on [Windows and Mac](#windows-or-mac).
 * on a remote k8s cluster
 * each with the option
     * to use an external Jenkins, SCM-Manager and registry
-      (this can be run in production, e.g. with a [Cloudogu Ecosystem](https://cloudogu.com/en/ecosystem/?mtm_campaign=gitops-playground&mtm_kwd=ces&mtm_source=github&mtm_medium=link)) or
+      (this can be run in production, e.g. with
+      a [Cloudogu Ecosystem](https://cloudogu.com/en/ecosystem/?mtm_campaign=gitops-playground&mtm_kwd=ces&mtm_source=github&mtm_medium=link))
+      or
     * to run everything inside the cluster (for demo only)
 
 The diagrams below show an overview of the playground's architecture and three scenarios for running the playground.
-For a simpler overview including all optional features such as monitoring and secrets management see intro at the very top.
+For a simpler overview including all optional features such as monitoring and secrets management see intro at the very
+top.
 
 Note that running Jenkins inside the cluster is meant for demo purposes only. The third graphic shows our production
 scenario with the Cloudogu EcoSystem (CES). Here better security and build performance is achieved using ephemeral
 Jenkins build agents spawned in the cloud.
 
 ### Overview
-| Playground on local machine                                             | Production environment with Cloudogu EcoSystem                                                                                                                                                        |
-|-------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+
+| Playground on local machine                                             | Production environment with Cloudogu EcoSystem                                     |
+|-------------------------------------------------------------------------|------------------------------------------------------------------------------------|
 | ![Playground on local machine](docs/gitops-playground-local.drawio.svg) | ![A possible production environment](docs/gitops-playground-production.drawio.svg) |
 
 ### Create Cluster
 
-You can apply the GitOps playground to 
+You can apply the GitOps playground to
 
 * a local k3d cluster (see [docs](docs/k3d.md) or [script](scripts/init-cluster.sh) for more details):
   ```shell
@@ -150,9 +162,11 @@ You can apply the GitOps playground to
   ```
 * a remote k8s cluster on Google Kubernetes Engine (e.g. via Terraform, see our [docs](docs/gke.md)),
 * or almost any k8s cluster.  
-  Note that if you want to deploy Jenkins inside the cluster, you either need Docker as container runtime or set Jenkins up to run its build on an agent that provides Docker.
+  Note that if you want to deploy Jenkins inside the cluster, you either need Docker as container runtime or set Jenkins
+  up to run its build on an agent that provides Docker.
 
-For the local cluster, you can avoid hitting DockerHub's rate limiting by using a mirror via the `--docker-io-registry-mirror` parameter.
+For the local cluster, you can avoid hitting DockerHub's rate limiting by using a mirror via the
+`--docker-io-registry-mirror` parameter.
 
 For example:
 
@@ -161,13 +175,14 @@ bash <(curl -s \
     https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh) --docker-io-registry-mirror https://mirror.gcr.io
 ```
 
-This parameter is passed on the containerd used by k3d. 
+This parameter is passed on the containerd used by k3d.
 
 In addition, the Jobs run by Jenkins are using the host's Docker daemon.  
 To avoid rate limits there, you might have to configure a mirror there as well.
 This can be done in the `/etc/docker/daemon.json` or in the config of Docker Desktop.
 
 For example:
+
 ```json
 {
   "registry-mirrors": ["https://mirror.gcr.io"]
@@ -201,12 +216,15 @@ docker run --rm -t -u $(id -u) \
 ``` 
 
 Note:
+
 * `docker pull` in advance makes sure you have the newest image, even if you ran this command before.  
-  Of course, you could also specify a specific [version of the image](https://github.com/cloudogu/gitops-playground/pkgs/container/gitops-playground/versions).
+  Of course, you could also specify a
+  specific [version of the image](https://github.com/cloudogu/gitops-playground/pkgs/container/gitops-playground/versions).
 * Using the host network makes it possible to determine `localhost` and to use k3d's kubeconfig without altering, as it
   access the API server via a port bound to localhost.
 * We run as the local user in order to avoid file permission issues with the `kubeconfig-${CLUSTER_NAME}.yaml.`
-* If you experience issues and want to access the full log files, use the following command while the container is running:
+* If you experience issues and want to access the full log files, use the following command while the container is
+  running:
 
 ```bash
 docker exec -it \
@@ -255,15 +273,17 @@ docker run -t --rm ghcr.io/cloudogu/gitops-playground --help
 ##### Configuration file
 
 You can also use a configuration file to specify the parameters (`--config-file` or `--config-map`).
-That file must be a YAML file. 
+That file must be a YAML file.
 
 Note that the config file is not yet a complete replacement for CLI parameters.
 
 You can use `--output-config-file` to output the current config as set by defaults and CLI parameters.
 
-In addition, For easier validation and auto-completion, we provide a [schema file](https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/configuration.schema.json).
+In addition, For easier validation and auto-completion, we provide
+a [schema file](https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/configuration.schema.json).
 
-For example in Jetbrains IntelliJ IDEA, you can use the schema for autocompletion and validation when you put the following at the beginning of your config file:
+For example in Jetbrains IntelliJ IDEA, you can use the schema for autocompletion and validation when you put the
+following at the beginning of your config file:
 
 ```yaml
 # $schema: https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/configuration.schema.json
@@ -316,18 +336,21 @@ kubectl delete cm gitops-config
 
 ##### Deploy Ingress Controller
 
-In the default installation the GitOps-Playground comes without an Ingress-Controller.  
+In the default installation the GitOps-Playground comes without an Ingress-Controller.
 
 We use Nginx as default Ingress-Controller.
 It can be enabled via the configfile or parameter `--ingress-nginx`.
 
-In order to make use of the ingress controller, it is recommended to use it in conjunction with [`--base-url`](#deploy-ingresses), which will create `Ingress` objects for all components of the GitOps playground.
+In order to make use of the ingress controller, it is recommended to use it in conjunction with [
+`--base-url`](#deploy-ingresses), which will create `Ingress` objects for all components of the GitOps playground.
 
 The ingress controller is based on the helm chart [`ingress-nginx`](https://kubernetes.github.io/ingress-nginx).
 
-Additional parameters from this chart's values.yaml file can be added to the installation through the gitops-playground [configuration file](#configuration-file).
+Additional parameters from this chart's values.yaml file can be added to the installation through the
+gitops-playground [configuration file](#configuration-file).
 
 Example:
+
 ```yaml
 features:
   ingressNginx:
@@ -337,17 +360,21 @@ features:
         controller:
           replicaCount: 4
 ```
+
 In this Example we override the default `controller.replicaCount` (GOP's default is 2).
 
-This config file is merged with precedence over the defaults set by 
+This config file is merged with precedence over the defaults set by
+
 * [the GOP](applications/cluster-resources/ingress-nginx-helm-values.ftl.yaml) and
 * [the charts itself](https://github.com/kubernetes/ingress-nginx/blob/main/charts/ingress-nginx/values.yaml).
 
 ##### Deploy Ingresses
 
-It is possible to deploy `Ingress` objects for all components. You can either 
+It is possible to deploy `Ingress` objects for all components. You can either
+
 * Set a common base url (`--base-url=https://example.com`) or
-* individual URLS: 
+* individual URLS:
+
 ```
 --argocd-url https://argocd.example.com 
 --grafana-url https://grafana.example.com 
@@ -356,20 +383,24 @@ It is possible to deploy `Ingress` objects for all components. You can either
 --petclinic-base-domain petclinic.example.com 
 --nginx-base-domain nginx.example.com
 ```
+
 * or both, where the individual URLs take precedence.
 
-Note: 
-* `jenkins-url` and `scmm-url` are for external services and do not lead to ingresses, but you can set them via `--base-url` for now.
-* In order to make use of the `Ingress` you need an ingress controller. If your cluster does not provide one, the Playground can deploy one for you, via the [`--ingress-nginx` parameter](#deploy-ingress-controller).
+Note:
+
+* `jenkins-url` and `scmm-url` are for external services and do not lead to ingresses, but you can set them via
+  `--base-url` for now.
+* In order to make use of the `Ingress` you need an ingress controller. If your cluster does not provide one, the
+  Playground can deploy one for you, via the [`--ingress-nginx` parameter](#deploy-ingress-controller).
 
 ###### Subdomains vs hyphen-separated ingresses
 
-* By default, the ingresses are built as subdomains of `--base-url`.  
-* You can change this behaviour using the parameter `--url-separator-hyphen`.  
+* By default, the ingresses are built as subdomains of `--base-url`.
+* You can change this behaviour using the parameter `--url-separator-hyphen`.
 * With this, hyphen are used instead of dots to separate application name from base URL.
-* Examples: 
-  * `--base-url=https://xyz.example.org`: `argocd.xyz.example.org` (default)  
-  * `--base-url=https://xyz.example.org`: `argocd-xyz.example.org` (`--url-separator-hyphen`)
+* Examples:
+    * `--base-url=https://xyz.example.org`: `argocd.xyz.example.org` (default)
+    * `--base-url=https://xyz.example.org`: `argocd-xyz.example.org` (`--url-separator-hyphen`)
 * This is useful when you have a wildcard certificate for the TLD, but use a subdomain as base URL.  
   Here, browsers accept the validity only for the first level of subdomains.
 
@@ -377,38 +408,46 @@ Note:
 
 The ingresses can also be used when running the playground on your local machine:
 
-* Ingresses might be easier to remember than arbitrary port numbers and look better in demos 
-* With ingresses, we can execute our [local clusters](docs/k3d.md) in higher isolation or multiple playgrounds concurrently
+* Ingresses might be easier to remember than arbitrary port numbers and look better in demos
+* With ingresses, we can execute our [local clusters](docs/k3d.md) in higher isolation or multiple playgrounds
+  concurrently
 * Ingresses are required [for running on Windows/Mac](#windows-or-mac).
 
-To use them locally, 
+To use them locally,
+
 * init your cluster (`init-cluster.sh`).
-* apply your playground with the following parameters  
-  * `--base-url=http://localhost` 
-    * this is possible on Windows (tested on 11), Mac (tested on Ventura) or when using Linux with [systemd-resolved](https://www.freedesktop.org/software/systemd/man/systemd-resolved.service.html) (default in Ubuntu, not Debian)  
-      As an alternative, you could add all `*.localhost` entries to your `hosts` file.  
-      Use `kubectl get ingress -A` to get a full list 
-    * Then, you can reach argocd on `http://argocd.localhost`, for example
-  * `--base-url=http://local.gd` (or `127.0.0.1.nip.io`, `127.0.0.1.sslip.io`, or others)
-    * This should work for all other machines that have access to the internet without further config 
-    * Then, you can reach argocd on `http://argocd.local.gd`, for example
-* Note that when using port 80, the URLs are shorter, but you run into issues because port 80 is regarded as a privileged port. 
+* apply your playground with the following parameters
+    * `--base-url=http://localhost`
+        * this is possible on Windows (tested on 11), Mac (tested on Ventura) or when using Linux
+          with [systemd-resolved](https://www.freedesktop.org/software/systemd/man/systemd-resolved.service.html) (
+          default in Ubuntu, not Debian)  
+          As an alternative, you could add all `*.localhost` entries to your `hosts` file.  
+          Use `kubectl get ingress -A` to get a full list
+        * Then, you can reach argocd on `http://argocd.localhost`, for example
+    * `--base-url=http://local.gd` (or `127.0.0.1.nip.io`, `127.0.0.1.sslip.io`, or others)
+        * This should work for all other machines that have access to the internet without further config
+        * Then, you can reach argocd on `http://argocd.local.gd`, for example
+* Note that when using port 80, the URLs are shorter, but you run into issues because port 80 is regarded as a
+  privileged port.
   Java applications seem not to be able to reach `localhost:80` or even `127.0.0.1:80` (`NoRouteToHostException`)
 * You can change the port using `init-cluster.sh --bind-ingress-port=8080`.  
   When you do, make sure to append the same port when applying the playground: `--base-url=http://localhost:8080`
-* If your setup requires you to bind to a specific interface, you can just pass it with e.g. `--bind-ingress-port=127.0.0.1:80`
+* If your setup requires you to bind to a specific interface, you can just pass it with e.g.
+  `--bind-ingress-port=127.0.0.1:80`
 
 ##### Deploy GitOps operators
 
 * `--argocd` - deploy Argo CD GitOps operator
 
 > ⚠️ **Note** that switching between operators is not supported.  
-That is, expect errors (for example with cluster-resources) if you apply the playground once with Argo CD and the next
-time without it. We recommend resetting the cluster with `init-cluster.sh` beforehand.
+> That is, expect errors (for example with cluster-resources) if you apply the playground once with Argo CD and the next
+> time without it. We recommend resetting the cluster with `init-cluster.sh` beforehand.
 
 ##### Deploy with local Cloudogu Ecosystem
 
-See our [Quickstart Guide](https://cloudogu.com/en/ecosystem/quick-start-guide/?mtm_campaign=gitops-playground&mtm_kwd=ces&mtm_source=github&mtm_medium=link) on how to set up the instance.  
+See
+our [Quickstart Guide](https://cloudogu.com/en/ecosystem/quick-start-guide/?mtm_campaign=gitops-playground&mtm_kwd=ces&mtm_source=github&mtm_medium=link)
+on how to set up the instance.  
 Then set the following parameters.
 
 ```shell
@@ -428,7 +467,8 @@ Then set the following parameters.
 
 ##### Deploy with productive Cloudogu Ecosystem and GCR
 
-Using Google Container Registry (GCR) fits well with our cluster creation example via Terraform on Google Kubernetes Engine
+Using Google Container Registry (GCR) fits well with our cluster creation example via Terraform on Google Kubernetes
+Engine
 (GKE), see our [docs](docs/gke.md).
 
 Note that you can get a free CES demo instance set up with a Kubernetes Cluster as GitOps Playground
@@ -488,10 +528,8 @@ Images used by various tools and exercises can be configured using the following
 * `--nginx-image someRegistry/someImage:1.0.0`
 * `--maven-image someRegistry/someImage:1.0.0`
 
-Note that specifying a tag is mandatory.  
-  
-  
-  
+Note that specifying a tag is mandatory.
+
 ##### Argo CD-Notifications
 
 If you are using a remote cluster, you can set the `--argocd-url` parameter so that argocd-notification messages have a
@@ -503,10 +541,10 @@ You can specify email addresses for notifications (note that by default, MailHog
 * `--argocd-email-to-admin`: Alerts send to admin. Default is `infra@example.org`)
 * `--argocd-email-to-user`: Alerts send to user. Default is `app-team@example.org`)
 
-
 ##### Monitoring
 
-Set the parameter `--monitoring` to enable deployment of monitoring and alerting tools like prometheus, grafana and mailhog.
+Set the parameter `--monitoring` to enable deployment of monitoring and alerting tools like prometheus, grafana and
+mailhog.
 
 See [Monitoring tools](#monitoring-tools) for details.
 
@@ -525,16 +563,20 @@ If you set either `--mailhog` or `--mail` parameter, MailHog will be installed
 If you set `--smtp-*` parameters, a external Mailserver will be used and MailHog will not be deployed.
 
 ##### MailHog
+
 Set the parameter `--mailhog` to enable MailHog.
 
 This will deploy MailHog and configure Argo CD and Grafana to send mails to MailHog.  
-Sender and recipient email addresses can be set via parameters in some applications, e.g. `--grafana-email-from` or `--argocd-email-to-user`.
+Sender and recipient email addresses can be set via parameters in some applications, e.g. `--grafana-email-from` or
+`--argocd-email-to-user`.
 
 Parameters:
+
 * `--mailhog`: Activate MailHog as internal Mailserver
 * `--mailhog-url`: Specify domain name (ingress) under which MailHog will be served
 
 ##### External Mailserver
+
 If you want to use an external Mailserver you can set it with these parameters
 
 * `--smtp-address`: External Mailserver SMTP address or IP
@@ -543,7 +585,8 @@ If you want to use an external Mailserver you can set it with these parameters
 * `--smtp-password`: External Mailservers login password. Make sure to put your password in single quotes.
 
 This will configure Argo CD and Grafana to send mails using your external mailserver.  
-In addition you should set matching sender and recipient email addresses, e.g. `--grafana-email-from` or `--argocd-email-to-user`.
+In addition you should set matching sender and recipient email addresses, e.g. `--grafana-email-from` or
+`--argocd-email-to-user`.
 
 ##### Secrets Management
 
@@ -552,40 +595,51 @@ secrets operator.
 See [Secrets management tools](#secrets-managment-tools) for details.
 
 ##### Certificate Management
-Is implemented by cert-manager. 
+
+Is implemented by cert-manager.
 Set the parameter `--cert-manager` to enable cert-manager.
 For custom images use this parameters to override defaults:
-- --cert-manager-image 
-- --cert-manager-webhook-image 
-- --cert-manager-cainjector-image 
+
+- --cert-manager-image
+- --cert-manager-webhook-image
+- --cert-manager-cainjector-image
 - --cert-manager-acme-solver-image
 - --cert-manager-startup-api-check-image
 
 i.e.
+
 ```
 --cert-manager-image someRegistry/cert-manager-controller:latest
 ``` 
+
 ### Remove playground
 
 For k3d, you can just `k3d cluster delete gitops-playground`. This will delete the whole cluster.
 If you want to delete k3d use `rm .local/bin/k3d`.
 
 To remove the playground without deleting the cluster, use the option `--destroy`.
-You need to pass the same parameters when deploying the playground to ensure that the destroy script 
+You need to pass the same parameters when deploying the playground to ensure that the destroy script
 can authenticate with all tools.
-Note that this option has limitations. It does not remove CRDs, namespaces, locally deployed SCM-Manager, Jenkins and registry, plugins for SCM-Manager and Jenkins 
+Note that this option has limitations. It does not remove CRDs, namespaces, locally deployed SCM-Manager, Jenkins and
+registry, plugins for SCM-Manager and Jenkins
 
 ### Running on Windows or Mac
 
-* In general: We cannot use the `host` network, so it's easiest to access via [ingress controller](#deploy-ingress-controller) and [ingresses](#local-ingresses).
+* In general: We cannot use the `host` network, so it's easiest to access
+  via [ingress controller](#deploy-ingress-controller) and [ingresses](#local-ingresses).
 * `--base-url=http://localhost --ingress-nginx` should work on both Windows and Mac.
-* In case of problems resolving e.g. `jenkins.localhost`, you could try using `--base-url=http://local.gd` or similar, as described in [local ingresses](#local-ingresses).
+* In case of problems resolving e.g. `jenkins.localhost`, you could try using `--base-url=http://local.gd` or similar,
+  as described in [local ingresses](#local-ingresses).
 
 #### Mac and Windows WSL
 
-On macOS and when using the Windows Subsystem Linux on Windows (WSL), you can just run our [TL;DR command](#tldr) after installing Docker.
+On macOS and when using the Windows Subsystem Linux on Windows (WSL), you can just run our [TL;DR command](#tldr) after
+installing Docker.
 
-For Windows, we recommend using [Windows Subsystem for Linux version 2](https://learn.microsoft.com/en-us/windows/wsl/install#install-wsl-command) (WSL2) with a [native installation of Docker Engine](https://docs.docker.com/engine/install/), because it's easier to set up and less prone to errors.
+For Windows, we recommend
+using [Windows Subsystem for Linux version 2](https://learn.microsoft.com/en-us/windows/wsl/install#install-wsl-command) (
+WSL2) with a [native installation of Docker Engine](https://docs.docker.com/engine/install/), because it's easier to set
+up and less prone to errors.
 
 For macOS, please increase the Memory limit in Docker Desktop (for your DockerVM) to be > 10 GB.
 Recommendation: 16GB.
@@ -600,15 +654,17 @@ bash <(curl -s \
 # If you want to try all features, you might want to add these params: --mail --monitoring --vault=dev
 ```
 
-When you encounter errors with port 80 you might want to use e.g. 
-* `init-cluster.sh) --bind-ingress-port=8080` and 
+When you encounter errors with port 80 you might want to use e.g.
+
+* `init-cluster.sh) --bind-ingress-port=8080` and
 * `--base-url=http://localhost:8080` instead.
 
 #### Windows Docker Desktop
 
 * As mentioned in the previous section, we recommend using WSL2 with a native Docker Engine.
 * If you must, you can also run using Docker Desktop from native Windows console (see bellow)
-* However, there seems to be a problem when the Jenkins Jobs running the playground access docker, e.g.   
+* However, there seems to be a problem when the Jenkins Jobs running the playground access docker, e.g.
+
 ```
 $ docker run -t -d -u 0:133 -v ... -e ******** bitnami/kubectl:1.25.4 cat
 docker top e69b92070acf3c1d242f4341eb1fa225cc40b98733b0335f7237a01b4425aff3 -eo pid,comm
@@ -616,19 +672,25 @@ process apparently never started in /tmp/gitops-playground-jenkins-agent/workspa
 (running Jenkins temporarily with -Dorg.jenkinsci.plugins.durabletask.BourneShellScript.LAUNCH_DIAGNOSTICS=true might make the problem clearer)
 Cannot contact default-1bg7f: java.nio.file.NoSuchFileException: /tmp/gitops-playground-jenkins-agent/workspace/xample-apps_petclinic-plain_main/.configRepoTempDir@tmp/durable-7f109066/output.txt
 ```
-* In Docker Desktop, it's recommended to use WSL2 as backend. 
-* Using the Hyper-V backend should also work, but we experienced random `CrashLoopBackoff`s of running pods due to liveness probe timeouts.  
+
+* In Docker Desktop, it's recommended to use WSL2 as backend.
+* Using the Hyper-V backend should also work, but we experienced random `CrashLoopBackoff`s of running pods due to
+  liveness probe timeouts.  
   Same as for macOS, increasing the Memory limit in Docker Desktop (for your DockerVM) to be > 10 GB might help.  
   Recommendation: 16GB.
 
 Here is how you can start the playground from a Windows-native PowerShell console:
 
-* [Install k3d](https://k3d.io/#installation), see [init-cluster.sh](scripts/init-cluster.sh) for `K3D_VERSION`, e.g. using `winget`
+* [Install k3d](https://k3d.io/#installation), see [init-cluster.sh](scripts/init-cluster.sh) for `K3D_VERSION`, e.g.
+  using `winget`
+
 ```powershell
 winget install k3d --version x.y.z
 ```
+
 * Create k3d cluster.
-  See `K3S_VERSION` in [init-cluster.sh](scripts/init-cluster.sh) for `$image`, then execute  
+  See `K3S_VERSION` in [init-cluster.sh](scripts/init-cluster.sh) for `$image`, then execute
+
 ```powershell
 $ingress_port = "80"
 $registry_port = "30000"
@@ -646,15 +708,18 @@ k3d cluster create gitops-playground `
 # Write $HOME/.config/k3d/kubeconfig-gitops-playground.yaml
 k3d kubeconfig write gitops-playground
 ```
+
 * Note that
-  * You can ignore the warning about docker.sock
-  * We're mounting the docker socket, so it can be used by the Jenkins Agents for the docker-plugin.
-  * Windows seems not to provide a group id for the docker socket. So the Jenkins Agents run as root user.
-  * If you prefer running with an unprivileged user, consider running on WSL2, Mac or Linux
-  * You could also add `-v gitops-playground-build-cache:/tmp@server:0 ` to persist the Cache of the Jenkins agent between restarts of k3d containers.
+    * You can ignore the warning about docker.sock
+    * We're mounting the docker socket, so it can be used by the Jenkins Agents for the docker-plugin.
+    * Windows seems not to provide a group id for the docker socket. So the Jenkins Agents run as root user.
+    * If you prefer running with an unprivileged user, consider running on WSL2, Mac or Linux
+    * You could also add `-v gitops-playground-build-cache:/tmp@server:0 ` to persist the Cache of the Jenkins agent
+      between restarts of k3d containers.
 * Apply playground:  
-  Note that when using a `$registry_port` other than `30000` append the command `--internal-registry-port=$registry_port` bellow
-  
+  Note that when using a `$registry_port` other than `30000` append the command
+  `--internal-registry-port=$registry_port` bellow
+
 ```powershell
 docker run --rm -t --pull=always `
     -v $HOME/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config `
@@ -666,6 +731,7 @@ docker run --rm -t --pull=always `
 
 As described [above](#what-is-the-gitops-playground) the GitOps playground comes with a number of applications. Some of
 them can be accessed via web.
+
 * Jenkins
 * SCM-Manager
 * Argo CD
@@ -687,6 +753,7 @@ kubectl -n "${namespace}" get svc "${serviceName}" \
 
 There is also a convenience script `scripts/get-remote-url`. The script waits, if externalIP is not present, yet.
 You could use this conveniently like so:
+
 ```shell
 bash <(curl -s \
   https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/get-remote-url) \
@@ -735,18 +802,21 @@ From there everything is managed via GitOps. This diagram shows how it works.
 
 1. The `bootstrap` application manages the folder `applications`, which also contains `bootstrap` itself.  
    With this, changes to the `bootstrap` application can be done via GitOps. The `bootstrap` application also deploys
-   other apps ([App Of Apps pattern](https://github.com/argoproj/argo-cd/blob/v2.7.1/docs/operator-manual/cluster-bootstrapping.md?plain=1))
+   other
+   apps ([App Of Apps pattern](https://github.com/argoproj/argo-cd/blob/v2.7.1/docs/operator-manual/cluster-bootstrapping.md?plain=1))
 2. The `argocd` application manages the folder `argocd` which contains Argo CD's resources as an umbrella helm chart.  
    The [umbrella chart pattern](https://github.com/helm/helm-www/blob/d2543/content/en/docs/howto/charts_tips_and_tricks.md#complex-charts-with-many-dependencies)
    allows describing the actual values in `values.yaml` and deploying additional resources (such as secrets and
    ingresses) via the `templates` folder. The actual ArgoCD chart is declared in the `Chart.yaml`
 3. The `Chart.yaml` contains the Argo CD helm chart as `dependency`. It points to a deterministic version of the Chart
    (pinned via `Chart.lock`) that is pulled from the Chart repository on the internet.  
-   This mechanism can be used to upgrade Argo CD via GitOps. See the [Readme of the argocd repository](argocd/argocd/README.md)
+   This mechanism can be used to upgrade Argo CD via GitOps. See
+   the [Readme of the argocd repository](argocd/argocd/README.md)
    for details.
 4. The `projects` application manages the `projects` folder, that contains the following `AppProjects`:
     * the `argocd` project, used for bootstrapping
-    * the built-in `default` project (which is restricted to [eliminate threats to security](https://github.com/argoproj/argo-cd/blob/ce8825ad569bf961178606acc5f3842532148093/docs/threat_model.pdf))
+    * the built-in `default` project (which is restricted
+      to [eliminate threats to security](https://github.com/argoproj/argo-cd/blob/ce8825ad569bf961178606acc5f3842532148093/docs/threat_model.pdf))
     * one project per team (to implement least privilege and also notifications per team):
         * `cluster-resources` (for platform admin, needs more access to cluster) and
         * `example-apps` (for developers, needs less access to cluster)
@@ -761,31 +831,41 @@ From there everything is managed via GitOps. This diagram shows how it works.
       resources used by multiple apps, etc.)
 7. The `misc` application points to the `misc` folder
 8. The `my-app-staging` application points to the `apps/my-app/staging` folder within the same repo. This provides a
-   folder structure for release promotion. The `my-app-*` applications implement the [Environment per App Pattern](https://github.com/cloudogu/gitops-patterns/tree/8e1056f#global-vs-env-per-app).
+   folder structure for release promotion. The `my-app-*` applications implement
+   the [Environment per App Pattern](https://github.com/cloudogu/gitops-patterns/tree/8e1056f#global-vs-env-per-app).
    This pattern allows each application to have its own environments, e.g. production and staging or none at all.
    Note that the actual YAML here could either be pushed manually or using the CI server.
    The [applications](#example-applications) contain examples that push config changes from the app repo to the GitOps
-   repo using the CI server. This implementation mixes the [Repo per Team and Repo per App patterns](https://github.com/cloudogu/gitops-patterns/tree/8e1056f#repository-structure)
+   repo using the CI server. This implementation mixes
+   the [Repo per Team and Repo per App patterns](https://github.com/cloudogu/gitops-patterns/tree/8e1056f#repository-structure)
 9. The corresponding production environment is realizing using the `my-app-production` application, that points to the
    `apps/my-app/production` folder within the same repo.  
-   Note that it is recommended to protect the `production` folders from manual access, if supported by the SCM of your choice.  
+   Note that it is recommended to protect the `production` folders from manual access, if supported by the SCM of your
+   choice.  
    Alternatively, instead of different YAMLs files as used in the diagram, these applications could be realized as
-    * Two applications in the same YAML (implemented in the playground, see e.g. [`petclinic-plain.yaml`](argocd/example-apps/argocd/petclinic-plain.ftl.yaml))
+    * Two applications in the same YAML (implemented in the playground, see e.g. [
+      `petclinic-plain.yaml`](argocd/example-apps/argocd/petclinic-plain.ftl.yaml))
     * Two application with the same name in different namespaces, when ArgoCD is enabled to search for applications
       within different namespaces (implemented in the playground, see
       [Argo CD's values.yaml](argocd/argocd/argocd/values.ftl.yaml) - `application.namespaces` setting)
-    * One `ApplicationSet`, using the [`git` generator for directories](https://github.com/argoproj/argo-cd/blob/v2.7.1/docs/operator-manual/applicationset/Generators-Git.md#git-generator-directories)
+    * One `ApplicationSet`, using the [
+      `git` generator for directories](https://github.com/argoproj/argo-cd/blob/v2.7.1/docs/operator-manual/applicationset/Generators-Git.md#git-generator-directories)
       (not used in GitOps playground, yet)
 
-To keep things simpler, the GitOps playground only uses one kubernetes cluster, effectively implementing the [Standalone](https://github.com/cloudogu/gitops-patterns/tree/8e1056f#standalone)
-pattern. However, the repo structure could also be used to serve multiple clusters, in a [Hub and Spoke](https://github.com/cloudogu/gitops-patterns/tree/8e1056f#hub-and-spoke) pattern:
+To keep things simpler, the GitOps playground only uses one kubernetes cluster, effectively implementing
+the [Standalone](https://github.com/cloudogu/gitops-patterns/tree/8e1056f#standalone)
+pattern. However, the repo structure could also be used to serve multiple clusters, in
+a [Hub and Spoke](https://github.com/cloudogu/gitops-patterns/tree/8e1056f#hub-and-spoke) pattern:
 Additional clusters could either be defined in the `vaules.yaml` or as secrets via the `templates` folder.
 
-We're also working on an optional implementation of the [namespaced](https://github.com/cloudogu/gitops-patterns/tree/8e1056f#namespaced) pattern, using the [Argo CD operator](https://github.com/argoproj-labs/argocd-operator).
+We're also working on an optional implementation of
+the [namespaced](https://github.com/cloudogu/gitops-patterns/tree/8e1056f#namespaced) pattern, using
+the [Argo CD operator](https://github.com/argoproj-labs/argocd-operator).
 
 #### Why not use argocd-autopilot?
 
-And advanced question: Why does the GitOps playground not use the [**argocd-autopilot**](https://github.com/argoproj-labs/argocd-autopilot)?
+And advanced question: Why does the GitOps playground not use the [**argocd-autopilot
+**](https://github.com/argoproj-labs/argocd-autopilot)?
 
 The short answer is: As of 2023-05, version 0.4.15 it looks far from ready for production.
 
@@ -810,18 +890,23 @@ Here are some thoughts why we deem it not a good fit for production:
     * The `cluster-resources` `ApplicationSet` is a good approach to multi-cluster but again, requires writing JSON
       (4️ in the diagram).
 * Projects are used to realize environments (6️ and 7️ in the diagram).  
-  How would we separate teams in this [monorepo structure](https://github.com/cloudogu/gitops-patterns/tree/789d300#repository-structure)?  
-  One idea would be to use multiple Argo CD instances, realising a [Standalone pattern](https://github.com/cloudogu/gitops-patterns/tree/789d30055443b6096d9018ca13cbd4234a24cc3d#operator-deployment).
+  How would we separate teams in
+  this [monorepo structure](https://github.com/cloudogu/gitops-patterns/tree/789d300#repository-structure)?  
+  One idea would be to use multiple Argo CD instances, realising
+  a [Standalone pattern](https://github.com/cloudogu/gitops-patterns/tree/789d30055443b6096d9018ca13cbd4234a24cc3d#operator-deployment).
   This would mean that every team would have to manage its own ArgoCD instance.  
   How could this task be delegated to a dedicated platform team? These are the questions that lead to the structure
   realized in the GitOps playground.
 
 #### cluster-resources
 
-The playground installs cluster-resources (like prometheus, grafana, vault, external secrets operator, etc.) via the repo  
-`argocd/cluster-resources`. See [ADR](docs/architecture-decision-records.md#deploying-cluster-resources-with-argo-cd-using-inline-yaml) for more details.
+The playground installs cluster-resources (like prometheus, grafana, vault, external secrets operator, etc.) via the
+repo  
+`argocd/cluster-resources`.
+See [ADR](docs/architecture-decision-records.md#deploying-cluster-resources-with-argo-cd-using-inline-yaml) for more
+details.
 
-When installing without Argo CD, the tools are installed using helm imperatively, we fall back to using imperative 
+When installing without Argo CD, the tools are installed using helm imperatively, we fall back to using imperative
 helm installation as a kind of neutral ground.
 
 ### Jenkins
@@ -847,12 +932,15 @@ See [parameters](#additional-parameters) for examples.
 * `--jenkins-username`,
 * `--jenkins-password`
 
-To apply additional global environments for jenkins you can use `--jenkins-additional-envs "KEY1=value1,KEY2=value2"` parameter.
+To apply additional global environments for jenkins you can use `--jenkins-additional-envs "KEY1=value1,KEY2=value2"`
+parameter.
 
-Note that the [example applications](#example-applications) pipelines will only run on a Jenkins that uses agents that provide
+Note that the [example applications](#example-applications) pipelines will only run on a Jenkins that uses agents that
+provide
 a docker host. That is, Jenkins must be able to run e.g. `docker ps` successfully on the agent.
 
 The user has to have the following privileges:
+
 * install plugins
 * set credentials
 * create jobs
@@ -875,6 +963,7 @@ See [Parameters](#additional-parameters) for examples.
 * `--scmm-password`
 
 The user on the scm has to have privileges to:
+
 * add / edit users
 * add / edit permissions
 * add / edit repositories
@@ -885,7 +974,8 @@ The user on the scm has to have privileges to:
 
 Set the parameter `--monitoring` so the [kube-prometheus-stack](https://github.com/prometheus-operator/kube-prometheus)
 via its [helm-chart](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack)
-is being deployed including dashboards for 
+is being deployed including dashboards for
+
 - ArgoCD
 - Ingress Nginx Controller
 - Prometheus
@@ -920,7 +1010,8 @@ action:
 
 ![External Secret Operator <-> Vault - flow](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml-src/External-Secret-Operator-Flow.puml&fmt=svg)
 
-For this to work, the GitOps playground configures the whole chain in Kubernetes and vault (when [dev mode](#dev-mode) is used):
+For this to work, the GitOps playground configures the whole chain in Kubernetes and vault (when [dev mode](#dev-mode)
+is used):
 
 ![External Secret Operator Custom Resources](https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/plantuml-src/External-Secret-Operator-CRs.puml&fmt=svg)
 
@@ -936,6 +1027,7 @@ For this to work, the GitOps playground configures the whole chain in Kubernetes
 #### dev mode
 
 For testing you can set the parameter `--vault=dev` to deploy vault in development mode. This will lead to
+
 * vault being transient, i.e. all changes during runtime are not persisted. Meaning a restart will reset to default.
 * Vault is initialized with some fixed secrets that are used in the example app, see below.
 * Vault authorization is initialized with service accounts used in example `SecretStore`s for external secrets operator
@@ -945,6 +1037,7 @@ The secrets are then picked up by the `vault-backend` `SecretStore`s (connects E
 the namespace `argocd-staging` and `argocd-production` namespaces
 
 You can reach the vault UI on
+
 * http://localhost:8200 (k3d)
 * `scripts/get-remote-url vault-ui secrets` (remote k8s)
 * `--vault-url` to specify domain name
@@ -959,10 +1052,10 @@ You can reach the vault UI on
 When using `vault=prod` you'll have to initialize vault manually but on the other hand it will persist changes.
 
 If you want the example app to work, you'll have to manually
+
 * set up vault, unseal it and
 * authorize the `vault` service accounts in `argocd-production` and `argocd-staging` namspaces. See `SecretStore`s and
   [dev-post-start.sh](system/secrets/vault/dev-post-start.sh) for an example.
-
 
 #### Example app
 
@@ -974,16 +1067,21 @@ While exposing secrets on the web is a very bad practice, it's very good for dem
 vault.
 
 To demo this, you could
+
 * change the [staging secret](http://localhost:8200/ui/vault/secrets/secret/edit/staging/nginx-helm-jenkins)
 * Wait for the change to show on the web, e.g. like so
+
 ```shell
 while ; do echo -n "$(date '+%Y-%m-%d %H:%M:%S'): " ; \
   curl http://localhost:30024/secret/ ; echo; sleep 1; done
 ```
 
 This usually takes between a couple of seconds and 1-2 minutes.  
-This time consists of `ExternalSecret`'s `refreshInterval`, as well as the [kubelet sync period](https://v1-25.docs.kubernetes.io/docs/concepts/configuration/configmap/#mounted-configmaps-are-updated-automatically)
-(defaults to [1 Minute](https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/#kubelet-config-k8s-io-v1beta1-KubeletConfiguration))
+This time consists of `ExternalSecret`'s `refreshInterval`, as well as
+the [kubelet sync period](https://v1-25.docs.kubernetes.io/docs/concepts/configuration/configmap/#mounted-configmaps-are-updated-automatically)
+(defaults
+to [1 Minute](https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/#kubelet-config-k8s-io-v1beta1-KubeletConfiguration))
+
 + cache propagation delay
 
 The following video shows this demo in time-lapse:
@@ -1007,12 +1105,14 @@ The applications implement a simple staging mechanism:
 * After a successful Jenkins build, the staging application will be deployed into the cluster by the GitOps operator.
 * Deployment of production applications can be triggered by accepting pull requests.
 * For some applications working without CI Server and committing directly to the GitOps repo is pragmatic  
-  (e.g. 3rd-party-application like NGINX, like [`argocd/nginx-helm-umbrella`](argocd/example-apps/argocd/nginx-helm-umbrella.ftl.yaml))
+  (e.g. 3rd-party-application like NGINX, like [
+  `argocd/nginx-helm-umbrella`](argocd/example-apps/argocd/nginx-helm-umbrella.ftl.yaml))
 
 ![app-repo-vs-gitops-repo](docs/app-repo-vs-gitops-repo.svg)
 
 Note that the GitOps-related logic is implemented in the
 [gitops-build-lib](https://github.com/cloudogu/gitops-build-lib) for Jenkins. See the README there for more options like
+
 * staging,
 * resource creation,
 * validation (fail early / shift left).
@@ -1020,7 +1120,6 @@ Note that the GitOps-related logic is implemented in the
 Please note that it might take about a minute after the pull request has been accepted for the GitOps operator to start
 deploying.
 Alternatively, you can trigger the deployment via ArgoCD's UI or CLI.
-
 
 #### PetClinic with plain k8s resources
 
@@ -1046,7 +1145,7 @@ Alternatively, you can trigger the deployment via ArgoCD's UI or CLI.
 * Production
     * local [localhost:30023](http://localhost:30023)
     * remote: `scripts/get-remote-url spring-petclinic-helm argocd-production`
-  * `--petclinic-base-domain` to specify base domain. Then use `production.petclinic-helm.$base-domain`
+    * `--petclinic-base-domain` to specify base domain. Then use `production.petclinic-helm.$base-domain`
 
 #### 3rd Party app (NGINX) with helm, templated in Jenkins
 
@@ -1073,32 +1172,41 @@ Alternatively, you can trigger the deployment via ArgoCD's UI or CLI.
 See [docs/developers.md](docs/developers.md)
 
 ## License
+
 Copyright © 2020 - present Cloudogu GmbH
 
-This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, version 3.
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public
+License as published by the Free Software Foundation, version 3.
 
-This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+details.
 
-You should have received a copy of the GNU Affero General Public License along with this program. If not, see https://www.gnu.org/licenses/.  
+You should have received a copy of the GNU Affero General Public License along with this program. If not,
+see https://www.gnu.org/licenses/.
 
 See [LICENSE](LICENSE) for details.
 
-GitOps Playground© for use with  Argo™, Git™, Jenkins®, Kubernetes®, Grafana®, Prometheus®, Vault® and SCM-Manager 
+GitOps Playground© for use with Argo™, Git™, Jenkins®, Kubernetes®, Grafana®, Prometheus®, Vault® and SCM-Manager
 
 Argo™ is an unregistered trademark of The Linux Foundation®  
 Git™ is an unregistered trademark of Software Freedom Conservancy Inc.  
 Jenkins® is a registered trademark of LF Charities Inc.  
 Kubernetes® and the Kubernetes logo® are registered trademarks of The Linux Foundation®  
 K8s® is a registered trademark of The Linux Foundation®  
-The Grafana Labs Marks are trademarks of Grafana Labs, and are used with Grafana Labs’ permission. We are not affiliated with, endorsed or sponsored by Grafana Labs or its affiliates.  
+The Grafana Labs Marks are trademarks of Grafana Labs, and are used with Grafana Labs’ permission. We are not affiliated
+with, endorsed or sponsored by Grafana Labs or its affiliates.  
 Prometheus® is a registered trademark of The Linux Foundation®  
-Vault® and the Vault logo® are registered trademarks of HashiCorp® (http://www.hashicorp.com/)  
+Vault® and the Vault logo® are registered trademarks of HashiCorp® (http://www.hashicorp.com/)
 
 ## Written Offer
+
 Written Offer for Source Code:
 
-Information on the license conditions and - if required by the license - on the source code is available free of charge on request.  
-However, some licenses require providing physical copies of the source or object code. If this is the case, you can request a copy of the source code. A small fee is charged for these services to cover the cost of physical distribution.
+Information on the license conditions and - if required by the license - on the source code is available free of charge
+on request.  
+However, some licenses require providing physical copies of the source or object code. If this is the case, you can
+request a copy of the source code. A small fee is charged for these services to cover the cost of physical distribution.
 
 To receive a copy of the source code, you can either submit a written request to
 
@@ -1108,5 +1216,7 @@ Garküche 1
 
 or you may email hello@cloudogu.com.
 
-Your request must be sent within three years from the date you received the software from Cloudogu that is the subject of your request or, in the case of source code licensed under the AGPL/GPL/LGPL v3, for as long as Cloudogu offers spare parts or customer support
+Your request must be sent within three years from the date you received the software from Cloudogu that is the subject
+of your request or, in the case of source code licensed under the AGPL/GPL/LGPL v3, for as long as Cloudogu offers spare
+parts or customer support
 for the product, including the components or binaries that are the subject of your request.

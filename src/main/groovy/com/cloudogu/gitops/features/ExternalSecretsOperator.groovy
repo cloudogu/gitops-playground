@@ -3,7 +3,6 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Config
-
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -21,13 +20,13 @@ import java.nio.file.Path
 @Singleton
 @Order(400)
 class ExternalSecretsOperator extends Feature implements FeatureWithImage {
-    
+
     static final String HELM_VALUES_PATH = 'applications/cluster-resources/secrets/external-secrets/values.ftl.yaml'
-    
+
     String namespace = 'secrets'
     Config config
     K8sClient k8sClient
-    
+
     private FileSystemUtils fileSystemUtils
     private DeploymentStrategy deployer
     private AirGappedUtils airGappedUtils
@@ -56,10 +55,10 @@ class ExternalSecretsOperator extends Feature implements FeatureWithImage {
 
         def helmConfig = config.features.secrets.externalSecrets.helm as Config.HelmConfig
         def helmValuesYaml = templateToMap(HELM_VALUES_PATH, [
-                        config: config,
-                        // Allow for using static classes inside the templates
-                        statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
-                ])
+                config : config,
+                // Allow for using static classes inside the templates
+                statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
+        ])
 
         def tmpHelmValues = fileSystemUtils.createTempFile()
         fileSystemUtils.writeYaml(helmValuesYaml, tmpHelmValues.toFile())
@@ -84,16 +83,17 @@ class ExternalSecretsOperator extends Feature implements FeatureWithImage {
             )
         } else {
             deployer.deployFeature(
-                helmConfig.repoURL,
-                "externalsecretsoperator",
-                helmConfig.chart,
-                helmConfig.version,
+                    helmConfig.repoURL,
+                    "externalsecretsoperator",
+                    helmConfig.chart,
+                    helmConfig.version,
                     namespace,
-                'external-secrets',
-                tmpHelmValues
+                    'external-secrets',
+                    tmpHelmValues
             )
         }
     }
+
     private URI getScmmUri() {
         if (config.scmm.internal) {
             new URI('http://scmm-scm-manager.default.svc.cluster.local/scm')
@@ -104,11 +104,11 @@ class ExternalSecretsOperator extends Feature implements FeatureWithImage {
 
     Map templateToMap(String filePath, Map parameters) {
         def hydratedString = new TemplatingEngine().template(new File(filePath), parameters)
-        
+
         if (hydratedString.trim().isEmpty()) {
             // Otherwise YamlSlurper returns an empty array, whereas we expect a Map
             return [:]
-        } 
+        }
         return new YamlSlurper().parseText(hydratedString) as Map
     }
 }

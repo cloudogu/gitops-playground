@@ -4,7 +4,7 @@ package com.cloudogu.gitops.utils
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
-import static org.assertj.core.api.Assertions.assertThat 
+import static org.assertj.core.api.Assertions.assertThat
 
 class TemplatingEngineTest {
 
@@ -48,7 +48,7 @@ class TemplatingEngineTest {
         def barTemplate = new File(tmpDir.absolutePath, "bar.ftl.txt")
         def barTarget = new File(tmpDir.absolutePath, "bar.txt")
         barTemplate.text = "Hello \${name}"
-        
+
         def engine = new TemplatingEngine()
         engine.template(barTemplate, barTarget, [
                 name: "Playground",

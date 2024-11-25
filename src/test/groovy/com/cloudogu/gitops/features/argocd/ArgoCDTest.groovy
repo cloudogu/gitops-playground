@@ -1,7 +1,6 @@
 package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.config.Config
-
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.utils.*
 import groovy.io.FileType
@@ -11,17 +10,18 @@ import org.eclipse.jgit.api.CheckoutCommand
 import org.eclipse.jgit.api.CloneCommand
 import org.junit.jupiter.api.Test
 import org.springframework.security.crypto.bcrypt.BCrypt
+
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.stream.Collectors
 
+import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable
 import static org.assertj.core.api.Assertions.assertThat
 import static org.assertj.core.api.Assertions.fail
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.ArgumentMatchers.anyString
 import static org.mockito.Mockito.*
-import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable
 
 class ArgoCDTest {
     Map buildImages = [
@@ -32,7 +32,7 @@ class ArgoCDTest {
             yamllint   : 'yamllint-value'
     ]
     Config config = Config.fromMap(
-            application : [
+            application: [
                     openshift           : false,
                     remote              : false,
                     insecure            : false,
@@ -44,12 +44,12 @@ class ArgoCDTest {
                     gitEmail            : 'hello@cloudogu.com',
 
             ],
-            scmm        : [
+            scmm: [
                     internal: true,
                     protocol: 'https',
                     host    : 'abc',
             ],
-            images      : buildImages + [petclinic: 'petclinic-value'],
+            images: buildImages + [petclinic: 'petclinic-value'],
             repositories: [
                     springBootHelmChart: [
                             url: 'https://github.com/cloudogu/spring-boot-helm-chart.git',
@@ -66,18 +66,18 @@ class ArgoCDTest {
                             url: 'https://github.com/cloudogu/ces-build-lib.git',
                     ]
             ],
-            features    : [
+            features: [
                     argocd      : [
-                            operator    : false,
-                            active      : true,
-                            configOnly  : true,
-                            emailFrom   : 'argocd@example.org',
-                            emailToUser : 'app-team@example.org',
-                            emailToAdmin: 'infra@example.org',
+                            operator                 : false,
+                            active                   : true,
+                            configOnly               : true,
+                            emailFrom                : 'argocd@example.org',
+                            emailToUser              : 'app-team@example.org',
+                            emailToAdmin             : 'infra@example.org',
                             resourceInclusionsCluster: ''
                     ],
                     mail        : [
-                            mailhog     : true,
+                            mailhog: true,
                     ],
                     monitoring  : [
                             active: true,
@@ -331,7 +331,7 @@ class ArgoCDTest {
                 parseActualYaml(actualHelmValuesFile)['argo-cd']['notifications']['notifiers']['service.email'] as String)
 
         assertThat(serviceEmail['host']).isEqualTo(config.features.mail.smtpAddress)
-        assertThat(serviceEmail['port'] ).isEqualTo(config.features.mail.smtpPort)
+        assertThat(serviceEmail['port']).isEqualTo(config.features.mail.smtpPort)
         // username and password are both linked to the k8s secret. Secrets will be created at runtime, in this test
         assertThat(serviceEmail['username']).isEqualTo('$email-username')
         assertThat(serviceEmail['password']).isEqualTo('$email-password')
@@ -638,7 +638,7 @@ class ArgoCDTest {
         assertThat(image['registry']).isEqualTo('localhost:5000')
         assertThat(image['repository']).isEqualTo('nginx/nginx')
         assertThat(image['tag']).isEqualTo('latest')
-        
+
         def deployment = parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[0]
         assertThat(deployment['kind']).as("Did not correctly fetch deployment from broken-application.yaml").isEqualTo("Deploymentz")
         assertThat((deployment['spec']['template']['spec']['containers'] as List)[0]['image']).isEqualTo('localhost:5000/nginx/nginx:latest')
@@ -650,6 +650,7 @@ class ArgoCDTest {
   tag: latest
 """)
     }
+
     @Test
     void 'Sets image pull secrets for nginx'() {
         config.registry.createImagePullSecrets = true
@@ -657,15 +658,15 @@ class ArgoCDTest {
         config.registry.proxyUrl = 'proxy-url'
         config.registry.proxyUsername = 'proxy-user'
         config.registry.proxyPassword = 'proxy-pw'
-        
+
         createArgoCD().install()
 
         assertThat(parseActualYaml(nginxHelmJenkinsRepo.absoluteLocalRepoTmpDir + '/k8s/values-shared.yaml')['global']['imagePullSecrets'])
                 .isEqualTo(['proxy-registry'])
-        
+
         assertThat(parseActualYaml(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'apps/nginx-helm-umbrella/values.yaml')['nginx']['global']['imagePullSecrets'])
                 .isEqualTo(['proxy-registry'])
-        
+
         def deployment = parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[0]
         assertThat(deployment['spec']['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
 
@@ -675,7 +676,7 @@ class ArgoCDTest {
     - proxy-registry
 """)
     }
-    
+
     @Test
     void 'Skips CRDs for argo cd'() {
         config.application.skipCrds = true
@@ -756,7 +757,7 @@ class ArgoCDTest {
     }
 
     @Test
-    void 'ArgoCD with active network policies'(){
+    void 'ArgoCD with active network policies'() {
         config.application.netpols = true
 
         createArgoCD().install()
@@ -766,7 +767,7 @@ class ArgoCDTest {
         assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir(), '/argocd/templates/allow-namespaces.yaml').text.contains("namespace: monitoring"))
         assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir(), '/argocd/templates/allow-namespaces.yaml').text.contains("namespace: default"))
     }
-    
+
     @Test
     void 'set credentials for BuildImages'() {
         config.registry.twoRegistries = true
@@ -775,7 +776,6 @@ class ArgoCDTest {
 
         assertPetClinicRepos('NodePort', 'LoadBalancer', '')
     }
-
 
 
     private static Map parseBuildImagesMapFromString(String text) {
@@ -803,7 +803,7 @@ class ArgoCDTest {
 
             Binding binding = new Binding()
             binding.setVariable('dockerRegistryProxyCredentials', 'dockerRegistryProxyCredentials')
-            def map =  new GroovyShell(binding).evaluate(matchedText)
+            def map = new GroovyShell(binding).evaluate(matchedText)
 
             return map as Map
 
@@ -971,7 +971,7 @@ class ArgoCDTest {
         if (!actualBuildImages) {
             fail("Missing build images in Jenkinsfile ${jenkinsfile}")
         }
-        
+
         if (config.registry.twoRegistries) {
             for (Map.Entry image : actualBuildImages as Map) {
                 assertThat(image.value['image']).isEqualTo(buildImages[image.key])

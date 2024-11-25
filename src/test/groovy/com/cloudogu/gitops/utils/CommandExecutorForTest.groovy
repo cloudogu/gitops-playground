@@ -15,10 +15,10 @@ class CommandExecutorForTest extends CommandExecutor {
     void enqueueOutputs(Queue<Output> outputsQueue) {
         outputs.addAll(outputsQueue)
     }
-    
+
     // This is actually only set when an env is passed to CommandExecutor
-    List<GString> environment = [] 
-    
+    List<GString> environment = []
+
     @Override
     protected Output getOutput(Process proc, String command, boolean failOnError) {
         actualCommands += command

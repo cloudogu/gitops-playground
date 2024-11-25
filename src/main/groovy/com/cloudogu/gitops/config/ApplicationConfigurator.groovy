@@ -34,7 +34,7 @@ class ApplicationConfigurator {
             if (!namePrefix.endsWith('-')) {
                 newConfig.application.namePrefix = "${namePrefix}-"
             }
-            newConfig.application.namePrefixForEnvVars ="${(newConfig.application.namePrefix as String).toUpperCase().replace('-', '_')}"
+            newConfig.application.namePrefixForEnvVars = "${(newConfig.application.namePrefix as String).toUpperCase().replace('-', '_')}"
         }
 
         addRegistryConfig(newConfig)
@@ -63,7 +63,7 @@ class ApplicationConfigurator {
     private void addRegistryConfig(Config newConfig) {
         if (newConfig.registry.proxyUrl) {
             newConfig.registry.twoRegistries = true
-            if (!newConfig.registry.proxyUsername || !newConfig.registry.proxyPassword ) {
+            if (!newConfig.registry.proxyUsername || !newConfig.registry.proxyPassword) {
                 throw new RuntimeException("Proxy URL needs to be used with proxy-username and proxy-password")
             }
         }
@@ -79,7 +79,7 @@ class ApplicationConfigurator {
                k3d clusters. */
             newConfig.registry.url = "localhost:${newConfig.registry.internalPort}"
         }
-        
+
         if (newConfig.registry.createImagePullSecrets) {
             String username = newConfig.registry.readOnlyUsername ?: newConfig.registry.username
             String password = newConfig.registry.readOnlyPassword ?: newConfig.registry.password
@@ -166,11 +166,11 @@ class ApplicationConfigurator {
                 monitoring.grafanaUrl = injectSubdomain('grafana', baseUrl, urlSeparatorHyphen)
                 log.debug("Setting URL ${monitoring.grafanaUrl}")
             }
-            if ( newConfig.features.secrets.active && !vault.url) {
+            if (newConfig.features.secrets.active && !vault.url) {
                 vault.url = injectSubdomain('vault', baseUrl, urlSeparatorHyphen)
                 log.debug("Setting URL ${vault.url}")
             }
-            
+
             if (!newConfig.features.exampleApps.petclinic.baseDomain) {
                 // This param only requires the host / domain
                 newConfig.features.exampleApps.petclinic.baseDomain =
@@ -187,8 +187,8 @@ class ApplicationConfigurator {
     }
 
     /**
-     * 
-     * @param subdomain, e.g. argocd
+     *
+     * @param subdomain , e.g. argocd
      * @param baseUrl e.g. http://localhost:8080
      * @param urlSeparatorHyphen
      * @return e.g. http://argocd.localhost:8080

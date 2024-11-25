@@ -32,7 +32,7 @@ class NetworkingUtils {
         log.debug("Local address: " + localAddress)
         log.debug("Cluster address: " + potentialClusterBindAddress)
 
-        if(!potentialClusterBindAddress) {
+        if (!potentialClusterBindAddress) {
             throw new RuntimeException("Could not connect to kubernetes cluster: no cluster bind address")
         }
 
@@ -55,7 +55,7 @@ class NetworkingUtils {
      */
     String getLocalAddress() {
         try {
-            List<NetworkInterface> sortedInterfaces = 
+            List<NetworkInterface> sortedInterfaces =
                     Collections.list(NetworkInterface.getNetworkInterfaces()).sort { it.index }
 
             for (NetworkInterface anInterface : sortedInterfaces) {

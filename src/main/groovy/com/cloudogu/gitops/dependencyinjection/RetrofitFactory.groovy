@@ -32,7 +32,7 @@ class RetrofitFactory {
         return new Retrofit.Builder()
                 .baseUrl(config.scmm.url + '/api/')
                 .client(okHttpClient)
-                 // Converts HTTP body objects from groovy to JSON
+        // Converts HTTP body objects from groovy to JSON
                 .addConverterFactory(JacksonConverterFactory.create())
                 .build()
     }

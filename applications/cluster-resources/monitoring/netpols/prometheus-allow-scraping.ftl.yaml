@@ -4,7 +4,7 @@ metadata:
   name: allow-prometheus-scraping
   namespace: ${namespace}
 spec:
-  podSelector: {}
+  podSelector: { }
   ingress:
     - from:
         - namespaceSelector:

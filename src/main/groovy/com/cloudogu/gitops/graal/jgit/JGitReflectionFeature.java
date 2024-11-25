@@ -9,7 +9,7 @@ import java.util.List;
 public class JGitReflectionFeature implements Feature {
 
     // Found here https://github.com/quarkiverse/quarkus-jgit/blob/3.0.0/deployment/src/main/java/io/quarkus/jgit/deployment/JGitProcessor.java
-    private static List<String> jgitReflectionClasses = Arrays.asList(
+    private static final List<String> jgitReflectionClasses = Arrays.asList(
             "org.eclipse.jgit.api.MergeCommand$FastForwardMode",
             "org.eclipse.jgit.api.MergeCommand$FastForwardMode$Merge",
             "org.eclipse.jgit.internal.JGitText",

@@ -8,10 +8,11 @@ import com.cloudogu.gitops.utils.HelmClient
 import com.cloudogu.gitops.utils.K8sClientForTest
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
+
 import java.nio.file.Path
 
-import static org.assertj.core.api.Assertions.assertThat
 import static com.cloudogu.gitops.config.Config.*
+import static org.assertj.core.api.Assertions.assertThat
 
 class RegistryTest {
 
@@ -23,7 +24,7 @@ class RegistryTest {
     @Test
     void 'is disabled when external registry is configured'() {
         def registryConfig = new RegistrySchema(internal: false)
-        
+
         createRegistry(registryConfig).install()
 
         assertThat(helmCommands.actualCommands).isEmpty()
@@ -50,7 +51,7 @@ class RegistryTest {
     void 'creates an additional service when different port is set'() {
         def expectedNodePort = DEFAULT_REGISTRY_PORT as int + 1
         def registryConfig = new RegistrySchema(internalPort: expectedNodePort)
-        
+
         createRegistry(registryConfig).install()
 
         assertThat(k8sClient.commandExecutorForTest.actualCommands[0]).contains("--node-port $expectedNodePort")

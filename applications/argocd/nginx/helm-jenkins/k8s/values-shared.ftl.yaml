@@ -1,51 +1,51 @@
-<#if nginxImage??>
-image:
-  registry: ${nginxImage.registry}
-  repository: ${nginxImage.repository}
-  tag: ${nginxImage.tag}
-</#if>
-<#if config.registry.createImagePullSecrets == true>
+  <#if nginxImage??>
+  image:
+    registry: ${nginxImage.registry}
+    repository: ${nginxImage.repository}
+    tag: ${nginxImage.tag}
+    </#if>
+    <#if config.registry.createImagePullSecrets == true>
 
-global:
-  imagePullSecrets:
-    - proxy-registry
-</#if>
-service:
-  ports:
-    http: 80
-  type: <#if isRemote>LoadBalancer<#else>NodePort</#if>
-# We don't use staticSiteConfigmap, so this is extensible for our secret example. See ArgoCD.groovy
-extraVolumes:
-  - name: index
-    configMap:
-      name: index-nginx
-      items:
-        - key: index.html
-          path: index.html
-  <#if secrets.active>
-  - name: secret
-    secret:
-      secretName: nginx-helm-jenkins
-      items:
-        - key: some-secret
-          path: index.html
-  </#if>
-extraVolumeMounts: 
-  - name: index
-    mountPath: /app
-    readOnly: true
-  <#if secrets.active>
-  - name: secret
-    mountPath: /app/secret
-    readOnly: true
-  </#if>
-
-<#if podResources == true>
-resources:
-  limits:
-    cpu: 1
-    memory: 30Mi
-  requests:
-    cpu: 300m
-    memory: 15Mi
-</#if>
+  global:
+    imagePullSecrets:
+      - proxy-registry
+    </#if>
+  service:
+    ports:
+      http: 80
+    type: <#if isRemote>LoadBalancer<#else>NodePort</#if>
+  # We don't use staticSiteConfigmap, so this is extensible for our secret example. See ArgoCD.groovy
+  extraVolumes:
+    - name: index
+      configMap:
+        name: index-nginx
+        items:
+          - key: index.html
+            path: index.html
+    <#if secrets.active>
+    - name: secret
+      secret:
+        secretName: nginx-helm-jenkins
+        items:
+          - key: some-secret
+            path: index.html
+    </#if>
+  extraVolumeMounts:
+    - name: index
+      mountPath: /app
+      readOnly: true
+    <#if secrets.active>
+    - name: secret
+      mountPath: /app/secret
+      readOnly: true
+    </#if>
+    
+    <#if podResources == true>
+  resources:
+    limits:
+      cpu: 1
+      memory: 30Mi
+    requests:
+      cpu: 300m
+      memory: 15Mi
+    </#if>

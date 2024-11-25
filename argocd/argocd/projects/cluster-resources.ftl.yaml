@@ -5,42 +5,42 @@ metadata:
   # In a real-world scenario these might to into a separate namespace
   namespace: ${namePrefix}argocd
   annotations:
-<#if mail.active?? && mail.active>
-    notifications.argoproj.io/subscribe.email: ${argocd.emailToAdmin}
-</#if>
+  <#if mail.active?? && mail.active>
+notifications.argoproj.io/subscribe.email: ${argocd.emailToAdmin}
+  </#if>
 spec:
   description: Contains basic cluster-resources
   destinations:
     - namespace: '*'
       server: https://kubernetes.default.svc
   sourceRepos:
-  - ${scmm.baseUrl}/repo/${namePrefix}argocd/cluster-resources
+    - ${scmm.baseUrl}/repo/${namePrefix}argocd/cluster-resources
 
-<#if mirrorRepos>
-  - ${scmm.baseUrl}/repo/3rd-party-dependencies/kube-prometheus-stack
-  - ${scmm.baseUrl}/repo/3rd-party-dependencies/mailhog
-  - ${scmm.baseUrl}/repo/3rd-party-dependencies/ingress-nginx
-  - ${scmm.baseUrl}/repo/3rd-party-dependencies/external-secrets
-  - ${scmm.baseUrl}/repo/3rd-party-dependencies/vault
-  - ${scmm.baseUrl}/repo/3rd-party-dependencies/cert-manager
-<#else>
-  - https://prometheus-community.github.io/helm-charts
-  - https://codecentric.github.io/helm-charts
-  - https://kubernetes.github.io/ingress-nginx
-  - https://helm.releases.hashicorp.com
-  - https://charts.external-secrets.io
-  - https://charts.jetstack.io
-</#if>
+  <#if mirrorRepos>
+- ${scmm.baseUrl}/repo/3rd-party-dependencies/kube-prometheus-stack
+- ${scmm.baseUrl}/repo/3rd-party-dependencies/mailhog
+- ${scmm.baseUrl}/repo/3rd-party-dependencies/ingress-nginx
+- ${scmm.baseUrl}/repo/3rd-party-dependencies/external-secrets
+- ${scmm.baseUrl}/repo/3rd-party-dependencies/vault
+- ${scmm.baseUrl}/repo/3rd-party-dependencies/cert-manager
+  <#else>
+- https://prometheus-community.github.io/helm-charts
+- https://codecentric.github.io/helm-charts
+- https://kubernetes.github.io/ingress-nginx
+- https://helm.releases.hashicorp.com
+- https://charts.external-secrets.io
+- https://charts.jetstack.io
+  </#if>
 
-  # allow to only see application resources from the specified namespace
-  sourceNamespaces:
-    - '${namePrefix}argocd'
+# allow to only see application resources from the specified namespace
+sourceNamespaces:
+  - '${namePrefix}argocd'
 
-  # Allow all namespaced-scoped resources to be created
-  namespaceResourceWhitelist:
-    - group: '*'
-      kind: '*'
-  # Allow all cluster-scoped resources to be created
-  clusterResourceWhitelist:
-    - group: '*'
-      kind: '*'
+# Allow all namespaced-scoped resources to be created
+namespaceResourceWhitelist:
+  - group: '*'
+    kind: '*'
+# Allow all cluster-scoped resources to be created
+clusterResourceWhitelist:
+  - group: '*'
+    kind: '*'

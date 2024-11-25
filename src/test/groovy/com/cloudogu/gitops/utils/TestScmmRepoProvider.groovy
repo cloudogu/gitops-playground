@@ -8,7 +8,7 @@ import org.eclipse.jgit.api.Git
 
 class TestScmmRepoProvider extends ScmmRepoProvider {
     Map<String, ScmmRepo> repos = [:]
-    
+
     TestScmmRepoProvider(Config config, FileSystemUtils fileSystemUtils) {
         super(config, fileSystemUtils)
     }

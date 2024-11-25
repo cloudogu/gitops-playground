@@ -5,7 +5,7 @@ metadata:
   namespace: ${namePrefix}monitoring
   labels:
     grafana_dashboard: "1"
-<#noparse>
+  <#noparse>
 data:
   scmm-dashboard.json: |-
     {
@@ -3519,4 +3519,4 @@ data:
       "version": 6,
       "weekStart": ""
     }
-</#noparse>
+  </#noparse>

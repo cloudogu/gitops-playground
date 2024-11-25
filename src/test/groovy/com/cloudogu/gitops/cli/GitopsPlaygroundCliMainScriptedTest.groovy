@@ -11,9 +11,9 @@ import io.micronaut.context.ApplicationContext
 import io.micronaut.core.annotation.Order
 import org.junit.jupiter.api.Test
 
+import static com.cloudogu.gitops.config.Config.*
 import static org.assertj.core.api.Assertions.assertThat
 import static org.assertj.core.api.Fail.fail
-import static com.cloudogu.gitops.config.Config.*
 
 /**
  * It is difficult to test if *all* classes are instantiated.

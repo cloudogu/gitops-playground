@@ -15,6 +15,6 @@ class ScmmRepoProvider {
     }
 
     ScmmRepo getRepo(String repoTarget) {
-        return new ScmmRepo(config ,repoTarget, fileSystemUtils)
+        return new ScmmRepo(config, repoTarget, fileSystemUtils)
     }
 }

@@ -37,39 +37,39 @@ class TestLogger {
 class MemoryAppender extends ListAppender<ILoggingEvent> {
 
     void reset() {
-        list.clear();
+        list.clear()
     }
 
     boolean contains(String string, Level level) {
         return list.stream()
                 .anyMatch(event -> event.toString().contains(string)
-                        && event.getLevel().equals(level));
+                        && event.getLevel().equals(level))
     }
 
     int countEventsForLogger(String loggerName) {
         return (int) list.stream()
                 .filter(event -> event.getLoggerName().contains(loggerName))
-                .count();
+                .count()
     }
 
     List<ILoggingEvent> search(String string) {
         return list.stream()
                 .filter(event -> event.toString().contains(string))
-                .collect(Collectors.toList()) as List<ILoggingEvent>;
+                .collect(Collectors.toList()) as List<ILoggingEvent>
     }
 
     List<ILoggingEvent> search(String string, Level level) {
         return list.stream()
                 .filter(event -> event.toString().contains(string)
                         && event.getLevel().equals(level))
-                .collect(Collectors.toList()) as List<ILoggingEvent>;
+                .collect(Collectors.toList()) as List<ILoggingEvent>
     }
 
     int getSize() {
-        return list.size();
+        return list.size()
     }
 
     List<ILoggingEvent> getLoggedEvents() {
-        return Collections.unmodifiableList(list);
+        return Collections.unmodifiableList(list)
     }
 }

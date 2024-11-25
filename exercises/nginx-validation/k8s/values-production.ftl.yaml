@@ -3,7 +3,7 @@ service:
   nodePorts:
     http: 3OO43
 
-<#if exampleApps.nginx.baseDomain?has_content>
+  <#if exampleApps.nginx.baseDomain?has_content>
 ingress:
   enabled: true
   pathType: Prefix
@@ -12,4 +12,4 @@ ingress:
   <#else>
   hostname: production.exercise-nginx-helm.${exampleApps.nginx.baseDomain}
   </#if>
-</#if>
+  </#if>

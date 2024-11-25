@@ -1,7 +1,6 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Config
-
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -9,6 +8,7 @@ import com.cloudogu.gitops.utils.K8sClientForTest
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
+
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -42,7 +42,7 @@ class IngressNginxTest {
         assertThat(actual['controller']['replicaCount']).isEqualTo(2)
 
         verify(deploymentStrategy).deployFeature('https://kubernetes.github.io/ingress-nginx', 'ingress-nginx',
-                'ingress-nginx', '4.11.3','ingress-nginx',
+                'ingress-nginx', '4.11.3', 'ingress-nginx',
                 'ingress-nginx', temporaryYamlFile)
         assertThat(parseActualYaml()['controller']['resources']).isNull()
         assertThat(parseActualYaml()['controller']['metrics']).isNull()
@@ -74,8 +74,8 @@ class IngressNginxTest {
         config.features.ingressNginx.helm.values = [
                 controller: [
                         replicaCount: 42,
-                        span: '7,5',
-                   ]
+                        span        : '7,5',
+                ]
         ]
 
         createIngressNginx().install()
@@ -97,7 +97,7 @@ class IngressNginxTest {
         Path SourceChart = rootChartsFolder.resolve('ingress-nginx')
         Files.createDirectories(SourceChart)
 
-        Map ChartYaml = [ version     : '1.2.3' ]
+        Map ChartYaml = [version: '1.2.3']
         fileSystemUtils.writeYaml(ChartYaml, SourceChart.resolve('Chart.yaml').toFile())
 
         createIngressNginx().install()
@@ -109,7 +109,7 @@ class IngressNginxTest {
         assertThat(helmConfig.value.version).isEqualTo('4.11.3')
         verify(deploymentStrategy).deployFeature(
                 'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/a/b',
-                'ingress-nginx', '.', '1.2.3','ingress-nginx',
+                'ingress-nginx', '.', '1.2.3', 'ingress-nginx',
                 'ingress-nginx', temporaryYamlFile, DeploymentStrategy.RepoType.GIT)
     }
 
@@ -128,7 +128,7 @@ class IngressNginxTest {
     }
 
     @Test
-    void 'Activates network policies'(){
+    void 'Activates network policies'() {
         config.application.netpols = true
 
         createIngressNginx().install()
@@ -164,7 +164,7 @@ class IngressNginxTest {
         assertThat(yaml['controller']['image']['tag']).isEqualTo('v42')
         assertThat(yaml['controller']['image']['digest']).isNull()
     }
-    
+
     private IngressNginx createIngressNginx() {
         // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
         new IngressNginx(config, new FileSystemUtils() {

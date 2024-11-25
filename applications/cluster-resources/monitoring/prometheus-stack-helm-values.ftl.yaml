@@ -1,82 +1,82 @@
-<#assign DockerImageParser=statics['com.cloudogu.gitops.utils.DockerImageParser']>
-<#if skipCrds == true>
-crds:
-  enabled: false
-</#if>
-
-<#if namespaceIsolation == true || config.registry.createImagePullSecrets == true>
-global:
-  <#if config.registry.createImagePullSecrets == true>
-  imagePullSecrets:
-    - name: proxy-registry
-  </#if>
-<#if namespaceIsolation == true>
+  <#assign DockerImageParser=statics['com.cloudogu.gitops.utils.DockerImageParser']>
+    <#if skipCrds == true>
+  crds:
+    enabled: false
+    </#if>
+    
+    <#if namespaceIsolation == true || config.registry.createImagePullSecrets == true>
+  global:
+    <#if config.registry.createImagePullSecrets == true>
+    imagePullSecrets:
+        - name: proxy-registry
+    </#if>
+    <#if namespaceIsolation == true>
 
   rbac:
     # Avoids creation of ClusterRole, which do not need here
     create: false
-kubeApiServer:
-  # Don't scrape ApiServer to avoid 403 in prometheus targets due to lacking RBAC in isolated mode
-  enabled: false
-</#if>
-</#if>
+  kubeApiServer:
+    # Don't scrape ApiServer to avoid 403 in prometheus targets due to lacking RBAC in isolated mode
+    enabled: false
+    </#if>
+    </#if>
 
-# Note that many things are disabled here, because we want to start small, especially in airgapped envs where each image
-# has to be replicated individually
-defaultRules:
-  rules:
-    general: true
-    prometheus: true
-    prometheusOperator: true
-    kubePrometheusGeneral: true
-    alertmanager: false
-    etcd: false
-    k8sContainerCpuUsageSecondsTotal: false
-    k8sContainerMemoryCache: false
-    k8sContainerMemoryRss: false
-    k8sContainerMemorySwap: false
-    k8sContainerResource: false
-    k8sContainerMemoryWorkingSetBytes: false
-    k8sPodOwner: false
-    kubeApiserver: false
-    kubeApiserverAvailability: false
-    kubeApiserverBurnrate: false
-    kubeApiserverHistogram: false
-    kubeApiserverSlos: false
-    kubelet: false
-    kubePrometheusNodeRecording: false
-    kubernetesAbsent: false
-    kubernetesApps: false
-    kubernetesResources: false
-    kubernetesStorage: false
-    kubernetesSystem: false
-    kubeSchedulerAlerting: false
-    kubeSchedulerRecording: false
-    kubeStateMetrics: false
-    network: false
-    node: false
-    nodeExporterAlerting: false
-    nodeExporterRecording: false
-    windows: false
-kubeStateMetrics:
-  enabled: false
-nodeExporter:
-  enabled: false
-prometheusOperator:
-  enabled: true
-  admissionWebhooks:
-    # Avoids warning in operator log: remote error: tls: bad certificate
+  # Note that many things are disabled here, because we want to start small, especially in airgapped envs where each image
+  # has to be replicated individually
+  defaultRules:
+    rules:
+      general: true
+      prometheus: true
+      prometheusOperator: true
+      kubePrometheusGeneral: true
+      alertmanager: false
+      etcd: false
+      k8sContainerCpuUsageSecondsTotal: false
+      k8sContainerMemoryCache: false
+      k8sContainerMemoryRss: false
+      k8sContainerMemorySwap: false
+      k8sContainerResource: false
+      k8sContainerMemoryWorkingSetBytes: false
+      k8sPodOwner: false
+      kubeApiserver: false
+      kubeApiserverAvailability: false
+      kubeApiserverBurnrate: false
+      kubeApiserverHistogram: false
+      kubeApiserverSlos: false
+      kubelet: false
+      kubePrometheusNodeRecording: false
+      kubernetesAbsent: false
+      kubernetesApps: false
+      kubernetesResources: false
+      kubernetesStorage: false
+      kubernetesSystem: false
+      kubeSchedulerAlerting: false
+      kubeSchedulerRecording: false
+      kubeStateMetrics: false
+      network: false
+      node: false
+      nodeExporterAlerting: false
+      nodeExporterRecording: false
+      windows: false
+  kubeStateMetrics:
     enabled: false
-  tls:
-    # Avoids warning in operator log: server TLS client verification disabled
+  nodeExporter:
     enabled: false
-<#if config.application.openshift == true>
-  securityContext: 
+  prometheusOperator:
+    enabled: true
+    admissionWebhooks:
+      # Avoids warning in operator log: remote error: tls: bad certificate
+      enabled: false
+    tls:
+      # Avoids warning in operator log: server TLS client verification disabled
+      enabled: false
+    <#if config.application.openshift == true>
+  securityContext:
     fsGroup: null
     runAsGroup: null
     runAsUser: null
-</#if>
-<#if namespaceIsolation == true>
+    </#if>
+    <#if namespaceIsolation == true>
   kubeletService:
     enabled: false
   namespaces:
@@ -84,10 +84,10 @@ prometheusOperator:
     additional:
     <#-- Note that the quotes in the final YAML here are created by groovy, not Freemarker-->
     <#list namespaces as namespace>
-      - ${namespace}
+    - ${namespace}
     </#list>
-</#if>
-<#if podResources == true>
+    </#if>
+    <#if podResources == true>
   resources:
     limits:
       cpu: 300m
@@ -95,67 +95,67 @@ prometheusOperator:
     requests:
       cpu: 20m
       memory: 40Mi
-</#if>
-<#if config.features.monitoring.helm.prometheusOperatorImage?has_content>
-  <#assign operatorImageObject = DockerImageParser.parse(config.features.monitoring.helm.prometheusOperatorImage)>
+    </#if>
+    <#if config.features.monitoring.helm.prometheusOperatorImage?has_content>
+    <#assign operatorImageObject = DockerImageParser.parse(config.features.monitoring.helm.prometheusOperatorImage)>
   image:
-    registry  : ${operatorImageObject.registry}
+    registry: ${operatorImageObject.registry}
     repository: ${operatorImageObject.repository}
-    tag       : ${operatorImageObject.tag}
-</#if>
-<#if config.features.monitoring.helm.prometheusConfigReloaderImage?has_content || podResources == true>
+    tag: ${operatorImageObject.tag}
+    </#if>
+    <#if config.features.monitoring.helm.prometheusConfigReloaderImage?has_content || podResources == true>
   prometheusConfigReloader:
-  <#if config.features.monitoring.helm.prometheusConfigReloaderImage?has_content>
-  <#assign reloaderImageObject = DockerImageParser.parse(config.features.monitoring.helm.prometheusConfigReloaderImage)>
-    image:
-        registry  : ${reloaderImageObject.registry}
-        repository: ${reloaderImageObject.repository}
-        tag       : ${reloaderImageObject.tag}
-  </#if>
-  <#if podResources == true>
-    resources:
-      requests:
-        cpu: 200m
-        memory: 50Mi
-      limits:
-        cpu: 200m
-        memory: 50Mi
-  </#if>
-</#if>
-kubelet:
-  enabled: false
-kubeControllerManager:
-  enabled: false
-coreDns:
-  enabled: false
-kubeDns:
-  enabled: false
-kubeEtcd:
-  enabled: false
-kubeScheduler:
-  enabled: false
-kubeProxy:
-  enabled: false
-alertmanager:
-  enabled: false
-grafana:
-  grafana.ini:
-    analytics:
-      check_for_updates: false
-<#if config.application.openshift == true>
+    <#if config.features.monitoring.helm.prometheusConfigReloaderImage?has_content>
+    <#assign reloaderImageObject = DockerImageParser.parse(config.features.monitoring.helm.prometheusConfigReloaderImage)>
+  image:
+    registry: ${reloaderImageObject.registry}
+    repository: ${reloaderImageObject.repository}
+    tag: ${reloaderImageObject.tag}
+    </#if>
+    <#if podResources == true>
+  resources:
+    requests:
+      cpu: 200m
+      memory: 50Mi
+    limits:
+      cpu: 200m
+      memory: 50Mi
+    </#if>
+    </#if>
+  kubelet:
+    enabled: false
+  kubeControllerManager:
+    enabled: false
+  coreDns:
+    enabled: false
+  kubeDns:
+    enabled: false
+  kubeEtcd:
+    enabled: false
+  kubeScheduler:
+    enabled: false
+  kubeProxy:
+    enabled: false
+  alertmanager:
+    enabled: false
+  grafana:
+    grafana.ini:
+      analytics:
+        check_for_updates: false
+    <#if config.application.openshift == true>
   securityContext:
-      # Null is ignored on rendering resulting in default 472, which results in error: .containers[0].runAsUser: Invalid value: 472: must be in the ranges: [1000740000, 1000749999]
-      # So set some arbitrary but valid UID/GID
-      # Could likely be fixed by this never-ending PR: https://github.com/helm/helm/issues/12488
-      fsGroup: 1000740000
-      runAsGroup: 1000740000
-      runAsUser: 1000740000
-</#if>
-<#if namespaceIsolation == true>
+    # Null is ignored on rendering resulting in default 472, which results in error: .containers[0].runAsUser: Invalid value: 472: must be in the ranges: [1000740000, 1000749999]
+    # So set some arbitrary but valid UID/GID
+    # Could likely be fixed by this never-ending PR: https://github.com/helm/helm/issues/12488
+    fsGroup: 1000740000
+    runAsGroup: 1000740000
+    runAsUser: 1000740000
+    </#if>
+    <#if namespaceIsolation == true>
   rbac:
     # We add the roles and role bindings to each namespace manually
     create: false
-</#if>
+    </#if>
   defaultDashboardsEnabled: false
   adminUser: ${config.application["username"]}
   adminPassword: ${config.application["password"]}
@@ -164,54 +164,54 @@ grafana:
     <#if !remote>
     nodePort: "9095"
     </#if>
-<#if monitoring.grafana.host?has_content>
+    <#if monitoring.grafana.host?has_content>
   ingress:
     enabled: true
-    hosts: [${monitoring.grafana.host}]
-</#if>
-<#if config.features.monitoring.helm.grafanaImage?has_content>
-<#assign grafanImageObject = DockerImageParser.parse(config.features.monitoring.helm.grafanaImage)>
+    hosts: [ ${ monitoring.grafana.host } ]
+    </#if>
+    <#if config.features.monitoring.helm.grafanaImage?has_content>
+    <#assign grafanImageObject = DockerImageParser.parse(config.features.monitoring.helm.grafanaImage)>
   image:
     registry: ${grafanImageObject.registry}
     repository: ${grafanImageObject.repository}
     tag: ${grafanImageObject.tag}
-</#if>
+    </#if>
   sidecar:
     dashboards:
       # This needs to be added so that the label will become 'label: grafana_dashboards: "1"'
       labelValue: 1
-<#if namespaceIsolation == true>
-      searchNamespace: <#list namespaces as namespace>${namespace}<#if namespace_has_next>,</#if></#list>
-<#else>
-      searchNamespace: "ALL"
-</#if>
-<#if podResources == true>
-    resources:
-      limits:
-        cpu: 100m
-        memory: 130Mi
-      requests:
-        cpu: 35m
-        memory: 65Mi
-</#if>
-<#if config.features.monitoring.helm.grafanaSidecarImage?has_content>
-<#assign sidecarImageObject = DockerImageParser.parse(config.features.monitoring.helm.grafanaSidecarImage)>
-    image:
-      registry: ${sidecarImageObject.registry}
-      repository: ${sidecarImageObject.repository}
-      tag: ${sidecarImageObject.tag}
-</#if>
-<#if mail.active?? && mail.active>
+    <#if namespaceIsolation == true>
+  searchNamespace: <#list namespaces as namespace>${namespace}<#if namespace_has_next>,</#if></#list>
+    <#else>
+  searchNamespace: "ALL"
+    </#if>
+    <#if podResources == true>
+  resources:
+    limits:
+      cpu: 100m
+      memory: 130Mi
+    requests:
+      cpu: 35m
+      memory: 65Mi
+    </#if>
+    <#if config.features.monitoring.helm.grafanaSidecarImage?has_content>
+    <#assign sidecarImageObject = DockerImageParser.parse(config.features.monitoring.helm.grafanaSidecarImage)>
+  image:
+    registry: ${sidecarImageObject.registry}
+    repository: ${sidecarImageObject.repository}
+    tag: ${sidecarImageObject.tag}
+    </#if>
+    <#if mail.active?? && mail.active>
   notifiers:
     notifiers.yaml:
       notifiers:
-      - name: mailhog
-        type: email
-        uid: email1
-        is_default: true
-        settings:
-          addresses: ${monitoring.grafanaEmailTo}
-          uploadImage: false
+        - name: mailhog
+          type: email
+          uid: email1
+          is_default: true
+          settings:
+            addresses: ${monitoring.grafanaEmailTo}
+            uploadImage: false
 
   alerting:
     contactpoints.yaml:
@@ -221,10 +221,10 @@ grafana:
           name: email
           is_default: true
           receivers:
-          - uid: email1
-            type: email
-            settings:
-              addresses: ${monitoring.grafanaEmailTo}
+            - uid: email1
+              type: email
+              settings:
+                addresses: ${monitoring.grafanaEmailTo}
     notification-policies.yaml:
       apiVersion: 1
       policies:
@@ -232,27 +232,27 @@ grafana:
           is_default: true
           receiver: email
           routes:
-          - receiver: email
-          group_by: ["grafana_folder", "alertname"]
-  <#if mail.smtpUser?has_content || mail.smtpPassword?has_content>
+            - receiver: email
+          group_by: [ "grafana_folder", "alertname" ]
+    <#if mail.smtpUser?has_content || mail.smtpPassword?has_content>
   smtp:
     # `existingSecret` is a reference to an existing secret containing the smtp configuration
     # for Grafana.
     existingSecret: "grafana-email-secret"
- </#if>
- <#if mail.smtpAddress?has_content>
+    </#if>
+    <#if mail.smtpAddress?has_content>
   env:
     GF_SMTP_ENABLED: true
     GF_SMTP_FROM_ADDRESS: ${monitoring.grafanaEmailFrom}
     GF_SMTP_HOST: ${mail.smtpAddress}<#if mail.smtpPort?has_content>:${mail.smtpPort?c}</#if>
- <#else>
+    <#else>
   env:
     GF_SMTP_ENABLED: true
     GF_SMTP_FROM_ADDRESS: ${monitoring.grafanaEmailFrom}
     GF_SMTP_HOST: mailhog.${namePrefix}monitoring.svc.cluster.local:1025
- </#if>
-</#if>
-<#if podResources == true>
+    </#if>
+    </#if>
+    <#if podResources == true>
   resources:
     limits:
       cpu: '1'
@@ -260,32 +260,32 @@ grafana:
     requests:
       cpu: 350m
       memory: 70Mi
-</#if>
-
-prometheus:
-  prometheusSpec:
-    <#if config.application.openshift == true>
-    securityContext: 
-      fsGroup: null
-      runAsGroup: null
-      runAsUser: null
     </#if>
-    # Find podMonitors, serviceMonitor, etc. in all namespaces
-    serviceMonitorNamespaceSelector:
-      matchLabels: {}
-    # With this, we don't need the label "release: kube-prometheus-stack" on the service monitor
-    serviceMonitorSelectorNilUsesHelmValues: false
-    podMonitorNamespaceSelector:
-      matchLabels: {}
-    podMonitorSelectorNilUsesHelmValues: false
-    ruleNamespaceSelector:
-      matchLabels: {}
-    ruleSelectorNilUsesHelmValues: false
-    scrapeConfigSelectorNilUsesHelmValues: false
-    probeNamespaceSelector:
-      matchLabels: {}
-    probeSelectorNilUsesHelmValues: false
-  <#if podResources == true>
+
+  prometheus:
+    prometheusSpec:
+      <#if config.application.openshift == true>
+      securityContext:
+        fsGroup: null
+        runAsGroup: null
+        runAsUser: null
+      </#if>
+      # Find podMonitors, serviceMonitor, etc. in all namespaces
+      serviceMonitorNamespaceSelector:
+        matchLabels: { }
+      # With this, we don't need the label "release: kube-prometheus-stack" on the service monitor
+      serviceMonitorSelectorNilUsesHelmValues: false
+      podMonitorNamespaceSelector:
+        matchLabels: { }
+      podMonitorSelectorNilUsesHelmValues: false
+      ruleNamespaceSelector:
+        matchLabels: { }
+      ruleSelectorNilUsesHelmValues: false
+      scrapeConfigSelectorNilUsesHelmValues: false
+      probeNamespaceSelector:
+        matchLabels: { }
+      probeSelectorNilUsesHelmValues: false
+    <#if podResources == true>
     resources:
       limits:
         cpu: 500m
@@ -293,31 +293,31 @@ prometheus:
       requests:
         cpu: 50m
         memory: 450Mi
-</#if>
-<#if config.features.monitoring.helm.prometheusImage?has_content>
-<#assign prometheusImageObject = DockerImageParser.parse(config.features.monitoring.helm.prometheusImage)>
-    image:
-      registry  : ${prometheusImageObject.registry}
-      repository: ${prometheusImageObject.repository}
-      tag       : ${prometheusImageObject.tag}
-  </#if>
-    secrets:
-      - prometheus-metrics-creds-scmm
-      - prometheus-metrics-creds-jenkins
-    additionalScrapeConfigs:
-      - job_name: 'scm-manager'
-        static_configs:
-          - targets: [ '${scmm.host}' ]
-        scheme: ${scmm.protocol}
-        metrics_path: '${scmm.path}'
-        basic_auth:
-          username: '${namePrefix}metrics'
-          password_file: '/etc/prometheus/secrets/prometheus-metrics-creds-scmm/password'
-      - job_name: 'jenkins'
-        static_configs:
-          - targets: [ '${jenkins.host}' ]
-        scheme: ${jenkins.protocol}
-        metrics_path: '${jenkins.path}'
-        basic_auth:
-          username: '${jenkins.metricsUsername}'
-          password_file: '/etc/prometheus/secrets/prometheus-metrics-creds-jenkins/password'
+    </#if>
+    <#if config.features.monitoring.helm.prometheusImage?has_content>
+    <#assign prometheusImageObject = DockerImageParser.parse(config.features.monitoring.helm.prometheusImage)>
+  image:
+    registry: ${prometheusImageObject.registry}
+    repository: ${prometheusImageObject.repository}
+    tag: ${prometheusImageObject.tag}
+    </#if>
+  secrets:
+    - prometheus-metrics-creds-scmm
+    - prometheus-metrics-creds-jenkins
+  additionalScrapeConfigs:
+    - job_name: 'scm-manager'
+      static_configs:
+        - targets: [ '${scmm.host}' ]
+      scheme: ${scmm.protocol}
+      metrics_path: '${scmm.path}'
+      basic_auth:
+        username: '${namePrefix}metrics'
+        password_file: '/etc/prometheus/secrets/prometheus-metrics-creds-scmm/password'
+    - job_name: 'jenkins'
+      static_configs:
+        - targets: [ '${jenkins.host}' ]
+      scheme: ${jenkins.protocol}
+      metrics_path: '${jenkins.path}'
+      basic_auth:
+        username: '${jenkins.metricsUsername}'
+        password_file: '/etc/prometheus/secrets/prometheus-metrics-creds-jenkins/password'

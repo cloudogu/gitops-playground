@@ -27,7 +27,7 @@ import java.net.URL;
 import java.util.Properties;
 
 /**
- *  Source: <a href="https://github.com/croz-ltd/klokwrk-project/tree/57202c58b792aff5f47e4c9033f91e5a31f100cc">...</a>
+ * Source: <a href="https://github.com/croz-ltd/klokwrk-project/tree/57202c58b792aff5f47e4c9033f91e5a31f100cc">...</a>
  */
 public class RegistrationFeatureUtils {
     /**
@@ -42,8 +42,7 @@ public class RegistrationFeatureUtils {
                         RuntimeReflection.register(someClass.getDeclaredConstructors());
                         RuntimeReflection.register(someClass.getDeclaredMethods());
                         RuntimeReflection.register(someClass.getDeclaredFields());
-                    }
-                    catch (ClassNotFoundException e) {
+                    } catch (ClassNotFoundException e) {
                         throw new RuntimeException(e);
                     }
                 });
@@ -64,7 +63,7 @@ public class RegistrationFeatureUtils {
         }
 
         stringBuilder.append("---------- ").append(classInfoListName).append(" - end\n");
-        System.err.println(stringBuilder.toString());
+        System.err.println(stringBuilder);
     }
 
     /**
@@ -81,8 +80,7 @@ public class RegistrationFeatureUtils {
         Properties kwrkGraalConfig = new Properties();
         try (InputStream inputStream = kwrkGraalPropertiesUrl.openStream()) {
             kwrkGraalConfig.load(inputStream);
-        }
-        catch (IOException ioe) {
+        } catch (IOException ioe) {
             throw new RuntimeException(ioe);
         }
 
@@ -90,6 +88,6 @@ public class RegistrationFeatureUtils {
             return null;
         }
 
-        return  kwrkGraalConfig;
+        return kwrkGraalConfig;
     }
 }

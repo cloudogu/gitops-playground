@@ -1,106 +1,106 @@
-<#assign DockerImageParser=statics['com.cloudogu.gitops.utils.DockerImageParser']>
-<#if config.registry.createImagePullSecrets == true>
-global:
-  imagePullSecrets:
-    - name: proxy-registry
-</#if>
-
-<#if config.application.podResources == true>
-resources:
-  limits:
-     cpu: '1'
-     memory: 400Mi
-  requests:
-    cpu: 30m
-    memory: 400Mi
-</#if>
-<#if config.application.skipCrds != true>
-crds:
-  enabled: true
-</#if>
-
-<#if config.features.certManager.helm.image?has_content>
-<#assign imageObject = DockerImageParser.parse(config.features.certManager.helm.image)>
-image:
-  repository: ${imageObject.registryAndRepositoryAsString}
-  tag: ${imageObject.tag}
-</#if>
-
-<#--webhookImage-->
-<#if config.application.podResources == true || config.features.certManager.helm.webhookImage?has_content>
-webhook:
-  <#if config.application.podResources == true>
+  <#assign DockerImageParser=statics['com.cloudogu.gitops.utils.DockerImageParser']>
+    <#if config.registry.createImagePullSecrets == true>
+  global:
+    imagePullSecrets:
+      - name: proxy-registry
+    </#if>
+    
+    <#if config.application.podResources == true>
   resources:
     limits:
       cpu: '1'
-      memory: 30Mi
+      memory: 400Mi
     requests:
-      cpu: 20m
-      memory: 30Mi
-  </#if>
-  <#if config.features.certManager.helm.webhookImage?has_content>
+      cpu: 30m
+      memory: 400Mi
+    </#if>
+    <#if config.application.skipCrds != true>
+  crds:
+    enabled: true
+    </#if>
+    
+    <#if config.features.certManager.helm.image?has_content>
+    <#assign imageObject = DockerImageParser.parse(config.features.certManager.helm.image)>
+  image:
+    repository: ${imageObject.registryAndRepositoryAsString}
+    tag: ${imageObject.tag}
+    </#if>
+    
+    <#--webhookImage-->
+    <#if config.application.podResources == true || config.features.certManager.helm.webhookImage?has_content>
+  webhook:
+    <#if config.application.podResources == true>
+    resources:
+      limits:
+        cpu: '1'
+        memory: 30Mi
+      requests:
+        cpu: 20m
+        memory: 30Mi
+    </#if>
+    <#if config.features.certManager.helm.webhookImage?has_content>
     <#assign imageObject = DockerImageParser.parse(config.features.certManager.helm.webhookImage)>
-  image:
-    repository: ${imageObject.registryAndRepositoryAsString}
-    tag: ${imageObject.tag}
-  </#if>
-</#if>
-<#--cainjectorImage-->
-<#if config.application.podResources == true || config.features.certManager.helm.cainjectorImage?has_content>
-cainjector:
-  <#if config.application.podResources >
-  resources:
-    limits:
-      cpu: '1'
-      memory: 400Mi
-    requests:
-      cpu: 30m
-      memory: 400Mi
-  </#if>
-  <#if config.features.certManager.helm.cainjectorImage?has_content>
+    image:
+      repository: ${imageObject.registryAndRepositoryAsString}
+      tag: ${imageObject.tag}
+    </#if>
+    </#if>
+    <#--cainjectorImage-->
+    <#if config.application.podResources == true || config.features.certManager.helm.cainjectorImage?has_content>
+  cainjector:
+    <#if config.application.podResources >
+    resources:
+      limits:
+        cpu: '1'
+        memory: 400Mi
+      requests:
+        cpu: 30m
+        memory: 400Mi
+    </#if>
+    <#if config.features.certManager.helm.cainjectorImage?has_content>
     <#assign imageObject = DockerImageParser.parse(config.features.certManager.helm.cainjectorImage)>
-  image:
-    repository: ${imageObject.registryAndRepositoryAsString}
-    tag: ${imageObject.tag}
-  </#if>
-</#if>
-
-<#--acmeSolverImage-->
-<#if config.application.podResources == true || config.features.certManager.helm.acmeSolverImage?has_content>
-acmesolver:
-  <#if config.application.podResources >
-  resources:
-    limits:
-      cpu: '1'
-      memory: 400Mi
-    requests:
-      cpu: 30m
-      memory: 400Mi
-  </#if>
-  <#if config.features.certManager.helm.acmeSolverImage?has_content>
+    image:
+      repository: ${imageObject.registryAndRepositoryAsString}
+      tag: ${imageObject.tag}
+    </#if>
+    </#if>
+    
+    <#--acmeSolverImage-->
+    <#if config.application.podResources == true || config.features.certManager.helm.acmeSolverImage?has_content>
+  acmesolver:
+    <#if config.application.podResources >
+    resources:
+      limits:
+        cpu: '1'
+        memory: 400Mi
+      requests:
+        cpu: 30m
+        memory: 400Mi
+    </#if>
+    <#if config.features.certManager.helm.acmeSolverImage?has_content>
     <#assign imageObject = DockerImageParser.parse(config.features.certManager.helm.acmeSolverImage)>
-  image:
-    repository: ${imageObject.registryAndRepositoryAsString}
-    tag: ${imageObject.tag}
-  </#if>
-</#if>
-
-<#--startupAPICheckImage-->
-<#if config.application.podResources == true || config.features.certManager.helm.startupAPICheckImage?has_content>
-startupapicheck:
-  <#if config.application.podResources >
-  resources:
-    limits:
-      cpu: '1'
-      memory: 400Mi
-    requests:
-      cpu: 30m
-      memory: 400Mi
-  </#if>
-  <#if config.features.certManager.helm.startupAPICheckImage?has_content>
+    image:
+      repository: ${imageObject.registryAndRepositoryAsString}
+      tag: ${imageObject.tag}
+    </#if>
+    </#if>
+    
+    <#--startupAPICheckImage-->
+    <#if config.application.podResources == true || config.features.certManager.helm.startupAPICheckImage?has_content>
+  startupapicheck:
+    <#if config.application.podResources >
+    resources:
+      limits:
+        cpu: '1'
+        memory: 400Mi
+      requests:
+        cpu: 30m
+        memory: 400Mi
+    </#if>
+    <#if config.features.certManager.helm.startupAPICheckImage?has_content>
     <#assign imageObject = DockerImageParser.parse(config.features.certManager.helm.startupAPICheckImage)>
-  image:
-    repository: ${imageObject.registryAndRepositoryAsString}
-    tag: ${imageObject.tag}
-  </#if>
-</#if>
+    image:
+      repository: ${imageObject.registryAndRepositoryAsString}
+      tag: ${imageObject.tag}
+    </#if>
+    </#if>

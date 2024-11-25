@@ -1,16 +1,13 @@
 package com.cloudogu.gitops.features.deployment
 
 import com.cloudogu.gitops.config.Config
-
 import org.junit.jupiter.api.Test
 
 import java.nio.file.Path
 
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.ArgumentMatchers.anyString
-import static org.mockito.Mockito.mock
-import static org.mockito.Mockito.never
-import static org.mockito.Mockito.verify
+import static org.mockito.Mockito.*
 
 class DeployerTest {
     private ArgoCdApplicationStrategy argoCdStrat = mock(ArgoCdApplicationStrategy.class)
@@ -23,7 +20,7 @@ class DeployerTest {
         deployer.deployFeature("repoURL", "repoName", "chart", "version", "namespace", "releaseName", Path.of("values.yaml"))
 
         verify(argoCdStrat, never()).deployFeature(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), any(Path))
-        verify(helmStrat).deployFeature("repoURL", "repoName", "chart", "version", "namespace", 
+        verify(helmStrat).deployFeature("repoURL", "repoName", "chart", "version", "namespace",
                 "releaseName", Path.of("values.yaml"), DeploymentStrategy.RepoType.HELM)
     }
 
@@ -40,7 +37,7 @@ class DeployerTest {
     }
 
     private Deployer createDeployer(boolean argoCDActive) {
-        Config config = new Config(features: new Config.FeaturesSchema(argocd: new Config.ArgoCDSchema(active:argoCDActive)))
+        Config config = new Config(features: new Config.FeaturesSchema(argocd: new Config.ArgoCDSchema(active: argoCDActive)))
 
         return new Deployer(config, argoCdStrat, helmStrat)
     }

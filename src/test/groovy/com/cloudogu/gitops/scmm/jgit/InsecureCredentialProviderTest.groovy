@@ -38,7 +38,7 @@ class InsecureCredentialProviderTest {
         )).isTrue()
 
         assertThat(provider.get(new URIish("https://192.168.178.37/scm/repo/argocd/cluster-resources"), message, skipSingle, skipRepository, skipAlways))
-            .isTrue()
+                .isTrue()
 
         assertThat(skipSingle.value).isTrue()
         assertThat(skipRepository.value).isTrue()

@@ -13,7 +13,7 @@ podinfo:
   ui:
     color: '#456456'
 
-<#if podResources == true>
+  <#if podResources == true>
 resources:
   limits:
     cpu: '1'
@@ -21,8 +21,8 @@ resources:
   requests:
     cpu: 300m
     memory: 650Mi
-<#else>
-<#-- Explicitly set to null, because the chart sets memory by default
-     https://github.com/cloudogu/spring-boot-helm-chart/blob/0.3.2/values.yaml#L40 -->
+  <#else>
+  <#-- Explicitly set to null, because the chart sets memory by default
+  https://github.com/cloudogu/spring-boot-helm-chart/blob/0.3.2/values.yaml#L40 -->
 resources: null
-</#if>
+  </#if>

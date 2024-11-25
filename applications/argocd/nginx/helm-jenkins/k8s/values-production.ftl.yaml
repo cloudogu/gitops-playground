@@ -4,7 +4,7 @@ service:
     http: 30025
 
 
-<#if exampleApps.nginx.baseDomain?has_content>
+  <#if exampleApps.nginx.baseDomain?has_content>
 ingress:
   enabled: true
   pathType: Prefix
@@ -13,4 +13,4 @@ ingress:
   <#else>
   hostname: production.nginx-helm.${exampleApps.nginx.baseDomain}
   </#if>
-</#if>
+  </#if>

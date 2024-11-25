@@ -1,39 +1,39 @@
 nginx:
-<#if nginxImage??>
-  image:
-    registry: ${nginxImage.registry}
-    repository: ${nginxImage.repository}
-    tag: ${nginxImage.tag}
-</#if>
+  <#if nginxImage??>
+image:
+  registry: ${nginxImage.registry}
+  repository: ${nginxImage.repository}
+  tag: ${nginxImage.tag}
+  </#if>
   <#if config.registry.createImagePullSecrets == true>
 
-  global:
-    imagePullSecrets:
+global:
+  imagePullSecrets:
     - proxy-registry
   </#if>
-  service:
-    ports:
-      http: 80
-    nodePorts:
-      http: 30026
-    type: <#if isRemote>LoadBalancer<#else>NodePort</#if>
-<#if podResources == true>
-  resources:
-    limits:
-      cpu: 100m
-      memory: 30Mi
-    requests:
-      cpu: 30m
-      memory: 15Mi
-</#if>
-
-<#if exampleApps.nginx.baseDomain?has_content>
-  ingress:
-    enabled: true
-    pathType: Prefix
-    <#if urlSeparatorHyphen>
-    hostname: production-nginx-helm-umbrella-${exampleApps.nginx.baseDomain}
-    <#else>
-    hostname: production.nginx-helm-umbrella.${exampleApps.nginx.baseDomain}
-    </#if>
-</#if>
+service:
+  ports:
+    http: 80
+  nodePorts:
+    http: 30026
+  type: <#if isRemote>LoadBalancer<#else>NodePort</#if>
+  <#if podResources == true>
+resources:
+  limits:
+    cpu: 100m
+    memory: 30Mi
+  requests:
+    cpu: 30m
+    memory: 15Mi
+  </#if>
+  
+  <#if exampleApps.nginx.baseDomain?has_content>
+ingress:
+  enabled: true
+  pathType: Prefix
+  <#if urlSeparatorHyphen>
+  hostname: production-nginx-helm-umbrella-${exampleApps.nginx.baseDomain}
+  <#else>
+  hostname: production.nginx-helm-umbrella.${exampleApps.nginx.baseDomain}
+  </#if>
+  </#if>

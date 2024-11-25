@@ -5,12 +5,12 @@ String getScmManagerCredentials() { 'scmm-user' }
 String getConfigRepositoryPRBaseUrl() { env.SCMM_URL }
 String getConfigRepositoryPRRepo() { '${namePrefix}argocd/example-apps' }
 
-String getDockerRegistryBaseUrl() { env.${namePrefixForEnvVars}REGISTRY_URL }
-String getDockerRegistryPath() { env.${namePrefixForEnvVars}REGISTRY_PATH }
+String getDockerRegistryBaseUrl() { env.${namePrefixForEnvVars} }
+String getDockerRegistryPath() { env.${namePrefixForEnvVars} }
 String getDockerRegistryCredentials() { 'registry-user' }
 
 <#if registry.twoRegistries>
-String getDockerRegistryProxyBaseUrl() { env.${namePrefixForEnvVars}REGISTRY_PROXY_URL }
+String getDockerRegistryProxyBaseUrl() { env.${namePrefixForEnvVars} }
 String getDockerRegistryProxyCredentials() { 'registry-proxy-user' }
 </#if>
 
@@ -18,7 +18,7 @@ String getDockerRegistryProxyCredentials() { 'registry-proxy-user' }
 String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/3rd-party-dependencies/ces-build-lib/" }
 String getCesBuildLibVersion() { '2.5.0' }
 String getGitOpsBuildLibRepo() { "${env.SCMM_URL}/repo/3rd-party-dependencies/gitops-build-lib" }
-String getGitOpsBuildLibVersion() { '0.7.0'}
+String getGitOpsBuildLibVersion() { '0.7.0' }
 String getHelmChartRepository() { "${env.SCMM_URL}/repo/3rd-party-dependencies/spring-boot-helm-chart-with-dependency" }
 String getHelmChartVersion() { "1.0.0" }
 String getMainBranch() { 'main' }
@@ -28,7 +28,7 @@ cesBuildLib = library(identifier: "ces-build-lib@${cesBuildLibVersion}",
 ).com.cloudogu.ces.cesbuildlib
 
 gitOpsBuildLib = library(identifier: "gitops-build-lib@${gitOpsBuildLibVersion}",
-    retriever: modernSCM([$class: 'GitSCMSource', remote: gitOpsBuildLibRepo, credentialsId: scmManagerCredentials])
+        retriever: modernSCM([$class: 'GitSCMSource', remote: gitOpsBuildLibRepo, credentialsId: scmManagerCredentials])
 ).com.cloudogu.gitops.gitopsbuildlib
 
 properties([
@@ -40,17 +40,17 @@ node {
 
 </#noparse>
 <#if images.maven?has_content>
-  <#if registry.twoRegistries>
+    <#if registry.twoRegistries>
       mvn = cesBuildLib.MavenInDocker.new(this, '${images.maven}', dockerRegistryProxyCredentials)
-  <#else>
+    <#else>
       mvn = cesBuildLib.MavenInDocker.new(this, '${images.maven}')
-  </#if>
+    </#if>
 <#else>
     mvn = cesBuildLib.MavenWrapper.new(this)
 </#if>
 
 <#if jenkins.mavenCentralMirror?has_content>
-    mvn.useMirrors([name: 'maven-central-mirror', mirrorOf: 'central', url:  env.${namePrefixForEnvVars}MAVEN_CENTRAL_MIRROR])
+    mvn.useMirrors([name: 'maven-central-mirror', mirrorOf: 'central', url: env.${namePrefixForEnvVars}])
 </#if>
 <#noparse>
 
@@ -78,15 +78,15 @@ node {
             imageName = "${dockerRegistryBaseUrl}/${pathPrefix}${application}:${imageTag}"
 </#noparse>
 <#if registry.twoRegistries>
-<#noparse>
+    <#noparse>
             docker.withRegistry("https://${dockerRegistryProxyBaseUrl}", dockerRegistryProxyCredentials) {
                 image = docker.build(imageName, '.')
             }
-</#noparse>
+    </#noparse>
 <#else>
-<#noparse>
+    <#noparse>
             image = docker.build(imageName, '.')
-</#noparse>
+    </#noparse>
 </#if>
 <#noparse>
             if (isBuildSuccessful()) {
@@ -106,72 +106,72 @@ node {
                                 provider     : 'SCMManager',
                                 credentialsId: scmManagerCredentials,
                                 baseUrl      : configRepositoryPRBaseUrl,
-                                repositoryUrl   : configRepositoryPRRepo,
+                                repositoryUrl: configRepositoryPRRepo,
                         ],
-                        cesBuildLibRepo: cesBuildLibRepo,
-                        cesBuildLibVersion: cesBuildLibVersion,
+                        cesBuildLibRepo         : cesBuildLibRepo,
+                        cesBuildLibVersion      : cesBuildLibVersion,
                         cesBuildLibCredentialsId: scmManagerCredentials,
-                        application: application,
-                        mainBranch: mainBranch,
-                        gitopsTool: 'ARGO',
-                        folderStructureStrategy: 'ENV_PER_APP',
+                        application             : application,
+                        mainBranch              : mainBranch,
+                        gitopsTool              : 'ARGO',
+                        folderStructureStrategy : 'ENV_PER_APP',
 </#noparse>
-                        k8sVersion : env.${namePrefixForEnvVars}K8S_VERSION,
-                        buildImages          : [
+                        k8sVersion              : env.${namePrefixForEnvVars},
+                        buildImages             : [
 <#if registry.twoRegistries>
-                                helm:       [
-                                        image: '${images.helm}',
+                                helm       : [
+                                        image        : '${images.helm}',
                                         credentialsId: dockerRegistryProxyCredentials
                                 ],
-                                kubectl:    [
-                                        image: '${images.kubectl}',
+                                kubectl    : [
+                                        image        : '${images.kubectl}',
                                         credentialsId: dockerRegistryProxyCredentials
                                 ],
-                                kubeval:    [
-                                        image: '${images.kubeval}',
+                                kubeval    : [
+                                        image        : '${images.kubeval}',
                                         credentialsId: dockerRegistryProxyCredentials
                                 ],
                                 helmKubeval: [
-                                        image: '${images.helmKubeval}',
+                                        image        : '${images.helmKubeval}',
                                         credentialsId: dockerRegistryProxyCredentials
                                 ],
-                                yamllint:   [
-                                        image: '${images.yamllint}',
+                                yamllint   : [
+                                        image        : '${images.yamllint}',
                                         credentialsId: dockerRegistryProxyCredentials
                                 ]
 <#else>
-                                helm: '${images.helm}',
-                                kubectl: '${images.kubectl}',
-                                kubeval: '${images.kubeval}',
+                                helm       : '${images.helm}',
+                                kubectl    : '${images.kubectl}',
+                                kubeval    : '${images.kubeval}',
                                 helmKubeval: '${images.helmKubeval}',
-                                yamllint: '${images.yamllint}'
+                                yamllint   : '${images.yamllint}'
 </#if>
                         ],
-                        deployments: [
-                            sourcePath: 'k8s',
-                            destinationRootPath: 'apps',
-                            helm : [
-                                repoType : 'GIT',
-                                credentialsId : scmManagerCredentials,
-                                repoUrl  : helmChartRepository,
-                                version: helmChartVersion,
-                                updateValues  : [[fieldPath: "image.name", newValue: imageName]]
-                            ]
+                        deployments             : [
+                                sourcePath         : 'k8s',
+                                destinationRootPath: 'apps',
+                                helm               : [
+                                        repoType     : 'GIT',
+                                        credentialsId: scmManagerCredentials,
+                                        repoUrl      : helmChartRepository,
+                                        version      : helmChartVersion,
+                                        updateValues : [[fieldPath: "image.name", newValue: imageName]]
+                                ]
                         ],
-                        stages: [
-                                staging: [
-                                        namespace: '${namePrefix}example-apps-staging',
-                                        deployDirectly: true ],
+                        stages                  : [
+                                staging   : [
+                                        namespace     : '${namePrefix}example-apps-staging',
+                                        deployDirectly: true],
                                 production: [
-                                        namespace: '${namePrefix}example-apps-production',
-                                        deployDirectly: false ]
+                                        namespace     : '${namePrefix}example-apps-production',
+                                        deployDirectly: false]
                         ]
                 ]
 <#noparse>
                 deployViaGitops(gitopsConfig)
             } else {
-                echo 'Skipping deploy, because build not successful or not on main branch'
-            }
+    echo 'Skipping deploy, because build not successful or not on main branch'
+}
         }
     }
 

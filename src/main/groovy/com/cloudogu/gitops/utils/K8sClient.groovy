@@ -1,11 +1,10 @@
 package com.cloudogu.gitops.utils
 
+import com.cloudogu.gitops.config.Config
 import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
-import com.cloudogu.gitops.config.Config
 import groovy.transform.Immutable
 import groovy.util.logging.Slf4j
-import jakarta.inject.Inject
 import jakarta.inject.Provider
 import jakarta.inject.Singleton
 
@@ -25,7 +24,7 @@ class K8sClient {
     ) {
         this.fileSystemUtils = fileSystemUtils
         this.commandExecutor = commandExecutor
-        this.configProvider = configProvider;
+        this.configProvider = configProvider
     }
 
     String getInternalNodeIp() {
@@ -70,39 +69,39 @@ class K8sClient {
     }
 
     /**
-    * Creates a namespace with the specified name if it does not already exist.
-    *
-    * @param name the name of the namespace to create. Must not be {@code null} or empty.
-    *
-    * @throws IllegalArgumentException if the {@code name} is {@code null} or empty.
-    * @throws RuntimeException if an error occurs during the creation of the namespace,
-    *         such as insufficient permissions.
-    */
+     * Creates a namespace with the specified name if it does not already exist.
+     *
+     * @param name the name of the namespace to create. Must not be {@code null} or empty.
+     *
+     * @throws IllegalArgumentException if the {@code name} is {@code null} or empty.
+     * @throws RuntimeException if an error occurs during the creation of the namespace,
+     *         such as insufficient permissions.
+     */
     void createNamespace(String name) {
         if (name == null || name.trim().isEmpty()) {
-            throw new IllegalArgumentException("Namespace name must be provided and cannot be null or empty.");
+            throw new IllegalArgumentException("Namespace name must be provided and cannot be null or empty.")
         }
 
-        String namespace = "${configProvider.get().application.namePrefix}${name}";
+        String namespace = "${configProvider.get().application.namePrefix}${name}"
 
         // Check if the namespace already exists based on exitCode
-        String[] checkNamespaceCommand = new Kubectl("get", "namespace", namespace).build();
-        CommandExecutor.Output checkNamespaceOutput = commandExecutor.execute(checkNamespaceCommand, false);
+        String[] checkNamespaceCommand = new Kubectl("get", "namespace", namespace).build()
+        CommandExecutor.Output checkNamespaceOutput = commandExecutor.execute(checkNamespaceCommand, false)
 
         if (checkNamespaceOutput.exitCode == 0) {
-            log.debug("Namespace ${namespace} already exists.");
-            return;
+            log.debug("Namespace ${namespace} already exists.")
+            return
         }
 
-        log.debug("Namespace ${namespace} does not exist, proceeding to create.");
+        log.debug("Namespace ${namespace} does not exist, proceeding to create.")
 
         // Create the namespace
-        String[] createNamespaceCommand = new Kubectl("create", "namespace", namespace).build();
+        String[] createNamespaceCommand = new Kubectl("create", "namespace", namespace).build()
         try {
-            CommandExecutor.Output createNamespaceOutput = commandExecutor.execute(createNamespaceCommand);
-            log.debug("Namespace ${namespace} created successfully.");
+            CommandExecutor.Output createNamespaceOutput = commandExecutor.execute(createNamespaceCommand)
+            log.debug("Namespace ${namespace} created successfully.")
         } catch (Exception e) {
-            throw new RuntimeException("Failed to create namespace ${namespace} (possibly due to insufficient permissions)", e);
+            throw new RuntimeException("Failed to create namespace ${namespace} (possibly due to insufficient permissions)", e)
         }
     }
 
@@ -116,7 +115,7 @@ class K8sClient {
      */
     void createNamespaces(List<String> names) {
         if (names == null) {
-            throw new IllegalArgumentException("Namespaces must be provided and cannot be null.");
+            throw new IllegalArgumentException("Namespaces must be provided and cannot be null.")
         }
         names.each { name ->
             createNamespace(name)
@@ -269,21 +268,21 @@ class K8sClient {
         return output.stdOut
     }
 
-    Kubectl kubectl(String ... args) {
+    Kubectl kubectl(String... args) {
         new Kubectl(args)
     }
 
     /**
-    * Patches the nodePort of a specified port in a service.
-    *
-    * @param serviceName      The name of the service to patch.
-    * @param namespace        The namespace of the service.
-    * @param portName         The name of the port to patch.
-    * @param newNodePort      The new nodePort value to set.
-    *
-    * @throws IllegalArgumentException if name, namespace, portName, and nodePort are invalid.
-    * @throws RuntimeException if an error occurs while patching the service (i.e. portName not found).
-    */
+     * Patches the nodePort of a specified port in a service.
+     *
+     * @param serviceName The name of the service to patch.
+     * @param namespace The namespace of the service.
+     * @param portName The name of the port to patch.
+     * @param newNodePort The new nodePort value to set.
+     *
+     * @throws IllegalArgumentException if name, namespace, portName, and nodePort are invalid.
+     * @throws RuntimeException if an error occurs while patching the service (i.e. portName not found).
+     */
     void patchServiceNodePort(String serviceName, String namespace, String portName, int newNodePort) {
         if (!serviceName || !namespace || !portName || newNodePort <= 0) {
             throw new IllegalArgumentException("Service name, namespace, port name, and valid nodePort must be provided")
@@ -307,8 +306,8 @@ class K8sClient {
         // Create the JSON patch for the specific port
         def patch = [
                 [
-                        op: "replace",
-                        path: "/spec/ports/${portIndex}/nodePort",
+                        op   : "replace",
+                        path : "/spec/ports/${portIndex}/nodePort",
                         value: newNodePort
                 ]
         ]
@@ -325,18 +324,18 @@ class K8sClient {
     }
 
     /**
-    * Waits until the specified resource reaches the desired phase.
-    *
-    * @param resourceType      The type of the Kubernetes resource (e.g., pod, deployment).
-    * @param resourceName      The name of the specific resource.
-    * @param namespace         The namespace of the resource.
-    * @param desiredPhase      The desired phase to wait for (e.g., Running, Succeeded).
-    * @param timeoutSeconds    The maximum time to wait for the desired phase in seconds.
-    * @param checkIntervalSeconds The interval between status checks in seconds.
-    *
-    * @throws IllegalArgumentException if Resource type, name, namespace, desired phase, Timeout and check interval are invalid.
-    * @throws RuntimeException if the desired phase is not reached within the timeout period.
-    */
+     * Waits until the specified resource reaches the desired phase.
+     *
+     * @param resourceType The type of the Kubernetes resource (e.g., pod, deployment).
+     * @param resourceName The name of the specific resource.
+     * @param namespace The namespace of the resource.
+     * @param desiredPhase The desired phase to wait for (e.g., Running, Succeeded).
+     * @param timeoutSeconds The maximum time to wait for the desired phase in seconds.
+     * @param checkIntervalSeconds The interval between status checks in seconds.
+     *
+     * @throws IllegalArgumentException if Resource type, name, namespace, desired phase, Timeout and check interval are invalid.
+     * @throws RuntimeException if the desired phase is not reached within the timeout period.
+     */
     void waitForResourcePhase(String resourceType, String resourceName, String namespace, String desiredPhase, int timeoutSeconds, int checkIntervalSeconds) {
         if (!resourceType || !resourceName || !namespace || !desiredPhase) {
             throw new IllegalArgumentException("Resource type, name, namespace, and desired phase must be provided")
@@ -370,15 +369,15 @@ class K8sClient {
     }
 
     /**
-    * Waits for a specific resource to reach the desired phase with default timeout and interval.
-    *
-    * @param resourceType      The type of the Kubernetes resource (e.g., pod, deployment).
-    * @param resourceName      The name of the specific resource.
-    * @param namespace         The namespace of the resource.
-    * @param desiredPhase      The desired phase to wait for (e.g., Running, Succeeded).
-    *
-    * @see #waitForResourcePhase(String, String, String, String, int, int)
-    */
+     * Waits for a specific resource to reach the desired phase with default timeout and interval.
+     *
+     * @param resourceType The type of the Kubernetes resource (e.g., pod, deployment).
+     * @param resourceName The name of the specific resource.
+     * @param namespace The namespace of the resource.
+     * @param desiredPhase The desired phase to wait for (e.g., Running, Succeeded).
+     *
+     * @see #waitForResourcePhase(String, String, String, String, int, int)
+     */
     void waitForResourcePhase(String resourceType, String resourceName, String namespace, String desiredPhase) {
         waitForResourcePhase(resourceType, resourceName, namespace, desiredPhase, 60, 1)
     }

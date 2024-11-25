@@ -3,8 +3,8 @@ package com.cloudogu.gitops.config.schema
 import com.cloudogu.gitops.config.Config
 import org.junit.jupiter.api.Test
 
-import static org.assertj.core.api.Assertions.assertThat
 import static com.cloudogu.gitops.config.Config.*
+import static org.assertj.core.api.Assertions.assertThat
 
 class ConfigTest {
     Config testConfig = new Config(registry: new RegistrySchema(
@@ -33,12 +33,12 @@ registry:
   internalPort: 123
 """)
     }
-    
+
     @Test
     void 'creates from schema overwriting only Map values, ignoring null values'() {
         Config expectedValues = new Config(
                 application: new ApplicationSchema(
-                // Overwrites a default String
+                        // Overwrites a default String
                         username: 'myUser',
                         // Overwrites a default Boolean
                         yes: true,
@@ -46,9 +46,9 @@ registry:
                         namePrefix: "aPrefix"),
                 // Overwrites a default Integer
                 registry: new RegistrySchema(internalPort: 42))
-        
+
         def actualValues = fromMap(expectedValues.toMap())
-        
+
         assertThat(actualValues.application.username).isEqualTo(expectedValues.application.username)
         assertThat(actualValues.application.yes).isEqualTo(expectedValues.application.yes)
         assertThat(actualValues.application.namePrefix).isEqualTo(expectedValues.application.namePrefix)
