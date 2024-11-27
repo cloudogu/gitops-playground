@@ -201,7 +201,7 @@ class Config {
              - Also upgrade plugins. See docs/developers.md
              */
             @JsonPropertyDescription(HELM_CONFIG_VERSION_DESCRIPTION)
-            String version = '5.5.11'
+            String version = '4.8.1'
         }
     }
 
