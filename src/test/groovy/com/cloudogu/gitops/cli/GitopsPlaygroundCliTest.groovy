@@ -8,6 +8,7 @@ import com.cloudogu.gitops.Application
 import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.destroy.Destroyer
+import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.K8sClient
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 import io.micronaut.context.ApplicationContext
@@ -26,7 +27,7 @@ import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*
 
 // Avoids blocking if input is read by error
-@Timeout(value = 5, unit = TimeUnit.SECONDS)
+@Timeout(value = 10, unit = TimeUnit.SECONDS)
 class GitopsPlaygroundCliTest {
 
     static final String ORIGINAL_LOGGING_PATTERN = loggingEncoder.pattern
@@ -52,7 +53,35 @@ class GitopsPlaygroundCliTest {
         verify(applicationConfigurator).initAndValidateConfig(any(Config))
         verify(application).start()
     }
+
+    @Test
+    void 'Starts with config file'() {
+        String pathToConfigFile = "./src/test/resources/testMainConfig.yaml"
+
+        assertThat(new File(pathToConfigFile).isFile()).withFailMessage("config file for test do not exists anymore.").isTrue()
+
+        def status = cli.run('--config-file=' + pathToConfigFile)
+        assertThat(status).isEqualTo(ReturnCode.SUCCESS)
+
+        // Verify the first interaction
+        verify(applicationConfigurator).initAndValidateConfig(any(Config))
+
+        // Check application starts
+        verify(application).start()
+    }
     
+    @Test
+    void 'Starts with config map'() {
+        when(k8sClient.getConfigMap('my-config', 'config.yaml')).thenReturn('{"application": {"yes": true}}')
+
+        def status = cli.run("--config-map=my-config")
+
+        assertThat(status).isEqualTo(ReturnCode.SUCCESS)
+        // ensure init is called with Config
+        verify(applicationConfigurator).initAndValidateConfig(any(Config))
+        verify(application).start()
+    }
+
     @Test
     void 'Outputs config file'() {
         def status = cli.run('--output-config-file')

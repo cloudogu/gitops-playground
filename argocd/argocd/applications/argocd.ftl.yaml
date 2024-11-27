@@ -18,9 +18,14 @@ spec:
     namespace: ${namePrefix}argocd
   project: argocd
   source:
-    path: argocd/
+    path: ${argocd.isOperator?string("operator/", "argocd/")}
     repoURL: ${scmm.baseUrl}/repo/${namePrefix}argocd/argocd
     targetRevision: main
+    # needed to sync the operator/rbac folder
+    <#if argocd.isOperator??>
+    directory:
+      recurse: true
+    </#if>
   syncPolicy:
     automated:
       prune: false # is set to false to prevent argo from deleting itself

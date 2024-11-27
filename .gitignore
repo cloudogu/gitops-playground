@@ -1,4 +1,5 @@
 .idea
+.run
 *.iml
 target
 # do not check in the workspace

@@ -1,0 +1,147 @@
+registry:
+  internalPort: 30000
+  url: "localhost:30000"
+  path: ""
+  username: ""
+  password: ""
+  proxyUrl: ""
+  proxyUsername: ""
+  proxyPassword: ""
+  readOnlyUsername: ""
+  readOnlyPassword: ""
+  createImagePullSecrets: false
+  helm:
+    chart: "docker-registry"
+    repoURL: "https://helm.twun.io"
+    version: "2.2.3"
+jenkins:
+  url: "http://172.18.0.2:9090"
+  username: "admin"
+  password: "admin"
+  metricsUsername: "metrics"
+  metricsPassword: "metrics"
+  mavenCentralMirror: ""
+  helm:
+    version: "5.5.11"
+scmm:
+  url: "http://172.18.0.2:9091/scm"
+  username: "admin"
+  password: "admin"
+  helm:
+    chart: "scm-manager"
+    repoURL: "https://packages.scm-manager.org/repository/helm-v2-releases/"
+    version: "3.2.1"
+application:
+  remote: false
+  insecure: false
+  openshift: false
+  username: "admin"
+  password: "admin"
+  "yes": true
+  namePrefix: ""
+  destroy: false
+  podResources: false
+  gitName: "Cloudogu"
+  gitEmail: "hello@cloudogu.com"
+  baseUrl: ""
+  urlSeparatorHyphen: false
+  mirrorRepos: false
+  skipCrds: false
+  namespaceIsolation: false
+  netpols: false
+images:
+  kubectl: "bitnami/kubectl:1.29"
+  helm: "ghcr.io/cloudogu/helm:3.15.4-1"
+  kubeval: "ghcr.io/cloudogu/helm:3.15.4-1"
+  helmKubeval: "ghcr.io/cloudogu/helm:3.15.4-1"
+  yamllint: "cytopia/yamllint:1.25-0.7"
+  nginx: ""
+  petclinic: "eclipse-temurin:11-jre-alpine"
+  maven: ""
+repositories:
+  springBootHelmChart:
+    url: "/gitops/repos/spring-boot-helm-chart.git"
+    ref: "0.3.2"
+  springPetclinic:
+    url: "/gitops/repos/spring-petclinic.git"
+    ref: "b0e0d18"
+  gitopsBuildLib:
+    url: "/gitops/repos/gitops-build-lib.git"
+  cesBuildLib:
+    url: "/gitops/repos/ces-build-lib.git"
+features:
+  argocd:
+    active: false
+    url: ""
+    emailFrom: "argocd@example.org"
+    emailToUser: "app-team@example.org"
+    emailToAdmin: "infra@example.org"
+  mail:
+    mailhog: false
+    mailhogUrl: ""
+    smtpAddress: ""
+    smtpPort: 22222
+    smtpUser: ""
+    smtpPassword: ""
+    helm:
+      chart: "mailhog"
+      repoURL: "https://codecentric.github.io/helm-charts"
+      version: "5.0.1"
+      image: "ghcr.io/cloudogu/mailhog:v1.0.1"
+  monitoring:
+    active: false
+    grafanaUrl: ""
+    grafanaEmailFrom: "grafana@example.org"
+    grafanaEmailTo: "infra@example.org"
+    helm:
+      chart: "kube-prometheus-stack"
+      repoURL: "https://prometheus-community.github.io/helm-charts"
+      version: "58.2.1"
+      values: {}
+      grafanaImage: ""
+      grafanaSidecarImage: ""
+      prometheusImage: ""
+      prometheusOperatorImage: ""
+      prometheusConfigReloaderImage: ""
+  secrets:
+    externalSecrets:
+      helm:
+        chart: "external-secrets"
+        repoURL: "https://charts.external-secrets.io"
+        version: "0.9.16"
+        image: ""
+        certControllerImage: ""
+        webhookImage: ""
+    vault:
+      mode: "dev"
+      url: ""
+      helm:
+        chart: "vault"
+        repoURL: "https://helm.releases.hashicorp.com"
+        version: "0.25.0"
+        image: ""
+  ingressNginx:
+    active: false
+    helm:
+      chart: "ingress-nginx"
+      repoURL: "https://kubernetes.github.io/ingress-nginx"
+      version: "4.11.3"
+      values: {}
+      image: ""
+  exampleApps:
+    petclinic:
+      baseDomain: ""
+    nginx:
+      baseDomain: ""
+  certManager:
+    active: false
+    helm:
+      chart: "cert-manager"
+      repoURL: "https://charts.jetstack.io"
+      version: "1.16.1"
+      values: {}
+      image: ""
+      webhookImage: ""
+      cainjectorImage: ""
+      acmeSolverImage: ""
+      startupAPICheckImage: ""
