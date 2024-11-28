@@ -33,10 +33,11 @@ class ScmManagerTest {
                     password: 'scmm-pw',
                     gitOpsUsername: 'foo-gitops',
                     urlForJenkins : 'http://scmm4jenkins',
-                    helm  : new Config.HelmConfig(
+                    helm  : new Config.HelmConfigWithValues(
                             chart  : 'scm-manager-chart',
                             version: '2.47.0',
                             repoURL: 'https://packages.scm-manager.org/repository/helm-v2-releases/',
+                            values: [:]
                     )
             ),
             jenkins: new Config.JenkinsSchema(
@@ -126,6 +127,16 @@ class ScmManagerTest {
         createScmManager().install()
 
         assertThat(temporaryYamlFile).isNull()
+    }
+
+    @Test
+    void 'initialDelaySeconds is set properly'() {
+        config.scmm.helm.values = [
+                initialDelaySeconds: 140
+        ]
+
+        createScmManager().install()
+        assertThat(parseActualYaml()['livenessProbe'] as String).contains('initialDelaySeconds:140')
     }
 
     protected Map<String, String> getEnvAsMap() {

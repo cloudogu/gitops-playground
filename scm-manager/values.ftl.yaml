@@ -1,6 +1,11 @@
 persistence:
   size: 1Gi
 
+<#if helm.values['initialDelaySeconds']??>
+livenessProbe:
+  initialDelaySeconds: ${helm.values.initialDelaySeconds}
+</#if>
+
 extraEnv: |
     - name: SCM_WEBAPP_INITIALUSER
       value: "${username}"
@@ -12,7 +17,7 @@ service:
   nodePort: 9091
   type: NodePort
 </#if>
-  
+ 
 <#if host?has_content>
 ingress:
   enabled: true
@@ -20,3 +25,4 @@ ingress:
   hosts:
     - ${host}
 </#if>
+  
