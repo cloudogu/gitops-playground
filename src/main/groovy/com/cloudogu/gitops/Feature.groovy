@@ -46,7 +46,14 @@ abstract class Feature {
             return false
         }
     }
-    
+
+    String getActiveNamespaceFromFeature() {
+        if (this instanceof FeatureWithImage) {
+            return isEnabled() ? namespace : null
+        }
+        return null
+    }
+
     abstract boolean isEnabled()
     
     /*

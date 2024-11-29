@@ -1,6 +1,6 @@
 package com.cloudogu.gitops.config
 
-
+import com.cloudogu.gitops.Application
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
 import groovy.util.logging.Slf4j
@@ -54,6 +54,26 @@ class ApplicationConfigurator {
         evaluateBaseUrl(newConfig)
         
         return newConfig
+    }
+
+    List getNamespaceList(Config config) {
+        def namespaces = []
+        def namePrefix = config.application.namePrefix
+
+        namespaces.add("${namePrefix}default")
+
+        if (config.features.argocd.active) {
+            namespaces.addAll("${namePrefix}argocd", "${namePrefix}example-apps-staging", "${namePrefix}example-apps-production")
+        }
+
+        namespaces.addAll(Application.getFeatures().stream()
+                .map(Feature::getActiveNamespaceFromFeature)
+                .filter(Objects::nonNull)
+                .toList())
+
+        log.debug("Active namespaces retrieved: {}", namespaces);
+
+        return namespaces
     }
 
     private void addRegistryConfig(Config newConfig) {
@@ -218,4 +238,6 @@ class ApplicationConfigurator {
         }
 
     }
+
+
 }
