@@ -24,7 +24,7 @@ trait FeatureWithImage {
             k8sClient.createImagePullSecret('proxy-registry', namespace, url, user, password)
         }
     }
-    
+
     abstract String getNamespace()
     abstract K8sClient getK8sClient()
     abstract Config getConfig()

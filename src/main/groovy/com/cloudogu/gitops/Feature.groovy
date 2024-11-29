@@ -46,7 +46,15 @@ abstract class Feature {
             return false
         }
     }
-    
+
+    String getActiveNamespaceFromFeature() {
+        //using reflection to get all subclasses implementing a own namespace
+        if (this.metaClass.hasProperty(this, 'namespace'))  {
+            return isEnabled() ? this.getProperty('namespace') : null
+        }
+        return null
+    }
+
     abstract boolean isEnabled()
     
     /*

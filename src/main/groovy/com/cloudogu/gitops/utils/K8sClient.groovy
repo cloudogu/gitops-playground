@@ -15,7 +15,7 @@ class K8sClient {
 
     private CommandExecutor commandExecutor
     private FileSystemUtils fileSystemUtils
-    private Provider<Config> configProvider
+    public Provider<Config> configProvider
 
     K8sClient(
             CommandExecutor commandExecutor,
@@ -24,7 +24,7 @@ class K8sClient {
     ) {
         this.fileSystemUtils = fileSystemUtils
         this.commandExecutor = commandExecutor
-        this.configProvider = configProvider;
+        this.configProvider = configProvider
     }
 
     String getInternalNodeIp() {

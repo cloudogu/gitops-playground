@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.features
 
+import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.scmm.ScmmRepo
@@ -41,7 +42,15 @@ class PrometheusStackTest {
                     namespaceIsolation: false,
                     gitName: 'Cloudogu',
                     gitEmail: 'hello@cloudogu.com',
-                    netpols: false
+                    netpols: false,
+                    activeNamespaces: [
+                            "test1-default",
+                            "test1-argocd",
+                            "test1-monitoring",
+                            "test1-example-apps-staging",
+                            "test1-example-apps-production",
+                            "test1-secrets"
+                    ]
             ),
             features: new Config.FeaturesSchema(
                     argocd: new Config.ArgoCDSchema(active: true),
@@ -478,10 +487,7 @@ policies:
         def yaml = parseActualYaml()
         assertThat(yaml['global']['rbac']['create']).isEqualTo(false)
 
-        List<String> expectedNamespaces = ["foo-default", "foo-argocd", "foo-monitoring", "foo-ingress-nginx", "foo-example-apps-staging", "foo-example-apps-production", "foo-secrets"]
-        assertThat(prometheusStack.namespaceList.collect { it.toString() }).hasSameElementsAs(expectedNamespaces)
-
-        for (String namespace : prometheusStack.namespaceList) {
+        for (String namespace : config.application.activeNamespaces) {
             def rbacYaml = new File("$clusterResourcesRepoDir/misc/monitoring/rbac/${namespace}.yaml")
             assertThat(rbacYaml.text).contains("namespace: ${namespace}")
             assertThat(rbacYaml.text).contains("    namespace: foo-monitoring")
@@ -491,10 +497,10 @@ policies:
 
         assertThat(yaml['prometheusOperator']['kubeletService']['enabled']).isEqualTo(false)
         assertThat(yaml['prometheusOperator']['namespaces']['releaseNamespace']).isEqualTo(false)
-        assertThat(yaml['prometheusOperator']['namespaces']['additional'] as List).hasSameElementsAs(expectedNamespaces)
+        assertThat(yaml['prometheusOperator']['namespaces']['additional'] as List).hasSameElementsAs(config.application.activeNamespaces)
 
         assertThat(yaml['grafana']['rbac']['create']).isEqualTo(false)
-        assertThat(yaml['grafana']['sidecar']['dashboards']['searchNamespace']).isEqualTo(prometheusStack.namespaceList.join(','))
+        assertThat(yaml['grafana']['sidecar']['dashboards']['searchNamespace']).isEqualTo(config.application.activeNamespaces.join(','))
     }
 
     @Test
@@ -503,7 +509,7 @@ policies:
         def prometheusStack = createStack()
         prometheusStack.install()
 
-        for (String namespace : prometheusStack.namespaceList) {
+        for (String namespace : config.application.activeNamespaces) {
             def netPolsYaml = new File("$clusterResourcesRepoDir/misc/monitoring/netpols/${namespace}.yaml")
             assertThat(netPolsYaml.text).contains("namespace: ${namespace}")
         }
@@ -550,6 +556,40 @@ policies:
 
         assertThat(actual['key']['some']).isEqualTo('thing')
         assertThat(actual['key']['one']).isEqualTo(1)
+    }
+
+    @Test
+    void 'ServiceMonitor selectors'() {
+        config.application.namePrefix = "test1-"
+        config.features.argocd.active = true
+        config.features.secrets.active = true
+        config.features.ingressNginx.active = false
+        config.application.activeNamespaces = [""]
+        List<String> namespaceList = new ArrayList<>(Arrays.asList(
+                "test1-default",
+                "test1-argocd",
+                "test1-monitoring",
+                "test1-example-apps-staging",
+                "test1-example-apps-production",
+                "test1-secrets"
+        ))
+        config.application.activeNamespaces=  namespaceList
+        createStack().install()
+        def actual = parseActualYaml()
+
+        assertThat(actual['prometheus']['prometheusSpec']['serviceMonitorNamespaceSelector']).isEqualTo(new YamlSlurper().parseText('''
+matchExpressions:
+  - key: kubernetes.io/metadata.name
+    operator: In
+    values:
+      - test1-default
+      - test1-argocd
+      - test1-monitoring
+      - test1-example-apps-staging
+      - test1-example-apps-production
+      - test1-secrets
+'''
+        ))
     }
 
     private PrometheusStack createStack() {
