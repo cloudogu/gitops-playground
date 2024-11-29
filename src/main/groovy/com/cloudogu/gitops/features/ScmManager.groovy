@@ -52,7 +52,8 @@ class ScmManager extends Feature {
                     host  : config.scmm.ingress,
                     remote: config.application.remote,
                     username:  config.scmm.username,
-                    password: config.scmm.password
+                    password: config.scmm.password,
+                    helm: config.scmm.helm
             ]).toPath()
 
             deployer.deployFeature(

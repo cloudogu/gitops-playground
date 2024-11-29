@@ -237,10 +237,13 @@ class Config {
         String password = DEFAULT_ADMIN_PW
 
         @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
-        HelmConfig helm = new HelmConfig(
+        HelmConfigWithValues helm = new HelmConfigWithValues(
                 chart: 'scm-manager',
                 repoURL: 'https://packages.scm-manager.org/repository/helm-v2-releases/',
-                version: '3.2.1')
+                version: '3.2.1',
+                values: [
+                        initialDelaySeconds: 120
+                ])
     }
 
     static class ApplicationSchema {
