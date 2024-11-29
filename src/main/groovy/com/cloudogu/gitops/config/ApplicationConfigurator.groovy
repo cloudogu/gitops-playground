@@ -1,6 +1,5 @@
 package com.cloudogu.gitops.config
 
-
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
 import groovy.util.logging.Slf4j
@@ -10,9 +9,9 @@ class ApplicationConfigurator {
 
     private NetworkingUtils networkingUtils
     private FileSystemUtils fileSystemUtils
-
     ApplicationConfigurator(NetworkingUtils networkingUtils = new NetworkingUtils(), 
-                            FileSystemUtils fileSystemUtils = new FileSystemUtils()) {
+                            FileSystemUtils fileSystemUtils = new FileSystemUtils()
+    ) {
         this.networkingUtils = networkingUtils
         this.fileSystemUtils = fileSystemUtils
     }
@@ -21,6 +20,7 @@ class ApplicationConfigurator {
      * Sets dynamic fields and validates params 
      */
     Config initAndValidateConfig(Config newConfig) {
+
 
         validate(newConfig)
         
@@ -218,4 +218,6 @@ class ApplicationConfigurator {
         }
 
     }
+
+
 }

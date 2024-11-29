@@ -243,7 +243,7 @@ class K8sClient {
 
         Kubectl namespace(String namespace) {
             if (namespace) {
-                this.command += ['-n', configProvider.get().application.namePrefix + namespace]
+                this.command += ['-n', namespace]
             }
             return this
         }

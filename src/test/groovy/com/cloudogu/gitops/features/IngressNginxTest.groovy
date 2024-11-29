@@ -164,6 +164,13 @@ class IngressNginxTest {
         assertThat(yaml['controller']['image']['tag']).isEqualTo('v42')
         assertThat(yaml['controller']['image']['digest']).isNull()
     }
+
+    @Test
+    void 'get namespace from feature'() {
+        assertThat(createIngressNginx().getActiveNamespaceFromFeature()).isEqualTo('ingress-nginx')
+        config.features.ingressNginx.active = false
+        assertThat(createIngressNginx().getActiveNamespaceFromFeature()).isEqualTo(null)
+    }
     
     private IngressNginx createIngressNginx() {
         // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
