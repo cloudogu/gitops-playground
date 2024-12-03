@@ -246,6 +246,7 @@ class Config {
     static class ApplicationSchema {
         Boolean runningInsideK8s = false
         String namePrefixForEnvVars = ''
+        List<String> activeNamespaces
 
         @Option(names = ['--config-file'], description = CONFIG_FILE_DESCRIPTION)
         String configFile = ''

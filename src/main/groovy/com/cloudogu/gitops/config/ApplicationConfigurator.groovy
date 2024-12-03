@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.config
 
 import com.cloudogu.gitops.Application
+import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
 import groovy.util.logging.Slf4j
@@ -10,17 +11,22 @@ class ApplicationConfigurator {
 
     private NetworkingUtils networkingUtils
     private FileSystemUtils fileSystemUtils
+    Application application
 
     ApplicationConfigurator(NetworkingUtils networkingUtils = new NetworkingUtils(), 
-                            FileSystemUtils fileSystemUtils = new FileSystemUtils()) {
+                            FileSystemUtils fileSystemUtils = new FileSystemUtils(),
+            Application application = new Application(null)
+    ) {
         this.networkingUtils = networkingUtils
         this.fileSystemUtils = fileSystemUtils
+        this.application = application
     }
 
     /**
      * Sets dynamic fields and validates params 
      */
     Config initAndValidateConfig(Config newConfig) {
+
 
         validate(newConfig)
         
@@ -50,6 +56,8 @@ class ApplicationConfigurator {
         if (newConfig.features.ingressNginx.active && !newConfig.application.baseUrl) {
             log.warn("Ingress-controller is activated without baseUrl parameter. Services will not be accessible by hostnames. To avoid this use baseUrl with ingress. ")
         }
+        //Sets all active and needed namespaces into config
+        newConfig.application.activeNamespaces = getNamespaceList(newConfig)
 
         evaluateBaseUrl(newConfig)
         
@@ -66,10 +74,11 @@ class ApplicationConfigurator {
             namespaces.addAll("${namePrefix}argocd", "${namePrefix}example-apps-staging", "${namePrefix}example-apps-production")
         }
 
-        namespaces.addAll(Application.getFeatures().stream()
-                .map(Feature::getActiveNamespaceFromFeature)
-                .filter(Objects::nonNull)
-                .toList())
+        //gets all namespaces from the features with Image.
+        namespaces.addAll(application.features
+                .collect { it.activeNamespaceFromFeature }
+                .findAll { it }
+                .unique())
 
         log.debug("Active namespaces retrieved: {}", namespaces);
 

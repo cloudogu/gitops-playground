@@ -49,7 +49,7 @@ abstract class Feature {
 
     String getActiveNamespaceFromFeature() {
         if (this instanceof FeatureWithImage) {
-            return isEnabled() ? namespace : null
+            return isEnabled() ? ((FeatureWithImage) this).namespace : null
         }
         return null
     }

@@ -75,7 +75,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
                 remote: config.application.remote,
                 skipCrds          : config.application.skipCrds,
                 namespaceIsolation: config.application.namespaceIsolation,
-                namespaces        : namespaceList,
+                namespaces        : config.application.activeNamespaces,
                 mail              : [
                         active      : config.features.mail.active,
                         smtpAddress : config.features.mail.smtpAddress,

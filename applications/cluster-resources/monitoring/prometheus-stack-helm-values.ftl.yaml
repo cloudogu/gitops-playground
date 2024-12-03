@@ -272,8 +272,17 @@ prometheus:
     </#if>
     # Find podMonitors, serviceMonitor, etc. in all namespaces
     serviceMonitorNamespaceSelector:
-      matchLabels: {}
-    # With this, we don't need the label "release: kube-prometheus-stack" on the service monitor
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values:
+          <#if namespaces?has_content>
+            <#list namespaces as namespace>
+            - ${namespace}
+            </#list>
+            <#else>
+            {}
+          </#if>
     serviceMonitorSelectorNilUsesHelmValues: false
     podMonitorNamespaceSelector:
       matchLabels: {}
