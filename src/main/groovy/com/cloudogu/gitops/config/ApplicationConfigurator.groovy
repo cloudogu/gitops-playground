@@ -1,7 +1,5 @@
 package com.cloudogu.gitops.config
 
-import com.cloudogu.gitops.Application
-import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
 import groovy.util.logging.Slf4j
@@ -11,15 +9,11 @@ class ApplicationConfigurator {
 
     private NetworkingUtils networkingUtils
     private FileSystemUtils fileSystemUtils
-    Application application
-
     ApplicationConfigurator(NetworkingUtils networkingUtils = new NetworkingUtils(), 
-                            FileSystemUtils fileSystemUtils = new FileSystemUtils(),
-            Application application = new Application(null)
+                            FileSystemUtils fileSystemUtils = new FileSystemUtils()
     ) {
         this.networkingUtils = networkingUtils
         this.fileSystemUtils = fileSystemUtils
-        this.application = application
     }
 
     /**
@@ -56,33 +50,10 @@ class ApplicationConfigurator {
         if (newConfig.features.ingressNginx.active && !newConfig.application.baseUrl) {
             log.warn("Ingress-controller is activated without baseUrl parameter. Services will not be accessible by hostnames. To avoid this use baseUrl with ingress. ")
         }
-        //Sets all active and needed namespaces into config
-        newConfig.application.activeNamespaces = getNamespaceList(newConfig)
 
         evaluateBaseUrl(newConfig)
         
         return newConfig
-    }
-
-    List getNamespaceList(Config config) {
-        def namespaces = []
-        def namePrefix = config.application.namePrefix
-
-        namespaces.add("${namePrefix}default")
-
-        if (config.features.argocd.active) {
-            namespaces.addAll("${namePrefix}argocd", "${namePrefix}example-apps-staging", "${namePrefix}example-apps-production")
-        }
-
-        //gets all namespaces from the features with Image.
-        namespaces.addAll(application.features
-                .collect { it.activeNamespaceFromFeature }
-                .findAll { it }
-                .unique())
-
-        log.debug("Active namespaces retrieved: {}", namespaces);
-
-        return namespaces
     }
 
     private void addRegistryConfig(Config newConfig) {
@@ -112,6 +83,31 @@ class ApplicationConfigurator {
                 throw new RuntimeException("createImagePullSecrets needs to be used with either registry username and password or the readOnly variants")
             }
         }
+    }
+
+    static Map<String, String> getActiveNamespacesForAllFeatures() {
+        def activeNamespaces = [:]
+
+        // Use Reflections to find all subclasses of Feature
+        def reflections = new Reflections('your.package.name') // Replace with your package name
+        def featureClasses = reflections.getSubTypesOf(Feature)
+
+        featureClasses.each { featureClass ->
+            try {
+                // Create an instance of the feature class
+                def featureInstance = featureClass.getDeclaredConstructor().newInstance()
+                def activeNamespace = featureInstance.getActiveNamespaceFromFeature()
+
+                // Store the result if the namespace is not null
+                if (activeNamespace) {
+                    activeNamespaces[featureClass.simpleName] = activeNamespace
+                }
+            } catch (Exception e) {
+                log.error("Failed to process feature class: ${featureClass.name}", e)
+            }
+        }
+
+        return activeNamespaces
     }
 
     private void addAdditionalApplicationConfig(Config newConfig) {

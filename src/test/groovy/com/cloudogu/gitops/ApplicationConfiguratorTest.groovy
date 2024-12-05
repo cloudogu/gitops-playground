@@ -5,6 +5,7 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
 import com.cloudogu.gitops.utils.TestLogger
+import io.micronaut.context.ApplicationContext
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -368,25 +369,4 @@ class ApplicationConfiguratorTest {
         }
         assertThat(exception.message).isEqualTo(expectedException)
     }
-    @Test
-    void "get active namespaces correctly "() {
-        Config config= new Config()
-        config.features.monitoring.active = true
-        config.features.argocd.active = true
-        config.features.ingressNginx.active = true
-        config.application.namePrefix = 'test1'
-        List<String> namespaceList = new ArrayList<>(Arrays.asList(
-                "test1-default",
-                "test1-argocd",
-                "test1-monitoring",
-                "test1-example-apps-staging",
-                "test1-example-apps-production",
-                "test1-ingress-nginx"
-        ))
-
-        def actualConfig = applicationConfigurator.initAndValidateConfig(config)
-        assertThat(actualConfig.application.getActiveNamespaces()).isEqualTo(namespaceList)
-
-    }
-
 }

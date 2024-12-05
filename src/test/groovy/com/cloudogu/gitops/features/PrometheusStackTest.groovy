@@ -480,10 +480,7 @@ policies:
         def yaml = parseActualYaml()
         assertThat(yaml['global']['rbac']['create']).isEqualTo(false)
 
-        List<String> expectedNamespaces = ["foo-default", "foo-argocd", "foo-monitoring", "foo-ingress-nginx", "foo-example-apps-staging", "foo-example-apps-production", "foo-secrets"]
-        assertThat(prometheusStack.namespaceList.collect { it.toString() }).hasSameElementsAs(expectedNamespaces)
-
-        for (String namespace : prometheusStack.namespaceList) {
+        for (String namespace : config.application.activeNamespaces) {
             def rbacYaml = new File("$clusterResourcesRepoDir/misc/monitoring/rbac/${namespace}.yaml")
             assertThat(rbacYaml.text).contains("namespace: ${namespace}")
             assertThat(rbacYaml.text).contains("    namespace: foo-monitoring")

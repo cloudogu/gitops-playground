@@ -86,7 +86,7 @@ class GitopsPlaygroundCliMainScripted {
 
                 def airGappedUtils = new AirGappedUtils(config, scmmRepoProvider, repoApi, fileSystemUtils, helmClient)
 
-                context.registerSingleton(new Application([
+                context.registerSingleton(new Application(config,[
                         new Registry(config, fileSystemUtils, k8sClient, helmStrategy),
                         new ScmManager(config, executor, fileSystemUtils, helmStrategy),
                         new Jenkins(config, executor, fileSystemUtils, new GlobalPropertyManager(jenkinsApiClient),
