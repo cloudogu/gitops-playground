@@ -112,8 +112,7 @@ notifications, monitoring and secret management.
 
 In addition to creating an operational stack in production, you can run the playground locally, for learning and developing new features. 
 
-We aim to be compatible with various environments, e.g. OpenShift and in an air-gapped network.
-The support for these is *work in progress*.
+We aim to be compatible with various environments, e.g. we provide basic support in an air-gapped network.
 
 ## Installation
 
