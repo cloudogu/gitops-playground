@@ -91,7 +91,7 @@ class Mailhog extends Feature implements FeatureWithImage {
                     'mailhog',
                     '.',
                     mailhogVersion,
-                    namespace,
+                    getPrefixedNamespace(),
                     'mailhog',
                     tmpHelmValues, DeploymentStrategy.RepoType.GIT)
         } else {
@@ -100,7 +100,7 @@ class Mailhog extends Feature implements FeatureWithImage {
                     'mailhog',
                     helmConfig.chart ,
                     helmConfig.version ,
-                    namespace,
+                    getPrefixedNamespace(),
                     'mailhog',
                     tmpHelmValues)
         }

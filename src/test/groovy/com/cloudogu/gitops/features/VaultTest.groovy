@@ -176,7 +176,7 @@ class VaultTest {
                 'vault',
                 'vault',
                 '42.23.0',
-                'secrets',
+                'foo-secrets',
                 'vault',
                 temporaryYamlFilePath
         )
@@ -214,7 +214,7 @@ class VaultTest {
         assertThat(helmConfig.value.version).isEqualTo('42.23.0')
         verify(deploymentStrategy).deployFeature(
                 'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/a/b',
-                'vault', '.', '1.2.3', 'secrets',
+                'vault', '.', '1.2.3', 'foo-secrets',
                 'vault', temporaryYamlFilePath, DeploymentStrategy.RepoType.GIT)
     }
 

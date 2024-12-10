@@ -3,7 +3,6 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Config
-
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.*
 import freemarker.template.DefaultObjectWrapperBuilder
@@ -24,7 +23,7 @@ class IngressNginx extends Feature implements FeatureWithImage {
     String namespace = 'ingress-nginx'
     Config config
     K8sClient k8sClient
-    
+
     private FileSystemUtils fileSystemUtils
     private DeploymentStrategy deployer
     private AirGappedUtils airGappedUtils
@@ -53,11 +52,11 @@ class IngressNginx extends Feature implements FeatureWithImage {
 
         def templatedMap = new YamlSlurper().parseText(
                 new TemplatingEngine().template(new File(HELM_VALUES_PATH),
-                    [
-                            config: config,
-                            // Allow for using static classes inside the templates
-                            statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
-                    ])) as Map
+                        [
+                                config : config,
+                                // Allow for using static classes inside the templates
+                                statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
+                        ])) as Map
 
         def valuesFromConfig = config.features.ingressNginx.helm.values
 
@@ -86,7 +85,7 @@ class IngressNginx extends Feature implements FeatureWithImage {
                     'ingress-nginx',
                     '.',
                     ingressNginxVersion,
-                    namespace,
+                    getPrefixedNamespace(),
                     'ingress-nginx',
                     tmpHelmValues, DeploymentStrategy.RepoType.GIT)
         } else {
@@ -95,12 +94,13 @@ class IngressNginx extends Feature implements FeatureWithImage {
                     'ingress-nginx',
                     helmConfig.chart as String,
                     helmConfig.version as String,
-                    namespace,
+                    getPrefixedNamespace(),
                     'ingress-nginx',
                     tmpHelmValues
             )
         }
     }
+
     private URI getScmmUri() {
         if (config.scmm.internal) {
             new URI('http://scmm-scm-manager.default.svc.cluster.local/scm')
