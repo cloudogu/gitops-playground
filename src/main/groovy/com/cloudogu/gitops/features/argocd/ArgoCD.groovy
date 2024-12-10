@@ -212,7 +212,7 @@ class ArgoCD extends Feature {
                 new Tuple2('password', config.scmm.password)
         )
 
-        k8sClient.label('secret', repoTemplateSecretName,'argocd',
+        k8sClient.label('secret', repoTemplateSecretName,config.application.namePrefix+'argocd',
                 new Tuple2(' argocd.argoproj.io/secret-type', 'repo-creds'))
 
         if (config.features.mail.smtpUser || config.features.mail.smtpPassword) {
@@ -257,7 +257,7 @@ class ArgoCD extends Feature {
         if (config.features.monitoring.active) {
             
             log.debug("Creating namespace for monitoring, so argocd can add its service monitors there")
-            k8sClient.createNamespace('monitoring')
+            k8sClient.createNamespace(config.application.namePrefix+'monitoring')
 
             if (!config.application.skipCrds) {
                 def serviceMonitorCrdYaml

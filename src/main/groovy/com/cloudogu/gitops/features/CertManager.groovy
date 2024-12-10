@@ -82,7 +82,7 @@ class CertManager extends Feature implements FeatureWithImage{
                     'cert-manager',
                     '.',
                     certManagerVersion,
-                    'cert-manager',
+                    getPrefixedNamespace(),
                     'cert-manager',
                     tmpHelmValues, DeploymentStrategy.RepoType.GIT)
         } else {
@@ -91,7 +91,7 @@ class CertManager extends Feature implements FeatureWithImage{
                     'cert-manager',
                     helmConfig.chart,
                     helmConfig.version,
-                    'cert-manager',
+                    getPrefixedNamespace(),
                     'cert-manager',
                     tmpHelmValues
             )

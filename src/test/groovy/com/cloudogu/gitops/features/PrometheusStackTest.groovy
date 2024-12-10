@@ -480,6 +480,8 @@ policies:
         def yaml = parseActualYaml()
         assertThat(yaml['global']['rbac']['create']).isEqualTo(false)
 
+        List<String> expectedNamespaces = ["foo-default", "foo-argocd", "foo-monitoring", "foo-ingress-nginx", "foo-example-apps-staging", "foo-example-apps-production", "foo-secrets"]
+
         for (String namespace : config.application.activeNamespaces) {
             def rbacYaml = new File("$clusterResourcesRepoDir/misc/monitoring/rbac/${namespace}.yaml")
             assertThat(rbacYaml.text).contains("namespace: ${namespace}")
@@ -499,10 +501,11 @@ policies:
     @Test
     void 'network policies are created for prometheus'() {
         config.application.netpols = true
+        config.application.activeNamespaces = ["default","argocd","monitoring"]
         def prometheusStack = createStack()
         prometheusStack.install()
 
-        for (String namespace : prometheusStack.namespaceList) {
+        for (String namespace : config.application.activeNamespaces) {
             def netPolsYaml = new File("$clusterResourcesRepoDir/misc/monitoring/netpols/${namespace}.yaml")
             assertThat(netPolsYaml.text).contains("namespace: ${namespace}")
         }

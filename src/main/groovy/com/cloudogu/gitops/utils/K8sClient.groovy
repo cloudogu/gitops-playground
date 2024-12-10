@@ -70,8 +70,8 @@ class K8sClient {
     /**
      * Idempotent create, i.e. overwrites if exists.
      */
-    void createNamespace(String name) {
-        def command1 = kubectl('create', 'namespace', "${configProvider.get().application.namePrefix}${name}")
+    void createNamespace(String prefixedNamespace) {
+        def command1 = kubectl('create', 'namespace', prefixedNamespace)
                 .dryRunOutputYaml()
                 .build()
 
@@ -94,9 +94,9 @@ class K8sClient {
     /**
      * Idempotent create, i.e. overwrites if exists.
      */
-    void createImagePullSecret(String name, String namespace = '', String host, String user, String password) {
+    void createImagePullSecret(String name, String prefixedNamespace = '', String host, String user, String password) {
         def command1 = kubectl('create', 'secret', 'docker-registry', name)
-                .namespace(namespace)
+                .namespace(prefixedNamespace)
                 .mandatory('--docker-server', host)
                 .mandatory('--docker-username', user)
                 .mandatory('--docker-password', password)
@@ -109,9 +109,9 @@ class K8sClient {
     /**
      * Idempotent create, i.e. overwrites if exists.
      */
-    void createConfigMapFromFile(String name, String namespace = '', String filePath) {
+    void createConfigMapFromFile(String name, String prefixedNamespace = '', String filePath) {
         def command1 = kubectl('create', 'configmap', name)
-                .namespace(namespace)
+                .namespace(prefixedNamespace)
                 .mandatory('--from-file', filePath)
                 .dryRunOutputYaml()
                 .build()
@@ -124,9 +124,9 @@ class K8sClient {
      *
      * @param tcp Port pairs can be specified as '<port>:<targetPort>'.
      */
-    void createServiceNodePort(String name, String tcp, String nodePort = '', String namespace = '') {
+    void createServiceNodePort(String name, String tcp, String nodePort = '', String prefixedNamespace = '') {
         def command1 = kubectl('create', 'service', 'nodeport', name)
-                .namespace(namespace)
+                .namespace(prefixedNamespace)
                 .mandatory('--tcp', tcp)
                 .optional('--node-port', nodePort)
                 .dryRunOutputYaml()

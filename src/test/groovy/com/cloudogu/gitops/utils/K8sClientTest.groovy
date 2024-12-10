@@ -16,7 +16,7 @@ class K8sClientTest {
 
     @Test
     void 'Creates namespace'() {
-        k8sClient.createNamespace('my-ns')
+        k8sClient.createNamespace('foo-my-ns')
 
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
                 "kubectl create namespace foo-my-ns" +
@@ -55,7 +55,7 @@ class K8sClientTest {
     
     @Test
     void 'Creates secret'() {
-        k8sClient.createSecret('generic', 'my-secret', 'my-ns',
+        k8sClient.createSecret('generic', 'my-secret', 'foo-my-ns',
                 new Tuple2('key1', 'value1'), new Tuple2('key2', 'value2'))
 
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
@@ -84,7 +84,7 @@ class K8sClientTest {
     
     @Test
     void 'Creates imagePullSecret'() {
-        k8sClient.createImagePullSecret('my-reg', 'ns', 'host', 'user', 'pw')
+        k8sClient.createImagePullSecret('my-reg', 'foo-ns', 'host', 'user', 'pw')
 
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
                 'kubectl create secret docker-registry my-reg -n foo-ns' +
@@ -113,7 +113,7 @@ class K8sClientTest {
 
     @Test
     void 'Creates configmap from file'() {
-        k8sClient.createConfigMapFromFile('my-map', 'my-ns', '/file')
+        k8sClient.createConfigMapFromFile('my-map', 'foo-my-ns', '/file')
 
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
                 "kubectl create configmap my-map -n foo-my-ns --from-file /file --dry-run=client -oyaml" +
@@ -131,7 +131,7 @@ class K8sClientTest {
 
     @Test
     void 'Creates service type nodePort'() {
-        k8sClient.createServiceNodePort('my-svc', '42:23', '32000', 'my-ns')
+        k8sClient.createServiceNodePort('my-svc', '42:23', '32000', 'foo-my-ns')
         
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
                 'kubectl create service nodeport my-svc -n foo-my-ns --tcp 42:23 --node-port 32000' +

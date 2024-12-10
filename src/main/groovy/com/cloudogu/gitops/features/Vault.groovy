@@ -80,8 +80,8 @@ class Vault extends Feature implements FeatureWithImage {
             def postStartScript = new TemplatingEngine().replaceTemplate(templatedFile.toFile(), [namePrefix: namePrefix])
             
             log.debug('Creating namespace for vault, so it can add its secrets there')
-            k8sClient.createNamespace('secrets')
-            k8sClient.createConfigMapFromFile(vaultPostStartConfigMap, 'secrets', postStartScript.absolutePath)
+            k8sClient.createNamespace(getPrefixedNamespace())
+            k8sClient.createConfigMapFromFile(vaultPostStartConfigMap, getPrefixedNamespace(), postStartScript.absolutePath)
 
             MapUtils.deepMerge(
                     [
@@ -141,7 +141,7 @@ class Vault extends Feature implements FeatureWithImage {
                     'vault',
                     '.',
                     vaultVersion,
-                    namespace,
+                    getPrefixedNamespace(),
                     'vault',
                     tmpHelmValues, DeploymentStrategy.RepoType.GIT
             )
@@ -151,7 +151,7 @@ class Vault extends Feature implements FeatureWithImage {
                     'vault',
                     helmConfig.chart,
                     helmConfig.version,
-                    namespace,
+                    getPrefixedNamespace(),
                     'vault',
                     tmpHelmValues
             )

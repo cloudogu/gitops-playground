@@ -48,7 +48,7 @@ class ExternalSecretsOperatorTest {
                 'externalsecretsoperator',
                 'external-secrets',
                 '0.9.16',
-                'secrets',
+                'foo-secrets',
                 'external-secrets',
                 temporaryYamlFile
         )

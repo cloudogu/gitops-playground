@@ -39,20 +39,20 @@ class Content extends Feature {
             // Name prefix is added by k8sClient
             List exampleAppNamespaces = [ "example-apps-staging", "example-apps-production"]
             exampleAppNamespaces.each {
-                def namespace = it
+                def prefixedNamespace = config.application.getNamePrefix()+it
                 def registrySecretName = 'registry'
 
                 k8sClient.createNamespace(it)
                         
-                k8sClient.createImagePullSecret(registrySecretName, namespace,
+                k8sClient.createImagePullSecret(registrySecretName, prefixedNamespace,
                         config.registry.url /* Only domain matters, path would be ignored */,
                         registryUsername, registryPassword)
 
-                k8sClient.patch('serviceaccount', 'default', namespace,
+                k8sClient.patch('serviceaccount', 'default', prefixedNamespace,
                         [ imagePullSecrets: [ [name: registrySecretName] ]])
 
                 if (config.registry.twoRegistries) {
-                    k8sClient.createImagePullSecret('proxy-registry', namespace,
+                    k8sClient.createImagePullSecret('proxy-registry', prefixedNamespace,
                             config.registry.proxyUrl, config.registry.proxyUsername,
                             config.registry.proxyPassword)
                 }
