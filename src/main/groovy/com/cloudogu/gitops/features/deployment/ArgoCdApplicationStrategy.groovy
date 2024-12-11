@@ -50,7 +50,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
                 kind      : "Application",
                 metadata  : [
                         name     : repoName,
-                        namespace: prefixedNamespace
+                        namespace: "${config.application.namePrefix}argocd".toString()
                 ],
                 spec      : [
                         destination: [

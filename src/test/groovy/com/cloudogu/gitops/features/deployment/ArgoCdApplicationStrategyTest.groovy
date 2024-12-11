@@ -23,7 +23,7 @@ param1: value1
 param2: value2
 """
         strategy.deployFeature("repoURL", "repoName", "chartName", "version",
-                "namespace", "releaseName", valuesYaml.toPath())
+                "foo-namespace", "releaseName", valuesYaml.toPath())
 
         def argoCdApplicationYaml = new File("$localTempDir/argocd/releaseName.yaml")
         assertThat(argoCdApplicationYaml.text).isEqualTo("""---
@@ -31,11 +31,11 @@ apiVersion: "argoproj.io/v1alpha1"
 kind: "Application"
 metadata:
   name: "repoName"
-  namespace: "argocd"
+  namespace: "foo-argocd"
 spec:
   destination:
     server: "https://kubernetes.default.svc"
-    namespace: "namespace"
+    namespace: "foo-namespace"
   project: "cluster-resources"
   sources:
   - repoURL: "repoURL"
