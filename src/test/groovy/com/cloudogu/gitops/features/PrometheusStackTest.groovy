@@ -73,7 +73,6 @@ class PrometheusStackTest {
     Path temporaryYamlFilePrometheus = null
     FileSystemUtils fileSystemUtils = new FileSystemUtils()
     File clusterResourcesRepoDir
-    ApplicationConfigurator applicationConfigurator = mock(ApplicationConfigurator)
 
     @Test
     void "is disabled via active flag"() {
@@ -473,15 +472,14 @@ policies:
     @Test
     void 'works with namespaceIsolation'() {
         config.application.namespaceIsolation = true
+        List<String> expectedNamespaces = ["foo-default", "foo-argocd", "foo-monitoring", "foo-ingress-nginx", "foo-example-apps-staging", "foo-example-apps-production", "foo-secrets"]
+        config.application.activeNamespaces = expectedNamespaces
 
         def prometheusStack = createStack()
         prometheusStack.install()
 
         def yaml = parseActualYaml()
         assertThat(yaml['global']['rbac']['create']).isEqualTo(false)
-
-        List<String> expectedNamespaces = ["foo-default", "foo-argocd", "foo-monitoring", "foo-ingress-nginx", "foo-example-apps-staging", "foo-example-apps-production", "foo-secrets"]
-
         for (String namespace : config.application.activeNamespaces) {
             def rbacYaml = new File("$clusterResourcesRepoDir/misc/monitoring/rbac/${namespace}.yaml")
             assertThat(rbacYaml.text).contains("namespace: ${namespace}")

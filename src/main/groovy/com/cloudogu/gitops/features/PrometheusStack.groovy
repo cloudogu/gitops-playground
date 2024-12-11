@@ -75,7 +75,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
                 remote: config.application.remote,
                 skipCrds          : config.application.skipCrds,
                 namespaceIsolation: config.application.namespaceIsolation,
-                namespaces        : namespaceList,
+                namespaces        : config.application.activeNamespaces,
                 mail              : [
                         active      : config.features.mail.active,
                         smtpAddress : config.features.mail.smtpAddress,
@@ -97,14 +97,14 @@ class PrometheusStack extends Feature implements FeatureWithImage {
         k8sClient.createSecret(
                 'generic',
                 'prometheus-metrics-creds-scmm',
-                'monitoring',
+                getPrefixedNamespace(),
                 new Tuple2('password', config.application.password)
         )
 
         k8sClient.createSecret(
                 'generic',
                 'prometheus-metrics-creds-jenkins',
-                'monitoring',
+                getPrefixedNamespace(),
                 new Tuple2('password', config.jenkins.metricsPassword),
         )
 
@@ -112,7 +112,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
             k8sClient.createSecret(
                     'generic',
                     'grafana-email-secret',
-                    'monitoring',
+                    getPrefixedNamespace(),
                     new Tuple2('user', config.features.mail.smtpUser),
                     new Tuple2('password', config.features.mail.smtpPassword)
             )
@@ -121,21 +121,18 @@ class PrometheusStack extends Feature implements FeatureWithImage {
         if (config.application.namespaceIsolation || config.application.netpols) {
             ScmmRepo clusterResourcesRepo = scmmRepoProvider.getRepo('argocd/cluster-resources')
             clusterResourcesRepo.cloneRepo()
-            for (String currentNamespace : namespaceList) {
+            for (String currentPrefixedNamespace : config.application.activeNamespaces) {
 
                 if(config.application.namespaceIsolation) {
                     def rbacYaml = new TemplatingEngine().template(new File(RBAC_NAMESPACE_ISOLATION_TEMPLATE),
-                            [namespace : currentNamespace,
-                             namePrefix: namePrefix])
-                    clusterResourcesRepo.writeFile("misc/monitoring/rbac/${currentNamespace}.yaml", rbacYaml)
+                            [namespace : currentPrefixedNamespace])
+                    clusterResourcesRepo.writeFile("misc/monitoring/rbac/${currentPrefixedNamespace}.yaml", rbacYaml)
                 }
 
                 if (config.application.netpols) {
                     def netpolsYaml = new TemplatingEngine().template(new File(NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE),
-                            [namespace : currentNamespace,
-                             namePrefix: namePrefix])
-
-                    clusterResourcesRepo.writeFile("misc/monitoring/netpols/${currentNamespace}.yaml", netpolsYaml)
+                            [namespace : currentPrefixedNamespace])
+                    clusterResourcesRepo.writeFile("misc/monitoring/netpols/${currentPrefixedNamespace}.yaml", netpolsYaml)
                 }
             }
             clusterResourcesRepo.commitAndPush('Adding namespace-isolated RBAC and network policies if enabled.')
@@ -159,7 +156,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
                     'prometheusstack',
                     '.',
                     prometheusVersion,
-                    namespace,
+                    getPrefixedNamespace(),
                     'kube-prometheus-stack',
                     tmpHelmValues, RepoType.GIT)
         } else {
@@ -169,31 +166,10 @@ class PrometheusStack extends Feature implements FeatureWithImage {
                     'prometheusstack',
                     helmConfig.chart,
                     helmConfig.version,
-                    namespace,
+                    getPrefixedNamespace(),
                     'kube-prometheus-stack',
                     tmpHelmValues)
         }
-    }
-
-    protected List getNamespaceList() {
-        def namespaces = []
-        def namePrefix = config.application.namePrefix
-        if (config.features.argocd.active) {
-            namespaces.addAll("${namePrefix}argocd", "${namePrefix}example-apps-staging", "${namePrefix}example-apps-production")
-        }
-        if (config.features.monitoring.active) { // Ignore mailhog here, because it does not expose metrics
-            namespaces.addAll("${namePrefix}monitoring")
-        }
-        if (config.features.secrets.active) {
-            namespaces.addAll("${namePrefix}secrets")
-        }
-        if (config.features.ingressNginx.active) {
-            namespaces.addAll("${namePrefix}ingress-nginx")
-        }
-        if (config.registry.internal || config.scmm.internal || config.jenkins.internal) {
-            namespaces.addAll("${namePrefix}default")
-        }
-        return namespaces
     }
 
     private Map getScmmConfiguration() {

@@ -176,7 +176,7 @@ class K8sClientTest {
     @Test
     void 'Patches'() {
         def expectedYaml = [a: 'b']
-        k8sClient.patch('secret', 'my-secret', 'ns', expectedYaml)
+        k8sClient.patch('secret', 'my-secret', 'foo-ns', expectedYaml)
 
         assertThat(commandExecutor.actualCommands[0]).startsWith("kubectl patch secret my-secret -n foo-ns --patch-file=")
 
