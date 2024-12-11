@@ -389,7 +389,7 @@ policies:
                 'kubectl create secret generic prometheus-metrics-creds-scmm -n foo-monitoring --from-literal password=123 --dry-run=client -oyaml | kubectl apply -f-')
 
         verify(deploymentStrategy).deployFeature('https://prom', 'prometheusstack',
-                'kube-prometheus-stack', '19.2.2', 'monitoring',
+                'kube-prometheus-stack', '19.2.2', 'foo-monitoring',
                 'kube-prometheus-stack', temporaryYamlFilePrometheus)
         /* This corresponds to
                 'helm repo add prometheusstack https://prom'
@@ -534,7 +534,7 @@ policies:
         assertThat(helmConfig.value.version).isEqualTo('19.2.2')
         verify(deploymentStrategy).deployFeature(
                 'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/a/b',
-                'prometheusstack', '.', '1.2.3', 'monitoring',
+                'prometheusstack', '.', '1.2.3', 'foo-monitoring',
                 'kube-prometheus-stack', temporaryYamlFilePrometheus, RepoType.GIT)
     }
 

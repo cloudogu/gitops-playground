@@ -77,7 +77,7 @@ class Registry extends Feature {
                 'registry',
                 helmConfig.chart,
                 helmConfig.version,
-                'default',
+                config.application.namePrefix+'default',
                 'docker-registry',
                 tmpHelmValues
         )

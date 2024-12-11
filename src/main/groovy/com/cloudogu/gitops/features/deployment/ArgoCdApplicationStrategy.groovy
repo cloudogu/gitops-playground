@@ -32,11 +32,9 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 
     @Override
     @SuppressWarnings('GroovyGStringKey') // Using dynamic strings as keys seems an easy to read way to avoid more ifs
-    void deployFeature(String repoURL, String repoName, String chartOrPath, String version, String namespace,
+    void deployFeature(String repoURL, String repoName, String chartOrPath, String version, String prefixedNamespace,
                        String releaseName, Path helmValuesPath, RepoType repoType) {
         log.trace("Deploying helm chart via ArgoCD: ${releaseName}. Reading values from ${helmValuesPath}")
-        def namePrefix = config.application.namePrefix
-        def shallCreateNamespace  = config.features['argocd']['operator'] ? "CreateNamespace=false" : "CreateNamespace=true"
 
         ScmmRepo clusterResourcesRepo = scmmRepoProvider.getRepo('argocd/cluster-resources')
         clusterResourcesRepo.cloneRepo()
@@ -52,12 +50,12 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
                 kind      : "Application",
                 metadata  : [
                         name     : repoName,
-                        namespace: "${namePrefix}argocd".toString()
+                        namespace: prefixedNamespace
                 ],
                 spec      : [
                         destination: [
                                 server   : "https://kubernetes.default.svc",
-                                namespace: "${namePrefix}${namespace}".toString()
+                                namespace: prefixedNamespace
                         ],
                         project    : "cluster-resources",
                         sources    : [
@@ -79,8 +77,8 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
                                 syncOptions: [
                                         // So that we can apply very large resources (e.g. prometheus CRD)
                                         "ServerSideApply=true",
-                                        // Create namespaces for helm charts (while not using the argocd-operater mode)
-                                        shallCreateNamespace
+                                        // Create namespaces for helm charts
+                                        "CreateNamespace=true"
                                 ]
                         ]
                 ],

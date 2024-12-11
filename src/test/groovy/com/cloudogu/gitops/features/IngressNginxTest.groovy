@@ -42,7 +42,7 @@ class IngressNginxTest {
         assertThat(actual['controller']['replicaCount']).isEqualTo(2)
 
         verify(deploymentStrategy).deployFeature('https://kubernetes.github.io/ingress-nginx', 'ingress-nginx',
-                'ingress-nginx', '4.11.3','ingress-nginx',
+                'ingress-nginx', '4.11.3','foo-ingress-nginx',
                 'ingress-nginx', temporaryYamlFile)
         assertThat(parseActualYaml()['controller']['resources']).isNull()
         assertThat(parseActualYaml()['controller']['metrics']).isNull()
@@ -109,7 +109,7 @@ class IngressNginxTest {
         assertThat(helmConfig.value.version).isEqualTo('4.11.3')
         verify(deploymentStrategy).deployFeature(
                 'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/a/b',
-                'ingress-nginx', '.', '1.2.3','ingress-nginx',
+                'ingress-nginx', '.', '1.2.3','foo-ingress-nginx',
                 'ingress-nginx', temporaryYamlFile, DeploymentStrategy.RepoType.GIT)
     }
 

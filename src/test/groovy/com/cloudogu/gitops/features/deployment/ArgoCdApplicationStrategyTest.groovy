@@ -31,11 +31,11 @@ apiVersion: "argoproj.io/v1alpha1"
 kind: "Application"
 metadata:
   name: "repoName"
-  namespace: "foo-argocd"
+  namespace: "argocd"
 spec:
   destination:
     server: "https://kubernetes.default.svc"
-    namespace: "foo-namespace"
+    namespace: "namespace"
   project: "cluster-resources"
   sources:
   - repoURL: "repoURL"

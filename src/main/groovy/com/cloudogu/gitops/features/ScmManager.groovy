@@ -61,7 +61,7 @@ class ScmManager extends Feature {
                     'scm-manager',
                     helmConfig.chart,
                     helmConfig.version,
-                    'default',
+                    config.application.namePrefix+'default',
                     'scmm',
                     tmpHelmValues
             )

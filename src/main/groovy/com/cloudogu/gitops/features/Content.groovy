@@ -36,13 +36,12 @@ class Content extends Feature {
             String registryUsername = config.registry.readOnlyUsername ?: config.registry.username
             String registryPassword = config.registry.readOnlyPassword ?: config.registry.password
 
-            // Name prefix is added by k8sClient
             List exampleAppNamespaces = [ "example-apps-staging", "example-apps-production"]
             exampleAppNamespaces.each {
-                def prefixedNamespace = config.application.getNamePrefix()+it
+                def prefixedNamespace = config.application.namePrefix+it
                 def registrySecretName = 'registry'
 
-                k8sClient.createNamespace(it)
+                k8sClient.createNamespace(prefixedNamespace)
                         
                 k8sClient.createImagePullSecret(registrySecretName, prefixedNamespace,
                         config.registry.url /* Only domain matters, path would be ignored */,

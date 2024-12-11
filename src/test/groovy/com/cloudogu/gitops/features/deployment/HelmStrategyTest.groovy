@@ -18,7 +18,7 @@ class HelmStrategyTest {
     
     @Test
     void 'deploys feature using helm client'() {
-        createStrategy().deployFeature("repoURL", "repoName", "chart", "version", "namespace", "releaseName", Path.of("values.yaml"))
+        createStrategy().deployFeature("repoURL", "repoName", "chart", "version", "foo-namespace", "releaseName", Path.of("values.yaml"))
         
         verify(helmClient).addRepo("repoName", "repoURL")
         verify(helmClient).upgrade("releaseName", "repoName/chart", [
@@ -31,7 +31,7 @@ class HelmStrategyTest {
     @Test
     void 'Fails to deploy from git'() {
         def exception = shouldFail(RuntimeException) {
-            createStrategy().deployFeature("http://repoURL", "repoName", "chart", "version", "namespace",
+            createStrategy().deployFeature("http://repoURL", "repoName", "chart", "version", "foo-namespace",
                     "releaseName", Path.of("values.yaml"), DeploymentStrategy.RepoType.GIT)
         }
         assertThat(exception.message).isEqualTo(

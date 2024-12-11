@@ -125,7 +125,7 @@ class ExternalSecretsOperatorTest {
         assertThat(helmConfig.value.version).isEqualTo('0.9.16')
         verify(deploymentStrategy).deployFeature(
                 'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/a/b',
-                'external-secrets', '.', '1.2.3', 'secrets',
+                'external-secrets', '.', '1.2.3', 'foo-secrets',
                 'external-secrets', temporaryYamlFile, DeploymentStrategy.RepoType.GIT)
     }
 

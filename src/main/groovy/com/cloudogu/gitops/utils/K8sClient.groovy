@@ -155,7 +155,7 @@ class K8sClient {
 
         //  kubectl patch secret argocd-secret -p '{"stringData": { "admin.password": "'"${bcryptArgoCDPassword}"'"}}' || true
         String command =
-                "kubectl patch ${resource} ${name}${namespace ? " -n ${configProvider.get().application.namePrefix}${namespace}" : ''}" +
+                "kubectl patch ${resource} ${name}${namespace ? " -n ${namespace}" : ''}" +
                         (type ? " --type=$type" : '') +
                         " --patch-file=${patchYaml.absolutePath}"
         commandExecutor.execute(command)

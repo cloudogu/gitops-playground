@@ -99,7 +99,7 @@ class MailhogTest {
                 'mailhog',
                 'mailhog',
                 '5.0.1',
-                'monitoring',
+                'foo-monitoring',
                 'mailhog',
                 temporaryYamlFile
         )
@@ -169,7 +169,7 @@ class MailhogTest {
         assertThat(helmConfig.value.version).isEqualTo('5.0.1')
         verify(deploymentStrategy).deployFeature(
                 'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/a/b',
-                'mailhog', '.', '1.2.3', 'monitoring',
+                'mailhog', '.', '1.2.3', 'foo-monitoring',
                 'mailhog', temporaryYamlFile, DeploymentStrategy.RepoType.GIT)
     }
 
