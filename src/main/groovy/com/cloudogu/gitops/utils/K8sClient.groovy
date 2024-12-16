@@ -15,7 +15,7 @@ class K8sClient {
 
     private CommandExecutor commandExecutor
     private FileSystemUtils fileSystemUtils
-    public Provider<Config> configProvider
+    private Provider<Config> configProvider
 
     K8sClient(
             CommandExecutor commandExecutor,
@@ -410,14 +410,15 @@ class K8sClient {
 
     private class Kubectl {
         private List<String> command = ['kubectl']
-
+        private Provider<Config> configProvider
         Kubectl(String... args) {
+            configProvider=K8sClient.this.configProvider
             command.addAll(args)
         }
 
         Kubectl namespace(String namespace) {
             if (namespace) {
-                this.command += ['-n', configProvider.get().application.namePrefix + namespace]
+                this.command += ['-n', K8sClient.this.configProvider.get().application.namePrefix + namespace]
             }
             return this
         }

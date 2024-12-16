@@ -97,14 +97,14 @@ class PrometheusStack extends Feature implements FeatureWithImage {
         k8sClient.createSecret(
                 'generic',
                 'prometheus-metrics-creds-scmm',
-                'monitoring',
+                namespace,
                 new Tuple2('password', config.application.password)
         )
 
         k8sClient.createSecret(
                 'generic',
                 'prometheus-metrics-creds-jenkins',
-                'monitoring',
+                namespace,
                 new Tuple2('password', config.jenkins.metricsPassword),
         )
 
@@ -112,7 +112,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
             k8sClient.createSecret(
                     'generic',
                     'grafana-email-secret',
-                    'monitoring',
+                    namespace,
                     new Tuple2('user', config.features.mail.smtpUser),
                     new Tuple2('password', config.features.mail.smtpPassword)
             )
@@ -159,7 +159,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
                     'prometheusstack',
                     '.',
                     prometheusVersion,
-                    'monitoring',
+                    namespace,
                     'kube-prometheus-stack',
                     tmpHelmValues, RepoType.GIT)
         } else {
@@ -169,7 +169,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
                     'prometheusstack',
                     helmConfig.chart,
                     helmConfig.version,
-                    'monitoring',
+                    namespace,
                     'kube-prometheus-stack',
                     tmpHelmValues)
         }

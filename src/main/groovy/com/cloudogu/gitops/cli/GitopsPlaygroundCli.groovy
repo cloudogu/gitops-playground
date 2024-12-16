@@ -17,6 +17,7 @@ import com.cloudogu.gitops.utils.K8sClient
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 import io.micronaut.context.ApplicationContext
+import jakarta.inject.Provider
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
 
