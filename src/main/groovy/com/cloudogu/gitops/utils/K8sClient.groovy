@@ -1,8 +1,8 @@
 package com.cloudogu.gitops.utils
 
+import com.cloudogu.gitops.config.Config
 import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
-import com.cloudogu.gitops.config.Config
 import groovy.transform.Immutable
 import groovy.util.logging.Slf4j
 import jakarta.inject.Provider
@@ -410,9 +410,8 @@ class K8sClient {
 
     private class Kubectl {
         private List<String> command = ['kubectl']
-        private Provider<Config> configProvider
+
         Kubectl(String... args) {
-            configProvider=K8sClient.this.configProvider
             command.addAll(args)
         }
 
