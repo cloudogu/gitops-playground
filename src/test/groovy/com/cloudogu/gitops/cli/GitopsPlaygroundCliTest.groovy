@@ -69,6 +69,18 @@ class GitopsPlaygroundCliTest {
         // Check application starts
         verify(application).start()
     }
+    @Test
+    void 'fails on starts because config file with helm overrides, not allowed'() {
+        String pathToConfigFile = "./src/test/resources/errorConfig.yaml"
+
+        assertThat(new File(pathToConfigFile).isFile()).withFailMessage("config file for test do not exists anymore.").isTrue()
+
+        def exception = shouldFail(RuntimeException) {
+            cli.run('--config-file=' + pathToConfigFile)
+        }
+        assertThat(exception.message).contains('Config file invalid')
+
+    }
     
     @Test
     void 'Starts with config map'() {
