@@ -1,33 +1,37 @@
 package com.cloudogu.gitops.integration
 
-import com.cloudogu.gitops.jenkins.ApiClient
+
+import io.kubernetes.client.openapi.ApiClient
+import io.kubernetes.client.openapi.Configuration
 import io.kubernetes.client.openapi.apis.CoreV1Api
 import io.kubernetes.client.openapi.models.V1NamespaceList
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodList
-import io.kubernetes.client.extended.kubectl.Kubectl
+import io.kubernetes.client.util.ClientBuilder
+import io.kubernetes.client.util.KubeConfig
 import org.junit.jupiter.api.Test
+
 import static org.assertj.core.api.Assertions.assertThat
-import io.kubernetes.client.openapi.ApiClient;
-import io.kubernetes.client.openapi.Configuration;
-import io.kubernetes.client.openapi.apis.CoreV1Api;
-import io.kubernetes.client.openapi.models.V1Pod;
-import io.kubernetes.client.openapi.models.V1PodList;
-import io.kubernetes.client.util.ClientBuilder;
-import io.kubernetes.client.util.KubeConfig;
 
 class PrometheusStackTestIT {
 
     @Test
-    void testtesttest()  {
+    void testtesttest() {
         assertThat(true).isEqualTo(true)
 
 
     }
+
     @Test
-    void ensureJenkinsPodIsStarted()  {
+    void ensureJenkinsPodIsStarted() {
 
         String kubeConfigPath = System.getenv("HOME") + "/.kube/config";
+
+        if (!new File(kubeConfigPath).exists()) {
+            kubeConfigPath = System.getenv("KUBECONFIG");
+        }
+        System.out.println("Kubeconfig" + kubeConfigPath)
+        assertThat(kubeConfigPath) isNotBlank();
 
         // loading the out-of-cluster config, a kubeconfig from file-system
         ApiClient client =
@@ -41,15 +45,19 @@ class PrometheusStackTestIT {
         V1PodList list = api.listPodForAllNamespaces()
                 .execute();
         // invokes the CoreV1Api client
-        V1Pod jenkinsPod = list.getItems().findAll {it.getMetadata().getName().startsWith("jenkins")}.get(0)
+        V1Pod jenkinsPod = list.getItems().findAll { it.getMetadata().getName().startsWith("jenkins") }.get(0)
 
         assertThat(jenkinsPod.getMetadata().getName()).isEqualTo("jenkins-0")
     }
 
     @Test
-    void checknamesOverAPI()  {
+    void checknamesOverAPI() {
 
         String kubeConfigPath = System.getenv("HOME") + "/.kube/config";
+        if (!new File(kubeConfigPath).exists()) {
+            kubeConfigPath = System.getenv("KUBECONFIG");
+        }
+        assertThat(kubeConfigPath) isNotBlank();
 
         // loading the out-of-cluster config, a kubeconfig from file-system
         ApiClient client =
