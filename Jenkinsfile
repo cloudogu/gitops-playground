@@ -139,7 +139,7 @@ node('high-cpu') {
                             }
                     )
 
-                    if (ret > 0) {
+                    if (ret > 0 || currentBuild.result == 'UNSTABLE') {
                         if (fileExists('playground-logs-of-failed-jobs')) {
                             archiveArtifacts artifacts: 'playground-logs-of-failed-jobs/*.log'
                         }
