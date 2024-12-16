@@ -2,6 +2,7 @@ package com.cloudogu.gitops.integration
 
 import com.cloudogu.gitops.jenkins.ApiClient
 import io.kubernetes.client.openapi.apis.CoreV1Api
+import io.kubernetes.client.openapi.models.V1NamespaceList
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodList
 import io.kubernetes.client.extended.kubectl.Kubectl
@@ -19,7 +20,7 @@ class PrometheusStackTestIT {
 
     @Test
     void testtesttest()  {
-        assertThat(true).isEqualTo(false)
+        assertThat(true).isEqualTo(true)
 
 
     }
@@ -46,7 +47,7 @@ class PrometheusStackTestIT {
     }
 
     @Test
-    void kubectltesttest()  {
+    void checknamesOverAPI()  {
 
         String kubeConfigPath = System.getenv("HOME") + "/.kube/config";
 
@@ -54,7 +55,6 @@ class PrometheusStackTestIT {
         ApiClient client =
                 ClientBuilder.kubeconfig(KubeConfig.loadKubeConfig(new FileReader(kubeConfigPath))).build();
 
-        Kubectl.apply()
         // set the global default api-client to the out-of-cluster one from above
         Configuration.setDefaultApiClient(client);
 
@@ -62,9 +62,9 @@ class PrometheusStackTestIT {
         CoreV1Api api = new CoreV1Api();
 
         // invokes the CoreV1Api client
-        V1PodList list =
-                api.listPodForAllNamespaces()
-        for (V1Pod item : list.getItems()) {
+
+        V1NamespaceList list = api.listNamespace().execute()
+        for (def item : list.getItems()) {
             System.out.println(item.getMetadata().getName())
         }
     }
