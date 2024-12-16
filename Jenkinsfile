@@ -123,7 +123,7 @@ node('high-cpu') {
                                 withEnv([ "KUBECONFIG=${env.WORKSPACE}/.kube/config", "ADDITIONAL_DOCKER_RUN_ARGS=--network=host" ]) {
                                     mvn 'failsafe:integration-test -Dmaven.test.failure.ignore=true'
                                     // Archive test results. Makes build unstable on failed tests.
-                        junit testResults: '**/target/surefire-reports/TEST-*.xml'
+                        junit testResults: '**/target/failsafe-reports/TEST-*.xml'
                                 }
                             },
                             'e2e.groovy': {
