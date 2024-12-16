@@ -128,7 +128,7 @@ node('high-cpu') {
                                         script: "groovy ./scripts/e2e.groovy --url http://${k3dAddress}:9090 --user admin --password admin --writeFailedLog --fail --retry 2")
                             }
 
-                    withEnv([ "KUBECONFIG=${env.WORKSPACE}/.kube/config"]) {
+                    withEnv([ "KUBECONFIG=${env.WORKSPACE}/.kube/config", "ADDITIONAL_DOCKER_RUN_ARGS=--network=${k3dNetwork}"]) {
                         mvn 'failsafe:integration-test -Dmaven.test.failure.ignore=true'
                                             // Archive test results. Makes build unstable on failed tests.
                         junit testResults: '**/target/failsafe-reports/TEST-*.xml'
