@@ -115,6 +115,14 @@ node('high-cpu') {
                             returnStdout: true
                     ).trim()
 
+                    // TODO run in parallel
+                    withEnv([ "KUBECONFIG=${env.WORKSPACE}/.kube/config", "ADDITIONAL_DOCKER_RUN_ARGS=--network=host" ]) {
+                        mvn 'failsafe:integration-test -Dmaven.test.failure.ignore=true'
+                        // Archive test results. Makes build unstable on failed tests.
+                        junit testResults: '**/target/surefire-reports/TEST-*.xml'
+                    }
+                    
+                    // TODO check both return codes
                     int ret=0
                     new Docker(this).image(groovyImage)
                     // Avoids errors ("unable to resolve class") probably due to missing HOME for container in JVM.
@@ -127,14 +135,6 @@ node('high-cpu') {
                                 ret = sh(returnStatus: true,
                                         script: "groovy ./scripts/e2e.groovy --url http://${k3dAddress}:9090 --user admin --password admin --writeFailedLog --fail --retry 2")
                             }
-
-                    withEnv([ "KUBECONFIG=${env.WORKSPACE}/.kube/config", "ADDITIONAL_DOCKER_RUN_ARGS=--network=${k3dNetwork}"]) {
-                        mvn 'failsafe:integration-test -Dmaven.test.failure.ignore=true'
-                                            // Archive test results. Makes build unstable on failed tests.
-                        junit testResults: '**/target/failsafe-reports/TEST-*.xml'
-                    }
-
-
 
                     if (ret > 0) {
                         if (fileExists('playground-logs-of-failed-jobs')) {
