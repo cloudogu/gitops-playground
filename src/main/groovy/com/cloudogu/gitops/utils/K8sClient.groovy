@@ -1,8 +1,8 @@
 package com.cloudogu.gitops.utils
 
+import com.cloudogu.gitops.config.Config
 import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
-import com.cloudogu.gitops.config.Config
 import groovy.transform.Immutable
 import groovy.util.logging.Slf4j
 import jakarta.inject.Provider
@@ -24,7 +24,7 @@ class K8sClient {
     ) {
         this.fileSystemUtils = fileSystemUtils
         this.commandExecutor = commandExecutor
-        this.configProvider = configProvider;
+        this.configProvider = configProvider
     }
 
     String getInternalNodeIp() {
@@ -417,7 +417,7 @@ class K8sClient {
 
         Kubectl namespace(String namespace) {
             if (namespace) {
-                this.command += ['-n', configProvider.get().application.namePrefix + namespace]
+                this.command += ['-n', K8sClient.this.configProvider.get().application.namePrefix + namespace]
             }
             return this
         }

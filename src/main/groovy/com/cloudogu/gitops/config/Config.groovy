@@ -249,6 +249,7 @@ class Config {
     static class ApplicationSchema {
         Boolean runningInsideK8s = false
         String namePrefixForEnvVars = ''
+        List<String> activeNamespaces = []
         String internalKubernetesApiUrl = ''
         String localHelmChartFolder = System.getenv('LOCAL_HELM_CHART_FOLDER')
 

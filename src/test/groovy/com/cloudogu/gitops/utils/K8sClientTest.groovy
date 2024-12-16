@@ -12,7 +12,7 @@ class K8sClientTest {
 
     Config config = new Config(application: new Config.ApplicationSchema(namePrefix: "foo-"))
 
-    K8sClientForTest k8sClient = new K8sClientForTest( config)
+    K8sClientForTest k8sClient = new K8sClientForTest(config)
     CommandExecutorForTest commandExecutor =  k8sClient.commandExecutorForTest
 
     @Test
@@ -100,7 +100,6 @@ class K8sClientTest {
                 "kubectl create secret generic very-secret --from-literal isnullbecomeempty= --dry-run=client -oyaml" +
                         " | kubectl apply -f-")
     }
-
 
     @Test
     void 'Creates configmap from file'() {
