@@ -123,7 +123,10 @@ node('high-cpu') {
                                 // removing m2 and grapes avoids issues where grapes primarily resolves local m2 and fails on missing versions
                                 sh "rm -rf .m2/"
                                 sh "rm -rf .groovy/grapes"
-                                ret = sh(returnStatus: true, 
+                                mvn 'failsafe:integration-test -Dmaven.test.failure.ignore=true'
+                                                    // Archive test results. Makes build unstable on failed tests.
+                                junit testResults: '**/target/failsafe-reports/TEST-*.xml'
+                                ret = sh(returnStatus: true,
                                         script: "groovy ./scripts/e2e.groovy --url http://${k3dAddress}:9090 --user admin --password admin --writeFailedLog --fail --retry 2")
                             }
 
