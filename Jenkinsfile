@@ -51,6 +51,8 @@ node('high-cpu') {
                     groovyImage = "groovy:${groovyVersion}-jdk${jdkVersion}"
                     // Re-use groovy image here, even though we only need JDK
                     mvn = new MavenWrapperInDocker(this, groovyImage)
+                    // Faster builds because mvn local repo is reused between build, unit and integration tests
+                    mvn.useLocalRepoFromJenkins = true
 
                     mvn 'clean install -DskipTests'
                 }
