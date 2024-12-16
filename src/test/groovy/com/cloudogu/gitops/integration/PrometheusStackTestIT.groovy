@@ -23,6 +23,27 @@ class PrometheusStackTestIT {
 
 
     }
+    @Test
+    void ensureJenkinsPodIsStarted()  {
+
+        String kubeConfigPath = System.getenv("HOME") + "/.kube/config";
+
+        // loading the out-of-cluster config, a kubeconfig from file-system
+        ApiClient client =
+                ClientBuilder.kubeconfig(KubeConfig.loadKubeConfig(new FileReader(kubeConfigPath))).build();
+        // set the global default api-client to the out-of-cluster one from above
+        Configuration.setDefaultApiClient(client);
+
+        // the CoreV1Api loads default api-client from global configuration.
+        CoreV1Api api = new CoreV1Api();
+
+        V1PodList list = api.listPodForAllNamespaces()
+                .execute();
+        // invokes the CoreV1Api client
+        V1Pod jenkinsPod = list.getItems().findAll {it.getMetadata().getName().startsWith("jenkins")}.get(0)
+
+        assertThat(jenkinsPod.getMetadata().getName()).isEqualTo("jenkins-0")
+    }
 
     @Test
     void kubectltesttest()  {
