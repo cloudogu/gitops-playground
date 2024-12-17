@@ -75,6 +75,10 @@ class KubernetesSmoketestsIT {
 
         V1PodList list = api.listPodForAllNamespaces()
                 .execute();
+        for (V1Pod item:list.getItems())
+        {
+            println item.getMetadata().getName()
+        }
         // invokes the CoreV1Api client
         V1Pod scmmPod = list.getItems().findAll { it.getMetadata().getName().startsWith("scmm-scm-manager") }.get(0)
         assertThat(scmmPod.getMetadata().getName()).startsWith("scmm-scm-manager")
