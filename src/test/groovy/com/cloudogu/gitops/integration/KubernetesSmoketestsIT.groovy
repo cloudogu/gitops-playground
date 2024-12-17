@@ -100,10 +100,14 @@ class KubernetesSmoketestsIT {
      * tests searches for ingress services and ensure ingress is used as laodbalancer
      */
     @Test
-    void ensureNginIsOnline()
+    void ensureNginxIsOnline()
     {
         def expectedIngressServices = 2;
         def services = api.listServiceForAllNamespaces().execute()
+
+        for (def item : services.getItems()) {
+            System.out.println("Service:" + item.getMetadata().getName())
+        }
 
         def listOfIngessServices = services.getItems().findAll{it.getMetadata().getName().startsWith("ingress")}
         assertThat(listOfIngessServices.size()).isEqualTo(expectedIngressServices)
