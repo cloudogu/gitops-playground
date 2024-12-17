@@ -120,7 +120,7 @@ node('high-cpu') {
                     int ret = 0
                     parallel(
                             'failsafe': {
-                                withEnv([ "KUBECONFIG=${env.WORKSPACE}/.kube/config", "ADDITIONAL_DOCKER_RUN_ARGS=--network=host" ]) {
+                                withEnv([ "KUBECONFIG=${env.WORKSPACE}/.kube/config", "ADDITIONAL_DOCKER_RUN_ARGS=--network=host","K3D_ADDRESS=${k3dAddress}"]) {
                                     mvn 'failsafe:integration-test -Dmaven.test.failure.ignore=true'
                                     // Archive test results. Makes build unstable on failed tests.
                         junit testResults: '**/target/failsafe-reports/TEST-*.xml'

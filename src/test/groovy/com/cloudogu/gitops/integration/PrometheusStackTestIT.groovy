@@ -1,6 +1,6 @@
 package com.cloudogu.gitops.integration
 
-
+import com.cloudogu.gitops.utils.CommandExecutor
 import io.kubernetes.client.openapi.ApiClient
 import io.kubernetes.client.openapi.Configuration
 import io.kubernetes.client.openapi.apis.CoreV1Api
@@ -14,6 +14,8 @@ import org.junit.jupiter.api.Test
 import static org.assertj.core.api.Assertions.assertThat
 
 class PrometheusStackTestIT {
+
+    CommandExecutor executor = new CommandExecutor()
 
     @Test
     void testtesttest() {
@@ -57,7 +59,7 @@ class PrometheusStackTestIT {
         if (!new File(kubeConfigPath).exists()) {
             kubeConfigPath = System.getenv("KUBECONFIG");
         }
-        assertThat(kubeConfigPath) isNotBlank();
+        assertThat(kubeConfigPath) isNotBlank()
 
         // loading the out-of-cluster config, a kubeconfig from file-system
         ApiClient client =
@@ -75,5 +77,16 @@ class PrometheusStackTestIT {
         for (def item : list.getItems()) {
             System.out.println(item.getMetadata().getName())
         }
+
+    }
+
+    @Test
+    void testingKubeCTL() {
+
+        def output = executor.execute("kubectl get pods -o yaml", [:], true)
+        print(output)
+
+        def output1 = executor.execute("kubectl get pods -o custom-columns=\"POD_NAME:.metadata.name\"", [:], true)
+        print(output1)
     }
 }
