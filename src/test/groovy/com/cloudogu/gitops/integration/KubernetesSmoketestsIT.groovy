@@ -109,12 +109,6 @@ class KubernetesSmoketestsIT {
         for (def item : services.getItems()) {
             System.out.println("Service:" + item.getMetadata().getName())
         }
-    // check via Kubectl
-        CommandExecutor commandExecutor = new CommandExecutor()
-        def output1 = commandExecutor.execute("kubectl get services -o custom-columns=NAME:.metadata.name", [:], true)
-        println ("Service via kubectl:" + output1.stdOut)
-
-
         def listOfIngessServices = services.getItems().findAll { it.getMetadata().getName().startsWith("ingress") }
         assertThat(listOfIngessServices.size()).isEqualTo(expectedIngressServices)
         def ingress = listOfIngessServices.find { it.getMetadata().getName().equals("ingress-nginx-controller") }
@@ -123,14 +117,4 @@ class KubernetesSmoketestsIT {
         assertThat(ingress.getStatus().getLoadBalancer().getIngress()).isNotNull()
     }
 
-    @Test
-    void secondCheckForNginx() {
-        CommandExecutor commandExecutor = new CommandExecutor()
-        def output1 = commandExecutor.execute("kubectl get services -n ingress-nginx -o custom-columns=NAME:.metadata.name", [:], true)
-        println output1
-        def result = output1.stdOut;
-        def podNameAsList = result.split('\n')
-        assertThat(podNameAsList.size()).isEqualTo(3)
-
-    }
 }
