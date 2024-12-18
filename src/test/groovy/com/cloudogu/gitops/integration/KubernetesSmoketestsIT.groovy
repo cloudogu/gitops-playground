@@ -10,6 +10,7 @@ import io.kubernetes.client.openapi.models.V1PodList
 import io.kubernetes.client.openapi.models.V1Service
 import io.kubernetes.client.util.ClientBuilder
 import io.kubernetes.client.util.KubeConfig
+import org.bouncycastle.est.CTEChunkedInputStream
 import org.junit.Ignore
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
@@ -75,8 +76,7 @@ class KubernetesSmoketestsIT {
 
         V1PodList list = api.listPodForAllNamespaces()
                 .execute();
-        for (V1Pod item:list.getItems())
-        {
+        for (V1Pod item : list.getItems()) {
             println item.getMetadata().getName()
         }
         // invokes the CoreV1Api client
@@ -105,7 +105,8 @@ class KubernetesSmoketestsIT {
     /**
      * tests searches for ingress services and ensure ingress is used as laodbalancer
      */
-    @Test // kein nginx Service am laufen am Jenkins!
+    @Test
+    // kein nginx Service am laufen am Jenkins!
     void ensureNginxIsOnline() {
         def expectedIngressServices = 2;
         def services = api.listServiceForAllNamespaces().execute()
@@ -120,5 +121,20 @@ class KubernetesSmoketestsIT {
         assertThat(ingress.getStatus().getLoadBalancer()).isNotNull()
         assertThat(ingress.getStatus().getLoadBalancer().getIngress()).isNotNull()
     }
+
+    @Test
+    void ensureArgoCDIsOnlineAndRunning() {
+        def expectedSumOfArgoPods= 7
+        V1PodList list = api.listPodForAllNamespaces()
+                .execute()
+        List<V1Pod> argoPods = list.getItems().findAll { it.getMetadata().getName().startsWith("argo") }
+        assertThat(argoPods.size()).isEqualTo(expectedSumOfArgoPods)
+
+        for (V1Pod pod : argoPods) {
+            assertThat(pod.status.phase).isEqualTo("Running")
+        }
+
+    }
+
 
 }
