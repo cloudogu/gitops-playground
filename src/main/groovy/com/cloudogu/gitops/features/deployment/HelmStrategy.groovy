@@ -3,10 +3,12 @@ package com.cloudogu.gitops.features.deployment
 import com.cloudogu.gitops.config.Config
 
 import com.cloudogu.gitops.utils.HelmClient
+import groovy.util.logging.Slf4j
 import jakarta.inject.Singleton
 
 import java.nio.file.Path
 
+@Slf4j
 @Singleton
 class HelmStrategy implements DeploymentStrategy {
     private HelmClient helmClient
@@ -29,9 +31,13 @@ class HelmStrategy implements DeploymentStrategy {
         
         def namePrefix = config.application.namePrefix
 
+        String prefixedNamespace = "${namePrefix}${namespace}"
+        log.debug("Imperatively deploying helm release ${releaseName} basing on chart ${chartOrPath} from ${repoURL}, " +
+                "version ${version}, into namespace ${prefixedNamespace}. Using values:\n${helmValuesPath.text}")
+        
         helmClient.addRepo(repoName, repoURL)
         helmClient.upgrade(releaseName, "$repoName/$chartOrPath",
-                [namespace: "${namePrefix}${namespace}".toString(),
+                [namespace: prefixedNamespace,
                  version  : version,
                  values   : helmValuesPath.toString()])
     }
