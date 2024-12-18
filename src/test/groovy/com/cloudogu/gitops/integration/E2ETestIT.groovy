@@ -1,6 +1,6 @@
 package com.cloudogu.gitops.integration
 
-import com.cloudogu.gitops.utils.K8sClient
+
 import org.junit.jupiter.api.Test
 
 class E2ETestIT {
@@ -10,7 +10,7 @@ class E2ETestIT {
     void runE2EScriptedIT(){
 
         def k3dAddress = System.getenv("K3D_ADDRESS") ?: "jenkins.localhost"
-        E2EIT.main([
+        JenkinsPipelineTestIT.main([
                 "--url", "http://172.18.0.2:9090",
                 "--user", "admin",
                 "--password", "admin",

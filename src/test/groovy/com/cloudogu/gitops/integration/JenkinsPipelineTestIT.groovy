@@ -11,10 +11,15 @@ import com.offbytwo.jenkins.model.QueueReference
 import groovy.cli.picocli.CliBuilder
 import groovy.cli.picocli.OptionAccessor
 import org.apache.tools.ant.util.DateUtils
+import org.junit.jupiter.api.Test
+
 import java.util.concurrent.Callable
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
+
+import static org.assertj.core.api.Assertions.fail
+import static org.assertj.core.api.Assertions.assertThat
 
 /**
  * Usage: `groovy com.cloudogu.gitops.integration.E2EIT.groovy --url http://localhost:9090 --user admin --password admin
@@ -22,9 +27,36 @@ import java.util.concurrent.Future
  * Use --help for help
  * Optional parameters for wait interval and abort on failure.
  */
-class E2EIT {
-    static void main(args) {
-        Configuration configuration = CommandLineInterface.INSTANCE.parse(args)
+class JenkinsPipelineTestIT {
+
+    int numberOfExampleRepos = 3
+
+    String url = "http://172.18.0.2:9090"
+    boolean writeFailedLog = true;
+    int retry = 2;
+
+//    def k3dAddress = System.getenv("K3D_ADDRESS") ?: "jenkins.localhost"
+//    JenkinsPipelineTestIT.main([
+//    "--url", "http://172.18.0.2:9090",
+//    "--user", "admin",
+//    "--password", "admin",
+//    "--writeFailedLog",
+//    "--fail",
+//    "--retry", "2"
+//    ] as String[])
+
+    @Test
+    void wholeJenkinsPipelineTest() {
+        String[] configurationArguments = ([
+                "--url", "http://172.18.0.2:9090",
+                "--user", "admin",
+                "--password", "admin",
+                "--writeFailedLog",
+                "--fail",
+                "--retry", "2"
+        ] as String[])
+        Configuration configuration = CommandLineInterface.INSTANCE.parse(configurationArguments)
+
         PipelineExecutor executor = new PipelineExecutor(configuration)
         List<Future<PipelineResult>> buildFutures = new ArrayList<Future<PipelineResult>>()
 
@@ -32,16 +64,18 @@ class E2EIT {
             JenkinsHandler js = new JenkinsHandler(configuration)
 
             List<JobWithDetails> jobs = js.buildJobList()
-
+            assertThat(jobs.size()).isEqualTo(numberOfExampleRepos)
             jobs.each { JobWithDetails job ->
                 buildFutures.add(executor.run(js, job, configuration.retry))
             }
+
+            assertThat(buildFutures.size()).isEqualTo(numberOfExampleRepos)
 
             // if any build is still running
             while (buildFutures.any { !it.isDone() }) {
                 // check if there is a build which is done and has failed status
                 Future<PipelineResult> resultFuture = buildFutures.find { it.isDone() && it.get().getBuild().getResult().name() == "FAILURE" }
-                if (resultFuture != null){
+                if (resultFuture != null) {
                     //if retries are set, start the failed build new and delete the old one
                     if (resultFuture.get().retry > 0) {
                         //write log of failed build to fs
@@ -51,7 +85,7 @@ class E2EIT {
                         int newRetry = resultFuture.get().retry - 1
                         buildFutures.add(executor.run(js, resultFuture.get().getJob(), newRetry))
                         buildFutures.remove(resultFuture)
-                      // if abortonfail is true and no more retries left then kill the process
+                        // if abortonfail is true and no more retries left then kill the process
                     } else if (configuration.abortOnFail) {
                         //write log of failed build to fs
                         if (configuration.writeFailedLog) {
@@ -59,7 +93,7 @@ class E2EIT {
                         }
                         println "A BUILD FAILED. ABORTING"
                         resultFuture.get().prettyPrint(true)
-                        System.exit 1
+                        fail("A BUILD FAILED. ABORTING")
                     }
                 }
                 Thread.sleep(configuration.sleepInterval)
@@ -74,12 +108,10 @@ class E2EIT {
 
 
             int status = buildFutures.any { it.get().getBuild().getResult().name() == "FAILURE" } ? 1 : 0
-            System.exit status
+            assertThat(status).isEqualTo(0)
 
         } catch (Exception err) {
-            System.err << "Unexpected error during execution of gitops playground e2e:\n"
-            err.printStackTrace(System.err);
-            System.exit 1
+            fail("Unexpected error during execution of gitops playground e2e:\n")
         }
     }
 
@@ -97,6 +129,7 @@ class E2EIT {
         }
 
         println("written log file of failed job to: " + f.getAbsolutePath())
+        fail("written log file of failed job to: " + f.getAbsolutePath())
     }
 }
 
@@ -144,7 +177,7 @@ class JenkinsHandler {
 
     BuildWithDetails waitForBuild(QueueItem item, String executorId) {
         while (jenkins.getBuild(item).details().isBuilding()) {
-           // log.debug("[$executorId] Building..")
+            // log.debug("[$executorId] Building..")
             Thread.sleep(configuration.sleepInterval)
         }
 
@@ -153,7 +186,7 @@ class JenkinsHandler {
 
     QueueItem getQueueItemFromRef(QueueReference ref, String executorId) {
         while (jenkins.getQueueItem(ref).getExecutable() == null) {
-           // log.debug("[$executorId] Build has not yet started..")
+            // log.debug("[$executorId] Build has not yet started..")
             Thread.sleep(configuration.sleepInterval)
         }
         return jenkins.getQueueItem(ref)
@@ -359,12 +392,12 @@ enum CommandLineInterface {
         OptionAccessor options = cliBuilder.parse(args)
 
         if (!options) {
-            System.err << "Error while parsing command-line options.\n"
-            System.exit 1
+            fail("Error while parsing command-line options.\n")
         }
 
         if (options.h) {
             cliBuilder.usage()
+
             System.exit 0
         }
 
@@ -391,8 +424,7 @@ enum CommandLineInterface {
         config.writeFailedLog = options.writeFailedLog ? true : false
 
         if (!config.isValid()) {
-            System.err << "Config given is invalid. Seems like you are missing one of the parameters. Use -h flag for help.\n"
-            System.exit 1
+            fail("Config given is invalid. Seems like you are missing one of the parameters. Use -h flag for help.\n")
         }
 
         return config
