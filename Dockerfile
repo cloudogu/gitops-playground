@@ -48,7 +48,7 @@ RUN apk add curl grep
 ARG K8S_VERSION=1.29.8
 ARG KUBECTL_CHECKSUM=038454e0d79748aab41668f44ca6e4ac8affd1895a94f592b9739a0ae2a5f06a
 # When updating, also upgrade helm image in Config
-ARG HELM_VERSION=3.16.3
+ARG HELM_VERSION=3.16.4
 # bash curl unzip required for Jenkins downloader
 RUN apk add --no-cache \
       gnupg \
