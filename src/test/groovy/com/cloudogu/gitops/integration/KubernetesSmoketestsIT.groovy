@@ -1,17 +1,14 @@
 package com.cloudogu.gitops.integration
 
-import com.cloudogu.gitops.utils.CommandExecutor
+
 import io.kubernetes.client.openapi.ApiClient
 import io.kubernetes.client.openapi.Configuration
 import io.kubernetes.client.openapi.apis.CoreV1Api
 import io.kubernetes.client.openapi.models.V1NamespaceList
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodList
-import io.kubernetes.client.openapi.models.V1Service
 import io.kubernetes.client.util.ClientBuilder
 import io.kubernetes.client.util.KubeConfig
-import org.bouncycastle.est.CTEChunkedInputStream
-import org.junit.Ignore
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
