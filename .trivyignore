@@ -1,6 +1,0 @@
-# Right now there is no fix in helm, and it is likely not exploitable via our image,
-# so ignore issue for some time to be able to continue development
-# https://github.com/helm/helm/blob/v3.16.3/go.mod#L36
-# https://github.com/helm/helm/commit/194d989b235cf6f5821f068ce5ba81c55eb6be2f
-# The mean time between the last 10 helm releases is about three weeks. Lets hope for the best.
-CVE-2024-45337 exp:2025-01-15
