@@ -1,39 +1,154 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.jenkins.GlobalPropertyManager
 import com.cloudogu.gitops.jenkins.JobManager
 import com.cloudogu.gitops.jenkins.PrometheusConfigurator
 import com.cloudogu.gitops.jenkins.UserManager
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.utils.K8sClient
+import groovy.yaml.YamlSlurper
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.ArgumentCaptor
+
+import java.nio.file.Path
 
 import static org.assertj.core.api.Assertions.assertThat
-import static org.mockito.ArgumentMatchers.anyString
-import static org.mockito.ArgumentMatchers.eq
+import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.*
 
 class JenkinsTest {
     Config config = new Config()
 
+    String expectedNodeName = 'something'
+    
     CommandExecutorForTest commandExecutor = new CommandExecutorForTest()
     GlobalPropertyManager globalPropertyManager = mock(GlobalPropertyManager)
     JobManager jobManger = mock(JobManager)
     UserManager userManager = mock(UserManager)
     PrometheusConfigurator prometheusConfigurator = mock(PrometheusConfigurator)
+    HelmStrategy deploymentStrategy = mock(HelmStrategy)
+    Path temporaryYamlFile
+    K8sClient k8sClient = mock(K8sClient)
 
+    @BeforeEach
+    void setup() {
+        // getInternalNodeIp -> waitForNode()
+        when(k8sClient.waitForNode()).thenReturn("node/${expectedNodeName}".toString())
+    }
+    
+    @Test
+    void 'Installs Jenkins'() {
+        def jenkins = createJenkins()
+        
+        config.jenkins.url = 'http://jenkins'
+        config.jenkins.helm.chart = 'jen-chart'
+        config.jenkins.helm.repoURL = 'https://jen-repo'
+        config.jenkins.helm.version = '4.8.1'
+        config.jenkins.username = 'jenusr'
+        config.jenkins.password = 'jenpw'
+        config.jenkins.internalBashImage = 'bash:42'
+        config.jenkins.internalDockerClientVersion = '23'
+        
+        when(k8sClient.run(anyString(), anyString(), anyString(), anyMap(), any())).thenReturn('42')
+
+        jenkins.install()
+        
+        verify(deploymentStrategy).deployFeature('https://jen-repo', 'jenkins',
+                'jen-chart', '4.8.1', 'default',
+                'jenkins', temporaryYamlFile)
+        verify(k8sClient).label('node', expectedNodeName, new Tuple2('node', 'jenkins'))
+        verify(k8sClient).labelRemove('node', '--all', '', 'node')
+        verify(k8sClient).createSecret('generic', 'jenkins-credentials', 'default',
+                new Tuple2('jenkins-admin-user', 'jenusr'),
+                new Tuple2('jenkins-admin-password', 'jenpw'))
+        
+        assertThat(parseActualYaml()['dockerClientVersion'].toString()).isEqualTo('23')
+        
+        assertThat(parseActualYaml()['controller']['image']['tag']).isEqualTo('4.8.1')
+        
+        assertThat(parseActualYaml()['controller']['jenkinsUrl']).isEqualTo('http://jenkins')
+        assertThat(parseActualYaml()['controller']['serviceType']).isEqualTo('NodePort')
+
+        assertThat(parseActualYaml()['controller']['ingress']).isNull()
+
+        List customInitContainers = parseActualYaml()['controller']['customInitContainers'] as List
+        assertThat(customInitContainers[0]['image']).isEqualTo('bash:42')
+        
+        assertThat(parseActualYaml()['agent']['runAsUser']).isEqualTo(1000)
+        assertThat(parseActualYaml()['agent']['runAsGroup']).isEqualTo(42)
+
+        ArgumentCaptor<String> nameCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<Map> overridesCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(k8sClient).run(nameCaptor.capture(), anyString(), eq(jenkins.namespace), overridesCaptor.capture(), any())
+        assertThat(nameCaptor.value).startsWith('tmp-docker-gid-grepper-')
+        List containers = overridesCaptor.value['spec']['containers'] as List
+        assertThat(containers[0]['image'].toString()).isEqualTo('bash:42')
+    }
+
+    @Test
+    void 'Installs Jenkins without dockerGid'() {
+        createJenkins().install()
+
+        assertThat(parseActualYaml()['agent']['runAsUser']).isEqualTo(0)
+        assertThat(parseActualYaml()['agent']['runAsGroup']).isEqualTo(133)
+    }
+
+    @Test
+    void 'Installs only if internal'() {
+        config.jenkins.internal = false
+        
+       createJenkins().install()
+        verify(deploymentStrategy, never()).deployFeature(anyString(), anyString(), anyString(), anyString(), 
+                anyString(), anyString(), any(Path))
+        
+        assertThat(temporaryYamlFile).isNull()
+    }
+
+    @Test
+    void 'Additional helm values are merged with default values'() {
+        config.jenkins.helm.values = [
+                controller: [
+                        nodePort: 42 
+                ]
+        ]
+
+        createJenkins().install()
+
+        assertThat(parseActualYaml()['controller']['nodePort']).isEqualTo(42)
+    }
+
+    @Test
+    void 'Enables ingress when baseUrl is set'() {
+        config.jenkins.ingress = 'jenkins.localhost'
+        config.application.baseUrl = 'someBaseUrl'
+        
+        createJenkins().install()
+
+        assertThat(parseActualYaml()['controller']['ingress']['enabled']).isEqualTo(true)
+        assertThat(parseActualYaml()['controller']['ingress']['hostName']).isEqualTo('jenkins.localhost')
+    }
+
+    @Test
+    void "service type LoadBalancer when run remotely"() {
+        config.application.remote = true
+        createJenkins().install()
+
+        assertThat(parseActualYaml()['controller']['serviceType']).isEqualTo('LoadBalancer')
+    }
+    
     @Test
     void 'Maps config properly'() {
         config.application.remote = true
         config.application.trace = true
-        config.application.urlSeparatorHyphen = true
         config.features.argocd.active = true
         config.scmm.url = 'http://scmm'
         config.scmm.urlForJenkins ='http://scmm-scm-manager/scm'
         config.scmm.username = 'scmm-usr'
         config.scmm.password = 'scmm-pw'
-        config.application.baseUrl = 'http://localhost'
         config.application.namePrefix = 'my-prefix-'
         config.application.namePrefixForEnvVars = 'MY_PREFIX_'
         config.registry.url = 'reg-url'
@@ -43,7 +158,7 @@ class JenkinsTest {
         config.registry.proxyUrl = 'reg-proxy-url'
         config.registry.proxyUsername = 'reg-proxy-usr'
         config.registry.proxyPassword = 'reg-proxy-pw'
-        config.jenkins.internal = true
+        config.jenkins.internal = false
         config.jenkins.helm.version = '4.8.1'
         config.jenkins.username = 'jenusr'
         config.jenkins.password = 'jenpw'
@@ -51,7 +166,6 @@ class JenkinsTest {
         config.jenkins.metricsUsername = 'metrics-usr'
         config.jenkins.metricsPassword = 'metrics-pw'
 
-        
         createJenkins().install()
 
         def env = getEnvAsMap()
@@ -59,17 +173,15 @@ class JenkinsTest {
                 "${System.getProperty('user.dir')}/scripts/jenkins/init-jenkins.sh" as String)
 
         assertThat(env['TRACE']).isEqualTo('true')
-        assertThat(env['INTERNAL_JENKINS']).isEqualTo('true')
+        assertThat(env['INTERNAL_JENKINS']).isEqualTo('false')
         assertThat(env['JENKINS_HELM_CHART_VERSION']).isEqualTo('4.8.1')
         assertThat(env['JENKINS_URL']).isEqualTo('http://jenkins')
         assertThat(env['JENKINS_USERNAME']).isEqualTo('jenusr')
         assertThat(env['JENKINS_PASSWORD']).isEqualTo('jenpw')
         assertThat(env['JENKINS_USERNAME']).isEqualTo('jenusr')
         assertThat(env['REMOTE_CLUSTER']).isEqualTo('true')
-        assertThat(env['BASE_URL']).isEqualTo('http://localhost')
         assertThat(env['NAME_PREFIX']).isEqualTo('my-prefix-')
         assertThat(env['INSECURE']).isEqualTo('false')
-        assertThat(env['URL_SEPARATOR_HYPHEN']).isEqualTo('true')
 
         assertThat(env['SCMM_URL']).isEqualTo('http://scmm-scm-manager/scm')
         assertThat(env['SCMM_PASSWORD']).isEqualTo('scmm-pw')
@@ -188,6 +300,19 @@ class JenkinsTest {
     }
 
     private Jenkins createJenkins() {
-        new Jenkins(config, commandExecutor, new FileSystemUtils(), globalPropertyManager, jobManger, userManager, prometheusConfigurator)
+        new Jenkins(config, commandExecutor, new FileSystemUtils() {
+            @Override
+            Path createTempFile() {
+                def ret = super.createTempFile()
+                temporaryYamlFile = Path.of(ret.toString().replace(".ftl", "")) // Path after template invocation
+
+                return ret
+            }
+        }, globalPropertyManager, jobManger, userManager, prometheusConfigurator, deploymentStrategy, k8sClient)
+    }
+
+    private Map parseActualYaml() {
+        def ys = new YamlSlurper()
+        return ys.parse(temporaryYamlFile) as Map
     }
 }

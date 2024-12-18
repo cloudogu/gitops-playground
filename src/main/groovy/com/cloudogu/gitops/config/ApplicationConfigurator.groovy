@@ -146,9 +146,14 @@ class ApplicationConfigurator {
             newConfig.jenkins.url = networkingUtils.createUrl("jenkins.default.svc.cluster.local", "80")
         } else {
             log.debug("Setting jenkins configs for local single node cluster with internal jenkins")
-            def port = fileSystemUtils.getLineFromFile(fileSystemUtils.getRootDir() + "/jenkins/values.yaml", "nodePort:").findAll(/\d+/)*.toString().get(0)
+            def port = fileSystemUtils.getLineFromFile(fileSystemUtils.getRootDir() + "/jenkins/values.ftl.yaml", "nodePort:").findAll(/\d+/)*.toString().get(0)
             String clusterBindAddress = networkingUtils.findClusterBindAddress()
             newConfig.jenkins.url = networkingUtils.createUrl(clusterBindAddress, port)
+        }
+
+        if (newConfig.application.baseUrl) {
+            newConfig.jenkins.ingress = new URL(injectSubdomain('jenkins',
+                    newConfig.application.baseUrl as String, newConfig.application.urlSeparatorHyphen as Boolean)).host
         }
     }
 

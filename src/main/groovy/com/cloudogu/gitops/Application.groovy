@@ -35,7 +35,7 @@ class Application {
     }
 
     void setNamespaceListToConfig(Config config) {
-        List<String> namespaces = []
+        Set<String> namespaces = new HashSet<>()
         String namePrefix = config.application.namePrefix;
 
         if(config.registry.internal || config.scmm.internal || config.jenkins.internal){
@@ -58,6 +58,6 @@ class Application {
                 .collect { "${namePrefix}${it}".toString() })
 
         log.debug("Active namespaces retrieved: {}", namespaces);
-        config.application.activeNamespaces = namespaces
+        config.application.activeNamespaces = namespaces.toList()
     }
 }

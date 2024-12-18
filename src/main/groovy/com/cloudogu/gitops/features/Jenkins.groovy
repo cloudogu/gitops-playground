@@ -1,15 +1,22 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
-
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.features.deployment.DeploymentStrategy
+import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.jenkins.GlobalPropertyManager
 import com.cloudogu.gitops.jenkins.JobManager
 import com.cloudogu.gitops.jenkins.PrometheusConfigurator
 import com.cloudogu.gitops.jenkins.UserManager
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.utils.K8sClient
+import com.cloudogu.gitops.utils.MapUtils
+import com.cloudogu.gitops.utils.TemplatingEngine
+import freemarker.template.Configuration
+import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
+import groovy.yaml.YamlSlurper
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
 
@@ -18,6 +25,10 @@ import jakarta.inject.Singleton
 @Order(70)
 class Jenkins extends Feature {
 
+    static final String HELM_VALUES_PATH = "jenkins/values.ftl.yaml"
+
+    String namespace = 'default'
+    
     private Config config
     private CommandExecutor commandExecutor
     private FileSystemUtils fileSystemUtils
@@ -25,6 +36,8 @@ class Jenkins extends Feature {
     private JobManager jobManger
     private UserManager userManager
     private PrometheusConfigurator prometheusConfigurator
+    private DeploymentStrategy deployer
+    private K8sClient k8sClient
 
     Jenkins(
             Config config,
@@ -33,7 +46,9 @@ class Jenkins extends Feature {
             GlobalPropertyManager globalPropertyManager,
             JobManager jobManger,
             UserManager userManager,
-            PrometheusConfigurator prometheusConfigurator
+            PrometheusConfigurator prometheusConfigurator,
+            HelmStrategy deployer,
+            K8sClient k8sClient
     ) {
         this.config = config
         this.commandExecutor = commandExecutor
@@ -42,6 +57,8 @@ class Jenkins extends Feature {
         this.jobManger = jobManger
         this.userManager = userManager
         this.prometheusConfigurator = prometheusConfigurator
+        this.deployer = deployer
+        this.k8sClient = k8sClient
     }
 
     @Override
@@ -51,6 +68,57 @@ class Jenkins extends Feature {
 
     @Override
     void enable() {
+
+        if (config.jenkins.internal) {
+            // Mark the first node for Jenkins and agents. See jenkins/values.yaml "agent.workingDir" for details.
+            // Remove first (in case new nodes were added)
+            k8sClient.labelRemove('node', '--all', '', 'node')
+            def nodeName = k8sClient.waitForNode().replace('node/', '')
+            k8sClient.label('node', nodeName, new Tuple2('node', 'jenkins'))
+
+
+            k8sClient.createSecret('generic', 'jenkins-credentials', namespace,
+                    new Tuple2('jenkins-admin-user', config.jenkins.username),
+                    new Tuple2('jenkins-admin-password', config.jenkins.password))
+            
+            def dockerGid = k8sClient.run("tmp-docker-gid-grepper-${new Random().nextInt(10000)}",
+                    'irrelevant' /* Redundant, but mandatory param */, namespace, createGidGrepperOverrides(), 
+                    '--restart=Never', '-ti', '--rm', '--quiet')
+                    // --quiet is necessary to avoid 'pod deleted' output
+            if (!dockerGid) {
+                log.warn 'Unable to determine Docker Group ID (GID). Jenkins Agent pods will run as root user (UID 0)!'
+            } else {
+                log.debug("Using Docker Group ID (GID) ${dockerGid} for Jenkins Agent pods")
+            }
+
+            def helmConfig = config.jenkins.helm
+            def templatedMap = new YamlSlurper().parseText(
+                    new TemplatingEngine().template(new File(HELM_VALUES_PATH),
+                            [dockerGid : dockerGid,
+                             config: config,
+                             // Allow for using static classes inside the templates
+                             statics: new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build()
+                                     .getStaticModels(),
+                            ])) as Map
+            
+            def valuesFromConfig = helmConfig.values
+
+            def mergedMap = MapUtils.deepMerge(valuesFromConfig, templatedMap)
+
+            def tmpHelmValues = fileSystemUtils.createTempFile()
+            fileSystemUtils.writeYaml(mergedMap, tmpHelmValues.toFile())
+
+            deployer.deployFeature(
+                    helmConfig.repoURL,
+                    'jenkins',
+                    helmConfig.chart,
+                    helmConfig.version,
+                    namespace,
+                    'jenkins',
+                    tmpHelmValues
+            )
+        }
+        
         commandExecutor.execute("${fileSystemUtils.rootDir}/scripts/jenkins/init-jenkins.sh", [
                 TRACE                     : config.application.trace,
                 INTERNAL_JENKINS          : config.jenkins.internal,
@@ -58,14 +126,13 @@ class Jenkins extends Feature {
                 JENKINS_URL               : config.jenkins.url,
                 JENKINS_USERNAME          : config.jenkins.username,
                 JENKINS_PASSWORD          : config.jenkins.password,
+                // Used indirectly in utils.sh 😬
                 REMOTE_CLUSTER            : config.application.remote,
-                BASE_URL                  : config.application.baseUrl ? config.application.baseUrl : '',
                 SCMM_URL                  : config.scmm.urlForJenkins,
                 SCMM_PASSWORD             : config.scmm.password,
                 INSTALL_ARGOCD            : config.features.argocd.active,
                 NAME_PREFIX               : config.application.namePrefix,
                 INSECURE                  : config.application.insecure,
-                URL_SEPARATOR_HYPHEN      : config.application.urlSeparatorHyphen
         ])
 
         globalPropertyManager.setGlobalProperty('SCMM_URL', config.scmm.url)
@@ -140,5 +207,38 @@ class Jenkins extends Feature {
             // Once everything is set up, start the jobs.
             jobManger.startJob(jobName)
         }
+    }
+
+    Map createGidGrepperOverrides() {
+        [
+                'spec': [
+                        'containers'  : [
+                                [
+                                        'name'        : 'tmp-docker-gid-grepper',
+                                        // We use the same image for several tasks for performance and maintenance reasons 
+                                        'image'       : "${config.jenkins.internalBashImage}",
+                                        'args'        : [ 'sh', '-c', 'cat /etc/group | grep docker | cut -d: -f3'],
+                                        'volumeMounts': [
+                                                [
+                                                        'name'     : 'group',
+                                                        'mountPath': '/etc/group',
+                                                        'readOnly' : true
+                                                ]
+                                        ]
+                                ]
+                        ],
+                        'nodeSelector': [
+                                'node': 'jenkins'
+                        ],
+                        'volumes'     : [
+                                [
+                                        'name'    : 'group',
+                                        'hostPath': [
+                                                'path': '/etc/group'
+                                        ]
+                                ]
+                        ]
+                ]
+        ]
     }
 }

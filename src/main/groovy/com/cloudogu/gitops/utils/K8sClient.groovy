@@ -37,7 +37,10 @@ class K8sClient {
         return commandExecutor.execute(command).stdOut
     }
 
-    private String waitForNode() {
+    /**
+     * @return A string containing "node/nodeName", e.g. "node/k3d-gitops-playground-server-0"
+     */
+    String waitForNode() {
         String[] command1 = ['kubectl', 'get', 'node', '-oname']
         String[] command2 = ['head', '-n1']
 
@@ -140,7 +143,7 @@ class K8sClient {
     void createSecret(String type, String name, String namespace = '', Tuple2... literals) {
         def command1 = kubectl('create', 'secret', type, name)
                 .namespace(namespace)
-                .addAllMandatory('--from-literal', literals)
+                .mandatory('--from-literal', literals)
                 .dryRunOutputYaml()
                 .build()
 
@@ -191,6 +194,11 @@ class K8sClient {
         commandExecutor.execute(command1, APPLY_FROM_STDIN)
     }
 
+    void labelRemove(String resource, String name, String namespace = '', String... keys) {
+        Tuple2[] tuples = keys.collect { new Tuple2("${it}-", "") }.toArray(new Tuple2[0])
+        label(resource, name, namespace, tuples)
+    }
+    
     void label(String resource, String name, String namespace = '', Tuple2... keyValues) {
         if (!keyValues) {
             throw new RuntimeException("Missing key-value-pairs")
@@ -198,10 +206,22 @@ class K8sClient {
         String command =
                 "kubectl label ${resource} ${name}${namespace ? " -n ${configProvider.get().application.namePrefix}${namespace}" : ''} " +
                         '--overwrite ' + // Make idempotent
-                        keyValues.collect { "${it.v1}=${it.v2}" }.join(' ')
+                        keyValues.collect { "${it.v1}${it.v2 ? "=${it.v2}" : ''}" }.join(' ')
         commandExecutor.execute(command)
     }
 
+    String run (String name, String image, String namespace = '', Map overrides = [:], String... params) {
+        String overridesJson =  overrides.isEmpty() ? '' : new JsonBuilder(overrides).toPrettyString()
+        def command1 = kubectl('run', name)
+                .mandatory('--image', image)
+                .namespace(namespace)
+                .optional(params)
+                .optional('--overrides', overridesJson)
+                .build()
+        
+        commandExecutor.execute(command1).stdOut
+    }
+    
     void patch(String resource, String name, String namespace = '', String type = '', Map yaml) {
         // We're using a patch file here, instead of a patch JSON (--patch), because of quoting issues
         // ERROR c.c.gitops.utils.CommandExecutor - Stderr: error: unable to parse "'{\"stringData\":": yaml: found unexpected end of stream
@@ -428,7 +448,7 @@ class K8sClient {
             return this
         }
 
-        Kubectl addAllMandatory(String paramName, Tuple2... values) {
+        Kubectl mandatory(String paramName, Tuple2... values) {
             if (!values) {
                 throw new RuntimeException("Missing values for parameter '${paramName}' in command '${command.join(' ')}'")
             }
@@ -440,6 +460,11 @@ class K8sClient {
             if (value) {
                 this.command += [paramName, value]
             }
+            return this
+        }
+        
+        Kubectl optional(String... params) {
+            command.addAll(params)
             return this
         }
 

@@ -18,7 +18,7 @@ jenkins:
   metricsPassword: "metrics"
   mavenCentralMirror: ""
   helm:
-    version: "5.5.11"
+    values: {}
 scmm:
   url: "http://172.18.0.2:9091/scm"
   username: "admin"

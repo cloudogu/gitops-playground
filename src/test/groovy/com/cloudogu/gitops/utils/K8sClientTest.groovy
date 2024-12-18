@@ -5,8 +5,7 @@ import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 
 import static groovy.test.GroovyAssert.shouldFail
-import static org.assertj.core.api.Assertions.assertThat
-import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable
+import static org.assertj.core.api.Assertions.assertThat 
 
 class K8sClientTest {
 
@@ -69,8 +68,8 @@ class K8sClientTest {
 
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
                 'kubectl create secret docker-registry my-reg' +
-                ' --docker-server host --docker-username user --docker-password pw' +
-                ' --dry-run=client -oyaml | kubectl apply -f-')
+                        ' --docker-server host --docker-username user --docker-password pw' +
+                        ' --dry-run=client -oyaml | kubectl apply -f-')
     }
     
     @Test
@@ -144,6 +143,25 @@ class K8sClientTest {
 
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
                 "kubectl label secret my-secret -n foo-my-ns --overwrite key1=value1 key2=value2")
+    }
+    
+    @Test
+    void 'Removes labels explicitly'() {
+        k8sClient.labelRemove('node', '--all', null, 'key1', 'key2')
+
+        assertThat(commandExecutor.actualCommands[0]).isEqualTo(
+                "kubectl label node --all --overwrite key1- key2-")
+    }
+    
+    @Test
+    void 'Removes labels kubectl-style'() {
+        // The syntax for removing labels is key appended by a minus, e.g.
+        // kubectl label node key- 
+        k8sClient.label('node', '--all',
+                new Tuple2('key1-', ''), new Tuple2('key2-', ''))
+
+        assertThat(commandExecutor.actualCommands[0]).isEqualTo(
+                "kubectl label node --all --overwrite key1- key2-")
     }
 
     @Test
@@ -542,6 +560,48 @@ class K8sClientTest {
         assertThat(commandExecutor.actualCommands).hasSize(1)
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
                 'kubectl get pod my-pod -n foo-my-namespace -o jsonpath={.status.phase}')
+    }
+
+    @Test
+    void 'Runs a pod '() {
+        k8sClient.run('my-pod', 'alpine')
+
+        assertThat(commandExecutor.actualCommands[0]).startsWith("kubectl run my-pod --image alpine")
+    }
+    
+    @Test
+    void 'Runs a pod with params'() {
+        k8sClient.run('my-pod', 'alpine', 'my-ns', '--rm')
+        
+        assertThat(commandExecutor.actualCommands[0]).startsWith("kubectl run my-pod --image alpine -n foo-my-ns --rm")
+    }
+
+    @Test
+    void 'Runs a pod with overrides'() {
+        def overrides = [
+                spec: [
+                        containers: [
+                                [
+                                        name : "tmp-docker-gid-grepper",
+                                        image: "bash:5",
+                                ]
+                        ]
+                ]
+        ]
+        k8sClient.run('my-pod', 'alpine', 'my-ns', overrides, '--restart=Never', '-ti', '--rm', '--quiet')
+
+        assertThat(commandExecutor.actualCommands[0]).startsWith("kubectl run my-pod --image alpine -n foo-my-ns --restart=Never -ti --rm --quiet")
+        assertThat(commandExecutor.actualCommands[0]).contains(
+'''--overrides {
+    "spec": {
+        "containers": [
+            {
+                "name": "tmp-docker-gid-grepper",
+                "image": "bash:5"
+            }
+        ]
+    }
+}'''.toString().trim())
     }
 
     private Map parseActualYaml(String pathToYamlFile) {
