@@ -150,6 +150,11 @@ class ApplicationConfigurator {
             String clusterBindAddress = networkingUtils.findClusterBindAddress()
             newConfig.jenkins.url = networkingUtils.createUrl(clusterBindAddress, port)
         }
+
+        if (newConfig.application.baseUrl) {
+            newConfig.jenkins.ingress = new URL(injectSubdomain('jenkins',
+                    newConfig.application.baseUrl as String, newConfig.application.urlSeparatorHyphen as Boolean)).host
+        }
     }
 
     private void evaluateBaseUrl(Config newConfig) {

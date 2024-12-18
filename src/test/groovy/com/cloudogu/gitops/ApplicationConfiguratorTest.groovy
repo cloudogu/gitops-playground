@@ -5,7 +5,6 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
 import com.cloudogu.gitops.utils.TestLogger
-import io.micronaut.context.ApplicationContext
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -14,7 +13,7 @@ import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.anyString
 import static org.mockito.Mockito.mock
-import static org.mockito.Mockito.when
+import static org.mockito.Mockito.when 
 
 class ApplicationConfiguratorTest {
 
@@ -211,6 +210,7 @@ class ApplicationConfiguratorTest {
         assertThat(actualConfig.features.exampleApps.petclinic.baseDomain).isEqualTo("petclinic.localhost")
         assertThat(actualConfig.features.exampleApps.nginx.baseDomain).isEqualTo("nginx.localhost")
         assertThat(actualConfig.scmm.ingress).isEqualTo("scmm.localhost")
+        assertThat(actualConfig.jenkins.ingress).isEqualTo("jenkins.localhost")
     }
 
     @Test
@@ -232,6 +232,7 @@ class ApplicationConfiguratorTest {
         assertThat(actualConfig.features.exampleApps.petclinic.baseDomain).isEqualTo("petclinic-localhost")
         assertThat(actualConfig.features.exampleApps.nginx.baseDomain).isEqualTo("nginx-localhost")
         assertThat(actualConfig.scmm.ingress).isEqualTo("scmm-localhost")
+        assertThat(actualConfig.jenkins.ingress).isEqualTo("jenkins-localhost")
     }
 
     @Test

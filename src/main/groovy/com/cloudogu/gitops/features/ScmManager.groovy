@@ -19,6 +19,8 @@ class ScmManager extends Feature {
 
     static final String HELM_VALUES_PATH = "scm-manager/values.ftl.yaml"
 
+    String namespace = 'default'
+    
     private Config config
     private CommandExecutor commandExecutor
     private FileSystemUtils fileSystemUtils
@@ -61,7 +63,7 @@ class ScmManager extends Feature {
                     'scm-manager',
                     helmConfig.chart,
                     helmConfig.version,
-                    'default',
+                    namespace,
                     'scmm',
                     tmpHelmValues
             )

@@ -11,6 +11,16 @@
       },
       "additionalProperties" : false
     },
+    "HelmConfigWithValues-nullable" : {
+      "type" : [ "object", "null" ],
+      "properties" : {
+        "values" : {
+          "$ref" : "#/$defs/Map(String,Object)-nullable",
+          "description" : "Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration"
+        }
+      },
+      "additionalProperties" : false
+    },
     "Map(String,Object)-nullable" : {
       "type" : [ "object", "null" ]
     },
@@ -471,14 +481,7 @@
           }
         },
         "helm" : {
-          "type" : [ "object", "null" ],
-          "properties" : {
-            "version" : {
-              "type" : [ "string", "null" ],
-              "description" : "The version of the Helm chart to be installed"
-            }
-          },
-          "additionalProperties" : false,
+          "$ref" : "#/$defs/HelmConfigWithValues-nullable",
           "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
         },
         "mavenCentralMirror" : {
@@ -592,14 +595,7 @@
       "type" : [ "object", "null" ],
       "properties" : {
         "helm" : {
-          "type" : [ "object", "null" ],
-          "properties" : {
-            "values" : {
-              "$ref" : "#/$defs/Map(String,Object)-nullable",
-              "description" : "Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration"
-            }
-          },
-          "additionalProperties" : false,
+          "$ref" : "#/$defs/HelmConfigWithValues-nullable",
           "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
         },
         "password" : {

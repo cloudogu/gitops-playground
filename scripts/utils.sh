@@ -28,28 +28,6 @@ function getExternalIP() {
   echo $external_ip
 }
 
-function createSecret() {
-  kubectl create secret generic "$@" --dry-run=client -oyaml | kubectl apply -f-
-}
-
-function extractHost() {
-    echo "$1" | awk -F[/:] '{print $4}'
-}
-
-function injectSubdomain() {
-    local BASE_URL="$1"
-    local SUBDOMAIN="$2"
-
-    if [[ "$BASE_URL" =~ ^http:// ]]; then
-        echo "${BASE_URL/http:\/\//http://${SUBDOMAIN}.}"
-    elif [[ "$BASE_URL" =~ ^https:// ]]; then
-        echo "${BASE_URL/https:\/\//https://${SUBDOMAIN}.}"
-    else
-        echo "Invalid BASE URL: ${BASE_URL}. It should start with either http:// or https://"
-        return 1
-    fi
-}
-
 function setExternalHostnameIfNecessary() {
   local variablePrefix="$1"
   local serviceName="$2"

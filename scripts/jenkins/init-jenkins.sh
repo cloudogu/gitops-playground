@@ -21,51 +21,17 @@ fi
 
 function initJenkins() {
   if [[ ${INTERNAL_JENKINS} == true ]]; then
-    deployLocalJenkins 
-
     setExternalHostnameIfNecessary "JENKINS" "jenkins" "default"
   fi
 
-  configureJenkins
+  installPlugins
 }
 
 function deployLocalJenkins() {
 
-  # Mark the first node for Jenkins and agents. See jenkins/values.yamls "agent.workingDir" for details.
-  # Remove first (in case new nodes were added)
-  kubectl label --all nodes node- >/dev/null
-  kubectl label $(kubectl get node -o name | sort | head -n 1) node=jenkins
-
-  createSecret jenkins-credentials --from-literal=jenkins-admin-user=$JENKINS_USERNAME --from-literal=jenkins-admin-password=$JENKINS_PASSWORD -n default
-
-  helm repo add jenkins https://charts.jenkins.io
-  helm repo update jenkins
   helm upgrade -i jenkins --values jenkins/values.yaml \
-    $(jenkinsHelmSettingsForLocalCluster) $(jenkinsIngress) $(setAgentGidOrUid) \
+     $(setAgentGidOrUid) \
     --version ${JENKINS_HELM_CHART_VERSION} jenkins/jenkins -n default
-}
-
-function jenkinsIngress() {
-  
-    if [[ -n "${BASE_URL}" ]]; then
-      if [[ $URL_SEPARATOR_HYPHEN == true ]]; then
-        local jenkinsHost="jenkins-$(extractHost "${BASE_URL}")"
-      else
-        local jenkinsHost="jenkins.$(extractHost "${BASE_URL}")"
-      fi
-      local externalJenkinsUrl="$(injectSubdomain "${BASE_URL}" 'jenkins')"
-      echo "--set controller.jenkinsUrl=$JENKINS_URL --set controller.ingress.enabled=true --set controller.ingress.hostName=${jenkinsHost}"
-    else
-      echo "--set controller.jenkinsUrl=$JENKINS_URL" 
-    fi
-}
-
-function jenkinsHelmSettingsForLocalCluster() {
-  if [[ $REMOTE_CLUSTER != true ]]; then
-    # We need a host port, so jenkins can be reached via localhost:9090
-    # But: This helm charts only uses the nodePort value, if the type is "NodePort". So change it for local cluster.
-    echo "--set controller.serviceType=NodePort"
-  fi
 }
 
 # Enable access for the Jenkins Agents Pods to the docker socket  
@@ -76,7 +42,7 @@ function setAgentGidOrUid() {
   # use same image as in initContainer create-agent-working-dir (values.yaml) for performance reasons
   local DOCKER_GID=$(kubectl run $RANDOM \
     --image=irrelevant \
-    --restart=Never -ti \
+    --restart=Never -ti --rm \
     --overrides='
      {
        "spec": {
@@ -129,7 +95,7 @@ function waitForJenkins() {
   echo ""
 }
 
-function configureJenkins() {
+function installPlugins() {
   local pluginFolder
 
   waitForJenkins

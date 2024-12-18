@@ -5,8 +5,7 @@ import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 
 import static groovy.test.GroovyAssert.shouldFail
-import static org.assertj.core.api.Assertions.assertThat
-import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable
+import static org.assertj.core.api.Assertions.assertThat 
 
 class K8sClientTest {
 
@@ -144,6 +143,25 @@ class K8sClientTest {
 
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
                 "kubectl label secret my-secret -n foo-my-ns --overwrite key1=value1 key2=value2")
+    }
+    
+    @Test
+    void 'Removes labels explicitly'() {
+        k8sClient.labelRemove('node', '--all', null, 'key1', 'key2')
+
+        assertThat(commandExecutor.actualCommands[0]).isEqualTo(
+                "kubectl label node --all --overwrite key1- key2-")
+    }
+    
+    @Test
+    void 'Removes labels kubectl-style'() {
+        // The syntax for removing labels is key appended by a minus, e.g.
+        // kubectl label node key- 
+        k8sClient.label('node', '--all',
+                new Tuple2('key1-', ''), new Tuple2('key2-', ''))
+
+        assertThat(commandExecutor.actualCommands[0]).isEqualTo(
+                "kubectl label node --all --overwrite key1- key2-")
     }
 
     @Test
