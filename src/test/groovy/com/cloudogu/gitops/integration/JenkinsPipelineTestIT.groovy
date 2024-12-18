@@ -10,6 +10,7 @@ import com.offbytwo.jenkins.model.QueueItem
 import com.offbytwo.jenkins.model.QueueReference
 import groovy.cli.picocli.CliBuilder
 import groovy.cli.picocli.OptionAccessor
+import groovy.util.logging.Slf4j
 import org.apache.tools.ant.util.DateUtils
 import org.junit.jupiter.api.Test
 
@@ -27,12 +28,13 @@ import static org.assertj.core.api.Assertions.assertThat
  * Use --help for help
  * Optional parameters for wait interval and abort on failure.
  */
+@Slf4j
 class JenkinsPipelineTestIT {
 
     int numberOfExampleRepos = 3
+    boolean abortOnFail = true
 
-    String url = "http://172.18.0.2:9090"
-    boolean writeFailedLog = true;
+    static int sleepInterval = 2000
     int retry = 2;
 
 //    def k3dAddress = System.getenv("K3D_ADDRESS") ?: "jenkins.localhost"
@@ -47,6 +49,7 @@ class JenkinsPipelineTestIT {
 
     @Test
     void wholeJenkinsPipelineTest() {
+
         String[] configurationArguments = ([
                 "--url", "http://172.18.0.2:9090",
                 "--user", "admin",
@@ -55,18 +58,18 @@ class JenkinsPipelineTestIT {
                 "--fail",
                 "--retry", "2"
         ] as String[])
-        Configuration configuration = CommandLineInterface.INSTANCE.parse(configurationArguments)
 
-        PipelineExecutor executor = new PipelineExecutor(configuration)
+
+        PipelineExecutor executor = new PipelineExecutor()
         List<Future<PipelineResult>> buildFutures = new ArrayList<Future<PipelineResult>>()
 
         try {
-            JenkinsHandler js = new JenkinsHandler(configuration)
+            JenkinsHandler js = new JenkinsHandler()
 
             List<JobWithDetails> jobs = js.buildJobList()
             assertThat(jobs.size()).isEqualTo(numberOfExampleRepos)
             jobs.each { JobWithDetails job ->
-                buildFutures.add(executor.run(js, job, configuration.retry))
+                buildFutures.add(executor.run(js, job, retry))
             }
 
             assertThat(buildFutures.size()).isEqualTo(numberOfExampleRepos)
@@ -79,31 +82,28 @@ class JenkinsPipelineTestIT {
                     //if retries are set, start the failed build new and delete the old one
                     if (resultFuture.get().retry > 0) {
                         //write log of failed build to fs
-                        if (configuration.writeFailedLog) {
-                            writeBuildLogToFile(resultFuture.get().getBuild())
-                        }
+                        writeBuildLogToFile(resultFuture.get().getBuild())
                         int newRetry = resultFuture.get().retry - 1
                         buildFutures.add(executor.run(js, resultFuture.get().getJob(), newRetry))
                         buildFutures.remove(resultFuture)
                         // if abortonfail is true and no more retries left then kill the process
-                    } else if (configuration.abortOnFail) {
+                    } else if (abortOnFail) {
                         //write log of failed build to fs
-                        if (configuration.writeFailedLog) {
-                            writeBuildLogToFile(resultFuture.get().getBuild())
-                        }
+                        writeBuildLogToFile(resultFuture.get().getBuild())
                         println "A BUILD FAILED. ABORTING"
                         resultFuture.get().prettyPrint(true)
                         fail("A BUILD FAILED. ABORTING")
                     }
                 }
-                Thread.sleep(configuration.sleepInterval)
+                Thread.sleep(sleepInterval)
             }
 
             buildFutures.each {
                 it.get().prettyPrint(false)
-                if (configuration.writeFailedLog && it.get().getBuild().getResult().name() == "FAILURE") {
+                if (it.get().getBuild().getResult().name() == "FAILURE") {
                     writeBuildLogToFile(it.get().getBuild())
                 }
+                assertThat(it.get().getBuild().getResult().name()).isEqualTo("SUCCESS")
             }
 
 
@@ -111,7 +111,7 @@ class JenkinsPipelineTestIT {
             assertThat(status).isEqualTo(0)
 
         } catch (Exception err) {
-            fail("Unexpected error during execution of gitops playground e2e:\n")
+            fail("Unexpected error during execution of gitops playground e2e:\n", err)
         }
     }
 
@@ -129,18 +129,17 @@ class JenkinsPipelineTestIT {
         }
 
         println("written log file of failed job to: " + f.getAbsolutePath())
-        fail("written log file of failed job to: " + f.getAbsolutePath())
+
     }
 }
 
 
 class JenkinsHandler {
     private JenkinsServer jenkins
-    private Configuration configuration
+    String url = "http://172.18.0.2:9090"
 
-    JenkinsHandler(Configuration configuration) {
-        this.configuration = configuration
-        this.jenkins = new JenkinsServer(new URI(configuration.url), configuration.username, configuration.password)
+    JenkinsHandler() {
+        this.jenkins = new JenkinsServer(new URI(url), "admin", "admin")
     }
 
     JenkinsServer get() { return this.jenkins }
@@ -152,7 +151,7 @@ class JenkinsHandler {
         List<JobWithDetails> jobs = new ArrayList<>()
         jenkins.getJobs().each { Map.Entry<String, Job> potentialNamespaceJob ->
 
-            potentialNamespaceJob.value.url = "${configuration.getUrl()}/job/${potentialNamespaceJob.value.name}/"
+            potentialNamespaceJob.value.url = "${url}/job/${potentialNamespaceJob.value.name}/"
             println "Trying to build job list for ${potentialNamespaceJob.value.name}"
             if (!jenkins.getFolderJob(potentialNamespaceJob.value).isPresent()) {
                 println "Job ${potentialNamespaceJob.value.name} seems not to be a folder job. Skipping."
@@ -178,7 +177,7 @@ class JenkinsHandler {
     BuildWithDetails waitForBuild(QueueItem item, String executorId) {
         while (jenkins.getBuild(item).details().isBuilding()) {
             // log.debug("[$executorId] Building..")
-            Thread.sleep(configuration.sleepInterval)
+            Thread.sleep(JenkinsPipelineTestIT.sleepInterval)
         }
 
         return jenkins.getBuild(item).details()
@@ -187,7 +186,7 @@ class JenkinsHandler {
     QueueItem getQueueItemFromRef(QueueReference ref, String executorId) {
         while (jenkins.getQueueItem(ref).getExecutable() == null) {
             // log.debug("[$executorId] Build has not yet started..")
-            Thread.sleep(configuration.sleepInterval)
+            Thread.sleep(JenkinsPipelineTestIT.sleepInterval)
         }
         return jenkins.getQueueItem(ref)
 
@@ -222,53 +221,6 @@ class JenkinsHandler {
     }
 }
 
-class Configuration {
-    private String url
-    private String username
-    private String password
-    private int sleepInterval = 2000
-    private boolean abortOnFail = false
-    private boolean writeFailedLog = false
-    private int retry = 0
-
-    Configuration() {}
-
-    String getUrl() { return this.url }
-
-    String getUsername() { return this.username }
-
-    String getPassword() { return this.password }
-
-    int getSleepInterval() { return this.sleepInterval }
-
-    boolean getAbortOnFail() { return this.abortOnFail }
-
-    boolean getWriteFailedLog() { return this.writeFailedLog }
-
-    int getRetry() { return this.retry }
-
-    void setUrl(String url) { this.url = url }
-
-    void setUsername(String username) { this.username = username }
-
-    void setPassword(String password) { this.password = password }
-
-    void setSleepInterval(int interval) { this.sleepInterval = interval }
-
-    void setAbortOnFail(boolean fail) { this.abortOnFail = fail }
-
-    void setWriteFailedLog(boolean writeFailedLog) { this.writeFailedLog = writeFailedLog }
-
-    void setRetry(int retry) { this.retry = retry }
-
-
-    boolean isValid() {
-        return (
-                url != null && !url.isEmpty()
-                        && username != null && !username.isEmpty()
-                        && password != null && !password.isEmpty())
-    }
-}
 
 /**
  * Executor
@@ -279,10 +231,8 @@ class Configuration {
 
 class PipelineExecutor {
     private ExecutorService executor = Executors.newFixedThreadPool((int) (Runtime.getRuntime().availableProcessors() / 2))
-    private Configuration configuration
 
-    PipelineExecutor(Configuration configuration) {
-        this.configuration = configuration
+    PipelineExecutor() {
     }
 
     Future<PipelineResult> run(JenkinsHandler js, JobWithDetails job, int retry) {
@@ -349,6 +299,7 @@ class PipelineResult {
         if (minify)
             println "${getPrintColor()}[${this.getExecutorId()}] ${this.getBuild().fullDisplayName} | ${this.getBuild().getResult().name()} | ${DateUtils.formatElapsedTime(this.getBuild().duration)}${Color.RESET}"
         else {
+
             println """
                 ${getPrintColor()}[${this.getExecutorId()}] 
                 ${this.getBuild().fullDisplayName}
@@ -358,78 +309,6 @@ class PipelineResult {
     }
 }
 
-/**
- * CLI-args definition and handling.
- */
-enum CommandLineInterface {
-    INSTANCE
-
-    CliBuilder cliBuilder
-
-    CommandLineInterface() {
-        cliBuilder = new CliBuilder(
-                usage: 'e2e [<options>]',
-                header: 'Options:',
-                footer: 'And here we put footer text.'
-        )
-        // set the amount of columns the usage message will be wide
-        cliBuilder.width = 80  // default is 74
-        cliBuilder.with {
-            h longOpt: 'help', 'Print this help text and exit.'
-            _(longOpt: 'url', args: 1, argName: 'URL', 'Jenkins-URL')
-            _(longOpt: 'user', args: 1, argName: 'User', 'Jenkins-User')
-            _(longOpt: 'password', args: 1, argName: 'Password', 'Jenkins-Password')
-            _(longOpt: 'fail', argName: 'fail', 'Exit on first build failure')
-            _(longOpt: 'writeFailedLog', argName: 'writeFailedLog', 'Writes a log file for each failed build to the folder playground-logs-of-failed-jobs/')
-            _(longOpt: 'retry', args: 1, argName: 'retry', 'Retries failed builds x time')
-            _(longOpt: 'interval', args: 1, argName: 'Interval', 'Interval for waits')
-            _(longOpt: 'debug', argName: 'debug', 'Set log level to debug')
-        }
-    }
-
-    Configuration parse(args) {
-        Configuration config = new Configuration()
-        OptionAccessor options = cliBuilder.parse(args)
-
-        if (!options) {
-            fail("Error while parsing command-line options.\n")
-        }
-
-        if (options.h) {
-            cliBuilder.usage()
-
-            System.exit 0
-        }
-
-        if (options.url)
-            config.url = options.url
-
-        if (options.user)
-            config.username = options.user
-
-        if (options.password)
-            config.password = options.password
-
-        if (options.interval)
-            config.sleepInterval = options.interval
-
-        if (options.retry)
-            config.retry = Integer.parseInt(options.retry)
-
-        String level = options.debug ? "debug" : "info"
-        System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", level)
-
-        config.abortOnFail = options.fail ? true : false
-
-        config.writeFailedLog = options.writeFailedLog ? true : false
-
-        if (!config.isValid()) {
-            fail("Config given is invalid. Seems like you are missing one of the parameters. Use -h flag for help.\n")
-        }
-
-        return config
-    }
-}
 
 /**
  * com.cloudogu.gitops.integration.Color palette for CLI colorization.
