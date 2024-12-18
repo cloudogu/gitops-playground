@@ -1,6 +1,11 @@
 package com.cloudogu.gitops
 
+import com.cloudogu.gitops.utils.MapUtils
+import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
+import groovy.yaml.YamlSlurper
+
+import java.nio.file.Path
 
 /**
  * A single tool to be deployed by GOP.
@@ -53,6 +58,16 @@ abstract class Feature {
             return isEnabled() ? this.getProperty('namespace') : null
         }
         return null
+    }
+
+    static Map templateToMap(String filePath, Map parameters) {
+        def hydratedString = new TemplatingEngine().template(new File(filePath), parameters)
+
+        if (hydratedString.trim().isEmpty()) {
+            // Otherwise YamlSlurper returns an empty array, whereas we expect a Map
+            return [:]
+        }
+        return new YamlSlurper().parseText(hydratedString) as Map
     }
 
     abstract boolean isEnabled()

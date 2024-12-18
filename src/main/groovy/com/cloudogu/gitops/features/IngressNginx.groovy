@@ -3,9 +3,11 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Config
-
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
-import com.cloudogu.gitops.utils.*
+import com.cloudogu.gitops.utils.AirGappedUtils
+import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.utils.K8sClient
+import com.cloudogu.gitops.utils.MapUtils
 import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
@@ -24,7 +26,7 @@ class IngressNginx extends Feature implements FeatureWithImage {
     String namespace = 'ingress-nginx'
     Config config
     K8sClient k8sClient
-    
+
     private FileSystemUtils fileSystemUtils
     private DeploymentStrategy deployer
     private AirGappedUtils airGappedUtils
@@ -51,26 +53,15 @@ class IngressNginx extends Feature implements FeatureWithImage {
     @Override
     void enable() {
 
-        def templatedMap = new YamlSlurper().parseText(
-                new TemplatingEngine().template(new File(HELM_VALUES_PATH),
-                    [
-                            config: config,
-                            // Allow for using static classes inside the templates
-                            statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
-                    ])) as Map
-
-        def valuesFromConfig = config.features.ingressNginx.helm.values
-
-        def mergedMap = MapUtils.deepMerge(valuesFromConfig, templatedMap)
-
-        def tmpHelmValues = fileSystemUtils.createTempFile()
-        // Note that YAML builder seems to use double quotes to escape strings. So for example:
-        // This:     log-format-upstream: '..."$request"...'
-        // Becomes:  log-format-upstream: "...\"$request\"..."
-        // Harder to read but same payload. Not sure if we can do something about it.
-        fileSystemUtils.writeYaml(mergedMap, tmpHelmValues.toFile())
-
+        def templatedMap = templateToMap(HELM_VALUES_PATH, [
+                config : config,
+                // Allow for using static classes inside the templates
+                statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
+        ])
         def helmConfig = config.features.ingressNginx.helm
+        def mergedMap = MapUtils.deepMerge(helmConfig.values, templatedMap)
+        def tempValuesPath = fileSystemUtils.writeTempFile(mergedMap)
+
 
         if (config.application.mirrorRepos) {
             log.debug("Mirroring repos: Deploying IngressNginx from local git repo")
@@ -88,7 +79,7 @@ class IngressNginx extends Feature implements FeatureWithImage {
                     ingressNginxVersion,
                     namespace,
                     'ingress-nginx',
-                    tmpHelmValues, DeploymentStrategy.RepoType.GIT)
+                    tempValuesPath, DeploymentStrategy.RepoType.GIT)
         } else {
             deployer.deployFeature(
                     helmConfig.repoURL as String,
@@ -97,10 +88,11 @@ class IngressNginx extends Feature implements FeatureWithImage {
                     helmConfig.version as String,
                     namespace,
                     'ingress-nginx',
-                    tmpHelmValues
+                    tempValuesPath
             )
         }
     }
+
     private URI getScmmUri() {
         if (config.scmm.internal) {
             new URI('http://scmm-scm-manager.default.svc.cluster.local/scm')

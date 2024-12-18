@@ -18,7 +18,7 @@ class RegistryTest {
     K8sClientForTest k8sClient
     CommandExecutorForTest helmCommands
     HelmClient helmClient
-    File temporaryYamlFile
+    Path temporaryYamlFile
 
     @Test
     void 'is disabled when external registry is configured'() {
@@ -56,6 +56,25 @@ class RegistryTest {
         assertThat(k8sClient.commandExecutorForTest.actualCommands[0]).contains("--node-port $expectedNodePort")
     }
 
+    @Test
+    void 'inject custom value into chart'() {
+        def registryConfig = new RegistrySchema(internal: true,
+                helm: new HelmConfigWithValues(
+                        chart: 'test',
+                        values: [
+                                service: [
+                                        type: 'NodePortTest'
+                                ],
+                                customValue: 'testinjectionValue'
+                        ]
+                )
+        )
+
+        createRegistry(registryConfig).install()
+        assertThat(parseActualYaml()['service'] as String).contains('NodePortTest')
+        assertThat(parseActualYaml()['customValue'] as String).contains('testinjectionValue')
+    }
+
     private Registry createRegistry(RegistrySchema registryConfig = new RegistrySchema()) {
         def config = new Config(
                 application: new ApplicationSchema(namePrefix: 'foo-'),
@@ -68,18 +87,18 @@ class RegistryTest {
         // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
         new Registry(config, new FileSystemUtils() {
             @Override
-            Path createTempFile() {
-                def ret = super.createTempFile()
-                temporaryYamlFile = ret.toFile()
-
+            Path writeTempFile(Map mergeMap) {
+                def ret = super.writeTempFile(mergeMap)
+                temporaryYamlFile = Path.of(ret.toString().replace(".ftl", ""))
+                // Path after template invocation
                 return ret
             }
         }, k8sClient, new HelmStrategy(config, helmClient))
     }
 
-    private parseActualYaml() {
+    private Map parseActualYaml() {
         def ys = new YamlSlurper()
-        return ys.parse(temporaryYamlFile)
+        return ys.parse(temporaryYamlFile) as Map
     }
 
 }

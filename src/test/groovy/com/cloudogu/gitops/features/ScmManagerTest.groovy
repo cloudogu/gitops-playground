@@ -7,6 +7,7 @@ import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.HelmClient
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
+
 import java.nio.file.Path
 
 import static org.assertj.core.api.Assertions.assertThat
@@ -15,35 +16,35 @@ class ScmManagerTest {
 
     Config config = new Config(
             application: new Config.ApplicationSchema(
-                    username  : 'abc',
-                    password  : '123',
+                    username: 'abc',
+                    password: '123',
                     namePrefix: 'foo-',
-                    trace     : true,
-                    insecure : false,
-                    gitName : 'Cloudogu',
-                    gitEmail : 'hello@cloudogu.com',
+                    trace: true,
+                    insecure: false,
+                    gitName: 'Cloudogu',
+                    gitEmail: 'hello@cloudogu.com',
             ),
             scmm: new Config.ScmmSchema(
                     url: 'http://scmm',
                     internal: true,
                     protocol: 'https',
-                    host    : 'abc',
-                    ingress : 'scmm.localhost',
+                    host: 'abc',
+                    ingress: 'scmm.localhost',
                     username: 'scmm-usr',
                     password: 'scmm-pw',
                     gitOpsUsername: 'foo-gitops',
-                    urlForJenkins : 'http://scmm4jenkins',
-                    helm  : new Config.HelmConfigWithValues(
-                            chart  : 'scm-manager-chart',
+                    urlForJenkins: 'http://scmm4jenkins',
+                    helm: new Config.HelmConfigWithValues(
+                            chart: 'scm-manager-chart',
                             version: '2.47.0',
                             repoURL: 'https://packages.scm-manager.org/repository/helm-v2-releases/',
                             values: [:]
                     )
             ),
             jenkins: new Config.JenkinsSchema(
-                    internal       : true,
-                    url            : 'http://jenkins',
-                    urlForScmm     : 'http://jenkins4scm'
+                    internal: true,
+                    url: 'http://jenkins',
+                    urlForScmm: 'http://jenkins4scm'
             ),
             repositories: new Config.RepositoriesSchema(
                     springBootHelmChart: new Config.RepositorySchemaWithRef(
@@ -51,7 +52,7 @@ class ScmManagerTest {
                             ref: '1.2.3'
                     ),
                     gitopsBuildLib: new Config.RepositorySchema(
-                             url: 'gitopsBuildLibUrl'
+                            url: 'gitopsBuildLibUrl'
                     ),
                     cesBuildLib: new Config.RepositorySchema(
                             url: 'cesBuildLibUrl'
@@ -60,7 +61,7 @@ class ScmManagerTest {
     )
     CommandExecutorForTest commandExecutor = new CommandExecutorForTest()
 
-    File temporaryYamlFile
+    Path temporaryYamlFile
     CommandExecutorForTest helmCommands = new CommandExecutorForTest()
     HelmClient helmClient = new HelmClient(helmCommands)
 
@@ -73,8 +74,8 @@ class ScmManagerTest {
 
         assertThat(parseActualYaml()['extraEnv'] as String).contains('SCM_WEBAPP_INITIALUSER\n  value: "scmm-usr"')
         assertThat(parseActualYaml()['extraEnv'] as String).contains('SCM_WEBAPP_INITIALPASSWORD\n  value: "scmm-pw"')
-        assertThat(parseActualYaml()['service']).isEqualTo([ nodePort: 9091, type: 'NodePort' ])
-        assertThat(parseActualYaml()['ingress']).isEqualTo([ enabled: true, path: '/', hosts: [ 'scmm.localhost'] ])
+        assertThat(parseActualYaml()['service']).isEqualTo([nodePort: 9091, type: 'NodePort'])
+        assertThat(parseActualYaml()['ingress']).isEqualTo([enabled: true, path: '/', hosts: ['scmm.localhost']])
         assertThat(helmCommands.actualCommands[0].trim()).isEqualTo(
                 'helm repo add scm-manager https://packages.scm-manager.org/repository/helm-v2-releases/')
         assertThat(helmCommands.actualCommands[1].trim()).startsWith(
@@ -96,9 +97,9 @@ class ScmManagerTest {
         assertThat(env['SCMM_URL']).isEqualTo('http://scmm')
         assertThat(env['SCMM_USERNAME']).isEqualTo('scmm-usr')
         assertThat(env['SCMM_PASSWORD']).isEqualTo('scmm-pw')
-        assertThat(env['JENKINS_URL']).isEqualTo( 'http://jenkins')
-        assertThat(env['JENKINS_URL_FOR_SCMM']).isEqualTo( 'http://jenkins4scm')
-        assertThat(env['SCMM_URL_FOR_JENKINS']).isEqualTo( 'http://scmm4jenkins')
+        assertThat(env['JENKINS_URL']).isEqualTo('http://jenkins')
+        assertThat(env['JENKINS_URL_FOR_SCMM']).isEqualTo('http://jenkins4scm')
+        assertThat(env['SCMM_URL_FOR_JENKINS']).isEqualTo('http://scmm4jenkins')
         assertThat(env['REMOTE_CLUSTER']).isEqualTo('false')
         assertThat(env['INSTALL_ARGOCD']).isEqualTo('true')
         assertThat(env['SPRING_BOOT_HELM_CHART_COMMIT']).isEqualTo('1.2.3')
@@ -132,7 +133,9 @@ class ScmManagerTest {
     @Test
     void 'initialDelaySeconds is set properly'() {
         config.scmm.helm.values = [
-                initialDelaySeconds: 140
+                livenessProbe: [
+                        initialDelaySeconds: 140
+                ]
         ]
 
         createScmManager().install()
@@ -143,19 +146,19 @@ class ScmManagerTest {
         commandExecutor.environment.collectEntries { it.split('=') }
     }
 
-    private parseActualYaml() {
+    private Map parseActualYaml() {
         def ys = new YamlSlurper()
-        return ys.parse(temporaryYamlFile)
+        return ys.parse(temporaryYamlFile) as Map
     }
 
     private ScmManager createScmManager() {
-        new ScmManager(config, commandExecutor,  new FileSystemUtils() {
+        new ScmManager(config, commandExecutor, new FileSystemUtils() {
             @Override
-            Path copyToTempDir(String filePath) {
-                Path ret = super.copyToTempDir(filePath)
-                temporaryYamlFile = Path.of(ret.toString().replace(".ftl", "")).toFile() // Path after template invocation
+            Path writeTempFile(Map mapValues) {
+                def ret = super.writeTempFile(mapValues)
+                temporaryYamlFile = Path.of(ret.toString().replace(".ftl", "")) // Path after template invocation
                 return ret
             }
-        },  new HelmStrategy(config, helmClient))
+        }, new HelmStrategy(config, helmClient))
     }
 }

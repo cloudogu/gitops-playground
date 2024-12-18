@@ -1,10 +1,10 @@
 persistence:
   size: 1Gi
 
-<#if helm.values['initialDelaySeconds']??>
+#increased startup time for slower devices
 livenessProbe:
-  initialDelaySeconds: ${helm.values.initialDelaySeconds}
-</#if>
+  initialDelaySeconds: 120
+
 
 extraEnv: |
     - name: SCM_WEBAPP_INITIALUSER

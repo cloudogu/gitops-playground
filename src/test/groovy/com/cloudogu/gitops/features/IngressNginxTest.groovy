@@ -176,10 +176,10 @@ class IngressNginxTest {
         // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
         new IngressNginx(config, new FileSystemUtils() {
             @Override
-            Path createTempFile() {
-                def ret = super.createTempFile()
-                temporaryYamlFile = Path.of(ret.toString().replace(".ftl", "")) // Path after template invocation
-
+            Path writeTempFile(Map mergeMap) {
+                def ret = super.writeTempFile(mergeMap)
+                temporaryYamlFile = Path.of(ret.toString().replace(".ftl", ""))
+                // Path after template invocation
                 return ret
             }
         }, deploymentStrategy, k8sClient, airGappedUtils)

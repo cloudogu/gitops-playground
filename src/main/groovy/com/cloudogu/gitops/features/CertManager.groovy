@@ -3,9 +3,11 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Config
-
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
-import com.cloudogu.gitops.utils.*
+import com.cloudogu.gitops.utils.AirGappedUtils
+import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.utils.K8sClient
+import com.cloudogu.gitops.utils.MapUtils
 import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
@@ -17,7 +19,7 @@ import java.nio.file.Path
 @Slf4j
 @Singleton
 @Order(160)
-class CertManager extends Feature implements FeatureWithImage{
+class CertManager extends Feature implements FeatureWithImage {
 
     static final String HELM_VALUES_PATH = "applications/cluster-resources/certManager-helm-values.ftl.yaml"
 
@@ -26,7 +28,7 @@ class CertManager extends Feature implements FeatureWithImage{
     private AirGappedUtils airGappedUtils
     final K8sClient k8sClient
     final Config config
-    final String namespace ="cert-manager"
+    final String namespace = "cert-manager"
 
     CertManager(
             Config config,
@@ -50,22 +52,20 @@ class CertManager extends Feature implements FeatureWithImage{
     @Override
     void enable() {
 
-        def templatedMap = new YamlSlurper().parseText(
-                new TemplatingEngine().template(new File(HELM_VALUES_PATH),
-                    [config: config,
-                     // Allow for using static classes inside the templates
-                     statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build()
-                             .getStaticModels(),
-                    ])) as Map
-
+        def templatedMap = templateToMap(HELM_VALUES_PATH,
+                [
+                        config : config,
+                        // Allow for using static classes inside the templates
+                        statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build()
+                                .getStaticModels(),
+                ]) as Map
 
 
         def valuesFromConfig = config.features.certManager.helm.values
 
         def mergedMap = MapUtils.deepMerge(valuesFromConfig, templatedMap)
 
-        def tmpHelmValues = fileSystemUtils.createTempFile()
-        fileSystemUtils.writeYaml(mergedMap, tmpHelmValues.toFile())
+        def tempValuesPath = fileSystemUtils.writeTempFile(mergedMap)
 
         def helmConfig = config.features.certManager.helm
         if (config.application.mirrorRepos) {
@@ -84,7 +84,7 @@ class CertManager extends Feature implements FeatureWithImage{
                     certManagerVersion,
                     'cert-manager',
                     'cert-manager',
-                    tmpHelmValues, DeploymentStrategy.RepoType.GIT)
+                    tempValuesPath, DeploymentStrategy.RepoType.GIT)
         } else {
             deployer.deployFeature(
                     helmConfig.repoURL,
@@ -93,10 +93,11 @@ class CertManager extends Feature implements FeatureWithImage{
                     helmConfig.version,
                     'cert-manager',
                     'cert-manager',
-                    tmpHelmValues
+                    tempValuesPath
             )
         }
     }
+
     private URI getScmmUri() {
         if (config.scmm.internal) {
             new URI('http://scmm-scm-manager.default.svc.cluster.local/scm')
