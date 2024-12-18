@@ -15,53 +15,7 @@ import static org.mockito.ArgumentMatchers.eq
 import static org.mockito.Mockito.*
 
 class JenkinsTest {
-    Config config = new Config(
-            registry: new Config.RegistrySchema(
-                    url: 'reg-url',
-                    path: 'reg-path',
-                    username: 'reg-usr',
-                    password: 'reg-pw',
-                    twoRegistries: false,
-                    proxyUrl: 'reg-proxy-url',
-                    proxyUsername: 'reg-proxy-usr',
-                    proxyPassword: 'reg-proxy-pw',
-            ),
-            scmm: new Config.ScmmSchema(
-                    url: 'http://scmm',
-                    urlForJenkins: 'http://scmm-scm-manager/scm',
-                    internal: true,
-                    protocol: 'https',
-                    host: 'abc',
-                    username: 'scmm-usr',
-                    password: 'scmm-pw'
-            ),
-            application: new Config.ApplicationSchema(
-                    username: 'abc',
-                    password: '123',
-                    remote: true,
-                    trace: true,
-                    baseUrl: 'http://localhost',
-                    namePrefix: 'my-prefix-',
-                    namePrefixForEnvVars: 'MY_PREFIX_',
-                    insecure: false,
-                    urlSeparatorHyphen: true,
-            ),
-            jenkins: new Config.JenkinsSchema(
-                    internal: true,
-                    username: 'jenusr',
-                    password: 'jenpw',
-                    url: 'http://jenkins',
-                    urlForScmm: 'http://jenkins4scm',
-                    metricsUsername: 'metrics-usr',
-                    metricsPassword: 'metrics-pw',
-                    helm: [
-                            version: '4.8.1'
-                    ],
-                    mavenCentralMirror: ''),
-            features: new Config.FeaturesSchema(
-                    argocd: new Config.ArgoCDSchema(
-                            active: true)),)
-
+    Config config = new Config()
 
     CommandExecutorForTest commandExecutor = new CommandExecutorForTest()
     GlobalPropertyManager globalPropertyManager = mock(GlobalPropertyManager)
@@ -71,6 +25,33 @@ class JenkinsTest {
 
     @Test
     void 'Maps config properly'() {
+        config.application.remote = true
+        config.application.trace = true
+        config.application.urlSeparatorHyphen = true
+        config.features.argocd.active = true
+        config.scmm.url = 'http://scmm'
+        config.scmm.urlForJenkins ='http://scmm-scm-manager/scm'
+        config.scmm.username = 'scmm-usr'
+        config.scmm.password = 'scmm-pw'
+        config.application.baseUrl = 'http://localhost'
+        config.application.namePrefix = 'my-prefix-'
+        config.application.namePrefixForEnvVars = 'MY_PREFIX_'
+        config.registry.url = 'reg-url'
+        config.registry.path = 'reg-path'
+        config.registry.username = 'reg-usr'
+        config.registry.password = 'reg-pw'
+        config.registry.proxyUrl = 'reg-proxy-url'
+        config.registry.proxyUsername = 'reg-proxy-usr'
+        config.registry.proxyPassword = 'reg-proxy-pw'
+        config.jenkins.internal = true
+        config.jenkins.helm.version = '4.8.1'
+        config.jenkins.username = 'jenusr'
+        config.jenkins.password = 'jenpw'
+        config.jenkins.url = 'http://jenkins'
+        config.jenkins.metricsUsername = 'metrics-usr'
+        config.jenkins.metricsPassword = 'metrics-pw'
+
+        
         createJenkins().install()
 
         def env = getEnvAsMap()
@@ -125,6 +106,17 @@ class JenkinsTest {
     @Test
     void 'Handles two registries'() {
         config.registry.twoRegistries = true
+        config.features.argocd.active = true
+        config.application.namePrefix = 'my-prefix-'
+        config.application.namePrefixForEnvVars = 'MY_PREFIX_'
+        
+        config.registry.url = 'reg-url'
+        config.registry.path = 'reg-path'
+        config.registry.username = 'reg-usr'
+        config.registry.password = 'reg-pw'
+        config.registry.proxyUrl = 'reg-proxy-url'
+        config.registry.proxyUsername = 'reg-proxy-usr'
+        config.registry.proxyPassword = 'reg-proxy-pw'
 
         createJenkins().install()
 
@@ -143,6 +135,7 @@ class JenkinsTest {
 
     @Test
     void 'Does not create create job credentials when argo cd is deactivated'() {
+        config.application.namePrefixForEnvVars = 'MY_PREFIX_'
         when(userManager.isUsingCasSecurityRealm()).thenReturn(true)
 
         createJenkins().install()
@@ -181,7 +174,10 @@ class JenkinsTest {
 
     @Test
     void 'Sets maven mirror '() {
+        config.registry.url = 'some value'
         config.jenkins.mavenCentralMirror = 'http://test'
+        config.application.namePrefixForEnvVars = 'MY_PREFIX_'
+        
         createJenkins().install()
 
         verify(globalPropertyManager).setGlobalProperty(eq('MY_PREFIX_MAVEN_CENTRAL_MIRROR'), eq("http://test"))

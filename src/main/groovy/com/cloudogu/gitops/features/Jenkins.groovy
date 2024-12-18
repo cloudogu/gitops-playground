@@ -68,79 +68,77 @@ class Jenkins extends Feature {
                 URL_SEPARATOR_HYPHEN      : config.application.urlSeparatorHyphen
         ])
 
+        globalPropertyManager.setGlobalProperty('SCMM_URL', config.scmm.url)
+
+        if (config.jenkins.additionalEnvs) {
+            for (entry in (config.jenkins.additionalEnvs as Map).entrySet()) {
+                globalPropertyManager.setGlobalProperty(entry.key.toString(), entry.value.toString())
+            }
+        }
+
         if (config.registry.url) {
-            globalPropertyManager.setGlobalProperty('SCMM_URL', config.scmm.url)
+            globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}REGISTRY_URL", config.registry.url)
+        }
 
-            if (config.jenkins.additionalEnvs) {
-                for (entry in (config.jenkins.additionalEnvs as Map).entrySet()) {
-                    globalPropertyManager.setGlobalProperty(entry.key.toString(), entry.value.toString())
-                }
-            }
+        if (config.registry.path) {
+            globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}REGISTRY_PATH", config.registry.path)
+        }
 
-            if (config.registry.url) {
-                globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}REGISTRY_URL", config.registry.url)
-            }
+        if (config.registry.twoRegistries) {
+            globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}REGISTRY_PROXY_URL", config.registry.proxyUrl)
+        }
 
-            if (config.registry.path) {
-                globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}REGISTRY_PATH", config.registry.path)
-            }
+        if (config.jenkins.mavenCentralMirror) {
+            globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}MAVEN_CENTRAL_MIRROR", config.jenkins.mavenCentralMirror)
+        }
+
+        globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}K8S_VERSION", Config.K8S_VERSION)
+
+        if (userManager.isUsingCasSecurityRealm()) {
+            log.trace("Using CAS Security Realm. Must not create user.")
+        } else {
+            userManager.createUser(config.jenkins.metricsUsername, config.jenkins.metricsPassword)
+        }
+
+        userManager.grantPermission(config.jenkins.metricsUsername, UserManager.Permissions.METRICS_VIEW)
+
+        prometheusConfigurator.enableAuthentication()
+
+        if (config.features.argocd.active) {
+
+            String jobName = "${config.application.namePrefix}example-apps"
+            def credentialId = "scmm-user"
+
+            jobManger.createJob(jobName,
+                    config.scmm.urlForJenkins,
+                    "${config.application.namePrefix}argocd",
+                    credentialId)
+
+            jobManger.createCredential(
+                    jobName,
+                    credentialId,
+                    "${config.application.namePrefix}gitops",
+                    "${config.scmm.password}",
+                    'credentials for accessing scm-manager')
+
+            jobManger.createCredential(
+                    jobName,
+                    "registry-user",
+                    "${config.registry.username}",
+                    "${config.registry.password}",
+                    'credentials for accessing the docker-registry for writing images built on jenkins')
 
             if (config.registry.twoRegistries) {
-                globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}REGISTRY_PROXY_URL", config.registry.proxyUrl)
-            }
-
-            if (config.jenkins.mavenCentralMirror) {
-                globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}MAVEN_CENTRAL_MIRROR", config.jenkins.mavenCentralMirror)
-            }
-
-            globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}K8S_VERSION", Config.K8S_VERSION)
-
-            if (userManager.isUsingCasSecurityRealm()) {
-                log.trace("Using CAS Security Realm. Must not create user.")
-            } else {
-                userManager.createUser(config.jenkins.metricsUsername, config.jenkins.metricsPassword)
-            }
-
-            userManager.grantPermission(config.jenkins.metricsUsername, UserManager.Permissions.METRICS_VIEW)
-
-            prometheusConfigurator.enableAuthentication()
-
-            if (config.features.argocd.active) {
-
-                String jobName = "${config.application.namePrefix}example-apps"
-                def credentialId = "scmm-user"
-
-                jobManger.createJob(jobName,
-                        config.scmm.urlForJenkins,
-                        "${config.application.namePrefix}argocd",
-                        credentialId)
-
                 jobManger.createCredential(
-                        jobName,
-                        credentialId,
-                        "${config.application.namePrefix}gitops",
-                        "${config.scmm.password}",
-                        'credentials for accessing scm-manager')
+                        "${config.application.namePrefix}example-apps",
+                        "registry-proxy-user",
+                        "${config.registry.proxyUsername}",
+                        "${config.registry.proxyPassword}",
+                        'credentials for accessing the docker-registry that contains 3rd party or base images')
 
-                jobManger.createCredential(
-                        jobName,
-                        "registry-user",
-                        "${config.registry.username}",
-                        "${config.registry.password}",
-                        'credentials for accessing the docker-registry for writing images built on jenkins')
-
-                if (config.registry.twoRegistries) {
-                    jobManger.createCredential(
-                            "${config.application.namePrefix}example-apps",
-                            "registry-proxy-user",
-                            "${config.registry.proxyUsername}",
-                            "${config.registry.proxyPassword}",
-                            'credentials for accessing the docker-registry that contains 3rd party or base images')
-
-                }
-                // Once everything is set up, start the jobs.
-                jobManger.startJob(jobName)
             }
+            // Once everything is set up, start the jobs.
+            jobManger.startJob(jobName)
         }
     }
 }
