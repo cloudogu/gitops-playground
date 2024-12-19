@@ -1,16 +1,10 @@
 package com.cloudogu.gitops.integration
 
-
-import io.kubernetes.client.openapi.ApiClient
-import io.kubernetes.client.openapi.Configuration
-import io.kubernetes.client.openapi.apis.CoreV1Api
+import com.cloudogu.gitops.integration.features.KubenetesApiTestSetup
 import io.kubernetes.client.openapi.models.V1NamespaceList
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodList
-import io.kubernetes.client.util.ClientBuilder
-import io.kubernetes.client.util.KubeConfig
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 import static org.assertj.core.api.Assertions.assertThat
@@ -18,35 +12,16 @@ import static org.assertj.core.api.Assertions.assertThat
 /**
  * This test ensures all Pods and Namespaces are available, runnning at a startet GOP with - more or less - defaulöt values.
  */
-class KubernetesSmoketestsIT {
-    static String kubeConfigPath;
-    CoreV1Api api
-
+class GOPSmoketestsIT extends KubenetesApiTestSetup {
 
     /**
      * Gets path to kubeconfig
      */
     @BeforeAll
-    static void setupKubeconfig() {
-        kubeConfigPath = System.getenv("HOME") + "/.kube/config";
-        if (!new File(kubeConfigPath).exists()) {
-            kubeConfigPath = System.getenv("KUBECONFIG");
-        }
-        assertThat(kubeConfigPath) isNotBlank();
+    static void labelMyTest() {
+        println '########### K8S SMOKE TESTS ###########'
     }
-    /**
-     * etablish connection to kubernetes and create API to use.
-     */
-    @BeforeEach
-    void setupConnection() {
-        ApiClient client =
-                ClientBuilder.kubeconfig(KubeConfig.loadKubeConfig(new FileReader(kubeConfigPath))).build();
-        // set the global default api-client to the out-of-cluster one from above
-        Configuration.setDefaultApiClient(client);
 
-        // the CoreV1Api loads default api-client from global configuration.
-        api = new CoreV1Api();
-    }
 
     @Test
     void ensureJenkinsPodIsStarted() {
@@ -96,7 +71,7 @@ class KubernetesSmoketestsIT {
                                      "secrets"]
 
         V1NamespaceList list = api.listNamespace().execute()
-        assertThat(list.getItems().containsAll()).isTrue()
+        assertThat(list.getItems().containsAll(expectedNamespaces)).isTrue()
     }
 
     /**
@@ -119,13 +94,17 @@ class KubernetesSmoketestsIT {
         assertThat(ingress.getStatus().getLoadBalancer().getIngress()).isNotNull()
     }
 
+    @Override
+    boolean isReadyToStartTests() {
+        V1PodList list = api.listPodForAllNamespaces()
+                .execute();
+        if (list && !list.items.isEmpty()) {
 
-    // Kubernetes Smoketest             : 20 sek  <<< Immer
-    // Jenkins Test     (e2e)           : 15 min  <<< bei Bedarf
-    // ArgoCD - Feature Tests (future)  : 3 Min?  <<< Immer
-    /// alles im MAIN immer
-    // Profile umbennen in long-running
-
-    // paralle Ausführung der Tests
-
+            V1Pod argoPod = list.getItems().find { it.getMetadata().getName().startsWith("argo") }
+            if (argoPod) {
+                return true
+            }
+        }
+        return false
+    }
 }

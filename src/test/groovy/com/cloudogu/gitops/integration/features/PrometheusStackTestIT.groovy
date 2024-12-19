@@ -1,15 +1,8 @@
 package com.cloudogu.gitops.integration.features
 
-import com.cloudogu.gitops.utils.CommandExecutor
-import io.kubernetes.client.openapi.ApiClient
-import io.kubernetes.client.openapi.Configuration
-import io.kubernetes.client.openapi.apis.CoreV1Api
-import io.kubernetes.client.openapi.models.V1Namespace
-import io.kubernetes.client.openapi.models.V1NamespaceList
-import io.kubernetes.client.openapi.models.V1Pod
-import io.kubernetes.client.openapi.models.V1PodList
-import io.kubernetes.client.util.ClientBuilder
-import io.kubernetes.client.util.KubeConfig
+import io.kubernetes.client.openapi.models.V1APIResourceList
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 import static org.assertj.core.api.Assertions.assertThat
@@ -21,12 +14,29 @@ import static org.assertj.core.api.Assertions.assertThat
  *  - Operator
  *  - prometheus-stack
  */
-class PrometheusStackTestIT extends FeatureTestSetup {
+class PrometheusStackTestIT extends KubenetesApiTestSetup {
 
     String namespace = 'monitoring'
     String grafanaPod = 'prometheus-stack-grafana'
     String operatorPod = 'prometheus-stack-operator'
     String prometheusPod = 'prometheus-stack-prometheus'
+
+    @Override
+    boolean isReadyToStartTests() {
+        // TODO: check via Argo CRD Appplication
+        def pods = api.listNamespacedPod(namespace).execute()
+        if (pods && !pods.items.isEmpty()) {
+            def grafanaPod = pods.items.find { it.getMetadata().name.contains(grafanaPod) }
+            if (grafanaPod) {
+                return "Running".equals(grafanaPod.status.phase)
+            }
+        }
+        return false;
+    }
+    @BeforeAll
+    static void labelTest() {
+        println "###### PROMETHEUS ######"
+    }
 
     @Test
     void ensureNamespaceExists() {
@@ -61,6 +71,7 @@ class PrometheusStackTestIT extends FeatureTestSetup {
         assertThat(operator).isNotNull()
         assertThat(operator.status.phase).isEqualTo("Running")
     }
+
     @Test
     void ensurePrometheusStackIsStarted() {
 

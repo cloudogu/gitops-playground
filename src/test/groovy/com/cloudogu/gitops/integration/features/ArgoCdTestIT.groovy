@@ -1,21 +1,15 @@
 package com.cloudogu.gitops.integration.features
 
-import io.kubernetes.client.openapi.ApiClient
-import io.kubernetes.client.openapi.Configuration
-import io.kubernetes.client.openapi.apis.CoreV1Api
+
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodList
-import io.kubernetes.client.util.ClientBuilder
-import io.kubernetes.client.util.KubeConfig
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat
 
 /**
- * This class is for testing deployments via ArgoCD
- */
-class ArgoCdTestIT extends FeatureTestSetup {
+ * This class is for testing deployments via ArgoCD*/
+class ArgoCdTestIT extends KubenetesApiTestSetup {
 
     String namespace = 'monitoring'
 
@@ -35,8 +29,7 @@ class ArgoCdTestIT extends FeatureTestSetup {
     }
 
     /**
-     * ArgoCD uses 7 pods. All have to run
-     */
+     * ArgoCD uses 7 pods. All have to run*/
     @Test
     void ensureArgoCDIsOnlineAndRunning() {
         def expectedSumOfArgoPods = 7
@@ -49,5 +42,17 @@ class ArgoCdTestIT extends FeatureTestSetup {
             assertThat(pod.status.phase).isEqualTo("Running")
         }
 
+    }
+
+    @Override
+    boolean isReadyToStartTests() {
+        V1PodList list = api.listPodForAllNamespaces()
+                .execute()
+        if (list && !list.items.isEmpty()) {
+
+            List<V1Pod> argoPods = list.getItems().findAll { it.getMetadata().getName().startsWith("argo") }
+            return argoPods.size() == 7
+        }
+        return false
     }
 }
