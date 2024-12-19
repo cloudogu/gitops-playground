@@ -394,6 +394,9 @@
           <includes>
             <include>**/*IT.java</include>
           </includes>
+          <excludes>
+            <exclude>**/*LongIT.java</exclude>
+          </excludes>
         </configuration>
       </plugin>
 
@@ -534,7 +537,7 @@
             <configuration>
               <includes>
                 <include>**/*LongIT</include>
-                <include>**/*IT</include>
+                <include>**/*IT</include> <!-- this includes LongIT, too. Just to clearify. -->
               </includes>
             </configuration>
           </plugin>

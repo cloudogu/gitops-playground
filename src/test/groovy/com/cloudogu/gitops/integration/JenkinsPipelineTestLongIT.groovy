@@ -1,11 +1,8 @@
 #!/usr/bin/env groovy
 package com.cloudogu.gitops.integration
 
-
 import com.offbytwo.jenkins.JenkinsServer
 import com.offbytwo.jenkins.model.*
-import groovy.transform.CompileStatic
-import groovy.transform.TypeChecked
 import groovy.util.logging.Slf4j
 import io.kubernetes.client.openapi.ApiClient
 import io.kubernetes.client.openapi.Configuration
@@ -15,6 +12,7 @@ import io.kubernetes.client.openapi.models.V1NodeAddress
 import io.kubernetes.client.util.ClientBuilder
 import io.kubernetes.client.util.KubeConfig
 import org.apache.tools.ant.util.DateUtils
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 
 import java.util.concurrent.Callable
@@ -32,34 +30,21 @@ import static org.assertj.core.api.Assertions.fail
  * Optional parameters for wait interval and abort on failure.
  */
 @Slf4j
-@CompileStatic
-@TypeChecked
 class JenkinsPipelineTestIT {
 
     int numberOfExampleRepos = 3
     boolean abortOnFail = true
-
-    static int sleepInterval = 2000
     int retry = 2;
 
-    static String currentIP = null;
-
-
-//    def k3dAddress = System.getenv("K3D_ADDRESS") ?: "jenkins.localhost"
-//    JenkinsPipelineTestIT.main([
-//    "--url", "http://172.18.0.2:9090",
-//    "--user", "admin",
-//    "--password", "admin",
-//    "--writeFailedLog",
-//    "--fail",
-//    "--retry", "2"
-//    ] as String[])
+    static int sleepInterval = 2000
+    //to get IP one time via kubernetes - lazy init.
+    static String INTERNAL_IP = 'InternalIP'
+    static String CURRENT_IP = null;
 
     static String findIP() {
-        if (currentIP) {
-            return currentIP
+        if (CURRENT_IP && CURRENT_IP.length() > 0) {
+            return CURRENT_IP
         } else {
-
 
             String kubeConfigPath = System.getenv("HOME") + "/.kube/config"; ;
             ApiClient client =
@@ -70,19 +55,23 @@ class JenkinsPipelineTestIT {
 
             def nodes = api.listNode().execute()
             def items = nodes.getItems()
-            for (V1Node i : items) {
-                println i.toJson()
-                def addresses1 = i.status.addresses
-                for (V1NodeAddress a : addresses1) {
-                    if ('InternalIP'.equals(a.type)) {
-                        currentIP = a.address
-                        return a.address
+            items.each { V1Node node ->
+                println node.toJson()
+                def addresses1 = node.status.addresses
+                addresses1.each { V1NodeAddress adress ->
+                    if (INTERNAL_IP.equals(adress.type)) {
+                        CURRENT_IP = adress.address
+                        return adress.address
                     }
                 }
             }
         }
-
         return null;
+    }
+
+    @BeforeAll
+    static void setIP() {
+        findIP()
     }
 
     @Test
@@ -94,14 +83,14 @@ class JenkinsPipelineTestIT {
 
     @Test
     void checkExpectedJenkinsJobs() {
-        JenkinsHandler js = new JenkinsHandler()
+        JenkinsHandler js = new JenkinsHandler(findIP())
         List<JobWithDetails> jobs = js.buildJobList()
         assertThat(jobs.size()).isEqualTo(numberOfExampleRepos)
     }
 
     @Test
     void checkJenkinsIsAvailable() {
-        JenkinsHandler js = new JenkinsHandler()
+        JenkinsHandler js = new JenkinsHandler(findIP())
         JenkinsServer jenkins = js.get()
         assertThat(jenkins).isNotNull()
         assertThat(jenkins.running).isTrue()
@@ -114,7 +103,7 @@ class JenkinsPipelineTestIT {
         List<Future<PipelineResult>> buildFutures = new ArrayList<Future<PipelineResult>>()
 
         try {
-            JenkinsHandler js = new JenkinsHandler()
+            JenkinsHandler js = new JenkinsHandler(findIP())
 
             List<JobWithDetails> jobs = js.buildJobList()
             assertThat(jobs.size()).isEqualTo(numberOfExampleRepos)
@@ -186,10 +175,10 @@ class JenkinsPipelineTestIT {
 
 class JenkinsHandler {
     private JenkinsServer jenkins
-    String myIP = JenkinsPipelineTestIT.findIP()
-    String url = "http://" + myIP + ":9090"
+    String url
 
-    JenkinsHandler() {
+    JenkinsHandler(String ip) {
+        url = "http://${ip}:9090"
         println url
         this.jenkins = new JenkinsServer(new URI(url), "admin", "admin")
     }
