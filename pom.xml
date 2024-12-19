@@ -533,7 +533,7 @@
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
               <includes>
-                <include>**/*LongIT<include>
+                <include>**/*LongIT</include>
                 <include>**/*IT</include>
               </includes>
             </configuration>
