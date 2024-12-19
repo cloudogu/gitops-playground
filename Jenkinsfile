@@ -116,12 +116,11 @@ node('high-cpu') {
                             returnStdout: true
                     ).trim()
 
-                    mvn.useLocalRepoFromJenkins = true
-
                     int ret = 0
                     // after parallel because of exceute maven tests, again
                     if (params.longRunningTests) {
                         withEnv([ "KUBECONFIG=${env.WORKSPACE}/.kube/config", "ADDITIONAL_DOCKER_RUN_ARGS=--network=host","K3D_ADDRESS=${k3dAddress}"]) {
+                            mvn.useLocalRepoFromJenkins = true
                             mvn 'failsafe:integration-test -Dmaven.test.failure.ignore=true -Plong-running'
                             // Archive test results. Makes build unstable on failed tests.
                             junit testResults: '**/target/failsafe-reports/TEST-*.xml'
@@ -129,6 +128,7 @@ node('high-cpu') {
                     } else {
 
                         withEnv([ "KUBECONFIG=${env.WORKSPACE}/.kube/config", "ADDITIONAL_DOCKER_RUN_ARGS=--network=host","K3D_ADDRESS=${k3dAddress}"]) {
+                            mvn.useLocalRepoFromJenkins = true
                             mvn 'failsafe:integration-test -Dmaven.test.failure.ignore=true'
                             // Archive test results. Makes build unstable on failed tests.
                             junit testResults: '**/target/failsafe-reports/TEST-*.xml'
