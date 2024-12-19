@@ -61,19 +61,18 @@ class GOPSmoketestsIT extends KubenetesApiTestSetup {
         String expectedNamespaces = ["argocd",
                                      "cert-manager",
                                      "default",
-                                     "example-apps-production",
-                                     "example-apps-staging",
+//                                     "example-apps-production",
+//                                     "example-apps-staging",
                                      "ingress-nginx",
-                                     "kube-node-lease",
-                                     "kube-public",
+//                                     "kube-node-lease",
+//                                     "kube-public",
                                      "kube-system",
                                      "monitoring",
                                      "secrets"]
 
         V1NamespaceList list = api.listNamespace().execute()
         list.items.each {println it.getMetadata().getName()}
-        // TODO: Thomas fix
-//        assertThat(list.getItems().containsAll(expectedNamespaces)).isTrue()
+        assertThat(list.getItems().containsAll(expectedNamespaces)).isTrue()
     }
 
     /**
