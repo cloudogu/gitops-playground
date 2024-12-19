@@ -30,7 +30,7 @@ import static org.assertj.core.api.Assertions.fail
  * Optional parameters for wait interval and abort on failure.
  */
 @Slf4j
-class JenkinsPipelineTestIT {
+class JenkinsPipelineTestLongIT {
 
     int numberOfExampleRepos = 3
     boolean abortOnFail = true
@@ -218,7 +218,7 @@ class JenkinsHandler {
     BuildWithDetails waitForBuild(QueueItem item, String executorId) {
         while (jenkins.getBuild(item).details().isBuilding()) {
             // log.debug("[$executorId] Building..")
-            Thread.sleep(JenkinsPipelineTestIT.sleepInterval)
+            Thread.sleep(JenkinsPipelineTestLongIT.sleepInterval)
         }
 
         return jenkins.getBuild(item).details()
@@ -227,7 +227,7 @@ class JenkinsHandler {
     QueueItem getQueueItemFromRef(QueueReference ref, String executorId) {
         while (jenkins.getQueueItem(ref).getExecutable() == null) {
             // log.debug("[$executorId] Build has not yet started..")
-            Thread.sleep(JenkinsPipelineTestIT.sleepInterval)
+            Thread.sleep(JenkinsPipelineTestLongIT.sleepInterval)
         }
         return jenkins.getQueueItem(ref)
 
