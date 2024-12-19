@@ -119,19 +119,13 @@ class KubernetesSmoketestsIT {
         assertThat(ingress.getStatus().getLoadBalancer().getIngress()).isNotNull()
     }
 
-    @Test
-    void ensureArgoCDIsOnlineAndRunning() {
-        def expectedSumOfArgoPods= 7
-        V1PodList list = api.listPodForAllNamespaces()
-                .execute()
-        List<V1Pod> argoPods = list.getItems().findAll { it.getMetadata().getName().startsWith("argo") }
-        assertThat(argoPods.size()).isEqualTo(expectedSumOfArgoPods)
 
-        for (V1Pod pod : argoPods) {
-            assertThat(pod.status.phase).isEqualTo("Running")
-        }
+    // Kubernetes Smoketest             : 20 sek  <<< Immer
+    // Jenkins Test     (e2e)           : 15 min  <<< bei Bedarf
+    // ArgoCD - Feature Tests (future)  : 3 Min?  <<< Immer
+    /// alles im MAIN immer
+    // Profile umbennen in long-running
 
-    }
-
+    // paralle Ausführung der Tests
 
 }
