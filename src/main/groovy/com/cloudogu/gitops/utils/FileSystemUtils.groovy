@@ -146,6 +146,7 @@ class FileSystemUtils {
         File.createTempDir("gitops-playground-").toPath()
     }
 
+
     Path createTempFile() {
         def file = File.createTempFile("gitops-playground-", '')
         file.deleteOnExit()
@@ -158,6 +159,16 @@ class FileSystemUtils {
         return (ys.parse path) as Map
     }
 
+    Path writeTempFile(Map mapValues){
+        def tmpHelmValues = createTempFile()
+        writeYaml(mapValues, tmpHelmValues.toFile())
+        return tmpHelmValues
+    }
+
+    // Note that YAML builder seems to use double quotes to escape strings. So for example:
+    // This:     log-format-upstream: '..."$request"...'
+    // Becomes:  log-format-upstream: "...\"$request\"..."
+    // Harder to read but same payload. Not sure if we can do something about it.
     void writeYaml(Map yaml, File file) {
         def builder = new YamlBuilder()
         builder yaml

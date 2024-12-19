@@ -138,10 +138,9 @@ class CertManagerTest {
         // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
         new CertManager(config, new FileSystemUtils() {
             @Override
-            Path createTempFile() {
-                def ret = super.createTempFile()
-                temporaryYamlFile = Path.of(ret.toString().replace(".ftl", "")) // Path after template invocation
-
+            Path writeTempFile(Map mapValues) {
+                def ret = super.writeTempFile(mapValues)
+                temporaryYamlFile = Path.of(ret.toString().replace(".ftl", ""))
                 return ret
             }
         }, deploymentStrategy, new K8sClientForTest(config), airGappedUtils)

@@ -61,7 +61,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
     void enable() {
         def namePrefix = config.application.namePrefix
 
-        def templatedMap = new YamlSlurper().parseText(new TemplatingEngine().template(new File(HELM_VALUES_PATH), [
+        def templatedMap = templateToMap(HELM_VALUES_PATH, [
                 namePrefix        : namePrefix,
                 podResources      : config.application.podResources,
                 monitoring        : [
@@ -88,10 +88,9 @@ class PrometheusStack extends Feature implements FeatureWithImage {
                 config: config,
                 // Allow for using static classes inside the templates
                 statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
-        ])) as Map
-        
-        def valuesFromConfig = config.features.monitoring.helm.values
-        def mergedMap = MapUtils.deepMerge(valuesFromConfig, templatedMap)
+        ])
+        def helmConfig = config.features.monitoring.helm
+        def mergedMap = MapUtils.deepMerge(helmConfig.values, templatedMap)
 
         // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo
         k8sClient.createSecret(
@@ -141,10 +140,8 @@ class PrometheusStack extends Feature implements FeatureWithImage {
             clusterResourcesRepo.commitAndPush('Adding namespace-isolated RBAC and network policies if enabled.')
         }
 
-        def tmpHelmValues = fileSystemUtils.createTempFile()
-        fileSystemUtils.writeYaml(mergedMap, tmpHelmValues.toFile())
+        def tempValuesPath = fileSystemUtils.writeTempFile(mergedMap)
 
-        def helmConfig = config.features.monitoring.helm
         if (config.application.mirrorRepos) {
             log.debug("Mirroring repos: Deploying prometheus from local git repo")
 
@@ -161,7 +158,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
                     prometheusVersion,
                     namespace,
                     'kube-prometheus-stack',
-                    tmpHelmValues, RepoType.GIT)
+                    tempValuesPath, RepoType.GIT)
         } else {
 
             deployer.deployFeature(
@@ -171,7 +168,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
                     helmConfig.version,
                     namespace,
                     'kube-prometheus-stack',
-                    tmpHelmValues)
+                    tempValuesPath)
         }
     }
 

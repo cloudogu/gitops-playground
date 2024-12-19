@@ -1,6 +1,5 @@
 package com.cloudogu.gitops.features
 
-import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.scmm.ScmmRepo
@@ -608,11 +607,9 @@ matchExpressions:
 
         new PrometheusStack(configuration, new FileSystemUtils() {
             @Override
-            Path createTempFile() {
-                def ret = super.createTempFile()
+            Path writeTempFile(Map mapValues) {
+                def ret = super.writeTempFile(mapValues)
                 temporaryYamlFilePrometheus = Path.of(ret.toString().replace(".ftl", ""))
-                // Path after template invocation
-
                 return ret
             }
         }, deploymentStrategy, k8sClient, airGappedUtils, repoProvider)

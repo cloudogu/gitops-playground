@@ -6,6 +6,7 @@ import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
+import com.cloudogu.gitops.utils.MapUtils
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
@@ -39,7 +40,6 @@ class Registry extends Feature {
         this.config = config
         this.fileSystemUtils = fileSystemUtils
         this.k8sClient = k8sClient
-        tmpHelmValues = fileSystemUtils.createTempFile()
     }
 
     @Override
@@ -51,16 +51,18 @@ class Registry extends Feature {
     void enable() {
 
         def helmConfig = config.registry.helm
-        
+
         Map yaml = [
                 service: [
                         nodePort: Config.DEFAULT_REGISTRY_PORT,
                         type: 'NodePort'
                 ]
         ]
+        def mergedMap = MapUtils.deepMerge(helmConfig.values, yaml)
+
+        def tempValuesPath = fileSystemUtils.writeTempFile(mergedMap)
         log.trace("Helm yaml to be applied: ${yaml}")
-        fileSystemUtils.writeYaml(yaml, tmpHelmValues.toFile())
-        
+
         if (config.registry.internalPort != Config.DEFAULT_REGISTRY_PORT) {
             /* Add additional node port
                30000 is needed as a static by docker via port mapping of k3d, e.g. 32769 -> 30000 on server-0 container
@@ -79,7 +81,7 @@ class Registry extends Feature {
                 helmConfig.version,
                 'default',
                 'docker-registry',
-                tmpHelmValues
+                tempValuesPath
         )
 
     }

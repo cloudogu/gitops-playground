@@ -42,8 +42,6 @@ class Vault extends Feature implements FeatureWithImage {
         this.fileSystemUtils = fileSystemUtils
         this.k8sClient = k8sClient
         this.airGappedUtils = airGappedUtils
-
-        tmpHelmValues = fileSystemUtils.createTempFile()
     }
 
     @Override
@@ -56,13 +54,12 @@ class Vault extends Feature implements FeatureWithImage {
         // Note that some specific configuration steps are implemented in ArgoCD
         def helmConfig = config.features.secrets.vault.helm
 
-        def yaml =  new YamlSlurper().parseText(
-                new TemplatingEngine().template(new File(HELM_VALUES_PATH), [
+        def templatedMap = templateToMap(HELM_VALUES_PATH, [
                 host: config.features.secrets.vault.url ? new URL(config.features.secrets.vault.url as String).host : '',
                 config: config,
                 // Allow for using static classes inside the templates
                 statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
-            ])) as Map
+            ])
 
         String vaultMode = config.features.secrets.vault.mode
         if (vaultMode == 'dev') {
@@ -83,6 +80,7 @@ class Vault extends Feature implements FeatureWithImage {
             k8sClient.createNamespace('secrets')
             k8sClient.createConfigMapFromFile(vaultPostStartConfigMap, 'secrets', postStartScript.absolutePath)
 
+            //modifies the templatedMap Object directly, merges values for dev mode
             MapUtils.deepMerge(
                     [
                             server: [
@@ -121,11 +119,14 @@ class Vault extends Feature implements FeatureWithImage {
                                                     "/var/opt/scripts/${postStartScript.name} 2>&1 | tee /tmp/dev-post-start.log"
                                     ],
                             ]
-                    ], yaml)
+                    ], templatedMap)
         }
+        //merge custom helm values into chart
+        MapUtils.deepMerge(helmConfig.values,templatedMap)
 
-        log.trace("Helm yaml to be applied: ${yaml}")
-        fileSystemUtils.writeYaml(yaml, tmpHelmValues.toFile())
+        log.trace("Helm yaml to be applied: ${templatedMap}")
+
+        def tempValuesPath = fileSystemUtils.writeTempFile(templatedMap)
 
         if (config.application.mirrorRepos) {
             log.debug('Mirroring repos: Deploying vault from local git repo')
@@ -143,7 +144,7 @@ class Vault extends Feature implements FeatureWithImage {
                     vaultVersion,
                     namespace,
                     'vault',
-                    tmpHelmValues, DeploymentStrategy.RepoType.GIT
+                    tempValuesPath, DeploymentStrategy.RepoType.GIT
             )
         } else {
             deployer.deployFeature(
@@ -153,7 +154,7 @@ class Vault extends Feature implements FeatureWithImage {
                     helmConfig.version,
                     namespace,
                     'vault',
-                    tmpHelmValues
+                    tempValuesPath
             )
         }
     }

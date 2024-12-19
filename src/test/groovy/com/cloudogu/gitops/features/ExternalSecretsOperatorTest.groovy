@@ -155,11 +155,12 @@ class ExternalSecretsOperatorTest {
         new ExternalSecretsOperator(
                 config,
                 new FileSystemUtils() {
-
                     @Override
-                    Path createTempFile() {
-                        temporaryYamlFile = super.createTempFile()
-                        return temporaryYamlFile
+                    Path writeTempFile(Map mergeMap) {
+                        def ret = super.writeTempFile(mergeMap)
+                        temporaryYamlFile = Path.of(ret.toString().replace(".ftl", ""))
+                        // Path after template invocation
+                        return ret
                     }
                 }, deploymentStrategy, k8sClient, airGappedUtils)
     }
