@@ -33,16 +33,6 @@ controller:
     node: jenkins
 
   runAsUser: 1000
-  JCasC:
-    defaultConfig: true
-    configScripts:
-      welcome-message: |
-        jenkins:
-          systemMessage: Welcome to our CI\CD server.  This Jenkins is configured and managed 'as code'.
-
-  sidecars:
-    configAutoReload:
-      enabled: false
 
   admin:
     # Use reproducible admin password from secret. Change there, if necessary.
@@ -84,7 +74,6 @@ controller:
           find docker -type f -not -name 'docker' -delete;
           # Delete containerd, etc. We only need the docker CLI
           # Note: "wget -O- | tar" leads to the folder being owned by root, even when creating it beforehand?!
-        # That's
       volumeMounts:
         - name: host-tmp
           mountPath: /host-tmp
@@ -128,7 +117,7 @@ agent:
   envVars:
     - name: PATH
       # Add /tmp/docker to the path
-      value: /usr/local/openjdk-11/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/tmp/docker
+      value: /opt/java/openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/tmp/docker
   volumes:
     - type: HostPath
       # See workingDir
@@ -140,7 +129,7 @@ agent:
       hostPath: /tmp/gitops-playground-jenkins-agent
       mountPath: /home/jenkins
     - type: HostPath
-      # For this demo, allow jenkins controller to access docker client
+      # When run locally, allow jenkins controller to access docker client
       hostPath: /var/run/docker.sock
       mountPath: /var/run/docker.sock
     - type: HostPath
