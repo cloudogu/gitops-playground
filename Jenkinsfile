@@ -119,28 +119,6 @@ node('high-cpu') {
                     ).trim()
 
                     int ret = 0
-                    parallel(
-                            'failsafe': {
-                                withEnv([ "KUBECONFIG=${env.WORKSPACE}/.kube/config", "ADDITIONAL_DOCKER_RUN_ARGS=--network=host","K3D_ADDRESS=${k3dAddress}"]) {
-                                    mvn 'failsafe:integration-test -Dmaven.test.failure.ignore=true'
-                                    // Archive test results. Makes build unstable on failed tests.
-                                    junit testResults: '**/target/failsafe-reports/TEST-*.xml'
-                                }
-                            },
-                            'e2e.groovy': {
-                                new Docker(this).image(groovyImage)
-                                // Avoids errors ("unable to resolve class") probably due to missing HOME for container in JVM.
-                                        .mountJenkinsUser()
-                                        .inside("--network=${k3dNetwork}") {
-                                            // removing m2 and grapes avoids issues where grapes primarily resolves local m2 and fails on missing versions
-                                            sh "rm -rf .m2/"
-                                            sh "rm -rf .groovy/grapes"
-
-                                            ret = sh(returnStatus: true,
-                                                    script: "groovy ./scripts/e2e.groovy --url http://${k3dAddress}:9090 --user admin --password admin --writeFailedLog --fail --retry 2")
-                                        }
-                            }
-                    )
                     // after parallel because of exceute maven tests, again
                     if (params.runAsyncTest) {
                         withEnv([ "KUBECONFIG=${env.WORKSPACE}/.kube/config", "ADDITIONAL_DOCKER_RUN_ARGS=--network=host","K3D_ADDRESS=${k3dAddress}"]) {
@@ -148,9 +126,14 @@ node('high-cpu') {
                             // Archive test results. Makes build unstable on failed tests.
                             junit testResults: '**/target/failsafe-reports/TEST-*.xml'
                         }
+                    } else {
+
+                        withEnv([ "KUBECONFIG=${env.WORKSPACE}/.kube/config", "ADDITIONAL_DOCKER_RUN_ARGS=--network=host","K3D_ADDRESS=${k3dAddress}"]) {
+                            mvn 'failsafe:integration-test -Dmaven.test.failure.ignore=true'
+                            // Archive test results. Makes build unstable on failed tests.
+                            junit testResults: '**/target/failsafe-reports/TEST-*.xml'
+                            }
                     }
-
-
 
                     if (ret > 0 || currentBuild.result == 'UNSTABLE') {
                         if (fileExists('playground-logs-of-failed-jobs')) {

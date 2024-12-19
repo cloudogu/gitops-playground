@@ -534,6 +534,7 @@
             <configuration>
               <includes>
                 <include>**/async/*IT.java</include>
+                <include>**/*IT.java</include>
               </includes>
             </configuration>
           </plugin>
