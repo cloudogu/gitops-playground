@@ -3,7 +3,7 @@
 # See https://github.com/rancher/k3d/releases
 # This variable is also read in Jenkinsfile
 K3D_VERSION=5.7.4
-# When updating please also adapt in Dockerfile, vars.tf and ApplicationConfigurator.groovy
+# When updating please also adapt in Dockerfile, vars.tf and Config.groovy
 K8S_VERSION=1.29.8
 K3S_VERSION="rancher/k3s:v${K8S_VERSION}-k3s1"
 

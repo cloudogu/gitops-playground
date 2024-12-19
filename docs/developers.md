@@ -229,7 +229,7 @@ repository so need to be upgraded regularly.
 * Kubernetes [in Terraform](../terraform/vars.tf) and locally [k3d](../scripts/init-cluster.sh),
 * [k3d](../scripts/init-cluster.sh)
 * [Groovy libs](../pom.xml) + [Maven](../.mvn/wrapper/maven-wrapper.properties)
-* Installed components
+* Installed components, most versions are maintained in [Config.groovy](../src/main/groovy/com/cloudogu/gitops/config/Config.groovy)
   * Jenkins
     * Helm Chart
     * Plugins
@@ -240,9 +240,10 @@ repository so need to be upgraded regularly.
   * SCM-Manager Helm Chart + Plugins
   * Docker Registry Helm Chart
   * ArgoCD Helm Chart
-  * Grafana + Prometheus [Helm Charts](../src/main/groovy/com/cloudogu/gitops/ApplicationConfigurator.groovy)
-  * Vault + ExternalSerets Operator [Helm Charts](../src/main/groovy/com/cloudogu/gitops/ApplicationConfigurator.groovy)
-  * Ingress-nginx [Helm Charts](https://artifacthub.io/packages/helm/ingress-nginx/ingress-nginx)
+  * Grafana + Prometheus Helm Charts
+  * Vault + ExternalSerets Operator Helm Charts
+  * Ingress-nginx Helm Charts
+  * Cert-Manager
   * Mailhog
 * Applications
   * GitOps-build-lib + `buildImages`
