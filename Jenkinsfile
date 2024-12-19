@@ -59,7 +59,7 @@ node('high-cpu') {
                                 mvn 'clean test -Dmaven.test.failure.ignore=true'
                                  junit testResults: '**/target/surefire-reports/TEST-*.xml'
                             }
-                        }
+                        },
                         'Build images': {
                             stage('Build images') {
                                 imageNames += createImageName(git.commitHashShort)
