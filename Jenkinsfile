@@ -116,6 +116,8 @@ node('high-cpu') {
                             returnStdout: true
                     ).trim()
 
+                    mvn.useLocalRepoFromJenkins = true
+
                     int ret = 0
                     // after parallel because of exceute maven tests, again
                     if (params.longRunningTests) {
