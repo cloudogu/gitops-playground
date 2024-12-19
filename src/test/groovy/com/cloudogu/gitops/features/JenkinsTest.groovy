@@ -38,6 +38,7 @@ class JenkinsTest {
     void setup() {
         // getInternalNodeIp -> waitForNode()
         when(k8sClient.waitForNode()).thenReturn("node/${expectedNodeName}".toString())
+        when(k8sClient.run(anyString(), anyString(), anyString(), anyMap(), any())).thenReturn('')
     }
     
     @Test
@@ -53,7 +54,11 @@ class JenkinsTest {
         config.jenkins.internalBashImage = 'bash:42'
         config.jenkins.internalDockerClientVersion = '23'
         
-        when(k8sClient.run(anyString(), anyString(), anyString(), anyMap(), any())).thenReturn('42')
+        when(k8sClient.run(anyString(), anyString(), anyString(), anyMap(), any())).thenReturn('''
+root:x:0:
+daemon:x:1:
+docker:x:42:me
+me:x:1000:''')
 
         jenkins.install()
         
@@ -91,10 +96,14 @@ class JenkinsTest {
 
     @Test
     void 'Installs Jenkins without dockerGid'() {
+        when(k8sClient.run(anyString(), anyString(), anyString(), anyMap(), any())).thenReturn('''
+root:x:0:
+daemon:x:1:
+me:x:1000:''')
         createJenkins().install()
 
-        assertThat(parseActualYaml()['agent']['runAsUser']).isEqualTo(0)
-        assertThat(parseActualYaml()['agent']['runAsGroup']).isEqualTo(133)
+        assertThat(parseActualYaml()['agent']['runAsUser']).isEqualTo('0')
+        assertThat(parseActualYaml()['agent']['runAsGroup']).isEqualTo('133')
     }
 
     @Test

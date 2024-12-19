@@ -33,7 +33,7 @@ class HelmStrategy implements DeploymentStrategy {
 
         String prefixedNamespace = "${namePrefix}${namespace}"
         log.debug("Imperatively deploying helm release ${releaseName} basing on chart ${chartOrPath} from ${repoURL}, " +
-                "version ${version}, into namespace ${prefixedNamespace}. Using values:\n${helmValuesPath.text}")
+                "version ${version}, into namespace ${prefixedNamespace}. Using values:\n${helmValuesPath.toFile().text}")
         
         helmClient.addRepo(repoName, repoURL)
         helmClient.upgrade(releaseName, "$repoName/$chartOrPath",

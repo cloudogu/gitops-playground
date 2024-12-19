@@ -211,12 +211,12 @@ class K8sClient {
     }
 
     String run (String name, String image, String namespace = '', Map overrides = [:], String... params) {
-        String overridesJson =  overrides.isEmpty() ? '' : new JsonBuilder(overrides).toPrettyString()
+        
         def command1 = kubectl('run', name)
                 .mandatory('--image', image)
                 .namespace(namespace)
                 .optional(params)
-                .optional('--overrides', overridesJson)
+                .optional('--overrides', mapToJson(overrides, 'kubectl run overrides'))
                 .build()
         
         commandExecutor.execute(command1).stdOut
@@ -300,7 +300,7 @@ class K8sClient {
         return output.stdOut
     }
 
-    Kubectl kubectl(String... args) {
+    private Kubectl kubectl(String... args) {
         new Kubectl(args)
     }
 
@@ -351,6 +351,17 @@ class K8sClient {
                 .build()
         CommandExecutor.Output patchOutput = commandExecutor.execute(patchCommand)
         log.debug("Service ${serviceName} in namespace ${namespace} successfully patched with nodePort ${newNodePort} for port ${portName}.")
+    }
+
+    private static String mapToJson(Map kubectlJson, String debugPrefix) {
+        if (kubectlJson.isEmpty()) {
+            return ''
+        }
+
+        JsonBuilder json = new JsonBuilder(kubectlJson)
+        log.debug("${debugPrefix} JSON pretty printed:\n${json.toPrettyString()}")
+        // Note that toPrettyString() will lead to empty results in some shell, e.g. plain sh 🧐 
+        return json.toString()
     }
 
     private void validateInputForPatch(String serviceName, String namespace, String portName, int newNodePort) {
