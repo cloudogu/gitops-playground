@@ -51,7 +51,10 @@ class ArgoCdTestIT extends KubenetesApiTestSetup {
         if (list && !list.items.isEmpty()) {
 
             List<V1Pod> argoPods = list.getItems().findAll { it.getMetadata().getName().startsWith("argo") }
-            return argoPods.size() == 7
+            if (argoPods.size() == 7)
+            {
+                return "Running".equals(argoPods.get(0).status.phase)
+            }
         }
         return false
     }
