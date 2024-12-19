@@ -522,7 +522,7 @@
   </pluginRepositories>
   <profiles>
     <profile>
-      <id>async-tests</id>
+      <id>long-running</id>
       <activation>
         <activeByDefault>false</activeByDefault>
       </activation>
@@ -533,8 +533,8 @@
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
               <includes>
-                <include>**/async/*IT.java</include>
-                <include>**/*IT.java</include>
+                <include>**/*LongIT<include>
+                <include>**/*IT</include>
               </includes>
             </configuration>
           </plugin>
