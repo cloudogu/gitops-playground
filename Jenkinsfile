@@ -15,7 +15,8 @@ properties([
         // If this happens to occur often, add the following here: disableConcurrentBuilds(),
 
         parameters([
-                booleanParam(defaultValue: false, name: 'forcePushImage', description: 'Pushes the image with the current git commit as tag, even when it is on a branch')
+                booleanParam(defaultValue: false, name: 'forcePushImage', description: 'Pushes the image with the current git commit as tag, even when it is on a branch'),
+                booleanParam(defaultValue: false, name: 'runAsyncTest', description: 'Executes long running async integrationtests like testing ArgoCD feature deployment')
         ])
 ])
 
@@ -119,6 +120,14 @@ node('high-cpu') {
 
                     int ret = 0
                     parallel(
+                            'async-integration-tests': {
+                                if (params.runAsyncTest){
+                                    withEnv([ "KUBECONFIG=${env.WORKSPACE}/.kube/config", "ADDITIONAL_DOCKER_RUN_ARGS=--network=host","K3D_ADDRESS=${k3dAddress}"]) {
+                                        mvn 'failsafe:integration-test -Dmaven.test.failure.ignore=true -Pasync-tests'
+                                        // Archive test results. Makes build unstable on failed tests.
+                                        junit testResults: '**/target/failsafe-reports/TEST-*.xml'
+                            }
+                            },
                             'failsafe': {
                                 withEnv([ "KUBECONFIG=${env.WORKSPACE}/.kube/config", "ADDITIONAL_DOCKER_RUN_ARGS=--network=host","K3D_ADDRESS=${k3dAddress}"]) {
                                     mvn 'failsafe:integration-test -Dmaven.test.failure.ignore=true'
