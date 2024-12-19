@@ -1,8 +1,11 @@
 #!/usr/bin/env groovy
 package com.cloudogu.gitops.integration
 
+
 import com.offbytwo.jenkins.JenkinsServer
 import com.offbytwo.jenkins.model.*
+import groovy.transform.CompileStatic
+import groovy.transform.TypeChecked
 import groovy.util.logging.Slf4j
 import io.kubernetes.client.openapi.ApiClient
 import io.kubernetes.client.openapi.Configuration
@@ -29,6 +32,8 @@ import static org.assertj.core.api.Assertions.fail
  * Optional parameters for wait interval and abort on failure.
  */
 @Slf4j
+@CompileStatic
+@TypeChecked
 class JenkinsPipelineTestIT {
 
     int numberOfExampleRepos = 3
@@ -93,6 +98,7 @@ class JenkinsPipelineTestIT {
         List<JobWithDetails> jobs = js.buildJobList()
         assertThat(jobs.size()).isEqualTo(numberOfExampleRepos)
     }
+
     @Test
     void checkJenkinsIsAvailable() {
         JenkinsHandler js = new JenkinsHandler()
@@ -180,8 +186,8 @@ class JenkinsPipelineTestIT {
 
 class JenkinsHandler {
     private JenkinsServer jenkins
-    String myIP =  JenkinsPipelineTestIT.findIP()
-    String url = "http://" + myIP +":9090"
+    String myIP = JenkinsPipelineTestIT.findIP()
+    String url = "http://" + myIP + ":9090"
 
     JenkinsHandler() {
         println url
@@ -282,7 +288,8 @@ class PipelineExecutor {
     }
 
     Future<PipelineResult> run(JenkinsHandler js, JobWithDetails job, int retry) {
-        String executorId = new Random().with { (1..3).collect { (('a'..'z')).join()[nextInt((('a'..'z')).join().length())] }.join() }
+
+        String executorId = defineIdExecutorID()
         return executor.submit(() -> {
             println "[$executorId] ${StringUtils.reduceToName(job.url)} started.."
             QueueReference ref = job.build(true)
@@ -290,6 +297,20 @@ class PipelineExecutor {
             return new PipelineResult(executorId, job, details, retry)
         } as Callable) as Future<PipelineResult>
     }
+
+    static String defineIdExecutorID() {
+        Random executorId = new Random()
+        String result = executorId.with {
+            Range<Integer> three = (1..3)
+            three.collect {
+                int aToZ2 = ('a'..'z').join('').length()
+                Range<String> aToZ = ('a'..'z')
+                aToZ.join('')[new Random().nextInt(aToZ2)]
+            }.join('')
+        }
+        return result
+    }
+
 }
 
 class PipelineResult {
