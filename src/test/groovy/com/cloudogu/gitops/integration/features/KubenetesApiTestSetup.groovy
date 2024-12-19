@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.fail
 abstract class KubenetesApiTestSetup {
     static String kubeConfigPath;
     CoreV1Api api
-    int TIME_TO_WAIT = 5;
+    int TIME_TO_WAIT = 7;
     int RETRY_SECONDS = 15
 
     /**
