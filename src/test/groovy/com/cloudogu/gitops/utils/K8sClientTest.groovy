@@ -591,17 +591,7 @@ class K8sClientTest {
         k8sClient.run('my-pod', 'alpine', 'my-ns', overrides, '--restart=Never', '-ti', '--rm', '--quiet')
 
         assertThat(commandExecutor.actualCommands[0]).startsWith("kubectl run my-pod --image alpine -n foo-my-ns --restart=Never -ti --rm --quiet")
-        assertThat(commandExecutor.actualCommands[0]).contains(
-'''--overrides {
-    "spec": {
-        "containers": [
-            {
-                "name": "tmp-docker-gid-grepper",
-                "image": "bash:5"
-            }
-        ]
-    }
-}'''.toString().trim())
+        assertThat(commandExecutor.actualCommands[0]).contains('{"spec":{"containers":[{"name":"tmp-docker-gid-grepper","image":"bash:5"}]}}'.toString().trim())
     }
 
     private Map parseActualYaml(String pathToYamlFile) {

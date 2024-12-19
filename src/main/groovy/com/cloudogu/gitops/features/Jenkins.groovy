@@ -80,21 +80,11 @@ class Jenkins extends Feature {
             k8sClient.createSecret('generic', 'jenkins-credentials', namespace,
                     new Tuple2('jenkins-admin-user', config.jenkins.username),
                     new Tuple2('jenkins-admin-password', config.jenkins.password))
-            
-            def dockerGid = k8sClient.run("tmp-docker-gid-grepper-${new Random().nextInt(10000)}",
-                    'irrelevant' /* Redundant, but mandatory param */, namespace, createGidGrepperOverrides(), 
-                    '--restart=Never', '-ti', '--rm', '--quiet')
-                    // --quiet is necessary to avoid 'pod deleted' output
-            if (!dockerGid) {
-                log.warn 'Unable to determine Docker Group ID (GID). Jenkins Agent pods will run as root user (UID 0)!'
-            } else {
-                log.debug("Using Docker Group ID (GID) ${dockerGid} for Jenkins Agent pods")
-            }
 
             def helmConfig = config.jenkins.helm
             def templatedMap = new YamlSlurper().parseText(
                     new TemplatingEngine().template(new File(HELM_VALUES_PATH),
-                            [dockerGid : dockerGid,
+                            [dockerGid : findDockerGid(),
                              config: config,
                              // Allow for using static classes inside the templates
                              statics: new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build()
@@ -209,6 +199,32 @@ class Jenkins extends Feature {
         }
     }
 
+    protected String findDockerGid() {
+        String gid = ''
+        def etcGroup = k8sClient.run("tmp-docker-gid-grepper-${new Random().nextInt(10000)}",
+                'irrelevant' /* Redundant, but mandatory param */, namespace, createGidGrepperOverrides(),
+                '--restart=Never', '-ti', '--rm', '--quiet')
+            // --quiet is necessary to avoid 'pod deleted' output
+        
+        def lines = etcGroup.split('\n')
+        for (String it : lines) {
+            def parts = it.split(":")
+            if (parts[0] == 'docker') {
+                gid = parts[2]
+                break
+            }
+        }
+
+        if (!gid) {
+            log.warn 'Unable to determine Docker Group ID (GID). Jenkins Agent pods will run as root user (UID 0)!\n' +
+                    "Group docker not found in /etc/group:\n${etcGroup}"
+            return ''
+        } else {
+            log.debug("Using Docker Group ID (GID) ${gid} for Jenkins Agent pods")
+            return gid
+        }
+    }
+
     Map createGidGrepperOverrides() {
         [
                 'spec': [
@@ -217,7 +233,7 @@ class Jenkins extends Feature {
                                         'name'        : 'tmp-docker-gid-grepper',
                                         // We use the same image for several tasks for performance and maintenance reasons 
                                         'image'       : "${config.jenkins.internalBashImage}",
-                                        'args'        : [ 'sh', '-c', 'cat /etc/group | grep docker | cut -d: -f3'],
+                                        'args'        : [ 'cat', '/etc/group' ],
                                         'volumeMounts': [
                                                 [
                                                         'name'     : 'group',
