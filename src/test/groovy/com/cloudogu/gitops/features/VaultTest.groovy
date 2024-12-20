@@ -34,7 +34,7 @@ class VaultTest {
     DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
     AirGappedUtils airGappedUtils = mock(AirGappedUtils)
     K8sClientForTest k8sClient = new K8sClientForTest(config)
-    File temporaryYamlFile
+    Path temporaryYamlFile
 
     @Test
     void 'is disabled via active flag'() {
@@ -169,8 +169,6 @@ class VaultTest {
         )
         createVault().install()
 
-        Path temporaryYamlFilePath = temporaryYamlFile.toPath()
-
         verify(deploymentStrategy).deployFeature(
                 'https://vault-reg',
                 'vault',
@@ -178,7 +176,7 @@ class VaultTest {
                 '42.23.0',
                 'secrets',
                 'vault',
-                temporaryYamlFilePath
+                temporaryYamlFile
         )
 
         assertThat(parseActualYaml()).doesNotContainKey('global')
@@ -206,7 +204,6 @@ class VaultTest {
 
         createVault().install()
 
-        Path temporaryYamlFilePath = temporaryYamlFile.toPath()
         def helmConfig = ArgumentCaptor.forClass(Config.HelmConfig)
         verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
         assertThat(helmConfig.value.chart).isEqualTo('vault')
@@ -215,7 +212,7 @@ class VaultTest {
         verify(deploymentStrategy).deployFeature(
                 'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/a/b',
                 'vault', '.', '1.2.3', 'secrets',
-                'vault', temporaryYamlFilePath, DeploymentStrategy.RepoType.GIT)
+                'vault', temporaryYamlFile, DeploymentStrategy.RepoType.GIT)
     }
 
     @Test
@@ -248,9 +245,9 @@ class VaultTest {
 
         new Vault(config, new FileSystemUtils() {
             @Override
-            Path createTempFile() {
-                def ret = super.createTempFile()
-                temporaryYamlFile = Path.of(ret.toString().replace(".ftl", "")).toFile()
+            Path writeTempFile(Map mapValues) {
+                def ret = super.writeTempFile(mapValues)
+                temporaryYamlFile = Path.of(ret.toString().replace(".ftl", ""))
                 return ret
             }
         }, k8sClient, deploymentStrategy, airGappedUtils)

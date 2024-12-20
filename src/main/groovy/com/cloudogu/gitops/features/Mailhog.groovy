@@ -8,6 +8,7 @@ import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
+import com.cloudogu.gitops.utils.MapUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
 import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
@@ -59,9 +60,9 @@ class Mailhog extends Feature implements FeatureWithImage {
 
     @Override
     void enable() {
-        
         String bcryptMailhogPassword = BCrypt.hashpw(password, BCrypt.gensalt(4))
-        def tmpHelmValues = new TemplatingEngine().replaceTemplate(fileSystemUtils.copyToTempDir(HELM_VALUES_PATH).toFile(), [
+
+        def templatedMap = templateToMap(HELM_VALUES_PATH, [
                 mail         : [
                         // Note that passing the URL object here leads to problems in Graal Native image, see Git history
                         host: config.features.mail.mailhogUrl ? new URL(config.features.mail.mailhogUrl ).host : "",
@@ -73,9 +74,13 @@ class Mailhog extends Feature implements FeatureWithImage {
                 config : config,
                 // Allow for using static classes inside the templates
                 statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
-        ]).toPath()
+        ])
 
         def helmConfig = config.features.mail.helm
+        def mergedMap = MapUtils.deepMerge(helmConfig.values, templatedMap)
+
+        def tempValuesPath = fileSystemUtils.writeTempFile(mergedMap)
+
 
         if (config.application.mirrorRepos) {
             log.debug("Mirroring repos: Deploying mailhog from local git repo")
@@ -93,7 +98,7 @@ class Mailhog extends Feature implements FeatureWithImage {
                     mailhogVersion,
                     namespace,
                     'mailhog',
-                    tmpHelmValues, DeploymentStrategy.RepoType.GIT)
+                    tempValuesPath, DeploymentStrategy.RepoType.GIT)
         } else {
             deployer.deployFeature(
                     helmConfig.repoURL ,
@@ -102,7 +107,7 @@ class Mailhog extends Feature implements FeatureWithImage {
                     helmConfig.version ,
                     namespace,
                     'mailhog',
-                    tmpHelmValues)
+                    tempValuesPath)
         }
     }
 

@@ -146,7 +146,7 @@ class Config {
         Boolean createImagePullSecrets = false
 
         @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
-        HelmConfig helm = new HelmConfig(
+        HelmConfigWithValues helm = new HelmConfigWithValues(
                 chart: 'docker-registry',
                 repoURL: 'https://helm.twun.io',
                 version: '2.2.3')
@@ -240,9 +240,8 @@ class Config {
                 chart: 'scm-manager',
                 repoURL: 'https://packages.scm-manager.org/repository/helm-v2-releases/',
                 version: '3.2.1',
-                values: [
-                        initialDelaySeconds: 120
-                ])
+                values: [:]
+        )
     }
 
     static class ApplicationSchema {
@@ -511,7 +510,7 @@ class Config {
                 repoURL: 'https://codecentric.github.io/helm-charts',
                 version: '5.0.1')
 
-        static class MailHelmSchema extends HelmConfig {
+        static class MailHelmSchema extends HelmConfigWithValues {
             @Option(names = ['--mailhog-image'], description = HELM_CONFIG_IMAGE_DESCRIPTION)
             @JsonPropertyDescription(HELM_CONFIG_IMAGE_DESCRIPTION)
             String image = 'ghcr.io/cloudogu/mailhog:v1.0.1'
@@ -589,7 +588,7 @@ class Config {
                     repoURL: 'https://charts.external-secrets.io',
                     version: '0.9.16'
             )
-            static class ESOHelmSchema extends HelmConfig {
+            static class ESOHelmSchema extends HelmConfigWithValues {
                 @Option(names = ['--external-secrets-image'], description = EXTERNAL_SECRETS_IMAGE_DESCRIPTION)
                 @JsonPropertyDescription(EXTERNAL_SECRETS_IMAGE_DESCRIPTION)
                 String image = ''
@@ -620,7 +619,7 @@ class Config {
                     repoURL: 'https://helm.releases.hashicorp.com',
                     version: '0.25.0'
             )
-            static class VaultHelmSchema extends HelmConfig {
+            static class VaultHelmSchema extends HelmConfigWithValues {
                 @Option(names = ['--vault-image'], description = VAULT_IMAGE_DESCRIPTION)
                 @JsonPropertyDescription(VAULT_IMAGE_DESCRIPTION)
                 String image = ''

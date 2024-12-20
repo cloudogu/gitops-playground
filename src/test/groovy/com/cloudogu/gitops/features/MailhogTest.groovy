@@ -147,6 +147,21 @@ class MailhogTest {
     }
 
     @Test
+    void 'custom values are injected correctly'() {
+        config.features.mail.helm.values = [
+                "containerPort": [
+                        "http": [
+                                "port": 9849003 //huge impossible port so it will not match any other configs
+                        ]
+                ]
+        ]
+        createMailhog().install()
+        assertThat(parseActualYaml()['containerPort'] as String).contains('9849003')
+
+    }
+
+
+    @Test
     void 'helm release is installed in air-gapped mode'() {
         config.application.mirrorRepos = true
         when(airGappedUtils.mirrorHelmRepoToGit(any(Config.HelmConfig))).thenReturn('a/b')
@@ -193,8 +208,8 @@ class MailhogTest {
 
         new Mailhog(config, new FileSystemUtils() {
             @Override
-            Path copyToTempDir(String filePath) {
-                Path ret = super.copyToTempDir(filePath)
+            Path writeTempFile(Map mergeMap) {
+                def ret = super.writeTempFile(mergeMap)
                 temporaryYamlFile = Path.of(ret.toString().replace(".ftl", ""))
                 // Path after template invocation
                 return ret

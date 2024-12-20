@@ -2,12 +2,11 @@ package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
-
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.TemplatingEngine
+import com.cloudogu.gitops.utils.MapUtils
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
@@ -48,13 +47,16 @@ class ScmManager extends Feature {
         if (config.scmm.internal) {
             def helmConfig = config.scmm.helm
 
-            def tmpHelmValues = new TemplatingEngine().replaceTemplate(fileSystemUtils.copyToTempDir(HELM_VALUES_PATH).toFile(), [
-                    host  : config.scmm.ingress,
-                    remote: config.application.remote,
-                    username:  config.scmm.username,
+            def templatedMap = templateToMap(HELM_VALUES_PATH, [
+                    host    : config.scmm.ingress,
+                    remote  : config.application.remote,
+                    username: config.scmm.username,
                     password: config.scmm.password,
-                    helm: config.scmm.helm
-            ]).toPath()
+                    helm    : config.scmm.helm
+            ])
+
+            def mergedMap = MapUtils.deepMerge(helmConfig.values, templatedMap)
+            def tempValuesPath = fileSystemUtils.writeTempFile(mergedMap)
 
             deployer.deployFeature(
                     helmConfig.repoURL,
@@ -63,7 +65,7 @@ class ScmManager extends Feature {
                     helmConfig.version,
                     'default',
                     'scmm',
-                    tmpHelmValues
+                    tempValuesPath
             )
         }
 
