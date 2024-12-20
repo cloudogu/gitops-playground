@@ -11,6 +11,16 @@
       },
       "additionalProperties" : false
     },
+    "HelmConfigWithValues-nullable" : {
+      "type" : [ "object", "null" ],
+      "properties" : {
+        "values" : {
+          "$ref" : "#/$defs/Map(String,Object)-nullable",
+          "description" : "Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration"
+        }
+      },
+      "additionalProperties" : false
+    },
     "Map(String,Object)-nullable" : {
       "type" : [ "object", "null" ]
     },
@@ -262,6 +272,10 @@
                 "image" : {
                   "type" : [ "string", "null" ],
                   "description" : "The image of the Helm chart to be installed"
+                },
+                "values" : {
+                  "$ref" : "#/$defs/Map(String,Object)-nullable",
+                  "description" : "Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration"
                 }
               },
               "additionalProperties" : false,
@@ -366,6 +380,10 @@
                       "type" : [ "string", "null" ],
                       "description" : "Sets image for external secrets operator"
                     },
+                    "values" : {
+                      "$ref" : "#/$defs/Map(String,Object)-nullable",
+                      "description" : "Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration"
+                    },
                     "webhookImage" : {
                       "type" : [ "string", "null" ],
                       "description" : "Sets image for external secrets operator's webhook"
@@ -387,6 +405,10 @@
                     "image" : {
                       "type" : [ "string", "null" ],
                       "description" : "Sets image for vault"
+                    },
+                    "values" : {
+                      "$ref" : "#/$defs/Map(String,Object)-nullable",
+                      "description" : "Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration"
                     }
                   },
                   "additionalProperties" : false,
@@ -517,8 +539,7 @@
           "description" : "Create image pull secrets for registry and proxy-registry for all GOP namespaces and helm charts. Uses proxy-username, read-only-username or registry-username (in this order).  Use this if your cluster is not auto-provisioned with credentials for your private registries or if you configure individual helm images to be pulled from the proxy-registry that requires authentication."
         },
         "helm" : {
-          "type" : [ "object", "null" ],
-          "additionalProperties" : false,
+          "$ref" : "#/$defs/HelmConfigWithValues-nullable",
           "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
         },
         "internalPort" : {
@@ -592,14 +613,7 @@
       "type" : [ "object", "null" ],
       "properties" : {
         "helm" : {
-          "type" : [ "object", "null" ],
-          "properties" : {
-            "values" : {
-              "$ref" : "#/$defs/Map(String,Object)-nullable",
-              "description" : "Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration"
-            }
-          },
-          "additionalProperties" : false,
+          "$ref" : "#/$defs/HelmConfigWithValues-nullable",
           "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
         },
         "password" : {
