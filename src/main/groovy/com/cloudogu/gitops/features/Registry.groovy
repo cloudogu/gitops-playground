@@ -22,6 +22,8 @@ class Registry extends Feature {
      * Local container port of the registry within the pod
      */
     public static final String CONTAINER_PORT = '5000'
+
+    String namespace = 'default'
     
     private Config config
     private DeploymentStrategy deployer
@@ -71,7 +73,7 @@ class Registry extends Feature {
              */
             k8sClient.createServiceNodePort('docker-registry-internal-port', 
                     CONTAINER_PORT, config.registry.internalPort.toString(),
-                    'default')
+                    namespace)
         }
         
         deployer.deployFeature(
@@ -79,7 +81,7 @@ class Registry extends Feature {
                 'registry',
                 helmConfig.chart,
                 helmConfig.version,
-                'default',
+                namespace,
                 'docker-registry',
                 tempValuesPath
         )

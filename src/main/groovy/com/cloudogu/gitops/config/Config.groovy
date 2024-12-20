@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.databind.*
-import com.fasterxml.jackson.databind.introspect.POJOPropertyBuilder
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.ser.BeanPropertyWriter
 import com.fasterxml.jackson.databind.ser.BeanSerializerModifier
@@ -16,8 +15,7 @@ import picocli.CommandLine.Mixin
 import picocli.CommandLine.Option
 
 import static com.cloudogu.gitops.config.ConfigConstants.*
-import static picocli.CommandLine.ScopeType
-
+import static picocli.CommandLine.ScopeType 
 /**
  * The global configuration object.
  *
@@ -161,6 +159,17 @@ class Config {
           For production we overwrite this when config.jenkins["url"] is set.
           See addJenkinsConfig() and the comment at scmm.urlForJenkins */
         String urlForScmm = "http://jenkins"
+        String ingress = ''
+        // Bash image used with internal Jenkins only 
+        String internalBashImage = 'bash:5'
+        /* Docker client image, downloaded on internal Jenkins only
+          For updating, delete pvc jenkins-docker-client
+          When updating, we should not use too recent version, to not break support for LTS distros like debian
+          https://docs.docker.com/engine/install/debian/#os-requirements -> oldstable
+          For example:
+          $ curl -s https://download.docker.com/linux/debian/dists/bullseye/stable/binary-amd64/Packages  | grep -EA5 'Package\: docker-ce$' | grep Version | sort | uniq | tail -n1
+          Version: 5:27.1.1-1~debian.11~bullseye */
+        String internalDockerClientVersion = '27.1.2'
 
         @Option(names = ['--jenkins-url'], description = JENKINS_URL_DESCRIPTION)
         @JsonPropertyDescription(JENKINS_URL_DESCRIPTION)
@@ -191,18 +200,10 @@ class Config {
         Map<String, String> additionalEnvs = [:]
 
         @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
-        JenkinsHelmSchema helm = new JenkinsHelmSchema()
-        static class JenkinsHelmSchema {
-            // Once these can be used get rid of this class and use HelmConfig instead
-            // String chart = "jenkins"
-            // String repoURL = "https://charts.jenkins.io"
-            /* When Upgrading helm chart, also upgrade controller.tag in jenkins/values.yaml
-            In addition:
-             - Also upgrade plugins. See docs/developers.md
-             */
-            @JsonPropertyDescription(HELM_CONFIG_VERSION_DESCRIPTION)
-            String version = '5.5.11'
-        }
+        HelmConfigWithValues helm = new HelmConfigWithValues(
+                chart: 'jenkins',
+                repoURL: 'https://charts.jenkins.io',
+                version: '5.5.11')
     }
 
     static class ScmmSchema {

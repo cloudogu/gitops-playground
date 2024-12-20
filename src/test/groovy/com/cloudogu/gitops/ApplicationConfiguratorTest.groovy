@@ -5,7 +5,6 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
 import com.cloudogu.gitops.utils.TestLogger
-import io.micronaut.context.ApplicationContext
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -14,13 +13,12 @@ import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.anyString
 import static org.mockito.Mockito.mock
-import static org.mockito.Mockito.when
+import static org.mockito.Mockito.when 
 
 class ApplicationConfiguratorTest {
 
     static final String EXPECTED_REGISTRY_URL = 'http://my-reg'
     static final int EXPECTED_REGISTRY_INTERNAL_PORT = 33333
-    static final boolean EXPECTED_ARGOCD = false
     static final Config.VaultMode EXPECTED_VAULT_MODE = Config.VaultMode.dev
     public static final String EXPECTED_JENKINS_URL = 'http://my-jenkins'
     public static final String EXPECTED_SCMM_URL = 'http://my-scmm'
@@ -66,12 +64,9 @@ class ApplicationConfiguratorTest {
     @BeforeEach
     void setup() {
         networkingUtils = mock(NetworkingUtils.class)
-        fileSystemUtils = mock(FileSystemUtils.class)
+        fileSystemUtils = new FileSystemUtils()
         applicationConfigurator = new ApplicationConfigurator(networkingUtils, fileSystemUtils)
         testLogger = new TestLogger(applicationConfigurator.getClass())
-        when(fileSystemUtils.getRootDir()).thenReturn("/test")
-        when(fileSystemUtils.getLineFromFile("/test/scm-manager/values.ftl.yaml", "nodePort:")).thenReturn("nodePort: 9091")
-        when(fileSystemUtils.getLineFromFile("/test/jenkins/values.yaml", "nodePort:")).thenReturn("nodePort: 9090")
 
         when(networkingUtils.createUrl(anyString(), anyString(), anyString())).thenCallRealMethod()
         when(networkingUtils.createUrl(anyString(), anyString())).thenCallRealMethod()
@@ -211,6 +206,7 @@ class ApplicationConfiguratorTest {
         assertThat(actualConfig.features.exampleApps.petclinic.baseDomain).isEqualTo("petclinic.localhost")
         assertThat(actualConfig.features.exampleApps.nginx.baseDomain).isEqualTo("nginx.localhost")
         assertThat(actualConfig.scmm.ingress).isEqualTo("scmm.localhost")
+        assertThat(actualConfig.jenkins.ingress).isEqualTo("jenkins.localhost")
     }
 
     @Test
@@ -232,6 +228,7 @@ class ApplicationConfiguratorTest {
         assertThat(actualConfig.features.exampleApps.petclinic.baseDomain).isEqualTo("petclinic-localhost")
         assertThat(actualConfig.features.exampleApps.nginx.baseDomain).isEqualTo("nginx-localhost")
         assertThat(actualConfig.scmm.ingress).isEqualTo("scmm-localhost")
+        assertThat(actualConfig.jenkins.ingress).isEqualTo("jenkins-localhost")
     }
 
     @Test
