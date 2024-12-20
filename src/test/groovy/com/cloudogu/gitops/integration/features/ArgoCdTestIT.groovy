@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat
  * This class is for testing deployments via ArgoCD*/
 class ArgoCdTestIT extends KubenetesApiTestSetup {
 
-    String namespace = 'monitoring'
+    String namespace = 'argocd'
 
     @BeforeAll
     static void labelTest() {
@@ -33,7 +33,8 @@ class ArgoCdTestIT extends KubenetesApiTestSetup {
     @Test
     void ensureArgoCDIsOnlineAndRunning() {
         def expectedSumOfArgoPods = 7
-        V1PodList list = api.listPodForAllNamespaces()
+
+        V1PodList list = api.listNamespacedPod(namespace )
                 .execute()
         List<V1Pod> argoPods = list.getItems().findAll { it.getMetadata().getName().startsWith("argo") }
         assertThat(argoPods.size()).isEqualTo(expectedSumOfArgoPods)

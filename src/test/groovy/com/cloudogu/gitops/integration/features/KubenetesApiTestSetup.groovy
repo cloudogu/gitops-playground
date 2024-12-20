@@ -46,8 +46,8 @@ abstract class KubenetesApiTestSetup {
         api = new CoreV1Api()
         waitForCondition(() ->
                 waitingCondition(),
-                timeToWaitMaxInMinutes(TIME_TO_WAIT),
-                inSecondsRepeatPollIn(RETRY_SECONDS)
+                maxWaitTimeInMinutes(TIME_TO_WAIT),
+                pollIntervallSeconds(RETRY_SECONDS)
         )
     }
 
@@ -67,11 +67,11 @@ abstract class KubenetesApiTestSetup {
         fail('Wait condition not fulfilled in time')
     }
 
-    private Duration inSecondsRepeatPollIn(int time) {
+    private Duration pollIntervallSeconds(int time) {
         return Duration.ofSeconds(time)
     }
 
-    private Duration timeToWaitMaxInMinutes(int time) {
+    private Duration maxWaitTimeInMinutes(int time) {
         return Duration.ofMinutes(time)
     }
 

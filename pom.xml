@@ -304,19 +304,7 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- https://mvnrepository.com/artifact/org.apache.httpcomponents.client5/httpclient5 -->
-    <dependency>
-      <groupId>org.apache.httpcomponents.client5</groupId>
-      <artifactId>httpclient5</artifactId>
-      <version>5.4.1</version>
-    </dependency>
 
-    <!-- https://mvnrepository.com/artifact/org.apache.httpcomponents.core5/httpcore5 -->
-    <dependency>
-      <groupId>org.apache.httpcomponents.core5</groupId>
-      <artifactId>httpcore5</artifactId>
-      <version>5.3.1</version>
-    </dependency>
 
     <dependency>
       <groupId>com.github.victools</groupId>
