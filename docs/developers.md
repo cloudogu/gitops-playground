@@ -50,7 +50,7 @@ It provides workarounds or solutions for the given issues.
 ## Testing
 
 1. There are integration tests implemented by Junit. Classes marked with 'IT' and the end.
-2. Long living tests marked with 'LongIt'.
+2. Long running tests are marked with 'LongIT'.
 3. Main Branch executes both, feature-branches only IT.
 
 ### Usage
