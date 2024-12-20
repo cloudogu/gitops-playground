@@ -54,7 +54,7 @@ It provides workarounds or solutions for the given issues.
 3. Main Branch executes both, feature-branches only IT.
 
 ### Usage
-Runnable seperatly via maven.
+Runnable separately via maven.
 ``
 failsafe:integration-test -f pom.xml
 ``
