@@ -49,11 +49,19 @@ It provides workarounds or solutions for the given issues.
 
 ## Testing
 
-There is an end to end testing script inside the `./scripts` folder. It scans for builds and starts them, waits until their finished or fail and returns the result.
+1. There are end to end tests implement by Junit. Classes marked with 'IT' and the end.
+2. Long living tests marked with 'LongIt'.
+3. Main Branch executes both, feature-branches only IT.
 
 ### Usage
-
-You can use it by executing `groovy ./scripts/e2e.groovy --url http://localhost:9090 --user admin --password admin`
+Runnable seperatly via maven.
+``
+failsafe:integration-test -f pom.xml
+``
+To run long living test, use maven with profile: long-running 
+``
+failsafe:integration-test -f pom.xml -P long-running
+``
 
 ### Options
 

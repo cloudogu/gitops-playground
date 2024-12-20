@@ -18,7 +18,7 @@ class CertManagerTestIT extends KubenetesApiTestSetup {
 
     @Override
     boolean isReadyToStartTests() {
-        // TODO: check via Argo CRD Appplication
+
         def pods = api.listNamespacedPod(namespace).execute()
         if (pods && !pods.items.isEmpty()) {
             def certManagerPod = pods.items.find { it.getMetadata().name.startsWith(certManagerPodName) }

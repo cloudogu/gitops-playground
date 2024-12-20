@@ -23,7 +23,7 @@ class PrometheusStackTestIT extends KubenetesApiTestSetup {
 
     @Override
     boolean isReadyToStartTests() {
-        // TODO: check via Argo CRD Appplication
+
         def pods = api.listNamespacedPod(namespace).execute()
         if (pods && !pods.items.isEmpty()) {
             def grafanaPod = pods.items.find { it.getMetadata().name.contains(grafanaPod) }

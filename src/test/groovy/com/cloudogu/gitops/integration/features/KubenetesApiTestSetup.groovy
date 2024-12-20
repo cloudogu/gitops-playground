@@ -33,7 +33,7 @@ abstract class KubenetesApiTestSetup {
         assertThat(kubeConfigPath) isNotBlank();
     }
     /**
-     * etablish connection to kubernetes and create API to use.
+     * establish connection to kubernetes and create API to use.
      */
     @BeforeEach
     void setupConnection() {
