@@ -84,7 +84,7 @@ class PrometheusStackTestIT extends KubenetesApiTestSetup {
         assertThat(prometheus).isNotNull()
         assertThat(prometheus.status.phase).isEqualTo("Running")
     }
-    @Disabled("jenink got only 2")
+    @Disabled("jenkins got only 2")
     @Test
     void ensureNamespaceGot3Pods() {
         def pods = api.listNamespacedPod(namespace).execute()
