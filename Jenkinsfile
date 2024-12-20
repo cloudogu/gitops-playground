@@ -15,7 +15,8 @@ properties([
         // If this happens to occur often, add the following here: disableConcurrentBuilds(),
 
         parameters([
-                booleanParam(defaultValue: false, name: 'forcePushImage', description: 'Pushes the image with the current git commit as tag, even when it is on a branch')
+                booleanParam(defaultValue: false, name: 'forcePushImage', description: 'Pushes the image with the current git commit as tag, even when it is on a branch'),
+                booleanParam(defaultValue: false, name: 'longRunningTests', description: 'Executes long running async integrationtests like testing ArgoCD feature deployment')
         ])
 ])
 
@@ -37,38 +38,38 @@ node('high-cpu') {
                     // Otherwise git.isTag() will not be reliable. Jenkins seems to do a sparse checkout only
                     sh "git fetch --tags"
                 }
+                parallel (
+                        'Build cli': {
+                            stage('Build cli') {
+                                // Read Java version from Dockerfile (DRY)
+                                String jdkVersion = sh(returnStdout: true, script:
+                                        'grep -r \'ARG JDK_VERSION\' Dockerfile | sed "s/.*JDK_VERSION=\'\\(.*\\)\'.*/\\1/" ').trim()
+                                // Groovy version is defined by micronaut version. Get it from there.
+                                String groovyVersion = sh(returnStdout: true, script:
+                                        'MICRONAUT_VERSION=$(cat pom.xml | sed -n \'/<parent>/,/<\\/parent>/p\' | ' +
+                                                'sed -n \'s/.*<version>\\(.*\\)<\\/version>.*/\\1/p\'); ' +
+                                                'curl -s https://repo1.maven.org/maven2/io/micronaut/micronaut-core-bom/${MICRONAUT_VERSION}/micronaut-core-bom-${MICRONAUT_VERSION}.pom | ' +
+                                                'sed -n \'s/.*<groovy.version>\\(.*\\)<\\/groovy.version>.*/\\1/p\'').trim()
+                                groovyImage = "groovy:${groovyVersion}-jdk${jdkVersion}"
+                                // Re-use groovy image here, even though we only need JDK
+                                mvn = new MavenWrapperInDocker(this, groovyImage)
+                                // Faster builds because mvn local repo is reused between build, unit and integration tests
+                                mvn.useLocalRepoFromJenkins = true
 
-                stage('Build cli') {
-                    // Read Java version from Dockerfile (DRY)
-                    String jdkVersion = sh(returnStdout: true, script:
-                            'grep -r \'ARG JDK_VERSION\' Dockerfile | sed "s/.*JDK_VERSION=\'\\(.*\\)\'.*/\\1/" ').trim()
-                    // Groovy version is defined by micronaut version. Get it from there.
-                    String groovyVersion = sh(returnStdout: true, script:
-                            'MICRONAUT_VERSION=$(cat pom.xml | sed -n \'/<parent>/,/<\\/parent>/p\' | ' +
-                                    'sed -n \'s/.*<version>\\(.*\\)<\\/version>.*/\\1/p\'); ' +
-                                    'curl -s https://repo1.maven.org/maven2/io/micronaut/micronaut-core-bom/${MICRONAUT_VERSION}/micronaut-core-bom-${MICRONAUT_VERSION}.pom | ' +
-                                    'sed -n \'s/.*<groovy.version>\\(.*\\)<\\/groovy.version>.*/\\1/p\'').trim()
-                    groovyImage = "groovy:${groovyVersion}-jdk${jdkVersion}"
-                    // Re-use groovy image here, even though we only need JDK
-                    mvn = new MavenWrapperInDocker(this, groovyImage)
+                                mvn 'clean test -Dmaven.test.failure.ignore=true'
+                                 junit testResults: '**/target/surefire-reports/TEST-*.xml'
+                            }
+                        },
+                        'Build images': {
+                            stage('Build images') {
+                                imageNames += createImageName(git.commitHashShort)
+                                imageNames += createImageName(git.commitHashShort) + '-dev'
 
-                    mvn 'clean install -DskipTests'
-                }
-
-                stage('Test cli') {
-                    mvn 'test -Dmaven.test.failure.ignore=true'
-                    // Archive test results. Makes build unstable on failed tests.
-                    junit testResults: '**/target/surefire-reports/TEST-*.xml'
-                }
-
-                stage('Build images') {
-                    imageNames += createImageName(git.commitHashShort)
-                    imageNames += createImageName(git.commitHashShort) + '-dev'
-
-                    images += buildImage(imageNames[0])
-                    images += buildImage(imageNames[1], '--build-arg ENV=dev')
-                }
-
+                                images += buildImage(imageNames[0])
+                                images += buildImage(imageNames[1], '--build-arg ENV=dev')
+                            }
+                        }
+                  )
                 parallel(
                         'Scan image': {
                             stage('Scan image') {
@@ -97,7 +98,7 @@ node('high-cpu') {
                                         .inside("-e KUBECONFIG=${env.WORKSPACE}/.kube/config " +
                                                 " --network=host --entrypoint=''") {
                                             sh "/app/apply-ng --yes --trace --internal-registry-port=${registryPort} " +
-                                                    "--argocd --monitoring --vault=dev --ingress-nginx --mailhog --base-url=http://localhost"
+                                                    "--argocd --monitoring --vault=dev --ingress-nginx --mailhog --base-url=http://localhost --cert-manager"
                                         }
                             }
                         }
@@ -115,19 +116,28 @@ node('high-cpu') {
                             returnStdout: true
                     ).trim()
 
-                    int ret=0
-                    new Docker(this).image(groovyImage)
-                    // Avoids errors ("unable to resolve class") probably due to missing HOME for container in JVM.
-                            .mountJenkinsUser()
-                            .inside("--network=${k3dNetwork}") {
-                                // removing m2 and grapes avoids issues where grapes primarily resolves local m2 and fails on missing versions
-                                sh "rm -rf .m2/"
-                                sh "rm -rf .groovy/grapes"
-                                ret = sh(returnStatus: true, 
-                                        script: "groovy ./scripts/e2e.groovy --url http://${k3dAddress}:9090 --user admin --password admin --writeFailedLog --fail --retry 2")
-                            }
+                    int ret = 0
 
-                    if (ret > 0) {
+
+                    // long running can switch on for every branch but should run everytime on MAIN.
+                    if (params.longRunningTests || (env.BRANCH_NAME == 'main')) {
+                        withEnv([ "KUBECONFIG=${env.WORKSPACE}/.kube/config", "ADDITIONAL_DOCKER_RUN_ARGS=--network=host","K3D_ADDRESS=${k3dAddress}"]) {
+                            mvn.useLocalRepoFromJenkins = true
+                            mvn 'failsafe:integration-test -Dmaven.test.failure.ignore=true -Plong-running'
+                            // Archive test results. Makes build unstable on failed tests.
+                            junit testResults: '**/target/failsafe-reports/TEST-*.xml'
+                        }
+                    } else {
+
+                        withEnv([ "KUBECONFIG=${env.WORKSPACE}/.kube/config", "ADDITIONAL_DOCKER_RUN_ARGS=--network=host","K3D_ADDRESS=${k3dAddress}"]) {
+                            mvn.useLocalRepoFromJenkins = true
+                            mvn 'failsafe:integration-test -Dmaven.test.failure.ignore=true'
+                            // Archive test results. Makes build unstable on failed tests.
+                            junit testResults: '**/target/failsafe-reports/TEST-*.xml'
+                            }
+                    }
+
+                    if (ret > 0 || currentBuild.result == 'UNSTABLE') {
                         if (fileExists('playground-logs-of-failed-jobs')) {
                             archiveArtifacts artifacts: 'playground-logs-of-failed-jobs/*.log'
                         }
