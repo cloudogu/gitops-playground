@@ -63,7 +63,7 @@ class CertManagerTestIT extends KubenetesApiTestSetup {
     }
 
     @Test
-    void ensureNumberOfPodsAre3() {
+    void ensureNumberOfPodsAreEqualToSumOfPods() {
 
         def pods = api.listNamespacedPod(namespace).execute()
         assertThat(pods.getItems().size()).isEqualTo(sumOfPods)
