@@ -9,7 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat
 
 /**
  * This class checks if Prometheus is started well.
- * Prometheus contains own namespace ('monitoinr') which owns and 3 Pods:
+ * Prometheus contains own namespace ('monitoring') which owns and 3 Pods:
  *  - Grafana
  *  - Operator
  *  - prometheus-stack
