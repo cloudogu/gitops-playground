@@ -56,7 +56,7 @@ It provides workarounds or solutions for the given issues.
 ### Usage
 Runnable separately via maven.
 ``
-failsafe:integration-test -f pom.xml
+mvn failsafe:integration-test -f pom.xml
 ``
 To run long living test, use maven with profile: long-running 
 ``
