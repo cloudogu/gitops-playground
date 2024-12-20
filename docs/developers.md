@@ -49,7 +49,7 @@ It provides workarounds or solutions for the given issues.
 
 ## Testing
 
-1. There are end to end tests implement by Junit. Classes marked with 'IT' and the end.
+1. There are integration tests implemented by Junit. Classes marked with 'IT' and the end.
 2. Long living tests marked with 'LongIt'.
 3. Main Branch executes both, feature-branches only IT.
 
