@@ -16,9 +16,9 @@ import static org.assertj.core.api.Assertions.assertThat
 import static org.assertj.core.api.Assertions.fail
 
 abstract class KubenetesApiTestSetup {
-    static String kubeConfigPath;
+    static String kubeConfigPath
     CoreV1Api api
-    int TIME_TO_WAIT = 7;
+    int TIME_TO_WAIT = 7
     int RETRY_SECONDS = 15
 
     /**
@@ -26,11 +26,11 @@ abstract class KubenetesApiTestSetup {
      */
     @BeforeAll
     static void setupKubeconfig() {
-        kubeConfigPath = System.getenv("HOME") + "/.kube/config";
+        kubeConfigPath = System.getenv("HOME") + "/.kube/config"
         if (!new File(kubeConfigPath).exists()) {
-            kubeConfigPath = System.getenv("KUBECONFIG");
+            kubeConfigPath = System.getenv("KUBECONFIG")
         }
-        assertThat(kubeConfigPath) isNotBlank();
+        assertThat(kubeConfigPath) isNotBlank()
     }
     /**
      * establish connection to kubernetes and create API to use.
@@ -38,12 +38,12 @@ abstract class KubenetesApiTestSetup {
     @BeforeEach
     void setupConnection() {
         ApiClient client =
-                ClientBuilder.kubeconfig(KubeConfig.loadKubeConfig(new FileReader(kubeConfigPath))).build();
+                ClientBuilder.kubeconfig(KubeConfig.loadKubeConfig(new FileReader(kubeConfigPath))).build()
         // set the global default api-client to the out-of-cluster one from above
-        Configuration.setDefaultApiClient(client);
+        Configuration.setDefaultApiClient(client)
 
         // the CoreV1Api loads default api-client from global configuration.
-        api = new CoreV1Api();
+        api = new CoreV1Api()
         waitForCondition(() ->
                 waitingCondition(),
                 timeToWaitMaxInMinutes(TIME_TO_WAIT),
@@ -52,19 +52,19 @@ abstract class KubenetesApiTestSetup {
     }
 
     static void waitForCondition(Supplier<Boolean> condition, Duration timeout, Duration pollInterval) {
-        Instant end = Instant.now().plus(timeout);
+        Instant end = Instant.now().plus(timeout)
         while (Instant.now().isBefore(end)) {
             if (condition.get()) {
-                return; // Bedingung erfüllt
+                return
             }
             try {
-                Thread.sleep(pollInterval.toMillis());
+                Thread.sleep(pollInterval.toMillis())
             } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new RuntimeException("Polling unterbrochen", e);
+                Thread.currentThread().interrupt()
+                throw new RuntimeException("break polling", e)
             }
         }
-        fail('Wait condition not fulfilled in time');
+        fail('Wait condition not fulfilled in time')
     }
 
     private Duration inSecondsRepeatPollIn(int time) {

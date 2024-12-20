@@ -79,7 +79,7 @@ class GOPSmoketestsIT extends KubenetesApiTestSetup {
     }
 
     /**
-     * tests searches for ingress services and ensure ingress is used as laodbalancer
+     * tests searches for ingress services and ensure ingress is used as loadbalancer
      */
     @Test
     // kein nginx Service am laufen am Jenkins!
