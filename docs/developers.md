@@ -60,7 +60,7 @@ mvn failsafe:integration-test -f pom.xml
 ``
 To run long living test, use maven with profile: long-running 
 ``
-failsafe:integration-test -f pom.xml -P long-running
+mvn failsafe:integration-test -f pom.xml -P long-running
 ``
 
 ### Options
