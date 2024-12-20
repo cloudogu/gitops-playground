@@ -125,7 +125,7 @@ class JenkinsPipelineTestLongIT {
                         int newRetry = resultFuture.get().retry - 1
                         buildFutures.add(executor.run(js, resultFuture.get().getJob(), newRetry))
                         buildFutures.remove(resultFuture)
-                        // if abortonfail is true and no more retries left then kill the process
+                        // if abortOnFail is true and no more retries left then kill the process
                     } else if (abortOnFail) {
                         //write log of failed build to fs
                         writeBuildLogToFile(resultFuture.get().getBuild())
