@@ -12,11 +12,9 @@ import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.MapUtils
-import com.cloudogu.gitops.utils.TemplatingEngine
 import freemarker.template.Configuration
 import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
-import groovy.yaml.YamlSlurper
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
 
@@ -28,7 +26,7 @@ class Jenkins extends Feature {
     static final String HELM_VALUES_PATH = "jenkins/values.ftl.yaml"
 
     String namespace = 'default'
-    
+
     private Config config
     private CommandExecutor commandExecutor
     private FileSystemUtils fileSystemUtils
@@ -82,21 +80,17 @@ class Jenkins extends Feature {
                     new Tuple2('jenkins-admin-password', config.jenkins.password))
 
             def helmConfig = config.jenkins.helm
-            def templatedMap = new YamlSlurper().parseText(
-                    new TemplatingEngine().template(new File(HELM_VALUES_PATH),
-                            [dockerGid : findDockerGid(),
-                             config: config,
-                             // Allow for using static classes inside the templates
-                             statics: new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build()
-                                     .getStaticModels(),
-                            ])) as Map
-            
-            def valuesFromConfig = helmConfig.values
+            def templatedMap = templateToMap(HELM_VALUES_PATH,
+                    [
+                            dockerGid: findDockerGid(),
+                            config   : config,
+                            // Allow for using static classes inside the templates
+                            statics  : new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build()
+                                    .getStaticModels(),
+                    ])
 
-            def mergedMap = MapUtils.deepMerge(valuesFromConfig, templatedMap)
-
-            def tmpHelmValues = fileSystemUtils.createTempFile()
-            fileSystemUtils.writeYaml(mergedMap, tmpHelmValues.toFile())
+            def mergedMap = MapUtils.deepMerge(helmConfig.values, templatedMap)
+            def tempValuesPath = fileSystemUtils.writeTempFile(mergedMap)
 
             deployer.deployFeature(
                     helmConfig.repoURL,
@@ -105,10 +99,10 @@ class Jenkins extends Feature {
                     helmConfig.version,
                     namespace,
                     'jenkins',
-                    tmpHelmValues
+                    tempValuesPath
             )
         }
-        
+
         commandExecutor.execute("${fileSystemUtils.rootDir}/scripts/jenkins/init-jenkins.sh", [
                 TRACE                     : config.application.trace,
                 INTERNAL_JENKINS          : config.jenkins.internal,
@@ -204,8 +198,8 @@ class Jenkins extends Feature {
         def etcGroup = k8sClient.run("tmp-docker-gid-grepper-${new Random().nextInt(10000)}",
                 'irrelevant' /* Redundant, but mandatory param */, namespace, createGidGrepperOverrides(),
                 '--restart=Never', '-ti', '--rm', '--quiet')
-            // --quiet is necessary to avoid 'pod deleted' output
-        
+        // --quiet is necessary to avoid 'pod deleted' output
+
         def lines = etcGroup.split('\n')
         for (String it : lines) {
             def parts = it.split(":")
@@ -233,7 +227,7 @@ class Jenkins extends Feature {
                                         'name'        : 'tmp-docker-gid-grepper',
                                         // We use the same image for several tasks for performance and maintenance reasons 
                                         'image'       : "${config.jenkins.internalBashImage}",
-                                        'args'        : [ 'cat', '/etc/group' ],
+                                        'args'        : ['cat', '/etc/group'],
                                         'volumeMounts': [
                                                 [
                                                         'name'     : 'group',

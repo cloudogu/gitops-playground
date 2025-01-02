@@ -311,10 +311,10 @@ me:x:1000:''')
     private Jenkins createJenkins() {
         new Jenkins(config, commandExecutor, new FileSystemUtils() {
             @Override
-            Path createTempFile() {
-                def ret = super.createTempFile()
-                temporaryYamlFile = Path.of(ret.toString().replace(".ftl", "")) // Path after template invocation
-
+            Path writeTempFile(Map mergeMap) {
+                def ret = super.writeTempFile(mergeMap)
+                temporaryYamlFile = Path.of(ret.toString().replace(".ftl", ""))
+                // Path after template invocation
                 return ret
             }
         }, globalPropertyManager, jobManger, userManager, prometheusConfigurator, deploymentStrategy, k8sClient)
