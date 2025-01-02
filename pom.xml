@@ -394,6 +394,45 @@
       </plugin>
 
       <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <version>2.43.0</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>check</goal>
+              <goal>apply</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <groovy>
+            <!-- Include Groovy files from main and test sources -->
+            <includes>
+              <include>src/main/groovy/**/*.groovy</include>
+              <include>src/test/groovy/**/*.groovy</include>
+            </includes>
+
+            <!-- Specify the import order for Groovy files -->
+            <importOrder>
+              <order>java|javax,org,com,com.diffplug,,\#com.diffplug,\#</order>  <!-- Custom import order -->
+            </importOrder>
+
+            <!-- Remove semicolons from the end of lines -->
+            <removeSemicolons/>
+
+            <!-- Optional: Apply Greclipse formatting -->
+            <greclipse/>
+
+            <!-- License header for the Groovy files -->
+            <licenseHeader>
+              <content>/* (C)$YEAR */</content>  <!-- License header content -->
+            </licenseHeader>
+          </groovy>
+        </configuration>
+      </plugin>
+      
+      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.9.0</version>

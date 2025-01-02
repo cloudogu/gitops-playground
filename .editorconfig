@@ -1,0 +1,53 @@
+# Top-most EditorConfig file
+root = true
+
+# General settings for all files
+[*]
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# Java settings (applies to Groovy for compatibility)
+[*.{java,groovy}]
+indent_style = space
+indent_size = 4
+continuation_indent_size = 8
+max_line_length = 120
+insert_final_newline = true
+spaces_around_operators = true   # Add spaces around operators
+spaces_before_colon = false      # No spaces before colons in maps and named parameters
+spaces_around_closure_arrow = true  # Add spaces around closure arrow (->)
+brace_style = stroustrup          # Brace style: 'Stroustrup' for readability
+align_parameters = true          # Align method parameters
+align_closing_brackets = true    # Align closing brackets with their opening counterparts
+
+# XML settings for Maven POM files
+[*.xml]
+indent_style = space
+indent_size = 2
+max_line_length = 120
+trim_trailing_whitespace = false # Trailing whitespace is allowed in XML
+insert_final_newline = true
+
+# Settings specific to configuration files (e.g., properties, YAML)
+[*.{properties,yaml,yml}]
+indent_style = space
+indent_size = 2
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# Test-specific settings (e.g., Spock or JUnit-based Groovy tests)
+[src/test/groovy/*.groovy]
+indent_style = space
+indent_size = 4
+continuation_indent_size = 8
+spaces_around_operators = true
+spaces_around_closure_arrow = true
+max_line_length = 120
+
+# Markdown and documentation files
+[*.md]
+trim_trailing_whitespace = true
+insert_final_newline = true
+max_line_length = off  # Markdown doesn't strictly follow line length rules
