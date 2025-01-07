@@ -153,7 +153,7 @@ class ApplicationConfigurator {
 
         if (newConfig.application.baseUrl) {
             newConfig.jenkins.ingress = new URL(injectSubdomain('jenkins',
-                    newConfig.application.baseUrl as String, newConfig.application.urlSeparatorHyphen as Boolean)).host
+                    newConfig.application.baseUrl, newConfig.application.urlSeparatorHyphen)).host
         }
     }
 

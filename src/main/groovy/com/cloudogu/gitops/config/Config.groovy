@@ -203,7 +203,7 @@ class Config {
         HelmConfigWithValues helm = new HelmConfigWithValues(
                 chart: 'jenkins',
                 repoURL: 'https://charts.jenkins.io',
-                version: '5.5.11')
+                version: '5.8.1')
     }
 
     static class ScmmSchema {

@@ -13,7 +13,6 @@ import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
-
 import java.nio.file.Path
 
 import static org.assertj.core.api.Assertions.assertThat

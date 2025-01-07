@@ -68,7 +68,7 @@ class Jenkins extends Feature {
     void enable() {
 
         if (config.jenkins.internal) {
-            // Mark the first node for Jenkins and agents. See jenkins/values.yaml "agent.workingDir" for details.
+            // Mark the first node for Jenkins and agents. See jenkins/values.ftl.yaml "agent.workingDir" for details.
             // Remove first (in case new nodes were added)
             k8sClient.labelRemove('node', '--all', '', 'node')
             def nodeName = k8sClient.waitForNode().replace('node/', '')
@@ -210,8 +210,8 @@ class Jenkins extends Feature {
         }
 
         if (!gid) {
-            log.warn 'Unable to determine Docker Group ID (GID). Jenkins Agent pods will run as root user (UID 0)!\n' +
-                    "Group docker not found in /etc/group:\n${etcGroup}"
+            log.warn('Unable to determine Docker Group ID (GID). Jenkins Agent pods will run as root user (UID 0)!\n' +
+                    "Group docker not found in /etc/group:\n${etcGroup}")
             return ''
         } else {
             log.debug("Using Docker Group ID (GID) ${gid} for Jenkins Agent pods")
