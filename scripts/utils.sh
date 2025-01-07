@@ -1,21 +1,7 @@
 #!/usr/bin/env bash
 
-function confirm() {
-  # shellcheck disable=SC2145
-  # - the line break between args is intended here!
-  printf "%s\n" "${@:-Are you sure? [y/N]} "
-  
-  read -r response
-  case "$response" in
-  [yY][eE][sS] | [yY])
-    true
-    ;;
-  *)
-    false
-    ;;
-  esac
-}
-
+# Note that this is also used in scripts/get-remote-url
+# Move it to get-remote-url, once setExternalHostnameIfNecessary() is no longer needed in init-scmm and init-jenkins.sh
 function getExternalIP() {
   servicename=$1
   namespace=$2
@@ -26,28 +12,6 @@ function getExternalIP() {
     [ -z "$external_ip" ] && sleep 10
   done
   echo $external_ip
-}
-
-function createSecret() {
-  kubectl create secret generic "$@" --dry-run=client -oyaml | kubectl apply -f-
-}
-
-function extractHost() {
-    echo "$1" | awk -F[/:] '{print $4}'
-}
-
-function injectSubdomain() {
-    local BASE_URL="$1"
-    local SUBDOMAIN="$2"
-
-    if [[ "$BASE_URL" =~ ^http:// ]]; then
-        echo "${BASE_URL/http:\/\//http://${SUBDOMAIN}.}"
-    elif [[ "$BASE_URL" =~ ^https:// ]]; then
-        echo "${BASE_URL/https:\/\//https://${SUBDOMAIN}.}"
-    else
-        echo "Invalid BASE URL: ${BASE_URL}. It should start with either http:// or https://"
-        return 1
-    fi
 }
 
 function setExternalHostnameIfNecessary() {
@@ -61,9 +25,4 @@ function setExternalHostnameIfNecessary() {
     # Our apps are configured to use port 80 on remote clusters
     declare -g "${variablePrefix}_URL"="http://$(getExternalIP "${serviceName}" "${namespace}")"
   fi
-}
-
-function error() {
-    # Print to stderr in red
-    echo -e "\033[31m$@\033[0m" 1>&2;
 }

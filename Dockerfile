@@ -42,7 +42,7 @@ FROM alpine AS downloader
 RUN apk add curl grep
 # When updating, 
 # * also update the checksum found at https://dl.k8s.io/release/v${K8S_VERSION}/bin/linux/amd64/kubectl.sha256
-# * also update in init-cluster.sh. vars.tf, ApplicationConfigurator.groovy and apply.sh
+# * also update in init-cluster.sh. vars.tf, Config.groovy and apply.sh
 # When upgrading to 1.26 we can verify the kubectl signature with cosign!
 # https://kubernetes.io/blog/2022/12/12/kubernetes-release-artifact-signing/
 ARG K8S_VERSION=1.29.8

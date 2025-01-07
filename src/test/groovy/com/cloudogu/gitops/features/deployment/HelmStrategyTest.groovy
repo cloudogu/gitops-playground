@@ -5,6 +5,7 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.utils.HelmClient
 import org.junit.jupiter.api.Test
 
+import java.nio.file.Files
 import java.nio.file.Path
 
 import static groovy.test.GroovyAssert.shouldFail
@@ -18,13 +19,15 @@ class HelmStrategyTest {
     
     @Test
     void 'deploys feature using helm client'() {
-        createStrategy().deployFeature("repoURL", "repoName", "chart", "version", "namespace", "releaseName", Path.of("values.yaml"))
+        Path valuesYaml = Files.createTempFile('', '')
+        
+        createStrategy().deployFeature("repoURL", "repoName", "chart", "version", "namespace", "releaseName", valuesYaml)
         
         verify(helmClient).addRepo("repoName", "repoURL")
         verify(helmClient).upgrade("releaseName", "repoName/chart", [
                 namespace: "foo-namespace",
                 version: "version",
-                values: "values.yaml"
+                values: valuesYaml.toString()
         ])
     }
 

@@ -1,27 +1,30 @@
-# For updating, delete pvc jenkins-docker-client
-# When updating, we should not use too recent version, to not break support for LTS distros like debian
-# https://docs.docker.com/engine/install/debian/#os-requirements -> oldstable
-# For example:
-# $ curl -s https://download.docker.com/linux/debian/dists/bullseye/stable/binary-amd64/Packages  | grep -EA5 'Package\: docker-ce$' | grep Version | sort | uniq | tail -n1
-# Version: 5:27.1.1-1~debian.11~bullseye
-dockerClientVersion: 27.1.2
+dockerClientVersion: ${config.jenkins.internalDockerClientVersion}
 
 controller:
   image:
     registry: ghcr.io
     repository: cloudogu/jenkins-helm
-    # Use same version here as in ApplicationConfigurator.groovy (config.jenkins['helm']['version'])
-    tag: "5.5.11"
+    # The image corresponds to the helm version,
+    # because it contains the default plugins for this particular chart version
+    tag: "${config.jenkins.helm.version}"
   installPlugins: false
   
   # to prevent the jenkins-ui-test pod being created
   testEnabled: false
 
-  serviceType: LoadBalancer
+  serviceType: <#if config.application.remote>LoadBalancer<#else>NodePort</#if>
   servicePort: 80
   # Is ignored when type is LoadBalancer. For local cluster we change the service type to NodePort
   nodePort: 9090
 
+  jenkinsUrl: ${config.jenkins.url}
+
+<#if config.application.baseUrl?has_content>
+  ingress:
+    enabled: true
+    hostName: ${config.jenkins.ingress}
+
+</#if>
   # Don't use controller for builds
   numExecutors: 0
 
@@ -30,16 +33,6 @@ controller:
     node: jenkins
 
   runAsUser: 1000
-  JCasC:
-    defaultConfig: true
-    configScripts:
-      welcome-message: |
-        jenkins:
-          systemMessage: Welcome to our CI\CD server.  This Jenkins is configured and managed 'as code'.
-
-  sidecars:
-    configAutoReload:
-      enabled: false
 
   admin:
     # Use reproducible admin password from secret. Change there, if necessary.
@@ -60,8 +53,8 @@ controller:
     - name: create-agent-working-dir
       securityContext:
         runAsUser: 1000
-      # Note: When upgrading, use same image as in gid-grepper for performance reasons
-      image: bash:5
+      <#-- We use the same image for several tasks for performance and maintenance reasons -->
+      image: ${config.jenkins.internalBashImage}
       imagePullPolicy: "{{ .Values.controller.imagePullPolicy }}"
       command: [ "/usr/local/bin/bash", "-c" ]
       args:
@@ -81,7 +74,6 @@ controller:
           find docker -type f -not -name 'docker' -delete;
           # Delete containerd, etc. We only need the docker CLI
           # Note: "wget -O- | tar" leads to the folder being owned by root, even when creating it beforehand?!
-        # That's
       volumeMounts:
         - name: host-tmp
           mountPath: /host-tmp
@@ -94,14 +86,15 @@ persistence:
         path: /tmp
 
 agent:
-  # In our local playground infrastructure builds are run in agent containers (pods). During the builds, more
-  # containers are started via the Jenkins Docker Plugin (on the same docker host).
+  # In our local playground infrastructure, builds are run in agent containers (pods).
+  # During the builds, more containers are started via the Jenkins Docker Plugin (on the same docker host).
   # This leads to a scenario where the agent container tries to mount its filesystem into another container.
-  # The docker host is only able to realize this mounts when the mounted paths are the same inside and outside the
+  # The docker host is only able to realize these mounts when the mounted paths are the same inside and outside the
   # containers.
   # So as a workaround, we provide the path inside the container also outside the container.
-  # The /tmp folder is a good choice, because it is writable for all users on the host.
-  # One disadvantage is, that /tmp is deleted when the host shuts down. Which might slow down builds
+  # The /tmp folder is a good choice because it is writable for all users on the host.
+  # One disadvantage is that /tmp is deleted when the host shuts down. 
+  # This might slow down builds.
   # A different option would be to link the workspace into this repo.
   # If we should ever want to implement this, the logic can be reused from Git History:
   # https://github.com/cloudogu/gitops-playground/blob/61e033/scripts/apply.sh#L211-L235
@@ -109,8 +102,9 @@ agent:
   # On Multi Node Clusters this leads to the requirement that Jenkins controller and agents run on the same host
   # We realize this using nodeSelectors 
   workingDir: "/tmp/gitops-playground-jenkins-agent"
-  runAsUser: 1000
-  runAsGroup: 133
+  <#-- Note that setting the user as int seems to the value being ignored either by the helm chart or eventually by CasC plugin -->
+  runAsUser: <#if dockerGid?has_content>1000<#else>"0"</#if>
+  runAsGroup: <#if dockerGid?has_content>${dockerGid}<#else>"133"</#if>
   nodeSelector:
     node: jenkins
   # Number of concurrent builds. Keep it low to avoid high CPU load.
@@ -123,7 +117,7 @@ agent:
   envVars:
     - name: PATH
       # Add /tmp/docker to the path
-      value: /usr/local/openjdk-11/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/tmp/docker
+      value: /opt/java/openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/tmp/docker
   volumes:
     - type: HostPath
       # See workingDir
@@ -135,7 +129,7 @@ agent:
       hostPath: /tmp/gitops-playground-jenkins-agent
       mountPath: /home/jenkins
     - type: HostPath
-      # For this demo, allow jenkins controller to access docker client
+      # When run locally, allow jenkins controller to access docker client
       hostPath: /var/run/docker.sock
       mountPath: /var/run/docker.sock
     - type: HostPath

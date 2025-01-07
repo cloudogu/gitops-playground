@@ -114,6 +114,41 @@ Jenkins.instance.pluginManager.activePlugins.sort().each {
   * Make sure you have updated `plugins.txt` with working versions of the plugins
   * commit and push changes to your feature-branch and submit a pr
 
+Note that `plugins.txt` contains the whole dependency tree, including transitive plugin dependencies.
+The bare minimum of plugins that are needed is this:
+
+```shell
+docker-workflow # Used in example builds
+git # Used in example builds
+junit # Used in example builds
+pipeline-utility-steps # Used in example builds, by gitops-build-lib
+pipeline-stage-view # Only necessary for better visualization of the builds
+prometheus # Necessary to fill Jenkins dashboard in Grafana
+scm-manager # Used in example builds
+workflow-aggregator # Pipelines plugin, used in example builds
+```
+
+Note that, when running locally we also need `kubernetes` and `configuration-as-code` but these are contained in [our 
+jenkins helm image](https://github.com/cloudogu/jenkins-helm-image/blob/5.8.1-1/Dockerfile#L2) (extracted from the 
+[corresponding helm chart version](https://github.com/jenkinsci/helm-charts/blob/jenkins-5.8.1/charts/jenkins/values.yaml#L406-L409)).
+
+
+### Updating all plugins 
+To get a minimal list of plugins, start an empty jenkins that uses [the base image of our image](https://github.com/cloudogu/jenkins-helm-image/blob/main/Dockerfile):
+
+```shell
+docker run --rm -v $RANDOM-tmp-jenkins:/var/jenkins_home  jenkins/jenkins:2.479.2-jdk17
+```
+We need a volume to persist the plugins when jenkins restarts.  
+(These can be cleaned up afterwards like so: `docker volume ls -q | grep jenkins | xargs -I {} docker volume rm {}`).
+
+Then
+* manually install the bare minimum of plugins mentioned above
+* extract the plugins using the groovy console as mentioned above
+* Write the output into `plugins.txt`
+
+We should automate this!
+
 ## Local development
 
 * Run locally
@@ -229,7 +264,7 @@ repository so need to be upgraded regularly.
 * Kubernetes [in Terraform](../terraform/vars.tf) and locally [k3d](../scripts/init-cluster.sh),
 * [k3d](../scripts/init-cluster.sh)
 * [Groovy libs](../pom.xml) + [Maven](../.mvn/wrapper/maven-wrapper.properties)
-* Installed components
+* Installed components, most versions are maintained in [Config.groovy](../src/main/groovy/com/cloudogu/gitops/config/Config.groovy)
   * Jenkins
     * Helm Chart
     * Plugins
@@ -240,9 +275,10 @@ repository so need to be upgraded regularly.
   * SCM-Manager Helm Chart + Plugins
   * Docker Registry Helm Chart
   * ArgoCD Helm Chart
-  * Grafana + Prometheus [Helm Charts](../src/main/groovy/com/cloudogu/gitops/ApplicationConfigurator.groovy)
-  * Vault + ExternalSerets Operator [Helm Charts](../src/main/groovy/com/cloudogu/gitops/ApplicationConfigurator.groovy)
-  * Ingress-nginx [Helm Charts](https://artifacthub.io/packages/helm/ingress-nginx/ingress-nginx)
+  * Grafana + Prometheus Helm Charts
+  * Vault + ExternalSerets Operator Helm Charts
+  * Ingress-nginx Helm Charts
+  * Cert-Manager
   * Mailhog
 * Applications
   * GitOps-build-lib + `buildImages`

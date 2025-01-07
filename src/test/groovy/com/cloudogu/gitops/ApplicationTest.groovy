@@ -40,6 +40,6 @@ class ApplicationTest {
                 .registerSingleton(config)
                 .getBean(Application)
         application.setNamespaceListToConfig(config)
-        assertThat(config.application.getActiveNamespaces()).isEqualTo(namespaceList)
+        assertThat(config.application.getActiveNamespaces()).containsExactlyInAnyOrderElementsOf(namespaceList)
     }
 }

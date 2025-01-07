@@ -34,7 +34,7 @@ variable "k8s_version_prefix" {
   # So we use a version prefix hoping that the stable patch versions won't do unexpected things (which is unlikely!) 
   description = "Master and Node version prefix to setup"
 
-  # When updating please also adapt in Dockerfile, init-cluster.sh and ApplicationConfigurator.groovy
+  # When updating please also adapt in Dockerfile, init-cluster.sh and Config.groovy
   default = "1.29."
 }
 
