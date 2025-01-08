@@ -267,6 +267,7 @@ grafana:
 prometheus:
   prometheusSpec:
     <#if config.application.openshift == true>
+    automountServiceAccountToken: null
     securityContext: 
       fsGroup: null
       runAsGroup: null
@@ -287,14 +288,44 @@ prometheus:
           </#if>
     serviceMonitorSelectorNilUsesHelmValues: false
     podMonitorNamespaceSelector:
-      matchLabels: {}
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values:
+          <#if namespaces?has_content>
+          <#list namespaces as namespace>
+          - ${namespace}
+          </#list>
+          <#else>
+          { }
+          </#if>
     podMonitorSelectorNilUsesHelmValues: false
     ruleNamespaceSelector:
-      matchLabels: {}
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values:
+          <#if namespaces?has_content>
+          <#list namespaces as namespace>
+          - ${namespace}
+          </#list>
+          <#else>
+          { }
+          </#if>
     ruleSelectorNilUsesHelmValues: false
     scrapeConfigSelectorNilUsesHelmValues: false
     probeNamespaceSelector:
-      matchLabels: {}
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values:
+          <#if namespaces?has_content>
+          <#list namespaces as namespace>
+          - ${namespace}
+          </#list>
+          <#else>
+          { }
+          </#if>
     probeSelectorNilUsesHelmValues: false
   <#if podResources == true>
     resources:
