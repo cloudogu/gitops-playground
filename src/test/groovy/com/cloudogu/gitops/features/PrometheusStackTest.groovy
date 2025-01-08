@@ -7,6 +7,7 @@ import com.cloudogu.gitops.utils.*
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
+
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -294,7 +295,7 @@ policies:
 
         def additionalScrapeConfigs = parseActualYaml()['prometheus']['prometheusSpec']['additionalScrapeConfigs'] as List
         assertThat(((additionalScrapeConfigs[0]['static_configs'] as List)[0]['targets'] as List)[0]).isEqualTo('localhost:9091')
-        assertThat(additionalScrapeConfigs[0]['metrics_path']).isEqualTo('/prefix/scm/api/v2/metrics/prometheus')
+        assertThat(additionalScrapeConfigs[0]['metrics_path']).isEqualTo('/prefix/api/v2/metrics/prometheus')
         assertThat(additionalScrapeConfigs[0]['scheme']).isEqualTo('https')
 
         // scrape config for jenkins is unchanged
@@ -544,9 +545,14 @@ policies:
     @Test
     void 'Merges additional helm values merged with default values'() {
         config.features.monitoring.helm.values = [
-                key: [
+                key       : [
                         some: 'thing',
                         one : 1
+                ],
+                prometheus: [
+                        prometheusSpec: [
+                                scrapeConfigSelectorNilUsesHelmValues: null
+                        ]
                 ]
         ]
 
@@ -555,6 +561,7 @@ policies:
 
         assertThat(actual['key']['some']).isEqualTo('thing')
         assertThat(actual['key']['one']).isEqualTo(1)
+        assertThat(actual['prometheus']['prometheusSpec']['scrapeConfigSelectorNilUsesHelmValues']).isEqualTo(null)
     }
 
     @Test
@@ -572,7 +579,7 @@ policies:
                 "test1-example-apps-production",
                 "test1-secrets"
         ))
-        config.application.activeNamespaces=  namespaceList
+        config.application.activeNamespaces = namespaceList
         createStack().install()
         def actual = parseActualYaml()
 

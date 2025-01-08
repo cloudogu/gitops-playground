@@ -99,7 +99,7 @@ class ExternalSecretsOperator extends Feature implements FeatureWithImage {
         if (config.scmm.internal) {
             new URI('http://scmm-scm-manager.default.svc.cluster.local/scm')
         } else {
-            new URI("${config.scmm.url}/scm")
+            new URI("${config.scmm.url}")
         }
     }
 
