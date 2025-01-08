@@ -532,9 +532,9 @@ skopeo copy docker://registry.k8s.io/ingress-nginx/controller:v1.9.6 --dest-cred
 # k describe prometheus -n monitoring
 #  Message:               initializing PrometheusRules failed: failed to parse version: Invalid character(s) found in major number "0latest"
 skopeo copy docker://quay.io/prometheus/prometheus:v2.55.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/prometheus:v2.55.1
-skopeo copy docker://quay.io/prometheus-operator/prometheus-operator:v0.78.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/prometheus-operator
+skopeo copy docker://quay.io/prometheus-operator/prometheus-operator:v0.78.2 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/prometheus-operator
 skopeo copy docker://quay.io/prometheus-operator/prometheus-config-reloader:v0.78.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/prometheus-config-reloader
-skopeo copy docker://docker.io/grafana/grafana:11.3.0 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/grafana
+skopeo copy docker://docker.io/grafana/grafana:11.3.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/grafana
 skopeo copy docker://quay.io/kiwigrid/k8s-sidecar:1.28.0 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/k8s-sidecar
 
 # Cert Manager images
