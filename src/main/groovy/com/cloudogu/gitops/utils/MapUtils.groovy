@@ -1,20 +1,32 @@
 package com.cloudogu.gitops.utils 
 
 class MapUtils {
-    
+
     static Map deepMerge(Map src, Map target) {
-        src.forEach(
-                (key, value) -> { if (value != null) target.merge(key, value, (oldVal, newVal) -> {
-                    if (oldVal instanceof Map) {
-                        if (!newVal instanceof Map) {
-                            throw new RuntimeException("Can't merge config, different types, map vs other: Map ${oldVal}; Other ${newVal}")
-                        }
-                        return deepMerge(newVal as Map, oldVal)
-                    } else {
+        src.each { key, value ->
+            if (value == null) {
+                // If the value in src is null, set the key in target to null
+                target[key] = null
+            } else {
+                target.merge(key, value) { oldVal, newVal ->
+                    // Case 1: If both values are Maps, perform a deep merge
+                    if (oldVal instanceof Map && newVal instanceof Map) {
+                        return deepMerge(newVal, oldVal)  // Recursively merge the maps
+                    }
+                    // Case 2: If newVal is null, set the key to null in target
+                    if (newVal == null) {
+                        return null
+                    }
+                    // Case 3: If oldVal is null, use newVal
+                    if (oldVal == null) {
                         return newVal
                     }
-                })
-                })
+                    // Case 4: Default, return the new value (newVal takes priority)
+                    return newVal
+                }
+            }
+        }
         return target
     }
+
 }
