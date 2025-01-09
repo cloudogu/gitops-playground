@@ -94,10 +94,6 @@ RUN cd /dist && for dir in $(find gitops/repos -type d  -maxdepth 1); do \
     done
 RUN cp /tmp/.gitconfig /dist/home/.gitconfig
 
-# Download Jenkins Plugin
-COPY scripts/jenkins/plugins /jenkins
-RUN /jenkins/download-plugins.sh /dist/gitops/jenkins-plugins
-
 COPY src/main/groovy/com/cloudogu/gitops/config/Config.groovy /tmp/
 COPY scripts/downloadHelmCharts.sh /tmp/
 RUN cd /dist/gitops && /tmp/downloadHelmCharts.sh /tmp/Config.groovy

@@ -23,8 +23,6 @@ function initJenkins() {
   if [[ ${INTERNAL_JENKINS} == true ]]; then
     setExternalHostnameIfNecessary "JENKINS" "jenkins" "default"
   fi
-
-  installPlugins
 }
 
 function waitForJenkins() {
@@ -38,41 +36,5 @@ function waitForJenkins() {
   echo ""
 }
 
-function installPlugins() {
-  local pluginFolder
-
-  waitForJenkins
-
-  if [[ -z "${JENKINS_PLUGIN_FOLDER}" ]]; then
-    pluginFolder=$(mktemp -d)
-    echo "Downloading jenkins plugins to ${pluginFolder}"
-    "${PLAYGROUND_DIR}"/scripts/jenkins/plugins/download-plugins.sh "${pluginFolder}"
-  else
-    echo "Jenkins plugins folder present, skipping plugin download"
-    pluginFolder="${JENKINS_PLUGIN_FOLDER}"
-  fi 
-
-  echo "Installing Jenkins Plugins from ${pluginFolder}"
-  awk -F':' '{ print $1 }' scripts/jenkins/plugins/plugins.txt | while read -r pluginName; do
-     installPlugin "${pluginFolder}/plugins/${pluginName}.jpi"
-  done
-
-  echo "Waiting for plugin installation.."
-  PLUGIN_STATUS=($(checkPluginStatus $(cat "${PLAYGROUND_DIR}"/scripts/jenkins/plugins/plugins.txt | tr '\n' ',')))
-  while [[ ${#PLUGIN_STATUS[@]} -gt 0 ]]; do
-    PLUGIN_STATUS=($(checkPluginStatus $(cat "${PLAYGROUND_DIR}"/scripts/jenkins/plugins/plugins.txt | tr '\n' ',')))
-    echo "Processing: ${PLUGIN_STATUS[*]}"
-    sleep 5
-  done
-  echo ""
-
-  safeRestart
-
-  # we add a sleep here since there are issues directly after jenkins is available and getting 403 when curling jenkins
-  # script executor. We think this might be a timing issue so we are waiting.
-  # Since safeRestart can take time until it really restarts jenkins, we will sleep here before querying jenkins status.
-  sleep 5
-  waitForJenkins
-}
 
 initJenkins "$@"

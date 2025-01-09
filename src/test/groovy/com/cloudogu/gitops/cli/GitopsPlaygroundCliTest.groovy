@@ -253,7 +253,7 @@ class GitopsPlaygroundCliTest {
 
         configFile.text = toYaml(fileConfig)
 
-        cli.run("--config-file=${configFile}", "--yes")
+        cli.run("--config-file=${configFile}","--yes")
 
         assertThat(cli.lastSchema.features.monitoring.helm.chart).isEqualTo('kube-prometheus-stack')
         assertThat(cli.lastSchema.features.monitoring.helm.repoURL).isEqualTo('https://prometheus-community.github.io/helm-chartsTEST')
