@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.integration.features
 
+import groovy.util.logging.Slf4j
 import io.kubernetes.client.openapi.models.V1Pod
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -10,23 +11,26 @@ import static org.assertj.core.api.Assertions.assertThat
  * This class checks if cert-manager is started well.
  * Cert-Manager contains own namespace ('cert-manager') which owns and 3 Pods:
  */
+@Slf4j
 class CertManagerTestIT extends KubenetesApiTestSetup {
 
     String namespace = 'cert-manager'
-    String certManagerPodName = 'cert-manager-'
     int sumOfPods = 3
 
     @Override
     boolean isReadyToStartTests() {
-
+        // cert-manager should has 3 running pods
         def pods = api.listNamespacedPod(namespace).execute()
-        if (pods && !pods.items.isEmpty()) {
-            def certManagerPod = pods.items.find { it.getMetadata().name.startsWith(certManagerPodName) }
-            if (certManagerPod) {
-                return "Running".equals(certManagerPod.status.phase)
+        if (pods.items.size() != 3) {
+            return false
+        }
+        for (V1Pod pod : pods.getItems()) {
+            println("Pod ${pod.getMetadata().name} with status ${pod.status.phase}")
+            if (!"Running".equals(pod.status.phase)) {
+                return false
             }
         }
-        return false;
+        return true
     }
 
     @BeforeAll
@@ -51,15 +55,6 @@ class CertManagerTestIT extends KubenetesApiTestSetup {
         assertThat(pods).isNotNull()
         assertThat(pods.getItems().isEmpty()).isFalse()
 
-    }
-
-    @Test
-    void ensureAllCertManagerPodsAreStarted() {
-
-        def pods = api.listNamespacedPod(namespace).execute()
-        for (V1Pod pod : pods.getItems()) {
-            assertThat(pod.status.phase).isEqualTo("Running")
-        }
     }
 
     @Test

@@ -198,7 +198,7 @@ class K8sClient {
         Tuple2[] tuples = keys.collect { new Tuple2("${it}-", "") }.toArray(new Tuple2[0])
         label(resource, name, namespace, tuples)
     }
-    
+
     void label(String resource, String name, String namespace = '', Tuple2... keyValues) {
         if (!keyValues) {
             throw new RuntimeException("Missing key-value-pairs")
@@ -210,18 +210,18 @@ class K8sClient {
         commandExecutor.execute(command)
     }
 
-    String run (String name, String image, String namespace = '', Map overrides = [:], String... params) {
-        
+    String run(String name, String image, String namespace = '', Map overrides = [:], String... params) {
+
         def command1 = kubectl('run', name)
                 .mandatory('--image', image)
                 .namespace(namespace)
                 .optional(params)
                 .optional('--overrides', mapToJson(overrides, 'kubectl run overrides'))
                 .build()
-        
+
         commandExecutor.execute(command1).stdOut
     }
-    
+
     void patch(String resource, String name, String namespace = '', String type = '', Map yaml) {
         // We're using a patch file here, instead of a patch JSON (--patch), because of quoting issues
         // ERROR c.c.gitops.utils.CommandExecutor - Stderr: error: unable to parse "'{\"stringData\":": yaml: found unexpected end of stream
@@ -299,6 +299,41 @@ class K8sClient {
         }
         return output.stdOut
     }
+
+    /**
+     * @param resource resource to get the annotation from
+     * @param name name of the resource, only one resource allowed!
+     * @param key key of the annotation
+     * @param namespace namespace of the resource (if not cluster wide)
+     *
+     * @return the value of the annotation
+     */
+    String getAnnotation(String resource, String name, String key, String namespace = '') {
+        List<String> commandAsList = [
+                "kubectl",
+                "get",
+                resource,
+                name,
+                "-o",
+                // jsonpath expects a single resource object
+                // some requests with multiple resources may result in a listed response
+                // that does not match the jsonpath
+                "jsonpath={.metadata.annotations}"
+        ]
+        if (namespace) {
+            commandAsList.add("-n $namespace" as String)
+        }
+        String[] command = commandAsList.toArray(new String [0])
+        def result = commandExecutor.execute(command, false)
+        if (!result.getStdErr().isEmpty()){
+            throw new RuntimeException("Failed to fetch data from resource [$resource/$name] in namespace [$namespace]: ${result.stdErr}")
+        }
+        log.debug("getAnnotation returns = ${result.stdOut}")
+        def value = new JsonSlurper().parseText(result.stdOut) as Map
+        String myResult = value[key]
+        return myResult
+    }
+
 
     private Kubectl kubectl(String... args) {
         new Kubectl(args)
@@ -473,7 +508,7 @@ class K8sClient {
             }
             return this
         }
-        
+
         Kubectl optional(String... params) {
             command.addAll(params)
             return this

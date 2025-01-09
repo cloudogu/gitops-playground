@@ -594,6 +594,17 @@ class K8sClientTest {
         assertThat(commandExecutor.actualCommands[0]).contains('{"spec":{"containers":[{"name":"tmp-docker-gid-grepper","image":"bash:5"}]}}'.toString().trim())
     }
 
+    @Test
+    void 'fetch some data from monitoring namespace'() {
+        // prepare test outout
+        commandExecutor.enqueueOutput(new CommandExecutor.Output('', '{"app.kubernetes.io/created-by":"Internal OpenShift","openshift.io/description":"","openshift.io/display-name":"","openshift.io/requester":"myUser@mydomain.de","openshift.io/sa.scc.mcs":"s0:c30,c25","openshift.io/sa.scc.supplemental-groups":"1000920000/10000","openshift.io/sa.scc.uid-range":"1000920000/10000","project-type":"customer"}', 0))
+        // call k8s
+        def result = k8sClient.getAnnotation('namespace', 'monitoring', 'openshift.io/sa.scc.uid-range')
+        assertThat(commandExecutor.actualCommands[0]).isEqualTo("kubectl get namespace monitoring -o jsonpath={.metadata.annotations}")
+        assertThat(result).isEqualTo("1000920000/10000");
+    }
+
+
     private Map parseActualYaml(String pathToYamlFile) {
         File yamlFile = new File(pathToYamlFile)
         def ys = new YamlSlurper()

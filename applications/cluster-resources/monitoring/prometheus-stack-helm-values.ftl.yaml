@@ -146,12 +146,9 @@ grafana:
       check_for_updates: false
 <#if config.application.openshift == true>
   securityContext:
-      # Null is ignored on rendering resulting in default 472, which results in error: .containers[0].runAsUser: Invalid value: 472: must be in the ranges: [1000740000, 1000749999]
-      # So set some arbitrary but valid UID/GID
-      # Could likely be fixed by this never-ending PR: https://github.com/helm/helm/issues/12488
-      fsGroup: 1000740000
-      runAsGroup: 1000740000
-      runAsUser: 1000740000
+    fsGroup: ${uid}
+    runAsGroup: ${uid}
+    runAsUser: ${uid}
 </#if>
 <#if namespaceIsolation == true>
   rbac:
@@ -268,7 +265,7 @@ prometheus:
   prometheusSpec:
     <#if config.application.openshift == true>
     automountServiceAccountToken: null
-    securityContext: 
+    securityContext:
       fsGroup: null
       runAsGroup: null
       runAsUser: null
