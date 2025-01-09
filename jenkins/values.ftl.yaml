@@ -1,12 +1,13 @@
 dockerClientVersion: ${config.jenkins.internalDockerClientVersion}
 
 controller:
-  image:
-    registry: ghcr.io
-    repository: cloudogu/jenkins-helm
+  image: "ghcr.io/cloudogu/jenkins-helm"
+  tag: "4.8.1-1"
+
+    # registry: ghcr.io
+    # repository: cloudogu/jenkins-helm
     # The image corresponds to the helm version,
     # because it contains the default plugins for this particular chart version
-    tag: "${config.jenkins.helm.version}"
   installPlugins: false
   
   # to prevent the jenkins-ui-test pod being created

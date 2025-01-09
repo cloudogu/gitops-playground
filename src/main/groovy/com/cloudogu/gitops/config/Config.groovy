@@ -15,7 +15,7 @@ import picocli.CommandLine.Mixin
 import picocli.CommandLine.Option
 
 import static com.cloudogu.gitops.config.ConfigConstants.*
-import static picocli.CommandLine.ScopeType 
+import static picocli.CommandLine.ScopeType
 /**
  * The global configuration object.
  *
@@ -162,7 +162,7 @@ class Config {
           See addJenkinsConfig() and the comment at scmm.urlForJenkins */
         String urlForScmm = "http://jenkins"
         String ingress = ''
-        // Bash image used with internal Jenkins only 
+        // Bash image used with internal Jenkins only
         String internalBashImage = 'bash:5'
         /* Docker client image, downloaded on internal Jenkins only
           For updating, delete pvc jenkins-docker-client
@@ -205,7 +205,7 @@ class Config {
         HelmConfigWithValues helm = new HelmConfigWithValues(
                 chart: 'jenkins',
                 repoURL: 'https://charts.jenkins.io',
-                version: '5.8.1')
+                version: '4.8.1')
     }
 
     static class ScmmSchema {

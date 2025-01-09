@@ -72,7 +72,7 @@ me:x:1000:''')
         
         assertThat(parseActualYaml()['dockerClientVersion'].toString()).isEqualTo('23')
         
-        assertThat(parseActualYaml()['controller']['image']['tag']).isEqualTo('4.8.1')
+        assertThat(parseActualYaml()['controller']['tag']).isEqualTo('4.8.1-1')
         
         assertThat(parseActualYaml()['controller']['jenkinsUrl']).isEqualTo('http://jenkins')
         assertThat(parseActualYaml()['controller']['serviceType']).isEqualTo('NodePort')
