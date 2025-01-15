@@ -260,6 +260,95 @@ class GitopsPlaygroundCliTest {
         assertThat(cli.lastSchema.features.monitoring.helm.version).isEqualTo('66.5.0')
     }
 
+
+    @Test
+    void 'ensure helm defaults are used, if not set'() {
+    // this test sets only a few values for helm configuration and expect, that defaults are used.
+
+        def fileConfig = [
+                jenkins: [
+                        helm: [
+                                    version: '5.8.1'
+                        ]
+                ],
+                scmm: [
+                        helm: [
+                            values: [
+                                    initialDelaySeconds: 120
+                            ]
+                        ]
+                ]
+                ,
+                features: [
+                        monitoring: [
+                                helm: [
+                                        version: '66.2.1',
+                                        grafanaImage: 'localhost:30000/proxy/grafana:latest'
+                                ]
+                        ],
+                        secrets: [
+                                externalSecrets: [
+                                    helm: [
+                                            chart: 'my-secrets'
+                                    ]
+                                ],
+                                vault: [
+                                    helm: [
+                                            repoURL: 'localhost:3000/proxy/vault:latest'
+                                    ]
+                                ],
+                        ],
+                        certManager: [
+                                helm: [
+                                        image: 'localhost:30000/proxy/cert-manager-controller:latest'
+                                ]
+                        ]
+                ]
+        ]
+
+        def configFile = File.createTempFile("gop", ".yaml")
+        configFile.deleteOnExit()
+
+        configFile.text = toYaml(fileConfig)
+
+        cli.run("--config-file=${configFile}","--yes")
+        def myconfig = cli.lastSchema;
+        assertThat(myconfig.jenkins.helm.chart).isEqualTo('jenkins')
+        assertThat(myconfig.jenkins.helm.repoURL).isEqualTo('https://charts.jenkins.io')
+        assertThat(myconfig.jenkins.helm.version).isEqualTo('5.8.1') // overridden
+
+
+        assertThat(myconfig.scmm.helm.chart).isEqualTo('scm-manager')
+        assertThat(myconfig.scmm.helm.repoURL).isEqualTo('https://packages.scm-manager.org/repository/helm-v2-releases/')
+        assertThat(myconfig.scmm.helm.version).isEqualTo('3.2.1')
+        assertThat(myconfig.scmm.helm.values.initialDelaySeconds).isEqualTo(120) // overridden
+
+        assertThat(cli.lastSchema.features.monitoring.helm.chart).isEqualTo('kube-prometheus-stack')
+        assertThat(cli.lastSchema.features.monitoring.helm.repoURL).isEqualTo('https://prometheus-community.github.io/helm-charts')
+        assertThat(cli.lastSchema.features.monitoring.helm.version).isEqualTo('66.2.1')
+        assertThat(cli.lastSchema.features.monitoring.helm.grafanaSidecarImage).isEqualTo('')
+        assertThat(cli.lastSchema.features.monitoring.helm.prometheusImage).isEqualTo('')
+        assertThat(cli.lastSchema.features.monitoring.helm.prometheusConfigReloaderImage).isEqualTo('')
+        assertThat(cli.lastSchema.features.monitoring.helm.prometheusOperatorImage).isEqualTo('')
+        assertThat(cli.lastSchema.features.monitoring.helm.grafanaImage).isEqualTo('localhost:30000/proxy/grafana:latest')
+
+        assertThat(cli.lastSchema.features.secrets.externalSecrets.helm.chart).isEqualTo('my-secrets')
+        assertThat(cli.lastSchema.features.secrets.externalSecrets.helm.repoURL).isEqualTo('https://charts.external-secrets.io')
+        assertThat(cli.lastSchema.features.secrets.externalSecrets.helm.version).isEqualTo('0.9.16')
+
+        assertThat(cli.lastSchema.features.secrets.vault.helm.chart).isEqualTo('vault')
+        assertThat(cli.lastSchema.features.secrets.vault.helm.repoURL).isEqualTo('localhost:3000/proxy/vault:latest')
+        assertThat(cli.lastSchema.features.secrets.vault.helm.version).isEqualTo('0.25.0')
+
+        assertThat(cli.lastSchema.features.certManager.helm.chart).isEqualTo('cert-manager')
+        assertThat(cli.lastSchema.features.certManager.helm.repoURL).isEqualTo('https://charts.jetstack.io')
+        assertThat(cli.lastSchema.features.certManager.helm.version).isEqualTo('1.16.1')
+        assertThat(cli.lastSchema.features.certManager.helm.startupAPICheckImage).isEqualTo('')
+        assertThat(cli.lastSchema.features.certManager.helm.webhookImage).isEqualTo('')
+        assertThat(cli.lastSchema.features.certManager.helm.cainjectorImage).isEqualTo('')
+        assertThat(cli.lastSchema.features.certManager.helm.acmeSolverImage).isEqualTo('')
+        assertThat(cli.lastSchema.features.certManager.helm.image).isEqualTo('localhost:30000/proxy/cert-manager-controller:latest')
+    }
     static String getLoggingPattern() {
         loggingEncoder.pattern
     }
