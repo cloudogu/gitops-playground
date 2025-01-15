@@ -6,7 +6,6 @@ image:
 <#if imageObject.tag?has_content>  tag: ${imageObject.tag}</#if>
 </#if>
 <#if config.registry.createImagePullSecrets == true>
-
 imagePullSecrets: 
  - name: proxy-registry
 </#if>
@@ -39,4 +38,11 @@ resources:
   requests:
     memory: 10Mi
     cpu: 20m
+</#if>
+  
+<#if config.application.openshift == true>
+securityContext:
+  fsGroup: null
+  runAsGroup: null
+  runAsUser: null
 </#if>

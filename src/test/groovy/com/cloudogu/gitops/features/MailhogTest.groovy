@@ -203,6 +203,15 @@ class MailhogTest {
         assertThat(parseActualYaml()['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
     }
 
+    @Test
+    void 'empty security context in openshift'() {
+        config.application.openshift = true
+        createMailhog().install()
+        assertThat(parseActualYaml()['securityContext']['fsGroup']).isEqualTo(null)
+        assertThat(parseActualYaml()['securityContext']['runAsUser']).isEqualTo(null)
+        assertThat(parseActualYaml()['securityContext']['runAsGroup']).isEqualTo(null)
+    }
+
     private Mailhog createMailhog() {
         // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
 
