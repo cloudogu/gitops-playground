@@ -8,7 +8,6 @@ import com.cloudogu.gitops.Application
 import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.destroy.Destroyer
-import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.K8sClient
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 import io.micronaut.context.ApplicationContext
@@ -38,7 +37,7 @@ class GitopsPlaygroundCliTest {
     Destroyer destroyer = mock(Destroyer)
     GitopsPlaygroundCliForTest cli = new GitopsPlaygroundCliForTest()
     static YAMLMapper yamlMapper = new YAMLMapper()
-    
+
     @AfterEach
     void setup() {
         // Restore logging pattern, if modified
@@ -69,19 +68,7 @@ class GitopsPlaygroundCliTest {
         // Check application starts
         verify(application).start()
     }
-    @Test
-    void 'fails on starts because config file with helm overrides, not allowed'() {
-        String pathToConfigFile = "./src/test/resources/errorConfig.yaml"
 
-        assertThat(new File(pathToConfigFile).isFile()).withFailMessage("config file for test do not exists anymore.").isTrue()
-
-        def exception = shouldFail(RuntimeException) {
-            cli.run('--config-file=' + pathToConfigFile)
-        }
-        assertThat(exception.message).contains('Config file invalid')
-
-    }
-    
     @Test
     void 'Starts with config map'() {
         when(k8sClient.getConfigMap('my-config', 'config.yaml')).thenReturn('{"application": {"yes": true}}')
@@ -102,7 +89,7 @@ class GitopsPlaygroundCliTest {
         verify(applicationConfigurator).initAndValidateConfig(any(Config))
         verify(application, never()).start()
     }
-    
+
     @Test
     void 'Outputs version'() {
         def cli = new GitopsPlaygroundCliForTest()
@@ -134,7 +121,7 @@ class GitopsPlaygroundCliTest {
     @Test
     void 'Runs when applying is confirmed'() {
         writeViaSystemIn('y')
-        
+
         cli.run()
 
         verify(application).start()
@@ -149,9 +136,9 @@ class GitopsPlaygroundCliTest {
 
     @Test
     void 'Returns error, when destroying is not confirmed'() {
-        
+
         writeViaSystemIn('something')
-        
+
         def status = cli.run('--destroy')
 
         assertThat(status).isEqualTo(ReturnCode.NOT_CONFIRMED)
@@ -159,9 +146,9 @@ class GitopsPlaygroundCliTest {
 
     @Test
     void 'Destroys when confirmed'() {
-        
+
         writeViaSystemIn('y')
-        
+
         cli.run '--destroy'
 
         verify(destroyer).destroy()
@@ -184,11 +171,11 @@ class GitopsPlaygroundCliTest {
 
     @Test
     void 'keeps simplified logging pattern when trace is enabled'() {
-        cli.run('--trace','--yes')
+        cli.run('--trace', '--yes')
 
         assertThat(getLoggingPattern()).contains('%logger', '%thread')
     }
-    
+
     @Test
     void 'keeps simplified logging pattern when debug is enabled'() {
         cli.run('--debug', '--yes')
@@ -198,13 +185,13 @@ class GitopsPlaygroundCliTest {
 
     @Test
     void 'fails on invalid config file'() {
-        
+
         def configFile = File.createTempFile("gop", '.yaml')
         configFile.deleteOnExit()
         configFile.text = 'something: not-matching-our-schema'
-        
+
         def exception = shouldFail(RuntimeException) {
-            cli.run("--config-file=${configFile}", '--yes' )
+            cli.run("--config-file=${configFile}", '--yes')
         }
         assertThat(exception.message).contains('Config file invalid')
     }
@@ -214,11 +201,11 @@ class GitopsPlaygroundCliTest {
         when(k8sClient.getConfigMap('my-config', 'config.yaml')).thenReturn('something: not-matching-our-schema')
 
         def exception = shouldFail(RuntimeException) {
-            cli.run('--config-map=my-config', '--yes' )
+            cli.run('--config-map=my-config', '--yes')
         }
         assertThat(exception.message).contains('Config file invalid')
     }
-    
+
     @Test
     void 'Precedence: config file overwrite confiMap, cli overwrites config file'() {
 
@@ -226,27 +213,142 @@ class GitopsPlaygroundCliTest {
                 application: [
                         username: 'cmUser', password: 'cmPw', namePrefix: 'cmPref'
                 ]
-        ] 
+        ]
         def fileConfig = [
                 application: [
                         username: 'fileUser', password: 'filePw'
                 ]
         ]
-        
+
         def configFile = File.createTempFile("gop", '.yaml')
         configFile.deleteOnExit()
-        
+
         configFile.text = toYaml(fileConfig)
         when(k8sClient.getConfigMap('my-config', 'config.yaml')).thenReturn(toYaml(cmConfig))
 
         cli.run("--config-file=${configFile}", '--config-map=my-config', '--username=paramUser', '--yes')
-        
+
         assertThat(cli.lastSchema.application.username).isEqualTo('paramUser')
         assertThat(cli.lastSchema.application.password).isEqualTo('filePw')
         assertThat(cli.lastSchema.application.namePrefix).isEqualTo('cmPref')
     }
 
 
+    @Test
+    void 'Helm null values overwrite'() {
+
+
+        def fileConfig = [
+                features: [
+                        monitoring: [
+                                helm: [
+                                        repoURL: "https://prometheus-community.github.io/helm-chartsTEST"
+                                ]
+                        ]
+                ]
+        ]
+
+        def configFile = File.createTempFile("gop", '.yaml')
+        configFile.deleteOnExit()
+
+        configFile.text = toYaml(fileConfig)
+
+        cli.run("--config-file=${configFile}", "--yes")
+
+        assertThat(cli.lastSchema.features.monitoring.helm.chart).isEqualTo('kube-prometheus-stack')
+        assertThat(cli.lastSchema.features.monitoring.helm.repoURL).isEqualTo('https://prometheus-community.github.io/helm-chartsTEST')
+        assertThat(cli.lastSchema.features.monitoring.helm.version).isEqualTo('66.5.0')
+    }
+
+
+    @Test
+    void 'ensure helm defaults are used, if not set'() {
+    // this test sets only a few values for helm configuration and expect, that defaults are used.
+
+        def fileConfig = [
+                jenkins: [
+                        helm: [
+                                    version: '5.8.1'
+                        ]
+                ],
+                scmm: [
+                        helm: [
+                            values: [
+                                    initialDelaySeconds: 120
+                            ]
+                        ]
+                ]
+                ,
+                features: [
+                        monitoring: [
+                                helm: [
+                                        version: '66.2.1',
+                                        grafanaImage: 'localhost:30000/proxy/grafana:latest'
+                                ]
+                        ],
+                        secrets: [
+                                externalSecrets: [
+                                    helm: [
+                                            chart: 'my-secrets'
+                                    ]
+                                ],
+                                vault: [
+                                    helm: [
+                                            repoURL: 'localhost:3000/proxy/vault:latest'
+                                    ]
+                                ],
+                        ],
+                        certManager: [
+                                helm: [
+                                        image: 'localhost:30000/proxy/cert-manager-controller:latest'
+                                ]
+                        ]
+                ]
+        ]
+
+        def configFile = File.createTempFile("gop", ".yaml")
+        configFile.deleteOnExit()
+
+        configFile.text = toYaml(fileConfig)
+
+        cli.run("--config-file=${configFile}","--yes")
+        def myconfig = cli.lastSchema;
+        assertThat(myconfig.jenkins.helm.chart).isEqualTo('jenkins')
+        assertThat(myconfig.jenkins.helm.repoURL).isEqualTo('https://charts.jenkins.io')
+        assertThat(myconfig.jenkins.helm.version).isEqualTo('5.8.1') // overridden
+
+
+        assertThat(myconfig.scmm.helm.chart).isEqualTo('scm-manager')
+        assertThat(myconfig.scmm.helm.repoURL).isEqualTo('https://packages.scm-manager.org/repository/helm-v2-releases/')
+        assertThat(myconfig.scmm.helm.version).isEqualTo('3.2.1')
+        assertThat(myconfig.scmm.helm.values.initialDelaySeconds).isEqualTo(120) // overridden
+
+        assertThat(cli.lastSchema.features.monitoring.helm.chart).isEqualTo('kube-prometheus-stack')
+        assertThat(cli.lastSchema.features.monitoring.helm.repoURL).isEqualTo('https://prometheus-community.github.io/helm-charts')
+        assertThat(cli.lastSchema.features.monitoring.helm.version).isEqualTo('66.2.1')
+        assertThat(cli.lastSchema.features.monitoring.helm.grafanaSidecarImage).isEqualTo('')
+        assertThat(cli.lastSchema.features.monitoring.helm.prometheusImage).isEqualTo('')
+        assertThat(cli.lastSchema.features.monitoring.helm.prometheusConfigReloaderImage).isEqualTo('')
+        assertThat(cli.lastSchema.features.monitoring.helm.prometheusOperatorImage).isEqualTo('')
+        assertThat(cli.lastSchema.features.monitoring.helm.grafanaImage).isEqualTo('localhost:30000/proxy/grafana:latest')
+
+        assertThat(cli.lastSchema.features.secrets.externalSecrets.helm.chart).isEqualTo('my-secrets')
+        assertThat(cli.lastSchema.features.secrets.externalSecrets.helm.repoURL).isEqualTo('https://charts.external-secrets.io')
+        assertThat(cli.lastSchema.features.secrets.externalSecrets.helm.version).isEqualTo('0.9.16')
+
+        assertThat(cli.lastSchema.features.secrets.vault.helm.chart).isEqualTo('vault')
+        assertThat(cli.lastSchema.features.secrets.vault.helm.repoURL).isEqualTo('localhost:3000/proxy/vault:latest')
+        assertThat(cli.lastSchema.features.secrets.vault.helm.version).isEqualTo('0.25.0')
+
+        assertThat(cli.lastSchema.features.certManager.helm.chart).isEqualTo('cert-manager')
+        assertThat(cli.lastSchema.features.certManager.helm.repoURL).isEqualTo('https://charts.jetstack.io')
+        assertThat(cli.lastSchema.features.certManager.helm.version).isEqualTo('1.16.1')
+        assertThat(cli.lastSchema.features.certManager.helm.startupAPICheckImage).isEqualTo('')
+        assertThat(cli.lastSchema.features.certManager.helm.webhookImage).isEqualTo('')
+        assertThat(cli.lastSchema.features.certManager.helm.cainjectorImage).isEqualTo('')
+        assertThat(cli.lastSchema.features.certManager.helm.acmeSolverImage).isEqualTo('')
+        assertThat(cli.lastSchema.features.certManager.helm.image).isEqualTo('localhost:30000/proxy/cert-manager-controller:latest')
+    }
     static String getLoggingPattern() {
         loggingEncoder.pattern
     }
@@ -262,11 +364,11 @@ class GitopsPlaygroundCliTest {
         ByteArrayInputStream inContent = new ByteArrayInputStream("${value}\n".getBytes())
         System.setIn(inContent)
     }
-    
+
     static String toYaml(Map map) {
         yamlMapper.writeValueAsString(map)
     }
-    
+
     class GitopsPlaygroundCliForTest extends GitopsPlaygroundCli {
         ApplicationContext applicationContext = mock(ApplicationContext)
         Config lastSchema = null
@@ -283,12 +385,12 @@ class GitopsPlaygroundCliTest {
             })
 
         }
-        
+
         @Override
         protected ApplicationContext createApplicationContext() {
             when(applicationContext.getBean(Application)).thenReturn(application)
             when(applicationContext.getBean(Destroyer)).thenReturn(destroyer)
-            
+
             return applicationContext
         }
     }

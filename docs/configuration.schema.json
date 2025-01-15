@@ -14,9 +14,21 @@
     "HelmConfigWithValues-nullable" : {
       "type" : [ "object", "null" ],
       "properties" : {
+        "chart" : {
+          "type" : [ "string", "null" ],
+          "description" : "Name of the Helm chart"
+        },
+        "repoURL" : {
+          "type" : [ "string", "null" ],
+          "description" : "Repository url from which the Helm chart should be obtained"
+        },
         "values" : {
           "$ref" : "#/$defs/Map(String,Object)-nullable",
           "description" : "Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration"
+        },
+        "version" : {
+          "type" : [ "string", "null" ],
+          "description" : "The version of the Helm chart to be installed"
         }
       },
       "additionalProperties" : false
@@ -198,9 +210,17 @@
                   "type" : [ "string", "null" ],
                   "description" : "Sets cainjector Image for Cert Manager"
                 },
+                "chart" : {
+                  "type" : [ "string", "null" ],
+                  "description" : "Name of the Helm chart"
+                },
                 "image" : {
                   "type" : [ "string", "null" ],
                   "description" : "Sets image for Cert Manager"
+                },
+                "repoURL" : {
+                  "type" : [ "string", "null" ],
+                  "description" : "Repository url from which the Helm chart should be obtained"
                 },
                 "startupAPICheckImage" : {
                   "type" : [ "string", "null" ],
@@ -209,6 +229,10 @@
                 "values" : {
                   "$ref" : "#/$defs/Map(String,Object)-nullable",
                   "description" : "Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration"
+                },
+                "version" : {
+                  "type" : [ "string", "null" ],
+                  "description" : "The version of the Helm chart to be installed"
                 },
                 "webhookImage" : {
                   "type" : [ "string", "null" ],
@@ -247,13 +271,25 @@
             "helm" : {
               "type" : [ "object", "null" ],
               "properties" : {
+                "chart" : {
+                  "type" : [ "string", "null" ],
+                  "description" : "Name of the Helm chart"
+                },
                 "image" : {
                   "type" : [ "string", "null" ],
                   "description" : "The image of the Helm chart to be installed"
                 },
+                "repoURL" : {
+                  "type" : [ "string", "null" ],
+                  "description" : "Repository url from which the Helm chart should be obtained"
+                },
                 "values" : {
                   "$ref" : "#/$defs/Map(String,Object)-nullable",
                   "description" : "Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration"
+                },
+                "version" : {
+                  "type" : [ "string", "null" ],
+                  "description" : "The version of the Helm chart to be installed"
                 }
               },
               "additionalProperties" : false,
@@ -269,13 +305,25 @@
             "helm" : {
               "type" : [ "object", "null" ],
               "properties" : {
+                "chart" : {
+                  "type" : [ "string", "null" ],
+                  "description" : "Name of the Helm chart"
+                },
                 "image" : {
                   "type" : [ "string", "null" ],
                   "description" : "The image of the Helm chart to be installed"
                 },
+                "repoURL" : {
+                  "type" : [ "string", "null" ],
+                  "description" : "Repository url from which the Helm chart should be obtained"
+                },
                 "values" : {
                   "$ref" : "#/$defs/Map(String,Object)-nullable",
                   "description" : "Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration"
+                },
+                "version" : {
+                  "type" : [ "string", "null" ],
+                  "description" : "The version of the Helm chart to be installed"
                 }
               },
               "additionalProperties" : false,
@@ -331,6 +379,10 @@
             "helm" : {
               "type" : [ "object", "null" ],
               "properties" : {
+                "chart" : {
+                  "type" : [ "string", "null" ],
+                  "description" : "Name of the Helm chart"
+                },
                 "grafanaImage" : {
                   "type" : [ "string", "null" ],
                   "description" : "Sets image for grafana"
@@ -351,9 +403,17 @@
                   "type" : [ "string", "null" ],
                   "description" : "Sets image for prometheus-operator"
                 },
+                "repoURL" : {
+                  "type" : [ "string", "null" ],
+                  "description" : "Repository url from which the Helm chart should be obtained"
+                },
                 "values" : {
                   "$ref" : "#/$defs/Map(String,Object)-nullable",
                   "description" : "Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration"
+                },
+                "version" : {
+                  "type" : [ "string", "null" ],
+                  "description" : "The version of the Helm chart to be installed"
                 }
               },
               "additionalProperties" : false,
@@ -376,13 +436,25 @@
                       "type" : [ "string", "null" ],
                       "description" : "Sets image for external secrets operator's controller"
                     },
+                    "chart" : {
+                      "type" : [ "string", "null" ],
+                      "description" : "Name of the Helm chart"
+                    },
                     "image" : {
                       "type" : [ "string", "null" ],
                       "description" : "Sets image for external secrets operator"
                     },
+                    "repoURL" : {
+                      "type" : [ "string", "null" ],
+                      "description" : "Repository url from which the Helm chart should be obtained"
+                    },
                     "values" : {
                       "$ref" : "#/$defs/Map(String,Object)-nullable",
                       "description" : "Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration"
+                    },
+                    "version" : {
+                      "type" : [ "string", "null" ],
+                      "description" : "The version of the Helm chart to be installed"
                     },
                     "webhookImage" : {
                       "type" : [ "string", "null" ],
@@ -402,13 +474,25 @@
                 "helm" : {
                   "type" : [ "object", "null" ],
                   "properties" : {
+                    "chart" : {
+                      "type" : [ "string", "null" ],
+                      "description" : "Name of the Helm chart"
+                    },
                     "image" : {
                       "type" : [ "string", "null" ],
                       "description" : "Sets image for vault"
                     },
+                    "repoURL" : {
+                      "type" : [ "string", "null" ],
+                      "description" : "Repository url from which the Helm chart should be obtained"
+                    },
                     "values" : {
                       "$ref" : "#/$defs/Map(String,Object)-nullable",
                       "description" : "Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration"
+                    },
+                    "version" : {
+                      "type" : [ "string", "null" ],
+                      "description" : "The version of the Helm chart to be installed"
                     }
                   },
                   "additionalProperties" : false,

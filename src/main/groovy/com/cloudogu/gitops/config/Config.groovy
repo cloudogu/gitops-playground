@@ -1,6 +1,6 @@
 package com.cloudogu.gitops.config
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.databind.*
@@ -80,10 +80,12 @@ class Config {
     @Mixin
     FeaturesSchema features = new FeaturesSchema()
 
-    @JsonIgnoreProperties
     static class HelmConfig {
+        @JsonPropertyDescription(HELM_CONFIG_CHART_DESCRIPTION)
         String chart = ''
+        @JsonPropertyDescription(HELM_CONFIG_REPO_URL_DESCRIPTION)
         String repoURL = ''
+        @JsonPropertyDescription(HELM_CONFIG_VERSION_DESCRIPTION)
         String version = ''
     }
 

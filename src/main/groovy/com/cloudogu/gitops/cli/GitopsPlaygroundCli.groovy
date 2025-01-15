@@ -195,6 +195,9 @@ class GitopsPlaygroundCli {
             deepMerge(it, mergedConfigs)
         }
 
+        // DeepMerge with default Config values to keep the default values defined in Config.groovy
+        mergedConfigs = deepMerge(mergedConfigs,new Config().toMap())
+
         log.debug("Writing CLI params into config")
         Config mergedConfig = Config.fromMap(mergedConfigs)
         //Schema newConfig = Config.fromMap(deepMerge(configToSet, config.toMap()))
