@@ -42,7 +42,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
         clusterResourcesRepo.cloneRepo()
 
         // Inline values from tmpHelmValues file into ArgoCD Application YAML
-        def inlineValues = new YamlSlurper().parse(helmValuesPath.toFile())
+        def inlineValues = helmValuesPath.toFile().text
 
         // Write chart, repoURL and version into a ArgoCD Application YAML
 
@@ -68,7 +68,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
                                         targetRevision                     : version,
                                         helm                               : [
                                                 releaseName: releaseName,
-                                                valuesObject: inlineValues
+                                                values: inlineValues
                                         ],
                                 ],
                         ],

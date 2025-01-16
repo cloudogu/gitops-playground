@@ -457,6 +457,9 @@ policies:
     @Test
     void 'works with openshift'() {
         config.application.openshift = true
+        // Prepare UID
+        String realoutput='{"app.kubernetes.io/created-by":"Internal OpenShift","openshift.io/description":"","openshift.io/display-name":"","openshift.io/requester":"myUser@mydomain.de","openshift.io/sa.scc.mcs":"s0:c30,c25","openshift.io/sa.scc.supplemental-groups":"1000920000/10000","openshift.io/sa.scc.uid-range":"1000920000/10000","project-type":"customer"}'
+        k8sCommandExecutor.enqueueOutput(new CommandExecutor.Output('', realoutput, 0))
 
         createStack().install()
 
@@ -467,9 +470,9 @@ policies:
         assertThat(yaml['prometheusOperator']['securityContext']['runAsUser']).isNull()
 
         assertThat(yaml['grafana']['securityContext']).isNotNull()
-        assertThat(yaml['grafana']['securityContext']['fsGroup']).isEqualTo(1000740000)
-        assertThat(yaml['grafana']['securityContext']['runAsGroup']).isEqualTo(1000740000)
-        assertThat(yaml['grafana']['securityContext']['runAsUser']).isEqualTo(1000740000)
+        assertThat(yaml['grafana']['securityContext']['fsGroup']).isEqualTo(1000920000)
+        assertThat(yaml['grafana']['securityContext']['runAsGroup']).isEqualTo(1000920000)
+        assertThat(yaml['grafana']['securityContext']['runAsUser']).isEqualTo(1000920000)
 
         assertThat(yaml['prometheus']['prometheusSpec']['securityContext']).isNotNull()
         assertThat(yaml['prometheus']['prometheusSpec']['securityContext']['fsGroup']).isNull()

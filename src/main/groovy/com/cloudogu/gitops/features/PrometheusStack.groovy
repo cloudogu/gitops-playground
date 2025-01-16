@@ -69,10 +69,10 @@ class PrometheusStack extends Feature implements FeatureWithImage {
                         grafanaEmailTo  : config.features.monitoring.grafanaEmailTo,
                         grafana         : [
                                 // Note that passing the URL object here leads to problems in Graal Native image, see Git history
-                                host: config.features.monitoring.grafanaUrl ? new URL(config.features.monitoring.grafanaUrl ).host : ""
+                                host: config.features.monitoring.grafanaUrl ? new URL(config.features.monitoring.grafanaUrl).host : ""
                         ]
                 ],
-                remote: config.application.remote,
+                remote            : config.application.remote,
                 skipCrds          : config.application.skipCrds,
                 namespaceIsolation: config.application.namespaceIsolation,
                 namespaces        : config.application.activeNamespaces,
@@ -85,10 +85,13 @@ class PrometheusStack extends Feature implements FeatureWithImage {
                 ],
                 scmm              : getScmmConfiguration(),
                 jenkins           : getJenkinsConfiguration(),
-                config: config,
+                config            : config,
                 // Allow for using static classes inside the templates
-                statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
+                statics           : new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels(),
+                uid               : config.application.openshift ? findValidOpenShiftUid()  : ''
         ])
+
+
         def helmConfig = config.features.monitoring.helm
         def mergedMap = MapUtils.deepMerge(helmConfig.values, templatedMap)
 
@@ -122,7 +125,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
             clusterResourcesRepo.cloneRepo()
             for (String currentNamespace : config.application.activeNamespaces) {
 
-                if(config.application.namespaceIsolation) {
+                if (config.application.namespaceIsolation) {
                     def rbacYaml = new TemplatingEngine().template(new File(RBAC_NAMESPACE_ISOLATION_TEMPLATE),
                             [namespace : currentNamespace,
                              namePrefix: namePrefix])
@@ -149,8 +152,8 @@ class PrometheusStack extends Feature implements FeatureWithImage {
 
             String prometheusVersion =
                     new YamlSlurper().parse(Path.of("${config.application.localHelmChartFolder}/${helmConfig.chart}",
-                    'Chart.yaml'))['version']
-            
+                            'Chart.yaml'))['version']
+
             deployer.deployFeature(
                     "${scmmUri}/repo/${repoNamespaceAndName}",
                     'prometheusstack',
@@ -172,6 +175,19 @@ class PrometheusStack extends Feature implements FeatureWithImage {
         }
     }
 
+    private String findValidOpenShiftUid() {
+        String uidRange = k8sClient.getAnnotation('namespace', 'monitoring', 'openshift.io/sa.scc.uid-range')
+
+        if (uidRange) {
+            log.debug("found UID=${uidRange}")
+            String uid = uidRange.split("/")[0]
+            return uid
+        } else {
+            throw new RuntimeException("Could not find a valid UID! Really running on openshift?")
+        }
+    }
+
+
     private Map getScmmConfiguration() {
         // Note that URI.resolve() seems to throw away the existing path. So we create a new URI object.
         URI uri = new URI("${scmmUri}/api/v2/metrics/prometheus")
@@ -182,7 +198,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
                 path    : uri.path
         ]
     }
-    
+
     private URI getScmmUri() {
         if (config.scmm.internal) {
             new URI('http://scmm-scm-manager.default.svc.cluster.local/scm')
