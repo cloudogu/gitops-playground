@@ -625,6 +625,24 @@ class ArgoCDTest {
     }
 
     @Test
+    void 'SecurityContext null in Openshift'() {
+        config.application.openshift = true
+        createArgoCD().install()
+
+        for (def petclinicRepo : petClinicRepos) {
+            if (petclinicRepo.scmmRepoTarget.contains('argocd/petclinic-plain')) {
+                assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, '/k8s/staging/deployment.yaml').text).contains('runAsUser: null')
+                assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, '/k8s/staging/deployment.yaml').text).contains('runAsGroup: null')
+            }
+            if (petclinicRepo.scmmRepoTarget.contains('argocd/petclinic-helm')) {
+                assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, '/k8s/values-shared.yaml').text).contains('runAsUser: null')
+                assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, '/k8s/values-shared.yaml').text).contains('runAsGroup: null')
+            }
+        }
+    }
+
+
+    @Test
     void 'configures custom nginx image'() {
         config.images.nginx = 'localhost:5000/nginx/nginx:latest'
         createArgoCD().install()
