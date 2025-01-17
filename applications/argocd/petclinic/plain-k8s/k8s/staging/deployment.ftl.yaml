@@ -46,7 +46,11 @@ spec:
               cpu: 300m
               memory: 650Mi
 </#if>
-          securityContext: # Implement some least privilege good practices
+          securityContext:
+<#if config.application.openshift == true>
+            runAsUser: null
+            runAsGroup: null
+</#if>
             runAsNonRoot: true
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true

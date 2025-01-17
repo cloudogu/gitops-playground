@@ -13,6 +13,12 @@ podinfo:
   ui:
     color: '#456456'
 
+<#if config.application.openshift == true>
+securityContext:
+  runAsUser: null
+  runAsGroup: null
+</#if>  
+
 <#if podResources == true>
 resources:
   limits:

@@ -374,7 +374,7 @@ class Config {
 
         @Option(names = ['--petclinic-image'], description = PETCLINIC_IMAGE_DESCRIPTION)
         @JsonPropertyDescription(PETCLINIC_IMAGE_DESCRIPTION)
-        String petclinic = 'eclipse-temurin:11-jre-alpine'
+        String petclinic = 'eclipse-temurin:17-jre-alpine'
 
         @Option(names = ['--maven-image'], description = MAVEN_IMAGE_DESCRIPTION)
         @JsonPropertyDescription(MAVEN_IMAGE_DESCRIPTION)
@@ -386,12 +386,12 @@ class Config {
         RepositorySchemaWithRef springBootHelmChart = new RepositorySchemaWithRef(
                 // Take from env or use default because the Dockerfile provides a local copy of the repo
                 url: System.getenv('SPRING_BOOT_HELM_CHART_REPO') ?: 'https://github.com/cloudogu/spring-boot-helm-chart.git',
-                ref: '0.3.2'
+                ref: '0.4.0'
         )
         @JsonPropertyDescription(SPRING_PETCLINIC_DESCRIPTION)
         RepositorySchemaWithRef springPetclinic = new RepositorySchemaWithRef(
                 url: System.getenv('SPRING_PETCLINIC_REPO') ?: 'https://github.com/cloudogu/spring-petclinic.git',
-                ref: 'b0e0d18'
+                ref: 'faf9b7c'
         )
         @JsonPropertyDescription(GITOPS_BUILD_LIB_DESCRIPTION)
         RepositorySchema gitopsBuildLib = new RepositorySchema(
