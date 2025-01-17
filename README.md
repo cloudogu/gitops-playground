@@ -1007,7 +1007,9 @@ Note that the GitOps-related logic is implemented in the
 [gitops-build-lib](https://github.com/cloudogu/gitops-build-lib) for Jenkins. See the README there for more options like
 * staging,
 * resource creation,
-* validation (fail early / shift left).
+* validation (fail early / shift left). 
+
+For further understanding, also take look at the GitOps pattern repository at [GitOps-Paddern](https://github.com/cloudogu/gitops-patterns?tab=readme-ov-file#gitops-playground)
 
 Please note that it might take about a minute after the pull request has been accepted for the GitOps operator to start
 deploying.
