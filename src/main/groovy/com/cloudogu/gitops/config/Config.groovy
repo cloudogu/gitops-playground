@@ -391,7 +391,7 @@ class Config {
         @JsonPropertyDescription(SPRING_PETCLINIC_DESCRIPTION)
         RepositorySchemaWithRef springPetclinic = new RepositorySchemaWithRef(
                 url: System.getenv('SPRING_PETCLINIC_REPO') ?: 'https://github.com/cloudogu/spring-petclinic.git',
-                ref: 'b0e0d18'
+                ref: 'faf9b7c'
         )
         @JsonPropertyDescription(GITOPS_BUILD_LIB_DESCRIPTION)
         RepositorySchema gitopsBuildLib = new RepositorySchema(
