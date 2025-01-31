@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.databind.*
-import com.fasterxml.jackson.databind.introspect.POJOPropertyBuilder
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.ser.BeanPropertyWriter
 import com.fasterxml.jackson.databind.ser.BeanSerializerModifier
@@ -242,6 +241,14 @@ class Config {
                 version: '3.2.1',
                 values: [:]
         )
+
+        @Option(names = ['--scm-root-path'], description = SCM_ROOT_PATH_DESCRIPTION)
+        @JsonPropertyDescription(SCM_ROOT_PATH_DESCRIPTION)
+        String rootPath = 'repo'
+
+        @Option(names = ['--scm-provider'], description = SCM_PROVIDER_DESCRIPTION)
+        @JsonPropertyDescription(SCM_PROVIDER_DESCRIPTION)
+        String provider = 'scm-manager'
     }
 
     static class ApplicationSchema {
