@@ -30,6 +30,7 @@ class ScmmRepo {
     private Git gitMemoization = null
     private String gitName
     private String gitEmail
+    private String rootPath
 
     ScmmRepo(Config config, String scmmRepoTarget, FileSystemUtils fileSystemUtils) {
         def tmpDir = File.createTempDir()
@@ -44,6 +45,7 @@ class ScmmRepo {
         this.insecure = config.application.insecure
         this.gitName = config.application.gitName
         this.gitEmail = config.application.gitEmail
+        this.rootPath = config.scmm.rootPath
     }
 
     String getAbsoluteLocalRepoTmpDir() {
@@ -172,6 +174,6 @@ class ScmmRepo {
     }
 
     protected String getGitRepositoryUrl() {
-        return scmmUrl + "/repo/" + scmmRepoTarget
+        return "${scmmUrl}/${rootPath}/${scmmRepoTarget}"
     }
 }
