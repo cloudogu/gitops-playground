@@ -697,6 +697,14 @@
           "type" : [ "string", "null" ],
           "description" : "Mandatory when scmm-url is set"
         },
+        "provider" : {
+          "type" : [ "string", "null" ],
+          "description" : "Sets the scm Provider. Possible Options are \"scm-manager\" and \"gitlab\""
+        },
+        "rootPath" : {
+          "type" : [ "string", "null" ],
+          "description" : "Sets the root path for the Git Repositories. In SCM-Manager it is always \"repo\""
+        },
         "url" : {
           "type" : [ "string", "null" ],
           "description" : "The host of your external scm-manager"

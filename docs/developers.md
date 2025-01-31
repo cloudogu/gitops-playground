@@ -986,3 +986,9 @@ kubectl kustomize config/default | kubectl create -f - || true
 3. The patch also changes the image tag in the kustomization.yaml file located in the manager directory from version v0.11.1 to v0.11.0. The Version v0.11.1 does not exist in the Repository anymore, but is referenced in the Kustomization.
 4. Install the Prometheus CRDs. These Custom Resource Definitions are necessary for monitoring the operator and will prevent a successful startup if not present. 
 5. Install the ArgoCD Operator CRDs and components using kubectl kustomize.
+
+## Gitlab (Experimental)
+
+### Disclaimer
+The GitLab integration is for **experimental use only** and is **not fully implemented**. Features may be incomplete, unstable, or subject to change. Use at your own discretion.  
+
