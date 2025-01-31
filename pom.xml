@@ -305,6 +305,11 @@
     </dependency>
 
 
+    <dependency>
+      <groupId>org.gitlab4j</groupId>
+      <artifactId>gitlab4j-api</artifactId>
+      <version>6.0.0-rc.8</version>
+    </dependency>
 
     <dependency>
       <groupId>com.github.victools</groupId>
@@ -349,6 +354,11 @@
       <groupId>io.github.classgraph</groupId>
       <artifactId>classgraph</artifactId>
       <version>4.8.141</version>
+    </dependency>
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <scope>provided</scope>
     </dependency>
   </dependencies>
 

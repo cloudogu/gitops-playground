@@ -19,7 +19,7 @@ import java.util.regex.Pattern
 class ScmmRepo {
 
     static final String NAMESPACE_3RD_PARTY_DEPENDENCIES = '3rd-party-dependencies'
-    
+
     private String scmmRepoTarget
     private String username
     private String password
@@ -30,20 +30,24 @@ class ScmmRepo {
     private Git gitMemoization = null
     private String gitName
     private String gitEmail
+    private String rootPath
+    private String scmProvider
 
     ScmmRepo(Config config, String scmmRepoTarget, FileSystemUtils fileSystemUtils) {
         def tmpDir = File.createTempDir()
         tmpDir.deleteOnExit()
-        this.username =  config.scmm.internal ? config.application.username : config.scmm.username
+        this.username = config.scmm.internal ? config.application.username : config.scmm.username
         this.password = config.scmm.internal ? config.application.password : config.scmm.password
         this.scmmUrl = "${config.scmm.protocol}://${config.scmm.host}"
-        this.scmmRepoTarget =  scmmRepoTarget.startsWith(NAMESPACE_3RD_PARTY_DEPENDENCIES) ? scmmRepoTarget : 
+        this.scmmRepoTarget = scmmRepoTarget.startsWith(NAMESPACE_3RD_PARTY_DEPENDENCIES) ? scmmRepoTarget :
                 "${config.application.namePrefix}${scmmRepoTarget}"
         this.absoluteLocalRepoTmpDir = tmpDir.absolutePath
         this.fileSystemUtils = fileSystemUtils
         this.insecure = config.application.insecure
         this.gitName = config.application.gitName
         this.gitEmail = config.application.gitEmail
+        this.scmProvider = config.scmm.provider
+        this.rootPath = config.scmm.rootPath
     }
 
     String getAbsoluteLocalRepoTmpDir() {
@@ -57,6 +61,20 @@ class ScmmRepo {
     static String createScmmUrl(Config config) {
         return "${config.scmm.protocol}://${config.scmm.host}"
     }
+
+    static String createRepoBaseUrl(Config config) {
+        //TODO multi-tenancy
+        //TODO UnitTests
+        if (config.scmm.provider == "scm-manager") {
+            return createScmmUrl(config) + "/repo/${config.application.namePrefix}"
+        }
+        if (config.scmm.provider == "gitlab") {
+            return "${config.scmm.protocol}://${config.scmm.host}/${config.application.namePrefix}scm/"
+        }
+        log.error("No SCM Provider found. Failing to create SCMURL!")
+        return ""
+    }
+
 
     void cloneRepo() {
         log.debug("Cloning $scmmRepoTarget repo")
@@ -102,14 +120,14 @@ class ScmmRepo {
                     .setAuthor(gitName, gitEmail)
                     .setCommitter(gitName, gitEmail)
                     .call()
-            
+
             def pushCommand = getGit()
                     .push()
                     .setForce(true)
                     .setRemote(getGitRepositoryUrl())
                     .setRefSpecs(new RefSpec("HEAD:refs/heads/main"))
                     .setCredentialsProvider(getCredentialProvider())
-            
+
             if (tag) {
                 log.debug("Setting tag '${tag}' on repo: ${scmmRepoTarget}")
                 // Delete existing tags first to get idempotence
@@ -118,10 +136,10 @@ class ScmmRepo {
                         .tag()
                         .setName(tag)
                         .call()
-                
+
                 pushCommand.setPushTags()
             }
-            
+
             log.debug("Pushing repo: ${scmmRepoTarget}")
             pushCommand.call()
         }
@@ -154,6 +172,9 @@ class ScmmRepo {
     }
 
     private CredentialsProvider getCredentialProvider() {
+        if (scmProvider == "gitlab") {
+            username = "oauth2"
+        }
         def passwordAuthentication = new UsernamePasswordCredentialsProvider(username, password)
 
         if (!insecure) {
@@ -172,6 +193,6 @@ class ScmmRepo {
     }
 
     protected String getGitRepositoryUrl() {
-        return scmmUrl + "/repo/" + scmmRepoTarget
+        return "${scmmUrl}/${rootPath}/${scmmRepoTarget}"
     }
 }

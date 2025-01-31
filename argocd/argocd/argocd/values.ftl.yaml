@@ -68,23 +68,23 @@ argo-cd:
     repositories:
       argocd:
         name: argocd
-        url: ${scmm.baseUrl}/repo/${namePrefix}argocd/argocd
+        url: ${scmm.repoUrl}argocd/argocd<#if scmm.provider == "gitlab">.git</#if>
         <#if isInsecure>insecure: "true"</#if>
       example-apps:
         name: example-apps
-        url: ${scmm.baseUrl}/repo/${namePrefix}argocd/example-apps
+        url: ${scmm.repoUrl}argocd/example-apps<#if scmm.provider == "gitlab">.git</#if>
         <#if isInsecure>insecure: "true"</#if>
       cluster-resources:
         name: cluster-resources
-        url: ${scmm.baseUrl}/repo/${namePrefix}argocd/cluster-resources
+        url: ${scmm.repoUrl}argocd/cluster-resources<#if scmm.provider == "gitlab">.git</#if>
         <#if isInsecure>insecure: "true"</#if>
       nginx-helm-jenkins:
         name: nginx-helm-jenkins
-        url: ${scmm.baseUrl}/repo/${namePrefix}argocd/nginx-helm-jenkins
+        url: ${scmm.repoUrl}argocd/nginx-helm-jenkins<#if scmm.provider == "gitlab">.git</#if>
         <#if isInsecure>insecure: "true"</#if>
       nginx-helm-umbrella:
         name: nginx-helm-umbrella
-        url: ${scmm.baseUrl}/repo/${namePrefix}argocd/nginx-helm-umbrella
+        url: ${scmm.repoUrl}argocd/nginx-helm-umbrella<#if scmm.provider == "gitlab">.git</#if>
         <#if isInsecure>insecure: "true"</#if>
 <#if mirrorRepos>
       prometheus:

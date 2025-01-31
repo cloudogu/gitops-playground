@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -o errexit -o nounset -o pipefail
+set -x
 
 ABSOLUTE_BASEDIR="$(cd "$(dirname $0)" && pwd)"
 source ${ABSOLUTE_BASEDIR}/../utils.sh
@@ -23,19 +24,35 @@ function initSCMM() {
   SCMM_HOST=$(getHost "${SCMM_URL}")
   SCMM_PROTOCOL=$(getProtocol "${SCMM_URL}")
 
+  echo "SCM provider: ${SCM_PROVIDER}"
   if [[ ${INTERNAL_SCMM} == true ]]; then
     setExternalHostnameIfNecessary 'SCMM' 'scmm-scm-manager' 'default'
   fi
   
   [[ "${SCMM_URL}" != *scm ]] && SCMM_URL=${SCMM_URL}/scm
 
-  configureScmmManager "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "${SCMM_URL}" "${JENKINS_URL_FOR_SCMM}" \
-    "${SCMM_URL_FOR_JENKINS}" "${INSTALL_ARGOCD}"
+  if [[ ${SCM_PROVIDER} == "scm-manager" ]]; then
+      configureScmmManager "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "${SCMM_URL}" "${JENKINS_URL_FOR_SCMM}" \
+        "${SCMM_URL_FOR_JENKINS}" "${INSTALL_ARGOCD}"
+  fi
+
+
 
   pushHelmChartRepo "3rd-party-dependencies/spring-boot-helm-chart"
   pushHelmChartRepoWithDependency "3rd-party-dependencies/spring-boot-helm-chart-with-dependency"
   pushRepoMirror "${GITOPS_BUILD_LIB_REPO}" "3rd-party-dependencies/gitops-build-lib"
   pushRepoMirror "${CES_BUILD_LIB_REPO}" "3rd-party-dependencies/ces-build-lib" 'develop'
+}
+
+function initGitLab() {
+
+    addRepo "argocd" "nginx-helm-jenkins" "3rd Party app (NGINX) with helm, templated in Jenkins (gitops-build-lib)"
+    addRepo "argocd" "petclinic-plain" "Java app with plain k8s resources"
+    addRepo "argocd" "petclinic-helm" "Java app with custom helm chart"
+    addRepo "argocd" "argocd" "GitOps repo for administration of ArgoCD"
+    addRepo "argocd" "cluster-resources" "GitOps repo for basic cluster-resources"
+    addRepo "argocd" "example-apps" "GitOps repo for examples of end-user applications"
+
 }
 
 function pushHelmChartRepo() {
@@ -55,8 +72,20 @@ function pushHelmChartRepo() {
     git checkout --quiet -b main
 
     waitForScmManager
-    git push "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
-    git push "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" refs/tags/1.0.0 --quiet --force
+
+    local remote_url
+
+    if [[ ${SCM_PROVIDER} == "scm-manager" ]]; then
+        remote_url="${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/${SCM_ROOT_PATH}/${TARGET_REPO_SCMM}"
+    elif [[ ${SCM_PROVIDER} == "gitlab" ]]; then
+        remote_url="${SCMM_PROTOCOL}://oauth2:${SCMM_PASSWORD}@${SCMM_HOST}/${SCM_ROOT_PATH}/${TARGET_REPO_SCMM}.git"
+    else
+        echo "Unsupported SCM provider: ${SCM_PROVIDER}"
+        return 1
+    fi
+
+    git push "${remote_url}" HEAD:main --force --quiet
+    git push "${remote_url}" refs/tags/1.0.0 --quiet --force
   )
 
   rm -rf "${TMP_REPO}"
@@ -88,8 +117,20 @@ function pushHelmChartRepoWithDependency() {
     git commit -a -m "Added dependency" --quiet
 
     waitForScmManager
-    git push "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" HEAD:main --force --quiet
-    git push "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" refs/tags/1.0.0 --quiet --force
+
+    local remote_url
+
+    if [[ ${SCM_PROVIDER} == "scm-manager" ]]; then
+        remote_url="${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/${SCM_ROOT_PATH}/${TARGET_REPO_SCMM}"
+    elif [[ ${SCM_PROVIDER} == "gitlab" ]]; then
+        remote_url="${SCMM_PROTOCOL}://oauth2:${SCMM_PASSWORD}@${SCMM_HOST}/${SCM_ROOT_PATH}/${TARGET_REPO_SCMM}.git"
+    else
+        echo "Unsupported SCM provider: ${SCM_PROVIDER}"
+        return 1
+    fi
+
+    git push "${remote_url}" HEAD:main --force --quiet
+    git push "${remote_url}" refs/tags/1.0.0 --quiet --force
   )
 
   rm -rf "${TMP_REPO}"
@@ -107,7 +148,18 @@ function pushRepoMirror() {
   (
     cd "${TMP_REPO}"
     waitForScmManager
-    git push --mirror "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/repo/${TARGET_REPO_SCMM}" --force --quiet
+
+    local remote_url
+
+    if [[ ${SCM_PROVIDER} == "scm-manager" ]]; then
+        remote_url="${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/${SCM_ROOT_PATH}/${TARGET_REPO_SCMM}"
+    elif [[ ${SCM_PROVIDER} == "gitlab" ]]; then
+        remote_url="${SCMM_PROTOCOL}://oauth2:${SCMM_PASSWORD}@${SCMM_HOST}/${SCM_ROOT_PATH}/${TARGET_REPO_SCMM}.git"
+    else
+        echo "Unsupported SCM provider: ${SCM_PROVIDER}"
+        return 1
+    fi
+    git push --mirror "${remote_url}" --force --quiet
   )
 
   rm -rf "${TMP_REPO}"
@@ -325,6 +377,10 @@ function configJenkins() {
 }
 
 function waitForScmManager() {
+  if [[ ${SCM_PROVIDER} != "scm-manager" ]]; then
+      return
+  fi
+
   echo -n "Waiting for Scmm to become available at ${SCMM_PROTOCOL}://${SCMM_HOST}/api/v2"
 
   HTTP_CODE="0"

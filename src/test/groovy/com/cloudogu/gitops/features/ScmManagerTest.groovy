@@ -2,6 +2,7 @@ package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.HelmStrategy
+import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.HelmClient
@@ -64,7 +65,7 @@ class ScmManagerTest {
     Path temporaryYamlFile
     CommandExecutorForTest helmCommands = new CommandExecutorForTest()
     HelmClient helmClient = new HelmClient(helmCommands)
-
+    CommandExecutor commandExecutorReal
     @Test
     void 'Installs SCMM and calls script with proper params'() {
         config.scmm.username = 'scmm-usr'
@@ -159,6 +160,6 @@ class ScmManagerTest {
                 temporaryYamlFile = Path.of(ret.toString().replace(".ftl", "")) // Path after template invocation
                 return ret
             }
-        }, new HelmStrategy(config, helmClient))
+        }, new HelmStrategy(config, helmClient),null,null)
     }
 }

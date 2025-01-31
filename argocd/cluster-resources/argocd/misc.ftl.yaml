@@ -10,7 +10,7 @@ spec:
     server: https://kubernetes.default.svc
   source:
     path: misc/
-    repoURL: ${scmm.baseUrl}/repo/${namePrefix}argocd/cluster-resources
+    repoURL: ${scmm.repoUrl}argocd/cluster-resources<#if scmm.provider == "gitlab">.git</#if>
     targetRevision: main
     directory:
       recurse: true

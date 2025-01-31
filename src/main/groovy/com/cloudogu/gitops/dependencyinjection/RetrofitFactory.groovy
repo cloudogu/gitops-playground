@@ -2,10 +2,9 @@ package com.cloudogu.gitops.dependencyinjection
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.okhttp.RetryInterceptor
-import com.cloudogu.gitops.scmm.api.AuthorizationInterceptor
-import com.cloudogu.gitops.scmm.api.RepositoryApi
-import com.cloudogu.gitops.scmm.api.UsersApi
+import com.cloudogu.gitops.scmm.api.*
 import io.micronaut.context.annotation.Factory
+import io.micronaut.context.annotation.Primary
 import jakarta.inject.Named
 import jakarta.inject.Provider
 import jakarta.inject.Singleton
@@ -17,17 +16,18 @@ import retrofit2.converter.jackson.JacksonConverterFactory
 @Factory
 class RetrofitFactory {
     @Singleton
-    UsersApi usersApi(Retrofit retrofit) {
+    UsersApi usersApi(@Named("scmm") Retrofit retrofit) {
         return retrofit.create(UsersApi)
     }
 
     @Singleton
-
-    RepositoryApi repositoryApi(Retrofit retrofit) {
+    RepositoryApi repositoryApi(@Named("scmm") Retrofit retrofit) {
         return retrofit.create(RepositoryApi)
     }
 
     @Singleton
+    @Primary
+    @Named("scmm")
     Retrofit retrofit(Config config, @Named("scmm") OkHttpClient okHttpClient) {
         return new Retrofit.Builder()
                 .baseUrl(config.scmm.url + '/api/')
@@ -52,4 +52,5 @@ class RetrofitFactory {
 
         return builder.build()
     }
+
 }
