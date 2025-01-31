@@ -14,7 +14,7 @@ spec:
     server: https://kubernetes.default.svc
   project: example-apps
   source:
-    path: appps/exercise-nginx-helm/staging
+    path: apps/exercise-nginx-helm/staging
     repoURL: ${scmm.baseUrl}/repo/${namePrefix}argocd/example-apps
     targetRevision: main
     directory:

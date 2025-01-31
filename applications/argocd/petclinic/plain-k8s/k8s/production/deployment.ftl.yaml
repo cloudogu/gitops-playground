@@ -31,6 +31,24 @@ spec:
               path: /actuator/health/readiness
               port: 9080
               scheme: HTTP
+          securityContext:
+<#if config.application.openshift == true>
+          runAsUser: null
+          runAsGroup: null
+</#if>
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+              - ALL
+          # These two seem to cause problems with OpenShift, so we disable them for now
+          #runAsUser: 65312
+          #seccompProfile:
+          #  type: RuntimeDefault
+          # With k8s 1.30 apparmor is added
+          # Won't work on k3d, though, because apparmor is not enabled
+          # apparmorProfile: "runtime/default"
           volumeMounts:
             - name: messages
               mountPath: /tmp/messages
