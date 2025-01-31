@@ -2,14 +2,25 @@ package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.dependencyinjection.HttpClientFactory
+import com.cloudogu.gitops.dependencyinjection.RetrofitFactory
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.deployment.HelmStrategy
+import com.cloudogu.gitops.scmm.api.GitLabGroup
+import com.cloudogu.gitops.scmm.api.GitLabMember
+import com.cloudogu.gitops.scmm.api.GitLabProject
+import com.cloudogu.gitops.scmm.api.GitlabApi
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.MapUtils
-import groovy.util.logging.Slf4j
+import groovy.json.JsonSlurper
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
+import okhttp3.ResponseBody
+import retrofit2.Call
+import retrofit2.Response
+import groovy.util.logging.Slf4j
+import jakarta.inject.Provider
 
 @Slf4j
 @Singleton
@@ -24,18 +35,32 @@ class ScmManager extends Feature {
     private CommandExecutor commandExecutor
     private FileSystemUtils fileSystemUtils
     private DeploymentStrategy deployer
+    private GitlabApi gitlabApi
 
     ScmManager(
             Config config,
             CommandExecutor commandExecutor,
             FileSystemUtils fileSystemUtils,
             // For now we deploy imperatively using helm to avoid order problems. In future we could deploy via argocd.
-            HelmStrategy deployer
+            HelmStrategy deployer,
+            HttpClientFactory httpClientFactory,
+            RetrofitFactory retrofitFactory
     ) {
         this.config = config
         this.commandExecutor = commandExecutor
         this.fileSystemUtils = fileSystemUtils
         this.deployer = deployer
+
+        // Initialize GitLab API using RetrofitFactory
+        def insecureSslContextProvider = new Provider<HttpClientFactory.InsecureSslContext>() {
+            @Override
+            HttpClientFactory.InsecureSslContext get() {
+                return httpClientFactory.insecureSslContext()
+            }
+        }
+        def httpClientGitLab = retrofitFactory.gitlabOkHttpClient(httpClientFactory.createLoggingInterceptor(), config, insecureSslContextProvider)
+        def retrofitGitLab = retrofitFactory.gitlabRetrofit(config, httpClientGitLab)
+        this.gitlabApi = retrofitFactory.gitLabApi(retrofitGitLab)
     }
 
     @Override
@@ -71,6 +96,8 @@ class ScmManager extends Feature {
             )
         }
 
+        configureGitlab()
+
         commandExecutor.execute("${fileSystemUtils.rootDir}/scripts/scm-manager/init-scmm.sh", [
 
                 GIT_COMMITTER_NAME           : config.application.gitName,
@@ -95,6 +122,102 @@ class ScmManager extends Feature {
                 CES_BUILD_LIB_REPO           : config.repositories.cesBuildLib.url,
                 NAME_PREFIX                  : config.application.namePrefix,
                 INSECURE                     : config.application.insecure,
+                SCM_ROOT_PATH                : config.scmm.rootPath,
+                SCM_PROVIDER                 : config.scmm.provider,
         ])
+    }
+
+    // Should look like configureScmManager in init-scmm.sh
+    void configureGitlab() {
+        log.info("Configuring GitLab...")
+
+        def groupName = "${config.application.namePrefix}argocd" // Namespace equivalent
+        def projectName = "argocd" //Repo Name
+        def projectDescription = "GitOps repo for administration of ArgoCD"
+        def userId = 100
+        def accessLevel = GitLabMember.AccessLevel.DEVELOPER  // WRITE access equivalent
+
+        // Step 1: Create a GitLab group (if needed)
+        int groupId = createGroup(groupName, null)
+        if (groupId == -1) {
+            log.error("Failed to create or fetch GitLab group: {}", groupName)
+            return
+        }
+
+        // Step 2: Create the project (repository) inside the group
+        int projectId = createProject(projectName, projectDescription, groupId)
+        if (projectId == -1) {
+            log.error("Failed to create GitLab project: {}", projectName)
+            return
+        }
+
+        // Step 3: Set permissions for the user on the repository
+        addMember(projectId, userId, accessLevel)
+
+        log.info("GitLab configuration completed successfully.")
+    }
+
+
+    int createGroup(String groupName, Integer parentId) {
+        def group = new GitLabGroup(groupName, groupName.toLowerCase().replaceAll(" ", "-"), parentId)
+        Call<ResponseBody> call = gitlabApi.createGroup(group)
+
+        try {
+            Response<ResponseBody> response = call.execute()
+            if (response.isSuccessful() && response.body() != null) {
+                log.info("GitLab group created: {}", groupName)
+                return extractGroupId(response.body().string())
+            } else {
+                log.error("Failed to create GitLab group: {} - {}", response.code(), response.errorBody()?.string())
+            }
+        } catch (Exception e) {
+            log.error("Error creating GitLab group: {}", e.message)
+        }
+        return -1
+    }
+
+    int createProject(String projectName, String projectDescription, int groupId) {
+        def project = new GitLabProject(projectName, groupId)
+        project.setDescription(projectDescription)
+        Call<ResponseBody> call = gitlabApi.createProject(project)
+
+        try {
+            Response<ResponseBody> response = call.execute()
+            if (response.isSuccessful() && response.body() != null) {
+                log.info("GitLab project created: {}", projectName)
+                return extractProjectId(response.body().string())
+            } else {
+                log.error("Failed to create GitLab project: {} - {}", response.code(), response.errorBody()?.string())
+            }
+        } catch (Exception e) {
+            log.error("Error creating GitLab project: {}", e.message)
+        }
+        return -1
+    }
+
+    void addMember(int projectId, int userId, int accessLevel) {
+        def member = new GitLabMember(userId, accessLevel)
+        Call<ResponseBody> call = gitlabApi.addProjectMember(projectId, member)
+
+        try {
+            Response<ResponseBody> response = call.execute()
+            if (response.isSuccessful()) {
+                log.info("User {} added to project {} with access level {}", userId, projectId, accessLevel)
+            } else {
+                log.error("Failed to add user {} to project {}: {} - {}", userId, projectId, response.code(), response.errorBody()?.string())
+            }
+        } catch (Exception e) {
+            log.error("Error adding user to GitLab project: {}", e.message)
+        }
+    }
+
+    private int extractGroupId(String jsonResponse) {
+        def parsed = new JsonSlurper().parseText(jsonResponse)
+        return parsed?.id ?: -1
+    }
+
+    private int extractProjectId(String jsonResponse) {
+        def parsed = new JsonSlurper().parseText(jsonResponse)
+        return parsed?.id ?: -1
     }
 }
