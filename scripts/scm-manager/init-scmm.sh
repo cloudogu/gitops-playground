@@ -34,10 +34,24 @@ function initSCMM() {
         "${SCMM_URL_FOR_JENKINS}" "${INSTALL_ARGOCD}"
   fi
 
+  if [[ ${SCM_PROVIDER} == "gitlab" ]]; then
+
+  fi
   pushHelmChartRepo "3rd-party-dependencies/spring-boot-helm-chart"
   pushHelmChartRepoWithDependency "3rd-party-dependencies/spring-boot-helm-chart-with-dependency"
   pushRepoMirror "${GITOPS_BUILD_LIB_REPO}" "3rd-party-dependencies/gitops-build-lib"
   pushRepoMirror "${CES_BUILD_LIB_REPO}" "3rd-party-dependencies/ces-build-lib" 'develop'
+}
+
+function initGitLab {
+
+    addRepo "argocd" "nginx-helm-jenkins" "3rd Party app (NGINX) with helm, templated in Jenkins (gitops-build-lib)"
+    addRepo "${NAME_PREFIX}argocd" "petclinic-plain" "Java app with plain k8s resources"
+    addRepo "${NAME_PREFIX}argocd" "petclinic-helm" "Java app with custom helm chart"
+    addRepo "${NAME_PREFIX}argocd" "argocd" "GitOps repo for administration of ArgoCD"
+    addRepo "${NAME_PREFIX}argocd" "cluster-resources" "GitOps repo for basic cluster-resources"
+    addRepo "${NAME_PREFIX}argocd" "example-apps" "GitOps repo for examples of end-user applications"
+
 }
 
 function pushHelmChartRepo() {

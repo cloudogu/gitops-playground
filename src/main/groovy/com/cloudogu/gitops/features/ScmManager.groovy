@@ -144,28 +144,35 @@ class ScmManager extends Feature {
         int groupId = createGroup("argocd",28)
         if (groupId == -1) {
             log.error("Failed to create or fetch GitLab group: {}", groupName)
-            return
         }
 
         // Step 1: Create a GitLab group (if needed)
-        int groupId = createGroup("3rd-party-dependencies",28)
-        if (groupId == -1) {
+        int groupId1 = createGroup("3rd-party-dependencies",28)
+        if (groupId1 == -1) {
             log.error("Failed to create or fetch GitLab group: {}", groupName)
-            return
         }
 
-        // Step 2: Create the project (repository) inside the group
-        int projectId = createProject(projectName, projectDescription, groupId)
-        if (projectId == -1) {
-            log.error("Failed to create GitLab project: {}", projectName)
-            return
+        // Step 1: Create a GitLab group (if needed)
+        int groupId2 = createGroup("exercises",28)
+        if (groupId2 == -1) {
+            log.error("Failed to create or fetch GitLab group: {}", groupName)
         }
-        addMember(projectId, userId, accessLevel)
+        createArgoRepos("argocd")
+        //addMember(projectId, userId, accessLevel)
 
         log.info("GitLab configuration completed successfully.")
     }
 
 
+    void createArgoRepos(String groupName){
+        createProject("nginx-helm-jenkins", "3rd Party app (NGINX) with helm, templated in Jenkins (gitops-build-lib)",31)
+        createProject("petclinic-plain", "Java app with plain k8s resources",31)
+        createProject("petclinic-helm", "Java app with custom helm chart",31)
+        createProject("argocd", "GitOps repo for administration of ArgoCD",31)
+        createProject("cluster-resources", "GitOps repo for basic cluster-resources",31)
+        createProject("example-apps", "GitOps repo for examples of end-user applications",31)
+
+    }
 
     int createGroup(String groupName, Integer parentId) {
         def group = new GitLabGroup(groupName, groupName.toLowerCase().replaceAll(" ", "-"), parentId)
@@ -175,7 +182,7 @@ class ScmManager extends Feature {
             Response<ResponseBody> response = call.execute()
             if (response.isSuccessful() && response.body() != null) {
                 log.info("GitLab group created: {}", groupName)
-                return extractGroupId(response.body().string())
+                return extractID(response.body().string())
             } else {
                 log.error("Failed to create GitLab group: {} - {}", response.code(), response.errorBody()?.string())
             }
@@ -194,7 +201,7 @@ class ScmManager extends Feature {
             Response<ResponseBody> response = call.execute()
             if (response.isSuccessful() && response.body() != null) {
                 log.info("GitLab project created: {}", projectName)
-                return extractProjectId(response.body().string())
+                return extractID(response.body().string())
             } else {
                 log.error("Failed to create GitLab project: {} - {}", response.code(), response.errorBody()?.string())
             }
@@ -220,23 +227,9 @@ class ScmManager extends Feature {
         }
     }
 
-    int fetchGroupId(String groupPath) {
-        def response = gitlabApi.getGroupByPath(groupPath).execute()
-        if (response.isSuccessful()) {
-            return response.body()
-        } else {
-            log.error("Failed to fetch GitLab group ID for: ${groupPath}")
-            return -1
-        }
-    }
 
-    private int extractGroupId(String jsonResponse) {
-        def parsed = new JsonSlurper().parseText(jsonResponse)
-        return parsed?.id ?: -1
-    }
-
-    private int extractProjectId(String jsonResponse) {
-        def parsed = new JsonSlurper().parseText(jsonResponse)
-        return parsed?.id ?: -1
+    private int extractID(String jsonResponse) {
+        def parsed = new JsonSlurper().parseText(jsonResponse) as Map
+        return (parsed?.get('id') as Integer) ?: -1
     }
 }
