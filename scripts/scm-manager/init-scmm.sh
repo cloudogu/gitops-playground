@@ -34,9 +34,7 @@ function initSCMM() {
         "${SCMM_URL_FOR_JENKINS}" "${INSTALL_ARGOCD}"
   fi
 
-  if [[ ${SCM_PROVIDER} == "gitlab" ]]; then
 
-  fi
   pushHelmChartRepo "3rd-party-dependencies/spring-boot-helm-chart"
   pushHelmChartRepoWithDependency "3rd-party-dependencies/spring-boot-helm-chart-with-dependency"
   pushRepoMirror "${GITOPS_BUILD_LIB_REPO}" "3rd-party-dependencies/gitops-build-lib"
