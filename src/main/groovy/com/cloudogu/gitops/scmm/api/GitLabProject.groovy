@@ -1,19 +1,25 @@
 package com.cloudogu.gitops.scmm.api
 
+import com.fasterxml.jackson.annotation.JsonProperty
+import lombok.Getter
+import lombok.Setter
+import lombok.ToString
+
+@ToString
+@Getter
+@Setter
 class GitLabProject {
-    private String name;           // The name of the project
-    private Integer groupId;   // The group ID where the project will reside
+    private String name;
+    @JsonProperty("namespace_id")// The name of the project
+    private Integer namespaceID;   // The group ID where the project will reside
     private String description;    // Optional: Description of the project
     private String visibility;     // Optional: "private", "internal", or "public"
-    private boolean initializeWithReadme; // Optional: Initialize the project with a README file
 
-    GitLabProject(String name, Integer groupId) {
+    GitLabProject(String name, Integer namespaceID) {
         this.name = name
-        this.groupId = groupId
+        this.namespaceID = namespaceID
         this.description = name
         this.visibility = "private"
-        this.initializeWithReadme = true
-
     }
 
     String getName() {
@@ -22,14 +28,6 @@ class GitLabProject {
 
     void setName(String name) {
         this.name = name
-    }
-
-    Integer getNamespaceId() {
-        return groupId
-    }
-
-    void setNamespaceId(Integer groupId) {
-        this.groupId = groupId
     }
 
     String getDescription() {
@@ -48,23 +46,12 @@ class GitLabProject {
         this.visibility = visibility
     }
 
-    boolean getInitializeWithReadme() {
-        return initializeWithReadme
+    Integer getNamespaceID() {
+        return namespaceID
     }
 
-    void setInitializeWithReadme(boolean initializeWithReadme) {
-        this.initializeWithReadme = initializeWithReadme
-    }
-
-    @Override
-    public String toString() {
-        return "GitLabProject{" +
-                "name='" + name + '\'' +
-                ", groupId=" + groupId +
-                ", description='" + description + '\'' +
-                ", visibility='" + visibility + '\'' +
-                ", initializeWithReadme=" + initializeWithReadme +
-                '}';
+    void setNamespaceID(Integer namespaceID) {
+        this.namespaceID = namespaceID
     }
 }
 
