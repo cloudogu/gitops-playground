@@ -224,10 +224,10 @@ class ApplicationConfigurator {
     }
 
     private void validate(Config configToSet) {
-        if (configToSet.scmm.url && !configToSet.jenkins.url ||
+        /* if (configToSet.scmm.url && !configToSet.jenkins.url ||
                 !configToSet.scmm.url && configToSet.jenkins.url) {
             throw new RuntimeException('When setting jenkins URL, scmm URL must also be set and the other way round')
-        }
+        }*/
         if (configToSet.application.mirrorRepos && !configToSet.application.localHelmChartFolder) {
             // This should only happen when run outside the image, i.e. during development
             throw new RuntimeException("Missing config for localHelmChartFolder.\n" +

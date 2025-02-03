@@ -96,7 +96,10 @@ class ScmManager extends Feature {
             )
         }
 
-        configureGitlab()
+        if(config.scmm.provider == "gitlab"){
+            configureGitlab()
+        }
+
 
         commandExecutor.execute("${fileSystemUtils.rootDir}/scripts/scm-manager/init-scmm.sh", [
 
@@ -132,13 +135,20 @@ class ScmManager extends Feature {
         log.info("Configuring GitLab...")
 
         def groupName = "${config.application.namePrefix}argocd" // Namespace equivalent
-        def projectName = "argocd" //Repo Name
+        def projectName = "argocd1" //Repo Name
         def projectDescription = "GitOps repo for administration of ArgoCD"
         def userId = 100
         def accessLevel = GitLabMember.AccessLevel.DEVELOPER  // WRITE access equivalent
 
         // Step 1: Create a GitLab group (if needed)
-        int groupId = createGroup(groupName, null)
+        int groupId = createGroup("argocd",28)
+        if (groupId == -1) {
+            log.error("Failed to create or fetch GitLab group: {}", groupName)
+            return
+        }
+
+        // Step 1: Create a GitLab group (if needed)
+        int groupId = createGroup("3rd-party-dependencies",28)
         if (groupId == -1) {
             log.error("Failed to create or fetch GitLab group: {}", groupName)
             return
@@ -150,12 +160,11 @@ class ScmManager extends Feature {
             log.error("Failed to create GitLab project: {}", projectName)
             return
         }
-
-        // Step 3: Set permissions for the user on the repository
         addMember(projectId, userId, accessLevel)
 
         log.info("GitLab configuration completed successfully.")
     }
+
 
 
     int createGroup(String groupName, Integer parentId) {
@@ -208,6 +217,16 @@ class ScmManager extends Feature {
             }
         } catch (Exception e) {
             log.error("Error adding user to GitLab project: {}", e.message)
+        }
+    }
+
+    int fetchGroupId(String groupPath) {
+        def response = gitlabApi.getGroupByPath(groupPath).execute()
+        if (response.isSuccessful()) {
+            return response.body()
+        } else {
+            log.error("Failed to fetch GitLab group ID for: ${groupPath}")
+            return -1
         }
     }
 
