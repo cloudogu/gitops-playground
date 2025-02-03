@@ -36,4 +36,8 @@ interface GitlabApi {
     @GET("groups/{group_path}")
     Call<ResponseBody> getGroupByPath(@Path("group_path") String groupPath);
 
+    @GET("api/v4/groups/{groupName}")
+    Call<ResponseBody> getGroupByName(@Path("groupName") String groupName);
+
+
 }
