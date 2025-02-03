@@ -33,4 +33,7 @@ interface GitlabApi {
     @POST("projects/{id}/members")
     Call<ResponseBody> addProjectMember(@Path("id") int projectId, @Body GitLabMember projectMember);
 
+    @GET("groups/{group_path}")
+    Call<ResponseBody> getGroupByPath(@Path("group_path") String groupPath);
+
 }
