@@ -133,43 +133,28 @@ class ScmManager extends Feature {
     void configureGitlab() {
         log.info("Configuring GitLab...")
 
-        def mainGroup= new GitLabGroup("${config.application.namePrefix}scm",null,null)
+        def mainGroup = new GitLabGroup("${config.application.namePrefix}scm", null, null)
+        mainGroup.setId(28) //TODO Get ID
 
-        // Step 1: Create a GitLab group (if needed)
-        int groupId = getOrCreateGroup("argocd", mainGroup)
-        if (groupId == -1) {
-            log.error("Failed to create or fetch GitLab group: {}", groupId)
-        } else {
-            log.info("GitLab group 'argocd' created or fetched successfully with ID: {}", groupId)
-            createArgoRepos(groupId)
-        }
+        def argoCDGroup = getOrCreateGroup(new GitLabGroup("${config.application.namePrefix}scm", null, mainGroup))
+        def dependenciesGroup = getOrCreateGroup(new GitLabGroup("3rd-party-dependencies", null, mainGroup))
+        def excerisesGroup = getOrCreateGroup(new GitLabGroup("exercises", null, mainGroup))
 
-        // Step 1: Create a GitLab group (if needed)
-        int groupId1 = getOrCreateGroup("3rd-party-dependencies", mainGroupId)
-        if (groupId1 == -1) {
-            log.error("Failed to create or fetch GitLab group: {}", groupId1)
-        }
+        argoCDGroup ? createArgoRepos(argoCDGroup) : ""
+        excerisesGroup ? createExercices(excerisesGroup) : ""
 
-        // Step 1: Create a GitLab group (if needed)
-        int groupId2 = getOrCreateGroup("exercises", mainGroupId)
-        if (groupId2 == -1) {
-            log.error("Failed to create or fetch GitLab group: {}", groupId2)
-        } else {
-            log.info("GitLab group 'argocd' created or fetched successfully with ID: {}", groupId2)
-            createExercices(groupId2)
-        }
-        //addMember(projectId, userId, accessLevel)
-
-        log.info("GitLab configuration completed successfully.")
     }
 
-    void createExercices(Integer excersisesGroupId) {
+    void createExercices(GitLabGroup excersisesGroup) {
+        def excersisesGroupId = excersisesGroup.id
         createProject("petclinic-helm", "Exercise for Petclinic Helm", excersisesGroupId)
         createProject("nginx-validation", "Exercise nginx-validation", excersisesGroupId)
         createProject("broken-application", "Exercise for broken-application", excersisesGroupId)
     }
 
-    void createArgoRepos(Integer argoGroupID) {
+    void createArgoRepos(GitLabGroup argoCDGroup) {
+        def argoGroupID = argoCDGroup.id
+        log.info("GitLab group 'argocd' created or fetched successfully with ID: {}", argoGroupID)
         createProject("nginx-helm-jenkins", "3rd Party app (NGINX) with helm, templated in Jenkins (gitops-build-lib)", argoGroupID)
         createProject("petclinic-plain", "Java app with plain k8s resources", argoGroupID)
         createProject("petclinic-helm", "Java app with custom helm chart", argoGroupID)
@@ -189,52 +174,45 @@ class ScmManager extends Feature {
      * 0 Group is missing
      *
      */
-    int getOrCreateGroup(String groupName, GitLabGroup parent) {
-        int groupId = getGroupID(groupName,parentName)
-        return (groupId != -1) ? groupId : createGroup(groupName, parentId)
+    GitLabGroup getOrCreateGroup(GitLabGroup group) {
+        Integer groupID = getGroupIdIfExists(group, group.parent.name)
+        return group ? group.setId(groupID) : createGroup(group, group.parent)
     }
 
-    int getGroupID(String groupName,String parentName) {
-        int existingGroupId = getGroupIdIfExists(groupName, String parentName)
-        if (existingGroupId != -1) {
-            // Group exists, return the existing ID
-            log.info("GitLab group already exists: {} with ID: {}", groupName, existingGroupId)
-            return existingGroupId
-        }
-        return -1
-    }
-
-
-    int getGroupIdIfExists(String groupName,String parentName) {
-        Call<ResponseBody> call = gitlabApi.getGroupByName(groupName,parentName)
+    Integer getGroupIdIfExists(GitLabGroup groupName,String parentName) {
+        def groupPath = "${parentName}/${groupName}".toString()
+        Call<ResponseBody> call = gitlabApi.getGroupByName(groupPath)
         try {
             Response<ResponseBody> response = call.execute()
             if (response.isSuccessful() && response.body() != null) {
                 String responseBody = response.body().string()
                 return extractID(responseBody)
+
             }
         } catch (Exception e) {
             log.error("Error checking if group exists: {}", e.message)
+
         }
-        return -1
+        return null
     }
 
-    int createGroup(String groupName, Integer parentId) {
-        def group = new GitLabGroup(groupName, groupName.toLowerCase().replaceAll(" ", "-"), parentId)
-        Call<ResponseBody> call = gitlabApi.createGroup(group)
+    GitLabGroup createGroup(GitLabGroup group, GitLabGroup parent) {
+        group.setParent(parent)
+        group.setPath(group.getName().toLowerCase().replaceAll(" ", "-"))
 
         try {
+            Call<ResponseBody> call = gitlabApi.createGroup(group)
             Response<ResponseBody> response = call.execute()
             if (response.isSuccessful() && response.body() != null) {
-                log.info("GitLab group created: {}", groupName)
-                return extractID(response.body().string())
+                log.info("GitLab group created: {}", group.name)
+                return group.setId(extractID(response.body().string()))
             } else {
                 log.error("Failed to create GitLab group: {} - {}", response.code(), response.errorBody()?.string())
             }
         } catch (Exception e) {
             log.error("Error creating GitLab group: {}", e.message)
         }
-        return -1
+        return null
     }
 
 //Project
