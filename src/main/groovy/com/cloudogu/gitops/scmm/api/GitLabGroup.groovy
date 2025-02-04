@@ -1,7 +1,13 @@
 package com.cloudogu.gitops.scmm.api
 
-import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.annotation.JsonIgnore
+import lombok.Getter
+import lombok.Setter
+import lombok.ToString
 
+@Getter
+@Setter
+@ToString
 class GitLabGroup {
 
     private Integer id       // The name of the group
@@ -9,15 +15,23 @@ class GitLabGroup {
     private String path       // The URL path (slug) for the group
     private String description // Optional: Description of the group
     private String visibility // Optional: "private", "internal", or "public"
-    @JsonProperty("parent_id")
-    private Integer parentId  // Optional: ID of the parent group if creating a subgroup
+    @JsonIgnore
+    private GitLabGroup parent  // Optional: ID of the parent group if creating a subgroup
 
-    GitLabGroup(String name, String path, Integer parentId) {
+    GitLabGroup(String name, String path, GitLabGroup parent = null) {
         this.name = name
         this.path = path
         this.description = name
         this.visibility = "private"
-        this.parentId = parentId
+        this.parent = parent
+    }
+
+    Integer getId() {
+        return id
+    }
+
+    void setId(Integer id) {
+        this.id = id
     }
 
     String getName() {
@@ -52,11 +66,11 @@ class GitLabGroup {
         this.visibility = visibility
     }
 
-    Integer getParentId() {
-        return parentId
+    GitLabGroup getParent() {
+        return parent
     }
 
-    void setParentId(Integer parentId) {
-        this.parentId = parentId
+    void setParent(GitLabGroup parent) {
+        this.parent = parent
     }
 }

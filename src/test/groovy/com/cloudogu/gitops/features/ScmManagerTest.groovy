@@ -165,6 +165,6 @@ class ScmManagerTest {
                 temporaryYamlFile = Path.of(ret.toString().replace(".ftl", "")) // Path after template invocation
                 return ret
             }
-        }, new HelmStrategy(config, helmClient))
+        }, new HelmStrategy(config, helmClient),null,null)
     }
 }
