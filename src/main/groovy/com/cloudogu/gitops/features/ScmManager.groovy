@@ -130,14 +130,13 @@ class ScmManager extends Feature {
         ])
     }
 
-    // Should look like configureScmManager in init-scmm.sh
     void configureGitlab() {
         log.info("Configuring GitLab...")
 
-        int mainGroupId = getGroupID("scm",null) //TODO Configure it
+        def mainGroup= new GitLabGroup("${config.application.namePrefix}scm",null,null)
 
         // Step 1: Create a GitLab group (if needed)
-        int groupId = createGroup("argocd", mainGroupId)
+        int groupId = getOrCreateGroup("argocd", mainGroup)
         if (groupId == -1) {
             log.error("Failed to create or fetch GitLab group: {}", groupId)
         } else {
@@ -146,13 +145,13 @@ class ScmManager extends Feature {
         }
 
         // Step 1: Create a GitLab group (if needed)
-        int groupId1 = createGroup("3rd-party-dependencies", mainGroupId)
+        int groupId1 = getOrCreateGroup("3rd-party-dependencies", mainGroupId)
         if (groupId1 == -1) {
             log.error("Failed to create or fetch GitLab group: {}", groupId1)
         }
 
         // Step 1: Create a GitLab group (if needed)
-        int groupId2 = createGroup("exercises", mainGroupId)
+        int groupId2 = getOrCreateGroup("exercises", mainGroupId)
         if (groupId2 == -1) {
             log.error("Failed to create or fetch GitLab group: {}", groupId2)
         } else {
@@ -179,25 +178,43 @@ class ScmManager extends Feature {
         createProject("example-apps", "GitOps repo for examples of end-user applications", argoGroupID)
 
     }
-
+// Groups
     /**
      * Checks if a GitLab group exists, and if not, creates it.
      *
      * @param groupName the name of the group to check or create
      * @param parentId the ID of the parent group (if any)
      * @return the ID of the existing group if it exists, or the ID of the newly created group
+     * -1 means error
+     * 0 Group is missing
+     *
      */
-    int getOrCreateGroup(String groupName, Integer parentId) {
-        int groupId = getGroupID(groupName, parentId)
+    int getOrCreateGroup(String groupName, GitLabGroup parent) {
+        int groupId = getGroupID(groupName,parentName)
         return (groupId != -1) ? groupId : createGroup(groupName, parentId)
     }
 
-    int getGroupID(String groupName, Integer parentId) {
-        int existingGroupId = getGroupIdIfExists(groupName)
+    int getGroupID(String groupName,String parentName) {
+        int existingGroupId = getGroupIdIfExists(groupName, String parentName)
         if (existingGroupId != -1) {
             // Group exists, return the existing ID
             log.info("GitLab group already exists: {} with ID: {}", groupName, existingGroupId)
             return existingGroupId
+        }
+        return -1
+    }
+
+
+    int getGroupIdIfExists(String groupName,String parentName) {
+        Call<ResponseBody> call = gitlabApi.getGroupByName(groupName,parentName)
+        try {
+            Response<ResponseBody> response = call.execute()
+            if (response.isSuccessful() && response.body() != null) {
+                String responseBody = response.body().string()
+                return extractID(responseBody)
+            }
+        } catch (Exception e) {
+            log.error("Error checking if group exists: {}", e.message)
         }
         return -1
     }
@@ -220,22 +237,7 @@ class ScmManager extends Feature {
         return -1
     }
 
-    int getGroupIdIfExists(String groupName) {
-        // Use the GitLab API to check if the group exists
-        Call<ResponseBody> call = gitlabApi.getGroupByName(groupName)
-        // Assuming `gitlabApi.getGroupByName(groupName)` exists
-        try {
-            Response<ResponseBody> response = call.execute()
-            if (response.isSuccessful() && response.body() != null) {
-                // If group exists, parse the response to get the ID
-                String responseBody = response.body().string()
-                return extractID(responseBody)
-            }
-        } catch (Exception e) {
-            log.error("Error checking if group exists: {}", e.message)
-        }
-        return -1
-    }
+//Project
 
     int createProject(String projectName, String projectDescription, int groupId) {
         def project = new GitLabProject(projectName, groupId)
