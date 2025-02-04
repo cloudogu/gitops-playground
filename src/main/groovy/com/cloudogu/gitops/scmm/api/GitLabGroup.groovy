@@ -4,11 +4,11 @@ import com.fasterxml.jackson.annotation.JsonProperty
 
 class GitLabGroup {
 
+    private Integer id       // The name of the group
     private String name       // The name of the group
     private String path       // The URL path (slug) for the group
     private String description // Optional: Description of the group
     private String visibility // Optional: "private", "internal", or "public"
-
     @JsonProperty("parent_id")
     private Integer parentId  // Optional: ID of the parent group if creating a subgroup
 
