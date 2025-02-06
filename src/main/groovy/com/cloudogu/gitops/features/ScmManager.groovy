@@ -142,6 +142,7 @@ class ScmManager extends Feature {
 
         argoCDGroup ? createArgoRepos(argoCDGroup) : ""
         excerisesGroup ? createExercices(excerisesGroup) : ""
+        dependenciesGroup ? "": "" //will be created over the init-scm script
 
     }
 
