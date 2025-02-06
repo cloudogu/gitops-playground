@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -o errexit -o nounset -o pipefail
+set -x
 
 ABSOLUTE_BASEDIR="$(cd "$(dirname $0)" && pwd)"
 source ${ABSOLUTE_BASEDIR}/../utils.sh
