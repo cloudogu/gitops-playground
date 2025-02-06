@@ -18,12 +18,12 @@ class GitLabGroup {
     @JsonIgnore
     private GitLabGroup parent  // Optional: ID of the parent group if creating a subgroup
 
-    GitLabGroup(String name, String path, GitLabGroup parent = null) {
+    GitLabGroup(String name, GitLabGroup parent = null) {
         this.name = name
-        this.path = path
         this.description = name
         this.visibility = "private"
         this.parent = parent
+        this.parent ? setPath(this.parent.path + "%2F" + this.name) : setPath(this.name)
     }
 
     Integer getId() {
@@ -47,6 +47,10 @@ class GitLabGroup {
     }
 
     void setPath(String path) {
+        if (!path) {
+            path = path.replaceAll(/[^a-zA-Z0-9_.-]/, "") // Remove invalid characters
+            path = path.replaceAll(/^-+/, "").replaceAll(/\.+$/, "") // Remove leading `-` and trailing `.`
+        }
         this.path = path
     }
 
@@ -73,4 +77,18 @@ class GitLabGroup {
     void setParent(GitLabGroup parent) {
         this.parent = parent
     }
+
+
+    @Override
+    String toString() {
+        return "{" +
+                (id != null ? "id=" + id + ", " : "") +
+                "name='" + name + '\'' +
+                ", path='" + path + '\'' +
+                ", description='" + description + '\'' +
+                ", visibility='" + visibility + '\'' +
+                ", parent_id=" + (parent != null ? parent.id : "null") +
+                '}'
+    }
+
 }

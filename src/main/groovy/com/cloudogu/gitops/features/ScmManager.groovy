@@ -133,12 +133,12 @@ class ScmManager extends Feature {
     void configureGitlab() {
         log.info("Configuring GitLab...")
 
-        def mainGroup = new GitLabGroup("${config.application.namePrefix}scm", null, null)
+        def mainGroup = new GitLabGroup("${config.application.namePrefix}scm", null)
         mainGroup.setId(28) //TODO Get ID
 
-        def argoCDGroup = getOrCreateGroup(new GitLabGroup("${config.application.namePrefix}scm", null, mainGroup))
-        def dependenciesGroup = getOrCreateGroup(new GitLabGroup("3rd-party-dependencies", null, mainGroup))
-        def excerisesGroup = getOrCreateGroup(new GitLabGroup("exercises", null, mainGroup))
+        def argoCDGroup = getOrCreateGroup(new GitLabGroup("argocd", mainGroup))
+        def dependenciesGroup = getOrCreateGroup(new GitLabGroup("3rd-party-dependencies", mainGroup))
+        def excerisesGroup = getOrCreateGroup(new GitLabGroup("exercises", mainGroup))
 
         argoCDGroup ? createArgoRepos(argoCDGroup) : ""
         excerisesGroup ? createExercices(excerisesGroup) : ""
@@ -176,13 +176,12 @@ class ScmManager extends Feature {
      *
      */
     GitLabGroup getOrCreateGroup(GitLabGroup group) {
-        Integer groupID = getGroupIdIfExists(group, group.parent.name)
-        return group ? group.setId(groupID) : createGroup(group, group.parent)
+        Integer groupID = getGroupIdIfExists(group)
+        return (groupID != null) ? group.with { it.setId(groupID); it } : createGroup(group)
     }
 
-    Integer getGroupIdIfExists(GitLabGroup groupName,String parentName) {
-        def groupPath = "${parentName}/${groupName}".toString()
-        Call<ResponseBody> call = gitlabApi.getGroupByName(groupPath)
+    Integer getGroupIdIfExists(GitLabGroup group) {
+        Call<ResponseBody> call = gitlabApi.getGroupByName(group.path)
         try {
             Response<ResponseBody> response = call.execute()
             if (response.isSuccessful() && response.body() != null) {
@@ -197,10 +196,7 @@ class ScmManager extends Feature {
         return null
     }
 
-    GitLabGroup createGroup(GitLabGroup group, GitLabGroup parent) {
-        group.setParent(parent)
-        group.setPath(group.getName().toLowerCase().replaceAll(" ", "-"))
-
+    GitLabGroup createGroup(GitLabGroup group) {
         try {
             Call<ResponseBody> call = gitlabApi.createGroup(group)
             Response<ResponseBody> response = call.execute()
@@ -208,7 +204,7 @@ class ScmManager extends Feature {
                 log.info("GitLab group created: {}", group.name)
                 return group.setId(extractID(response.body().string()))
             } else {
-                log.error("Failed to create GitLab group: {} - {}", response.code(), response.errorBody()?.string())
+                log.error("Failed {} to create GitLab group: {} - {}", response.code(),group, response.errorBody()?.string())
             }
         } catch (Exception e) {
             log.error("Error creating GitLab group: {}", e.message)
