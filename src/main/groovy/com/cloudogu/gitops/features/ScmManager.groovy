@@ -142,7 +142,7 @@ class ScmManager extends Feature {
 
         argoCDGroup ? createArgoRepos(argoCDGroup) : ""
         excerisesGroup ? createExercices(excerisesGroup) : ""
-        dependenciesGroup ? "": "" //will be created over the init-scm script
+        dependenciesGroup ? "" : "" //will be created over the init-scm script
 
     }
 
@@ -180,31 +180,41 @@ class ScmManager extends Feature {
         return (groupID != null) ? group.with { it.setId(groupID); it } : createGroup(group)
     }
 
+    //Only works when the scm%2Fargocd path is used in url encoding
     Integer getGroupIdIfExists(GitLabGroup group) {
-        Call<ResponseBody> call = gitlabApi.getGroupByName(group.path)
         try {
+            def path = ''
+            if (group.parent) {
+                path = group.parent.path + '/' + group.name
+            }
+
+            Call<ResponseBody> call = gitlabApi.getGroupByName(path)
             Response<ResponseBody> response = call.execute()
             if (response.isSuccessful() && response.body() != null) {
                 String responseBody = response.body().string()
                 return extractID(responseBody)
-
             }
         } catch (Exception e) {
             log.error("Error checking if group exists: {}", e.message)
-
         }
         return null
     }
 
     GitLabGroup createGroup(GitLabGroup group) {
         try {
-            Call<ResponseBody> call = gitlabApi.createGroup(group)
+
+            def jsonObject = [
+                    path     : group.name,
+                    name     : group.name,
+                    parent_id: group.parent?.id
+            ]
+            Call<ResponseBody> call = gitlabApi.createGroup(jsonObject)
             Response<ResponseBody> response = call.execute()
             if (response.isSuccessful() && response.body() != null) {
                 log.info("GitLab group created: {}", group.name)
                 return group.setId(extractID(response.body().string()))
             } else {
-                log.error("Failed {} to create GitLab group: {} - {}", response.code(),group, response.errorBody()?.string())
+                log.error("Failed {} to create GitLab group: {} - {}", response.code(), group, response.errorBody()?.string())
             }
         } catch (Exception e) {
             log.error("Error creating GitLab group: {}", e.message)
