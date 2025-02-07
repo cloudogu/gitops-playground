@@ -31,6 +31,7 @@ class ScmmRepo {
     private String gitName
     private String gitEmail
     private String rootPath
+    private String scmProvider
 
     ScmmRepo(Config config, String scmmRepoTarget, FileSystemUtils fileSystemUtils) {
         def tmpDir = File.createTempDir()
@@ -45,6 +46,7 @@ class ScmmRepo {
         this.insecure = config.application.insecure
         this.gitName = config.application.gitName
         this.gitEmail = config.application.gitEmail
+        this.scmProvider = config.scmm.provider
         this.rootPath = config.scmm.rootPath
     }
 
@@ -156,6 +158,9 @@ class ScmmRepo {
     }
 
     private CredentialsProvider getCredentialProvider() {
+        if(scmProvider=="gitlab"){
+            username= "oauth2"
+        }
         def passwordAuthentication = new UsernamePasswordCredentialsProvider(username, password)
 
         if (!insecure) {

@@ -6,21 +6,17 @@ import com.cloudogu.gitops.dependencyinjection.HttpClientFactory
 import com.cloudogu.gitops.dependencyinjection.RetrofitFactory
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.deployment.HelmStrategy
-import com.cloudogu.gitops.scmm.api.GitLabGroup
-import com.cloudogu.gitops.scmm.api.GitLabMember
-import com.cloudogu.gitops.scmm.api.GitLabProject
-import com.cloudogu.gitops.scmm.api.GitlabApi
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.MapUtils
-import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
-import jakarta.inject.Provider
 import jakarta.inject.Singleton
-import okhttp3.ResponseBody
-import retrofit2.Call
-import retrofit2.Response
+import org.gitlab4j.api.GitLabApi
+import org.gitlab4j.api.models.Group
+import org.gitlab4j.api.models.Project
+
+import java.util.logging.Level
 
 @Slf4j
 @Singleton
@@ -35,7 +31,7 @@ class ScmManager extends Feature {
     private CommandExecutor commandExecutor
     private FileSystemUtils fileSystemUtils
     private DeploymentStrategy deployer
-    private GitlabApi gitlabApi
+    private GitLabApi gitlabApi
 
     ScmManager(
             Config config,
@@ -50,17 +46,8 @@ class ScmManager extends Feature {
         this.commandExecutor = commandExecutor
         this.fileSystemUtils = fileSystemUtils
         this.deployer = deployer
-
-        // Initialize GitLab API using RetrofitFactory
-        def insecureSslContextProvider = new Provider<HttpClientFactory.InsecureSslContext>() {
-            @Override
-            HttpClientFactory.InsecureSslContext get() {
-                return httpClientFactory.insecureSslContext()
-            }
-        }
-        def httpClientGitLab = retrofitFactory.gitlabOkHttpClient(httpClientFactory.createLoggingInterceptor(), config, insecureSslContextProvider)
-        def retrofitGitLab = retrofitFactory.gitlabRetrofit(config, httpClientGitLab)
-        this.gitlabApi = retrofitFactory.gitLabApi(retrofitGitLab)
+        this.gitlabApi = new GitLabApi(config.scmm.url, config.scmm.password)
+        this.gitlabApi.enableRequestResponseLogging(Level.ALL)
     }
 
     @Override
@@ -131,137 +118,139 @@ class ScmManager extends Feature {
     }
 
     void configureGitlab() {
-        log.info("Configuring GitLab...")
+        log.info("Gitlab init")
 
-        def mainGroup = new GitLabGroup("${config.application.namePrefix}scm", null)
-        mainGroup.setId(28) //TODO Get ID
-
-        def argoCDGroup = getOrCreateGroup(new GitLabGroup("argocd", mainGroup))
-        def dependenciesGroup = getOrCreateGroup(new GitLabGroup("3rd-party-dependencies", mainGroup))
-        def excerisesGroup = getOrCreateGroup(new GitLabGroup("exercises", mainGroup))
-
-        argoCDGroup ? createArgoRepos(argoCDGroup) : ""
-        excerisesGroup ? createExercices(excerisesGroup) : ""
-        dependenciesGroup ? "" : "" //will be created over the init-scm script
+        createGroups()
 
     }
 
-    void createExercices(GitLabGroup excersisesGroup) {
-        def excersisesGroupId = excersisesGroup.id
-        createProject("petclinic-helm", "Exercise for Petclinic Helm", excersisesGroupId)
-        createProject("nginx-validation", "Exercise nginx-validation", excersisesGroupId)
-        createProject("broken-application", "Exercise for broken-application", excersisesGroupId)
-    }
 
-    void createArgoRepos(GitLabGroup argoCDGroup) {
-        def argoGroupID = argoCDGroup.id
-        log.info("GitLab group 'argocd' created or fetched successfully with ID: {}", argoGroupID)
-        createProject("nginx-helm-jenkins", "3rd Party app (NGINX) with helm, templated in Jenkins (gitops-build-lib)", argoGroupID)
-        createProject("petclinic-plain", "Java app with plain k8s resources", argoGroupID)
-        createProject("petclinic-helm", "Java app with custom helm chart", argoGroupID)
-        createProject("argocd", "GitOps repo for administration of ArgoCD", argoGroupID)
-        createProject("cluster-resources", "GitOps repo for basic cluster-resources", argoGroupID)
-        createProject("example-apps", "GitOps repo for examples of end-user applications", argoGroupID)
+    void createGroups() {
+        log.info("Creating Gitlab Groups")
+        def mainGroupName = "${config.application.namePrefix}scm".toString()
+        Group mainSCMGroup = this.gitlabApi.groupApi.getGroup(mainGroupName)
+        if (!mainSCMGroup) {
+            def tempGroup = new Group()
+                    .withName(mainGroupName)
+                    .withPath(mainGroupName.toLowerCase())
+                    .withParentId(null)
 
-    }
-// Groups
-    /**
-     * Checks if a GitLab group exists, and if not, creates it.
-     *
-     * @param groupName the name of the group to check or create
-     * @param parentId the ID of the parent group (if any)
-     * @return the ID of the existing group if it exists, or the ID of the newly created group
-     * -1 means error
-     * 0 Group is missing
-     *
-     */
-    GitLabGroup getOrCreateGroup(GitLabGroup group) {
-        Integer groupID = getGroupIdIfExists(group)
-        return (groupID != null) ? group.with { it.setId(groupID); it } : createGroup(group)
-    }
-
-    //Only works when the scm%2Fargocd path is used in url encoding
-    Integer getGroupIdIfExists(GitLabGroup group) {
-        try {
-            def path = ''
-            if (group.parent) {
-                path = group.parent.path + '/' + group.name
-            }
-
-            Call<ResponseBody> call = gitlabApi.getGroupByName(path)
-            Response<ResponseBody> response = call.execute()
-            if (response.isSuccessful() && response.body() != null) {
-                String responseBody = response.body().string()
-                return extractID(responseBody)
-            }
-        } catch (Exception e) {
-            log.error("Error checking if group exists: {}", e.message)
+            mainSCMGroup = this.gitlabApi.groupApi.addGroup(tempGroup)
         }
-        return null
-    }
 
-    GitLabGroup createGroup(GitLabGroup group) {
-        try {
 
-            def jsonObject = [
-                    path     : group.name,
-                    name     : group.name,
-                    parent_id: group.parent?.id
-            ]
-            Call<ResponseBody> call = gitlabApi.createGroup(jsonObject)
-            Response<ResponseBody> response = call.execute()
-            if (response.isSuccessful() && response.body() != null) {
-                log.info("GitLab group created: {}", group.name)
-                return group.setId(extractID(response.body().string()))
-            } else {
-                log.error("Failed {} to create GitLab group: {} - {}", response.code(), group, response.errorBody()?.string())
-            }
-        } catch (Exception e) {
-            log.error("Error creating GitLab group: {}", e.message)
+        String argoCDGroupName = 'argocd'
+        Optional<Group> argoCDGroup = getGroup("${mainGroupName}/${argoCDGroupName}")
+        if (argoCDGroup.isEmpty()) {
+            def tempGroup = new Group()
+                    .withName(argoCDGroupName)
+                    .withPath(argoCDGroupName.toLowerCase())
+                    .withParentId(mainSCMGroup.id)
+
+            argoCDGroup = addGroup(tempGroup)
         }
-        return null
-    }
 
-//Project
+        argoCDGroup.ifPresent(this.&createArgoCDRepos)
 
-    int createProject(String projectName, String projectDescription, int groupId) {
-        def project = new GitLabProject(projectName, groupId)
-        project.setDescription(projectDescription)
-        Call<ResponseBody> call = gitlabApi.createProject(project)
+        String dependencysGroupName = '3rd-party-dependencies'
+        Optional<Group> dependencysGroup = getGroup("${mainGroupName}/${dependencysGroupName}")
+        if (dependencysGroup.isEmpty()) {
+            def tempGroup = new Group()
+                    .withName(dependencysGroupName)
+                    .withPath(dependencysGroupName.toLowerCase())
+                    .withParentId(mainSCMGroup.id)
 
-        try {
-            Response<ResponseBody> response = call.execute()
-            if (response.isSuccessful() && response.body() != null) {
-                log.info("GitLab project created: {}", projectName)
-                return extractID(response.body().string())
-            } else {
-                log.error("Failed to create GitLab project: {} - {}", response.code(), response.errorBody()?.string())
-            }
-        } catch (Exception e) {
-            log.error("Error creating GitLab project: {}", e.message)
+            addGroup(tempGroup)
         }
-        return -1
+
+        String exercisesGroupName = 'exercises'
+        Optional<Group> exercisesGroup = getGroup("${mainGroupName}/${exercisesGroupName}")
+        if (exercisesGroup.isEmpty()) {
+            def tempGroup = new Group()
+                    .withName(exercisesGroupName)
+                    .withPath(exercisesGroupName.toLowerCase())
+                    .withParentId(mainSCMGroup.id)
+
+            exercisesGroup = addGroup(tempGroup)
+        }
+
+        exercisesGroup.ifPresent(this.&createExercisesRepos)
     }
 
-    void addMember(int projectId, int userId, int accessLevel) {
-        def member = new GitLabMember(userId, accessLevel)
-        Call<ResponseBody> call = gitlabApi.addProjectMember(projectId, member)
+    void createExercisesRepos(Group exercisesGroup) {
+        //TODO Create Repos
+        log.info("Creating GitlabRepos for ${exercisesGroup}")
+        createRepo("petclinic-helm", "petclinic-helm", exercisesGroup)
+        createRepo("nginx-validation", "nginx-validation", exercisesGroup)
+        createRepo("broken-application", "broken-application", exercisesGroup)
+    }
 
+    void createArgoCDRepos(Group argoCDGroup) {
+        log.info("Creating GitlabRepos for ${argoCDGroup}")
+        createRepo("cluster-resources", "GitOps repo for basic cluster-resources", argoCDGroup)
+        createRepo("petclinic-helm", "Java app with custom helm chart", argoCDGroup)
+        createRepo("petclinic-plain", "Java app with plain k8s resources", argoCDGroup)
+        createRepo("nginx-helm-jenkins", "3rd Party app (NGINX) with helm, templated in Jenkins (gitops-build-lib)", argoCDGroup)
+        createRepo("argocd", "GitOps repo for administration of ArgoCD", argoCDGroup)
+        createRepo("example-apps", "GitOps repo for examples of end-user applications", argoCDGroup)
+
+    }
+
+
+    void removeBranchProtection(Project project){
+        try{
+            this.gitlabApi.getProtectedBranchesApi().unprotectBranch(project.getId(), project.getDefaultBranch());
+            System.out.println("Unprotected default branch: " + project.getDefaultBranch());
+        }catch(Exception ex) {
+
+        }
+        log.error("Failed Unprotecting branch for repo ${project}")
+    }
+
+
+    void createRepo(String name, String description, Group parentGroup) {
+
+        Optional<Project> project = getProject("${parentGroup.getFullPath()}/${name}".toString())
+        if (project.isEmpty()) {
+            Project projectSpec = new Project()
+                    .withName(name)
+                    .withDescription(description)
+                    .withIssuesEnabled(true)
+                    .withMergeRequestsEnabled(true)
+                    .withWikiEnabled(true)
+                    .withSnippetsEnabled(true)
+                    .withPublic(false)
+                    .withNamespaceId(parentGroup.getId())
+                    .withInitializeWithReadme(true)
+
+            log.info("Project ${projectSpec} created!")
+            project= Optional.ofNullable(this.gitlabApi.projectApi.createProject(projectSpec))
+        }
+        removeBranchProtection(project.get())
+    }
+
+
+    private Optional<Group> getGroup(String groupName) {
         try {
-            Response<ResponseBody> response = call.execute()
-            if (response.isSuccessful()) {
-                log.info("User {} added to project {} with access level {}", userId, projectId, accessLevel)
-            } else {
-                log.error("Failed to add user {} to project {}: {} - {}", userId, projectId, response.code(), response.errorBody()?.string())
-            }
+            return Optional.ofNullable(this.gitlabApi.groupApi.getGroup(groupName))
         } catch (Exception e) {
-            log.error("Error adding user to GitLab project: {}", e.message)
+            return Optional.empty()
         }
     }
 
+    private Optional<Group> addGroup(Group group) {
+        try {
+            return Optional.ofNullable(this.gitlabApi.groupApi.addGroup(group))
+        } catch (Exception e) {
+            return Optional.empty()
+        }
+    }
 
-    private int extractID(String jsonResponse) {
-        def parsed = new JsonSlurper().parseText(jsonResponse) as Map
-        return (parsed?.get('id') as Integer) ?: -1
+    private Optional<Project> getProject(String projectPath) {
+        try {
+            return Optional.ofNullable(this.gitlabApi.projectApi.getProject(projectPath))
+        } catch (Exception e) {
+            return Optional.empty()
+        }
     }
 }

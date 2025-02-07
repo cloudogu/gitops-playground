@@ -305,6 +305,11 @@
     </dependency>
 
 
+    <dependency>
+      <groupId>org.gitlab4j</groupId>
+      <artifactId>gitlab4j-api</artifactId>
+      <version>6.0.0-rc.8</version>
+    </dependency>
 
     <dependency>
       <groupId>com.github.victools</groupId>
