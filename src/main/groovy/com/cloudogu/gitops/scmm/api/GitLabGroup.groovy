@@ -23,7 +23,8 @@ class GitLabGroup {
         this.description = name
         this.visibility = "private"
         this.parent = parent
-        this.parent ? setPath(this.parent.path + "%2F" + this.name) : setPath(this.name)
+        this.path= name
+        //this.parent ? setPath(this.parent.path + "%2F" + this.name) : setPath(this.name)
     }
 
     Integer getId() {

@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.scmm.api
 
+
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.*;
@@ -12,7 +13,7 @@ interface GitlabApi {
      * @return The created group response.
      */
     @POST("groups")
-    Call<ResponseBody> createGroup(@Body GitLabGroup group);
+    Call<ResponseBody> createGroup(@Body Object  group);
 
     /**
      * Create a new project (repository) in an existing group.
