@@ -1,5 +1,5 @@
 #!groovy
-@Library('github.com/cloudogu/ces-build-lib@2.5.0')
+@Library('github.com/cloudogu/ces-build-lib@4.0.1')
 import com.cloudogu.ces.cesbuildlib.*
 
 String getDockerRegistryBaseUrl() { 'ghcr.io' }
