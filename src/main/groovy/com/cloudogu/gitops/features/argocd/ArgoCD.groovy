@@ -471,7 +471,8 @@ class ArgoCD extends Feature {
                             baseUrl : config.scmm.internal ? 'http://scmm-scm-manager.default.svc.cluster.local/scm' : ScmmRepo.createScmmUrl(config),
                             host    : config.scmm.internal ? 'scmm-scm-manager.default.svc.cluster.local' : config.scmm.host,
                             protocol: config.scmm.internal ? 'http' : config.scmm.protocol,
-                            repoUrl : ScmmRepo.createRepoBaseUrl(config)
+                            repoUrl : ScmmRepo.createRepoBaseUrl(config),
+                            provider: config.scmm.provider
                     ],
                     jenkins             : [
                             mavenCentralMirror  : config.jenkins.mavenCentralMirror,
