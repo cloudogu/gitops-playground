@@ -88,39 +88,39 @@ class ScmManager extends Feature {
         }
 
 
-        commandExecutor.execute("${fileSystemUtils.rootDir}/scripts/scm-manager/init-scmm.sh", [
+//       commandExecutor.execute("${fileSystemUtils.rootDir}/scripts/scm-manager/init-scmm.sh", [
 
-                GIT_COMMITTER_NAME           : config.application.gitName,
-                GIT_COMMITTER_EMAIL          : config.application.gitEmail,
-                GIT_AUTHOR_NAME              : config.application.gitName,
-                GIT_AUTHOR_EMAIL             : config.application.gitEmail,
-                GITOPS_USERNAME              : config.scmm.gitOpsUsername,
-                TRACE                        : config.application.trace,
-                SCMM_URL                     : config.scmm.url,
-                SCMM_USERNAME                : config.scmm.username,
-                SCMM_PASSWORD                : config.scmm.password,
-                JENKINS_URL                  : config.jenkins.url,
-                INTERNAL_SCMM                : config.scmm.internal,
-                JENKINS_URL_FOR_SCMM         : config.jenkins.urlForScmm,
-                SCMM_URL_FOR_JENKINS         : config.scmm.urlForJenkins,
-                // Used indirectly in utils.sh 😬
-                REMOTE_CLUSTER               : config.application.remote,
-                INSTALL_ARGOCD               : config.features.argocd.active,
-                SPRING_BOOT_HELM_CHART_COMMIT: config.repositories.springBootHelmChart.ref,
-                SPRING_BOOT_HELM_CHART_REPO  : config.repositories.springBootHelmChart.url,
-                GITOPS_BUILD_LIB_REPO        : config.repositories.gitopsBuildLib.url,
-                CES_BUILD_LIB_REPO           : config.repositories.cesBuildLib.url,
-                NAME_PREFIX                  : config.application.namePrefix,
-                INSECURE                     : config.application.insecure,
-                SCM_ROOT_PATH                : config.scmm.rootPath,
-                SCM_PROVIDER                 : config.scmm.provider,
-        ])
+//                GIT_COMMITTER_NAME           : config.application.gitName,
+//                GIT_COMMITTER_EMAIL          : config.application.gitEmail,
+//                GIT_AUTHOR_NAME              : config.application.gitName,
+//                GIT_AUTHOR_EMAIL             : config.application.gitEmail,
+//                GITOPS_USERNAME              : config.scmm.gitOpsUsername,
+//                TRACE                        : config.application.trace,
+//                SCMM_URL                     : config.scmm.url,
+//                SCMM_USERNAME                : config.scmm.username,
+//                SCMM_PASSWORD                : config.scmm.password,
+//                JENKINS_URL                  : config.jenkins.url,
+//                INTERNAL_SCMM                : config.scmm.internal,
+//                JENKINS_URL_FOR_SCMM         : config.jenkins.urlForScmm,
+//                SCMM_URL_FOR_JENKINS         : config.scmm.urlForJenkins,
+//                // Used indirectly in utils.sh 😬
+//                REMOTE_CLUSTER               : config.application.remote,
+//                INSTALL_ARGOCD               : config.features.argocd.active,
+//                SPRING_BOOT_HELM_CHART_COMMIT: config.repositories.springBootHelmChart.ref,
+//                SPRING_BOOT_HELM_CHART_REPO  : config.repositories.springBootHelmChart.url,
+//                GITOPS_BUILD_LIB_REPO        : config.repositories.gitopsBuildLib.url,
+//                CES_BUILD_LIB_REPO           : config.repositories.cesBuildLib.url,
+//                NAME_PREFIX                  : config.application.namePrefix,
+//                INSECURE                     : config.application.insecure,
+//                SCM_ROOT_PATH                : config.scmm.rootPath,
+//                SCM_PROVIDER                 : config.scmm.provider,
+//        ])
     }
 
     void configureGitlab() {
         log.info("Gitlab init")
 
-        createGroups()
+        //createGroups()
 
     }
 
@@ -178,7 +178,6 @@ class ScmManager extends Feature {
     }
 
     void createExercisesRepos(Group exercisesGroup) {
-        //TODO Create Repos
         log.info("Creating GitlabRepos for ${exercisesGroup}")
         createRepo("petclinic-helm", "petclinic-helm", exercisesGroup)
         createRepo("nginx-validation", "nginx-validation", exercisesGroup)
