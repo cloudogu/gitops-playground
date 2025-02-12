@@ -15,8 +15,8 @@ spec:
   - namespace: ${namePrefix}example-apps-staging
     server: https://kubernetes.default.svc
   sourceRepos:
-  - ${scmm.baseUrl}/repo/${namePrefix}argocd/example-apps
-  - ${scmm.baseUrl}/repo/${namePrefix}argocd/nginx-helm-umbrella
+  - ${scmm.repoUrl}argocd/example-apps
+  - ${scmm.repoUrl}argocd/nginx-helm-umbrella
   
   
   # allow to only see application resources from the specified namespace
