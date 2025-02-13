@@ -1,5 +1,5 @@
 package com.cloudogu.gitops.scmm.api
-
+//TODO Remove
 import com.fasterxml.jackson.annotation.JsonIgnore
 import lombok.Getter
 import lombok.Setter

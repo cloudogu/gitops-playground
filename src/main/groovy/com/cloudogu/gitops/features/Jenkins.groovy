@@ -61,7 +61,7 @@ class Jenkins extends Feature {
 
     @Override
     boolean isEnabled() {
-        return false
+        return true
 //        return true // For now, we either deploy an internal or configure an external instance
     }
 
@@ -159,6 +159,7 @@ class Jenkins extends Feature {
         if (config.features.argocd.active) {
 
             String jobName = "${config.application.namePrefix}example-apps"
+            //TODO refactor and rename scmm->scm
             def credentialId = "scmm-user"
 
             jobManger.createJob(jobName,
@@ -166,12 +167,23 @@ class Jenkins extends Feature {
                     "${config.application.namePrefix}argocd",
                     credentialId)
 
-            jobManger.createCredential(
-                    jobName,
-                    credentialId,
-                    "${config.application.namePrefix}gitops",
-                    "${config.scmm.password}",
-                    'credentials for accessing scm-manager')
+            if (config.scmm.provider == 'scm-manager') {
+                jobManger.createCredential(
+                        jobName,
+                        credentialId,
+                        "${config.application.namePrefix}gitops",
+                        "${config.scmm.password}",
+                        'credentials for accessing scm-manager')
+            }
+
+            if (config.scmm.provider == 'gitlab') {
+                jobManger.createCredential(
+                        jobName,
+                        credentialId,
+                        "${config.scmm.username}",
+                        "${config.scmm.password}",
+                        'credentials for accessing gitlab')
+            }
 
             jobManger.createCredential(
                     jobName,
