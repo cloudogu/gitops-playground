@@ -53,37 +53,4 @@ class RetrofitFactory {
         return builder.build()
     }
 
-    // New GitLab API
-    @Singleton
-    GitlabApi gitLabApi(@Named("gitlab") Retrofit gitlabRetrofit) {
-        return gitlabRetrofit.create(GitlabApi)
-    }
-
-    // New GitLab Retrofit
-    @Singleton
-    @Named("gitlab")
-    Retrofit gitlabRetrofit(Config config, @Named("gitlab") OkHttpClient gitlabOkHttpClient) {
-        return new Retrofit.Builder()
-                .baseUrl(config.scmm.url + '/api/v4/')
-                .client(gitlabOkHttpClient)
-                .addConverterFactory(JacksonConverterFactory.create())
-                .build()
-    }
-
-    // New GitLab OkHttpClient
-    @Singleton
-    @Named("gitlab")
-    OkHttpClient gitlabOkHttpClient(HttpLoggingInterceptor loggingInterceptor, Config config, Provider<HttpClientFactory.InsecureSslContext> insecureSslContext) {
-        def builder = new OkHttpClient.Builder()
-                .addInterceptor(new GitLabAuthorizationInterceptor(config.scmm.password))
-                .addInterceptor(loggingInterceptor)
-                .addInterceptor(new RetryInterceptor())
-
-        if (config.application.insecure) {
-            def context = insecureSslContext.get()
-            builder.sslSocketFactory(context.socketFactory, context.trustManager)
-        }
-
-        return builder.build()
-    }
 }
