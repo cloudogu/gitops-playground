@@ -18,11 +18,9 @@ class ApplicationConfigurator {
     }
 
     /**
-     * Sets dynamic fields and validates params
+     * Sets dynamic fields
      */
-    Config initAndValidateConfig(Config newConfig) {
-
-        validate(newConfig)
+    Config initConfig(Config newConfig) {
 
         addAdditionalApplicationConfig(newConfig)
 
@@ -223,7 +221,7 @@ class ApplicationConfigurator {
         return newUrl
     }
 
-    private void validate(Config configToSet) {
+    void validateConfig(Config configToSet) {
         if (configToSet.scmm.url && !configToSet.jenkins.url ||
                 !configToSet.scmm.url && configToSet.jenkins.url) {
             throw new RuntimeException('When setting jenkins URL, scmm URL must also be set and the other way round')
