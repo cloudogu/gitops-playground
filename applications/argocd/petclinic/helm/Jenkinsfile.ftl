@@ -66,6 +66,7 @@ node {
         }
 
         stage('Test') {
+            // Disable database integration tests because they start docker images (which won't work in air-gapped envs and take a lot of time in demos)
             mvn "test -Dmaven.test.failure.ignore=true -Dcheckstyle.skip" +
             '-Dtest=!org.springframework.samples.petclinic.MySqlIntegrationTests,!org.springframework.samples.petclinic.PostgresIntegrationTests'
         }
