@@ -49,7 +49,7 @@ class GitopsPlaygroundCliTest {
         def status = cli.run('--yes')
 
         assertThat(status).isEqualTo(ReturnCode.SUCCESS)
-        verify(applicationConfigurator).initAndValidateConfig(any(Config))
+        verify(applicationConfigurator).initConfig(any(Config))
         verify(application).start()
     }
 
@@ -63,7 +63,7 @@ class GitopsPlaygroundCliTest {
         assertThat(status).isEqualTo(ReturnCode.SUCCESS)
 
         // Verify the first interaction
-        verify(applicationConfigurator).initAndValidateConfig(any(Config))
+        verify(applicationConfigurator).initConfig(any(Config))
 
         // Check application starts
         verify(application).start()
@@ -77,7 +77,7 @@ class GitopsPlaygroundCliTest {
 
         assertThat(status).isEqualTo(ReturnCode.SUCCESS)
         // ensure init is called with Config
-        verify(applicationConfigurator).initAndValidateConfig(any(Config))
+        verify(applicationConfigurator).initConfig(any(Config))
         verify(application).start()
     }
 
@@ -86,7 +86,7 @@ class GitopsPlaygroundCliTest {
         def status = cli.run('--output-config-file')
 
         assertThat(status).isEqualTo(ReturnCode.SUCCESS)
-        verify(applicationConfigurator).initAndValidateConfig(any(Config))
+        verify(applicationConfigurator, never()).initConfig(any(Config))
         verify(application, never()).start()
     }
 
@@ -96,7 +96,7 @@ class GitopsPlaygroundCliTest {
         def status = cli.run('--version')
 
         assertThat(status).isEqualTo(ReturnCode.SUCCESS)
-        verify(applicationConfigurator).initAndValidateConfig(any(Config))
+        verify(applicationConfigurator, never()).initConfig(any(Config))
         verify(application, never()).start()
     }
 
@@ -106,7 +106,7 @@ class GitopsPlaygroundCliTest {
         def status = cli.run('--help')
 
         assertThat(status).isEqualTo(ReturnCode.SUCCESS)
-        verify(applicationConfigurator).initAndValidateConfig(any(Config))
+        verify(applicationConfigurator, never()).initConfig(any(Config))
         verify(application, never()).start()
     }
 
@@ -376,7 +376,7 @@ class GitopsPlaygroundCliTest {
         GitopsPlaygroundCliForTest() {
             super(GitopsPlaygroundCliTest.this.k8sClient, GitopsPlaygroundCliTest.this.applicationConfigurator)
 
-            when(applicationConfigurator.initAndValidateConfig(any(Config))).thenAnswer(new Answer<Config>() {
+            when(applicationConfigurator.initConfig(any(Config))).thenAnswer(new Answer<Config>() {
                 @Override
                 Config answer(InvocationOnMock invocation) throws Throwable {
                     lastSchema = invocation.getArgument(0)
