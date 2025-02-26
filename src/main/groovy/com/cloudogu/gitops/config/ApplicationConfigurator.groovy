@@ -221,16 +221,28 @@ class ApplicationConfigurator {
         return newUrl
     }
 
+    /**
+     * Make sure that config does not contain contradictory values.
+     * Throws RuntimeException which meaningful message, if invalid.
+     */
     void validateConfig(Config configToSet) {
-        if (configToSet.scmm.url && !configToSet.jenkins.url ||
-                !configToSet.scmm.url && configToSet.jenkins.url) {
-            throw new RuntimeException('When setting jenkins URL, scmm URL must also be set and the other way round')
-        }
+        validateScmmAndJenkinsAreBothSet(configToSet)
+        validateMirrorReposHelmChartFolderSet(configToSet)
+    }
+
+    private void validateMirrorReposHelmChartFolderSet(Config configToSet) {
         if (configToSet.application.mirrorRepos && !configToSet.application.localHelmChartFolder) {
             // This should only happen when run outside the image, i.e. during development
             throw new RuntimeException("Missing config for localHelmChartFolder.\n" +
                     "Either run inside the official container image or setting env var " +
                     "LOCAL_HELM_CHART_FOLDER='charts' after running 'scripts/downloadHelmCharts.sh' from the repo")
+        }
+    }
+
+    private void validateScmmAndJenkinsAreBothSet(Config configToSet) {
+        if (configToSet.scmm.url && !configToSet.jenkins.url ||
+                !configToSet.scmm.url && configToSet.jenkins.url) {
+            throw new RuntimeException('When setting jenkins URL, scmm URL must also be set and the other way round')
         }
     }
 
