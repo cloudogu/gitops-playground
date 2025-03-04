@@ -42,4 +42,24 @@ class ApplicationTest {
         application.setNamespaceListToConfig(config)
         assertThat(config.application.getActiveNamespaces()).containsExactlyInAnyOrderElementsOf(namespaceList)
     }
+    @Test
+    void 'get active namespaces correctly in Openshift'() {
+        config.features.monitoring.active = true
+        config.features.argocd.active = true
+        config.features.ingressNginx.active = true
+        config.application.namePrefix = 'test1-'
+        config.application.openshift = true
+        List<String> namespaceList = new ArrayList<>(Arrays.asList(
+                "test1-argocd",
+                "test1-example-apps-staging",
+                "test1-example-apps-production",
+                "test1-ingress-nginx",
+                "test1-monitoring"
+        ))
+        def application = ApplicationContext.run()
+                .registerSingleton(config)
+                .getBean(Application)
+        application.setNamespaceListToConfig(config)
+        assertThat(config.application.getActiveNamespaces()).containsExactlyInAnyOrderElementsOf(namespaceList)
+    }
 }

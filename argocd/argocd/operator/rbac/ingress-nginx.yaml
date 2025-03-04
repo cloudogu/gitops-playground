@@ -44,6 +44,18 @@ rules:
       - update
       - watch
   - apiGroups:
+      - ""
+    resources:
+      - services
+      - endpoints
+    verbs:
+      - list
+      - watch
+      - get
+      - create
+      - update
+      - delete
+  - apiGroups:
       - "apps"
     resources:
       - deployments
@@ -128,9 +140,15 @@ rules:
       - "monitoring.coreos.com"
     resources:
       - alertmanagers
+      - alertmanagers/finalizers
       - alertmanagerconfigs
       - prometheuses
+      - prometheuses/status
+      - prometheuses/finalizers
       - prometheusrules
+      - thanosrulers
+      - thanosrulers/status
+      - thanosrulers/finalizers
       - servicemonitors
       - podmonitors
       - probes

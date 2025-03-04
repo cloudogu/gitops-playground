@@ -7,8 +7,10 @@ rules:
   - apiGroups:
       - ""
     resources:
+<#if config.application.openshift == false>
       - nodes
       - nodes/metrics
+</#if>
       - services
       - endpoints
       - pods
@@ -39,104 +41,92 @@ metadata:
   name: kube-prometheus-stack-operator
   namespace: ${namespace}
 rules:
-  - apiGroups:
+  - verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+    apiGroups:
       - monitoring.coreos.com
     resources:
       - alertmanagers
       - alertmanagers/finalizers
-      - alertmanagers/status
       - alertmanagerconfigs
       - prometheuses
-      - prometheuses/finalizers
       - prometheuses/status
-      - prometheusagents
-      - prometheusagents/finalizers
-      - prometheusagents/status
+      - prometheuses/finalizers
       - thanosrulers
-      - thanosrulers/finalizers
       - thanosrulers/status
-      - scrapeconfigs
+      - thanosrulers/finalizers
       - servicemonitors
       - podmonitors
       - probes
       - prometheusrules
-    verbs:
-      - '*'
-  - apiGroups:
+  - verbs:
+      - get
+      - list
+      - watch
+    apiGroups:
+      - ''
+    resources:
+      - namespaces
+  - verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+    apiGroups:
       - apps
     resources:
       - statefulsets
-    verbs:
-      - '*'
-  - apiGroups:
-      - ""
+  - verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+    apiGroups:
+      - ''
     resources:
       - configmaps
       - secrets
-    verbs:
-      - '*'
-  - apiGroups:
-      - ""
-    resources:
-      - pods
-    verbs:
+  - verbs:
+      - watch
+      - get
       - list
       - delete
-  - apiGroups:
-      - ""
+    apiGroups:
+      - ''
     resources:
-      - services
-      - services/finalizers
-      - endpoints
-    verbs:
+      - pods
+  - verbs:
+      - list
+      - watch
       - get
       - create
       - update
       - delete
-  - apiGroups:
-      - ""
+    apiGroups:
+      - ''
     resources:
-      - nodes
-    verbs:
-      - list
-      - watch
-  - apiGroups:
-      - ""
-    resources:
-      - namespaces
-    verbs:
+      - services
+      - endpoints
+  - verbs:
       - get
       - list
       - watch
-  - apiGroups:
-      - ""
-    resources:
-      - events
-    verbs:
-      - patch
-      - create
-  - apiGroups:
+    apiGroups:
       - networking.k8s.io
     resources:
       - ingresses
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - storage.k8s.io
-    resources:
-      - storageclasses
-    verbs:
-      - get
-  - apiGroups:
-      - discovery.k8s.io
-    resources:
-      - endpointslices
-    verbs:
-      - get
-      - list
-      - watch
 ---
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1

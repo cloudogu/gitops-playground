@@ -1,3 +1,4 @@
+<#if config.application.openshift == false>
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -8,3 +9,4 @@ kind: Namespace
 metadata:
   name: ${namePrefix}example-apps-production
 ---
+</#if>
