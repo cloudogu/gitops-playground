@@ -4,6 +4,8 @@ import com.cloudogu.gitops.integration.features.KubenetesApiTestSetup
 import io.kubernetes.client.openapi.models.V1NamespaceList
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodList
+import io.kubernetes.client.openapi.models.V1Service
+import io.kubernetes.client.openapi.models.V1ServiceList
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 
@@ -57,24 +59,24 @@ class GOPSmoketestsIT extends KubenetesApiTestSetup {
     }
 
     @Test
-    void ensusreNamespacesExists() {
+    void ensureNamespacesExists() {
         List<String> expectedNamespaces = ["argocd",
-                                     "cert-manager",
-                                     "default",
-                                     "example-apps-production",
-                                     "example-apps-staging",
-                                     "ingress-nginx",
-                                     "kube-node-lease",
-                                     "kube-public",
-                                     "kube-system",
-                                     "monitoring",
-                                     "secrets"] as List<String>
+                                           "cert-manager",
+                                           "default",
+                                           "example-apps-production",
+                                           "example-apps-staging",
+                                           "ingress-nginx",
+                                           "kube-node-lease",
+                                           "kube-public",
+                                           "kube-system",
+                                           "monitoring",
+                                           "secrets"] as List<String>
 
 
         V1NamespaceList list = api.listNamespace().execute()
         //      list.items.each {println it.getMetadata().getName()} // print namespaces
         List<String> listOfNamespaces = list.getItems().collect { it.getMetadata().name }
-        assertThat(expectedNamespaces).containsAll (listOfNamespaces)
+        assertThat(expectedNamespaces).containsAll(listOfNamespaces)
 
     }
 
@@ -101,11 +103,16 @@ class GOPSmoketestsIT extends KubenetesApiTestSetup {
     @Override
     boolean isReadyToStartTests() {
         V1PodList list = api.listPodForAllNamespaces()
-                .execute();
-        if (list && !list.items.isEmpty()) {
+                .execute()
+        V1ServiceList services = api.listServiceForAllNamespaces()
+                .execute()
+        if (list && !list.items.isEmpty() &&
+            services && !services.items.isEmpty()) {
 
-            V1Pod argoPod = list.getItems().find { it.getMetadata().getName().startsWith("argo") }
-            if (argoPod) {
+            V1Pod argoPod = list.getItems().find { it.getMetadata().getName().startsWith("argo")}
+            V1Service service = services.getItems()find { it.getMetadata().getName().startsWith("ingress")}
+
+            if (argoPod && service) {
                 return true
             }
         }
