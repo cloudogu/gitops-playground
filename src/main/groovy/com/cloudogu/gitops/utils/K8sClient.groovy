@@ -13,6 +13,9 @@ import jakarta.inject.Singleton
 class K8sClient {
     private static final String[] APPLY_FROM_STDIN = ['kubectl', 'apply', '-f-']
 
+    protected int SLEEPTIME = 1000
+    protected int DEFAULT_RETRIES = 120
+
     private CommandExecutor commandExecutor
     private FileSystemUtils fileSystemUtils
     private Provider<Config> configProvider
@@ -27,14 +30,51 @@ class K8sClient {
         this.configProvider = configProvider
     }
 
-    String getInternalNodeIp() {
-        String node = waitForNode()
 
+    private String waitForOutput(String[] command, String[] additionalCommand, String logMessage, String failureMessage, int maxTries = DEFAULT_RETRIES) {
+        int tryCount = 0
+        String output = ""
+
+        log.debug(logMessage)
+        while (output.isEmpty() && tryCount < maxTries) {
+            if(!additionalCommand){
+                output = commandExecutor.execute(command).stdOut
+            }else{
+                output = commandExecutor.execute(command,additionalCommand).stdOut
+            }
+
+            if (output.isEmpty()) {
+                tryCount++
+                log.debug("Still waiting... (try $tryCount/$maxTries)")
+                sleep(SLEEPTIME)
+            }
+        }
+
+        if (output.isEmpty()) {
+            throw new RuntimeException(failureMessage)
+        }
+
+        return output
+    }
+
+    private String waitForOutput(String[] command, String logMessage, String failureMessage, int maxTries = DEFAULT_RETRIES) {
+        waitForOutput(command, null, logMessage, failureMessage, maxTries)
+    }
+
+    String waitForInternalNodeIp() {
+        String node = waitForNode()
         // For k3d this is either the host's IP or the IP address of the k3d API server's container IP (when --bind-localhost=false)
         // Note that this might return multiple InternalIP (IPV4 and IPV6) - we assume the first one is IPV4 (break after first)
         String[] command = ["kubectl", "get", "$node",
                             "--template='{{range .status.addresses}}{{ if eq .type \"InternalIP\" }}{{.address}}{{break}}{{end}}{{end}}'"]
-        return commandExecutor.execute(command).stdOut
+        String output = waitForOutput(
+                command,
+                "Waiting for internal IP of node $node",
+                "Failed to retrieve internal node IP"
+        )
+
+        log.debug("Internal IP of node $node: $output")
+        return output
     }
 
     /**
@@ -44,25 +84,12 @@ class K8sClient {
         String[] command1 = ['kubectl', 'get', 'node', '-oname']
         String[] command2 = ['head', '-n1']
 
-        int maxTries = 120
-        int sleepMillis = 1000
-        int tryCount = 0
-        String output = ""
+        String output = waitForOutput(
+                command1, command2,
+                "Waiting for first node of the cluster to become ready",
+                "Failed waiting for node of the cluster to become ready"
+        )
 
-        log.debug("Waiting for first node of the cluster to become ready")
-        while (output.isEmpty() && tryCount < maxTries) {
-            output = commandExecutor.execute(command1, command2).stdOut
-
-            if (output.isEmpty()) {
-                tryCount++
-                log.debug("Still waiting for first node of the cluster to become ready (try $tryCount/$maxTries)")
-                sleep(sleepMillis)
-            }
-        }
-
-        if (output.isEmpty()) {
-            throw new RuntimeException("Back up waiting for first node of the cluster to become ready after $maxTries tries")
-        }
         log.debug("First node of the cluster is ready: $output")
         return output
     }
@@ -323,9 +350,9 @@ class K8sClient {
         if (namespace) {
             commandAsList.add("-n $namespace" as String)
         }
-        String[] command = commandAsList.toArray(new String [0])
+        String[] command = commandAsList.toArray(new String[0])
         def result = commandExecutor.execute(command, false)
-        if (!result.getStdErr().isEmpty()){
+        if (!result.getStdErr().isEmpty()) {
             throw new RuntimeException("Failed to fetch data from resource [$resource/$name] in namespace [$namespace]: ${result.stdErr}")
         }
         log.debug("getAnnotation returns = ${result.stdOut}")
