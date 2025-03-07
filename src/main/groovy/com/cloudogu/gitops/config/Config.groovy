@@ -545,7 +545,7 @@ class Config {
                 chart: 'kube-prometheus-stack',
                 repoURL: 'https://prometheus-community.github.io/helm-charts',
                 /* When updating this make sure to also test if air-gapped mode still works */
-                version: '66.5.0',
+                version: '69.7.4',
                 values: [:] // Otherwise values is null 🤷‍♂️
         )
         static class MonitoringHelmSchema extends HelmConfigWithValues {
