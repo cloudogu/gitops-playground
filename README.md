@@ -12,10 +12,10 @@ Creates a complete GitOps-based operational stack on your Kubernetes clusters:
 * Runs on: 
   * local cluster (try it [with only one command](#tldr)), 
   * in the public cloud, 
-  * and even air-gapped environments (work in progress).
+  * and even air-gapped environments.
 
-The gitops-playground is derived from our experiences in [consulting](https://cloudogu.com/en/consulting/?mtm_campaign=gitops-playground&mtm_kwd=consulting&mtm_source=github&mtm_medium=link),
-operating the [myCloudogu platform](https://my.cloudogu.com/) and is used in our [GitOps trainings for both Flux and ArgoCD](https://platform.cloudogu.com/en/trainings/gitops-continuous-operations/?mtm_campaign=gitops-playground&mtm_kwd=training&mtm_source=github&mtm_medium=link).  
+The gitops-playground is derived from our experiences in [consulting](https://platform.cloudogu.com/consulting/kubernetes-und-gitops/?mtm_campaign=gitops-playground&mtm_kwd=consulting&mtm_source=github&mtm_medium=link),
+operating our internal developer platform (IDP) at [Cloudogu](https://cloudogu.com/?mtm_campaign=gitops-playground&mtm_kwd=cloudogu&mtm_source=github&mtm_medium=link) and is used in our [GitOps trainings](https://platform.cloudogu.com/en/trainings/gitops-continuous-operations/?mtm_campaign=gitops-playground&mtm_kwd=training&mtm_source=github&mtm_medium=link).  
 
 ![Playground features](docs/gitops-playground-features.drawio.svg)
 
@@ -112,7 +112,7 @@ notifications, monitoring and secret management.
 
 In addition to creating an operational stack in production, you can run the playground locally, for learning and developing new features. 
 
-We aim to be compatible with various environments, e.g. we provide basic support in an air-gapped network.
+We aim to be compatible with various environments, we even run in an air-gapped networks.
 
 ## Installation
 
