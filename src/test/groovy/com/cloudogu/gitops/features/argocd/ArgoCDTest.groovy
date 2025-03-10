@@ -1162,6 +1162,17 @@ class ArgoCDTest {
     }
 
     @Test
+    void 'No files for operator when operator is false'() {
+        createArgoCD().install()
+
+        def argocdConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH)
+        def rbacConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_RBAC_PATH)
+
+        assertThat(argocdConfigPath.toFile()).doesNotExist()
+        assertThat(rbacConfigPath.toFile()).doesNotExist()
+    }
+
+    @Test
     void 'Deploys with operator without OpenShift configuration'() {
         def argoCD = setupOperatorTest(openshift: false)
 
