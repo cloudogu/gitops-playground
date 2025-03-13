@@ -1,0 +1,29 @@
+application:
+  remote: false
+  insecure: false
+  username: "admin"
+  password: "admin"
+  "yes": false
+  namePrefix: ""
+  destroy: false
+  podResources: false
+  gitName: "Cloudogu"
+  gitEmail: "hello@cloudogu.com"
+  urlSeparatorHyphen: false
+  mirrorRepos: false
+  skipCrds: false
+  openshift: false
+features:
+  argocd:
+    active: true
+    url: ""
+    emailFrom: "argocd@example.org"
+    emailToUser: "app-team@example.org"
+    emailToAdmin: "infra@example.org"
+    operator: true
+    env:
+      - name: "testvalue"
+        value: "abc"
+      - name: "testvalue1"
+        value: "testabc"
+    resourceInclusionsCluster: "https://10.43.0.1:443"

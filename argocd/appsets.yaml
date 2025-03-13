@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ns1
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ns2
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ns3
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gop-mgmt
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: demoapplication
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - namespace: ns1
+            appRepo: "http://scmm.localhost/scm/repo/ns1/code/"
+          - namespace: ns2
+            appRepo: "http://scmm.localhost/scm/repo/ns2/code/"
+          - namespace: ns3
+            appRepo: "http://scmm.localhost/scm/repo/ns3/code/"
+  template:
+    metadata:
+      name: "my-app-{{namespace}}"
+    spec:
+      project: default
+      source:
+        repoURL: "http://scmm.localhost/scm/repo/argocd/cluster-resources/code/sources/"
+        targetRevision: main
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{namespace}}"
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+      info:
+        - name: "Application Repository"
+          value: "{{appRepo}}" # Store app-specific repo as metadata
