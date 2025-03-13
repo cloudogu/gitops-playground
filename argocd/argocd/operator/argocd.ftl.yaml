@@ -126,15 +126,15 @@ spec:
     </#if>
   initialRepositories: |
     - name: argocd
-      url: ${scmm.baseUrl}/repo/${namePrefix}argocd/argocd
+      url: ${scmm.repoUrl}argocd/argocd<#if scmm.provider == "gitlab">.git</#if>
     - name: example-apps
-      url: ${scmm.baseUrl}/repo/${namePrefix}argocd/example-apps
+      url: ${scmm.repoUrl}argocd/example-apps<#if scmm.provider == "gitlab">.git</#if>
     - name: cluster-resources
-      url: ${scmm.baseUrl}/repo/${namePrefix}argocd/cluster-resources
+      url: ${scmm.repoUrl}argocd/cluster-resources<#if scmm.provider == "gitlab">.git</#if>
     - name: nginx-helm-jenkins
-      url: ${scmm.baseUrl}/repo/${namePrefix}argocd/nginx-helm-jenkins
+      url: ${scmm.repoUrl}argocd/nginx-helm-jenkins<#if scmm.provider == "gitlab">.git</#if>
     - name: nginx-helm-umbrella
-      url: ${scmm.baseUrl}/repo/${namePrefix}argocd/nginx-helm-umbrella
+      url: ${scmm.repoUrl}argocd/nginx-helm-umbrella<#if scmm.provider == "gitlab">.git</#if>
     - name: bitnami
       type: helm
       url: https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami

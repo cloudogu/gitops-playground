@@ -41,6 +41,8 @@ interface ConfigConstants {
     String SCMM_PASSWORD_DESCRIPTION = 'Mandatory when scmm-url is set'
     String GIT_NAME_DESCRIPTION = 'Sets git author and committer name used for initial commits'
     String GIT_EMAIL_DESCRIPTION = 'Sets git author and committer email used for initial commits'
+    String SCM_ROOT_PATH_DESCRIPTION = 'Sets the root path for the Git Repositories. In SCM-Manager it is always "repo"'
+    String SCM_PROVIDER_DESCRIPTION = 'Sets the scm Provider. Possible Options are "scm-manager" and "gitlab"'
 
     // group remote
     String REMOTE_DESCRIPTION = 'Expose services as LoadBalancers'
