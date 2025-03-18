@@ -7,7 +7,7 @@ rules:
   - apiGroups:
       - ""
     resources:
-<#if config.application.openshift == true>
+<#if config.application.openshift == false>
       - nodes
       - nodes/metrics
 </#if>
