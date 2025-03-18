@@ -7,8 +7,10 @@ rules:
   - apiGroups:
       - ""
     resources:
+<#if config.application.openshift == true>
       - nodes
       - nodes/metrics
+</#if>
       - services
       - endpoints
       - pods
