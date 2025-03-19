@@ -259,7 +259,7 @@ class ApplicationConfigurator {
 
     private void setResourceInclusionsCluster(Config configToSet) {
         // Return early if NOT deploying via operator
-        if (configToSet.features.argocd.operator === false) {
+        if (!configToSet.features.argocd.operator) {
             log.debug("ArgoCD operator is not enabled. Skipping features.argocd.resourceInclusionsCluster setup.")
             return
         }

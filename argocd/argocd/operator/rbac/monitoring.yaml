@@ -145,13 +145,13 @@ rules:
       - prometheuses
       - prometheuses/status
       - prometheuses/finalizers
+      - prometheusrules
       - thanosrulers
       - thanosrulers/status
       - thanosrulers/finalizers
       - servicemonitors
       - podmonitors
       - probes
-      - prometheusrules
     verbs:
       - create
       - delete
