@@ -245,6 +245,14 @@ class Config {
                 version: '3.2.1',
                 values: [:]
         )
+
+        @Option(names = ['--scm-root-path'], description = SCM_ROOT_PATH_DESCRIPTION)
+        @JsonPropertyDescription(SCM_ROOT_PATH_DESCRIPTION)
+        String rootPath = 'repo'
+
+        @Option(names = ['--scm-provider'], description = SCM_PROVIDER_DESCRIPTION)
+        @JsonPropertyDescription(SCM_PROVIDER_DESCRIPTION)
+        String provider = 'scm-manager'
     }
 
     static class ApplicationSchema {
@@ -391,7 +399,7 @@ class Config {
         @JsonPropertyDescription(SPRING_PETCLINIC_DESCRIPTION)
         RepositorySchemaWithRef springPetclinic = new RepositorySchemaWithRef(
                 url: System.getenv('SPRING_PETCLINIC_REPO') ?: 'https://github.com/cloudogu/spring-petclinic.git',
-                ref: 'faf9b7c'
+                ref: 'b0738b2'
         )
         @JsonPropertyDescription(GITOPS_BUILD_LIB_DESCRIPTION)
         RepositorySchema gitopsBuildLib = new RepositorySchema(
@@ -545,7 +553,7 @@ class Config {
                 chart: 'kube-prometheus-stack',
                 repoURL: 'https://prometheus-community.github.io/helm-charts',
                 /* When updating this make sure to also test if air-gapped mode still works */
-                version: '66.5.0',
+                version: '69.7.4',
                 values: [:] // Otherwise values is null 🤷‍♂️
         )
         static class MonitoringHelmSchema extends HelmConfigWithValues {
@@ -698,6 +706,7 @@ class Config {
             String baseDomain = ''
         }
     }
+
 
     static enum VaultMode {
         dev, prod

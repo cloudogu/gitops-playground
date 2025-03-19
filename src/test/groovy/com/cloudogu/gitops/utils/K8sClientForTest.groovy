@@ -15,5 +15,6 @@ class K8sClientForTest extends K8sClient {
             }
         })
         commandExecutorForTest = commandExecutor
+        this.SLEEPTIME = 1
     }
 }

@@ -18,10 +18,10 @@ class K8sClientTest {
     void 'Gets internal nodeIp'() {
         // waitForNode()
         k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', 'node/k3d-gitops-playground-server-0', 0))
-        // getInternalNodeIp()
+        // waitForInternalNodeIp()
         k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', '1.2.3.4', 0))
 
-        def actualNodeIp = k8sClient.getInternalNodeIp()
+        def actualNodeIp = k8sClient.waitForInternalNodeIp()
         
         assertThat(actualNodeIp).isEqualTo('1.2.3.4')
         assertThat(commandExecutor.actualCommands[1]).isEqualTo(
@@ -35,10 +35,10 @@ class K8sClientTest {
         k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', '', 0))
         k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', '', 0))
         k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', 'node/k3d-gitops-playground-server-0', 0))
-        // getInternalNodeIp()
+        // waitForInternalNodeIp()
         k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', '1.2.3.4', 0))
 
-        def actualNodeIp = k8sClient.getInternalNodeIp()
+        def actualNodeIp = k8sClient.waitForInternalNodeIp()
 
         assertThat(actualNodeIp).isEqualTo('1.2.3.4')
     }

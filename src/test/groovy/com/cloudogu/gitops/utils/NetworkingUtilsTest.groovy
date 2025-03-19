@@ -18,9 +18,9 @@ class NetworkingUtilsTest {
     void 'clusterBindAddress: returns bind address for external cluster'() {
         def internalNodeIp = "1.2.3.4"
         def localIp = "5.6.7.8"
-        // getInternalNodeIp -> waitForNode()
+        // waitForInternalNodeIp -> waitForNode()
         k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', 'node/something', 0))
-        // getInternalNodeIp -> actual exec
+        // waitForInternalNodeIp -> actual exec
         k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', internalNodeIp, 0))
         commandExecutor.enqueueOutput(new CommandExecutor.Output('',
                 "1.0.0.0 via w.x.y.z dev someDevice src ${localIp} uid 1000", 0))
@@ -35,9 +35,9 @@ class NetworkingUtilsTest {
         def internalNodeIp = networkingUtils.localAddress
         assertThat(internalNodeIp).isNotEmpty()
 
-        // getInternalNodeIp -> waitForNode(), don't care
+        // waitForInternalNodeIp -> waitForNode(), don't care
         k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', 'node/something', 0))
-        // getInternalNodeIp -> actual exec
+        // waitForInternalNodeIp -> actual exec
         k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', internalNodeIp, 0))
 
         def actualBindAddress = networkingUtils.findClusterBindAddress()
@@ -48,9 +48,9 @@ class NetworkingUtilsTest {
     @Test
     void 'clusterBindAddress: fails when no potential bind address'() {
         def internalNodeIp = ''
-        // getInternalNodeIp -> waitForNode()
+        // waitForInternalNodeIp -> waitForNode()
         k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', 'node/something', 0))
-        // getInternalNodeIp -> actual exec
+        // waitForInternalNodeIp -> actual exec
         k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', internalNodeIp, 0))
         commandExecutor.enqueueOutput(new CommandExecutor.Output('',
                 "1.0.0.0 via w.x.y.z dev someDevice src 1.2.3.4 uid 1000", 0))
@@ -58,6 +58,6 @@ class NetworkingUtilsTest {
         def exception = shouldFail(RuntimeException) {
             networkingUtils.findClusterBindAddress()
         }
-        assertThat(exception.message).isEqualTo('Could not connect to kubernetes cluster: no cluster bind address')
+        assertThat(exception.message).isEqualTo('Failed to retrieve internal node IP')
     }
 }

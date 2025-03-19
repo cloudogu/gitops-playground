@@ -8,8 +8,8 @@ import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.ConsoleAppender
 import com.cloudogu.gitops.Application
 import com.cloudogu.gitops.config.ApplicationConfigurator
-import com.cloudogu.gitops.config.schema.JsonSchemaValidator
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.config.schema.JsonSchemaValidator
 import com.cloudogu.gitops.destroy.Destroyer
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -17,12 +17,11 @@ import com.cloudogu.gitops.utils.K8sClient
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 import io.micronaut.context.ApplicationContext
-import jakarta.inject.Provider
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
 
 import static com.cloudogu.gitops.config.ConfigConstants.APP_NAME
-import static com.cloudogu.gitops.utils.MapUtils.deepMerge
+import static com.cloudogu.gitops.utils.MapUtils.deepMerge 
 /**
  * Provides the entrypoint to the application as well as all config parameters.
  * When changing parameters, make sure to update the Config for the config file as well
@@ -44,24 +43,32 @@ class GitopsPlaygroundCli {
     ReturnCode run(String[] args) {
         setLogging(args)
 
-        def config = readConfigs(args)
-        def version = createVersionOutput()
+        log.debug("Reading initial CLI params")
+        def cliParams = new Config()
+        new CommandLine(cliParams).parseArgs(args)
 
-        // if help is requested picocli help is used and printed by execute automatically
-        if (config.application.usageHelpRequested) {
-            new CommandLine(config).execute(args)
+        if (cliParams.application.usageHelpRequested) {
+            // if help is requested picocli help is used and printed by execute automatically
+            new CommandLine(cliParams).execute(args)
             return ReturnCode.SUCCESS
         }
-
-        if (config.application.versionInfoRequested) {
+        
+        def version = createVersionOutput()
+        if (cliParams.application.versionInfoRequested) {
             println version
             return ReturnCode.SUCCESS
         }
 
+        def config = readConfigs(args)
         if (config.application.outputConfigFile) {
             println(config.toYaml(false))
             return ReturnCode.SUCCESS
         }
+        
+        // Set internal values in config after help/version/output because these should work without connecting to k8s
+        // eg a simple docker run .. --help should not fail with connection refused
+        config = applicationConfigurator.initConfig(config)
+        log.debug("Actual config: ${config.toYaml(true)}")
 
         def context = createApplicationContext()
         register(config, context)
@@ -167,7 +174,6 @@ class GitopsPlaygroundCli {
     }
 
     private Config readConfigs(String[] args) {
-        log.debug("Reading initial CLI params")
         def cliParams = new Config()
         new CommandLine(cliParams).parseArgs(args)
 
@@ -200,13 +206,10 @@ class GitopsPlaygroundCli {
 
         log.debug("Writing CLI params into config")
         Config mergedConfig = Config.fromMap(mergedConfigs)
-        //Schema newConfig = Config.fromMap(deepMerge(configToSet, config.toMap()))
         new CommandLine(mergedConfig).parseArgs(args)
 
-        mergedConfig = applicationConfigurator.initAndValidateConfig(mergedConfig)
-
-        log.debug("Actual config: ${mergedConfig.toYaml(true)}")
-
+        applicationConfigurator.validateConfig(mergedConfig)
+        
         return mergedConfig
     }
 

@@ -24,7 +24,7 @@ class NetworkingUtils {
     String findClusterBindAddress() {
         log.debug("Figuring out the address of the k8s cluster")
 
-        String potentialClusterBindAddress = k8sClient.getInternalNodeIp()
+        String potentialClusterBindAddress = k8sClient.waitForInternalNodeIp()
         potentialClusterBindAddress = potentialClusterBindAddress.replaceAll("'", "")
 
         String localAddress = localAddress

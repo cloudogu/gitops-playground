@@ -35,7 +35,7 @@ class JenkinsTest {
 
     @BeforeEach
     void setup() {
-        // getInternalNodeIp -> waitForNode()
+        // waitForInternalNodeIp -> waitForNode()
         when(k8sClient.waitForNode()).thenReturn("node/${expectedNodeName}".toString())
         when(k8sClient.run(anyString(), anyString(), anyString(), anyMap(), any())).thenReturn('')
     }

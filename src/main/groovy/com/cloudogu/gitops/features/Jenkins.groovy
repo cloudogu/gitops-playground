@@ -61,7 +61,8 @@ class Jenkins extends Feature {
 
     @Override
     boolean isEnabled() {
-        return true // For now, we either deploy an internal or configure an external instance
+        return true
+//        return true // For now, we either deploy an internal or configure an external instance
     }
 
     @Override
@@ -112,11 +113,14 @@ class Jenkins extends Feature {
                 JENKINS_PASSWORD          : config.jenkins.password,
                 // Used indirectly in utils.sh 😬
                 REMOTE_CLUSTER            : config.application.remote,
+                //TODO SCMM wording SCM?
                 SCMM_URL                  : config.scmm.urlForJenkins,
                 SCMM_PASSWORD             : config.scmm.password,
+                SCM_PROVIDER              : config.scmm.provider,
                 INSTALL_ARGOCD            : config.features.argocd.active,
                 NAME_PREFIX               : config.application.namePrefix,
                 INSECURE                  : config.application.insecure,
+
         ])
 
         globalPropertyManager.setGlobalProperty('SCMM_URL', config.scmm.url)
@@ -158,6 +162,7 @@ class Jenkins extends Feature {
         if (config.features.argocd.active) {
 
             String jobName = "${config.application.namePrefix}example-apps"
+            //TODO refactor and rename scmm->scm
             def credentialId = "scmm-user"
 
             jobManger.createJob(jobName,
@@ -165,12 +170,23 @@ class Jenkins extends Feature {
                     "${config.application.namePrefix}argocd",
                     credentialId)
 
-            jobManger.createCredential(
-                    jobName,
-                    credentialId,
-                    "${config.application.namePrefix}gitops",
-                    "${config.scmm.password}",
-                    'credentials for accessing scm-manager')
+            if (config.scmm.provider == 'scm-manager') {
+                jobManger.createCredential(
+                        jobName,
+                        credentialId,
+                        "${config.application.namePrefix}gitops",
+                        "${config.scmm.password}",
+                        'credentials for accessing scm-manager')
+            }
+
+            if (config.scmm.provider == 'gitlab') {
+                jobManger.createCredential(
+                        jobName,
+                        credentialId,
+                        "${config.scmm.username}",
+                        "${config.scmm.password}",
+                        'credentials for accessing gitlab')
+            }
 
             jobManger.createCredential(
                     jobName,
