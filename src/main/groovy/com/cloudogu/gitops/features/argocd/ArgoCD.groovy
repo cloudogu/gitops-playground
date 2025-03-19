@@ -207,10 +207,11 @@ class ArgoCD extends Feature {
         log.debug('Creating repo credential secret that is used by argocd to access repos in SCM-Manager')
         // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo
         def repoTemplateSecretName = 'argocd-repo-creds-scmm'
+        //TODO multi-tenancy
         String scmmUrlForArgoCD = config.scmm.internal ? SCMM_URL_INTERNAL : ScmmRepo.createScmmUrl(config)
         k8sClient.createSecret('generic', repoTemplateSecretName, 'argocd',
                 new Tuple2('url', scmmUrlForArgoCD),
-                new Tuple2('username', "${namePrefix}gitops"),
+                new Tuple2('username', config.scmm.username),
                 new Tuple2('password', config.scmm.password)
         )
 
@@ -470,6 +471,8 @@ class ArgoCD extends Feature {
                             baseUrl : config.scmm.internal ? 'http://scmm-scm-manager.default.svc.cluster.local/scm' : ScmmRepo.createScmmUrl(config),
                             host    : config.scmm.internal ? 'scmm-scm-manager.default.svc.cluster.local' : config.scmm.host,
                             protocol: config.scmm.internal ? 'http' : config.scmm.protocol,
+                            repoUrl : ScmmRepo.createSCMBaseUrl(config),
+                            provider: config.scmm.provider
                     ],
                     jenkins             : [
                             mavenCentralMirror: config.jenkins.mavenCentralMirror,

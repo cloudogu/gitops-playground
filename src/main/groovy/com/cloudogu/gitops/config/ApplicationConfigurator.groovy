@@ -18,7 +18,7 @@ class ApplicationConfigurator {
     }
 
     /**
-     * Sets dynamic fields
+     * Sets dynamic fields and validates params
      */
     Config initConfig(Config newConfig) {
 

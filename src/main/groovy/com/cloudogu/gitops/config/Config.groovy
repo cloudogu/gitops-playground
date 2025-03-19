@@ -245,6 +245,14 @@ class Config {
                 version: '3.2.1',
                 values: [:]
         )
+
+        @Option(names = ['--scm-root-path'], description = SCM_ROOT_PATH_DESCRIPTION)
+        @JsonPropertyDescription(SCM_ROOT_PATH_DESCRIPTION)
+        String rootPath = 'repo'
+
+        @Option(names = ['--scm-provider'], description = SCM_PROVIDER_DESCRIPTION)
+        @JsonPropertyDescription(SCM_PROVIDER_DESCRIPTION)
+        String provider = 'scm-manager'
     }
 
     static class ApplicationSchema {
@@ -698,6 +706,7 @@ class Config {
             String baseDomain = ''
         }
     }
+
 
     static enum VaultMode {
         dev, prod
