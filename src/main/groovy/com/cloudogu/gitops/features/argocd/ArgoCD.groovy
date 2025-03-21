@@ -105,7 +105,7 @@ class ArgoCD extends Feature {
         log.debug('Cloning Repositories')
         cloneRemotePetclinicRepo()
 
-        gitRepos.forEach( repoInitializationAction -> {
+        gitRepos.forEach(repoInitializationAction -> {
             repoInitializationAction.initLocalRepo()
         })
 
@@ -115,7 +115,7 @@ class ArgoCD extends Feature {
 
         preparePetClinicRepos()
 
-        gitRepos.forEach( repoInitializationAction -> {
+        gitRepos.forEach(repoInitializationAction -> {
             repoInitializationAction.repo.commitAndPush('Initial Commit')
         })
 
@@ -142,16 +142,6 @@ class ArgoCD extends Feature {
     }
 
     private void prepareGitOpsRepos() {
-
-        if(config.features.argocd.operator) {
-            log.debug("Deleting unnecessary argocd (argocd helm variant) folder from argocd repo: ${argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
-            deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/argocd'
-            log.debug("Deleting unnecessary namespaces resources from clusterResources repo: ${clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
-            deleteFile clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/misc/namespaces.yaml'
-        } else {
-            log.debug("Deleting unnecessary operator (argocd operator variant) folder from argocd repo: ${argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
-            deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/operator'
-        }
 
         if (!config.features.secrets.active) {
             log.debug("Deleting unnecessary secrets folder from cluster resources: ${clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
@@ -197,7 +187,7 @@ class ArgoCD extends Feature {
             new TemplatingEngine().template(
                     new File("${fileSystemUtils.getRootDir()}/applications/argocd/petclinic/Dockerfile.ftl"),
                     new File("${tmpDir}/Dockerfile"),
-                    [ baseImage: config.images.petclinic as String ]
+                    [baseImage: config.images.petclinic as String]
             )
         }
     }
@@ -225,7 +215,7 @@ class ArgoCD extends Feature {
                 new Tuple2('password', config.scmm.password)
         )
 
-        k8sClient.label('secret', repoTemplateSecretName,'argocd',
+        k8sClient.label('secret', repoTemplateSecretName, 'argocd',
                 new Tuple2(' argocd.argoproj.io/secret-type', 'repo-creds'))
 
         if (config.features.mail.smtpUser || config.features.mail.smtpPassword) {
@@ -238,7 +228,7 @@ class ArgoCD extends Feature {
             )
         }
 
-        if(config.features.argocd.operator) {
+        if (config.features.argocd.operator) {
             deployWithOperator("argocd")
         } else {
             deployWithHelm(namePrefix, "argocd")
@@ -281,7 +271,7 @@ class ArgoCD extends Feature {
         // Set admin password imperatively here instead of values.yaml, because we don't want it to show in git repo
         String bcryptArgoCDPassword = BCrypt.hashpw(password, BCrypt.gensalt(4))
         k8sClient.patch('secret', 'argocd-secret', 'argocd',
-                [stringData: ['admin.password': bcryptArgoCDPassword ] ])
+                [stringData: ['admin.password': bcryptArgoCDPassword]])
     }
 
     private void deployWithOperator(String argocdNamespace) {
@@ -293,7 +283,7 @@ class ArgoCD extends Feature {
         // This can take some time, so we wait for the status of the custom resource to become "Available"
         k8sClient.waitForResourcePhase("argocd", "argocd", argocdNamespace, "Available")
 
-        if(!config.application.openshift) {
+        if (!config.application.openshift) {
             // We need to patch the NodePrt of the Service, because the operator only supports setting type: NodePort but not the port itself
             log.debug("Patching NodePorts for 'argocd-server' Service in namespace '{}' to HTTP: 9092 and HTTPS: 9093", argocdNamespace);
             k8sClient.patchServiceNodePort("argocd-server", argocdNamespace, "http", 9092)
@@ -304,19 +294,19 @@ class ArgoCD extends Feature {
         // Set admin password imperatively here instead of operator/argocd.yaml, because we don't want it to show in git repo
         // The Operator uses an extra secret to store the admin Password, which is not bcrypted
         k8sClient.patch('secret', 'argocd-cluster', argocdNamespace,
-                [stringData: ['admin.password': password ] ])
+                [stringData: ['admin.password': password]])
         // In newer Versions ArgoCD Operator uses the password in argocd-cluster secret only as generated initial password
         // but we want to set our own admin password so we set the password in both Secrets for consistency
         String bcryptArgoCDPassword = BCrypt.hashpw(password, BCrypt.gensalt(4))
         k8sClient.patch('secret', 'argocd-secret', 'argocd',
-                [stringData: ['admin.password': bcryptArgoCDPassword ] ])
+                [stringData: ['admin.password': bcryptArgoCDPassword]])
 
         log.debug("Updating managed namespaces in ArgoCD configuration secret.")
         // The ArgoCD instance installed via an operator only manages its deployment namespace.
         // To manage additional namespaces, we need to update the 'argocd-default-cluster-config' secret with all managed namespaces.
         def namespaceList = getNamespaceList()
         k8sClient.patch('secret', 'argocd-default-cluster-config', argocdNamespace,
-                [stringData: ['namespaces': namespaceList.join(',') ] ])
+                [stringData: ['namespaces': namespaceList.join(',')]])
 
         log.debug("Add RBAC permissions for ArgoCD in all managed namespaces.")
         // Apply rbac yamls from operator/rbac folder
@@ -347,10 +337,20 @@ class ArgoCD extends Feature {
     }
 
     protected void prepareArgoCdRepo() {
-        String argocdConfigPath = this.config.features.argocd.operator ? OPERATOR_CONFIG_PATH : HELM_VALUES_PATH;
+        String argocdConfigPath = this.config.features.argocd.operator ? OPERATOR_CONFIG_PATH : HELM_VALUES_PATH
         def argocdConfigFile = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), argocdConfigPath)
 
         argocdRepoInitializationAction.initLocalRepo()
+
+        if (config.features.argocd.operator) {
+            log.debug("Deleting unnecessary argocd (argocd helm variant) folder from argocd repo: ${argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
+            deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/argocd'
+            log.debug("Deleting unnecessary namespaces resources from clusterResources repo: ${clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
+            deleteFile clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/misc/namespaces.yaml'
+        } else {
+            log.debug("Deleting unnecessary operator (argocd operator variant) folder from argocd repo: ${argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
+            deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/operator'
+        }
 
         if (!config.scmm.internal) {
             String externalScmmUrl = ScmmRepo.createScmmUrl(config)
@@ -424,7 +424,7 @@ class ArgoCD extends Feature {
         void replaceTemplates() {
             repo.replaceTemplates(~/\.ftl/, [
                     namePrefix          : config.application.namePrefix,
-                    namePrefixForEnvVars: config.application.namePrefixForEnvVars ,
+                    namePrefixForEnvVars: config.application.namePrefixForEnvVars,
                     podResources        : config.application.podResources,
                     images              : config.images,
                     nginxImage          : config.images.nginx ? DockerImageParser.parse(config.images.nginx) : null,
@@ -437,29 +437,29 @@ class ArgoCD extends Feature {
                     netpols             : config.application.netpols,
                     argocd              : [
                             // Note that passing the URL object here leads to problems in Graal Native image, see Git history
-                            host: config.features.argocd.url ? new URL(config.features.argocd.url).host : "",
-                            env : config.features.argocd.env,
-                            isOperator   : config.features.argocd.operator,
-                            emailFrom    : config.features.argocd.emailFrom,
-                            emailToUser  : config.features.argocd.emailToUser,
-                            emailToAdmin : config.features.argocd.emailToAdmin,
-                            resourceInclusionsCluster : config.features.argocd.resourceInclusionsCluster
+                            host                     : config.features.argocd.url ? new URL(config.features.argocd.url).host : "",
+                            env                      : config.features.argocd.env,
+                            isOperator               : config.features.argocd.operator,
+                            emailFrom                : config.features.argocd.emailFrom,
+                            emailToUser              : config.features.argocd.emailToUser,
+                            emailToAdmin             : config.features.argocd.emailToAdmin,
+                            resourceInclusionsCluster: config.features.argocd.resourceInclusionsCluster
                     ],
-                    registry : [
+                    registry            : [
                             twoRegistries: config.registry.twoRegistries
                     ],
                     monitoring          : [
                             grafana: [
                                     url: config.features.monitoring.grafanaUrl ? new URL(config.features.monitoring.grafanaUrl) : null,
                             ],
-                            active: config.features.monitoring.active
+                            active : config.features.monitoring.active
                     ],
-                    mail: [
-                            active: config.features.mail.active,
+                    mail                : [
+                            active      : config.features.mail.active,
                             smtpAddress : config.features.mail.smtpAddress,
-                            smtpPort : config.features.mail.smtpPort,
-                            smtpUser : config.features.mail.smtpUser,
-                            smtpPassword : config.features.mail.smtpPassword
+                            smtpPort    : config.features.mail.smtpPort,
+                            smtpUser    : config.features.mail.smtpUser,
+                            smtpPassword: config.features.mail.smtpPassword
                     ],
                     secrets             : [
                             active: config.features.secrets.active,
@@ -475,7 +475,7 @@ class ArgoCD extends Feature {
                             provider: config.scmm.provider
                     ],
                     jenkins             : [
-                            mavenCentralMirror  : config.jenkins.mavenCentralMirror,
+                            mavenCentralMirror: config.jenkins.mavenCentralMirror,
                     ],
                     exampleApps         : [
                             petclinic: [
@@ -485,9 +485,9 @@ class ArgoCD extends Feature {
                                     baseDomain: config.features.exampleApps.nginx.baseDomain
                             ],
                     ],
-                    config: config,
+                    config              : config,
                     // Allow for using static classes inside the templates
-                    statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
+                    statics             : new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
             ])
         }
 

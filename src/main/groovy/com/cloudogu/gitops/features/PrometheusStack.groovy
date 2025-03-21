@@ -128,7 +128,8 @@ class PrometheusStack extends Feature implements FeatureWithImage {
                 if (config.application.namespaceIsolation) {
                     def rbacYaml = new TemplatingEngine().template(new File(RBAC_NAMESPACE_ISOLATION_TEMPLATE),
                             [namespace : currentNamespace,
-                             namePrefix: namePrefix])
+                             namePrefix: namePrefix,
+                             config: config])
                     clusterResourcesRepo.writeFile("misc/monitoring/rbac/${currentNamespace}.yaml", rbacYaml)
                 }
 
