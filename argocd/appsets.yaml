@@ -28,19 +28,28 @@ spec:
     - list:
         elements:
           - namespace: ns1
-            appRepo: "http://scmm.localhost/scm/repo/ns1/code/"
+            appRepo: "http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/example-apps"
+            cluster: in-cluster
+            folder: apps/spring-petclinic-helm/staging
           - namespace: ns2
-            appRepo: "http://scmm.localhost/scm/repo/ns2/code/"
+            appRepo: "http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/example-apps"
+            cluster: in-cluster
+            folder: apps/spring-petclinic-helm/production
           - namespace: ns3
-            appRepo: "http://scmm.localhost/scm/repo/ns3/code/"
+            appRepo: "http://scmm-scm-manager.default.svc.cluster.local/scm/repo/argocd/example-apps"
+            cluster: in-cluster
+            folder: apps/spring-petclinic-helm/qs
   template:
     metadata:
       name: "my-app-{{namespace}}"
     spec:
-      project: default
+      project: argocd
       source:
-        repoURL: "http://scmm.localhost/scm/repo/argocd/cluster-resources/code/sources/"
+        path: "{{folder}}"
+        repoURL: "{{appRepo}}"
         targetRevision: main
+        directory:
+          recurse: true
       destination:
         server: https://kubernetes.default.svc
         namespace: "{{namespace}}"
@@ -51,3 +60,8 @@ spec:
       info:
         - name: "Application Repository"
           value: "{{appRepo}}" # Store app-specific repo as metadata
+      ignoreDifferences:
+      - group: ""
+        kind: Application
+        jsonPointers:
+          - /metadata/annotations/argocd.argoproj.io~1instance
