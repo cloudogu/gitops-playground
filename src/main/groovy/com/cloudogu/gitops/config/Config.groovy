@@ -15,7 +15,8 @@ import picocli.CommandLine.Mixin
 import picocli.CommandLine.Option
 
 import static com.cloudogu.gitops.config.ConfigConstants.*
-import static picocli.CommandLine.ScopeType 
+import static picocli.CommandLine.ScopeType
+
 /**
  * The global configuration object.
  *
@@ -488,9 +489,10 @@ class Config {
     }
 
     static class MailSchema {
-        @Option(names = ['--mailhog', '--mail'], description = MAILHOG_ENABLE_DESCRIPTION, scope = ScopeType.INHERIT)
+
         Boolean active = false
 
+        @Option(names = ['--mailhog', '--mail'], description = MAILHOG_ENABLE_DESCRIPTION, scope = ScopeType.INHERIT)
         @JsonPropertyDescription(MAILHOG_ENABLE_DESCRIPTION)
         Boolean mailhog = false
 
