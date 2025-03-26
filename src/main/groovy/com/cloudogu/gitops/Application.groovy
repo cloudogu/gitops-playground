@@ -57,6 +57,11 @@ class Application {
                 .unique()
                 .collect { "${namePrefix}${it}".toString() })
 
+        //TODO remove after Jenkins/SCMM/Registry got their own namespaces
+        if(config.application.openshift){
+            namespaces.remove(namePrefix + "default")
+        }
+
         log.debug("Active namespaces retrieved: {}", namespaces);
         config.application.activeNamespaces = namespaces.toList()
     }
