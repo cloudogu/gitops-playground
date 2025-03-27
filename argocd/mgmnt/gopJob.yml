@@ -1,0 +1,30 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: gop-rollout
+  namespace: gop-mgmt
+spec:
+  template:
+    metadata:
+      name: rollout-job-pod
+    spec:
+      containers:
+        - name: gop
+          image: ghcr.io/cloudogu/gitops-playground:latest
+          args:
+            - '--trace'
+            - '--config-file=/gop/config.yaml'
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: config-secret
+              mountPath: /gop/
+              readOnly: true
+      volumes:
+        - name: config-secret
+          secret:
+            secretName: gop-config
+            items:
+              - key: config.yaml
+                path: config.yaml
+      restartPolicy: Never
+  backoffLimit: 4

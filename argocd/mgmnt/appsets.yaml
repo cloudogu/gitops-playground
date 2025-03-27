@@ -1,16 +1,6 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: ns1
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: ns2
----
-apiVersion: v1
-kind: Namespace
-metadata:
   name: ns3
 ---
 apiVersion: v1
@@ -22,7 +12,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
   name: demoapplication
-  namespace: argocd
+  namespace: argocd  #gop-mgmt later on
 spec:
   generators:
     - list:
