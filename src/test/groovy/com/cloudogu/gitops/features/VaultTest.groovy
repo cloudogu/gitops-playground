@@ -64,13 +64,22 @@ class VaultTest {
     @Test
     void 'uses ingress if enabled'() {
         config.features.secrets.vault.url = 'http://vault.local'
-        // Also set image to make sure ingress and image work at the same time under the server block
-        config.features.secrets.vault.helm.image = 'localhost:5000/hashicorp/vault:1.12.0'
         createVault().install()
 
         def ingressYaml = parseActualYaml()['server']['ingress']
         assertThat(ingressYaml['enabled']).isEqualTo(true)
         assertThat((ingressYaml['hosts'] as List)[0]['host']).isEqualTo('vault.local')
+    }
+    
+    @Test
+    void 'uses ingress if enabled and image set'() {
+        config.features.secrets.vault.url = 'http://vault.local'
+        // Also set image to make sure ingress and image work at the same time under the server block
+        //config.features.secrets.vault.helm.image = 'localhost:5000/hashicorp/vault:1.12.0'
+        createVault().install()
+
+        def ingressYaml = parseActualYaml()['server']['ingress']
+        assertThat(ingressYaml['enabled']).isEqualTo(true)
     }
 
     @Test

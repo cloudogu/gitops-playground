@@ -131,6 +131,15 @@ class ApplicationConfigurator {
             newConfig.scmm.ingress = new URL(injectSubdomain('scmm',
                     newConfig.application.baseUrl as String, newConfig.application.urlSeparatorHyphen as Boolean)).host
         }
+        // When specific user/pw are not set, set them to global values
+        if (newConfig.scmm.password === Config.DEFAULT_ADMIN_PW) {
+            newConfig.scmm.password = newConfig.application.password
+        }
+        if (newConfig.scmm.username === Config.DEFAULT_ADMIN_USER) {
+            newConfig.scmm.username = newConfig.application.username
+        }
+
+
     }
 
     private void addJenkinsConfig(Config newConfig) {
@@ -152,6 +161,13 @@ class ApplicationConfigurator {
         if (newConfig.application.baseUrl) {
             newConfig.jenkins.ingress = new URL(injectSubdomain('jenkins',
                     newConfig.application.baseUrl, newConfig.application.urlSeparatorHyphen)).host
+        }
+        // When specific user/pw are not set, set them to global values
+        if (newConfig.jenkins.username === Config.DEFAULT_ADMIN_USER) {
+            newConfig.jenkins.username = newConfig.application.username
+        }
+        if (newConfig.jenkins.password === Config.DEFAULT_ADMIN_PW) {
+            newConfig.jenkins.password = newConfig.application.password
         }
     }
 
@@ -328,4 +344,6 @@ class ApplicationConfigurator {
             throw new RuntimeException(errorMessage, e)
         }
     }
+
+
 }
