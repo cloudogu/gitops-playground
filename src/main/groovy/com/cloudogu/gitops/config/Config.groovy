@@ -649,7 +649,7 @@ class Config {
         IngressNginxHelmSchema helm = new IngressNginxHelmSchema(
                 chart: 'ingress-nginx',
                 repoURL: 'https://kubernetes.github.io/ingress-nginx',
-                version: '4.11.3'
+                version: '4.12.1'
         )
         static class IngressNginxHelmSchema extends HelmConfigWithValues {
             @Option(names = ['--ingress-nginx-image'], description = HELM_CONFIG_IMAGE_DESCRIPTION)

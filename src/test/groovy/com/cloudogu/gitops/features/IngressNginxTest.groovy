@@ -41,8 +41,8 @@ class IngressNginxTest {
         def actual = parseActualYaml()
         assertThat(actual['controller']['replicaCount']).isEqualTo(2)
 
-        verify(deploymentStrategy).deployFeature('https://kubernetes.github.io/ingress-nginx', 'ingress-nginx',
-                'ingress-nginx', '4.11.3','ingress-nginx',
+        verify(deploymentStrategy).deployFeature(config.features.ingressNginx.helm.repoURL, 'ingress-nginx',
+                config.features.ingressNginx.helm.chart, config.features.ingressNginx.helm.version,'ingress-nginx',
                 'ingress-nginx', temporaryYamlFile)
         assertThat(parseActualYaml()['controller']['resources']).isNull()
         assertThat(parseActualYaml()['controller']['metrics']).isNull()
@@ -104,9 +104,9 @@ class IngressNginxTest {
 
         def helmConfig = ArgumentCaptor.forClass(Config.HelmConfig)
         verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
-        assertThat(helmConfig.value.chart).isEqualTo('ingress-nginx')
-        assertThat(helmConfig.value.repoURL).isEqualTo('https://kubernetes.github.io/ingress-nginx')
-        assertThat(helmConfig.value.version).isEqualTo('4.11.3')
+        assertThat(helmConfig.value.chart).isEqualTo(config.features.ingressNginx.helm.chart)
+        assertThat(helmConfig.value.repoURL).isEqualTo(config.features.ingressNginx.helm.repoURL)
+        assertThat(helmConfig.value.version).isEqualTo(config.features.ingressNginx.helm.version)
         verify(deploymentStrategy).deployFeature(
                 'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/a/b',
                 'ingress-nginx', '.', '1.2.3','ingress-nginx',
