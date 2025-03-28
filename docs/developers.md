@@ -568,7 +568,7 @@ skopeo copy docker://ghcr.io/cloudogu/mailhog:v1.0.1 --dest-creds Proxy:Proxy123
 skopeo copy docker://ghcr.io/external-secrets/external-secrets:v0.9.16 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/external-secrets
 skopeo copy docker://hashicorp/vault:1.14.0 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/vault
 skopeo copy docker://bitnami/nginx:1.23.3-debian-11-r8 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/nginx
-skopeo copy docker://registry.k8s.io/ingress-nginx/controller:v1.9.6 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/ingress-nginx
+skopeo copy docker://registry.k8s.io/ingress-nginx/controller:v1.12.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/ingress-nginx
 
 # Monitoring
 # Using latest will lead to failure with
