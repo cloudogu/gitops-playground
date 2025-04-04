@@ -65,8 +65,9 @@ node('high-cpu') {
                                 imageNames += createImageName(git.commitHashShort)
                                 imageNames += createImageName(git.commitHashShort) + '-dev'
 
-                                images += buildImage(imageNames[0])
-                                images += buildImage(imageNames[1], '--build-arg ENV=dev')
+                                // Load it from buildkit to docker so it can be pushed later (if necessary)
+                                images += buildImage(imageNames[0], '--load')
+                                images += buildImage(imageNames[1], '--build-arg ENV=dev --load')
                             }
                         }
                   )
@@ -165,24 +166,52 @@ node('high-cpu') {
                                 images[0].push()
                                 images[0].push('latest')
                                 images[0].push(git.tag)
+                                
+                                // Arm64 can only be pushed directly by buildkit
+                                buildAndPushArm64Image(git.commitHashShort + '-dev', '--build-arg ENV=dev')
+                                buildAndPushArm64Image(git.tag + '-dev', '--build-arg ENV=dev')
+                                buildAndPushArm64Image('-dev', '--build-arg ENV=dev')
+                                buildAndPushArm64Image('latest-dev', '--build-arg ENV=dev')
+                                        
+                                // For now, prod images can't be built for arm64, because we build musl
+                                // Seems complicated to build. When upgrading Graal we need to get rid of it anyway.
+                                //buildAndPushArm64Image(git.commitHashShort)
+                                //buildAndPushArm64Image('latest')
+                                //buildAndPushArm64Image(git.tag)
 
                                 currentBuild.description = createImageName(git.tag)
                                 currentBuild.description += "\n${imageNames[0]}"
-
                             } else if (env.BRANCH_NAME == 'main') {
                                 images[1].push()
                                 images[0].push()
+                                
+                                // Arm64 can only be pushed directly by buildkit
+                                buildAndPushArm64Image(git.commitHashShort + '-dev', '--build-arg ENV=dev')
+                                //buildAndPushArm64Image(git.commitHashShort)
+                                
                                 currentBuild.description = "${imageNames[0]}"
                             } else if (env.BRANCH_NAME == 'test') {
                                 images[1].push()
                                 images[1].push('test-dev')
                                 images[0].push()
                                 images[0].push('test')
+
+                                // Arm64 can only be pushed directly by buildkit
+                                buildAndPushArm64Image(git.commitHashShort + '-dev', '--build-arg ENV=dev')
+                                buildAndPushArm64Image('test-dev', '--build-arg ENV=dev')
+                                //buildAndPushArm64Image(git.commitHashShort)
+                                //buildAndPushArm64Image('test')
+                                
                                 currentBuild.description = createImageName('test')
                                 currentBuild.description += "\n${imageNames[0]}"
                             } else if (params.forcePushImage) {
                                 images[1].push()
                                 images[0].push()
+                                
+                                // Arm64 can only be pushed directly by buildkit
+                                buildAndPushArm64Image(git.commitHashShort + '-dev', '--build-arg ENV=dev')
+                                //buildAndPushArm64Image(git.commitHashShort)
+                                
                                 currentBuild.description = imageNames[0]
                             } else {
                                 echo "Skipping deployment to github container registry because not a tag and not main branch."
@@ -214,12 +243,27 @@ node('high-cpu') {
 
 def buildImage(String imageName, String additionalBuildArgs = '') {
     String rfcDate = sh(returnStdout: true, script: 'date --rfc-3339 ns').trim()
-    return docker.build(imageName,
+    withEnv(['DOCKER_BUILDKIT=1']) {
+        return docker.build(imageName,
+                "--build-arg BUILD_DATE='${rfcDate}' " +
+                "--build-arg VCS_REF='${git.commitHash}' " +
+                "--platform linux/amd64 " +
+                "${additionalBuildArgs} " +
+                // if using optional parameters you need to add the '.' argument at the end for docker to build the image
+                ".")
+    }
+}
+
+void buildAndPushArm64Image(String tagName, String additionalBuildArgs = '') {
+    // DOCKER_BUILDKIT is not enough.
+    // It leads to bin/sh: exec format error on 'apk add curl grep' on arm64 for example
+    String rfcDate = sh(returnStdout: true, script: 'date --rfc-3339 ns').trim()
+    sh "docker buildx create --use && " +
+        "docker buildx inspect --bootstrap && " +
+        "docker buildx build -t ${createImageName(tagName)} --progress=plain --platform linux/arm64 --push " +
             "--build-arg BUILD_DATE='${rfcDate}' " +
-                    "--build-arg VCS_REF='${git.commitHash}' " +
-                    "${additionalBuildArgs} " +
-                    // if using optional parameters you need to add the '.' argument at the end for docker to build the image
-                    ".")
+            "--build-arg VCS_REF='${git.commitHash}' " +
+            "${additionalBuildArgs} ."
 }
 
 def scanForCriticalVulns(String imageName, String fileName){

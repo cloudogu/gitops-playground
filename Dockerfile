@@ -4,11 +4,15 @@ ARG ENV=prod
 ARG JDK_VERSION='17'
 # Set by the micronaut BOM, see pom.xml
 ARG GRAAL_VERSION='22.3.0'
+# When updating also update in init-cluster.sh. vars.tf, Config.groovy and apply.sh
+ARG K8S_VERSION=1.29.8
 
 FROM alpine:3 AS alpine
 
 # Keep in sync with the version in pom.xml
 FROM ghcr.io/graalvm/graalvm-ce:ol8-java${JDK_VERSION}-${GRAAL_VERSION} AS graal
+
+FROM registry.k8s.io/kubectl:v${K8S_VERSION} as kubectl
 
 FROM graal AS maven-cache
 ENV MAVEN_OPTS='-Dmaven.repo.local=/mvn'
@@ -40,15 +44,9 @@ RUN mv $(ls -S target/*.jar | head -n 1) /app/gitops-playground.jar
 
 FROM alpine AS downloader
 RUN apk add curl grep
-# When updating, 
-# * also update the checksum found at https://dl.k8s.io/release/v${K8S_VERSION}/bin/linux/amd64/kubectl.sha256
-# * also update in init-cluster.sh. vars.tf, Config.groovy and apply.sh
-# When upgrading to 1.26 we can verify the kubectl signature with cosign!
-# https://kubernetes.io/blog/2022/12/12/kubernetes-release-artifact-signing/
-ARG K8S_VERSION=1.29.8
-ARG KUBECTL_CHECKSUM=038454e0d79748aab41668f44ca6e4ac8affd1895a94f592b9739a0ae2a5f06a
-# When updating, also upgrade helm image in Config
+# When updating also update in init-cluster.sh. vars.tf, Config.groovy. apply.sh and helm image in Config
 ARG HELM_VERSION=3.16.4
+ARG TARGETARCH
 # bash curl unzip required for Jenkins downloader
 RUN apk add --no-cache \
       gnupg \
@@ -64,21 +62,16 @@ ENV HOME=/tmp
 WORKDIR /tmp
 
 # Helm
-RUN curl --location --fail --retry 20 --retry-connrefused --retry-all-errors --output helm.tar.gz https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz 
-RUN curl --location --fail --retry 20 --retry-connrefused --retry-all-errors --output helm.tar.gz.asc https://github.com/helm/helm/releases/download/v${HELM_VERSION}/helm-v${HELM_VERSION}-linux-amd64.tar.gz.asc
+RUN curl --location --fail --retry 20 --retry-connrefused --retry-all-errors --output helm.tar.gz https://get.helm.sh/helm-v${HELM_VERSION}-linux-${TARGETARCH}.tar.gz 
+RUN curl --location --fail --retry 20 --retry-connrefused --retry-all-errors --output helm.tar.gz.asc https://github.com/helm/helm/releases/download/v${HELM_VERSION}/helm-v${HELM_VERSION}-linux-${TARGETARCH}.tar.gz.asc
 RUN tar -xf helm.tar.gz
 RUN set -o pipefail && curl --location --fail --retry 20 --retry-connrefused --retry-all-errors \
   https://raw.githubusercontent.com/helm/helm/main/KEYS | gpg --import --batch --no-default-keyring --keyring /tmp/keyring.gpg 
 RUN gpgv --keyring /tmp/keyring.gpg helm.tar.gz.asc helm.tar.gz
-RUN mv linux-amd64/helm /dist/usr/local/bin
+RUN mv linux-${TARGETARCH}/helm /dist/usr/local/bin
 ENV PATH=$PATH:/dist/usr/local/bin
 
-# Kubectl
-RUN curl --location --fail --retry 20 --retry-connrefused --retry-all-errors --output kubectl https://dl.k8s.io/release/v${K8S_VERSION}/bin/linux/amd64/kubectl
-# Without the two spaces the check fails!
-RUN echo "${KUBECTL_CHECKSUM}  kubectl" | sha256sum -c
-RUN chmod +x /tmp/kubectl
-RUN mv /tmp/kubectl /dist/usr/local/bin/kubectl
+COPY --from=kubectl /bin/kubectl /dist/usr/local/bin/kubectl
 
 # External Repos used in GOP
 WORKDIR /dist/gitops/repos
@@ -214,7 +207,7 @@ COPY --from=native-image /app/apply-ng app/apply-ng
 ENTRYPOINT ["/app/apply-ng"]
 
 
-FROM eclipse-temurin:${JDK_VERSION}-jre-alpine AS dev
+FROM azul/zulu-openjdk-alpine:${JDK_VERSION}-jre AS dev
 
 # apply-ng.sh is part of the dev image and allows trying changing groovy code inside the image for debugging
 # Allow changing code in dev mode, less secure, but the intention of the dev image
@@ -276,7 +269,7 @@ LABEL org.opencontainers.image.title="gitops-playground" \
       org.opencontainers.image.documentation="https://github.com/cloudogu/gitops-playground" \
       org.opencontainers.image.vendor="cloudogu" \
       org.opencontainers.image.licenses="AGPL3.0" \
-      org.opencontainers.image.description="Reproducible infrastructure to showcase GitOps workflows and evaluate different GitOps Operators" \
+      org.opencontainers.image.description="Creates a complete GitOps-based operational stack on your Kubernetes clusters " \
       org.opencontainers.image.version="${VCS_REF}" \
       org.opencontainers.image.created="${BUILD_DATE}" \
       org.opencontainers.image.ref.name="${VCS_REF}" \
