@@ -70,6 +70,10 @@ abstract class Feature {
         return new YamlSlurper().parseText(hydratedString) as Map
     }
 
+    String getNamespace(String namespace){
+        return
+    }
+
     abstract boolean isEnabled()
     
     /*

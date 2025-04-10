@@ -24,7 +24,6 @@ class Registry extends Feature {
     public static final String CONTAINER_PORT = '5000'
 
     String namespace = "${config.application.namePrefix}registry"
-
     private Config config
     private DeploymentStrategy deployer
     private FileSystemUtils fileSystemUtils
