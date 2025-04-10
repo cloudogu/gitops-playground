@@ -3,7 +3,7 @@
 String getApplication() { 'spring-petclinic-plain' }
 String getConfigRepositoryPRRepo() { '${namePrefix}argocd/example-apps' }
 String getScmManagerCredentials() { 'scmm-user' }
-String getConfigRepositoryPRBaseUrl() { env.SCMM_URL }
+String getConfigRepositoryPRBaseUrl() { env.${namePrefixForEnvVars}SCMM_URL }
 
 String getDockerRegistryBaseUrl() { env.${namePrefixForEnvVars}REGISTRY_URL }
 String getDockerRegistryPath() { env.${namePrefixForEnvVars}REGISTRY_PATH }
@@ -15,9 +15,11 @@ String getDockerRegistryProxyCredentials() { 'registry-proxy-user' }
 </#if>
 
 <#noparse>
-String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/3rd-party-dependencies/ces-build-lib" }
+
+String getCesBuildLibRepo() { configRepositoryPRBaseUrl+"/repo/3rd-party-dependencies/ces-build-lib/" }
+String getGitOpsBuildLibRepo() { configRepositoryPRBaseUrl+"/repo/3rd-party-dependencies/gitops-build-lib" }
+
 String getCesBuildLibVersion() { '2.5.0' }
-String getGitOpsBuildLibRepo() { "${env.SCMM_URL}/repo/3rd-party-dependencies/gitops-build-lib" }
 String getGitOpsBuildLibVersion() { '0.7.0'}
 
 loadLibraries()

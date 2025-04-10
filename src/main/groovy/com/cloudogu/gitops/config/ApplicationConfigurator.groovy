@@ -24,10 +24,11 @@ class ApplicationConfigurator {
 
         addAdditionalApplicationConfig(newConfig)
 
-        addScmmConfig(newConfig)
-        addJenkinsConfig(newConfig)
-
         addNamePrefix(newConfig)
+
+        addScmmConfig(newConfig)
+
+        addJenkinsConfig(newConfig)
 
         addRegistryConfig(newConfig)
 
@@ -113,12 +114,13 @@ class ApplicationConfigurator {
             newConfig.scmm.urlForJenkins = newConfig.scmm.url
         } else if (newConfig.application.runningInsideK8s) {
             log.debug("Setting scmm url to k8s service, since installation is running inside k8s")
-            newConfig.scmm.url = networkingUtils.createUrl("scmm-scm-manager.default.svc.cluster.local", "80", "/scm")
+            newConfig.scmm.url = networkingUtils.createUrl("scmm-scm-manager.${newConfig.application.namePrefix}scm-manager.svc.cluster.local", "80", "/scm")
         } else {
             log.debug("Setting internal configs for local single node cluster with internal scmm")
             def port = fileSystemUtils.getLineFromFile(fileSystemUtils.getRootDir() + "/scm-manager/values.ftl.yaml", "nodePort:").findAll(/\d+/)*.toString().get(0)
             String clusterBindAddress = networkingUtils.findClusterBindAddress()
             newConfig.scmm.url = networkingUtils.createUrl(clusterBindAddress, port, "/scm")
+            newConfig.scmm.urlForJenkins = "http://scmm-scm-manager.${newConfig.application.namePrefix}scm-manager.svc.cluster.local/scm"
         }
 
         String scmmUrl = newConfig.scmm.url
@@ -150,12 +152,13 @@ class ApplicationConfigurator {
             newConfig.jenkins.urlForScmm = newConfig.jenkins.url
         } else if (newConfig.application.runningInsideK8s) {
             log.debug("Setting jenkins url to k8s service, since installation is running inside k8s")
-            newConfig.jenkins.url = networkingUtils.createUrl("jenkins.default.svc.cluster.local", "80")
+            newConfig.jenkins.url = networkingUtils.createUrl("jenkins.${newConfig.application.namePrefix}jenkins.svc.cluster.local", "80")
         } else {
             log.debug("Setting jenkins configs for local single node cluster with internal jenkins")
             def port = fileSystemUtils.getLineFromFile(fileSystemUtils.getRootDir() + "/jenkins/values.ftl.yaml", "nodePort:").findAll(/\d+/)*.toString().get(0)
             String clusterBindAddress = networkingUtils.findClusterBindAddress()
             newConfig.jenkins.url = networkingUtils.createUrl(clusterBindAddress, port)
+            newConfig.jenkins.urlForScmm = "http://jenkins.${newConfig.application.namePrefix}jenkins.svc.cluster.local"
         }
 
         if (newConfig.application.baseUrl) {

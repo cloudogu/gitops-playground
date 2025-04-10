@@ -121,7 +121,7 @@ class ArgoCDTest {
         k8sCommands.assertExecuted('kubectl create namespace argocd')
 
         // check values.yaml
-        List filesWithInternalSCMM = findFilesContaining(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), ArgoCD.SCMM_URL_INTERNAL)
+        List filesWithInternalSCMM = findFilesContaining(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), argocd.scmm_url_internal)
         assertThat(filesWithInternalSCMM).isNotEmpty()
         assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['server']['service']['type'])
                 .isEqualTo('NodePort')
@@ -184,8 +184,9 @@ class ArgoCDTest {
         config.scmm.internal = false
         config.features.argocd.url = 'https://argo.cd'
 
-        createArgoCD().install()
-        List filesWithInternalSCMM = findFilesContaining(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), ArgoCD.SCMM_URL_INTERNAL)
+        def argocd = createArgoCD()
+        argocd.install()
+        List filesWithInternalSCMM = findFilesContaining(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), argocd.scmm_url_internal)
         assertThat(filesWithInternalSCMM).isEmpty()
         List filesWithExternalSCMM = findFilesContaining(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), "https://abc")
         assertThat(filesWithExternalSCMM).isNotEmpty()
@@ -500,11 +501,11 @@ class ArgoCDTest {
         createArgoCD().install()
 
         Map repos = parseActualYaml(actualHelmValuesFile)['argo-cd']['configs']['repositories'] as Map
-        assertThat(repos['prometheus']['url']).isEqualTo('http://scmm-scm-manager.default.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack')
+        assertThat(repos['prometheus']['url']).isEqualTo('http://scmm-scm-manager.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack')
 
         def clusterRessourcesYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/cluster-resources.yaml')
         assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains(
-                'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack')
+                'http://scmm-scm-manager.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack')
         assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain(
                 'https://prometheus-community.github.io/helm-charts')
     }
@@ -574,20 +575,22 @@ class ArgoCDTest {
 
     @Test
     void 'For internal SCMM: Use service address in gitops repos'() {
-        createArgoCD().install()
-        List filesWithInternalSCMM = findFilesContaining(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), ArgoCD.SCMM_URL_INTERNAL)
+        def argocd = createArgoCD()
+        argocd.install()
+        List filesWithInternalSCMM = findFilesContaining(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), argocd.scmm_url_internal)
         assertThat(filesWithInternalSCMM).isNotEmpty()
-        filesWithInternalSCMM = findFilesContaining(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), ArgoCD.SCMM_URL_INTERNAL)
+        filesWithInternalSCMM = findFilesContaining(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), argocd.scmm_url_internal)
         assertThat(filesWithInternalSCMM).isNotEmpty()
     }
 
     @Test
     void 'For external SCMM: Use external address in gitops repos'() {
         config.scmm.internal = false
-        createArgoCD().install()
-        List filesWithInternalSCMM = findFilesContaining(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), ArgoCD.SCMM_URL_INTERNAL)
+        def argocd = createArgoCD()
+        argocd.install()
+        List filesWithInternalSCMM = findFilesContaining(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), argocd.scmm_url_internal)
         assertThat(filesWithInternalSCMM).isEmpty()
-        filesWithInternalSCMM = findFilesContaining(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), ArgoCD.SCMM_URL_INTERNAL)
+        filesWithInternalSCMM = findFilesContaining(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), argocd.scmm_url_internal)
         assertThat(filesWithInternalSCMM).isEmpty()
 
         List filesWithExternalSCMM = findFilesContaining(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), "https://abc")
@@ -598,9 +601,10 @@ class ArgoCDTest {
 
     @Test
     void 'Pushes repos with empty name-prefix'() {
-        createArgoCD().install()
+        def argocd = createArgoCD()
+        argocd.install()
 
-        assertArgoCdYamlPrefixes(ArgoCD.SCMM_URL_INTERNAL, '')
+        assertArgoCdYamlPrefixes(argocd.scmm_url_internal, '')
         assertJenkinsEnvironmentVariablesPrefixes('')
     }
 
@@ -618,9 +622,10 @@ class ArgoCDTest {
         config.application.namePrefix = 'abc-'
         config.application.namePrefixForEnvVars = 'ABC_'
 
-        createArgoCD().install()
+        def argocd = createArgoCD()
+        argocd.install()
 
-        assertArgoCdYamlPrefixes(ArgoCD.SCMM_URL_INTERNAL, 'abc-')
+        assertArgoCdYamlPrefixes(argocd.scmm_url_internal, 'abc-')
         assertJenkinsEnvironmentVariablesPrefixes('ABC_')
     }
 
@@ -656,7 +661,7 @@ class ArgoCDTest {
         assertThat(image['registry']).isEqualTo('localhost:5000')
         assertThat(image['repository']).isEqualTo('nginx/nginx')
         assertThat(image['tag']).isEqualTo('latest')
-        
+
         def deployment = parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[0]
         assertThat(deployment['kind']).as("Did not correctly fetch deployment from broken-application.yaml").isEqualTo("Deploymentz")
         assertThat((deployment['spec']['template']['spec']['containers'] as List)[0]['image']).isEqualTo('localhost:5000/nginx/nginx:latest')
@@ -675,15 +680,15 @@ class ArgoCDTest {
         config.registry.proxyUrl = 'proxy-url'
         config.registry.proxyUsername = 'proxy-user'
         config.registry.proxyPassword = 'proxy-pw'
-        
+
         createArgoCD().install()
 
         assertThat(parseActualYaml(nginxHelmJenkinsRepo.absoluteLocalRepoTmpDir + '/k8s/values-shared.yaml')['global']['imagePullSecrets'])
                 .isEqualTo(['proxy-registry'])
-        
+
         assertThat(parseActualYaml(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'apps/nginx-helm-umbrella/values.yaml')['nginx']['global']['imagePullSecrets'])
                 .isEqualTo(['proxy-registry'])
-        
+
         def deployment = parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[0]
         assertThat(deployment['spec']['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
 
@@ -693,7 +698,7 @@ class ArgoCDTest {
     - proxy-registry
 """)
     }
-    
+
     @Test
     void 'Skips CRDs for argo cd'() {
         config.application.skipCrds = true
@@ -784,7 +789,7 @@ class ArgoCDTest {
         assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir(), '/argocd/templates/allow-namespaces.yaml').text.contains("namespace: monitoring"))
         assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir(), '/argocd/templates/allow-namespaces.yaml').text.contains("namespace: default"))
     }
-    
+
     @Test
     void 'set credentials for BuildImages'() {
         config.registry.twoRegistries = true
@@ -916,7 +921,7 @@ class ArgoCDTest {
             def yaml = parseActualYaml(it.toString())
             List yamlDocuments = yaml instanceof List ? yaml : [yaml]
             for (def document in yamlDocuments) {
-                // Check all YAMLs objects for proper namespace, but namespaces because they dont have namespace attributes 
+                // Check all YAMLs objects for proper namespace, but namespaces because they dont have namespace attributes
                 if (document && document['kind'] != 'Namespace') {
                     def metadataNamespace = document['metadata']['namespace'] as String
                     assertThat(metadataNamespace)
@@ -989,7 +994,7 @@ class ArgoCDTest {
         if (!actualBuildImages) {
             fail("Missing build images in Jenkinsfile ${jenkinsfile}")
         }
-        
+
         if (config.registry.twoRegistries) {
             for (Map.Entry image : actualBuildImages as Map) {
                 assertThat(image.value['image']).isEqualTo(buildImages[image.key])
@@ -1430,4 +1435,3 @@ class ArgoCDTest {
     }
 
 }
-

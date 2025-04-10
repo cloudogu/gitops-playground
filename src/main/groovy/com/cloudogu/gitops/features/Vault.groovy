@@ -21,12 +21,11 @@ class Vault extends Feature implements FeatureWithImage {
     static final String VAULT_START_SCRIPT_PATH = '/applications/cluster-resources/secrets/vault/dev-post-start.ftl.sh'
     static final String HELM_VALUES_PATH = 'applications/cluster-resources/secrets/vault/values.ftl.yaml'
 
-    String namespace = 'secrets'
+    String namespace =  "${config.application.namePrefix}secrets"
     Config config
     K8sClient k8sClient
 
     private FileSystemUtils fileSystemUtils
-    private Path tmpHelmValues
     private DeploymentStrategy deployer
     private AirGappedUtils airGappedUtils
 
@@ -71,14 +70,12 @@ class Vault extends Feature implements FeatureWithImage {
             def vaultPostStartConfigMap = 'vault-dev-post-start'
             def vaultPostStartVolume = 'dev-post-start'
 
-            def namePrefix = config.application.namePrefix
-
             def templatedFile = fileSystemUtils.copyToTempDir(fileSystemUtils.getRootDir() + VAULT_START_SCRIPT_PATH)
-            def postStartScript = new TemplatingEngine().replaceTemplate(templatedFile.toFile(), [namePrefix: namePrefix])
+            def postStartScript = new TemplatingEngine().replaceTemplate(templatedFile.toFile(), [namePrefix: config.application.namePrefix])
 
             log.debug('Creating namespace for vault, so it can add its secrets there')
-            k8sClient.createNamespace('secrets')
-            k8sClient.createConfigMapFromFile(vaultPostStartConfigMap, 'secrets', postStartScript.absolutePath)
+            k8sClient.createNamespace(namespace)
+            k8sClient.createConfigMapFromFile(vaultPostStartConfigMap, namespace, postStartScript.absolutePath)
 
             templatedMap = MapUtils.deepMerge(
                     [
@@ -158,7 +155,7 @@ class Vault extends Feature implements FeatureWithImage {
 
     private URI getScmmUri() {
         if (config.scmm.internal) {
-            new URI('http://scmm-scm-manager.default.svc.cluster.local/scm')
+            new URI("http://scmm-scm-manager.${config.application.namePrefix}scm-manager.svc.cluster.local/scm")
         } else {
             new URI("${config.scmm.url}")
         }

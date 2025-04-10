@@ -12,12 +12,11 @@ class Application {
     final Config config
 
     Application(Config config,
-            List<Feature> features
+                List<Feature> features
     ) {
-        this.config=config
+        this.config = config
         // Order is important. Enforced by @Order-Annotation on the Singletons
         this.features = features
-
     }
 
     def start() {
@@ -36,15 +35,10 @@ class Application {
 
     void setNamespaceListToConfig(Config config) {
         Set<String> namespaces = new HashSet<>()
-        String namePrefix = config.application.namePrefix;
+        String namePrefix = config.application.namePrefix
 
-        if(config.registry.internal || config.scmm.internal || config.jenkins.internal){
-            namespaces.add(namePrefix + "default")
-        }
-        
         if (config.features.argocd.active) {
             namespaces.addAll(Arrays.asList(
-                    namePrefix + "argocd",
                     namePrefix + "example-apps-staging",
                     namePrefix + "example-apps-production"
             ))
@@ -55,12 +49,7 @@ class Application {
                 .collect { it.activeNamespaceFromFeature }
                 .findAll { it }
                 .unique()
-                .collect { "${namePrefix}${it}".toString() })
-
-        //TODO remove after Jenkins/SCMM/Registry got their own namespaces
-        if(config.application.openshift){
-            namespaces.remove(namePrefix + "default")
-        }
+                .collect { "${it}".toString() })
 
         log.debug("Active namespaces retrieved: {}", namespaces);
         config.application.activeNamespaces = namespaces.toList()

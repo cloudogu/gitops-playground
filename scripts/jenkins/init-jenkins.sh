@@ -21,7 +21,7 @@ fi
 
 function initJenkins() {
   if [[ ${INTERNAL_JENKINS} == true ]]; then
-    setExternalHostnameIfNecessary "JENKINS" "jenkins" "default"
+    setExternalHostnameIfNecessary "JENKINS" "jenkins" "${NAME_PREFIX}jenkins"
   fi
 
   installPlugins

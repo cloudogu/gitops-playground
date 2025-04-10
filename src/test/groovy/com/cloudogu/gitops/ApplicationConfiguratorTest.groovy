@@ -98,8 +98,8 @@ class ApplicationConfiguratorTest {
         withEnvironmentVariable("KUBERNETES_SERVICE_HOST", "127.0.0.1").execute {
             Config actualConfig = applicationConfigurator.initConfig(testConfig)
 
-            assertThat(actualConfig.scmm.url).isEqualTo("http://scmm-scm-manager.default.svc.cluster.local:80/scm")
-            assertThat(actualConfig.jenkins.url).isEqualTo("http://jenkins.default.svc.cluster.local:80")
+            assertThat(actualConfig.scmm.url).isEqualTo("http://scmm-scm-manager.scm-manager.svc.cluster.local:80/scm")
+            assertThat(actualConfig.jenkins.url).isEqualTo("http://jenkins.jenkins.svc.cluster.local:80")
         }
     }
 

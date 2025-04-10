@@ -42,7 +42,7 @@ class RegistryTest {
                 'helm upgrade -i docker-registry registry/docker-registry --create-namespace')
         assertThat(helmCommands.actualCommands[1].trim()).contains('--version')
         assertThat(helmCommands.actualCommands[1].trim()).contains("--values ${temporaryYamlFile}")
-        assertThat(helmCommands.actualCommands[1].trim()).contains('--namespace foo-default')
+        assertThat(helmCommands.actualCommands[1].trim()).contains('--namespace foo-registry')
         assertThat(k8sClient.commandExecutorForTest.actualCommands).isEmpty()
     }
 
