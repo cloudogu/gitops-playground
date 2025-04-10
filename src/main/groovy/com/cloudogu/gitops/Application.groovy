@@ -55,7 +55,7 @@ class Application {
                 .collect { it.activeNamespaceFromFeature }
                 .findAll { it }
                 .unique()
-                .collect { "${namePrefix}${it}".toString() })
+                .collect { "${it}".toString() })
 
         //TODO remove after Jenkins/SCMM/Registry got their own namespaces
         if(config.application.openshift){

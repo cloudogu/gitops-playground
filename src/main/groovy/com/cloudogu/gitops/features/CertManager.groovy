@@ -28,7 +28,7 @@ class CertManager extends Feature implements FeatureWithImage {
     private AirGappedUtils airGappedUtils
     final K8sClient k8sClient
     final Config config
-    final String namespace = "cert-manager"
+    final String namespace = "${config.application.namePrefix}cert-manager"
 
     CertManager(
             Config config,
@@ -82,7 +82,7 @@ class CertManager extends Feature implements FeatureWithImage {
                     'cert-manager',
                     '.',
                     certManagerVersion,
-                    'cert-manager',
+                    namespace,
                     'cert-manager',
                     tempValuesPath, DeploymentStrategy.RepoType.GIT)
         } else {
@@ -91,7 +91,7 @@ class CertManager extends Feature implements FeatureWithImage {
                     'cert-manager',
                     helmConfig.chart,
                     helmConfig.version,
-                    'cert-manager',
+                    namespace,
                     'cert-manager',
                     tempValuesPath
             )

@@ -26,7 +26,7 @@ class Mailhog extends Feature implements FeatureWithImage {
 
     static final String HELM_VALUES_PATH = "applications/cluster-resources/mailhog-helm-values.ftl.yaml"
 
-    String namespace = 'monitoring'
+    String namespace = "${config.application.namePrefix}monitoring"
     Config config
     K8sClient k8sClient
     

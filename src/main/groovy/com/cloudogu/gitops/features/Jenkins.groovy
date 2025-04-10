@@ -25,7 +25,7 @@ class Jenkins extends Feature {
 
     static final String HELM_VALUES_PATH = "jenkins/values.ftl.yaml"
 
-    String namespace = 'default'
+    String namespace = "${config.application.namePrefix}jenkins"
 
     private Config config
     private CommandExecutor commandExecutor
@@ -69,6 +69,9 @@ class Jenkins extends Feature {
     void enable() {
 
         if (config.jenkins.internal) {
+
+            k8sClient.createNamespace(namespace)
+
             // Mark the first node for Jenkins and agents. See jenkins/values.ftl.yaml "agent.workingDir" for details.
             // Remove first (in case new nodes were added)
             k8sClient.labelRemove('node', '--all', '', 'node')

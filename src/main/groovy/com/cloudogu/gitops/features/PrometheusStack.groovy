@@ -27,7 +27,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
     static final String RBAC_NAMESPACE_ISOLATION_TEMPLATE = 'applications/cluster-resources/monitoring/rbac/namespace-isolation-rbac.ftl.yaml'
     static final String NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE = 'applications/cluster-resources/monitoring/netpols/prometheus-allow-scraping.ftl.yaml'
 
-    String namespace = 'monitoring'
+    String namespace =  "${config.application.namePrefix}monitoring"
     Config config
     K8sClient k8sClient
 

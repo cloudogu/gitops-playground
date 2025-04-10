@@ -19,7 +19,8 @@ import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
 import io.micronaut.context.ApplicationContext
-import jakarta.inject.Provider 
+import jakarta.inject.Provider
+
 /**
  * Micronaut's dependency injection relies on statically compiled class files with seems incompatible with groovy 
  * scripting/interpretation (without prior compilation).
@@ -52,7 +53,7 @@ class GitopsPlaygroundCliMainScripted {
             def helmClient = new HelmClient(executor)
 
             def httpClientFactory = new HttpClientFactory()
-            
+
             def scmmRepoProvider = new ScmmRepoProvider(config, fileSystemUtils)
             def retrofitFactory = new RetrofitFactory()
 
@@ -72,7 +73,7 @@ class GitopsPlaygroundCliMainScripted {
                     httpClientFactory.okHttpClient(httpClientFactory.createLoggingInterceptor(), jenkinsConfiguration, insecureSslContextProvider))
 
             context.registerSingleton(k8sClient)
-            
+
             if (config.application.destroy) {
                 context.registerSingleton(new Destroyer([
                         new ArgoCDDestructionHandler(config, k8sClient, scmmRepoProvider, helmClient, fileSystemUtils),
@@ -86,9 +87,9 @@ class GitopsPlaygroundCliMainScripted {
 
                 def airGappedUtils = new AirGappedUtils(config, scmmRepoProvider, repoApi, fileSystemUtils, helmClient)
 
-                context.registerSingleton(new Application(config,[
+                context.registerSingleton(new Application(config, [
                         new Registry(config, fileSystemUtils, k8sClient, helmStrategy),
-                        new ScmManager(config, executor, fileSystemUtils, helmStrategy),
+                        new ScmManager(config, executor, fileSystemUtils, helmStrategy, k8sClient),
                         new Jenkins(config, executor, fileSystemUtils, new GlobalPropertyManager(jenkinsApiClient),
                                 new JobManager(jenkinsApiClient), new UserManager(jenkinsApiClient),
                                 new PrometheusConfigurator(jenkinsApiClient), helmStrategy, k8sClient),

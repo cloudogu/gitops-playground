@@ -23,7 +23,7 @@ class IngressNginx extends Feature implements FeatureWithImage {
 
     static final String HELM_VALUES_PATH = "applications/cluster-resources/ingress-nginx-helm-values.ftl.yaml"
 
-    String namespace = 'ingress-nginx'
+    String namespace = "${config.application.namePrefix}ingress-nginx"
     Config config
     K8sClient k8sClient
 
