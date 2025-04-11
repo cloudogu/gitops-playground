@@ -202,7 +202,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
 
     private URI getScmmUri() {
         if (config.scmm.internal) {
-            new URI('http://scmm-scm-manager.default.svc.cluster.local/scm')
+            new URI("http://scmm-scm-manager.${config.application.namePrefix}scm-manager.svc.cluster.local/scm")
         } else {
             new URI("${config.scmm.url}")
         }
@@ -212,7 +212,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
         String path = 'prometheus'
         URI uri
         if (config.jenkins.internal) {
-            uri = new URI("http://jenkins.default.svc.cluster.local/${path}")
+            uri = new URI("http://jenkins.${config.application.namePrefix}jenkins.svc.cluster.local/${path}")
         } else {
             uri = new URI("${config.jenkins.url}/${path}")
         }

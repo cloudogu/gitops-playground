@@ -116,7 +116,6 @@ class Jenkins extends Feature {
                 JENKINS_PASSWORD          : config.jenkins.password,
                 // Used indirectly in utils.sh 😬
                 REMOTE_CLUSTER            : config.application.remote,
-                //TODO SCMM wording SCM?
                 SCMM_URL                  : config.scmm.urlForJenkins,
                 SCMM_PASSWORD             : config.scmm.password,
                 SCM_PROVIDER              : config.scmm.provider,
@@ -165,7 +164,6 @@ class Jenkins extends Feature {
         if (config.features.argocd.active) {
 
             String jobName = "${config.application.namePrefix}example-apps"
-            //TODO refactor and rename scmm->scm
             def credentialId = "scmm-user"
 
             jobManger.createJob(jobName,
