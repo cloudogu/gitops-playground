@@ -27,11 +27,12 @@ class ArgoCD extends Feature {
     static final String MONITORING_RESOURCES_PATH = '/misc/monitoring/'
 
     private String namespace = "${config.application.namePrefix}argocd"
-    private String scmm_url_internal =  "http://scmm-scm-manager.${config.application.namePrefix}scm-manager.svc.cluster.local/scm"
     private Config config
     private List<RepoInitializationAction> gitRepos = []
 
     private String password
+
+    protected final String scmm_url_internal =  "http://scmm-scm-manager.${config.application.namePrefix}scm-manager.svc.cluster.local/scm"
 
     protected RepoInitializationAction argocdRepoInitializationAction
     protected RepoInitializationAction clusterResourcesInitializationAction
