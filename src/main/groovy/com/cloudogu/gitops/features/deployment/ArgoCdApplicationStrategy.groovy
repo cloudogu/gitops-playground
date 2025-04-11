@@ -52,12 +52,12 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
                 kind      : "Application",
                 metadata  : [
                         name     : repoName,
-                        namespace: "${namePrefix}argocd"
+                        namespace: "${namePrefix}argocd".toString()
                 ],
                 spec      : [
                         destination: [
                                 server   : "https://kubernetes.default.svc",
-                                namespace: "${namespace}"
+                                namespace: namespace
                         ],
                         project    : "cluster-resources",
                         sources    : [
