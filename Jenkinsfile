@@ -170,7 +170,9 @@ node('high-cpu') {
                                 currentBuild.description += "\n${imageNames[0]}"
 
                             } else if (env.BRANCH_NAME == 'main') {
+                                images[1].push()
                                 images[1].push('main-dev')
+                                images[0].push()
                                 images[0].push('main')
                                 currentBuild.description = "${imageNames[0]}"
                             } else if (env.BRANCH_NAME == 'test') {
