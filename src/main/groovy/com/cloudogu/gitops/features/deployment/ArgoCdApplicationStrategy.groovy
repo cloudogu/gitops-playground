@@ -47,7 +47,6 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
         // Write chart, repoURL and version into a ArgoCD Application YAML
 
         def yamlMapper = YAMLMapper.builder().enable(YAMLGenerator.Feature.LITERAL_BLOCK_STYLE).build()
-        String prefixedNamespace = "${namePrefix}${namespace}"
         def yamlResult = yamlMapper.writeValueAsString([
                 apiVersion: "argoproj.io/v1alpha1",
                 kind      : "Application",
@@ -58,7 +57,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
                 spec      : [
                         destination: [
                                 server   : "https://kubernetes.default.svc",
-                                namespace: prefixedNamespace
+                                namespace: namespace
                         ],
                         project    : "cluster-resources",
                         sources    : [
@@ -89,7 +88,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
         clusterResourcesRepo.writeFile("argocd/${releaseName}.yaml", yamlResult)
 
         log.debug("Deploying helm release ${releaseName} basing on chart ${chartOrPath} from ${repoURL}, version " +
-                "${version}, into namespace ${prefixedNamespace}. Using Argo CD application:\n${yamlResult}")
+                "${version}, into namespace ${namespace}. Using Argo CD application:\n${yamlResult}")
 
         clusterResourcesRepo.commitAndPush("Added $repoName/$chartOrPath to ArgoCD")
     }

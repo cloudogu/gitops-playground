@@ -27,7 +27,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
     static final String RBAC_NAMESPACE_ISOLATION_TEMPLATE = 'applications/cluster-resources/monitoring/rbac/namespace-isolation-rbac.ftl.yaml'
     static final String NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE = 'applications/cluster-resources/monitoring/netpols/prometheus-allow-scraping.ftl.yaml'
 
-    String namespace = 'monitoring'
+    String namespace =  "${config.application.namePrefix}monitoring"
     Config config
     K8sClient k8sClient
 
@@ -202,7 +202,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
 
     private URI getScmmUri() {
         if (config.scmm.internal) {
-            new URI('http://scmm-scm-manager.default.svc.cluster.local/scm')
+            new URI("http://scmm-scm-manager.${config.application.namePrefix}scm-manager.svc.cluster.local/scm")
         } else {
             new URI("${config.scmm.url}")
         }
@@ -212,7 +212,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
         String path = 'prometheus'
         URI uri
         if (config.jenkins.internal) {
-            uri = new URI("http://jenkins.default.svc.cluster.local/${path}")
+            uri = new URI("http://jenkins.${config.application.namePrefix}jenkins.svc.cluster.local/${path}")
         } else {
             uri = new URI("${config.jenkins.url}/${path}")
         }

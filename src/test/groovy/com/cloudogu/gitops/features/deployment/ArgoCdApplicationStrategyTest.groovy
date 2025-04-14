@@ -23,7 +23,7 @@ param1: value1
 param2: value2
 """
         strategy.deployFeature("repoURL", "repoName", "chartName", "version",
-                "namespace", "releaseName", valuesYaml.toPath())
+                "foo-namespace", "releaseName", valuesYaml.toPath())
 
         def argoCdApplicationYaml = new File("$localTempDir/argocd/releaseName.yaml")
         assertThat(argoCdApplicationYaml.text).isEqualTo("""---

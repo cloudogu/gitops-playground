@@ -45,7 +45,7 @@ class K8sClientTest {
     
     @Test
     void 'Creates secret'() {
-        k8sClient.createSecret('generic', 'my-secret', 'my-ns',
+        k8sClient.createSecret('generic', 'my-secret', 'foo-my-ns',
                 new Tuple2('key1', 'value1'), new Tuple2('key2', 'value2'))
 
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
@@ -74,10 +74,10 @@ class K8sClientTest {
     
     @Test
     void 'Creates imagePullSecret'() {
-        k8sClient.createImagePullSecret('my-reg', 'ns', 'host', 'user', 'pw')
+        k8sClient.createImagePullSecret('my-reg', 'foo-my-ns', 'host', 'user', 'pw')
 
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
-                'kubectl create secret docker-registry my-reg -n foo-ns' +
+                'kubectl create secret docker-registry my-reg -n foo-my-ns' +
                 ' --docker-server host --docker-username user --docker-password pw' +
                 ' --dry-run=client -oyaml | kubectl apply -f-')
     }
@@ -102,7 +102,7 @@ class K8sClientTest {
 
     @Test
     void 'Creates configmap from file'() {
-        k8sClient.createConfigMapFromFile('my-map', 'my-ns', '/file')
+        k8sClient.createConfigMapFromFile('my-map', 'foo-my-ns', '/file')
 
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
                 "kubectl create configmap my-map -n foo-my-ns --from-file /file --dry-run=client -oyaml" +
@@ -120,7 +120,7 @@ class K8sClientTest {
 
     @Test
     void 'Creates service type nodePort'() {
-        k8sClient.createServiceNodePort('my-svc', '42:23', '32000', 'my-ns')
+        k8sClient.createServiceNodePort('my-svc', '42:23', '32000', 'foo-my-ns')
         
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
                 'kubectl create service nodeport my-svc -n foo-my-ns --tcp 42:23 --node-port 32000' +
@@ -138,7 +138,7 @@ class K8sClientTest {
 
     @Test
     void 'Adds labels'() {
-        k8sClient.label('secret', 'my-secret', 'my-ns',
+        k8sClient.label('secret', 'my-secret', 'foo-my-ns',
                 new Tuple2('key1', 'value1'), new Tuple2('key2', 'value2'))
 
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
@@ -208,7 +208,7 @@ class K8sClientTest {
 
     @Test
     void 'Deletes'() {
-        k8sClient.delete('secret', 'my-ns',
+        k8sClient.delete('secret', 'foo-my-ns',
                 new Tuple2('key1', 'value1'), new Tuple2('key2', 'value2'))
         
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
@@ -288,7 +288,7 @@ class K8sClientTest {
         commandExecutor.enqueueOutput(new CommandExecutor.Output('Error from server (NotFound): namespaces "foo-my-ns" not found', '', 1))
 
         // Attempt to create the namespace
-        k8sClient.createNamespace('my-ns')
+        k8sClient.createNamespace('foo-my-ns')
 
         // Assert that the correct kubectl command was issued to create the namespace
         assertThat(commandExecutor.actualCommands[1]).isEqualTo(
@@ -301,7 +301,7 @@ class K8sClientTest {
         commandExecutor.enqueueOutput(new CommandExecutor.Output('', '', 0))
 
         // Attempt to create the namespace
-        k8sClient.createNamespace('my-ns')
+        k8sClient.createNamespace('foo-my-ns')
 
         // Assert that no kubectl create command was issued except 'kubectl get namespace foo-my-ns'
         assertThat(commandExecutor.actualCommands.size()).is(1)
@@ -340,7 +340,7 @@ class K8sClientTest {
 
         // Attempt to create the namespace
         def exception = shouldFail(RuntimeException) {
-            k8sClient.createNamespace('my-ns')
+            k8sClient.createNamespace('foo-my-ns')
         }
 
         // Assert that the exception message is correct
@@ -356,7 +356,7 @@ class K8sClientTest {
 
         // Attempt to create the namespace
         def exception = shouldFail(RuntimeException) {
-            k8sClient.createNamespace('my-ns')
+            k8sClient.createNamespace('foo-my-ns')
         }
 
         // Assert that the exception message is correct
@@ -571,7 +571,7 @@ class K8sClientTest {
     
     @Test
     void 'Runs a pod with params'() {
-        k8sClient.run('my-pod', 'alpine', 'my-ns', '--rm')
+        k8sClient.run('my-pod', 'alpine', 'foo-my-ns', '--rm')
         
         assertThat(commandExecutor.actualCommands[0]).startsWith("kubectl run my-pod --image alpine -n foo-my-ns --rm")
     }
@@ -588,7 +588,7 @@ class K8sClientTest {
                         ]
                 ]
         ]
-        k8sClient.run('my-pod', 'alpine', 'my-ns', overrides, '--restart=Never', '-ti', '--rm', '--quiet')
+        k8sClient.run('my-pod', 'alpine', 'foo-my-ns', overrides, '--restart=Never', '-ti', '--rm', '--quiet')
 
         assertThat(commandExecutor.actualCommands[0]).startsWith("kubectl run my-pod --image alpine -n foo-my-ns --restart=Never -ti --rm --quiet")
         assertThat(commandExecutor.actualCommands[0]).contains('{"spec":{"containers":[{"name":"tmp-docker-gid-grepper","image":"bash:5"}]}}'.toString().trim())

@@ -26,7 +26,7 @@ class Mailhog extends Feature implements FeatureWithImage {
 
     static final String HELM_VALUES_PATH = "applications/cluster-resources/mailhog-helm-values.ftl.yaml"
 
-    String namespace = 'monitoring'
+    String namespace = "${config.application.namePrefix}monitoring"
     Config config
     K8sClient k8sClient
     
@@ -113,7 +113,7 @@ class Mailhog extends Feature implements FeatureWithImage {
 
     private URI getScmmUri() {
         if (config.scmm.internal) {
-            new URI('http://scmm-scm-manager.default.svc.cluster.local/scm')
+            new URI("http://scmm-scm-manager.${config.application.namePrefix}scm-manager.svc.cluster.local/scm")
         } else {
             new URI("${config.scmm.url}")
         }
