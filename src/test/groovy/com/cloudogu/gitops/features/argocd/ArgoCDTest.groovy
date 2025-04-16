@@ -1313,6 +1313,18 @@ class ArgoCDTest {
     }
 
     @Test
+    void 'Use centralized SCMM'() {
+
+        config.scmm.centralMgmtRepo= 'testurl.de'
+        def argocd = createArgoCD()
+        argocd.install()
+
+        def argocdConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(),'tentants')
+        def yaml = parseActualYaml(argocdConfigPath.toFile().toString())
+
+    }
+
+    @Test
     void 'Sets single env variable in ArgoCD components when provided'() {
         def argoCD = setupOperatorTest()
 
@@ -1430,4 +1442,3 @@ class ArgoCDTest {
     }
 
 }
-

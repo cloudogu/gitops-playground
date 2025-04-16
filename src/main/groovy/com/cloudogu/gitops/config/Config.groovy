@@ -62,6 +62,7 @@ class Config {
     @Mixin
     JenkinsSchema jenkins = new JenkinsSchema()
 
+
     @JsonPropertyDescription(SCMM_DESCRIPTION)
     @Mixin
     ScmmSchema scmm = new ScmmSchema()
@@ -96,7 +97,7 @@ class Config {
     }
 
     static class RegistrySchema {
-        Boolean internal = true
+        Boolean internal = false
         Boolean twoRegistries = false
 
         @Option(names = ['--internal-registry-port'], description = REGISTRY_INTERNAL_PORT_DESCRIPTION)
@@ -254,6 +255,11 @@ class Config {
         @Option(names = ['--scm-provider'], description = SCM_PROVIDER_DESCRIPTION)
         @JsonPropertyDescription(SCM_PROVIDER_DESCRIPTION)
         String provider = 'scm-manager'
+
+
+        @Option(names = ['--central-management-repo'], description = CENTRAL_MGMT_REPO_DESCRIPTION)
+        @JsonPropertyDescription(CENTRAL_MGMT_REPO_DESCRIPTION)
+        String centralMgmtRepo = ''
     }
 
     static class ApplicationSchema {
@@ -353,6 +359,10 @@ class Config {
         @Option(names = ['--netpols'], description = NETPOLS_DESCRIPTION)
         @JsonPropertyDescription(NETPOLS_DESCRIPTION)
         Boolean netpols = false
+
+        @Option(names = ['--tenant-name'], description = BASE_URL_DESCRIPTION)
+        @JsonPropertyDescription(BASE_URL_DESCRIPTION)
+        String tenantName = ''
     }
 
     static class ImagesSchema {

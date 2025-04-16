@@ -33,12 +33,12 @@ class ScmmRepo {
     private String rootPath
     private String scmProvider
 
-    ScmmRepo(Config config, String scmmRepoTarget, FileSystemUtils fileSystemUtils) {
+    ScmmRepo(Config config, String scmmRepoTarget, FileSystemUtils fileSystemUtils, Boolean useCentralizedRepo = false) {
         def tmpDir = File.createTempDir()
         tmpDir.deleteOnExit()
         this.username = config.scmm.username
         this.password = config.scmm.password
-        this.scmmUrl = "${config.scmm.protocol}://${config.scmm.host}"
+        this.scmmUrl = !useCentralizedRepo ? "${config.scmm.protocol}://${config.scmm.host}" : "${config.scmm.protocol}://${config.scmm.centralMgmtRepo}"
         this.scmmRepoTarget = scmmRepoTarget.startsWith(NAMESPACE_3RD_PARTY_DEPENDENCIES) ? scmmRepoTarget :
                 "${config.application.namePrefix}${scmmRepoTarget}"
         this.absoluteLocalRepoTmpDir = tmpDir.absolutePath
@@ -65,7 +65,7 @@ class ScmmRepo {
     static String createSCMBaseUrl(Config config) {
         switch (config.scmm.provider) {
             case "scm-manager":
-                if(config.scmm.internal){
+                if (config.scmm.internal) {
                     return "http://scmm-scm-manager.default.svc.cluster.local/scm/${config.scmm.rootPath}/${config.application.namePrefix}"
                 }
                 return createScmmUrl(config) + "/${config.scmm.rootPath}/${config.application.namePrefix}"
@@ -92,6 +92,10 @@ class ScmmRepo {
     }
 
     void copyDirectoryContents(String srcDir) {
+        if (!srcDir) {
+            println "Source directory is not defined. Nothing to copy?"
+            return
+        }
         log.debug("Initializing repo $scmmRepoTarget with content of folder $srcDir")
         String absoluteSrcDirLocation = srcDir
         if (!new File(absoluteSrcDirLocation).isAbsolute()) {

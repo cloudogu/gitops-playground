@@ -2,7 +2,6 @@ package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
-
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import com.cloudogu.gitops.utils.*
@@ -33,6 +32,7 @@ class ArgoCD extends Feature {
     private String password
 
     protected RepoInitializationAction argocdRepoInitializationAction
+    protected RepoInitializationAction centralizedArgoInitializationAction
     protected RepoInitializationAction clusterResourcesInitializationAction
     protected RepoInitializationAction exampleAppsInitializationAction
     protected RepoInitializationAction nginxHelmJenkinsInitializationAction
@@ -63,9 +63,12 @@ class ArgoCD extends Feature {
         this.password = this.config.application.password
 
         argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd')
-
         clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources')
         gitRepos += clusterResourcesInitializationAction
+
+        def localPath = 'mgmt/multi-tenant-cluster-resources'
+        def centralizedRepo = new ScmmRepo(this.config, localPath, fileSystemUtils, true)
+        centralizedArgoInitializationAction = new RepoInitializationAction(this.config, centralizedRepo, null)
 
         exampleAppsInitializationAction = createRepoInitializationAction('argocd/example-apps', 'argocd/example-apps')
         gitRepos += exampleAppsInitializationAction
@@ -80,7 +83,6 @@ class ArgoCD extends Feature {
         gitRepos += brokenApplicationInitializationAction
 
         remotePetClinicRepoTmpDir = File.createTempDir('gitops-playground-petclinic')
-
 
         def petclinicInitAction = createRepoInitializationAction('applications/argocd/petclinic/plain-k8s', 'argocd/petclinic-plain')
         petClinicInitializationActions += petclinicInitAction
@@ -193,8 +195,11 @@ class ArgoCD extends Feature {
     }
 
     private void installArgoCd() {
-
         prepareArgoCdRepo()
+        if(config.scmm.centralMgmtRepo){
+            prepareCentralizedRepo()
+        }
+
 
         def namePrefix = config.application.namePrefix
         def namespaceList = getNamespaceList()
@@ -207,7 +212,6 @@ class ArgoCD extends Feature {
         log.debug('Creating repo credential secret that is used by argocd to access repos in SCM-Manager')
         // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo
         def repoTemplateSecretName = 'argocd-repo-creds-scmm'
-        //TODO multi-tenancy
         String scmmUrlForArgoCD = config.scmm.internal ? SCMM_URL_INTERNAL : ScmmRepo.createScmmUrl(config)
         k8sClient.createSecret('generic', repoTemplateSecretName, 'argocd',
                 new Tuple2('url', scmmUrlForArgoCD),
@@ -336,6 +340,21 @@ class ArgoCD extends Feature {
         }
     }
 
+    protected void prepareCentralizedRepo() {
+        centralizedArgoInitializationAction.repo.cloneRepo()
+
+        def centralPath = Path.of(centralizedArgoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'tenants', "${config.application.tenantName}").toString()
+        def argoPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()).toString()
+        def clusterResPath = Path.of(clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()).toString()
+        //create new tenant
+        fileSystemUtils.createDirectory(centralPath)
+        fileSystemUtils.copyDirectory(argoPath, "${centralPath}/argocd")
+        fileSystemUtils.copyDirectory(clusterResPath, "${centralPath}/cluster-ressources")
+        fileSystemUtils.deleteGitFolders(Path.of(centralizedArgoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'tenants').toString())
+        log.info("Pushing centralized Cluster Ressources!")
+        centralizedArgoInitializationAction.repo.commitAndPush("Initial Commit")
+    }
+
     protected void prepareArgoCdRepo() {
         String argocdConfigPath = this.config.features.argocd.operator ? OPERATOR_CONFIG_PATH : HELM_VALUES_PATH
         def argocdConfigFile = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), argocdConfigPath)
@@ -411,6 +430,7 @@ class ArgoCD extends Feature {
             this.repo = repo
             this.copyFromDirectory = copyFromDirectory
         }
+
 
         /**
          * Clone repo from SCM and initialize it with default basic files. Afterwards we can edit these files.
@@ -494,5 +514,6 @@ class ArgoCD extends Feature {
         ScmmRepo getRepo() {
             return repo
         }
+
     }
 }
