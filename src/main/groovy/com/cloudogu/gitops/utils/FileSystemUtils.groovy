@@ -8,8 +8,11 @@ import groovy.yaml.YamlSlurper
 import jakarta.inject.Singleton
 import org.apache.commons.io.FileUtils
 
+import java.nio.file.FileVisitResult
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.SimpleFileVisitor
+import java.nio.file.attribute.BasicFileAttributes
 import java.util.regex.Pattern
 
 @Slf4j
@@ -19,7 +22,7 @@ class FileSystemUtils {
     /**
      * Replaces text in files. If you want to change a YAML field, better use 
      * {@link #readYaml(java.nio.file.Path)} and
-     * {@link #writeYaml(java.util.Map, java.io.File)} 
+     * {@link #writeYaml(java.util.Map, java.io.File)}
      */
     File replaceFileContent(String folder, String fileToChange, String from, String to) {
         File file = new File(folder + "/" + fileToChange)
@@ -159,7 +162,7 @@ class FileSystemUtils {
         return (ys.parse path) as Map
     }
 
-    Path writeTempFile(Map mapValues){
+    Path writeTempFile(Map mapValues) {
         def tmpHelmValues = createTempFile()
         writeYaml(mapValues, tmpHelmValues.toFile())
         return tmpHelmValues
@@ -175,8 +178,8 @@ class FileSystemUtils {
         file.setText(builder.toString())
     }
 
-    void deleteFilesExcept(File parentPath, String ... fileOrFolderNamesToKeep) {
-        for(File file: parentPath.listFiles()) {
+    void deleteFilesExcept(File parentPath, String... fileOrFolderNamesToKeep) {
+        for (File file : parentPath.listFiles()) {
             if (file.name in fileOrFolderNamesToKeep) {
                 continue
             }
@@ -184,6 +187,19 @@ class FileSystemUtils {
                 file.delete()
             } else {
                 file.deleteDir()
+            }
+        }
+    }
+
+
+    void deleteGitFolders(String path) {
+        new File(path).eachDir { tenantDir ->
+            ['argocd', 'cluster-ressources'].each { subDirName ->
+                def gitDir = new File(tenantDir, "${subDirName}/.git")
+                if (gitDir.exists()) {
+                    println "Lösche .git Ordner: ${gitDir.absolutePath}"
+                    gitDir.deleteDir()
+                }
             }
         }
     }

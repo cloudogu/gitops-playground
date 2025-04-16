@@ -43,6 +43,7 @@ interface ConfigConstants {
     String GIT_EMAIL_DESCRIPTION = 'Sets git author and committer email used for initial commits'
     String SCM_ROOT_PATH_DESCRIPTION = 'Sets the root path for the Git Repositories. In SCM-Manager it is always "repo"'
     String SCM_PROVIDER_DESCRIPTION = 'Sets the scm Provider. Possible Options are "scm-manager" and "gitlab"'
+    String CENTRAL_MGMT_REPO_DESCRIPTION = 'URL for the centralized Management Repo'
 
     // group remote
     String REMOTE_DESCRIPTION = 'Expose services as LoadBalancers'
