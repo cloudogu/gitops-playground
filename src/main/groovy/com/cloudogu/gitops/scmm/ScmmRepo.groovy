@@ -38,7 +38,7 @@ class ScmmRepo {
         tmpDir.deleteOnExit()
         this.username = config.scmm.username
         this.password = config.scmm.password
-        this.scmmUrl = !useCentralizedRepo ? "${config.scmm.protocol}://${config.scmm.host}" : "${config.scmm.protocol}://${config.scmm.centralMgmtRepo}"
+        this.scmmUrl = !useCentralizedRepo ? "${config.scmm.protocol}://${config.scmm.host}" : "${config.scmm.protocol}://${config.multiTenant.centralMgmtRepo}"
         this.scmmRepoTarget = scmmRepoTarget.startsWith(NAMESPACE_3RD_PARTY_DEPENDENCIES) ? scmmRepoTarget :
                 "${config.application.namePrefix}${scmmRepoTarget}"
         this.absoluteLocalRepoTmpDir = tmpDir.absolutePath
@@ -66,7 +66,7 @@ class ScmmRepo {
         switch (config.scmm.provider) {
             case "scm-manager":
                 if(config.scmm.internal){
-                    return "http://scmm-scm-manager.${config.application.namePrefix}scm-manager.svc.cluster.local/scm/${config.scmm.rootPath}/${config.application.namePrefix}"
+                    return "http://scmm-scm-manager.${config.application.namePrefix}scm-manager.svc.cluster.local/scm/${config.scmm.rootPath}/${config.multiTenant.repoPrefix}"
                 }
                 return createScmmUrl(config) + "/${config.scmm.rootPath}/${config.application.namePrefix}"
             case "gitlab":

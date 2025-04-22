@@ -198,7 +198,7 @@ class ArgoCD extends Feature {
 
     private void installArgoCd() {
         prepareArgoCdRepo()
-        if(config.scmm.centralMgmtRepo){
+        if(config.multiTenant.centralMgmtRepo){
             prepareCentralizedRepo()
         }
 
@@ -213,9 +213,9 @@ class ArgoCD extends Feature {
         log.debug('Creating repo credential secret that is used by argocd to access repos in SCM-Manager')
         // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo
         def repoTemplateSecretName = 'argocd-repo-creds-scmm'
-
-        String scmmUrlForArgoCD = config.scmm.internal ? SCMM_URL_INTERNAL : ScmmRepo.createScmmUrl(config)
+        String scmmUrlForArgoCD = config.scmm.internal ? scmm_url_internal : ScmmRepo.createScmmUrl(config)
         k8sClient.createSecret('generic', repoTemplateSecretName, namespace,
+
                 new Tuple2('url', scmmUrlForArgoCD),
                 new Tuple2('username', config.scmm.username),
                 new Tuple2('password', config.scmm.password)
@@ -346,7 +346,7 @@ class ArgoCD extends Feature {
     protected void prepareCentralizedRepo() {
         centralizedArgoInitializationAction.repo.cloneRepo()
 
-        def centralPath = Path.of(centralizedArgoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'tenants', "${config.application.tenantName}").toString()
+        def centralPath = Path.of(centralizedArgoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'tenants', "${config.multiTenant.tenantName}").toString()
         def argoPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()).toString()
         def clusterResPath = Path.of(clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()).toString()
         //create new tenant
