@@ -53,7 +53,7 @@ class ScmManager extends Feature {
 
     @Override
     boolean isEnabled() {
-        return true // For now, we either deploy an internal or configure an external instance
+        return false // For now, we either deploy an internal or configure an external instance
     }
 
     @Override
@@ -70,7 +70,7 @@ class ScmManager extends Feature {
                     remote  : config.application.remote,
                     username: config.scmm.username,
                     password: config.scmm.password,
-                    helm    : config.scmm.helm
+                    helm    : config.scmm.helm,
             ])
 
             def mergedMap = MapUtils.deepMerge(helmConfig.values, templatedMap)

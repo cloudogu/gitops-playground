@@ -144,6 +144,26 @@ class ApplicationConfigurator {
 
     }
 
+    //port conflicts
+    private Object generateRandomPort() {
+        def filePath = fileSystemUtils.getRootDir() + "/scm-manager/values.ftl.yaml"
+        def lines = new File(filePath).readLines()
+        def updatedLines = []
+        def randomNodePort = 30000 + new Random().nextInt(32768 - 30000)
+        lines.each { line ->
+            if (line.trim().startsWith("nodePort:")) {
+                updatedLines << "  nodePort: ${randomNodePort}"
+            } else {
+                updatedLines << line
+            }
+        }
+
+        new File(filePath).text = updatedLines.join("\n")
+        println "NodePort updated in file: $filePath"
+        return randomNodePort
+
+    }
+
     private void addJenkinsConfig(Config newConfig) {
         log.debug("Adding additional config for Jenkins")
         if (newConfig.jenkins.url) {

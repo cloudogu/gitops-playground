@@ -14,7 +14,7 @@ extraEnv: |
 
 <#if remote?? && !remote>
 service:
-  nodePort: 9091
+  nodePort: 30545
   type: NodePort
 </#if>
  
@@ -25,4 +25,3 @@ ingress:
   hosts:
     - ${host}
 </#if>
-  
