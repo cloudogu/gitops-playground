@@ -31,7 +31,7 @@ class ArgoCD extends Feature {
 
     private String password
 
-    protected final String scmm_url_internal =  "http://scmm-scm-manager.${config.application.namePrefix}scm-manager.svc.cluster.local/scm"
+    protected final String scmm_url_internal = "http://scmm-scm-manager.${config.application.namePrefix}scm-manager.svc.cluster.local/scm"
 
     protected RepoInitializationAction argocdRepoInitializationAction
     protected RepoInitializationAction centralizedArgoInitializationAction
@@ -110,7 +110,7 @@ class ArgoCD extends Feature {
         cloneRemotePetclinicRepo()
 
         gitRepos.forEach(repoInitializationAction -> {
-            repoInitializationAction.initLocalRepo()
+            repoInitializationAction.initClonedLocalRepo()
         })
 
         prepareGitOpsRepos()
@@ -198,7 +198,7 @@ class ArgoCD extends Feature {
 
     private void installArgoCd() {
         prepareArgoCdRepo()
-        if(config.multiTenant.centralMgmtRepo){
+        if (config.multiTenant.centralMgmtRepo) {
             prepareCentralizedRepo()
         }
 
@@ -346,7 +346,7 @@ class ArgoCD extends Feature {
     protected void prepareCentralizedRepo() {
         centralizedArgoInitializationAction.repo.cloneRepo()
 
-        def centralPath = Path.of(centralizedArgoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'tenants', "${config.multiTenant.tenantName}").toString()
+        def centralPath = Path.of(centralizedArgoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'tenants', "${config.application.namePrefix}".replaceAll(/-$/, "")).toString()
         def argoPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()).toString()
         def clusterResPath = Path.of(clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()).toString()
         //create new tenant
@@ -362,7 +362,7 @@ class ArgoCD extends Feature {
         String argocdConfigPath = this.config.features.argocd.operator ? OPERATOR_CONFIG_PATH : HELM_VALUES_PATH
         def argocdConfigFile = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), argocdConfigPath)
 
-        argocdRepoInitializationAction.initLocalRepo()
+        argocdRepoInitializationAction.initClonedLocalRepo()
 
         if (config.features.argocd.operator) {
             log.debug("Deleting unnecessary argocd (argocd helm variant) folder from argocd repo: ${argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
@@ -396,7 +396,9 @@ class ArgoCD extends Feature {
             deleteFile argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/argocd/templates/allow-namespaces.yaml'
         }
 
-        argocdRepoInitializationAction.repo.commitAndPush("Initial Commit")
+        if (config.multiTenant.centralMgmtRepo) {
+            argocdRepoInitializationAction.repo.commitAndPush("Initial Commit")
+        }
     }
 
     private void deleteFile(String path) {
@@ -438,8 +440,13 @@ class ArgoCD extends Feature {
         /**
          * Clone repo from SCM and initialize it with default basic files. Afterwards we can edit these files.
          */
-        void initLocalRepo() {
+        void initClonedLocalRepo() {
             repo.cloneRepo()
+            repo.copyDirectoryContents(copyFromDirectory)
+            replaceTemplates()
+        }
+
+        void initLocalRepo() {
             repo.copyDirectoryContents(copyFromDirectory)
             replaceTemplates()
         }

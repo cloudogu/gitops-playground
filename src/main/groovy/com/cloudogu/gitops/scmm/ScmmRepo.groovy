@@ -6,6 +6,7 @@ import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
 import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.errors.NoRemoteRepositoryException
 import org.eclipse.jgit.transport.ChainingCredentialsProvider
 import org.eclipse.jgit.transport.CredentialsProvider
 import org.eclipse.jgit.transport.RefSpec
@@ -169,12 +170,14 @@ class ScmmRepo {
     }
 
     protected Git gitClone() {
-        Git.cloneRepository()
+
+       Git.cloneRepository()
                 .setURI(getGitRepositoryUrl())
                 .setDirectory(new File(absoluteLocalRepoTmpDir))
                 .setNoCheckout(true)
                 .setCredentialsProvider(getCredentialProvider())
                 .call()
+
     }
 
     private CredentialsProvider getCredentialProvider() {

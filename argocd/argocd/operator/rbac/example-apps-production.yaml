@@ -2,7 +2,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   namespace: "${namePrefix}example-apps-production"
-  name: argocd
+  name:  "${namePrefix}argocd"
 rules:
   - apiGroups:
       - "route.openshift.io"

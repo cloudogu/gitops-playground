@@ -266,10 +266,6 @@ class Config {
         @JsonPropertyDescription(CENTRAL_MGMT_REPO_DESCRIPTION)
         String centralMgmtRepo = ''
 
-        @Option(names = ['--tenant-name'], description = BASE_URL_DESCRIPTION)
-        @JsonPropertyDescription(BASE_URL_DESCRIPTION)
-        String tenantName = ''
-
         @Option(names = ['--central-scmm-username'], description = CENTRAL_SCMM_USERNAME_DESCRIPTION)
         @JsonPropertyDescription(CENTRAL_SCMM_USERNAME_DESCRIPTION)
         String username = ''
