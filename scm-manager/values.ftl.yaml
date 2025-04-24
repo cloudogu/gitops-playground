@@ -5,6 +5,7 @@ persistence:
 livenessProbe:
   initialDelaySeconds: 120
 
+nameOverride: ${config.application.namePrefix}
 
 extraEnv: |
     - name: SCM_WEBAPP_INITIALUSER
@@ -14,7 +15,7 @@ extraEnv: |
 
 <#if remote?? && !remote>
 service:
-  nodePort: 30545
+  nodePort: 9091
   type: NodePort
 </#if>
  

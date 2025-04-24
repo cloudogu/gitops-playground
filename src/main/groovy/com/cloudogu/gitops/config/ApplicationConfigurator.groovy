@@ -5,6 +5,8 @@ import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
 import groovy.util.logging.Slf4j
 
+import java.security.MessageDigest
+
 @Slf4j
 class ApplicationConfigurator {
 
@@ -23,12 +25,14 @@ class ApplicationConfigurator {
     Config initConfig(Config newConfig) {
 
         addAdditionalApplicationConfig(newConfig)
+        addNamePrefix(newConfig)
 
         addNamePrefix(newConfig)
 
         addScmmConfig(newConfig)
 
         addJenkinsConfig(newConfig)
+
 
         addRegistryConfig(newConfig)
 
@@ -120,7 +124,6 @@ class ApplicationConfigurator {
             def port = fileSystemUtils.getLineFromFile(fileSystemUtils.getRootDir() + "/scm-manager/values.ftl.yaml", "nodePort:").findAll(/\d+/)*.toString().get(0)
             String clusterBindAddress = networkingUtils.findClusterBindAddress()
             newConfig.scmm.url = networkingUtils.createUrl(clusterBindAddress, port, "/scm")
-            newConfig.scmm.urlForJenkins = "http://scmm-scm-manager.${newConfig.application.namePrefix}scm-manager.svc.cluster.local/scm"
         }
 
         String scmmUrl = newConfig.scmm.url
@@ -130,7 +133,7 @@ class ApplicationConfigurator {
 
         // We probably could get rid of some of the complexity by refactoring url, host and ingress into a single var
         if (newConfig.application.baseUrl) {
-            newConfig.scmm.ingress = new URL(injectSubdomain('scmm',
+            newConfig.scmm.ingress = new URL(injectSubdomain("${newConfig.application.namePrefix}scmm",
                     newConfig.application.baseUrl as String, newConfig.application.urlSeparatorHyphen as Boolean)).host
         }
         // When specific user/pw are not set, set them to global values
@@ -140,28 +143,6 @@ class ApplicationConfigurator {
         if (newConfig.scmm.username === Config.DEFAULT_ADMIN_USER) {
             newConfig.scmm.username = newConfig.application.username
         }
-
-
-    }
-
-    //port conflicts
-    private Object generateRandomPort() {
-        def filePath = fileSystemUtils.getRootDir() + "/scm-manager/values.ftl.yaml"
-        def lines = new File(filePath).readLines()
-        def updatedLines = []
-        def randomNodePort = 30000 + new Random().nextInt(32768 - 30000)
-        lines.each { line ->
-            if (line.trim().startsWith("nodePort:")) {
-                updatedLines << "  nodePort: ${randomNodePort}"
-            } else {
-                updatedLines << line
-            }
-        }
-
-        new File(filePath).text = updatedLines.join("\n")
-        println "NodePort updated in file: $filePath"
-        return randomNodePort
-
     }
 
     private void addJenkinsConfig(Config newConfig) {

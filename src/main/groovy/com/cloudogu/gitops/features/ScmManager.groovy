@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
+import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.deployment.HelmStrategy
@@ -53,7 +54,7 @@ class ScmManager extends Feature {
 
     @Override
     boolean isEnabled() {
-        return false // For now, we either deploy an internal or configure an external instance
+        return true // For now, we either deploy an internal or configure an external instance
     }
 
     @Override
@@ -71,6 +72,7 @@ class ScmManager extends Feature {
                     username: config.scmm.username,
                     password: config.scmm.password,
                     helm    : config.scmm.helm,
+                    config : config
             ])
 
             def mergedMap = MapUtils.deepMerge(helmConfig.values, templatedMap)
@@ -89,7 +91,6 @@ class ScmManager extends Feature {
 
         // NOTE: This code is experimental and not intended for production use.
         // Please use with caution and ensure proper testing before deployment.
-
         if (config.scmm.provider == "gitlab") {
             configureGitlab()
         }

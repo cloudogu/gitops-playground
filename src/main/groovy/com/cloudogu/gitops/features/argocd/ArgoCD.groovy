@@ -68,7 +68,7 @@ class ArgoCD extends Feature {
         clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources')
         gitRepos += clusterResourcesInitializationAction
 
-        def localPath = 'mgmt/multi-tenant-cluster-resources'
+        def localPath = 'admin/multi-tenant-cluster-resources'
         def centralizedRepo = new ScmmRepo(this.config, localPath, fileSystemUtils, true)
         centralizedArgoInitializationAction = new RepoInitializationAction(this.config, centralizedRepo, null)
 
