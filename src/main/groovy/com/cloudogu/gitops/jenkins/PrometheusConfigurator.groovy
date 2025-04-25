@@ -4,9 +4,9 @@ import jakarta.inject.Singleton
 
 @Singleton
 class PrometheusConfigurator {
-    private final ApiClient apiClient
+    private final JenkinsApiClient apiClient
 
-    PrometheusConfigurator(ApiClient apiClient) {
+    PrometheusConfigurator(JenkinsApiClient apiClient) {
         this.apiClient = apiClient
     }
 

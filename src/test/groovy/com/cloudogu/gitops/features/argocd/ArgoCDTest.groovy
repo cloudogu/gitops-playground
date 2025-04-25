@@ -95,7 +95,7 @@ class ArgoCDTest {
                     ]
             ]
     )
-
+    
     CommandExecutorForTest k8sCommands = new CommandExecutorForTest()
     CommandExecutorForTest helmCommands = new CommandExecutorForTest()
     ScmmRepo argocdRepo
@@ -105,7 +105,6 @@ class ArgoCDTest {
     ScmmRepo nginxHelmJenkinsRepo
     ScmmRepo nginxValidationRepo
     ScmmRepo brokenApplicationRepo
-    File remotePetClinicRepoTmpDir
     List<ScmmRepo> petClinicRepos = []
     CloneCommand gitCloneMock = mock(CloneCommand.class, RETURNS_DEEP_STUBS)
 
@@ -433,13 +432,14 @@ class ArgoCDTest {
     @Test
     void 'Pushes example repos for local'() {
         config.application.remote = false
+        def argocd = createArgoCD()
 
         def setUriMock = mock(CloneCommand.class, RETURNS_DEEP_STUBS)
         def checkoutMock = mock(CheckoutCommand.class, RETURNS_DEEP_STUBS)
         when(gitCloneMock.setURI(anyString())).thenReturn(setUriMock)
         when(setUriMock.setDirectory(any(File.class)).call().checkout()).thenReturn(checkoutMock)
 
-        createArgoCD().install()
+        argocd.install()
         def valuesYaml = parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-shared.yaml')
         assertThat(valuesYaml['service']['type']).isEqualTo('NodePort')
         assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-production.yaml')).doesNotContainKey('ingress')
@@ -460,7 +460,7 @@ class ArgoCDTest {
 
         // Assert Petclinic repo cloned
         verify(gitCloneMock).setURI('https://github.com/cloudogu/spring-petclinic.git')
-        verify(setUriMock).setDirectory(remotePetClinicRepoTmpDir)
+        verify(setUriMock).setDirectory(argocd.remotePetClinicRepoTmpDir)
         verify(checkoutMock).setName('32c8653')
 
         assertPetClinicRepos('NodePort', 'LoadBalancer', '')
@@ -975,17 +975,7 @@ class ArgoCDTest {
     }
 
     ArgoCD createArgoCD() {
-        def argoCD = new ArgoCDForTest(config, helmCommands)
-        k8sCommands = (argoCD.k8sClient as K8sClientForTest).commandExecutorForTest
-        argocdRepo = argoCD.argocdRepoInitializationAction.repo
-        actualHelmValuesFile = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.HELM_VALUES_PATH)
-        clusterResourcesRepo = argoCD.clusterResourcesInitializationAction.repo
-        exampleAppsRepo = argoCD.exampleAppsInitializationAction.repo
-        nginxHelmJenkinsRepo = argoCD.nginxHelmJenkinsInitializationAction.repo
-        nginxValidationRepo = argoCD.nginxValidationInitializationAction.repo
-        brokenApplicationRepo = argoCD.brokenApplicationInitializationAction.repo
-        remotePetClinicRepoTmpDir = argoCD.remotePetClinicRepoTmpDir
-        petClinicRepos = argoCD.petClinicInitializationActions.collect { it.repo }
+        def argoCD = new ArgoCDForTest(config, k8sCommands, helmCommands)
         return argoCD
     }
 
@@ -1413,9 +1403,23 @@ class ArgoCDTest {
     }
 
     class ArgoCDForTest extends ArgoCD {
-        ArgoCDForTest(Config config, CommandExecutorForTest helmCommands) {
-            super(config, new K8sClientForTest(config), new HelmClient(helmCommands), new FileSystemUtils(),
+        ArgoCDForTest(Config config, CommandExecutorForTest k8sCommands, CommandExecutorForTest helmCommands) {
+            super(config, new K8sClientForTest(config, k8sCommands), new HelmClient(helmCommands), new FileSystemUtils(),
                     new TestScmmRepoProvider(config, new FileSystemUtils()))
+        }
+
+        @Override
+        protected initRepos() {
+            super.initRepos()
+            
+            argocdRepo = argocdRepoInitializationAction.repo
+            actualHelmValuesFile = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), HELM_VALUES_PATH)
+            clusterResourcesRepo = clusterResourcesInitializationAction.repo
+            exampleAppsRepo = exampleAppsInitializationAction.repo
+            nginxHelmJenkinsRepo = nginxHelmJenkinsInitializationAction.repo
+            nginxValidationRepo = nginxValidationInitializationAction.repo
+            brokenApplicationRepo = brokenApplicationInitializationAction.repo
+            petClinicRepos = petClinicInitializationActions.collect { it.repo }
         }
 
         @Override

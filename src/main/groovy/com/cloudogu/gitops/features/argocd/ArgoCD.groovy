@@ -63,26 +63,18 @@ class ArgoCD extends Feature {
         this.fileSystemUtils = fileSystemUtils
 
         this.password = this.config.application.password
+    }
 
-        argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd')
+    @Override
+    boolean isEnabled() {
+        config.features.argocd.active
+    }
 
-        clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources')
-        gitRepos += clusterResourcesInitializationAction
-
-        exampleAppsInitializationAction = createRepoInitializationAction('argocd/example-apps', 'argocd/example-apps')
-        gitRepos += exampleAppsInitializationAction
-
-        nginxHelmJenkinsInitializationAction = createRepoInitializationAction('applications/argocd/nginx/helm-jenkins', 'argocd/nginx-helm-jenkins')
-        gitRepos += nginxHelmJenkinsInitializationAction
-
-        nginxValidationInitializationAction = createRepoInitializationAction('exercises/nginx-validation', 'exercises/nginx-validation')
-        gitRepos += nginxValidationInitializationAction
-
-        brokenApplicationInitializationAction = createRepoInitializationAction('exercises/broken-application', 'exercises/broken-application')
-        gitRepos += brokenApplicationInitializationAction
-
-        remotePetClinicRepoTmpDir = File.createTempDir('gitops-playground-petclinic')
-
+    @Override
+    void enable() {
+        initRepos()
+        
+        log.debug('Cloning Repositories')
 
         def petclinicInitAction = createRepoInitializationAction('applications/argocd/petclinic/plain-k8s', 'argocd/petclinic-plain')
         petClinicInitializationActions += petclinicInitAction
@@ -95,16 +87,7 @@ class ArgoCD extends Feature {
         petclinicInitAction = createRepoInitializationAction('exercises/petclinic-helm', 'exercises/petclinic-helm')
         petClinicInitializationActions += petclinicInitAction
         gitRepos += petclinicInitAction
-    }
-
-    @Override
-    boolean isEnabled() {
-        config.features.argocd.active
-    }
-
-    @Override
-    void enable() {
-        log.debug('Cloning Repositories')
+        
         cloneRemotePetclinicRepo()
 
         gitRepos.forEach(repoInitializationAction -> {
@@ -123,6 +106,27 @@ class ArgoCD extends Feature {
 
         log.debug('Installing Argo CD')
         installArgoCd()
+    }
+
+    protected initRepos() {
+        argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd')
+
+        clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources')
+        gitRepos += clusterResourcesInitializationAction
+
+        exampleAppsInitializationAction = createRepoInitializationAction('argocd/example-apps', 'argocd/example-apps')
+        gitRepos += exampleAppsInitializationAction
+
+        nginxHelmJenkinsInitializationAction = createRepoInitializationAction('applications/argocd/nginx/helm-jenkins', 'argocd/nginx-helm-jenkins')
+        gitRepos += nginxHelmJenkinsInitializationAction
+
+        nginxValidationInitializationAction = createRepoInitializationAction('exercises/nginx-validation', 'exercises/nginx-validation')
+        gitRepos += nginxValidationInitializationAction
+
+        brokenApplicationInitializationAction = createRepoInitializationAction('exercises/broken-application', 'exercises/broken-application')
+        gitRepos += brokenApplicationInitializationAction
+
+        remotePetClinicRepoTmpDir = File.createTempDir('gitops-playground-petclinic')
     }
 
     private void cloneRemotePetclinicRepo() {

@@ -10,7 +10,7 @@ import static org.mockito.Mockito.*
 class GlobalPropertyManagerTest {
     @Test
     void 'sets global property'() {
-        def client = mock(ApiClient)
+        def client = mock(JenkinsApiClient)
         def propertyManager = new GlobalPropertyManager(client)
 
         when(client.runScript(anyString())).thenReturn("Done")
@@ -42,7 +42,7 @@ class GlobalPropertyManagerTest {
 
     @Test
     void 'throws when there was an error when creating global property'() {
-        def client = mock(ApiClient)
+        def client = mock(JenkinsApiClient)
         when(client.runScript(anyString())).thenReturn("groovy.lang.MissingPropertyException: No such property: asd for class: Script1[...]")
 
         shouldFail(RuntimeException) {
@@ -52,7 +52,7 @@ class GlobalPropertyManagerTest {
 
     @Test
     void 'deletes global property'() {
-        def client = mock(ApiClient)
+        def client = mock(JenkinsApiClient)
         def propertyManager = new GlobalPropertyManager(client)
 
         when(client.runScript(anyString())).thenReturn("Nothing to do")
@@ -76,7 +76,7 @@ class GlobalPropertyManagerTest {
 
     @Test
     void 'throws when there was an error when deleting global property'() {
-        def client = mock(ApiClient)
+        def client = mock(JenkinsApiClient)
         when(client.runScript(anyString())).thenReturn("groovy.lang.MissingPropertyException: No such property: asd for class: Script1[...]")
 
         shouldFail(RuntimeException) {

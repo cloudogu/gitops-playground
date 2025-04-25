@@ -5,9 +5,9 @@ import org.intellij.lang.annotations.Language
 
 @Singleton
 class GlobalPropertyManager {
-    private ApiClient apiClient
+    private JenkinsApiClient apiClient
 
-    GlobalPropertyManager(ApiClient apiClient) {
+    GlobalPropertyManager(JenkinsApiClient apiClient) {
         this.apiClient = apiClient
     }
 
