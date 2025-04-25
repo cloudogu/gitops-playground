@@ -1,7 +1,8 @@
 package com.cloudogu.gitops.dependencyinjection
 
-import com.cloudogu.gitops.jenkins.JenkinsConfiguration
+import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.okhttp.RetryInterceptor
+import com.cloudogu.gitops.scmm.api.AuthorizationInterceptor
 import groovy.transform.TupleConstructor
 import io.micronaut.context.annotation.Factory
 import io.micronaut.context.annotation.Prototype
@@ -25,14 +26,30 @@ import java.security.cert.X509Certificate
 class HttpClientFactory {
     @Singleton
     @Named("jenkins")
-    OkHttpClient okHttpClient(HttpLoggingInterceptor httpLoggingInterceptor, JenkinsConfiguration jenkinsConfiguration, Provider<InsecureSslContext> insecureSslContextProvider) {
+    OkHttpClient okHttpClientJenkins(HttpLoggingInterceptor httpLoggingInterceptor, Config config, Provider<InsecureSslContext> insecureSslContextProvider) {
         def builder = new OkHttpClient.Builder()
                 .cookieJar(new JavaNetCookieJar(new CookieManager()))
                 .addInterceptor(httpLoggingInterceptor)
                 .addInterceptor(new RetryInterceptor())
 
-        if (jenkinsConfiguration.insecure) {
+        if (config.application.insecure) {
             def context = insecureSslContextProvider.get()
+            builder.sslSocketFactory(context.socketFactory, context.trustManager)
+        }
+
+        return builder.build()
+    }
+    
+    @Singleton
+    @Named("scmm")
+    OkHttpClient okHttpClientScmm(HttpLoggingInterceptor loggingInterceptor, Config config, Provider<HttpClientFactory.InsecureSslContext> insecureSslContext) {
+        def builder = new OkHttpClient.Builder()
+                .addInterceptor(new AuthorizationInterceptor(config.scmm.username, config.scmm.password))
+                .addInterceptor(loggingInterceptor)
+                .addInterceptor(new RetryInterceptor())
+
+        if (config.application.insecure) {
+            def context = insecureSslContext.get()
             builder.sslSocketFactory(context.socketFactory, context.trustManager)
         }
 

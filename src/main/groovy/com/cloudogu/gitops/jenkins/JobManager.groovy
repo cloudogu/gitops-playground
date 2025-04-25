@@ -12,9 +12,9 @@ import org.intellij.lang.annotations.Language
 @Singleton
 @Slf4j
 class JobManager {
-    private ApiClient apiClient
+    private JenkinsApiClient apiClient
 
-    JobManager(ApiClient apiClient) {
+    JobManager(JenkinsApiClient apiClient) {
         this.apiClient = apiClient
     }
 

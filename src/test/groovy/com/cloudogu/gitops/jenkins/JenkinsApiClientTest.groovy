@@ -17,7 +17,7 @@ import java.nio.charset.Charset
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
 
-class ApiClientTest {
+class JenkinsApiClientTest {
     private MockWebServer webServer = new MockWebServer()
 
     @AfterEach
@@ -40,7 +40,9 @@ class ApiClientTest {
         webServer.start()
 
         def httpClient = new OkHttpClient.Builder().cookieJar(new JavaNetCookieJar(new CookieManager())).build()
-        def apiClient = new ApiClient(webServer.url("jenkins").toString(), "admin", "admin", httpClient)
+        def apiClient = new JenkinsApiClient(
+                new Config(jenkins: new Config.JenkinsSchema(url: webServer.url("jenkins").toString())),
+                httpClient)
 
         def result = apiClient.runScript("println('ok')")
         assertThat(result).isEqualTo("ok")
@@ -60,7 +62,9 @@ class ApiClientTest {
         webServer.enqueue(new MockResponse().setBody('{"crumb": "the-crumb", "crumbRequestField": "Jenkins-Crumb"}'))
         webServer.enqueue(new MockResponse())
 
-        def client = new ApiClient(webServer.url('jenkins').toString(), 'admin', 'admin', new OkHttpClient())
+        def client = new JenkinsApiClient(
+                new Config(jenkins: new Config.JenkinsSchema(url: webServer.url("jenkins").toString())), 
+                new OkHttpClient())
         client.postRequestWithCrumb("foobar")
 
         assertThat(webServer.requestCount).isEqualTo(2)
@@ -75,7 +79,9 @@ class ApiClientTest {
         webServer.enqueue(new MockResponse().setBody('{"crumb": "the-crumb", "crumbRequestField": "Jenkins-Crumb"}'))
         webServer.enqueue(new MockResponse())
 
-        def client = new ApiClient(webServer.url('jenkins').toString(), 'admin', 'admin', new OkHttpClient())
+        def client = new JenkinsApiClient(
+                new Config(jenkins: new Config.JenkinsSchema(url: webServer.url("jenkins").toString())),
+                new OkHttpClient())
         client.postRequestWithCrumb("foobar", new FormBody.Builder().add('key', 'value with spaces').build())
 
         assertThat(webServer.requestCount).isEqualTo(2)
@@ -106,9 +112,9 @@ class ApiClientTest {
                         application: new Config.ApplicationSchema(
                                 insecure: true),
                         jenkins: new Config.JenkinsSchema(
-                                url: webServer.url("jenkins"), username: "admin", password: "admin")
+                                url: webServer.url("jenkins"))
                 ))
-                .getBean(ApiClient)
+                .getBean(JenkinsApiClient)
 
         def result = apiClient.runScript("println('ok')")
         assertThat(result).isEqualTo("ok")
@@ -143,7 +149,11 @@ class ApiClientTest {
         webServer.start()
 
         def httpClient = new OkHttpClient()
-        def apiClient = new ApiClient(webServer.url("jenkins").toString(), "admin", "admin", httpClient, 3, 0)
+        def apiClient = new JenkinsApiClient(
+                new Config(jenkins: new Config.JenkinsSchema(url: webServer.url("jenkins").toString())),
+                httpClient)
+        apiClient.setMaxRetries(3)
+        apiClient.setWaitPeriodInMs(0)
 
         def result = apiClient.runScript("println('ok')")
         assertThat(result).isEqualTo("ok")
@@ -166,8 +176,12 @@ class ApiClientTest {
         webServer.start()
 
         def httpClient = new OkHttpClient()
-        def apiClient = new ApiClient(webServer.url("jenkins").toString(), "admin", "admin", httpClient, 3, 0)
-
+        def apiClient = new JenkinsApiClient(
+                new Config(jenkins: new Config.JenkinsSchema(url: webServer.url("jenkins").toString())),
+                httpClient)
+        apiClient.setMaxRetries(3)
+        apiClient.setWaitPeriodInMs(0)
+        
         shouldFail(RuntimeException) {
             apiClient.runScript("println('ok')")
         }
@@ -194,7 +208,11 @@ class ApiClientTest {
         webServer.start()
 
         def httpClient = new OkHttpClient()
-        def apiClient = new ApiClient(webServer.url("jenkins").toString(), "admin", "admin", httpClient, 3, 0)
+        def apiClient = new JenkinsApiClient(
+                new Config(jenkins: new Config.JenkinsSchema(url: webServer.url("jenkins").toString())),
+                httpClient)
+        apiClient.setMaxRetries(3)
+        apiClient.setWaitPeriodInMs(0)
 
         def result = apiClient.runScript("println('ok')")
         assertThat(result).isEqualTo("ok")
