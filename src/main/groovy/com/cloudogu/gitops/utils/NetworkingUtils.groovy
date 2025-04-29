@@ -1,8 +1,10 @@
 package com.cloudogu.gitops.utils
 
 import groovy.util.logging.Slf4j
+import jakarta.inject.Singleton
 
 @Slf4j
+@Singleton
 class NetworkingUtils {
 
     private K8sClient k8sClient
@@ -71,17 +73,34 @@ class NetworkingUtils {
         }
     }
 
-    String getHost(String url) {
+    /**
+     * Legacy function with misleading name. Returns the part after the protocol of an URL.
+     * e.g.
+     * http://host:42/path returns host:42/path 
+     *
+     * @return the part after http:///https://. Otherwise returns the input url. Works for urls without protocol, 
+     * but not for outer protocols like ftp:// 😬 Good enough for here, but should be removed anyway.
+     */
+    @Deprecated
+    static String getHost(String url) {
         if (url.contains("https://"))
             return url.substring(8)
         if (url.contains("http://"))
             return url.substring(7)
+        return url
     }
 
-    String getProtocol(String url) {
+    /**
+     * Extracts the protocol from an URL string.
+     *
+     * @return http or https. Defensively empty string in all other cases.
+     */
+    @Deprecated
+    static String getProtocol(String url) {
         if (url.contains("https://"))
             return "https"
         if (url.contains("http://"))
             return "http"
+        return ''
     }
 }

@@ -23,9 +23,7 @@ class PrometheusStackTest {
                     createImagePullSecrets: false
             ),
             scmm: new Config.ScmmSchema(
-                    internal: true,
-                    host: '',
-                    protocol: 'http',
+                    internal: true
             ),
             jenkins: new Config.JenkinsSchema(internal: true,
                     metricsUsername: 'metrics',

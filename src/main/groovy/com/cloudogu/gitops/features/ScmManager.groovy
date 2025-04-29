@@ -8,6 +8,7 @@ import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.MapUtils
+import com.cloudogu.gitops.utils.NetworkingUtils
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
@@ -33,6 +34,7 @@ class ScmManager extends Feature {
     private DeploymentStrategy deployer
     private GitLabApi gitlabApi
     private K8sClient k8sClient
+    private NetworkingUtils networkingUtils
 
     ScmManager(
             Config config,
@@ -40,7 +42,8 @@ class ScmManager extends Feature {
             FileSystemUtils fileSystemUtils,
             // For now we deploy imperatively using helm to avoid order problems. In future we could deploy via argocd.
             HelmStrategy deployer,
-            K8sClient k8sClient
+            K8sClient k8sClient,
+            NetworkingUtils networkingUtils
     ) {
         this.config = config
         this.commandExecutor = commandExecutor
@@ -49,6 +52,7 @@ class ScmManager extends Feature {
         this.gitlabApi = new GitLabApi(config.scmm.url, config.scmm.password)
         this.gitlabApi.enableRequestResponseLogging(Level.ALL)
         this.k8sClient = k8sClient
+        this.networkingUtils = networkingUtils
     }
 
     @Override
@@ -76,6 +80,7 @@ class ScmManager extends Feature {
             def mergedMap = MapUtils.deepMerge(helmConfig.values, templatedMap)
             def tempValuesPath = fileSystemUtils.writeTempFile(mergedMap)
 
+            String releaseName = 'scmm'
             deployer.deployFeature(
                     helmConfig.repoURL,
                     'scm-manager',
@@ -85,6 +90,21 @@ class ScmManager extends Feature {
                     'scmm',
                     tempValuesPath
             )
+            
+            // Update scmm.url after it is deployed (and ports are known)
+            // Defined here: https://github.com/scm-manager/scm-manager/blob/3.2.1/scm-packaging/helm/src/main/chart/templates/_helpers.tpl#L14-L25
+            String serviceName = "${releaseName}-scm-manager"
+            String contentPath = "/scm"
+            
+            if (config.application.runningInsideK8s) {
+                log.debug("Setting scmm url to k8s service, since installation is running inside k8s")
+                config.scmm.url = networkingUtils.createUrl("${serviceName}.${namespace}.svc.cluster.local", "80", contentPath)
+            } else {
+                log.debug("Setting internal configs for local single node cluster with internal scmm. Waiting for NodePort...")
+                def port = k8sClient.waitForNodePort(serviceName, namespace)
+                String clusterBindAddress = networkingUtils.findClusterBindAddress()
+                config.scmm.url = networkingUtils.createUrl(clusterBindAddress, port, contentPath)
+            }
         }
 
         // NOTE: This code is experimental and not intended for production use.

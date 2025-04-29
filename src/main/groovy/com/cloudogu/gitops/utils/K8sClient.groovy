@@ -77,6 +77,23 @@ class K8sClient {
         return output
     }
 
+    String waitForNodePort(String serviceName, String namespace) {
+
+        String[] command = new Kubectl("get", "service", serviceName)
+                .namespace(namespace)
+                .mandatory("-o", "jsonpath={.spec.ports[0].nodePort}")
+                .build()
+        
+        String output = waitForOutput(
+                command,
+                "Getting node port for service $serviceName, ns=$namespace",
+                "Failed to get node port for service $serviceName, ns=$namespace"
+        )
+
+        log.debug("Node port for service $serviceName, ns=$namespace: $output")
+        return output
+    }
+
     /**
      * @return A string containing "node/nodeName", e.g. "node/k3d-gitops-playground-server-0"
      */

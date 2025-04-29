@@ -60,4 +60,34 @@ class NetworkingUtilsTest {
         }
         assertThat(exception.message).isEqualTo('Failed to retrieve internal node IP')
     }
+
+    @Test
+    void 'get hosts'() {
+        assertThat(NetworkingUtils.getHost("https://example.com")).isEqualTo("example.com")
+        assertThat(NetworkingUtils.getHost("http://example.com")).isEqualTo("example.com")
+        assertThat(NetworkingUtils.getHost("")).isEqualTo("")
+        assertThat(NetworkingUtils.getHost("example.com")).isEqualTo("example.com")
+        
+        // Legacy! The function is misleading.
+        //assertThat(NetworkingUtils.getHost("http://example.com/bla")).isEqualTo("example.com")
+        //assertThat(NetworkingUtils.getHost("http://example.com:9090/bla")).isEqualTo("example.com")
+        //assertThat(NetworkingUtils.getHost("example.com/bla")).isEqualTo("example.com")
+        //assertThat(NetworkingUtils.getHost("example.com:9090/bla")).isEqualTo("example.com")
+        assertThat(NetworkingUtils.getHost("http://example.com/bla")).isEqualTo("example.com/bla")
+        assertThat(NetworkingUtils.getHost("http://example.com:9090/bla")).isEqualTo("example.com:9090/bla")
+        assertThat(NetworkingUtils.getHost("example.com/bla")).isEqualTo("example.com/bla")
+        assertThat(NetworkingUtils.getHost("example.com:9090/bla")).isEqualTo("example.com:9090/bla")
+
+        // More legacy, known bugs. We should get rid of this method and scmm.host and scmm.protocol altogether!
+        // assertThat(NetworkingUtils.getHost("ftp://example.com")).isEqualTo("example.com")
+    }
+
+    @Test
+    void 'get protocols'() {
+        assertThat(NetworkingUtils.getProtocol("https://example.com")).isEqualTo("https");
+        assertThat(NetworkingUtils.getProtocol("http://example.com")).isEqualTo("http");
+        assertThat(NetworkingUtils.getProtocol("ftp://example.com")).isEqualTo("");
+        assertThat(NetworkingUtils.getProtocol("example.com")).isEqualTo("");
+        assertThat(NetworkingUtils.getProtocol("")).isEqualTo("")
+    }
 }

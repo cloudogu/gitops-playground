@@ -77,8 +77,6 @@ class ApplicationConfiguratorTest {
     void "correct config with no programm arguments"() {
         when(networkingUtils.findClusterBindAddress()).thenReturn("localhost")
         when(networkingUtils.createUrl("localhost", "9091", "/scm")).thenReturn("http://localhost:9091/scm")
-        when(networkingUtils.getProtocol("http://localhost:9091/scm")).thenReturn("http")
-        when(networkingUtils.getHost("http://localhost:9091/scm")).thenReturn("localhost:9091/scm")
 
         def actualConfig = applicationConfigurator.initConfig(testConfig)
 
@@ -91,6 +89,14 @@ class ApplicationConfiguratorTest {
     }
 
     @Test
+    void "sets config application runningInsideK8s"() {
+        withEnvironmentVariable("KUBERNETES_SERVICE_HOST", "127.0.0.1").execute {
+            Config actualConfig = applicationConfigurator.initConfig(testConfig)
+            assertThat(actualConfig.application.runningInsideK8s).isEqualTo(true)
+        }
+    }
+    
+    @Test
     void "uses k8s services for jenkins and scmm if running as k8s job"() {
         testConfig.jenkins.url = ''
         testConfig.scmm.url = ''
@@ -98,7 +104,6 @@ class ApplicationConfiguratorTest {
         withEnvironmentVariable("KUBERNETES_SERVICE_HOST", "127.0.0.1").execute {
             Config actualConfig = applicationConfigurator.initConfig(testConfig)
 
-            assertThat(actualConfig.scmm.url).isEqualTo("http://scmm-scm-manager.scm-manager.svc.cluster.local:80/scm")
             assertThat(actualConfig.jenkins.url).isEqualTo("http://jenkins.jenkins.svc.cluster.local:80")
         }
     }
@@ -164,7 +169,6 @@ class ApplicationConfiguratorTest {
 
         Config actualConfig = applicationConfigurator.initConfig(testConfig)
 
-        assertThat(actualConfig.scmm.url).isEqualTo("http://localhost:9091/scm")
         assertThat(actualConfig.jenkins.url).isEqualTo("http://localhost:9090")
     }
 
