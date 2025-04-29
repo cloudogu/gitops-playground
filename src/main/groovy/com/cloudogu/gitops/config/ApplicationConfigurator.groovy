@@ -121,9 +121,9 @@ class ApplicationConfigurator {
             newConfig.scmm.url = networkingUtils.createUrl("scmm-scm-manager.${newConfig.application.namePrefix}scm-manager.svc.cluster.local", "80", "/scm")
         } else {
             log.debug("Setting internal configs for local single node cluster with internal scmm")
-            def port = fileSystemUtils.getLineFromFile(fileSystemUtils.getRootDir() + "/scm-manager/values.ftl.yaml", "nodePort:").findAll(/\d+/)*.toString().get(0)
+           // def port = fileSystemUtils.getLineFromFile(fileSystemUtils.getRootDir() + "/scm-manager/values.ftl.yaml", "nodePort:").findAll(/\d+/)*.toString().get(0)
             String clusterBindAddress = networkingUtils.findClusterBindAddress()
-            newConfig.scmm.url = networkingUtils.createUrl(clusterBindAddress, port, "/scm")
+            newConfig.scmm.url = networkingUtils.createUrl(clusterBindAddress, generatePortFromPrefix(newConfig.application.namePrefix), "/scm")
         }
 
         String scmmUrl = newConfig.scmm.url
@@ -156,9 +156,9 @@ class ApplicationConfigurator {
             newConfig.jenkins.url = networkingUtils.createUrl("jenkins.${newConfig.application.namePrefix}jenkins.svc.cluster.local", "80")
         } else {
             log.debug("Setting jenkins configs for local single node cluster with internal jenkins")
-            def port = fileSystemUtils.getLineFromFile(fileSystemUtils.getRootDir() + "/jenkins/values.ftl.yaml", "nodePort:").findAll(/\d+/)*.toString().get(0)
+            //   def port = fileSystemUtils.getLineFromFile(fileSystemUtils.getRootDir() + "/jenkins/values.ftl.yaml", "nodePort:").findAll(/\d+/)*.toString().get(0)
             String clusterBindAddress = networkingUtils.findClusterBindAddress()
-            newConfig.jenkins.url = networkingUtils.createUrl(clusterBindAddress, port)
+            newConfig.jenkins.url = networkingUtils.createUrl(clusterBindAddress, generatePortFromPrefix(newConfig.application.namePrefix))
             newConfig.jenkins.urlForScmm = "http://jenkins.${newConfig.application.namePrefix}jenkins.svc.cluster.local"
         }
 
@@ -173,6 +173,14 @@ class ApplicationConfigurator {
         if (newConfig.jenkins.password === Config.DEFAULT_ADMIN_PW) {
             newConfig.jenkins.password = newConfig.application.password
         }
+    }
+
+
+    static  String generatePortFromPrefix(String prefix, int basePort = 10000, int maxPort = 65000) {
+        int hash = Math.abs(prefix.hashCode())
+
+        int port = basePort + (hash % (maxPort - basePort))
+        return port.toString()
     }
 
     private void evaluateBaseUrl(Config newConfig) {

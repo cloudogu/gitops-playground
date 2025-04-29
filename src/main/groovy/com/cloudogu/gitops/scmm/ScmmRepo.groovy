@@ -6,7 +6,6 @@ import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
 import org.eclipse.jgit.api.Git
-import org.eclipse.jgit.errors.NoRemoteRepositoryException
 import org.eclipse.jgit.transport.ChainingCredentialsProvider
 import org.eclipse.jgit.transport.CredentialsProvider
 import org.eclipse.jgit.transport.RefSpec
@@ -39,9 +38,12 @@ class ScmmRepo {
         tmpDir.deleteOnExit()
         this.username = config.scmm.username
         this.password = config.scmm.password
+        //switching from normal scm path to the central path
         this.scmmUrl = !useCentralizedRepo ? "${config.scmm.protocol}://${config.scmm.host}" : "${config.scmm.protocol}://${config.multiTenant.centralMgmtRepo}"
-        this.scmmRepoTarget = (scmmRepoTarget.startsWith(NAMESPACE_3RD_PARTY_DEPENDENCIES)|| scmmRepoTarget.contains("multi-tenant-cluster-resources")) ? scmmRepoTarget :
+
+        this.scmmRepoTarget = (scmmRepoTarget.startsWith(NAMESPACE_3RD_PARTY_DEPENDENCIES) || scmmRepoTarget.contains("multi-tenant-cluster-resources")) ? scmmRepoTarget :
                 "${config.application.namePrefix}${scmmRepoTarget}"
+
         this.absoluteLocalRepoTmpDir = tmpDir.absolutePath
         this.fileSystemUtils = fileSystemUtils
         this.insecure = config.application.insecure
@@ -66,7 +68,7 @@ class ScmmRepo {
     static String createSCMBaseUrl(Config config) {
         switch (config.scmm.provider) {
             case "scm-manager":
-                if(config.scmm.internal){
+                if (config.scmm.internal) {
                     return "http://scmm-scm-manager.${config.application.namePrefix}scm-manager.svc.cluster.local/scm/${config.scmm.rootPath}/${config.multiTenant.repoPrefix}"
                 }
                 return createScmmUrl(config) + "/${config.scmm.rootPath}/${config.application.namePrefix}"
@@ -170,14 +172,12 @@ class ScmmRepo {
     }
 
     protected Git gitClone() {
-
-       Git.cloneRepository()
+        Git.cloneRepository()
                 .setURI(getGitRepositoryUrl())
                 .setDirectory(new File(absoluteLocalRepoTmpDir))
                 .setNoCheckout(true)
                 .setCredentialsProvider(getCredentialProvider())
                 .call()
-
     }
 
     private CredentialsProvider getCredentialProvider() {

@@ -100,6 +100,7 @@ class ArgoCDTest {
     CommandExecutorForTest helmCommands = new CommandExecutorForTest()
     ScmmRepo argocdRepo
     String actualHelmValuesFile
+    ScmmRepo centralizedMgmtRepo
     ScmmRepo clusterResourcesRepo
     ScmmRepo exampleAppsRepo
     ScmmRepo nginxHelmJenkinsRepo
@@ -791,6 +792,18 @@ class ArgoCDTest {
     }
 
     @Test
+    void 'MultiTentant  Appset enabled when MultiTenant'(){
+
+        config.multiTenant.centralMgmtRepo = 'abc'
+        config.application.namePrefix = 'foo-'
+
+        createArgoCD().install()
+
+        def tenantFolder = clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + "/multiTenant/multiTenantAppSet.yaml"
+        assertThat(new File(tenantFolder)).exists()
+    }
+
+    @Test
     void 'set credentials for BuildImages'() {
         config.registry.twoRegistries = true
 
@@ -798,8 +811,6 @@ class ArgoCDTest {
 
         assertPetClinicRepos('NodePort', 'LoadBalancer', '')
     }
-
-
 
     private static Map parseBuildImagesMapFromString(String text) {
         def startIndex = text.indexOf('buildImages')
@@ -979,6 +990,9 @@ class ArgoCDTest {
         k8sCommands = (argoCD.k8sClient as K8sClientForTest).commandExecutorForTest
         argocdRepo = argoCD.argocdRepoInitializationAction.repo
         actualHelmValuesFile = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.HELM_VALUES_PATH)
+        if(config.multiTenant.centralMgmtRepo){
+            centralizedMgmtRepo = argoCD.centralizedArgoInitializationAction.repo
+        }
         clusterResourcesRepo = argoCD.clusterResourcesInitializationAction.repo
         exampleAppsRepo = argoCD.exampleAppsInitializationAction.repo
         nginxHelmJenkinsRepo = argoCD.nginxHelmJenkinsInitializationAction.repo

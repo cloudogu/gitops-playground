@@ -68,9 +68,9 @@ class ArgoCD extends Feature {
         clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources')
         gitRepos += clusterResourcesInitializationAction
 
-        def localPath = 'admin/multi-tenant-cluster-resources'
-        def centralizedRepo = new ScmmRepo(this.config, localPath, fileSystemUtils, true)
-        centralizedArgoInitializationAction = new RepoInitializationAction(this.config, centralizedRepo, null)
+        if(config.multiTenant.centralMgmtRepo) {
+            centralizedArgoInitializationAction = new RepoInitializationAction(this.config, repoProvider.getRepo(config.multiTenant.repoName,true), null)
+        }
 
         exampleAppsInitializationAction = createRepoInitializationAction('argocd/example-apps', 'argocd/example-apps')
         gitRepos += exampleAppsInitializationAction
@@ -152,6 +152,11 @@ class ArgoCD extends Feature {
             deleteDir clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/misc/secrets'
         }
 
+        if (!config.multiTenant.centralMgmtRepo) {
+            log.debug("Deleting unnecessary MultiTenant folder from cluster resources: ${clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
+            deleteDir clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/multiTenant'
+        }
+
         if (!config.features.monitoring.active) {
             log.debug("Deleting unnecessary monitoring folder from cluster resources: ${clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
             deleteDir clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + MONITORING_RESOURCES_PATH
@@ -200,9 +205,9 @@ class ArgoCD extends Feature {
         prepareArgoCdRepo()
         if (config.multiTenant.centralMgmtRepo) {
             prepareCentralizedRepo()
+            return
         }
 
-        def namePrefix = config.application.namePrefix
         def namespaceList = getNamespaceList()
 
         log.debug("Creating namespaces")
@@ -259,7 +264,12 @@ class ArgoCD extends Feature {
 
     private void deployWithHelm() {
         // Install umbrella chart from folder
-        String umbrellaChartPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'argocd/')
+        String repoDir = config.multiTenant.centralMgmtRepo
+                ? centralizedArgoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()
+                : argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()
+
+        String umbrellaChartPath = Path.of(repoDir, 'argocd/')
+
         // Even if the Chart.lock already contains the repo, we need to add it before resolving it
         // See https://github.com/helm/helm/issues/8036#issuecomment-872502901
         List helmDependencies = fileSystemUtils.readYaml(
@@ -344,9 +354,15 @@ class ArgoCD extends Feature {
     }
 
     protected void prepareCentralizedRepo() {
-        centralizedArgoInitializationAction.repo.cloneRepo()
 
-        def centralPath = Path.of(centralizedArgoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'tenants', "${config.application.namePrefix}".replaceAll(/-$/, "")).toString()
+        String tenantName= "${config.application.namePrefix}".replaceAll(/-$/, "")
+        try {
+            centralizedArgoInitializationAction.initClonedLocalRepo()
+        } catch (Exception e) {
+            log.error("Coundn't clone from Central Management Repo. Check Param or create Repo manually!")
+        }
+
+        def centralPath = Path.of(centralizedArgoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'tenants', tenantName).toString()
         def argoPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()).toString()
         def clusterResPath = Path.of(clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()).toString()
         //create new tenant
@@ -355,7 +371,15 @@ class ArgoCD extends Feature {
         fileSystemUtils.copyDirectory(clusterResPath, "${centralPath}/cluster-ressources")
         fileSystemUtils.deleteGitFolders(Path.of(centralizedArgoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'tenants').toString())
         log.info("Pushing centralized Cluster Ressources!")
-        centralizedArgoInitializationAction.repo.commitAndPush("Initial Commit")
+        centralizedArgoInitializationAction.repo.commitAndPush("Adding Tenant ${tenantName} to Central Repo.")
+
+        new TemplatingEngine().template(
+                new File("${centralPath}/argocd/multiTenant/multiTenantAppSet.ftl.yaml"),
+                new File("${centralPath}/argocd/multiTenant/multiTenantAppSet.yaml"),
+                [:]
+        )
+        k8sClient.applyYaml(Path.of(centralizedArgoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), '/argocd/multiTenant/multiTenantAppSet.yaml').toString())
+
     }
 
     protected void prepareArgoCdRepo() {
@@ -442,11 +466,6 @@ class ArgoCD extends Feature {
          */
         void initClonedLocalRepo() {
             repo.cloneRepo()
-            repo.copyDirectoryContents(copyFromDirectory)
-            replaceTemplates()
-        }
-
-        void initLocalRepo() {
             repo.copyDirectoryContents(copyFromDirectory)
             replaceTemplates()
         }

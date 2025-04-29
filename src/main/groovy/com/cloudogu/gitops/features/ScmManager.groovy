@@ -72,6 +72,7 @@ class ScmManager extends Feature {
                     username: config.scmm.username,
                     password: config.scmm.password,
                     helm    : config.scmm.helm,
+                    nodePort: ApplicationConfigurator.generatePortFromPrefix(config.application.namePrefix),
                     config : config
             ])
 

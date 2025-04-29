@@ -15,7 +15,7 @@ extraEnv: |
 
 <#if remote?? && !remote>
 service:
-  nodePort: 9091
+  nodePort: ${nodePort}
   type: NodePort
 </#if>
  
