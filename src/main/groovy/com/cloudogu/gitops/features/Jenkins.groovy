@@ -25,7 +25,7 @@ class Jenkins extends Feature {
 
     static final String HELM_VALUES_PATH = "jenkins/values.ftl.yaml"
 
-    String namespace = 'default'
+    String namespace = "${config.application.namePrefix}jenkins"
 
     private Config config
     private CommandExecutor commandExecutor
@@ -69,6 +69,9 @@ class Jenkins extends Feature {
     void enable() {
 
         if (config.jenkins.internal) {
+
+            k8sClient.createNamespace(namespace)
+
             // Mark the first node for Jenkins and agents. See jenkins/values.ftl.yaml "agent.workingDir" for details.
             // Remove first (in case new nodes were added)
             k8sClient.labelRemove('node', '--all', '', 'node')
@@ -113,7 +116,6 @@ class Jenkins extends Feature {
                 JENKINS_PASSWORD          : config.jenkins.password,
                 // Used indirectly in utils.sh 😬
                 REMOTE_CLUSTER            : config.application.remote,
-                //TODO SCMM wording SCM?
                 SCMM_URL                  : config.scmm.urlForJenkins,
                 SCMM_PASSWORD             : config.scmm.password,
                 SCM_PROVIDER              : config.scmm.provider,
@@ -123,7 +125,7 @@ class Jenkins extends Feature {
 
         ])
 
-        globalPropertyManager.setGlobalProperty('SCMM_URL', config.scmm.url)
+        globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}SCMM_URL", config.scmm.urlForJenkins)
 
         if (config.jenkins.additionalEnvs) {
             for (entry in (config.jenkins.additionalEnvs as Map).entrySet()) {
@@ -162,7 +164,6 @@ class Jenkins extends Feature {
         if (config.features.argocd.active) {
 
             String jobName = "${config.application.namePrefix}example-apps"
-            //TODO refactor and rename scmm->scm
             def credentialId = "scmm-user"
 
             jobManger.createJob(jobName,
@@ -202,7 +203,6 @@ class Jenkins extends Feature {
                         "${config.registry.proxyUsername}",
                         "${config.registry.proxyPassword}",
                         'credentials for accessing the docker-registry that contains 3rd party or base images')
-
             }
             // Once everything is set up, start the jobs.
             jobManger.startJob(jobName)

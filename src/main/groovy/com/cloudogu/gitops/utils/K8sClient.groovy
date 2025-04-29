@@ -109,20 +109,18 @@ class K8sClient {
      */
     void createNamespace(String name) {
         validateNamespace(name)
+        
+        if (!exists(name)) {
 
-        String namespace = "${configProvider.get().application.namePrefix}${name}";
-
-        if (!exists(namespace)) {
-
-            log.debug("Namespace ${namespace} does not exist, proceeding to create.");
+            log.debug("Namespace ${name} does not exist, proceeding to create.")
 
             // Create the namespace
-            String[] createNamespaceCommand = new Kubectl("create", "namespace", namespace).build();
+            String[] createNamespaceCommand = new Kubectl("create", "namespace", name).build()
             try {
-                CommandExecutor.Output createNamespaceOutput = commandExecutor.execute(createNamespaceCommand);
-                log.debug("Namespace ${namespace} created successfully.");
+                CommandExecutor.Output createNamespaceOutput = commandExecutor.execute(createNamespaceCommand)
+                log.debug("Namespace ${name} created successfully.")
             } catch (Exception e) {
-                throw new RuntimeException("Failed to create namespace ${namespace} (possibly due to insufficient permissions)", e);
+                throw new RuntimeException("Failed to create namespace ${name} (possibly due to insufficient permissions)", e)
             }
         }
 
@@ -131,11 +129,11 @@ class K8sClient {
 
     private boolean exists(String namespace) {
 // Check if the namespace already exists based on exitCode
-        String[] checkNamespaceCommand = new Kubectl("get", "namespace", namespace).build();
-        CommandExecutor.Output checkNamespaceOutput = commandExecutor.execute(checkNamespaceCommand, false);
+        String[] checkNamespaceCommand = new Kubectl("get", "namespace", namespace).build()
+        CommandExecutor.Output checkNamespaceOutput = commandExecutor.execute(checkNamespaceCommand, false)
 
         if (checkNamespaceOutput.exitCode == 0) {
-            log.debug("Namespace ${namespace} already exists.");
+            log.debug("Namespace ${namespace} already exists.")
             return true
         }
         return false
@@ -143,7 +141,7 @@ class K8sClient {
 
     private void validateNamespace(String name) {
         if (name == null || name.trim().isEmpty()) {
-            throw new IllegalArgumentException("Namespace name must be provided and cannot be null or empty.");
+            throw new IllegalArgumentException("Namespace name must be provided and cannot be null or empty.")
         }
     }
 
@@ -157,7 +155,7 @@ class K8sClient {
      */
     void createNamespaces(List<String> names) {
         if (names == null) {
-            throw new IllegalArgumentException("Namespaces must be provided and cannot be null.");
+            throw new IllegalArgumentException("Namespaces must be provided and cannot be null.")
         }
         names.each { name ->
             createNamespace(name)
@@ -231,7 +229,7 @@ class K8sClient {
             throw new RuntimeException("Missing key-value-pairs")
         }
         String command =
-                "kubectl label ${resource} ${name}${namespace ? " -n ${configProvider.get().application.namePrefix}${namespace}" : ''} " +
+                "kubectl label ${resource} ${name}${namespace ? " -n ${namespace}" : ''} " +
                         '--overwrite ' + // Make idempotent
                         keyValues.collect { "${it.v1}${it.v2 ? "=${it.v2}" : ''}" }.join(' ')
         commandExecutor.execute(command)
@@ -258,7 +256,7 @@ class K8sClient {
 
         //  kubectl patch secret argocd-secret -p '{"stringData": { "admin.password": "'"${bcryptArgoCDPassword}"'"}}' || true
         String command =
-                "kubectl patch ${resource} ${name}${namespace ? " -n ${configProvider.get().application.namePrefix}${namespace}" : ''}" +
+                "kubectl patch ${resource} ${name}${namespace ? " -n ${namespace}" : ''}" +
                         (type ? " --type=$type" : '') +
                         " --patch-file=${patchYaml.absolutePath}"
         commandExecutor.execute(command)
@@ -270,7 +268,7 @@ class K8sClient {
         }
         // kubectl delete secret -n argocd -l owner=helm,name=argocd
         String command =
-                "kubectl delete ${resource}${namespace ? " -n ${configProvider.get().application.namePrefix}${namespace}" : ''}" +
+                "kubectl delete ${resource}${namespace ? " -n ${namespace}" : ''}" +
                         ' --ignore-not-found=true ' + // Make idempotent
                         selectors.collect { "--selector=${it.v1}=${it.v2}" }.join(' ')
 
@@ -279,7 +277,7 @@ class K8sClient {
 
     void delete(String resource, String namespace, String name) {
         String command =
-                "kubectl delete ${resource}${namespace ? " -n ${configProvider.get().application.namePrefix}${namespace}" : ''}" +
+                "kubectl delete ${resource}${namespace ? " -n ${namespace}" : ''}" +
                         " $name" +
                         ' --ignore-not-found=true ' // Make idempotent
 
@@ -510,7 +508,7 @@ class K8sClient {
 
         Kubectl namespace(String namespace) {
             if (namespace) {
-                this.command += ['-n', K8sClient.this.configProvider.get().application.namePrefix + namespace]
+                this.command += ['-n', namespace]
             }
             return this
         }

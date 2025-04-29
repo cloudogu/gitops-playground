@@ -28,16 +28,13 @@ class HelmStrategy implements DeploymentStrategy {
             throw new RuntimeException("Unable to deploy helm chart via Helm CLI from Git URL, because helm does not support this out of the box.\n" +
                     "Repo URL: ${repoURL}")
         }
-        
-        def namePrefix = config.application.namePrefix
 
-        String prefixedNamespace = "${namePrefix}${namespace}"
         log.debug("Imperatively deploying helm release ${releaseName} basing on chart ${chartOrPath} from ${repoURL}, " +
-                "version ${version}, into namespace ${prefixedNamespace}. Using values:\n${helmValuesPath.toFile().text}")
+                "version ${version}, into namespace ${namespace}. Using values:\n${helmValuesPath.toFile().text}")
         
         helmClient.addRepo(repoName, repoURL)
         helmClient.upgrade(releaseName, "$repoName/$chartOrPath",
-                [namespace: prefixedNamespace,
+                [namespace: namespace,
                  version  : version,
                  values   : helmValuesPath.toString()])
     }

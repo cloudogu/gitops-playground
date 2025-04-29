@@ -15,12 +15,12 @@ trait FeatureWithImage {
     void createImagePullSecret() {
         if (config.registry.createImagePullSecrets) {
 
-            log.trace("Creating image pull secret 'proxy-registry' in namespace ${namespace}")
+            log.trace("Creating image pull secret 'proxy-registry' in namespace ${this.namespace}")
             String url = config.registry.proxyUrl ?: config.registry.url
             String user = config.registry.proxyUsername ?: config.registry.readOnlyUsername ?: config.registry.username
             String password = config.registry.proxyPassword ?: config.registry.readOnlyPassword ?: config.registry.password
             
-            k8sClient.createNamespace(namespace)
+            k8sClient.createNamespace(this.namespace)
             k8sClient.createImagePullSecret('proxy-registry', namespace, url, user, password)
         }
     }

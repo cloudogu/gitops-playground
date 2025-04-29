@@ -29,12 +29,14 @@ class ApplicationTest {
         config.features.ingressNginx.active = true
         config.application.namePrefix = 'test1-'
         List<String> namespaceList = new ArrayList<>(Arrays.asList(
-                "test1-default",
                 "test1-argocd",
                 "test1-example-apps-staging",
                 "test1-example-apps-production",
                 "test1-ingress-nginx",
-                "test1-monitoring"
+                "test1-monitoring",
+                "test1-scm-manager",
+                "test1-registry",
+                "test1-jenkins"
         ))
         def application = ApplicationContext.run()
                 .registerSingleton(config)
@@ -54,7 +56,10 @@ class ApplicationTest {
                 "test1-example-apps-staging",
                 "test1-example-apps-production",
                 "test1-ingress-nginx",
-                "test1-monitoring"
+                "test1-monitoring",
+                "test1-scm-manager",
+                "test1-registry",
+                "test1-jenkins"
         ))
         def application = ApplicationContext.run()
                 .registerSingleton(config)

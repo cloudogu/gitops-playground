@@ -1,7 +1,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  namespace: example-apps-staging
+  namespace: "${namePrefix}example-apps-staging"
   name: argocd
 rules:
   - apiGroups:
@@ -166,7 +166,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: argocd
-  namespace: example-apps-staging
+  namespace: "${namePrefix}example-apps-staging"
 subjects:
   - kind: ServiceAccount
     name: argocd-argocd-server

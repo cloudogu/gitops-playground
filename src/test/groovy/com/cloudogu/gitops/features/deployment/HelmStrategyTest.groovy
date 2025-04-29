@@ -21,7 +21,7 @@ class HelmStrategyTest {
     void 'deploys feature using helm client'() {
         Path valuesYaml = Files.createTempFile('', '')
         
-        createStrategy().deployFeature("repoURL", "repoName", "chart", "version", "namespace", "releaseName", valuesYaml)
+        createStrategy().deployFeature("repoURL", "repoName", "chart", "version", "foo-namespace", "releaseName", valuesYaml)
         
         verify(helmClient).addRepo("repoName", "repoURL")
         verify(helmClient).upgrade("releaseName", "repoName/chart", [

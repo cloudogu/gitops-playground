@@ -26,7 +26,7 @@ function initSCMM() {
 
   echo "SCM provider: ${SCM_PROVIDER}"
   if [[ ${INTERNAL_SCMM} == true ]]; then
-    setExternalHostnameIfNecessary 'SCMM' 'scmm-scm-manager' 'default'
+    setExternalHostnameIfNecessary 'SCMM' 'scmm-scm-manager' "${NAME_PREFIX}scm-manager"
   fi
   
   [[ "${SCMM_URL}" != *scm ]] && SCMM_URL=${SCMM_URL}/scm

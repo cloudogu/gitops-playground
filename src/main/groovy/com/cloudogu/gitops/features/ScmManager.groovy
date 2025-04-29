@@ -6,6 +6,7 @@ import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.MapUtils
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
@@ -24,20 +25,22 @@ class ScmManager extends Feature {
 
     static final String HELM_VALUES_PATH = "scm-manager/values.ftl.yaml"
 
-    String namespace = 'default'
+    String namespace = "${config.application.namePrefix}scm-manager"
 
     private Config config
     private CommandExecutor commandExecutor
     private FileSystemUtils fileSystemUtils
     private DeploymentStrategy deployer
     private GitLabApi gitlabApi
+    private K8sClient k8sClient
 
     ScmManager(
             Config config,
             CommandExecutor commandExecutor,
             FileSystemUtils fileSystemUtils,
             // For now we deploy imperatively using helm to avoid order problems. In future we could deploy via argocd.
-            HelmStrategy deployer
+            HelmStrategy deployer,
+            K8sClient k8sClient
     ) {
         this.config = config
         this.commandExecutor = commandExecutor
@@ -45,6 +48,7 @@ class ScmManager extends Feature {
         this.deployer = deployer
         this.gitlabApi = new GitLabApi(config.scmm.url, config.scmm.password)
         this.gitlabApi.enableRequestResponseLogging(Level.ALL)
+        this.k8sClient = k8sClient
     }
 
     @Override
@@ -56,6 +60,9 @@ class ScmManager extends Feature {
     void enable() {
 
         if (config.scmm.internal) {
+
+            k8sClient.createNamespace(namespace)
+
             def helmConfig = config.scmm.helm
 
             def templatedMap = templateToMap(HELM_VALUES_PATH, [

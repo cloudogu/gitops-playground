@@ -1,11 +1,7 @@
 package com.cloudogu.gitops.integration
 
 import com.cloudogu.gitops.integration.features.KubenetesApiTestSetup
-import io.kubernetes.client.openapi.models.V1NamespaceList
-import io.kubernetes.client.openapi.models.V1Pod
-import io.kubernetes.client.openapi.models.V1PodList
-import io.kubernetes.client.openapi.models.V1Service
-import io.kubernetes.client.openapi.models.V1ServiceList
+import io.kubernetes.client.openapi.models.*
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 
@@ -62,6 +58,9 @@ class GOPSmoketestsIT extends KubenetesApiTestSetup {
     void ensureNamespacesExists() {
         List<String> expectedNamespaces = ["argocd",
                                            "cert-manager",
+                                           "jenkins",
+                                           "registry",
+                                           "scm-manager",
                                            "default",
                                            "example-apps-production",
                                            "example-apps-staging",
@@ -107,10 +106,10 @@ class GOPSmoketestsIT extends KubenetesApiTestSetup {
         V1ServiceList services = api.listServiceForAllNamespaces()
                 .execute()
         if (list && !list.items.isEmpty() &&
-            services && !services.items.isEmpty()) {
+                services && !services.items.isEmpty()) {
 
-            V1Pod argoPod = list.getItems().find { it.getMetadata().getName().startsWith("argo")}
-            V1Service service = services.getItems()find { it.getMetadata().getName().startsWith("ingress")}
+            V1Pod argoPod = list.getItems().find { it.getMetadata().getName().startsWith("argo") }
+            V1Service service = services.getItems() find { it.getMetadata().getName().startsWith("ingress") }
 
             if (argoPod && service) {
                 return true

@@ -62,11 +62,11 @@ me:x:1000:''')
         jenkins.install()
         
         verify(deploymentStrategy).deployFeature('https://jen-repo', 'jenkins',
-                'jen-chart', '4.8.1', 'default',
+                'jen-chart', '4.8.1', 'jenkins',
                 'jenkins', temporaryYamlFile)
         verify(k8sClient).label('node', expectedNodeName, new Tuple2('node', 'jenkins'))
         verify(k8sClient).labelRemove('node', '--all', '', 'node')
-        verify(k8sClient).createSecret('generic', 'jenkins-credentials', 'default',
+        verify(k8sClient).createSecret('generic', 'jenkins-credentials', 'jenkins',
                 new Tuple2('jenkins-admin-user', 'jenusr'),
                 new Tuple2('jenkins-admin-password', 'jenpw'))
         
@@ -195,7 +195,7 @@ me:x:1000:''')
         assertThat(env['SCMM_PASSWORD']).isEqualTo('scmm-pw')
         assertThat(env['INSTALL_ARGOCD']).isEqualTo('true')
 
-        verify(globalPropertyManager).setGlobalProperty('SCMM_URL', 'http://scmm')
+        verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_SCMM_URL', 'http://scmm-scm-manager/scm')
         verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_K8S_VERSION', Config.K8S_VERSION)
 
         verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_URL', 'reg-url')

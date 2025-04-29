@@ -42,7 +42,7 @@ class IngressNginxTest {
         assertThat(actual['controller']['replicaCount']).isEqualTo(2)
 
         verify(deploymentStrategy).deployFeature(config.features.ingressNginx.helm.repoURL, 'ingress-nginx',
-                config.features.ingressNginx.helm.chart, config.features.ingressNginx.helm.version,'ingress-nginx',
+                config.features.ingressNginx.helm.chart, config.features.ingressNginx.helm.version,'foo-ingress-nginx',
                 'ingress-nginx', temporaryYamlFile)
         assertThat(parseActualYaml()['controller']['resources']).isNull()
         assertThat(parseActualYaml()['controller']['metrics']).isNull()
@@ -104,12 +104,12 @@ class IngressNginxTest {
 
         def helmConfig = ArgumentCaptor.forClass(Config.HelmConfig)
         verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
-        assertThat(helmConfig.value.chart).isEqualTo(config.features.ingressNginx.helm.chart)
-        assertThat(helmConfig.value.repoURL).isEqualTo(config.features.ingressNginx.helm.repoURL)
-        assertThat(helmConfig.value.version).isEqualTo(config.features.ingressNginx.helm.version)
+        assertThat(helmConfig.value.chart).isEqualTo('ingress-nginx')
+        assertThat(helmConfig.value.repoURL).isEqualTo('https://kubernetes.github.io/ingress-nginx')
+        assertThat(helmConfig.value.version).isEqualTo('4.12.1')
         verify(deploymentStrategy).deployFeature(
-                'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/a/b',
-                'ingress-nginx', '.', '1.2.3','ingress-nginx',
+                'http://scmm-scm-manager.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
+                'ingress-nginx', '.', '1.2.3','foo-ingress-nginx',
                 'ingress-nginx', temporaryYamlFile, DeploymentStrategy.RepoType.GIT)
     }
 
@@ -167,7 +167,7 @@ class IngressNginxTest {
 
     @Test
     void 'get namespace from feature'() {
-        assertThat(createIngressNginx().getActiveNamespaceFromFeature()).isEqualTo('ingress-nginx')
+        assertThat(createIngressNginx().getActiveNamespaceFromFeature()).isEqualTo('foo-ingress-nginx')
         config.features.ingressNginx.active = false
         assertThat(createIngressNginx().getActiveNamespaceFromFeature()).isEqualTo(null)
     }

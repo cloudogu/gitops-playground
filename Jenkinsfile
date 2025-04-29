@@ -162,8 +162,10 @@ node('high-cpu') {
                                 images[1].push(git.tag + '-dev')
                                 images[1].push('dev')
                                 images[1].push('latest-dev')
+                                images[1].push('main-dev')
                                 images[0].push()
                                 images[0].push('latest')
+                                images[0].push('main')
                                 images[0].push(git.tag)
 
                                 currentBuild.description = createImageName(git.tag)

@@ -9,7 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat
 
 class K8sClientTest {
 
-    Config config = new Config(application: new Config.ApplicationSchema(namePrefix: "foo-"))
+    Config config = new Config(application: new Config.ApplicationSchema(namePrefix: ""))
 
     K8sClientForTest k8sClient = new K8sClientForTest(config)
     CommandExecutorForTest commandExecutor =  k8sClient.commandExecutorForTest
@@ -49,7 +49,7 @@ class K8sClientTest {
                 new Tuple2('key1', 'value1'), new Tuple2('key2', 'value2'))
 
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
-                "kubectl create secret generic my-secret -n foo-my-ns --from-literal key1=value1 --from-literal key2=value2" +
+                "kubectl create secret generic my-secret -n my-ns --from-literal key1=value1 --from-literal key2=value2" +
                         " --dry-run=client -oyaml | kubectl apply -f-")
     }
 
@@ -74,10 +74,10 @@ class K8sClientTest {
     
     @Test
     void 'Creates imagePullSecret'() {
-        k8sClient.createImagePullSecret('my-reg', 'ns', 'host', 'user', 'pw')
+        k8sClient.createImagePullSecret('my-reg', 'my-ns', 'host', 'user', 'pw')
 
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
-                'kubectl create secret docker-registry my-reg -n foo-ns' +
+                'kubectl create secret docker-registry my-reg -n my-ns' +
                 ' --docker-server host --docker-username user --docker-password pw' +
                 ' --dry-run=client -oyaml | kubectl apply -f-')
     }
@@ -105,7 +105,7 @@ class K8sClientTest {
         k8sClient.createConfigMapFromFile('my-map', 'my-ns', '/file')
 
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
-                "kubectl create configmap my-map -n foo-my-ns --from-file /file --dry-run=client -oyaml" +
+                "kubectl create configmap my-map -n my-ns --from-file /file --dry-run=client -oyaml" +
                         " | kubectl apply -f-")
     }
     
@@ -123,7 +123,7 @@ class K8sClientTest {
         k8sClient.createServiceNodePort('my-svc', '42:23', '32000', 'my-ns')
         
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
-                'kubectl create service nodeport my-svc -n foo-my-ns --tcp 42:23 --node-port 32000' +
+                'kubectl create service nodeport my-svc -n my-ns --tcp 42:23 --node-port 32000' +
                         ' --dry-run=client -oyaml | kubectl apply -f-')
     }
 
@@ -142,7 +142,7 @@ class K8sClientTest {
                 new Tuple2('key1', 'value1'), new Tuple2('key2', 'value2'))
 
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
-                "kubectl label secret my-secret -n foo-my-ns --overwrite key1=value1 key2=value2")
+                "kubectl label secret my-secret -n my-ns --overwrite key1=value1 key2=value2")
     }
     
     @Test
@@ -186,7 +186,7 @@ class K8sClientTest {
         def expectedYaml = [a: 'b']
         k8sClient.patch('secret', 'my-secret', 'ns', expectedYaml)
 
-        assertThat(commandExecutor.actualCommands[0]).startsWith("kubectl patch secret my-secret -n foo-ns --patch-file=")
+        assertThat(commandExecutor.actualCommands[0]).startsWith("kubectl patch secret my-secret -n ns --patch-file=")
 
         String patchFile = (commandExecutor.actualCommands[0] =~ /--patch-file=([\S]+)/)?.findResult { (it as List)[1] }
         assertThat(parseActualYaml(patchFile)).isEqualTo(expectedYaml)
@@ -212,7 +212,7 @@ class K8sClientTest {
                 new Tuple2('key1', 'value1'), new Tuple2('key2', 'value2'))
         
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
-                "kubectl delete secret -n foo-my-ns --ignore-not-found=true --selector=key1=value1 --selector=key2=value2")
+                "kubectl delete secret -n my-ns --ignore-not-found=true --selector=key1=value1 --selector=key2=value2")
     }
 
     @Test
@@ -234,7 +234,7 @@ class K8sClientTest {
 
     @Test
     void 'Gets custom resources with name prefix'() {
-        commandExecutor.enqueueOutput(new CommandExecutor.Output('', "foo-namespace,name\nfoo-namespace2,name2", 0))
+        commandExecutor.enqueueOutput(new CommandExecutor.Output('', "namespace,name\nnamespace2,name2", 0))
         def result = k8sClient.getCustomResource('foo')
 
         assertThat(result).isEqualTo([new K8sClient.CustomResource('namespace', 'name'), new K8sClient.CustomResource('namespace2', 'name2')])
@@ -285,14 +285,14 @@ class K8sClientTest {
     @Test
     void 'Creates namespace when it does not exist'() {
         // Simulate that the namespace does not exist (kubectl get returns a non-zero exit code)
-        commandExecutor.enqueueOutput(new CommandExecutor.Output('Error from server (NotFound): namespaces "foo-my-ns" not found', '', 1))
+        commandExecutor.enqueueOutput(new CommandExecutor.Output('Error from server (NotFound): namespaces "my-ns" not found', '', 1))
 
         // Attempt to create the namespace
         k8sClient.createNamespace('my-ns')
 
         // Assert that the correct kubectl command was issued to create the namespace
         assertThat(commandExecutor.actualCommands[1]).isEqualTo(
-                "kubectl create namespace foo-my-ns")
+                "kubectl create namespace my-ns")
     }
 
     @Test
@@ -303,10 +303,10 @@ class K8sClientTest {
         // Attempt to create the namespace
         k8sClient.createNamespace('my-ns')
 
-        // Assert that no kubectl create command was issued except 'kubectl get namespace foo-my-ns'
+        // Assert that no kubectl create command was issued except 'kubectl get namespace my-ns'
         assertThat(commandExecutor.actualCommands.size()).is(1)
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
-                "kubectl get namespace foo-my-ns")
+                "kubectl get namespace my-ns")
     }
 
     @Test
@@ -344,7 +344,7 @@ class K8sClientTest {
         }
 
         // Assert that the exception message is correct
-        assertThat(exception.message).contains("Failed to create namespace foo-my-ns (possibly due to insufficient permissions)")
+        assertThat(exception.message).contains("Failed to create namespace my-ns (possibly due to insufficient permissions)")
     }
 
     @Test
@@ -360,7 +360,7 @@ class K8sClientTest {
         }
 
         // Assert that the exception message is correct
-        assertThat(exception.message).contains("Failed to create namespace foo-my-ns (possibly due to insufficient permissions)")
+        assertThat(exception.message).contains("Failed to create namespace my-ns (possibly due to insufficient permissions)")
     }
 
     @Test
@@ -382,7 +382,7 @@ class K8sClientTest {
 
         // Assert that the correct kubectl patch command was issued
         assertThat(commandExecutor.actualCommands[1]).isEqualTo(
-                'kubectl patch service my-service -n foo-my-namespace --type json -p [{"op":"replace","path":"/spec/ports/1/nodePort","value":32000}]'
+                'kubectl patch service my-service -n my-namespace --type json -p [{"op":"replace","path":"/spec/ports/1/nodePort","value":32000}]'
         )
     }
     @Test
@@ -461,7 +461,7 @@ class K8sClientTest {
             k8sClient.patchServiceNodePort('my-service', 'my-namespace', 'http', 32000)
         }
 
-        assertThat(exception.message).contains("Executing command failed: kubectl patch service my-service -n foo-my-namespace --type json -p [{\"op\":\"replace\",\"path\":\"/spec/ports/0/nodePort\",\"value\":32000}]")
+        assertThat(exception.message).contains("Executing command failed: kubectl patch service my-service -n my-namespace --type json -p [{\"op\":\"replace\",\"path\":\"/spec/ports/0/nodePort\",\"value\":32000}]")
     }
 
     @Test
@@ -476,7 +476,7 @@ class K8sClientTest {
         // Assert that the correct kubectl get command was issued and that the method returned successfully
         assertThat(commandExecutor.actualCommands).hasSize(2)
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
-                'kubectl get pod my-pod -n foo-my-namespace -o jsonpath={.status.phase}')
+                'kubectl get pod my-pod -n my-namespace -o jsonpath={.status.phase}')
     }
 
     @Test
@@ -559,7 +559,7 @@ class K8sClientTest {
         // Assert that the command was executed only once and no retries occurred
         assertThat(commandExecutor.actualCommands).hasSize(1)
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
-                'kubectl get pod my-pod -n foo-my-namespace -o jsonpath={.status.phase}')
+                'kubectl get pod my-pod -n my-namespace -o jsonpath={.status.phase}')
     }
 
     @Test
@@ -573,7 +573,7 @@ class K8sClientTest {
     void 'Runs a pod with params'() {
         k8sClient.run('my-pod', 'alpine', 'my-ns', '--rm')
         
-        assertThat(commandExecutor.actualCommands[0]).startsWith("kubectl run my-pod --image alpine -n foo-my-ns --rm")
+        assertThat(commandExecutor.actualCommands[0]).startsWith("kubectl run my-pod --image alpine -n my-ns --rm")
     }
 
     @Test
@@ -590,7 +590,7 @@ class K8sClientTest {
         ]
         k8sClient.run('my-pod', 'alpine', 'my-ns', overrides, '--restart=Never', '-ti', '--rm', '--quiet')
 
-        assertThat(commandExecutor.actualCommands[0]).startsWith("kubectl run my-pod --image alpine -n foo-my-ns --restart=Never -ti --rm --quiet")
+        assertThat(commandExecutor.actualCommands[0]).startsWith("kubectl run my-pod --image alpine -n my-ns --restart=Never -ti --rm --quiet")
         assertThat(commandExecutor.actualCommands[0]).contains('{"spec":{"containers":[{"name":"tmp-docker-gid-grepper","image":"bash:5"}]}}'.toString().trim())
     }
 

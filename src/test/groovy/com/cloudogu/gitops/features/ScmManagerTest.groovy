@@ -5,6 +5,8 @@ import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.HelmClient
+import com.cloudogu.gitops.utils.K8sClient
+import com.cloudogu.gitops.utils.K8sClientForTest
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 
@@ -82,7 +84,7 @@ class ScmManagerTest {
                 'helm upgrade -i scmm scm-manager/scm-manager-chart --create-namespace')
         assertThat(helmCommands.actualCommands[1].trim()).contains('--version 2.47.0')
         assertThat(helmCommands.actualCommands[1].trim()).contains(" --values ${temporaryYamlFile}")
-        assertThat(helmCommands.actualCommands[1].trim()).contains('--namespace foo-default')
+        assertThat(helmCommands.actualCommands[1].trim()).contains('--namespace foo-scm-manager')
 
         def env = getEnvAsMap()
         assertThat(commandExecutor.actualCommands[0] as String).isEqualTo(
@@ -159,6 +161,6 @@ class ScmManagerTest {
                 temporaryYamlFile = Path.of(ret.toString().replace(".ftl", "")) // Path after template invocation
                 return ret
             }
-        }, new HelmStrategy(config, helmClient))
+        }, new HelmStrategy(config, helmClient), new K8sClientForTest(config))
     }
 }

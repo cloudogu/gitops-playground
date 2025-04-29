@@ -9,7 +9,6 @@ class FeatureTest {
     Config config = new Config(
             application: new Config.ApplicationSchema(
                     namePrefix: "foo-")
-
     )
 
     K8sClientForTest k8sClient = new K8sClientForTest( config)
@@ -37,7 +36,7 @@ class FeatureTest {
         Feature feature = new FeatureWithImageForTest()
         feature.config = config
         feature.k8sClient = k8sClient
-        feature.namespace = 'my-ns'
+        feature.namespace = 'foo-my-ns'
         feature
     }
 
