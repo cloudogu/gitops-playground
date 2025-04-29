@@ -9,6 +9,7 @@ import com.cloudogu.gitops.jenkins.UserManager
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
+import com.cloudogu.gitops.utils.NetworkingUtils
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -31,6 +32,7 @@ class JenkinsTest {
     PrometheusConfigurator prometheusConfigurator = mock(PrometheusConfigurator)
     HelmStrategy deploymentStrategy = mock(HelmStrategy)
     Path temporaryYamlFile
+    NetworkingUtils networkingUtils = mock(NetworkingUtils.class)
     K8sClient k8sClient = mock(K8sClient)
 
     @BeforeEach
@@ -224,6 +226,27 @@ me:x:1000:''')
     }
 
     @Test
+    void "URL: Use k8s service name if running as k8s pod"() {
+        config.jenkins.internal = true
+        config.application.runningInsideK8s = true
+        
+        createJenkins().install()
+        assertThat(config.jenkins.url).isEqualTo("http://jenkins.jenkins.svc.cluster.local:80")
+    }
+
+    @Test
+    void "URL: Use local ip and nodePort when outside of k8s"() {
+        config.jenkins.internal = true
+        config.application.runningInsideK8s = false
+
+        when(networkingUtils.findClusterBindAddress()).thenReturn('192.168.16.2')
+        when(k8sClient.waitForNodePort(anyString(), anyString())).thenReturn('42')
+
+        createJenkins().install()
+        assertThat(config.jenkins.url).endsWith('192.168.16.2:42')
+    }
+    
+    @Test
     void 'Handles two registries'() {
         config.registry.twoRegistries = true
         config.features.argocd.active = true
@@ -308,6 +331,8 @@ me:x:1000:''')
     }
 
     private Jenkins createJenkins() {
+        when(networkingUtils.createUrl(anyString(), anyString(), anyString())).thenCallRealMethod()
+        when(networkingUtils.createUrl(anyString(), anyString())).thenCallRealMethod()
         new Jenkins(config, commandExecutor, new FileSystemUtils() {
             @Override
             Path writeTempFile(Map mergeMap) {
@@ -316,7 +341,7 @@ me:x:1000:''')
                 // Path after template invocation
                 return ret
             }
-        }, globalPropertyManager, jobManger, userManager, prometheusConfigurator, deploymentStrategy, k8sClient)
+        }, globalPropertyManager, jobManger, userManager, prometheusConfigurator, deploymentStrategy, k8sClient, networkingUtils)
     }
 
     private Map parseActualYaml() {

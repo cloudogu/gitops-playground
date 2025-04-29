@@ -1,19 +1,14 @@
 package com.cloudogu.gitops.config
 
-
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.NetworkingUtils
 import groovy.util.logging.Slf4j
 
 @Slf4j
 class ApplicationConfigurator {
 
-    private NetworkingUtils networkingUtils
     private FileSystemUtils fileSystemUtils
 
-    ApplicationConfigurator(NetworkingUtils networkingUtils = new NetworkingUtils(),
-                            FileSystemUtils fileSystemUtils = new FileSystemUtils()) {
-        this.networkingUtils = networkingUtils
+    ApplicationConfigurator(FileSystemUtils fileSystemUtils = new FileSystemUtils()) {
         this.fileSystemUtils = fileSystemUtils
     }
 
@@ -145,15 +140,14 @@ class ApplicationConfigurator {
             log.debug("Setting external jenkins config")
             newConfig.jenkins.internal = false
             newConfig.jenkins.urlForScmm = newConfig.jenkins.url
-        } else if (newConfig.application.runningInsideK8s) {
-            log.debug("Setting jenkins url to k8s service, since installation is running inside k8s")
-            newConfig.jenkins.url = networkingUtils.createUrl("jenkins.${newConfig.application.namePrefix}jenkins.svc.cluster.local", "80")
         } else {
-            log.debug("Setting jenkins configs for local single node cluster with internal jenkins")
-            def port = fileSystemUtils.getLineFromFile(fileSystemUtils.getRootDir() + "/jenkins/values.ftl.yaml", "nodePort:").findAll(/\d+/)*.toString().get(0)
-            String clusterBindAddress = networkingUtils.findClusterBindAddress()
-            newConfig.jenkins.url = networkingUtils.createUrl(clusterBindAddress, port)
+            log.debug("Setting configs for internal jenkins")
+            // We use the K8s service as default name here, because it is the only option:
+            // "jenkins.localhost" will not work inside the Pods and k3d-container IP + Port (e.g. 172.x.y.z:9090)
+            // will not work on Windows and MacOS.
             newConfig.jenkins.urlForScmm = "http://jenkins.${newConfig.application.namePrefix}jenkins.svc.cluster.local"
+            
+            // More internal fields are set lazily in Jenkins.groovy (after Jenkins is deployed and ports are known)
         }
 
         if (newConfig.application.baseUrl) {

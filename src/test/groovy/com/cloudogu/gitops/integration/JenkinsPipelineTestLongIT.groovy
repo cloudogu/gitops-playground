@@ -12,7 +12,6 @@ import io.kubernetes.client.openapi.models.V1NodeAddress
 import io.kubernetes.client.util.ClientBuilder
 import io.kubernetes.client.util.KubeConfig
 import org.apache.tools.ant.util.DateUtils
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 
 import java.util.concurrent.Callable
@@ -21,8 +20,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.Future
 
 import static org.assertj.core.api.Assertions.assertThat
-import static org.assertj.core.api.Assertions.fail
-
+import static org.assertj.core.api.Assertions.fail 
 /**
  * Usage: `groovy com.cloudogu.gitops.integration.E2EIT.groovy --url http://localhost:9090 --user admin --password admin
  *
@@ -39,58 +37,68 @@ class JenkinsPipelineTestLongIT {
     static int sleepInterval = 2000
     //to get IP one time via kubernetes - lazy init.
     static String INTERNAL_IP = 'InternalIP'
-    static String CURRENT_IP = null;
+    static String CURRENT_URL = null
 
-    static String findIP() {
-        if (CURRENT_IP && CURRENT_IP.length() > 0) {
-            return CURRENT_IP
-        } else {
+    static String findUrl() {
+        if (!CURRENT_URL) {
+            if (!Utils.isRunningInContainer()) {
+                // When the tests are running in a container, e.g. CI build (see Jenkinsfile)
+                // jenkins.localhost will not work there. 
+                // So, we use the IP of the single node k3d cluster and find out the nodePort of the Jenkins Service
+                String kubeConfigPath = System.getenv("HOME") + "/.kube/config"
+                ApiClient client =
+                        ClientBuilder.kubeconfig(KubeConfig.loadKubeConfig(new FileReader(kubeConfigPath))).build()
+                // set the global default api-client to the out-of-cluster one from above
+                Configuration.setDefaultApiClient(client)
+                CoreV1Api api = new CoreV1Api()
+    
+                CURRENT_URL = "http://${findCurrentIp(api)}:${findPort(api)}"
+                println "Running in container. Setting current Jenkin URL to IP: ${CURRENT_URL}"
+            } else {
+                // Using ingress is the only option to make the test work on local dev machines on all OSes: Windows, MacOS and Linux
+                // Obviously only when the ingress controller was deployed
+                CURRENT_URL = "http://jenkins.localhost"
+                println "Not Running in Container. Setting current Jenkin URL to ingress: ${CURRENT_URL}"
+            }
+        }
+        return CURRENT_URL
+    }
 
-            String kubeConfigPath = System.getenv("HOME") + "/.kube/config"; ;
-            ApiClient client =
-                    ClientBuilder.kubeconfig(KubeConfig.loadKubeConfig(new FileReader(kubeConfigPath))).build();
-            // set the global default api-client to the out-of-cluster one from above
-            Configuration.setDefaultApiClient(client);
-            CoreV1Api api = new CoreV1Api();
-
-            def nodes = api.listNode().execute()
-            def items = nodes.getItems()
-            items.each { V1Node node ->
-                println node.toJson()
-                def addresses1 = node.status.addresses
-                addresses1.each { V1NodeAddress adress ->
-                    if (INTERNAL_IP.equals(adress.type)) {
-                        CURRENT_IP = adress.address
-                        return adress.address
-                    }
+    protected static String findCurrentIp(CoreV1Api api) {
+        def nodes = api.listNode().execute()
+        def items = nodes.getItems()
+        for (V1Node node : items) {
+            def addresses = node.status.addresses
+            for (V1NodeAddress address : addresses) {
+                if (INTERNAL_IP == address.type) {
+                    return address.address
                 }
             }
         }
-        return null;
+        throw new RuntimeException('Unable to find IP Address of local cluster node')
     }
 
-    @BeforeAll
-    static void setIP() {
-        findIP()
+    static Integer findPort(CoreV1Api api) {
+        def service = api.readNamespacedService('jenkins', 'jenkins').execute()
+        return service.getSpec().getPorts().get(0).getNodePort()
     }
 
     @Test
     void ipShouldNotBeNull() {
-        assertThat(findIP()).isNotNull()
-        assertThat(findIP()).contains('.') //
-        assertThat(findIP().split('\\.').length).isEqualTo(4) // IP splittet into 4 parts
+        assertThat(findUrl()).isNotNull()
+        assertThat(findUrl()).contains('.') //
     }
 
     @Test
     void checkExpectedJenkinsJobs() {
-        JenkinsHandler js = new JenkinsHandler(findIP())
-        List<JobWithDetails> jobs = js.buildJobList()
+        JenkinsHandler js = new JenkinsHandler(findUrl())
+        List<Job> jobs = js.buildJobList()
         assertThat(jobs.size()).isEqualTo(numberOfExampleRepos)
     }
 
     @Test
     void checkJenkinsIsAvailable() {
-        JenkinsHandler js = new JenkinsHandler(findIP())
+        JenkinsHandler js = new JenkinsHandler(findUrl())
         JenkinsServer jenkins = js.get()
         assertThat(jenkins).isNotNull()
         assertThat(jenkins.running).isTrue()
@@ -103,11 +111,11 @@ class JenkinsPipelineTestLongIT {
         List<Future<PipelineResult>> buildFutures = new ArrayList<Future<PipelineResult>>()
 
         try {
-            JenkinsHandler js = new JenkinsHandler(findIP())
+            JenkinsHandler js = new JenkinsHandler(findUrl())
 
-            List<JobWithDetails> jobs = js.buildJobList()
+            List<Job> jobs = js.buildJobList()
             assertThat(jobs.size()).isEqualTo(numberOfExampleRepos)
-            jobs.each { JobWithDetails job ->
+            jobs.each { Job job ->
                 buildFutures.add(executor.run(js, job, retry))
             }
 
@@ -155,6 +163,7 @@ class JenkinsPipelineTestLongIT {
     }
 
     static void writeBuildLogToFile(BuildWithDetails buildDetails) {
+        
         String directoryName = "playground-logs-of-failed-jobs/"
 
         File directory = new File(directoryName);
@@ -164,7 +173,7 @@ class JenkinsPipelineTestLongIT {
 
         File f = new File(directoryName + buildDetails.getFullDisplayName() + ".log")
         f.withWriter("utf-8") { writer ->
-            writer.write(buildDetails.getConsoleOutputText())
+            writer.write(Utils.changeHost(buildDetails, CURRENT_URL).getConsoleOutputText())
         }
 
         println("written log file of failed job to: " + f.getAbsolutePath())
@@ -172,14 +181,12 @@ class JenkinsPipelineTestLongIT {
     }
 }
 
-
 class JenkinsHandler {
     private JenkinsServer jenkins
     String url
 
-    JenkinsHandler(String ip) {
-        url = "http://${ip}:9090"
-        println url
+    JenkinsHandler(String url) {
+        this.url = url
         this.jenkins = new JenkinsServer(new URI(url), "admin", "admin")
     }
 
@@ -188,12 +195,12 @@ class JenkinsHandler {
     // Due to missing support of multibranch-pipelines in the java-jenkins-client we need to build up the jobs ourselves.
     // Querying the root folder and starting builds leads to a namespace scan.
     // After that we need to iterate through every job folder
-    List<JobWithDetails> buildJobList() {
-        List<JobWithDetails> jobs = new ArrayList<>()
+    List<Job> buildJobList() {
+        List<Job> jobs = new ArrayList<>()
         jenkins.getJobs().each { Map.Entry<String, Job> potentialNamespaceJob ->
 
             potentialNamespaceJob.value.url = "${url}/job/${potentialNamespaceJob.value.name}/"
-            println "Trying to build job list for ${potentialNamespaceJob.value.name}"
+            println "Trying to build job list for ${potentialNamespaceJob.value.name}, URL: ${potentialNamespaceJob.value.url}"
             if (!jenkins.getFolderJob(potentialNamespaceJob.value).isPresent()) {
                 println "Job ${potentialNamespaceJob.value.name} seems not to be a folder job. Skipping."
                 return
@@ -205,10 +212,21 @@ class JenkinsHandler {
             var namespaceJob = waitForNamespaceJob(jenkins, potentialNamespaceJob.value)
 
             namespaceJob.getJobs().each { Map.Entry<String, Job> repoJob ->
-                println("Checking the repo ${repoJob.getKey()}")
+                repoJob.value.url = "${url}/job/${potentialNamespaceJob.value.name}/job/${repoJob.value.name}"
+                println("Checking the repo ${potentialNamespaceJob.value.name}/${repoJob.key} at URL: ${repoJob.value.url}")
+
                 jenkins.getFolderJob(repoJob.value).get().getJobs().each { Map.Entry<String, Job> branchJob ->
-                    println("Checking the branch ${branchJob.getKey()}")
-                    jobs.add(branchJob.value.details())
+                    branchJob.value.url = "${url}/job/${potentialNamespaceJob.value.name}/job/${repoJob.value.name}/job/${branchJob.value.name}/"
+                    println("Added Branch job ${potentialNamespaceJob.value.name}/${repoJob.key}/${branchJob.key}, URL: ${branchJob.value.url}")
+                    jobs.add(branchJob.value)
+                    // We have to set the URL (to avoid exception
+                    // "Connect to jenkins.localhost:80 [jenkins.localhost/127.0.0.1, jenkins.localhost/0:0:0:0:0:0:0:1] failed: Connection refused").
+                    // But setting the URL in JobWithDetails is not possible (Groovyc: [Static type checking] - Cannot set read-only property: url),
+                    // so use the one without details 🤷
+                    //println("Checking the branch ${potentialNamespaceJob.value.name}/${repoJob.key}/${branchJob.key}, URL: ${branchJob.value.url}")
+                    // Job jobDetails = branchJob.value.details()
+                    //jobDetails.url = branchJob.value.url
+                    //jobs.add(jobDetails)
                 }
             }
         }
@@ -216,12 +234,16 @@ class JenkinsHandler {
     }
 
     BuildWithDetails waitForBuild(QueueItem item, String executorId) {
-        while (jenkins.getBuild(item).details().isBuilding()) {
+        Build build = jenkins.getBuild(item)
+        def buildWithAdaptedUrl = new Build(build.number, Utils.changeHost(build.url, url))
+        buildWithAdaptedUrl.setClient(build.client)
+        println("Getting build details from URL: ${buildWithAdaptedUrl.url}")
+        while (buildWithAdaptedUrl.details().isBuilding()) {
             // log.debug("[$executorId] Building..")
-            Thread.sleep(JenkinsPipelineTestLongIT.sleepInterval)
-        }
+           Thread.sleep(JenkinsPipelineTestLongIT.sleepInterval)
+        } 
 
-        return jenkins.getBuild(item).details()
+        return buildWithAdaptedUrl.details()
     }
 
     QueueItem getQueueItemFromRef(QueueReference ref, String executorId) {
@@ -255,8 +277,8 @@ class JenkinsHandler {
             println "Found repositories. Waiting a little more so that all repositories have been discovered"
             Thread.sleep(30000)
             folderJob = server.getFolderJob(job).get()
-            println "There are ${folderJob.getJobs().size()} jobs. These are:"
-            folderJob.getJobs().each { Map.Entry<String, Job> repoJob -> println "${repoJob.getKey()}" }
+            println "There are ${folderJob.jobs.size()} jobs. These are:"
+            folderJob.getJobs().each { Map.Entry<String, Job> repoJob -> println "${repoJob.key}, URL: ${repoJob.value.url}" }
         }
         return folderJob
     }
@@ -276,13 +298,16 @@ class PipelineExecutor {
     PipelineExecutor() {
     }
 
-    Future<PipelineResult> run(JenkinsHandler js, JobWithDetails job, int retry) {
+    Future<PipelineResult> run(JenkinsHandler js, Job job, int retry) {
 
         String executorId = defineIdExecutorID()
         return executor.submit(() -> {
-            println "[$executorId] ${StringUtils.reduceToName(job.url)} started.."
+            println "[$executorId] ${Utils.reduceToName(job.url)} started.. via URL: ${job.url}"
             QueueReference ref = job.build(true)
-            BuildWithDetails details = js.waitForBuild(js.getQueueItemFromRef(ref, executorId), executorId)
+            def queueItem = js.getQueueItemFromRef(ref, executorId)
+            queueItem.executable.url = Utils.changeHost(queueItem.executable.url, js.url)
+            println("Waiting for build ${queueItem.executable.url }")
+            BuildWithDetails details = js.waitForBuild(queueItem, executorId)
             return new PipelineResult(executorId, job, details, retry)
         } as Callable) as Future<PipelineResult>
     }
@@ -304,11 +329,11 @@ class PipelineExecutor {
 
 class PipelineResult {
     private String executorId
-    private JobWithDetails job
+    private Job job
     private BuildWithDetails build
     private int retry
 
-    PipelineResult(String id, JobWithDetails job, BuildWithDetails build, int retry) {
+    PipelineResult(String id, Job job, BuildWithDetails build, int retry) {
         this.executorId = id
         this.job = job
         this.build = build
@@ -323,7 +348,7 @@ class PipelineResult {
         this.executorId = executorId
     }
 
-    JobWithDetails getJob() {
+    Job getJob() {
         return job
     }
 
@@ -392,12 +417,35 @@ enum Color {
     }
 }
 
-class StringUtils {
+class Utils {
 
     static String reduceToName(String input) {
         return input.substring(
                 input.findIndexValues(0, { it -> it == "/" }).get(3).toInteger() + 1,
                 input.length() - 1)
                 .replaceAll("job", "").replaceAll("//", " » ").trim()
+    }
+    
+    static String changeHost(String url, String newHost) {
+        url.replaceFirst("https?://[^/]*/", newHost + "/")
+    }
+
+    static BuildWithDetails changeHost(BuildWithDetails buildWithDetails, String host) {
+        new BuildWithDetailsWithChangableUrl(buildWithDetails, changeHost(buildWithDetails.url, host))
+    }
+
+    static boolean isRunningInContainer() {
+        File cgroupFile = new File("/proc/1/cgroup")
+        if (cgroupFile.exists()) {
+            return cgroupFile.text.contains("docker") || cgroupFile.text.contains("containerd")
+        }
+        return false
+    }
+
+    static class BuildWithDetailsWithChangableUrl extends BuildWithDetails {
+        BuildWithDetailsWithChangableUrl(BuildWithDetails details, String url) {
+            super(details)
+            this.url = url
+        }
     }
 }

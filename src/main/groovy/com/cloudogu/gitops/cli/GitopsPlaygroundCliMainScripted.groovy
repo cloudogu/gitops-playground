@@ -84,13 +84,14 @@ class GitopsPlaygroundCliMainScripted {
                 def deployer = new Deployer(config, new ArgoCdApplicationStrategy(config, fileSystemUtils, scmmRepoProvider), helmStrategy)
 
                 def airGappedUtils = new AirGappedUtils(config, scmmRepoProvider, scmmApiClient, fileSystemUtils, helmClient)
-
+                def networkingUtils = new NetworkingUtils()
+                
                 context.registerSingleton(new Application(config, [
                         new Registry(config, fileSystemUtils, k8sClient, helmStrategy),
-                        new ScmManager(config, executor, fileSystemUtils, helmStrategy, k8sClient, new NetworkingUtils()),
+                        new ScmManager(config, executor, fileSystemUtils, helmStrategy, k8sClient, networkingUtils),
                         new Jenkins(config, executor, fileSystemUtils, new GlobalPropertyManager(jenkinsApiClient),
                                 new JobManager(jenkinsApiClient), new UserManager(jenkinsApiClient),
-                                new PrometheusConfigurator(jenkinsApiClient), helmStrategy, k8sClient),
+                                new PrometheusConfigurator(jenkinsApiClient), helmStrategy, k8sClient, networkingUtils),
                         new Content(config, k8sClient),
                         new ArgoCD(config, k8sClient, helmClient, fileSystemUtils, scmmRepoProvider),
                         new IngressNginx(config, fileSystemUtils, deployer, k8sClient, airGappedUtils),

@@ -159,7 +159,6 @@ class ScmManagerTest {
         config.application.runningInsideK8s = false
 
         when(networkingUtils.findClusterBindAddress()).thenReturn('192.168.16.2')
-        when(networkingUtils.createUrl(anyString(), anyString(), anyString())).thenCallRealMethod()
         when(k8sClient.waitForNodePort(anyString(), anyString())).thenReturn('42')
         
         createScmManager().install()

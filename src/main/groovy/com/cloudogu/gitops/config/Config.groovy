@@ -156,13 +156,12 @@ class Config {
 
     static class JenkinsSchema {
         Boolean internal = true
-        /* This is the URL configured in SCMM inside the Jenkins Plugin, e.g. at http://scmm.localhost/scm/admin/settings/jenkins
-          We use the K8s service as default name here, because it is the only option:
-          "jenkins.localhost" will not work inside the Pods and k3d-container IP + Port (e.g. 172.x.y.z:9090) will not work on Windows and MacOS.
-
-          For production we overwrite this when config.jenkins["url"] is set.
-          See addJenkinsConfig() and the comment at scmm.urlForJenkins */
-        String urlForScmm = "http://jenkins"
+        /* When installing via Docker we have to distinguish jenkins.url (which is a local IP address) from 
+           the Jenkins URL used by SCMM.
+           
+           This is the URL configured in SCMM inside the Jenkins Plugin, e.g. at http://scmm.localhost/scm/admin/settings/jenkins
+           See addJenkinsConfig() and the comment at scmm.urlForJenkins */
+        String urlForScmm = ''
         String ingress = ''
         // Bash image used with internal Jenkins only 
         String internalBashImage = 'bash:5'
@@ -207,7 +206,7 @@ class Config {
         HelmConfigWithValues helm = new HelmConfigWithValues(
                 chart: 'jenkins',
                 repoURL: 'https://charts.jenkins.io',
-                version: '5.8.1')
+                version: '5.8.43')
     }
 
     static class ScmmSchema {
