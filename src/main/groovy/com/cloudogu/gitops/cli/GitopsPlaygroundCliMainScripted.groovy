@@ -87,7 +87,7 @@ class GitopsPlaygroundCliMainScripted {
 
                 context.registerSingleton(new Application(config, [
                         new Registry(config, fileSystemUtils, k8sClient, helmStrategy),
-                        new ScmManager(config, executor, fileSystemUtils, helmStrategy, k8sClient),
+                        new ScmManager(config, executor, fileSystemUtils, helmStrategy, k8sClient, new NetworkingUtils()),
                         new Jenkins(config, executor, fileSystemUtils, new GlobalPropertyManager(jenkinsApiClient),
                                 new JobManager(jenkinsApiClient), new UserManager(jenkinsApiClient),
                                 new PrometheusConfigurator(jenkinsApiClient), helmStrategy, k8sClient),

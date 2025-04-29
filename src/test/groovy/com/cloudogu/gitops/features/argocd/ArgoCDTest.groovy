@@ -46,8 +46,7 @@ class ArgoCDTest {
             ],
             scmm        : [
                     internal: true,
-                    protocol: 'https',
-                    host    : 'abc',
+                    url: 'https://abc'
             ],
             images      : buildImages + [petclinic: 'petclinic-value'],
             repositories: [

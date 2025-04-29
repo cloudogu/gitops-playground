@@ -112,21 +112,16 @@ class ApplicationConfigurator {
             log.debug("Setting external scmm config")
             newConfig.scmm.internal = false
             newConfig.scmm.urlForJenkins = newConfig.scmm.url
-        } else if (newConfig.application.runningInsideK8s) {
-            log.debug("Setting scmm url to k8s service, since installation is running inside k8s")
-            newConfig.scmm.url = networkingUtils.createUrl("scmm-scm-manager.${newConfig.application.namePrefix}scm-manager.svc.cluster.local", "80", "/scm")
         } else {
-            log.debug("Setting internal configs for local single node cluster with internal scmm")
-            def port = fileSystemUtils.getLineFromFile(fileSystemUtils.getRootDir() + "/scm-manager/values.ftl.yaml", "nodePort:").findAll(/\d+/)*.toString().get(0)
-            String clusterBindAddress = networkingUtils.findClusterBindAddress()
-            newConfig.scmm.url = networkingUtils.createUrl(clusterBindAddress, port, "/scm")
-            newConfig.scmm.urlForJenkins = "http://scmm-scm-manager.${newConfig.application.namePrefix}scm-manager.svc.cluster.local/scm"
-        }
+            log.debug("Setting configs for internal SCM-Manager")
+            // We use the K8s service as default name here, because it is the only option:
+            // "scmm.localhost" will not work inside the Pods and k3d-container IP + Port (e.g. 172.x.y.z:9091) 
+            // will not work on Windows and MacOS.
+            newConfig.scmm.urlForJenkins =
+                    "http://scmm-scm-manager.${newConfig.application.namePrefix}scm-manager.svc.cluster.local/scm"
 
-        String scmmUrl = newConfig.scmm.url
-        log.debug("Getting host and protocol from scmmUrl: " + scmmUrl)
-        newConfig.scmm.host = networkingUtils.getHost(scmmUrl)
-        newConfig.scmm.protocol = networkingUtils.getProtocol(scmmUrl)
+            // More internal fields are set lazily in ScmManger.groovy (after SCMM is deployed and ports are known) 
+        }
 
         // We probably could get rid of some of the complexity by refactoring url, host and ingress into a single var
         if (newConfig.application.baseUrl) {

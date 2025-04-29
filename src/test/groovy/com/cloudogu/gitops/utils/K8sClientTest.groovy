@@ -507,6 +507,21 @@ class K8sClientTest {
     }
 
     @Test
+    void 'Waits for node port of a service'() {
+        commandExecutor.enqueueOutput(new CommandExecutor.Output('', '42', 0))
+
+        def nodePort = k8sClient.waitForNodePort('my-service', 'my-namespace')
+
+        // Assert the correct command was executed
+        assertThat(commandExecutor.actualCommands[0]).isEqualTo(
+                'kubectl get service my-service -n my-namespace -o jsonpath={.spec.ports[0].nodePort}'
+        )
+
+        // Assert the returned node port is correct
+        assertThat(nodePort).isEqualTo('42')
+    }
+
+    @Test
     void 'Throws IllegalArgumentException when desiredPhase is null'() {
         def exception = shouldFail(IllegalArgumentException) {
             k8sClient.waitForResourcePhase('pod', 'my-pod', 'my-namespace', null)
