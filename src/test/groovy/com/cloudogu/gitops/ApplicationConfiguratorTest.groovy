@@ -3,7 +3,6 @@ package com.cloudogu.gitops
 import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.NetworkingUtils
 import com.cloudogu.gitops.utils.TestLogger
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -11,9 +10,6 @@ import org.junit.jupiter.api.Test
 import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
-import static org.mockito.ArgumentMatchers.anyString
-import static org.mockito.Mockito.mock
-import static org.mockito.Mockito.when 
 
 class ApplicationConfiguratorTest {
 
@@ -24,7 +20,6 @@ class ApplicationConfiguratorTest {
     public static final String EXPECTED_SCMM_URL = 'http://my-scmm'
 
     private ApplicationConfigurator applicationConfigurator
-    private NetworkingUtils networkingUtils
     private FileSystemUtils fileSystemUtils
     private TestLogger testLogger
     Config testConfig = Config.fromMap([
@@ -41,10 +36,10 @@ class ApplicationConfiguratorTest {
             ],
             jenkins    : [
                     url     : EXPECTED_JENKINS_URL
-                    ],
+            ],
             scmm       : [
                     url     : EXPECTED_SCMM_URL,
-                    ],
+            ],
             features    : [
                     secrets : [
                             vault : [
@@ -53,30 +48,23 @@ class ApplicationConfiguratorTest {
                     ],
             ]
     ])
-    
+
     // We have to set this value using env vars, which makes tests complicated, so ignore it
     Config almostEmptyConfig = Config.fromMap([
             application: [
                     localHelmChartFolder : 'someValue',
             ],
     ])
-    
+
     @BeforeEach
     void setup() {
-        networkingUtils = mock(NetworkingUtils.class)
         fileSystemUtils = new FileSystemUtils()
-        applicationConfigurator = new ApplicationConfigurator(networkingUtils, fileSystemUtils)
+        applicationConfigurator = new ApplicationConfigurator(fileSystemUtils)
         testLogger = new TestLogger(applicationConfigurator.getClass())
-
-        when(networkingUtils.createUrl(anyString(), anyString(), anyString())).thenCallRealMethod()
-        when(networkingUtils.createUrl(anyString(), anyString())).thenCallRealMethod()
-        when(networkingUtils.findClusterBindAddress()).thenReturn("localhost")
     }
 
     @Test
     void "correct config with no programm arguments"() {
-        when(networkingUtils.findClusterBindAddress()).thenReturn("localhost")
-        when(networkingUtils.createUrl("localhost", "9091", "/scm")).thenReturn("http://localhost:9091/scm")
 
         def actualConfig = applicationConfigurator.initConfig(testConfig)
 
@@ -95,18 +83,6 @@ class ApplicationConfiguratorTest {
             assertThat(actualConfig.application.runningInsideK8s).isEqualTo(true)
         }
     }
-    
-    @Test
-    void "uses k8s services for jenkins and scmm if running as k8s job"() {
-        testConfig.jenkins.url = ''
-        testConfig.scmm.url = ''
-
-        withEnvironmentVariable("KUBERNETES_SERVICE_HOST", "127.0.0.1").execute {
-            Config actualConfig = applicationConfigurator.initConfig(testConfig)
-
-            assertThat(actualConfig.jenkins.url).isEqualTo("http://jenkins.jenkins.svc.cluster.local:80")
-        }
-    }
 
     @Test
     void 'Fails if jenkins is internal and scmm is external'() {
@@ -118,23 +94,23 @@ class ApplicationConfiguratorTest {
         }
         assertThat(exception.message).isEqualTo('When setting jenkins URL, scmm URL must also be set and the other way round')
     }
-    
+
     @Test
     void 'Fails if jenkins is external and scmm is internal'() {
         testConfig.jenkins.url = 'external'
         testConfig.scmm.url = ''
-        
+
         def exception = shouldFail(RuntimeException) {
             applicationConfigurator.validateConfig(testConfig)
         }
         assertThat(exception.message).isEqualTo('When setting jenkins URL, scmm URL must also be set and the other way round')
     }
-    
+
     @Test
     void 'Fails if monitoring local is not set'() {
         testConfig.application.mirrorRepos = true
         testConfig.application.localHelmChartFolder = ''
-        
+
         def exception = shouldFail(RuntimeException) {
             applicationConfigurator.validateConfig(testConfig)
         }
@@ -146,48 +122,38 @@ class ApplicationConfiguratorTest {
     @Test
     void 'Fails if createImagePullSecrets is used without secrets'() {
         testConfig.registry.createImagePullSecrets = true
-        
+
         def exception = shouldFail(RuntimeException) {
             applicationConfigurator.initConfig(testConfig)
         }
         assertThat(exception.message).isEqualTo('createImagePullSecrets needs to be used with either registry username and password or the readOnly variants')
     }
-    
+
     @Test
     void 'Ignores empty localHemlChartFolder, if mirrorRepos is not set'() {
         testConfig.application.mirrorRepos = false
         testConfig.application.localHelmChartFolder = ''
-        
+
         applicationConfigurator.initConfig(testConfig)
         // no exceptions means success
-    }
-    
-    @Test
-    void "uses default localhost url for jenkins and scmm if nothing specified"() {
-        testConfig.jenkins.url = ''
-        testConfig.scmm.url = ''
-
-        Config actualConfig = applicationConfigurator.initConfig(testConfig)
-
-        assertThat(actualConfig.jenkins.url).isEqualTo("http://localhost:9090")
     }
 
     @Test
     void "Certain properties are read from env"() {
         withEnvironmentVariable('SPRING_BOOT_HELM_CHART_REPO', 'value1').execute {
-            def actualConfig = new ApplicationConfigurator(networkingUtils, fileSystemUtils).initConfig(new Config())
+            def actualConfig = new ApplicationConfigurator(fileSystemUtils).initConfig(new Config())
             assertThat(actualConfig.repositories.springBootHelmChart.url).isEqualTo('value1')
         }
         withEnvironmentVariable('SPRING_PETCLINIC_REPO', 'value2').execute {
-            def actualConfig = new ApplicationConfigurator(networkingUtils, fileSystemUtils).initConfig(new Config())
+            def actualConfig = new ApplicationConfigurator(fileSystemUtils).initConfig(new Config())
             assertThat(actualConfig.repositories.springPetclinic.url).isEqualTo('value2')
         }
         withEnvironmentVariable('GITOPS_BUILD_LIB_REPO', 'value3').execute {
-            def actualConfig = new ApplicationConfigurator(networkingUtils, fileSystemUtils).initConfig(new Config())
+            def actualConfig = new ApplicationConfigurator(fileSystemUtils).initConfig(new Config())
             assertThat(actualConfig.repositories.gitopsBuildLib.url).isEqualTo('value3')
         }
         withEnvironmentVariable('CES_BUILD_LIB_REPO', 'value4').execute {
-            def actualConfig = new ApplicationConfigurator(networkingUtils, fileSystemUtils).initConfig(new Config())
+            def actualConfig = new ApplicationConfigurator(fileSystemUtils).initConfig(new Config())
             assertThat(actualConfig.repositories.cesBuildLib.url).isEqualTo('value4')
         }
     }
@@ -195,7 +161,7 @@ class ApplicationConfiguratorTest {
     @Test
     void "base url: evaluates for all tools"() {
         testConfig.application.baseUrl = 'http://localhost'
-        
+
         testConfig.features.argocd.active = true
         testConfig.features.mail.mailhog = true
         testConfig.features.monitoring.active = true
@@ -316,54 +282,54 @@ class ApplicationConfiguratorTest {
         assertThat(actualConfig.application.namePrefix.toString()).isEqualTo('my-prefix-')
         assertThat(actualConfig.application.namePrefixForEnvVars.toString()).isEqualTo('MY_PREFIX_')
     }
-    
+
     @Test
     void "Registry: Sets to internal when no URL set"() {
         testConfig.registry.url = null
         testConfig.registry.proxyUrl = null
-        
+
         def actualConfig = applicationConfigurator.initConfig(testConfig)
-        
+
         assertThat(actualConfig.registry.url).isEqualTo('localhost:33333')
         assertThat(actualConfig.registry.internalPort).isEqualTo(EXPECTED_REGISTRY_INTERNAL_PORT)
         assertThat(actualConfig.registry.internal).isEqualTo(true)
     }
-    
+
     @Test
     void "Registry: Sets to external when only registry URL set"() {
         testConfig.registry.proxyUrl = null
 
         def actualConfig = applicationConfigurator.initConfig(testConfig)
-        
+
         assertThat(actualConfig.registry.internal).isEqualTo(false)
     }
-    
+
     @Test
     void "Registry: Sets to internal when only proxy Url is set"() {
         testConfig.registry.url = null
 
         def actualConfig = applicationConfigurator.initConfig(testConfig)
-        
+
         assertThat(actualConfig.registry.internal).isEqualTo(true)
     }
-    
+
     @Test
     void "Registry: Fails when proxy but no username and password set"() {
         def expectedException = 'Proxy URL needs to be used with proxy-username and proxy-password'
-        
+
         testConfig.registry.proxyUsername = null
         def exception = shouldFail(RuntimeException) {
             applicationConfigurator.initConfig(testConfig)
         }
         assertThat(exception.message).isEqualTo(expectedException)
-        
+
         testConfig.registry.proxyUsername = 'something'
         testConfig.registry.proxyPassword = null
         exception = shouldFail(RuntimeException) {
             applicationConfigurator.initConfig(testConfig)
         }
         assertThat(exception.message).isEqualTo(expectedException)
-        
+
         testConfig.registry.proxyUsername = null
         exception = shouldFail(RuntimeException) {
             applicationConfigurator.initConfig(testConfig)
@@ -376,8 +342,8 @@ class ApplicationConfiguratorTest {
         testConfig.features.argocd.operator = true
         testConfig.features.argocd.resourceInclusionsCluster = 'https://100.125.0.1:443'
         testConfig.features.argocd.env = [
-            [name: "ENV_VAR_1", value: "value1"] ,
-            [name: "ENV_VAR_2", value: "value2"]
+                [name: "ENV_VAR_1", value: "value1"] ,
+                [name: "ENV_VAR_2", value: "value2"]
         ] as List<Map<String, String>>
 
         // No exception should be thrown

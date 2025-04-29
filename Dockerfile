@@ -2,14 +2,11 @@ ARG ENV=prod
 
 # Keep in sync with the versions in pom.xml
 ARG JDK_VERSION='17'
-# Set by the micronaut BOM, see pom.xml
-ARG GRAAL_VERSION='22.3.0'
 
 FROM alpine:3 AS alpine
 
 # Keep in sync with the version in pom.xml
-FROM ghcr.io/graalvm/graalvm-ce:ol8-java${JDK_VERSION}-${GRAAL_VERSION} AS graal
-
+FROM ghcr.io/graalvm/native-image-community:${JDK_VERSION}-muslib-ol8 AS graal
 FROM graal AS maven-cache
 ENV MAVEN_OPTS='-Dmaven.repo.local=/mvn'
 WORKDIR /app
@@ -133,36 +130,7 @@ RUN chmod +r /dist/root/ && chmod g+rw /dist/root/.config/jgit/
 # This stage builds a static binary using graal VM. For details see docs/developers.md#GraalVM
 FROM graal AS native-image
 ENV MAVEN_OPTS='-Dmaven.repo.local=/mvn'
-RUN gu install native-image
 RUN microdnf install gnupg
-
-# Set up musl, in order to produce a static image compatible to alpine
-ARG RESULT_LIB="/musl"
-ARG MUSL_VERSION=10.2.1
-ARG ZLIB_VERSION=1.3.1
-
-RUN mkdir ${RESULT_LIB}
-RUN curl --location --fail --retry 20 --retry-connrefused -o x86_64-linux-musl-native.tgz https://more.musl.cc/${MUSL_VERSION}/x86_64-linux-musl/x86_64-linux-musl-native.tgz
-RUN set -o pipefail && curl --location --fail --retry 20 --retry-connrefused https://more.musl.cc/10.2.1/x86_64-linux-musl/SHA512SUMS \
-    | grep 'x86_64-linux-musl-native.tgz' | sha512sum -c -
-RUN tar -xvzf x86_64-linux-musl-native.tgz -C ${RESULT_LIB} --strip-components 1 && \
-    cp /usr/lib/gcc/x86_64-redhat-linux/8/libstdc++.a ${RESULT_LIB}/lib/
-
-ENV CC=/musl/bin/gcc
-RUN curl --location --fail --retry 20 --retry-connrefused -o zlib.tar.gz https://github.com/madler/zlib/releases/download/v${ZLIB_VERSION}/zlib-${ZLIB_VERSION}.tar.gz
-RUN curl --location --fail --retry 20 --retry-connrefused -o zlib.tar.gz.asc https://github.com/madler/zlib/releases/download/v${ZLIB_VERSION}/zlib-${ZLIB_VERSION}.tar.gz.asc
-# Use curl instead of "gpg --recv-keys" for more stable builds with retries
-# Key of the zlib maintainer: madler@alumni.caltech.edu
-ENV ZLIB_KEY=5ED46A6721D365587791E2AA783FCD8E58BCAFBA 
-RUN set -o pipefail && curl --silent --show-error --location --fail --retry 20 --retry-connrefused --retry-delay 5 \
-    "https://keys.openpgp.org/vks/v1/by-fingerprint/${ZLIB_KEY}" | \
-    gpg --import --batch --no-default-keyring --keyring /tmp/keyring.gpg
-RUN gpgv --keyring  /tmp/keyring.gpg zlib.tar.gz.asc zlib.tar.gz
-RUN mkdir zlib && tar -xvzf zlib.tar.gz -C zlib --strip-components 1 && \
-    cd zlib && ./configure --static --prefix=/musl && \
-    make && make install && \
-    cd / && rm -rf /zlib && rm -f /zlib.tar.gz
-ENV PATH="$PATH:/musl/bin"
 
 # Provide binaries used by apply-ng, so our runs with native-image-agent dont fail 
 # with "java.io.IOException: Cannot run program "kubectl"..." etc.
@@ -193,7 +161,7 @@ RUN native-image -Dgroovy.grape.enable=false \
     -H:DynamicProxyConfigurationResources=proxy-config.json \
     -H:ReflectionConfigurationFiles=conf/reflect-config.json \
     -H:ReflectionConfigurationResources=reflect-config.json \
-    --features=com.cloudogu.gitops.graal.groovy.GroovyApplicationRegistrationFeature,com.cloudogu.gitops.graal.groovy.GroovyDgmClassesRegistrationFeature,com.cloudogu.gitops.graal.jgit.JGitReflectionFeature \
+    --features=com.cloudogu.gitops.graal.groovy.GroovyApplicationRegistrationFeature,com.cloudogu.gitops.graal.groovy.GroovyDgmClassesRegistrationFeature,com.cloudogu.gitops.graal.jgit.JGitReflectionFeature,com.cloudogu.gitops.graal.okhttp.OkHttpReflectionFeature \
     --static \
     --allow-incomplete-classpath \
     --report-unsupported-elements-at-runtime \
