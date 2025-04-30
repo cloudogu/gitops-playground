@@ -792,15 +792,15 @@ class ArgoCDTest {
     }
 
     @Test
-    void 'MultiTentant  Appset enabled when MultiTenant'(){
+    void 'MultiTentant Appset file exists when MultiTenant'(){
 
         config.multiTenant.centralMgmtRepo = 'abc'
         config.application.namePrefix = 'foo-'
 
         createArgoCD().install()
 
-        def tenantFolder = clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + "/multiTenant/multiTenantAppSet.yaml"
-        assertThat(new File(tenantFolder)).exists()
+        def tenantFile= clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + "/multiTenant/multiTenantAppSet.yaml"
+        assertThat(new File(tenantFile)).exists()
     }
 
     @Test

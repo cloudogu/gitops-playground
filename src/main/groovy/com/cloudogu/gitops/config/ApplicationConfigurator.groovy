@@ -1,11 +1,8 @@
 package com.cloudogu.gitops.config
 
-
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
 import groovy.util.logging.Slf4j
-
-import java.security.MessageDigest
 
 @Slf4j
 class ApplicationConfigurator {
@@ -43,6 +40,8 @@ class ApplicationConfigurator {
         evaluateBaseUrl(newConfig)
 
         setResourceInclusionsCluster(newConfig)
+
+        setMgmtConfig(newConfig)
 
         return newConfig
     }
@@ -121,7 +120,7 @@ class ApplicationConfigurator {
             newConfig.scmm.url = networkingUtils.createUrl("scmm-scm-manager.${newConfig.application.namePrefix}scm-manager.svc.cluster.local", "80", "/scm")
         } else {
             log.debug("Setting internal configs for local single node cluster with internal scmm")
-           // def port = fileSystemUtils.getLineFromFile(fileSystemUtils.getRootDir() + "/scm-manager/values.ftl.yaml", "nodePort:").findAll(/\d+/)*.toString().get(0)
+            // def port = fileSystemUtils.getLineFromFile(fileSystemUtils.getRootDir() + "/scm-manager/values.ftl.yaml", "nodePort:").findAll(/\d+/)*.toString().get(0)
             String clusterBindAddress = networkingUtils.findClusterBindAddress()
             newConfig.scmm.url = networkingUtils.createUrl(clusterBindAddress, generatePortFromPrefix(newConfig.application.namePrefix), "/scm")
         }
@@ -176,7 +175,7 @@ class ApplicationConfigurator {
     }
 
 
-    static  String generatePortFromPrefix(String prefix, int basePort = 10000, int maxPort = 65000) {
+    static String generatePortFromPrefix(String prefix, int basePort = 10000, int maxPort = 65000) {
         int hash = Math.abs(prefix.hashCode())
 
         int port = basePort + (hash % (maxPort - basePort))
@@ -223,6 +222,12 @@ class ApplicationConfigurator {
             newConfig.features.exampleApps.nginx.baseDomain =
                     new URL(injectSubdomain('nginx', baseUrl, urlSeparatorHyphen)).host
             log.debug("Setting Nginx URL ${newConfig.features.exampleApps.nginx.baseDomain}")
+        }
+    }
+
+    private void setMgmtConfig(Config newConfig) {
+        if (newConfig.multiTenant.centralMgmtRepo && !newConfig.application.namePrefix) {
+            throw new RuntimeException('To use Central Multi Tenant Repo define a NamePrefix.')
         }
     }
 

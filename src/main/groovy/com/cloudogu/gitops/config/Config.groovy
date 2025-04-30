@@ -280,8 +280,6 @@ class Config {
         @Option(names = ['--prefix-repo'], description = SCMM_PASSWORD_DESCRIPTION)
         @JsonPropertyDescription(SCMM_PASSWORD_DESCRIPTION)
         String repoPrefix = ''
-
-
     }
 
     static class ApplicationSchema {

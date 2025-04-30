@@ -113,6 +113,7 @@ class ArgoCD extends Feature {
             repoInitializationAction.initClonedLocalRepo()
         })
 
+
         prepareGitOpsRepos()
 
         prepareApplicationNginxHelmJenkins()
@@ -360,6 +361,8 @@ class ArgoCD extends Feature {
             centralizedArgoInitializationAction.initClonedLocalRepo()
         } catch (Exception e) {
             log.error("Coundn't clone from Central Management Repo. Check Param or create Repo manually!")
+            //TODO
+            //Throw error?
         }
 
         def centralPath = Path.of(centralizedArgoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'tenants', tenantName).toString()
@@ -372,14 +375,8 @@ class ArgoCD extends Feature {
         fileSystemUtils.deleteGitFolders(Path.of(centralizedArgoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'tenants').toString())
         log.info("Pushing centralized Cluster Ressources!")
         centralizedArgoInitializationAction.repo.commitAndPush("Adding Tenant ${tenantName} to Central Repo.")
-
-        new TemplatingEngine().template(
-                new File("${centralPath}/argocd/multiTenant/multiTenantAppSet.ftl.yaml"),
-                new File("${centralPath}/argocd/multiTenant/multiTenantAppSet.yaml"),
-                [:]
-        )
-        k8sClient.applyYaml(Path.of(centralizedArgoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), '/argocd/multiTenant/multiTenantAppSet.yaml').toString())
-
+        log.info("Applying centralized management Appset for ArgoCD!")
+        k8sClient.applyYaml(Path.of(centralPath, '/cluster-ressources/multiTenant/multiTenantAppSet.yaml').toString())
     }
 
     protected void prepareArgoCdRepo() {
