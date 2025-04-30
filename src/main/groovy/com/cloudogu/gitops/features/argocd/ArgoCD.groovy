@@ -69,7 +69,7 @@ class ArgoCD extends Feature {
         gitRepos += clusterResourcesInitializationAction
 
         if(config.multiTenant.centralMgmtRepo) {
-            centralizedArgoInitializationAction = new RepoInitializationAction(this.config, repoProvider.getRepo(config.multiTenant.repoName,true), null)
+            centralizedArgoInitializationAction = new RepoInitializationAction(this.config, repoProvider.getRepo(config.multiTenant.defaultMgmtRepoName,true), null)
         }
 
         exampleAppsInitializationAction = createRepoInitializationAction('argocd/example-apps', 'argocd/example-apps')
@@ -120,9 +120,9 @@ class ArgoCD extends Feature {
 
         preparePetClinicRepos()
 
-        gitRepos.forEach(repoInitializationAction -> {
-            repoInitializationAction.repo.commitAndPush('Initial Commit')
-        })
+        gitRepos.findAll { !it.repo.getIsCentralRepo() }.each {
+            it.repo.commitAndPush('Initial Commit')
+        }
 
         log.debug('Installing Argo CD')
         installArgoCd()
@@ -204,10 +204,6 @@ class ArgoCD extends Feature {
 
     private void installArgoCd() {
         prepareArgoCdRepo()
-        if (config.multiTenant.centralMgmtRepo) {
-            prepareCentralizedRepo()
-            return
-        }
 
         def namespaceList = getNamespaceList()
 
@@ -240,7 +236,12 @@ class ArgoCD extends Feature {
             )
         }
 
-        if (config.features.argocd.operator) {
+        //deployment of Argo
+
+        if (config.multiTenant.centralMgmtRepo) {
+            prepareCentralizedRepo()
+            return
+        } else if (config.features.argocd.operator) {
             deployWithOperator()
         } else {
             deployWithHelm()
