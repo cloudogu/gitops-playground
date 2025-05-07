@@ -153,8 +153,7 @@ class ArgoCDTest {
 
         assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['server']['service']['type'])
                 .isEqualTo('NodePort')
-        assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['notifications']['argocdUrl'])
-                .isEqualTo('https://localhost:9092')
+        assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['notifications']['argocdUrl']).isNull()
 
 
         def namespacesYaml = clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + "/misc/namespaces.yaml"

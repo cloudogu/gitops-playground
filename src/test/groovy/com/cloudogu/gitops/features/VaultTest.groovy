@@ -49,7 +49,6 @@ class VaultTest {
         createVault().install()
 
         assertThat(parseActualYaml()['ui']['serviceType']).isEqualTo('NodePort')
-        assertThat(parseActualYaml()['ui']['serviceNodePort']).isEqualTo(8200)
     }
 
     @Test
