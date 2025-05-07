@@ -14,8 +14,6 @@ nginx:
   service:
     ports:
       http: 80
-    nodePorts:
-      http: 30026
     type: <#if isRemote>LoadBalancer<#else>NodePort</#if>
 <#if podResources == true>
   resources:

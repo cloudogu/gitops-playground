@@ -18,9 +18,6 @@ argo-cd:
 
     service:
       type: LoadBalancer
-      # Is ignored when type is LoadBalancer. For local cluster we change the service type to NodePort
-      nodePortHttp: 9092
-      nodePortHttps: 9093
     metrics:
       enabled: true
 <#if monitoring.active == true>
@@ -126,7 +123,10 @@ argo-cd:
     secret:
       create: false
     enabled: <#if mail.active == true>true<#else>false</#if>
-    argocdUrl: https://localhost:9092
+    <#-- When url is null, this field is left empty. This leads to notifications that dont contain a host. 
+         But what could we do differently? When ingress is not used locally, we could set the IP of the k3d container.
+         But: It is only reachable in linux and it also might change. So we can as well just save the effort. -->
+    argocdUrl: ${config.features.argocd.url}
 <#if mail.active?? && mail.active>
     notifiers:
       service.email: |

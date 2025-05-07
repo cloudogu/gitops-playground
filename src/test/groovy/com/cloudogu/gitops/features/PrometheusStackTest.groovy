@@ -263,7 +263,6 @@ policies:
         createStack().install()
 
         assertThat(parseActualYaml()['grafana']['service']['type']).isEqualTo('NodePort')
-        assertThat(parseActualYaml()['grafana']['service']['nodePort']).isEqualTo('9095')
     }
 
     @Test

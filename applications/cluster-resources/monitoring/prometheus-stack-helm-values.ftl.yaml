@@ -160,9 +160,6 @@ grafana:
   adminPassword: ${config.application["password"]}
   service:
     type: <#if remote>LoadBalancer<#else>NodePort</#if>
-    <#if !remote>
-    nodePort: "9095"
-    </#if>
 <#if monitoring.grafana.host?has_content>
   ingress:
     enabled: true

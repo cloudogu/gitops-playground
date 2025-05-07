@@ -1,6 +1,5 @@
 service:
   port: 80
-  nodePort: 30041
 
 <#if exampleApps.petclinic.baseDomain?has_content>
 ingress:
