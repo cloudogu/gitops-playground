@@ -638,26 +638,21 @@ docker run --rm -t -u $(id -u) \
 The first increment of our `--netpols` feature is intended to be used on openshift and with an external Cloudogu Ecosystem.
 
 That's why we need to initialize our local cluster with some netpols for everything to work.
-* The `default` namespace needs to be accesible from outside the cluster (so GOP apply via `docker run` has access)
+* The `<prefix>-jenkins` and  `<prefix>-scm-manager` namespace needs to be accesible from outside the cluster (so GOP apply via `docker run` has access)
 * Emulate OpenShift default netPols: allow network communication inside namespaces and access by ingress controller 
 
 After the cluster is initialized and before GOP is applied, do the following:
 
 ```bash
+# Prefix handling:
+# if used, change prefix to your configured prefix and then
+# hyphen "-" is neccessary for this workaorund.
+# if no prefix is used, delete everthing after prefix=
+prefix=<prefix>-
 # When using harbor, do the same for namespace harbor
-k apply -f- <<EOF
-kind: NetworkPolicy
-apiVersion: networking.k8s.io/v1
-metadata:
-  name: allow-all-ingress
-  namespace: default
-spec:
-  podSelector: {}
-  ingress:
-  - {}
-EOF
 
-for ns in default example-apps-production example-apps-staging monitoring secrets; do
+
+for ns in ${prefix}jenkins  ${prefix}registry  ${prefix}scm-manager ${prefix}example-apps-production ${prefix}example-apps-staging ${prefix}monitoring ${prefix}secrets; do
   k create ns $ns -oyaml --dry-run=client | k apply -f-
   k apply --namespace "$ns" -f- <<EOF
 kind: NetworkPolicy
@@ -670,7 +665,7 @@ spec:
     - from:
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: ingress-nginx
+              kubernetes.io/metadata.name: ${prefix}ingress-nginx
         - podSelector:
             matchLabels:
               app.kubernetes.io/component: controller
@@ -690,6 +685,38 @@ spec:
         - podSelector: {}
 EOF
 done
+k apply -f- <<EOF
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: allow-all-ingress
+  namespace: ${prefix}scm-manager
+spec:
+  podSelector: {}
+  ingress:
+  - {}
+--- 
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: allow-all-ingress
+  namespace: ${prefix}jenkins
+spec:
+  podSelector: {}
+  ingress:
+  - {} 
+--- 
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: allow-all-ingress
+  namespace: ${prefix}registry
+spec:
+  podSelector: {}
+  ingress:
+  - {} 
+EOF
+
 ```
 
 ## Emulate an airgapped environment
