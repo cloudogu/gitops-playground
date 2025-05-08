@@ -685,38 +685,19 @@ spec:
         - podSelector: {}
 EOF
 done
-k apply -f- <<EOF
+# Some NS need to be accessible from docker image
+for ns in ${prefix}jenkins ${prefix}registry ${prefix}scm-manager; do
+  k apply --namespace "$ns" -f- <<EOF
 kind: NetworkPolicy
 apiVersion: networking.k8s.io/v1
 metadata:
   name: allow-all-ingress
-  namespace: ${prefix}scm-manager
 spec:
   podSelector: {}
   ingress:
   - {}
---- 
-kind: NetworkPolicy
-apiVersion: networking.k8s.io/v1
-metadata:
-  name: allow-all-ingress
-  namespace: ${prefix}jenkins
-spec:
-  podSelector: {}
-  ingress:
-  - {} 
---- 
-kind: NetworkPolicy
-apiVersion: networking.k8s.io/v1
-metadata:
-  name: allow-all-ingress
-  namespace: ${prefix}registry
-spec:
-  podSelector: {}
-  ingress:
-  - {} 
 EOF
-
+done
 ```
 
 ## Emulate an airgapped environment
