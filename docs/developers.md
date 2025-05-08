@@ -638,7 +638,7 @@ docker run --rm -t -u $(id -u) \
 The first increment of our `--netpols` feature is intended to be used on openshift and with an external Cloudogu Ecosystem.
 
 That's why we need to initialize our local cluster with some netpols for everything to work.
-* The `<prefix>-jenkins` and  `<prefix>-scm-manager` namespace needs to be accesible from outside the cluster (so GOP apply via `docker run` has access)
+* The `<prefix>-jenkins` ,  `<prefix>-scm-manager` and `<prefix>-registry` namespace needs to be accesible from outside the cluster (so GOP apply via `docker run` has access)
 * Emulate OpenShift default netPols: allow network communication inside namespaces and access by ingress controller 
 
 After the cluster is initialized and before GOP is applied, do the following:
