@@ -122,7 +122,7 @@ class ArgoCDTest {
         List filesWithInternalSCMM = findFilesContaining(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), argocd.scmm_url_internal)
         assertThat(filesWithInternalSCMM).isNotEmpty()
         assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['server']['service']['type'])
-                .isEqualTo('NodePort')
+                .isEqualTo('ClusterIP')
 
         // check repoTemplateSecretName
         k8sCommands.assertExecuted('kubectl create secret generic argocd-repo-creds-scmm -n argocd')
@@ -152,7 +152,7 @@ class ArgoCDTest {
         assertThat(deleteCommand).contains('owner=helm', 'name=argocd')
 
         assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['server']['service']['type'])
-                .isEqualTo('NodePort')
+                .isEqualTo('ClusterIP')
         assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['notifications']['argocdUrl']).isNull()
 
 
@@ -439,18 +439,18 @@ class ArgoCDTest {
 
         argocd.install()
         def valuesYaml = parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-shared.yaml')
-        assertThat(valuesYaml['service']['type']).isEqualTo('NodePort')
+        assertThat(valuesYaml['service']['type']).isEqualTo('ClusterIP')
         assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-production.yaml')).doesNotContainKey('ingress')
         assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-staging.yaml')).doesNotContainKey('ingress')
         assertThat(valuesYaml).doesNotContainKey('resources')
 
         valuesYaml = parseActualYaml(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'apps/nginx-helm-umbrella/values.yaml')
-        assertThat(valuesYaml['nginx']['service']['type']).isEqualTo('NodePort')
+        assertThat(valuesYaml['nginx']['service']['type']).isEqualTo('ClusterIP')
         assertThat(valuesYaml['nginx'] as Map).doesNotContainKey('ingress')
         assertThat(valuesYaml['nginx'] as Map).doesNotContainKey('resources')
 
         assertThat((parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[1]['spec']['type']))
-                .isEqualTo('NodePort')
+                .isEqualTo('ClusterIP')
         assertThat((parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[0]['spec']['template']['spec']['containers'] as List)[0]['resources'])
                 .isNull()
 
@@ -461,7 +461,7 @@ class ArgoCDTest {
         verify(setUriMock).setDirectory(argocd.remotePetClinicRepoTmpDir)
         verify(checkoutMock).setName('32c8653')
 
-        assertPetClinicRepos('NodePort', 'LoadBalancer', '')
+        assertPetClinicRepos('ClusterIP', 'LoadBalancer', '')
     }
 
     @Test
@@ -473,12 +473,12 @@ class ArgoCDTest {
         createArgoCD().install()
 
         assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-shared.yaml').toString())
-                .doesNotContain('NodePort')
+                .doesNotContain('ClusterIP')
         assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-production.yaml')['ingress']['hostname']).isEqualTo('production.nginx-helm.nginx.local')
         assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-staging.yaml')['ingress']['hostname']).isEqualTo('staging.nginx-helm.nginx.local')
 
         assertThat(parseActualYaml(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'apps/nginx-helm-umbrella/values.yaml').toString())
-                .doesNotContain('NodePort')
+                .doesNotContain('ClusterIP')
 
         def valuesYaml = parseActualYaml(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'apps/nginx-helm-umbrella/values.yaml')
         assertThat(valuesYaml['nginx']['ingress']['hostname'] as String).isEqualTo('production.nginx-helm-umbrella.nginx.local')
@@ -488,7 +488,7 @@ class ArgoCDTest {
         assertThat((parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[1]['spec']['type']))
                 .isEqualTo('LoadBalancer')
 
-        assertPetClinicRepos('LoadBalancer', 'NodePort', 'petclinic.local')
+        assertPetClinicRepos('LoadBalancer', 'ClusterIP', 'petclinic.local')
     }
 
     @Test
@@ -551,7 +551,7 @@ class ArgoCDTest {
         assertThat((parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[2]['spec']['rules'] as List)[0]['host'])
                 .isEqualTo('broken-application-nginx-local')
 
-        assertPetClinicRepos('LoadBalancer', 'NodePort', 'petclinic-local')
+        assertPetClinicRepos('LoadBalancer', 'ClusterIP', 'petclinic-local')
     }
 
     @Test
@@ -568,7 +568,7 @@ class ArgoCDTest {
 
         assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-production.yaml')['ingress']['hostname']).isEqualTo('production.nginx-helm.nginx.local')
         assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-staging.yaml')['ingress']['hostname']).isEqualTo('staging.nginx-helm.nginx.local')
-        assertPetClinicRepos('LoadBalancer', 'NodePort', 'petclinic.local')
+        assertPetClinicRepos('LoadBalancer', 'ClusterIP', 'petclinic.local')
     }
 
     @Test
@@ -773,7 +773,7 @@ class ArgoCDTest {
         assertThat((parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[0]['spec']['template']['spec']['containers'] as List)[0]['resources'] as Map)
                 .containsKeys('limits', 'requests')
 
-        assertPetClinicRepos('NodePort', 'LoadBalancer', '')
+        assertPetClinicRepos('ClusterIP', 'LoadBalancer', '')
     }
 
     @Test
@@ -794,7 +794,7 @@ class ArgoCDTest {
 
         createArgoCD().install()
 
-        assertPetClinicRepos('NodePort', 'LoadBalancer', '')
+        assertPetClinicRepos('ClusterIP', 'LoadBalancer', '')
     }
 
 
@@ -1177,7 +1177,6 @@ class ArgoCDTest {
         def yaml = parseActualYaml(argocdConfigPath.toFile().toString())
         assertThat(yaml['spec']['rbac']).isNull()
         assertThat(yaml['spec']['sso']).isNull()
-        assertThat(yaml['spec']['server']['service']['type']).isEqualTo('NodePort')
     }
 
     @Test
@@ -1362,23 +1361,7 @@ class ArgoCDTest {
                 new CommandExecutor.Output('', '', 0), // Labeling ArgoCD Secret
                 new CommandExecutor.Output('', '', 0), // ArgoCD operator YAML applied
                 new CommandExecutor.Output('', 'Available', 0), // ArgoCD resource reached desired phase
-                new CommandExecutor.Output('', createServiceJson(), 0),
-                new CommandExecutor.Output('', '', 0),
-                new CommandExecutor.Output('', createServiceJson(), 0),
-                new CommandExecutor.Output('', '', 0)
         ].flatten() as Queue<CommandExecutor.Output>)
-    }
-
-    private static String createServiceJson() {
-        return '''
-        {
-            "spec": {
-                "ports": [
-                    {"name": "http", "nodePort": 30000},
-                    {"name": "https", "nodePort": 30001}
-                ]
-            }
-        }'''
     }
 
     private void simulateNamespaceCreation() {

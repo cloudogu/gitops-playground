@@ -13,7 +13,7 @@ global:
 service:
   ports:
     http: 80
-  type: <#if isRemote>LoadBalancer<#else>NodePort</#if>
+  type: <#if isRemote>LoadBalancer<#else>ClusterIP</#if>
 # We don't use staticSiteConfigmap, so this is extensible for our secret example. See ArgoCD.groovy
 extraVolumes:
   - name: index

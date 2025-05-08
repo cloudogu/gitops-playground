@@ -357,11 +357,6 @@ class ArgoCD extends Feature {
             replaceFileContentInYamls(new File(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()), scmm_url_internal, externalScmmUrl)
         }
 
-        if (!config.application.remote) {
-            log.debug("Setting argocd service.type to NodePort since it is not running in a remote cluster")
-            fileSystemUtils.replaceFileContent(argocdConfigFile.toString(), "LoadBalancer", "NodePort")
-        }
-
         if (!config.application.netpols) {
             log.debug("Deleting argocd netpols.")
             deleteFile argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/argocd/templates/allow-namespaces.yaml'

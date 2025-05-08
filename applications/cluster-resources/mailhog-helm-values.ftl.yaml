@@ -10,7 +10,7 @@ imagePullSecrets:
  - name: proxy-registry
 </#if>
 service:
-  type: <#if isRemote>LoadBalancer<#else>NodePort</#if>
+  type: <#if isRemote>LoadBalancer<#else>ClusterIP</#if>
   port:
     http: 80
 auth:

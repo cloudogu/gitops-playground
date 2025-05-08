@@ -14,7 +14,7 @@ nginx:
   service:
     ports:
       http: 80
-    type: <#if isRemote>LoadBalancer<#else>NodePort</#if>
+    type: <#if isRemote>LoadBalancer<#else>ClusterIP</#if>
 <#if podResources == true>
   resources:
     limits:
