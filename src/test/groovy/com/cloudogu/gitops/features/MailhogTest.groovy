@@ -49,11 +49,11 @@ class MailhogTest {
     }
 
     @Test
-    void 'service type NodePort when not run remotely'() {
+    void 'service type ClusterIP when not run remotely'() {
         config.application.remote = false
         createMailhog().install()
 
-        assertThat(parseActualYaml()['service']['type']).isEqualTo('NodePort')
+        assertThat(parseActualYaml()['service']['type']).isEqualTo('ClusterIP')
     }
 
     @Test

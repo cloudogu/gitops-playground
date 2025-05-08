@@ -258,11 +258,11 @@ policies:
     }
 
     @Test
-    void 'service type NodePort when not run remotely'() {
+    void 'service type ClusterIP when not run remotely'() {
         config.application.remote = false
         createStack().install()
 
-        assertThat(parseActualYaml()['grafana']['service']['type']).isEqualTo('NodePort')
+        assertThat(parseActualYaml()['grafana']['service']['type']).isEqualTo('ClusterIP')
     }
 
     @Test

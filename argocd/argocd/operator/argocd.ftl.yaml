@@ -120,10 +120,6 @@ spec:
     route:
       enabled: ${isOpenshift?c}
     host: "${argocd.host}"
-    <#if !isOpenshift>
-    service:
-      type: NodePort
-    </#if>
   initialRepositories: |
     - name: argocd
       url: ${scmm.repoUrl}argocd/argocd<#if scmm.provider == "gitlab">.git</#if>

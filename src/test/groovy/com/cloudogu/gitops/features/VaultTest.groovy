@@ -45,10 +45,10 @@ class VaultTest {
     }
 
     @Test
-    void 'when not run remotely, set node port'() {
+    void 'when not run remotely, set type ClusterIP'() {
         createVault().install()
 
-        assertThat(parseActualYaml()['ui']['serviceType']).isEqualTo('NodePort')
+        assertThat(parseActualYaml()['ui']['serviceType']).isEqualTo('ClusterIP')
     }
 
     @Test

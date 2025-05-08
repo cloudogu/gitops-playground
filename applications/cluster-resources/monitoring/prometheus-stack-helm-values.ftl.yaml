@@ -159,7 +159,7 @@ grafana:
   adminUser: ${config.application["username"]}
   adminPassword: ${config.application["password"]}
   service:
-    type: <#if remote>LoadBalancer<#else>NodePort</#if>
+    type: <#if remote>LoadBalancer<#else>ClusterIP</#if>
 <#if monitoring.grafana.host?has_content>
   ingress:
     enabled: true
