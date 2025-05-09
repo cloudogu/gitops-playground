@@ -20,8 +20,6 @@ class ScmmRepoTest {
             scmm: new Config.ScmmSchema(
                     username: "dont-care-username",
                     password: "dont-care-password",
-                    protocol: "https",
-                    host: "localhost"
             ))
 
     @Test

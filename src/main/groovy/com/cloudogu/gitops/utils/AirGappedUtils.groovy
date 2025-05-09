@@ -5,11 +5,12 @@ import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import com.cloudogu.gitops.scmm.api.Permission
 import com.cloudogu.gitops.scmm.api.Repository
-import com.cloudogu.gitops.scmm.api.RepositoryApi
+import com.cloudogu.gitops.scmm.api.ScmmApiClient
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 import jakarta.inject.Singleton
 import retrofit2.Response
+
 import java.nio.file.Path
 
 @Slf4j
@@ -18,15 +19,15 @@ class AirGappedUtils {
 
     private Config config
     private ScmmRepoProvider repoProvider
-    private RepositoryApi repositoryApi
+    private ScmmApiClient scmmApiClient
     private FileSystemUtils fileSystemUtils
     private HelmClient helmClient
 
-    AirGappedUtils(Config config, ScmmRepoProvider repoProvider, RepositoryApi repositoryApi,
+    AirGappedUtils(Config config, ScmmRepoProvider repoProvider, ScmmApiClient scmmApiClient,
                    FileSystemUtils fileSystemUtils, HelmClient helmClient) {
         this.config = config
         this.repoProvider = repoProvider
-        this.repositoryApi = repositoryApi
+        this.scmmApiClient = scmmApiClient
         this.fileSystemUtils = fileSystemUtils
         this.helmClient = helmClient
     }
@@ -77,6 +78,7 @@ class AirGappedUtils {
 
     // This could be moved to ScmmRepo, if needed
     private void createRepo(String namespace, String repoName, String description) {
+        def repositoryApi = scmmApiClient.repositoryApi()
         def repo = new Repository(namespace, repoName, description)
         def createResponse = repositoryApi.create(repo, true).execute()
         handleResponse(createResponse, repo)

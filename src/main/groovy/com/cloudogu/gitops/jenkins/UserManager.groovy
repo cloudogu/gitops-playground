@@ -7,9 +7,9 @@ import org.intellij.lang.annotations.Language
 @Singleton
 @Slf4j
 class UserManager {
-    private ApiClient apiClient
+    private JenkinsApiClient apiClient
 
-    UserManager(ApiClient apiClient) {
+    UserManager(JenkinsApiClient apiClient) {
         this.apiClient = apiClient
     }
 

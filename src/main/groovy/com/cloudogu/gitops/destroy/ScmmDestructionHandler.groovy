@@ -1,27 +1,22 @@
 package com.cloudogu.gitops.destroy
 
 import com.cloudogu.gitops.config.Config
-
-import com.cloudogu.gitops.scmm.api.RepositoryApi
-import com.cloudogu.gitops.scmm.api.UsersApi
+import com.cloudogu.gitops.scmm.api.ScmmApiClient
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
 
 @Singleton
 @Order(200)
 class ScmmDestructionHandler implements DestructionHandler {
-    private UsersApi usersApi
-    private RepositoryApi repositoryApi
+    private ScmmApiClient scmmApiClient
     private Config config
 
     ScmmDestructionHandler(
             Config config,
-            UsersApi usersApi,
-            RepositoryApi repositoryApi
+            ScmmApiClient scmmApiClient
     ) {
-        this.usersApi = usersApi
         this.config = config
-        this.repositoryApi = repositoryApi
+        this.scmmApiClient = scmmApiClient
     }
 
     @Override
@@ -44,7 +39,7 @@ class ScmmDestructionHandler implements DestructionHandler {
 
     private void deleteRepository(String namespace, String repository, boolean prefixNamespace = true) {
         def namePrefix = prefixNamespace ? config.application.namePrefix : ''
-        def response = repositoryApi.delete("${namePrefix}$namespace", repository).execute()
+        def response = scmmApiClient.repositoryApi().delete("${namePrefix}$namespace", repository).execute()
 
         if (response.code() != 204) {
             throw new RuntimeException("Could not delete user $namespace/$repository (${response.code()} ${response.message()}): ${response.errorBody().string()}")
@@ -52,7 +47,7 @@ class ScmmDestructionHandler implements DestructionHandler {
     }
 
     private void deleteUser(String name) {
-        def response = usersApi.delete("${config.application.namePrefix}$name").execute()
+        def response = scmmApiClient.usersApi().delete("${config.application.namePrefix}$name").execute()
 
         if (response.code() != 204) {
             throw new RuntimeException("Could not delete user $name (${response.code()} ${response.message()}): ${response.errorBody().string()}")

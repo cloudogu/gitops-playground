@@ -12,6 +12,7 @@ import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.MapUtils
+import com.cloudogu.gitops.utils.NetworkingUtils
 import freemarker.template.Configuration
 import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
@@ -36,6 +37,7 @@ class Jenkins extends Feature {
     private PrometheusConfigurator prometheusConfigurator
     private DeploymentStrategy deployer
     private K8sClient k8sClient
+    private NetworkingUtils networkingUtils
 
     Jenkins(
             Config config,
@@ -46,7 +48,8 @@ class Jenkins extends Feature {
             UserManager userManager,
             PrometheusConfigurator prometheusConfigurator,
             HelmStrategy deployer,
-            K8sClient k8sClient
+            K8sClient k8sClient,
+            NetworkingUtils networkingUtils
     ) {
         this.config = config
         this.commandExecutor = commandExecutor
@@ -57,6 +60,7 @@ class Jenkins extends Feature {
         this.prometheusConfigurator = prometheusConfigurator
         this.deployer = deployer
         this.k8sClient = k8sClient
+        this.networkingUtils = networkingUtils
     }
 
     @Override
@@ -96,15 +100,29 @@ class Jenkins extends Feature {
             def mergedMap = MapUtils.deepMerge(helmConfig.values, templatedMap)
             def tempValuesPath = fileSystemUtils.writeTempFile(mergedMap)
 
+            String releaseName = "jenkins"
             deployer.deployFeature(
                     helmConfig.repoURL,
                     'jenkins',
                     helmConfig.chart,
                     helmConfig.version,
                     namespace,
-                    'jenkins',
+                    releaseName,
                     tempValuesPath
             )
+            
+            // Defined here: https://github.com/jenkinsci/helm-charts/blob/jenkins-5.8.1/charts/jenkins/templates/_helpers.tpl#L46-L57
+            String serviceName = releaseName
+            // Update jenkins.url after it is deployed (and ports are known)
+            if (config.application.runningInsideK8s) {
+                log.debug("Setting jenkins url to k8s service, since installation is running inside k8s")
+                config.jenkins.url = networkingUtils.createUrl("${serviceName}.${namespace}.svc.cluster.local", "80")
+            } else {
+                log.debug("Setting jenkins configs for local single node cluster with internal jenkins. Waiting for NodePort...")
+                def port = k8sClient.waitForNodePort(serviceName, namespace)
+                String clusterBindAddress = networkingUtils.findClusterBindAddress()
+                config.jenkins.url = networkingUtils.createUrl(clusterBindAddress, port)
+            }
         }
 
         commandExecutor.execute("${fileSystemUtils.rootDir}/scripts/jenkins/init-jenkins.sh", [

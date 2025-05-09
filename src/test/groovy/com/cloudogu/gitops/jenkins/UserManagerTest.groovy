@@ -11,7 +11,7 @@ import static org.mockito.Mockito.*
 class UserManagerTest {
     @Test
     void 'creates user successfully'() {
-        def client = mock(ApiClient)
+        def client = mock(JenkinsApiClient)
         when(client.runScript(anyString())).thenReturn("the-user")
 
         new UserManager(client).createUser("the-user", "hunter2")
@@ -20,7 +20,7 @@ class UserManagerTest {
 
     @Test
     void 'creates user with quotes successfully'() {
-        def client = mock(ApiClient)
+        def client = mock(JenkinsApiClient)
         when(client.runScript(anyString())).thenReturn("the-'user")
 
         new UserManager(client).createUser("the-'user", "code''injection")
@@ -34,7 +34,7 @@ class UserManagerTest {
 
     @Test
     void 'throws when backslashes are passed'() {
-        def client = mock(ApiClient)
+        def client = mock(JenkinsApiClient)
         shouldFail(IllegalArgumentException) {
             new UserManager(client).createUser("the-\\'user", "hunter2")
         }
@@ -42,7 +42,7 @@ class UserManagerTest {
 
     @Test
     void 'throws when there was an error'() {
-        def client = mock(ApiClient)
+        def client = mock(JenkinsApiClient)
         when(client.runScript(anyString())).thenReturn("groovy.lang.MissingPropertyException: No such property: asd for class: Script1[...]")
 
         shouldFail(RuntimeException) {
@@ -52,7 +52,7 @@ class UserManagerTest {
 
     @Test
     void 'grants permission for user'() {
-        def client = mock(ApiClient)
+        def client = mock(JenkinsApiClient)
         when(client.runScript(anyString())).thenReturn("true")
         when(client.runScript("print(Jenkins.getInstance().getAuthorizationStrategy().class)")).thenReturn("class hudson.security.GlobalMatrixAuthorizationStrategy")
 
@@ -73,7 +73,7 @@ class UserManagerTest {
 
     @Test
     void 'throws when granting permission failed'() {
-        def client = mock(ApiClient)
+        def client = mock(JenkinsApiClient)
         when(client.runScript(anyString())).thenReturn("groovy.lang.MissingPropertyException: No such property: asd for class: Script1[...]")
 
         shouldFail(RuntimeException) {
@@ -83,7 +83,7 @@ class UserManagerTest {
 
     @Test
     void 'checks whether matrix based authorization is enabled'() {
-        def client = mock(ApiClient)
+        def client = mock(JenkinsApiClient)
         when(client.runScript(anyString())).thenReturn("class hudson.security.GlobalMatrixAuthorizationStrategy")
 
         assertThat(new UserManager(client).isUsingMatrixBasedPermissions()).isTrue()
@@ -91,7 +91,7 @@ class UserManagerTest {
 
     @Test
     void 'checks whether matrix based authorization is disabled'() {
-        def client = mock(ApiClient)
+        def client = mock(JenkinsApiClient)
         when(client.runScript(anyString())).thenReturn("class hudson.security.FullControlOnceLoggedInAuthorizationStrategy")
 
         assertThat(new UserManager(client).isUsingMatrixBasedPermissions()).isFalse()
@@ -99,7 +99,7 @@ class UserManagerTest {
 
     @Test
     void 'checks whether cas security realm is used'() {
-        def client = mock(ApiClient)
+        def client = mock(JenkinsApiClient)
         when(client.runScript(anyString())).thenReturn("class org.jenkinsci.plugins.cas.CasSecurityRealm")
 
         assertThat(new UserManager(client).isUsingCasSecurityRealm()).isTrue()
@@ -107,7 +107,7 @@ class UserManagerTest {
 
     @Test
     void 'checks whether cas security realm is not used'() {
-        def client = mock(ApiClient)
+        def client = mock(JenkinsApiClient)
         when(client.runScript(anyString())).thenReturn("class hudson.security.HudsonPrivateSecurityRealm")
 
         assertThat(new UserManager(client).isUsingCasSecurityRealm()).isFalse()
@@ -115,7 +115,7 @@ class UserManagerTest {
 
     @Test
     void 'throws when determining security realm errors'() {
-        def client = mock(ApiClient)
+        def client = mock(JenkinsApiClient)
         when(client.runScript(anyString())).thenReturn("groovy.lang.MissingPropertyException: No such property: asd for class: Script1[...]")
 
         shouldFail(RuntimeException) {
