@@ -1,3 +1,4 @@
+<#assign centralScmmUrl = (config.multiTenant.centralScmUrl?string)!'' >
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -19,7 +20,11 @@ spec:
   project: argocd
   source:
     path: ${argocd.isOperator?string("operator/", "argocd/")}
+<#if config.multiTenant.useDedicatedInstance && scmm.centralScmmUrl?has_content>
+    repoURL: ${scmm.centralScmmUrl}/repo/${namePrefix}argocd/argocd
+<#else>
     repoURL: ${scmm.repoUrl}argocd/argocd<#if scmm.provider == "gitlab">.git</#if>
+</#if>
     targetRevision: main
     # needed to sync the operator/rbac folder
     <#if argocd.isOperator>

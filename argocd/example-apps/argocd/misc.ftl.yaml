@@ -19,7 +19,7 @@ spec:
     namespace: ${namePrefix}example-apps-production
   source:
     path: misc/
-    repoURL: ${scmm.baseUrl}/repo/${namePrefix}argocd/example-apps
+    repoURL: ${scmm.repoUrl}argocd/example-apps
     targetRevision: main
     directory:
       recurse: true
@@ -27,3 +27,34 @@ spec:
     automated:
       prune: true
       selfHeal: true
+<#if config.multiTenant.centralSCMUrl?has_content>
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: example-apps
+  namespace: ${namePrefix}argocd
+spec:
+  description: Contains examples of end-user application
+  destinations:
+    - namespace: ${namePrefix}example-apps-production
+      server: https://kubernetes.default.svc
+    - namespace: ${namePrefix}example-apps-staging
+      server: https://kubernetes.default.svc
+    - namespace: ${namePrefix}argocd
+      server: https://kubernetes.default.svc
+  sourceRepos:
+    - http://scmm.${namePrefix}scm-manager.svc.cluster.local/scm/repo/${namePrefix}argocd/example-apps
+    - http://scmm.${namePrefix}scm-manager.svc.cluster.local/scm/repo/${namePrefix}argocd/nginx-helm-umbrella
+
+  sourceNamespaces:
+    - ${namePrefix}example-apps-staging
+    - ${namePrefix}example-apps-production
+    - ${namePrefix}argocd
+
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'
+
+  clusterResourceWhitelist: []
+</#if>

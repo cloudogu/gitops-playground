@@ -1,7 +1,6 @@
 package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.config.Config
-
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.utils.*
 import groovy.io.FileType
@@ -11,17 +10,18 @@ import org.eclipse.jgit.api.CheckoutCommand
 import org.eclipse.jgit.api.CloneCommand
 import org.junit.jupiter.api.Test
 import org.springframework.security.crypto.bcrypt.BCrypt
+
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.stream.Collectors
 
+import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable
 import static org.assertj.core.api.Assertions.assertThat
 import static org.assertj.core.api.Assertions.fail
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.ArgumentMatchers.anyString
 import static org.mockito.Mockito.*
-import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable
 
 class ArgoCDTest {
     Map buildImages = [
@@ -32,7 +32,7 @@ class ArgoCDTest {
             yamllint   : 'yamllint-value'
     ]
     Config config = Config.fromMap(
-            application : [
+            application: [
                     openshift           : false,
                     remote              : false,
                     insecure            : false,
@@ -42,14 +42,16 @@ class ArgoCDTest {
                     namePrefixForEnvVars: '',
                     gitName             : 'Cloudogu',
                     gitEmail            : 'hello@cloudogu.com',
-                    activeNamespaces: ["argocd", "monitoring", "ingress-nginx", "example-apps-staging", "example-apps-production", "secrets"]
-
+                    namespaces          : [
+                            dedicatedNamespaces: ["argocd", "monitoring", "ingress-nginx", "secrets"],
+                            tenantNamespaces: ["example-apps-staging", "example-apps-production"]
+                    ]
             ],
-            scmm        : [
+            scmm: [
                     internal: true,
-                    url: 'https://abc'
+                    url     : 'https://abc'
             ],
-            images      : buildImages + [petclinic: 'petclinic-value'],
+            images: buildImages + [petclinic: 'petclinic-value'],
             repositories: [
                     springBootHelmChart: [
                             url: 'https://github.com/cloudogu/spring-boot-helm-chart.git',
@@ -69,18 +71,18 @@ class ArgoCDTest {
             content: [
                     examples: true
             ],
-            features    : [
+            features: [
                     argocd      : [
-                            operator    : false,
-                            active      : true,
-                            configOnly  : true,
-                            emailFrom   : 'argocd@example.org',
-                            emailToUser : 'app-team@example.org',
-                            emailToAdmin: 'infra@example.org',
+                            operator                 : false,
+                            active                   : true,
+                            configOnly               : true,
+                            emailFrom                : 'argocd@example.org',
+                            emailToUser              : 'app-team@example.org',
+                            emailToAdmin             : 'infra@example.org',
                             resourceInclusionsCluster: ''
                     ],
                     mail        : [
-                            mailhog     : true,
+                            mailhog: true,
                     ],
                     monitoring  : [
                             active: true,
@@ -98,7 +100,7 @@ class ArgoCDTest {
                     ]
             ]
     )
-    
+
     CommandExecutorForTest k8sCommands = new CommandExecutorForTest()
     CommandExecutorForTest helmCommands = new CommandExecutorForTest()
     ScmmRepo argocdRepo
@@ -108,6 +110,7 @@ class ArgoCDTest {
     ScmmRepo nginxHelmJenkinsRepo
     ScmmRepo nginxValidationRepo
     ScmmRepo brokenApplicationRepo
+    ScmmRepo tenantBootstrap
     List<ScmmRepo> petClinicRepos = []
     CloneCommand gitCloneMock = mock(CloneCommand.class, RETURNS_DEEP_STUBS)
 
@@ -133,7 +136,7 @@ class ArgoCDTest {
 
         assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['crds']).isNull()
         assertThat(parseActualYaml(actualHelmValuesFile)['global']).isNull()
-        
+
         // check repoTemplateSecretName
         k8sCommands.assertExecuted('kubectl create secret generic argocd-repo-creds-scmm -n argocd')
         k8sCommands.assertExecuted('kubectl label secret argocd-repo-creds-scmm -n argocd')
@@ -166,7 +169,7 @@ class ArgoCDTest {
         def rbacConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_RBAC_PATH)
         assertThat(argocdConfigPath.toFile()).doesNotExist()
         assertThat(rbacConfigPath.toFile()).doesNotExist()
-        
+
         // Projects
         def clusterRessourcesYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/cluster-resources.yaml')
         assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains(
@@ -180,7 +183,7 @@ class ArgoCDTest {
         assertThat(argocdYaml['spec']['source']['directory']).isNull()
         assertThat(argocdYaml['spec']['source']['path']).isEqualTo('argocd/')
         // The other application files should be validated here as well!
-        
+
         // Content examples
         assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/example-apps.yaml')).exists()
         assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'applications/example-apps.yaml')).exists()
@@ -192,7 +195,7 @@ class ArgoCDTest {
 
         def argocd = createArgoCD()
         argocd.install()
-        
+
         assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/example-apps.yaml')).doesNotExist()
         assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'applications/example-apps.yaml')).doesNotExist()
     }
@@ -336,7 +339,7 @@ class ArgoCDTest {
                 parseActualYaml(actualHelmValuesFile)['argo-cd']['notifications']['notifiers']['service.email'] as String)
 
         assertThat(serviceEmail['host']).isEqualTo(config.features.mail.smtpAddress)
-        assertThat(serviceEmail['port'] ).isEqualTo(config.features.mail.smtpPort)
+        assertThat(serviceEmail['port']).isEqualTo(config.features.mail.smtpPort)
         // username and password are both linked to the k8s secret. Secrets will be created at runtime, in this test
         assertThat(serviceEmail['username']).isEqualTo('$email-username')
         assertThat(serviceEmail['password']).isEqualTo('$email-password')
@@ -675,6 +678,7 @@ class ArgoCDTest {
   tag: latest
 """)
     }
+
     @Test
     void 'Sets image pull secrets for nginx'() {
         config.registry.createImagePullSecrets = true
@@ -781,7 +785,7 @@ class ArgoCDTest {
     }
 
     @Test
-    void 'ArgoCD with active network policies'(){
+    void 'ArgoCD with active network policies'() {
         config.application.netpols = true
 
         createArgoCD().install()
@@ -800,7 +804,6 @@ class ArgoCDTest {
 
         assertPetClinicRepos('ClusterIP', 'LoadBalancer', '')
     }
-
 
 
     private static Map parseBuildImagesMapFromString(String text) {
@@ -828,7 +831,7 @@ class ArgoCDTest {
 
             Binding binding = new Binding()
             binding.setVariable('dockerRegistryProxyCredentials', 'dockerRegistryProxyCredentials')
-            def map =  new GroovyShell(binding).evaluate(matchedText)
+            def map = new GroovyShell(binding).evaluate(matchedText)
 
             return map as Map
 
@@ -1159,6 +1162,17 @@ class ArgoCDTest {
     }
 
     @Test
+    void 'No files for operator when operator is false'() {
+        createArgoCD().install()
+
+        def argocdConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH)
+        def rbacConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_RBAC_PATH)
+
+        assertThat(argocdConfigPath.toFile()).doesNotExist()
+        assertThat(rbacConfigPath.toFile()).doesNotExist()
+    }
+
+    @Test
     void 'Deploys with operator without OpenShift configuration'() {
         def argoCD = setupOperatorTest(openshift: false)
 
@@ -1180,18 +1194,18 @@ class ArgoCDTest {
     @Test
     void 'RBACs with operator using RbacDefinition outputs'() {
         config.application.namePrefix = "testPrefix-"
-        def argoCD = setupOperatorTest(openshift: false)
 
-        List<String> expectedNamespaces = [
+        LinkedHashSet<String> expectedNamespaces = [
                 "testPrefix-monitoring",
                 "testPrefix-secrets",
                 "testPrefix-ingress-nginx",
                 "testPrefix-example-apps-staging",
                 "testPrefix-example-apps-production"
         ]
-    // have to prepare activeNamespaces for unit-test, Application.groovy is setting this in integration way
-        config.application.activeNamespaces = expectedNamespaces
+        // have to prepare activeNamespaces for unit-test, Application.groovy is setting this in integration way
+        config.application.namespaces.dedicatedNamespaces = expectedNamespaces
 
+        def argoCD = setupOperatorTest(openshift: false)
         argoCD.install()
 
         File rbacPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_RBAC_PATH).toFile()
@@ -1231,7 +1245,6 @@ class ArgoCDTest {
             assertThat(roleRef["kind"]).isEqualTo("Role")
         }
     }
-
 
 
     @Test
@@ -1391,7 +1404,7 @@ class ArgoCDTest {
 
         argoCD.install()
 
-        config.application.activeNamespaces.each { namespace ->
+        config.application.namespaces.getActiveNamespaces().each { namespace ->
             k8sCommands.assertExecuted("kubectl create namespace ${namespace}")
         }
     }
@@ -1478,33 +1491,72 @@ class ArgoCDTest {
                 .doesNotExist()
     }
 
-
-    private ArgoCD setupOperatorTest(Map options = [:]) {
+    protected ArgoCD setupOperatorTest(Map options = [:]) {
         config.features.argocd.operator = true
         config.features.argocd.resourceInclusionsCluster = 'https://192.168.0.1:6443'
         config.application.openshift = options.openshift ?: false
 
         def argoCD = createArgoCD()
 
-        setupMockResponses()
+        if (config.multiTenant.useDedicatedInstance) {
+            config.content.examples ? setupMockResponsesFor(MockReponses.MULTI_TENANT_WITH_EXAMPLES) : setupMockResponsesFor(MockReponses.MULTI_TENANT)
+        } else {
+            setupMockResponsesFor(MockReponses.SINGLE_TENANT)
+        }
 
         return argoCD
     }
 
-    private void setupMockResponses() {
+    enum MockReponses {
+        SINGLE_TENANT,
+        MULTI_TENANT,
+        MULTI_TENANT_WITH_EXAMPLES
+    }
+
+    //Mock Responses for Testing
+    void setupMockResponsesFor(MockReponses mockReponses) {
+        switch (mockReponses) {
+            case MockReponses.SINGLE_TENANT -> {
+                k8sCommands.enqueueOutputs([
+                        queueUpAllNamespacesExist(),
+                        new CommandExecutor.Output('', '', 0), // Monitoring CRDs applied
+                        new CommandExecutor.Output('', '', 0), // ArgoCD Secret applied
+                        new CommandExecutor.Output('', '', 0), // Labeling ArgoCD Secret
+                        new CommandExecutor.Output('', '', 0), // ArgoCD operator YAML applied
+                        new CommandExecutor.Output('', 'Available', 0), // ArgoCD resource reached desired phase
+                ].flatten() as Queue<CommandExecutor.Output>)
+            }
+            case MockReponses.MULTI_TENANT_WITH_EXAMPLES -> mockReponseMultiTenant()
+            case MockReponses.MULTI_TENANT -> mockReponseMultiTenant()
+        }
+    }
+
+    void mockReponseMultiTenant() {
         k8sCommands.enqueueOutputs([
                 queueUpAllNamespacesExist(),
                 new CommandExecutor.Output('', '', 0), // Monitoring CRDs applied
-                new CommandExecutor.Output('', '', 0), // ArgoCD Secret applied
-                new CommandExecutor.Output('', '', 0), // Labeling ArgoCD Secret
+
+                new CommandExecutor.Output('', '', 0), // ArgoCD SCM Secret applied
+                new CommandExecutor.Output('', '', 0), // Labeling ArgoCD SCM Secret
+                new CommandExecutor.Output('', '', 0), // ArgoCD SCM central Secret applied
+                new CommandExecutor.Output('', '', 0), // Labeling ArgoCD central SCM Secret
+
                 new CommandExecutor.Output('', '', 0), // ArgoCD operator YAML applied
                 new CommandExecutor.Output('', 'Available', 0), // ArgoCD resource reached desired phase
+
+                new CommandExecutor.Output('', '', 0), // ArgoCD argocd-cluster password secret
+                new CommandExecutor.Output('', '', 0), // ArgoCD argocd-secret
+
+                new CommandExecutor.Output('', '', 0), // argocd-default-cluster-config patched
+                new CommandExecutor.Output('', '', 0), // ArgoCD argocd-secret
+                new CommandExecutor.Output('', 'dGVzdG5hbWVzcGFjZTEsdGVzdG5hbWVzcGFjZTI=', 0), // getting argocd-default-cluster-config from central Argocd
+                new CommandExecutor.Output('', '', 0), // setting argocd-default-cluster-config from central Argocd
         ].flatten() as Queue<CommandExecutor.Output>)
     }
 
     private void simulateNamespaceCreation() {
         Queue<CommandExecutor.Output> outputs = new LinkedList<CommandExecutor.Output>()
-        config.application.activeNamespaces.each { namespace ->
+        config.application.namespaces.getActiveNamespaces().each { namespace ->
             outputs.add(new CommandExecutor.Output("${namespace} not found", "", 1))
             outputs.add(new CommandExecutor.Output("${namespace} created", "", 0))
         }
@@ -1513,7 +1565,7 @@ class ArgoCDTest {
 
     private Queue<CommandExecutor.Output> queueUpAllNamespacesExist() {
         return new LinkedList<CommandExecutor.Output>(
-                config.application.activeNamespaces.collect { namespace -> new CommandExecutor.Output(namespace, "", 0) }
+                config.application.namespaces.getActiveNamespaces().collect { namespace -> new CommandExecutor.Output(namespace, "", 0) }
         )
     }
 
@@ -1526,11 +1578,14 @@ class ArgoCDTest {
         @Override
         protected initRepos() {
             super.initRepos()
-            
+
             argocdRepo = argocdRepoInitializationAction.repo
             actualHelmValuesFile = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), HELM_VALUES_PATH)
             clusterResourcesRepo = clusterResourcesInitializationAction.repo
-            
+            if (config.multiTenant.useDedicatedInstance) {
+                tenantBootstrap = tenantBootstrapInitializationAction.repo
+            }
+
             if (config.content.examples) {
                 exampleAppsRepo = exampleAppsInitializationAction.repo
                 nginxHelmJenkinsRepo = nginxHelmJenkinsInitializationAction.repo

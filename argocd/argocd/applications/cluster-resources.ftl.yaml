@@ -1,3 +1,4 @@
+<#assign centralScmmUrl = (config.multiTenant.centralScmUrl?string)!'' >
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -13,7 +14,11 @@ spec:
   project: argocd
   source:
     path: argocd/
+<#if config.multiTenant.useDedicatedInstance && scmm.centralScmmUrl?has_content>
+    repoURL: ${scmm.centralScmmUrl}/repo/${namePrefix}argocd/cluster-resources
+<#else>
     repoURL: ${scmm.repoUrl}argocd/cluster-resources<#if scmm.provider == "gitlab">.git</#if>
+</#if>
     targetRevision: main
     directory:
       recurse: true
