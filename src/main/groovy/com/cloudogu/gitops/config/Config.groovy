@@ -264,11 +264,10 @@ class Config {
 
     static class MultiTentantSchema {
 
-        String defaultMgmtRepoName='mgmt/multi-tenant-cluster-resources' //Central Namespace and Repo Name
 
         @Option(names = ['--central-management-repo'], description = CENTRAL_MGMT_REPO_DESCRIPTION)
         @JsonPropertyDescription(CENTRAL_MGMT_REPO_DESCRIPTION)
-        String centralMgmtRepo = ''
+        String centralSCM = ''
 
         @Option(names = ['--central-scmm-username'], description = CENTRAL_SCMM_USERNAME_DESCRIPTION)
         @JsonPropertyDescription(CENTRAL_SCMM_USERNAME_DESCRIPTION)
@@ -278,9 +277,6 @@ class Config {
         @JsonPropertyDescription(SCMM_PASSWORD_DESCRIPTION)
         String password = ''
 
-        @Option(names = ['--prefix-repo'], description = SCMM_PASSWORD_DESCRIPTION)
-        @JsonPropertyDescription(SCMM_PASSWORD_DESCRIPTION)
-        String repoPrefix = ''
     }
 
     static class ApplicationSchema {
