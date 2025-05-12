@@ -1,3 +1,4 @@
+<#assign centralScmmUrl = (config.multiTenant.centralScmUrl?string)!'' >
 # This is the root Applications, which manages all other applications with the app-of-apps-pattern.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -14,7 +15,11 @@ spec:
   project: argocd
   source:
     path: applications/
+<#if config.multiTenant.useDedicatedInstance && scmm.centralScmmUrl?has_content>
+    repoURL: ${scmm.centralScmmUrl}/repo/${namePrefix}argocd/argocd
+<#else>
     repoURL: ${scmm.repoUrl}argocd/argocd<#if scmm.provider == "gitlab">.git</#if>
+</#if>
     targetRevision: main
     directory:
       recurse: true
