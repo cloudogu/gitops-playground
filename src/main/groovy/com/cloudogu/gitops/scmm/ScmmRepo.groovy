@@ -32,15 +32,20 @@ class ScmmRepo {
     private String gitEmail
     private String rootPath
     private String scmProvider
+    private Boolean isCentralRepo
 
-    ScmmRepo(Config config, String scmmRepoTarget, FileSystemUtils fileSystemUtils) {
+    ScmmRepo(Config config, String scmmRepoTarget, FileSystemUtils fileSystemUtils, Boolean isCentralRepo = false) {
         def tmpDir = File.createTempDir()
         tmpDir.deleteOnExit()
         this.username = config.scmm.username
         this.password = config.scmm.password
-        this.scmmUrl = "${config.scmm.protocol}://${config.scmm.host}"
-        this.scmmRepoTarget = scmmRepoTarget.startsWith(NAMESPACE_3RD_PARTY_DEPENDENCIES) ? scmmRepoTarget :
+        this.isCentralRepo = isCentralRepo
+        //switching from normal scm path to the central path
+        this.scmmUrl = !this.isCentralRepo ? "${config.scmm.protocol}://${config.scmm.host}" : "${config.scmm.protocol}://${config.multiTenant.centralMgmtRepo}"
+
+        this.scmmRepoTarget = (scmmRepoTarget.startsWith(NAMESPACE_3RD_PARTY_DEPENDENCIES) || scmmRepoTarget.contains(config.multiTenant.defaultMgmtRepoName)) ? scmmRepoTarget :
                 "${config.application.namePrefix}${scmmRepoTarget}"
+
         this.absoluteLocalRepoTmpDir = tmpDir.absolutePath
         this.fileSystemUtils = fileSystemUtils
         this.insecure = config.application.insecure
@@ -196,5 +201,9 @@ class ScmmRepo {
 
     protected String getGitRepositoryUrl() {
         return "${scmmUrl}/${rootPath}/${scmmRepoTarget}"
+    }
+
+    public Boolean getIsCentralRepo(){
+        return this.isCentralRepo
     }
 }

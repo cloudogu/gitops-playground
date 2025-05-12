@@ -44,6 +44,12 @@ interface ConfigConstants {
     String SCM_ROOT_PATH_DESCRIPTION = 'Sets the root path for the Git Repositories. In SCM-Manager it is always "repo"'
     String SCM_PROVIDER_DESCRIPTION = 'Sets the scm Provider. Possible Options are "scm-manager" and "gitlab"'
 
+    //MutliTentant
+
+    String MULTITENANT_DESCRIPTION =   'Multi Tenant Configs'
+    String CENTRAL_MGMT_REPO_DESCRIPTION = 'URL for the centralized Management Repo'
+    String CENTRAL_SCMM_USERNAME_DESCRIPTION = 'CENTRAL SCMM USERNAME'
+    String CENTRAL_SCMM_PASSWORD_DESCRIPTION = 'CENTRAL SCMM Password'
     // group remote
     String REMOTE_DESCRIPTION = 'Expose services as LoadBalancers'
     String INSECURE_DESCRIPTION = 'Sets insecure-mode in cURL which skips cert validation'

@@ -18,6 +18,7 @@ class ApplicationConfigurator {
     Config initConfig(Config newConfig) {
 
         addAdditionalApplicationConfig(newConfig)
+        addNamePrefix(newConfig)
 
         addNamePrefix(newConfig)
 
@@ -34,6 +35,8 @@ class ApplicationConfigurator {
         evaluateBaseUrl(newConfig)
 
         setResourceInclusionsCluster(newConfig)
+
+        setMgmtConfig(newConfig)
 
         return newConfig
     }
@@ -110,17 +113,17 @@ class ApplicationConfigurator {
         } else {
             log.debug("Setting configs for internal SCM-Manager")
             // We use the K8s service as default name here, because it is the only option:
-            // "scmm.localhost" will not work inside the Pods and k3d-container IP + Port (e.g. 172.x.y.z:9091) 
+            // "scmm.localhost" will not work inside the Pods and k3d-container IP + Port (e.g. 172.x.y.z:9091)
             // will not work on Windows and MacOS.
             newConfig.scmm.urlForJenkins =
                     "http://scmm.${newConfig.application.namePrefix}scm-manager.svc.cluster.local/scm"
 
-            // More internal fields are set lazily in ScmManger.groovy (after SCMM is deployed and ports are known) 
+            // More internal fields are set lazily in ScmManger.groovy (after SCMM is deployed and ports are known)
         }
 
         // We probably could get rid of some of the complexity by refactoring url, host and ingress into a single var
         if (newConfig.application.baseUrl) {
-            newConfig.scmm.ingress = new URL(injectSubdomain('scmm',
+            newConfig.scmm.ingress = new URL(injectSubdomain("${newConfig.application.namePrefix}scmm",
                     newConfig.application.baseUrl as String, newConfig.application.urlSeparatorHyphen as Boolean)).host
         }
         // When specific user/pw are not set, set them to global values
@@ -146,7 +149,7 @@ class ApplicationConfigurator {
             // "jenkins.localhost" will not work inside the Pods and k3d-container IP + Port (e.g. 172.x.y.z:9090)
             // will not work on Windows and MacOS.
             newConfig.jenkins.urlForScmm = "http://jenkins.${newConfig.application.namePrefix}jenkins.svc.cluster.local"
-            
+
             // More internal fields are set lazily in Jenkins.groovy (after Jenkins is deployed and ports are known)
         }
 
@@ -161,6 +164,14 @@ class ApplicationConfigurator {
         if (newConfig.jenkins.password === Config.DEFAULT_ADMIN_PW) {
             newConfig.jenkins.password = newConfig.application.password
         }
+    }
+
+
+    static String generatePortFromPrefix(String prefix, int basePort = 10000, int maxPort = 65000) {
+        int hash = Math.abs(prefix.hashCode())
+
+        int port = basePort + (hash % (maxPort - basePort))
+        return port.toString()
     }
 
     private void evaluateBaseUrl(Config newConfig) {
@@ -203,6 +214,12 @@ class ApplicationConfigurator {
             newConfig.features.exampleApps.nginx.baseDomain =
                     new URL(injectSubdomain('nginx', baseUrl, urlSeparatorHyphen)).host
             log.debug("Setting Nginx URL ${newConfig.features.exampleApps.nginx.baseDomain}")
+        }
+    }
+
+    private void setMgmtConfig(Config newConfig) {
+        if (newConfig.multiTenant.centralMgmtRepo && !newConfig.application.namePrefix) {
+            throw new RuntimeException('To use Central Multi Tenant Repo define a NamePrefix.')
         }
     }
 
