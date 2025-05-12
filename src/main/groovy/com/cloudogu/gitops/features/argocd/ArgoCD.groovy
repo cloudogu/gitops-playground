@@ -63,10 +63,9 @@ class ArgoCD extends Feature {
 
         this.password = this.config.application.password
 
-        config.multiTenant.centralSCM
-        argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd', config.multiTenant.centralSCM ? true : false)
+        argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd', config.multiTenant.centralSCMUrl ? true : false)
 
-        clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources',config.multiTenant.centralSCM ? true : false)
+        clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources', config.multiTenant.centralSCMUrl ? true : false)
         gitRepos += clusterResourcesInitializationAction
 
         exampleAppsInitializationAction = createRepoInitializationAction('argocd/example-apps', 'argocd/example-apps')

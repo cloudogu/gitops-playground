@@ -100,7 +100,7 @@ class Config {
     }
 
     static class RegistrySchema {
-        Boolean internal = true
+        Boolean internal = false
         Boolean twoRegistries = false
 
         @Option(names = ['--internal-registry-port'], description = REGISTRY_INTERNAL_PORT_DESCRIPTION)
@@ -264,15 +264,15 @@ class Config {
     static class MultiTentantSchema {
 
 
-        @Option(names = ['--central-management-repo'], description = CENTRAL_MGMT_REPO_DESCRIPTION)
+        @Option(names = ['--central-scm-url'], description = CENTRAL_MGMT_REPO_DESCRIPTION)
         @JsonPropertyDescription(CENTRAL_MGMT_REPO_DESCRIPTION)
-        String centralSCM = ''
+        String centralSCMUrl = ''
 
-        @Option(names = ['--central-scmm-username'], description = CENTRAL_SCMM_USERNAME_DESCRIPTION)
+        @Option(names = ['--central-scm-username'], description = CENTRAL_SCMM_USERNAME_DESCRIPTION)
         @JsonPropertyDescription(CENTRAL_SCMM_USERNAME_DESCRIPTION)
         String username = ''
 
-        @Option(names = ['--central-scmm-password'], description = SCMM_PASSWORD_DESCRIPTION)
+        @Option(names = ['--central-scm-password'], description = SCMM_PASSWORD_DESCRIPTION)
         @JsonPropertyDescription(SCMM_PASSWORD_DESCRIPTION)
         String password = ''
 

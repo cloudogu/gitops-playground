@@ -73,7 +73,7 @@ class ScmManager extends Feature {
                     password: config.scmm.password,
                     helm    : config.scmm.helm,
                     nodePort: ApplicationConfigurator.generatePortFromPrefix(config.application.namePrefix),
-                    config : config
+                    config  : config
             ])
 
             def mergedMap = MapUtils.deepMerge(helmConfig.values, templatedMap)
@@ -123,6 +123,9 @@ class ScmManager extends Feature {
                 INSECURE                     : config.application.insecure,
                 SCM_ROOT_PATH                : config.scmm.rootPath,
                 SCM_PROVIDER                 : config.scmm.provider,
+                CENTRAL_SCM_URL              : config.multiTenant.centralSCMUrl,
+                CENTRAL_SCM_USERNAME         : config.multiTenant.username,
+                CENTRAL_SCM_PASSWORD         : config.multiTenant.password
         ])
     }
 
