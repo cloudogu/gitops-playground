@@ -2,6 +2,11 @@
 .run
 *.iml
 target
+
+#includes just the .sh files in local
+.scripts/local/**
+!scripts/local/**/*.sh
+
 # do not check in the workspace
 workspace/
 

@@ -21,7 +21,7 @@ class Role {
     }
 
     enum Variant {
-        ARGOCD("templates/kubernetes/rbac/argocd-role.ftl.yaml");
+        ARGOCD("templates/kubernetes/rbac/argocd-role.ftl.yaml")
 
         final String templatePath
 

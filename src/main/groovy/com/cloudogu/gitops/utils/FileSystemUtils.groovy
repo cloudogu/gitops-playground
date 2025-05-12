@@ -81,6 +81,20 @@ class FileSystemUtils {
         return foundLines
     }
 
+    static void deleteFile(String path) {
+        boolean successfullyDeleted = new File(path).delete()
+        if (!successfullyDeleted) {
+            log.warn("Faild to delete file ${path}")
+        }
+    }
+
+    static void deleteDir(String path) {
+        boolean successfullyDeleted = new File(path).deleteDir()
+        if (!successfullyDeleted) {
+            log.warn("Faild to delete dir ${path}")
+        }
+    }
+
     String goBackToDir(String filePath, String directory) {
         return filePath.substring(0, filePath.indexOf(directory) + directory.length())
     }
@@ -138,6 +152,27 @@ class FileSystemUtils {
             log.error("An error occured while copying directories: ", e)
         }
     }
+
+    void copyFile(String sourcePath, String destinationPath) {
+        File sourceFile = new File(sourcePath)
+        File destinationFile = new File(destinationPath)
+
+        log.debug("Copying file from ${sourcePath} to ${destinationPath}")
+
+        try {
+            File parentDir = destinationFile.getParentFile()
+            if (!parentDir.exists()) {
+                log.debug("Creating missing destination directories: ${parentDir}")
+                parentDir.mkdirs()
+            }
+
+            FileUtils.copyFile(sourceFile, destinationFile)
+            log.debug("File copy completed successfully.")
+        } catch (IOException e) {
+            log.error("An error occurred while copying the file: ", e)
+        }
+    }
+
 
     void createDirectory(String directory) {
         log.trace("Creating folder: " + directory)

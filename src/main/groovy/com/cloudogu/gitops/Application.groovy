@@ -37,26 +37,28 @@ class Application {
     }
 
     void setNamespaceListToConfig(Config config) {
-        Set<String> namespaces = new HashSet<>()
+        LinkedHashSet<String> dedicatedNamespaces = new LinkedHashSet<>()
+        LinkedHashSet<String> tenantNamespaces = new LinkedHashSet<>()
         def engine = new TemplatingEngine()
 
         config.content.namespaces.each { String ns ->
-            namespaces.add(engine.template(ns, [
-                    config              : config,
+            tenantNamespaces.add(engine.template(ns, [
+                    config : config,
                     // Allow for using static classes inside the templates
-                    statics             : new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels()
+                    statics: new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels()
             ]))
         }
-        config.content.namespaces = namespaces.toList()
+        config.content.namespaces = tenantNamespaces.toList()
 
         //iterates over all FeatureWithImages and gets their namespaces
-        namespaces.addAll(this.features
+        dedicatedNamespaces.addAll(this.features
                 .collect { it.activeNamespaceFromFeature }
                 .findAll { it }
                 .unique()
                 .collect { "${it}".toString() })
 
-        log.debug("Active namespaces retrieved: {}", namespaces);
-        config.application.activeNamespaces = namespaces.toList()
+        config.application.namespaces.dedicatedNamespaces = dedicatedNamespaces
+        config.application.namespaces.tenantNamespaces = tenantNamespaces
+        log.debug("Active namespaces retrieved: {}", config.application.namespaces.activeNamespaces)
     }
 }

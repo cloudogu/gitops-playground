@@ -14,16 +14,21 @@ class TestScmmRepoProvider extends ScmmRepoProvider {
     TestScmmRepoProvider(Config config, FileSystemUtils fileSystemUtils) {
         super(config, fileSystemUtils)
     }
+    @Override
+    ScmmRepo getRepo(String repoTarget){
+        return getRepo(repoTarget,false)
+    }
 
     @Override
-    ScmmRepo getRepo(String repoTarget) {
+    ScmmRepo getRepo(String repoTarget, Boolean centralRepo) {
         // Check if we already have a mock for this repo
-        if (repos.containsKey(repoTarget)) {
-            return repos[repoTarget]
+        ScmmRepo repo = repos[repoTarget]
+        // Check if we already have a mock for this repo
+        if (repo != null && repo.isCentralRepo == centralRepo) {
+            return repo
         }
 
-        ScmmRepo repo = new ScmmRepo(config, repoTarget, fileSystemUtils) {
-
+        ScmmRepo repoNew = new ScmmRepo(config, repoTarget, fileSystemUtils, centralRepo) {
             String remoteGitRepopUrl = ''
 
             @Override
@@ -38,7 +43,6 @@ class TestScmmRepoProvider extends ScmmRepoProvider {
                     remoteGitRepopUrl = 'file://' + tempDir.absolutePath
                 }
                 return remoteGitRepopUrl
-
             }
 
             @Override
@@ -58,14 +62,10 @@ class TestScmmRepoProvider extends ScmmRepoProvider {
                     fileSystemUtils.deleteFilesExcept(new File(absoluteLocalRepoTmpDir))
                     gitClone()
                 }
-
-
             }
-
         }
         // Create a spy to enable verification while keeping real behavior
-        ScmmRepo spyRepo = spy(repo)
-
+        ScmmRepo spyRepo = spy(repoNew)
         repos.put(repoTarget, spyRepo)
         return spyRepo
     }

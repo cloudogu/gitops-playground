@@ -63,6 +63,10 @@ class Config {
     @Mixin
     JenkinsSchema jenkins = new JenkinsSchema()
 
+    @JsonPropertyDescription(MULTITENANT_DESCRIPTION)
+    @Mixin
+    MultiTentantSchema multiTenant = new MultiTentantSchema()
+
     @JsonPropertyDescription(SCMM_DESCRIPTION)
     @Mixin
     ScmmSchema scmm = new ScmmSchema()
@@ -85,13 +89,12 @@ class Config {
     @JsonPropertyDescription(CONTENT_DESCRIPTION)
     @Mixin
     ContentSchema content = new ContentSchema()
-    
-    class ContentSchema {
 
+    static class ContentSchema {
         @Option(names = ['--content-examples'], description = CONTENT_EXAMPLES_DESCRIPTION)
         @JsonPropertyDescription(CONTENT_EXAMPLES_DESCRIPTION)
         Boolean examples = false
-        
+
         @JsonPropertyDescription(CONTENT_NAMESPACES_DESCRIPTION)
         List<String> namespaces = []
 
@@ -143,7 +146,6 @@ class Config {
         }
     }
 
-
     static class HelmConfig {
         @JsonPropertyDescription(HELM_CONFIG_CHART_DESCRIPTION)
         String chart = ''
@@ -165,7 +167,7 @@ class Config {
         @Option(names = ['--registry'], description = REGISTRY_ENABLE_DESCRIPTION)
         @JsonPropertyDescription(REGISTRY_ENABLE_DESCRIPTION)
         Boolean active = false
-        
+
         @Option(names = ['--internal-registry-port'], description = REGISTRY_INTERNAL_PORT_DESCRIPTION)
         @JsonPropertyDescription(REGISTRY_INTERNAL_PORT_DESCRIPTION)
         Integer internalPort = DEFAULT_REGISTRY_PORT
@@ -302,8 +304,12 @@ class Config {
 
            See ApplicationConfigurator.addScmmConfig() and the comment at jenkins.urlForScmm */
         String urlForJenkins = ''
-        @JsonIgnore String getHost() { return NetworkingUtils.getHost(url)}
-        @JsonIgnore String getProtocol() { return NetworkingUtils.getProtocol(url)}
+
+        @JsonIgnore
+        String getHost() { return NetworkingUtils.getHost(url) }
+
+        @JsonIgnore
+        String getProtocol() { return NetworkingUtils.getProtocol(url) }
         String ingress = ''
 
         @Option(names = ['--scmm-skip-restart'], description = SCMM_SKIP_RESTART_DESCRIPTION)
@@ -341,14 +347,39 @@ class Config {
         @Option(names = ['--scm-provider'], description = SCM_PROVIDER_DESCRIPTION)
         @JsonPropertyDescription(SCM_PROVIDER_DESCRIPTION)
         String provider = 'scm-manager'
+
+    }
+
+    static class MultiTentantSchema {
+
+        @Option(names = ['--dedicated-internal'], description = CENTRAL_SCM_INTERNAL_DESCRIPTION)
+        @JsonPropertyDescription(CENTRAL_SCM_INTERNAL_DESCRIPTION)
+        Boolean internal = false
+
+        @Option(names = ['--dedicated-instance'], description = CENTRAL_USEDEDICATED_DESCRIPTION)
+        @JsonPropertyDescription(CENTRAL_USEDEDICATED_DESCRIPTION)
+        Boolean useDedicatedInstance = false
+
+        @Option(names = ['--central-scm-url'], description = CENTRAL_MGMT_REPO_DESCRIPTION)
+        @JsonPropertyDescription(CENTRAL_MGMT_REPO_DESCRIPTION)
+        String centralScmUrl = ''
+
+        @Option(names = ['--central-scm-username'], description = CENTRAL_SCMM_USERNAME_DESCRIPTION)
+        @JsonPropertyDescription(CENTRAL_SCMM_USERNAME_DESCRIPTION)
+        String username = ''
+
+        @Option(names = ['--central-scm-password'], description = SCMM_PASSWORD_DESCRIPTION)
+        @JsonPropertyDescription(CENTRAL_SCMM_PASSWORD_DESCRIPTION)
+        String password = ''
     }
 
     static class ApplicationSchema {
         Boolean runningInsideK8s = false
         String namePrefixForEnvVars = ''
-        List<String> activeNamespaces = []
         String internalKubernetesApiUrl = ''
         String localHelmChartFolder = System.getenv('LOCAL_HELM_CHART_FOLDER')
+
+        NamespaceSchema namespaces = new NamespaceSchema()
 
         @Option(names = ['--config-file'], description = CONFIG_FILE_DESCRIPTION)
         String configFile = ''
@@ -440,6 +471,15 @@ class Config {
         @Option(names = ['--netpols'], description = NETPOLS_DESCRIPTION)
         @JsonPropertyDescription(NETPOLS_DESCRIPTION)
         Boolean netpols = false
+
+        static class NamespaceSchema {
+            LinkedHashSet<String> dedicatedNamespaces = new LinkedHashSet<>()
+            LinkedHashSet<String> tenantNamespaces = new LinkedHashSet<>()
+
+            LinkedHashSet<String> getActiveNamespaces() {
+                return new LinkedHashSet<>(dedicatedNamespaces + tenantNamespaces)
+            }
+        }
     }
 
     static class ImagesSchema {

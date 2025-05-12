@@ -49,7 +49,7 @@ class ApplicationTest {
                 .registerSingleton(config)
                 .getBean(Application)
         application.setNamespaceListToConfig(config)
-        assertThat(config.application.getActiveNamespaces()).containsExactlyInAnyOrderElementsOf(namespaceList)
+        assertThat(config.application.namespaces.getActiveNamespaces()).containsExactlyInAnyOrderElementsOf(namespaceList)
     }
     
     @Test
@@ -80,7 +80,7 @@ class ApplicationTest {
                 .registerSingleton(config)
                 .getBean(Application)
         application.setNamespaceListToConfig(config)
-        assertThat(config.application.getActiveNamespaces()).containsExactlyInAnyOrderElementsOf(namespaceList)
+        assertThat(config.application.namespaces.getActiveNamespaces()).containsExactlyInAnyOrderElementsOf(namespaceList)
     }
 
     @Test
@@ -93,7 +93,7 @@ class ApplicationTest {
                 .registerSingleton(config)
                 .getBean(Application)
         application.setNamespaceListToConfig(config)
-        assertThat(config.application.getActiveNamespaces()).containsAll([
+        assertThat(config.application.namespaces.getActiveNamespaces()).containsAll([
                 "example-apps-staging",
                 "example-apps-production",
         ])

@@ -69,6 +69,14 @@ interface ConfigConstants {
     String SCM_ROOT_PATH_DESCRIPTION = 'Sets the root path for the Git Repositories. In SCM-Manager it is always "repo"'
     String SCM_PROVIDER_DESCRIPTION = 'Sets the scm Provider. Possible Options are "scm-manager" and "gitlab"'
 
+    //MutliTentant
+    String CENTRAL_USEDEDICATED_DESCRIPTION = "Toggles the Dedicated Instances Mode"
+    String CENTRAL_SCM_INTERNAL_DESCRIPTION = 'SCM for Central Management is running on the same cluster, so k8s internal URLs can be used for access'
+    String MULTITENANT_DESCRIPTION =   'Multi Tenant Configs'
+    String CENTRAL_MGMT_REPO_DESCRIPTION = 'URL for the centralized Management Repo'
+    String CENTRAL_SCMM_USERNAME_DESCRIPTION = 'CENTRAL SCMM USERNAME'
+    String CENTRAL_SCMM_PASSWORD_DESCRIPTION = 'CENTRAL SCMM Password'
+
     // group remote
     String REMOTE_DESCRIPTION = 'Expose services as LoadBalancers'
     String INSECURE_DESCRIPTION = 'Sets insecure-mode in cURL which skips cert validation'

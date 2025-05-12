@@ -14,7 +14,7 @@ spec:
   project: example-apps
   source:
     path: apps/nginx-helm-umbrella
-    repoURL: ${scmm.baseUrl}/repo/${namePrefix}argocd/example-apps
+    repoURL: ${scmm.repoUrl}argocd/example-apps
     targetRevision: main
   syncPolicy:
     automated:
