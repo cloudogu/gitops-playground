@@ -72,7 +72,7 @@ class ArgoCD extends Feature {
     @Override
     void enable() {
         initRepos()
-        
+
         log.debug('Cloning Repositories')
 
         def petclinicInitAction = createRepoInitializationAction('applications/argocd/petclinic/plain-k8s', 'argocd/petclinic-plain')

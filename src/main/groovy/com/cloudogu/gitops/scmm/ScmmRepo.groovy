@@ -37,11 +37,12 @@ class ScmmRepo {
     ScmmRepo(Config config, String scmmRepoTarget, FileSystemUtils fileSystemUtils, Boolean isCentralRepo = false) {
         def tmpDir = File.createTempDir()
         tmpDir.deleteOnExit()
-        this.username = config.scmm.username
-        this.password = config.scmm.password
         this.isCentralRepo = isCentralRepo
+        this.username = !this.isCentralRepo ? config.scmm.username : config.multiTenant.username
+        this.password = !this.isCentralRepo ? config.scmm.password : config.multiTenant.password
+
         //switching from normal scm path to the central path
-        this.scmmUrl = !this.isCentralRepo ? "${config.scmm.protocol}://${config.scmm.host}" : "${config.scmm.protocol}://${config.multiTenant.centralSCM}"
+        this.scmmUrl = !this.isCentralRepo ? "${config.scmm.protocol}://${config.scmm.host}" : "${config.scmm.protocol}://${config.multiTenant.centralSCMUrl}"
 
         this.scmmRepoTarget = scmmRepoTarget.startsWith(NAMESPACE_3RD_PARTY_DEPENDENCIES) ? scmmRepoTarget :
                 "${config.application.namePrefix}${scmmRepoTarget}"
@@ -97,6 +98,10 @@ class ScmmRepo {
     }
 
     void copyDirectoryContents(String srcDir) {
+        if (!srcDir) {
+            println "Source directory is not defined. Nothing to copy?"
+            return
+        }
         log.debug("Initializing repo $scmmRepoTarget with content of folder $srcDir")
         String absoluteSrcDirLocation = srcDir
         if (!new File(absoluteSrcDirLocation).isAbsolute()) {
@@ -170,12 +175,13 @@ class ScmmRepo {
     }
 
     protected Git gitClone() {
-        Git.cloneRepository()
-                .setURI(getGitRepositoryUrl())
-                .setDirectory(new File(absoluteLocalRepoTmpDir))
-                .setNoCheckout(true)
-                .setCredentialsProvider(getCredentialProvider())
-                .call()
+            Git.cloneRepository()
+                    .setURI(getGitRepositoryUrl())
+                    .setDirectory(new File(absoluteLocalRepoTmpDir))
+                    .setNoCheckout(true)
+                    .setCredentialsProvider(getCredentialProvider())
+                    .call()
+
     }
 
     private CredentialsProvider getCredentialProvider() {
@@ -203,7 +209,7 @@ class ScmmRepo {
         return "${scmmUrl}/${rootPath}/${scmmRepoTarget}"
     }
 
-    public Boolean getIsCentralRepo(){
+    public Boolean getIsCentralRepo() {
         return this.isCentralRepo
     }
 }

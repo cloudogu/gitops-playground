@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
+import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.deployment.HelmStrategy
@@ -141,6 +142,9 @@ class ScmManager extends Feature {
                 INSECURE                     : config.application.insecure,
                 SCM_ROOT_PATH                : config.scmm.rootPath,
                 SCM_PROVIDER                 : config.scmm.provider,
+                CENTRAL_SCM_URL              : config.multiTenant.centralSCMUrl,
+                CENTRAL_SCM_USERNAME         : config.multiTenant.username,
+                CENTRAL_SCM_PASSWORD         : config.multiTenant.password
         ])
     }
 

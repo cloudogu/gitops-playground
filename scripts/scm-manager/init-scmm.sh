@@ -182,6 +182,11 @@ function configureScmmManager() {
 
   ### ArgoCD Repos
   if [[ $INSTALL_ARGOCD == true ]]; then
+
+   USE_CENTRAL_SCM=$([[ -n "${CENTRAL_SCM_URL// /}" ]] && echo true || echo false)
+
+
+  echo "Setting USE_CENTRAL_SCM  $USE_CENTRAL_SCM becuase $CENTRAL_SCM_URL"
     addRepo "${NAME_PREFIX}argocd" "nginx-helm-jenkins" "3rd Party app (NGINX) with helm, templated in Jenkins (gitops-build-lib)"
     setPermission "${NAME_PREFIX}argocd" "nginx-helm-jenkins" "${GITOPS_USERNAME}" "WRITE"
     
@@ -191,10 +196,10 @@ function configureScmmManager() {
     addRepo "${NAME_PREFIX}argocd" "petclinic-helm" "Java app with custom helm chart"
     setPermission "${NAME_PREFIX}argocd" "petclinic-helm" "${GITOPS_USERNAME}" "WRITE"
   
-    addRepo "${NAME_PREFIX}argocd" "argocd" "GitOps repo for administration of ArgoCD"
+    addRepo "${NAME_PREFIX}argocd" "argocd" "GitOps repo for administration of ArgoCD" "$USE_CENTRAL_SCM"
     setPermission "${NAME_PREFIX}argocd" "argocd" "${GITOPS_USERNAME}" "WRITE"
       
-    addRepo "${NAME_PREFIX}argocd" "cluster-resources" "GitOps repo for basic cluster-resources"
+    addRepo "${NAME_PREFIX}argocd" "cluster-resources" "GitOps repo for basic cluster-resources" "$USE_CENTRAL_SCM"
     setPermission "${NAME_PREFIX}argocd" "cluster-resources" "${GITOPS_USERNAME}" "WRITE"
     
     addRepo "${NAME_PREFIX}argocd" "example-apps" "GitOps repo for examples of end-user applications"
@@ -250,19 +255,32 @@ function addRepo() {
   NAMESPACE="${1}"
   NAME="${2}"
   DESCRIPTION="${3:-}"
-  
-  printf 'Adding Repo %s/%s ... ' "${1}" "${2}"
+  local PARAM="${4:-false}"
+  if [[ "${PARAM,,}" == "true" ]]; then
+    HOST="${CENTRAL_SCM_URL}"
+    USERNAME="${CENTRAL_SCM_USERNAME}"
+    PASSWORD="${CENTRAL_SCM_PASSWORD}"
+  else
+    HOST="${SCMM_HOST}"
+    USERNAME="${SCMM_USERNAME}"
+    PASSWORD="${SCMM_PASSWORD}"
+  fi
 
-  STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X POST -H "Content-Type: application/vnd.scmm-repository+json;v=2" \
+  printf 'Adding Repo %s/%s ... ' "${NAMESPACE}" "${NAME}"
+
+  STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X POST \
+    -H "Content-Type: application/vnd.scmm-repository+json;v=2" \
     --data "{\"name\":\"${NAME}\",\"namespace\":\"${NAMESPACE}\",\"type\":\"git\",\"description\":\"${DESCRIPTION}\",\"contextEntries\":{},\"_links\":{}}" \
-    "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/api/v2/repositories/?initialize=true") && EXIT_STATUS=$? || EXIT_STATUS=$?
-  if [ $EXIT_STATUS != 0 ]; then
+    "${SCMM_PROTOCOL}://${USERNAME}:${PASSWORD}@${HOST}/api/v2/repositories/?initialize=true") && EXIT_STATUS=$? || EXIT_STATUS=$?
+
+  if [ $EXIT_STATUS -ne 0 ]; then
     echo "Adding Repo failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
     exit $EXIT_STATUS
   fi
 
   printStatus "${STATUS}"
 }
+
 
 function setConfig() {
   printf 'Setting config'
