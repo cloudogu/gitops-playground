@@ -1,6 +1,5 @@
 package com.cloudogu.gitops.config
 
-
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.NetworkingUtils
 import groovy.util.logging.Slf4j
@@ -23,6 +22,7 @@ class ApplicationConfigurator {
     Config initConfig(Config newConfig) {
 
         addAdditionalApplicationConfig(newConfig)
+        addNamePrefix(newConfig)
 
         addNamePrefix(newConfig)
 
@@ -39,6 +39,8 @@ class ApplicationConfigurator {
         evaluateBaseUrl(newConfig)
 
         setResourceInclusionsCluster(newConfig)
+
+        setMgmtConfig(newConfig)
 
         return newConfig
     }
@@ -117,10 +119,9 @@ class ApplicationConfigurator {
             newConfig.scmm.url = networkingUtils.createUrl("scmm-scm-manager.${newConfig.application.namePrefix}scm-manager.svc.cluster.local", "80", "/scm")
         } else {
             log.debug("Setting internal configs for local single node cluster with internal scmm")
-            def port = fileSystemUtils.getLineFromFile(fileSystemUtils.getRootDir() + "/scm-manager/values.ftl.yaml", "nodePort:").findAll(/\d+/)*.toString().get(0)
+            // def port = fileSystemUtils.getLineFromFile(fileSystemUtils.getRootDir() + "/scm-manager/values.ftl.yaml", "nodePort:").findAll(/\d+/)*.toString().get(0)
             String clusterBindAddress = networkingUtils.findClusterBindAddress()
-            newConfig.scmm.url = networkingUtils.createUrl(clusterBindAddress, port, "/scm")
-            newConfig.scmm.urlForJenkins = "http://scmm-scm-manager.${newConfig.application.namePrefix}scm-manager.svc.cluster.local/scm"
+            newConfig.scmm.url = networkingUtils.createUrl(clusterBindAddress, generatePortFromPrefix(newConfig.application.namePrefix), "/scm")
         }
 
         String scmmUrl = newConfig.scmm.url
@@ -130,7 +131,7 @@ class ApplicationConfigurator {
 
         // We probably could get rid of some of the complexity by refactoring url, host and ingress into a single var
         if (newConfig.application.baseUrl) {
-            newConfig.scmm.ingress = new URL(injectSubdomain('scmm',
+            newConfig.scmm.ingress = new URL(injectSubdomain("${newConfig.application.namePrefix}scmm",
                     newConfig.application.baseUrl as String, newConfig.application.urlSeparatorHyphen as Boolean)).host
         }
         // When specific user/pw are not set, set them to global values
@@ -155,9 +156,9 @@ class ApplicationConfigurator {
             newConfig.jenkins.url = networkingUtils.createUrl("jenkins.${newConfig.application.namePrefix}jenkins.svc.cluster.local", "80")
         } else {
             log.debug("Setting jenkins configs for local single node cluster with internal jenkins")
-            def port = fileSystemUtils.getLineFromFile(fileSystemUtils.getRootDir() + "/jenkins/values.ftl.yaml", "nodePort:").findAll(/\d+/)*.toString().get(0)
+            //   def port = fileSystemUtils.getLineFromFile(fileSystemUtils.getRootDir() + "/jenkins/values.ftl.yaml", "nodePort:").findAll(/\d+/)*.toString().get(0)
             String clusterBindAddress = networkingUtils.findClusterBindAddress()
-            newConfig.jenkins.url = networkingUtils.createUrl(clusterBindAddress, port)
+            newConfig.jenkins.url = networkingUtils.createUrl(clusterBindAddress, generatePortFromPrefix(newConfig.application.namePrefix))
             newConfig.jenkins.urlForScmm = "http://jenkins.${newConfig.application.namePrefix}jenkins.svc.cluster.local"
         }
 
@@ -172,6 +173,14 @@ class ApplicationConfigurator {
         if (newConfig.jenkins.password === Config.DEFAULT_ADMIN_PW) {
             newConfig.jenkins.password = newConfig.application.password
         }
+    }
+
+
+    static String generatePortFromPrefix(String prefix, int basePort = 10000, int maxPort = 65000) {
+        int hash = Math.abs(prefix.hashCode())
+
+        int port = basePort + (hash % (maxPort - basePort))
+        return port.toString()
     }
 
     private void evaluateBaseUrl(Config newConfig) {
@@ -214,6 +223,12 @@ class ApplicationConfigurator {
             newConfig.features.exampleApps.nginx.baseDomain =
                     new URL(injectSubdomain('nginx', baseUrl, urlSeparatorHyphen)).host
             log.debug("Setting Nginx URL ${newConfig.features.exampleApps.nginx.baseDomain}")
+        }
+    }
+
+    private void setMgmtConfig(Config newConfig) {
+        if (newConfig.multiTenant.centralMgmtRepo && !newConfig.application.namePrefix) {
+            throw new RuntimeException('To use Central Multi Tenant Repo define a NamePrefix.')
         }
     }
 
