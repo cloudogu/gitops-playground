@@ -63,6 +63,10 @@ class Config {
     @Mixin
     JenkinsSchema jenkins = new JenkinsSchema()
 
+    @JsonPropertyDescription(MULTITENANT_DESCRIPTION)
+    @Mixin
+    MultiTentantSchema multiTenant = new MultiTentantSchema()
+
     @JsonPropertyDescription(SCMM_DESCRIPTION)
     @Mixin
     ScmmSchema scmm = new ScmmSchema()
@@ -107,7 +111,7 @@ class Config {
     }
 
     static class RegistrySchema {
-        Boolean internal = true
+        Boolean internal = false
         Boolean twoRegistries = false
 
         @Option(names = ['--registry'], description = REGISTRY_ENABLE_DESCRIPTION)
@@ -289,6 +293,28 @@ class Config {
         @Option(names = ['--scm-provider'], description = SCM_PROVIDER_DESCRIPTION)
         @JsonPropertyDescription(SCM_PROVIDER_DESCRIPTION)
         String provider = 'scm-manager'
+
+    }
+
+    static class MultiTentantSchema {
+
+        Boolean useDedicatedInstance= false
+
+        @Option(names = ['--central-scm-internal'], description = CENTRAL_SCM_INTERNAL_DESCRIPTION)
+        @JsonPropertyDescription(CENTRAL_SCM_INTERNAL_DESCRIPTION)
+        Boolean internal = true
+
+        @Option(names = ['--central-scm-url'], description = CENTRAL_MGMT_REPO_DESCRIPTION)
+        @JsonPropertyDescription(CENTRAL_MGMT_REPO_DESCRIPTION)
+        String centralScmUrl = ''
+
+        @Option(names = ['--central-scm-username'], description = CENTRAL_SCMM_USERNAME_DESCRIPTION)
+        @JsonPropertyDescription(CENTRAL_SCMM_USERNAME_DESCRIPTION)
+        String username = ''
+
+        @Option(names = ['--central-scm-password'], description = SCMM_PASSWORD_DESCRIPTION)
+        @JsonPropertyDescription(CENTRAL_SCMM_PASSWORD_DESCRIPTION)
+        String password = ''
     }
 
     static class ApplicationSchema {

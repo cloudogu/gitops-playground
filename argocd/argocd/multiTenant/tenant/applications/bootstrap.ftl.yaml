@@ -1,7 +1,8 @@
+# This is the root Applications, which manages all other applications with the app-of-apps-pattern.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: projects
+  name: bootstrap
   namespace: ${namePrefix}argocd
 # finalizer disabled, because otherwise everything under this Application would be deleted as well, if this Application is deleted by accident
 #  finalizers:
@@ -10,14 +11,10 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: ${namePrefix}argocd
-  project: argocd
+  project: default
   source:
-    path: projects/
-<#if config.multiTenant.centralSCMUrl?has_content>
-    repoURL: ${scmm.centralScmmUrl}/repo/${namePrefix}argocd/argocd
-<#else>
-    repoURL: ${scmm.repoUrl}argocd/argocd<#if scmm.provider == "gitlab">.git</#if>
-</#if>
+    path: argocd/
+    repoURL: ${scmm.repoUrl}argocd/argocd
     targetRevision: main
     directory:
       recurse: true

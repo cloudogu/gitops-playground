@@ -14,7 +14,11 @@ spec:
   project: argocd
   source:
     path: applications/
+<#if config.multiTenant.centralSCMUrl?has_content>
+    repoURL: ${scmm.centralScmmUrl}/repo/${namePrefix}argocd/argocd
+<#else>
     repoURL: ${scmm.repoUrl}argocd/argocd<#if scmm.provider == "gitlab">.git</#if>
+</#if>
     targetRevision: main
     directory:
       recurse: true

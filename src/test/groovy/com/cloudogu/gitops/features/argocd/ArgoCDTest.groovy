@@ -1,7 +1,6 @@
 package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.config.Config
-
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.utils.*
 import groovy.io.FileType
@@ -15,6 +14,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.stream.Collectors
 
+import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable
 import static org.assertj.core.api.Assertions.assertThat
 import static org.assertj.core.api.Assertions.fail
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode
@@ -32,7 +32,7 @@ class ArgoCDTest {
             yamllint   : 'yamllint-value'
     ]
     Config config = Config.fromMap(
-            application : [
+            application: [
                     openshift           : false,
                     remote              : false,
                     insecure            : false,
@@ -44,11 +44,11 @@ class ArgoCDTest {
                     gitEmail            : 'hello@cloudogu.com',
 
             ],
-            scmm        : [
+            scmm: [
                     internal: true,
-                    url: 'https://abc'
+                    url     : 'https://abc'
             ],
-            images      : buildImages + [petclinic: 'petclinic-value'],
+            images: buildImages + [petclinic: 'petclinic-value'],
             repositories: [
                     springBootHelmChart: [
                             url: 'https://github.com/cloudogu/spring-boot-helm-chart.git',
@@ -68,18 +68,18 @@ class ArgoCDTest {
             content: [
                     examples: true
             ],
-            features    : [
+            features: [
                     argocd      : [
-                            operator    : false,
-                            active      : true,
-                            configOnly  : true,
-                            emailFrom   : 'argocd@example.org',
-                            emailToUser : 'app-team@example.org',
-                            emailToAdmin: 'infra@example.org',
+                            operator                 : false,
+                            active                   : true,
+                            configOnly               : true,
+                            emailFrom                : 'argocd@example.org',
+                            emailToUser              : 'app-team@example.org',
+                            emailToAdmin             : 'infra@example.org',
                             resourceInclusionsCluster: ''
                     ],
                     mail        : [
-                            mailhog     : true,
+                            mailhog: true,
                     ],
                     monitoring  : [
                             active: true,
@@ -97,7 +97,7 @@ class ArgoCDTest {
                     ]
             ]
     )
-    
+
     CommandExecutorForTest k8sCommands = new CommandExecutorForTest()
     CommandExecutorForTest helmCommands = new CommandExecutorForTest()
     ScmmRepo argocdRepo
@@ -132,7 +132,7 @@ class ArgoCDTest {
 
         assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['crds']).isNull()
         assertThat(parseActualYaml(actualHelmValuesFile)['global']).isNull()
-        
+
         // check repoTemplateSecretName
         k8sCommands.assertExecuted('kubectl create secret generic argocd-repo-creds-scmm -n argocd')
         k8sCommands.assertExecuted('kubectl label secret argocd-repo-creds-scmm -n argocd')
@@ -165,7 +165,7 @@ class ArgoCDTest {
         def rbacConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_RBAC_PATH)
         assertThat(argocdConfigPath.toFile()).doesNotExist()
         assertThat(rbacConfigPath.toFile()).doesNotExist()
-        
+
         // Projects
         def clusterRessourcesYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/cluster-resources.yaml')
         assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains(
@@ -179,7 +179,7 @@ class ArgoCDTest {
         assertThat(argocdYaml['spec']['source']['directory']).isNull()
         assertThat(argocdYaml['spec']['source']['path']).isEqualTo('argocd/')
         // The other application files should be validated here as well!
-        
+
         // Content examples
         assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/example-apps.yaml')).exists()
         assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'applications/example-apps.yaml')).exists()
@@ -191,7 +191,7 @@ class ArgoCDTest {
 
         def argocd = createArgoCD()
         argocd.install()
-        
+
         assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/example-apps.yaml')).doesNotExist()
         assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'applications/example-apps.yaml')).doesNotExist()
     }
@@ -335,7 +335,7 @@ class ArgoCDTest {
                 parseActualYaml(actualHelmValuesFile)['argo-cd']['notifications']['notifiers']['service.email'] as String)
 
         assertThat(serviceEmail['host']).isEqualTo(config.features.mail.smtpAddress)
-        assertThat(serviceEmail['port'] ).isEqualTo(config.features.mail.smtpPort)
+        assertThat(serviceEmail['port']).isEqualTo(config.features.mail.smtpPort)
         // username and password are both linked to the k8s secret. Secrets will be created at runtime, in this test
         assertThat(serviceEmail['username']).isEqualTo('$email-username')
         assertThat(serviceEmail['password']).isEqualTo('$email-password')
@@ -674,6 +674,7 @@ class ArgoCDTest {
   tag: latest
 """)
     }
+
     @Test
     void 'Sets image pull secrets for nginx'() {
         config.registry.createImagePullSecrets = true
@@ -780,7 +781,7 @@ class ArgoCDTest {
     }
 
     @Test
-    void 'ArgoCD with active network policies'(){
+    void 'ArgoCD with active network policies'() {
         config.application.netpols = true
 
         createArgoCD().install()
@@ -792,6 +793,15 @@ class ArgoCDTest {
     }
 
     @Test
+    void 'ArgoCD uses central multi tenant scm for repos'() {
+        config.multiTenant.centralScmUrl = "scmm-central.localhost/scm/"
+        config.application.namePrefix = "foo-"
+        createArgoCD().install()
+        def argocdYaml = new YamlSlurper().parse(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'applications/argocd.yaml'))
+        assertThat(argocdYaml['spec']['source']['repoURL']).isEqualTo('scmm-central.localhost/scm/repo/foo-argocd/argocd')
+    }
+
+    @Test
     void 'set credentials for BuildImages'() {
         config.registry.twoRegistries = true
 
@@ -799,7 +809,6 @@ class ArgoCDTest {
 
         assertPetClinicRepos('ClusterIP', 'LoadBalancer', '')
     }
-
 
 
     private static Map parseBuildImagesMapFromString(String text) {
@@ -827,7 +836,7 @@ class ArgoCDTest {
 
             Binding binding = new Binding()
             binding.setVariable('dockerRegistryProxyCredentials', 'dockerRegistryProxyCredentials')
-            def map =  new GroovyShell(binding).evaluate(matchedText)
+            def map = new GroovyShell(binding).evaluate(matchedText)
 
             return map as Map
 
@@ -1158,6 +1167,34 @@ class ArgoCDTest {
     }
 
     @Test
+    void 'ArgoCD multi-tenant via operator mode template test'() {
+        config.multiTenant.centralScmUrl = "testcentralurl.localhost"
+        def argocd = setupOperatorTest()
+
+        argocd.install()
+
+        def argocdConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH)
+        def yamlText = argocdConfigPath.toFile().text
+        def parsed = new YamlSlurper().parseText(yamlText)
+        def repos = parsed.spec.initialRepositories
+
+        assertThat(repos.any {
+            it.name == 'tenantApp' && it.url == 'http://scmm-scm-manager.scm-manager.svc.cluster.local/scm/tenant/app'
+        }).isTrue()
+    }
+
+    @Test
+    void 'No files for operator when operator is false'() {
+        createArgoCD().install()
+
+        def argocdConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH)
+        def rbacConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_RBAC_PATH)
+
+        assertThat(argocdConfigPath.toFile()).doesNotExist()
+        assertThat(rbacConfigPath.toFile()).doesNotExist()
+    }
+
+    @Test
     void 'Deploys with operator without OpenShift configuration'() {
         def argoCD = setupOperatorTest(openshift: false)
 
@@ -1474,14 +1511,18 @@ class ArgoCDTest {
                 .doesNotExist()
     }
 
-    private ArgoCD setupOperatorTest(Map options = [:]) {
+    protected ArgoCD setupOperatorTest(Map options = [:]) {
         config.features.argocd.operator = true
         config.features.argocd.resourceInclusionsCluster = 'https://192.168.0.1:6443'
         config.application.openshift = options.openshift ?: false
 
         def argoCD = createArgoCD()
 
-        setupMockResponses()
+        if (config.multiTenant.centralScmUrl) {
+            setupMockResponsesForMultiTenant()
+        } else {
+            setupMockResponses()
+        }
 
         return argoCD
     }
@@ -1490,6 +1531,19 @@ class ArgoCDTest {
         k8sCommands.enqueueOutputs([
                 queueUpAllNamespacesExist(),
                 new CommandExecutor.Output('', '', 0), // Monitoring CRDs applied
+                new CommandExecutor.Output('', '', 0), // ArgoCD Secret applied
+                new CommandExecutor.Output('', '', 0), // Labeling ArgoCD Secret
+                new CommandExecutor.Output('', '', 0), // ArgoCD operator YAML applied
+                new CommandExecutor.Output('', 'Available', 0), // ArgoCD resource reached desired phase
+        ].flatten() as Queue<CommandExecutor.Output>)
+    }
+
+    private void setupMockResponsesForMultiTenant() {
+        k8sCommands.enqueueOutputs([
+                queueUpAllNamespacesExist(),
+                new CommandExecutor.Output('', '', 0), // Monitoring CRDs applied
+                new CommandExecutor.Output('', '', 0), // ArgoCD Secret applied
+                new CommandExecutor.Output('', '', 0), // Labeling ArgoCD Secret
                 new CommandExecutor.Output('', '', 0), // ArgoCD Secret applied
                 new CommandExecutor.Output('', '', 0), // Labeling ArgoCD Secret
                 new CommandExecutor.Output('', '', 0), // ArgoCD operator YAML applied
@@ -1525,11 +1579,11 @@ class ArgoCDTest {
         @Override
         protected initRepos() {
             super.initRepos()
-            
+
             argocdRepo = argocdRepoInitializationAction.repo
             actualHelmValuesFile = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), HELM_VALUES_PATH)
             clusterResourcesRepo = clusterResourcesInitializationAction.repo
-            
+
             if (config.content.examples) {
                 exampleAppsRepo = exampleAppsInitializationAction.repo
                 nginxHelmJenkinsRepo = nginxHelmJenkinsInitializationAction.repo

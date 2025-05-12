@@ -32,15 +32,21 @@ class ScmmRepo {
     private String gitEmail
     private String rootPath
     private String scmProvider
+    private Boolean isCentralRepo
 
-    ScmmRepo(Config config, String scmmRepoTarget, FileSystemUtils fileSystemUtils) {
+    ScmmRepo(Config config, String scmmRepoTarget, FileSystemUtils fileSystemUtils, Boolean isCentralRepo = false) {
         def tmpDir = File.createTempDir()
         tmpDir.deleteOnExit()
-        this.username = config.scmm.username
-        this.password = config.scmm.password
-        this.scmmUrl = "${config.scmm.protocol}://${config.scmm.host}"
+        this.isCentralRepo = isCentralRepo
+        this.username = !this.isCentralRepo ? config.scmm.username : config.multiTenant.username
+        this.password = !this.isCentralRepo ? config.scmm.password : config.multiTenant.password
+
+        //switching from normal scm path to the central path
+        this.scmmUrl = !this.isCentralRepo ? "${config.scmm.protocol}://${config.scmm.host}" : "${config.scmm.protocol}://${config.multiTenant.centralScmUrl}"
+
         this.scmmRepoTarget = scmmRepoTarget.startsWith(NAMESPACE_3RD_PARTY_DEPENDENCIES) ? scmmRepoTarget :
                 "${config.application.namePrefix}${scmmRepoTarget}"
+
         this.absoluteLocalRepoTmpDir = tmpDir.absolutePath
         this.fileSystemUtils = fileSystemUtils
         this.insecure = config.application.insecure
@@ -92,6 +98,11 @@ class ScmmRepo {
     }
 
     void copyDirectoryContents(String srcDir) {
+        if (!srcDir) {
+            println "Source directory is not defined. Nothing to copy?"
+            return
+        }
+
         log.debug("Initializing repo $scmmRepoTarget with content of folder $srcDir")
         String absoluteSrcDirLocation = srcDir
         if (!new File(absoluteSrcDirLocation).isAbsolute()) {
@@ -171,6 +182,7 @@ class ScmmRepo {
                 .setNoCheckout(true)
                 .setCredentialsProvider(getCredentialProvider())
                 .call()
+
     }
 
     private CredentialsProvider getCredentialProvider() {
@@ -197,4 +209,5 @@ class ScmmRepo {
     protected String getGitRepositoryUrl() {
         return "${scmmUrl}/${rootPath}/${scmmRepoTarget}"
     }
+
 }

@@ -10,7 +10,6 @@ import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 import jakarta.inject.Singleton
 import retrofit2.Response
-
 import java.nio.file.Path
 
 @Slf4j

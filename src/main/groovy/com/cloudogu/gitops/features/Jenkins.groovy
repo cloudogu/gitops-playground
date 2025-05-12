@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
+import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.deployment.HelmStrategy
@@ -91,6 +92,7 @@ class Jenkins extends Feature {
                     [
                             dockerGid: findDockerGid(),
                             config   : config,
+                            nodePort: ApplicationConfigurator.generatePortFromPrefix(config.application.namePrefix),
                             // Allow for using static classes inside the templates
                             statics  : new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build()
                                     .getStaticModels(),
