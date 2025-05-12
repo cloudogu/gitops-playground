@@ -2,7 +2,6 @@ package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
-
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import com.cloudogu.gitops.utils.*
@@ -64,9 +63,10 @@ class ArgoCD extends Feature {
 
         this.password = this.config.application.password
 
-        argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd')
+        config.multiTenant.centralSCM
+        argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd', config.multiTenant.centralSCM ? true : false)
 
-        clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources')
+        clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources',config.multiTenant.centralSCM ? true : false)
         gitRepos += clusterResourcesInitializationAction
 
         exampleAppsInitializationAction = createRepoInitializationAction('argocd/example-apps', 'argocd/example-apps')
@@ -396,6 +396,11 @@ class ArgoCD extends Feature {
     protected RepoInitializationAction createRepoInitializationAction(String localSrcDir, String scmmRepoTarget) {
         new RepoInitializationAction(config, repoProvider.getRepo(scmmRepoTarget), localSrcDir)
     }
+
+    protected RepoInitializationAction createRepoInitializationAction(String localSrcDir, String scmmRepoTarget, Boolean isCentralRepo) {
+        new RepoInitializationAction(config, repoProvider.getRepo(scmmRepoTarget, isCentralRepo), localSrcDir)
+    }
+
 
     private void replaceFileContentInYamls(File folder, String from, String to) {
         fileSystemUtils.getAllFilesFromDirectoryWithEnding(folder.absolutePath, ".yaml").forEach(file -> {

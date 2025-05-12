@@ -41,9 +41,9 @@ class ScmmRepo {
         this.password = config.scmm.password
         this.isCentralRepo = isCentralRepo
         //switching from normal scm path to the central path
-        this.scmmUrl = !this.isCentralRepo ? "${config.scmm.protocol}://${config.scmm.host}" : "${config.scmm.protocol}://${config.multiTenant.centralMgmtRepo}"
+        this.scmmUrl = !this.isCentralRepo ? "${config.scmm.protocol}://${config.scmm.host}" : "${config.scmm.protocol}://${config.multiTenant.centralSCM}"
 
-        this.scmmRepoTarget = (scmmRepoTarget.startsWith(NAMESPACE_3RD_PARTY_DEPENDENCIES) || scmmRepoTarget.contains(config.multiTenant.defaultMgmtRepoName)) ? scmmRepoTarget :
+        this.scmmRepoTarget = scmmRepoTarget.startsWith(NAMESPACE_3RD_PARTY_DEPENDENCIES) ? scmmRepoTarget :
                 "${config.application.namePrefix}${scmmRepoTarget}"
 
         this.absoluteLocalRepoTmpDir = tmpDir.absolutePath
@@ -71,7 +71,7 @@ class ScmmRepo {
         switch (config.scmm.provider) {
             case "scm-manager":
                 if (config.scmm.internal) {
-                    return "http://scmm-scm-manager.${config.application.namePrefix}scm-manager.svc.cluster.local/scm/${config.scmm.rootPath}/${config.multiTenant.repoPrefix}"
+                    return "http://scmm-scm-manager.${config.application.namePrefix}scm-manager.svc.cluster.local/scm/${config.scmm.rootPath}/"
                 }
                 return createScmmUrl(config) + "/${config.scmm.rootPath}/${config.application.namePrefix}"
             case "gitlab":

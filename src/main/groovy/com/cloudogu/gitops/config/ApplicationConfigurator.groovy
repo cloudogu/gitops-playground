@@ -227,7 +227,7 @@ class ApplicationConfigurator {
     }
 
     private void setMgmtConfig(Config newConfig) {
-        if (newConfig.multiTenant.centralMgmtRepo && !newConfig.application.namePrefix) {
+        if (newConfig.multiTenant.centralSCM && !newConfig.application.namePrefix) {
             throw new RuntimeException('To use Central Multi Tenant Repo define a NamePrefix.')
         }
     }
