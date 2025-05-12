@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
+import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.deployment.HelmStrategy
@@ -74,7 +75,9 @@ class ScmManager extends Feature {
                     remote  : config.application.remote,
                     username: config.scmm.username,
                     password: config.scmm.password,
-                    helm    : config.scmm.helm
+                    helm    : config.scmm.helm,
+                    nodePort: ApplicationConfigurator.generatePortFromPrefix(config.application.namePrefix),
+                    config : config
             ])
 
             def mergedMap = MapUtils.deepMerge(helmConfig.values, templatedMap)

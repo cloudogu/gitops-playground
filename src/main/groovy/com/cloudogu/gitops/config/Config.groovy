@@ -63,6 +63,10 @@ class Config {
     @Mixin
     JenkinsSchema jenkins = new JenkinsSchema()
 
+    @JsonPropertyDescription(MULTITENANT_DESCRIPTION)
+    @Mixin
+    MultiTentantSchema multiTenant = new MultiTentantSchema()
+
     @JsonPropertyDescription(SCMM_DESCRIPTION)
     @Mixin
     ScmmSchema scmm = new ScmmSchema()
@@ -255,6 +259,28 @@ class Config {
         @Option(names = ['--scm-provider'], description = SCM_PROVIDER_DESCRIPTION)
         @JsonPropertyDescription(SCM_PROVIDER_DESCRIPTION)
         String provider = 'scm-manager'
+
+    }
+
+    static class MultiTentantSchema {
+
+        String defaultMgmtRepoName='mgmt/multi-tenant-cluster-resources' //Central Namespace and Repo Name
+
+        @Option(names = ['--central-management-repo'], description = CENTRAL_MGMT_REPO_DESCRIPTION)
+        @JsonPropertyDescription(CENTRAL_MGMT_REPO_DESCRIPTION)
+        String centralMgmtRepo = ''
+
+        @Option(names = ['--central-scmm-username'], description = CENTRAL_SCMM_USERNAME_DESCRIPTION)
+        @JsonPropertyDescription(CENTRAL_SCMM_USERNAME_DESCRIPTION)
+        String username = ''
+
+        @Option(names = ['--central-scmm-password'], description = SCMM_PASSWORD_DESCRIPTION)
+        @JsonPropertyDescription(SCMM_PASSWORD_DESCRIPTION)
+        String password = ''
+
+        @Option(names = ['--prefix-repo'], description = SCMM_PASSWORD_DESCRIPTION)
+        @JsonPropertyDescription(SCMM_PASSWORD_DESCRIPTION)
+        String repoPrefix = ''
     }
 
     static class ApplicationSchema {
