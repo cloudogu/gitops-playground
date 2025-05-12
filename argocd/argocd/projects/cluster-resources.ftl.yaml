@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
-  name: cluster-resources
+  name: ${namePrefix}cluster-resources
   # In a real-world scenario these might to into a separate namespace
   namespace: ${namePrefix}argocd
   annotations:

@@ -21,7 +21,7 @@ spec:
       source:
         repoURL: http://scmm-scm-manager.scm-manager.svc.cluster.local/scm/repo/mgmt/multi-tenant-cluster-resources.git
         targetRevision: main
-        path: '{{ .path.path }}/argocd/projects'
+        path: '{{ .path.path }}/argocd/applications/bootstrap.yaml'
       destination:
         server: https://kubernetes.default.svc
         namespace: 'argocd-{{.path.basename}}'

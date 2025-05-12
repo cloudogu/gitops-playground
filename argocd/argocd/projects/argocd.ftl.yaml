@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
-  name: argocd
+  name: ${namePrefix}argocd
   namespace: ${namePrefix}argocd
   annotations:
 <#if mail.active?? && mail.active>
@@ -20,6 +20,9 @@ spec:
     - ${scmm.repoUrl}argocd/argocd<#if scmm.provider == "gitlab">.git</#if>
     - ${scmm.repoUrl}argocd/cluster-resources<#if scmm.provider == "gitlab">.git</#if>
     - ${scmm.repoUrl}argocd/example-apps<#if scmm.provider == "gitlab">.git</#if>
+    <#if allowMgmtRepo?? && allowMgmtRepo>
+    - ${scmm.repoUrl}mgmt/multi-tenant-cluster-resources<#if scmm.provider == "gitlab">.git</#if>
+    </#if>
   # Allow applications from all namespaces to use this project for now.
   sourceNamespaces:
     - '*'

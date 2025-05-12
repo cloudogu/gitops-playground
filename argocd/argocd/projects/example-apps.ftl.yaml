@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
-  name: example-apps
+  name: ${namePrefix}example-apps
   namespace: ${namePrefix}argocd
   annotations:
 <#if mail.active?? && mail.active>
