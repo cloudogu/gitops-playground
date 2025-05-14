@@ -196,7 +196,7 @@ class ApplicationConfigurator {
         boolean urlSeparatorHyphen = newConfig.application.urlSeparatorHyphen
 
         if (argocd.active && !argocd.url) {
-            argocd.url = injectSubdomain('argocd', baseUrl, urlSeparatorHyphen)
+            argocd.url = injectSubdomain("${newConfig.application.namePrefix}argocd", baseUrl, urlSeparatorHyphen)
             log.debug("Setting ArgoCD URL ${argocd.url}")
         }
         if (mail.mailhog && !mail.mailhogUrl) {

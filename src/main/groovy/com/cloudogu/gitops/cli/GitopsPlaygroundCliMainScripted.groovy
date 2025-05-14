@@ -17,9 +17,13 @@ import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.jenkins.*
 import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import com.cloudogu.gitops.utils.*
+import com.oracle.svm.core.annotate.Inject
 import groovy.util.logging.Slf4j
 import io.micronaut.context.ApplicationContext
+import jakarta.annotation.PostConstruct
 import jakarta.inject.Provider
+
+import java.beans.beancontext.BeanContext
 
 /**
  * Micronaut's dependency injection relies on statically compiled class files with seems incompatible with groovy 
@@ -63,9 +67,15 @@ class GitopsPlaygroundCliMainScripted {
                     return httpClientFactory.insecureSslContext()
                 }
             }
+            //SCM
             def httpClientScmm = retrofitFactory.okHttpClient(httpClientFactory.createLoggingInterceptor(), config, insecureSslContextProvider)
             def retrofit = retrofitFactory.retrofit(config, httpClientScmm)
             def repoApi = retrofitFactory.repositoryApi(retrofit)
+
+            def httpClientCentralScm = retrofitFactory.centralSCMHttpClient(httpClientFactory.createLoggingInterceptor(), config, insecureSslContextProvider)
+            def retrofitCentralSCM = retrofitFactory.retrofit(config, httpClientCentralScm)
+            def repoApiCentralSCM = retrofitFactory.repositoryApiCentralSCM(retrofitCentralSCM)
+
 
             def jenkinsConfiguration = new JenkinsConfigurationAdapter(config)
             JenkinsFactory jenkinsFactory = new JenkinsFactory(jenkinsConfiguration)

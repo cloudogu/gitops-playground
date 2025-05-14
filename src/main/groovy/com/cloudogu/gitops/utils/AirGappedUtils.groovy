@@ -6,10 +6,15 @@ import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import com.cloudogu.gitops.scmm.api.Permission
 import com.cloudogu.gitops.scmm.api.Repository
 import com.cloudogu.gitops.scmm.api.RepositoryApi
+import com.oracle.svm.core.annotate.Inject
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
+import jakarta.annotation.PostConstruct
+import jakarta.inject.Named
 import jakarta.inject.Singleton
 import retrofit2.Response
+
+import java.beans.beancontext.BeanContext
 import java.nio.file.Path
 
 @Slf4j
@@ -22,7 +27,7 @@ class AirGappedUtils {
     private FileSystemUtils fileSystemUtils
     private HelmClient helmClient
 
-    AirGappedUtils(Config config, ScmmRepoProvider repoProvider, RepositoryApi repositoryApi,
+    AirGappedUtils(Config config, ScmmRepoProvider repoProvider, @Named("scmm") RepositoryApi repositoryApi,
                    FileSystemUtils fileSystemUtils, HelmClient helmClient) {
         this.config = config
         this.repoProvider = repoProvider
