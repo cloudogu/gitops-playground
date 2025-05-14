@@ -20,9 +20,11 @@ import com.cloudogu.gitops.jenkins.UserManager
 import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import com.cloudogu.gitops.scmm.api.ScmmApiClient
 import com.cloudogu.gitops.utils.*
+import com.oracle.svm.core.annotate.Inject
 import groovy.util.logging.Slf4j
 import io.micronaut.context.ApplicationContext
-import jakarta.inject.Provider 
+import jakarta.inject.Provider
+
 /**
  * Micronaut's dependency injection relies on statically compiled class files with seems incompatible with groovy 
  * scripting/interpretation (without prior compilation).
@@ -85,7 +87,7 @@ class GitopsPlaygroundCliMainScripted {
 
                 def airGappedUtils = new AirGappedUtils(config, scmmRepoProvider, scmmApiClient, fileSystemUtils, helmClient)
                 def networkingUtils = new NetworkingUtils()
-                
+
                 context.registerSingleton(new Application(config, [
                         new Registry(config, fileSystemUtils, k8sClient, helmStrategy),
                         new ScmManager(config, executor, fileSystemUtils, helmStrategy, k8sClient, networkingUtils),
