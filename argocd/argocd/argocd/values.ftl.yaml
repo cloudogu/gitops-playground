@@ -65,7 +65,11 @@ argo-cd:
     repositories:
       argocd:
         name: argocd
+<#if scmm.centralScmmUrl?has_content>
+        url: ${scmm.centralScmmUrl}/repo/argocd/argocd
+<#else>
         url: ${scmm.repoUrl}argocd/argocd<#if scmm.provider == "gitlab">.git</#if>
+</#if>
         <#if isInsecure>insecure: "true"</#if>
       example-apps:
         name: example-apps
@@ -73,7 +77,11 @@ argo-cd:
         <#if isInsecure>insecure: "true"</#if>
       cluster-resources:
         name: cluster-resources
+<#if scmm.centralScmmUrl?has_content>
+        url: ${scmm.centralScmmUrl}/repo/argocd/cluster-resources
+<#else>
         url: ${scmm.repoUrl}argocd/cluster-resources<#if scmm.provider == "gitlab">.git</#if>
+</#if>
         <#if isInsecure>insecure: "true"</#if>
       nginx-helm-jenkins:
         name: nginx-helm-jenkins

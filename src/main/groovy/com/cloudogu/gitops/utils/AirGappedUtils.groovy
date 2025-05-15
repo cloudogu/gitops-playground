@@ -23,7 +23,6 @@ class AirGappedUtils {
     private HelmClient helmClient
 
     AirGappedUtils(Config config, ScmmRepoProvider repoProvider, ScmmApiClient scmmApiClient,
-    AirGappedUtils(Config config, ScmmRepoProvider repoProvider, @Named("scmm") RepositoryApi repositoryApi,
                    FileSystemUtils fileSystemUtils, HelmClient helmClient) {
         this.config = config
         this.repoProvider = repoProvider

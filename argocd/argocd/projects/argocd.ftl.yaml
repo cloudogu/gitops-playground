@@ -17,9 +17,15 @@ spec:
       kind: '*'
   # must be able to get all git repos because of the Applications pointing to other repos
   sourceRepos:
+<#if scmm.centralScmmUrl?has_content>
+    - ${scmm.centralScmmUrl}/repo/${namePrefix}argocd/argocd
+    - ${scmm.centralScmmUrl}/repo/${namePrefix}argocd/cluster-resources
+<#else>
     - ${scmm.repoUrl}argocd/argocd<#if scmm.provider == "gitlab">.git</#if>
     - ${scmm.repoUrl}argocd/cluster-resources<#if scmm.provider == "gitlab">.git</#if>
+</#if>
     - ${scmm.repoUrl}argocd/example-apps<#if scmm.provider == "gitlab">.git</#if>
+
   # Allow applications from all namespaces to use this project for now.
   sourceNamespaces:
     - '*'

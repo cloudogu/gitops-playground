@@ -121,7 +121,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
         }
 
         if (config.application.namespaceIsolation || config.application.netpols) {
-            ScmmRepo clusterResourcesRepo = scmmRepoProvider.getRepo('argocd/cluster-resources')
+            ScmmRepo clusterResourcesRepo = scmmRepoProvider.getRepo('argocd/cluster-resources',config.multiTenant.centralSCMUrl? true: false)
             clusterResourcesRepo.cloneRepo()
             for (String currentNamespace : config.application.activeNamespaces) {
 

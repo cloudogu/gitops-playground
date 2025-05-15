@@ -476,6 +476,15 @@ class ApplicationConfiguratorTest {
                 }
     }
 
+
+    @Test
+    void "MultiTenant Mode Central SCM Url"(){
+        testConfig.multiTenant.centralSCMUrl="scmm.localhost/scm"
+        testConfig.application.namePrefix="foo"
+        applicationConfigurator.initConfig(testConfig)
+        assertThat(testConfig.multiTenant.centralSCMUrl).toString() == "scmm.localhost/scm/"
+    }
+
     @Test
     void "should throw exception when Kubernetes ENV variables are not set and resourceInclusionsCluster is null"() {
         testConfig.features.argocd.operator = true

@@ -102,6 +102,7 @@ class ScmmRepo {
             println "Source directory is not defined. Nothing to copy?"
             return
         }
+
         log.debug("Initializing repo $scmmRepoTarget with content of folder $srcDir")
         String absoluteSrcDirLocation = srcDir
         if (!new File(absoluteSrcDirLocation).isAbsolute()) {
@@ -175,12 +176,12 @@ class ScmmRepo {
     }
 
     protected Git gitClone() {
-            Git.cloneRepository()
-                    .setURI(getGitRepositoryUrl())
-                    .setDirectory(new File(absoluteLocalRepoTmpDir))
-                    .setNoCheckout(true)
-                    .setCredentialsProvider(getCredentialProvider())
-                    .call()
+        Git.cloneRepository()
+                .setURI(getGitRepositoryUrl())
+                .setDirectory(new File(absoluteLocalRepoTmpDir))
+                .setNoCheckout(true)
+                .setCredentialsProvider(getCredentialProvider())
+                .call()
 
     }
 
@@ -209,7 +210,4 @@ class ScmmRepo {
         return "${scmmUrl}/${rootPath}/${scmmRepoTarget}"
     }
 
-    public Boolean getIsCentralRepo() {
-        return this.isCentralRepo
-    }
 }

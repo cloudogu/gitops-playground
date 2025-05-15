@@ -121,12 +121,13 @@ spec:
       enabled: ${isOpenshift?c}
     host: "${argocd.host}"
   initialRepositories: |
+<#if !(scmm.centralScmmUrl?has_content)>
     - name: argocd
       url: ${scmm.repoUrl}argocd/argocd<#if scmm.provider == "gitlab">.git</#if>
-    - name: example-apps
-      url: ${scmm.repoUrl}argocd/example-apps<#if scmm.provider == "gitlab">.git</#if>
     - name: cluster-resources
       url: ${scmm.repoUrl}argocd/cluster-resources<#if scmm.provider == "gitlab">.git</#if>
+    - name: example-apps
+      url: ${scmm.repoUrl}argocd/example-apps<#if scmm.provider == "gitlab">.git</#if>
     - name: nginx-helm-jenkins
       url: ${scmm.repoUrl}argocd/nginx-helm-jenkins<#if scmm.provider == "gitlab">.git</#if>
     - name: nginx-helm-umbrella
@@ -143,6 +144,13 @@ spec:
     - name: ingress-nginx
       type: helm
       url: https://kubernetes.github.io/ingress-nginx
+<#else>
+    - name: tenantApp
+      type: helm
+      url: ${scmm.centralScmmUrl}/tenant/app
+    - name: example-apps
+      url: ${scmm.centralScmmUrl}/argocd/example-apps
+</#if>
   resourceInclusions: |
     - apiGroups:
       - ""

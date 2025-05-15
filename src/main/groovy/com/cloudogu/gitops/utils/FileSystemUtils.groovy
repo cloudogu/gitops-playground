@@ -81,6 +81,20 @@ class FileSystemUtils {
         return foundLines
     }
 
+    static void deleteFile(String path) {
+        boolean successfullyDeleted = new File(path).delete()
+        if (!successfullyDeleted) {
+            log.warn("Faild to delete file ${path}")
+        }
+    }
+
+    static void deleteDir(String path) {
+        boolean successfullyDeleted = new File(path).deleteDir()
+        if (!successfullyDeleted) {
+            log.warn("Faild to delete dir ${path}")
+        }
+    }
+
     String goBackToDir(String filePath, String directory) {
         return filePath.substring(0, filePath.indexOf(directory) + directory.length())
     }
