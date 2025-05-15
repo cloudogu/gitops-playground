@@ -38,7 +38,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
         def namePrefix = config.application.namePrefix
         def shallCreateNamespace  = config.features['argocd']['operator'] ? "CreateNamespace=false" : "CreateNamespace=true"
 
-        ScmmRepo clusterResourcesRepo = scmmRepoProvider.getRepo('argocd/cluster-resources')
+        ScmmRepo clusterResourcesRepo = scmmRepoProvider.getRepo('argocd/cluster-resources',true)
         clusterResourcesRepo.cloneRepo()
 
         // Inline values from tmpHelmValues file into ArgoCD Application YAML

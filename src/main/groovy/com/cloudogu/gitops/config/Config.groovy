@@ -264,6 +264,9 @@ class Config {
 
     static class MultiTentantSchema {
 
+        @Option(names = ['--central-scm-internal'], description = CENTRAL_SCM_INTERNAL_DESCRIPTION)
+        @JsonPropertyDescription(CENTRAL_SCM_INTERNAL_DESCRIPTION)
+        Boolean internal = true
 
         @Option(names = ['--central-scm-url'], description = CENTRAL_MGMT_REPO_DESCRIPTION)
         @JsonPropertyDescription(CENTRAL_MGMT_REPO_DESCRIPTION)
@@ -274,7 +277,7 @@ class Config {
         String username = ''
 
         @Option(names = ['--central-scm-password'], description = SCMM_PASSWORD_DESCRIPTION)
-        @JsonPropertyDescription(SCMM_PASSWORD_DESCRIPTION)
+        @JsonPropertyDescription(CENTRAL_SCMM_PASSWORD_DESCRIPTION)
         String password = ''
 
     }

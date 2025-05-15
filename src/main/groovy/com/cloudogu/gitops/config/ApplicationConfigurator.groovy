@@ -36,7 +36,7 @@ class ApplicationConfigurator {
 
         setResourceInclusionsCluster(newConfig)
 
-        setMgmtConfig(newConfig)
+        setMultiTenantModeConfig(newConfig)
 
         return newConfig
     }
@@ -217,9 +217,19 @@ class ApplicationConfigurator {
         }
     }
 
-    private void setMgmtConfig(Config newConfig) {
-        if (newConfig.multiTenant.centralSCMUrl && !newConfig.application.namePrefix) {
-            throw new RuntimeException('To use Central Multi Tenant Repo define a NamePrefix.')
+    private void setMultiTenantModeConfig(Config newConfig) {
+        if (newConfig.multiTenant.centralSCMUrl) {
+            if (newConfig.multiTenant.centralSCMUrl && !newConfig.application.namePrefix) {
+                throw new RuntimeException('To enable Central Multi-Tenant mode, you must define a name prefix to distinguish between instances.')
+            }
+
+            if (newConfig.multiTenant.username && !newConfig.multiTenant.password) {
+                throw new RuntimeException('To use Central Multi Tenant mode define the username and password for the central SCM instance.')
+            }
+
+            newConfig.multiTenant.centralSCMUrl = newConfig.multiTenant.centralSCMUrl.trim().endsWith('/') ?
+                    newConfig.multiTenant.centralSCMUrl.trim() :
+                    newConfig.multiTenant.centralSCMUrl.trim() + ''
         }
     }
 

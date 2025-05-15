@@ -185,8 +185,6 @@ function configureScmmManager() {
 
    USE_CENTRAL_SCM=$([[ -n "${CENTRAL_SCM_URL// /}" ]] && echo true || echo false)
 
-
-  echo "Setting USE_CENTRAL_SCM  $USE_CENTRAL_SCM becuase $CENTRAL_SCM_URL"
     addRepo "${NAME_PREFIX}argocd" "nginx-helm-jenkins" "3rd Party app (NGINX) with helm, templated in Jenkins (gitops-build-lib)"
     setPermission "${NAME_PREFIX}argocd" "nginx-helm-jenkins" "${GITOPS_USERNAME}" "WRITE"
     
@@ -257,7 +255,7 @@ function addRepo() {
   DESCRIPTION="${3:-}"
   local PARAM="${4:-false}"
   if [[ "${PARAM,,}" == "true" ]]; then
-    HOST="${CENTRAL_SCM_URL}"
+    HOST=$(getHost "${CENTRAL_SCM_URL%/}")  # Remove trailing slash if present, we already got this in the api requests: /api
     USERNAME="${CENTRAL_SCM_USERNAME}"
     PASSWORD="${CENTRAL_SCM_PASSWORD}"
   else
@@ -399,11 +397,11 @@ function waitForScmManager() {
 
 function getHost() {
   local SCMM_URL="$1"
-  if [[ "${SCMM_URL}" == https://* ]]; then
-    echo "${SCMM_URL}" | cut -c 9-
-  elif [[ "${SCMM_URL}" == http://* ]]; then
-    echo "${SCMM_URL}" | cut -c 8-
-  fi
+
+  local CLEANED_URL="${SCMM_URL#http://}"
+  CLEANED_URL="${CLEANED_URL#https://}"
+
+  echo "${CLEANED_URL}"
 }
 
 function getProtocol() {

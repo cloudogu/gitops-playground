@@ -4,8 +4,10 @@ import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.scmm.ScmmRepoProvider
-import com.cloudogu.gitops.utils.*
-import freemarker.template.DefaultObjectWrapperBuilder
+import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.utils.HelmClient
+import com.cloudogu.gitops.utils.K8sClient
+import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
@@ -32,6 +34,7 @@ class ArgoCD extends Feature {
     private String password
 
     protected final String scmm_url_internal = "http://scmm-scm-manager.${config.application.namePrefix}scm-manager.svc.cluster.local/scm"
+    protected final String central_scm_url_internal = "http://scmm-scm-manager.scm-manager.svc.cluster.local/scm"
 
     protected RepoInitializationAction argocdRepoInitializationAction
     protected RepoInitializationAction clusterResourcesInitializationAction
@@ -108,9 +111,11 @@ class ArgoCD extends Feature {
     }
 
     protected initRepos() {
-        argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd')
+        Boolean isCentralRepo = config.multiTenant.centralSCMUrl ? true : false
 
-        clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources')
+        argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd', isCentralRepo)
+
+        clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources', isCentralRepo)
         gitRepos += clusterResourcesInitializationAction
 
         exampleAppsInitializationAction = createRepoInitializationAction('argocd/example-apps', 'argocd/example-apps')
@@ -150,15 +155,15 @@ class ArgoCD extends Feature {
 
         if (!config.features.secrets.active) {
             log.debug("Deleting unnecessary secrets folder from cluster resources: ${clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
-            deleteDir clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/misc/secrets'
+            FileSystemUtils.deleteDir clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/misc/secrets'
         }
 
         if (!config.features.monitoring.active) {
             log.debug("Deleting unnecessary monitoring folder from cluster resources: ${clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
-            deleteDir clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + MONITORING_RESOURCES_PATH
+            FileSystemUtils.deleteDir clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + MONITORING_RESOURCES_PATH
         } else if (!config.features.ingressNginx.active) {
-            deleteFile clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + MONITORING_RESOURCES_PATH + 'ingress-nginx-dashboard.yaml'
-            deleteFile clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + MONITORING_RESOURCES_PATH + 'ingress-nginx-dashboard-requests-handling.yaml'
+            FileSystemUtils.deleteFile clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + MONITORING_RESOURCES_PATH + 'ingress-nginx-dashboard.yaml'
+            FileSystemUtils.deleteFile clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + MONITORING_RESOURCES_PATH + 'ingress-nginx-dashboard-requests-handling.yaml'
         }
 
         if (!config.scmm.internal) {
@@ -176,8 +181,8 @@ class ArgoCD extends Feature {
     private void prepareApplicationNginxHelmJenkins() {
         if (!config.features.secrets.active) {
             // External Secrets are not needed in example
-            deleteFile nginxHelmJenkinsInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/k8s/staging/external-secret.yaml'
-            deleteFile nginxHelmJenkinsInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/k8s/production/external-secret.yaml'
+            FileSystemUtils.deleteFile nginxHelmJenkinsInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/k8s/staging/external-secret.yaml'
+            FileSystemUtils.deleteFile nginxHelmJenkinsInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/k8s/production/external-secret.yaml'
         }
     }
 
@@ -208,19 +213,7 @@ class ArgoCD extends Feature {
 
         createMonitoringCrd()
 
-        log.debug('Creating repo credential secret that is used by argocd to access repos in SCM-Manager')
-        // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo
-        def repoTemplateSecretName = 'argocd-repo-creds-scmm'
-
-        String scmmUrlForArgoCD = config.scmm.internal ? scmm_url_internal : ScmmRepo.createScmmUrl(config)
-        k8sClient.createSecret('generic', repoTemplateSecretName, namespace,
-                new Tuple2('url', scmmUrlForArgoCD),
-                new Tuple2('username', config.scmm.username),
-                new Tuple2('password', config.scmm.password)
-        )
-
-        k8sClient.label('secret', repoTemplateSecretName, namespace,
-                new Tuple2(' argocd.argoproj.io/secret-type', 'repo-creds'))
+        createSCMCredentialsSecret()
 
         if (config.features.mail.smtpUser || config.features.mail.smtpPassword) {
             k8sClient.createSecret(
@@ -303,14 +296,20 @@ class ArgoCD extends Feature {
         log.debug("Updating managed namespaces in ArgoCD configuration secret.")
         // The ArgoCD instance installed via an operator only manages its deployment namespace.
         // To manage additional namespaces, we need to update the 'argocd-default-cluster-config' secret with all managed namespaces.
-        def namespaceList = getNamespaceList()
+        def namespaceList = !config.multiTenant.centralSCMUrl ? getNamespaceList() : "${config.application.namePrefix}tenantapp".toList()
         k8sClient.patch('secret', 'argocd-default-cluster-config', namespace,
                 [stringData: ['namespaces': namespaceList.join(',')]])
 
+        // TODO: Skip applying RBAC configurations for cluster-scoped resources in multi-tenant mode.
+        // In multi-tenant setups, each tenant should only have access to their own application namespace.
         log.debug("Add RBAC permissions for ArgoCD in all managed namespaces.")
-        // Apply rbac yamls from operator/rbac folder
-        String argocdRbacPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), OPERATOR_RBAC_PATH)
-        k8sClient.applyYaml(argocdRbacPath)
+        if (!config.multiTenant.centralSCMUrl) {
+            log.debug("Add RBAC permissions for ArgoCD in all managed namespaces.")
+            // Apply rbac yamls from operator/rbac folder
+            String argocdRbacPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), OPERATOR_RBAC_PATH)
+            k8sClient.applyYaml(argocdRbacPath)
+        }
+
     }
 
     protected void createMonitoringCrd() {
@@ -335,20 +334,35 @@ class ArgoCD extends Feature {
         }
     }
 
+    protected void createSCMCredentialsSecret() {
+
+        log.debug('Creating repo credential secret that is used by argocd to access repos in SCM-Manager')
+        // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo
+        def repoTemplateSecretName = 'argocd-repo-creds-scmm'
+
+        String scmmUrlForArgoCD = config.scmm.internal ? scmm_url_internal : ScmmRepo.createScmmUrl(config)
+        k8sClient.createSecret('generic', repoTemplateSecretName, namespace,
+                new Tuple2('url', scmmUrlForArgoCD),
+                new Tuple2('username', config.scmm.username),
+                new Tuple2('password', config.scmm.password)
+        )
+
+        k8sClient.label('secret', repoTemplateSecretName, namespace,
+                new Tuple2(' argocd.argoproj.io/secret-type', 'repo-creds'))
+    }
+
     protected void prepareArgoCdRepo() {
-        String argocdConfigPath = this.config.features.argocd.operator ? OPERATOR_CONFIG_PATH : HELM_VALUES_PATH
-        def argocdConfigFile = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), argocdConfigPath)
 
         argocdRepoInitializationAction.initLocalRepo()
 
         if (config.features.argocd.operator) {
             log.debug("Deleting unnecessary argocd (argocd helm variant) folder from argocd repo: ${argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
-            deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/argocd'
+            FileSystemUtils.deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/argocd'
             log.debug("Deleting unnecessary namespaces resources from clusterResources repo: ${clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
-            deleteFile clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/misc/namespaces.yaml'
+            FileSystemUtils.deleteFile clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/misc/namespaces.yaml'
         } else {
             log.debug("Deleting unnecessary operator (argocd operator variant) folder from argocd repo: ${argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
-            deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/operator'
+            FileSystemUtils.deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/operator'
         }
 
         if (!config.scmm.internal) {
@@ -359,24 +373,10 @@ class ArgoCD extends Feature {
 
         if (!config.application.netpols) {
             log.debug("Deleting argocd netpols.")
-            deleteFile argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/argocd/templates/allow-namespaces.yaml'
+            FileSystemUtils.deleteFile argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/argocd/templates/allow-namespaces.yaml'
         }
 
         argocdRepoInitializationAction.repo.commitAndPush("Initial Commit")
-    }
-
-    private void deleteFile(String path) {
-        boolean successfullyDeleted = new File(path).delete()
-        if (!successfullyDeleted) {
-            log.warn("Faild to delete file ${path}")
-        }
-    }
-
-    private void deleteDir(String path) {
-        boolean successfullyDeleted = new File(path).deleteDir()
-        if (!successfullyDeleted) {
-            log.warn("Faild to delete dir ${path}")
-        }
     }
 
     protected RepoInitializationAction createRepoInitializationAction(String localSrcDir, String scmmRepoTarget) {
@@ -392,100 +392,5 @@ class ArgoCD extends Feature {
         fileSystemUtils.getAllFilesFromDirectoryWithEnding(folder.absolutePath, ".yaml").forEach(file -> {
             fileSystemUtils.replaceFileContent(file.absolutePath, from, to)
         })
-    }
-
-    static class RepoInitializationAction {
-        private ScmmRepo repo
-        private String copyFromDirectory
-        private Config config
-
-        RepoInitializationAction(Config config, ScmmRepo repo, String copyFromDirectory) {
-            this.config = config
-            this.repo = repo
-            this.copyFromDirectory = copyFromDirectory
-        }
-
-        /**
-         * Clone repo from SCM and initialize it with default basic files. Afterwards we can edit these files.
-         */
-        void initLocalRepo() {
-            repo.cloneRepo()
-            repo.copyDirectoryContents(copyFromDirectory)
-            replaceTemplates()
-        }
-
-        void replaceTemplates() {
-            repo.replaceTemplates(~/\.ftl/, [
-                    namePrefix          : config.application.namePrefix,
-                    namePrefixForEnvVars: config.application.namePrefixForEnvVars,
-                    podResources        : config.application.podResources,
-                    images              : config.images,
-                    nginxImage          : config.images.nginx ? DockerImageParser.parse(config.images.nginx) : null,
-                    isRemote            : config.application.remote,
-                    isInsecure          : config.application.insecure,
-                    isOpenshift         : config.application.openshift,
-                    urlSeparatorHyphen  : config.application.urlSeparatorHyphen,
-                    mirrorRepos         : config.application.mirrorRepos,
-                    skipCrds            : config.application.skipCrds,
-                    netpols             : config.application.netpols,
-                    argocd              : [
-                            // Note that passing the URL object here leads to problems in Graal Native image, see Git history
-                            host                     : config.features.argocd.url ? new URL(config.features.argocd.url).host : "",
-                            env                      : config.features.argocd.env,
-                            isOperator               : config.features.argocd.operator,
-                            emailFrom                : config.features.argocd.emailFrom,
-                            emailToUser              : config.features.argocd.emailToUser,
-                            emailToAdmin             : config.features.argocd.emailToAdmin,
-                            resourceInclusionsCluster: config.features.argocd.resourceInclusionsCluster
-                    ],
-                    registry            : [
-                            twoRegistries: config.registry.twoRegistries
-                    ],
-                    monitoring          : [
-                            grafana: [
-                                    url: config.features.monitoring.grafanaUrl ? new URL(config.features.monitoring.grafanaUrl) : null,
-                            ],
-                            active : config.features.monitoring.active
-                    ],
-                    mail                : [
-                            active      : config.features.mail.active,
-                            smtpAddress : config.features.mail.smtpAddress,
-                            smtpPort    : config.features.mail.smtpPort,
-                            smtpUser    : config.features.mail.smtpUser,
-                            smtpPassword: config.features.mail.smtpPassword
-                    ],
-                    secrets             : [
-                            active: config.features.secrets.active,
-                            vault : [
-                                    url: config.features.secrets.vault.url ? new URL(config.features.secrets.vault.url) : null,
-                            ],
-                    ],
-                    scmm                : [
-                            baseUrl : config.scmm.internal ? "http://scmm-scm-manager.${config.application.namePrefix}scm-manager.svc.cluster.local/scm" : ScmmRepo.createScmmUrl(config),
-                            host    : config.scmm.internal ? "http://scmm-scm-manager.${config.application.namePrefix}scm-manager.svc.cluster.local" : config.scmm.host,
-                            protocol: config.scmm.internal ? 'http' : config.scmm.protocol,
-                            repoUrl : ScmmRepo.createSCMBaseUrl(config),
-                            provider: config.scmm.provider
-                    ],
-                    jenkins             : [
-                            mavenCentralMirror: config.jenkins.mavenCentralMirror,
-                    ],
-                    exampleApps         : [
-                            petclinic: [
-                                    baseDomain: config.features.exampleApps.petclinic.baseDomain
-                            ],
-                            nginx    : [
-                                    baseDomain: config.features.exampleApps.nginx.baseDomain
-                            ],
-                    ],
-                    config              : config,
-                    // Allow for using static classes inside the templates
-                    statics             : new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
-            ])
-        }
-
-        ScmmRepo getRepo() {
-            return repo
-        }
     }
 }

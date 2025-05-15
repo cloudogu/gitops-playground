@@ -5,8 +5,6 @@ persistence:
 livenessProbe:
   initialDelaySeconds: 120
 
-nameOverride: ${config.application.namePrefix}
-
 extraEnv: |
     - name: SCM_WEBAPP_INITIALUSER
       value: "${username}"

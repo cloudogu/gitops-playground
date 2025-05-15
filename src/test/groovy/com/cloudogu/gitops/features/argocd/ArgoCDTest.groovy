@@ -789,6 +789,15 @@ class ArgoCDTest {
     }
 
     @Test
+    void 'ArgoCD uses central multi tenant scm for repos'(){
+        config.multiTenant.centralSCMUrl = "scmm-central.localhost/scm/"
+        config.application.namePrefix = "foo-"
+        createArgoCD().install()
+        def argocdYaml = new YamlSlurper().parse(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'applications/argocd.yaml'))
+        assertThat(argocdYaml['spec']['source']['repoURL']).isEqualTo('scmm-central.localhost/scm/repo/foo-argocd/argocd')
+    }
+
+    @Test
     void 'set credentials for BuildImages'() {
         config.registry.twoRegistries = true
 
@@ -1155,6 +1164,23 @@ class ArgoCDTest {
     }
 
     @Test
+    void 'ArgoCD multi-tenant via operator mode template test'() {
+        config.multiTenant.centralSCMUrl= "testcentralurl.localhost"
+        def argocd = setupOperatorTest()
+
+        argocd.install()
+
+        def argocdConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH)
+        def yamlText = argocdConfigPath.toFile().text
+        def parsed = new YamlSlurper().parseText(yamlText)
+        def repos = parsed.spec.initialRepositories
+
+        assertThat(repos.any {
+            it.name == 'tenantApp' && it.url == 'http://scmm-scm-manager.scm-manager.svc.cluster.local/scm/tenant/app'
+        }).isTrue()
+    }
+
+    @Test
     void 'No files for operator when operator is false'() {
         createArgoCD().install()
 
@@ -1348,7 +1374,11 @@ class ArgoCDTest {
 
         def argoCD = createArgoCD()
 
-        setupMockResponses()
+        if (config.multiTenant.centralSCMUrl) {
+            setupMockResponsesForMultiTenant()
+        } else {
+            setupMockResponses()
+        }
 
         return argoCD
     }
@@ -1357,6 +1387,19 @@ class ArgoCDTest {
         k8sCommands.enqueueOutputs([
                 queueUpAllNamespacesExist(),
                 new CommandExecutor.Output('', '', 0), // Monitoring CRDs applied
+                new CommandExecutor.Output('', '', 0), // ArgoCD Secret applied
+                new CommandExecutor.Output('', '', 0), // Labeling ArgoCD Secret
+                new CommandExecutor.Output('', '', 0), // ArgoCD operator YAML applied
+                new CommandExecutor.Output('', 'Available', 0), // ArgoCD resource reached desired phase
+        ].flatten() as Queue<CommandExecutor.Output>)
+    }
+
+    private void setupMockResponsesForMultiTenant() {
+        k8sCommands.enqueueOutputs([
+                queueUpAllNamespacesExist(),
+                new CommandExecutor.Output('', '', 0), // Monitoring CRDs applied
+                new CommandExecutor.Output('', '', 0), // ArgoCD Secret applied
+                new CommandExecutor.Output('', '', 0), // Labeling ArgoCD Secret
                 new CommandExecutor.Output('', '', 0), // ArgoCD Secret applied
                 new CommandExecutor.Output('', '', 0), // Labeling ArgoCD Secret
                 new CommandExecutor.Output('', '', 0), // ArgoCD operator YAML applied

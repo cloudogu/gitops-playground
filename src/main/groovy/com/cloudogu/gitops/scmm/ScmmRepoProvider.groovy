@@ -18,7 +18,7 @@ class ScmmRepoProvider {
         return new ScmmRepo(config ,repoTarget, fileSystemUtils)
     }
 
-    ScmmRepo getRepo(String repoTarget, Boolean centralized) {
-        return new ScmmRepo(config ,repoTarget, fileSystemUtils, centralized)
+    ScmmRepo getRepo(String repoTarget, Boolean isCentralRepo) {
+        return new ScmmRepo(config ,repoTarget, fileSystemUtils, isCentralRepo)
     }
 }
