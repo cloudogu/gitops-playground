@@ -59,7 +59,7 @@ argo-cd:
     # Repo credential templates are created dynamically in groovy, so they are not stored in git
     #credentialTemplates:
     #  scmm:
-    #    url: http://scmm-scm-manager.default.svc.cluster.local
+    #    url: http://scmm.default.svc.cluster.local
     #    username: gitops
     #    password: ...
     repositories:
