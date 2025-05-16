@@ -87,7 +87,7 @@ class CertManagerTest {
         assertThat(helmConfig.value.version).isEqualTo(chartVersion)
         // important check: repoUrl is overridden with our values.
         verify(deploymentStrategy).deployFeature(
-                'http://scmm-scm-manager.scm-manager.svc.cluster.local/scm/repo/a/b',
+                'http://scmm.scm-manager.svc.cluster.local/scm/repo/a/b',
                 'cert-manager', '.', chartVersion, 'cert-manager',
                 'cert-manager', temporaryYamlFile, DeploymentStrategy.RepoType.GIT)
     }

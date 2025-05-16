@@ -50,8 +50,8 @@ class GOPSmoketestsIT extends KubenetesApiTestSetup {
             println item.getMetadata().getName()
         }
         // invokes the CoreV1Api client
-        V1Pod scmmPod = list.getItems().findAll { it.getMetadata().getName().startsWith("scmm-scm-manager") }.get(0)
-        assertThat(scmmPod.getMetadata().getName()).startsWith("scmm-scm-manager")
+        V1Pod scmmPod = list.getItems().findAll { it.getMetadata().getName().startsWith("scmm") }.get(0)
+        assertThat(scmmPod.getMetadata().getName()).startsWith("scmm")
     }
 
     @Test

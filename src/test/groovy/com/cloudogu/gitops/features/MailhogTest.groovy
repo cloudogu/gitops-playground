@@ -183,7 +183,7 @@ class MailhogTest {
         assertThat(helmConfig.value.repoURL).isEqualTo('https://codecentric.github.io/helm-charts')
         assertThat(helmConfig.value.version).isEqualTo('5.0.1')
         verify(deploymentStrategy).deployFeature(
-                'http://scmm-scm-manager.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
+                'http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
                 'mailhog', '.', '1.2.3', 'foo-monitoring',
                 'mailhog', temporaryYamlFile, DeploymentStrategy.RepoType.GIT)
     }
