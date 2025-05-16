@@ -314,7 +314,7 @@ policies:
         assertThat(additionalScrapeConfigs[1]['scheme']).isEqualTo('https')
 
         // scrape config for scmm is unchanged
-        assertThat(((additionalScrapeConfigs[0]['static_configs'] as List)[0]['targets'] as List)[0]).isEqualTo('scmm-scm-manager.foo-scm-manager.svc.cluster.local')
+        assertThat(((additionalScrapeConfigs[0]['static_configs'] as List)[0]['targets'] as List)[0]).isEqualTo('scmm.foo-scm-manager.svc.cluster.local')
         assertThat(additionalScrapeConfigs[0]['scheme']).isEqualTo('http')
         assertThat(additionalScrapeConfigs[0]['metrics_path']).isEqualTo('/scm/api/v2/metrics/prometheus')
     }
@@ -537,7 +537,7 @@ policies:
         assertThat(helmConfig.value.repoURL).isEqualTo('https://prom')
         assertThat(helmConfig.value.version).isEqualTo('19.2.2')
         verify(deploymentStrategy).deployFeature(
-                'http://scmm-scm-manager.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
+                'http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
                 'prometheusstack', '.', '1.2.3', 'foo-monitoring',
                 'kube-prometheus-stack', temporaryYamlFilePrometheus, RepoType.GIT)
     }

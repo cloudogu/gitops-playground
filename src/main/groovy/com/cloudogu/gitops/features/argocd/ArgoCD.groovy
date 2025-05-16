@@ -32,7 +32,7 @@ class ArgoCD extends Feature {
 
     private String password
 
-    protected final String scmm_url_internal =  "http://scmm-scm-manager.${config.application.namePrefix}scm-manager.svc.cluster.local/scm"
+    protected final String scmm_url_internal =  "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm"
 
     protected RepoInitializationAction argocdRepoInitializationAction
     protected RepoInitializationAction clusterResourcesInitializationAction
@@ -336,9 +336,6 @@ class ArgoCD extends Feature {
     }
 
     protected void prepareArgoCdRepo() {
-        String argocdConfigPath = this.config.features.argocd.operator ? OPERATOR_CONFIG_PATH : HELM_VALUES_PATH
-        def argocdConfigFile = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), argocdConfigPath)
-
         argocdRepoInitializationAction.initLocalRepo()
 
         if (config.features.argocd.operator) {
@@ -456,8 +453,8 @@ class ArgoCD extends Feature {
                             ],
                     ],
                     scmm                : [
-                            baseUrl : config.scmm.internal ? "http://scmm-scm-manager.${config.application.namePrefix}scm-manager.svc.cluster.local/scm" : ScmmRepo.createScmmUrl(config),
-                            host    : config.scmm.internal ? "http://scmm-scm-manager.${config.application.namePrefix}scm-manager.svc.cluster.local" : config.scmm.host,
+                            baseUrl : config.scmm.internal ? "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm" : ScmmRepo.createScmmUrl(config),
+                            host    : config.scmm.internal ? "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local" : config.scmm.host,
                             protocol: config.scmm.internal ? 'http' : config.scmm.protocol,
                             repoUrl : ScmmRepo.createSCMBaseUrl(config),
                             provider: config.scmm.provider

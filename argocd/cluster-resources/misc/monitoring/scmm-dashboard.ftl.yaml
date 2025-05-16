@@ -5,7 +5,6 @@ metadata:
   namespace: ${namePrefix}monitoring
   labels:
     grafana_dashboard: "1"
-<#noparse>
 data:
   scmm-dashboard.json: |-
     {
@@ -3357,8 +3356,8 @@ data:
                   "allFormat": "glob",
                   "current": {
                       "selected": false,
-                      "text": "scmm-scm-manager.default.svc.cluster.local:80",
-                      "value": "scmm-scm-manager.default.svc.cluster.local:80"
+                      "text": "scmm.${config.application.namePrefix}scm-manager.svc.cluster.local:80",
+                      "value": "scmm.${config.application.namePrefix}scm-manager.svc.cluster.local:80"
                   },
                   "datasource": {
                       "type": "prometheus",
@@ -3519,4 +3518,3 @@ data:
       "version": 6,
       "weekStart": ""
     }
-</#noparse>

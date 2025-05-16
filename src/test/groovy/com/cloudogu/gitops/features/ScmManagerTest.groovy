@@ -96,7 +96,7 @@ class ScmManagerTest {
         assertThat(env['GIT_AUTHOR_EMAIL']).isEqualTo('hello@cloudogu.com')
         assertThat(env['GITOPS_USERNAME']).isEqualTo('foo-gitops')
         assertThat(env['TRACE']).isEqualTo('true')
-        assertThat(env['SCMM_URL']).isEqualTo('http://scmm-scm-manager.foo-scm-manager.svc.cluster.local:80/scm')
+        assertThat(env['SCMM_URL']).isEqualTo('http://scmm.foo-scm-manager.svc.cluster.local:80/scm')
         assertThat(env['SCMM_USERNAME']).isEqualTo('scmm-usr')
         assertThat(env['SCMM_PASSWORD']).isEqualTo('scmm-pw')
         assertThat(env['JENKINS_URL']).isEqualTo('http://jenkins')
@@ -150,7 +150,7 @@ class ScmManagerTest {
         config.application.runningInsideK8s = true
         
         createScmManager().install()
-        assertThat(config.scmm.url).isEqualTo("http://scmm-scm-manager.foo-scm-manager.svc.cluster.local:80/scm")
+        assertThat(config.scmm.url).isEqualTo("http://scmm.foo-scm-manager.svc.cluster.local:80/scm")
     }
 
     @Test

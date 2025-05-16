@@ -113,7 +113,7 @@ class ApplicationConfigurator {
             // "scmm.localhost" will not work inside the Pods and k3d-container IP + Port (e.g. 172.x.y.z:9091) 
             // will not work on Windows and MacOS.
             newConfig.scmm.urlForJenkins =
-                    "http://scmm-scm-manager.${newConfig.application.namePrefix}scm-manager.svc.cluster.local/scm"
+                    "http://scmm.${newConfig.application.namePrefix}scm-manager.svc.cluster.local/scm"
 
             // More internal fields are set lazily in ScmManger.groovy (after SCMM is deployed and ports are known) 
         }
