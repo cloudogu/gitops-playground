@@ -155,7 +155,7 @@ class Vault extends Feature implements FeatureWithImage {
 
     private URI getScmmUri() {
         if (config.scmm.internal) {
-            new URI("http://scmm-scm-manager.${config.application.namePrefix}scm-manager.svc.cluster.local/scm")
+            new URI("http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm")
         } else {
             new URI("${config.scmm.url}")
         }

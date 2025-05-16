@@ -108,7 +108,7 @@ class IngressNginxTest {
         assertThat(helmConfig.value.repoURL).isEqualTo('https://kubernetes.github.io/ingress-nginx')
         assertThat(helmConfig.value.version).isEqualTo('4.12.1')
         verify(deploymentStrategy).deployFeature(
-                'http://scmm-scm-manager.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
+                'http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
                 'ingress-nginx', '.', '1.2.3','foo-ingress-nginx',
                 'ingress-nginx', temporaryYamlFile, DeploymentStrategy.RepoType.GIT)
     }

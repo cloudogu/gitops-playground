@@ -3357,8 +3357,8 @@ data:
                   "allFormat": "glob",
                   "current": {
                       "selected": false,
-                      "text": "scmm-scm-manager.default.svc.cluster.local:80",
-                      "value": "scmm-scm-manager.default.svc.cluster.local:80"
+                      "text": "scmm.default.svc.cluster.local:80",
+                      "value": "scmm.default.svc.cluster.local:80"
                   },
                   "datasource": {
                       "type": "prometheus",

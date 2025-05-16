@@ -156,7 +156,7 @@ me:x:1000:''')
         config.application.trace = true
         config.features.argocd.active = true
         config.scmm.url = 'http://scmm'
-        config.scmm.urlForJenkins ='http://scmm-scm-manager/scm'
+        config.scmm.urlForJenkins ='http://scmm/scm'
         config.scmm.username = 'scmm-usr'
         config.scmm.password = 'scmm-pw'
         config.application.namePrefix = 'my-prefix-'
@@ -193,11 +193,11 @@ me:x:1000:''')
         assertThat(env['NAME_PREFIX']).isEqualTo('my-prefix-')
         assertThat(env['INSECURE']).isEqualTo('false')
 
-        assertThat(env['SCMM_URL']).isEqualTo('http://scmm-scm-manager/scm')
+        assertThat(env['SCMM_URL']).isEqualTo('http://scmm/scm')
         assertThat(env['SCMM_PASSWORD']).isEqualTo('scmm-pw')
         assertThat(env['INSTALL_ARGOCD']).isEqualTo('true')
 
-        verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_SCMM_URL', 'http://scmm-scm-manager/scm')
+        verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_SCMM_URL', 'http://scmm/scm')
         verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_K8S_VERSION', Config.K8S_VERSION)
 
         verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_URL', 'reg-url')
@@ -214,7 +214,7 @@ me:x:1000:''')
                 'my-prefix-gitops', 'scmm-pw', 'credentials for accessing scm-manager')
 
         verify(jobManger).startJob('my-prefix-example-apps')
-        verify(jobManger).createJob('my-prefix-example-apps', 'http://scmm-scm-manager/scm',
+        verify(jobManger).createJob('my-prefix-example-apps', 'http://scmm/scm',
                 "my-prefix-argocd", 'scmm-user')
 
         verify(jobManger).createCredential('my-prefix-example-apps', 'registry-user',
