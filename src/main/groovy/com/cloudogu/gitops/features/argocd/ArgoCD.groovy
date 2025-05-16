@@ -63,26 +63,18 @@ class ArgoCD extends Feature {
         this.fileSystemUtils = fileSystemUtils
 
         this.password = this.config.application.password
+    }
 
-        argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd')
+    @Override
+    boolean isEnabled() {
+        config.features.argocd.active
+    }
 
-        clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources')
-        gitRepos += clusterResourcesInitializationAction
-
-        exampleAppsInitializationAction = createRepoInitializationAction('argocd/example-apps', 'argocd/example-apps')
-        gitRepos += exampleAppsInitializationAction
-
-        nginxHelmJenkinsInitializationAction = createRepoInitializationAction('applications/argocd/nginx/helm-jenkins', 'argocd/nginx-helm-jenkins')
-        gitRepos += nginxHelmJenkinsInitializationAction
-
-        nginxValidationInitializationAction = createRepoInitializationAction('exercises/nginx-validation', 'exercises/nginx-validation')
-        gitRepos += nginxValidationInitializationAction
-
-        brokenApplicationInitializationAction = createRepoInitializationAction('exercises/broken-application', 'exercises/broken-application')
-        gitRepos += brokenApplicationInitializationAction
-
-        remotePetClinicRepoTmpDir = File.createTempDir('gitops-playground-petclinic')
-
+    @Override
+    void enable() {
+        initRepos()
+        
+        log.debug('Cloning Repositories')
 
         def petclinicInitAction = createRepoInitializationAction('applications/argocd/petclinic/plain-k8s', 'argocd/petclinic-plain')
         petClinicInitializationActions += petclinicInitAction
@@ -95,16 +87,7 @@ class ArgoCD extends Feature {
         petclinicInitAction = createRepoInitializationAction('exercises/petclinic-helm', 'exercises/petclinic-helm')
         petClinicInitializationActions += petclinicInitAction
         gitRepos += petclinicInitAction
-    }
-
-    @Override
-    boolean isEnabled() {
-        config.features.argocd.active
-    }
-
-    @Override
-    void enable() {
-        log.debug('Cloning Repositories')
+        
         cloneRemotePetclinicRepo()
 
         gitRepos.forEach(repoInitializationAction -> {
@@ -123,6 +106,27 @@ class ArgoCD extends Feature {
 
         log.debug('Installing Argo CD')
         installArgoCd()
+    }
+
+    protected initRepos() {
+        argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd')
+
+        clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources')
+        gitRepos += clusterResourcesInitializationAction
+
+        exampleAppsInitializationAction = createRepoInitializationAction('argocd/example-apps', 'argocd/example-apps')
+        gitRepos += exampleAppsInitializationAction
+
+        nginxHelmJenkinsInitializationAction = createRepoInitializationAction('applications/argocd/nginx/helm-jenkins', 'argocd/nginx-helm-jenkins')
+        gitRepos += nginxHelmJenkinsInitializationAction
+
+        nginxValidationInitializationAction = createRepoInitializationAction('exercises/nginx-validation', 'exercises/nginx-validation')
+        gitRepos += nginxValidationInitializationAction
+
+        brokenApplicationInitializationAction = createRepoInitializationAction('exercises/broken-application', 'exercises/broken-application')
+        gitRepos += brokenApplicationInitializationAction
+
+        remotePetClinicRepoTmpDir = File.createTempDir('gitops-playground-petclinic')
     }
 
     private void cloneRemotePetclinicRepo() {
@@ -285,13 +289,6 @@ class ArgoCD extends Feature {
         // This can take some time, so we wait for the status of the custom resource to become "Available"
         k8sClient.waitForResourcePhase("argocd", "argocd", namespace, "Available")
 
-        if (!config.application.openshift) {
-            // We need to patch the NodePrt of the Service, because the operator only supports setting type: NodePort but not the port itself
-            log.debug("Patching NodePorts for 'argocd-server' Service in namespace '{}' to HTTP: 9092 and HTTPS: 9093", namespace);
-            k8sClient.patchServiceNodePort("argocd-server", namespace, "http", 9092)
-            k8sClient.patchServiceNodePort("argocd-server", namespace, "https", 9093)
-        }
-
         log.debug("Setting new argocd admin password")
         // Set admin password imperatively here instead of operator/argocd.yaml, because we don't want it to show in git repo
         // The Operator uses an extra secret to store the admin Password, which is not bcrypted
@@ -358,17 +355,6 @@ class ArgoCD extends Feature {
             String externalScmmUrl = ScmmRepo.createScmmUrl(config)
             log.debug("Configuring all yaml files in argocd repo to use the external scmm url: ${externalScmmUrl}")
             replaceFileContentInYamls(new File(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()), scmm_url_internal, externalScmmUrl)
-        }
-
-        if (!config.application.remote) {
-            log.debug("Setting argocd service.type to NodePort since it is not running in a remote cluster")
-            fileSystemUtils.replaceFileContent(argocdConfigFile.toString(), "LoadBalancer", "NodePort")
-        }
-
-        if (config.features.argocd.url) {
-            log.debug('Setting argocd url for notifications')
-            fileSystemUtils.replaceFileContent(argocdConfigFile.toString(),
-                    "argocdUrl: https://localhost:9092", "argocdUrl: ${config.features.argocd.url}")
         }
 
         if (!config.application.netpols) {

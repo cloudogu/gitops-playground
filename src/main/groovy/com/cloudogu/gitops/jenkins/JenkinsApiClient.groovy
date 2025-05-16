@@ -1,36 +1,29 @@
 package com.cloudogu.gitops.jenkins
 
+import com.cloudogu.gitops.config.Config
 import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
+import jakarta.inject.Named
+import jakarta.inject.Singleton
 import okhttp3.*
 
 @Slf4j
-class ApiClient {
-    private String jenkinsUrl
-    private String username
-    private String password
+@Singleton
+class JenkinsApiClient {
+    private Config config
 
     private OkHttpClient client
 
-    private int maxRetries
-    private int waitPeriodInMs
-
     // Number of retries in uncommonly high, because we might have to  outlive a unexpected Jenkins restart
-    ApiClient(
-            String jenkinsUrl,
-            String username,
-            String password,
-            OkHttpClient client,
-            int retries = 180,
-            int waitPeriodInMs = 2000
+    private int maxRetries = 180
+    private int waitPeriodInMs = 2000
+
+    JenkinsApiClient(
+            Config config,
+            @Named("jenkins") OkHttpClient client
     ) {
         this.client = client
-        this.jenkinsUrl = jenkinsUrl
-        this.password = password
-        this.username = username
-
-        this.waitPeriodInMs = waitPeriodInMs
-        this.maxRetries = retries
+        this.config = config
     }
 
     String runScript(String code) {
@@ -79,8 +72,8 @@ class ApiClient {
 
     private Request.Builder buildRequest(String url) {
         return new Request.Builder()
-                .url("$jenkinsUrl/$url")
-                .header("Authorization", Credentials.basic(username, password))
+                .url("${config.jenkins.url}/$url")
+                .header("Authorization", Credentials.basic(config.jenkins.username, config.jenkins.password))
     }
 
     // We pass a closure, so that we actually refetch a new crumb for a failed request
@@ -104,4 +97,13 @@ class ApiClient {
         // Here in the ApiClient, we simply retry all 401 and 403 including fetching a new crumb
         return response.code() in [401, 403]
     }
+
+    protected  void setMaxRetries(int retries) {
+        this.maxRetries = retries
+    }
+    
+    protected setWaitPeriodInMs(int waitPeriodInMs) {
+        this.waitPeriodInMs = waitPeriodInMs
+    }
+
 }

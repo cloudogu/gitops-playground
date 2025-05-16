@@ -1,8 +1,9 @@
 # gitops-playground
 
-Creates a complete GitOps-based operational stack on your Kubernetes clusters:
+Creates a complete GitOps-based operational stack that can be used as an internal developer platform (IDP) on your 
+Kubernetes clusters:
 
-* Deployment: GitOps via Argo CD with a ready-to-use [repo structure](#argocd)
+* Deployment: GitOps via Argo CD with a ready-to-use [repo structure](#argo-cd)
 * Monitoring: [Prometheus and Grafana](#monitoring-tools)
 * Secrets Management:  [Vault and External Secrets Operator](#secrets-management-tools)
 * Notifications/Alerts: Grafana and ArgoCD can be predefined with either an external mailserver or [MailHog](https://github.com/mailhog/MailHog) for demo purposes.
@@ -96,10 +97,11 @@ We recommend running this command as an unprivileged user, that is inside the [d
 
 ## What is the GitOps Playground?
 
-The GitOps Playground provides a reproducible environment for setting up a GitOps-Stack.
+The GitOps Playground provides a reproducible environment for setting up a complete GitOps-based operational stack 
+that can be used as an internal developer platform (IDP) on your Kubernetes clusters.
 It provides an image for automatically setting up a Kubernetes Cluster including CI-server (Jenkins),
 source code management (SCM-Manager), Monitoring and Alerting (Prometheus, Grafana, MailHog), Secrets Management (Hashicorp
-Vault and External Secrets Operator) and of course Argo CD as GitOps operator.
+Vault and External Secrets Operator) and of course, Argo CD as GitOps operator.
 
 The playground also deploys a number of [example applications](#example-applications).
 
@@ -344,9 +346,10 @@ This config file is merged with precedence over the defaults set by
 
 ##### Deploy Ingresses
 
-It is possible to deploy `Ingress` objects for all components. You can either 
-* Set a common base url (`--base-url=https://example.com`) or
-* individual URLS: 
+It is possible to deploy `Ingress` objects for all components. You can either
+
+* set a common base url (`--base-url=https://example.com`) or
+* individual URLS:
 ```
 --argocd-url https://argocd.example.com 
 --grafana-url https://grafana.example.com 
@@ -359,13 +362,18 @@ It is possible to deploy `Ingress` objects for all components. You can either
 
 Note: 
 * `jenkins-url` and `scmm-url` are for external services and do not lead to ingresses, but you can set them via `--base-url` for now.
-* In order to make use of the `Ingress` you need an ingress controller. If your cluster does not provide one, the Playground can deploy one for you, via the [`--ingress-nginx` parameter](#deploy-ingress-controller).
+* In order to make use of the `Ingress` you need an ingress controller.
+  If your cluster does not provide one, the Playground can deploy one for you, via the [`--ingress-nginx` parameter](#deploy-ingress-controller).
+* For this to work, you need to set an `*.example.com` DNS record to the externalIP of the ingress controller.
+
+Alternatively, [hyphen-separated ingresses](#subdomains-vs-hyphen-separated-ingresses) can be created,
+like http://argocd-example.com
 
 ###### Subdomains vs hyphen-separated ingresses
 
 * By default, the ingresses are built as subdomains of `--base-url`.  
-* You can change this behaviour using the parameter `--url-separator-hyphen`.  
-* With this, hyphen are used instead of dots to separate application name from base URL.
+* You can change this behavior using the parameter `--url-separator-hyphen`.  
+* With this, hyphens are used instead of dots to separate application name from base URL.
 * Examples: 
   * `--base-url=https://xyz.example.org`: `argocd.xyz.example.org` (default)  
   * `--base-url=https://xyz.example.org`: `argocd-xyz.example.org` (`--url-separator-hyphen`)
@@ -495,6 +503,7 @@ Note that specifying a tag is mandatory.
 
 If you are using a remote cluster, you can set the `--argocd-url` parameter so that argocd-notification messages have a
 link to the corresponding application.
+Otherwise, `argocd.$base-url` is used.
 
 You can specify email addresses for notifications (note that by default, MailHog will not actually send emails)
 
@@ -548,7 +557,12 @@ In addition you should set matching sender and recipient email addresses, e.g. `
 
 Set the parameter `--vault=[dev|prod]` to enable deployment of secret management tools hashicorp vault and external
 secrets operator.
-See [Secrets management tools](#secrets-managment-tools) for details.
+
+`--vault-url` specifies domain name, Otherwise, `vault.$base-url` is used.
+
+
+
+See [Secrets management tools](#secrets-management-tools) for details.
 
 ##### Certificate Management
 Is implemented by cert-manager. 
@@ -663,59 +677,47 @@ docker run --rm -t --pull=always `
 
 ## Stack
 
-As described [above](#what-is-the-gitops-playground) the GitOps playground comes with a number of applications. Some of
-them can be accessed via web.
-* Jenkins
-* SCM-Manager
+As described [above](#what-is-the-gitops-playground) the GitOps playground creates a complete GitOps-based operational
+stack that can be used as an internal developer platform (IDP) on your Kubernetes cluster.
+
+The stack is composed of multiple applications, where some of them can be accessed via a web UI.
 * Argo CD
 * Prometheus/Grafana
+* Jenkins
+* SCM-Manager
 * Vault
-* Example applications for each GitOps operator, some with staging and production environments.
+* Ingress-nginx
+* Cert-Manager
 
-The URLs of the applications depend on the environment the playground is deployed to.
-The following lists all applications and how to find out their respective URLs for a GitOps playground being deployed to
-local or remote cluster.
+In addition, there are example applications that provide a turnkey solution for GitOps-Pipelines from a developer's
+point of view.
+See [Example Applications](#example-applications).
 
-For remote clusters you need the external IP, no need to specify the port (everything running on port 80).
-Basically, you can get the IP address as follows:
+We recommend using the `--ingress-nginx` and `--base-url` Parameters.
+With these, the applications are made available as subdomains of `base-url`.
 
-```shell
-kubectl -n "${namespace}" get svc "${serviceName}" \
-  --template="{{range .status.loadBalancer.ingress}}{{.ip}}{{end}}"
-```
+For example, `--base-url=http://localhost` leads to `
+* http://argocd.localhost
+* http://grafana.localhost
+* http://jenkins.localhost
+* http://scmm.localhost
+* http://vault.localhost
 
-There is also a convenience script `scripts/get-remote-url`. The script waits, if externalIP is not present, yet.
-You could use this conveniently like so:
-```shell
-bash <(curl -s \
-  https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/get-remote-url) \
-  jenkins default
-```
+Of course, this would also work for production instances with proper domains, see [Deploy Ingresses](#deploy-ingresses).
 
-You can open the application in the browser right away, like so for example:
-
-```shell
-xdg-open $(bash <(curl -s \
-  https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/get-remote-url) \
-   jenkins default)
-```
+All applications are deployed via GitOps and can be found in the `cluster-resources` repository.
+See [Argo CD](#argo-cd) for more details on the repository structure.
 
 ### Credentials
 
 If deployed within the cluster, all applications can be accessed via: `admin/admin`
 
 Note that you can change (and should for a remote cluster!) the password with the `--password` argument.
-There also is a `--username` parameter, which is ignored for argocd. That is, for now argos username ist always `admin`.
+There also is a `--username` parameter, which is ignored for argocd. That is, for now Argo CD's username always is `admin`.
 
 ### Argo CD
 
-Argo CD's web UI is available at
-
-* http://localhost:9092 (k3d)
-* `scripts/get-remote-url argocd-server argocd` (remote k8s)
-* `--argocd-url` to specify domain name
-
-Argo CD is installed in a production-ready way, that allows for operating Argo CD with Argo CD, using GitOps and
+Argo CD is installed in a production-ready way that allows for operating Argo CD with Argo CD, using GitOps and
 providing a [repo per team pattern](https://github.com/cloudogu/gitops-patterns/tree/8e1056f#repo-per-team).
 
 When installing the GitOps playground, the following steps are performed to bootstrap Argo CD:
@@ -728,7 +730,7 @@ When installing the GitOps playground, the following steps are performed to boot
 * Two resources are applied imperatively to the cluster: an `AppProject` called `argocd` and an `Application` called
   `bootstrap`. These are also contained within the `argocd` repository.
 
-From there everything is managed via GitOps. This diagram shows how it works.
+From there, everything is managed via GitOps. This diagram shows how it works.
 
 ![](docs/argocd-repos.svg)
 
@@ -820,17 +822,10 @@ Here are some thoughts why we deem it not a good fit for production:
 The playground installs cluster-resources (like prometheus, grafana, vault, external secrets operator, etc.) via the repo  
 `argocd/cluster-resources`. See [ADR](docs/architecture-decision-records.md#deploying-cluster-resources-with-argo-cd-using-inline-yaml) for more details.
 
-When installing without Argo CD, the tools are installed using helm imperatively, we fall back to using imperative 
-helm installation as a kind of neutral ground.
+When installing without Argo CD, the tools are installed using helm imperatively.
+We fall back to using imperative helm installation as a kind of neutral ground.
 
 ### Jenkins
-
-Jenkins is available at
-
-* http://localhost:9090 (k3d)
-* `scripts/get-remote-url jenkins default` (remote k8s)
-
-###### External Jenkins
 
 You can set an external jenkins server via the following parameters when applying the playground.
 See [parameters](#additional-parameters) for examples.
@@ -839,25 +834,18 @@ See [parameters](#additional-parameters) for examples.
 * `--jenkins-username`,
 * `--jenkins-password`
 
-To apply additional global environments for jenkins you can use `--jenkins-additional-envs "KEY1=value1,KEY2=value2"` parameter.
-
-Note that the [example applications](#example-applications) pipelines will only run on a Jenkins that uses agents that provide
-a docker host. That is, Jenkins must be able to run e.g. `docker ps` successfully on the agent.
-
 The user has to have the following privileges:
 * install plugins
 * set credentials
 * create jobs
 * restarting
 
+To apply additional global environments for jenkins you can use `--jenkins-additional-envs "KEY1=value1,KEY2=value2"` parameter.
+
+Note that the [example applications](#example-applications) pipelines will only run on a Jenkins that uses agents that provide
+a docker host. That is, Jenkins must be able to run e.g. `docker ps` successfully on the agent.
+
 ### SCM-Manager
-
-SCM-Manager is available at
-
-* http://localhost:9091 (k3d)
-* `scripts/get-remote-url scmm-scm-manager default` (remote k8s)
-
-###### External SCM-Manager
 
 You can set an external SCM-Manager via the following parameters when applying the playground.
 See [Parameters](#additional-parameters) for examples.
@@ -884,18 +872,9 @@ is being deployed including dashboards for
 - SCMManager
 - Jenkins.
 
-This leads to the following tools to be exposed:
-
-* Mailhog
-    * http://localhost:9094 (k3d)
-    * `scripts/get-remote-url mailhog monitoring` (remote k8s)
-    * `--mailhog-url` to specify domain name
-* Grafana
-    * http://localhost:9095 (k3d)
-    * `scripts/get-remote-url kube-prometheus-stack-grafana monitoring` (remote k8s)
-    * `--grafana-url` to specify domain name
 
 Grafana can be used to query and visualize metrics via prometheus.
+It is exposed via ingress, e.g. http://grafana.localhost.
 Prometheus is not exposed by default.
 
 In addition, argocd-notifications is set up. Applications deployed with Argo CD now will alert via email to mailhog
@@ -936,16 +915,6 @@ For testing you can set the parameter `--vault=dev` to deploy vault in developme
 The secrets are then picked up by the `vault-backend` `SecretStore`s (connects External Secrets Operator with Vault) in
 the namespace `argocd-staging` and `argocd-production` namespaces
 
-You can reach the vault UI on
-* http://localhost:8200 (k3d)
-* `scripts/get-remote-url vault-ui secrets` (remote k8s)
-* `--vault-url` to specify domain name
-* You can log in vie the user account mentioned above.  
-  If necessary, the root token can be found on the log:
-  ```shell
-  kubectl logs -n secrets vault-0 | grep 'Root Token'
-  ```
-
 #### prod mode
 
 When using `vault=prod` you'll have to initialize vault manually but on the other hand it will persist changes.
@@ -960,17 +929,17 @@ If you want the example app to work, you'll have to manually
 
 With vault in `dev` mode and ArgoCD enabled, the example app `applications/nginx/argocd/helm-jenkins` will be deployed
 in a way that exposes the vault secrets `secret/<environment>/nginx-secret` via HTTP on the URL `http://<host>/secret`,
-for example `http://localhost:30024/secret`.
+for example `http://staging.nginx-helm.nginx.localhost/secret`.
 
-While exposing secrets on the web is a very bad practice, it's very good for demoing auto reload of a secret changed in
+While exposing secrets on the web is a bad practice, it's good for demoing auto reload of a secret changed in
 vault.
 
 To demo this, you could
-* change the [staging secret](http://localhost:8200/ui/vault/secrets/secret/edit/staging/nginx-helm-jenkins)
+* change the [staging secret](http://vault.localhost/ui/vault/secrets/secret/edit/staging/nginx-helm-jenkins)
 * Wait for the change to show on the web, e.g. like so
 ```shell
 while ; do echo -n "$(date '+%Y-%m-%d %H:%M:%S'): " ; \
-  curl http://localhost:30024/secret/ ; echo; sleep 1; done
+  curl http://staging.nginx-helm.nginx.localhost/secret/ ; echo; sleep 1; done
 ```
 
 This usually takes between a couple of seconds and 1-2 minutes.  
@@ -984,7 +953,10 @@ The following video shows this demo in time-lapse:
 
 ### Example Applications
 
-The playground comes with example applications that allow for experimenting with different GitOps features.
+The playground comes with example applications that provide a turnkey solution for GitOps-Pipelines  
+from a developer's point of view.
+
+This includes staging and production environments, providing a ready-to-use solution for promotion.
 
 All applications are deployed via separated application and GitOps repos:
 
@@ -1009,58 +981,52 @@ Note that the GitOps-related logic is implemented in the
 * resource creation,
 * validation (fail early / shift left). 
 
-For further understanding, also take look at the GitOps pattern repository at [GitOps-Paddern](https://github.com/cloudogu/gitops-patterns?tab=readme-ov-file#gitops-playground)
+For further understanding, also take a look at our GitOps pattern repository
+[cloudogu/gitops-patterns](https://github.com/cloudogu/gitops-patterns?tab=readme-ov-file#gitops-playground)
 
 Please note that it might take about a minute after the pull request has been accepted for the GitOps operator to start
 deploying.
 Alternatively, you can trigger the deployment via ArgoCD's UI or CLI.
 
 
+We recommend using the `--ingress-nginx` and `--base-url` Parameters.
+With these, the applications are made available as subdomains of `base-url`.
+
+For example, `--base-url=http://localhost` leads to 
+http://staging.petclinic-plain.petclinic.localhost/.
+
+The `.petlinic.` part can be overridden using
+`--petclinic-base-domain` (for the petlinic examples/exercises), or 
+`--nginx-base-domain` (for the nginx examples/exercises).
+
 #### PetClinic with plain k8s resources
 
 [Jenkinsfile](applications/petclinic/argocd/plain-k8s/Jenkinsfile) for `plain` deployment
 
-* Staging
-    * local [localhost:30020](http://localhost:30020)
-    * remote: `scripts/get-remote-url spring-petclinic-plain argocd-staging`
-    * `--petclinic-base-domain` to specify base domain. Then use `staging.petclinic-plain.$base-domain`
-* Production
-    * local [localhost:30021](http://localhost:30021)
-    * remote: `scripts/get-remote-url spring-petclinic-plain argocd-production`
-    * `--petclinic-base-domain` to specify base domain. Then use `production.petclinic-plain.$base-domain`
+* Staging: http://staging.petclinic-plain.petclinic.localhost/
+* Production: http://production.petclinic-plain.petclinic.localhost/  
+  Note that you have to accept a [pull request](http://scmm.localhost/scm/repo/argocd/example-apps/pull-requests/) for deployment
 
 #### PetClinic with helm
 
 [Jenkinsfile](applications/petclinic/argocd/helm/Jenkinsfile) for `helm` deployment
 
-* Staging
-    * local [localhost:30022](http://localhost:30022)
-    * remote: `scripts/get-remote-url spring-petclinic-helm argocd-staging`
-    * `--petclinic-base-domain` to specify base domain. Then use `staging.petclinic-helm.$base-domain`
-* Production
-    * local [localhost:30023](http://localhost:30023)
-    * remote: `scripts/get-remote-url spring-petclinic-helm argocd-production`
-  * `--petclinic-base-domain` to specify base domain. Then use `production.petclinic-helm.$base-domain`
+* Staging: http://staging.petclinic-helm.petclinic.localhost/
+* Production: http://production.petclinic-helm.petclinic.localhost/  
+   Note that you have to accept a [pull request](http://scmm.localhost/scm/repo/argocd/example-apps/pull-requests/) for deployment
 
 #### 3rd Party app (NGINX) with helm, templated in Jenkins
 
 [Jenkinsfile](applications/nginx/argocd/helm-jenkins/Jenkinsfile)
 
-* Staging
-    * local: [localhost:30024](http://localhost:30024)
-    * remote: `scripts/get-remote-url nginx argocd-staging`
-    * `--nginx-base-domain` to specify base domain. Then use `staging.nginx.$base-domain`
-* Production
-    * local: [localhost:30025](http://localhost:30025)
-    * remote: `scripts/get-remote-url nginx argocd-production`
-    * `--nginx-base-domain` to specify base domain. Then use `production.nginx.$base-domain`
+* Staging: http://staging.nginx-helm.nginx.localhost/
+* Production: http://production.nginx-helm.nginx.localhost/  
+  Note that you have to accept a [pull request](http://scmm.localhost/scm/repo/argocd/example-apps/pull-requests/) for deployment
+
 
 #### 3rd Party app (NGINX) with helm, using Helm dependency mechanism
 
-* Application name: `nginx-helm-umbrella`
-* local: [localhost:30026](http://localhost:30026)
-* remote: `scripts/get-remote-url nginx-helm-umbrella argocd-production`
-* `--nginx-base-domain` to specify base domain. Then use `production.nginx-helm-umbrella.$base-domain`
+* http://production.nginx-helm-umbrella.nginx.localhost/
 
 ## Development
 

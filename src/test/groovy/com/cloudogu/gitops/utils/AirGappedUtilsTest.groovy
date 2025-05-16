@@ -6,11 +6,13 @@ import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.scmm.api.Permission
 import com.cloudogu.gitops.scmm.api.Repository
 import com.cloudogu.gitops.scmm.api.RepositoryApi
+import com.cloudogu.gitops.scmm.api.ScmmApiClient
 import groovy.yaml.YamlSlurper
 import okhttp3.internal.http.RealResponseBody
 import okio.BufferedSource
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Ref
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
 import retrofit2.Call
@@ -48,9 +50,15 @@ class AirGappedUtilsTest {
     Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
     TestScmmRepoProvider scmmRepoProvider = new TestScmmRepoProvider(config, new FileSystemUtils())
     FileSystemUtils fileSystemUtils = new FileSystemUtils()
+    ScmmApiClient scmmApiClient = mock(ScmmApiClient)
     RepositoryApi repositoryApi = mock(RepositoryApi)
     HelmClient helmClient = mock(HelmClient)
 
+    @BeforeEach
+    void setUp() {
+        when(scmmApiClient.repositoryApi()).thenReturn(repositoryApi)
+    }
+    
     @Test
     void 'Prepares repos for air-gapped use'() {
         setupForAirgappedUse()
@@ -286,6 +294,6 @@ class AirGappedUtilsTest {
     }
 
     AirGappedUtils createAirGappedUtils() {
-        new AirGappedUtils(config, scmmRepoProvider, repositoryApi, fileSystemUtils, helmClient)
+        new AirGappedUtils(config, scmmRepoProvider, scmmApiClient, fileSystemUtils, helmClient)
     }
 }

@@ -40,12 +40,11 @@ metadata:
   labels:
     app: broken-application
 spec:
-  type: <#if isRemote>LoadBalancer<#else>NodePort</#if>
+  type: <#if isRemote>LoadBalancer<#else>ClusterIP</#if>
   ports:
     - name: http
       port: 80
       targetPort: 8080
-      nodePort: 30046
   selector:
     app: broken-application
 

@@ -23,9 +23,7 @@ class PrometheusStackTest {
                     createImagePullSecrets: false
             ),
             scmm: new Config.ScmmSchema(
-                    internal: true,
-                    host: '',
-                    protocol: 'http',
+                    internal: true
             ),
             jenkins: new Config.JenkinsSchema(internal: true,
                     metricsUsername: 'metrics',
@@ -260,12 +258,11 @@ policies:
     }
 
     @Test
-    void 'service type NodePort when not run remotely'() {
+    void 'service type ClusterIP when not run remotely'() {
         config.application.remote = false
         createStack().install()
 
-        assertThat(parseActualYaml()['grafana']['service']['type']).isEqualTo('NodePort')
-        assertThat(parseActualYaml()['grafana']['service']['nodePort']).isEqualTo('9095')
+        assertThat(parseActualYaml()['grafana']['service']['type']).isEqualTo('ClusterIP')
     }
 
     @Test

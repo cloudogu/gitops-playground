@@ -3,8 +3,6 @@ package com.cloudogu.gitops.cli
 import com.cloudogu.gitops.Application
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.dependencyinjection.HttpClientFactory
-import com.cloudogu.gitops.dependencyinjection.JenkinsFactory
-import com.cloudogu.gitops.dependencyinjection.RetrofitFactory
 import com.cloudogu.gitops.destroy.ArgoCDDestructionHandler
 import com.cloudogu.gitops.destroy.Destroyer
 import com.cloudogu.gitops.destroy.JenkinsDestructionHandler
@@ -14,13 +12,17 @@ import com.cloudogu.gitops.features.argocd.ArgoCD
 import com.cloudogu.gitops.features.deployment.ArgoCdApplicationStrategy
 import com.cloudogu.gitops.features.deployment.Deployer
 import com.cloudogu.gitops.features.deployment.HelmStrategy
-import com.cloudogu.gitops.jenkins.*
+import com.cloudogu.gitops.jenkins.GlobalPropertyManager
+import com.cloudogu.gitops.jenkins.JenkinsApiClient
+import com.cloudogu.gitops.jenkins.JobManager
+import com.cloudogu.gitops.jenkins.PrometheusConfigurator
+import com.cloudogu.gitops.jenkins.UserManager
 import com.cloudogu.gitops.scmm.ScmmRepoProvider
+import com.cloudogu.gitops.scmm.api.ScmmApiClient
 import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
 import io.micronaut.context.ApplicationContext
-import jakarta.inject.Provider
-
+import jakarta.inject.Provider 
 /**
  * Micronaut's dependency injection relies on statically compiled class files with seems incompatible with groovy 
  * scripting/interpretation (without prior compilation).
@@ -55,7 +57,6 @@ class GitopsPlaygroundCliMainScripted {
             def httpClientFactory = new HttpClientFactory()
 
             def scmmRepoProvider = new ScmmRepoProvider(config, fileSystemUtils)
-            def retrofitFactory = new RetrofitFactory()
 
             def insecureSslContextProvider = new Provider<HttpClientFactory.InsecureSslContext>() {
                 @Override
@@ -63,21 +64,18 @@ class GitopsPlaygroundCliMainScripted {
                     return httpClientFactory.insecureSslContext()
                 }
             }
-            def httpClientScmm = retrofitFactory.okHttpClient(httpClientFactory.createLoggingInterceptor(), config, insecureSslContextProvider)
-            def retrofit = retrofitFactory.retrofit(config, httpClientScmm)
-            def repoApi = retrofitFactory.repositoryApi(retrofit)
+            def httpClientScmm = httpClientFactory.okHttpClientScmm(httpClientFactory.createLoggingInterceptor(), config, insecureSslContextProvider)
+            def scmmApiClient = new ScmmApiClient(config, httpClientScmm)
 
-            def jenkinsConfiguration = new JenkinsConfigurationAdapter(config)
-            JenkinsFactory jenkinsFactory = new JenkinsFactory(jenkinsConfiguration)
-            def jenkinsApiClient = jenkinsFactory.jenkinsApiClient(
-                    httpClientFactory.okHttpClient(httpClientFactory.createLoggingInterceptor(), jenkinsConfiguration, insecureSslContextProvider))
+            def jenkinsApiClient = new JenkinsApiClient(config,
+                    httpClientFactory.okHttpClientJenkins(httpClientFactory.createLoggingInterceptor(), config, insecureSslContextProvider))
 
             context.registerSingleton(k8sClient)
 
             if (config.application.destroy) {
                 context.registerSingleton(new Destroyer([
                         new ArgoCDDestructionHandler(config, k8sClient, scmmRepoProvider, helmClient, fileSystemUtils),
-                        new ScmmDestructionHandler(config, retrofitFactory.usersApi(retrofit), retrofitFactory.repositoryApi(retrofit)),
+                        new ScmmDestructionHandler(config, scmmApiClient),
                         new JenkinsDestructionHandler(new JobManager(jenkinsApiClient), config, new GlobalPropertyManager(jenkinsApiClient))
                 ]))
             } else {
@@ -85,14 +83,15 @@ class GitopsPlaygroundCliMainScripted {
 
                 def deployer = new Deployer(config, new ArgoCdApplicationStrategy(config, fileSystemUtils, scmmRepoProvider), helmStrategy)
 
-                def airGappedUtils = new AirGappedUtils(config, scmmRepoProvider, repoApi, fileSystemUtils, helmClient)
-
+                def airGappedUtils = new AirGappedUtils(config, scmmRepoProvider, scmmApiClient, fileSystemUtils, helmClient)
+                def networkingUtils = new NetworkingUtils()
+                
                 context.registerSingleton(new Application(config, [
                         new Registry(config, fileSystemUtils, k8sClient, helmStrategy),
-                        new ScmManager(config, executor, fileSystemUtils, helmStrategy, k8sClient),
+                        new ScmManager(config, executor, fileSystemUtils, helmStrategy, k8sClient, networkingUtils),
                         new Jenkins(config, executor, fileSystemUtils, new GlobalPropertyManager(jenkinsApiClient),
                                 new JobManager(jenkinsApiClient), new UserManager(jenkinsApiClient),
-                                new PrometheusConfigurator(jenkinsApiClient), helmStrategy, k8sClient),
+                                new PrometheusConfigurator(jenkinsApiClient), helmStrategy, k8sClient, networkingUtils),
                         new Content(config, k8sClient),
                         new ArgoCD(config, k8sClient, helmClient, fileSystemUtils, scmmRepoProvider),
                         new IngressNginx(config, fileSystemUtils, deployer, k8sClient, airGappedUtils),

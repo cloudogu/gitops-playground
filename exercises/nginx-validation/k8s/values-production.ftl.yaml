@@ -1,7 +1,4 @@
 namespaceOverride: ${namePrefix}example-apps-production
-service:
-  nodePorts:
-    http: 3OO43
 
 <#if exampleApps.nginx.baseDomain?has_content>
 ingress:

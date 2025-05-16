@@ -1,6 +1,6 @@
 package com.cloudogu.gitops.jenkins
 
-
+import com.cloudogu.gitops.config.Config
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -20,7 +20,9 @@ class JobManagerTest {
         try {
             server.enqueue(new MockResponse().setBody('{"crumb":"the-crumb"}'))
             server.enqueue(new MockResponse())
-            def jobManager = new JobManager(new ApiClient(server.url("jenkins").toString(), 'admin', 'admin', new OkHttpClient()))
+            def jobManager = new JobManager(new JenkinsApiClient(
+                    new Config(jenkins: new Config.JenkinsSchema(url: server.url("jenkins").toString())), 
+                    new OkHttpClient()))
             jobManager.createCredential('the-jobname', 'the-id', 'the-username', 'the-password', 'some description')
 
             assertThat(server.requestCount).isEqualTo(2)
@@ -39,7 +41,9 @@ class JobManagerTest {
         try {
             server.enqueue(new MockResponse().setBody('{"crumb":"the-crumb"}'))
             server.enqueue(new MockResponse().setResponseCode(404))
-            def jobManager = new JobManager(new ApiClient(server.url("jenkins").toString(), 'admin', 'admin', new OkHttpClient()))
+            def jobManager = new JobManager(new JenkinsApiClient(
+                    new Config(jenkins: new Config.JenkinsSchema(url: server.url("jenkins").toString())),
+                    new OkHttpClient()))
             def exception = shouldFail(RuntimeException) {
                 jobManager.createCredential('the-jobname', 'the-id', 'the-username', 'the-password', 'some description')
             }
@@ -55,7 +59,9 @@ class JobManagerTest {
         try {
             server.enqueue(new MockResponse().setBody('{"crumb":"the-crumb"}'))
             server.enqueue(new MockResponse().setResponseCode(200))
-            def jobManager = new JobManager(new ApiClient(server.url("jenkins").toString(), 'admin', 'admin', new OkHttpClient()))
+            def jobManager = new JobManager(new JenkinsApiClient(
+                    new Config(jenkins: new Config.JenkinsSchema(url: server.url("jenkins").toString())),
+                    new OkHttpClient()))
             jobManager.startJob('the-jobname')
 
             assertThat(server.requestCount).isEqualTo(2)
@@ -73,7 +79,9 @@ class JobManagerTest {
         try {
             server.enqueue(new MockResponse().setBody('{"crumb":"the-crumb"}'))
             server.enqueue(new MockResponse().setResponseCode(400))
-            def jobManager = new JobManager(new ApiClient(server.url("jenkins").toString(), 'admin', 'admin', new OkHttpClient()))
+            def jobManager = new JobManager(new JenkinsApiClient(
+                    new Config(jenkins: new Config.JenkinsSchema(url: server.url("jenkins").toString())),
+                    new OkHttpClient()))
             def exception = shouldFail(RuntimeException) {
                 jobManager.startJob('the-jobname')
             }
@@ -86,7 +94,7 @@ class JobManagerTest {
 
     @Test
     void 'throws when job contains invalid characters'() {
-        def client = mock(ApiClient)
+        def client = mock(JenkinsApiClient)
         def jobManager = new JobManager(client)
 
         def exception = shouldFail(RuntimeException) {
@@ -97,7 +105,7 @@ class JobManagerTest {
     
     @Test
     void 'throws when job deletion fails'() {
-        def client = mock(ApiClient)
+        def client = mock(JenkinsApiClient)
         def jobManager = new JobManager(client)
 
         def exception = shouldFail(RuntimeException) {
@@ -108,7 +116,7 @@ class JobManagerTest {
 
     @Test
     void 'deletes job'() {
-        def client = mock(ApiClient)
+        def client = mock(JenkinsApiClient)
         def jobManager = new JobManager(client)
 
         when(client.runScript(anyString())).thenReturn("null")
@@ -123,7 +131,9 @@ class JobManagerTest {
         try {
             server.enqueue(new MockResponse().setBody('{"crumb":"the-crumb"}'))
             server.enqueue(new MockResponse().setResponseCode(200))
-            def jobManager = new JobManager(new ApiClient(server.url("jenkins").toString(), 'admin', 'admin', new OkHttpClient()))
+            def jobManager = new JobManager(new JenkinsApiClient(
+                    new Config(jenkins: new Config.JenkinsSchema(url: server.url("jenkins").toString())),
+                    new OkHttpClient()))
             
             def exists = jobManager.jobExists('the-jobname')
             
@@ -143,7 +153,9 @@ class JobManagerTest {
         try {
             server.enqueue(new MockResponse().setBody('{"crumb":"the-crumb"}'))
             server.enqueue(new MockResponse().setResponseCode(404))
-            def jobManager = new JobManager(new ApiClient(server.url("jenkins").toString(), 'admin', 'admin', new OkHttpClient()))
+            def jobManager = new JobManager(new JenkinsApiClient(
+                    new Config(jenkins: new Config.JenkinsSchema(url: server.url("jenkins").toString())),
+                    new OkHttpClient()))
             
             def exists = jobManager.jobExists('the-jobname')
             
@@ -165,7 +177,9 @@ class JobManagerTest {
             server.enqueue(new MockResponse().setResponseCode(404))  // jobExists
             server.enqueue(new MockResponse().setBody('{"crumb":"the-crumb"}'))
             server.enqueue(new MockResponse().setResponseCode(200))
-            def jobManager = new JobManager(new ApiClient(server.url("jenkins").toString(), 'admin', 'admin', new OkHttpClient()))
+            def jobManager = new JobManager(new JenkinsApiClient(
+                    new Config(jenkins: new Config.JenkinsSchema(url: server.url("jenkins").toString())),
+                    new OkHttpClient()))
 
             def created = jobManager.createJob('the-jobname', 'http://scm', 'ns', 'creds')
 
@@ -192,7 +206,9 @@ class JobManagerTest {
         try {
             server.enqueue(new MockResponse().setBody('{"crumb":"the-crumb"}'))
             server.enqueue(new MockResponse().setResponseCode(200))  // jobExists
-            def jobManager = new JobManager(new ApiClient(server.url("jenkins").toString(), 'admin', 'admin', new OkHttpClient()))
+            def jobManager = new JobManager(new JenkinsApiClient(
+                    new Config(jenkins: new Config.JenkinsSchema(url: server.url("jenkins").toString())),
+                    new OkHttpClient()))
 
             def created = jobManager.createJob('the-jobname', 'http://scm', 'ns', 'creds')
 
