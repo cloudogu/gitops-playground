@@ -5,6 +5,7 @@ persistence:
 livenessProbe:
   initialDelaySeconds: 120
 
+fullnameOverride : ${releaseName}
 
 extraEnv: |
     - name: SCM_WEBAPP_INITIALUSER
@@ -24,4 +25,3 @@ ingress:
   hosts:
     - ${host}
 </#if>
-  

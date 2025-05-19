@@ -66,7 +66,7 @@ class ScmmRepo {
         switch (config.scmm.provider) {
             case "scm-manager":
                 if(config.scmm.internal){
-                    return "http://scmm-scm-manager.${config.application.namePrefix}scm-manager.svc.cluster.local/scm/${config.scmm.rootPath}/${config.application.namePrefix}"
+                    return "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm/${config.scmm.rootPath}/${config.application.namePrefix}"
                 }
                 return createScmmUrl(config) + "/${config.scmm.rootPath}/${config.application.namePrefix}"
             case "gitlab":
