@@ -119,7 +119,7 @@ class ArgoCDTest {
         k8sCommands.assertExecuted('kubectl create namespace argocd')
 
         // check values.yaml
-        List filesWithInternalSCMM = findFilesContaining(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), argocd.scmm_url_internal)
+        List filesWithInternalSCMM = findFilesContaining(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), argocd.scmmUrlInternal)
         assertThat(filesWithInternalSCMM).isNotEmpty()
         assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['server']['service']['type'])
                 .isEqualTo('ClusterIP')
@@ -169,7 +169,7 @@ class ArgoCDTest {
         assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains(
                 'https://prometheus-community.github.io/helm-charts')
         assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain(
-                'http://scmm.default.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack')
+                'http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack')
 
         assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['crds']).isNull()
         assertThat(parseActualYaml(actualHelmValuesFile)['global']).isNull()
@@ -183,7 +183,7 @@ class ArgoCDTest {
 
         def argocd = createArgoCD()
         argocd.install()
-        List filesWithInternalSCMM = findFilesContaining(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), argocd.scmm_url_internal)
+        List filesWithInternalSCMM = findFilesContaining(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), argocd.scmmUrlInternal)
         assertThat(filesWithInternalSCMM).isEmpty()
         List filesWithExternalSCMM = findFilesContaining(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), "https://abc")
         assertThat(filesWithExternalSCMM).isNotEmpty()
@@ -575,9 +575,9 @@ class ArgoCDTest {
     void 'For internal SCMM: Use service address in gitops repos'() {
         def argocd = createArgoCD()
         argocd.install()
-        List filesWithInternalSCMM = findFilesContaining(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), argocd.scmm_url_internal)
+        List filesWithInternalSCMM = findFilesContaining(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), argocd.scmmUrlInternal)
         assertThat(filesWithInternalSCMM).isNotEmpty()
-        filesWithInternalSCMM = findFilesContaining(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), argocd.scmm_url_internal)
+        filesWithInternalSCMM = findFilesContaining(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), argocd.scmmUrlInternal)
         assertThat(filesWithInternalSCMM).isNotEmpty()
     }
 
@@ -586,9 +586,9 @@ class ArgoCDTest {
         config.scmm.internal = false
         def argocd = createArgoCD()
         argocd.install()
-        List filesWithInternalSCMM = findFilesContaining(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), argocd.scmm_url_internal)
+        List filesWithInternalSCMM = findFilesContaining(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), argocd.scmmUrlInternal)
         assertThat(filesWithInternalSCMM).isEmpty()
-        filesWithInternalSCMM = findFilesContaining(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), argocd.scmm_url_internal)
+        filesWithInternalSCMM = findFilesContaining(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), argocd.scmmUrlInternal)
         assertThat(filesWithInternalSCMM).isEmpty()
 
         List filesWithExternalSCMM = findFilesContaining(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), "https://abc")
@@ -602,7 +602,7 @@ class ArgoCDTest {
         def argocd = createArgoCD()
         argocd.install()
 
-        assertArgoCdYamlPrefixes(argocd.scmm_url_internal, '')
+        assertArgoCdYamlPrefixes(argocd.scmmUrlInternal, '')
         assertJenkinsEnvironmentVariablesPrefixes('')
     }
 
@@ -623,7 +623,7 @@ class ArgoCDTest {
         def argocd = createArgoCD()
         argocd.install()
 
-        assertArgoCdYamlPrefixes(argocd.scmm_url_internal, 'abc-')
+        assertArgoCdYamlPrefixes(argocd.scmmUrlInternal, 'abc-')
         assertJenkinsEnvironmentVariablesPrefixes('ABC_')
     }
 
