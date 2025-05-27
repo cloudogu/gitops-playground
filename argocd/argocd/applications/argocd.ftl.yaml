@@ -22,7 +22,7 @@ spec:
     repoURL: ${scmm.repoUrl}argocd/argocd<#if scmm.provider == "gitlab">.git</#if>
     targetRevision: main
     # needed to sync the operator/rbac folder
-    <#if argocd.isOperator??>
+    <#if argocd.isOperator>
     directory:
       recurse: true
     </#if>
