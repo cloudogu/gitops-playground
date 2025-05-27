@@ -124,7 +124,7 @@ class ExternalSecretsOperatorTest {
         assertThat(helmConfig.value.repoURL).isEqualTo('https://charts.external-secrets.io')
         assertThat(helmConfig.value.version).isEqualTo('0.9.16')
         verify(deploymentStrategy).deployFeature(
-                'http://scmm-scm-manager.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
+                'http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
                 'external-secrets', '.', '1.2.3', 'foo-secrets',
                 'external-secrets', temporaryYamlFile, DeploymentStrategy.RepoType.GIT)
     }

@@ -65,6 +65,8 @@ class ScmManager extends Feature {
 
         if (config.scmm.internal) {
 
+            String releaseName = 'scmm'
+
             k8sClient.createNamespace(namespace)
 
             def helmConfig = config.scmm.helm
@@ -74,13 +76,13 @@ class ScmManager extends Feature {
                     remote  : config.application.remote,
                     username: config.scmm.username,
                     password: config.scmm.password,
-                    helm    : config.scmm.helm
+                    helm    : config.scmm.helm,
+                    releaseName: releaseName
             ])
 
             def mergedMap = MapUtils.deepMerge(helmConfig.values, templatedMap)
             def tempValuesPath = fileSystemUtils.writeTempFile(mergedMap)
 
-            String releaseName = 'scmm'
             deployer.deployFeature(
                     helmConfig.repoURL,
                     'scm-manager',
@@ -93,15 +95,14 @@ class ScmManager extends Feature {
             
             // Update scmm.url after it is deployed (and ports are known)
             // Defined here: https://github.com/scm-manager/scm-manager/blob/3.2.1/scm-packaging/helm/src/main/chart/templates/_helpers.tpl#L14-L25
-            String serviceName = "${releaseName}-scm-manager"
             String contentPath = "/scm"
             
             if (config.application.runningInsideK8s) {
                 log.debug("Setting scmm url to k8s service, since installation is running inside k8s")
-                config.scmm.url = networkingUtils.createUrl("${serviceName}.${namespace}.svc.cluster.local", "80", contentPath)
+                config.scmm.url = networkingUtils.createUrl("${releaseName}.${namespace}.svc.cluster.local", "80", contentPath)
             } else {
                 log.debug("Setting internal configs for local single node cluster with internal scmm. Waiting for NodePort...")
-                def port = k8sClient.waitForNodePort(serviceName, namespace)
+                def port = k8sClient.waitForNodePort(releaseName, namespace)
                 String clusterBindAddress = networkingUtils.findClusterBindAddress()
                 config.scmm.url = networkingUtils.createUrl(clusterBindAddress, port, contentPath)
             }

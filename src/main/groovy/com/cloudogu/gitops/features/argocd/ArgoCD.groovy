@@ -32,7 +32,7 @@ class ArgoCD extends Feature {
 
     private String password
 
-    protected final String scmm_url_internal =  "http://scmm-scm-manager.${config.application.namePrefix}scm-manager.svc.cluster.local/scm"
+    protected final String scmmUrlInternal =  "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm"
 
     protected RepoInitializationAction argocdRepoInitializationAction
     protected RepoInitializationAction clusterResourcesInitializationAction
@@ -165,8 +165,8 @@ class ArgoCD extends Feature {
         if (!config.scmm.internal) {
             String externalScmmUrl = ScmmRepo.createScmmUrl(config)
             log.debug("Configuring all yaml files in gitops repos to use the external scmm url: ${externalScmmUrl}")
-            replaceFileContentInYamls(new File(clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()), scmm_url_internal, externalScmmUrl)
-            replaceFileContentInYamls(new File(exampleAppsInitializationAction.repo.getAbsoluteLocalRepoTmpDir()), scmm_url_internal, externalScmmUrl)
+            replaceFileContentInYamls(new File(clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()), scmmUrlInternal, externalScmmUrl)
+            replaceFileContentInYamls(new File(exampleAppsInitializationAction.repo.getAbsoluteLocalRepoTmpDir()), scmmUrlInternal, externalScmmUrl)
         }
 
         fileSystemUtils.copyDirectory("${fileSystemUtils.rootDir}/applications/argocd/nginx/helm-umbrella",
@@ -213,7 +213,7 @@ class ArgoCD extends Feature {
         // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo
         def repoTemplateSecretName = 'argocd-repo-creds-scmm'
 
-        String scmmUrlForArgoCD = config.scmm.internal ? scmm_url_internal : ScmmRepo.createScmmUrl(config)
+        String scmmUrlForArgoCD = config.scmm.internal ? scmmUrlInternal : ScmmRepo.createScmmUrl(config)
         k8sClient.createSecret('generic', repoTemplateSecretName, namespace,
                 new Tuple2('url', scmmUrlForArgoCD),
                 new Tuple2('username', config.scmm.username),
@@ -336,9 +336,6 @@ class ArgoCD extends Feature {
     }
 
     protected void prepareArgoCdRepo() {
-        String argocdConfigPath = this.config.features.argocd.operator ? OPERATOR_CONFIG_PATH : HELM_VALUES_PATH
-        def argocdConfigFile = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), argocdConfigPath)
-
         argocdRepoInitializationAction.initLocalRepo()
 
         if (config.features.argocd.operator) {
@@ -354,7 +351,7 @@ class ArgoCD extends Feature {
         if (!config.scmm.internal) {
             String externalScmmUrl = ScmmRepo.createScmmUrl(config)
             log.debug("Configuring all yaml files in argocd repo to use the external scmm url: ${externalScmmUrl}")
-            replaceFileContentInYamls(new File(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()), scmm_url_internal, externalScmmUrl)
+            replaceFileContentInYamls(new File(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()), scmmUrlInternal, externalScmmUrl)
         }
 
         if (!config.application.netpols) {
@@ -456,8 +453,8 @@ class ArgoCD extends Feature {
                             ],
                     ],
                     scmm                : [
-                            baseUrl : config.scmm.internal ? "http://scmm-scm-manager.${config.application.namePrefix}scm-manager.svc.cluster.local/scm" : ScmmRepo.createScmmUrl(config),
-                            host    : config.scmm.internal ? "http://scmm-scm-manager.${config.application.namePrefix}scm-manager.svc.cluster.local" : config.scmm.host,
+                            baseUrl : config.scmm.internal ? "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm" : ScmmRepo.createScmmUrl(config),
+                            host    : config.scmm.internal ? "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local" : config.scmm.host,
                             protocol: config.scmm.internal ? 'http' : config.scmm.protocol,
                             repoUrl : ScmmRepo.createSCMBaseUrl(config),
                             provider: config.scmm.provider
