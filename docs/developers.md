@@ -13,7 +13,7 @@ The versions are also specified in the `Config.groovy` file, so it is recommende
 
 ## Table of contents
 
-<!-- Update with ` doctoc --notitle docs/developers.md --maxlevel 4      `. See https://github.com/thlorenz/doctoc -->
+<!-- Update with `doctoc --notitle docs/developers.md --maxlevel 4`. See https://github.com/thlorenz/doctoc -->
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
