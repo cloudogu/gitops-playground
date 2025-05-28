@@ -85,12 +85,43 @@ class Config {
     @JsonPropertyDescription(CONTENT_DESCRIPTION)
     @Mixin
     ContentSchema content = new ContentSchema()
-
+    
     class ContentSchema {
+
         @Option(names = ['--content-examples'], description = CONTENT_EXAMPLES_DESCRIPTION)
         @JsonPropertyDescription(CONTENT_EXAMPLES_DESCRIPTION)
         Boolean examples = false
+
+        @JsonPropertyDescription(CONTENT_REPO_DESCRIPTION)
+        List<ContentRepositorySchema> repos = []
+
+        static class ContentRepositorySchema {
+            @JsonPropertyDescription(CONTENT_REPO_URL_DESCRIPTION)
+            String url = ''
+
+            @JsonPropertyDescription(CONTENT_REPO_PATH_DESCRIPTION)
+            String path = '.'
+
+            @JsonPropertyDescription(CONTENT_REPO_REF_DESCRIPTION)
+            String ref = 'main'
+
+            @JsonPropertyDescription(CONTENT_REPO_USERNAME_DESCRIPTION)
+            String username = ''
+
+            @JsonPropertyDescription(CONTENT_REPO_PASSWORD_DESCRIPTION)
+            String password = ''
+
+            @JsonPropertyDescription(CONTENT_REPO_TEMPLATING_DESCRIPTION)
+            Boolean templating = false
+
+            @JsonPropertyDescription(CONTENT_REPO_FOLDER_BASED_REPOS_DESCRIPTION)
+            Boolean folderBased = false
+
+            @JsonPropertyDescription(CONTENT_REPO_TARGET_DESCRIPTION)
+            String target = ''
+        }
     }
+
 
     static class HelmConfig {
         @JsonPropertyDescription(HELM_CONFIG_CHART_DESCRIPTION)

@@ -150,6 +150,48 @@
         "examples" : {
           "type" : [ "boolean", "null" ],
           "description" : "Deploy example content: source repos, GitOps repos, Jenkins Job, Argo CD apps/project"
+        },
+        "repos" : {
+          "description" : "Content repos to push into target environment",
+          "type" : [ "array", "null" ],
+          "items" : {
+            "type" : "object",
+            "properties" : {
+              "folderBased" : {
+                "type" : [ "boolean", "null" ],
+                "description" : "When true, interpret the folder structure of each repo as repos. That is, root folder becomes namespace in SCM, sub folders become repository names in SCM"
+              },
+              "password" : {
+                "type" : [ "string", "null" ],
+                "description" : "Password to authenticate against content repo"
+              },
+              "path" : {
+                "type" : [ "string", "null" ],
+                "description" : "Path within the content repo to process"
+              },
+              "ref" : {
+                "type" : [ "string", "null" ],
+                "description" : "Reference for a specific branch, tag, or commit"
+              },
+              "target" : {
+                "type" : [ "string", "null" ],
+                "description" : "Target path for the repository"
+              },
+              "templating" : {
+                "type" : [ "boolean", "null" ],
+                "description" : "When true, template all files ending in .ftl within the repo"
+              },
+              "url" : {
+                "type" : [ "string", "null" ],
+                "description" : "URL of the content repo"
+              },
+              "username" : {
+                "type" : [ "string", "null" ],
+                "description" : "Username to authenticate against content repo"
+              }
+            },
+            "additionalProperties" : false
+          }
         }
       },
       "additionalProperties" : false,

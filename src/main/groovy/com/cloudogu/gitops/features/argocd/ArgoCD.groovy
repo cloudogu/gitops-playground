@@ -140,10 +140,10 @@ class ArgoCD extends Feature {
         log.debug("Cloning petclinic base repo, revision ${config.repositories.springPetclinic.ref}," +
                 " from ${config.repositories.springPetclinic.url}")
         Git git = gitClone()
-                .setURI(config.repositories.springPetclinic.url.toString())
+                .setURI(config.repositories.springPetclinic.url)
                 .setDirectory(remotePetClinicRepoTmpDir)
                 .call()
-        git.checkout().setName(config.repositories.springPetclinic.ref.toString()).call()
+        git.checkout().setName(config.repositories.springPetclinic.ref).call()
         log.debug('Finished cloning petclinic base repo')
     }
 
@@ -487,9 +487,8 @@ class ArgoCD extends Feature {
                             ],
                     ],
                     scmm                : [
+                            // This should be put into a static method call, similar to repoUrl, so it can be used in templates directly!
                             baseUrl : config.scmm.internal ? "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm" : ScmmRepo.createScmmUrl(config),
-                            host    : config.scmm.internal ? "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local" : config.scmm.host,
-                            protocol: config.scmm.internal ? 'http' : config.scmm.protocol,
                             repoUrl : ScmmRepo.createSCMBaseUrl(config),
                             provider: config.scmm.provider
                     ],

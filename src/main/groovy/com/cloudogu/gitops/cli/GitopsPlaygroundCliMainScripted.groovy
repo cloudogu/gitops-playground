@@ -92,7 +92,7 @@ class GitopsPlaygroundCliMainScripted {
                         new Jenkins(config, executor, fileSystemUtils, new GlobalPropertyManager(jenkinsApiClient),
                                 new JobManager(jenkinsApiClient), new UserManager(jenkinsApiClient),
                                 new PrometheusConfigurator(jenkinsApiClient), helmStrategy, k8sClient, networkingUtils),
-                        new Content(config, k8sClient),
+                        new Content(config, k8sClient, scmmRepoProvider, scmmApiClient),
                         new ArgoCD(config, k8sClient, helmClient, fileSystemUtils, scmmRepoProvider),
                         new IngressNginx(config, fileSystemUtils, deployer, k8sClient, airGappedUtils),
                         new CertManager(config, fileSystemUtils, deployer, k8sClient, airGappedUtils),

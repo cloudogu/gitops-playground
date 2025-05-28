@@ -29,6 +29,15 @@ interface ConfigConstants {
 
     // Content
     String CONTENT_EXAMPLES_DESCRIPTION = 'Deploy example content: source repos, GitOps repos, Jenkins Job, Argo CD apps/project'
+    String CONTENT_REPO_DESCRIPTION = "Content repos to push into target environment"
+    String CONTENT_REPO_URL_DESCRIPTION = "URL of the content repo"
+    String CONTENT_REPO_PATH_DESCRIPTION = "Path within the content repo to process"
+    String CONTENT_REPO_REF_DESCRIPTION = "Reference for a specific branch, tag, or commit"
+    String CONTENT_REPO_USERNAME_DESCRIPTION = "Username to authenticate against content repo"
+    String CONTENT_REPO_PASSWORD_DESCRIPTION = "Password to authenticate against content repo"
+    String CONTENT_REPO_TEMPLATING_DESCRIPTION = "When true, template all files ending in .ftl within the repo"
+    String CONTENT_REPO_FOLDER_BASED_REPOS_DESCRIPTION = "When true, interpret the folder structure of each repo as repos. That is, root folder becomes namespace in SCM, sub folders become repository names in SCM"
+    String CONTENT_REPO_TARGET_DESCRIPTION = "Target path for the repository"
     
     // group jenkins
     String JENKINS_ENABLE_DESCRIPTION = 'Installs Jenkins as CI server'
