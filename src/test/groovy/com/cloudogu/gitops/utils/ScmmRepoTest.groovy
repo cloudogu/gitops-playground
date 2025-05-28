@@ -129,7 +129,7 @@ class ScmmRepoTest {
         assertThat(commits[0].committerIdent.name).isEqualTo("Cloudogu")
 
         List<Ref> tags = Git.open(new File(repo.absoluteLocalRepoTmpDir)).tagList().call()
-        assertThat(tags.size()).isEqualTo(0)
+        assertThat(tags.size()).isEqualTo(1) // Already one test tag present
     }
 
     @Test
@@ -147,7 +147,7 @@ class ScmmRepoTest {
 
 
         List<Ref> tags = Git.open(new File(repo.absoluteLocalRepoTmpDir)).tagList().call()
-        assertThat(tags.size()).isEqualTo(1)
+        assertThat(tags.size()).isEqualTo(2) // Already one test tag present
         assertThat(tags[0].name).isEqualTo("refs/tags/$expectedTag".toString())
         // It would be a good idea to check if the git tag is set on the commit. 
         // However, it's extremely complicated with jgit
