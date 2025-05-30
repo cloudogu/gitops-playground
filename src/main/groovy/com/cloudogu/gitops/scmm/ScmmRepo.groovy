@@ -1,6 +1,9 @@
 package com.cloudogu.gitops.scmm
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.scmm.api.Permission
+import com.cloudogu.gitops.scmm.api.Repository
+import com.cloudogu.gitops.scmm.api.ScmmApiClient
 import com.cloudogu.gitops.scmm.jgit.InsecureCredentialProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
@@ -10,6 +13,7 @@ import org.eclipse.jgit.transport.ChainingCredentialsProvider
 import org.eclipse.jgit.transport.CredentialsProvider
 import org.eclipse.jgit.transport.RefSpec
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
+import retrofit2.Response
 
 import java.nio.file.Files
 import java.nio.file.Path
@@ -32,6 +36,7 @@ class ScmmRepo {
     private String gitEmail
     private String rootPath
     private String scmProvider
+    private Config config
 
     ScmmRepo(Config config, String scmmRepoTarget, FileSystemUtils fileSystemUtils) {
         def tmpDir = File.createTempDir()
@@ -48,6 +53,7 @@ class ScmmRepo {
         this.gitEmail = config.application.gitEmail
         this.scmProvider = config.scmm.provider
         this.rootPath = config.scmm.rootPath
+        this.config = config
     }
 
     String getAbsoluteLocalRepoTmpDir() {
@@ -82,6 +88,30 @@ class ScmmRepo {
         log.debug("Cloning $scmmRepoTarget repo")
         gitClone()
         checkoutOrCreateBranch('main')
+    }
+
+    void create(String description, ScmmApiClient scmmApiClient) {
+        def namespace = scmmRepoTarget.split('/', 2)[0]
+        def repoName = scmmRepoTarget.split('/', 2)[1]
+
+        def repositoryApi = scmmApiClient.repositoryApi()
+        def repo = new Repository(namespace, repoName, description)
+        def createResponse = repositoryApi.create(repo, true).execute()
+        handleResponse(createResponse, repo)
+
+        def permission = new Permission(config.scmm.gitOpsUsername as String, Permission.Role.WRITE)
+        def permissionResponse = repositoryApi.createPermission(namespace, repoName, permission).execute()
+        handleResponse(permissionResponse, permission, "for repo $namespace/$repoName")
+    }
+
+    private static void handleResponse(Response<Void> response, Object body, String additionalMessage = '') {
+        if (response.code() == 409) {
+            // Here, we could consider sending another request for changing the existing object to become proper idempotent
+            log.debug("${body.class.simpleName} already exists ${additionalMessage}, ignoring: ${body}")
+        } else if (response.code() != 201) {
+            throw new RuntimeException("Could not create ${body.class.simpleName} ${additionalMessage}.\n${body}\n" +
+                    "HTTP Details: ${response.code()} ${response.message()}: ${response.errorBody().string()}")
+        }
     }
 
     void writeFile(String path, String content) {

@@ -3,13 +3,10 @@ package com.cloudogu.gitops.utils
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.scmm.ScmmRepoProvider
-import com.cloudogu.gitops.scmm.api.Permission
-import com.cloudogu.gitops.scmm.api.Repository
 import com.cloudogu.gitops.scmm.api.ScmmApiClient
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 import jakarta.inject.Singleton
-import retrofit2.Response
 
 import java.nio.file.Path
 
@@ -47,9 +44,8 @@ class AirGappedUtils {
 
         validateChart(repoNamespaceAndName, localHelmChartFolder, repoName)
 
-        createRepo(namespace, repoName,"Mirror of Helm chart $repoName from ${helmConfig.repoURL}")
-
         ScmmRepo repo = repoProvider.getRepo(repoNamespaceAndName)
+        repo.create("Mirror of Helm chart $repoName from ${helmConfig.repoURL}", scmmApiClient)
         repo.cloneRepo()
 
         repo.copyDirectoryContents(localHelmChartFolder)
@@ -73,28 +69,6 @@ class AirGappedUtils {
             helmClient.template(repoName, localHelmChartFolder)
         } catch (RuntimeException e) {
             throw new RuntimeException("Helm chart in folder ${localHelmChartFolder} seems invalid.", e)
-        }
-    }
-
-    // This could be moved to ScmmRepo, if needed
-    private void createRepo(String namespace, String repoName, String description) {
-        def repositoryApi = scmmApiClient.repositoryApi()
-        def repo = new Repository(namespace, repoName, description)
-        def createResponse = repositoryApi.create(repo, true).execute()
-        handleResponse(createResponse, repo)
-
-        def permission = new Permission(config.scmm.gitOpsUsername as String, Permission.Role.WRITE)
-        def permissionResponse = repositoryApi.createPermission(namespace, repoName, permission).execute()
-        handleResponse(permissionResponse, permission, "for repo $namespace/$repoName")
-    }
-
-    private static void handleResponse(Response<Void> response, Object body, String additionalMessage = '') {
-        if (response.code() == 409) {
-            // Here, we could consider sending another request for changing the existing object to become proper idempotent
-            log.debug("${body.class.simpleName} already exists ${additionalMessage}, ignoring: ${body}")
-        } else if (response.code() != 201) {
-            throw new RuntimeException("Could not create ${body.class.simpleName} ${additionalMessage}.\n${body}\n" +
-                    "HTTP Details: ${response.code()} ${response.message()}: ${response.errorBody().string()}")
         }
     }
 
