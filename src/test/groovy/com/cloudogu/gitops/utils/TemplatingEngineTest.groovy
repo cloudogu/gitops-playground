@@ -70,4 +70,20 @@ class TemplatingEngineTest {
 
         assertThat(result).isEqualTo("Hello Playground")
     }
+
+    @Test
+    void "replaces yaml templates"() {
+        def barTemplate = new File(tmpDir.absolutePath + File.separator + "subdirectory", "result.ftl.yaml")
+        barTemplate.getParentFile().mkdirs()
+        barTemplate.text = 'foo: ${prefix}suffix'
+        def barTarget = new File(tmpDir.absolutePath, "subdirectory/keep-this-way.yaml")
+        barTarget.text = 'thiswont: ${prefix}-be-replaced'
+        
+        def engine = new TemplatingEngine()
+        engine.replaceTemplates(tmpDir, [prefix: "myteam-"])
+
+        assertThat(new File("$tmpDir/subdirectory/result.yaml").text).isEqualTo("foo: myteam-suffix")
+        assertThat(new File("$tmpDir/subdirectory/keep-this-way.yaml").text).isEqualTo('thiswont: ${prefix}-be-replaced')
+        assertThat(new File("$tmpDir/subdirectory/result.ftl.yaml").exists()).isFalse()
+    }
 }
