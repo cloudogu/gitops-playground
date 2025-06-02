@@ -144,6 +144,17 @@
       "additionalProperties" : false,
       "description" : "Application configuration parameter for GOP"
     },
+    "content" : {
+      "type" : [ "object", "null" ],
+      "properties" : {
+        "examples" : {
+          "type" : [ "boolean", "null" ],
+          "description" : "Deploy example content: source repos, GitOps repos, Jenkins Job, Argo CD apps/project"
+        }
+      },
+      "additionalProperties" : false,
+      "description" : "Config parameters for content, i.e. end-user or tenant applications as opposed to cluster-resources"
+    },
     "features" : {
       "type" : [ "object", "null" ],
       "properties" : {
@@ -565,6 +576,10 @@
     "jenkins" : {
       "type" : [ "object", "null" ],
       "properties" : {
+        "active" : {
+          "type" : [ "boolean", "null" ],
+          "description" : "Installs Jenkins as CI server"
+        },
         "additionalEnvs" : {
           "anyOf" : [ {
             "type" : "null"
@@ -611,6 +626,10 @@
     "registry" : {
       "type" : [ "object", "null" ],
       "properties" : {
+        "active" : {
+          "type" : [ "boolean", "null" ],
+          "description" : "Installs a simple cluster-local registry for demonstration purposes. Warning: Registry does not provide authentication!"
+        },
         "createImagePullSecrets" : {
           "type" : [ "boolean", "null" ],
           "description" : "Create image pull secrets for registry and proxy-registry for all GOP namespaces and helm charts. Uses proxy-username, read-only-username or registry-username (in this order).  Use this if your cluster is not auto-provisioned with credentials for your private registries or if you configure individual helm images to be pulled from the proxy-registry that requires authentication."

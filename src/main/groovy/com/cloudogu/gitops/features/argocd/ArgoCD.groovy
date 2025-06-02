@@ -76,19 +76,21 @@ class ArgoCD extends Feature {
         
         log.debug('Cloning Repositories')
 
-        def petclinicInitAction = createRepoInitializationAction('applications/argocd/petclinic/plain-k8s', 'argocd/petclinic-plain')
-        petClinicInitializationActions += petclinicInitAction
-        gitRepos += petclinicInitAction
-
-        petclinicInitAction = createRepoInitializationAction('applications/argocd/petclinic/helm', 'argocd/petclinic-helm')
-        petClinicInitializationActions += petclinicInitAction
-        gitRepos += petclinicInitAction
-
-        petclinicInitAction = createRepoInitializationAction('exercises/petclinic-helm', 'exercises/petclinic-helm')
-        petClinicInitializationActions += petclinicInitAction
-        gitRepos += petclinicInitAction
+        if (config.content.examples) {
+            def petclinicInitAction = createRepoInitializationAction('applications/argocd/petclinic/plain-k8s', 'argocd/petclinic-plain')
+            petClinicInitializationActions += petclinicInitAction
+            gitRepos += petclinicInitAction
+    
+            petclinicInitAction = createRepoInitializationAction('applications/argocd/petclinic/helm', 'argocd/petclinic-helm')
+            petClinicInitializationActions += petclinicInitAction
+            gitRepos += petclinicInitAction
+    
+            petclinicInitAction = createRepoInitializationAction('exercises/petclinic-helm', 'exercises/petclinic-helm')
+            petClinicInitializationActions += petclinicInitAction
+            gitRepos += petclinicInitAction
         
-        cloneRemotePetclinicRepo()
+            cloneRemotePetclinicRepo()
+        }
 
         gitRepos.forEach(repoInitializationAction -> {
             repoInitializationAction.initLocalRepo()
@@ -96,9 +98,11 @@ class ArgoCD extends Feature {
 
         prepareGitOpsRepos()
 
-        prepareApplicationNginxHelmJenkins()
+        if (config.content.examples) {
+            prepareApplicationNginxHelmJenkins()
 
-        preparePetClinicRepos()
+            preparePetClinicRepos()
+        }
 
         gitRepos.forEach(repoInitializationAction -> {
             repoInitializationAction.repo.commitAndPush('Initial Commit')
@@ -114,19 +118,21 @@ class ArgoCD extends Feature {
         clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources')
         gitRepos += clusterResourcesInitializationAction
 
-        exampleAppsInitializationAction = createRepoInitializationAction('argocd/example-apps', 'argocd/example-apps')
-        gitRepos += exampleAppsInitializationAction
-
-        nginxHelmJenkinsInitializationAction = createRepoInitializationAction('applications/argocd/nginx/helm-jenkins', 'argocd/nginx-helm-jenkins')
-        gitRepos += nginxHelmJenkinsInitializationAction
-
-        nginxValidationInitializationAction = createRepoInitializationAction('exercises/nginx-validation', 'exercises/nginx-validation')
-        gitRepos += nginxValidationInitializationAction
-
-        brokenApplicationInitializationAction = createRepoInitializationAction('exercises/broken-application', 'exercises/broken-application')
-        gitRepos += brokenApplicationInitializationAction
-
-        remotePetClinicRepoTmpDir = File.createTempDir('gitops-playground-petclinic')
+        if (config.content.examples) {
+            exampleAppsInitializationAction = createRepoInitializationAction('argocd/example-apps', 'argocd/example-apps')
+            gitRepos += exampleAppsInitializationAction
+    
+            nginxHelmJenkinsInitializationAction = createRepoInitializationAction('applications/argocd/nginx/helm-jenkins', 'argocd/nginx-helm-jenkins')
+            gitRepos += nginxHelmJenkinsInitializationAction
+    
+            nginxValidationInitializationAction = createRepoInitializationAction('exercises/nginx-validation', 'exercises/nginx-validation')
+            gitRepos += nginxValidationInitializationAction
+    
+            brokenApplicationInitializationAction = createRepoInitializationAction('exercises/broken-application', 'exercises/broken-application')
+            gitRepos += brokenApplicationInitializationAction
+            
+            remotePetClinicRepoTmpDir = File.createTempDir('gitops-playground-petclinic')
+        }
     }
 
     private void cloneRemotePetclinicRepo() {
@@ -166,12 +172,17 @@ class ArgoCD extends Feature {
             String externalScmmUrl = ScmmRepo.createScmmUrl(config)
             log.debug("Configuring all yaml files in gitops repos to use the external scmm url: ${externalScmmUrl}")
             replaceFileContentInYamls(new File(clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()), scmmUrlInternal, externalScmmUrl)
-            replaceFileContentInYamls(new File(exampleAppsInitializationAction.repo.getAbsoluteLocalRepoTmpDir()), scmmUrlInternal, externalScmmUrl)
+            
+            if (config.content.examples) {
+                replaceFileContentInYamls(new File(exampleAppsInitializationAction.repo.getAbsoluteLocalRepoTmpDir()), scmmUrlInternal, externalScmmUrl)
+            }
         }
 
-        fileSystemUtils.copyDirectory("${fileSystemUtils.rootDir}/applications/argocd/nginx/helm-umbrella",
-                Path.of(exampleAppsInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'apps/nginx-helm-umbrella/').toString())
-        exampleAppsInitializationAction.replaceTemplates()
+        if (config.content.examples) {
+            fileSystemUtils.copyDirectory("${fileSystemUtils.rootDir}/applications/argocd/nginx/helm-umbrella",
+                    Path.of(exampleAppsInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'apps/nginx-helm-umbrella/').toString())
+            exampleAppsInitializationAction.replaceTemplates()
+        }
     }
 
     private void prepareApplicationNginxHelmJenkins() {
@@ -357,6 +368,11 @@ class ArgoCD extends Feature {
         if (!config.application.netpols) {
             log.debug("Deleting argocd netpols.")
             deleteFile argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/argocd/templates/allow-namespaces.yaml'
+        }
+
+        if (!config.content.examples) {
+            deleteFile argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/applications/example-apps.yaml'
+            deleteFile argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/projects/example-apps.yaml'
         }
 
         argocdRepoInitializationAction.repo.commitAndPush("Initial Commit")

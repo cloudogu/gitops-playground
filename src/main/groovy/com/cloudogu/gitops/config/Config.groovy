@@ -82,6 +82,16 @@ class Config {
     @Mixin
     FeaturesSchema features = new FeaturesSchema()
 
+    @JsonPropertyDescription(CONTENT_DESCRIPTION)
+    @Mixin
+    ContentSchema content = new ContentSchema()
+
+    class ContentSchema {
+        @Option(names = ['--content-examples'], description = CONTENT_EXAMPLES_DESCRIPTION)
+        @JsonPropertyDescription(CONTENT_EXAMPLES_DESCRIPTION)
+        Boolean examples = false
+    }
+
     static class HelmConfig {
         @JsonPropertyDescription(HELM_CONFIG_CHART_DESCRIPTION)
         String chart = ''
@@ -100,6 +110,10 @@ class Config {
         Boolean internal = true
         Boolean twoRegistries = false
 
+        @Option(names = ['--registry'], description = REGISTRY_ENABLE_DESCRIPTION)
+        @JsonPropertyDescription(REGISTRY_ENABLE_DESCRIPTION)
+        Boolean active = false
+        
         @Option(names = ['--internal-registry-port'], description = REGISTRY_INTERNAL_PORT_DESCRIPTION)
         @JsonPropertyDescription(REGISTRY_INTERNAL_PORT_DESCRIPTION)
         Integer internalPort = DEFAULT_REGISTRY_PORT
@@ -173,6 +187,10 @@ class Config {
           $ curl -s https://download.docker.com/linux/debian/dists/bullseye/stable/binary-amd64/Packages  | grep -EA5 'Package\: docker-ce$' | grep Version | sort | uniq | tail -n1
           Version: 5:27.1.1-1~debian.11~bullseye */
         String internalDockerClientVersion = '27.1.2'
+
+        @Option(names = ['--jenkins'], description = JENKINS_ENABLE_DESCRIPTION)
+        @JsonPropertyDescription(JENKINS_ENABLE_DESCRIPTION)
+        Boolean active = false
 
         @Option(names = ['--jenkins-url'], description = JENKINS_URL_DESCRIPTION)
         @JsonPropertyDescription(JENKINS_URL_DESCRIPTION)

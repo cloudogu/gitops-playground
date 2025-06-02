@@ -37,7 +37,7 @@ class Application {
         Set<String> namespaces = new HashSet<>()
         String namePrefix = config.application.namePrefix
 
-        if (config.features.argocd.active) {
+        if (config.content.examples) {
             namespaces.addAll(Arrays.asList(
                     namePrefix + "example-apps-staging",
                     namePrefix + "example-apps-production"

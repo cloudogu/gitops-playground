@@ -179,7 +179,7 @@ class Jenkins extends Feature {
 
         prometheusConfigurator.enableAuthentication()
 
-        if (config.features.argocd.active) {
+        if (config.content.examples) {
 
             String jobName = "${config.application.namePrefix}example-apps"
             def credentialId = "scmm-user"

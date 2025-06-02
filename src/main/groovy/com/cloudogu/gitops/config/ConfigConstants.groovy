@@ -23,6 +23,11 @@ interface ConfigConstants {
     String REGISTRY_CREATE_IMAGE_PULL_SECRETS_DESCRIPTION = 'Create image pull secrets for registry and proxy-registry for all GOP namespaces and helm charts. Uses proxy-username, read-only-username or registry-username (in this order).  Use this if your cluster is not auto-provisioned with credentials for your private registries or if you configure individual helm images to be pulled from the proxy-registry that requires authentication.'
 
     String FEATURES_DESCRIPTION = 'Config parameters for features or tools'
+
+    String CONTENT_DESCRIPTION = 'Config parameters for content, i.e. end-user or tenant applications as opposed to cluster-resources'
+
+    // Content
+    String CONTENT_EXAMPLES_DESCRIPTION = 'Deploy example content: source repos, GitOps repos, Jenkins Job, Argo CD apps/project'
     
     // group jenkins
     String JENKINS_DESCRIPTION = 'Config parameters for Jenkins CI/CD Pipeline Server'

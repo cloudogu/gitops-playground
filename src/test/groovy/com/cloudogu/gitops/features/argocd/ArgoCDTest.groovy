@@ -65,6 +65,9 @@ class ArgoCDTest {
                             url: 'https://github.com/cloudogu/ces-build-lib.git',
                     ]
             ],
+            content: [
+                    examples: true
+            ],
             features    : [
                     argocd      : [
                             operator    : false,
@@ -179,6 +182,22 @@ class ArgoCDTest {
         assertThat(argocdYaml['spec']['source']['directory']).isNull()
         assertThat(argocdYaml['spec']['source']['path']).isEqualTo('argocd/')
         // The other application files should be validated here as well!
+        
+        // Content examples
+        assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/example-apps.yaml')).exists()
+        assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'applications/example-apps.yaml')).exists()
+    }
+
+
+    @Test
+    void 'Disables example content'() {
+        config.content.examples = false
+
+        def argocd = createArgoCD()
+        argocd.install()
+        
+        assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/example-apps.yaml')).doesNotExist()
+        assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'applications/example-apps.yaml')).doesNotExist()
     }
 
     @Test
@@ -1422,11 +1441,14 @@ class ArgoCDTest {
             argocdRepo = argocdRepoInitializationAction.repo
             actualHelmValuesFile = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), HELM_VALUES_PATH)
             clusterResourcesRepo = clusterResourcesInitializationAction.repo
-            exampleAppsRepo = exampleAppsInitializationAction.repo
-            nginxHelmJenkinsRepo = nginxHelmJenkinsInitializationAction.repo
-            nginxValidationRepo = nginxValidationInitializationAction.repo
-            brokenApplicationRepo = brokenApplicationInitializationAction.repo
-            petClinicRepos = petClinicInitializationActions.collect { it.repo }
+            
+            if (config.content.examples) {
+                exampleAppsRepo = exampleAppsInitializationAction.repo
+                nginxHelmJenkinsRepo = nginxHelmJenkinsInitializationAction.repo
+                nginxValidationRepo = nginxValidationInitializationAction.repo
+                brokenApplicationRepo = brokenApplicationInitializationAction.repo
+                petClinicRepos = petClinicInitializationActions.collect { it.repo }
+            }
         }
 
         @Override

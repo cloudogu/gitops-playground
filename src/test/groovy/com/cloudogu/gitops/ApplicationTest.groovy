@@ -26,6 +26,7 @@ class ApplicationTest {
     void 'get active namespaces correctly'() {
         config.features.monitoring.active = true
         config.features.argocd.active = true
+        config.content.examples = true
         config.features.ingressNginx.active = true
         config.application.namePrefix = 'test1-'
         List<String> namespaceList = new ArrayList<>(Arrays.asList(
@@ -48,6 +49,7 @@ class ApplicationTest {
     void 'get active namespaces correctly in Openshift'() {
         config.features.monitoring.active = true
         config.features.argocd.active = true
+        config.content.examples = true
         config.features.ingressNginx.active = true
         config.application.namePrefix = 'test1-'
         config.application.openshift = true
