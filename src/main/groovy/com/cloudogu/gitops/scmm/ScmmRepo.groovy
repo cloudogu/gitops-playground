@@ -15,10 +15,6 @@ import org.eclipse.jgit.transport.RefSpec
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 import retrofit2.Response
 
-import java.nio.file.Files
-import java.nio.file.Path
-import java.util.regex.Pattern
-
 @Slf4j
 class ScmmRepo {
 
@@ -130,11 +126,8 @@ class ScmmRepo {
         fileSystemUtils.copyDirectory(absoluteSrcDirLocation, absoluteLocalRepoTmpDir)
     }
 
-    void replaceTemplates(Pattern filepathMatches, Map parameters) {
-        def engine = new TemplatingEngine()
-        Files.walk(Path.of(absoluteLocalRepoTmpDir))
-                .filter { filepathMatches.matcher(it.toString()).find() }
-                .each { Path it -> engine.replaceTemplate(it.toFile(), parameters) }
+    void replaceTemplates(Map parameters) {
+        new TemplatingEngine().replaceTemplates(new File(absoluteLocalRepoTmpDir), parameters)
     }
 
     void commitAndPush(String commitMessage, String tag = null) {

@@ -423,7 +423,7 @@ class ArgoCD extends Feature {
         }
 
         void replaceTemplates() {
-            repo.replaceTemplates(~/\.ftl/, [
+            repo.replaceTemplates([
                     namePrefix          : config.application.namePrefix,
                     namePrefixForEnvVars: config.application.namePrefixForEnvVars,
                     podResources        : config.application.podResources,
