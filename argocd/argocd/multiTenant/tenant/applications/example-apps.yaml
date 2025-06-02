@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: example-apps
+  namespace: fv24-argocd
+spec:
+  destination:
+    namespace: fv24-argocd
+    server: https://kubernetes.default.svc
+  project: example-apps
+  source:
+    path: argocd/
+    repoURL: http://scmm-scm-manager.fv23-scm-manager.svc.cluster.local/scm/repo/fv23-argocd/example-apps
+    targetRevision: main
+    directory:
+      recurse: true
+  syncPolicy:
+    automated:
+      prune: false # is set to false to prevent projects to be deleted by accident
+      selfHeal: true

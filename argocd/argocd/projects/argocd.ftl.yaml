@@ -24,7 +24,6 @@ spec:
     - ${scmm.repoUrl}argocd/argocd<#if scmm.provider == "gitlab">.git</#if>
     - ${scmm.repoUrl}argocd/cluster-resources<#if scmm.provider == "gitlab">.git</#if>
 </#if>
-    - ${scmm.repoUrl}argocd/example-apps<#if scmm.provider == "gitlab">.git</#if>
 
   # Allow applications from all namespaces to use this project for now.
   sourceNamespaces:

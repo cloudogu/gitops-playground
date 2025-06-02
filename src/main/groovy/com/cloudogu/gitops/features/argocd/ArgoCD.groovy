@@ -31,7 +31,7 @@ class ArgoCD extends Feature {
 
     private String password
 
-    protected final String scmm_url_internal = "http://scmm-scm-manager.${config.application.namePrefix}scm-manager.svc.cluster.local/scm"
+    protected final String scmmUrlInternal = "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm"
 
     protected RepoInitializationAction argocdRepoInitializationAction
     protected RepoInitializationAction clusterResourcesInitializationAction
@@ -150,22 +150,22 @@ class ArgoCD extends Feature {
 
         if (!config.features.secrets.active) {
             log.debug("Deleting unnecessary secrets folder from cluster resources: ${clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
-            deleteDir clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/misc/secrets'
+            FileSystemUtils.deleteDir clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/misc/secrets'
         }
 
         if (!config.features.monitoring.active) {
             log.debug("Deleting unnecessary monitoring folder from cluster resources: ${clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
-            deleteDir clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + MONITORING_RESOURCES_PATH
+            FileSystemUtils.deleteDir clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + MONITORING_RESOURCES_PATH
         } else if (!config.features.ingressNginx.active) {
-            deleteFile clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + MONITORING_RESOURCES_PATH + 'ingress-nginx-dashboard.yaml'
-            deleteFile clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + MONITORING_RESOURCES_PATH + 'ingress-nginx-dashboard-requests-handling.yaml'
+            FileSystemUtils.deleteFile clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + MONITORING_RESOURCES_PATH + 'ingress-nginx-dashboard.yaml'
+            FileSystemUtils.deleteFile clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + MONITORING_RESOURCES_PATH + 'ingress-nginx-dashboard-requests-handling.yaml'
         }
 
         if (!config.scmm.internal) {
             String externalScmmUrl = ScmmRepo.createScmmUrl(config)
             log.debug("Configuring all yaml files in gitops repos to use the external scmm url: ${externalScmmUrl}")
-            replaceFileContentInYamls(new File(clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()), scmm_url_internal, externalScmmUrl)
-            replaceFileContentInYamls(new File(exampleAppsInitializationAction.repo.getAbsoluteLocalRepoTmpDir()), scmm_url_internal, externalScmmUrl)
+            replaceFileContentInYamls(new File(clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()), scmmUrlInternal, externalScmmUrl)
+            replaceFileContentInYamls(new File(exampleAppsInitializationAction.repo.getAbsoluteLocalRepoTmpDir()), scmmUrlInternal, externalScmmUrl)
         }
 
         fileSystemUtils.copyDirectory("${fileSystemUtils.rootDir}/applications/argocd/nginx/helm-umbrella",
@@ -176,8 +176,8 @@ class ArgoCD extends Feature {
     private void prepareApplicationNginxHelmJenkins() {
         if (!config.features.secrets.active) {
             // External Secrets are not needed in example
-            deleteFile nginxHelmJenkinsInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/k8s/staging/external-secret.yaml'
-            deleteFile nginxHelmJenkinsInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/k8s/production/external-secret.yaml'
+            FileSystemUtils.deleteFile nginxHelmJenkinsInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/k8s/staging/external-secret.yaml'
+            FileSystemUtils.deleteFile nginxHelmJenkinsInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/k8s/production/external-secret.yaml'
         }
     }
 
@@ -227,8 +227,14 @@ class ArgoCD extends Feature {
         }
 
         // Bootstrap root application
-        k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'projects/argocd.yaml').toString())
-        k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'applications/bootstrap.yaml').toString())
+        if (config.multiTenant.centralSCMUrl) {
+            k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'multiTenant/central/projects/tenant.yaml').toString())
+            k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'multiTenant/central/applications/bootstrap.yaml').toString())
+
+        } else {
+            k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'projects/argocd.yaml').toString())
+            k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'applications/bootstrap.yaml').toString())
+        }
 
         // Delete helm-argo secrets to decouple from helm.
         // This does not delete Argo from the cluster, but you can no longer modify argo directly with helm
@@ -305,6 +311,15 @@ class ArgoCD extends Feature {
             k8sClient.applyYaml(argocdRbacPath)
         }
 
+        dedicatedInstanceMode()
+    }
+
+
+    protected void dedicatedInstanceMode() {
+
+        log.debug("Deleting unnecessary rbac ${argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
+        FileSystemUtils.deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/operator/rbac/'
+
     }
 
     protected void createMonitoringCrd() {
@@ -335,7 +350,7 @@ class ArgoCD extends Feature {
         // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo
         def repoTemplateSecretName = 'argocd-repo-creds-scmm'
 
-        String scmmUrlForArgoCD = config.scmm.internal ? scmm_url_internal : ScmmRepo.createScmmUrl(config)
+        String scmmUrlForArgoCD = config.scmm.internal ? scmmUrlInternal : ScmmRepo.createScmmUrl(config)
         k8sClient.createSecret('generic', repoTemplateSecretName, namespace,
                 new Tuple2('url', scmmUrlForArgoCD),
                 new Tuple2('username', config.scmm.username),
@@ -369,6 +384,13 @@ class ArgoCD extends Feature {
         if (!config.application.netpols) {
             log.debug("Deleting argocd netpols.")
             FileSystemUtils.deleteFile argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/argocd/templates/allow-namespaces.yaml'
+        }
+
+        if(config.multiTenant.centralSCMUrl){
+            log.debug("Deleting unnecessary MultiTentant files ${argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
+            FileSystemUtils.deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/operator/rbac/'
+            FileSystemUtils.deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/argocd/applications/'
+            FileSystemUtils.deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/argocd/projects/'
         }
 
         argocdRepoInitializationAction.repo.commitAndPush("Initial Commit")

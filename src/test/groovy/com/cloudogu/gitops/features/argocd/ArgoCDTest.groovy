@@ -1367,7 +1367,7 @@ class ArgoCDTest {
         }
     }
 
-    private ArgoCD setupOperatorTest(Map options = [:]) {
+    protected ArgoCD setupOperatorTest(Map options = [:]) {
         config.features.argocd.operator = true
         config.features.argocd.resourceInclusionsCluster = 'https://192.168.0.1:6443'
         config.application.openshift = options.openshift ?: false

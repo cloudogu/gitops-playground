@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: example-apps
+  namespace: fv23-argocd
+spec:
+  description: Contains examples of end-user application
+  destinations:
+    - namespace: fv23-example-apps-production
+      server: https://kubernetes.default.svc
+    - namespace: fv23-example-apps-staging
+      server: https://kubernetes.default.svc
+    - namespace: fv23-argocd
+      server: https://kubernetes.default.svc
+  sourceRepos:
+    - http://scmm-scm-manager.fv23-scm-manager.svc.cluster.local/scm/repo/fv23-argocd/example-apps
+    - http://scmm-scm-manager.fv23-scm-manager.svc.cluster.local/scm/repo/fv23-argocd/nginx-helm-umbrella
+
+  sourceNamespaces:
+    - fv23-example-apps-staging
+    - fv23-example-apps-production
+    - fv23-argocd
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'
+
+  clusterResourceWhitelist: []

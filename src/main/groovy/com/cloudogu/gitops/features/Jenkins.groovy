@@ -66,7 +66,7 @@ class Jenkins extends Feature {
 
     @Override
     boolean isEnabled() {
-        return false
+        return true
 //        return true // For now, we either deploy an internal or configure an external instance
     }
 

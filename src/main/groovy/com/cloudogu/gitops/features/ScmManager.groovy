@@ -110,7 +110,7 @@ class ScmManager extends Feature {
 
                 if(config.multiTenant.centralSCMUrl){
                     log.debug("Setting internal configs for local single node cluster with internal scmm. Waiting for NodePort...")
-                    def portCentralScm = k8sClient.waitForNodePort(serviceName, "scm-manager")
+                    def portCentralScm = k8sClient.waitForNodePort(releaseName, "scm-manager")
                     centralSCMUrl = networkingUtils.createUrl(clusterBindAddress, portCentralScm, contentPath)
                 }
             }
