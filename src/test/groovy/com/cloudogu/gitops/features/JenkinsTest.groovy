@@ -21,7 +21,7 @@ import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.*
 
 class JenkinsTest {
-    Config config = new Config()
+    Config config = new Config( jenkins: new Config.JenkinsSchema(active: true))
 
     String expectedNodeName = 'something'
     

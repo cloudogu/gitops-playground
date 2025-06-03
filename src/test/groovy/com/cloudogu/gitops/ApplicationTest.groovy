@@ -24,6 +24,8 @@ class ApplicationTest {
 
     @Test
     void 'get active namespaces correctly'() {
+        config.registry.active = true
+        config.jenkins.active = true
         config.features.monitoring.active = true
         config.features.argocd.active = true
         config.content.examples = true
@@ -47,6 +49,8 @@ class ApplicationTest {
     }
     @Test
     void 'get active namespaces correctly in Openshift'() {
+        config.registry.active = true
+        config.jenkins.active = true
         config.features.monitoring.active = true
         config.features.argocd.active = true
         config.content.examples = true

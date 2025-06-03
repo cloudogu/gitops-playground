@@ -147,7 +147,7 @@ COPY --from=maven-build /app/gitops-playground.jar /app/
 # Create Graal native image config
 RUN java -agentlib:native-image-agent=config-output-dir=conf/ -jar gitops-playground.jar || true
 # Run again with different params in order to avoid NoSuchMethodException with config file
-RUN printf 'content:\n  examples: true\napplication:\n  "yes": true\nfeatures:\n  argocd:\n    active: true\n    env:\n      - name: mykey\n        value: myValue\n  secrets:\n    vault:\n      mode: "dev"\n  exampleApps:\n    petclinic:\n      baseDomain: "base"' > config.yaml && \
+RUN printf 'registry:\n  active: true\njenkins:\n  active: true\ncontent:\n  examples: true\napplication:\n  "yes": true\nfeatures:\n  argocd:\n    active: true\n    env:\n      - name: mykey\n        value: myValue\n  secrets:\n    vault:\n      mode: "dev"\n  exampleApps:\n    petclinic:\n      baseDomain: "base"' > config.yaml && \
     java -agentlib:native-image-agent=config-merge-dir=conf/ -jar gitops-playground.jar \
       --trace --config-file=config.yaml || true
 # Run again with different params in order to avoid NoSuchMethodException with output-config file

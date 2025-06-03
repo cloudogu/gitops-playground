@@ -188,7 +188,6 @@ class ArgoCDTest {
         assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'applications/example-apps.yaml')).exists()
     }
 
-
     @Test
     void 'Disables example content'() {
         config.content.examples = false

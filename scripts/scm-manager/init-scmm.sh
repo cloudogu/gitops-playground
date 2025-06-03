@@ -32,8 +32,7 @@ function initSCMM() {
   [[ "${SCMM_URL}" != *scm ]] && SCMM_URL=${SCMM_URL}/scm
 
   if [[ ${SCM_PROVIDER} == "scm-manager" ]]; then
-      configureScmmManager "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "${SCMM_URL}" "${JENKINS_URL_FOR_SCMM}" \
-        "${SCMM_URL_FOR_JENKINS}" "${INSTALL_ARGOCD}"
+      configureScmmManager
   fi
 
   if [[ $CONTENT_EXAMPLES == true ]]; then
@@ -235,17 +234,20 @@ function configureScmmManager() {
   installScmmPlugin "scm-editor-plugin" "false"
   installScmmPlugin "scm-landingpage-plugin" "false"
   installScmmPlugin "scm-el-plugin" "false"
-  installScmmPlugin "scm-jenkins-plugin" "false"
   installScmmPlugin "scm-readme-plugin" "false"
   installScmmPlugin "scm-webhook-plugin" "false"
   installScmmPlugin "scm-ci-plugin" "false"
   installScmmPlugin "scm-metrics-prometheus-plugin" "true"
+  
+  if [ -n "${JENKINS_URL_FOR_SCMM}" ]; then
+    installScmmPlugin "scm-jenkins-plugin" "false"
+  fi
 
   # We have to wait 1 second to ensure that the restart is really initiated
   sleep 1
   waitForScmManager
 
-  configJenkins "${JENKINS_URL_FOR_SCMM}"
+  configJenkins
 }
 
 function addRepo() {
@@ -355,17 +357,20 @@ function installScmmPlugin() {
 }
 
 function configJenkins() {
-  printf 'Configuring Jenkins plugin in SCM-Manager ... '
 
-  STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X PUT -H 'Content-Type: application/json' \
-    --data-raw "{\"disableRepositoryConfiguration\":false,\"disableMercurialTrigger\":false,\"disableGitTrigger\":false,\"disableEventTrigger\":false,\"url\":\"${1}\"}" \
-    "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/api/v2/config/jenkins/") && EXIT_STATUS=$? || EXIT_STATUS=$?
-  if [ $EXIT_STATUS != 0 ]; then
-    echo "Configuring Jenkins failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
-    exit $EXIT_STATUS
+  if [ -n "${JENKINS_URL_FOR_SCMM}" ]; then
+    printf 'Configuring Jenkins plugin in SCM-Manager ... '
+  
+    STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X PUT -H 'Content-Type: application/json' \
+      --data-raw "{\"disableRepositoryConfiguration\":false,\"disableMercurialTrigger\":false,\"disableGitTrigger\":false,\"disableEventTrigger\":false,\"url\":\"${JENKINS_URL_FOR_SCMM}\"}" \
+      "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/api/v2/config/jenkins/") && EXIT_STATUS=$? || EXIT_STATUS=$?
+    if [ $EXIT_STATUS != 0 ]; then
+      echo "Configuring Jenkins failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
+      exit $EXIT_STATUS
+    fi
+  
+    printStatus "${STATUS}"
   fi
-
-  printStatus "${STATUS}"
 }
 
 function waitForScmManager() {

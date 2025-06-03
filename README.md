@@ -31,7 +31,8 @@ bash <(curl -s \
     -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     --net=host \
     ghcr.io/cloudogu/gitops-playground --yes --argocd --ingress-nginx --base-url=http://localhost
-# If you want to try all features, you might want to add these params: --mail --monitoring --vault=dev
+# More IDP-features: --mailhog --monitoring --vault=dev --cert-manager
+# More features for developers: --jenkins --registry --content-examples
 ```
 
 Note that on some linux distros like debian do not support subdomains of localhost.
@@ -956,7 +957,12 @@ The following video shows this demo in time-lapse:
 The playground comes with example applications that provide a turnkey solution for GitOps-Pipelines  
 from a developer's point of view.
 
-This includes staging and production environments, providing a ready-to-use solution for promotion.
+These can be enabled using `--content-examples`.  
+They require a registry, so locally use `--registry` or pass in an existing instance using `registry-url`.  
+The examples very much rely on jenkins. So it is recommended to enable it using `--jenkins` or pass in an existing 
+instance using `--jenkins-url`.  
+
+The examples include staging and production environments, providing a ready-to-use solution for promotion.
 
 All applications are deployed via separated application and GitOps repos:
 

@@ -7,6 +7,7 @@ interface ConfigConstants {
     public static final String APP_DESCRIPTION = 'CLI-tool to deploy gitops-playground.'
     
     // group registry
+    String REGISTRY_ENABLE_DESCRIPTION = 'Installs a simple cluster-local registry for demonstration purposes. Warning: Registry does not provide authentication!'
     String REGISTRY_DESCRIPTION = 'Config parameters for Registry'
     String REGISTRY_INTERNAL_PORT_DESCRIPTION = 'Port of registry registry. Ignored when a registry*url params are set'
     String REGISTRY_URL_DESCRIPTION = 'The url of your external registry, used for pushing images'
@@ -30,6 +31,7 @@ interface ConfigConstants {
     String CONTENT_EXAMPLES_DESCRIPTION = 'Deploy example content: source repos, GitOps repos, Jenkins Job, Argo CD apps/project'
     
     // group jenkins
+    String JENKINS_ENABLE_DESCRIPTION = 'Installs Jenkins as CI server'
     String JENKINS_DESCRIPTION = 'Config parameters for Jenkins CI/CD Pipeline Server'
     String JENKINS_URL_DESCRIPTION = 'The url of your external jenkins'
     String JENKINS_USERNAME_DESCRIPTION = 'Mandatory when jenkins-url is set'
