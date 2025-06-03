@@ -49,12 +49,11 @@ class Content extends Feature {
     }
 
     void createImagePullSecrets() {
-        if (config.registry.createImagePullSecrets && config.content.examples) {
+        if (config.registry.createImagePullSecrets) {
             String registryUsername = config.registry.readOnlyUsername ?: config.registry.username
             String registryPassword = config.registry.readOnlyPassword ?: config.registry.password
 
-            List exampleAppNamespaces = ["example-apps-staging", "example-apps-production"]
-            exampleAppNamespaces.each {
+            config.content.namespaces.each {
                 String namespace = "${config.application.namePrefix}${it}"
                 def registrySecretName = 'registry'
 
