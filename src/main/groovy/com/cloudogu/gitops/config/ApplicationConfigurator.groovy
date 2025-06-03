@@ -230,7 +230,11 @@ class ApplicationConfigurator {
             newConfig.multiTenant.centralSCMUrl = newConfig.multiTenant.centralSCMUrl.trim().endsWith('/') ?
                     newConfig.multiTenant.centralSCMUrl.trim() :
                     newConfig.multiTenant.centralSCMUrl.trim() + ''
+
+            //Disabling IngressNginx in DedicatedInstances Mode for now. Ingress has to be handled manually.
+            newConfig.features.ingressNginx.active= false
         }
+
     }
 
     /**

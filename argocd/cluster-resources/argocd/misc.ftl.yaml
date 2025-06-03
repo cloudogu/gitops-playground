@@ -3,14 +3,18 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: misc
+  name: <#if config.multiTenant.centralSCMUrl?has_content>${namePrefix}misc<#else>misc</#if>
 spec:
-  project: cluster-resources
+  project: <#if config.multiTenant.centralSCMUrl?has_content>${tenantName}<#else>cluster-resources</#if>
   destination:
     server: https://kubernetes.default.svc
   source:
     path: misc/
+<#if config.multiTenant.centralSCMUrl?has_content>
+    repoURL: ${scmm.centralScmmUrl}/repo/${namePrefix}argocd/cluster-resources
+<#else>
     repoURL: ${scmm.repoUrl}argocd/cluster-resources<#if scmm.provider == "gitlab">.git</#if>
+</#if>
     targetRevision: main
     directory:
       recurse: true
