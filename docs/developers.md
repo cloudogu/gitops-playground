@@ -237,7 +237,7 @@ scripts/init-cluster.sh --bind-ingress-port="808$INSTANCE" \
   --cluster-name="gitops-playground$INSTANCE" --bind-registry-port="3000$INSTANCE"
 
 docker run --rm -t -u $(id -u) \
- -v "$HOME/.config/k3d/kubeconfig-playground$INSTANCE.yaml:/home/.kube/config" \
+ -v "$HOME/.config/k3d/kubeconfig-gitops-playground$INSTANCE.yaml:/home/.kube/config" \
     --net=host \
     ghcr.io/cloudogu/gitops-playground --yes --internal-registry-port="3000$INSTANCE" -x \
       --base-url="http://localhost:808$INSTANCE" --argocd --ingress-nginx

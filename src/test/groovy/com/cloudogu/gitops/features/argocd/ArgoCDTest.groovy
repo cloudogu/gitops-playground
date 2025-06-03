@@ -123,7 +123,16 @@ class ArgoCDTest {
         assertThat(filesWithInternalSCMM).isNotEmpty()
         assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['server']['service']['type'])
                 .isEqualTo('ClusterIP')
+        assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['server']['service']['type'])
+                .isEqualTo('ClusterIP')
+        assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['notifications']['argocdUrl']).isNull()
 
+        Map repos = parseActualYaml(actualHelmValuesFile)['argo-cd']['configs']['repositories'] as Map
+        assertThat(repos['prometheus']['url']).isEqualTo('https://prometheus-community.github.io/helm-charts')
+
+        assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['crds']).isNull()
+        assertThat(parseActualYaml(actualHelmValuesFile)['global']).isNull()
+        
         // check repoTemplateSecretName
         k8sCommands.assertExecuted('kubectl create secret generic argocd-repo-creds-scmm -n argocd')
         k8sCommands.assertExecuted('kubectl label secret argocd-repo-creds-scmm -n argocd')
@@ -151,28 +160,25 @@ class ArgoCDTest {
         def deleteCommand = k8sCommands.assertExecuted('kubectl delete secret -n argocd')
         assertThat(deleteCommand).contains('owner=helm', 'name=argocd')
 
-        assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['server']['service']['type'])
-                .isEqualTo('ClusterIP')
-        assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['notifications']['argocdUrl']).isNull()
-
-
-        def namespacesYaml = clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + "/misc/namespaces.yaml"
-        assertThat(new File(namespacesYaml)).exists()
-        def yaml = parseActualYaml(namespacesYaml)
-        assertThat(yaml[0]['metadata']['name']).isEqualTo('example-apps-staging')
-        assertThat(yaml[1]['metadata']['name']).isEqualTo('example-apps-production')
-
-        Map repos = parseActualYaml(actualHelmValuesFile)['argo-cd']['configs']['repositories'] as Map
-        assertThat(repos['prometheus']['url']).isEqualTo('https://prometheus-community.github.io/helm-charts')
-
+        // Operator disabled
+        def argocdConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH)
+        def rbacConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_RBAC_PATH)
+        assertThat(argocdConfigPath.toFile()).doesNotExist()
+        assertThat(rbacConfigPath.toFile()).doesNotExist()
+        
+        // Projects
         def clusterRessourcesYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/cluster-resources.yaml')
         assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains(
                 'https://prometheus-community.github.io/helm-charts')
         assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain(
-                'http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack')
+                'http://scmm-scm-manager.default.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack')
+        // The other project files should be validated here as well!
 
-        assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['crds']).isNull()
-        assertThat(parseActualYaml(actualHelmValuesFile)['global']).isNull()
+        // Applications
+        def argocdYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'applications/argocd.yaml')
+        assertThat(argocdYaml['spec']['source']['directory']).isNull()
+        assertThat(argocdYaml['spec']['source']['path']).isEqualTo('argocd/')
+        // The other application files should be validated here as well!
     }
 
     @Test
@@ -783,9 +789,9 @@ class ArgoCDTest {
         createArgoCD().install()
 
         assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['global']['networkPolicy']['create']).isEqualTo(true)
-        assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir(), '/argocd/values.yaml').text.contains("namespace: monitoring")).isTrue()
-        assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir(), '/argocd/templates/allow-namespaces.yaml').text.contains("namespace: monitoring")).isTrue()
-        assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir(), '/argocd/templates/allow-namespaces.yaml').text.contains("namespace: scm-manager")).isTrue()
+        assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir(), '/argocd/values.yaml').text.contains("namespace: monitoring"))
+        assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir(), '/argocd/templates/allow-namespaces.yaml').text.contains("namespace: monitoring"))
+        assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir(), '/argocd/templates/allow-namespaces.yaml').text.contains("namespace: default"))
     }
 
     @Test
@@ -1155,17 +1161,6 @@ class ArgoCDTest {
     }
 
     @Test
-    void 'No files for operator when operator is false'() {
-        createArgoCD().install()
-
-        def argocdConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH)
-        def rbacConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_RBAC_PATH)
-
-        assertThat(argocdConfigPath.toFile()).doesNotExist()
-        assertThat(rbacConfigPath.toFile()).doesNotExist()
-    }
-
-    @Test
     void 'Deploys with operator without OpenShift configuration'() {
         def argoCD = setupOperatorTest(openshift: false)
 
@@ -1177,6 +1172,37 @@ class ArgoCDTest {
         def yaml = parseActualYaml(argocdConfigPath.toFile().toString())
         assertThat(yaml['spec']['rbac']).isNull()
         assertThat(yaml['spec']['sso']).isNull()
+
+        def argocdYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'applications/argocd.yaml')
+        assertThat(argocdYaml['spec']['source']['directory']['recurse'] as Boolean).isTrue()
+        assertThat(argocdYaml['spec']['source']['path']).isEqualTo('operator/')
+        // Here we should assert all <#if argocd.isOperator> in YAML 😐️
+    }
+
+    @Test
+    void 'RBACs with operator'() {
+        config.application.namePrefix = "testPrefix-"
+        def argoCD = setupOperatorTest(openshift: false)
+
+        argoCD.install()
+
+        assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir() + "/${ArgoCD.OPERATOR_RBAC_PATH}/monitoring.yaml")).exists()
+        assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir() + "/${ArgoCD.OPERATOR_RBAC_PATH}/secrets.yaml")).exists()
+        assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir() + "/${ArgoCD.OPERATOR_RBAC_PATH}/ingress-nginx.yaml")).exists()
+        assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir() + "/${ArgoCD.OPERATOR_RBAC_PATH}/example-apps-staging.yaml")).exists()
+        assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir() + "/${ArgoCD.OPERATOR_RBAC_PATH}/example-apps-production.yaml")).exists()
+
+        //we deploy to Yamls via 1 file. So namespace returns boths
+        def monitoringRbacYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), "${ArgoCD.OPERATOR_RBAC_PATH}/monitoring.yaml")
+        assertThat(monitoringRbacYaml['metadata']['namespace']).isEqualTo(["testPrefix-monitoring", "testPrefix-monitoring"])
+        def secretsRbacYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), "${ArgoCD.OPERATOR_RBAC_PATH}/secrets.yaml")
+        assertThat(secretsRbacYaml['metadata']['namespace']).isEqualTo(["testPrefix-secrets", "testPrefix-secrets"])
+        def ingressRbacYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), "${ArgoCD.OPERATOR_RBAC_PATH}/ingress-nginx.yaml")
+        assertThat(ingressRbacYaml['metadata']['namespace']).isEqualTo(["testPrefix-ingress-nginx", "testPrefix-ingress-nginx"])
+        def exampleStatingRbacYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), "${ArgoCD.OPERATOR_RBAC_PATH}/example-apps-staging.yaml")
+        assertThat(exampleStatingRbacYaml['metadata']['namespace']).isEqualTo(["testPrefix-example-apps-staging","testPrefix-example-apps-staging"])
+        def exampleProdRbacYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), "${ArgoCD.OPERATOR_RBAC_PATH}/example-apps-production.yaml")
+        assertThat(exampleProdRbacYaml['metadata']['namespace']).isEqualTo(["testPrefix-example-apps-production","testPrefix-example-apps-production"])
     }
 
     @Test
