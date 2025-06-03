@@ -1180,6 +1180,32 @@ class ArgoCDTest {
     }
 
     @Test
+    void 'RBACs with operator'() {
+        config.application.namePrefix = "testPrefix-"
+        def argoCD = setupOperatorTest(openshift: false)
+
+        argoCD.install()
+
+        assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir() + "/${ArgoCD.OPERATOR_RBAC_PATH}/monitoring.yaml")).exists()
+        assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir() + "/${ArgoCD.OPERATOR_RBAC_PATH}/secrets.yaml")).exists()
+        assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir() + "/${ArgoCD.OPERATOR_RBAC_PATH}/ingress-nginx.yaml")).exists()
+        assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir() + "/${ArgoCD.OPERATOR_RBAC_PATH}/example-apps-staging.yaml")).exists()
+        assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir() + "/${ArgoCD.OPERATOR_RBAC_PATH}/example-apps-production.yaml")).exists()
+
+        //we deploy to Yamls via 1 file. So namespace returns boths
+        def monitoringRbacYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), "${ArgoCD.OPERATOR_RBAC_PATH}/monitoring.yaml")
+        assertThat(monitoringRbacYaml['metadata']['namespace']).isEqualTo(["testPrefix-monitoring", "testPrefix-monitoring"])
+        def secretsRbacYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), "${ArgoCD.OPERATOR_RBAC_PATH}/secrets.yaml")
+        assertThat(secretsRbacYaml['metadata']['namespace']).isEqualTo(["testPrefix-secrets", "testPrefix-secrets"])
+        def ingressRbacYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), "${ArgoCD.OPERATOR_RBAC_PATH}/ingress-nginx.yaml")
+        assertThat(ingressRbacYaml['metadata']['namespace']).isEqualTo(["testPrefix-ingress-nginx", "testPrefix-ingress-nginx"])
+        def exampleStatingRbacYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), "${ArgoCD.OPERATOR_RBAC_PATH}/example-apps-staging.yaml")
+        assertThat(exampleStatingRbacYaml['metadata']['namespace']).isEqualTo(["testPrefix-example-apps-staging","testPrefix-example-apps-staging"])
+        def exampleProdRbacYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), "${ArgoCD.OPERATOR_RBAC_PATH}/example-apps-production.yaml")
+        assertThat(exampleProdRbacYaml['metadata']['namespace']).isEqualTo(["testPrefix-example-apps-production","testPrefix-example-apps-production"])
+    }
+
+    @Test
     void 'Deploys with operator with OpenShift configuration'() {
         def argoCD = setupOperatorTest(openshift: true)
 
