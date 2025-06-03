@@ -59,7 +59,7 @@ class TemplatingEngineTest {
     }
 
     @Test
-    void 'Templates to string'() {
+    void 'Templates from file to string'() {
         def fooTemplate = new File(tmpDir.absolutePath, "foo.ftl.txt")
         fooTemplate.text = "Hello \${name}"
 
@@ -69,6 +69,28 @@ class TemplatingEngineTest {
         ])
 
         assertThat(result).isEqualTo("Hello Playground")
+    }
+    
+    @Test
+    void 'Templates from string to string'() {
+        def fooTemplate = "Hello \${name}"
+
+        def engine = new TemplatingEngine()
+        String result = engine.template(fooTemplate, [
+                name: "Playground",
+        ])
+
+        assertThat(result).isEqualTo("Hello Playground")
+    }
+    
+    @Test
+    void 'Ignores templates without variables'() {
+        def fooTemplate = "Hello name"
+
+        def engine = new TemplatingEngine()
+        String result = engine.template(fooTemplate, [:])
+
+        assertThat(result).isEqualTo("Hello name")
     }
 
     @Test

@@ -69,6 +69,7 @@ class ContentTest {
     void 'deploys image pull secrets'() {
         config.content.examples = true
         config.registry.createImagePullSecrets = true
+        config.content.namespaces = [ 'example-apps-staging', 'example-apps-production']
 
         createContent().install()
 
@@ -79,6 +80,7 @@ class ContentTest {
     void 'deploys image pull secrets from read-only vars'() {
         config.content.examples = true
         config.registry.createImagePullSecrets = true
+        config.content.namespaces = [ 'example-apps-staging', 'example-apps-production']
         config.registry.readOnlyUsername = 'other-user'
         config.registry.readOnlyPassword = 'other-pw'
 
@@ -91,10 +93,12 @@ class ContentTest {
     void 'deploys additional image pull secrets for proxy registry'() {
         config.content.examples = true
         config.registry.createImagePullSecrets = true
+        config.content.namespaces = [ 'example-apps-staging', 'example-apps-production']
         config.registry.twoRegistries = true
         config.registry.proxyUrl = 'proxy-url'
         config.registry.proxyUsername = 'proxy-user'
         config.registry.proxyPassword = 'proxy-pw'
+        
 
         // Simulate argocd Namespace does not exist
         k8sCommands.enqueueOutput(new CommandExecutor.Output('namespace not found', '', 1)) // Namespace not exit

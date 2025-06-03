@@ -52,9 +52,11 @@ class ApplicationConfigurator {
         if (newConfig.features.ingressNginx.active && !newConfig.application.baseUrl) {
             log.warn("Ingress-controller is activated without baseUrl parameter. Services will not be accessible by hostnames. To avoid this use baseUrl with ingress. ")
         }
-        
-        if (newConfig.content.examples && !newConfig.registry.active) {
-            throw new RuntimeException("content.examples requires either registry.active or registry.url")
+        if (newConfig.content.examples) {
+            if  (!newConfig.registry.active) {
+                throw new RuntimeException("content.examples requires either registry.active or registry.url")
+            }
+            newConfig.content.namespaces += [ 'example-apps-staging', 'example-apps-production']
         }
     }
 
