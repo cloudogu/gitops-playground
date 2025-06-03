@@ -148,7 +148,6 @@ class ScmmRepo {
 
             def pushCommand = getGit()
                     .push()
-                    .setForce(true)
                     .setRemote(getGitRepositoryUrl())
                     .setRefSpecs(new RefSpec("HEAD:refs/heads/main"))
                     .setCredentialsProvider(getCredentialProvider())

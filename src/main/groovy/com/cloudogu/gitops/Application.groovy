@@ -1,6 +1,9 @@
 package com.cloudogu.gitops
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.utils.TemplatingEngine
+import freemarker.template.Configuration
+import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
 import jakarta.inject.Singleton
 
@@ -35,13 +38,14 @@ class Application {
 
     void setNamespaceListToConfig(Config config) {
         Set<String> namespaces = new HashSet<>()
-        String namePrefix = config.application.namePrefix
+        def engine = new TemplatingEngine()
 
-        if (config.content.examples) {
-            namespaces.addAll(Arrays.asList(
-                    namePrefix + "example-apps-staging",
-                    namePrefix + "example-apps-production"
-            ))
+        config.content.namespaces.each { String ns ->
+            namespaces.add(engine.template(ns, [
+                    config              : config,
+                    // Allow for using static classes inside the templates
+                    statics             : new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels()
+            ]))
         }
 
         //iterates over all FeatureWithImages and gets their namespaces

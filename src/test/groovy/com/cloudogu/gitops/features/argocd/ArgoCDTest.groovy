@@ -42,6 +42,7 @@ class ArgoCDTest {
                     namePrefixForEnvVars: '',
                     gitName             : 'Cloudogu',
                     gitEmail            : 'hello@cloudogu.com',
+                    activeNamespaces: ["argocd", "monitoring", "ingress-nginx", "example-apps-staging", "example-apps-production", "secrets"]
 
             ],
             scmm        : [
@@ -1387,7 +1388,7 @@ class ArgoCDTest {
 
         argoCD.install()
 
-        getNamespaceList().each { namespace ->
+        config.application.activeNamespaces.each { namespace ->
             k8sCommands.assertExecuted("kubectl create namespace ${namespace}")
         }
     }
@@ -1499,21 +1500,17 @@ class ArgoCDTest {
 
     private void simulateNamespaceCreation() {
         Queue<CommandExecutor.Output> outputs = new LinkedList<CommandExecutor.Output>()
-        getNamespaceList().each { namespace ->
+        config.application.activeNamespaces.each { namespace ->
             outputs.add(new CommandExecutor.Output("${namespace} not found", "", 1))
             outputs.add(new CommandExecutor.Output("${namespace} created", "", 0))
         }
         k8sCommands.enqueueOutputs(outputs)
     }
 
-    private static Queue<CommandExecutor.Output> queueUpAllNamespacesExist() {
+    private Queue<CommandExecutor.Output> queueUpAllNamespacesExist() {
         return new LinkedList<CommandExecutor.Output>(
-                getNamespaceList().collect { namespace -> new CommandExecutor.Output(namespace, "", 0) }
+                config.application.activeNamespaces.collect { namespace -> new CommandExecutor.Output(namespace, "", 0) }
         )
-    }
-
-    private static List<String> getNamespaceList() {
-        return ["argocd", "monitoring", "ingress-nginx", "example-apps-staging", "example-apps-production", "secrets"]
     }
 
     class ArgoCDForTest extends ArgoCD {

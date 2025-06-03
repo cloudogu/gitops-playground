@@ -172,6 +172,16 @@ class ApplicationConfiguratorTest {
     }
 
     @Test
+    void 'Adds content example namespaces'() {
+        testConfig.content.examples = true
+
+        def actualConfig = applicationConfigurator.initConfig(testConfig)
+
+        assertThat(actualConfig.content.namespaces).containsExactlyInAnyOrder('example-apps-staging', 'example-apps-production')
+    }
+
+
+    @Test
     void 'Fails if example Content is active but registry is not active'() {
         testConfig.content.examples = true
         testConfig.registry.internal = false

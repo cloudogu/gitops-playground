@@ -31,6 +31,10 @@ class ApplicationTest {
         config.content.examples = true
         config.features.ingressNginx.active = true
         config.application.namePrefix = 'test1-'
+        config.content.namespaces = [
+                '${config.application.namePrefix}example-apps-staging',
+                '${config.application.namePrefix}example-apps-production'
+        ]
         List<String> namespaceList = new ArrayList<>(Arrays.asList(
                 "test1-argocd",
                 "test1-example-apps-staging",
@@ -47,6 +51,7 @@ class ApplicationTest {
         application.setNamespaceListToConfig(config)
         assertThat(config.application.getActiveNamespaces()).containsExactlyInAnyOrderElementsOf(namespaceList)
     }
+    
     @Test
     void 'get active namespaces correctly in Openshift'() {
         config.registry.active = true
@@ -57,6 +62,10 @@ class ApplicationTest {
         config.features.ingressNginx.active = true
         config.application.namePrefix = 'test1-'
         config.application.openshift = true
+        config.content.namespaces = [
+                '${config.application.namePrefix}example-apps-staging',
+                '${config.application.namePrefix}example-apps-production'
+        ]
         List<String> namespaceList = new ArrayList<>(Arrays.asList(
                 "test1-argocd",
                 "test1-example-apps-staging",
@@ -72,5 +81,30 @@ class ApplicationTest {
                 .getBean(Application)
         application.setNamespaceListToConfig(config)
         assertThat(config.application.getActiveNamespaces()).containsExactlyInAnyOrderElementsOf(namespaceList)
+    }
+
+    @Test
+    void 'handles content namespaces without template'() {
+        config.content.namespaces = [
+                'example-apps-staging',
+                'example-apps-production'
+        ]
+        def application = ApplicationContext.run()
+                .registerSingleton(config)
+                .getBean(Application)
+        application.setNamespaceListToConfig(config)
+        assertThat(config.application.getActiveNamespaces()).containsAll([
+                "example-apps-staging",
+                "example-apps-production",
+        ])
+    }
+    
+    @Test
+    void 'handles empty content namespaces'() {
+        def application = ApplicationContext.run()
+                .registerSingleton(config)
+                .getBean(Application)
+        application.setNamespaceListToConfig(config)
+        // No exception == happy
     }
 }

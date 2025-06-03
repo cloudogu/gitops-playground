@@ -6,7 +6,7 @@ import freemarker.template.Version
 
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util.regex.Pattern
+import java.util.regex.Pattern 
 
 class TemplatingEngine {
     private Configuration engine
@@ -56,6 +56,8 @@ class TemplatingEngine {
 
         return targetFile
     }
+    
+    
 
     String template(File templateFile, Map parameters) {
         Template template = prepareTemplate(templateFile)
@@ -63,6 +65,13 @@ class TemplatingEngine {
         StringWriter writer = new StringWriter()
         template.process(parameters, writer)
         
+        return writer.toString()
+    }
+
+    String template(String template, Map parameters) {
+        StringWriter writer = new StringWriter()
+        Template templateObj = new Template("template", new StringReader(template), engine)
+        templateObj.process(parameters, writer)
         return writer.toString()
     }
 
@@ -76,4 +85,6 @@ class TemplatingEngine {
         def template = engine.getTemplate(templateFile.name)
         template
     }
+    
+    
 }

@@ -214,10 +214,8 @@ class ArgoCD extends Feature {
 
         prepareArgoCdRepo()
 
-        def namespaceList = getNamespaceList()
-
         log.debug("Creating namespaces")
-        k8sClient.createNamespaces(namespaceList)
+        k8sClient.createNamespaces(config.application.activeNamespaces)
 
         createMonitoringCrd()
 
@@ -260,12 +258,6 @@ class ArgoCD extends Feature {
         // For development keeping it in helm makes it easier (e.g. for helm uninstall).
         k8sClient.delete('secret', namespace,
                 new Tuple2('owner', 'helm'), new Tuple2('name', 'argocd'))
-    }
-
-    private List<String> getNamespaceList() {
-        def namespaceList = ["argocd", "monitoring", "ingress-nginx", "example-apps-staging", "example-apps-production", "secrets"]
-        def prefixedNamespaces = namespaceList.collect { ns -> "${config.application.namePrefix}${ns}".toString() }
-        return prefixedNamespaces
     }
 
     private void deployWithHelm() {
@@ -315,9 +307,8 @@ class ArgoCD extends Feature {
         log.debug("Updating managed namespaces in ArgoCD configuration secret.")
         // The ArgoCD instance installed via an operator only manages its deployment namespace.
         // To manage additional namespaces, we need to update the 'argocd-default-cluster-config' secret with all managed namespaces.
-        def namespaceList = getNamespaceList()
         k8sClient.patch('secret', 'argocd-default-cluster-config', namespace,
-                [stringData: ['namespaces': namespaceList.join(',')]])
+                [stringData: ['namespaces': config.application.activeNamespaces.join(',')]])
 
         log.debug("Apply RBAC permissions for ArgoCD in all managed namespaces imperatively")
         // Apply rbac yamls from operator/rbac folder

@@ -151,6 +151,13 @@
           "type" : [ "boolean", "null" ],
           "description" : "Deploy example content: source repos, GitOps repos, Jenkins Job, Argo CD apps/project"
         },
+        "namespaces" : {
+          "description" : "Additional kubernetes namespaces. These are authorized to Argo CD, supplied with image pull secrets, monitored by prometheus, etc. Namespaces can be templates, e.g. ${config.application.namePrefix}staging}",
+          "type" : [ "array", "null" ],
+          "items" : {
+            "type" : "string"
+          }
+        },
         "repos" : {
           "description" : "Content repos to push into target environment",
           "type" : [ "array", "null" ],
