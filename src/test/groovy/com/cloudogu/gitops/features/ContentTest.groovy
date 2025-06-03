@@ -6,7 +6,6 @@ import com.cloudogu.gitops.scmm.api.Permission
 import com.cloudogu.gitops.scmm.api.Repository
 import com.cloudogu.gitops.scmm.api.ScmmApiClient
 import com.cloudogu.gitops.utils.*
-import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 import org.apache.commons.io.FileUtils
 import org.eclipse.jgit.api.CloneCommand
@@ -58,11 +57,11 @@ class ContentTest {
             // Non-folder-based repo writing to their own target
             new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), folderBased: false, target: 'nonFolderBased/repo1'),
             new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), folderBased: false, target: 'nonFolderBased/repo2', path: 'subPath'),
-
+            
             // Same folder as in folderBasedRepos -> Should be combined
             new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', folderBased: false, target: 'common/repo'),
             new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), folderBased: false, target: 'common/repo', path: 'subPath'),
-
+            
             // Contains ftl
             new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('folderBasedRepo1'), folderBased: true, templating: true),
             // Contains a templated file that should be ignored
@@ -71,7 +70,6 @@ class ContentTest {
 
     @AfterAll
     static void cleanFolders() {
-
         foldersToDelete.each { it.deleteDir() }
     }
 
@@ -109,7 +107,6 @@ class ContentTest {
         config.registry.proxyUrl = 'proxy-url'
         config.registry.proxyUsername = 'proxy-user'
         config.registry.proxyPassword = 'proxy-pw'
-
 
         // Simulate argocd Namespace does not exist
         k8sCommands.enqueueOutput(new CommandExecutor.Output('namespace not found', '', 1)) // Namespace not exit
@@ -160,6 +157,22 @@ class ContentTest {
     }
 
     @Test
+    void 'test custom variables'() {
+
+        config.content.repos = [
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('folderBasedRepo1'), folderBased: true, templating: true)
+        ]
+        config.content.variables.someapp = [somevalue: 'this is a custom variable']
+
+        def repos = createContent().cloneContentRepos()
+
+        // Assert Templating
+        assertThat(new File(findRoot(repos), "common/repo/some.yaml")).exists()
+        assertThat(new File(findRoot(repos), "common/repo/some.yaml").text).contains("namePrefix: foo-")
+        assertThat(new File(findRoot(repos), "common/repo/some.yaml").text).contains("myvar: this is a custom variable")
+    }
+
+    @Test
     void 'Authenticates content Repos'() {
         config.content.repos = [
                 new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', folderBased: false, target: 'common/repo', username: 'user', password: 'pw')
@@ -176,7 +189,7 @@ class ContentTest {
         assertThat(value.properties.username).isEqualTo('user')
         assertThat(value.properties.password).isEqualTo('pw'.toCharArray())
     }
-
+    
     @Test
     void 'Checks out commit refs and tags for content repos'() {
         config.content.repos = [
@@ -220,14 +233,14 @@ class ContentTest {
         assertThat(actualTargetRepos).hasSameSizeAs(expectedTargetRepos)
 
         expectedTargetRepos.each { expected ->
-
+            
             def actual = actualTargetRepos.findAll { actual ->
                 actual.namespace == expected.namespace && actual.repo == expected.repo
             }
             assertThat(actual).withFailMessage(
                     "Could not find repo with namespace=${expected.namespace} and repo=${expected.repo} in ${actualTargetRepos}"
             ).hasSize(1)
-
+            
             assertThat(actual[0].newContent.absolutePath).isEqualTo(
                     new File(findRoot(repos), "${expected.namespace}/${expected.repo}").absolutePath)
         }
@@ -455,7 +468,6 @@ class ContentTest {
 
     static String createContentRepo(String srcPath) {
         // The bare repo works as the "remote"
-
         def bareRepoDir = File.createTempDir('gitops-playground-test-content-repo')
         bareRepoDir.deleteOnExit()
         foldersToDelete << bareRepoDir
@@ -521,7 +533,7 @@ class ContentTest {
 
     }
 
-    @Slf4j
+
     class ContentForTest extends Content {
         CloneCommand cloneSpy
 
