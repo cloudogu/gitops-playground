@@ -52,9 +52,11 @@ class ApplicationConfigurator {
         if (newConfig.features.ingressNginx.active && !newConfig.application.baseUrl) {
             log.warn("Ingress-controller is activated without baseUrl parameter. Services will not be accessible by hostnames. To avoid this use baseUrl with ingress. ")
         }
-        
-        if (newConfig.content.examples && !newConfig.registry.active) {
-            throw new RuntimeException("content.examples requires either registry.active or registry.url")
+        if (newConfig.content.examples) {
+            if  (!newConfig.registry.active) {
+                throw new RuntimeException("content.examples requires either registry.active or registry.url")
+            }
+            newConfig.content.namespaces += [ 'example-apps-staging', 'example-apps-production']
         }
     }
 
@@ -251,6 +253,7 @@ class ApplicationConfigurator {
     void validateConfig(Config configToSet) {
         validateScmmAndJenkinsAreBothSet(configToSet)
         validateMirrorReposHelmChartFolderSet(configToSet)
+        validateContent(configToSet)
     }
 
     private void validateMirrorReposHelmChartFolderSet(Config configToSet) {
@@ -259,6 +262,17 @@ class ApplicationConfigurator {
             throw new RuntimeException("Missing config for localHelmChartFolder.\n" +
                     "Either run inside the official container image or setting env var " +
                     "LOCAL_HELM_CHART_FOLDER='charts' after running 'scripts/downloadHelmCharts.sh' from the repo")
+        }
+    }
+    
+    static void validateContent(Config config) {
+        config.content.repos.each { repo ->
+            if (!repo.url) {
+                throw new RuntimeException('content.repos requires a url parameter')
+            }
+            if (!repo.folderBased && !repo.target) {
+                throw new RuntimeException('content.repos.folderBased: false requires folder content.repos.target to be set')
+            }
         }
     }
 

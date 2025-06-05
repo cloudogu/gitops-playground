@@ -4,6 +4,10 @@ import freemarker.template.Configuration
 import freemarker.template.Template
 import freemarker.template.Version
 
+import java.nio.file.Files
+import java.nio.file.Path
+import java.util.regex.Pattern 
+
 class TemplatingEngine {
     private Configuration engine
 
@@ -27,6 +31,17 @@ class TemplatingEngine {
     }
 
     /**
+     * Recursively templates all .ftl files in <code>path</code>.
+     *
+     * That is, apply {@link #replaceTemplate(java.io.File, java.util.Map)} to all files matching <code>filepathMatches</code>.  
+     */
+    void replaceTemplates(File path, Map parameters, Pattern filepathMatches = ~/\.ftl/) {
+        Files.walk(path.toPath())
+                .filter { filepathMatches.matcher(it.toString()).find() }
+                .each { Path it -> replaceTemplate(it.toFile(), parameters) }
+    }
+
+    /**
      * Executes template and writes to targetFile, keeping the template file.
      */
     File template(File templateFile, File targetFile, Map parameters) {
@@ -35,6 +50,8 @@ class TemplatingEngine {
 
         return targetFile
     }
+    
+    
 
     String template(File templateFile, Map parameters) {
         Template template = prepareTemplate(templateFile)
@@ -42,6 +59,13 @@ class TemplatingEngine {
         StringWriter writer = new StringWriter()
         template.process(parameters, writer)
         
+        return writer.toString()
+    }
+
+    String template(String template, Map parameters) {
+        StringWriter writer = new StringWriter()
+        Template templateObj = new Template("template", new StringReader(template), engine)
+        templateObj.process(parameters, writer)
         return writer.toString()
     }
 
@@ -55,4 +79,6 @@ class TemplatingEngine {
         def template = engine.getTemplate(templateFile.name)
         template
     }
+    
+    
 }

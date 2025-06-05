@@ -1,17 +1,25 @@
 package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
-
 import com.cloudogu.gitops.scmm.ScmmRepo
+import com.cloudogu.gitops.scmm.api.Permission
+import com.cloudogu.gitops.scmm.api.Repository
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Ref
 import org.junit.jupiter.api.Test
+import org.mockito.ArgumentCaptor
+import retrofit2.Call
 
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
+import static org.mockito.ArgumentMatchers.*
+import static org.mockito.Mockito.*
 
 class ScmmRepoTest {
 
+
+    public static final String expectedNamespace = "namespace"
+    public static final String expectedRepo = "repo"
     Config config = new Config(
             application: new Config.ApplicationSchema(
                     gitName: "Cloudogu",
@@ -20,8 +28,14 @@ class ScmmRepoTest {
             scmm: new Config.ScmmSchema(
                     username: "dont-care-username",
                     password: "dont-care-password",
+                    gitOpsUsername: 'foo-gitops'
             ))
-
+    TestScmmRepoProvider scmmRepoProvider = new TestScmmRepoProvider(config, new FileSystemUtils())
+    TestScmmApiClient scmmApiClient = new TestScmmApiClient(config)
+    Call<Void>  response201 = TestScmmApiClient.mockSuccessfulResponse(201)
+    Call<Void> response409 = scmmApiClient.mockErrorResponse(409)
+    Call<Void> response500 = scmmApiClient.mockErrorResponse(500)
+    
     @Test
     void "writes file"() {
         def repo = createRepo()
@@ -65,20 +79,6 @@ class ScmmRepoTest {
         shouldFail(FileNotFoundException) {
             repo.writeFile("test.txt", "the file's content")
         }
-    }
-
-    @Test
-    void "replaces yaml templates"() {
-        def repo = createRepo()
-        def tempDir = repo.absoluteLocalRepoTmpDir
-        repo.writeFile("subdirectory/result.ftl.yaml", 'foo: ${prefix}suffix')
-        repo.writeFile("subdirectory/keep-this-way.yaml", 'thiswont: ${prefix}-be-replaced')
-
-        repo.replaceTemplates(~/\.ftl\.yaml$/, [prefix: "myteam-"])
-
-        assertThat(new File("$tempDir/subdirectory/result.yaml").text).isEqualTo("foo: myteam-suffix")
-        assertThat(new File("$tempDir/subdirectory/keep-this-way.yaml").text).isEqualTo('thiswont: ${prefix}-be-replaced')
-        assertThat(new File("$tempDir/subdirectory/result.ftl.yaml").exists()).isFalse()
     }
 
     @Test
@@ -129,7 +129,7 @@ class ScmmRepoTest {
         assertThat(commits[0].committerIdent.name).isEqualTo("Cloudogu")
 
         List<Ref> tags = Git.open(new File(repo.absoluteLocalRepoTmpDir)).tagList().call()
-        assertThat(tags.size()).isEqualTo(0)
+        assertThat(tags.size()).isEqualTo(1) // Already one test tag present
     }
 
     @Test
@@ -147,7 +147,7 @@ class ScmmRepoTest {
 
 
         List<Ref> tags = Git.open(new File(repo.absoluteLocalRepoTmpDir)).tagList().call()
-        assertThat(tags.size()).isEqualTo(1)
+        assertThat(tags.size()).isEqualTo(2) // Already one test tag present
         assertThat(tags[0].name).isEqualTo("refs/tags/$expectedTag".toString())
         // It would be a good idea to check if the git tag is set on the commit. 
         // However, it's extremely complicated with jgit
@@ -155,8 +155,100 @@ class ScmmRepoTest {
         // https://github.com/centic9/jgit-cookbook/blob/d923e18b2ce2e55761858fd2e8e402dd252e0766/src/main/java/org/dstadler/jgit/porcelain/ListTags.java
         // 🤷
     }
+    
+    @Test
+    void 'Create repo'() {
+        def repo = createRepo()
 
-    private ScmmRepo createRepo(String repoTarget = "dont-care-repo-target") {
-        return new TestScmmRepoProvider(config, new FileSystemUtils()).getRepo(repoTarget)
+        when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response201)
+        when(scmmApiClient.repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(response201)
+        
+        repo.create('description', scmmApiClient)
+
+        assertCreatedRepo()
+    }
+
+    @Test
+    void 'Create repo: Ignores existing Repos'() {
+        def repo = createRepo()
+
+        when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response409)
+        when(scmmApiClient.repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(response201)
+        
+        repo.create('description', scmmApiClient)
+
+        assertCreatedRepo()
+    }
+    
+    @Test
+    void 'Create repo: Ignore existing Repos'() {
+        def repo = createRepo()
+
+        when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response409)
+        when(scmmApiClient.repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(response201)
+        
+        repo.create('description', scmmApiClient)
+
+        assertCreatedRepo()
+    }
+    
+    @Test
+    void 'Create repo: Ignore existing Permissions'() {
+        def repo = createRepo()
+
+        when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response201)
+        when(scmmApiClient.repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(response409)
+
+        repo.create('description', scmmApiClient)
+
+        assertCreatedRepo()
+    }
+
+    @Test
+    void 'Create repo: Handle failures to SCMM-API for Repos'() {
+        def repo = createRepo()
+
+        when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response500)
+
+        def exception = shouldFail(RuntimeException) {
+            repo.create('description', scmmApiClient)
+        }
+        assertThat(exception.message).startsWith('Could not create Repository')
+        assertThat(exception.message).contains(expectedNamespace)
+        assertThat(exception.message).contains(expectedRepo)
+        assertThat(exception.message).contains('500')
+    }
+
+    @Test
+    void 'Create repo: Handle failures to SCMM-API for Permissions'() {
+        def repo = createRepo()
+
+        when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response201)
+        when(scmmApiClient.repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(response500)
+
+        def exception = shouldFail(RuntimeException) {
+            repo.create('description', scmmApiClient)
+        }
+        assertThat(exception.message).startsWith("Could not create Permission for repo $expectedNamespace/$expectedRepo")
+        assertThat(exception.message).contains('foo-gitops')
+        assertThat(exception.message).contains(Permission.Role.WRITE.name())
+        assertThat(exception.message).contains('500')
+    }
+
+    protected void assertCreatedRepo() {
+        def repoCreateArgument = ArgumentCaptor.forClass(Repository)
+        verify(scmmApiClient.repositoryApi, times(1)).create(repoCreateArgument.capture(), eq(true))
+        assertThat(repoCreateArgument.allValues[0].namespace).isEqualTo(expectedNamespace)
+        assertThat(repoCreateArgument.allValues[0].name).isEqualTo(expectedRepo)
+        assertThat(repoCreateArgument.allValues[0].description).isEqualTo('description')
+
+        def permissionCreateArgument = ArgumentCaptor.forClass(Permission)
+        verify(scmmApiClient.repositoryApi, times(1)).createPermission(anyString(), anyString(), permissionCreateArgument.capture())
+        assertThat(permissionCreateArgument.allValues[0].name).isEqualTo('foo-gitops')
+        assertThat(permissionCreateArgument.allValues[0].role).isEqualTo(Permission.Role.WRITE)
+    }
+    
+    private ScmmRepo createRepo(String repoTarget = "${expectedNamespace}/${expectedRepo}") {
+        return scmmRepoProvider.getRepo(repoTarget)
     }
 }

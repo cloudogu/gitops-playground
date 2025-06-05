@@ -6,6 +6,8 @@ import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import org.apache.commons.io.FileUtils
 import org.eclipse.jgit.api.Git
 
+import static org.mockito.Mockito.spy
+
 class TestScmmRepoProvider extends ScmmRepoProvider {
     Map<String, ScmmRepo> repos = [:]
     
@@ -15,6 +17,11 @@ class TestScmmRepoProvider extends ScmmRepoProvider {
 
     @Override
     ScmmRepo getRepo(String repoTarget) {
+        // Check if we already have a mock for this repo
+        if (repos.containsKey(repoTarget)) {
+            return repos[repoTarget]
+        }
+
         ScmmRepo repo = new ScmmRepo(config, repoTarget, fileSystemUtils) {
             @Override
             protected String getGitRepositoryUrl() {
@@ -38,7 +45,10 @@ class TestScmmRepoProvider extends ScmmRepoProvider {
                         .call()
             }
         }
-        repos.put(repoTarget, repo)
-        return repo
+        // Create a spy to enable verification while keeping real behavior
+        ScmmRepo spyRepo = spy(repo)
+
+        repos.put(repoTarget, spyRepo)
+        return spyRepo
     }
 }
