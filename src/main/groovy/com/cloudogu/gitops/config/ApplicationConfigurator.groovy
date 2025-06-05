@@ -23,9 +23,9 @@ class ApplicationConfigurator {
 
         addScmmConfig(newConfig)
 
-        addJenkinsConfig(newConfig)
-
         addRegistryConfig(newConfig)
+        
+        addJenkinsConfig(newConfig)
 
         addFeatureConfig(newConfig)
 
@@ -41,14 +41,20 @@ class ApplicationConfigurator {
     private void addFeatureConfig(Config newConfig) {
         if (newConfig.features.secrets.vault.mode)
             newConfig.features.secrets.active = true
+        
         if (newConfig.features.mail.smtpAddress || newConfig.features.mail.mailhog)
             newConfig.features.mail.active = true
         if (newConfig.features.mail.smtpAddress && newConfig.features.mail.mailhog) {
             newConfig.features.mail.mailhog = false
             log.warn("Enabled both external Mailserver and MailHog! Implicitly deactivating MailHog")
         }
+        
         if (newConfig.features.ingressNginx.active && !newConfig.application.baseUrl) {
             log.warn("Ingress-controller is activated without baseUrl parameter. Services will not be accessible by hostnames. To avoid this use baseUrl with ingress. ")
+        }
+        
+        if (newConfig.content.examples && !newConfig.registry.active) {
+            throw new RuntimeException("content.examples requires either registry.active or registry.url")
         }
     }
 
@@ -63,16 +69,19 @@ class ApplicationConfigurator {
     }
 
     private void addRegistryConfig(Config newConfig) {
-        if (newConfig.registry.proxyUrl) {
-            newConfig.registry.twoRegistries = true
-            if (!newConfig.registry.proxyUsername || !newConfig.registry.proxyPassword) {
-                throw new RuntimeException("Proxy URL needs to be used with proxy-username and proxy-password")
+        // Process image pull secrets first, they might even be relevant if no registry is set
+        if (newConfig.registry.createImagePullSecrets) {
+            String username = newConfig.registry.readOnlyUsername ?: newConfig.registry.username
+            String password = newConfig.registry.readOnlyPassword ?: newConfig.registry.password
+            if (!username || !password) {
+                throw new RuntimeException("createImagePullSecrets needs to be used with either registry username and password or the readOnly variants")
             }
         }
 
         if (newConfig.registry.url) {
             newConfig.registry.internal = false
-        } else {
+            newConfig.registry.active = true
+        } else if (newConfig.registry.active) {
             /* Internal Docker registry must be on localhost. Otherwise docker will use HTTPS, leading to errors on 
                docker push in the example application's Jenkins Jobs.
                Both setting up HTTPS or allowing insecure registry via daemon.json makes the playground difficult to use.
@@ -80,13 +89,15 @@ class ApplicationConfigurator {
                Allow overriding the port, in case multiple playground instance run on a single host in different 
                k3d clusters. */
             newConfig.registry.url = "localhost:${newConfig.registry.internalPort}"
+        } else {
+            // Registry not active, no need to set the following values
+            return
         }
 
-        if (newConfig.registry.createImagePullSecrets) {
-            String username = newConfig.registry.readOnlyUsername ?: newConfig.registry.username
-            String password = newConfig.registry.readOnlyPassword ?: newConfig.registry.password
-            if (!username || !password) {
-                throw new RuntimeException("createImagePullSecrets needs to be used with either registry username and password or the readOnly variants")
+        if (newConfig.registry.proxyUrl) {
+            newConfig.registry.twoRegistries = true
+            if (!newConfig.registry.proxyUsername || !newConfig.registry.proxyPassword) {
+                throw new RuntimeException("Proxy URL needs to be used with proxy-username and proxy-password")
             }
         }
     }
@@ -138,9 +149,10 @@ class ApplicationConfigurator {
         log.debug("Adding additional config for Jenkins")
         if (newConfig.jenkins.url) {
             log.debug("Setting external jenkins config")
+            newConfig.jenkins.active = true
             newConfig.jenkins.internal = false
             newConfig.jenkins.urlForScmm = newConfig.jenkins.url
-        } else {
+        } else if (newConfig.jenkins.active) {
             log.debug("Setting configs for internal jenkins")
             // We use the K8s service as default name here, because it is the only option:
             // "jenkins.localhost" will not work inside the Pods and k3d-container IP + Port (e.g. 172.x.y.z:9090)
@@ -148,6 +160,9 @@ class ApplicationConfigurator {
             newConfig.jenkins.urlForScmm = "http://jenkins.${newConfig.application.namePrefix}jenkins.svc.cluster.local"
             
             // More internal fields are set lazily in Jenkins.groovy (after Jenkins is deployed and ports are known)
+        } else {
+            // Jenkins not active, no need to set the following values
+            return
         }
 
         if (newConfig.application.baseUrl) {
@@ -248,8 +263,9 @@ class ApplicationConfigurator {
     }
 
     private void validateScmmAndJenkinsAreBothSet(Config configToSet) {
-        if (configToSet.scmm.url && !configToSet.jenkins.url ||
-                !configToSet.scmm.url && configToSet.jenkins.url) {
+        if (configToSet.jenkins.active && 
+                (configToSet.scmm.url && !configToSet.jenkins.url ||
+                !configToSet.scmm.url && configToSet.jenkins.url)) {
             throw new RuntimeException('When setting jenkins URL, scmm URL must also be set and the other way round')
         }
     }
@@ -336,6 +352,4 @@ class ApplicationConfigurator {
             throw new RuntimeException(errorMessage, e)
         }
     }
-
-
 }

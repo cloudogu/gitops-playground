@@ -26,6 +26,7 @@ class ContentTest {
 
     @Test
     void 'deploys image pull secrets'() {
+        config.content.examples = true
         config.registry.createImagePullSecrets = true
 
         createContent().install()
@@ -35,6 +36,7 @@ class ContentTest {
 
     @Test
     void 'deploys image pull secrets from read-only vars'() {
+        config.content.examples = true
         config.registry.createImagePullSecrets = true
         config.registry.readOnlyUsername = 'other-user'
         config.registry.readOnlyPassword = 'other-pw'
@@ -46,6 +48,7 @@ class ContentTest {
 
     @Test
     void 'deploys additional image pull secrets for proxy registry'() {
+        config.content.examples = true
         config.registry.createImagePullSecrets = true
         config.registry.twoRegistries = true
         config.registry.proxyUrl = 'proxy-url'

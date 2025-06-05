@@ -65,8 +65,7 @@ class Jenkins extends Feature {
 
     @Override
     boolean isEnabled() {
-        return true
-//        return true // For now, we either deploy an internal or configure an external instance
+        return config.jenkins.active
     }
 
     @Override
@@ -179,7 +178,7 @@ class Jenkins extends Feature {
 
         prometheusConfigurator.enableAuthentication()
 
-        if (config.features.argocd.active) {
+        if (config.content.examples) {
 
             String jobName = "${config.application.namePrefix}example-apps"
             def credentialId = "scmm-user"

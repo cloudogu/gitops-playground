@@ -110,6 +110,7 @@ class ScmManagerTest {
         assertThat(env['CES_BUILD_LIB_REPO']).isEqualTo('cesBuildLibUrl')
         assertThat(env['NAME_PREFIX']).isEqualTo('foo-')
         assertThat(env['INSECURE']).isEqualTo('false')
+        assertThat(env['CONTENT_EXAMPLES']).isEqualTo('false')
     }
 
     @Test

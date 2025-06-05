@@ -18,8 +18,6 @@ class ConfigTest {
         assertThat(config).startsWith("""---
 registry:
   internal: true
-  twoRegistries: true
-  internalPort: 123
 """)
     }
 
@@ -30,7 +28,7 @@ registry:
 
         assertThat(config).startsWith("""---
 registry:
-  internalPort: 123
+  active: false
 """)
     }
     

@@ -46,56 +46,58 @@ class Registry extends Feature {
 
     @Override
     boolean isEnabled() {
-        return config.registry.internal
+        return config.registry.active
     }
 
     @Override
     void enable() {
 
-        def helmConfig = config.registry.helm
+        if (config.registry.internal) {
 
-        Map yaml = [
-                service: [
-                        nodePort: Config.DEFAULT_REGISTRY_PORT,
-                        type: 'NodePort'
-                ]
-        ]
-        def mergedMap = MapUtils.deepMerge(helmConfig.values, yaml)
+            def helmConfig = config.registry.helm
 
-        def tempValuesPath = fileSystemUtils.writeTempFile(mergedMap)
-        log.trace("Helm yaml to be applied: ${yaml}")
+            Map yaml = [
+                    service: [
+                            nodePort: Config.DEFAULT_REGISTRY_PORT,
+                            type    : 'NodePort'
+                    ]
+            ]
+            def mergedMap = MapUtils.deepMerge(helmConfig.values, yaml)
+
+            def tempValuesPath = fileSystemUtils.writeTempFile(mergedMap)
+            log.trace("Helm yaml to be applied: ${yaml}")
 
 
-        deployer.deployFeature(
-                helmConfig.repoURL,
-                'registry',
-                helmConfig.chart,
-                helmConfig.version,
-                namespace,
-                'docker-registry',
-                tempValuesPath
-        )
+            deployer.deployFeature(
+                    helmConfig.repoURL,
+                    'registry',
+                    helmConfig.chart,
+                    helmConfig.version,
+                    namespace,
+                    'docker-registry',
+                    tempValuesPath
+            )
 
-        if (config.registry.internalPort != Config.DEFAULT_REGISTRY_PORT) {
-            /* Add additional node port
+            if (config.registry.internalPort != Config.DEFAULT_REGISTRY_PORT) {
+                /* Add additional node port
                30000 is needed as a static by docker via port mapping of k3d, e.g. 32769 -> 30000 on server-0 container
                See "-p 30000" in init-cluster.sh
                e.g 32769 is needed so the kubelet can access the image inside the server-0 container
              */
-            k8sClient.createServiceNodePort('docker-registry-internal-port',
-                    CONTAINER_PORT, config.registry.internalPort.toString(),
-                    namespace)
+                k8sClient.createServiceNodePort('docker-registry-internal-port',
+                        CONTAINER_PORT, config.registry.internalPort.toString(),
+                        namespace)
+            }
+
+            deployer.deployFeature(
+                    helmConfig.repoURL,
+                    'registry',
+                    helmConfig.chart,
+                    helmConfig.version,
+                    namespace,
+                    'docker-registry',
+                    tempValuesPath
+            )
         }
-
-        deployer.deployFeature(
-                helmConfig.repoURL,
-                'registry',
-                helmConfig.chart,
-                helmConfig.version,
-                namespace,
-                'docker-registry',
-                tempValuesPath
-        )
-
     }
 }

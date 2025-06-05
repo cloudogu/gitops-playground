@@ -21,7 +21,7 @@ import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.*
 
 class JenkinsTest {
-    Config config = new Config()
+    Config config = new Config( jenkins: new Config.JenkinsSchema(active: true))
 
     String expectedNodeName = 'something'
     
@@ -155,6 +155,7 @@ me:x:1000:''')
         config.application.remote = true
         config.application.trace = true
         config.features.argocd.active = true
+        config.content.examples = true
         config.scmm.url = 'http://scmm'
         config.scmm.urlForJenkins ='http://scmm/scm'
         config.scmm.username = 'scmm-usr'
@@ -249,7 +250,7 @@ me:x:1000:''')
     @Test
     void 'Handles two registries'() {
         config.registry.twoRegistries = true
-        config.features.argocd.active = true
+        config.content.examples = true
         config.application.namePrefix = 'my-prefix-'
         config.application.namePrefixForEnvVars = 'MY_PREFIX_'
         

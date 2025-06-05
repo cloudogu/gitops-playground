@@ -185,7 +185,7 @@ We should automate this!
     `JENKINS_PLUGIN_FOLDER=$(pwd) java -classpath .. # See above`.  
     A working combination of plugins be extracted from the image:
       ```bash
-      id=$(docker create --pull=always ghcr.io/cloudogu/gitops-playground)
+      id=$(docker create --pull=always ghcr.io/cloudogu/gitops-playground:main)
       docker cp $id:/gitops/jenkins-plugins .
       docker rm -v $id
       ```

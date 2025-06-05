@@ -22,9 +22,7 @@ class RegistryTest {
 
     @Test
     void 'is disabled when external registry is configured'() {
-        def registryConfig = new RegistrySchema(internal: false)
-        
-        createRegistry(registryConfig).install()
+        createRegistry().install()
 
         assertThat(helmCommands.actualCommands).isEmpty()
         assertThat(k8sClient.commandExecutorForTest.actualCommands).isEmpty()
@@ -32,7 +30,7 @@ class RegistryTest {
 
     @Test
     void 'is installed'() {
-        createRegistry().install()
+        createRegistry(new RegistrySchema(active: true)).install()
 
         assertThat(parseActualYaml()['service']['nodePort']).isEqualTo(DEFAULT_REGISTRY_PORT)
         assertThat(parseActualYaml()['service']['type']).isEqualTo('NodePort')
@@ -49,7 +47,7 @@ class RegistryTest {
     @Test
     void 'creates an additional service when different port is set'() {
         def expectedNodePort = DEFAULT_REGISTRY_PORT as int + 1
-        def registryConfig = new RegistrySchema(internalPort: expectedNodePort)
+        def registryConfig = new RegistrySchema(active: true, internalPort: expectedNodePort)
         
         createRegistry(registryConfig).install()
 
@@ -58,7 +56,7 @@ class RegistryTest {
 
     @Test
     void 'inject custom value into chart'() {
-        def registryConfig = new RegistrySchema(internal: true,
+        def registryConfig = new RegistrySchema(active: true,
                 helm: new HelmConfigWithValues(
                         chart: 'test',
                         values: [

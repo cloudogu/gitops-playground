@@ -83,20 +83,26 @@ class ApplicationConfiguratorTest {
             assertThat(actualConfig.application.runningInsideK8s).isEqualTo(true)
         }
     }
-
+    
     @Test
-    void 'Fails if jenkins is internal and scmm is external'() {
-        testConfig.jenkins.url = ''
-        testConfig.scmm.url = 'external'
-
-        def exception = shouldFail(RuntimeException) {
-            applicationConfigurator.validateConfig(testConfig)
-        }
-        assertThat(exception.message).isEqualTo('When setting jenkins URL, scmm URL must also be set and the other way round')
+    void 'Sets jenkins active if external url is set'() {
+        testConfig.jenkins.url = 'external'
+        def actualConfig = applicationConfigurator.initConfig(testConfig)
+        assertThat(actualConfig.jenkins.active).isEqualTo(true)
     }
-
+    
     @Test
-    void 'Fails if jenkins is external and scmm is internal'() {
+    void 'Leaves Jenkins urlForScmm empty, if not active'() {
+        testConfig.jenkins.url = ''
+        testConfig.jenkins.active = false
+        
+        def actualConfig = applicationConfigurator.initConfig(testConfig)
+        assertThat(actualConfig.jenkins.urlForScmm).isEmpty()
+    }
+    
+    @Test
+    void 'Fails if jenkins is external and scmm is internal or the other way round'() {
+        testConfig.jenkins.active = true
         testConfig.jenkins.url = 'external'
         testConfig.scmm.url = ''
 
@@ -104,6 +110,19 @@ class ApplicationConfiguratorTest {
             applicationConfigurator.validateConfig(testConfig)
         }
         assertThat(exception.message).isEqualTo('When setting jenkins URL, scmm URL must also be set and the other way round')
+
+        testConfig.jenkins.url = ''
+        testConfig.scmm.url = 'external'
+
+        exception = shouldFail(RuntimeException) {
+            applicationConfigurator.validateConfig(testConfig)
+        }
+        assertThat(exception.message).isEqualTo('When setting jenkins URL, scmm URL must also be set and the other way round')
+        
+        
+        testConfig.jenkins.active = false
+        applicationConfigurator.validateConfig(testConfig)
+        // no exception when jenkins is not active
     }
 
     @Test
@@ -127,6 +146,19 @@ class ApplicationConfiguratorTest {
             applicationConfigurator.initConfig(testConfig)
         }
         assertThat(exception.message).isEqualTo('createImagePullSecrets needs to be used with either registry username and password or the readOnly variants')
+    }
+
+    @Test
+    void 'Fails if example Content is active but registry is not active'() {
+        testConfig.content.examples = true
+        testConfig.registry.internal = false
+        testConfig.registry.url = ''
+        
+        
+        def exception = shouldFail(RuntimeException) {
+            applicationConfigurator.initConfig(testConfig)
+        }
+        assertThat(exception.message).isEqualTo('content.examples requires either registry.active or registry.url')
     }
 
     @Test
@@ -284,33 +316,13 @@ class ApplicationConfiguratorTest {
     }
 
     @Test
-    void "Registry: Sets to internal when no URL set"() {
-        testConfig.registry.url = null
-        testConfig.registry.proxyUrl = null
-
-        def actualConfig = applicationConfigurator.initConfig(testConfig)
-
-        assertThat(actualConfig.registry.url).isEqualTo('localhost:33333')
-        assertThat(actualConfig.registry.internalPort).isEqualTo(EXPECTED_REGISTRY_INTERNAL_PORT)
-        assertThat(actualConfig.registry.internal).isEqualTo(true)
-    }
-
-    @Test
     void "Registry: Sets to external when only registry URL set"() {
         testConfig.registry.proxyUrl = null
 
         def actualConfig = applicationConfigurator.initConfig(testConfig)
 
         assertThat(actualConfig.registry.internal).isEqualTo(false)
-    }
-
-    @Test
-    void "Registry: Sets to internal when only proxy Url is set"() {
-        testConfig.registry.url = null
-
-        def actualConfig = applicationConfigurator.initConfig(testConfig)
-
-        assertThat(actualConfig.registry.internal).isEqualTo(true)
+        assertThat(actualConfig.registry.active).isEqualTo(true)
     }
 
     @Test

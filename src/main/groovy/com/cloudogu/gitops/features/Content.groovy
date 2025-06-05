@@ -32,7 +32,7 @@ class Content extends Feature {
 
     @Override
     void enable() {
-        if (config.registry.createImagePullSecrets) {
+        if (config.registry.createImagePullSecrets && config.content.examples) {
             String registryUsername = config.registry.readOnlyUsername ?: config.registry.username
             String registryPassword = config.registry.readOnlyPassword ?: config.registry.password
 
