@@ -479,10 +479,10 @@ class ApplicationConfiguratorTest {
 
     @Test
     void "MultiTenant Mode Central SCM Url"(){
-        testConfig.multiTenant.centralSCMUrl="scmm.localhost/scm"
+        testConfig.multiTenant.centralScmUrl="scmm.localhost/scm"
         testConfig.application.namePrefix="foo"
         applicationConfigurator.initConfig(testConfig)
-        assertThat(testConfig.multiTenant.centralSCMUrl).toString() == "scmm.localhost/scm/"
+        assertThat(testConfig.multiTenant.centralScmUrl).toString() == "scmm.localhost/scm/"
     }
 
     @Test

@@ -791,7 +791,7 @@ class ArgoCDTest {
 
     @Test
     void 'ArgoCD uses central multi tenant scm for repos'() {
-        config.multiTenant.centralSCMUrl = "scmm-central.localhost/scm/"
+        config.multiTenant.centralScmUrl = "scmm-central.localhost/scm/"
         config.application.namePrefix = "foo-"
         createArgoCD().install()
         def argocdYaml = new YamlSlurper().parse(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'applications/argocd.yaml'))
@@ -1165,7 +1165,7 @@ class ArgoCDTest {
 
     @Test
     void 'ArgoCD multi-tenant via operator mode template test'() {
-        config.multiTenant.centralSCMUrl = "testcentralurl.localhost"
+        config.multiTenant.centralScmUrl = "testcentralurl.localhost"
         def argocd = setupOperatorTest()
 
         argocd.install()
@@ -1400,7 +1400,7 @@ class ArgoCDTest {
 
         def argoCD = createArgoCD()
 
-        if (config.multiTenant.centralSCMUrl) {
+        if (config.multiTenant.centralScmUrl) {
             setupMockResponsesForMultiTenant()
         } else {
             setupMockResponses()

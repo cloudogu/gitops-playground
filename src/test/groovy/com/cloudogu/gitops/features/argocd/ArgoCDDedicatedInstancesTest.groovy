@@ -13,7 +13,7 @@ class ArgoCDDedicatedInstancesTest extends ArgoCDTest {
     @Test
     void 'GOP DedicatedInstances Central templating works correctly'() {
         config.application.namePrefix = 'testPrefix-'
-        config.multiTenant.centralSCMUrl = 'scmm.testhost/scm'
+        config.multiTenant.centralScmUrl = 'scmm.testhost/scm'
         config.multiTenant.username = 'testUserName'
         config.multiTenant.password = 'testPassword'
 
@@ -68,7 +68,7 @@ class ArgoCDDedicatedInstancesTest extends ArgoCDTest {
     @Test
     void 'GOP DedicatedInstances Tenant templating works correctly'() {
         config.application.namePrefix = 'testPrefix-'
-        config.multiTenant.centralSCMUrl = 'scmm.testhost/scm'
+        config.multiTenant.centralScmUrl = 'scmm.testhost/scm'
         config.multiTenant.username = 'testUserName'
         config.multiTenant.password = 'testPassword'
 

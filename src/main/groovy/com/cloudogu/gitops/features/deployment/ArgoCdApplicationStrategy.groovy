@@ -37,7 +37,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
         def namePrefix = config.application.namePrefix
         def shallCreateNamespace = config.features['argocd']['operator'] ? "CreateNamespace=false" : "CreateNamespace=true"
 
-        ScmmRepo clusterResourcesRepo = scmmRepoProvider.getRepo('argocd/cluster-resources', true)
+        ScmmRepo clusterResourcesRepo = scmmRepoProvider.getRepo('argocd/cluster-resources', config.multiTenant.useDedicatedInstance)
         clusterResourcesRepo.cloneRepo()
 
         // Inline values from tmpHelmValues file into ArgoCD Application YAML
@@ -47,7 +47,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
         String namespaceName = "cluster-resources"
 
         //DedicatedInstances
-        if (config.multiTenant.centralSCMUrl) {
+        if (config.multiTenant.useDedicatedInstance) {
             repoName = "${config.application.namePrefix}${repoName}"
             namespaceName = "argocd"
             project = config.application.namePrefix.replaceFirst(/-$/, "")

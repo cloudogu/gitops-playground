@@ -214,8 +214,8 @@ class ApplicationConfigurator {
     }
 
     private void setMultiTenantModeConfig(Config newConfig) {
-        if (newConfig.multiTenant.centralSCMUrl) {
-            if (newConfig.multiTenant.centralSCMUrl && !newConfig.application.namePrefix) {
+        if (newConfig.multiTenant.centralScmUrl) {
+            if (newConfig.multiTenant.centralScmUrl && !newConfig.application.namePrefix) {
                 throw new RuntimeException('To enable Central Multi-Tenant mode, you must define a name prefix to distinguish between instances.')
             }
 
@@ -223,13 +223,10 @@ class ApplicationConfigurator {
                 throw new RuntimeException('To use Central Multi Tenant mode define the username and password for the central SCM instance.')
             }
 
-            //TODO is this still needed? 03.6.25
-            newConfig.multiTenant.centralSCMUrl = newConfig.multiTenant.centralSCMUrl.trim().endsWith('/') ?
-                    newConfig.multiTenant.centralSCMUrl.trim() :
-                    newConfig.multiTenant.centralSCMUrl.trim() + ''
+            newConfig.multiTenant.useDedicatedInstance = true
 
             //Disabling IngressNginx in DedicatedInstances Mode for now. Ingress has to be handled manually.
-            newConfig.features.ingressNginx.active= false
+            newConfig.features.ingressNginx.active = false
         }
 
     }

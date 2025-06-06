@@ -78,7 +78,7 @@ class RepoInitializationAction {
                         protocol      : config.scmm.internal ? 'http' : config.scmm.protocol,
                         repoUrl       : ScmmRepo.createSCMBaseUrl(config),
                         provider      : config.scmm.provider,
-                        centralScmmUrl: config.multiTenant.internal ? "http://scmm.scm-manager.svc.cluster.local/scm" : config.multiTenant.centralSCMUrl
+                        centralScmmUrl: config.multiTenant.internal ? "http://scmm.scm-manager.svc.cluster.local/scm" : config.multiTenant.centralScmUrl
                 ],
                 jenkins             : [
                         mavenCentralMirror: config.jenkins.mavenCentralMirror,

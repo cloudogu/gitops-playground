@@ -26,6 +26,7 @@ class ArgoCD extends Feature {
     static final String OPERATOR_RBAC_PATH = 'operator/rbac'
     static final String OPERATOR_DEDICATED_RBAC_PATH = 'multiTenant/central/rbac'
     static final String CHART_YAML_PATH = 'argocd/Chart.yaml'
+    static final String DEDICATED_INSTANCE_PATH = 'multiTenant/central/'
     static final String MONITORING_RESOURCES_PATH = '/misc/monitoring/'
 
     private String namespace = "${config.application.namePrefix}argocd"
@@ -111,9 +112,9 @@ class ArgoCD extends Feature {
     }
 
     protected initRepos() {
-        argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd', config.multiTenant.centralSCMUrl ? true : false)
+        argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd', config.multiTenant.centralScmUrl ? true : false)
 
-        clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources', config.multiTenant.centralSCMUrl ? true : false)
+        clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources', config.multiTenant.centralScmUrl ? true : false)
         gitRepos += clusterResourcesInitializationAction
 
         exampleAppsInitializationAction = createRepoInitializationAction('argocd/example-apps', 'argocd/example-apps')
@@ -229,10 +230,10 @@ class ArgoCD extends Feature {
             deployWithHelm()
         }
 
-        if (config.multiTenant.centralSCMUrl) {
+        if (config.multiTenant.useDedicatedInstance) {
             //Bootstrapping dedicated instance
-            k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'multiTenant/central/projects/tenant.yaml').toString())
-            k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'multiTenant/central/applications/bootstrap.yaml').toString())
+            k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), "${DEDICATED_INSTANCE_PATH}projects/tenant.yaml").toString())
+            k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), "${DEDICATED_INSTANCE_PATH}applications/bootstrap.yaml").toString())
             k8sClient.applyYaml(Path.of(exampleAppsInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'argocd/bootstrap.yaml').toString())
         } else {
             // Bootstrap root application
@@ -303,7 +304,7 @@ class ArgoCD extends Feature {
         // To manage additional namespaces, we need to update the 'argocd-default-cluster-config' secret with all managed namespaces.
 
         //TODO merge Tenant Namespace Lists. Not hardcoded here: like getTenantNamespaces()
-        def namespaceList = !config.multiTenant.centralSCMUrl ? getNamespaceList() : ["${config.application.namePrefix}example-apps-staging", "${config.application.namePrefix}argocd", "${config.application.namePrefix}example-apps-production"]
+        def namespaceList = !config.multiTenant.centralScmUrl ? getNamespaceList() : ["${config.application.namePrefix}example-apps-staging", "${config.application.namePrefix}argocd", "${config.application.namePrefix}example-apps-production"]
         k8sClient.patch('secret', 'argocd-default-cluster-config', namespace,
                 [stringData: ['namespaces': namespaceList.join(',')]])
 
@@ -312,8 +313,7 @@ class ArgoCD extends Feature {
         String argocdRbacPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), OPERATOR_RBAC_PATH)
         k8sClient.applyYaml(argocdRbacPath)
 
-        if (config.multiTenant.centralSCMUrl) {
-            //TODO loop over getTenantNamespace() and create new rbac file for it
+        if (config.multiTenant.centralScmUrl) {
             log.debug("Applying RBAC permissions for ArgoCD in all managed tenant namespaces.")
             String tenantRBAC = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), OPERATOR_DEDICATED_RBAC_PATH)
             k8sClient.applyYaml(tenantRBAC)
@@ -359,13 +359,13 @@ class ArgoCD extends Feature {
                 new Tuple2(' argocd.argoproj.io/secret-type', 'repo-creds'))
 
 
-        if (config.multiTenant.centralSCMUrl) {
+        if (config.multiTenant.centralScmUrl) {
             log.debug('Creating central repo credential secret that is used by argocd to access repos in SCM-Manager')
             // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo
             def centralRepoTemplateSecretName = 'argocd-repo-creds-central-scmm'
 
             k8sClient.createSecret('generic', centralRepoTemplateSecretName, "argocd",
-                    new Tuple2('url', config.multiTenant.centralSCMUrl),
+                    new Tuple2('url', config.multiTenant.centralScmUrl),
                     new Tuple2('username', config.multiTenant.username),
                     new Tuple2('password', config.multiTenant.password)
             )

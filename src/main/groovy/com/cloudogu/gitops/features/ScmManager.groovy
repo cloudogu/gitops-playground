@@ -1,7 +1,6 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
-import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.deployment.HelmStrategy
@@ -108,7 +107,7 @@ class ScmManager extends Feature {
                 String clusterBindAddress = networkingUtils.findClusterBindAddress()
                 config.scmm.url = networkingUtils.createUrl(clusterBindAddress, port, contentPath)
 
-                if(config.multiTenant.centralSCMUrl){
+                if(config.multiTenant.centralScmUrl){
                     log.debug("Setting internal configs for local single node cluster with internal scmm. Waiting for NodePort...")
                     def portCentralScm = k8sClient.waitForNodePort(releaseName, "scm-manager")
                     centralSCMUrl = networkingUtils.createUrl(clusterBindAddress, portCentralScm, contentPath)
