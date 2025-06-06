@@ -20,8 +20,6 @@ class ApplicationConfigurator {
         addAdditionalApplicationConfig(newConfig)
         addNamePrefix(newConfig)
 
-        addNamePrefix(newConfig)
-
         addScmmConfig(newConfig)
 
         addJenkinsConfig(newConfig)
@@ -134,7 +132,6 @@ class ApplicationConfigurator {
             newConfig.scmm.username = newConfig.application.username
         }
 
-
     }
 
     private void addJenkinsConfig(Config newConfig) {
@@ -154,7 +151,7 @@ class ApplicationConfigurator {
         }
 
         if (newConfig.application.baseUrl) {
-            newConfig.jenkins.ingress = new URL(injectSubdomain('jenkins',
+            newConfig.jenkins.ingress = new URL(injectSubdomain("${newConfig.application.namePrefix}jenkins",
                     newConfig.application.baseUrl, newConfig.application.urlSeparatorHyphen)).host
         }
         // When specific user/pw are not set, set them to global values
@@ -165,7 +162,6 @@ class ApplicationConfigurator {
             newConfig.jenkins.password = newConfig.application.password
         }
     }
-
 
     static String generatePortFromPrefix(String prefix, int basePort = 10000, int maxPort = 65000) {
         int hash = Math.abs(prefix.hashCode())
@@ -227,6 +223,7 @@ class ApplicationConfigurator {
                 throw new RuntimeException('To use Central Multi Tenant mode define the username and password for the central SCM instance.')
             }
 
+            //TODO is this still needed? 03.6.25
             newConfig.multiTenant.centralSCMUrl = newConfig.multiTenant.centralSCMUrl.trim().endsWith('/') ?
                     newConfig.multiTenant.centralSCMUrl.trim() :
                     newConfig.multiTenant.centralSCMUrl.trim() + ''

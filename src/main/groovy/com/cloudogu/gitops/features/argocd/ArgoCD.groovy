@@ -24,6 +24,7 @@ class ArgoCD extends Feature {
     static final String HELM_VALUES_PATH = 'argocd/values.yaml'
     static final String OPERATOR_CONFIG_PATH = 'operator/argocd.yaml'
     static final String OPERATOR_RBAC_PATH = 'operator/rbac'
+    static final String OPERATOR_DEDICATED_RBAC_PATH = 'multiTenant/central/rbac'
     static final String CHART_YAML_PATH = 'argocd/Chart.yaml'
     static final String MONITORING_RESOURCES_PATH = '/misc/monitoring/'
 
@@ -228,12 +229,13 @@ class ArgoCD extends Feature {
             deployWithHelm()
         }
 
-        // Bootstrap root application
         if (config.multiTenant.centralSCMUrl) {
+            //Bootstrapping dedicated instance
             k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'multiTenant/central/projects/tenant.yaml').toString())
             k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'multiTenant/central/applications/bootstrap.yaml').toString())
-
+            k8sClient.applyYaml(Path.of(exampleAppsInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'argocd/bootstrap.yaml').toString())
         } else {
+            // Bootstrap root application
             k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'projects/argocd.yaml').toString())
             k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'applications/bootstrap.yaml').toString())
         }
@@ -293,35 +295,29 @@ class ArgoCD extends Feature {
         // In newer Versions ArgoCD Operator uses the password in argocd-cluster secret only as generated initial password
         // but we want to set our own admin password so we set the password in both Secrets for consistency
         String bcryptArgoCDPassword = BCrypt.hashpw(password, BCrypt.gensalt(4))
-        k8sClient.patch('secret', 'argocd-secret', 'argocd',
+        k8sClient.patch('secret', 'argocd-secret', namespace,
                 [stringData: ['admin.password': bcryptArgoCDPassword]])
 
         log.debug("Updating managed namespaces in ArgoCD configuration secret.")
         // The ArgoCD instance installed via an operator only manages its deployment namespace.
         // To manage additional namespaces, we need to update the 'argocd-default-cluster-config' secret with all managed namespaces.
-        def namespaceList = !config.multiTenant.centralSCMUrl ? getNamespaceList() : "${config.application.namePrefix}tenantapp".toList()
+
+        //TODO merge Tenant Namespace Lists. Not hardcoded here: like getTenantNamespaces()
+        def namespaceList = !config.multiTenant.centralSCMUrl ? getNamespaceList() : ["${config.application.namePrefix}example-apps-staging", "${config.application.namePrefix}argocd", "${config.application.namePrefix}example-apps-production"]
         k8sClient.patch('secret', 'argocd-default-cluster-config', namespace,
                 [stringData: ['namespaces': namespaceList.join(',')]])
 
-        // TODO: Skip applying RBAC configurations for cluster-scoped resources in multi-tenant mode.
-        // In multi-tenant setups, each tenant should only have access to their own application namespace.
         log.debug("Add RBAC permissions for ArgoCD in all managed namespaces.")
-        if (!config.multiTenant.centralSCMUrl) {
-            log.debug("Add RBAC permissions for ArgoCD in all managed namespaces.")
-            // Apply rbac yamls from operator/rbac folder
-            String argocdRbacPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), OPERATOR_RBAC_PATH)
-            k8sClient.applyYaml(argocdRbacPath)
+        // Apply rbac yamls from operator/rbac folder
+        String argocdRbacPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), OPERATOR_RBAC_PATH)
+        k8sClient.applyYaml(argocdRbacPath)
+
+        if (config.multiTenant.centralSCMUrl) {
+            //TODO loop over getTenantNamespace() and create new rbac file for it
+            log.debug("Applying RBAC permissions for ArgoCD in all managed tenant namespaces.")
+            String tenantRBAC = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), OPERATOR_DEDICATED_RBAC_PATH)
+            k8sClient.applyYaml(tenantRBAC)
         }
-
-        dedicatedInstanceMode()
-    }
-
-
-    protected void dedicatedInstanceMode() {
-
-        log.debug("Deleting unnecessary rbac ${argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
-        FileSystemUtils.deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/operator/rbac/'
-
     }
 
     protected void createMonitoringCrd() {
@@ -361,6 +357,22 @@ class ArgoCD extends Feature {
 
         k8sClient.label('secret', repoTemplateSecretName, namespace,
                 new Tuple2(' argocd.argoproj.io/secret-type', 'repo-creds'))
+
+
+        if (config.multiTenant.centralSCMUrl) {
+            log.debug('Creating central repo credential secret that is used by argocd to access repos in SCM-Manager')
+            // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo
+            def centralRepoTemplateSecretName = 'argocd-repo-creds-central-scmm'
+
+            k8sClient.createSecret('generic', centralRepoTemplateSecretName, "argocd",
+                    new Tuple2('url', config.multiTenant.centralSCMUrl),
+                    new Tuple2('username', config.multiTenant.username),
+                    new Tuple2('password', config.multiTenant.password)
+            )
+
+            k8sClient.label('secret', centralRepoTemplateSecretName, "argocd",
+                    new Tuple2(' argocd.argoproj.io/secret-type', 'repo-creds'))
+        }
     }
 
     protected void prepareArgoCdRepo() {
@@ -386,13 +398,6 @@ class ArgoCD extends Feature {
         if (!config.application.netpols) {
             log.debug("Deleting argocd netpols.")
             FileSystemUtils.deleteFile argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/argocd/templates/allow-namespaces.yaml'
-        }
-
-        if (config.multiTenant.centralSCMUrl) {
-            log.debug("Deleting unnecessary MultiTentant files ${argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
-            FileSystemUtils.deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/operator/rbac/'
-            FileSystemUtils.deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/argocd/applications/'
-            FileSystemUtils.deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/argocd/projects/'
         }
 
         argocdRepoInitializationAction.repo.commitAndPush("Initial Commit")
