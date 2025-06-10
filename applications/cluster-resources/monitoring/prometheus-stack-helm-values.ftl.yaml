@@ -163,7 +163,7 @@ grafana:
 <#if monitoring.grafana.host?has_content>
   ingress:
     enabled: true
-    hosts: [${monitoring.grafana.host}]
+    hosts: [${namePrefix}${monitoring.grafana.host}]
 </#if>
 <#if config.features.monitoring.helm.grafanaImage?has_content>
 <#assign grafanImageObject = DockerImageParser.parse(config.features.monitoring.helm.grafanaImage)>

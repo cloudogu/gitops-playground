@@ -30,8 +30,8 @@ nginx:
     enabled: true
     pathType: Prefix
     <#if urlSeparatorHyphen>
-    hostname: production-nginx-helm-umbrella-${exampleApps.nginx.baseDomain}
+    hostname: ${namePrefix}production-nginx-helm-umbrella-${exampleApps.nginx.baseDomain}
     <#else>
-    hostname: production.nginx-helm-umbrella.${exampleApps.nginx.baseDomain}
+    hostname: ${namePrefix}production.nginx-helm-umbrella.${exampleApps.nginx.baseDomain}
     </#if>
 </#if>

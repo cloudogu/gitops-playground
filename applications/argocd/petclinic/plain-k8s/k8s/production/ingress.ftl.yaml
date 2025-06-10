@@ -8,9 +8,9 @@ metadata:
 spec:
   rules:
     <#if urlSeparatorHyphen>
-    - host: production-petclinic-plain-${exampleApps.petclinic.baseDomain}
+    - host: ${namePrefix}production-petclinic-plain-${exampleApps.petclinic.baseDomain}
     <#else>
-    - host: production.petclinic-plain.${exampleApps.petclinic.baseDomain}
+    - host: ${namePrefix}production.petclinic-plain.${exampleApps.petclinic.baseDomain}
     </#if>
       http:
         paths:

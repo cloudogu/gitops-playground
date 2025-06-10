@@ -103,6 +103,7 @@ spec:
     </#list>
     </#if>
   server:
+    insecure: ${isInsecure?c}
     resources:
       limits:
         cpu: "500m"
@@ -119,7 +120,16 @@ spec:
     </#if>
     route:
       enabled: ${isOpenshift?c}
-    host: "${argocd.host}"
+    host: "${namePrefix}${argocd.host}"
+ # set to false because forced HTTP Redirect to HTTPS can not be disabled (most likely due to a bug). So we can not use this ingress for inSecure mode
+#    ingress:
+#      enabled: false # ${(!isOpenshift)?c}
+#      path: /
+#      <#if isInsecure>
+#      annotations: # annotations set here do not get honored by the operator (bug?)
+#        nginx.ingress.kubernetes.io/ssl-redirect: "false"
+#        nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+#      </#if>
   initialRepositories: |
     - name: argocd
       url: ${scmm.repoUrl}argocd/argocd<#if scmm.provider == "gitlab">.git</#if>
@@ -144,6 +154,10 @@ spec:
       type: helm
       url: https://kubernetes.github.io/ingress-nginx
   resourceInclusions: |
+    - apiGroups:
+      - "batch"
+      kinds:
+      - "Job"
     - apiGroups:
       - ""
       kinds:

@@ -50,10 +50,12 @@ class Vault extends Feature implements FeatureWithImage {
 
     @Override
     void enable() {
+        def namePrefix = config.application.namePrefix
         // Note that some specific configuration steps are implemented in ArgoCD
         def helmConfig = config.features.secrets.vault.helm
 
         def templatedMap = templateToMap(HELM_VALUES_PATH, [
+                namePrefix: namePrefix,
                 host   : config.features.secrets.vault.url ? new URL(config.features.secrets.vault.url as String).host : '',
                 config : config,
                 // Allow for using static classes inside the templates
