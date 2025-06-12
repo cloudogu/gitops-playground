@@ -1385,6 +1385,148 @@ class ArgoCDTest {
         }
     }
 
+    @Test
+    void 'Operator config sets server insecure to true when insecure is set'() {
+        config.application.insecure = true
+        def argoCD = setupOperatorTest()
+
+        argoCD.install()
+
+        def yaml = parseActualYaml(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH).toString())
+        assertThat(yaml['spec']['server']['insecure']).isEqualTo(true)
+    }
+
+    @Test
+    void 'Operator config sets server_insecure to false when insecure is not set'() {
+        def argoCD = setupOperatorTest()
+
+        argoCD.install()
+
+        def yaml = parseActualYaml(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH).toString())
+        assertThat(yaml['spec']['server']['insecure']).isEqualTo(false)
+    }
+
+    @Test
+    void 'Generates correct ingress yaml with expected host when insecure is true and not on OpenShift'() {
+        config.application.insecure = true
+        config.features.argocd.url = "http://argocd.localhost"
+        def argoCD = setupOperatorTest(openshift: false)
+
+        argoCD.install()
+
+        def ingressFile = new File(argocdRepo.getAbsoluteLocalRepoTmpDir(), "operator/ingress.yaml")
+        assertThat(ingressFile)
+                .as("Ingress file should be generated for insecure mode on non-OpenShift")
+                .exists()
+
+        def ingressYaml = parseActualYaml(ingressFile.toString())
+
+        assertThat(ingressYaml['spec']['rules'][0]['host'])
+                .as("Ingress host should match configured ArgoCD hostname")
+                .isEqualTo(new URL(config.features.argocd.url).host)
+    }
+
+    @Test
+    void 'Does not generate ingress yaml when insecure is false'() {
+        config.application.insecure = false
+        def argoCD = setupOperatorTest(openshift: false)
+
+        argoCD.install()
+
+        def ingressFile = new File(argocdRepo.getAbsoluteLocalRepoTmpDir(), "operator/ingress.yaml")
+        assertThat(ingressFile)
+                .as("Ingress file should not be generated when insecure is false")
+                .doesNotExist()
+    }
+
+    @Test
+    void 'Does not generate ingress yaml when running on OpenShift'() {
+        config.application.insecure = true
+        def argoCD = setupOperatorTest(openshift: true)
+
+        argoCD.install()
+
+        def ingressFile = new File(argocdRepo.getAbsoluteLocalRepoTmpDir(), "operator/ingress.yaml")
+        assertThat(ingressFile)
+                .as("Ingress file should not be generated on OpenShift")
+                .doesNotExist()
+    }
+
+    @Test
+    void 'Does not generate ingress yaml when insecure is false and OpenShift is true'() {
+        config.application.insecure = false
+        def argoCD = setupOperatorTest(openshift: true)
+
+        argoCD.install()
+
+        def ingressFile = new File(argocdRepo.getAbsoluteLocalRepoTmpDir(), "operator/ingress.yaml")
+        assertThat(ingressFile)
+                .as("Ingress file should not be generated when both flags are false")
+                .doesNotExist()
+    }
+
+    @Test
+    void 'RBAC files use ${namePrefix}argocd as serviceAccount namespace'() {
+        config.application.namePrefix = "test-"
+        def argoCD = setupOperatorTest()
+
+        argoCD.install()
+
+        def rbacFiles = [
+                "monitoring.yaml",
+                "secrets.yaml",
+                "ingress-nginx.yaml",
+                "example-apps-staging.yaml",
+                "example-apps-production.yaml"
+        ]
+
+        rbacFiles.each { file ->
+            def path = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), "${ArgoCD.OPERATOR_RBAC_PATH}/$file").toString()
+            def raw = parseActualYaml(path)
+            // Ensure uniform handling whether YAML has one or multiple documents
+            // Freemarker parser returns a List for multi-doc YAML, but a Map for single-doc files
+            def documents = raw instanceof List ? raw : [raw]
+
+            documents.findAll { it['kind'] == 'RoleBinding' }.each { roleBinding ->
+                def subjects = roleBinding['subjects'] as List<Map>
+                def namespaces = subjects.collect { it['namespace'] }.findAll()
+                assertThat(namespaces)
+                        .as("Subjects in $file should use templated namespace")
+                        .allMatch { it == "test-argocd" }
+            }
+        }
+    }
+
+    @Test
+    void 'RBAC files have metadata namespace set with namePrefix'() {
+        config.application.namePrefix = "test-"
+        def argoCD = setupOperatorTest()
+
+        argoCD.install()
+
+        def rbacFiles = [
+                "monitoring.yaml",
+                "secrets.yaml",
+                "ingress-nginx.yaml",
+                "example-apps-staging.yaml",
+                "example-apps-production.yaml"
+        ]
+
+        rbacFiles.each { file ->
+            def path = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), "${ArgoCD.OPERATOR_RBAC_PATH}/$file").toString()
+            def raw = parseActualYaml(path)
+            // Ensure uniform handling whether YAML has one or multiple documents
+            // Freemarker parser returns a List for multi-doc YAML, but a Map for single-doc files
+            def documents = raw instanceof List ? raw : [raw]
+
+            documents.each { doc ->
+                assertThat(doc['metadata']?.get('namespace'))
+                        .as("metadata.namespace should be prefixed in $file")
+                        .startsWith("test-")
+            }
+        }
+    }
+
     private ArgoCD setupOperatorTest(Map options = [:]) {
         config.features.argocd.operator = true
         config.features.argocd.resourceInclusionsCluster = 'https://192.168.0.1:6443'

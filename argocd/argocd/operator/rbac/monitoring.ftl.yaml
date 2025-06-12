@@ -5,6 +5,18 @@ metadata:
   name: argocd
 rules:
   - apiGroups:
+      - "batch"
+    resources:
+      - jobs
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
       - "route.openshift.io"
     resources:
       - routes
@@ -170,13 +182,13 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: argocd-argocd-server
-    namespace: argocd
+    namespace: "${namePrefix}argocd"
   - kind: ServiceAccount
     name: argocd-argocd-application-controller
-    namespace: argocd
+    namespace: "${namePrefix}argocd"
   - kind: ServiceAccount
     name: argocd-applicationset-controller
-    namespace: argocd
+    namespace: "${namePrefix}argocd"
 roleRef:
   kind: Role
   name: argocd
