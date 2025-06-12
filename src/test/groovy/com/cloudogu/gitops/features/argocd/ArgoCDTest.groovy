@@ -1421,7 +1421,9 @@ class ArgoCDTest {
 
         def ingressYaml = parseActualYaml(ingressFile.toString())
 
-        assertThat(ingressYaml['spec']['rules'][0]['host'])
+        def rules = ingressYaml['spec']['rules'] as List<Map>
+        def host = rules[0]['host']
+        assertThat(host)
                 .as("Ingress host should match configured ArgoCD hostname")
                 .isEqualTo(new URL(config.features.argocd.url).host)
     }
@@ -1520,7 +1522,10 @@ class ArgoCDTest {
             def documents = raw instanceof List ? raw : [raw]
 
             documents.each { doc ->
-                assertThat(doc['metadata']?.get('namespace'))
+                def metadata = (doc as Map)['metadata'] as Map
+                def ns = metadata['namespace'] as String
+
+                assertThat(ns)
                         .as("metadata.namespace should be prefixed in $file")
                         .startsWith("test-")
             }
