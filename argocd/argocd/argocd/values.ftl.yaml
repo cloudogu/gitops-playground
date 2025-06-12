@@ -62,59 +62,6 @@ argo-cd:
     #    url: http://scmm.scm-manager.svc.cluster.local
     #    username: gitops
     #    password: ...
-    repositories:
-      argocd:
-        name: argocd
-        url: ${scmm.repoUrl}argocd/argocd<#if scmm.provider == "gitlab">.git</#if>
-        <#if isInsecure>insecure: "true"</#if>
-      example-apps:
-        name: example-apps
-        url: ${scmm.repoUrl}argocd/example-apps<#if scmm.provider == "gitlab">.git</#if>
-        <#if isInsecure>insecure: "true"</#if>
-      cluster-resources:
-        name: cluster-resources
-        url: ${scmm.repoUrl}argocd/cluster-resources<#if scmm.provider == "gitlab">.git</#if>
-        <#if isInsecure>insecure: "true"</#if>
-      nginx-helm-jenkins:
-        name: nginx-helm-jenkins
-        url: ${scmm.repoUrl}argocd/nginx-helm-jenkins<#if scmm.provider == "gitlab">.git</#if>
-        <#if isInsecure>insecure: "true"</#if>
-      nginx-helm-umbrella:
-        name: nginx-helm-umbrella
-        url: ${scmm.repoUrl}argocd/nginx-helm-umbrella<#if scmm.provider == "gitlab">.git</#if>
-        <#if isInsecure>insecure: "true"</#if>
-<#if mirrorRepos>
-      prometheus:
-        name: prometheus
-        url: ${scmm.baseUrl}/repo/3rd-party-dependencies/kube-prometheus-stack
-        <#if isInsecure>insecure: "true"</#if>
-<#else>
-      prometheus:
-        name: prometheus-community
-        type: helm
-        url: https://prometheus-community.github.io/helm-charts
-</#if>
-      bitnami:
-        name: bitnami
-        type: helm
-        url: https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami
-      codecentric:
-        name: codecentric
-        type: helm
-        url: https://codecentric.github.io/helm-charts
-      cert-manager:
-          name: cert-manager
-          type: helm
-          url:  https://charts.jetstack.io
-      argo-helm-repo:
-        type: helm
-        url: https://argoproj.github.io/argo-helm
-        name: argocd
-      ingress-nginx:
-        type: helm
-        url: https://kubernetes.github.io/ingress-nginx
-        name: ingress-nginx
-
     cm:
       timeout.reconciliation: 15s
 
