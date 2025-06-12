@@ -132,6 +132,7 @@ class ArgoCD extends Feature {
 
         remotePetClinicRepoTmpDir = File.createTempDir('gitops-playground-petclinic')
 
+        //TODO tenant Bootstrap Repo
         /*if(config.multiTenant.useDedicatedInstance){
             tenantBootstrapInitializationAction = createRepoInitializationAction('argocd/argocd/multiTenant/tenant', 'argocd/argocd')
             gitRepos += clusterResourcesInitializationAction
@@ -240,7 +241,7 @@ class ArgoCD extends Feature {
             //Bootstrapping dedicated instance
             k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), "${DEDICATED_INSTANCE_PATH}projects/tenant.yaml").toString())
             k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), "${DEDICATED_INSTANCE_PATH}applications/bootstrap.yaml").toString())
-            k8sClient.applyYaml(Path.of(exampleAppsInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'argocd/bootstrap.yaml').toString())
+            k8sClient.applyYaml(Path.of(exampleAppsInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'argocd/bootstrap.yaml').toString()) //TODO Booststrapping via Tenant argocd/argocd repo
         } else {
             // Bootstrap root application
             k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'projects/argocd.yaml').toString())
@@ -314,16 +315,22 @@ class ArgoCD extends Feature {
         k8sClient.patch('secret', 'argocd-default-cluster-config', namespace,
                 [stringData: ['namespaces': namespaceList.join(',')]])
 
+        //TODO RBACs? what else we need for permissions?
+        //allowing the central argo to access the tenant cluster-resource namespaces. Patch adds the tenant namespaces to central argocd secret
+        if(config.multiTenant.centralScmUrl){
+            k8sClient.patch('secret', 'argocd-default-cluster-config', 'argocd',
+                    [stringData: ['namespaces': getNamespaceList()]])
+            /* if (config.multiTenant.centralScmUrl) {
+            log.debug("Applying RBAC permissions for ArgoCD in all managed tenant namespaces.")
+            String tenantRBAC = Path.of(tenantBootstrapInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), OPERATOR_DEDICATED_RBAC_PATH)
+            k8sClient.applyYaml(tenantRBAC)
+        } */
+        }
+
         log.debug("Add RBAC permissions for ArgoCD in all managed namespaces.")
         // Apply rbac yamls from operator/rbac folder
         String argocdRbacPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), OPERATOR_RBAC_PATH)
         k8sClient.applyYaml(argocdRbacPath)
-
-        /* if (config.multiTenant.centralScmUrl) {
-            log.debug("Applying RBAC permissions for ArgoCD in all managed tenant namespaces.")
-            String tenantRBAC = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), OPERATOR_DEDICATED_RBAC_PATH)
-            k8sClient.applyYaml(tenantRBAC)
-        } */
     }
 
     protected void createMonitoringCrd() {
