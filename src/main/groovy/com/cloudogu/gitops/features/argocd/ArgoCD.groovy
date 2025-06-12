@@ -132,10 +132,10 @@ class ArgoCD extends Feature {
 
         remotePetClinicRepoTmpDir = File.createTempDir('gitops-playground-petclinic')
 
-        if(config.multiTenant.useDedicatedInstance){
+        /*if(config.multiTenant.useDedicatedInstance){
             tenantBootstrapInitializationAction = createRepoInitializationAction('argocd/argocd/multiTenant/tenant', 'argocd/argocd')
             gitRepos += clusterResourcesInitializationAction
-        }
+        }*/
     }
 
     private void cloneRemotePetclinicRepo() {
@@ -319,11 +319,11 @@ class ArgoCD extends Feature {
         String argocdRbacPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), OPERATOR_RBAC_PATH)
         k8sClient.applyYaml(argocdRbacPath)
 
-        if (config.multiTenant.centralScmUrl) {
+        /* if (config.multiTenant.centralScmUrl) {
             log.debug("Applying RBAC permissions for ArgoCD in all managed tenant namespaces.")
             String tenantRBAC = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), OPERATOR_DEDICATED_RBAC_PATH)
             k8sClient.applyYaml(tenantRBAC)
-        }
+        } */
     }
 
     protected void createMonitoringCrd() {
