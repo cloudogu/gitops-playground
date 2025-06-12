@@ -115,6 +115,7 @@ rules:
     resources:
       - roles
       - rolebindings
+      - serviceaccounts
     verbs:
       - create
       - delete
@@ -160,7 +161,28 @@ rules:
       - patch
       - update
       - watch
-
+  - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    verbs:
+      - get
+      - update
+      - create
+  - apiGroups:
+      - discovery.k8s.io
+    resources:
+      - endpointslices
+    verbs:
+      - list
+      - watch
+      - get
+  - apiGroups:
+      - networking.k8s.io
+    resources:
+      - ingresses/status
+    verbs:
+      - update
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -181,3 +203,25 @@ roleRef:
   kind: Role
   name: argocd
   apiGroup: rbac.authorization.k8s.io
+---
+<#if config.multiTenant.useDedicatedInstance>
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: argocd-central
+  namespace: "${namePrefix}ingress-nginx"
+subjects:
+  - kind: ServiceAccount
+    name: argocd-argocd-server
+    namespace: argocd
+  - kind: ServiceAccount
+    name: argocd-argocd-application-controller
+    namespace: argocd
+  - kind: ServiceAccount
+    name: argocd-applicationset-controller
+    namespace: argocd
+roleRef:
+  kind: Role
+  name: argocd
+  apiGroup: rbac.authorization.k8s.io
+</#if>

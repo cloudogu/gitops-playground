@@ -43,6 +43,7 @@ class ArgoCD extends Feature {
     protected RepoInitializationAction nginxHelmJenkinsInitializationAction
     protected RepoInitializationAction nginxValidationInitializationAction
     protected RepoInitializationAction brokenApplicationInitializationAction
+    protected RepoInitializationAction tenantBootstrapInitializationAction
     protected File remotePetClinicRepoTmpDir
     protected List<RepoInitializationAction> petClinicInitializationActions = []
 
@@ -112,9 +113,9 @@ class ArgoCD extends Feature {
     }
 
     protected initRepos() {
-        argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd', config.multiTenant.centralScmUrl ? true : false)
+        argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd', config.multiTenant.useDedicatedInstance)
 
-        clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources', config.multiTenant.centralScmUrl ? true : false)
+        clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources', config.multiTenant.useDedicatedInstance)
         gitRepos += clusterResourcesInitializationAction
 
         exampleAppsInitializationAction = createRepoInitializationAction('argocd/example-apps', 'argocd/example-apps')
@@ -130,6 +131,11 @@ class ArgoCD extends Feature {
         gitRepos += brokenApplicationInitializationAction
 
         remotePetClinicRepoTmpDir = File.createTempDir('gitops-playground-petclinic')
+
+        if(config.multiTenant.useDedicatedInstance){
+            tenantBootstrapInitializationAction = createRepoInitializationAction('argocd/argocd/multiTenant/tenant', 'argocd/argocd')
+            gitRepos += clusterResourcesInitializationAction
+        }
     }
 
     private void cloneRemotePetclinicRepo() {

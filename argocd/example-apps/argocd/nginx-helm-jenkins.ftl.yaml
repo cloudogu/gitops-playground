@@ -15,7 +15,7 @@ spec:
   project: example-apps
   source:
     path: apps/nginx-helm-jenkins/staging
-    repoURL: ${scmm.repoUrl}/repo/${namePrefix}argocd/example-apps
+    repoURL: ${scmm.repoUrl}argocd/example-apps
     targetRevision: main
     directory:
       recurse: true
