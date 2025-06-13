@@ -85,8 +85,16 @@ class ScmmRepo {
         gitClone()
         checkoutOrCreateBranch('main')
     }
-
-    void create(String description, ScmmApiClient scmmApiClient) {
+    /**
+     * if repo creation is succesfull or it still exist, then returns HTTP Code
+     *
+     * otherwise exception.
+     *
+     * @param description
+     * @param scmmApiClient
+     * @return 201 or 409
+     */
+    boolean create(String description, ScmmApiClient scmmApiClient) {
         def namespace = scmmRepoTarget.split('/', 2)[0]
         def repoName = scmmRepoTarget.split('/', 2)[1]
 
@@ -97,17 +105,19 @@ class ScmmRepo {
 
         def permission = new Permission(config.scmm.gitOpsUsername as String, Permission.Role.WRITE)
         def permissionResponse = repositoryApi.createPermission(namespace, repoName, permission).execute()
-        handleResponse(permissionResponse, permission, "for repo $namespace/$repoName")
+        return handleResponse(permissionResponse, permission, "for repo $namespace/$repoName")
     }
 
-    private static void handleResponse(Response<Void> response, Object body, String additionalMessage = '') {
+    private static boolean handleResponse(Response<Void> response, Object body, String additionalMessage = '') {
         if (response.code() == 409) {
             // Here, we could consider sending another request for changing the existing object to become proper idempotent
             log.debug("${body.class.simpleName} already exists ${additionalMessage}, ignoring: ${body}")
+            return false // because repo exists
         } else if (response.code() != 201) {
             throw new RuntimeException("Could not create ${body.class.simpleName} ${additionalMessage}.\n${body}\n" +
                     "HTTP Details: ${response.code()} ${response.message()}: ${response.errorBody().string()}")
         }
+        return true// because its created
     }
 
     void writeFile(String path, String content) {
@@ -216,7 +226,13 @@ class ScmmRepo {
         return gitMemoization = Git.open(new File(absoluteLocalRepoTmpDir))
     }
 
-    protected String getGitRepositoryUrl() {
+    String getGitRepositoryUrl() {
         return "${scmmUrl}/${rootPath}/${scmmRepoTarget}"
+    }
+    /**
+     * Delete all files in this repository
+     */
+    void clearRepo() {
+        fileSystemUtils.deleteFilesExcept(new File(absoluteLocalRepoTmpDir), ".git")
     }
 }

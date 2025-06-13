@@ -122,6 +122,9 @@ class Config {
 
             @JsonPropertyDescription(CONTENT_REPO_TARGET_DESCRIPTION)
             String target = ''
+
+            @JsonPropertyDescription(CONTENT_REPO_TARGET_OVERRIDE_MODE)
+            OverrideMode overrideMode = OverrideMode.INIT // default is init a new repository
         }
     }
 
@@ -782,6 +785,14 @@ class Config {
     static enum VaultMode {
         dev, prod
     }
+
+    /**
+     * This defines, how customer repos will be updated.
+     */
+    static enum OverrideMode {
+        INIT, RESET, UPGRADE
+    }
+
 
     private static final ObjectMapper objectMapper = new ObjectMapper()
             .registerModule(new SimpleModule().addSerializer(GString, new JsonSerializer<GString>() {

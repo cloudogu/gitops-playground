@@ -13,8 +13,10 @@ import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
 import org.apache.commons.io.FileUtils
+import org.apache.commons.io.filefilter.IOFileFilter
 import org.eclipse.jgit.api.CloneCommand
 import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.api.errors.GitAPIException
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 
 @Slf4j
@@ -76,87 +78,143 @@ class Content extends Feature {
     }
 
     void createContentRepos() {
-        File combinedContentRepoFolder = cloneContentRepos()
-        List<RepoCoordinates> repos = parseSrcRepos(combinedContentRepoFolder)
+        List<RepoCoordinates> repos = cloneContentRepos()
         pushTargetRepos(repos)
     }
 
-    protected File cloneContentRepos() {
-        def mergedFolderBasedRepoFolder = File.createTempDir('gitops-playground-folder-based-content-repos')
+    protected List<RepoCoordinates> cloneContentRepos() {
+        List<RepoCoordinates> repos = []
+        def mergedFolderBasedRepoFolder = File.createTempDir('gitops-playground-folder-based-content-repos-')
         mergedFolderBasedRepoFolder.deleteOnExit()
         def engine = new TemplatingEngine()
 
         log.debug("Aggregating folder structure for all ${config.content.repos.size()} folder based-repos")
         config.content.repos.each { repo ->
-            def repoTmpDir = File.createTempDir('gitops-playground-folder-based-content-repo')
-            log.debug("Cloning folder-based content repo, ${repo.url}, revision ${repo.ref}, ${repo.path}")
 
-            def cloneCommand = gitClone()
-                    .setURI(repo.url)
-                    .setDirectory(repoTmpDir)
-            
-            if (repo.username != null && repo.password != null) {
-                cloneCommand.setCredentialsProvider(
-                        new UsernamePasswordCredentialsProvider(repo.username, repo.password))
-            }
-            def git = cloneCommand.call()
-            git.checkout().setName(repo.ref).call()
+            def repoTmpDir = File.createTempDir('gitops-playground-folder-based-single-content-repo-')
+            log.debug("Cloning folder-based content repo, ${repo.url}, revision ${repo.ref}, ${repo.path} OverideMode ${repo.overrideMode}")
+
+            cloneToLocalFolder(repo, repoTmpDir)
 
             def srcPath = new File(repoTmpDir, repo.path)
-            if (repo.templating) {
-                engine.replaceTemplates(srcPath, [
-                        config              : config,
-                        // Allow for using static classes inside the templates
-                        statics             : new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels()
-                ])
-            }
-            
+            doTemplating(repo, engine, srcPath)
+
             if (repo.folderBased) {
-                FileUtils.copyDirectory(srcPath, mergedFolderBasedRepoFolder)
+                srcPath.listFiles().findAll { it.isDirectory() && !it.name.startsWith('.') }
+                        .each { namespaceDir ->
+                            String namespace = namespaceDir.name
+                            namespaceDir.listFiles().findAll {
+                                it.isDirectory()
+                                        // Exclude .git for example
+                                        && !it.name.startsWith('.')
+                            }.each { repoDir ->
+                                {
+                                    def gitIgnoreFilter = createGitIgnoreFilter(mergedFolderBasedRepoFolder)
+                                    // Namespace
+                                    File directory = new File(mergedFolderBasedRepoFolder, namespace)
+                                    // Repo
+                                    File repoFolder = new File(directory, repoDir.name)
+                                    FileUtils.copyDirectory(repoDir, repoFolder, gitIgnoreFilter)
+
+                                    def repoCoords = new RepoCoordinates(
+                                            namespace: namespace,
+                                            repo: repoDir.name,
+                                            newContent: repoFolder,
+                                            overrideMode: repo.overrideMode
+                                    )
+                                    addRepoCoordinates(repos, repoCoords)
+                                }
+                            }
+                        }
+
             } else {
-                // If repo.target has more than two levels for SCM-Manager, only the first two will be used as ns/repo.
-                // The remainer will be interpreted as sub-folder
-                FileUtils.copyDirectory(srcPath, new File(mergedFolderBasedRepoFolder, repo.target))
+                // non folderbased repo
+                def gitIgnoreFilter = createGitIgnoreFilter(mergedFolderBasedRepoFolder)
+                File contentFolder = new File(mergedFolderBasedRepoFolder, repo.target)
+                FileUtils.copyDirectory(srcPath, contentFolder, gitIgnoreFilter)
+
+                String namespace = repo.target.split('/')[0]
+                String repoName = repo.target.split('/')[1]
+                def repoCoords =  new RepoCoordinates(
+                        namespace: namespace,
+                        repo: repoName,
+                        newContent: contentFolder,
+                        overrideMode: repo.overrideMode
+                )
+                addRepoCoordinates(repos, repoCoords)
             }
 
-            repoTmpDir.delete()
+
+            repoTmpDir.deleteDir()
             log.debug("Merge content repo, ${repo.url} into ${mergedFolderBasedRepoFolder}")
         }
-        return mergedFolderBasedRepoFolder
+        return repos
     }
 
-    protected static List<RepoCoordinates> parseSrcRepos(File mergedFolderBasedRepoFolder) {
-        List<RepoCoordinates> repos = []
+    private void doTemplating(Config.ContentSchema.ContentRepositorySchema repo, TemplatingEngine engine, File srcPath) {
+        if (repo.templating) {
+            engine.replaceTemplates(srcPath, [
+                    config : config,
+                    // Allow for using static classes inside the templates
+                    statics: new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels()
+            ])
+        }
+    }
 
-        mergedFolderBasedRepoFolder.listFiles().findAll { it.isDirectory() && !it.name.startsWith('.') }
-                .each { namespaceDir ->
-                    String namespace = namespaceDir.name
-                    namespaceDir.listFiles().findAll {
-                        it.isDirectory()
-                                // Exclude .git for example
-                                && !it.name.startsWith('.')
-                    }.each { repoDir ->
-                        repos << new RepoCoordinates(
-                                namespace: namespace,
-                                repo: repoDir.name,
-                                newContent: repoDir
-                        )
-                    }
+    private static IOFileFilter createGitIgnoreFilter(mergedFolderBasedRepoFolder) {
+        [
+                accept: { File file ->
+                    def relativePath = file.absolutePath - mergedFolderBasedRepoFolder
+                    // exclude ".git" to remove all git repo info for copy to new repo.
+                    return !relativePath.contains(File.separator + ".git")
                 }
 
-        log.debug("Prepared ${repos.size()} folder-based content repos: ${repos}")
-        return repos
+        ] as IOFileFilter
+    }
+
+    private void cloneToLocalFolder(Config.ContentSchema.ContentRepositorySchema repo, File repoTmpDir) {
+        def cloneCommand = gitClone()
+                .setURI(repo.url)
+                .setDirectory(repoTmpDir)
+
+        if (repo.username != null && repo.password != null) {
+            cloneCommand.setCredentialsProvider(
+                    new UsernamePasswordCredentialsProvider(repo.username, repo.password))
+        }
+        def git = cloneCommand.call()
+        try {
+            // switch to used branch.
+            git.checkout().setName(repo.ref).call()
+
+        } catch (GitAPIException e) {
+            // This is a fallback because of branches hosted at github.
+            log.debug("checkout branch ${repo.ref} not working, maybe because of github. Now again with createBranch(true).")
+            git.checkout().setCreateBranch(true).setName(repo.ref).call()
+        }
     }
 
     protected void pushTargetRepos(List<RepoCoordinates> srcRepos) {
         srcRepos.each { repoCoordinates ->
+
             ScmmRepo repo = repoProvider.getRepo("${repoCoordinates.namespace}/${repoCoordinates.repo}")
-            // A later iteration will allow setting the description for each folder-based repo
-            repo.create('', scmmApiClient)
-            repo.cloneRepo()
-            repo.copyDirectoryContents(repoCoordinates.newContent.absolutePath)
-            repo.commitAndPush("Initialize content repo ${repoCoordinates.namespace}/${repoCoordinates.repo}")
+            def isRepoCreated = repo.create('', scmmApiClient)
+
+            // Repo exists and INIT, then nothing happens
+            if (!isRepoCreated && Config.OverrideMode.INIT == repoCoordinates.overrideMode) {
+                // nothing
+            } else {
+
+                repo.cloneRepo()
+                if (Config.OverrideMode.RESET == repoCoordinates.overrideMode) {
+                    repo.clearRepo()
+                }
+                repo.copyDirectoryContents(repoCoordinates.newContent.absolutePath)
+                repo.commitAndPush("Initialize content repo ${repoCoordinates.namespace}/${repoCoordinates.repo}")
+                // cleaning after use
+                new File(repo.absoluteLocalRepoTmpDir).deleteDir()
+            }
         }
+
     }
 
     /**
@@ -165,15 +223,27 @@ class Content extends Feature {
     protected CloneCommand gitClone() {
         Git.cloneRepository()
     }
-    
+    /**
+     * add new repoCoordinates to repos and ensure, newest one override last one
+     * @param repos
+     * @param entry
+     */
+    void addRepoCoordinates(List<RepoCoordinates> repos, RepoCoordinates entry) {
+
+        repos.removeIf { it.namespace == entry.namespace && it.repo == entry.repo }
+        repos << entry
+    }
+
     static class RepoCoordinates {
         String namespace
         String repo
         File newContent
+        Config.OverrideMode overrideMode
 
         @Override
         String toString() {
-            return "RepoCoordinates{ namespace='$namespace', repo='$repo', newContent=$newContent }"
+            return "RepoCoordinates{ namespace='$namespace', repo='$repo', overrideMode='$overrideMode', newContent=$newContent' }"
         }
     }
+
 }

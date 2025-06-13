@@ -6,12 +6,14 @@ import com.cloudogu.gitops.scmm.api.Permission
 import com.cloudogu.gitops.scmm.api.Repository
 import com.cloudogu.gitops.scmm.api.ScmmApiClient
 import com.cloudogu.gitops.utils.*
+import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 import org.apache.commons.io.FileUtils
 import org.eclipse.jgit.api.CloneCommand
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 import org.eclipse.jgit.util.SystemReader
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
 
@@ -20,6 +22,8 @@ import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.*
 
 class ContentTest {
+    // bareRepo
+    static List<File> foldersToDelete = new ArrayList<File>()
 
     Config config = new Config(
             application: new Config.ApplicationSchema(
@@ -54,22 +58,29 @@ class ContentTest {
             // Non-folder-based repo writing to their own target
             new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), folderBased: false, target: 'nonFolderBased/repo1'),
             new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), folderBased: false, target: 'nonFolderBased/repo2', path: 'subPath'),
-            
+
             // Same folder as in folderBasedRepos -> Should be combined
             new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', folderBased: false, target: 'common/repo'),
             new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), folderBased: false, target: 'common/repo', path: 'subPath'),
-            
+
             // Contains ftl
             new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('folderBasedRepo1'), folderBased: true, templating: true),
             // Contains a templated file that should be ignored
             new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('folderBasedRepo2'), folderBased: true, path: 'subPath'),
     ]
-    
+
+    @AfterAll
+    static void cleanFolders() {
+
+        foldersToDelete.each { it.deleteDir() }
+    }
+
+
     @Test
     void 'deploys image pull secrets'() {
         config.content.examples = true
         config.registry.createImagePullSecrets = true
-        config.content.namespaces = [ 'example-apps-staging', 'example-apps-production']
+        config.content.namespaces = ['example-apps-staging', 'example-apps-production']
 
         createContent().install()
 
@@ -80,7 +91,7 @@ class ContentTest {
     void 'deploys image pull secrets from read-only vars'() {
         config.content.examples = true
         config.registry.createImagePullSecrets = true
-        config.content.namespaces = [ 'example-apps-staging', 'example-apps-production']
+        config.content.namespaces = ['example-apps-staging', 'example-apps-production']
         config.registry.readOnlyUsername = 'other-user'
         config.registry.readOnlyPassword = 'other-pw'
 
@@ -93,12 +104,12 @@ class ContentTest {
     void 'deploys additional image pull secrets for proxy registry'() {
         config.content.examples = true
         config.registry.createImagePullSecrets = true
-        config.content.namespaces = [ 'example-apps-staging', 'example-apps-production']
+        config.content.namespaces = ['example-apps-staging', 'example-apps-production']
         config.registry.twoRegistries = true
         config.registry.proxyUrl = 'proxy-url'
         config.registry.proxyUsername = 'proxy-user'
         config.registry.proxyPassword = 'proxy-pw'
-        
+
 
         // Simulate argocd Namespace does not exist
         k8sCommands.enqueueOutput(new CommandExecutor.Output('namespace not found', '', 1)) // Namespace not exit
@@ -130,24 +141,24 @@ class ContentTest {
         def repos = createContent().cloneContentRepos()
 
         expectedTargetRepos.each { expected ->
-            assertThat(new File(repos, "${expected.namespace}/${expected.repo}/file")).exists().isFile()
+            assertThat(new File(findRoot(repos), "${expected.namespace}/${expected.repo}/file")).exists().isFile()
         }
-        
-        assertThat(new File(repos, "common/repo/file").text).contains("folderBasedRepo2") // Last repo "wins"
 
-        assertThat(new File(repos, "common/repo/folderBasedRepo1")).exists().isFile()
-        assertThat(new File(repos, "common/repo/folderBasedRepo2")).exists().isFile()
-        assertThat(new File(repos, "common/repo/nonFolderBasedRepo1")).exists().isFile()
-        assertThat(new File(repos, "common/repo/nonFolderBasedRepo2")).exists().isFile()
+        assertThat(new File(findRoot(repos), "common/repo/file").text).contains("folderBasedRepo2") // Last repo "wins"
+
+        assertThat(new File(findRoot(repos), "common/repo/folderBasedRepo1")).exists().isFile()
+        assertThat(new File(findRoot(repos), "common/repo/folderBasedRepo2")).exists().isFile()
+        assertThat(new File(findRoot(repos), "common/repo/nonFolderBasedRepo1")).exists().isFile()
+        assertThat(new File(findRoot(repos), "common/repo/nonFolderBasedRepo2")).exists().isFile()
 
         // Assert Templating
-        assertThat(new File(repos, "common/repo/some.yaml")).exists() 
-        assertThat(new File(repos, "common/repo/some.yaml").text).contains("namePrefix: foo-") 
+        assertThat(new File(findRoot(repos), "common/repo/some.yaml")).exists()
+        assertThat(new File(findRoot(repos), "common/repo/some.yaml").text).contains("namePrefix: foo-")
         // Assert not templating for this folder-based repo
-        assertThat(new File(repos, "common/repo/someOther.yaml.ftl")).exists() 
-        assertThat(new File(repos, "common/repo/someOther.yaml.ftl").text).contains('namePrefix: ${config.application.namePrefix}') 
+        assertThat(new File(findRoot(repos), "common/repo/someOther.yaml.ftl")).exists()
+        assertThat(new File(findRoot(repos), "common/repo/someOther.yaml.ftl").text).contains('namePrefix: ${config.application.namePrefix}')
     }
-    
+
     @Test
     void 'Authenticates content Repos'() {
         config.content.repos = [
@@ -165,7 +176,7 @@ class ContentTest {
         assertThat(value.properties.username).isEqualTo('user')
         assertThat(value.properties.password).isEqualTo('pw'.toCharArray())
     }
-    
+
     @Test
     void 'Checks out commit refs and tags for content repos'() {
         config.content.repos = [
@@ -175,8 +186,8 @@ class ContentTest {
 
         def repos = createContent().cloneContentRepos()
 
-        assertThat(new File(repos, "common/tag/README.md")).exists().isFile()
-        assertThat(new File(repos, "common/ref/README.md")).exists().isFile()
+        assertThat(new File(findRoot(repos), "common/tag/README.md")).exists().isFile()
+        assertThat(new File(findRoot(repos), "common/ref/README.md")).exists().isFile()
     }
 
     @Test
@@ -191,8 +202,10 @@ class ContentTest {
 
         def repos = createContent().cloneContentRepos()
 
-        assertThat(new File(repos, "common/repo/file").text).contains("nonFolderBasedRepo1") // Last repo "wins"
+        assertThat(new File(findRoot(repos), "common/repo/file").text).contains("nonFolderBasedRepo1")
+        // Last repo "wins"
     }
+
 
     @Test
     void 'Parses Repo coordinates'() {
@@ -201,28 +214,71 @@ class ContentTest {
 
         def content = createContent()
 
-        def repos = content.cloneContentRepos()
-        def actualTargetRepos = content.parseSrcRepos(repos)
+        def actualTargetRepos = content.cloneContentRepos()
+        def repos = actualTargetRepos
 
         assertThat(actualTargetRepos).hasSameSizeAs(expectedTargetRepos)
 
         expectedTargetRepos.each { expected ->
-            
+
             def actual = actualTargetRepos.findAll { actual ->
                 actual.namespace == expected.namespace && actual.repo == expected.repo
             }
             assertThat(actual).withFailMessage(
                     "Could not find repo with namespace=${expected.namespace} and repo=${expected.repo} in ${actualTargetRepos}"
             ).hasSize(1)
-            
+
             assertThat(actual[0].newContent.absolutePath).isEqualTo(
-                    new File(repos, "${expected.namespace}/${expected.repo}").absolutePath)
+                    new File(findRoot(repos), "${expected.namespace}/${expected.repo}").absolutePath)
         }
     }
 
     @Test
-    void 'Creates And pushes content repos'() {
+    void 'Creates And pushes content repos, whole flow '() {
         config.content.repos = contentRepos
+        def response = scmmApiClient.mockSuccessfulResponse(201)
+        when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response)
+        when(scmmApiClient.repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(response)
+
+        createContent().install()
+
+        def expectedRepo = 'nonFolderBased/repo1'
+        def repo = scmmRepoProvider.getRepo(expectedRepo)
+
+        def url = repo.getGitRepositoryUrl()
+        def repoFolder = File.createTempDir('cloned-repo')
+        // clone repo, to ensure, changes in rmeote repo.
+        def git = Git.cloneRepository().setURI(url).setBranch('main').setDirectory(repoFolder).call()
+
+
+        verify(repo).create(eq(''), any(ScmmApiClient))
+
+        def commitMsg = git.log().call().iterator().next().getFullMessage()
+        assertThat(commitMsg).isEqualTo("Initialize content repo ${expectedRepo}".toString())
+
+        assertThat(new File(repoFolder, "file").text).contains("nonFolderBasedRepo1")
+        assertThat(new File(repoFolder, "nonFolderBasedRepo1")).exists().isFile()
+
+        // Don't bother validating all other repos here.
+        // If it works for the most complex one, the other ones will work as well.
+        // The other tests are already asserting correct combining (including order) and parsing of the repos.
+    }
+
+    @Test
+    void 'Reset common_repo to repo '() {
+        /**
+         * Prepare Testcase
+         * using all defined repos ->  common/repo is used by nonFolderRepo1 + 2
+         * file content after that: nonFolderRepo2
+         *
+         * Then again "RESET" to nonFolderRepo1.
+         * file content after that should be: nonFolderRepo1
+         */
+        config.content.repos = [
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', folderBased: false, target: 'common/repo'),
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), folderBased: false, target: 'common/repo', path: 'subPath')
+
+        ]
         def response = scmmApiClient.mockSuccessfulResponse(201)
         when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response)
         when(scmmApiClient.repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(response)
@@ -231,30 +287,178 @@ class ContentTest {
 
         def expectedRepo = 'common/repo'
         def repo = scmmRepoProvider.getRepo(expectedRepo)
-        def repoFolder = repo.absoluteLocalRepoTmpDir
-        
+
+        def url = repo.getGitRepositoryUrl()
+        def repoFolder = File.createTempDir('cloned-repo')
+        // clone repo, to ensure, changes in rmeote repo.
+        def git = Git.cloneRepository().setURI(url).setBranch('main').setDirectory(repoFolder).call()
+
+
         verify(repo).create(eq(''), any(ScmmApiClient))
 
-        def git = Git.open(new File(repoFolder))
         def commitMsg = git.log().call().iterator().next().getFullMessage()
         assertThat(commitMsg).isEqualTo("Initialize content repo ${expectedRepo}".toString())
 
-        assertThat(new File(repoFolder, "file").text).contains("folderBasedRepo2") // Last repo "wins"
-
-        assertThat(new File(repoFolder, "folderBasedRepo1")).exists().isFile()
-        assertThat(new File(repoFolder, "folderBasedRepo2")).exists().isFile()
-        assertThat(new File(repoFolder, "nonFolderBasedRepo1")).exists().isFile()
+        assertThat(new File(repoFolder, "file").text).contains("nonFolderBasedRepo2")
         assertThat(new File(repoFolder, "nonFolderBasedRepo2")).exists().isFile()
-        
-        // Don't bother validating all other repos here. 
-        // If it works for the most complex one, the other ones will work as well. 
-        // The other tests are already asserting correct combining (including order) and parsing of the repos.
+
+        /**
+         * End of preparation
+         *
+         * Now Reset to nonFolderBased1
+         */
+        config.content.repos = [
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', folderBased: false, target: 'common/repo', overrideMode: Config.OverrideMode.RESET),
+        ]
+
+        def resourceExistsAnswer = scmmApiClient.mockErrorResponse(409)
+        when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(resourceExistsAnswer)
+        when(scmmApiClient.repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(resourceExistsAnswer)
+
+        createContent().install()
+
+        def folderAfterReset = File.createTempDir('second-cloned-repo')
+        // clone repo, to ensure, changes in rmeote repo.
+        Git.cloneRepository().setURI(url).setBranch('main').setDirectory(folderAfterReset).call()
+        // because nonFolderBasedRepo1 is only part of repo1
+        assertThat(new File(folderAfterReset, "file").text).contains("nonFolderBasedRepo1")
+        // should not exists, if RESET to first repo
+        assertThat(new File(folderAfterReset, "nonFolderBasedRepo2").exists()).isFalse()
+
     }
+
+    @Test
+    void 'Update common_repo test '() {
+        /**
+         * Prepare Testcase
+         * using all defined repos ->  common/repo is used by nonFolderRepo1 + 2
+         * file content after that: nonFolderRepo2
+         *
+         * Then again "RESET" to nonFolderRepo1.
+         * file content after that should be: nonFolderRepo1
+         */
+        config.content.repos = [
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', folderBased: false, target: 'common/repo'),
+        ]
+        def response = scmmApiClient.mockSuccessfulResponse(201)
+        when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response)
+        when(scmmApiClient.repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(response)
+
+        createContent().install()
+
+        def expectedRepo = 'common/repo'
+        def repo = scmmRepoProvider.getRepo(expectedRepo)
+
+        def url = repo.getGitRepositoryUrl()
+        def repoFolder = File.createTempDir('cloned-repo')
+        // clone repo, to ensure, changes in rmeote repo.
+        def git = Git.cloneRepository().setURI(url).setBranch('main').setDirectory(repoFolder).call()
+
+
+        verify(repo).create(eq(''), any(ScmmApiClient))
+
+        def commitMsg = git.log().call().iterator().next().getFullMessage()
+        assertThat(commitMsg).isEqualTo("Initialize content repo ${expectedRepo}".toString())
+
+        assertThat(new File(repoFolder, "file").text).contains("nonFolderBasedRepo1")
+        assertThat(new File(repoFolder, "nonFolderBasedRepo1")).exists().isFile()
+
+        /**
+         * End of preparation
+         *
+         * Now Upgrade to nonFolderBased2
+         */
+        config.content.repos = [
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), folderBased: false, target: 'common/repo', path: 'subPath', overrideMode: Config.OverrideMode.UPGRADE)
+        ]
+
+        def resourceExistsAnswer = scmmApiClient.mockErrorResponse(409)
+        when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(resourceExistsAnswer)
+        when(scmmApiClient.repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(resourceExistsAnswer)
+
+        createContent().install()
+
+        def folderAfterReset = File.createTempDir('second-cloned-repo')
+        // clone repo, to ensure, changes in rmeote repo.
+        Git.cloneRepository().setURI(url).setBranch('main').setDirectory(folderAfterReset).call()
+        // because nonFolderBasedRepo1 is only part of repo1
+        assertThat(new File(folderAfterReset, "file").text).contains("nonFolderBasedRepo2")
+        // should not exists, if RESET to first repo
+        assertThat(new File(folderAfterReset, "nonFolderBasedRepo2").exists()).isTrue()
+
+    }
+
+    @Test
+    void 'init common_repo, expect unchanged repo'() {
+        /**
+         * Prepare Testcase
+         * using all defined repos ->  common/repo is used by nonFolderRepo1 + 2
+         * file content after that: nonFolderRepo2
+         *
+         * Then again "RESET" to nonFolderRepo1.
+         * file content after that should be: nonFolderRepo1
+         */
+        config.content.repos = [
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', folderBased: false, target: 'common/repo'),
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), folderBased: false, target: 'common/repo', path: 'subPath')
+
+        ]
+        def response = scmmApiClient.mockSuccessfulResponse(201)
+        when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response)
+        when(scmmApiClient.repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(response)
+
+        createContent().install()
+
+        def expectedRepo = 'common/repo'
+        def repo = scmmRepoProvider.getRepo(expectedRepo)
+
+        def url = repo.getGitRepositoryUrl()
+        def repoFolder = File.createTempDir('cloned-repo')
+        // clone repo, to ensure, changes in rmeote repo.
+        def git = Git.cloneRepository().setURI(url).setBranch('main').setDirectory(repoFolder).call()
+
+
+        verify(repo).create(eq(''), any(ScmmApiClient))
+
+        def commitMsg = git.log().call().iterator().next().getFullMessage()
+        assertThat(commitMsg).isEqualTo("Initialize content repo ${expectedRepo}".toString())
+
+        assertThat(new File(repoFolder, "file").text).contains("nonFolderBasedRepo2")
+        assertThat(new File(repoFolder, "nonFolderBasedRepo2")).exists().isFile()
+
+        /**
+         * End of preparation
+         *
+         * Now INit to nonFolderBased1
+         * no changes expected, file still has nonFolderBasedRepo2 and so on
+         */
+        config.content.repos = [
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', folderBased: false, target: 'common/repo', overrideMode: Config.OverrideMode.INIT),
+        ]
+
+        def resourceExistsAnswer = scmmApiClient.mockErrorResponse(409)
+        when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(resourceExistsAnswer)
+        when(scmmApiClient.repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(resourceExistsAnswer)
+
+        createContent().install()
+
+        def folderAfterReset = File.createTempDir('second-cloned-repo')
+        // clone repo, to ensure, changes in rmeote repo.
+        Git.cloneRepository().setURI(url).setBranch('main').setDirectory(folderAfterReset).call()
+        // because nonFolderBasedRepo1 is only part of repo1
+        assertThat(new File(folderAfterReset, "file").text).contains("nonFolderBasedRepo2")
+        // should not exists, if RESET to first repo
+        assertThat(new File(folderAfterReset, "nonFolderBasedRepo2").exists()).isTrue()
+
+    }
+
 
     static String createContentRepo(String srcPath) {
         // The bare repo works as the "remote"
+
         def bareRepoDir = File.createTempDir('gitops-playground-test-content-repo')
         bareRepoDir.deleteOnExit()
+        foldersToDelete << bareRepoDir
         // init with bare repo
         FileUtils.copyDirectory(new File(System.getProperty("user.dir") + "/src/test/groovy/com/cloudogu/gitops/utils/data/git-repository/"), bareRepoDir)
         def bareRepoUri = 'file://' + bareRepoDir.absolutePath
@@ -262,6 +466,8 @@ class ContentTest {
 
         // Add srcPath to bare repo
         def tempRepo = File.createTempDir('gitops-playground-temp-repo')
+        tempRepo.deleteOnExit()
+        foldersToDelete << tempRepo
         println("Repo $srcPath: cloned bare repo to $tempRepo")
         def git = Git.cloneRepository()
                 .setURI(bareRepoUri)
@@ -308,7 +514,14 @@ class ContentTest {
         def ys = new YamlSlurper()
         return ys.parse(pathToYamlFile)
     }
-    
+
+    String findRoot(List<Content.RepoCoordinates> repos) {
+        def result = new File(repos.get(0).getNewContent().getParent()).getParent()
+        return result;
+
+    }
+
+    @Slf4j
     class ContentForTest extends Content {
         CloneCommand cloneSpy
 
