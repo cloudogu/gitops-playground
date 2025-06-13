@@ -12,7 +12,7 @@ spec:
     namespace: <#if config.multiTenant.useDedicatedInstance>argocd<#else>${namePrefix}argocd</#if>
   source:
     path: misc/
-<#if config.multiTenant.centralSCMUrl?has_content>
+<#if config.multiTenant.useDedicatedInstance>
     repoURL: ${scmm.centralScmmUrl}/repo/${namePrefix}argocd/cluster-resources
 <#else>
     repoURL: ${scmm.repoUrl}argocd/cluster-resources<#if scmm.provider == "gitlab">.git</#if>

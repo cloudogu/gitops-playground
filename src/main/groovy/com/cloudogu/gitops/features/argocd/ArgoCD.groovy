@@ -311,16 +311,17 @@ class ArgoCD extends Feature {
         // The ArgoCD instance installed via an operator only manages its deployment namespace.
         // To manage additional namespaces, we need to update the 'argocd-default-cluster-config' secret with all managed namespaces.
 
-        //TODO merge Tenant Namespace Lists. Not hardcoded here: like getTenantNamespaces()
-        def namespaceList = !config.multiTenant.centralScmUrl ? getNamespaceList() : ["${config.application.namePrefix}example-apps-staging", "${config.application.namePrefix}argocd", "${config.application.namePrefix}example-apps-production"]
+        //TODO merge Tenant Namespace Lists. Not hardcoded here: like getTenantNamespaces(). Changes with ContentHooks
+        def namespaceList = !config.multiTenant.useDedicatedInstance ? getNamespaceList() : ["${config.application.namePrefix}example-apps-staging", "${config.application.namePrefix}argocd", "${config.application.namePrefix}example-apps-production"]
         k8sClient.patch('secret', 'argocd-default-cluster-config', namespace,
                 [stringData: ['namespaces': namespaceList.join(',')]])
 
         //TODO RBACs? what else we need for permissions?
         //allowing the central argo to access the tenant cluster-resource namespaces. Patch adds the tenant namespaces to central argocd secret
-        if(config.multiTenant.centralScmUrl){
+        if(config.multiTenant.useDedicatedInstance){
             k8sClient.patch('secret', 'argocd-default-cluster-config', 'argocd',
-                    [stringData: ['namespaces': getNamespaceList()]])
+                    [stringData: ['namespaces': getNamespaceList().join(',')]])
+
             /* if (config.multiTenant.centralScmUrl) {
             log.debug("Applying RBAC permissions for ArgoCD in all managed tenant namespaces.")
             String tenantRBAC = Path.of(tenantBootstrapInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), OPERATOR_DEDICATED_RBAC_PATH)
