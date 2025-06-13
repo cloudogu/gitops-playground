@@ -29,6 +29,7 @@ class Content extends Feature {
     private K8sClient k8sClient
     private ScmmRepoProvider repoProvider
     private ScmmApiClient scmmApiClient
+    public static String overrideModeFileName = 'override.mode'
 
     Content(
             Config config, K8sClient k8sClient, ScmmRepoProvider repoProvider, ScmmApiClient scmmApiClient
@@ -91,8 +92,12 @@ class Content extends Feature {
 
         log.debug("Aggregating folder structure for all ${config.content.repos.size()} folder based-repos")
         config.content.repos.each { repo ->
+
+
+            File overrideModeFlagAsFile = createOverrideModeFlag(repo.overrideMode)
+
             def repoTmpDir = File.createTempDir('gitops-playground-folder-based-content-repo')
-            log.debug("Cloning folder-based content repo, ${repo.url}, revision ${repo.ref}, ${repo.path}")
+            log.debug("Cloning folder-based content repo, ${repo.url}, revision ${repo.ref}, ${repo.path} OverideMode ${repo.overrideMode}")
 
             def cloneCommand = gitClone()
                     .setURI(repo.url)
@@ -108,7 +113,7 @@ class Content extends Feature {
                 git.checkout().setName(repo.ref).call()
 
             } catch (GitAPIException e) {
-
+                // This is a fallback because of branches hosted at github.
                 log.debug("checkout branch ${repo.ref} not working, maybe because of github. Now again with createBranch(true).")
                 git.checkout().setCreateBranch(true).setName(repo.ref).call()
             }
@@ -124,6 +129,7 @@ class Content extends Feature {
 
             if (repo.folderBased) {
                 FileUtils.copyDirectory(srcPath, mergedFolderBasedRepoFolder)
+                FileUtils.copyFileToDirectory(overrideModeFlagAsFile, mergedFolderBasedRepoFolder)
             } else {
                 // If repo.target has more than two levels for SCM-Manager, only the first two will be used as ns/repo.
                 // The remainer will be interpreted as sub-folder
@@ -136,7 +142,9 @@ class Content extends Feature {
 
                 ] as IOFileFilter
 
-                FileUtils.copyDirectory(srcPath, new File(mergedFolderBasedRepoFolder, repo.target), filter)
+                File directory = new File(mergedFolderBasedRepoFolder, repo.target)
+                FileUtils.copyDirectory(srcPath, directory, filter)
+                FileUtils.copyFileToDirectory(overrideModeFlagAsFile, directory)
             }
 
             repoTmpDir.delete()
@@ -156,11 +164,23 @@ class Content extends Feature {
                                 // Exclude .git for example
                                 && !it.name.startsWith('.')
                     }.each { repoDir ->
-                        repos << new RepoCoordinates(
-                                namespace: namespace,
-                                repo: repoDir.name,
-                                newContent: repoDir
-                        )
+                        {
+                            File fileMode = new File(repoDir, overrideModeFileName)
+                            Config.OverrideMode mode = null
+                            if (fileMode.exists()) {
+                                String overrideText = fileMode.getText()
+                                mode = Config.OverrideMode.valueOf(overrideText)
+                                fileMode.delete()
+
+                            }
+
+                            repos << new RepoCoordinates(
+                                    namespace: namespace,
+                                    repo: repoDir.name,
+                                    newContent: repoDir,
+                                    overrideMode: mode
+                            )
+                        }
                     }
                 }
 
@@ -170,6 +190,19 @@ class Content extends Feature {
 
     protected void pushTargetRepos(List<RepoCoordinates> srcRepos) {
         srcRepos.each { repoCoordinates ->
+            switch (repoCoordinates.overrideMode) {
+
+                case Config.OverrideMode.INIT:
+                    log.debug('INIT')
+                    break
+                case Config.OverrideMode.RESET:
+                    log.debug('RESET')
+                    break
+                case Config.OverrideMode.UPGRADE:
+                    log.debug('UPGRADE')
+                    break
+
+            }
             ScmmRepo repo = repoProvider.getRepo("${repoCoordinates.namespace}/${repoCoordinates.repo}")
             // A later iteration will allow setting the description for each folder-based repo
             repo.create('', scmmApiClient)
@@ -186,14 +219,24 @@ class Content extends Feature {
         Git.cloneRepository()
     }
 
+    private static File createOverrideModeFlag(Config.OverrideMode mode) {
+        def tmpFolderOverrideMode = File.createTempDir('gitops-repo-override-mode')
+        tmpFolderOverrideMode.deleteOnExit()
+        File flagOverrideMode = new File(tmpFolderOverrideMode, overrideModeFileName)
+        flagOverrideMode.createNewFile()
+        flagOverrideMode.setText('' + mode)
+        return flagOverrideMode
+    }
+
     static class RepoCoordinates {
         String namespace
         String repo
         File newContent
+        Config.OverrideMode overrideMode
 
         @Override
         String toString() {
-            return "RepoCoordinates{ namespace='$namespace', repo='$repo', newContent=$newContent }"
+            return "RepoCoordinates{ namespace='$namespace', repo='$repo', overrideMode='$overrideMode', newContent=$newContent' }"
         }
     }
 }
