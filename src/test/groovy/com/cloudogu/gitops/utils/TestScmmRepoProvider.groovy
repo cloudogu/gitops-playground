@@ -23,15 +23,22 @@ class TestScmmRepoProvider extends ScmmRepoProvider {
         }
 
         ScmmRepo repo = new ScmmRepo(config, repoTarget, fileSystemUtils) {
+
+            String remoteGitRepopUrl=''
+
             @Override
-            protected String getGitRepositoryUrl() {
-                def tempDir = File.createTempDir('gitops-playground-repocopy')
-                tempDir.deleteOnExit()
-                def originalRepo = System.getProperty("user.dir") + "/src/test/groovy/com/cloudogu/gitops/utils/data/git-repository/"
+            String getGitRepositoryUrl() {
+                if (!remoteGitRepopUrl) {
 
-                FileUtils.copyDirectory(new File(originalRepo), tempDir)
+                    def tempDir = File.createTempDir('gitops-playground-repocopy')
+                    tempDir.deleteOnExit()
+                    def originalRepo = System.getProperty("user.dir") + "/src/test/groovy/com/cloudogu/gitops/utils/data/git-repository/"
 
-                return 'file://' + tempDir.absolutePath
+                    FileUtils.copyDirectory(new File(originalRepo), tempDir)
+                    remoteGitRepopUrl = 'file://' + tempDir.absolutePath
+                }
+                return remoteGitRepopUrl
+
             }
 
             @Override

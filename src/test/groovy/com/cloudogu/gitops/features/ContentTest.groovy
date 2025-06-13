@@ -221,7 +221,7 @@ class ContentTest {
     }
 
     @Test
-    void 'Creates And pushes content repos'() {
+    void 'Creates And pushes content repos, whole flow '() {
         config.content.repos = contentRepos
         def response = scmmApiClient.mockSuccessfulResponse(201)
         when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response)
@@ -229,25 +229,25 @@ class ContentTest {
 
         createContent().install()
 
-        def expectedRepo = 'common/repo'
+        def expectedRepo = 'nonFolderBased/repo1'
         def repo = scmmRepoProvider.getRepo(expectedRepo)
-        def repoFolder = repo.absoluteLocalRepoTmpDir
-        
+
+        def url = repo.getGitRepositoryUrl()
+        def repoFolder = File.createTempDir('cloned-repo')
+        // clone repo, to ensure, changes in rmeote repo.
+        def git = Git.cloneRepository().setURI(url).setBranch('main').setDirectory(repoFolder).call()
+
+
         verify(repo).create(eq(''), any(ScmmApiClient))
 
-        def git = Git.open(new File(repoFolder))
         def commitMsg = git.log().call().iterator().next().getFullMessage()
         assertThat(commitMsg).isEqualTo("Initialize content repo ${expectedRepo}".toString())
 
-        assertThat(new File(repoFolder, "file").text).contains("folderBasedRepo2") // Last repo "wins"
-
-        assertThat(new File(repoFolder, "folderBasedRepo1")).exists().isFile()
-        assertThat(new File(repoFolder, "folderBasedRepo2")).exists().isFile()
+        assertThat(new File(repoFolder, "file").text).contains("nonFolderBasedRepo1")
         assertThat(new File(repoFolder, "nonFolderBasedRepo1")).exists().isFile()
-        assertThat(new File(repoFolder, "nonFolderBasedRepo2")).exists().isFile()
-        
-        // Don't bother validating all other repos here. 
-        // If it works for the most complex one, the other ones will work as well. 
+
+        // Don't bother validating all other repos here.
+        // If it works for the most complex one, the other ones will work as well.
         // The other tests are already asserting correct combining (including order) and parsing of the repos.
     }
 

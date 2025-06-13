@@ -216,7 +216,7 @@ class ScmmRepo {
         return gitMemoization = Git.open(new File(absoluteLocalRepoTmpDir))
     }
 
-    protected String getGitRepositoryUrl() {
+    String getGitRepositoryUrl() {
         return "${scmmUrl}/${rootPath}/${scmmRepoTarget}"
     }
 }

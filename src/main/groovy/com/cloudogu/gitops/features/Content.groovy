@@ -13,6 +13,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
 import org.apache.commons.io.FileUtils
+import org.apache.commons.io.filefilter.IOFileFilter
 import org.eclipse.jgit.api.CloneCommand
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
@@ -116,7 +117,16 @@ class Content extends Feature {
             } else {
                 // If repo.target has more than two levels for SCM-Manager, only the first two will be used as ns/repo.
                 // The remainer will be interpreted as sub-folder
-                FileUtils.copyDirectory(srcPath, new File(mergedFolderBasedRepoFolder, repo.target))
+                def filter = [
+                        accept: { File file ->
+                            def relativePath = file.absolutePath - mergedFolderBasedRepoFolder
+                            // exclude ".git" to remove all git repo info for copy to new repo.
+                            return !relativePath.contains(File.separator + ".git")
+                        }
+
+                ] as IOFileFilter
+
+                FileUtils.copyDirectory(srcPath, new File(mergedFolderBasedRepoFolder, repo.target), filter)
             }
 
             repoTmpDir.delete()
