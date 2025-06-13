@@ -1,3 +1,4 @@
+<#if config.multiTenant.useDedicatedInstance>
 #deploying the AppProject first. Application already needs the AppProject to be created
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
@@ -16,6 +17,7 @@ spec:
   sourceRepos:
     - http://scmm.${namePrefix}scm-manager.svc.cluster.local/scm/repo/${namePrefix}argocd/example-apps
     - http://scmm.${namePrefix}scm-manager.svc.cluster.local/scm/repo/${namePrefix}argocd/nginx-helm-umbrella
+    - http://scmm.${namePrefix}scm-manager.svc.cluster.local/scm/repo/${namePrefix}argocd/argocd
 
   sourceNamespaces:
     - '*'
@@ -53,3 +55,4 @@ spec:
     automated:
       prune: false # is set to false to prevent projects to be deleted by accident
       selfHeal: true
+</#if>

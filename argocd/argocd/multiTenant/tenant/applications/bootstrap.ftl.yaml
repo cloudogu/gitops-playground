@@ -1,34 +1,3 @@
-#deploying the AppProject first. Application already needs the AppProject to be created
-apiVersion: argoproj.io/v1alpha1
-kind: AppProject
-metadata:
-  name: example-apps
-  namespace: ${namePrefix}argocd
-spec:
-  description: Contains examples of end-user application
-  destinations:
-    - namespace: ${namePrefix}example-apps-production
-      server: https://kubernetes.default.svc
-    - namespace: ${namePrefix}example-apps-staging
-      server: https://kubernetes.default.svc
-    - namespace: ${namePrefix}argocd
-      server: https://kubernetes.default.svc
-  sourceRepos:
-    - http://scmm.${namePrefix}scm-manager.svc.cluster.local/scm/repo/${namePrefix}argocd/example-apps
-    - http://scmm.${namePrefix}scm-manager.svc.cluster.local/scm/repo/${namePrefix}argocd/nginx-helm-umbrella
-
-  sourceNamespaces:
-    - '*'
-
-  namespaceResourceWhitelist:
-    - group: '*'
-      kind: '*'
-  # Allow all cluster-scoped resources to be created
-  clusterResourceWhitelist:
-    - group: '*'
-      kind: '*'
-
----
 # This is the root Applications, which manages all other applications with the app-of-apps-pattern.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -42,10 +11,10 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: ${namePrefix}argocd
-  project: example-apps
+  project: default
   source:
     path: argocd/
-    repoURL: ${scmm.repoUrl}argocd/example-apps
+    repoURL: ${scmm.repoUrl}argocd/argocd
     targetRevision: main
     directory:
       recurse: true

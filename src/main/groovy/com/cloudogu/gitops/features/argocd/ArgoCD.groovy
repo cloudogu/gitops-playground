@@ -241,6 +241,7 @@ class ArgoCD extends Feature {
             //Bootstrapping dedicated instance
             k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), "${DEDICATED_INSTANCE_PATH}projects/tenant.yaml").toString())
             k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), "${DEDICATED_INSTANCE_PATH}applications/bootstrap.yaml").toString())
+            //k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'multiTenant/tenant/applications/bootstrap.yaml').toString()) TODO
             k8sClient.applyYaml(Path.of(exampleAppsInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'argocd/bootstrap.yaml').toString()) //TODO Booststrapping via Tenant argocd/argocd repo
         } else {
             // Bootstrap root application
@@ -372,7 +373,7 @@ class ArgoCD extends Feature {
                 new Tuple2(' argocd.argoproj.io/secret-type', 'repo-creds'))
 
 
-        if (config.multiTenant.centralScmUrl) {
+        if (config.multiTenant.useDedicatedInstance) {
             log.debug('Creating central repo credential secret that is used by argocd to access repos in SCM-Manager')
             // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo
             def centralRepoTemplateSecretName = 'argocd-repo-creds-central-scmm'

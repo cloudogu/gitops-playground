@@ -213,6 +213,7 @@ class ApplicationConfigurator {
         }
     }
 
+    //TODO renaming? more settings to capture?
     private void setMultiTenantModeConfig(Config newConfig) {
         if (newConfig.multiTenant.centralScmUrl) {
             if (newConfig.multiTenant.centralScmUrl && !newConfig.application.namePrefix) {
@@ -223,12 +224,12 @@ class ApplicationConfigurator {
                 throw new RuntimeException('To use Central Multi Tenant mode define the username and password for the central SCM instance.')
             }
 
+            log.info("Using Dedicated Instances Mode for rollout!")
             newConfig.multiTenant.useDedicatedInstance = true
 
             //Disabling IngressNginx in DedicatedInstances Mode for now. Ingress has to be handled manually.
             newConfig.features.ingressNginx.active = false
         }
-
     }
 
     /**
