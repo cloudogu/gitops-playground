@@ -18,11 +18,17 @@ class TemplatingEngine {
      */
     File replaceTemplate(File templateFile, Map parameters) {
         def targetFile = new File(templateFile.toString().replace(".ftl", ""))
+        def rendered = template(templateFile, parameters)
 
-        template(templateFile, targetFile, parameters)
+        // Only write file if template has non-empty output.
+        // This avoids creating empty files when the entire template is skipped via <#if>.
+        if (rendered?.trim()) {
+            targetFile.text = rendered
+        } else {
+            targetFile.delete()
+        }
 
         templateFile.delete()
-
         return targetFile
     }
 
