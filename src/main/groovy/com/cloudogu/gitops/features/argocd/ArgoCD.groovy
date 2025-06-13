@@ -139,10 +139,10 @@ class ArgoCD extends Feature {
         log.debug("Cloning petclinic base repo, revision ${config.repositories.springPetclinic.ref}," +
                 " from ${config.repositories.springPetclinic.url}")
         Git git = gitClone()
-                .setURI(config.repositories.springPetclinic.url.toString())
+                .setURI(config.repositories.springPetclinic.url)
                 .setDirectory(remotePetClinicRepoTmpDir)
                 .call()
-        git.checkout().setName(config.repositories.springPetclinic.ref.toString()).call()
+        git.checkout().setName(config.repositories.springPetclinic.ref).call()
         log.debug('Finished cloning petclinic base repo')
     }
 
@@ -213,10 +213,8 @@ class ArgoCD extends Feature {
 
         prepareArgoCdRepo()
 
-        def namespaceList = getNamespaceList()
-
         log.debug("Creating namespaces")
-        k8sClient.createNamespaces(namespaceList)
+        k8sClient.createNamespaces(config.application.activeNamespaces)
 
         createMonitoringCrd()
 
@@ -259,12 +257,6 @@ class ArgoCD extends Feature {
         // For development keeping it in helm makes it easier (e.g. for helm uninstall).
         k8sClient.delete('secret', namespace,
                 new Tuple2('owner', 'helm'), new Tuple2('name', 'argocd'))
-    }
-
-    private List<String> getNamespaceList() {
-        def namespaceList = ["argocd", "monitoring", "ingress-nginx", "example-apps-staging", "example-apps-production", "secrets"]
-        def prefixedNamespaces = namespaceList.collect { ns -> "${config.application.namePrefix}${ns}".toString() }
-        return prefixedNamespaces
     }
 
     private void deployWithHelm() {
@@ -314,9 +306,8 @@ class ArgoCD extends Feature {
         log.debug("Updating managed namespaces in ArgoCD configuration secret.")
         // The ArgoCD instance installed via an operator only manages its deployment namespace.
         // To manage additional namespaces, we need to update the 'argocd-default-cluster-config' secret with all managed namespaces.
-        def namespaceList = getNamespaceList()
         k8sClient.patch('secret', 'argocd-default-cluster-config', namespace,
-                [stringData: ['namespaces': namespaceList.join(',')]])
+                [stringData: ['namespaces': config.application.activeNamespaces.join(',')]])
 
         log.debug("Add RBAC permissions for ArgoCD in all managed namespaces.")
         // Apply rbac yamls from operator/rbac folder
@@ -423,7 +414,7 @@ class ArgoCD extends Feature {
         }
 
         void replaceTemplates() {
-            repo.replaceTemplates(~/\.ftl/, [
+            repo.replaceTemplates([
                     namePrefix          : config.application.namePrefix,
                     namePrefixForEnvVars: config.application.namePrefixForEnvVars,
                     podResources        : config.application.podResources,
@@ -469,9 +460,8 @@ class ArgoCD extends Feature {
                             ],
                     ],
                     scmm                : [
+                            // This should be put into a static method call, similar to repoUrl, so it can be used in templates directly!
                             baseUrl : config.scmm.internal ? "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm" : ScmmRepo.createScmmUrl(config),
-                            host    : config.scmm.internal ? "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local" : config.scmm.host,
-                            protocol: config.scmm.internal ? 'http' : config.scmm.protocol,
                             repoUrl : ScmmRepo.createSCMBaseUrl(config),
                             provider: config.scmm.provider
                     ],

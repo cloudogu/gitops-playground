@@ -2,28 +2,43 @@ package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
-
+import com.cloudogu.gitops.scmm.ScmmRepo
+import com.cloudogu.gitops.scmm.ScmmRepoProvider
+import com.cloudogu.gitops.scmm.api.ScmmApiClient
 import com.cloudogu.gitops.utils.K8sClient
+import com.cloudogu.gitops.utils.TemplatingEngine
+import freemarker.template.Configuration
+import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
+import org.apache.commons.io.FileUtils
+import org.apache.commons.io.filefilter.IOFileFilter
+import org.eclipse.jgit.api.CloneCommand
+import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.api.errors.GitAPIException
+import org.eclipse.jgit.api.errors.RefAlreadyExistsException
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 
 @Slf4j
 @Singleton
 @Order(80)
 class Content extends Feature {
 
-    Config config
-    K8sClient k8sClient
-    
+    private Config config
+    private K8sClient k8sClient
+    private ScmmRepoProvider repoProvider
+    private ScmmApiClient scmmApiClient
+    public static String overrideModeFileName = 'override.mode'
+
     Content(
-            Config config,
-            K8sClient k8sClient
+            Config config, K8sClient k8sClient, ScmmRepoProvider repoProvider, ScmmApiClient scmmApiClient
     ) {
         this.config = config
         this.k8sClient = k8sClient
+        this.repoProvider = repoProvider
+        this.scmmApiClient = scmmApiClient
     }
-
 
     @Override
     boolean isEnabled() {
@@ -32,23 +47,28 @@ class Content extends Feature {
 
     @Override
     void enable() {
-        if (config.registry.createImagePullSecrets && config.content.examples) {
+        createImagePullSecrets()
+
+        createContentRepos()
+    }
+
+    void createImagePullSecrets() {
+        if (config.registry.createImagePullSecrets) {
             String registryUsername = config.registry.readOnlyUsername ?: config.registry.username
             String registryPassword = config.registry.readOnlyPassword ?: config.registry.password
 
-            List exampleAppNamespaces = [ "example-apps-staging", "example-apps-production"]
-            exampleAppNamespaces.each {
+            config.content.namespaces.each {
                 String namespace = "${config.application.namePrefix}${it}"
                 def registrySecretName = 'registry'
 
                 k8sClient.createNamespace(namespace)
-                        
+
                 k8sClient.createImagePullSecret(registrySecretName, namespace,
                         config.registry.url /* Only domain matters, path would be ignored */,
                         registryUsername, registryPassword)
 
                 k8sClient.patch('serviceaccount', 'default', namespace,
-                        [ imagePullSecrets: [ [name: registrySecretName] ]])
+                        [imagePullSecrets: [[name: registrySecretName]]])
 
                 if (config.registry.twoRegistries) {
                     k8sClient.createImagePullSecret('proxy-registry', namespace,
@@ -56,6 +76,167 @@ class Content extends Feature {
                             config.registry.proxyPassword)
                 }
             }
+        }
+    }
+
+    void createContentRepos() {
+        File combinedContentRepoFolder = cloneContentRepos()
+        List<RepoCoordinates> repos = parseSrcRepos(combinedContentRepoFolder)
+        pushTargetRepos(repos)
+    }
+
+    protected File cloneContentRepos() {
+        def mergedFolderBasedRepoFolder = File.createTempDir('gitops-playground-folder-based-content-repos')
+        mergedFolderBasedRepoFolder.deleteOnExit()
+        def engine = new TemplatingEngine()
+
+        log.debug("Aggregating folder structure for all ${config.content.repos.size()} folder based-repos")
+        config.content.repos.each { repo ->
+
+
+            File overrideModeFlagAsFile = createOverrideModeFlag(repo.overrideMode)
+
+            def repoTmpDir = File.createTempDir('gitops-playground-folder-based-content-repo')
+            log.debug("Cloning folder-based content repo, ${repo.url}, revision ${repo.ref}, ${repo.path} OverideMode ${repo.overrideMode}")
+
+            def cloneCommand = gitClone()
+                    .setURI(repo.url)
+                    .setDirectory(repoTmpDir)
+
+            if (repo.username != null && repo.password != null) {
+                cloneCommand.setCredentialsProvider(
+                        new UsernamePasswordCredentialsProvider(repo.username, repo.password))
+            }
+            def git = cloneCommand.call()
+            try {
+                // switch to used branch.
+                git.checkout().setName(repo.ref).call()
+
+            } catch (GitAPIException e) {
+                // This is a fallback because of branches hosted at github.
+                log.debug("checkout branch ${repo.ref} not working, maybe because of github. Now again with createBranch(true).")
+                git.checkout().setCreateBranch(true).setName(repo.ref).call()
+            }
+
+            def srcPath = new File(repoTmpDir, repo.path)
+            if (repo.templating) {
+                engine.replaceTemplates(srcPath, [
+                        config : config,
+                        // Allow for using static classes inside the templates
+                        statics: new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels()
+                ])
+            }
+
+            if (repo.folderBased) {
+                FileUtils.copyDirectory(srcPath, mergedFolderBasedRepoFolder)
+                FileUtils.copyFileToDirectory(overrideModeFlagAsFile, mergedFolderBasedRepoFolder)
+            } else {
+                // If repo.target has more than two levels for SCM-Manager, only the first two will be used as ns/repo.
+                // The remainer will be interpreted as sub-folder
+                def filter = [
+                        accept: { File file ->
+                            def relativePath = file.absolutePath - mergedFolderBasedRepoFolder
+                            // exclude ".git" to remove all git repo info for copy to new repo.
+                            return !relativePath.contains(File.separator + ".git")
+                        }
+
+                ] as IOFileFilter
+
+                File directory = new File(mergedFolderBasedRepoFolder, repo.target)
+                FileUtils.copyDirectory(srcPath, directory, filter)
+                FileUtils.copyFileToDirectory(overrideModeFlagAsFile, directory)
+            }
+
+            repoTmpDir.delete()
+            log.debug("Merge content repo, ${repo.url} into ${mergedFolderBasedRepoFolder}")
+        }
+        return mergedFolderBasedRepoFolder
+    }
+
+    protected static List<RepoCoordinates> parseSrcRepos(File mergedFolderBasedRepoFolder) {
+        List<RepoCoordinates> repos = []
+
+        mergedFolderBasedRepoFolder.listFiles().findAll { it.isDirectory() && !it.name.startsWith('.') }
+                .each { namespaceDir ->
+                    String namespace = namespaceDir.name
+                    namespaceDir.listFiles().findAll {
+                        it.isDirectory()
+                                // Exclude .git for example
+                                && !it.name.startsWith('.')
+                    }.each { repoDir ->
+                        {
+                            File fileMode = new File(repoDir, overrideModeFileName)
+                            Config.OverrideMode mode = null
+                            if (fileMode.exists()) {
+                                String overrideText = fileMode.getText()
+                                mode = Config.OverrideMode.valueOf(overrideText)
+                                fileMode.delete()
+
+                            }
+
+                            repos << new RepoCoordinates(
+                                    namespace: namespace,
+                                    repo: repoDir.name,
+                                    newContent: repoDir,
+                                    overrideMode: mode
+                            )
+                        }
+                    }
+                }
+
+        log.debug("Prepared ${repos.size()} folder-based content repos: ${repos}")
+        return repos
+    }
+
+    protected void pushTargetRepos(List<RepoCoordinates> srcRepos) {
+        srcRepos.each { repoCoordinates ->
+            switch (repoCoordinates.overrideMode) {
+
+                case Config.OverrideMode.INIT:
+                    log.debug('INIT')
+                    break
+                case Config.OverrideMode.RESET:
+                    log.debug('RESET')
+                    break
+                case Config.OverrideMode.UPGRADE:
+                    log.debug('UPGRADE')
+                    break
+
+            }
+            ScmmRepo repo = repoProvider.getRepo("${repoCoordinates.namespace}/${repoCoordinates.repo}")
+            // A later iteration will allow setting the description for each folder-based repo
+            repo.create('', scmmApiClient)
+            repo.cloneRepo()
+            repo.copyDirectoryContents(repoCoordinates.newContent.absolutePath)
+            repo.commitAndPush("Initialize content repo ${repoCoordinates.namespace}/${repoCoordinates.repo}")
+        }
+    }
+
+    /**
+     * Overwrite for testing purposes
+     */
+    protected CloneCommand gitClone() {
+        Git.cloneRepository()
+    }
+
+    private static File createOverrideModeFlag(Config.OverrideMode mode) {
+        def tmpFolderOverrideMode = File.createTempDir('gitops-repo-override-mode')
+        tmpFolderOverrideMode.deleteOnExit()
+        File flagOverrideMode = new File(tmpFolderOverrideMode, overrideModeFileName)
+        flagOverrideMode.createNewFile()
+        flagOverrideMode.setText('' + mode)
+        return flagOverrideMode
+    }
+
+    static class RepoCoordinates {
+        String namespace
+        String repo
+        File newContent
+        Config.OverrideMode overrideMode
+
+        @Override
+        String toString() {
+            return "RepoCoordinates{ namespace='$namespace', repo='$repo', overrideMode='$overrideMode', newContent=$newContent' }"
         }
     }
 }

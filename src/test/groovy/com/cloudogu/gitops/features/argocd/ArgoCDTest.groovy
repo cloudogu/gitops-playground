@@ -42,6 +42,7 @@ class ArgoCDTest {
                     namePrefixForEnvVars: '',
                     gitName             : 'Cloudogu',
                     gitEmail            : 'hello@cloudogu.com',
+                    activeNamespaces: ["argocd", "monitoring", "ingress-nginx", "example-apps-staging", "example-apps-production", "secrets"]
 
             ],
             scmm        : [
@@ -130,9 +131,6 @@ class ArgoCDTest {
                 .isEqualTo('ClusterIP')
         assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['notifications']['argocdUrl']).isNull()
 
-        Map repos = parseActualYaml(actualHelmValuesFile)['argo-cd']['configs']['repositories'] as Map
-        assertThat(repos['prometheus']['url']).isEqualTo('https://prometheus-community.github.io/helm-charts')
-
         assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['crds']).isNull()
         assertThat(parseActualYaml(actualHelmValuesFile)['global']).isNull()
         
@@ -217,21 +215,6 @@ class ArgoCDTest {
         assertThat(valuesYaml['argo-cd']['notifications']['argocdUrl']).isEqualTo('https://argo.cd')
         assertThat(valuesYaml['argo-cd']['server']['ingress']['enabled']).isEqualTo(true)
         assertThat(valuesYaml['argo-cd']['server']['ingress']['hostname']).isEqualTo('argo.cd')
-    }
-
-    @Test
-    void 'disables tls verification when using --insecure'() {
-        config.application.insecure = true
-
-        createArgoCD().install()
-
-
-        def repositories = parseActualYaml(actualHelmValuesFile)['argo-cd']['configs']['repositories']
-
-        for (def repo in ["argocd", "example-apps", "cluster-resources", "nginx-helm-jenkins", "nginx-helm-umbrella"]) {
-            assertThat(repositories[repo]['insecure']).isEqualTo("true")
-            // must be a string so that it can be passed to `|b64enc`
-        }
     }
 
     @Test
@@ -521,9 +504,6 @@ class ArgoCDTest {
         config.application.mirrorRepos = true
 
         createArgoCD().install()
-
-        Map repos = parseActualYaml(actualHelmValuesFile)['argo-cd']['configs']['repositories'] as Map
-        assertThat(repos['prometheus']['url']).isEqualTo('http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack')
 
         def clusterRessourcesYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/cluster-resources.yaml')
         assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains(
@@ -1380,7 +1360,7 @@ class ArgoCDTest {
 
         argoCD.install()
 
-        getNamespaceList().each { namespace ->
+        config.application.activeNamespaces.each { namespace ->
             k8sCommands.assertExecuted("kubectl create namespace ${namespace}")
         }
     }
@@ -1410,21 +1390,17 @@ class ArgoCDTest {
 
     private void simulateNamespaceCreation() {
         Queue<CommandExecutor.Output> outputs = new LinkedList<CommandExecutor.Output>()
-        getNamespaceList().each { namespace ->
+        config.application.activeNamespaces.each { namespace ->
             outputs.add(new CommandExecutor.Output("${namespace} not found", "", 1))
             outputs.add(new CommandExecutor.Output("${namespace} created", "", 0))
         }
         k8sCommands.enqueueOutputs(outputs)
     }
 
-    private static Queue<CommandExecutor.Output> queueUpAllNamespacesExist() {
+    private Queue<CommandExecutor.Output> queueUpAllNamespacesExist() {
         return new LinkedList<CommandExecutor.Output>(
-                getNamespaceList().collect { namespace -> new CommandExecutor.Output(namespace, "", 0) }
+                config.application.activeNamespaces.collect { namespace -> new CommandExecutor.Output(namespace, "", 0) }
         )
-    }
-
-    private static List<String> getNamespaceList() {
-        return ["argocd", "monitoring", "ingress-nginx", "example-apps-staging", "example-apps-production", "secrets"]
     }
 
     class ArgoCDForTest extends ArgoCD {
