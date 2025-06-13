@@ -16,6 +16,8 @@ import org.apache.commons.io.FileUtils
 import org.apache.commons.io.filefilter.IOFileFilter
 import org.eclipse.jgit.api.CloneCommand
 import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.api.errors.GitAPIException
+import org.eclipse.jgit.api.errors.RefAlreadyExistsException
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 
 @Slf4j
@@ -95,23 +97,31 @@ class Content extends Feature {
             def cloneCommand = gitClone()
                     .setURI(repo.url)
                     .setDirectory(repoTmpDir)
-            
+
             if (repo.username != null && repo.password != null) {
                 cloneCommand.setCredentialsProvider(
                         new UsernamePasswordCredentialsProvider(repo.username, repo.password))
             }
             def git = cloneCommand.call()
-            git.checkout().setName(repo.ref).call()
+            try {
+                // switch to used branch.
+                git.checkout().setName(repo.ref).call()
+
+            } catch (GitAPIException e) {
+
+                log.debug("checkout branch ${repo.ref} not working, maybe because of github. Now again with createBranch(true).")
+                git.checkout().setCreateBranch(true).setName(repo.ref).call()
+            }
 
             def srcPath = new File(repoTmpDir, repo.path)
             if (repo.templating) {
                 engine.replaceTemplates(srcPath, [
-                        config              : config,
+                        config : config,
                         // Allow for using static classes inside the templates
-                        statics             : new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels()
+                        statics: new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels()
                 ])
             }
-            
+
             if (repo.folderBased) {
                 FileUtils.copyDirectory(srcPath, mergedFolderBasedRepoFolder)
             } else {
@@ -175,7 +185,7 @@ class Content extends Feature {
     protected CloneCommand gitClone() {
         Git.cloneRepository()
     }
-    
+
     static class RepoCoordinates {
         String namespace
         String repo
