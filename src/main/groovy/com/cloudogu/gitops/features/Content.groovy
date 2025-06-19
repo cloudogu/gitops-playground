@@ -5,6 +5,7 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import com.cloudogu.gitops.scmm.api.ScmmApiClient
+import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.TemplatingEngine
 import freemarker.template.Configuration
@@ -13,7 +14,6 @@ import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
 import org.apache.commons.io.FileUtils
-import org.apache.commons.io.filefilter.IOFileFilter
 import org.eclipse.jgit.api.CloneCommand
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.errors.GitAPIException
@@ -109,7 +109,7 @@ class Content extends Feature {
                                         && !it.name.startsWith('.')
                             }.each { repoDir ->
                                 {
-                                    def gitIgnoreFilter = createGitIgnoreFilter(mergedFolderBasedRepoFolder)
+                                    def gitIgnoreFilter = FileSystemUtils.createGitIgnoreFilter(mergedFolderBasedRepoFolder.toString())
                                     // Namespace
                                     File directory = new File(mergedFolderBasedRepoFolder, namespace)
                                     // Repo
@@ -129,7 +129,7 @@ class Content extends Feature {
 
             } else {
                 // non folderbased repo
-                def gitIgnoreFilter = createGitIgnoreFilter(mergedFolderBasedRepoFolder)
+                def gitIgnoreFilter = FileSystemUtils.createGitIgnoreFilter(mergedFolderBasedRepoFolder.toString())
                 File contentFolder = new File(mergedFolderBasedRepoFolder, repo.target)
                 FileUtils.copyDirectory(srcPath, contentFolder, gitIgnoreFilter)
 
@@ -161,21 +161,13 @@ class Content extends Feature {
         }
     }
 
-    private static IOFileFilter createGitIgnoreFilter(mergedFolderBasedRepoFolder) {
-        [
-                accept: { File file ->
-                    def relativePath = file.absolutePath - mergedFolderBasedRepoFolder
-                    // exclude ".git" to remove all git repo info for copy to new repo.
-                    return !relativePath.contains(File.separator + ".git")
-                }
 
-        ] as IOFileFilter
-    }
 
     private void cloneToLocalFolder(Config.ContentSchema.ContentRepositorySchema repo, File repoTmpDir) {
         def cloneCommand = gitClone()
                 .setURI(repo.url)
                 .setDirectory(repoTmpDir)
+                .setCloneAllBranches(true)
 
         if (repo.username != null && repo.password != null) {
             cloneCommand.setCredentialsProvider(
@@ -188,12 +180,14 @@ class Content extends Feature {
 
         } catch (GitAPIException e) {
             // This is a fallback because of branches hosted at github.
-            log.debug("checkout branch ${repo.ref} not working, maybe because of github. Now again with createBranch(true).")
-            git.checkout().setCreateBranch(true).setName(repo.ref).call()
+            log.debug("checkout branch ${repo.ref} not working, maybe because of github. Now again with origin/${repo.ref} to checkout remote branch.")
+            var nameWithOrigin = 'origin/'+ repo.ref
+            git.checkout().setName(nameWithOrigin).call()
+
         }
     }
 
-    protected void pushTargetRepos(List<RepoCoordinates> srcRepos) {
+    protected void pushTargetRepos(List<RepoCoordinates> srcRepos) {9
         srcRepos.each { repoCoordinates ->
 
             ScmmRepo repo = repoProvider.getRepo("${repoCoordinates.namespace}/${repoCoordinates.repo}")

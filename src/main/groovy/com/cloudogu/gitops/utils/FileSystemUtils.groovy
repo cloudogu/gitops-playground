@@ -19,7 +19,7 @@ class FileSystemUtils {
     /**
      * Replaces text in files. If you want to change a YAML field, better use 
      * {@link #readYaml(java.nio.file.Path)} and
-     * {@link #writeYaml(java.util.Map, java.io.File)} 
+     * {@link #writeYaml(java.util.Map, java.io.File)}
      */
     File replaceFileContent(String folder, String fileToChange, String from, String to) {
         File file = new File(folder + "/" + fileToChange)
@@ -112,12 +112,17 @@ class FileSystemUtils {
     }
 
     void copyDirectory(String source, String destination) {
+        copyDirectory(source, destination, null)
+    }
+
+    void copyDirectory(String source, String destination, FileFilter fileFilter) {
+
         log.debug("Copying directory " + source + " to " + destination)
         File sourceDir = new File(source)
         File destinationDir = new File(destination)
 
         try {
-            FileUtils.copyDirectory(sourceDir, destinationDir)
+            FileUtils.copyDirectory(sourceDir, destinationDir, fileFilter)
         } catch (IOException e) {
             log.error("An error occured while copying directories: ", e)
         }
@@ -159,7 +164,7 @@ class FileSystemUtils {
         return (ys.parse path) as Map
     }
 
-    Path writeTempFile(Map mapValues){
+    Path writeTempFile(Map mapValues) {
         def tmpHelmValues = createTempFile()
         writeYaml(mapValues, tmpHelmValues.toFile())
         return tmpHelmValues
@@ -175,8 +180,8 @@ class FileSystemUtils {
         file.setText(builder.toString())
     }
 
-    void deleteFilesExcept(File parentPath, String ... fileOrFolderNamesToKeep) {
-        for(File file: parentPath.listFiles()) {
+    void deleteFilesExcept(File parentPath, String... fileOrFolderNamesToKeep) {
+        for (File file : parentPath.listFiles()) {
             if (file.name in fileOrFolderNamesToKeep) {
                 continue
             }
@@ -186,5 +191,21 @@ class FileSystemUtils {
                 file.deleteDir()
             }
         }
+    }
+
+    /**
+     * This filter can be used to copy whole directories without .git folder.
+     * @param folder
+     * @return
+     */
+    static FileFilter createGitIgnoreFilter(String folder) {
+        [
+                accept: { File file ->
+                    def relativePath = file.absolutePath - folder
+                    // exclude ".git" to remove all git repo info for copy to new repo.
+                    return !relativePath.contains(File.separator + ".git")
+                }
+
+        ] as FileFilter
     }
 }

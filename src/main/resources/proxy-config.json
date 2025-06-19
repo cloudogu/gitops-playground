@@ -4,5 +4,7 @@
   ["java.util.function.Predicate"],
   ["java.util.function.Supplier"],
   ["com.cloudogu.gitops.scmm.api.UsersApi"],
-  ["com.cloudogu.gitops.scmm.api.RepositoryApi"]
+  ["com.cloudogu.gitops.scmm.api.RepositoryApi"],
+  ["java.io.FileFilter"]
+
 ]
