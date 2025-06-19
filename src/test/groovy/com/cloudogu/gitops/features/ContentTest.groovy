@@ -12,6 +12,7 @@ import org.eclipse.jgit.api.CloneCommand
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 import org.eclipse.jgit.util.SystemReader
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
 
@@ -69,7 +70,6 @@ class ContentTest {
 
     @AfterAll
     static void cleanFolders() {
-
         foldersToDelete.each { it.deleteDir() }
     }
 
@@ -154,6 +154,22 @@ class ContentTest {
         // Assert not templating for this folder-based repo
         assertThat(new File(findRoot(repos), "common/repo/someOther.yaml.ftl")).exists()
         assertThat(new File(findRoot(repos), "common/repo/someOther.yaml.ftl").text).contains('namePrefix: ${config.application.namePrefix}')
+    }
+
+    @Test
+    void 'test custom variables'() {
+
+        config.content.repos = [
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('folderBasedRepo1'), folderBased: true, templating: true)
+        ]
+        config.content.variables.someapp = [somevalue: 'this is a custom variable']
+
+        def repos = createContent().cloneContentRepos()
+
+        // Assert Templating
+        assertThat(new File(findRoot(repos), "common/repo/some.yaml")).exists()
+        assertThat(new File(findRoot(repos), "common/repo/some.yaml").text).contains("namePrefix: foo-")
+        assertThat(new File(findRoot(repos), "common/repo/some.yaml").text).contains("myvar: this is a custom variable")
     }
 
     @Test
@@ -517,7 +533,7 @@ class ContentTest {
 
     }
 
-    @Slf4j
+
     class ContentForTest extends Content {
         CloneCommand cloneSpy
 
