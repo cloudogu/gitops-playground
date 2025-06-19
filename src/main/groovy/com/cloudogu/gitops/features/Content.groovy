@@ -5,6 +5,7 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import com.cloudogu.gitops.scmm.api.ScmmApiClient
+import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.TemplatingEngine
 import freemarker.template.Configuration
@@ -109,7 +110,7 @@ class Content extends Feature {
                                         && !it.name.startsWith('.')
                             }.each { repoDir ->
                                 {
-                                    def gitIgnoreFilter = createGitIgnoreFilter(mergedFolderBasedRepoFolder)
+                                    def gitIgnoreFilter = FileSystemUtils.createGitIgnoreFilter(mergedFolderBasedRepoFolder.toString())
                                     // Namespace
                                     File directory = new File(mergedFolderBasedRepoFolder, namespace)
                                     // Repo
@@ -129,7 +130,7 @@ class Content extends Feature {
 
             } else {
                 // non folderbased repo
-                def gitIgnoreFilter = createGitIgnoreFilter(mergedFolderBasedRepoFolder)
+                def gitIgnoreFilter = FileSystemUtils.createGitIgnoreFilter(mergedFolderBasedRepoFolder.toString())
                 File contentFolder = new File(mergedFolderBasedRepoFolder, repo.target)
                 FileUtils.copyDirectory(srcPath, contentFolder, gitIgnoreFilter)
 
@@ -161,16 +162,7 @@ class Content extends Feature {
         }
     }
 
-    private static IOFileFilter createGitIgnoreFilter(mergedFolderBasedRepoFolder) {
-        [
-                accept: { File file ->
-                    def relativePath = file.absolutePath - mergedFolderBasedRepoFolder
-                    // exclude ".git" to remove all git repo info for copy to new repo.
-                    return !relativePath.contains(File.separator + ".git")
-                }
 
-        ] as IOFileFilter
-    }
 
     private void cloneToLocalFolder(Config.ContentSchema.ContentRepositorySchema repo, File repoTmpDir) {
         def cloneCommand = gitClone()

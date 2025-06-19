@@ -7,6 +7,7 @@ import groovy.yaml.YamlBuilder
 import groovy.yaml.YamlSlurper
 import jakarta.inject.Singleton
 import org.apache.commons.io.FileUtils
+import org.apache.commons.io.filefilter.IOFileFilter
 
 import java.nio.file.Files
 import java.nio.file.Path
@@ -112,12 +113,17 @@ class FileSystemUtils {
     }
 
     void copyDirectory(String source, String destination) {
+        copyDirectory(source, destination, null)
+    }
+
+    void copyDirectory(String source, String destination, FileFilter fileFilter) {
+
         log.debug("Copying directory " + source + " to " + destination)
         File sourceDir = new File(source)
         File destinationDir = new File(destination)
 
         try {
-            FileUtils.copyDirectory(sourceDir, destinationDir)
+            FileUtils.copyDirectory(sourceDir, destinationDir, fileFilter)
         } catch (IOException e) {
             log.error("An error occured while copying directories: ", e)
         }
@@ -186,5 +192,21 @@ class FileSystemUtils {
                 file.deleteDir()
             }
         }
+    }
+
+    /**
+     * This filter can be used to copy whole directories without .git folder.
+     * @param folder
+     * @return
+     */
+    static FileFilter createGitIgnoreFilter(String folder) {
+        [
+                accept: { File file ->
+                    def relativePath = file.absolutePath - folder
+                    // exclude ".git" to remove all git repo info for copy to new repo.
+                    return !relativePath.contains(File.separator + ".git")
+                }
+
+        ] as IOFileFilter
     }
 }

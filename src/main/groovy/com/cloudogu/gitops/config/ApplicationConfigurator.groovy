@@ -56,7 +56,8 @@ class ApplicationConfigurator {
             if  (!newConfig.registry.active) {
                 throw new RuntimeException("content.examples requires either registry.active or registry.url")
             }
-            newConfig.content.namespaces += [ 'example-apps-staging', 'example-apps-production']
+            String prefix = newConfig.application.namePrefix
+            newConfig.content.namespaces += [ prefix+"example-apps-staging", prefix+"example-apps-production"]
         }
     }
 
