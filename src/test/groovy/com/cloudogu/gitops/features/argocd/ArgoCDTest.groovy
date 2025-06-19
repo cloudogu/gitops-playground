@@ -130,9 +130,6 @@ class ArgoCDTest {
                 .isEqualTo('ClusterIP')
         assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['notifications']['argocdUrl']).isNull()
 
-        Map repos = parseActualYaml(actualHelmValuesFile)['argo-cd']['configs']['repositories'] as Map
-        assertThat(repos['prometheus']['url']).isEqualTo('https://prometheus-community.github.io/helm-charts')
-
         assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['crds']).isNull()
         assertThat(parseActualYaml(actualHelmValuesFile)['global']).isNull()
         
@@ -217,21 +214,6 @@ class ArgoCDTest {
         assertThat(valuesYaml['argo-cd']['notifications']['argocdUrl']).isEqualTo('https://argo.cd')
         assertThat(valuesYaml['argo-cd']['server']['ingress']['enabled']).isEqualTo(true)
         assertThat(valuesYaml['argo-cd']['server']['ingress']['hostname']).isEqualTo('argo.cd')
-    }
-
-    @Test
-    void 'disables tls verification when using --insecure'() {
-        config.application.insecure = true
-
-        createArgoCD().install()
-
-
-        def repositories = parseActualYaml(actualHelmValuesFile)['argo-cd']['configs']['repositories']
-
-        for (def repo in ["argocd", "example-apps", "cluster-resources", "nginx-helm-jenkins", "nginx-helm-umbrella"]) {
-            assertThat(repositories[repo]['insecure']).isEqualTo("true")
-            // must be a string so that it can be passed to `|b64enc`
-        }
     }
 
     @Test
@@ -521,9 +503,6 @@ class ArgoCDTest {
         config.application.mirrorRepos = true
 
         createArgoCD().install()
-
-        Map repos = parseActualYaml(actualHelmValuesFile)['argo-cd']['configs']['repositories'] as Map
-        assertThat(repos['prometheus']['url']).isEqualTo('http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack')
 
         def clusterRessourcesYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/cluster-resources.yaml')
         assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains(

@@ -120,29 +120,6 @@ spec:
     route:
       enabled: ${isOpenshift?c}
     host: "${argocd.host}"
-  initialRepositories: |
-    - name: argocd
-      url: ${scmm.repoUrl}argocd/argocd<#if scmm.provider == "gitlab">.git</#if>
-    - name: example-apps
-      url: ${scmm.repoUrl}argocd/example-apps<#if scmm.provider == "gitlab">.git</#if>
-    - name: cluster-resources
-      url: ${scmm.repoUrl}argocd/cluster-resources<#if scmm.provider == "gitlab">.git</#if>
-    - name: nginx-helm-jenkins
-      url: ${scmm.repoUrl}argocd/nginx-helm-jenkins<#if scmm.provider == "gitlab">.git</#if>
-    - name: nginx-helm-umbrella
-      url: ${scmm.repoUrl}argocd/nginx-helm-umbrella<#if scmm.provider == "gitlab">.git</#if>
-    - name: bitnami
-      type: helm
-      url: https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami
-    - name: prometheus-community
-      type: helm
-      url: https://prometheus-community.github.io/helm-charts
-    - name: codecentric
-      type: helm
-      url: https://codecentric.github.io/helm-charts
-    - name: ingress-nginx
-      type: helm
-      url: https://kubernetes.github.io/ingress-nginx
   resourceInclusions: |
     - apiGroups:
       - ""
