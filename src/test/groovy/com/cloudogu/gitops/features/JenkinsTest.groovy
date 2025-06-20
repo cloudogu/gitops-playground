@@ -176,6 +176,8 @@ me:x:1000:''')
         config.jenkins.url = 'http://jenkins'
         config.jenkins.metricsUsername = 'metrics-usr'
         config.jenkins.metricsPassword = 'metrics-pw'
+        config.jenkins.skipPlugins = true
+        config.jenkins.skipRestart = true
 
         createJenkins().install()
 
@@ -198,6 +200,9 @@ me:x:1000:''')
         assertThat(env['SCMM_PASSWORD']).isEqualTo('scmm-pw')
         assertThat(env['INSTALL_ARGOCD']).isEqualTo('true')
 
+        assertThat(env['SKIP_PLUGINS']).isEqualTo('true')
+        assertThat(env['SKIP_RESTART']).isEqualTo('true')
+
         verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_SCMM_URL', 'http://scmm/scm')
         verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_K8S_VERSION', Config.K8S_VERSION)
 
@@ -208,8 +213,6 @@ me:x:1000:''')
 
         verify(userManager).createUser('metrics-usr', 'metrics-pw')
         verify(userManager).grantPermission('metrics-usr', UserManager.Permissions.METRICS_VIEW)
-
-        verify(prometheusConfigurator).enableAuthentication()
 
         verify(jobManger).createCredential('my-prefix-example-apps', 'scmm-user',
                 'my-prefix-gitops', 'scmm-pw', 'credentials for accessing scm-manager')
@@ -224,6 +227,36 @@ me:x:1000:''')
                 anyString(), anyString(), anyString())
         verify(jobManger, never()).createCredential(eq('my-prefix-example-apps'), eq('registry-proxy-user'),
                 anyString(), anyString(), anyString())
+    }
+
+    @Test
+    void 'Does not configure prometheus when external Jenkins'() {
+        config.features.monitoring.active = true
+        config.jenkins.internal = false
+        
+        createJenkins().install()
+
+        verify(prometheusConfigurator, never()).enableAuthentication()
+    }
+    
+    @Test
+    void 'Does not configure prometheus when monitoring off'() {
+        config.features.monitoring.active = false
+        config.jenkins.internal = true
+        
+        createJenkins().install()
+
+        verify(prometheusConfigurator, never()).enableAuthentication()
+    }
+    
+    @Test
+    void 'Configures prometheus'() {
+        config.features.monitoring.active = true
+        config.jenkins.internal = true
+        
+        createJenkins().install()
+
+        verify(prometheusConfigurator).enableAuthentication()
     }
 
     @Test

@@ -39,6 +39,11 @@ function waitForJenkins() {
 }
 
 function installPlugins() {
+  if [[ "${SKIP_PLUGINS:-false}" == "true" ]]; then
+    echo "Skipping Jenkins plugin installation due to SKIP_PLUGIN=true"
+    return
+  fi
+
   local pluginFolder
 
   waitForJenkins
@@ -66,13 +71,17 @@ function installPlugins() {
   done
   echo ""
 
-  safeRestart
+  if [[ "${SKIP_RESTART:-false}" != "true" ]]; then
+    safeRestart
 
-  # we add a sleep here since there are issues directly after jenkins is available and getting 403 when curling jenkins
-  # script executor. We think this might be a timing issue so we are waiting.
-  # Since safeRestart can take time until it really restarts jenkins, we will sleep here before querying jenkins status.
-  sleep 5
-  waitForJenkins
+    # we add a sleep here since there are issues directly after jenkins is available and getting 403 when curling jenkins
+    # script executor. We think this might be a timing issue so we are waiting.
+    # Since safeRestart can take time until it really restarts jenkins, we will sleep here before querying jenkins status.
+    sleep 5
+    waitForJenkins
+  else
+    echo "Skipping safeRestart due to SKIP_RESTART=true"
+  fi
 }
 
 initJenkins "$@"
