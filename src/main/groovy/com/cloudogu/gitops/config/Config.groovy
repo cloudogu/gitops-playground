@@ -98,6 +98,9 @@ class Config {
         @JsonPropertyDescription(CONTENT_REPO_DESCRIPTION)
         List<ContentRepositorySchema> repos = []
 
+        @JsonPropertyDescription(CONTENT_VARIABLES_DESCRIPTION)
+        Map<String, Object> variables = [:]
+
         static class ContentRepositorySchema {
             @JsonPropertyDescription(CONTENT_REPO_URL_DESCRIPTION)
             String url = ''
