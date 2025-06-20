@@ -139,6 +139,8 @@ class Jenkins extends Feature {
                 INSTALL_ARGOCD            : config.features.argocd.active,
                 NAME_PREFIX               : config.application.namePrefix,
                 INSECURE                  : config.application.insecure,
+                SKIP_RESTART              : config.jenkins.skipRestart,
+                SKIP_PLUGINS              : config.jenkins.skipPlugins
 
         ])
 

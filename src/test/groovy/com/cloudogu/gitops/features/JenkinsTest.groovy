@@ -176,6 +176,8 @@ me:x:1000:''')
         config.jenkins.url = 'http://jenkins'
         config.jenkins.metricsUsername = 'metrics-usr'
         config.jenkins.metricsPassword = 'metrics-pw'
+        config.jenkins.skipPlugins = true
+        config.jenkins.skipRestart = true
 
         createJenkins().install()
 
@@ -197,6 +199,9 @@ me:x:1000:''')
         assertThat(env['SCMM_URL']).isEqualTo('http://scmm/scm')
         assertThat(env['SCMM_PASSWORD']).isEqualTo('scmm-pw')
         assertThat(env['INSTALL_ARGOCD']).isEqualTo('true')
+
+        assertThat(env['SKIP_PLUGINS']).isEqualTo('true')
+        assertThat(env['SKIP_RESTART']).isEqualTo('true')
 
         verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_SCMM_URL', 'http://scmm/scm')
         verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_K8S_VERSION', Config.K8S_VERSION)

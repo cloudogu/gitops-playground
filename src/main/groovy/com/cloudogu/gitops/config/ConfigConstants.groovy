@@ -32,6 +32,8 @@ interface ConfigConstants {
     
     // group jenkins
     String JENKINS_ENABLE_DESCRIPTION = 'Installs Jenkins as CI server'
+    String JENKINS_SKIP_RESTART_DESCRIPTION = 'Skips restarting Jenkins after plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades.'
+    String JENKINS_SKIP_PLUGINS_DESCRIPTION = 'Skips plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades.'
     String JENKINS_DESCRIPTION = 'Config parameters for Jenkins CI/CD Pipeline Server'
     String JENKINS_URL_DESCRIPTION = 'The url of your external jenkins'
     String JENKINS_USERNAME_DESCRIPTION = 'Mandatory when jenkins-url is set'
@@ -43,6 +45,8 @@ interface ConfigConstants {
 
     // group scmm
     String SCMM_DESCRIPTION = 'Config parameters for SCMManager (Git repository Server, https://scm-manager.org/)'
+    String SCMM_SKIP_RESTART_DESCRIPTION = 'Skips restarting SCM-Manager after plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades.\''
+    String SCMM_SKIP_PLUGINS_DESCRIPTION = 'Skips plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades.'
     String SCMM_URL_DESCRIPTION = 'The host of your external scm-manager'
     String SCMM_USERNAME_DESCRIPTION = 'Mandatory when scmm-url is set'
     String SCMM_PASSWORD_DESCRIPTION = 'Mandatory when scmm-url is set'

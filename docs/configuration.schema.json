@@ -611,6 +611,14 @@
           "type" : [ "string", "null" ],
           "description" : "Mandatory when jenkins-url is set"
         },
+        "skipPlugins" : {
+          "type" : [ "boolean", "null" ],
+          "description" : "Skips plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades."
+        },
+        "skipRestart" : {
+          "type" : [ "boolean", "null" ],
+          "description" : "Skips restarting Jenkins after plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades."
+        },
         "url" : {
           "type" : [ "string", "null" ],
           "description" : "The url of your external jenkins"
@@ -723,6 +731,14 @@
         "rootPath" : {
           "type" : [ "string", "null" ],
           "description" : "Sets the root path for the Git Repositories. In SCM-Manager it is always \"repo\""
+        },
+        "skipPlugins" : {
+          "type" : [ "boolean", "null" ],
+          "description" : "Skips plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades."
+        },
+        "skipRestart" : {
+          "type" : [ "boolean", "null" ],
+          "description" : "Skips restarting SCM-Manager after plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades.'"
         },
         "url" : {
           "type" : [ "string", "null" ],

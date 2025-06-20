@@ -192,6 +192,14 @@ class Config {
         @JsonPropertyDescription(JENKINS_ENABLE_DESCRIPTION)
         Boolean active = false
 
+        @Option(names = ['--jenkins-skip-restart'], description = JENKINS_SKIP_RESTART_DESCRIPTION)
+        @JsonPropertyDescription(JENKINS_SKIP_RESTART_DESCRIPTION)
+        Boolean skipRestart = false
+
+        @Option(names = ['--jenkins-skip-plugins'], description = JENKINS_SKIP_PLUGINS_DESCRIPTION)
+        @JsonPropertyDescription(JENKINS_SKIP_PLUGINS_DESCRIPTION)
+        Boolean skipPlugins = false
+
         @Option(names = ['--jenkins-url'], description = JENKINS_URL_DESCRIPTION)
         @JsonPropertyDescription(JENKINS_URL_DESCRIPTION)
         String url = ''
@@ -245,6 +253,14 @@ class Config {
         @JsonIgnore String getHost() { return NetworkingUtils.getHost(url)}
         @JsonIgnore String getProtocol() { return NetworkingUtils.getProtocol(url)}
         String ingress = ''
+
+        @Option(names = ['--scmm-skip-restart'], description = SCMM_SKIP_RESTART_DESCRIPTION)
+        @JsonPropertyDescription(SCMM_SKIP_RESTART_DESCRIPTION)
+        Boolean skipRestart = false
+
+        @Option(names = ['--scmm-skip-plugins'], description = SCMM_SKIP_PLUGINS_DESCRIPTION)
+        @JsonPropertyDescription(SCMM_SKIP_PLUGINS_DESCRIPTION)
+        Boolean skipPlugins = false
 
         @Option(names = ['--scmm-url'], description = SCMM_URL_DESCRIPTION)
         @JsonPropertyDescription(SCMM_URL_DESCRIPTION)

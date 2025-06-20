@@ -228,6 +228,27 @@ function configureScmmManager() {
   fi 
 
   # Install necessary plugins
+  installScmmPlugins
+
+  configJenkins
+}
+
+function installScmmPlugins() {
+  if [[ "${SKIP_PLUGINS:-false}" == "true" ]]; then
+    echo "Skipping SCM plugin installation due to SKIP_PLUGINS=true"
+    return
+  fi
+
+  if [ -n "${JENKINS_URL_FOR_SCMM}" ]; then
+    installScmmPlugin "scm-jenkins-plugin" "false"
+  fi
+  
+  local restart_flag="true"
+  [[ "${SKIP_RESTART}" == "true" ]] && {
+    echo "Skipping SCMM restart due to SKIP_RESTART=true"
+    restart_flag="false"
+  }
+
   installScmmPlugin "scm-mail-plugin" "false"
   installScmmPlugin "scm-review-plugin" "false"
   installScmmPlugin "scm-code-editor-plugin" "false"
@@ -237,17 +258,13 @@ function configureScmmManager() {
   installScmmPlugin "scm-readme-plugin" "false"
   installScmmPlugin "scm-webhook-plugin" "false"
   installScmmPlugin "scm-ci-plugin" "false"
-  installScmmPlugin "scm-metrics-prometheus-plugin" "true"
-  
-  if [ -n "${JENKINS_URL_FOR_SCMM}" ]; then
-    installScmmPlugin "scm-jenkins-plugin" "false"
+  # Last plugin usually triggers restart
+  installScmmPlugin "scm-metrics-prometheus-plugin" "$restart_flag"
+  # Wait for SCM-Manager to restart
+  if [[ "$restart_flag" == "true" ]]; then
+    sleep 1
+    waitForScmManager
   fi
-
-  # We have to wait 1 second to ensure that the restart is really initiated
-  sleep 1
-  waitForScmManager
-
-  configJenkins
 }
 
 function addRepo() {
