@@ -214,8 +214,6 @@ me:x:1000:''')
         verify(userManager).createUser('metrics-usr', 'metrics-pw')
         verify(userManager).grantPermission('metrics-usr', UserManager.Permissions.METRICS_VIEW)
 
-        verify(prometheusConfigurator).enableAuthentication()
-
         verify(jobManger).createCredential('my-prefix-example-apps', 'scmm-user',
                 'my-prefix-gitops', 'scmm-pw', 'credentials for accessing scm-manager')
 
@@ -229,6 +227,36 @@ me:x:1000:''')
                 anyString(), anyString(), anyString())
         verify(jobManger, never()).createCredential(eq('my-prefix-example-apps'), eq('registry-proxy-user'),
                 anyString(), anyString(), anyString())
+    }
+
+    @Test
+    void 'Does not configure prometheus when external Jenkins'() {
+        config.features.monitoring.active = true
+        config.jenkins.internal = false
+        
+        createJenkins().install()
+
+        verify(prometheusConfigurator, never()).enableAuthentication()
+    }
+    
+    @Test
+    void 'Does not configure prometheus when monitoring off'() {
+        config.features.monitoring.active = false
+        config.jenkins.internal = true
+        
+        createJenkins().install()
+
+        verify(prometheusConfigurator, never()).enableAuthentication()
+    }
+    
+    @Test
+    void 'Configures prometheus'() {
+        config.features.monitoring.active = true
+        config.jenkins.internal = true
+        
+        createJenkins().install()
+
+        verify(prometheusConfigurator).enableAuthentication()
     }
 
     @Test

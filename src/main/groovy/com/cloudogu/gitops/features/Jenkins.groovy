@@ -178,7 +178,10 @@ class Jenkins extends Feature {
 
         userManager.grantPermission(config.jenkins.metricsUsername, UserManager.Permissions.METRICS_VIEW)
 
-        prometheusConfigurator.enableAuthentication()
+        if (config.features.monitoring.active && config.jenkins.internal) {
+            // And external Jenkins can likely not be monitored
+            prometheusConfigurator.enableAuthentication()
+        }
 
         if (config.content.examples) {
 
