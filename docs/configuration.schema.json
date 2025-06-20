@@ -208,6 +208,10 @@
             },
             "additionalProperties" : false
           }
+        },
+        "variables" : {
+          "$ref" : "#/$defs/Map(String,Object)-nullable",
+          "description" : "Additional variables to use in custom templates."
         }
       },
       "additionalProperties" : false,
