@@ -1,6 +1,9 @@
 package com.cloudogu.gitops.scmm
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.scmm.api.Permission
+import com.cloudogu.gitops.scmm.api.Repository
+import com.cloudogu.gitops.scmm.api.ScmmApiClient
 import com.cloudogu.gitops.scmm.jgit.InsecureCredentialProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
@@ -10,10 +13,7 @@ import org.eclipse.jgit.transport.ChainingCredentialsProvider
 import org.eclipse.jgit.transport.CredentialsProvider
 import org.eclipse.jgit.transport.RefSpec
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
-
-import java.nio.file.Files
-import java.nio.file.Path
-import java.util.regex.Pattern
+import retrofit2.Response
 
 @Slf4j
 class ScmmRepo {
@@ -32,6 +32,7 @@ class ScmmRepo {
     private String gitEmail
     private String rootPath
     private String scmProvider
+    private Config config
 
     ScmmRepo(Config config, String scmmRepoTarget, FileSystemUtils fileSystemUtils) {
         def tmpDir = File.createTempDir()
@@ -48,6 +49,7 @@ class ScmmRepo {
         this.gitEmail = config.application.gitEmail
         this.scmProvider = config.scmm.provider
         this.rootPath = config.scmm.rootPath
+        this.config = config
     }
 
     String getAbsoluteLocalRepoTmpDir() {
@@ -83,6 +85,40 @@ class ScmmRepo {
         gitClone()
         checkoutOrCreateBranch('main')
     }
+    /**
+     * if repo creation is succesfull or it still exist, then returns HTTP Code
+     *
+     * otherwise exception.
+     *
+     * @param description
+     * @param scmmApiClient
+     * @return 201 or 409
+     */
+    boolean create(String description, ScmmApiClient scmmApiClient) {
+        def namespace = scmmRepoTarget.split('/', 2)[0]
+        def repoName = scmmRepoTarget.split('/', 2)[1]
+
+        def repositoryApi = scmmApiClient.repositoryApi()
+        def repo = new Repository(namespace, repoName, description)
+        def createResponse = repositoryApi.create(repo, true).execute()
+        handleResponse(createResponse, repo)
+
+        def permission = new Permission(config.scmm.gitOpsUsername as String, Permission.Role.WRITE)
+        def permissionResponse = repositoryApi.createPermission(namespace, repoName, permission).execute()
+        return handleResponse(permissionResponse, permission, "for repo $namespace/$repoName")
+    }
+
+    private static boolean handleResponse(Response<Void> response, Object body, String additionalMessage = '') {
+        if (response.code() == 409) {
+            // Here, we could consider sending another request for changing the existing object to become proper idempotent
+            log.debug("${body.class.simpleName} already exists ${additionalMessage}, ignoring: ${body}")
+            return false // because repo exists
+        } else if (response.code() != 201) {
+            throw new RuntimeException("Could not create ${body.class.simpleName} ${additionalMessage}.\n${body}\n" +
+                    "HTTP Details: ${response.code()} ${response.message()}: ${response.errorBody().string()}")
+        }
+        return true// because its created
+    }
 
     void writeFile(String path, String content) {
         def file = new File("$absoluteLocalRepoTmpDir/$path")
@@ -100,11 +136,8 @@ class ScmmRepo {
         fileSystemUtils.copyDirectory(absoluteSrcDirLocation, absoluteLocalRepoTmpDir)
     }
 
-    void replaceTemplates(Pattern filepathMatches, Map parameters) {
-        def engine = new TemplatingEngine()
-        Files.walk(Path.of(absoluteLocalRepoTmpDir))
-                .filter { filepathMatches.matcher(it.toString()).find() }
-                .each { Path it -> engine.replaceTemplate(it.toFile(), parameters) }
+    void replaceTemplates(Map parameters) {
+        new TemplatingEngine().replaceTemplates(new File(absoluteLocalRepoTmpDir), parameters)
     }
 
     void commitAndPush(String commitMessage, String tag = null) {
@@ -125,7 +158,6 @@ class ScmmRepo {
 
             def pushCommand = getGit()
                     .push()
-                    .setForce(true)
                     .setRemote(getGitRepositoryUrl())
                     .setRefSpecs(new RefSpec("HEAD:refs/heads/main"))
                     .setCredentialsProvider(getCredentialProvider())
@@ -194,7 +226,13 @@ class ScmmRepo {
         return gitMemoization = Git.open(new File(absoluteLocalRepoTmpDir))
     }
 
-    protected String getGitRepositoryUrl() {
+    String getGitRepositoryUrl() {
         return "${scmmUrl}/${rootPath}/${scmmRepoTarget}"
+    }
+    /**
+     * Delete all files in this repository
+     */
+    void clearRepo() {
+        fileSystemUtils.deleteFilesExcept(new File(absoluteLocalRepoTmpDir), ".git")
     }
 }
