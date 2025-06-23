@@ -263,7 +263,8 @@ class ArgoCD extends Feature {
     }
 
     private List<String> getNamespaceList() {
-        def namespaceList = ["argocd", "monitoring", "ingress-nginx", "example-apps-staging", "example-apps-production", "secrets"]
+        def namespaceList = config.application.getActiveNamespaces()
+//        def namespaceList = ["argocd", "monitoring", "ingress-nginx", "example-apps-staging", "example-apps-production", "secrets"]
         def prefixedNamespaces = namespaceList.collect { ns -> "${config.application.namePrefix}${ns}".toString() }
         return prefixedNamespaces
     }
@@ -318,20 +319,6 @@ class ArgoCD extends Feature {
         def namespaceList = getNamespaceList()
         k8sClient.patch('secret', 'argocd-default-cluster-config', namespace,
                 [stringData: ['namespaces': namespaceList.join(',')]])
-
-        log.debug("Generate RBAC permissions for ArgoCD in all managed namespaces")
-        for (String ns : namespaceList) {
-            new RbacDefinition(Role.Variant.ARGOCD)
-                    .withName("argocd")
-                    .withNamespace(ns)
-                    .withServiceAccountsFrom(
-                            namespace,
-                            ["argocd-argocd-server", "argocd-argocd-application-controller", "argocd-applicationset-controller"]
-                    )
-                    .withRepo(argocdRepoInitializationAction.repo)
-                    .withSubfolder(OPERATOR_RBAC_PATH)
-                    .generate()
-        }
 
         log.debug("Apply RBAC permissions for ArgoCD in all managed namespaces imperatively")
         // Apply rbac yamls from operator/rbac folder
@@ -390,7 +377,28 @@ class ArgoCD extends Feature {
             deleteFile argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/projects/example-apps.yaml'
         }
 
+        if(config.features.argocd.operator) {
+            generateOperatorRBACdefinitions()
+        }
+
         argocdRepoInitializationAction.repo.commitAndPush("Initial Commit")
+    }
+
+    private void generateOperatorRBACdefinitions() {
+        log.debug("Generate RBAC permissions for ArgoCD in all managed namespaces")
+
+        for (String ns : getNamespaceList()) {
+            new RbacDefinition(Role.Variant.ARGOCD)
+                    .withName("argocd")
+                    .withNamespace(ns)
+                    .withServiceAccountsFrom(
+                            this.namespace,
+                            ["argocd-argocd-server", "argocd-argocd-application-controller", "argocd-applicationset-controller"]
+                    )
+                    .withRepo(argocdRepoInitializationAction.repo)
+                    .withSubfolder(OPERATOR_RBAC_PATH)
+                    .generate()
+        }
     }
 
     private void deleteFile(String path) {

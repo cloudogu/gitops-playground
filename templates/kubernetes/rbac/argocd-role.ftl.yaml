@@ -24,6 +24,10 @@ rules:
     resources: ["deployments", "replicasets", "statefulsets", "daemonsets"]
     verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
 
+  - apiGroups: [ "batch" ]
+    resources: [ "jobs" ]
+    verbs: [ "create", "delete", "get", "list", "patch", "update", "watch" ]
+
   - apiGroups: ["extensions"]
     resources: ["ingresses"]
     verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]

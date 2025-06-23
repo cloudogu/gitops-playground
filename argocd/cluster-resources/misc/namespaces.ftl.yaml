@@ -1,4 +1,4 @@
-<#if config.application.openshift == false>
+<#if config.application.namespaceIsolation == false>
 apiVersion: v1
 kind: Namespace
 metadata:
