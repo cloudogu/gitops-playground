@@ -160,6 +160,22 @@ class ContentTest {
     }
 
     @Test
+    void 'test custom variables'() {
+
+        config.content.repos = [
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('folderBasedRepo1'), folderBased: true, templating: true)
+        ]
+        config.content.variables.someapp = [somevalue: 'this is a custom variable']
+
+        def repos = createContent().cloneContentRepos()
+
+        // Assert Templating
+        assertThat(new File(findRoot(repos), "common/repo/some.yaml")).exists()
+        assertThat(new File(findRoot(repos), "common/repo/some.yaml").text).contains("namePrefix: foo-")
+        assertThat(new File(findRoot(repos), "common/repo/some.yaml").text).contains("myvar: this is a custom variable")
+    }
+
+    @Test
     void 'Authenticates content Repos'() {
         config.content.repos = [
                 new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', folderBased: false, target: 'common/repo', username: 'user', password: 'pw')
