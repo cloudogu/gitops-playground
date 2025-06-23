@@ -168,6 +168,7 @@ class Content extends Feature {
         def cloneCommand = gitClone()
                 .setURI(repo.url)
                 .setDirectory(repoTmpDir)
+                .setCloneAllBranches(true)
 
         if (repo.username != null && repo.password != null) {
             cloneCommand.setCredentialsProvider(
@@ -180,12 +181,14 @@ class Content extends Feature {
 
         } catch (GitAPIException e) {
             // This is a fallback because of branches hosted at github.
-            log.debug("checkout branch ${repo.ref} not working, maybe because of github. Now again with createBranch(true).")
-            git.checkout().setCreateBranch(true).setName(repo.ref).call()
+            log.debug("checkout branch ${repo.ref} not working, maybe because of github. Now again with origin/${repo.ref} to checkout remote branch.")
+            var nameWithOrigin = 'origin/'+ repo.ref
+            git.checkout().setName(nameWithOrigin).call()
+
         }
     }
 
-    protected void pushTargetRepos(List<RepoCoordinates> srcRepos) {
+    protected void pushTargetRepos(List<RepoCoordinates> srcRepos) {9
         srcRepos.each { repoCoordinates ->
 
             ScmmRepo repo = repoProvider.getRepo("${repoCoordinates.namespace}/${repoCoordinates.repo}")
