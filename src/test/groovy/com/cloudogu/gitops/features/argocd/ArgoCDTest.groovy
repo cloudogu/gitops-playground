@@ -1177,30 +1177,58 @@ class ArgoCDTest {
     }
 
     @Test
-    void 'RBACs with operator'() {
+    void 'RBACs with operator using RbacDefinition outputs'() {
         config.application.namePrefix = "testPrefix-"
         def argoCD = setupOperatorTest(openshift: false)
 
         argoCD.install()
 
-        assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir() + "/${ArgoCD.OPERATOR_RBAC_PATH}/monitoring.yaml")).exists()
-        assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir() + "/${ArgoCD.OPERATOR_RBAC_PATH}/secrets.yaml")).exists()
-        assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir() + "/${ArgoCD.OPERATOR_RBAC_PATH}/ingress-nginx.yaml")).exists()
-        assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir() + "/${ArgoCD.OPERATOR_RBAC_PATH}/example-apps-staging.yaml")).exists()
-        assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir() + "/${ArgoCD.OPERATOR_RBAC_PATH}/example-apps-production.yaml")).exists()
+        File rbacPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_RBAC_PATH).toFile()
 
-        //we deploy to Yamls via 1 file. So namespace returns boths
-        def monitoringRbacYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), "${ArgoCD.OPERATOR_RBAC_PATH}/monitoring.yaml")
-        assertThat(monitoringRbacYaml['metadata']['namespace']).isEqualTo(["testPrefix-monitoring", "testPrefix-monitoring"])
-        def secretsRbacYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), "${ArgoCD.OPERATOR_RBAC_PATH}/secrets.yaml")
-        assertThat(secretsRbacYaml['metadata']['namespace']).isEqualTo(["testPrefix-secrets", "testPrefix-secrets"])
-        def ingressRbacYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), "${ArgoCD.OPERATOR_RBAC_PATH}/ingress-nginx.yaml")
-        assertThat(ingressRbacYaml['metadata']['namespace']).isEqualTo(["testPrefix-ingress-nginx", "testPrefix-ingress-nginx"])
-        def exampleStatingRbacYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), "${ArgoCD.OPERATOR_RBAC_PATH}/example-apps-staging.yaml")
-        assertThat(exampleStatingRbacYaml['metadata']['namespace']).isEqualTo(["testPrefix-example-apps-staging","testPrefix-example-apps-staging"])
-        def exampleProdRbacYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), "${ArgoCD.OPERATOR_RBAC_PATH}/example-apps-production.yaml")
-        assertThat(exampleProdRbacYaml['metadata']['namespace']).isEqualTo(["testPrefix-example-apps-production","testPrefix-example-apps-production"])
+        List<String> expectedNamespaces = [
+                "testPrefix-monitoring",
+                "testPrefix-secrets",
+                "testPrefix-ingress-nginx",
+                "testPrefix-example-apps-staging",
+                "testPrefix-example-apps-production"
+        ]
+
+        expectedNamespaces.each { String ns ->
+            File roleFile = new File(rbacPath, "role-argocd-${ns}.yaml")
+            File bindingFile = new File(rbacPath, "rolebinding-argocd-${ns}.yaml")
+
+            assertThat(roleFile).exists()
+            assertThat(bindingFile).exists()
+
+            Map<String, Object> roleYaml = new YamlSlurper().parse(roleFile) as Map
+            Map<String, Object> bindingYaml = new YamlSlurper().parse(bindingFile) as Map
+
+            assertThat(roleYaml["kind"]).isEqualTo("Role")
+            assertThat(roleYaml["metadata"]["name"]).isEqualTo("argocd")
+            assertThat(roleYaml["metadata"]["namespace"]).isEqualTo(ns)
+
+            assertThat(bindingYaml["kind"]).isEqualTo("RoleBinding")
+            assertThat(bindingYaml["metadata"]["name"]).isEqualTo("argocd")
+            assertThat(bindingYaml["metadata"]["namespace"]).isEqualTo(ns)
+
+            List<Map<String, Object>> subjects = bindingYaml["subjects"] as List<Map<String, Object>>
+            assertThat(subjects).isNotEmpty()
+            assertThat(subjects*.kind).containsOnly("ServiceAccount")
+            assertThat(subjects*.namespace).containsOnly("testPrefix-argocd")
+            assertThat(subjects*.name).containsExactlyInAnyOrder(
+                    "argocd-argocd-server",
+                    "argocd-argocd-application-controller",
+                    "argocd-applicationset-controller"
+            )
+
+            Map<String, Object> roleRef = bindingYaml["roleRef"] as Map
+            assertThat(roleRef).isNotNull()
+            assertThat(roleRef["name"]).isEqualTo("argocd")
+            assertThat(roleRef["kind"]).isEqualTo("Role")
+        }
     }
+
+
 
     @Test
     void 'Deploys with operator with OpenShift configuration'() {
@@ -1444,71 +1472,6 @@ class ArgoCDTest {
         assertThat(ingressFile)
                 .as("Ingress file should not be generated when both flags are false")
                 .doesNotExist()
-    }
-
-    @Test
-    void 'RBAC files use ${namePrefix}argocd as serviceAccount namespace'() {
-        config.application.namePrefix = "test-"
-        def argoCD = setupOperatorTest()
-
-        argoCD.install()
-
-        def rbacFiles = [
-                "monitoring.yaml",
-                "secrets.yaml",
-                "ingress-nginx.yaml",
-                "example-apps-staging.yaml",
-                "example-apps-production.yaml"
-        ]
-
-        rbacFiles.each { file ->
-            def path = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), "${ArgoCD.OPERATOR_RBAC_PATH}/$file").toString()
-            def raw = parseActualYaml(path)
-            // Ensure uniform handling whether YAML has one or multiple documents
-            // Freemarker parser returns a List for multi-doc YAML, but a Map for single-doc files
-            def documents = raw instanceof List ? raw : [raw]
-
-            documents.findAll { it['kind'] == 'RoleBinding' }.each { roleBinding ->
-                def subjects = roleBinding['subjects'] as List<Map>
-                def namespaces = subjects.collect { it['namespace'] }.findAll()
-                assertThat(namespaces)
-                        .as("Subjects in $file should use templated namespace")
-                        .allMatch { it == "test-argocd" }
-            }
-        }
-    }
-
-    @Test
-    void 'RBAC files have metadata namespace set with namePrefix'() {
-        config.application.namePrefix = "test-"
-        def argoCD = setupOperatorTest()
-
-        argoCD.install()
-
-        def rbacFiles = [
-                "monitoring.yaml",
-                "secrets.yaml",
-                "ingress-nginx.yaml",
-                "example-apps-staging.yaml",
-                "example-apps-production.yaml"
-        ]
-
-        rbacFiles.each { file ->
-            def path = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), "${ArgoCD.OPERATOR_RBAC_PATH}/$file").toString()
-            def raw = parseActualYaml(path)
-            // Ensure uniform handling whether YAML has one or multiple documents
-            // Freemarker parser returns a List for multi-doc YAML, but a Map for single-doc files
-            def documents = raw instanceof List ? raw : [raw]
-
-            documents.each { doc ->
-                def metadata = (doc as Map)['metadata'] as Map
-                def ns = metadata['namespace'] as String
-
-                assertThat(ns)
-                        .as("metadata.namespace should be prefixed in $file")
-                        .startsWith("test-")
-            }
-        }
     }
 
     private ArgoCD setupOperatorTest(Map options = [:]) {
