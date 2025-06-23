@@ -72,6 +72,8 @@ class ScmManagerTest {
         config.scmm.username = 'scmm-usr'
         config.features.ingressNginx.active = true
         config.features.argocd.active = true
+        config.scmm.skipPlugins = true
+        config.scmm.skipRestart = true
         createScmManager().install()
 
         assertThat(parseActualYaml()['extraEnv'] as String).contains('SCM_WEBAPP_INITIALUSER\n  value: "scmm-usr"')
@@ -111,6 +113,8 @@ class ScmManagerTest {
         assertThat(env['NAME_PREFIX']).isEqualTo('foo-')
         assertThat(env['INSECURE']).isEqualTo('false')
         assertThat(env['CONTENT_EXAMPLES']).isEqualTo('false')
+        assertThat(env['SKIP_PLUGINS']).isEqualTo('true')
+        assertThat(env['SKIP_RESTART']).isEqualTo('true')
     }
 
     @Test

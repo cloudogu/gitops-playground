@@ -141,7 +141,9 @@ class ScmManager extends Feature {
                 INSECURE                     : config.application.insecure,
                 SCM_ROOT_PATH                : config.scmm.rootPath,
                 SCM_PROVIDER                 : config.scmm.provider,
-                CONTENT_EXAMPLES             : config.content.examples
+                CONTENT_EXAMPLES             : config.content.examples,
+                SKIP_RESTART                 : config.scmm.skipRestart,
+                SKIP_PLUGINS                 : config.scmm.skipPlugins
         ])
     }
 

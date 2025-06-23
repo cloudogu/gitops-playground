@@ -139,6 +139,8 @@ class Jenkins extends Feature {
                 INSTALL_ARGOCD            : config.features.argocd.active,
                 NAME_PREFIX               : config.application.namePrefix,
                 INSECURE                  : config.application.insecure,
+                SKIP_RESTART              : config.jenkins.skipRestart,
+                SKIP_PLUGINS              : config.jenkins.skipPlugins
 
         ])
 
@@ -176,7 +178,10 @@ class Jenkins extends Feature {
 
         userManager.grantPermission(config.jenkins.metricsUsername, UserManager.Permissions.METRICS_VIEW)
 
-        prometheusConfigurator.enableAuthentication()
+        if (config.features.monitoring.active && config.jenkins.internal) {
+            // And external Jenkins can likely not be monitored
+            prometheusConfigurator.enableAuthentication()
+        }
 
         if (config.content.examples) {
 
