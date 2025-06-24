@@ -79,7 +79,7 @@ class ArgoCD extends Feature {
     @Override
     void enable() {
         initRepos()
-        
+
         log.debug('Cloning Repositories')
 
         if (config.content.examples) {
@@ -124,7 +124,7 @@ class ArgoCD extends Feature {
         clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources', config.multiTenant.useDedicatedInstance)
         gitRepos += clusterResourcesInitializationAction
 
-        if(config.multiTenant.useDedicatedInstance) {
+        if (config.multiTenant.useDedicatedInstance) {
             tenantBootstrapInitializationAction = createRepoInitializationAction('argocd/argocd/multiTenant/tenant', 'argocd/bootstrap')
             gitRepos += tenantBootstrapInitializationAction
         }
@@ -328,15 +328,18 @@ class ArgoCD extends Feature {
                 [stringData: ['namespaces': namespaceList.join(',')]])
 
         //allowing the central argo to access the tenant cluster-resource namespaces. Patch adds the tenant namespaces to central argocd secret
-        if(config.multiTenant.useDedicatedInstance){
+        if (config.multiTenant.useDedicatedInstance) {
             k8sClient.patch('secret', 'argocd-default-cluster-config', 'argocd',
                     [stringData: ['namespaces': getNamespaceList().join(',')]])
         }
 
-        generateRBAC()
+        log.debug("Apply RBAC permissions for ArgoCD in all managed namespaces imperatively")
+        // Apply rbac yamls from operator/rbac folder
+        String argocdRbacPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), OPERATOR_RBAC_PATH)
+        k8sClient.applyYaml(argocdRbacPath)
     }
 
-    private void generateRBAC(){
+    private void generateRBAC() {
         log.debug("Generate RBAC permissions for ArgoCD in all managed namespaces")
         for (String ns : config.application.activeNamespaces) {
             new RbacDefinition(Role.Variant.ARGOCD)
@@ -351,11 +354,12 @@ class ArgoCD extends Feature {
                     .generate()
         }
 
-        if(config.multiTenant.useDedicatedInstance){
+        if (config.multiTenant.useDedicatedInstance) {
+
             log.debug("Generate RBAC permissions for centralized ArgoCD to access tenant ArgoCDs")
             new RbacDefinition(Role.Variant.ARGOCD)
-                    .withName('argocd')
-                    .withNamespace('argocd')
+                    .withName('argocd-central')
+                    .withNamespace(namespace)
                     .withServiceAccountsFrom(
                             'argocd',
                             ["argocd-argocd-server", "argocd-argocd-application-controller", "argocd-applicationset-controller"]
@@ -364,11 +368,6 @@ class ArgoCD extends Feature {
                     .withSubfolder(OPERATOR_RBAC_PATH)
                     .generate()
         }
-
-        log.debug("Apply RBAC permissions for ArgoCD in all managed namespaces imperatively")
-        // Apply rbac yamls from operator/rbac folder
-        String argocdRbacPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), OPERATOR_RBAC_PATH)
-        k8sClient.applyYaml(argocdRbacPath)
     }
 
     protected void createMonitoringCrd() {
@@ -435,6 +434,7 @@ class ArgoCD extends Feature {
             FileSystemUtils.deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/argocd'
             log.debug("Deleting unnecessary namespaces resources from clusterResources repo: ${clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
             FileSystemUtils.deleteFile clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/misc/namespaces.yaml'
+            generateRBAC()
         } else {
             log.debug("Deleting unnecessary operator (argocd operator variant) folder from argocd repo: ${argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
             FileSystemUtils.deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/operator'
