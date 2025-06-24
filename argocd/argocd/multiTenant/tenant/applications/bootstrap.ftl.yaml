@@ -13,8 +13,8 @@ spec:
     namespace: ${namePrefix}argocd
   project: default
   source:
-    path: argocd/
-    repoURL: ${scmm.repoUrl}argocd/argocd
+    path: applications/
+    repoURL: ${scmm.repoUrl}argocd/bootstrap
     targetRevision: main
     directory:
       recurse: true

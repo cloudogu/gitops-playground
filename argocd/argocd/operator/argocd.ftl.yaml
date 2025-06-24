@@ -142,6 +142,8 @@ spec:
       type: helm
       url: https://kubernetes.github.io/ingress-nginx
 </#if>
+    - name: example-apps
+      url: ${scmm.repoUrl}argocd/example-apps<#if scmm.provider == "gitlab">.git</#if>
     - name: nginx-helm-jenkins
       url: ${scmm.repoUrl}argocd/nginx-helm-jenkins<#if scmm.provider == "gitlab">.git</#if>
     - name: nginx-helm-umbrella

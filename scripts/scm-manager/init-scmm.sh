@@ -32,16 +32,15 @@ function initSCMM() {
   [[ "${SCMM_URL}" != *scm ]] && SCMM_URL=${SCMM_URL}/scm
 
   if [[ ${SCM_PROVIDER} == "scm-manager" ]]; then
-      configureScmmManager "${SCMM_USERNAME}" "${SCMM_PASSWORD}" "${SCMM_URL}" "${JENKINS_URL_FOR_SCMM}" \
-        "${SCMM_URL_FOR_JENKINS}" "${INSTALL_ARGOCD}"
+      configureScmmManager
   fi
 
-
-
-  pushHelmChartRepo "3rd-party-dependencies/spring-boot-helm-chart"
-  pushHelmChartRepoWithDependency "3rd-party-dependencies/spring-boot-helm-chart-with-dependency"
-  pushRepoMirror "${GITOPS_BUILD_LIB_REPO}" "3rd-party-dependencies/gitops-build-lib"
-  pushRepoMirror "${CES_BUILD_LIB_REPO}" "3rd-party-dependencies/ces-build-lib" 'develop'
+  if [[ $CONTENT_EXAMPLES == true ]]; then
+    pushHelmChartRepo "3rd-party-dependencies/spring-boot-helm-chart"
+    pushHelmChartRepoWithDependency "3rd-party-dependencies/spring-boot-helm-chart-with-dependency"
+    pushRepoMirror "${GITOPS_BUILD_LIB_REPO}" "3rd-party-dependencies/gitops-build-lib"
+    pushRepoMirror "${CES_BUILD_LIB_REPO}" "3rd-party-dependencies/ces-build-lib" 'develop'
+  fi
 }
 
 
@@ -180,18 +179,23 @@ function configureScmmManager() {
   addUser "${METRICS_USERNAME}" "${METRICS_PASSWORD}" "changeme@test.local"
   setPermissionForUser "${METRICS_USERNAME}" "metrics:read"
 
+ USE_CENTRAL_SCM=$([[ -n "${CENTRAL_SCM_URL// /}" ]] && echo true || echo false)
+
   ### ArgoCD Repos
   if [[ $INSTALL_ARGOCD == true ]]; then
 
-   USE_CENTRAL_SCM=$([[ -n "${CENTRAL_SCM_URL// /}" ]] && echo true || echo false)
+   addRepo "${NAME_PREFIX}argocd" "argocd" "GitOps repo for administration of ArgoCD" "$USE_CENTRAL_SCM"
+   setPermission "${NAME_PREFIX}argocd" "argocd" "${GITOPS_USERNAME}" "WRITE"
 
-    addRepo "${NAME_PREFIX}argocd" "argocd" "GitOps repo for administration of ArgoCD" "$USE_CENTRAL_SCM"
-    setPermission "${NAME_PREFIX}argocd" "argocd" "${GITOPS_USERNAME}" "WRITE"
+   addRepo "${NAME_PREFIX}argocd" "cluster-resources" "GitOps repo for basic cluster-resources" "$USE_CENTRAL_SCM"
+   setPermission "${NAME_PREFIX}argocd" "cluster-resources" "${GITOPS_USERNAME}" "WRITE"
 
-    addRepo "${NAME_PREFIX}argocd" "cluster-resources" "GitOps repo for basic cluster-resources" "$USE_CENTRAL_SCM"
-    setPermission "${NAME_PREFIX}argocd" "cluster-resources" "${GITOPS_USERNAME}" "WRITE"
+   setPermissionForNamespace "${NAME_PREFIX}argocd" "${GITOPS_USERNAME}" "CI-SERVER"
 
-    setPermissionForNamespace "${NAME_PREFIX}argocd" "${GITOPS_USERNAME}" "CI-SERVER"
+   if [[ $USE_CENTRAL_SCM == true ]]; then
+    addRepo "${NAME_PREFIX}argocd" "bootstrap" "Bootstrap repo for applications"
+    setPermission "${NAME_PREFIX}argocd" "bootstrap" "${GITOPS_USERNAME}" "WRITE"
+   fi
   fi
 
   if [[ $CONTENT_EXAMPLES == true ]]; then
@@ -259,7 +263,6 @@ function installScmmPlugins() {
   installScmmPlugin "scm-editor-plugin" "false"
   installScmmPlugin "scm-landingpage-plugin" "false"
   installScmmPlugin "scm-el-plugin" "false"
-  installScmmPlugin "scm-jenkins-plugin" "false"
   installScmmPlugin "scm-readme-plugin" "false"
   installScmmPlugin "scm-webhook-plugin" "false"
   installScmmPlugin "scm-ci-plugin" "false"

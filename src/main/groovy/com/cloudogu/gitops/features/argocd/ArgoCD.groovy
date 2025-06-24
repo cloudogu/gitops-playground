@@ -124,6 +124,11 @@ class ArgoCD extends Feature {
         clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources', config.multiTenant.useDedicatedInstance)
         gitRepos += clusterResourcesInitializationAction
 
+        if(config.multiTenant.useDedicatedInstance) {
+            tenantBootstrapInitializationAction = createRepoInitializationAction('argocd/argocd/multiTenant/tenant', 'argocd/bootstrap')
+            gitRepos += tenantBootstrapInitializationAction
+        }
+
         if (config.content.examples) {
             exampleAppsInitializationAction = createRepoInitializationAction('argocd/example-apps', 'argocd/example-apps')
             gitRepos += exampleAppsInitializationAction
@@ -248,8 +253,7 @@ class ArgoCD extends Feature {
             //Bootstrapping dedicated instance
             k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), "${DEDICATED_INSTANCE_PATH}projects/tenant.yaml").toString())
             k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), "${DEDICATED_INSTANCE_PATH}applications/bootstrap.yaml").toString())
-            //k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'multiTenant/tenant/applications/bootstrap.yaml').toString()) TODO
-            k8sClient.applyYaml(Path.of(exampleAppsInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'argocd/bootstrap.yaml').toString()) //TODO Booststrapping via Tenant argocd/argocd repo
+            k8sClient.applyYaml(Path.of(tenantBootstrapInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'applications/bootstrap.yaml').toString())
         } else {
             // Bootstrap root application
             k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'projects/argocd.yaml').toString())
@@ -323,15 +327,18 @@ class ArgoCD extends Feature {
         k8sClient.patch('secret', 'argocd-default-cluster-config', namespace,
                 [stringData: ['namespaces': namespaceList.join(',')]])
 
-        //TODO RBACs? what else we need for permissions?
         //allowing the central argo to access the tenant cluster-resource namespaces. Patch adds the tenant namespaces to central argocd secret
         if(config.multiTenant.useDedicatedInstance){
             k8sClient.patch('secret', 'argocd-default-cluster-config', 'argocd',
                     [stringData: ['namespaces': getNamespaceList().join(',')]])
         }
 
+        generateRBAC()
+    }
+
+    private void generateRBAC(){
         log.debug("Generate RBAC permissions for ArgoCD in all managed namespaces")
-        for (String ns : namespaceList) {
+        for (String ns : config.application.activeNamespaces) {
             new RbacDefinition(Role.Variant.ARGOCD)
                     .withName("argocd")
                     .withNamespace(ns)
@@ -344,7 +351,21 @@ class ArgoCD extends Feature {
                     .generate()
         }
 
-        log.debug("Apply RBAC permissions for ArgoCD in all ma
+        if(config.multiTenant.useDedicatedInstance){
+            log.debug("Generate RBAC permissions for centralized ArgoCD to access tenant ArgoCDs")
+            new RbacDefinition(Role.Variant.ARGOCD)
+                    .withName('argocd')
+                    .withNamespace('argocd')
+                    .withServiceAccountsFrom(
+                            'argocd',
+                            ["argocd-argocd-server", "argocd-argocd-application-controller", "argocd-applicationset-controller"]
+                    )
+                    .withRepo(argocdRepoInitializationAction.repo)
+                    .withSubfolder(OPERATOR_RBAC_PATH)
+                    .generate()
+        }
+
+        log.debug("Apply RBAC permissions for ArgoCD in all managed namespaces imperatively")
         // Apply rbac yamls from operator/rbac folder
         String argocdRbacPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), OPERATOR_RBAC_PATH)
         k8sClient.applyYaml(argocdRbacPath)
@@ -431,8 +452,8 @@ class ArgoCD extends Feature {
         }
 
         if (!config.content.examples) {
-            deleteFile argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/applications/example-apps.yaml'
-            deleteFile argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/projects/example-apps.yaml'
+            FileSystemUtils.deleteFile argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/applications/example-apps.yaml'
+            FileSystemUtils.deleteFile argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/projects/example-apps.yaml'
         }
 
         argocdRepoInitializationAction.repo.commitAndPush("Initial Commit")
