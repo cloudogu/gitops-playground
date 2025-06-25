@@ -319,6 +319,13 @@ class ArgoCD extends Feature {
         k8sClient.patch('secret', 'argocd-default-cluster-config', namespace,
                 [stringData: ['namespaces': namespaceList.join(',')]])
 
+        log.debug("Apply RBAC permissions for ArgoCD in all managed namespaces imperatively")
+        // Apply rbac yamls from operator/rbac folder
+        String argocdRbacPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), OPERATOR_RBAC_PATH)
+        k8sClient.applyYaml(argocdRbacPath)
+    }
+
+    private void generateRBACs() {
         log.debug("Generate RBAC permissions for ArgoCD in all managed namespaces")
         for (String ns : namespaceList) {
             new RbacDefinition(Role.Variant.ARGOCD)
@@ -332,11 +339,6 @@ class ArgoCD extends Feature {
                     .withSubfolder(OPERATOR_RBAC_PATH)
                     .generate()
         }
-
-        log.debug("Apply RBAC permissions for ArgoCD in all managed namespaces imperatively")
-        // Apply rbac yamls from operator/rbac folder
-        String argocdRbacPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), OPERATOR_RBAC_PATH)
-        k8sClient.applyYaml(argocdRbacPath)
     }
 
     protected void createMonitoringCrd() {
@@ -369,6 +371,7 @@ class ArgoCD extends Feature {
             deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/argocd'
             log.debug("Deleting unnecessary namespaces resources from clusterResources repo: ${clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
             deleteFile clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/misc/namespaces.yaml'
+            generateRBACs()
         } else {
             log.debug("Deleting unnecessary operator (argocd operator variant) folder from argocd repo: ${argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
             deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/operator'
