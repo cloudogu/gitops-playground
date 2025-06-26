@@ -315,9 +315,11 @@ class ArgoCD extends Feature {
         log.debug("Apply RBAC permissions for ArgoCD in all managed namespaces imperatively")
         // Apply rbac yamls from operator/rbac folder
         String argocdRbacPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), OPERATOR_RBAC_PATH)
-        String argocdRbacTenantPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), "${OPERATOR_RBAC_PATH}/tenant")
         k8sClient.applyYaml(argocdRbacPath)
-        k8sClient.applyYaml(argocdRbacTenantPath)
+
+        if(config.multiTenant.useDedicatedInstance){
+            k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), "${OPERATOR_RBAC_PATH}/tenant") as String)
+        }
     }
 
     // The ArgoCD instance installed via an operator only manages its deployment namespace.
