@@ -90,7 +90,7 @@ class Config {
     @Mixin
     ContentSchema content = new ContentSchema()
 
-    class ContentSchema {
+    static class ContentSchema {
         @Option(names = ['--content-examples'], description = CONTENT_EXAMPLES_DESCRIPTION)
         @JsonPropertyDescription(CONTENT_EXAMPLES_DESCRIPTION)
         Boolean examples = false
@@ -324,6 +324,8 @@ class Config {
         String internalKubernetesApiUrl = ''
         String localHelmChartFolder = System.getenv('LOCAL_HELM_CHART_FOLDER')
 
+        NamespaceSchema namespaces= new NamespaceSchema()
+
         @Option(names = ['--config-file'], description = CONFIG_FILE_DESCRIPTION)
         String configFile = ''
 
@@ -414,7 +416,17 @@ class Config {
         @Option(names = ['--netpols'], description = NETPOLS_DESCRIPTION)
         @JsonPropertyDescription(NETPOLS_DESCRIPTION)
         Boolean netpols = false
+
+        static class NamespaceSchema {
+            Set<String> dedicatedNamespaces = []
+            Set<String> tenantNamespaces = []
+
+            Set<String> getActiveNamespaces() {
+                return (dedicatedNamespaces + tenantNamespaces) as Set
+            }
+        }
     }
+
 
     static class ImagesSchema {
         @Option(names = ['--kubectl-image'], description = KUBECTL_IMAGE_DESCRIPTION)

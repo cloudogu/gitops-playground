@@ -26,7 +26,6 @@ class ArgoCD extends Feature {
     static final String HELM_VALUES_PATH = 'argocd/values.yaml'
     static final String OPERATOR_CONFIG_PATH = 'operator/argocd.yaml'
     static final String OPERATOR_RBAC_PATH = 'operator/rbac'
-    static final String OPERATOR_DEDICATED_RBAC_PATH = 'multiTenant/central/rbac'
     static final String CHART_YAML_PATH = 'argocd/Chart.yaml'
     static final String DEDICATED_INSTANCE_PATH = 'multiTenant/central/'
     static final String MONITORING_RESOURCES_PATH = '/misc/monitoring/'
@@ -224,10 +223,8 @@ class ArgoCD extends Feature {
 
         prepareArgoCdRepo()
 
-        def namespaceList = getNamespaceList()
-
         log.debug("Creating namespaces")
-        k8sClient.createNamespaces(namespaceList)
+        k8sClient.createNamespaces(config.application.namespaces.activeNamespaces.toList())
 
         createMonitoringCrd()
 
@@ -266,13 +263,7 @@ class ArgoCD extends Feature {
         k8sClient.delete('secret', namespace,
                 new Tuple2('owner', 'helm'), new Tuple2('name', 'argocd'))
     }
-
-    private List<String> getNamespaceList() {
-        def namespaceList = ["argocd", "monitoring", "ingress-nginx", "example-apps-staging", "example-apps-production", "secrets"]
-        def prefixedNamespaces = namespaceList.collect { ns -> "${config.application.namePrefix}${ns}".toString() }
-        return prefixedNamespaces
-    }
-
+    
     private void deployWithHelm() {
         // Install umbrella chart from folder
         String umbrellaChartPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'argocd/')
@@ -318,55 +309,90 @@ class ArgoCD extends Feature {
         k8sClient.patch('secret', 'argocd-secret', namespace,
                 [stringData: ['admin.password': bcryptArgoCDPassword]])
 
-        log.debug("Updating managed namespaces in ArgoCD configuration secret.")
-        // The ArgoCD instance installed via an operator only manages its deployment namespace.
-        // To manage additional namespaces, we need to update the 'argocd-default-cluster-config' secret with all managed namespaces.
 
-        //TODO merge Tenant Namespace Lists. Not hardcoded here: like getTenantNamespaces(). Changes with ContentHooks
-        def namespaceList = !config.multiTenant.useDedicatedInstance ? getNamespaceList() : ["${config.application.namePrefix}example-apps-staging", "${config.application.namePrefix}argocd", "${config.application.namePrefix}example-apps-production"]
-        k8sClient.patch('secret', 'argocd-default-cluster-config', namespace,
-                [stringData: ['namespaces': namespaceList.join(',')]])
-
-        //allowing the central argo to access the tenant cluster-resource namespaces. Patch adds the tenant namespaces to central argocd secret
-        if (config.multiTenant.useDedicatedInstance) {
-            k8sClient.patch('secret', 'argocd-default-cluster-config', 'argocd',
-                    [stringData: ['namespaces': getNamespaceList().join(',')]])
-        }
+        updatingArgoCDManagedNamespaces()
 
         log.debug("Apply RBAC permissions for ArgoCD in all managed namespaces imperatively")
         // Apply rbac yamls from operator/rbac folder
         String argocdRbacPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), OPERATOR_RBAC_PATH)
+        String argocdRbacTenantPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), "${OPERATOR_RBAC_PATH}/tenant")
         k8sClient.applyYaml(argocdRbacPath)
+        k8sClient.applyYaml(argocdRbacTenantPath)
+    }
+
+    // The ArgoCD instance installed via an operator only manages its deployment namespace.
+    // To manage additional namespaces, we need to update the 'argocd-default-cluster-config' secret with all managed namespaces.
+    private void updatingArgoCDManagedNamespaces() {
+
+        log.debug("Updating managed namespaces in ArgoCD configuration secret.")
+        def namespaceList = !config.multiTenant.useDedicatedInstance ?
+                config.application.namespaces.activeNamespaces :
+                config.application.namespaces.tenantNamespaces
+
+        k8sClient.patch('secret', 'argocd-default-cluster-config', namespace,
+                [stringData: ['namespaces': namespaceList.join(',')]])
+
+        if (config.multiTenant.useDedicatedInstance) {
+            // Append new namespaces to existing ones from the secret.
+            // `kubectl patch` can't merge list subfields, so we read, decode, merge, and update the secret.
+            // This ensures all centrally managed namespaces are preserved.
+            String base64Namespaces=k8sClient.getArgoCDNamespacesSecret('argocd-default-cluster-config','argocd' )
+            byte[] decodedBytes = Base64.decoder.decode(base64Namespaces)
+            String decoded = new String(decodedBytes, "UTF-8")
+            def decodedList = decoded?.split(',') as List ?: []
+            def activeList = config.application.namespaces.activeNamespaces?.flatten() as List ?: []
+            def merged = (decodedList + activeList).unique().join(',')
+
+            k8sClient.patch('secret', 'argocd-default-cluster-config', 'argocd',
+                    [stringData: ['namespaces': merged]])
+        }
     }
 
     private void generateRBAC() {
+
         log.debug("Generate RBAC permissions for ArgoCD in all managed namespaces")
-        for (String ns : config.application.activeNamespaces) {
-            new RbacDefinition(Role.Variant.ARGOCD)
-                    .withName("argocd")
-                    .withNamespace(ns)
-                    .withServiceAccountsFrom(
-                            namespace,
-                            ["argocd-argocd-server", "argocd-argocd-application-controller", "argocd-applicationset-controller"]
-                    )
-                    .withRepo(argocdRepoInitializationAction.repo)
-                    .withSubfolder(OPERATOR_RBAC_PATH)
-                    .generate()
-        }
-
         if (config.multiTenant.useDedicatedInstance) {
+            //Generating Tenant Namespace RBACs for Tenant Argocd
+            for (String ns : config.application.namespaces.tenantNamespaces) {
+                new RbacDefinition(Role.Variant.ARGOCD)
+                        .withName("argocd")
+                        .withNamespace(ns)
+                        .withServiceAccountsFrom(
+                                namespace,
+                                ["argocd-argocd-server", "argocd-argocd-application-controller", "argocd-applicationset-controller"]
+                        )
+                        .withRepo(argocdRepoInitializationAction.repo)
+                        .withSubfolder("${OPERATOR_RBAC_PATH}/tenant")
+                        .generate()
+            }
 
-            log.debug("Generate RBAC permissions for centralized ArgoCD to access tenant ArgoCDs")
-            new RbacDefinition(Role.Variant.ARGOCD)
-                    .withName('argocd-central')
-                    .withNamespace(namespace)
-                    .withServiceAccountsFrom(
-                            'argocd',
-                            ["argocd-argocd-server", "argocd-argocd-application-controller", "argocd-applicationset-controller"]
-                    )
-                    .withRepo(argocdRepoInitializationAction.repo)
-                    .withSubfolder(OPERATOR_RBAC_PATH)
-                    .generate()
+            //Generating Central ArgoCD RBACs for mananged namespaces
+            for (String ns : config.application.namespaces.activeNamespaces) {
+                log.debug("Generate RBAC permissions for centralized ArgoCD to access tenant ArgoCDs")
+                new RbacDefinition(Role.Variant.ARGOCD)
+                        .withName('argocd-central')
+                        .withNamespace(ns)
+                        .withServiceAccountsFrom(
+                                'argocd',
+                                ["argocd-argocd-server", "argocd-argocd-application-controller", "argocd-applicationset-controller"]
+                        )
+                        .withRepo(argocdRepoInitializationAction.repo)
+                        .withSubfolder(OPERATOR_RBAC_PATH)
+                        .generate()
+            }
+        } else {
+            for (String ns : config.application.namespaces.activeNamespaces) {
+                new RbacDefinition(Role.Variant.ARGOCD)
+                        .withName("argocd")
+                        .withNamespace(ns)
+                        .withServiceAccountsFrom(
+                                namespace,
+                                ["argocd-argocd-server", "argocd-argocd-application-controller", "argocd-applicationset-controller"]
+                        )
+                        .withRepo(argocdRepoInitializationAction.repo)
+                        .withSubfolder(OPERATOR_RBAC_PATH)
+                        .generate()
+            }
         }
     }
 

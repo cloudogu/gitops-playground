@@ -34,24 +34,26 @@ class Application {
     }
 
     void setNamespaceListToConfig(Config config) {
-        Set<String> namespaces = new HashSet<>()
+        Set<String> dedicatedNamespaces = new HashSet<>()
+        Set<String> tenantNamespaces = new HashSet<>()
         String namePrefix = config.application.namePrefix
 
         if (config.content.examples) {
-            namespaces.addAll(Arrays.asList(
+            tenantNamespaces.addAll(Arrays.asList(
                     namePrefix + "example-apps-staging",
                     namePrefix + "example-apps-production"
             ))
         }
 
         //iterates over all FeatureWithImages and gets their namespaces
-        namespaces.addAll(this.features
+        dedicatedNamespaces.addAll(this.features
                 .collect { it.activeNamespaceFromFeature }
                 .findAll { it }
                 .unique()
                 .collect { "${it}".toString() })
 
-        log.debug("Active namespaces retrieved: {}", namespaces);
-        config.application.activeNamespaces = namespaces.toList()
+        config.application.namespaces.dedicatedNamespaces = dedicatedNamespaces
+        config.application.namespaces.tenantNamespaces = tenantNamespaces
+        log.debug("Active namespaces retrieved: {}", config.application.namespaces.activeNamespaces)
     }
 }
