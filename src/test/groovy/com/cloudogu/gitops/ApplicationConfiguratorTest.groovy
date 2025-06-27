@@ -149,6 +149,39 @@ class ApplicationConfiguratorTest {
     }
 
     @Test
+    void 'Fails if content repo is set without mandatory params'() {
+        testConfig.content.repos = [
+                new Config.ContentSchema.ContentRepositorySchema(url: '', folderBased: true),
+        ]
+        def exception = shouldFail(RuntimeException) {
+            applicationConfigurator.validateConfig(testConfig)
+        }
+        assertThat(exception.message).isEqualTo('content.repos requires a url parameter')
+
+        testConfig.content.repos = [
+                new Config.ContentSchema.ContentRepositorySchema(url: 'abc', folderBased: false),
+        ]
+        exception = shouldFail(RuntimeException) {
+            applicationConfigurator.validateConfig(testConfig)
+        }
+        assertThat(exception.message).isEqualTo('content.repos.folderBased: false requires folder content.repos.target to be set')
+
+
+        //  mandatory params:url
+        //   folderBasedRepo: false requires target
+    }
+
+    @Test
+    void 'Adds content example namespaces'() {
+        testConfig.content.examples = true
+
+        def actualConfig = applicationConfigurator.initConfig(testConfig)
+
+        assertThat(actualConfig.content.namespaces).containsExactlyInAnyOrder('example-apps-staging', 'example-apps-production')
+    }
+
+
+    @Test
     void 'Fails if example Content is active but registry is not active'() {
         testConfig.content.examples = true
         testConfig.registry.internal = false

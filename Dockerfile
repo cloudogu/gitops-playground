@@ -13,7 +13,7 @@ WORKDIR /app
 COPY .mvn/ /app/.mvn/
 COPY mvnw /app/
 COPY pom.xml /app/
-RUN ./mvnw dependency:resolve-plugins dependency:go-offline -B 
+RUN ./mvnw dependency:resolve-plugins dependency:go-offline -B
 
 FROM graal AS maven-build
 ENV MAVEN_OPTS='-Dmaven.repo.local=/mvn'
@@ -25,7 +25,7 @@ COPY compiler.groovy /app
 COPY .git /app/.git
 
 WORKDIR /app
-# Exclude code not needed in productive image 
+# Exclude code not needed in productive image
 RUN cd /app/src/main/groovy/com/cloudogu/gitops/cli/ \
     && rm GenerateJsonSchema.groovy \
     && rm GitopsPlaygroundCliMainScripted.groovy
@@ -37,7 +37,7 @@ RUN mv $(ls -S target/*.jar | head -n 1) /app/gitops-playground.jar
 
 FROM alpine AS downloader
 RUN apk add curl grep
-# When updating, 
+# When updating,
 # * also update the checksum found at https://dl.k8s.io/release/v${K8S_VERSION}/bin/linux/amd64/kubectl.sha256
 # * also update in init-cluster.sh. vars.tf, Config.groovy and apply.sh
 # When upgrading to 1.26 we can verify the kubectl signature with cosign!
@@ -61,11 +61,11 @@ ENV HOME=/tmp
 WORKDIR /tmp
 
 # Helm
-RUN curl --location --fail --retry 20 --retry-connrefused --retry-all-errors --output helm.tar.gz https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz 
+RUN curl --location --fail --retry 20 --retry-connrefused --retry-all-errors --output helm.tar.gz https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz
 RUN curl --location --fail --retry 20 --retry-connrefused --retry-all-errors --output helm.tar.gz.asc https://github.com/helm/helm/releases/download/v${HELM_VERSION}/helm-v${HELM_VERSION}-linux-amd64.tar.gz.asc
 RUN tar -xf helm.tar.gz
 RUN set -o pipefail && curl --location --fail --retry 20 --retry-connrefused --retry-all-errors \
-  https://raw.githubusercontent.com/helm/helm/main/KEYS | gpg --import --batch --no-default-keyring --keyring /tmp/keyring.gpg 
+  https://raw.githubusercontent.com/helm/helm/main/KEYS | gpg --import --batch --no-default-keyring --keyring /tmp/keyring.gpg
 RUN gpgv --keyring /tmp/keyring.gpg helm.tar.gz.asc helm.tar.gz
 RUN mv linux-amd64/helm /dist/usr/local/bin
 ENV PATH=$PATH:/dist/usr/local/bin
@@ -79,7 +79,7 @@ RUN mv /tmp/kubectl /dist/usr/local/bin/kubectl
 
 # External Repos used in GOP
 WORKDIR /dist/gitops/repos
-RUN git clone --bare https://github.com/cloudogu/spring-petclinic.git 
+RUN git clone --bare https://github.com/cloudogu/spring-petclinic.git
 RUN git clone --bare https://github.com/cloudogu/spring-boot-helm-chart.git
 RUN git clone --bare https://github.com/cloudogu/gitops-build-lib.git
 RUN git clone --bare https://github.com/cloudogu/ces-build-lib.git
@@ -118,7 +118,7 @@ RUN mv /dist/app/src /dist-dev/src && \
     chmod a=rwx -R /dist-dev/src && \
     rm -r /dist-dev/src/main/groovy/com/cloudogu/gitops/graal
 COPY --from=maven-build /app/gitops-playground.jar /dist-dev/gitops-playground.jar
-# Remove compiled GOP code from jar to avoid duplicate in dev image, allowing for scripting. 
+# Remove compiled GOP code from jar to avoid duplicate in dev image, allowing for scripting.
 # Keep generated class Version, to avoid ClassNotFoundException.
 RUN zip -d /dist-dev/gitops-playground.jar 'com/cloudogu/gitops/*' -x com/cloudogu/gitops/cli/Version.class
 
@@ -132,7 +132,7 @@ FROM graal AS native-image
 ENV MAVEN_OPTS='-Dmaven.repo.local=/mvn'
 RUN microdnf install gnupg
 
-# Provide binaries used by apply-ng, so our runs with native-image-agent dont fail 
+# Provide binaries used by apply-ng, so our runs with native-image-agent dont fail
 # with "java.io.IOException: Cannot run program "kubectl"..." etc.
 RUN microdnf install iproute
 

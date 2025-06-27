@@ -150,6 +150,64 @@
         "examples" : {
           "type" : [ "boolean", "null" ],
           "description" : "Deploy example content: source repos, GitOps repos, Jenkins Job, Argo CD apps/project"
+        },
+        "namespaces" : {
+          "description" : "Additional kubernetes namespaces. These are authorized to Argo CD, supplied with image pull secrets, monitored by prometheus, etc. Namespaces can be templates, e.g. ${config.application.namePrefix}staging",
+          "type" : [ "array", "null" ],
+          "items" : {
+            "type" : "string"
+          }
+        },
+        "repos" : {
+          "description" : "Content repos to push into target environment",
+          "type" : [ "array", "null" ],
+          "items" : {
+            "type" : "object",
+            "properties" : {
+              "folderBased" : {
+                "type" : [ "boolean", "null" ],
+                "description" : "When true, interpret the folder structure of each repo as repos. That is, root folder becomes namespace in SCM, sub folders become repository names in SCM"
+              },
+              "overrideMode" : {
+                "anyOf" : [ {
+                  "type" : "null"
+                }, {
+                  "type" : "string",
+                  "enum" : [ "INIT", "RESET", "UPGRADE" ]
+                } ],
+                "description" : "This defines, how customer repos will be updated.\nINIT - push only if repo does not exist (SCMM Return value 409).\nRESET - delete alle files after cloning source - new files are deleted\nUPGRADE - clone and copy - existing files will be overwritten, new files are kept"
+              },
+              "password" : {
+                "type" : [ "string", "null" ],
+                "description" : "Password to authenticate against content repo"
+              },
+              "path" : {
+                "type" : [ "string", "null" ],
+                "description" : "Path within the content repo to process"
+              },
+              "ref" : {
+                "type" : [ "string", "null" ],
+                "description" : "Reference for a specific branch, tag, or commit"
+              },
+              "target" : {
+                "type" : [ "string", "null" ],
+                "description" : "Target path for the repository"
+              },
+              "templating" : {
+                "type" : [ "boolean", "null" ],
+                "description" : "When true, template all files ending in .ftl within the repo"
+              },
+              "url" : {
+                "type" : [ "string", "null" ],
+                "description" : "URL of the content repo"
+              },
+              "username" : {
+                "type" : [ "string", "null" ],
+                "description" : "Username to authenticate against content repo"
+              }
+            },
+            "additionalProperties" : false
+          }
         }
       },
       "additionalProperties" : false,

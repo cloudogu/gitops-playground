@@ -42,6 +42,7 @@ class ArgoCDTest {
                     namePrefixForEnvVars: '',
                     gitName             : 'Cloudogu',
                     gitEmail            : 'hello@cloudogu.com',
+                    activeNamespaces: ["argocd", "monitoring", "ingress-nginx", "example-apps-staging", "example-apps-production", "secrets"]
 
             ],
             scmm        : [
@@ -1181,10 +1182,6 @@ class ArgoCDTest {
         config.application.namePrefix = "testPrefix-"
         def argoCD = setupOperatorTest(openshift: false)
 
-        argoCD.install()
-
-        File rbacPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_RBAC_PATH).toFile()
-
         List<String> expectedNamespaces = [
                 "testPrefix-monitoring",
                 "testPrefix-secrets",
@@ -1192,6 +1189,13 @@ class ArgoCDTest {
                 "testPrefix-example-apps-staging",
                 "testPrefix-example-apps-production"
         ]
+    // have to prepare activeNamespaces for unit-test, Application.groovy is setting this in integration way
+        config.application.activeNamespaces = expectedNamespaces
+
+        argoCD.install()
+
+        File rbacPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_RBAC_PATH).toFile()
+
 
         expectedNamespaces.each { String ns ->
             File roleFile = new File(rbacPath, "role-argocd-${ns}.yaml")
@@ -1387,7 +1391,7 @@ class ArgoCDTest {
 
         argoCD.install()
 
-        getNamespaceList().each { namespace ->
+        config.application.activeNamespaces.each { namespace ->
             k8sCommands.assertExecuted("kubectl create namespace ${namespace}")
         }
     }
@@ -1474,6 +1478,7 @@ class ArgoCDTest {
                 .doesNotExist()
     }
 
+
     private ArgoCD setupOperatorTest(Map options = [:]) {
         config.features.argocd.operator = true
         config.features.argocd.resourceInclusionsCluster = 'https://192.168.0.1:6443'
@@ -1499,21 +1504,17 @@ class ArgoCDTest {
 
     private void simulateNamespaceCreation() {
         Queue<CommandExecutor.Output> outputs = new LinkedList<CommandExecutor.Output>()
-        getNamespaceList().each { namespace ->
+        config.application.activeNamespaces.each { namespace ->
             outputs.add(new CommandExecutor.Output("${namespace} not found", "", 1))
             outputs.add(new CommandExecutor.Output("${namespace} created", "", 0))
         }
         k8sCommands.enqueueOutputs(outputs)
     }
 
-    private static Queue<CommandExecutor.Output> queueUpAllNamespacesExist() {
+    private Queue<CommandExecutor.Output> queueUpAllNamespacesExist() {
         return new LinkedList<CommandExecutor.Output>(
-                getNamespaceList().collect { namespace -> new CommandExecutor.Output(namespace, "", 0) }
+                config.application.activeNamespaces.collect { namespace -> new CommandExecutor.Output(namespace, "", 0) }
         )
-    }
-
-    private static List<String> getNamespaceList() {
-        return ["argocd", "monitoring", "ingress-nginx", "example-apps-staging", "example-apps-production", "secrets"]
     }
 
     class ArgoCDForTest extends ArgoCD {

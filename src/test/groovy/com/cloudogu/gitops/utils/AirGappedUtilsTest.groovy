@@ -1,22 +1,15 @@
 package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
-
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.scmm.api.Permission
 import com.cloudogu.gitops.scmm.api.Repository
-import com.cloudogu.gitops.scmm.api.RepositoryApi
 import com.cloudogu.gitops.scmm.api.ScmmApiClient
 import groovy.yaml.YamlSlurper
-import okhttp3.internal.http.RealResponseBody
-import okio.BufferedSource
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Ref
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.ArgumentCaptor
-import retrofit2.Call
-import retrofit2.Response
 
 import java.nio.file.Files
 import java.nio.file.Path
@@ -33,11 +26,6 @@ class AirGappedUtilsTest {
                     localHelmChartFolder : '',
                     gitName : 'Cloudogu',
                     gitEmail : 'hello@cloudogu.com',
-            ),
-            scmm: new Config.ScmmSchema(
-                    username: 'scmm-usr',
-                    password: 'scmm-pw',
-                    gitOpsUsername: 'foo-gitops'
             )
     )
 
@@ -50,22 +38,20 @@ class AirGappedUtilsTest {
     Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
     TestScmmRepoProvider scmmRepoProvider = new TestScmmRepoProvider(config, new FileSystemUtils())
     FileSystemUtils fileSystemUtils = new FileSystemUtils()
-    ScmmApiClient scmmApiClient = mock(ScmmApiClient)
-    RepositoryApi repositoryApi = mock(RepositoryApi)
+    TestScmmApiClient scmmApiClient = new TestScmmApiClient(config)
     HelmClient helmClient = mock(HelmClient)
 
     @BeforeEach
     void setUp() {
-        when(scmmApiClient.repositoryApi()).thenReturn(repositoryApi)
+        def response = scmmApiClient.mockSuccessfulResponse(201)
+        when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response)
+        when(scmmApiClient.repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(response)
+
     }
     
     @Test
     void 'Prepares repos for air-gapped use'() {
         setupForAirgappedUse()
-
-        def response = mockSuccessfulResponse(201)
-        when(repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response)
-        when(repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(response)
 
         def actualRepoNamespaceAndName = createAirGappedUtils().mirrorHelmRepoToGit(helmConfig)
         
@@ -98,8 +84,7 @@ class AirGappedUtilsTest {
         def dependencies = actualPrometheusChartYaml['dependencies'] 
         assertThat(dependencies).isNull()
     }
-
-
+    
     @Test
     void 'Fails for invalid helm charts'() {
         setupForAirgappedUse()
@@ -116,74 +101,7 @@ class AirGappedUtilsTest {
         assertThat(exception.getCause()).isSameAs(expectedException)
     }
 
-    @Test
-    void 'Ignores existing Repos'() {
-        setupForAirgappedUse()
-
-        def errorResponse = this.mockErrorResponse(409)
-        when(repositoryApi.create(any(Repository), anyBoolean())).thenReturn(errorResponse)
-
-        createAirGappedUtils().mirrorHelmRepoToGit(helmConfig)
-
-        assertAirGapped()
-    }
-
-    @Test
-    void 'Ignores existing Permissions'() {
-        setupForAirgappedUse()
-
-        def errorResponse = mockErrorResponse(409)
-        def successfulResponse = mockSuccessfulResponse(201)
-
-        when(repositoryApi.create(any(Repository), anyBoolean())).thenReturn(successfulResponse)
-        when(repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(errorResponse)
-
-        createAirGappedUtils().mirrorHelmRepoToGit(helmConfig)
-
-        assertAirGapped()
-    }
-
-    @Test
-    void 'Handles failures to SCMM-API for Repos'() {
-        setupForAirgappedUse()
-
-        def errorResponse = this.mockErrorResponse(500)
-
-        when(repositoryApi.create(any(Repository), anyBoolean())).thenReturn(errorResponse)
-
-        def exception = shouldFail(RuntimeException) {
-            createAirGappedUtils().mirrorHelmRepoToGit(helmConfig)
-        }
-        assertThat(exception.message).startsWith('Could not create Repository')
-        assertThat(exception.message).contains('3rd-party-dependencies')
-        assertThat(exception.message).contains('kube-prometheus-stack')
-        assertThat(exception.message).contains('500')
-    }
-
-    @Test
-    void 'Handles failures to SCMM-API for Permissions'() {
-        setupForAirgappedUse()
-
-        def errorResponse = mockErrorResponse(500)
-        def successfulResponse = mockSuccessfulResponse(201)
-
-        when(repositoryApi.create(any(Repository), anyBoolean())).thenReturn(successfulResponse)
-        when(repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(errorResponse)
-
-        def exception = shouldFail(RuntimeException) {
-            createAirGappedUtils().mirrorHelmRepoToGit(helmConfig)
-        }
-        assertThat(exception.message).startsWith('Could not create Permission for repo 3rd-party-dependencies/kube-prometheus-stack')
-        assertThat(exception.message).contains('foo-gitops')
-        assertThat(exception.message).contains(Permission.Role.WRITE.name())
-        assertThat(exception.message).contains('500')
-    }
-
     protected void setupForAirgappedUse(Map chartLock = null, List dependencies = null) {
-        def response = mockSuccessfulResponse(201)
-        when(repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response)
-        when(repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(response)
-
         Path sourceChart = rootChartsFolder.resolve('kube-prometheus-stack')
         Files.createDirectories(sourceChart)
         Map prometheusChartYaml = [
@@ -257,31 +175,9 @@ class AirGappedUtilsTest {
         assertHelmRepoCommits(prometheusRepo, '1.2.3', 'Chart kube-prometheus-stack-chart, version: 1.2.3\n\n' +
                 'Source: https://kube-prometheus-stack-repo-url\nDependencies localized to run in air-gapped environments')
 
-        def repoCreateArgument = ArgumentCaptor.forClass(Repository)
-        verify(repositoryApi, times(1)).create(repoCreateArgument.capture(), eq(true))
-        assertThat(repoCreateArgument.allValues[0].namespace).isEqualTo(ScmmRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES)
-        assertThat(repoCreateArgument.allValues[0].name).isEqualTo('kube-prometheus-stack')
-        assertThat(repoCreateArgument.allValues[0].description).isEqualTo('Mirror of Helm chart kube-prometheus-stack from https://kube-prometheus-stack-repo-url')
-
-        def permissionCreateArgument = ArgumentCaptor.forClass(Permission)
-        verify(repositoryApi, times(1)).createPermission(anyString(), anyString(), permissionCreateArgument.capture())
-        assertThat(permissionCreateArgument.allValues[0].name).isEqualTo('foo-gitops')
-        assertThat(permissionCreateArgument.allValues[0].role).isEqualTo(Permission.Role.WRITE)
+        verify(prometheusRepo).create(eq('Mirror of Helm chart kube-prometheus-stack from https://kube-prometheus-stack-repo-url'), any(ScmmApiClient))
     }
 
-    Call<Void> mockSuccessfulResponse(int expectedReturnCode) {
-        def expectedCall = mock(Call<Void>)
-        when(expectedCall.execute()).thenReturn(Response.success(expectedReturnCode, null))
-        expectedCall
-    }
-
-    Call<Void> mockErrorResponse(int expectedReturnCode) {
-        def expectedCall = mock(Call<Void>)
-        // Response is a final class that cannot be mocked 😠
-        Response<Void> errorResponse = Response.error(expectedReturnCode, new RealResponseBody('dontcare', 0, mock(BufferedSource)))
-        when(expectedCall.execute()).thenReturn(errorResponse)
-        expectedCall
-    }
 
     void assertHelmRepoCommits(ScmmRepo repo, String expectedTag, String expectedCommitMessage) {
         def commits = Git.open(new File(repo.absoluteLocalRepoTmpDir)).log().setMaxCount(1).all().call().collect()
@@ -289,7 +185,7 @@ class AirGappedUtilsTest {
         assertThat(commits[0].fullMessage).isEqualTo(expectedCommitMessage)
 
         List<Ref> tags = Git.open(new File(repo.absoluteLocalRepoTmpDir)).tagList().call()
-        assertThat(tags.size()).isEqualTo(1)
+        assertThat(tags.size()).isEqualTo(2) // Already one test tag present
         assertThat(tags[0].name).isEqualTo("refs/tags/${expectedTag}".toString())
     }
 

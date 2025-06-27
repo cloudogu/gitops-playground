@@ -85,12 +85,49 @@ class Config {
     @JsonPropertyDescription(CONTENT_DESCRIPTION)
     @Mixin
     ContentSchema content = new ContentSchema()
-
+    
     class ContentSchema {
+
         @Option(names = ['--content-examples'], description = CONTENT_EXAMPLES_DESCRIPTION)
         @JsonPropertyDescription(CONTENT_EXAMPLES_DESCRIPTION)
         Boolean examples = false
+        
+        @JsonPropertyDescription(CONTENT_NAMESPACES_DESCRIPTION)
+        List<String> namespaces = []
+
+        @JsonPropertyDescription(CONTENT_REPO_DESCRIPTION)
+        List<ContentRepositorySchema> repos = []
+
+        static class ContentRepositorySchema {
+            @JsonPropertyDescription(CONTENT_REPO_URL_DESCRIPTION)
+            String url = ''
+
+            @JsonPropertyDescription(CONTENT_REPO_PATH_DESCRIPTION)
+            String path = '.'
+
+            @JsonPropertyDescription(CONTENT_REPO_REF_DESCRIPTION)
+            String ref = 'main'
+
+            @JsonPropertyDescription(CONTENT_REPO_USERNAME_DESCRIPTION)
+            String username = ''
+
+            @JsonPropertyDescription(CONTENT_REPO_PASSWORD_DESCRIPTION)
+            String password = ''
+
+            @JsonPropertyDescription(CONTENT_REPO_TEMPLATING_DESCRIPTION)
+            Boolean templating = false
+
+            @JsonPropertyDescription(CONTENT_REPO_FOLDER_BASED_REPOS_DESCRIPTION)
+            Boolean folderBased = false
+
+            @JsonPropertyDescription(CONTENT_REPO_TARGET_DESCRIPTION)
+            String target = ''
+
+            @JsonPropertyDescription(CONTENT_REPO_TARGET_OVERRIDE_MODE)
+            OverrideMode overrideMode = OverrideMode.INIT // default is init a new repository
+        }
     }
+
 
     static class HelmConfig {
         @JsonPropertyDescription(HELM_CONFIG_CHART_DESCRIPTION)
@@ -748,6 +785,14 @@ class Config {
     static enum VaultMode {
         dev, prod
     }
+
+    /**
+     * This defines, how customer repos will be updated.
+     */
+    static enum OverrideMode {
+        INIT, RESET, UPGRADE
+    }
+
 
     private static final ObjectMapper objectMapper = new ObjectMapper()
             .registerModule(new SimpleModule().addSerializer(GString, new JsonSerializer<GString>() {
