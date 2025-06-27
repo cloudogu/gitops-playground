@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.features
 
+import ch.qos.logback.core.net.AutoFlushingObjectWriter
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.scmm.ScmmRepo
@@ -12,6 +13,7 @@ import freemarker.template.Configuration
 import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
+import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import org.apache.commons.io.FileUtils
 import org.eclipse.jgit.api.CloneCommand
@@ -28,6 +30,8 @@ class Content extends Feature {
     private K8sClient k8sClient
     private ScmmRepoProvider repoProvider
     private ScmmApiClient scmmApiClient
+    @Inject
+    private Jenkins jenkins
 
     Content(
             Config config, K8sClient k8sClient, ScmmRepoProvider repoProvider, ScmmApiClient scmmApiClient
@@ -187,7 +191,7 @@ class Content extends Feature {
         }
     }
 
-    protected void pushTargetRepos(List<RepoCoordinates> srcRepos) {9
+    protected void pushTargetRepos(List<RepoCoordinates> srcRepos) {
         srcRepos.each { repoCoordinates ->
 
             ScmmRepo repo = repoProvider.getRepo("${repoCoordinates.namespace}/${repoCoordinates.repo}")
@@ -204,6 +208,13 @@ class Content extends Feature {
                 }
                 repo.copyDirectoryContents(repoCoordinates.newContent.absolutePath)
                 repo.commitAndPush("Initialize content repo ${repoCoordinates.namespace}/${repoCoordinates.repo}")
+
+                if (Config.OverrideMode.INIT == repoCoordinates.overrideMode){
+                    if (new File(repo.absoluteLocalRepoTmpDir, 'Jenkinsfile').exists()){
+                        // namespaces includes all jobs, thats why in this case namespace is uses as job and namespace.
+                        jenkins.createJenkinsjob(  repoCoordinates.namespace, repoCoordinates.namespace)
+                    }
+                }
                 // cleaning after use
                 new File(repo.absoluteLocalRepoTmpDir).deleteDir()
             }
