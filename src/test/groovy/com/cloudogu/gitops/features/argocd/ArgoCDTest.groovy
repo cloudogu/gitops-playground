@@ -1182,10 +1182,6 @@ class ArgoCDTest {
         config.application.namePrefix = "testPrefix-"
         def argoCD = setupOperatorTest(openshift: false)
 
-        argoCD.install()
-
-        File rbacPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_RBAC_PATH).toFile()
-
         List<String> expectedNamespaces = [
                 "testPrefix-monitoring",
                 "testPrefix-secrets",
@@ -1193,6 +1189,13 @@ class ArgoCDTest {
                 "testPrefix-example-apps-staging",
                 "testPrefix-example-apps-production"
         ]
+    // have to prepare activeNamespaces for unit-test, Application.groovy is setting this in integration way
+        config.application.activeNamespaces = expectedNamespaces
+
+        argoCD.install()
+
+        File rbacPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_RBAC_PATH).toFile()
+
 
         expectedNamespaces.each { String ns ->
             File roleFile = new File(rbacPath, "role-argocd-${ns}.yaml")
@@ -1474,6 +1477,7 @@ class ArgoCDTest {
                 .as("Ingress file should not be generated when both flags are false")
                 .doesNotExist()
     }
+
 
     private ArgoCD setupOperatorTest(Map options = [:]) {
         config.features.argocd.operator = true

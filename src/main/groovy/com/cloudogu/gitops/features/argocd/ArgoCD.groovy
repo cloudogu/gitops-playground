@@ -319,7 +319,7 @@ class ArgoCD extends Feature {
 
     private void generateRBACs() {
         log.debug("Generate RBAC permissions for ArgoCD in all managed namespaces")
-        for (String ns : namespaceList) {
+        for (String ns : config.application.activeNamespaces) {
             new RbacDefinition(Role.Variant.ARGOCD)
                     .withName("argocd")
                     .withNamespace(ns)
