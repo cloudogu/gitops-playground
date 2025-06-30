@@ -40,7 +40,8 @@ interface ConfigConstants {
     String CONTENT_REPO_FOLDER_BASED_REPOS_DESCRIPTION = "When true, interpret the folder structure of each repo as repos. That is, root folder becomes namespace in SCM, sub folders become repository names in SCM"
     String CONTENT_REPO_TARGET_DESCRIPTION = "Target path for the repository"
     String CONTENT_REPO_TARGET_OVERRIDE_MODE = "This defines, how customer repos will be updated.\nINIT - push only if repo does not exist (SCMM Return value 409).\nRESET - delete alle files after cloning source - new files are deleted\nUPGRADE - clone and copy - existing files will be overwritten, new files are kept"
-    
+    String CONTENT_VARIABLES_DESCRIPTION = "Additional variables to use in custom templates."
+
     // group jenkins
     String JENKINS_ENABLE_DESCRIPTION = 'Installs Jenkins as CI server'
     String JENKINS_SKIP_RESTART_DESCRIPTION = 'Skips restarting Jenkins after plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades.'
