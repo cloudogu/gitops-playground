@@ -130,11 +130,11 @@ RUN chmod +r /dist/root/ && chmod g+rw /dist/root/.config/jgit/
 # This stage builds a static binary using graal VM. For details see docs/developers.md#GraalVM
 FROM graal AS native-image
 ENV MAVEN_OPTS='-Dmaven.repo.local=/mvn'
-RUN microdnf install gnupg
 
 # Provide binaries used by apply-ng, so our runs with native-image-agent dont fail
 # with "java.io.IOException: Cannot run program "kubectl"..." etc.
-RUN microdnf install iproute
+# jq for manually adding to  proxy-config.json
+RUN microdnf install iproute jq
 
 WORKDIR /app
 
@@ -153,14 +153,16 @@ RUN printf 'registry:\n  active: true\njenkins:\n  active: true\ncontent:\n  exa
 # Run again with different params in order to avoid NoSuchMethodException with output-config file
 RUN java -agentlib:native-image-agent=config-merge-dir=conf/ -jar gitops-playground.jar \
       --yes  --output-config-file || true
+
+# Manually add some classes that cause exceptions at runtime
+RUN jq '.[0].interfaces += ["org.apache.commons.io.filefilter.IOFileFilter"]' conf/proxy-config.json > tmp && mv tmp conf/proxy-config.json
+RUN for f in conf/*config.json; do echo "=== $f ==="; cat "$f"; echo; done
 RUN native-image -Dgroovy.grape.enable=false \
     -H:+ReportExceptionStackTraces \
     -H:ConfigurationFileDirectories=conf/ \
     -H:IncludeResourceBundles=org.eclipse.jgit.internal.JGitText \
     -H:DynamicProxyConfigurationFiles=conf/proxy-config.json \
-    -H:DynamicProxyConfigurationResources=proxy-config.json \
     -H:ReflectionConfigurationFiles=conf/reflect-config.json \
-    -H:ReflectionConfigurationResources=reflect-config.json \
     --features=com.cloudogu.gitops.graal.groovy.GroovyApplicationRegistrationFeature,com.cloudogu.gitops.graal.groovy.GroovyDgmClassesRegistrationFeature,com.cloudogu.gitops.graal.jgit.JGitReflectionFeature,com.cloudogu.gitops.graal.okhttp.OkHttpReflectionFeature \
     --static \
     --allow-incomplete-classpath \
@@ -173,7 +175,6 @@ RUN native-image -Dgroovy.grape.enable=false \
     --install-exit-handlers \
     -jar gitops-playground.jar \
     apply-ng
-
 
 
 FROM alpine AS prod
