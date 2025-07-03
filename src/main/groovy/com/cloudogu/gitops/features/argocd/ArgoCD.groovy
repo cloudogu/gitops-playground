@@ -214,7 +214,7 @@ class ArgoCD extends Feature {
 
         prepareArgoCdRepo()
 
-        def namespaceList = getNamespaceList()
+        def namespaceList = config.application.activeNamespaces
 
         log.debug("Creating namespaces")
         k8sClient.createNamespaces(namespaceList)
@@ -260,12 +260,6 @@ class ArgoCD extends Feature {
         // For development keeping it in helm makes it easier (e.g. for helm uninstall).
         k8sClient.delete('secret', namespace,
                 new Tuple2('owner', 'helm'), new Tuple2('name', 'argocd'))
-    }
-
-    private List<String> getNamespaceList() {
-        def namespaceList = ["argocd", "monitoring", "ingress-nginx", "example-apps-staging", "example-apps-production", "secrets"]
-        def prefixedNamespaces = namespaceList.collect { ns -> "${config.application.namePrefix}${ns}".toString() }
-        return prefixedNamespaces
     }
 
     private void deployWithHelm() {
@@ -315,7 +309,7 @@ class ArgoCD extends Feature {
         log.debug("Updating managed namespaces in ArgoCD configuration secret.")
         // The ArgoCD instance installed via an operator only manages its deployment namespace.
         // To manage additional namespaces, we need to update the 'argocd-default-cluster-config' secret with all managed namespaces.
-        def namespaceList = getNamespaceList()
+        def namespaceList = config.application.activeNamespaces
         k8sClient.patch('secret', 'argocd-default-cluster-config', namespace,
                 [stringData: ['namespaces': namespaceList.join(',')]])
 
@@ -327,7 +321,7 @@ class ArgoCD extends Feature {
 
     private void generateRBACs() {
         log.debug("Generate RBAC permissions for ArgoCD in all managed namespaces")
-        for (String ns : namespaceList) {
+        for (String ns : config.application.activeNamespaces) {
             new RbacDefinition(Role.Variant.ARGOCD)
                     .withName("argocd")
                     .withNamespace(ns)
@@ -335,6 +329,7 @@ class ArgoCD extends Feature {
                             namespace,
                             ["argocd-argocd-server", "argocd-argocd-application-controller", "argocd-applicationset-controller"]
                     )
+                    .withConfig(config)
                     .withRepo(argocdRepoInitializationAction.repo)
                     .withSubfolder(OPERATOR_RBAC_PATH)
                     .generate()

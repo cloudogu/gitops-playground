@@ -977,6 +977,7 @@ class ArgoCDTest {
 
     ArgoCD createArgoCD() {
         def argoCD = new ArgoCDForTest(config, k8sCommands, helmCommands)
+        mockActiveNamespaces(config)
         return argoCD
     }
 
@@ -1178,13 +1179,6 @@ class ArgoCDTest {
 
     @Test
     void 'RBACs with operator using RbacDefinition outputs'() {
-        config.application.namePrefix = "testPrefix-"
-        def argoCD = setupOperatorTest(openshift: false)
-
-        argoCD.install()
-
-        File rbacPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_RBAC_PATH).toFile()
-
         List<String> expectedNamespaces = [
                 "testPrefix-monitoring",
                 "testPrefix-secrets",
@@ -1192,6 +1186,14 @@ class ArgoCDTest {
                 "testPrefix-example-apps-staging",
                 "testPrefix-example-apps-production"
         ]
+        config.application.namePrefix = "testPrefix-"
+
+        def argoCD = setupOperatorTest(openshift: false)
+
+
+        argoCD.install()
+
+        File rbacPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_RBAC_PATH).toFile()
 
         expectedNamespaces.each { String ns ->
             File roleFile = new File(rbacPath, "role-argocd-${ns}.yaml")
@@ -1474,6 +1476,48 @@ class ArgoCDTest {
                 .doesNotExist()
     }
 
+    @Test
+    void 'Operator RBAC includes node access rules when not on OpenShift'() {
+        config.application.openshift = false
+        config.application.namePrefix = "testprefix-"
+
+        def argoCD = setupOperatorTest()
+        argoCD.install()
+
+        print config.toMap()
+
+        File rbacDir = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_RBAC_PATH).toFile()
+        File roleFile = new File(rbacDir, "role-argocd-testprefix-monitoring.yaml")
+
+        Map yaml = new YamlSlurper().parse(roleFile) as Map
+        List<Map<String, Object>> rules = yaml["rules"] as List<Map<String, Object>>
+
+        assertThat(rules).anyMatch { rule ->
+            List<String> resources = rule["resources"] as List<String>
+            resources.contains("nodes") && resources.contains("nodes/metrics")
+        }
+    }
+
+    @Test
+    void 'Operator RBAC does not include node access rules when on OpenShift'() {
+        config.application.namePrefix = "testprefix-"
+
+        def argoCD = setupOperatorTest(openshift: true)
+        argoCD.install()
+
+        File rbacDir = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_RBAC_PATH).toFile()
+        File roleFile = new File(rbacDir, "role-argocd-testprefix-monitoring.yaml")
+        println roleFile
+
+        Map yaml = new YamlSlurper().parse(roleFile) as Map
+        List<Map<String, Object>> rules = yaml["rules"] as List<Map<String, Object>>
+
+        assertThat(rules).noneMatch { rule ->
+            List<String> resources = rule["resources"] as List<String>
+            resources.contains("nodes") && resources.contains("nodes/metrics")
+        }
+    }
+
     private ArgoCD setupOperatorTest(Map options = [:]) {
         config.features.argocd.operator = true
         config.features.argocd.resourceInclusionsCluster = 'https://192.168.0.1:6443'
@@ -1514,6 +1558,15 @@ class ArgoCDTest {
 
     private static List<String> getNamespaceList() {
         return ["argocd", "monitoring", "ingress-nginx", "example-apps-staging", "example-apps-production", "secrets"]
+    }
+
+    private static mockActiveNamespaces(Config config) {
+        def namespaces = getNamespaceList()  // e.g., List<String>
+        def prefix = config.application.namePrefix ?: ""
+
+        config.application.activeNamespaces = namespaces.collect { ns ->
+            "${prefix}${ns}".toString()
+        } as List<String>
     }
 
     class ArgoCDForTest extends ArgoCD {
