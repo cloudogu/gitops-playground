@@ -120,13 +120,13 @@ class ContentTest {
 
         assertRegistrySecrets('reg-user', 'reg-pw')
 
-        k8sClient.commandExecutorForTest.assertExecuted('kubectl create namespace foo-example-apps-staging')
-        k8sClient.commandExecutorForTest.assertExecuted('kubectl create namespace foo-example-apps-production')
+        k8sClient.commandExecutorForTest.assertExecuted('kubectl create namespace example-apps-staging')
+        k8sClient.commandExecutorForTest.assertExecuted('kubectl create namespace example-apps-production')
         k8sClient.commandExecutorForTest.assertExecuted(
-                'kubectl create secret docker-registry proxy-registry -n foo-example-apps-staging' +
+                'kubectl create secret docker-registry proxy-registry -n example-apps-staging' +
                         ' --docker-server proxy-url --docker-username proxy-user --docker-password proxy-pw')
         k8sClient.commandExecutorForTest.assertExecuted(
-                'kubectl create secret docker-registry proxy-registry -n foo-example-apps-production' +
+                'kubectl create secret docker-registry proxy-registry -n example-apps-production' +
                         ' --docker-server proxy-url --docker-username proxy-user --docker-password proxy-pw')
     }
 
@@ -157,7 +157,7 @@ class ContentTest {
     }
 
     @Test
-    void 'test custom variables'() {
+    void 'supports content variables'() {
 
         config.content.repos = [
                 new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('folderBasedRepo1'), folderBased: true, templating: true)
@@ -502,7 +502,7 @@ class ContentTest {
 
 
     private void assertRegistrySecrets(String regUser, String regPw) {
-        List expectedNamespaces = ["foo-example-apps-staging", "foo-example-apps-production"]
+        List expectedNamespaces = ["example-apps-staging", "example-apps-production"]
         expectedNamespaces.each {
 
             k8sClient.commandExecutorForTest.assertExecuted(

@@ -55,8 +55,7 @@ class Content extends Feature {
             String registryUsername = config.registry.readOnlyUsername ?: config.registry.username
             String registryPassword = config.registry.readOnlyPassword ?: config.registry.password
 
-            config.content.namespaces.each {
-                String namespace = "${config.application.namePrefix}${it}"
+            config.content.namespaces.each {String namespace ->
                 def registrySecretName = 'registry'
 
                 k8sClient.createNamespace(namespace)
