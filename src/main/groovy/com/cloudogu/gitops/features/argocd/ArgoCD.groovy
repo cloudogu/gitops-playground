@@ -169,7 +169,7 @@ class ArgoCD extends Feature {
         gitRepos += clusterResourcesInitializationAction
 
         if (config.multiTenant.useDedicatedInstance) {
-            tenantBootstrapInitializationAction = createRepoInitializationAction('argocd/argocd/multiTenant/tenant', 'argocd/bootstrap')
+            tenantBootstrapInitializationAction = createRepoInitializationAction('argocd/argocd/multiTenant/tenant', 'argocd/argocd')
             gitRepos += tenantBootstrapInitializationAction
         }
 

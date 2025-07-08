@@ -14,7 +14,7 @@ spec:
   project: default
   source:
     path: applications/
-    repoURL: ${scmm.repoUrl}argocd/bootstrap
+    repoURL: ${scmm.repoUrl}argocd/argocd
     targetRevision: main
     directory:
       recurse: true
@@ -39,7 +39,7 @@ spec:
   project: default
   source:
     path: projects/
-    repoURL: ${scmm.repoUrl}argocd/bootstrap
+    repoURL: ${scmm.repoUrl}argocd/argocd
     targetRevision: main
     directory:
       recurse: true
