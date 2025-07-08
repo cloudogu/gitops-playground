@@ -18,7 +18,7 @@ Kubernetes clusters:
 The gitops-playground is derived from our experiences in [consulting](https://platform.cloudogu.com/consulting/kubernetes-und-gitops/?mtm_campaign=gitops-playground&mtm_kwd=consulting&mtm_source=github&mtm_medium=link),
 operating our internal developer platform (IDP) at [Cloudogu](https://cloudogu.com/?mtm_campaign=gitops-playground&mtm_kwd=cloudogu&mtm_source=github&mtm_medium=link) and is used in our [GitOps trainings](https://platform.cloudogu.com/en/trainings/gitops-continuous-operations/?mtm_campaign=gitops-playground&mtm_kwd=training&mtm_source=github&mtm_medium=link).  
 
-![Playground features](docs/gitops-playground-features.drawio.svg)
+[![Playground features](docs/gitops-playground-features.drawio.svg)](https://cdn.jsdelivr.net/gh/cloudogu/gitops-playground@main/docs/gitops-playground-features.drawio.svg "View full size")
 
 ## TL;DR
 
@@ -137,9 +137,9 @@ scenario with the Cloudogu EcoSystem (CES). Here better security and build perfo
 Jenkins build agents spawned in the cloud.
 
 ### Overview
-| Playground on local machine                                             | Production environment with Cloudogu EcoSystem                                                                                                                                                        |
-|-------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| ![Playground on local machine](docs/gitops-playground-local.drawio.svg) | ![A possible production environment](docs/gitops-playground-production.drawio.svg) |
+| Playground on local machine                                                | Production environment with Cloudogu EcoSystem                                       |
+|----------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
+| [![Playground on local machine](docs/gitops-playground-local.drawio.svg)](https://cdn.jsdelivr.net/gh/cloudogu/gitops-playground@main/docs/gitops-playground-local.drawio.svg "View full size") | [![A possible production environment](docs/gitops-playground-production.drawio.svg)](https://cdn.jsdelivr.net/gh/cloudogu/gitops-playground@main/docs/gitops-playground-production.drawio.svg "View full size") |
 
 ### Create Cluster
 
@@ -733,7 +733,7 @@ When installing the GitOps playground, the following steps are performed to boot
 
 From there, everything is managed via GitOps. This diagram shows how it works.
 
-![](docs/argocd-repos.svg)
+[![](docs/argocd-repos.svg)](https://cdn.jsdelivr.net/gh/cloudogu/gitops-playground@main/docs/argocd-repos.svg "View full size")
 
 1. The `bootstrap` application manages the folder `applications`, which also contains `bootstrap` itself.  
    With this, changes to the `bootstrap` application can be done via GitOps. The `bootstrap` application also deploys
@@ -793,7 +793,7 @@ The short answer is: As of 2023-05, version 0.4.15 it looks far from ready for p
 
 Here is a diagram that shows how the repo structure created by autopilot looks like:
 
-![](docs/autopilot-repo.svg)
+[![](docs/autopilot-repo.svg)](https://cdn.jsdelivr.net/gh/cloudogu/gitops-playground@main/docs/autopilot-repo.svg "View full size")
 
 Here are some thoughts why we deem it not a good fit for production:
 
@@ -979,7 +979,7 @@ The applications implement a simple staging mechanism:
 * For some applications working without CI Server and committing directly to the GitOps repo is pragmatic  
   (e.g. 3rd-party-application like NGINX, like [`argocd/nginx-helm-umbrella`](argocd/example-apps/argocd/nginx-helm-umbrella.ftl.yaml))
 
-![app-repo-vs-gitops-repo](docs/app-repo-vs-gitops-repo.svg)
+[![app-repo-vs-gitops-repo](docs/app-repo-vs-gitops-repo.svg)](https://cdn.jsdelivr.net/gh/cloudogu/gitops-playground@main/docs/app-repo-vs-gitops-repo.svg "View full size")
 
 Note that the GitOps-related logic is implemented in the
 [gitops-build-lib](https://github.com/cloudogu/gitops-build-lib) for Jenkins. See the README there for more options like
