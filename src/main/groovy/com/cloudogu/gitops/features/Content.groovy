@@ -2,6 +2,7 @@ package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.config.Config.OverrideMode
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import com.cloudogu.gitops.scmm.api.ScmmApiClient
@@ -55,7 +56,7 @@ class Content extends Feature {
             String registryUsername = config.registry.readOnlyUsername ?: config.registry.username
             String registryPassword = config.registry.readOnlyPassword ?: config.registry.password
 
-            config.content.namespaces.each {String namespace ->
+            config.content.namespaces.each { String namespace ->
                 def registrySecretName = 'registry'
 
                 k8sClient.createNamespace(namespace)
@@ -77,77 +78,78 @@ class Content extends Feature {
     }
 
     void createContentRepos() {
-        List<RepoCoordinates> repos = cloneContentRepos()
-        pushTargetRepos(repos)
+        List<RepoCoordinate> repoCoordinates = cloneContentRepos()
+        pushTargetRepos(repoCoordinates)
     }
 
-    protected List<RepoCoordinates> cloneContentRepos() {
-        List<RepoCoordinates> repos = []
-        def mergedFolderBasedRepoFolder = File.createTempDir('gitops-playground-folder-based-content-repos-')
-        mergedFolderBasedRepoFolder.deleteOnExit()
+    protected List<RepoCoordinate> cloneContentRepos() {
+        List<RepoCoordinate> repoCoordinates = []
+        def mergedReposFolder = File.createTempDir('gitops-playground-folder-based-content-repos-')
+        mergedReposFolder.deleteOnExit()
         def engine = new TemplatingEngine()
 
         log.debug("Aggregating folder structure for all ${config.content.repos.size()} folder based-repos")
         config.content.repos.each { repo ->
 
             def repoTmpDir = File.createTempDir('gitops-playground-folder-based-single-content-repo-')
-            log.debug("Cloning folder-based content repo, ${repo.url}, revision ${repo.ref}, ${repo.path} OverideMode ${repo.overrideMode}")
+            log.debug("Cloning content repo, ${repo.url}, revision ${repo.ref}, path ${repo.path}, overrideMode ${repo.overrideMode}")
 
             cloneToLocalFolder(repo, repoTmpDir)
 
-            def srcPath = new File(repoTmpDir, repo.path)
-            doTemplating(repo, engine, srcPath)
+            def contentRepoDir = new File(repoTmpDir, repo.path)
+            doTemplating(repo, engine, contentRepoDir)
 
             if (repo.folderBased) {
-                srcPath.listFiles().findAll { it.isDirectory() && !it.name.startsWith('.') }
-                        .each { namespaceDir ->
-                            String namespace = namespaceDir.name
-                            namespaceDir.listFiles().findAll {
-                                it.isDirectory()
-                                        // Exclude .git for example
-                                        && !it.name.startsWith('.')
-                            }.each { repoDir ->
-                                {
-                                    def gitIgnoreFilter = FileSystemUtils.createGitIgnoreFilter(mergedFolderBasedRepoFolder.toString())
-                                    // Namespace
-                                    File directory = new File(mergedFolderBasedRepoFolder, namespace)
-                                    // Repo
-                                    File repoFolder = new File(directory, repoDir.name)
-                                    FileUtils.copyDirectory(repoDir, repoFolder, gitIgnoreFilter)
+                findRepoDirectories(contentRepoDir)
+                        .each { contentRepoNamespaceDir ->
+                            findRepoDirectories(contentRepoNamespaceDir)
+                                    .each { contentRepoRepoDir ->
+                                        String namespace = contentRepoNamespaceDir.name
+                                        String repoName = contentRepoRepoDir.name
 
-                                    def repoCoords = new RepoCoordinates(
-                                            namespace: namespace,
-                                            repo: repoDir.name,
-                                            newContent: repoFolder,
-                                            overrideMode: repo.overrideMode
-                                    )
-                                    addRepoCoordinates(repos, repoCoords)
-                                }
-                            }
+                                        mergeRepoDirs(contentRepoRepoDir, namespace, repoName, mergedReposFolder, repo.overrideMode, repoCoordinates)
+                                    }
                         }
-
             } else {
-                // non folderbased repo
-                def gitIgnoreFilter = FileSystemUtils.createGitIgnoreFilter(mergedFolderBasedRepoFolder.toString())
-                File contentFolder = new File(mergedFolderBasedRepoFolder, repo.target)
-                FileUtils.copyDirectory(srcPath, contentFolder, gitIgnoreFilter)
-
                 String namespace = repo.target.split('/')[0]
                 String repoName = repo.target.split('/')[1]
-                def repoCoords =  new RepoCoordinates(
-                        namespace: namespace,
-                        repo: repoName,
-                        newContent: contentFolder,
-                        overrideMode: repo.overrideMode
-                )
-                addRepoCoordinates(repos, repoCoords)
+
+                mergeRepoDirs(contentRepoDir, namespace, repoName, mergedReposFolder, repo.overrideMode, repoCoordinates)
             }
 
 
             repoTmpDir.deleteDir()
-            log.debug("Merge content repo, ${repo.url} into ${mergedFolderBasedRepoFolder}")
+            log.debug("Finished merging content repo, ${repo.url} into ${mergedReposFolder}")
         }
-        return repos
+        return repoCoordinates
+    }
+
+    /**
+     * Merges the files of src into the mergeRepoFolder/namespace/name and adds a new object to repoCoordinates.
+     *
+     * Note that existing repoCoordinate objects with different overrideMode are overwritten. The last repo to be mentioned within config.content.repos wins!
+     */
+    private static void mergeRepoDirs(File src, String namespace, String repoName, File mergedRepoFolder,
+                                      OverrideMode overrideMode, List<RepoCoordinate> repoCoordinates) {
+        File target = new File(new File(mergedRepoFolder, namespace), repoName)
+        log.debug("Merging content repo, namespace ${namespace}, repoName ${repoName} from ${src} to ${target}")
+        FileUtils.copyDirectory(src, target, new FileSystemUtils.IgnoreDotGitFolderFilter())
+
+        def repoCoordinate = new RepoCoordinate(
+                namespace: namespace,
+                repo: repoName,
+                newContent: target,
+                overrideMode: overrideMode
+        )
+        addRepoCoordinates(repoCoordinates, repoCoordinate)
+    }
+
+    private static List<File> findRepoDirectories(File srcRepo) {
+        srcRepo.listFiles().findAll {
+            it.isDirectory() &&
+                    // Exclude .git for example
+                    !it.name.startsWith('.')
+        }
     }
 
     private void doTemplating(Config.ContentSchema.ContentRepositorySchema repo, TemplatingEngine engine, File srcPath) {
@@ -161,8 +163,8 @@ class Content extends Feature {
     }
 
 
-
     private void cloneToLocalFolder(Config.ContentSchema.ContentRepositorySchema repo, File repoTmpDir) {
+
         def cloneCommand = gitClone()
                 .setURI(repo.url)
                 .setDirectory(repoTmpDir)
@@ -184,26 +186,36 @@ class Content extends Feature {
             git.checkout().setName(nameWithOrigin).call()
 
         }
-    }
+        }
 
-    protected void pushTargetRepos(List<RepoCoordinates> srcRepos) {9
-        srcRepos.each { repoCoordinates ->
+    protected void pushTargetRepos(List<RepoCoordinate> repoCoordinates) {
+        repoCoordinates.each { repoCoordinate ->
 
-            ScmmRepo repo = repoProvider.getRepo("${repoCoordinates.namespace}/${repoCoordinates.repo}")
+            ScmmRepo repo = repoProvider.getRepo(repoCoordinate.fullRepoName)
             def isRepoCreated = repo.create('', scmmApiClient)
 
-            // Repo exists and INIT, then nothing happens
-            if (!isRepoCreated && Config.OverrideMode.INIT == repoCoordinates.overrideMode) {
-                // nothing
+            if (!isRepoCreated && OverrideMode.INIT == repoCoordinate.overrideMode) {
+                log.warn("OverrideMode ${OverrideMode.INIT} set for repo '${repoCoordinate.fullRepoName}' " +
+                        "and repo already exists in target:  Not pushing content!" +
+                        "If you want to override, set ${OverrideMode.UPGRADE} or ${OverrideMode.RESET} .")
             } else {
 
                 repo.cloneRepo()
-                if (Config.OverrideMode.RESET == repoCoordinates.overrideMode) {
-                    repo.clearRepo()
+
+                if (OverrideMode.INIT != repoCoordinate.overrideMode) {
+                    if (OverrideMode.RESET == repoCoordinate.overrideMode) {
+                        log.info("OverrideMode ${OverrideMode.RESET} set for repo '${repoCoordinate.fullRepoName}': " +
+                                "Deleting existing files in repo and replacing them with new content.")
+                        repo.clearRepo()
+                    } else {
+                        log.info("OverrideMode ${OverrideMode.UPGRADE} set for repo '${repoCoordinate.fullRepoName}': " +
+                                "Merging new content into existing repo. ")
+                    }
                 }
-                repo.copyDirectoryContents(repoCoordinates.newContent.absolutePath)
-                repo.commitAndPush("Initialize content repo ${repoCoordinates.namespace}/${repoCoordinates.repo}")
-                // cleaning after use
+
+                repo.copyDirectoryContents(repoCoordinate.newContent.absolutePath)
+                repo.commitAndPush("Initialize content repo ${repoCoordinate.namespace}/${repoCoordinate.repo}")
+                
                 new File(repo.absoluteLocalRepoTmpDir).deleteDir()
             }
         }
@@ -216,26 +228,30 @@ class Content extends Feature {
     protected CloneCommand gitClone() {
         Git.cloneRepository()
     }
+
     /**
      * add new repoCoordinates to repos and ensure, newest one override last one
-     * @param repos
-     * @param entry
      */
-    void addRepoCoordinates(List<RepoCoordinates> repos, RepoCoordinates entry) {
-
-        repos.removeIf { it.namespace == entry.namespace && it.repo == entry.repo }
-        repos << entry
+    static void addRepoCoordinates(List<RepoCoordinate> repoCoordinates, RepoCoordinate entry) {
+        if (repoCoordinates.removeIf { it.namespace == entry.namespace && it.repo == entry.repo }) {
+            log.debug("Repo coordinate ${entry} replaced existing")
+        }
+        repoCoordinates << entry
     }
 
-    static class RepoCoordinates {
+    static class RepoCoordinate {
         String namespace
         String repo
         File newContent
-        Config.OverrideMode overrideMode
+        OverrideMode overrideMode
 
         @Override
         String toString() {
             return "RepoCoordinates{ namespace='$namespace', repo='$repo', overrideMode='$overrideMode', newContent=$newContent' }"
+        }
+
+        String getFullRepoName() {
+            return "${namespace}/${repo}"
         }
     }
 

@@ -172,7 +172,7 @@ class ApplicationConfiguratorTest {
         exception = shouldFail(RuntimeException) {
             applicationConfigurator.validateConfig(testConfig)
         }
-        assertThat(exception.message).isEqualTo('content.target needs / to divide between folder and repo. abc')
+        assertThat(exception.message).isEqualTo('content.target needs / to separate namespace/group from repo name. abc')
 
 
         //  mandatory params:url

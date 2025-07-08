@@ -195,17 +195,11 @@ class FileSystemUtils {
 
     /**
      * This filter can be used to copy whole directories without .git folder.
-     * @param folder
-     * @return
      */
-    static FileFilter createGitIgnoreFilter(String folder) {
-        [
-                accept: { File file ->
-                    def relativePath = file.absolutePath - folder
-                    // exclude ".git" to remove all git repo info for copy to new repo.
-                    return !relativePath.contains(File.separator + ".git")
-                }
-
-        ] as FileFilter
+    static class IgnoreDotGitFolderFilter implements FileFilter {
+        @Override
+        boolean accept(File file) {
+            return !file.absolutePath.contains(File.separator + ".git")
+        }
     }
 }

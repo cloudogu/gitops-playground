@@ -199,8 +199,7 @@ class ArgoCD extends Feature {
             def tmpDir = repoInitAction.repo.getAbsoluteLocalRepoTmpDir()
 
             log.debug("Copying original petclinic files for petclinic repo: $tmpDir")
-            FileFilter gitIgnoreFilter = fileSystemUtils.createGitIgnoreFilter(remotePetClinicRepoTmpDir.toString())
-            fileSystemUtils.copyDirectory(remotePetClinicRepoTmpDir.toString(), tmpDir, gitIgnoreFilter)
+            fileSystemUtils.copyDirectory(remotePetClinicRepoTmpDir.toString(), tmpDir, new FileSystemUtils.IgnoreDotGitFolderFilter())
             fileSystemUtils.deleteEmptyFiles(Path.of(tmpDir), ~/k8s\/.*\.yaml/)
 
             new TemplatingEngine().template(

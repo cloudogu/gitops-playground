@@ -276,7 +276,7 @@ class ApplicationConfigurator {
             }
             if (repo.target) {
                 if (repo.target.count('/') == 0) {
-                    throw new RuntimeException("content.target needs / to divide between folder and repo. ${repo.url}")
+                    throw new RuntimeException("content.target needs / to separate namespace/group from repo name. ${repo.url}")
                 }
 
 

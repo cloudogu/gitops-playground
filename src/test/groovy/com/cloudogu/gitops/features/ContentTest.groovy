@@ -39,18 +39,18 @@ class ContentTest {
     TestScmmRepoProvider scmmRepoProvider = new TestScmmRepoProvider(config, new FileSystemUtils())
     TestScmmApiClient scmmApiClient = new TestScmmApiClient(config)
 
-    List<Content.RepoCoordinates> expectedTargetRepos = [
-            new Content.RepoCoordinates(namespace: "common", repo: "repo"),
-            new Content.RepoCoordinates(namespace: "ns1a", repo: "repo1a1"),
-            new Content.RepoCoordinates(namespace: "ns1a", repo: "repo1a2"),
-            new Content.RepoCoordinates(namespace: "ns1b", repo: "repo1b1"),
-            new Content.RepoCoordinates(namespace: "ns1b", repo: "repo1b2"),
-            new Content.RepoCoordinates(namespace: "ns2a", repo: "repo2a1"),
-            new Content.RepoCoordinates(namespace: "ns2a", repo: "repo2a2"),
-            new Content.RepoCoordinates(namespace: "ns2b", repo: "repo2b1"),
-            new Content.RepoCoordinates(namespace: "ns2b", repo: "repo2b2"),
-            new Content.RepoCoordinates(namespace: "nonFolderBased", repo: "repo1"),
-            new Content.RepoCoordinates(namespace: "nonFolderBased", repo: "repo2")
+    List<Content.RepoCoordinate> expectedTargetRepos = [
+            new Content.RepoCoordinate(namespace: "common", repo: "repo"),
+            new Content.RepoCoordinate(namespace: "ns1a", repo: "repo1a1"),
+            new Content.RepoCoordinate(namespace: "ns1a", repo: "repo1a2"),
+            new Content.RepoCoordinate(namespace: "ns1b", repo: "repo1b1"),
+            new Content.RepoCoordinate(namespace: "ns1b", repo: "repo1b2"),
+            new Content.RepoCoordinate(namespace: "ns2a", repo: "repo2a1"),
+            new Content.RepoCoordinate(namespace: "ns2a", repo: "repo2a2"),
+            new Content.RepoCoordinate(namespace: "ns2b", repo: "repo2b1"),
+            new Content.RepoCoordinate(namespace: "ns2b", repo: "repo2b2"),
+            new Content.RepoCoordinate(namespace: "nonFolderBased", repo: "repo1"),
+            new Content.RepoCoordinate(namespace: "nonFolderBased", repo: "repo2")
     ]
 
     List<Config.ContentSchema.ContentRepositorySchema> contentRepos = [
@@ -527,7 +527,7 @@ class ContentTest {
         return ys.parse(pathToYamlFile)
     }
 
-    String findRoot(List<Content.RepoCoordinates> repos) {
+    String findRoot(List<Content.RepoCoordinate> repos) {
         def result = new File(repos.get(0).getNewContent().getParent()).getParent()
         return result;
 
