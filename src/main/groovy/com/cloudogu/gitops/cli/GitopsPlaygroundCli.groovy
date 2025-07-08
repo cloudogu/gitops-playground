@@ -213,7 +213,7 @@ class GitopsPlaygroundCli {
         return mergedConfig
     }
 
-    private static Map validateConfig(String configValues) {
+    static Map validateConfig(String configValues) {
         def map = new YamlSlurper().parseText(configValues)
         if (!(map instanceof Map)) {
             throw new RuntimeException("Could not parse YAML as map: $map")

@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
   name: ${tenantName}
-  namespace: argocd
+  namespace: ${config.multiTenant.centralArgocdNamespace}
 spec:
   description: Contains Cluster Ressources for MultiTentant Mode
   destinations:
