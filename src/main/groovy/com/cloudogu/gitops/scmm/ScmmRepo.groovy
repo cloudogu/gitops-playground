@@ -32,7 +32,7 @@ class ScmmRepo {
     private String gitEmail
     private String rootPath
     private String scmProvider
-    private Boolean isCentralRepo
+    Boolean isCentralRepo
     private Config config
 
     ScmmRepo(Config config, String scmmRepoTarget, FileSystemUtils fileSystemUtils, Boolean isCentralRepo = false) {
@@ -91,6 +91,7 @@ class ScmmRepo {
         gitClone()
         checkoutOrCreateBranch('main')
     }
+
     /**
      * if repo creation is succesfull or it still exist, then returns HTTP Code
      *
