@@ -366,6 +366,17 @@
         <configuration>
           <!-- Needed to allow unit tests to do reflection, e.g. for SystemLambda's withEnvironmentVariable -->
           <argLine>--add-opens java.base/java.util=ALL-UNNAMED</argLine>
+          <systemProperties>
+            <property>
+              <name>ROOT_LOG_LEVEL</name>
+              <value>OFF</value>
+            </property>
+            <property>
+              <name>APP_LOG_LEVEL</name>
+              <value>OFF</value>
+            </property>
+          </systemProperties>
+
         </configuration>
       </plugin>
       <plugin>
