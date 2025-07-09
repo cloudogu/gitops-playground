@@ -193,8 +193,8 @@ function configureScmmManager() {
    setPermissionForNamespace "${NAME_PREFIX}argocd" "${GITOPS_USERNAME}" "CI-SERVER"
 
    if [[ $USE_CENTRAL_SCM == true ]]; then
-    addRepo "${NAME_PREFIX}argocd" "bootstrap" "Bootstrap repo for applications"
-    setPermission "${NAME_PREFIX}argocd" "bootstrap" "${GITOPS_USERNAME}" "WRITE"
+    addRepo "${NAME_PREFIX}argocd" "argocd" "Bootstrap repo for applications"
+    setPermission "${NAME_PREFIX}argocd" "argocd" "${GITOPS_USERNAME}" "WRITE"
    fi
   fi
 

@@ -62,7 +62,7 @@ class ScmManager extends Feature {
 
     @Override
     void enable() {
-        String centralSCMUrl = ''
+        String centralSCMUrl = config.multiTenant.centralScmUrl
 
         if (config.scmm.internal) {
 
