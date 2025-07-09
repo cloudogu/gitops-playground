@@ -214,6 +214,18 @@ class ContentTest {
     }
 
     @Test
+    void 'Checks out default branch when no ref set'() {
+        config.content.repos = [
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('', 'git-repo-different-default-branch'), target: 'common/default'),
+        ]
+
+        def repos = createContent().cloneContentRepos()
+
+        assertThat(new File(findRoot(repos), "common/default/README.md")).exists().isFile()
+        assertThat(new File(findRoot(repos), "common/default/README.md").text).contains("different")
+    }
+
+    @Test
     void 'Fails if commit refs does not exit'() {
         config.content.repos = [
                 new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo(), ref: 'someTag', folderBased: false, target: 'common/tag'),
@@ -489,35 +501,35 @@ class ContentTest {
     }
 
 
-    static String createContentRepo(String srcPath = '') {
+    static String createContentRepo(String initPath = '', String baseBareRepo = 'git-repository') {
         // The bare repo works as the "remote"
         def bareRepoDir = File.createTempDir('gitops-playground-test-content-repo')
         bareRepoDir.deleteOnExit()
         foldersToDelete << bareRepoDir
         // init with bare repo
-        FileUtils.copyDirectory(new File(System.getProperty("user.dir") + "/src/test/groovy/com/cloudogu/gitops/utils/data/git-repository/"), bareRepoDir)
+        FileUtils.copyDirectory(new File(System.getProperty("user.dir") + "/src/test/groovy/com/cloudogu/gitops/utils/data/${baseBareRepo}/"), bareRepoDir)
         def bareRepoUri = 'file://' + bareRepoDir.absolutePath
-        log.debug("Repo $srcPath: bare repo $bareRepoUri")
+        log.debug("Repo $initPath: bare repo $bareRepoUri")
 
-        if (srcPath) {
-            // Add srcPath to bare repo
+        if (initPath) {
+            // Add initPath to bare repo
             def tempRepo = File.createTempDir('gitops-playground-temp-repo')
             tempRepo.deleteOnExit()
             foldersToDelete << tempRepo
-            log.debug("Repo $srcPath: cloned bare repo to $tempRepo")
+            log.debug("Repo $initPath: cloned bare repo to $tempRepo")
             def git = Git.cloneRepository()
                     .setURI(bareRepoUri)
                     .setBranch('main')
                     .setDirectory(tempRepo)
                     .call()
 
-            FileUtils.copyDirectory(new File(System.getProperty("user.dir") + '/src/test/groovy/com/cloudogu/gitops/utils/data/contentRepos/' + srcPath), tempRepo)
+            FileUtils.copyDirectory(new File(System.getProperty("user.dir") + '/src/test/groovy/com/cloudogu/gitops/utils/data/contentRepos/' + initPath), tempRepo)
 
             git.add().addFilepattern(".").call()
 
             // Avoid complications with local developer's git config, e.g. when  git config --global commit.gpgSign true
             SystemReader.getInstance().userConfig.clear()
-            git.commit().setMessage("Initialize with $srcPath").call()
+            git.commit().setMessage("Initialize with $initPath").call()
             git.push().call()
             tempRepo.delete()
         }

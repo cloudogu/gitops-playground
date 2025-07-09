@@ -109,7 +109,7 @@ class Config {
             String path = '.'
 
             @JsonPropertyDescription(CONTENT_REPO_REF_DESCRIPTION)
-            String ref = 'main'
+            String ref = ''
 
             @JsonPropertyDescription(CONTENT_REPO_USERNAME_DESCRIPTION)
             String username = ''

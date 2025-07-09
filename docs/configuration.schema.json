@@ -187,7 +187,7 @@
               },
               "ref" : {
                 "type" : [ "string", "null" ],
-                "description" : "Reference for a specific branch, tag, or commit"
+                "description" : "Reference for a specific branch, tag, or commit. Emtpy defaults to default branch of the repo"
               },
               "target" : {
                 "type" : [ "string", "null" ],

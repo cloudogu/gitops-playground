@@ -17,7 +17,6 @@ import jakarta.inject.Singleton
 import org.apache.commons.io.FileUtils
 import org.eclipse.jgit.api.CloneCommand
 import org.eclipse.jgit.api.Git
-import org.eclipse.jgit.api.ResetCommand
 import org.eclipse.jgit.lib.Ref
 import org.eclipse.jgit.lib.Repository
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
@@ -170,6 +169,7 @@ class Content extends Feature {
         def cloneCommand = gitClone()
                 .setURI(repo.url)
                 .setDirectory(repoTmpDir)
+                .setNoCheckout(false) // Checkout default branch
 
         if (repo.username != null && repo.password != null) {
             cloneCommand.setCredentialsProvider(
@@ -177,11 +177,10 @@ class Content extends Feature {
         }
         def git = cloneCommand.call()
         
-        def actualRef = findRef(repo, git.repository)
-
-        // Avoid jgit removing and staging all files except .git which might lead to CheckoutConflictException during checkout
-        git.reset().setMode(ResetCommand.ResetType.HARD).call()
-        git.checkout().setName(actualRef).call()
+        if (repo.ref) {
+            def actualRef = findRef(repo, git.repository)
+            git.checkout().setName(actualRef).call()
+        }
     }
 
     private String findRef(Config.ContentSchema.ContentRepositorySchema repoConfig, Repository gitRepo) {
