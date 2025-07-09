@@ -23,7 +23,7 @@ import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 
 @Slf4j
 @Singleton
-@Order(80)
+@Order(999) // We want to evaluate content last, to allow for changing all other repos
 class Content extends Feature {
 
     private Config config
@@ -176,7 +176,7 @@ class Content extends Feature {
                     new UsernamePasswordCredentialsProvider(repo.username, repo.password))
         }
         def git = cloneCommand.call()
-        
+
         if (repo.ref) {
             def actualRef = findRef(repo, git.repository)
             git.checkout().setName(actualRef).call()
@@ -188,7 +188,7 @@ class Content extends Feature {
         if (gitRepo.resolve(repoConfig.ref)) {
             return repoConfig.ref
         }
-        
+
         // Check tags or branches
         def remoteCommand = Git.lsRemoteRepository()
                 .setRemote(repoConfig.url)
@@ -207,7 +207,7 @@ class Content extends Feature {
             // This might lead to unexpected surprises for our users, so better fail explicitly
             throw new RuntimeException("Reference '${repoConfig.ref}' not found in repository '${repoConfig.url}'")
         }
-        
+
         // Jgit only checks out remote branches when they start in origin/ 🙄 
         return potentialRef.replace('refs/heads/', 'origin/')
     }

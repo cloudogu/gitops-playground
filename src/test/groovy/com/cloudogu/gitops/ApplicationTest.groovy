@@ -18,8 +18,8 @@ class ApplicationTest {
                 .registerSingleton(config)
                 .getBean(Application)
         def features = application.features.collect { it.class.simpleName }
-
-        assertThat(features).isEqualTo(["Registry", "ScmManager", "Jenkins", "Content", "ArgoCD", "IngressNginx", "CertManager", "Mailhog", "PrometheusStack", "ExternalSecretsOperator", "Vault"])
+        
+        assertThat(features).isEqualTo(["Registry", "ScmManager", "Jenkins", "ArgoCD", "IngressNginx", "CertManager", "Mailhog", "PrometheusStack", "ExternalSecretsOperator", "Vault",  "Content"])
     }
 
     @Test
