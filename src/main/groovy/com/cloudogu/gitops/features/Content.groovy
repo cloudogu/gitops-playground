@@ -17,7 +17,9 @@ import jakarta.inject.Singleton
 import org.apache.commons.io.FileUtils
 import org.eclipse.jgit.api.CloneCommand
 import org.eclipse.jgit.api.Git
-import org.eclipse.jgit.api.errors.GitAPIException
+import org.eclipse.jgit.api.ResetCommand
+import org.eclipse.jgit.lib.Ref
+import org.eclipse.jgit.lib.Repository
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 
 @Slf4j
@@ -168,25 +170,49 @@ class Content extends Feature {
         def cloneCommand = gitClone()
                 .setURI(repo.url)
                 .setDirectory(repoTmpDir)
-                .setCloneAllBranches(true)
 
         if (repo.username != null && repo.password != null) {
             cloneCommand.setCredentialsProvider(
                     new UsernamePasswordCredentialsProvider(repo.username, repo.password))
         }
         def git = cloneCommand.call()
-        try {
-            // switch to used branch.
-            git.checkout().setName(repo.ref).call()
+        
+        def actualRef = findRef(repo, git.repository)
 
-        } catch (GitAPIException e) {
-            // This is a fallback because of branches hosted at github.
-            log.debug("checkout branch ${repo.ref} not working, maybe because of github. Now again with origin/${repo.ref} to checkout remote branch.")
-            var nameWithOrigin = 'origin/'+ repo.ref
-            git.checkout().setName(nameWithOrigin).call()
+        // Avoid jgit removing and staging all files except .git which might lead to CheckoutConflictException during checkout
+        git.reset().setMode(ResetCommand.ResetType.HARD).call()
+        git.checkout().setName(actualRef).call()
+    }
 
+    private String findRef(Config.ContentSchema.ContentRepositorySchema repoConfig, Repository gitRepo) {
+        // Check if it is a commit hash first to avoid InvalidRefNameException
+        if (gitRepo.resolve(repoConfig.ref)) {
+            return repoConfig.ref
         }
+        
+        // Check tags or branches
+        def remoteCommand = Git.lsRemoteRepository()
+                .setRemote(repoConfig.url)
+                .setHeads(true)
+                .setTags(true)
+
+        if (repoConfig.username != null && repoConfig.password != null) {
+            remoteCommand.setCredentialsProvider(
+                    new UsernamePasswordCredentialsProvider(repoConfig.username, repoConfig.password))
         }
+        Collection<Ref> refs = remoteCommand.call()
+        String potentialRef = refs.find { it.name.endsWith(repoConfig.ref) }?.name
+
+        if (!potentialRef) {
+            // Jgit silently ignores some missing refs and just continues with default branch.
+            // This might lead to unexpected surprises for our users, so better fail explicitly
+            throw new RuntimeException("Reference '${repoConfig.ref}' not found in repository '${repoConfig.url}'")
+        }
+        
+        // Jgit only checks out remote branches when they start in origin/ 🙄 
+        return potentialRef.replace('refs/heads/', 'origin/')
+    }
+
 
     protected void pushTargetRepos(List<RepoCoordinate> repoCoordinates) {
         repoCoordinates.each { repoCoordinate ->

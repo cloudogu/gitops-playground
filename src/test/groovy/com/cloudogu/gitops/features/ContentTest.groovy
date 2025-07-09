@@ -6,6 +6,7 @@ import com.cloudogu.gitops.scmm.api.Permission
 import com.cloudogu.gitops.scmm.api.Repository
 import com.cloudogu.gitops.scmm.api.ScmmApiClient
 import com.cloudogu.gitops.utils.*
+import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 import org.apache.commons.io.FileUtils
 import org.eclipse.jgit.api.CloneCommand
@@ -16,10 +17,12 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
 
+import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.*
 
+@Slf4j
 class ContentTest {
     // bareRepo
     static List<File> foldersToDelete = new ArrayList<File>()
@@ -191,16 +194,36 @@ class ContentTest {
     }
     
     @Test
-    void 'Checks out commit refs and tags for content repos'() {
+    void 'Checks out commit refs, tags and non-default branches for content repos'() {
         config.content.repos = [
-                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'someTag', folderBased: false, target: 'common/tag'),
-                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), ref: '56d2e3f4b7c95d5645c823f7be8ea6f8a853ac40', folderBased: false, target: 'common/ref')
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo(), ref: 'someTag', folderBased: false, target: 'common/tag'),
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo(), ref: '8bc1d1165468359b16d9771d4a9a3df26afc03e8', folderBased: false, target: 'common/ref'),
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo(), ref: 'someBranch', folderBased: false, target: 'common/branch')
         ]
 
         def repos = createContent().cloneContentRepos()
 
         assertThat(new File(findRoot(repos), "common/tag/README.md")).exists().isFile()
+        assertThat(new File(findRoot(repos), "common/tag/README.md").text).contains("someTag")
+
         assertThat(new File(findRoot(repos), "common/ref/README.md")).exists().isFile()
+        assertThat(new File(findRoot(repos), "common/ref/README.md").text).contains("main")
+        
+        assertThat(new File(findRoot(repos), "common/branch/README.md")).exists().isFile()
+        assertThat(new File(findRoot(repos), "common/branch/README.md").text).contains("someBranch")
+    }
+
+    @Test
+    void 'Fails if commit refs does not exit'() {
+        config.content.repos = [
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo(), ref: 'someTag', folderBased: false, target: 'common/tag'),
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo(), ref: 'does/not/exist', folderBased: true, target: 'does not matter'),
+        ]
+
+        def exception = shouldFail(RuntimeException) {
+            createContent().cloneContentRepos()
+        }
+        assertThat(exception.message).startsWith("Reference 'does/not/exist' not found in repository")
     }
 
     @Test
@@ -466,7 +489,7 @@ class ContentTest {
     }
 
 
-    static String createContentRepo(String srcPath) {
+    static String createContentRepo(String srcPath = '') {
         // The bare repo works as the "remote"
         def bareRepoDir = File.createTempDir('gitops-playground-test-content-repo')
         bareRepoDir.deleteOnExit()
@@ -474,28 +497,30 @@ class ContentTest {
         // init with bare repo
         FileUtils.copyDirectory(new File(System.getProperty("user.dir") + "/src/test/groovy/com/cloudogu/gitops/utils/data/git-repository/"), bareRepoDir)
         def bareRepoUri = 'file://' + bareRepoDir.absolutePath
-        println("Repo $srcPath: bare repo $bareRepoUri")
+        log.debug("Repo $srcPath: bare repo $bareRepoUri")
 
-        // Add srcPath to bare repo
-        def tempRepo = File.createTempDir('gitops-playground-temp-repo')
-        tempRepo.deleteOnExit()
-        foldersToDelete << tempRepo
-        println("Repo $srcPath: cloned bare repo to $tempRepo")
-        def git = Git.cloneRepository()
-                .setURI(bareRepoUri)
-                .setBranch('main')
-                .setDirectory(tempRepo)
-                .call()
+        if (srcPath) {
+            // Add srcPath to bare repo
+            def tempRepo = File.createTempDir('gitops-playground-temp-repo')
+            tempRepo.deleteOnExit()
+            foldersToDelete << tempRepo
+            log.debug("Repo $srcPath: cloned bare repo to $tempRepo")
+            def git = Git.cloneRepository()
+                    .setURI(bareRepoUri)
+                    .setBranch('main')
+                    .setDirectory(tempRepo)
+                    .call()
 
-        FileUtils.copyDirectory(new File(System.getProperty("user.dir") + '/src/test/groovy/com/cloudogu/gitops/utils/data/contentRepos/' + srcPath), tempRepo)
+            FileUtils.copyDirectory(new File(System.getProperty("user.dir") + '/src/test/groovy/com/cloudogu/gitops/utils/data/contentRepos/' + srcPath), tempRepo)
 
-        git.add().addFilepattern(".").call()
+            git.add().addFilepattern(".").call()
 
-        // Avoid complications with local developer's git config, e.g. when  git config --global commit.gpgSign true
-        SystemReader.getInstance().userConfig.clear()
-        git.commit().setMessage("Initialize with $srcPath").call()
-        git.push().call()
-        tempRepo.delete()
+            // Avoid complications with local developer's git config, e.g. when  git config --global commit.gpgSign true
+            SystemReader.getInstance().userConfig.clear()
+            git.commit().setMessage("Initialize with $srcPath").call()
+            git.push().call()
+            tempRepo.delete()
+        }
 
         return bareRepoUri
     }
