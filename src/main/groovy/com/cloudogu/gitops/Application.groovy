@@ -41,18 +41,11 @@ class Application {
         LinkedHashSet<String> tenantNamespaces = new LinkedHashSet<>()
         def engine = new TemplatingEngine()
 
-        /* TODO
-        String namePrefix = config.application.namePrefix
-        if (config.content.examples) {
-            tenantNamespaces.addAll(Arrays.asList(
-                    namePrefix + "example-apps-staging",
-                    namePrefix + "example-apps-production"
-            ))*/
         config.content.namespaces.each { String ns ->
             tenantNamespaces.add(engine.template(ns, [
-                    config              : config,
+                    config : config,
                     // Allow for using static classes inside the templates
-                    statics             : new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels()
+                    statics: new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels()
             ]))
         }
 
