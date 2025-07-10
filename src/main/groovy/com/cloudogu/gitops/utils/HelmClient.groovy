@@ -25,7 +25,7 @@ class HelmClient {
     String upgrade(String release, String chartOrPath, Map args) {
         helm(['upgrade', '-i', release, chartOrPath, '--create-namespace' ], args)
     }
-    
+
     String template(String release, String chartOrPath, Map args = [:]) {
         helm(['template', release, chartOrPath ], args)
     }

@@ -62,6 +62,7 @@ class ScmManager extends Feature {
 
     @Override
     void enable() {
+        String centralSCMUrl = config.multiTenant.centralScmUrl
 
         if (config.scmm.internal) {
 
@@ -105,6 +106,12 @@ class ScmManager extends Feature {
                 def port = k8sClient.waitForNodePort(releaseName, namespace)
                 String clusterBindAddress = networkingUtils.findClusterBindAddress()
                 config.scmm.url = networkingUtils.createUrl(clusterBindAddress, port, contentPath)
+
+                if(config.multiTenant.useDedicatedInstance && config.multiTenant.internal){
+                    log.debug("Setting internal configs for local single node cluster with internal scmm. Waiting for NodePort...")
+                    def portCentralScm = k8sClient.waitForNodePort(releaseName, "scm-manager")
+                    centralSCMUrl = networkingUtils.createUrl(clusterBindAddress, portCentralScm, contentPath)
+                }
             }
         }
 
@@ -143,7 +150,10 @@ class ScmManager extends Feature {
                 SCM_PROVIDER                 : config.scmm.provider,
                 CONTENT_EXAMPLES             : config.content.examples,
                 SKIP_RESTART                 : config.scmm.skipRestart,
-                SKIP_PLUGINS                 : config.scmm.skipPlugins
+                SKIP_PLUGINS                 : config.scmm.skipPlugins,
+                CENTRAL_SCM_URL              : centralSCMUrl,
+                CENTRAL_SCM_USERNAME         : config.multiTenant.username,
+                CENTRAL_SCM_PASSWORD         : config.multiTenant.password
         ])
     }
 

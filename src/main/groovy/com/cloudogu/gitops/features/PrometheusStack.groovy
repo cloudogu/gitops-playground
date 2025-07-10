@@ -3,7 +3,6 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Config
-
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.scmm.ScmmRepoProvider
@@ -27,7 +26,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
     static final String RBAC_NAMESPACE_ISOLATION_TEMPLATE = 'applications/cluster-resources/monitoring/rbac/namespace-isolation-rbac.ftl.yaml'
     static final String NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE = 'applications/cluster-resources/monitoring/netpols/prometheus-allow-scraping.ftl.yaml'
 
-    String namespace =  "${config.application.namePrefix}monitoring"
+    String namespace = "${config.application.namePrefix}monitoring"
     Config config
     K8sClient k8sClient
 
@@ -75,7 +74,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
                 remote            : config.application.remote,
                 skipCrds          : config.application.skipCrds,
                 namespaceIsolation: config.application.namespaceIsolation,
-                namespaces        : config.application.activeNamespaces,
+                namespaces        : config.application.namespaces.getActiveNamespaces(),
                 mail              : [
                         active      : config.features.mail.active,
                         smtpAddress : config.features.mail.smtpAddress,
@@ -88,7 +87,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
                 config            : config,
                 // Allow for using static classes inside the templates
                 statics           : new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels(),
-                uid               : config.application.openshift ? findValidOpenShiftUid()  : ''
+                uid               : config.application.openshift ? findValidOpenShiftUid() : ''
         ])
 
 
@@ -121,15 +120,15 @@ class PrometheusStack extends Feature implements FeatureWithImage {
         }
 
         if (config.application.namespaceIsolation || config.application.netpols) {
-            ScmmRepo clusterResourcesRepo = scmmRepoProvider.getRepo('argocd/cluster-resources')
+            ScmmRepo clusterResourcesRepo = scmmRepoProvider.getRepo('argocd/cluster-resources', config.multiTenant.useDedicatedInstance)
             clusterResourcesRepo.cloneRepo()
-            for (String currentNamespace : config.application.activeNamespaces) {
+            for (String currentNamespace : config.application.namespaces.activeNamespaces) {
 
                 if (config.application.namespaceIsolation) {
                     def rbacYaml = new TemplatingEngine().template(new File(RBAC_NAMESPACE_ISOLATION_TEMPLATE),
                             [namespace : currentNamespace,
                              namePrefix: namePrefix,
-                             config: config])
+                             config    : config])
                     clusterResourcesRepo.writeFile("misc/monitoring/rbac/${currentNamespace}.yaml", rbacYaml)
                 }
 

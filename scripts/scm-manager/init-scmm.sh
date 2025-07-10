@@ -179,15 +179,23 @@ function configureScmmManager() {
   addUser "${METRICS_USERNAME}" "${METRICS_PASSWORD}" "changeme@test.local"
   setPermissionForUser "${METRICS_USERNAME}" "metrics:read"
 
+ USE_CENTRAL_SCM=$([[ -n "${CENTRAL_SCM_URL// /}" ]] && echo true || echo false)
+
   ### ArgoCD Repos
   if [[ $INSTALL_ARGOCD == true ]]; then
-    addRepo "${NAME_PREFIX}argocd" "argocd" "GitOps repo for administration of ArgoCD"
-    setPermission "${NAME_PREFIX}argocd" "argocd" "${GITOPS_USERNAME}" "WRITE"
-      
-    addRepo "${NAME_PREFIX}argocd" "cluster-resources" "GitOps repo for basic cluster-resources"
-    setPermission "${NAME_PREFIX}argocd" "cluster-resources" "${GITOPS_USERNAME}" "WRITE"
 
-    setPermissionForNamespace "${NAME_PREFIX}argocd" "${GITOPS_USERNAME}" "CI-SERVER"
+   addRepo "${NAME_PREFIX}argocd" "argocd" "GitOps repo for administration of ArgoCD" "$USE_CENTRAL_SCM"
+   setPermission "${NAME_PREFIX}argocd" "argocd" "${GITOPS_USERNAME}" "WRITE"
+
+   addRepo "${NAME_PREFIX}argocd" "cluster-resources" "GitOps repo for basic cluster-resources" "$USE_CENTRAL_SCM"
+   setPermission "${NAME_PREFIX}argocd" "cluster-resources" "${GITOPS_USERNAME}" "WRITE"
+
+   setPermissionForNamespace "${NAME_PREFIX}argocd" "${GITOPS_USERNAME}" "CI-SERVER"
+
+   if [[ $USE_CENTRAL_SCM == true ]]; then
+    addRepo "${NAME_PREFIX}argocd" "argocd" "Bootstrap repo for applications"
+    setPermission "${NAME_PREFIX}argocd" "argocd" "${GITOPS_USERNAME}" "WRITE"
+   fi
   fi
 
   if [[ $CONTENT_EXAMPLES == true ]]; then
@@ -199,33 +207,33 @@ function configureScmmManager() {
   
     addRepo "${NAME_PREFIX}argocd" "petclinic-helm" "Java app with custom helm chart"
     setPermission "${NAME_PREFIX}argocd" "petclinic-helm" "${GITOPS_USERNAME}" "WRITE"
-  
+
     addRepo "${NAME_PREFIX}argocd" "example-apps" "GitOps repo for examples of end-user applications"
     setPermission "${NAME_PREFIX}argocd" "example-apps" "${GITOPS_USERNAME}" "WRITE"
-    
+
     ### Repos with replicated dependencies
     addRepo "3rd-party-dependencies" "spring-boot-helm-chart"
     setPermission "3rd-party-dependencies" "spring-boot-helm-chart" "${GITOPS_USERNAME}" "WRITE"
-  
+
     addRepo "3rd-party-dependencies" "spring-boot-helm-chart-with-dependency"
     setPermission "3rd-party-dependencies" "spring-boot-helm-chart-with-dependency" "${GITOPS_USERNAME}" "WRITE"
-  
+
     addRepo "3rd-party-dependencies" "gitops-build-lib" "Jenkins pipeline shared library for automating deployments via GitOps "
     setPermission "3rd-party-dependencies" "gitops-build-lib" "${GITOPS_USERNAME}" "WRITE"
-  
+
     addRepo "3rd-party-dependencies" "ces-build-lib" "Jenkins pipeline shared library adding features for Maven, Gradle, Docker, SonarQube, Git and others"
     setPermission "3rd-party-dependencies" "ces-build-lib" "${GITOPS_USERNAME}" "WRITE"
-  
+
     ### Exercise Repos
     addRepo "${NAME_PREFIX}exercises" "petclinic-helm"
     setPermission "${NAME_PREFIX}exercises" "petclinic-helm" "${GITOPS_USERNAME}" "WRITE"
-  
+
     addRepo "${NAME_PREFIX}exercises" "nginx-validation"
     setPermission "${NAME_PREFIX}exercises" "nginx-validation" "${GITOPS_USERNAME}" "WRITE"
-  
+
     addRepo "${NAME_PREFIX}exercises" "broken-application"
     setPermission "${NAME_PREFIX}exercises" "broken-application" "${GITOPS_USERNAME}" "WRITE"
-  fi 
+  fi
 
   # Install necessary plugins
   installScmmPlugins
@@ -242,7 +250,7 @@ function installScmmPlugins() {
   if [ -n "${JENKINS_URL_FOR_SCMM}" ]; then
     installScmmPlugin "scm-jenkins-plugin" "false"
   fi
-  
+
   local restart_flag="true"
   [[ "${SKIP_RESTART}" == "true" ]] && {
     echo "Skipping SCMM restart due to SKIP_RESTART=true"
@@ -271,13 +279,25 @@ function addRepo() {
   NAMESPACE="${1}"
   NAME="${2}"
   DESCRIPTION="${3:-}"
-  
-  printf 'Adding Repo %s/%s ... ' "${1}" "${2}"
+  local PARAM="${4:-false}"
+  if [[ "${PARAM,,}" == "true" ]]; then
+    HOST=$(getHost "${CENTRAL_SCM_URL%/}")  # Remove trailing slash if present, we already got this in the api requests: /api
+    USERNAME="${CENTRAL_SCM_USERNAME}"
+    PASSWORD="${CENTRAL_SCM_PASSWORD}"
+  else
+    HOST="${SCMM_HOST}"
+    USERNAME="${SCMM_USERNAME}"
+    PASSWORD="${SCMM_PASSWORD}"
+  fi
 
-  STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X POST -H "Content-Type: application/vnd.scmm-repository+json;v=2" \
+  printf 'Adding Repo %s/%s ... ' "${NAMESPACE}" "${NAME}"
+
+  STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X POST \
+    -H "Content-Type: application/vnd.scmm-repository+json;v=2" \
     --data "{\"name\":\"${NAME}\",\"namespace\":\"${NAMESPACE}\",\"type\":\"git\",\"description\":\"${DESCRIPTION}\",\"contextEntries\":{},\"_links\":{}}" \
-    "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/api/v2/repositories/?initialize=true") && EXIT_STATUS=$? || EXIT_STATUS=$?
-  if [ $EXIT_STATUS != 0 ]; then
+    "${SCMM_PROTOCOL}://${USERNAME}:${PASSWORD}@${HOST}/api/v2/repositories/?initialize=true") && EXIT_STATUS=$? || EXIT_STATUS=$?
+
+  if [ $EXIT_STATUS -ne 0 ]; then
     echo "Adding Repo failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
     exit $EXIT_STATUS
   fi
@@ -377,7 +397,7 @@ function configJenkins() {
 
   if [ -n "${JENKINS_URL_FOR_SCMM}" ]; then
     printf 'Configuring Jenkins plugin in SCM-Manager ... '
-  
+
     STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X PUT -H 'Content-Type: application/json' \
       --data-raw "{\"disableRepositoryConfiguration\":false,\"disableMercurialTrigger\":false,\"disableGitTrigger\":false,\"disableEventTrigger\":false,\"url\":\"${JENKINS_URL_FOR_SCMM}\"}" \
       "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/api/v2/config/jenkins/") && EXIT_STATUS=$? || EXIT_STATUS=$?
@@ -385,7 +405,7 @@ function configJenkins() {
       echo "Configuring Jenkins failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
       exit $EXIT_STATUS
     fi
-  
+
     printStatus "${STATUS}"
   fi
 }
@@ -405,11 +425,11 @@ function waitForScmManager() {
 
 function getHost() {
   local SCMM_URL="$1"
-  if [[ "${SCMM_URL}" == https://* ]]; then
-    echo "${SCMM_URL}" | cut -c 9-
-  elif [[ "${SCMM_URL}" == http://* ]]; then
-    echo "${SCMM_URL}" | cut -c 8-
-  fi
+
+  local CLEANED_URL="${SCMM_URL#http://}"
+  CLEANED_URL="${CLEANED_URL#https://}"
+
+  echo "${CLEANED_URL}"
 }
 
 function getProtocol() {

@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1beta1
 kind: ArgoCD
 metadata:
-  name: "argocd"
+  name: argocd
   namespace: "${namePrefix}argocd"
 spec:
   applicationSet:
@@ -127,19 +127,11 @@ spec:
     ingress:
       enabled: ${((!isOpenshift) && (!isInsecure))?c}
   initialRepositories: |
+<#if !(scmm.centralScmmUrl?has_content)>
     - name: argocd
       url: ${scmm.repoUrl}argocd/argocd<#if scmm.provider == "gitlab">.git</#if>
-    - name: example-apps
-      url: ${scmm.repoUrl}argocd/example-apps<#if scmm.provider == "gitlab">.git</#if>
     - name: cluster-resources
       url: ${scmm.repoUrl}argocd/cluster-resources<#if scmm.provider == "gitlab">.git</#if>
-    - name: nginx-helm-jenkins
-      url: ${scmm.repoUrl}argocd/nginx-helm-jenkins<#if scmm.provider == "gitlab">.git</#if>
-    - name: nginx-helm-umbrella
-      url: ${scmm.repoUrl}argocd/nginx-helm-umbrella<#if scmm.provider == "gitlab">.git</#if>
-    - name: bitnami
-      type: helm
-      url: https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami
     - name: prometheus-community
       type: helm
       url: https://prometheus-community.github.io/helm-charts
@@ -149,6 +141,16 @@ spec:
     - name: ingress-nginx
       type: helm
       url: https://kubernetes.github.io/ingress-nginx
+</#if>
+    - name: example-apps
+      url: ${scmm.repoUrl}argocd/example-apps<#if scmm.provider == "gitlab">.git</#if>
+    - name: nginx-helm-jenkins
+      url: ${scmm.repoUrl}argocd/nginx-helm-jenkins<#if scmm.provider == "gitlab">.git</#if>
+    - name: nginx-helm-umbrella
+      url: ${scmm.repoUrl}argocd/nginx-helm-umbrella<#if scmm.provider == "gitlab">.git</#if>
+    - name: bitnami
+      type: helm
+      url: https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami
   resourceInclusions: |
     - apiGroups:
       - "batch"

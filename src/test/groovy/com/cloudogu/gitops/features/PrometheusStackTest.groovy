@@ -41,15 +41,16 @@ class PrometheusStackTest {
                     gitName: 'Cloudogu',
                     gitEmail: 'hello@cloudogu.com',
                     netpols: false,
-                    activeNamespaces: [
-                            "test1-default",
-                            "test1-argocd",
-                            "test1-monitoring",
-                            "test1-example-apps-staging",
-                            "test1-example-apps-production",
-                            "test1-secrets"
-                    ]
-            ),
+                    namespaces: new Config.ApplicationSchema.NamespaceSchema(
+                            dedicatedNamespaces: new LinkedHashSet([
+                                    "test1-default",
+                                    "test1-argocd",
+                                    "test1-monitoring",
+                                    "test1-secrets"
+                            ]),
+                            tenantNamespaces: new LinkedHashSet(["test1-example-apps-staging",
+                                                                 "test1-example-apps-production"])
+                    )),
             features: new Config.FeaturesSchema(
                     argocd: new Config.ArgoCDSchema(active: true),
                     monitoring: new Config.MonitoringSchema(
@@ -455,7 +456,7 @@ policies:
     void 'works with openshift'() {
         config.application.openshift = true
         // Prepare UID
-        String realoutput='{"app.kubernetes.io/created-by":"Internal OpenShift","openshift.io/description":"","openshift.io/display-name":"","openshift.io/requester":"myUser@mydomain.de","openshift.io/sa.scc.mcs":"s0:c30,c25","openshift.io/sa.scc.supplemental-groups":"1000920000/10000","openshift.io/sa.scc.uid-range":"1000920000/10000","project-type":"customer"}'
+        String realoutput = '{"app.kubernetes.io/created-by":"Internal OpenShift","openshift.io/description":"","openshift.io/display-name":"","openshift.io/requester":"myUser@mydomain.de","openshift.io/sa.scc.mcs":"s0:c30,c25","openshift.io/sa.scc.supplemental-groups":"1000920000/10000","openshift.io/sa.scc.uid-range":"1000920000/10000","project-type":"customer"}'
         k8sCommandExecutor.enqueueOutput(new CommandExecutor.Output('', realoutput, 0))
 
         createStack().install()
@@ -487,7 +488,7 @@ policies:
         def yaml = parseActualYaml()
         assertThat(yaml['global']['rbac']['create']).isEqualTo(false)
 
-        for (String namespace : config.application.activeNamespaces) {
+        for (String namespace : config.application.namespaces.getActiveNamespaces()) {
             def rbacYaml = new File("$clusterResourcesRepoDir/misc/monitoring/rbac/${namespace}.yaml")
             assertThat(rbacYaml.text).contains("namespace: ${namespace}")
             assertThat(rbacYaml.text).contains("    namespace: foo-monitoring")
@@ -497,19 +498,20 @@ policies:
 
         assertThat(yaml['prometheusOperator']['kubeletService']['enabled']).isEqualTo(false)
         assertThat(yaml['prometheusOperator']['namespaces']['releaseNamespace']).isEqualTo(false)
-        assertThat(yaml['prometheusOperator']['namespaces']['additional'] as List).hasSameElementsAs(config.application.activeNamespaces)
+        assertThat(yaml['prometheusOperator']['namespaces']['additional'] as List).hasSameElementsAs(config.application.namespaces.getActiveNamespaces())
 
         assertThat(yaml['grafana']['rbac']['create']).isEqualTo(false)
-        assertThat(yaml['grafana']['sidecar']['dashboards']['searchNamespace']).isEqualTo(config.application.activeNamespaces.join(','))
+        assertThat(yaml['grafana']['sidecar']['dashboards']['searchNamespace']).isEqualTo(config.application.namespaces.getActiveNamespaces().join(','))
     }
 
     @Test
     void 'network policies are created for prometheus'() {
         config.application.netpols = true
+        //config.application.namespaces.dedicatedNamespaces = ["testnamespace1", "testnamespace2"]
         def prometheusStack = createStack()
         prometheusStack.install()
 
-        for (String namespace : config.application.activeNamespaces) {
+        for (String namespace : config.application.namespaces.getActiveNamespaces()) {
             def netPolsYaml = new File("$clusterResourcesRepoDir/misc/monitoring/netpols/${namespace}.yaml")
             assertThat(netPolsYaml.text).contains("namespace: ${namespace}")
         }
@@ -570,16 +572,14 @@ policies:
         config.features.argocd.active = true
         config.features.secrets.active = true
         config.features.ingressNginx.active = false
-        config.application.activeNamespaces = [""]
-        List<String> namespaceList = new ArrayList<>(Arrays.asList(
-                "test1-default",
+        LinkedHashSet<String> namespaceList = [
                 "test1-argocd",
                 "test1-monitoring",
                 "test1-example-apps-staging",
                 "test1-example-apps-production",
                 "test1-secrets"
-        ))
-        config.application.activeNamespaces = namespaceList
+        ]
+        config.application.namespaces.dedicatedNamespaces = namespaceList
         createStack().install()
         def actual = parseActualYaml()
 
@@ -588,7 +588,6 @@ matchExpressions:
   - key: kubernetes.io/metadata.name
     operator: In
     values:
-      - test1-default
       - test1-argocd
       - test1-monitoring
       - test1-example-apps-staging
@@ -610,6 +609,15 @@ matchExpressions:
 
                 return repo
             }
+
+            @Override
+            ScmmRepo getRepo(String repoTarget, Boolean isCentralRepo) {
+                def repo = super.getRepo(repoTarget, isCentralRepo)
+                clusterResourcesRepoDir = new File(repo.getAbsoluteLocalRepoTmpDir())
+
+                return repo
+            }
+
         }
 
         new PrometheusStack(configuration, new FileSystemUtils() {

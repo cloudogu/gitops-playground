@@ -1,0 +1,88 @@
+# This is the root Applications, which manages all other applications with the app-of-apps-pattern.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: bootstrap
+  namespace: ${namePrefix}argocd
+# finalizer disabled, because otherwise everything under this Application would be deleted as well, if this Application is deleted by accident
+#  finalizers:
+#    - resources-finalizer.argocd.argoproj.io
+spec:
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ${namePrefix}argocd
+  project: default
+  source:
+    path: applications/
+    repoURL: ${scmm.repoUrl}argocd/argocd
+    targetRevision: main
+    directory:
+      recurse: true
+  syncPolicy:
+    automated:
+      prune: false # is set to false to prevent projects to be deleted by accident
+      selfHeal: true
+---
+# This is the root Applications, which manages all other applications with the app-of-apps-pattern.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: projects
+  namespace: ${namePrefix}argocd
+# finalizer disabled, because otherwise everything under this Application would be deleted as well, if this Application is deleted by accident
+#  finalizers:
+#    - resources-finalizer.argocd.argoproj.io
+spec:
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ${namePrefix}argocd
+  project: default
+  source:
+    path: projects/
+    repoURL: ${scmm.repoUrl}argocd/argocd
+    targetRevision: main
+    directory:
+      recurse: true
+  syncPolicy:
+    automated:
+      prune: false # is set to false to prevent projects to be deleted by accident
+      selfHeal: true
+---
+#duplicate from argocd/projects/
+<#if config.multiTenant.useDedicatedInstance>
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: example-apps
+  namespace: ${namePrefix}argocd
+  annotations:
+  <#if mail.active?? && mail.active>
+notifications.argoproj.io/subscribe.email: ${argocd.emailToUser}
+  </#if>
+spec:
+  description: Contains examples of end-user applications
+  destinations:
+    - namespace: ${namePrefix}example-apps-production
+      server: https://kubernetes.default.svc
+    - namespace: ${namePrefix}example-apps-staging
+      server: https://kubernetes.default.svc
+  sourceRepos:
+    - ${scmm.repoUrl}argocd/example-apps<#if scmm.provider == "gitlab">.git</#if>
+    - ${scmm.repoUrl}argocd/nginx-helm-umbrella<#if scmm.provider == "gitlab">.git</#if>
+
+  # allow to only see application resources from the specified namespace
+  sourceNamespaces:
+    - '${namePrefix}example-apps-staging'
+    - '${namePrefix}example-apps-production'
+    <#if argocd.isOperator>
+    - '${namePrefix}argocd'
+    </#if>
+
+  # Allow all namespaced-scoped resources to be created
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'
+
+  # Deny all cluster-scoped resources from being created. Least privilege.
+  clusterResourceWhitelist:
+</#if>

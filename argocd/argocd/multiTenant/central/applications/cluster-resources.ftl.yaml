@@ -1,19 +1,19 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: projects
-  namespace: ${namePrefix}argocd
+  name: ${namePrefix}cluster-resources
+  namespace: argocd
 # finalizer disabled, because otherwise everything under this Application would be deleted as well, if this Application is deleted by accident
 #  finalizers:
 #    - resources-finalizer.argocd.argoproj.io
 spec:
   destination:
-    server: https://kubernetes.default.svc
     namespace: ${namePrefix}argocd
-  project: argocd
+    server: https://kubernetes.default.svc
+  project: ${tenantName}
   source:
-    path: projects/
-    repoURL: ${scmm.repoUrl}argocd/argocd<#if scmm.provider == "gitlab">.git</#if>
+    path: argocd/
+    repoURL: ${scmm.centralScmmUrl}/repo/${namePrefix}argocd/cluster-resources
     targetRevision: main
     directory:
       recurse: true
