@@ -200,7 +200,7 @@
                   "type" : "string",
                   "enum" : [ "FOLDER_BASED", "COPY", "MIRROR" ]
                 } ],
-                "description" : "When true, interpret the folder structure of each repo as repos. That is, root folder becomes namespace in SCM, sub folders become repository names in SCM"
+                "description" : "Content Repos can either be:\ncopied (only the files, starting on ref, starting at path within the repo)\n, mirrored (the whole git repo)\nfolderBased (folder structure is interpreted as repos. That is, root folder becomes namespace in SCM, sub folders become repository names in SCM, files are copied)"
               },
               "url" : {
                 "type" : [ "string", "null" ],

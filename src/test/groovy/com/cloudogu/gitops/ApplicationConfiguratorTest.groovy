@@ -164,7 +164,7 @@ class ApplicationConfiguratorTest {
         exception = shouldFail(RuntimeException) {
             applicationConfigurator.validateConfig(testConfig)
         }
-        assertThat(exception.message).isEqualTo('content.repos.folderBased: false requires folder content.repos.target to be set. abc')
+        assertThat(exception.message).isEqualTo('content.repos.type COPY requires folder content.repos.target to be set. abc')
 
         testConfig.content.repos = [
                 new Config.ContentSchema.ContentRepositorySchema(url: 'abc', type: Config.ContentRepoType.COPY, target: "missing_slash"),
