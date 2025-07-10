@@ -32,7 +32,7 @@ class Jenkins extends Feature {
     private CommandExecutor commandExecutor
     private FileSystemUtils fileSystemUtils
     private GlobalPropertyManager globalPropertyManager
-    private JobManager jobManger
+    private JobManager jobManager
     private UserManager userManager
     private PrometheusConfigurator prometheusConfigurator
     private DeploymentStrategy deployer
@@ -55,7 +55,7 @@ class Jenkins extends Feature {
         this.commandExecutor = commandExecutor
         this.fileSystemUtils = fileSystemUtils
         this.globalPropertyManager = globalPropertyManager
-        this.jobManger = jobManger
+        this.jobManager = jobManger
         this.userManager = userManager
         this.prometheusConfigurator = prometheusConfigurator
         this.deployer = deployer
@@ -109,7 +109,7 @@ class Jenkins extends Feature {
                     releaseName,
                     tempValuesPath
             )
-            
+
             // Defined here: https://github.com/jenkinsci/helm-charts/blob/jenkins-5.8.1/charts/jenkins/templates/_helpers.tpl#L46-L57
             String serviceName = releaseName
             // Update jenkins.url after it is deployed (and ports are known)
@@ -185,50 +185,63 @@ class Jenkins extends Feature {
 
         if (config.content.examples) {
 
-            String jobName = "${config.application.namePrefix}example-apps"
-            def credentialId = "scmm-user"
+            String jobName = "example-apps"
+            String namespace = "argocd"
+            createJenkinsjob(namespace, jobName)
 
-            jobManger.createJob(jobName,
-                    config.scmm.urlForJenkins,
-                    "${config.application.namePrefix}argocd",
-                    credentialId)
-
-            if (config.scmm.provider == 'scm-manager') {
-                jobManger.createCredential(
-                        jobName,
-                        credentialId,
-                        "${config.application.namePrefix}gitops",
-                        "${config.scmm.password}",
-                        'credentials for accessing scm-manager')
-            }
-
-            if (config.scmm.provider == 'gitlab') {
-                jobManger.createCredential(
-                        jobName,
-                        credentialId,
-                        "${config.scmm.username}",
-                        "${config.scmm.password}",
-                        'credentials for accessing gitlab')
-            }
-
-            jobManger.createCredential(
-                    jobName,
-                    "registry-user",
-                    "${config.registry.username}",
-                    "${config.registry.password}",
-                    'credentials for accessing the docker-registry for writing images built on jenkins')
-
-            if (config.registry.twoRegistries) {
-                jobManger.createCredential(
-                        "${config.application.namePrefix}example-apps",
-                        "registry-proxy-user",
-                        "${config.registry.proxyUsername}",
-                        "${config.registry.proxyPassword}",
-                        'credentials for accessing the docker-registry that contains 3rd party or base images')
-            }
-            // Once everything is set up, start the jobs.
-            jobManger.startJob(jobName)
         }
+
+    }
+
+    /**
+     * creates a Jenkinsjob
+     * @param jobName
+     * @param repoName
+     */
+    void createJenkinsjob(String namespace, String repoName) {
+        def credentialId = "scmm-user"
+        String prefixedNamespace = "${config.application.namePrefix}${namespace}"
+        String jobName = "${config.application.namePrefix}${repoName}"
+        jobManager.createJob(jobName,
+                config.scmm.urlForJenkins,
+                prefixedNamespace,
+                credentialId)
+
+        if (config.scmm.provider == 'scm-manager') {
+            jobManager.createCredential(
+                    jobName,
+                    credentialId,
+                    "${config.application.namePrefix}gitops",
+                    "${config.scmm.password}",
+                    'credentials for accessing scm-manager')
+        }
+
+        if (config.scmm.provider == 'gitlab') {
+            jobManager.createCredential(
+                    jobName,
+                    credentialId,
+                    "${config.scmm.username}",
+                    "${config.scmm.password}",
+                    'credentials for accessing gitlab')
+        }
+
+        jobManager.createCredential(
+                jobName,
+                "registry-user",
+                "${config.registry.username}",
+                "${config.registry.password}",
+                'credentials for accessing the docker-registry for writing images built on jenkins')
+
+        if (config.registry.twoRegistries) {
+            jobManager.createCredential(
+                    jobName,
+                    "registry-proxy-user",
+                    "${config.registry.proxyUsername}",
+                    "${config.registry.proxyPassword}",
+                    'credentials for accessing the docker-registry that contains 3rd party or base images')
+        }
+
+        jobManager.startJob(jobName)
     }
 
     protected String findDockerGid() {
