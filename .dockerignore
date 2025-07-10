@@ -13,6 +13,7 @@
 !scripts/utils.sh
 !scripts/apply-ng.sh
 !scripts/downloadHelmCharts.sh
+!templates/kubernetes/rbac/
 !.curlrc
 !LICENSE
 
