@@ -240,12 +240,6 @@ class ApplicationConfigurator {
                 newConfig.features.argocd.operator = true
             }
 
-            //if no central SCM url is set. Fallback to kubernetes internal URL
-            if (!newConfig.multiTenant.centralScmUrl) {
-                newConfig.multiTenant.internal = true
-                newConfig.multiTenant.centralScmUrl = "http://scmm.scm-manager.svc.cluster.local/scm"
-            }
-
             // Removes trailing slash from the input URL to avoid duplicated slashes in further URL handling
             if (newConfig.multiTenant.centralScmUrl) {
                 String urlString = newConfig.multiTenant.centralScmUrl.toString()

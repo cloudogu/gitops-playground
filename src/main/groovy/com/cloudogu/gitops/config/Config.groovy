@@ -337,10 +337,12 @@ class Config {
 
     static class MultiTentantSchema {
 
+        @Option(names = ['--dedicated-internal'], description = CENTRAL_SCM_INTERNAL_DESCRIPTION)
+        @JsonPropertyDescription(CENTRAL_SCM_INTERNAL_DESCRIPTION)
         Boolean internal = false
 
-        @Option(names = ['--dedicated-instance'], description = CENTRAL_SCM_INTERNAL_DESCRIPTION)
-        @JsonPropertyDescription(CENTRAL_SCM_INTERNAL_DESCRIPTION)
+        @Option(names = ['--dedicated-instance'], description = CENTRAL_USEDEDICATED_DESCRIPTION)
+        @JsonPropertyDescription(CENTRAL_USEDEDICATED_DESCRIPTION)
         Boolean useDedicatedInstance = false
 
         @Option(names = ['--central-scm-url'], description = CENTRAL_MGMT_REPO_DESCRIPTION)

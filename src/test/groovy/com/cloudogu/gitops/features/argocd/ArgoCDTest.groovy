@@ -1494,6 +1494,15 @@ class ArgoCDTest {
     }
 
     @Test
+    void 'Central Bootstrapping for Tenant Applications'() {
+        setup()
+        def ingressFile = new File(argocdRepo.getAbsoluteLocalRepoTmpDir(), "operator/ingress.yaml")
+        assertThat(ingressFile)
+                .as("Ingress file should not be generated when both flags are false")
+                .doesNotExist()
+    }
+
+    @Test
     void 'GOP DedicatedInstances Central templating works correctly'() {
         setup()
         //Central Applications
@@ -1515,6 +1524,7 @@ class ArgoCDTest {
         assertThat(bootstrapYaml['metadata']['name']).isEqualTo('testPrefix-bootstrap')
         assertThat(bootstrapYaml['metadata']['namespace']).isEqualTo('argocd')
         assertThat(bootstrapYaml['spec']['project']).isEqualTo('testPrefix')
+        assertThat(bootstrapYaml['spec']['source']['repoURL']).isEqualTo("scmm.testhost/scm/repo/testPrefix-argocd/argocd")
 
         assertThat(clusterResourcesYaml['metadata']['name']).isEqualTo('testPrefix-cluster-resources')
         assertThat(clusterResourcesYaml['metadata']['namespace']).isEqualTo('argocd')
@@ -1546,10 +1556,14 @@ class ArgoCDTest {
     }
 
     @Test
-    void 'generate example-apps bootstrapping application via ArgoApplication'() {
+    void 'generate example-apps bootstrapping application via ArgoApplication when true'() {
         setup()
         assertThat(new File(tenantBootstrap.getAbsoluteLocalRepoTmpDir() + "/applications/bootstrap.yaml")).exists()
         assertThat(new File(tenantBootstrap.getAbsoluteLocalRepoTmpDir() + "/applications/argocd-application-example-apps-testPrefix-argocd.yaml")).exists()
+    }
+
+    @Test
+    void 'not generating example-apps bootstrapping application via ArgoApplication when false'() {
         config.content.examples = false
         setup()
         assertThat(new File(tenantBootstrap.getAbsoluteLocalRepoTmpDir() + "/applications/bootstrap.yaml")).exists()
@@ -1601,13 +1615,6 @@ class ArgoCDTest {
             }
         }
 
-    }
-
-    @Test
-    void 'ArgoCD uses central multi tenant scm for repos'() {
-        setup()
-        def argocdYaml = new YamlSlurper().parse(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), "${prefixPathCentral}applications/argocd.yaml"))
-        assertThat(argocdYaml['spec']['source']['repoURL']).isEqualTo('scmm.testhost/scm/repo/testPrefix-argocd/argocd')
     }
 
     void setup() {

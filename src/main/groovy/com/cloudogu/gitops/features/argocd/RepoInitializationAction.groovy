@@ -73,12 +73,12 @@ class RepoInitializationAction {
                         ],
                 ],
                 scmm                : [
-                        baseUrl       : config.scmm.internal ? "http://scmm-scm-manager.${config.application.namePrefix}scm-manager.svc.cluster.local/scm" : ScmmRepo.createScmmUrl(config),
-                        host          : config.scmm.internal ? "http://scmm-scm-manager.${config.application.namePrefix}scm-manager.svc.cluster.local" : config.scmm.host,
+                        baseUrl       : config.scmm.internal ? "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm" : ScmmRepo.createScmmUrl(config),
+                        host          : config.scmm.internal ? "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local" : config.scmm.host,
                         protocol      : config.scmm.internal ? 'http' : config.scmm.protocol,
                         repoUrl       : ScmmRepo.createSCMBaseUrl(config),
                         provider      : config.scmm.provider,
-                        centralScmmUrl: config.multiTenant.centralScmUrl
+                        centralScmmUrl: !config.multiTenant.internal? config.multiTenant.centralScmUrl : "http://scmm.scm-manager.svc.cluster.local/scm"
                 ],
                 jenkins             : [
                         mavenCentralMirror: config.jenkins.mavenCentralMirror,
