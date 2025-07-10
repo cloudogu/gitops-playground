@@ -175,7 +175,7 @@
                   "type" : "string",
                   "enum" : [ "INIT", "RESET", "UPGRADE" ]
                 } ],
-                "description" : "This defines, how customer repos will be updated.\nINIT - push only if repo does not exist (SCMM Return value 409).\nRESET - delete alle files after cloning source - new files are deleted\nUPGRADE - clone and copy - existing files will be overwritten, new files are kept"
+                "description" : "This defines, how customer repos will be updated.\nINIT - push only if repo does not exist.\nRESET - delete all files after cloning source - files not in content are deleted\nUPGRADE - clone and copy - existing files will be overwritten, files not in content are kept"
               },
               "password" : {
                 "type" : [ "string", "null" ],
@@ -187,7 +187,7 @@
               },
               "ref" : {
                 "type" : [ "string", "null" ],
-                "description" : "Reference for a specific branch, tag, or commit"
+                "description" : "Reference for a specific branch, tag, or commit. Emtpy defaults to default branch of the repo"
               },
               "target" : {
                 "type" : [ "string", "null" ],
@@ -208,6 +208,10 @@
             },
             "additionalProperties" : false
           }
+        },
+        "variables" : {
+          "$ref" : "#/$defs/Map(String,Object)-nullable",
+          "description" : "Additional variables to use in custom templates."
         }
       },
       "additionalProperties" : false,

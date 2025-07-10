@@ -17,10 +17,12 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
 
+import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.*
 
+@Slf4j
 class ContentTest {
     // bareRepo
     static List<File> foldersToDelete = new ArrayList<File>()
@@ -40,29 +42,29 @@ class ContentTest {
     TestScmmRepoProvider scmmRepoProvider = new TestScmmRepoProvider(config, new FileSystemUtils())
     TestScmmApiClient scmmApiClient = new TestScmmApiClient(config)
 
-    List<Content.RepoCoordinates> expectedTargetRepos = [
-            new Content.RepoCoordinates(namespace: "common", repo: "repo"),
-            new Content.RepoCoordinates(namespace: "ns1a", repo: "repo1a1"),
-            new Content.RepoCoordinates(namespace: "ns1a", repo: "repo1a2"),
-            new Content.RepoCoordinates(namespace: "ns1b", repo: "repo1b1"),
-            new Content.RepoCoordinates(namespace: "ns1b", repo: "repo1b2"),
-            new Content.RepoCoordinates(namespace: "ns2a", repo: "repo2a1"),
-            new Content.RepoCoordinates(namespace: "ns2a", repo: "repo2a2"),
-            new Content.RepoCoordinates(namespace: "ns2b", repo: "repo2b1"),
-            new Content.RepoCoordinates(namespace: "ns2b", repo: "repo2b2"),
-            new Content.RepoCoordinates(namespace: "nonFolderBased", repo: "repo1"),
-            new Content.RepoCoordinates(namespace: "nonFolderBased", repo: "repo2")
+    List<Content.RepoCoordinate> expectedTargetRepos = [
+            new Content.RepoCoordinate(namespace: "common", repo: "repo"),
+            new Content.RepoCoordinate(namespace: "ns1a", repo: "repo1a1"),
+            new Content.RepoCoordinate(namespace: "ns1a", repo: "repo1a2"),
+            new Content.RepoCoordinate(namespace: "ns1b", repo: "repo1b1"),
+            new Content.RepoCoordinate(namespace: "ns1b", repo: "repo1b2"),
+            new Content.RepoCoordinate(namespace: "ns2a", repo: "repo2a1"),
+            new Content.RepoCoordinate(namespace: "ns2a", repo: "repo2a2"),
+            new Content.RepoCoordinate(namespace: "ns2b", repo: "repo2b1"),
+            new Content.RepoCoordinate(namespace: "ns2b", repo: "repo2b2"),
+            new Content.RepoCoordinate(namespace: "nonFolderBased", repo: "repo1"),
+            new Content.RepoCoordinate(namespace: "nonFolderBased", repo: "repo2")
     ]
 
     List<Config.ContentSchema.ContentRepositorySchema> contentRepos = [
             // Non-folder-based repo writing to their own target
             new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), folderBased: false, target: 'nonFolderBased/repo1'),
             new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), folderBased: false, target: 'nonFolderBased/repo2', path: 'subPath'),
-
+            
             // Same folder as in folderBasedRepos -> Should be combined
             new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', folderBased: false, target: 'common/repo'),
             new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), folderBased: false, target: 'common/repo', path: 'subPath'),
-
+            
             // Contains ftl
             new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('folderBasedRepo1'), folderBased: true, templating: true),
             // Contains a templated file that should be ignored
@@ -71,7 +73,6 @@ class ContentTest {
 
     @AfterAll
     static void cleanFolders() {
-
         foldersToDelete.each { it.deleteDir() }
     }
 
@@ -110,7 +111,6 @@ class ContentTest {
         config.registry.proxyUsername = 'proxy-user'
         config.registry.proxyPassword = 'proxy-pw'
 
-
         // Simulate argocd Namespace does not exist
         k8sCommands.enqueueOutput(new CommandExecutor.Output('namespace not found', '', 1)) // Namespace not exit
         k8sCommands.enqueueOutput(new CommandExecutor.Output('', '', 0)) // other kubectl
@@ -123,13 +123,13 @@ class ContentTest {
 
         assertRegistrySecrets('reg-user', 'reg-pw')
 
-        k8sClient.commandExecutorForTest.assertExecuted('kubectl create namespace foo-example-apps-staging')
-        k8sClient.commandExecutorForTest.assertExecuted('kubectl create namespace foo-example-apps-production')
+        k8sClient.commandExecutorForTest.assertExecuted('kubectl create namespace example-apps-staging')
+        k8sClient.commandExecutorForTest.assertExecuted('kubectl create namespace example-apps-production')
         k8sClient.commandExecutorForTest.assertExecuted(
-                'kubectl create secret docker-registry proxy-registry -n foo-example-apps-staging' +
+                'kubectl create secret docker-registry proxy-registry -n example-apps-staging' +
                         ' --docker-server proxy-url --docker-username proxy-user --docker-password proxy-pw')
         k8sClient.commandExecutorForTest.assertExecuted(
-                'kubectl create secret docker-registry proxy-registry -n foo-example-apps-production' +
+                'kubectl create secret docker-registry proxy-registry -n example-apps-production' +
                         ' --docker-server proxy-url --docker-username proxy-user --docker-password proxy-pw')
     }
 
@@ -160,6 +160,22 @@ class ContentTest {
     }
 
     @Test
+    void 'supports content variables'() {
+
+        config.content.repos = [
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('folderBasedRepo1'), folderBased: true, templating: true)
+        ]
+        config.content.variables.someapp = [somevalue: 'this is a custom variable']
+
+        def repos = createContent().cloneContentRepos()
+
+        // Assert Templating
+        assertThat(new File(findRoot(repos), "common/repo/some.yaml")).exists()
+        assertThat(new File(findRoot(repos), "common/repo/some.yaml").text).contains("namePrefix: foo-")
+        assertThat(new File(findRoot(repos), "common/repo/some.yaml").text).contains("myvar: this is a custom variable")
+    }
+
+    @Test
     void 'Authenticates content Repos'() {
         config.content.repos = [
                 new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', folderBased: false, target: 'common/repo', username: 'user', password: 'pw')
@@ -176,18 +192,50 @@ class ContentTest {
         assertThat(value.properties.username).isEqualTo('user')
         assertThat(value.properties.password).isEqualTo('pw'.toCharArray())
     }
-
+    
     @Test
-    void 'Checks out commit refs and tags for content repos'() {
+    void 'Checks out commit refs, tags and non-default branches for content repos'() {
         config.content.repos = [
-                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'someTag', folderBased: false, target: 'common/tag'),
-                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), ref: '56d2e3f4b7c95d5645c823f7be8ea6f8a853ac40', folderBased: false, target: 'common/ref')
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo(), ref: 'someTag', folderBased: false, target: 'common/tag'),
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo(), ref: '8bc1d1165468359b16d9771d4a9a3df26afc03e8', folderBased: false, target: 'common/ref'),
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo(), ref: 'someBranch', folderBased: false, target: 'common/branch')
         ]
 
         def repos = createContent().cloneContentRepos()
 
         assertThat(new File(findRoot(repos), "common/tag/README.md")).exists().isFile()
+        assertThat(new File(findRoot(repos), "common/tag/README.md").text).contains("someTag")
+
         assertThat(new File(findRoot(repos), "common/ref/README.md")).exists().isFile()
+        assertThat(new File(findRoot(repos), "common/ref/README.md").text).contains("main")
+        
+        assertThat(new File(findRoot(repos), "common/branch/README.md")).exists().isFile()
+        assertThat(new File(findRoot(repos), "common/branch/README.md").text).contains("someBranch")
+    }
+
+    @Test
+    void 'Checks out default branch when no ref set'() {
+        config.content.repos = [
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('', 'git-repo-different-default-branch'), target: 'common/default'),
+        ]
+
+        def repos = createContent().cloneContentRepos()
+
+        assertThat(new File(findRoot(repos), "common/default/README.md")).exists().isFile()
+        assertThat(new File(findRoot(repos), "common/default/README.md").text).contains("different")
+    }
+
+    @Test
+    void 'Fails if commit refs does not exit'() {
+        config.content.repos = [
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo(), ref: 'someTag', folderBased: false, target: 'common/tag'),
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo(), ref: 'does/not/exist', folderBased: true, target: 'does not matter'),
+        ]
+
+        def exception = shouldFail(RuntimeException) {
+            createContent().cloneContentRepos()
+        }
+        assertThat(exception.message).startsWith("Reference 'does/not/exist' not found in repository")
     }
 
     @Test
@@ -220,14 +268,14 @@ class ContentTest {
         assertThat(actualTargetRepos).hasSameSizeAs(expectedTargetRepos)
 
         expectedTargetRepos.each { expected ->
-
+            
             def actual = actualTargetRepos.findAll { actual ->
                 actual.namespace == expected.namespace && actual.repo == expected.repo
             }
             assertThat(actual).withFailMessage(
                     "Could not find repo with namespace=${expected.namespace} and repo=${expected.repo} in ${actualTargetRepos}"
             ).hasSize(1)
-
+            
             assertThat(actual[0].newContent.absolutePath).isEqualTo(
                     new File(findRoot(repos), "${expected.namespace}/${expected.repo}").absolutePath)
         }
@@ -453,44 +501,45 @@ class ContentTest {
     }
 
 
-    static String createContentRepo(String srcPath) {
+    static String createContentRepo(String initPath = '', String baseBareRepo = 'git-repository') {
         // The bare repo works as the "remote"
-
         def bareRepoDir = File.createTempDir('gitops-playground-test-content-repo')
         bareRepoDir.deleteOnExit()
         foldersToDelete << bareRepoDir
         // init with bare repo
-        FileUtils.copyDirectory(new File(System.getProperty("user.dir") + "/src/test/groovy/com/cloudogu/gitops/utils/data/git-repository/"), bareRepoDir)
+        FileUtils.copyDirectory(new File(System.getProperty("user.dir") + "/src/test/groovy/com/cloudogu/gitops/utils/data/${baseBareRepo}/"), bareRepoDir)
         def bareRepoUri = 'file://' + bareRepoDir.absolutePath
-        println("Repo $srcPath: bare repo $bareRepoUri")
+        log.debug("Repo $initPath: bare repo $bareRepoUri")
 
-        // Add srcPath to bare repo
-        def tempRepo = File.createTempDir('gitops-playground-temp-repo')
-        tempRepo.deleteOnExit()
-        foldersToDelete << tempRepo
-        println("Repo $srcPath: cloned bare repo to $tempRepo")
-        def git = Git.cloneRepository()
-                .setURI(bareRepoUri)
-                .setBranch('main')
-                .setDirectory(tempRepo)
-                .call()
+        if (initPath) {
+            // Add initPath to bare repo
+            def tempRepo = File.createTempDir('gitops-playground-temp-repo')
+            tempRepo.deleteOnExit()
+            foldersToDelete << tempRepo
+            log.debug("Repo $initPath: cloned bare repo to $tempRepo")
+            def git = Git.cloneRepository()
+                    .setURI(bareRepoUri)
+                    .setBranch('main')
+                    .setDirectory(tempRepo)
+                    .call()
 
-        FileUtils.copyDirectory(new File(System.getProperty("user.dir") + '/src/test/groovy/com/cloudogu/gitops/utils/data/contentRepos/' + srcPath), tempRepo)
+            FileUtils.copyDirectory(new File(System.getProperty("user.dir") + '/src/test/groovy/com/cloudogu/gitops/utils/data/contentRepos/' + initPath), tempRepo)
 
-        git.add().addFilepattern(".").call()
+            git.add().addFilepattern(".").call()
 
-        // Avoid complications with local developer's git config, e.g. when  git config --global commit.gpgSign true
-        SystemReader.getInstance().userConfig.clear()
-        git.commit().setMessage("Initialize with $srcPath").call()
-        git.push().call()
-        tempRepo.delete()
+            // Avoid complications with local developer's git config, e.g. when  git config --global commit.gpgSign true
+            SystemReader.getInstance().userConfig.clear()
+            git.commit().setMessage("Initialize with $initPath").call()
+            git.push().call()
+            tempRepo.delete()
+        }
 
         return bareRepoUri
     }
 
 
     private void assertRegistrySecrets(String regUser, String regPw) {
-        List expectedNamespaces = ["foo-example-apps-staging", "foo-example-apps-production"]
+        List expectedNamespaces = ["example-apps-staging", "example-apps-production"]
         expectedNamespaces.each {
 
             k8sClient.commandExecutorForTest.assertExecuted(
@@ -515,13 +564,13 @@ class ContentTest {
         return ys.parse(pathToYamlFile)
     }
 
-    String findRoot(List<Content.RepoCoordinates> repos) {
+    String findRoot(List<Content.RepoCoordinate> repos) {
         def result = new File(repos.get(0).getNewContent().getParent()).getParent()
         return result;
 
     }
 
-    @Slf4j
+
     class ContentForTest extends Content {
         CloneCommand cloneSpy
 

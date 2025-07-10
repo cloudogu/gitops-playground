@@ -24,7 +24,7 @@ class ApplicationConfigurator {
         addScmmConfig(newConfig)
 
         addRegistryConfig(newConfig)
-        
+
         addJenkinsConfig(newConfig)
 
         addFeatureConfig(newConfig)
@@ -41,23 +41,23 @@ class ApplicationConfigurator {
     private void addFeatureConfig(Config newConfig) {
         if (newConfig.features.secrets.vault.mode)
             newConfig.features.secrets.active = true
-        
+
         if (newConfig.features.mail.smtpAddress || newConfig.features.mail.mailhog)
             newConfig.features.mail.active = true
         if (newConfig.features.mail.smtpAddress && newConfig.features.mail.mailhog) {
             newConfig.features.mail.mailhog = false
             log.warn("Enabled both external Mailserver and MailHog! Implicitly deactivating MailHog")
         }
-        
+
         if (newConfig.features.ingressNginx.active && !newConfig.application.baseUrl) {
             log.warn("Ingress-controller is activated without baseUrl parameter. Services will not be accessible by hostnames. To avoid this use baseUrl with ingress. ")
         }
         if (newConfig.content.examples) {
-            if  (!newConfig.registry.active) {
+            if (!newConfig.registry.active) {
                 throw new RuntimeException("content.examples requires either registry.active or registry.url")
             }
             String prefix = newConfig.application.namePrefix
-            newConfig.content.namespaces += [ prefix+"example-apps-staging", prefix+"example-apps-production"]
+            newConfig.content.namespaces += [prefix + "example-apps-staging", prefix + "example-apps-production"]
         }
     }
 
@@ -161,7 +161,7 @@ class ApplicationConfigurator {
             // "jenkins.localhost" will not work inside the Pods and k3d-container IP + Port (e.g. 172.x.y.z:9090)
             // will not work on Windows and MacOS.
             newConfig.jenkins.urlForScmm = "http://jenkins.${newConfig.application.namePrefix}jenkins.svc.cluster.local"
-            
+
             // More internal fields are set lazily in Jenkins.groovy (after Jenkins is deployed and ports are known)
         } else {
             // Jenkins not active, no need to set the following values
@@ -265,22 +265,29 @@ class ApplicationConfigurator {
                     "LOCAL_HELM_CHART_FOLDER='charts' after running 'scripts/downloadHelmCharts.sh' from the repo")
         }
     }
-    
+
     static void validateContent(Config config) {
         config.content.repos.each { repo ->
             if (!repo.url) {
-                throw new RuntimeException('content.repos requires a url parameter')
+                throw new RuntimeException("content.repos requires a url parameter.")
             }
             if (!repo.folderBased && !repo.target) {
-                throw new RuntimeException('content.repos.folderBased: false requires folder content.repos.target to be set')
+                throw new RuntimeException("content.repos.folderBased: false requires folder content.repos.target to be set. ${repo.url}")
+            }
+            if (repo.target) {
+                if (repo.target.count('/') == 0) {
+                    throw new RuntimeException("content.target needs / to separate namespace/group from repo name. ${repo.url}")
+                }
+
+
             }
         }
     }
 
     private void validateScmmAndJenkinsAreBothSet(Config configToSet) {
-        if (configToSet.jenkins.active && 
+        if (configToSet.jenkins.active &&
                 (configToSet.scmm.url && !configToSet.jenkins.url ||
-                !configToSet.scmm.url && configToSet.jenkins.url)) {
+                        !configToSet.scmm.url && configToSet.jenkins.url)) {
             throw new RuntimeException('When setting jenkins URL, scmm URL must also be set and the other way round')
         }
     }

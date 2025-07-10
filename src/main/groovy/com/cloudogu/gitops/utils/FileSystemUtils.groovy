@@ -19,7 +19,7 @@ class FileSystemUtils {
     /**
      * Replaces text in files. If you want to change a YAML field, better use 
      * {@link #readYaml(java.nio.file.Path)} and
-     * {@link #writeYaml(java.util.Map, java.io.File)}
+     * {@link #writeYaml(java.util.Map, java.io.File)} 
      */
     File replaceFileContent(String folder, String fileToChange, String from, String to) {
         File file = new File(folder + "/" + fileToChange)
@@ -195,17 +195,11 @@ class FileSystemUtils {
 
     /**
      * This filter can be used to copy whole directories without .git folder.
-     * @param folder
-     * @return
      */
-    static FileFilter createGitIgnoreFilter(String folder) {
-        [
-                accept: { File file ->
-                    def relativePath = file.absolutePath - folder
-                    // exclude ".git" to remove all git repo info for copy to new repo.
-                    return !relativePath.contains(File.separator + ".git")
-                }
-
-        ] as FileFilter
+    static class IgnoreDotGitFolderFilter implements FileFilter {
+        @Override
+        boolean accept(File file) {
+            return !file.absolutePath.contains(File.separator + ".git")
+        }
     }
 }

@@ -98,6 +98,9 @@ class Config {
         @JsonPropertyDescription(CONTENT_REPO_DESCRIPTION)
         List<ContentRepositorySchema> repos = []
 
+        @JsonPropertyDescription(CONTENT_VARIABLES_DESCRIPTION)
+        Map<String, Object> variables = [:]
+
         static class ContentRepositorySchema {
             @JsonPropertyDescription(CONTENT_REPO_URL_DESCRIPTION)
             String url = ''
@@ -106,7 +109,7 @@ class Config {
             String path = '.'
 
             @JsonPropertyDescription(CONTENT_REPO_REF_DESCRIPTION)
-            String ref = 'main'
+            String ref = ''
 
             @JsonPropertyDescription(CONTENT_REPO_USERNAME_DESCRIPTION)
             String username = ''
@@ -124,7 +127,7 @@ class Config {
             String target = ''
 
             @JsonPropertyDescription(CONTENT_REPO_TARGET_OVERRIDE_MODE)
-            OverrideMode overrideMode = OverrideMode.INIT // default is init a new repository
+            OverrideMode overrideMode = OverrideMode.INIT // Defensively use init to not override existing files by default
         }
     }
 
@@ -788,6 +791,7 @@ class Config {
 
     /**
      * This defines, how customer repos will be updated.
+     * See {@link ConfigConstants#CONTENT_REPO_TARGET_OVERRIDE_MODE}
      */
     static enum OverrideMode {
         INIT, RESET, UPGRADE

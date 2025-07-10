@@ -156,7 +156,7 @@ class ApplicationConfiguratorTest {
         def exception = shouldFail(RuntimeException) {
             applicationConfigurator.validateConfig(testConfig)
         }
-        assertThat(exception.message).isEqualTo('content.repos requires a url parameter')
+        assertThat(exception.message).isEqualTo('content.repos requires a url parameter.')
 
         testConfig.content.repos = [
                 new Config.ContentSchema.ContentRepositorySchema(url: 'abc', folderBased: false),
@@ -164,7 +164,15 @@ class ApplicationConfiguratorTest {
         exception = shouldFail(RuntimeException) {
             applicationConfigurator.validateConfig(testConfig)
         }
-        assertThat(exception.message).isEqualTo('content.repos.folderBased: false requires folder content.repos.target to be set')
+        assertThat(exception.message).isEqualTo('content.repos.folderBased: false requires folder content.repos.target to be set. abc')
+
+        testConfig.content.repos = [
+                new Config.ContentSchema.ContentRepositorySchema(url: 'abc', folderBased: false, target: "missing_slash"),
+        ]
+        exception = shouldFail(RuntimeException) {
+            applicationConfigurator.validateConfig(testConfig)
+        }
+        assertThat(exception.message).isEqualTo('content.target needs / to separate namespace/group from repo name. abc')
 
 
         //  mandatory params:url
