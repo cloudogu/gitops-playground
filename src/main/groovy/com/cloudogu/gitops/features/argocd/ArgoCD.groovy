@@ -327,6 +327,7 @@ class ArgoCD extends Feature {
                             namespace,
                             ["argocd-argocd-server", "argocd-argocd-application-controller", "argocd-applicationset-controller"]
                     )
+                    .withConfig(config)
                     .withRepo(argocdRepoInitializationAction.repo)
                     .withSubfolder(OPERATOR_RBAC_PATH)
                     .generate()

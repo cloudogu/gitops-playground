@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.kubernetes.rbac
 
+import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
@@ -15,6 +16,7 @@ class RbacDefinition {
     private List<ServiceAccountRef> serviceAccounts = []
     private String subfolder = "rbac"
     private ScmmRepo repo
+    private Config config
 
     private final TemplatingEngine templater = new TemplatingEngine()
 
@@ -51,16 +53,23 @@ class RbacDefinition {
         return this
     }
 
-    void generate() {
-        validateInputs()
+    RbacDefinition withConfig(Config config) {
+        this.config = config
+        return this
+    }
 
-        log.debug("Generating RBAC for name='${name}', namespace='${namespace}', subfolder='${subfolder}'")
+    void generate() {
+        if (!repo) {
+            throw new IllegalStateException("SCMM repo must be set using withRepo() before calling generate()")
+        }
+
+        def role = new Role(name, namespace, variant, config)
+        def binding = new RoleBinding(name, namespace, name, serviceAccounts)
+
+        log.trace("Generating RBAC for name='${name}', namespace='${namespace}', subfolder='${subfolder}'")
 
         def outputDir = Path.of(repo.absoluteLocalRepoTmpDir, subfolder).toFile()
         outputDir.mkdirs()
-
-        def role = new Role(name, namespace, variant)
-        def binding = new RoleBinding(name, namespace, name, serviceAccounts)
 
         templater.template(
                 role.getTemplateFile(),
@@ -75,18 +84,4 @@ class RbacDefinition {
         )
     }
 
-    private void validateInputs() {
-        if (!repo) {
-            throw new IllegalStateException("SCMM repo must be set using withRepo() before calling generate()")
-        }
-        if (!name?.trim()) {
-            throw new IllegalStateException("RBAC definition requires a non-empty name")
-        }
-        if (!namespace?.trim()) {
-            throw new IllegalStateException("RBAC definition requires a non-empty namespace")
-        }
-        if (!serviceAccounts || serviceAccounts.isEmpty()) {
-            throw new IllegalStateException("RBAC definition requires at least one service account")
-        }
-    }
 }
