@@ -17,9 +17,15 @@ import jakarta.inject.Singleton
 import org.apache.commons.io.FileUtils
 import org.eclipse.jgit.api.CloneCommand
 import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.lib.ObjectId
 import org.eclipse.jgit.lib.Ref
 import org.eclipse.jgit.lib.Repository
+import org.eclipse.jgit.revwalk.RevCommit
+import org.eclipse.jgit.revwalk.RevWalk
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
+
+import static com.cloudogu.gitops.config.Config.ContentRepoType
+import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositorySchema
 
 @Slf4j
 @Singleton
@@ -90,17 +96,17 @@ class Content extends Feature {
         def engine = new TemplatingEngine()
 
         log.debug("Aggregating folder structure for all ${config.content.repos.size()} folder based-repos")
-        config.content.repos.each { repo ->
+        config.content.repos.each { repoConfig ->
 
             def repoTmpDir = File.createTempDir('gitops-playground-folder-based-single-content-repo-')
-            log.debug("Cloning content repo, ${repo.url}, revision ${repo.ref}, path ${repo.path}, overrideMode ${repo.overrideMode}")
+            log.debug("Cloning content repo, ${repoConfig.url}, revision ${repoConfig.ref}, path ${repoConfig.path}, overrideMode ${repoConfig.overrideMode}")
 
-            cloneToLocalFolder(repo, repoTmpDir)
+            cloneToLocalFolder(repoConfig, repoTmpDir)
 
-            def contentRepoDir = new File(repoTmpDir, repo.path)
-            doTemplating(repo, engine, contentRepoDir)
+            def contentRepoDir = new File(repoTmpDir, repoConfig.path)
+            doTemplating(repoConfig, engine, contentRepoDir)
 
-            if (repo.folderBased) {
+            if (ContentRepoType.FOLDER_BASED == repoConfig.type) {
                 findRepoDirectories(contentRepoDir)
                         .each { contentRepoNamespaceDir ->
                             findRepoDirectories(contentRepoNamespaceDir)
@@ -108,19 +114,20 @@ class Content extends Feature {
                                         String namespace = contentRepoNamespaceDir.name
                                         String repoName = contentRepoRepoDir.name
 
-                                        mergeRepoDirs(contentRepoRepoDir, namespace, repoName, mergedReposFolder, repo.overrideMode, repoCoordinates)
+                                        mergeRepoDirs(contentRepoRepoDir, namespace, repoName, mergedReposFolder, 
+                                                repoConfig, repoCoordinates)
                                     }
                         }
             } else {
-                String namespace = repo.target.split('/')[0]
-                String repoName = repo.target.split('/')[1]
+                String namespace = repoConfig.target.split('/')[0]
+                String repoName = repoConfig.target.split('/')[1]
 
-                mergeRepoDirs(contentRepoDir, namespace, repoName, mergedReposFolder, repo.overrideMode, repoCoordinates)
+                mergeRepoDirs(contentRepoDir, namespace, repoName, mergedReposFolder, repoConfig, repoCoordinates)
             }
 
 
             repoTmpDir.deleteDir()
-            log.debug("Finished merging content repo, ${repo.url} into ${mergedReposFolder}")
+            log.debug("Finished merging content repo, ${repoConfig.url} into ${mergedReposFolder}")
         }
         return repoCoordinates
     }
@@ -131,18 +138,26 @@ class Content extends Feature {
      * Note that existing repoCoordinate objects with different overrideMode are overwritten. The last repo to be mentioned within config.content.repos wins!
      */
     private static void mergeRepoDirs(File src, String namespace, String repoName, File mergedRepoFolder,
-                                      OverrideMode overrideMode, List<RepoCoordinate> repoCoordinates) {
+                                      ContentRepositorySchema repoConfig, List<RepoCoordinate> repoCoordinates) {
         File target = new File(new File(mergedRepoFolder, namespace), repoName)
         log.debug("Merging content repo, namespace ${namespace}, repoName ${repoName} from ${src} to ${target}")
-        FileUtils.copyDirectory(src, target, new FileSystemUtils.IgnoreDotGitFolderFilter())
+        FileUtils.copyDirectory(src, target, isIgnoreDotGitFolder(repoConfig))
 
         def repoCoordinate = new RepoCoordinate(
                 namespace: namespace,
-                repo: repoName,
+                repoName: repoName,
                 newContent: target,
-                overrideMode: overrideMode
+                repoConfig: repoConfig
         )
         addRepoCoordinates(repoCoordinates, repoCoordinate)
+    }
+
+    protected static FileSystemUtils.IgnoreDotGitFolderFilter isIgnoreDotGitFolder(ContentRepositorySchema repoConfig) {
+        if (ContentRepoType.MIRROR == repoConfig.type) {
+            return null // In mirror mode, we need not only the files but also commits, tags, branches of content repo
+        } 
+        // In all other cases we want to keep the commits of the target repo
+        return new FileSystemUtils.IgnoreDotGitFolderFilter()
     }
 
     private static List<File> findRepoDirectories(File srcRepo) {
@@ -153,8 +168,8 @@ class Content extends Feature {
         }
     }
 
-    private void doTemplating(Config.ContentSchema.ContentRepositorySchema repo, TemplatingEngine engine, File srcPath) {
-        if (repo.templating) {
+    private void doTemplating(ContentRepositorySchema repoConfig, TemplatingEngine engine, File srcPath) {
+        if (repoConfig.templating) {
             engine.replaceTemplates(srcPath, [
                     config : config,
                     // Allow for using static classes inside the templates
@@ -164,32 +179,39 @@ class Content extends Feature {
     }
 
 
-    private void cloneToLocalFolder(Config.ContentSchema.ContentRepositorySchema repo, File repoTmpDir) {
+    private void cloneToLocalFolder(ContentRepositorySchema repoConfig, File repoTmpDir) {
 
         def cloneCommand = gitClone()
-                .setURI(repo.url)
+                .setURI(repoConfig.url)
                 .setDirectory(repoTmpDir)
                 .setNoCheckout(false) // Checkout default branch
 
-        if (repo.username != null && repo.password != null) {
+        if (repoConfig.username != null && repoConfig.password != null) {
             cloneCommand.setCredentialsProvider(
-                    new UsernamePasswordCredentialsProvider(repo.username, repo.password))
+                    new UsernamePasswordCredentialsProvider(repoConfig.username, repoConfig.password))
         }
+        
+        
         def git = cloneCommand.call()
 
-        if (repo.ref) {
-            def actualRef = findRef(repo, git.repository)
+        if (ContentRepoType.MIRROR == repoConfig.type) {
+            git.fetch().setRefSpecs("+refs/*:refs/*").call() // Fetch all branches and tags
+        }
+        
+        if (repoConfig.ref) {
+            def actualRef = findRef(repoConfig, git.repository)
             git.checkout().setName(actualRef).call()
         }
     }
 
-    private String findRef(Config.ContentSchema.ContentRepositorySchema repoConfig, Repository gitRepo) {
-        // Check if it is a commit hash first to avoid InvalidRefNameException
+    private static String findRef(ContentRepositorySchema repoConfig, Repository gitRepo) {
+        // Check if ref exists first to avoid InvalidRefNameException
+        // Note that this works for commits and shortname tags but not shortname branches 🙄
         if (gitRepo.resolve(repoConfig.ref)) {
             return repoConfig.ref
         }
 
-        // Check tags or branches
+        // Check branches or tags
         def remoteCommand = Git.lsRemoteRepository()
                 .setRemote(repoConfig.url)
                 .setHeads(true)
@@ -205,7 +227,7 @@ class Content extends Feature {
         if (!potentialRef) {
             // Jgit silently ignores some missing refs and just continues with default branch.
             // This might lead to unexpected surprises for our users, so better fail explicitly
-            throw new RuntimeException("Reference '${repoConfig.ref}' not found in repository '${repoConfig.url}'")
+            throw new RuntimeException("Reference '${repoConfig.ref}' not found in content repository '${repoConfig.url}'")
         }
 
         // Jgit only checks out remote branches when they start in origin/ 🙄 
@@ -216,32 +238,54 @@ class Content extends Feature {
     protected void pushTargetRepos(List<RepoCoordinate> repoCoordinates) {
         repoCoordinates.each { repoCoordinate ->
 
-            ScmmRepo repo = repoProvider.getRepo(repoCoordinate.fullRepoName)
-            def isRepoCreated = repo.create('', scmmApiClient)
+            ScmmRepo targetRepo = repoProvider.getRepo(repoCoordinate.fullRepoName)
+            def isRepoCreated = targetRepo.create('', scmmApiClient)
 
-            if (!isRepoCreated && OverrideMode.INIT == repoCoordinate.overrideMode) {
+            if (!isRepoCreated && OverrideMode.INIT == repoCoordinate.repoConfig.overrideMode) {
                 log.warn("OverrideMode ${OverrideMode.INIT} set for repo '${repoCoordinate.fullRepoName}' " +
                         "and repo already exists in target:  Not pushing content!" +
                         "If you want to override, set ${OverrideMode.UPGRADE} or ${OverrideMode.RESET} .")
             } else {
 
-                repo.cloneRepo()
+                targetRepo.cloneRepo()
 
-                if (OverrideMode.INIT != repoCoordinate.overrideMode) {
-                    if (OverrideMode.RESET == repoCoordinate.overrideMode) {
+                if (OverrideMode.INIT != repoCoordinate.repoConfig.overrideMode) {
+                    if (OverrideMode.RESET == repoCoordinate.repoConfig.overrideMode) {
                         log.info("OverrideMode ${OverrideMode.RESET} set for repo '${repoCoordinate.fullRepoName}': " +
                                 "Deleting existing files in repo and replacing them with new content.")
-                        repo.clearRepo()
+                        targetRepo.clearRepo()
                     } else {
                         log.info("OverrideMode ${OverrideMode.UPGRADE} set for repo '${repoCoordinate.fullRepoName}': " +
                                 "Merging new content into existing repo. ")
                     }
                 }
 
-                repo.copyDirectoryContents(repoCoordinate.newContent.absolutePath)
-                repo.commitAndPush("Initialize content repo ${repoCoordinate.namespace}/${repoCoordinate.repo}")
+                try (def targetGit = Git.open(new File(targetRepo.absoluteLocalRepoTmpDir))) {
+                    def remoteUrl = targetGit.repository.config.getString('remote', 'origin', 'url')
                 
-                new File(repo.absoluteLocalRepoTmpDir).deleteDir()
+                    targetRepo.copyDirectoryContents(repoCoordinate.newContent.absolutePath)
+                
+                    // Restore remote, it could have been overwritten due to a copied .git folder in MIRROR mode
+                    targetGit.repository.config.setString('remote', 'origin', 'url', remoteUrl)
+                    targetGit.repository.config.save()
+                }
+
+                if (ContentRepoType.MIRROR == repoCoordinate.repoConfig.type) { 
+                    if (repoCoordinate.repoConfig.ref) {
+                        if (isCommit(repoCoordinate.newContent, repoCoordinate.repoConfig.ref)) {
+                            // Mirroring detached commits does not make a lot of sense and is complicated
+                            // We would have to branch, push, delete remote branch. Considering this an edge case at the moment!
+                            throw new RuntimeException("Mirroring commit references is not supported for content repos at the moment. content repository '${repoCoordinate.repoConfig.url}', ref: ${repoCoordinate.repoConfig.ref}")
+                        }
+                        targetRepo.pushRef(repoCoordinate.repoConfig.ref, true)
+                    } else {
+                        targetRepo.pushAll(true)
+                    }
+                } else {
+                    targetRepo.commitAndPush("Initialize content repo ${repoCoordinate.namespace}/${repoCoordinate.repoName}")
+                }
+                
+                new File(targetRepo.absoluteLocalRepoTmpDir).deleteDir()
             }
         }
 
@@ -258,25 +302,42 @@ class Content extends Feature {
      * add new repoCoordinates to repos and ensure, newest one override last one
      */
     static void addRepoCoordinates(List<RepoCoordinate> repoCoordinates, RepoCoordinate entry) {
-        if (repoCoordinates.removeIf { it.namespace == entry.namespace && it.repo == entry.repo }) {
+        if (repoCoordinates.removeIf { it.namespace == entry.namespace && it.repoName == entry.repoName }) {
             log.debug("Repo coordinate ${entry} replaced existing")
         }
         repoCoordinates << entry
     }
 
+    static boolean isCommit(File repoPath, String ref) {
+        if (!ObjectId.isId(ref)) {
+            // This avoids exception on ObjectId.fromString if not ref not a SHA
+            return false
+        }
+        try (Git git = Git.open(repoPath)) {
+            ObjectId objectId = ObjectId.fromString(ref)
+            if (objectId == null) {
+                return false
+            }
+            // Make sure the ref that looks like a SHA is an actual commit
+            try (RevWalk revWalk = new RevWalk(git.repository)) {
+                return revWalk.parseAny(objectId) instanceof RevCommit
+            }
+        } 
+    }
+
     static class RepoCoordinate {
         String namespace
-        String repo
+        String repoName
         File newContent
-        OverrideMode overrideMode
+        ContentRepositorySchema repoConfig
 
         @Override
         String toString() {
-            return "RepoCoordinates{ namespace='$namespace', repo='$repo', overrideMode='$overrideMode', newContent=$newContent' }"
+            return "RepoCoordinates{ namespace='$namespace', repoName='$repoName', repoConfig='$repoConfig', newContent=$newContent' }"
         }
 
         String getFullRepoName() {
-            return "${namespace}/${repo}"
+            return "${namespace}/${repoName}"
         }
     }
 

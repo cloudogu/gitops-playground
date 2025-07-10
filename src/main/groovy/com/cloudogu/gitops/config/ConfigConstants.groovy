@@ -5,7 +5,7 @@ interface ConfigConstants {
     public static final String BINARY_NAME = 'apply-ng'
     public static final String APP_NAME = 'gitops-playground (GOP)'
     public static final String APP_DESCRIPTION = 'CLI-tool to deploy gitops-playground.'
-    
+
     // group registry
     String REGISTRY_ENABLE_DESCRIPTION = 'Installs a simple cluster-local registry for demonstration purposes. Warning: Registry does not provide authentication!'
     String REGISTRY_DESCRIPTION = 'Config parameters for Registry'
@@ -18,7 +18,7 @@ interface ConfigConstants {
     String REGISTRY_PROXY_URL_DESCRIPTION = 'The url of your proxy-registry. Used in pipelines to authorize pull base images. Use in conjunction with petclinic base image. Used in helm charts when create-image-pull-secrets is set. Use in conjunction with helm.*image fields.'
     String REGISTRY_PROXY_USERNAME_DESCRIPTION = 'Use with registry-proxy-url, added to Jenkins as credentials and created as pull secrets, when create-image-pull-secrets is set.'
     String REGISTRY_PROXY_PASSWORD_DESCRIPTION = 'Use with registry-proxy-url, added to Jenkins as credentials and created as pull secrets, when create-image-pull-secrets is set.'
-    
+
     String REGISTRY_USERNAME_RO_DESCRIPTION = 'Optional alternative username for registry-url with read-only permissions that is used when create-image-pull-secrets is set.'
     String REGISTRY_PASSWORD_RO_DESCRIPTION = 'Optional alternative password for registry-url with read-only permissions that is used when create-image-pull-secrets is set.'
     String REGISTRY_CREATE_IMAGE_PULL_SECRETS_DESCRIPTION = 'Create image pull secrets for registry and proxy-registry for all GOP namespaces and helm charts. Uses proxy-username, read-only-username or registry-username (in this order).  Use this if your cluster is not auto-provisioned with credentials for your private registries or if you configure individual helm images to be pulled from the proxy-registry that requires authentication.'
@@ -31,14 +31,14 @@ interface ConfigConstants {
     String CONTENT_EXAMPLES_DESCRIPTION = 'Deploy example content: source repos, GitOps repos, Jenkins Job, Argo CD apps/project'
     String CONTENT_NAMESPACES_DESCRIPTION = 'Additional kubernetes namespaces. These are authorized to Argo CD, supplied with image pull secrets, monitored by prometheus, etc. Namespaces can be templates, e.g. ${config.application.namePrefix}staging'
     String CONTENT_REPO_DESCRIPTION = "Content repos to push into target environment"
-    String CONTENT_REPO_URL_DESCRIPTION = "URL of the content repo"
+    String CONTENT_REPO_URL_DESCRIPTION = "URL of the content repo. Mandatory for each type."
     String CONTENT_REPO_PATH_DESCRIPTION = "Path within the content repo to process"
-    String CONTENT_REPO_REF_DESCRIPTION = "Reference for a specific branch, tag, or commit. Emtpy defaults to default branch of the repo"
+    String CONTENT_REPO_REF_DESCRIPTION = "Reference for a specific branch, tag, or commit. Emtpy defaults to default branch of the repo. With type MIRROR: ref must not be a commit hash; Choosing a ref only mirrors the ref but does not delete other branches/tags!"
     String CONTENT_REPO_USERNAME_DESCRIPTION = "Username to authenticate against content repo"
     String CONTENT_REPO_PASSWORD_DESCRIPTION = "Password to authenticate against content repo"
     String CONTENT_REPO_TEMPLATING_DESCRIPTION = "When true, template all files ending in .ftl within the repo"
-    String CONTENT_REPO_FOLDER_BASED_REPOS_DESCRIPTION = "When true, interpret the folder structure of each repo as repos. That is, root folder becomes namespace in SCM, sub folders become repository names in SCM"
-    String CONTENT_REPO_TARGET_DESCRIPTION = "Target path for the repository"
+    String CONTENT_REPO_TYPE_DESCRIPTION = "Content Repos can either be:\ncopied (only the files, starting on ref, starting at path within the repo. Requires target)\n, mirrored (the whole git repo. Requires target, does not allow path and template.)\nfolderBased (folder structure is interpreted as repos. That is, root folder becomes namespace in SCM, sub folders become repository names in SCM, files are copied. Requires target.)"
+    String CONTENT_REPO_TARGET_DESCRIPTION = "Target repo for the repository in the for of namespace/name. Must contain one slash to separate namespace from name."
     String CONTENT_REPO_TARGET_OVERRIDE_MODE = "This defines, how customer repos will be updated.\nINIT - push only if repo does not exist.\nRESET - delete all files after cloning source - files not in content are deleted\nUPGRADE - clone and copy - existing files will be overwritten, files not in content are kept"
     String CONTENT_VARIABLES_DESCRIPTION = "Additional variables to use in custom templates."
 

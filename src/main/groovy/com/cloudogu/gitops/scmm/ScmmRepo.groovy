@@ -9,6 +9,7 @@ import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
 import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.api.PushCommand
 import org.eclipse.jgit.transport.ChainingCredentialsProvider
 import org.eclipse.jgit.transport.CredentialsProvider
 import org.eclipse.jgit.transport.RefSpec
@@ -86,7 +87,7 @@ class ScmmRepo {
         checkoutOrCreateBranch('main')
     }
     /**
-     * if repo creation is succesfull or it still exist, then returns HTTP Code
+     * if repo creation is successful or it still exist, then returns HTTP Code
      *
      * otherwise exception.
      *
@@ -140,7 +141,7 @@ class ScmmRepo {
         new TemplatingEngine().replaceTemplates(new File(absoluteLocalRepoTmpDir), parameters)
     }
 
-    void commitAndPush(String commitMessage, String tag = null) {
+    def commitAndPush(String commitMessage, String tag = null) {
         log.debug("Checking out main, adding files for repo: ${scmmRepoTarget}")
         getGit()
                 .add()
@@ -156,11 +157,7 @@ class ScmmRepo {
                     .setCommitter(gitName, gitEmail)
                     .call()
 
-            def pushCommand = getGit()
-                    .push()
-                    .setRemote(getGitRepositoryUrl())
-                    .setRefSpecs(new RefSpec("HEAD:refs/heads/main"))
-                    .setCredentialsProvider(getCredentialProvider())
+            def pushCommand = createPushCommand('HEAD:refs/heads/main')
 
             if (tag) {
                 log.debug("Setting tag '${tag}' on repo: ${scmmRepoTarget}")
@@ -177,6 +174,25 @@ class ScmmRepo {
             log.debug("Pushing repo: ${scmmRepoTarget}")
             pushCommand.call()
         }
+    }
+
+    /**
+     * Push all refs, i.e. all tags and branches
+     */
+    def pushAll(boolean force = false) {
+        createPushCommand('refs/*:refs/*').setForce(force).call()
+    }
+    
+    def pushRef(String ref, boolean force = false) {
+        createPushCommand("${ref}:${ref}").setForce(force).call()
+    }
+
+    private PushCommand createPushCommand(String refSpec) {
+        getGit()
+                .push()
+                .setRemote(getGitRepositoryUrl())
+                .setRefSpecs(new RefSpec(refSpec))
+                .setCredentialsProvider(getCredentialProvider())
     }
 
     void checkoutOrCreateBranch(String branch) {
