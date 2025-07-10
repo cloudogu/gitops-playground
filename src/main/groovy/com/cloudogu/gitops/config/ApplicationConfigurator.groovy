@@ -271,15 +271,14 @@ class ApplicationConfigurator {
             if (!repo.url) {
                 throw new RuntimeException("content.repos requires a url parameter.")
             }
-            if (!repo.folderBased && !repo.target) {
-                throw new RuntimeException("content.repos.folderBased: false requires folder content.repos.target to be set. ${repo.url}")
+            if (Config.ContentRepoType.COPY == repo.type && !repo.target) {
+                throw new RuntimeException("content.repos.type ${Config.ContentRepoType.COPY} requires folder content.repos.target to be set. ${repo.url}")
             }
+            // TODO validations per type
             if (repo.target) {
                 if (repo.target.count('/') == 0) {
                     throw new RuntimeException("content.target needs / to separate namespace/group from repo name. ${repo.url}")
                 }
-
-
             }
         }
     }

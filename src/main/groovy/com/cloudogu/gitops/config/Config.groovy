@@ -120,8 +120,8 @@ class Config {
             @JsonPropertyDescription(CONTENT_REPO_TEMPLATING_DESCRIPTION)
             Boolean templating = false
 
-            @JsonPropertyDescription(CONTENT_REPO_FOLDER_BASED_REPOS_DESCRIPTION)
-            Boolean folderBased = false
+            @JsonPropertyDescription(CONTENT_REPO_TYPE_DESCRIPTION)
+            ContentRepoType type = ContentRepoType.COPY
 
             @JsonPropertyDescription(CONTENT_REPO_TARGET_DESCRIPTION)
             String target = ''
@@ -784,6 +784,9 @@ class Config {
         }
     }
 
+    static enum ContentRepoType {
+        FOLDER_BASED, COPY, MIRROR
+    }
 
     static enum VaultMode {
         dev, prod

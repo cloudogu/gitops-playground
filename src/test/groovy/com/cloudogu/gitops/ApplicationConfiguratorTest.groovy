@@ -151,7 +151,7 @@ class ApplicationConfiguratorTest {
     @Test
     void 'Fails if content repo is set without mandatory params'() {
         testConfig.content.repos = [
-                new Config.ContentSchema.ContentRepositorySchema(url: '', folderBased: true),
+                new Config.ContentSchema.ContentRepositorySchema(url: '', type: Config.ContentRepoType.FOLDER_BASED),
         ]
         def exception = shouldFail(RuntimeException) {
             applicationConfigurator.validateConfig(testConfig)
@@ -159,7 +159,7 @@ class ApplicationConfiguratorTest {
         assertThat(exception.message).isEqualTo('content.repos requires a url parameter.')
 
         testConfig.content.repos = [
-                new Config.ContentSchema.ContentRepositorySchema(url: 'abc', folderBased: false),
+                new Config.ContentSchema.ContentRepositorySchema(url: 'abc', type: Config.ContentRepoType.COPY),
         ]
         exception = shouldFail(RuntimeException) {
             applicationConfigurator.validateConfig(testConfig)
@@ -167,7 +167,7 @@ class ApplicationConfiguratorTest {
         assertThat(exception.message).isEqualTo('content.repos.folderBased: false requires folder content.repos.target to be set. abc')
 
         testConfig.content.repos = [
-                new Config.ContentSchema.ContentRepositorySchema(url: 'abc', folderBased: false, target: "missing_slash"),
+                new Config.ContentSchema.ContentRepositorySchema(url: 'abc', type: Config.ContentRepoType.COPY, target: "missing_slash"),
         ]
         exception = shouldFail(RuntimeException) {
             applicationConfigurator.validateConfig(testConfig)

@@ -164,10 +164,6 @@
           "items" : {
             "type" : "object",
             "properties" : {
-              "folderBased" : {
-                "type" : [ "boolean", "null" ],
-                "description" : "When true, interpret the folder structure of each repo as repos. That is, root folder becomes namespace in SCM, sub folders become repository names in SCM"
-              },
               "overrideMode" : {
                 "anyOf" : [ {
                   "type" : "null"
@@ -196,6 +192,15 @@
               "templating" : {
                 "type" : [ "boolean", "null" ],
                 "description" : "When true, template all files ending in .ftl within the repo"
+              },
+              "type" : {
+                "anyOf" : [ {
+                  "type" : "null"
+                }, {
+                  "type" : "string",
+                  "enum" : [ "FOLDER_BASED", "COPY", "MIRROR" ]
+                } ],
+                "description" : "When true, interpret the folder structure of each repo as repos. That is, root folder becomes namespace in SCM, sub folders become repository names in SCM"
               },
               "url" : {
                 "type" : [ "string", "null" ],

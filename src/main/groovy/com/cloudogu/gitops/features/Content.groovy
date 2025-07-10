@@ -100,7 +100,7 @@ class Content extends Feature {
             def contentRepoDir = new File(repoTmpDir, repo.path)
             doTemplating(repo, engine, contentRepoDir)
 
-            if (repo.folderBased) {
+            if (Config.ContentRepoType.FOLDER_BASED == repo.type) {
                 findRepoDirectories(contentRepoDir)
                         .each { contentRepoNamespaceDir ->
                             findRepoDirectories(contentRepoNamespaceDir)

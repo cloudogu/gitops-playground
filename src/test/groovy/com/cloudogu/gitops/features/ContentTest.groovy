@@ -58,17 +58,18 @@ class ContentTest {
 
     List<Config.ContentSchema.ContentRepositorySchema> contentRepos = [
             // Non-folder-based repo writing to their own target
-            new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), folderBased: false, target: 'nonFolderBased/repo1'),
-            new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), folderBased: false, target: 'nonFolderBased/repo2', path: 'subPath'),
+            // TODO rename nonFolderBasedRepo1 to copy repos?
+            new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), type: Config.ContentRepoType.COPY, target: 'nonFolderBased/repo1'),
+            new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), type: Config.ContentRepoType.COPY, target: 'nonFolderBased/repo2', path: 'subPath'),
             
             // Same folder as in folderBasedRepos -> Should be combined
-            new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', folderBased: false, target: 'common/repo'),
-            new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), folderBased: false, target: 'common/repo', path: 'subPath'),
+            new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: Config.ContentRepoType.COPY, target: 'common/repo'),
+            new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), type: Config.ContentRepoType.COPY, target: 'common/repo', path: 'subPath'),
             
             // Contains ftl
-            new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('folderBasedRepo1'), folderBased: true, templating: true),
+            new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('folderBasedRepo1'), type: Config.ContentRepoType.FOLDER_BASED, templating: true),
             // Contains a templated file that should be ignored
-            new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('folderBasedRepo2'), folderBased: true, path: 'subPath'),
+            new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('folderBasedRepo2'), type: Config.ContentRepoType.FOLDER_BASED, path: 'subPath'),
     ]
 
     @AfterAll
@@ -163,7 +164,7 @@ class ContentTest {
     void 'supports content variables'() {
 
         config.content.repos = [
-                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('folderBasedRepo1'), folderBased: true, templating: true)
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('folderBasedRepo1'), type: Config.ContentRepoType.FOLDER_BASED, templating: true)
         ]
         config.content.variables.someapp = [somevalue: 'this is a custom variable']
 
@@ -178,7 +179,7 @@ class ContentTest {
     @Test
     void 'Authenticates content Repos'() {
         config.content.repos = [
-                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', folderBased: false, target: 'common/repo', username: 'user', password: 'pw')
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: Config.ContentRepoType.COPY, target: 'common/repo', username: 'user', password: 'pw')
         ]
 
         def content = createContent()
@@ -196,9 +197,9 @@ class ContentTest {
     @Test
     void 'Checks out commit refs, tags and non-default branches for content repos'() {
         config.content.repos = [
-                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo(), ref: 'someTag', folderBased: false, target: 'common/tag'),
-                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo(), ref: '8bc1d1165468359b16d9771d4a9a3df26afc03e8', folderBased: false, target: 'common/ref'),
-                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo(), ref: 'someBranch', folderBased: false, target: 'common/branch')
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo(), ref: 'someTag', type: Config.ContentRepoType.COPY, target: 'common/tag'),
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo(), ref: '8bc1d1165468359b16d9771d4a9a3df26afc03e8', type: Config.ContentRepoType.COPY, target: 'common/ref'),
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo(), ref: 'someBranch', type: Config.ContentRepoType.COPY, target: 'common/branch')
         ]
 
         def repos = createContent().cloneContentRepos()
@@ -228,8 +229,8 @@ class ContentTest {
     @Test
     void 'Fails if commit refs does not exit'() {
         config.content.repos = [
-                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo(), ref: 'someTag', folderBased: false, target: 'common/tag'),
-                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo(), ref: 'does/not/exist', folderBased: true, target: 'does not matter'),
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo(), ref: 'someTag', type: Config.ContentRepoType.COPY, target: 'common/tag'),
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo(), ref: 'does/not/exist', type: Config.ContentRepoType.FOLDER_BASED, target: 'does not matter'),
         ]
 
         def exception = shouldFail(RuntimeException) {
@@ -242,10 +243,10 @@ class ContentTest {
     void 'Respects order of folder-based repositories'() {
         config.content.repos = [
                 // Note the different order!
-                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('folderBasedRepo1'), ref: 'main', folderBased: true),
-                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('folderBasedRepo2'), ref: 'main', folderBased: true, path: 'subPath'),
-                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), ref: 'main', folderBased: false, target: 'common/repo', path: 'subPath'),
-                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', folderBased: false, target: 'common/repo'),
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('folderBasedRepo1'), ref: 'main', type: Config.ContentRepoType.FOLDER_BASED),
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('folderBasedRepo2'), ref: 'main', type: Config.ContentRepoType.FOLDER_BASED, path: 'subPath'),
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), ref: 'main', type: Config.ContentRepoType.COPY, target: 'common/repo', path: 'subPath'),
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: Config.ContentRepoType.COPY, target: 'common/repo'),
         ]
 
         def repos = createContent().cloneContentRepos()
@@ -323,8 +324,8 @@ class ContentTest {
          * file content after that should be: nonFolderRepo1
          */
         config.content.repos = [
-                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', folderBased: false, target: 'common/repo'),
-                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), folderBased: false, target: 'common/repo', path: 'subPath')
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: Config.ContentRepoType.COPY, target: 'common/repo'),
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), type: Config.ContentRepoType.COPY, target: 'common/repo', path: 'subPath')
 
         ]
         def response = scmmApiClient.mockSuccessfulResponse(201)
@@ -356,7 +357,7 @@ class ContentTest {
          * Now Reset to nonFolderBased1
          */
         config.content.repos = [
-                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', folderBased: false, target: 'common/repo', overrideMode: Config.OverrideMode.RESET),
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: Config.ContentRepoType.COPY, target: 'common/repo', overrideMode: Config.OverrideMode.RESET),
         ]
 
         def resourceExistsAnswer = scmmApiClient.mockErrorResponse(409)
@@ -386,7 +387,7 @@ class ContentTest {
          * file content after that should be: nonFolderRepo1
          */
         config.content.repos = [
-                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', folderBased: false, target: 'common/repo'),
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: Config.ContentRepoType.COPY, target: 'common/repo'),
         ]
         def response = scmmApiClient.mockSuccessfulResponse(201)
         when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response)
@@ -417,7 +418,7 @@ class ContentTest {
          * Now Upgrade to nonFolderBased2
          */
         config.content.repos = [
-                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), folderBased: false, target: 'common/repo', path: 'subPath', overrideMode: Config.OverrideMode.UPGRADE)
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), type: Config.ContentRepoType.COPY, target: 'common/repo', path: 'subPath', overrideMode: Config.OverrideMode.UPGRADE)
         ]
 
         def resourceExistsAnswer = scmmApiClient.mockErrorResponse(409)
@@ -447,8 +448,8 @@ class ContentTest {
          * file content after that should be: nonFolderRepo1
          */
         config.content.repos = [
-                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', folderBased: false, target: 'common/repo'),
-                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), folderBased: false, target: 'common/repo', path: 'subPath')
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: Config.ContentRepoType.COPY, target: 'common/repo'),
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), type: Config.ContentRepoType.COPY, target: 'common/repo', path: 'subPath')
 
         ]
         def response = scmmApiClient.mockSuccessfulResponse(201)
@@ -481,7 +482,7 @@ class ContentTest {
          * no changes expected, file still has nonFolderBasedRepo2 and so on
          */
         config.content.repos = [
-                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', folderBased: false, target: 'common/repo', overrideMode: Config.OverrideMode.INIT),
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: Config.ContentRepoType.COPY, target: 'common/repo', overrideMode: Config.OverrideMode.INIT),
         ]
 
         def resourceExistsAnswer = scmmApiClient.mockErrorResponse(409)
