@@ -22,9 +22,13 @@ import org.eclipse.jgit.lib.Ref
 import org.eclipse.jgit.lib.Repository
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 
+import java.nio.file.FileSystems
+import java.nio.file.Paths
+
 @Slf4j
 @Singleton
-@Order(999) // We want to evaluate content last, to allow for changing all other repos
+@Order(999)
+// We want to evaluate content last, to allow for changing all other repos
 class Content extends Feature {
 
     private Config config
@@ -33,6 +37,7 @@ class Content extends Feature {
     private ScmmApiClient scmmApiClient
     @Inject
     private Jenkins jenkins
+
     Content(
             Config config, K8sClient k8sClient, ScmmRepoProvider repoProvider, ScmmApiClient scmmApiClient
     ) {
@@ -101,7 +106,7 @@ class Content extends Feature {
 
             def contentRepoDir = new File(repoTmpDir, repo.path)
             doTemplating(repo, engine, contentRepoDir)
-
+            List<String> exludes = repo.excludes
             if (repo.folderBased) {
                 findRepoDirectories(contentRepoDir)
                         .each { contentRepoNamespaceDir ->
@@ -110,14 +115,14 @@ class Content extends Feature {
                                         String namespace = contentRepoNamespaceDir.name
                                         String repoName = contentRepoRepoDir.name
 
-                                        mergeRepoDirs(contentRepoRepoDir, namespace, repoName, mergedReposFolder, repo.overrideMode, repoCoordinates)
+                                        mergeRepoDirs(contentRepoRepoDir, namespace, repoName, mergedReposFolder, repo.overrideMode, repoCoordinates, exludes)
                                     }
                         }
             } else {
                 String namespace = repo.target.split('/')[0]
                 String repoName = repo.target.split('/')[1]
 
-                mergeRepoDirs(contentRepoDir, namespace, repoName, mergedReposFolder, repo.overrideMode, repoCoordinates)
+                mergeRepoDirs(contentRepoDir, namespace, repoName, mergedReposFolder, repo.overrideMode, repoCoordinates, exludes)
             }
 
 
@@ -133,10 +138,25 @@ class Content extends Feature {
      * Note that existing repoCoordinate objects with different overrideMode are overwritten. The last repo to be mentioned within config.content.repos wins!
      */
     private static void mergeRepoDirs(File src, String namespace, String repoName, File mergedRepoFolder,
-                                      OverrideMode overrideMode, List<RepoCoordinate> repoCoordinates) {
+                                      OverrideMode overrideMode, List<RepoCoordinate> repoCoordinates, List<String> excludes = new ArrayList<>()) {
         File target = new File(new File(mergedRepoFolder, namespace), repoName)
         log.debug("Merging content repo, namespace ${namespace}, repoName ${repoName} from ${src} to ${target}")
-        FileUtils.copyDirectory(src, target, new FileSystemUtils.IgnoreDotGitFolderFilter())
+
+        // .git will be ignored in every case
+        excludes.add("**/.git")
+
+        def matchers = excludes.collect { pattern ->
+            FileSystems.default.getPathMatcher("glob:" + pattern.replace("/", File.separator))
+        }
+
+        def shouldExclude = { File file ->
+            def relativePath = Paths.get("").toAbsolutePath().relativize(file.toPath().toAbsolutePath())
+            matchers.any { it.matches(relativePath) }
+        }
+
+        FileFilter filter = { File file -> !shouldExclude(file) } as FileFilter
+
+        FileUtils.copyDirectory(src, target, filter)
 
         def repoCoordinate = new RepoCoordinate(
                 namespace: namespace,
@@ -280,10 +300,11 @@ class Content extends Feature {
         String repo
         File newContent
         OverrideMode overrideMode
+        List<String> exlcudes  = new ArrayList<>()
 
         @Override
         String toString() {
-            return "RepoCoordinates{ namespace='$namespace', repo='$repo', overrideMode='$overrideMode', newContent=$newContent' }"
+            return "RepoCoordinates{ namespace='$namespace', repo='$repo', overrideMode='$overrideMode', newContent=$newContent', exludes=${exlcudes.toListString()} }"
         }
 
         String getFullRepoName() {

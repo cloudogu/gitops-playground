@@ -164,6 +164,13 @@
           "items" : {
             "type" : "object",
             "properties" : {
+              "excludes" : {
+                "description" : "Defines a list of glob-patterns to exclude files and folder from content.",
+                "type" : [ "array", "null" ],
+                "items" : {
+                  "type" : "string"
+                }
+              },
               "folderBased" : {
                 "type" : [ "boolean", "null" ],
                 "description" : "When true, interpret the folder structure of each repo as repos. That is, root folder becomes namespace in SCM, sub folders become repository names in SCM"

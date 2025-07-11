@@ -128,6 +128,9 @@ class Config {
 
             @JsonPropertyDescription(CONTENT_REPO_TARGET_OVERRIDE_MODE)
             OverrideMode overrideMode = OverrideMode.INIT // Defensively use init to not override existing files by default
+
+            @JsonPropertyDescription(CONTENT_REPO_EXCLUDES)
+            List<String> excludes = []
         }
     }
 

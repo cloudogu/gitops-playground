@@ -40,6 +40,7 @@ interface ConfigConstants {
     String CONTENT_REPO_FOLDER_BASED_REPOS_DESCRIPTION = "When true, interpret the folder structure of each repo as repos. That is, root folder becomes namespace in SCM, sub folders become repository names in SCM"
     String CONTENT_REPO_TARGET_DESCRIPTION = "Target path for the repository"
     String CONTENT_REPO_TARGET_OVERRIDE_MODE = "This defines, how customer repos will be updated.\nINIT - push only if repo does not exist.\nRESET - delete all files after cloning source - files not in content are deleted\nUPGRADE - clone and copy - existing files will be overwritten, files not in content are kept"
+    String CONTENT_REPO_EXCLUDES = "Defines a list of glob-patterns to exclude files and folder from content."
     String CONTENT_VARIABLES_DESCRIPTION = "Additional variables to use in custom templates."
 
     // group jenkins
