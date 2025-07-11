@@ -26,15 +26,18 @@ import static com.cloudogu.gitops.config.Config.ContentSchema.*
 
 @Slf4j
 @Singleton
-@Order(999) // We want to evaluate content last, to allow for changing all other repos
+@Order(999)
+// We want to evaluate content last, to allow for changing all other repos
 class Content extends Feature {
 
     private Config config
     private K8sClient k8sClient
     private ScmmRepoProvider repoProvider
     private ScmmApiClient scmmApiClient
+
     @Inject
-    private Jenkins jenkins
+    Jenkins jenkins
+
     Content(
             Config config, K8sClient k8sClient, ScmmRepoProvider repoProvider, ScmmApiClient scmmApiClient
     ) {
@@ -103,6 +106,7 @@ class Content extends Feature {
 
             def contentRepoDir = new File(repoTmpDir, repoConfig.path)
             doTemplating(repoConfig, engine, contentRepoDir)
+            boolean ignoreJenkins = repoConfig.ignoreJenkins
 
             if (ContentRepoType.FOLDER_BASED == repoConfig.type) {
                 findRepoDirectories(contentRepoDir)
@@ -111,16 +115,15 @@ class Content extends Feature {
                                     .each { contentRepoRepoDir ->
                                         String namespace = contentRepoNamespaceDir.name
                                         String repoName = contentRepoRepoDir.name
-
-                                        mergeRepoDirs(contentRepoRepoDir, namespace, repoName, mergedReposFolder, 
-                                                repoConfig, repoCoordinates)
+                                        mergeRepoDirs(contentRepoRepoDir, namespace, repoName, mergedReposFolder,
+                                                repoConfig, repoCoordinates, ignoreJenkins)
                                     }
                         }
             } else {
                 String namespace = repoConfig.target.split('/')[0]
                 String repoName = repoConfig.target.split('/')[1]
 
-                mergeRepoDirs(contentRepoDir, namespace, repoName, mergedReposFolder, repoConfig, repoCoordinates)
+                mergeRepoDirs(contentRepoDir, namespace, repoName, mergedReposFolder, repoConfig, repoCoordinates, ignoreJenkins)
             }
 
 
@@ -136,7 +139,7 @@ class Content extends Feature {
      * Note that existing repoCoordinate objects with different overrideMode are overwritten. The last repo to be mentioned within config.content.repos wins!
      */
     private static void mergeRepoDirs(File src, String namespace, String repoName, File mergedRepoFolder,
-                                      ContentRepositorySchema repoConfig, List<RepoCoordinate> repoCoordinates) {
+                                      ContentRepositorySchema repoConfig, List<RepoCoordinate> repoCoordinates, boolean ignoreJenkins) {
         File target = new File(new File(mergedRepoFolder, namespace), repoName)
         log.debug("Merging content repo, namespace ${namespace}, repoName ${repoName} from ${src} to ${target}")
         FileUtils.copyDirectory(src, target, isIgnoreDotGitFolder(repoConfig))
@@ -145,7 +148,8 @@ class Content extends Feature {
                 namespace: namespace,
                 repoName: repoName,
                 newContent: target,
-                repoConfig: repoConfig
+                repoConfig: repoConfig,
+                ignoreJenkins: ignoreJenkins
         )
         addRepoCoordinates(repoCoordinates, repoCoordinate)
     }
@@ -153,7 +157,7 @@ class Content extends Feature {
     protected static FileSystemUtils.IgnoreDotGitFolderFilter isIgnoreDotGitFolder(ContentRepositorySchema repoConfig) {
         if (ContentRepoType.MIRROR == repoConfig.type) {
             return null // In mirror mode, we need not only the files but also commits, tags, branches of content repo
-        } 
+        }
         // In all other cases we want to keep the commits of the target repo
         return new FileSystemUtils.IgnoreDotGitFolderFilter()
     }
@@ -188,14 +192,14 @@ class Content extends Feature {
             cloneCommand.setCredentialsProvider(
                     new UsernamePasswordCredentialsProvider(repoConfig.username, repoConfig.password))
         }
-        
-        
+
+
         def git = cloneCommand.call()
 
         if (ContentRepoType.MIRROR == repoConfig.type) {
             git.fetch().setRefSpecs("+refs/*:refs/*").call() // Fetch all branches and tags
         }
-        
+
         if (repoConfig.ref) {
             def actualRef = findRef(repoConfig, git.repository)
             git.checkout().setName(actualRef).call()
@@ -259,15 +263,15 @@ class Content extends Feature {
 
                 try (def targetGit = Git.open(new File(targetRepo.absoluteLocalRepoTmpDir))) {
                     def remoteUrl = targetGit.repository.config.getString('remote', 'origin', 'url')
-                
+
                     targetRepo.copyDirectoryContents(repoCoordinate.newContent.absolutePath)
-                
+
                     // Restore remote, it could have been overwritten due to a copied .git folder in MIRROR mode
                     targetGit.repository.config.setString('remote', 'origin', 'url', remoteUrl)
                     targetGit.repository.config.save()
                 }
 
-                if (ContentRepoType.MIRROR == repoCoordinate.repoConfig.type) { 
+                if (ContentRepoType.MIRROR == repoCoordinate.repoConfig.type) {
                     if (repoCoordinate.repoConfig.ref) {
                         targetRepo.pushRef(repoCoordinate.repoConfig.ref, true)
                     } else {
@@ -276,8 +280,9 @@ class Content extends Feature {
                 } else {
                     targetRepo.commitAndPush("Initialize content repo ${repoCoordinate.namespace}/${repoCoordinate.repoName}")
                 }
-
-                createJenkinsJob(targetRepo, repoCoordinate)
+                if (!repoCoordinate.ignoreJenkins) {
+                    createJenkinsJob(targetRepo, repoCoordinate)
+                }
                 new File(targetRepo.absoluteLocalRepoTmpDir).deleteDir()
             }
         }
@@ -313,10 +318,11 @@ class Content extends Feature {
         String repoName
         File newContent
         ContentRepositorySchema repoConfig
+        boolean ignoreJenkins = false
 
         @Override
         String toString() {
-            return "RepoCoordinates{ namespace='$namespace', repoName='$repoName', repoConfig='$repoConfig', newContent=$newContent' }"
+            return "RepoCoordinates{ namespace='$namespace', repoName='$repoName', repoConfig='$repoConfig', newContent=$newContent', ignoreJenkins=${ignoreJenkins} }"
         }
 
         String getFullRepoName() {
