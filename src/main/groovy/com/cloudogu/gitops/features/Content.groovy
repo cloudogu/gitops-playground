@@ -233,8 +233,8 @@ class Content extends Feature {
     protected void pushTargetRepos(List<RepoCoordinate> repoCoordinates) {
         repoCoordinates.each { repoCoordinate ->
 
-            ScmmRepo repo = repoProvider.getRepo(repoCoordinate.fullRepoName)
-            def isRepoCreated = repo.create('', scmmApiClient)
+            ScmmRepo targetRepo = repoProvider.getRepo(repoCoordinate.fullRepoName)
+            def isRepoCreated = targetRepo.create('', scmmApiClient)
 
             if (!isRepoCreated && OverrideMode.INIT == repoCoordinate.repoConfig.overrideMode) {
                 log.warn("OverrideMode ${OverrideMode.INIT} set for repo '${repoCoordinate.fullRepoName}' " +
@@ -242,36 +242,40 @@ class Content extends Feature {
                         "If you want to override, set ${OverrideMode.UPGRADE} or ${OverrideMode.RESET} .")
             } else {
 
-                repo.cloneRepo()
+                targetRepo.cloneRepo()
 
                 if (OverrideMode.INIT != repoCoordinate.repoConfig.overrideMode) {
                     if (OverrideMode.RESET == repoCoordinate.repoConfig.overrideMode) {
                         log.info("OverrideMode ${OverrideMode.RESET} set for repo '${repoCoordinate.fullRepoName}': " +
                                 "Deleting existing files in repo and replacing them with new content.")
-                        repo.clearRepo()
+                        targetRepo.clearRepo()
                     } else {
                         log.info("OverrideMode ${OverrideMode.UPGRADE} set for repo '${repoCoordinate.fullRepoName}': " +
                                 "Merging new content into existing repo. ")
                     }
                 }
 
-                try (def targetGit = Git.open(new File(repo.absoluteLocalRepoTmpDir))) {
+                try (def targetGit = Git.open(new File(targetRepo.absoluteLocalRepoTmpDir))) {
                     def remoteUrl = targetGit.repository.config.getString('remote', 'origin', 'url')
                 
-                    repo.copyDirectoryContents(repoCoordinate.newContent.absolutePath)
+                    targetRepo.copyDirectoryContents(repoCoordinate.newContent.absolutePath)
                 
-                    // restore remote, it could have been overwritten due to a copied .git folder in MIRROR mode
+                    // Restore remote, it could have been overwritten due to a copied .git folder in MIRROR mode
                     targetGit.repository.config.setString('remote', 'origin', 'url', remoteUrl)
                     targetGit.repository.config.save()
                 }
 
                 if (ContentRepoType.MIRROR == repoCoordinate.repoConfig.type) { 
-                    repo.pushAll(true)
+                    if (repoCoordinate.repoConfig.ref) {
+                        targetRepo.pushRef(repoCoordinate.repoConfig.ref, true)
+                    } else {
+                        targetRepo.pushAll(true)
+                    }
                 } else {
-                    repo.commitAndPush("Initialize content repo ${repoCoordinate.namespace}/${repoCoordinate.repoName}")
+                    targetRepo.commitAndPush("Initialize content repo ${repoCoordinate.namespace}/${repoCoordinate.repoName}")
                 }
                 
-                new File(repo.absoluteLocalRepoTmpDir).deleteDir()
+                new File(targetRepo.absoluteLocalRepoTmpDir).deleteDir()
             }
         }
 

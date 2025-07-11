@@ -180,7 +180,11 @@ class ScmmRepo {
      * Push all refs, i.e. all tags and branches
      */
     def pushAll(boolean force = false) {
-        createPushCommand('+refs/*:refs/*').setForce(force).call()
+        createPushCommand('refs/*:refs/*').setForce(force).call()
+    }
+    
+    def pushRef(String ref, boolean force = false) {
+        createPushCommand("${ref}:${ref}").setForce(force).call()
     }
 
     private PushCommand createPushCommand(String refSpec) {
