@@ -13,6 +13,7 @@ import freemarker.template.Configuration
 import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
+import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import org.apache.commons.io.FileUtils
 import org.eclipse.jgit.api.CloneCommand
@@ -32,7 +33,8 @@ class Content extends Feature {
     private K8sClient k8sClient
     private ScmmRepoProvider repoProvider
     private ScmmApiClient scmmApiClient
-
+    @Inject
+    private Jenkins jenkins
     Content(
             Config config, K8sClient k8sClient, ScmmRepoProvider repoProvider, ScmmApiClient scmmApiClient
     ) {
@@ -274,11 +276,19 @@ class Content extends Feature {
                 } else {
                     targetRepo.commitAndPush("Initialize content repo ${repoCoordinate.namespace}/${repoCoordinate.repoName}")
                 }
-                
+
+                createJenkinsJob(targetRepo, repoCoordinate)
                 new File(targetRepo.absoluteLocalRepoTmpDir).deleteDir()
             }
         }
 
+    }
+
+    private void createJenkinsJob(ScmmRepo repo, RepoCoordinate repoCoordinate) {
+        if (new File(repo.absoluteLocalRepoTmpDir, 'Jenkinsfile').exists()) {
+            // namespaces includes all jobs, thats why in this case namespace is uses as job and namespace.
+            jenkins.createJenkinsjob(repoCoordinate.namespace, repoCoordinate.namespace)
+        }
     }
 
     /**
