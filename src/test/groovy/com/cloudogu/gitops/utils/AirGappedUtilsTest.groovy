@@ -185,7 +185,7 @@ class AirGappedUtilsTest {
         assertThat(commits[0].fullMessage).isEqualTo(expectedCommitMessage)
 
         List<Ref> tags = Git.open(new File(repo.absoluteLocalRepoTmpDir)).tagList().call()
-        assertThat(tags.size()).isEqualTo(2) // Already one test tag present
+        assertThat(tags.size()).isEqualTo(1)
         assertThat(tags[0].name).isEqualTo("refs/tags/${expectedTag}".toString())
     }
 
