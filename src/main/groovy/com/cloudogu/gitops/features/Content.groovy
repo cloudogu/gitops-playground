@@ -142,21 +142,7 @@ class Content extends Feature {
         File target = new File(new File(mergedRepoFolder, namespace), repoName)
         log.debug("Merging content repo, namespace ${namespace}, repoName ${repoName} from ${src} to ${target}")
 
-        // .git will be ignored in every case
-        excludes.add("**/.git")
-
-        def matchers = excludes.collect { pattern ->
-            FileSystems.default.getPathMatcher("glob:" + pattern.replace("/", File.separator))
-        }
-
-        def shouldExclude = { File file ->
-            def relativePath = Paths.get("").toAbsolutePath().relativize(file.toPath().toAbsolutePath())
-            matchers.any { it.matches(relativePath) }
-        }
-
-        FileFilter filter = { File file -> !shouldExclude(file) } as FileFilter
-
-        FileUtils.copyDirectory(src, target, filter)
+        FileUtils.copyDirectory(src, target, createExcludeFilter(excludes))
 
         def repoCoordinate = new RepoCoordinate(
                 namespace: namespace,
@@ -166,6 +152,17 @@ class Content extends Feature {
         )
         addRepoCoordinates(repoCoordinates, repoCoordinate)
     }
+
+    private static FileFilter createExcludeFilter(List<String> excludes) {
+        // .git will be ignored in every case
+        excludes.add("**/.git")
+
+        return new FileSystemUtils.ExcludeFileFilter(excludes)
+
+    }
+
+
+
 
     private static List<File> findRepoDirectories(File srcRepo) {
         srcRepo.listFiles().findAll {
@@ -300,7 +297,7 @@ class Content extends Feature {
         String repo
         File newContent
         OverrideMode overrideMode
-        List<String> exlcudes  = new ArrayList<>()
+        List<String> exlcudes = new ArrayList<>()
 
         @Override
         String toString() {

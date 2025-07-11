@@ -8,8 +8,11 @@ import groovy.yaml.YamlSlurper
 import jakarta.inject.Singleton
 import org.apache.commons.io.FileUtils
 
+import java.nio.file.FileSystems
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.PathMatcher
+import java.nio.file.Paths
 import java.util.regex.Pattern
 
 @Slf4j
@@ -19,7 +22,7 @@ class FileSystemUtils {
     /**
      * Replaces text in files. If you want to change a YAML field, better use 
      * {@link #readYaml(java.nio.file.Path)} and
-     * {@link #writeYaml(java.util.Map, java.io.File)} 
+     * {@link #writeYaml(java.util.Map, java.io.File)}
      */
     File replaceFileContent(String folder, String fileToChange, String from, String to) {
         File file = new File(folder + "/" + fileToChange)
@@ -200,6 +203,37 @@ class FileSystemUtils {
         @Override
         boolean accept(File file) {
             return !file.absolutePath.contains(File.separator + ".git")
+        }
+    }
+    /**
+     * This filter is used to exclude files and folder depending on a list with Glob-Pattern.
+     * e.g. link https://en.wikipedia.org/wiki/Glob_(programming)
+     */
+    static class ExcludeFileFilter implements FileFilter {
+
+        List<String> excludes
+
+        ExcludeFileFilter(List<String> _excludes) {
+            this.excludes = _excludes
+        }
+
+        @Override
+        boolean accept(File f) {
+            List<PathMatcher> excludeMatchers = excludes.collect {
+                pattern ->
+                    FileSystems.default.getPathMatcher("glob:" + pattern.replace("/", File.separator))
+            }
+
+            Closure<Boolean> shouldExclude = {
+                File file ->
+                    Path projectRoot = Paths.get("").toAbsolutePath()
+                    Path filePath = file.toPath().toAbsolutePath()
+                    Path relativePath = projectRoot.relativize(filePath)
+                    return excludeMatchers.any {
+                        matcher -> matcher.matches(relativePath)
+                    }
+            }
+            return !shouldExclude(f)
         }
     }
 }
