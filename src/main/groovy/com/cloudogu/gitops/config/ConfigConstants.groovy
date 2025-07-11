@@ -40,6 +40,7 @@ interface ConfigConstants {
     String CONTENT_REPO_TYPE_DESCRIPTION = "Content Repos can either be:\ncopied (only the files, starting on ref, starting at path within the repo)\n, mirrored (the whole git repo)\nfolderBased (folder structure is interpreted as repos. That is, root folder becomes namespace in SCM, sub folders become repository names in SCM, files are copied)"
     String CONTENT_REPO_TARGET_DESCRIPTION = "Target path for the repository"
     String CONTENT_REPO_TARGET_OVERRIDE_MODE = "This defines, how customer repos will be updated.\nINIT - push only if repo does not exist.\nRESET - delete all files after cloning source - files not in content are deleted\nUPGRADE - clone and copy - existing files will be overwritten, files not in content are kept"
+    String CONTENT_REPO_NO_JENKINSJOB = "If true, no Jenkinsjob will be created."
     String CONTENT_VARIABLES_DESCRIPTION = "Additional variables to use in custom templates."
 
     // group jenkins

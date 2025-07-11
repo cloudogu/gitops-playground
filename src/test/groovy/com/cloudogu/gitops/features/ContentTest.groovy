@@ -15,6 +15,7 @@ import org.eclipse.jgit.lib.Ref
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 import org.eclipse.jgit.util.SystemReader
 import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
 
@@ -45,6 +46,7 @@ class ContentTest {
     K8sClientForTest k8sClient = new K8sClientForTest(config, k8sCommands)
     TestScmmRepoProvider scmmRepoProvider = new TestScmmRepoProvider(config, new FileSystemUtils())
     TestScmmApiClient scmmApiClient = new TestScmmApiClient(config)
+    Jenkins jenkins = mock(Jenkins.class)
 
     List<RepoCoordinate> expectedTargetRepos = [
             new RepoCoordinate(namespace: "common", repoName: "repo"),
@@ -78,6 +80,7 @@ class ContentTest {
     @AfterAll
     static void cleanFolders() {
         foldersToDelete.each { it.deleteDir() }
+
     }
 
 
@@ -569,6 +572,47 @@ class ContentTest {
 
     }
 
+    @Test
+    void 'ensure Jenkinsjob will be created'() {
+        /**
+         * Prepare Testcase
+         * using all defined repos ->  common/repo is used by nonFolderRepo1 + 2
+         * file content after that: nonFolderRepo2
+         *
+         * Then again "RESET" to nonFolderRepo1.
+         * file content after that should be: nonFolderRepo1
+         */
+        config.content.repos = [
+                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, ignoreJenkins: false, target: 'common/repo'),
+        ]
+        def response = scmmApiClient.mockSuccessfulResponse(201)
+        when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response)
+        when(scmmApiClient.repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(response)
+
+        createContent().install()
+        verify(jenkins).createJenkinsjob(any(), any())
+    }
+    @Test
+    void 'ensure Jenkinsjob creation will be ignored'() {
+        /**
+         * Prepare Testcase
+         * using all defined repos ->  common/repo is used by nonFolderRepo1 + 2
+         * file content after that: nonFolderRepo2
+         *
+         * Then again "RESET" to nonFolderRepo1.
+         * file content after that should be: nonFolderRepo1
+         */
+        config.content.repos = [
+                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, ignoreJenkins: true, target: 'common/repo'),
+        ]
+        def response = scmmApiClient.mockSuccessfulResponse(201)
+        when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response)
+        when(scmmApiClient.repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(response)
+
+        createContent().install()
+        verify(jenkins, never()).createJenkinsjob(any(), any())
+    }
+
 
     static String createContentRepo(String initPath = '', String baseBareRepo = 'git-repository') {
         // The bare repo works as the "remote"
@@ -625,7 +669,10 @@ class ContentTest {
     }
 
     private ContentForTest createContent() {
-        new ContentForTest(config, k8sClient, scmmRepoProvider, scmmApiClient)
+        def content =  new ContentForTest(config, k8sClient, scmmRepoProvider, scmmApiClient)
+        content.setJenkins(jenkins)
+        return content;
+
     }
 
     private parseActualYaml(File pathToYamlFile) {
