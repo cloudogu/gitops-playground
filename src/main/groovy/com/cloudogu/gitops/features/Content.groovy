@@ -13,7 +13,6 @@ import freemarker.template.Configuration
 import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
-import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import org.apache.commons.io.FileUtils
 import org.eclipse.jgit.api.CloneCommand
@@ -30,22 +29,24 @@ import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositoryS
 
 @Slf4j
 @Singleton
-@Order(999) // We want to evaluate content last, to allow for changing all other repos
+@Order(999)
+// We want to evaluate content last, to allow for changing all other repos
 class Content extends Feature {
 
     private Config config
     private K8sClient k8sClient
     private ScmmRepoProvider repoProvider
     private ScmmApiClient scmmApiClient
-    @Inject
     private Jenkins jenkins
+
     Content(
-            Config config, K8sClient k8sClient, ScmmRepoProvider repoProvider, ScmmApiClient scmmApiClient
+            Config config, K8sClient k8sClient, ScmmRepoProvider repoProvider, ScmmApiClient scmmApiClient, Jenkins jenkins
     ) {
         this.config = config
         this.k8sClient = k8sClient
         this.repoProvider = repoProvider
         this.scmmApiClient = scmmApiClient
+        this.jenkins = jenkins
     }
 
     @Override
@@ -115,8 +116,7 @@ class Content extends Feature {
                                     .each { contentRepoRepoDir ->
                                         String namespace = contentRepoNamespaceDir.name
                                         String repoName = contentRepoRepoDir.name
-
-                                        mergeRepoDirs(contentRepoRepoDir, namespace, repoName, mergedReposFolder, 
+                                        mergeRepoDirs(contentRepoRepoDir, namespace, repoName, mergedReposFolder,
                                                 repoConfig, repoCoordinates)
                                     }
                         }
@@ -149,7 +149,7 @@ class Content extends Feature {
                 namespace: namespace,
                 repoName: repoName,
                 newContent: target,
-                repoConfig: repoConfig
+                repoConfig: repoConfig,
         )
         addRepoCoordinates(repoCoordinates, repoCoordinate)
     }
@@ -157,7 +157,7 @@ class Content extends Feature {
     protected static FileSystemUtils.IgnoreDotGitFolderFilter isIgnoreDotGitFolder(ContentRepositorySchema repoConfig) {
         if (ContentRepoType.MIRROR == repoConfig.type) {
             return null // In mirror mode, we need not only the files but also commits, tags, branches of content repo
-        } 
+        }
         // In all other cases we want to keep the commits of the target repo
         return new FileSystemUtils.IgnoreDotGitFolderFilter()
     }
@@ -192,14 +192,14 @@ class Content extends Feature {
             cloneCommand.setCredentialsProvider(
                     new UsernamePasswordCredentialsProvider(repoConfig.username, repoConfig.password))
         }
-        
-        
+
+
         def git = cloneCommand.call()
 
         if (ContentRepoType.MIRROR == repoConfig.type) {
             git.fetch().setRefSpecs("+refs/*:refs/*").call() // Fetch all branches and tags
         }
-        
+
         if (repoConfig.ref) {
             def actualRef = findRef(repoConfig, git.repository)
             git.checkout().setName(actualRef).call()
@@ -264,15 +264,15 @@ class Content extends Feature {
 
                 try (def targetGit = Git.open(new File(targetRepo.absoluteLocalRepoTmpDir))) {
                     def remoteUrl = targetGit.repository.config.getString('remote', 'origin', 'url')
-                
+
                     targetRepo.copyDirectoryContents(repoCoordinate.newContent.absolutePath)
-                
+
                     // Restore remote, it could have been overwritten due to a copied .git folder in MIRROR mode
                     targetGit.repository.config.setString('remote', 'origin', 'url', remoteUrl)
                     targetGit.repository.config.save()
                 }
 
-                if (ContentRepoType.MIRROR == repoCoordinate.repoConfig.type) { 
+                if (ContentRepoType.MIRROR == repoCoordinate.repoConfig.type) {
                     if (repoCoordinate.repoConfig.ref) {
                         if (isCommit(repoCoordinate.newContent, repoCoordinate.repoConfig.ref)) {
                             // Mirroring detached commits does not make a lot of sense and is complicated
@@ -286,8 +286,9 @@ class Content extends Feature {
                 } else {
                     targetRepo.commitAndPush("Initialize content repo ${repoCoordinate.namespace}/${repoCoordinate.repoName}")
                 }
-
-                createJenkinsJob(targetRepo, repoCoordinate)
+                if (!repoCoordinate.repoConfig.ignoreJenkins) {
+                    createJenkinsJob(targetRepo, repoCoordinate)
+                }
                 new File(targetRepo.absoluteLocalRepoTmpDir).deleteDir()
             }
         }
@@ -343,7 +344,7 @@ class Content extends Feature {
 
         @Override
         String toString() {
-            return "RepoCoordinates{ namespace='$namespace', repoName='$repoName', repoConfig='$repoConfig', newContent=$newContent' }"
+            return "RepoCoordinates{ namespace='$namespace', repoName='$repoName', repoConfig='$repoConfig', newContent=$newContent'  }"
         }
 
         String getFullRepoName() {

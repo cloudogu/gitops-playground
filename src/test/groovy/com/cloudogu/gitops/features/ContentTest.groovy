@@ -15,6 +15,7 @@ import org.eclipse.jgit.lib.Ref
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 import org.eclipse.jgit.util.SystemReader
 import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
 
@@ -45,6 +46,7 @@ class ContentTest {
     K8sClientForTest k8sClient = new K8sClientForTest(config, k8sCommands)
     TestScmmRepoProvider scmmRepoProvider = new TestScmmRepoProvider(config, new FileSystemUtils())
     TestScmmApiClient scmmApiClient = new TestScmmApiClient(config)
+    Jenkins jenkins = mock(Jenkins.class)
 
     List<RepoCoordinate> expectedTargetRepos = [
             new RepoCoordinate(namespace: "common", repoName: "repo"),
@@ -78,6 +80,7 @@ class ContentTest {
     @AfterAll
     static void cleanFolders() {
         foldersToDelete.each { it.deleteDir() }
+
     }
 
 
@@ -340,14 +343,14 @@ class ContentTest {
         }
 
         // Mirroring commit references is not supported 
-        config.content.repos = [ new ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, ref: '8bc1d1165468359b16d9771d4a9a3df26afc03e8', target: 'common/mirrorWithCommitRef')]
+        config.content.repos = [new ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, ref: '8bc1d1165468359b16d9771d4a9a3df26afc03e8', target: 'common/mirrorWithCommitRef')]
 
         def exception = shouldFail(RuntimeException) {
             createContent().install()
         }
         assertThat(exception.message).startsWith('Mirroring commit references is not supported for content repos at the moment. content repository')
         assertThat(exception.message).endsWith('ref: 8bc1d1165468359b16d9771d4a9a3df26afc03e8')
-        
+
 
         // Don't bother validating all other repos here.
         // If it works for the most complex one, the other ones will work as well.
@@ -568,6 +571,47 @@ class ContentTest {
 
     }
 
+    @Test
+    void 'ensure Jenkinsjob will be created'() {
+        /**
+         * Prepare Testcase
+         * using all defined repos ->  common/repo is used by nonFolderRepo1 + 2
+         * file content after that: nonFolderRepo2
+         *
+         * Then again "RESET" to nonFolderRepo1.
+         * file content after that should be: nonFolderRepo1
+         */
+        config.content.repos = [
+                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, ignoreJenkins: false, target: 'common/repo'),
+        ]
+        def response = scmmApiClient.mockSuccessfulResponse(201)
+        when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response)
+        when(scmmApiClient.repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(response)
+
+        createContent().install()
+        verify(jenkins).createJenkinsjob(any(), any())
+    }
+    @Test
+    void 'ensure Jenkinsjob creation will be ignored'() {
+        /**
+         * Prepare Testcase
+         * using all defined repos ->  common/repo is used by nonFolderRepo1 + 2
+         * file content after that: nonFolderRepo2
+         *
+         * Then again "RESET" to nonFolderRepo1.
+         * file content after that should be: nonFolderRepo1
+         */
+        config.content.repos = [
+                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, ignoreJenkins: true, target: 'common/repo'),
+        ]
+        def response = scmmApiClient.mockSuccessfulResponse(201)
+        when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response)
+        when(scmmApiClient.repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(response)
+
+        createContent().install()
+        verify(jenkins, never()).createJenkinsjob(any(), any())
+    }
+
 
     static String createContentRepo(String initPath = '', String baseBareRepo = 'git-repository') {
         // The bare repo works as the "remote"
@@ -624,7 +668,7 @@ class ContentTest {
     }
 
     private ContentForTest createContent() {
-        new ContentForTest(config, k8sClient, scmmRepoProvider, scmmApiClient)
+        new ContentForTest(config, k8sClient, scmmRepoProvider, scmmApiClient, jenkins)
     }
 
     private parseActualYaml(File pathToYamlFile) {
@@ -649,8 +693,8 @@ class ContentTest {
     class ContentForTest extends Content {
         CloneCommand cloneSpy
 
-        ContentForTest(Config config, K8sClient k8sClient, ScmmRepoProvider repoProvider, ScmmApiClient scmmApiClient) {
-            super(config, k8sClient, repoProvider, scmmApiClient)
+        ContentForTest(Config config, K8sClient k8sClient, ScmmRepoProvider repoProvider, ScmmApiClient scmmApiClient, Jenkins jenkins) {
+            super(config, k8sClient, repoProvider, scmmApiClient, jenkins)
         }
 
         @Override
