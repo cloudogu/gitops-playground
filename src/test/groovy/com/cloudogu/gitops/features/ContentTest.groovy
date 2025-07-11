@@ -196,9 +196,9 @@ class ContentTest {
     @Test
     void 'Checks out commit refs, tags and non-default branches for content repos'() {
         config.content.repos = [
-                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo(), ref: 'someTag', folderBased: false, target: 'common/tag'),
-                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo(), ref: '8bc1d1165468359b16d9771d4a9a3df26afc03e8', folderBased: false, target: 'common/ref'),
-                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo(), ref: 'someBranch', folderBased: false, target: 'common/branch')
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'), ref: 'someTag', folderBased: false, target: 'common/tag'),
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'), ref: '8bc1d1165468359b16d9771d4a9a3df26afc03e8', folderBased: false, target: 'common/ref'),
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'), ref: 'someBranch', folderBased: false, target: 'common/branch')
         ]
 
         def repos = createContent().cloneContentRepos()
@@ -228,8 +228,8 @@ class ContentTest {
     @Test
     void 'Fails if commit refs does not exit'() {
         config.content.repos = [
-                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo(), ref: 'someTag', folderBased: false, target: 'common/tag'),
-                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo(), ref: 'does/not/exist', folderBased: true, target: 'does not matter'),
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'), ref: 'someTag', folderBased: false, target: 'common/tag'),
+                new Config.ContentSchema.ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'), ref: 'does/not/exist', folderBased: true, target: 'does not matter'),
         ]
 
         def exception = shouldFail(RuntimeException) {
