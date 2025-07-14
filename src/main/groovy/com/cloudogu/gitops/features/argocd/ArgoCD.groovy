@@ -31,7 +31,7 @@ class ArgoCD extends Feature {
     static final String DEDICATED_INSTANCE_PATH = 'multiTenant/central/'
     static final String MONITORING_RESOURCES_PATH = '/misc/monitoring/'
 
-    private String namespace = "${config.application.namePrefix}argocd"
+    private String namespace = "${config.application.namePrefix}${config.features.argocd.namespace}"
     private Config config
     private List<RepoInitializationAction> gitRepos = []
 
@@ -148,6 +148,8 @@ class ArgoCD extends Feature {
             //Bootstrapping dedicated instance
             k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), "${DEDICATED_INSTANCE_PATH}projects/tenant.yaml").toString())
             k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), "${DEDICATED_INSTANCE_PATH}applications/bootstrap.yaml").toString())
+            //Bootstrapping tenant Argocd projects
+            k8sClient.applyYaml(Path.of(tenantBootstrapInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'projects/argocd.yaml').toString())
             k8sClient.applyYaml(Path.of(tenantBootstrapInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'applications/bootstrap.yaml').toString())
         } else {
             // Bootstrap root application
@@ -243,7 +245,7 @@ class ArgoCD extends Feature {
                 new ArgoApplication(
                         'example-apps',
                         ScmmRepo.createSCMBaseUrl(config)+'argocd/example-apps',
-                        "${config.application.namePrefix}argocd",
+                        namespace,
                         'argocd/')
                         .generate(tenantBootstrapInitializationAction.repo, 'applications')
             }
@@ -385,7 +387,7 @@ class ArgoCD extends Feature {
                         .withName('argocd-central')
                         .withNamespace(ns)
                         .withServiceAccountsFrom(
-                                'argocd',
+                                config.multiTenant.centralArgocdNamespace,
                                 ["argocd-argocd-server", "argocd-argocd-application-controller", "argocd-applicationset-controller"]
                         )
                         .withRepo(argocdRepoInitializationAction.repo)

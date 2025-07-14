@@ -11,7 +11,7 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: ${namePrefix}argocd
-  project: default
+  project: argocd
   source:
     path: applications/
     repoURL: ${scmm.repoUrl}argocd/argocd

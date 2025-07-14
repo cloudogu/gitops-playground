@@ -353,9 +353,13 @@ class Config {
         @JsonPropertyDescription(CENTRAL_SCMM_USERNAME_DESCRIPTION)
         String username = ''
 
-        @Option(names = ['--central-scm-password'], description = SCMM_PASSWORD_DESCRIPTION)
+        @Option(names = ['--central-scm-password'], description = CENTRAL_SCMM_PASSWORD_DESCRIPTION)
         @JsonPropertyDescription(CENTRAL_SCMM_PASSWORD_DESCRIPTION)
         String password = ''
+
+        @Option(names = ['--central-scm-namespace'], description = CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
+        @JsonPropertyDescription(CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
+        String centralArgocdNamespace = 'argocd'
     }
 
     static class ApplicationSchema {
@@ -598,6 +602,9 @@ class Config {
         @JsonPropertyDescription(ARGOCD_RESOURCE_INCLUSIONS_CLUSTER)
         String resourceInclusionsCluster = ''
 
+        @Option(names = ['--argocd-namespace'], description = ARGOCD_CUSTOM_NAMESPACE_DESCRIPTION)
+        @JsonPropertyDescription(ARGOCD_CUSTOM_NAMESPACE_DESCRIPTION)
+        String namespace = 'argocd'
     }
 
     static class MailSchema {
