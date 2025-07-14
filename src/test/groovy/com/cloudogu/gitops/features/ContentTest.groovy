@@ -15,7 +15,6 @@ import org.eclipse.jgit.lib.Ref
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 import org.eclipse.jgit.util.SystemReader
 import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
 
@@ -242,7 +241,7 @@ class ContentTest {
         def exception = shouldFail(RuntimeException) {
             createContent().cloneContentRepos()
         }
-        assertThat(exception.message).startsWith("Reference 'does/not/exist' not found in repository")
+        assertThat(exception.message).startsWith("Reference 'does/not/exist' not found in content repository")
     }
 
     @Test
@@ -294,8 +293,6 @@ class ContentTest {
                         new ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, target: 'common/mirror'),
                         new ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, ref: 'main', target: 'common/mirrorWithBranchRef'),
                         new ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, ref: 'someTag', target: 'common/mirrorWithTagRef'),
-                        // TODO does not work with commit ref, yet remote: error: invalid protocol: wanted 'old new ref'
-                        //new ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, ref: '8bc1d1165468359b16d9771d4a9a3df26afc03e8', target: 'common/mirrorWithCommitRef')                
                 ]
 
         def response = scmmApiClient.mockSuccessfulResponse(201)
@@ -344,14 +341,15 @@ class ContentTest {
             assertOnlyBranch(git, 'main')
         }
 
-/*        expectedRepo = 'common/mirrorWithCommitRef'
-        try (def git = cloneRepo(expectedRepo, File.createTempDir('cloned-repo'))) {
+        // Mirroring commit references is not supported 
+        config.content.repos = [ new ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, ref: '8bc1d1165468359b16d9771d4a9a3df26afc03e8', target: 'common/mirrorWithCommitRef')]
 
-            git.fetch().setRefSpecs("refs/*:refs/*").call()
-            // TODO assertCommit
-            assertNoTags(git)
-            assertOnlyBranch(git, 'main')
-        }*/
+        def exception = shouldFail(RuntimeException) {
+            createContent().install()
+        }
+        assertThat(exception.message).startsWith('Mirroring commit references is not supported for content repos at the moment. content repository')
+        assertThat(exception.message).endsWith('ref: 8bc1d1165468359b16d9771d4a9a3df26afc03e8')
+        
 
         // Don't bother validating all other repos here.
         // If it works for the most complex one, the other ones will work as well.
@@ -592,6 +590,7 @@ class ContentTest {
         createContent().install()
         verify(jenkins).createJenkinsjob(any(), any())
     }
+    
     @Test
     void 'ensure Jenkinsjob creation will be ignored'() {
         /**

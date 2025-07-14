@@ -18,11 +18,15 @@ import jakarta.inject.Singleton
 import org.apache.commons.io.FileUtils
 import org.eclipse.jgit.api.CloneCommand
 import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.lib.ObjectId
 import org.eclipse.jgit.lib.Ref
 import org.eclipse.jgit.lib.Repository
+import org.eclipse.jgit.revwalk.RevCommit
+import org.eclipse.jgit.revwalk.RevWalk
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
-import static com.cloudogu.gitops.config.Config.*
-import static com.cloudogu.gitops.config.Config.ContentSchema.*
+
+import static com.cloudogu.gitops.config.Config.ContentRepoType
+import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositorySchema
 
 @Slf4j
 @Singleton
@@ -207,12 +211,13 @@ class Content extends Feature {
     }
 
     private static String findRef(ContentRepositorySchema repoConfig, Repository gitRepo) {
-        // Check if it is a commit hash first to avoid InvalidRefNameException
+        // Check if ref exists first to avoid InvalidRefNameException
+        // Note that this works for commits and shortname tags but not shortname branches 🙄
         if (gitRepo.resolve(repoConfig.ref)) {
             return repoConfig.ref
         }
 
-        // Check tags or branches
+        // Check branches or tags
         def remoteCommand = Git.lsRemoteRepository()
                 .setRemote(repoConfig.url)
                 .setHeads(true)
@@ -228,7 +233,7 @@ class Content extends Feature {
         if (!potentialRef) {
             // Jgit silently ignores some missing refs and just continues with default branch.
             // This might lead to unexpected surprises for our users, so better fail explicitly
-            throw new RuntimeException("Reference '${repoConfig.ref}' not found in repository '${repoConfig.url}'")
+            throw new RuntimeException("Reference '${repoConfig.ref}' not found in content repository '${repoConfig.url}'")
         }
 
         // Jgit only checks out remote branches when they start in origin/ 🙄 
@@ -273,6 +278,11 @@ class Content extends Feature {
 
                 if (ContentRepoType.MIRROR == repoCoordinate.repoConfig.type) {
                     if (repoCoordinate.repoConfig.ref) {
+                        if (isCommit(repoCoordinate.newContent, repoCoordinate.repoConfig.ref)) {
+                            // Mirroring detached commits does not make a lot of sense and is complicated
+                            // We would have to branch, push, delete remote branch. Considering this an edge case at the moment!
+                            throw new RuntimeException("Mirroring commit references is not supported for content repos at the moment. content repository '${repoCoordinate.repoConfig.url}', ref: ${repoCoordinate.repoConfig.ref}")
+                        }
                         targetRepo.pushRef(repoCoordinate.repoConfig.ref, true)
                     } else {
                         targetRepo.pushAll(true)
@@ -311,6 +321,23 @@ class Content extends Feature {
             log.debug("Repo coordinate ${entry} replaced existing")
         }
         repoCoordinates << entry
+    }
+
+    static boolean isCommit(File repoPath, String ref) {
+        if (!ObjectId.isId(ref)) {
+            // This avoids exception on ObjectId.fromString if not ref not a SHA
+            return false
+        }
+        try (Git git = Git.open(repoPath)) {
+            ObjectId objectId = ObjectId.fromString(ref)
+            if (objectId == null) {
+                return false
+            }
+            // Make sure the ref that looks like a SHA is an actual commit
+            try (RevWalk revWalk = new RevWalk(git.repository)) {
+                return revWalk.parseAny(objectId) instanceof RevCommit
+            }
+        } 
     }
 
     static class RepoCoordinate {
