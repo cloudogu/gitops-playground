@@ -86,14 +86,9 @@ class ScmmRepo {
         gitClone()
         checkoutOrCreateBranch('main')
     }
+    
     /**
-     * if repo creation is successful or it still exist, then returns HTTP Code
-     *
-     * otherwise exception.
-     *
-     * @param description
-     * @param scmmApiClient
-     * @return 201 or 409
+     * @return true if created, false if already exists. Throw exception on all other errors
      */
     boolean create(String description, ScmmApiClient scmmApiClient) {
         def namespace = scmmRepoTarget.split('/', 2)[0]
@@ -101,6 +96,7 @@ class ScmmRepo {
 
         def repositoryApi = scmmApiClient.repositoryApi()
         def repo = new Repository(namespace, repoName, description)
+        log.debug("Creating repo: ${namespace}/${repoName}")
         def createResponse = repositoryApi.create(repo, true).execute()
         handleResponse(createResponse, repo)
 
@@ -128,13 +124,13 @@ class ScmmRepo {
         file.text = content
     }
 
-    void copyDirectoryContents(String srcDir) {
+    void copyDirectoryContents(String srcDir, FileFilter fileFilter = null) {
         log.debug("Initializing repo $scmmRepoTarget with content of folder $srcDir")
         String absoluteSrcDirLocation = srcDir
         if (!new File(absoluteSrcDirLocation).isAbsolute()) {
             absoluteSrcDirLocation = fileSystemUtils.getRootDir() + "/" + srcDir
         }
-        fileSystemUtils.copyDirectory(absoluteSrcDirLocation, absoluteLocalRepoTmpDir)
+        fileSystemUtils.copyDirectory(absoluteSrcDirLocation, absoluteLocalRepoTmpDir, fileFilter)
     }
 
     void replaceTemplates(Map parameters) {

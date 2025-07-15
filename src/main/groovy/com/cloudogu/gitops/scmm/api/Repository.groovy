@@ -14,7 +14,11 @@ class Repository {
         this.contact = contact
         this.description = description
     }
-
+    
+    String getFullRepoName() {
+        return "${namespace}/${name}"
+    }
+    
     @Override
     String toString() {
         "Repository{name='$name', namespace='$namespace', type='$type', contact='$contact', description='$description'}"

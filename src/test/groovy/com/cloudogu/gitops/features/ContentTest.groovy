@@ -233,7 +233,7 @@ class ContentTest {
     }
 
     @Test
-    void 'Fails if commit refs does not exit'() {
+    void 'Fails if commit ref does not exit'() {
         config.content.repos = [
                 new ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'), ref: 'someTag', type: ContentRepoType.COPY, target: 'common/tag'),
                 new ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'), ref: 'does/not/exist', type: ContentRepoType.FOLDER_BASED, target: 'does not matter'),
@@ -261,6 +261,67 @@ class ContentTest {
         // Last repo "wins"
     }
 
+
+    @Test
+    void 'Is able to COPY into MIRRORED repo'() {
+        config.content.repos = [
+                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, target: 'common/repo'),
+                new ContentRepositorySchema(url: createContentRepo('folderBasedRepo1'), type: ContentRepoType.FOLDER_BASED, overrideMode: OverrideMode.UPGRADE),
+                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), type: ContentRepoType.COPY, target: 'common/repo', overrideMode: OverrideMode.UPGRADE, path: 'subPath')
+        ]
+
+        scmmApiClient.mockRepoApiBehaviour()
+
+        createContent().install()
+
+        def expectedRepo = 'common/repo'
+        def repoFolder = File.createTempDir('cloned-repo')
+        // clone target repo, to ensure, changes in remote repo.
+        try (def git = cloneRepo(expectedRepo, repoFolder)) {
+            assertThat(new File(repoFolder, "file").text).contains("nonFolderBasedRepo2") // Last repo "wins"
+            assertThat(new File(repoFolder, "folderBasedRepo1")).exists().isFile()
+            assertThat(new File(repoFolder, "nonFolderBasedRepo1")).exists().isFile()
+
+            // Assert mirrors branches and tags of non-folderBased repos
+            // Verify tag exists and points to correct content
+            git.fetch().setRefSpecs("refs/*:refs/*").call() // Fetch all tags and branches
+
+            assertTag(git, 'someTag')
+            assertBranch(git, 'someBranch')
+        }
+    }
+        
+    @Test
+    void 'Handles multiple mirrors of the same repo with different refs'() {
+        // TODO implement
+        def repoToMirror = createContentRepo('nonFolderBasedRepo1', 'git-repository-with-branches-tags')
+        config.content.repos = [
+                new ContentRepositorySchema(url: repoToMirror, type: ContentRepoType.MIRROR, ref: 'main', target: 'common/repo'),
+                new ContentRepositorySchema(url: repoToMirror, type: ContentRepoType.MIRROR, ref: 'someBranch', target: 'common/repo'),
+                new ContentRepositorySchema(url: repoToMirror, type: ContentRepoType.MIRROR, ref: 'someTag', target: 'common/repo'),
+                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), type: ContentRepoType.COPY, target: 'common/repo', overrideMode: OverrideMode.UPGRADE,  path: 'subPath')
+        ]
+
+/*        scmmApiClient.mockRepoApiBehaviour()
+
+        createContent().install()
+
+        def expectedRepo = 'common/repo'
+        def repoFolder = File.createTempDir('cloned-repo')
+        // clone target repo, to ensure, changes in remote repo.
+        try (def git = cloneRepo(expectedRepo, repoFolder)) {
+            assertThat(new File(repoFolder, "file").text).contains("nonFolderBasedRepo2") // Last repo "wins"
+            assertThat(new File(repoFolder, "nonFolderBasedRepo1")).exists().isFile()
+            
+            // Assert mirrors branches and tags of non-folderBased repos
+            // Verify tag exists and points to correct content
+            git.fetch().setRefSpecs("refs/*:refs/*").call() // Fetch all tags and branches
+
+            assertTag(git, 'someTag')
+            assertBranch(git, 'someBranch')
+        }*/
+    }
+    
     @Test
     void 'Parses Repo coordinates'() {
 
@@ -296,9 +357,7 @@ class ContentTest {
                         new ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, ref: 'someTag', target: 'common/mirrorWithTagRef'),
                 ]
 
-        def response = scmmApiClient.mockSuccessfulResponse(201)
-        when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response)
-        when(scmmApiClient.repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(response)
+        scmmApiClient.mockRepoApiBehaviour()
 
         createContent().install()
 
@@ -584,9 +643,7 @@ class ContentTest {
         config.content.repos = [
                 new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, ignoreJenkins: false, target: 'common/repo'),
         ]
-        def response = scmmApiClient.mockSuccessfulResponse(201)
-        when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response)
-        when(scmmApiClient.repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(response)
+        scmmApiClient.mockRepoApiBehaviour()
 
         createContent().install()
         verify(jenkins).createJenkinsjob(any(), any())
@@ -604,9 +661,7 @@ class ContentTest {
         config.content.repos = [
                 new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, ignoreJenkins: true, target: 'common/repo'),
         ]
-        def response = scmmApiClient.mockSuccessfulResponse(201)
-        when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response)
-        when(scmmApiClient.repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(response)
+        scmmApiClient.mockRepoApiBehaviour()
 
         createContent().install()
         verify(jenkins, never()).createJenkinsjob(any(), any())

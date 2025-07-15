@@ -143,7 +143,22 @@ class Content extends Feature {
                                       ContentRepositorySchema repoConfig, List<RepoCoordinate> repoCoordinates) {
         File target = new File(new File(mergedRepoFolder, namespace), repoName)
         log.debug("Merging content repo, namespace ${namespace}, repoName ${repoName} from ${src} to ${target}")
-        FileUtils.copyDirectory(src, target, isIgnoreDotGitFolder(repoConfig))
+        if (ContentRepoType.MIRROR == repoConfig.type) {
+            // In mirror mode, we need not only the files but also commits, tags, branches of content repo.
+            // -> Include .git folder
+            // BUT: When two MIRROR repos with the same name are specified (e.g. with different refs) .git needs to
+            // be overwritten.
+            // However, git pack files are typically read-only, leading to IllegalArgumentException: 
+            // File parameter 'destFile is not writable: .git/objects/pack/pack-123.pack
+            // So: Make writable first
+            FileSystemUtils.makeWritable(new File(target, '.git'))
+            
+            FileUtils.copyDirectory(src, target)
+        } else {
+            // In all other cases we want to keep the commits of the target repo -> Ignore .git
+            FileUtils.copyDirectory(src, target, new FileSystemUtils.IgnoreDotGitFolderFilter())
+        }
+            
 
         def repoCoordinate = new RepoCoordinate(
                 namespace: namespace,
@@ -152,14 +167,6 @@ class Content extends Feature {
                 repoConfig: repoConfig,
         )
         addRepoCoordinates(repoCoordinates, repoCoordinate)
-    }
-
-    protected static FileSystemUtils.IgnoreDotGitFolderFilter isIgnoreDotGitFolder(ContentRepositorySchema repoConfig) {
-        if (ContentRepoType.MIRROR == repoConfig.type) {
-            return null // In mirror mode, we need not only the files but also commits, tags, branches of content repo
-        }
-        // In all other cases we want to keep the commits of the target repo
-        return new FileSystemUtils.IgnoreDotGitFolderFilter()
     }
 
     private static List<File> findRepoDirectories(File srcRepo) {
@@ -248,51 +255,70 @@ class Content extends Feature {
                         "and repo already exists in target:  Not pushing content!" +
                         "If you want to override, set ${OverrideMode.UPGRADE} or ${OverrideMode.RESET} .")
             } else {
-
                 targetRepo.cloneRepo()
-
-                if (OverrideMode.INIT != repoCoordinate.repoConfig.overrideMode) {
-                    if (OverrideMode.RESET == repoCoordinate.repoConfig.overrideMode) {
-                        log.info("OverrideMode ${OverrideMode.RESET} set for repo '${repoCoordinate.fullRepoName}': " +
-                                "Deleting existing files in repo and replacing them with new content.")
-                        targetRepo.clearRepo()
-                    } else {
-                        log.info("OverrideMode ${OverrideMode.UPGRADE} set for repo '${repoCoordinate.fullRepoName}': " +
-                                "Merging new content into existing repo. ")
-                    }
-                }
-
-                try (def targetGit = Git.open(new File(targetRepo.absoluteLocalRepoTmpDir))) {
-                    def remoteUrl = targetGit.repository.config.getString('remote', 'origin', 'url')
-
-                    targetRepo.copyDirectoryContents(repoCoordinate.newContent.absolutePath)
-
-                    // Restore remote, it could have been overwritten due to a copied .git folder in MIRROR mode
-                    targetGit.repository.config.setString('remote', 'origin', 'url', remoteUrl)
-                    targetGit.repository.config.save()
-                }
-
                 if (ContentRepoType.MIRROR == repoCoordinate.repoConfig.type) {
-                    if (repoCoordinate.repoConfig.ref) {
-                        if (isCommit(repoCoordinate.newContent, repoCoordinate.repoConfig.ref)) {
-                            // Mirroring detached commits does not make a lot of sense and is complicated
-                            // We would have to branch, push, delete remote branch. Considering this an edge case at the moment!
-                            throw new RuntimeException("Mirroring commit references is not supported for content repos at the moment. content repository '${repoCoordinate.repoConfig.url}', ref: ${repoCoordinate.repoConfig.ref}")
-                        }
-                        targetRepo.pushRef(repoCoordinate.repoConfig.ref, true)
-                    } else {
-                        targetRepo.pushAll(true)
-                    }
+                    handleRepoMirroring(repoCoordinate, targetRepo)
                 } else {
-                    targetRepo.commitAndPush("Initialize content repo ${repoCoordinate.namespace}/${repoCoordinate.repoName}")
+                    handleRepoCopying(repoCoordinate, targetRepo)
                 }
+                
                 if (!repoCoordinate.repoConfig.ignoreJenkins) {
                     createJenkinsJob(targetRepo, repoCoordinate)
                 }
+                
                 new File(targetRepo.absoluteLocalRepoTmpDir).deleteDir()
             }
         }
 
+    }
+
+    /**
+     * Copies repoCoordinate to targetRepo, commits and pushes
+     * Same logic for both FOLDER_BASED and COPY repo types.
+     */
+    private static void handleRepoCopying(RepoCoordinate repoCoordinate, ScmmRepo targetRepo) {
+        if (OverrideMode.INIT != repoCoordinate.repoConfig.overrideMode) {
+            if (OverrideMode.RESET == repoCoordinate.repoConfig.overrideMode) {
+                log.info("OverrideMode ${OverrideMode.RESET} set for repo '${repoCoordinate.fullRepoName}': " +
+                        "Deleting existing files in repo and replacing them with new content.")
+                targetRepo.clearRepo()
+            } else {
+                log.info("OverrideMode ${OverrideMode.UPGRADE} set for repo '${repoCoordinate.fullRepoName}': " +
+                        "Merging new content into existing repo. ")
+            }
+        }
+        // Avoid overwriting .git in target to avoid, because we don't need it for copying and
+        // git pack files are typically read-only, leading to IllegalArgumentException:
+        // File parameter 'destFile is not writable: .git/objects/pack/pack-123.pack
+        targetRepo.copyDirectoryContents(repoCoordinate.newContent.absolutePath, new FileSystemUtils.IgnoreDotGitFolderFilter())
+        targetRepo.commitAndPush("Initialize content repo ${repoCoordinate.namespace}/${repoCoordinate.repoName}")
+    }
+
+    /**
+     * Force pushes repoCoordinate.repoConfig.ref or all refs to targetRepo
+     */
+    private static void handleRepoMirroring(RepoCoordinate repoCoordinate, ScmmRepo targetRepo) {
+        try (def targetGit = Git.open(new File(targetRepo.absoluteLocalRepoTmpDir))) {
+            def remoteUrl = targetGit.repository.config.getString('remote', 'origin', 'url')
+
+            targetRepo.copyDirectoryContents(repoCoordinate.newContent.absolutePath)
+
+            // Restore remote, it could have been overwritten due to a copied .git folder in MIRROR mode
+            targetGit.repository.config.setString('remote', 'origin', 'url', remoteUrl)
+            targetGit.repository.config.save()
+        }
+        
+        if (repoCoordinate.repoConfig.ref) {
+            if (isCommit(repoCoordinate.newContent, repoCoordinate.repoConfig.ref)) {
+                // Mirroring detached commits does not make a lot of sense and is complicated
+                // We would have to branch, push, delete remote branch. Considering this an edge case at the moment!
+                throw new RuntimeException("Mirroring commit references is not supported for content repos at the moment. content repository '${repoCoordinate.repoConfig.url}', ref: ${repoCoordinate.repoConfig.ref}")
+            }
+            log.debug("Mirroring ref '${repoCoordinate.repoConfig.ref}' to target repo ${repoCoordinate.fullRepoName} from source ${}")
+            targetRepo.pushRef(repoCoordinate.repoConfig.ref, true)
+        } else {
+            targetRepo.pushAll(true)
+        }
     }
 
     private void createJenkinsJob(ScmmRepo repo, RepoCoordinate repoCoordinate) {
@@ -310,13 +336,22 @@ class Content extends Feature {
     }
 
     /**
-     * add new repoCoordinates to repos and ensure, newest one override last one
+     * Add new repoCoordinates to repos and ensure, newest one override last one.
+     * Except for MIRROR, which will have to run separately from COPY/FOLDER_BASED in order to allow overriding by COPY/FOLDER_BASED repoCoordinates for the same repo.
      */
-    static void addRepoCoordinates(List<RepoCoordinate> repoCoordinates, RepoCoordinate entry) {
-        if (repoCoordinates.removeIf { it.namespace == entry.namespace && it.repoName == entry.repoName }) {
-            log.debug("Repo coordinate ${entry} replaced existing")
+    static void addRepoCoordinates(List<RepoCoordinate> repoCoordinates, RepoCoordinate newRepoCoordinate) {
+        def existingRepoCoordinates = newRepoCoordinate.findSame(repoCoordinates)
+        
+        if (!existingRepoCoordinates.isEmpty()) {
+            log.debug("Found existing repo coordinates for ${newRepoCoordinate}: ${existingRepoCoordinates}")
+            
+            def repoCoordinateToOverwrite = newRepoCoordinate.findSameNotMirror(existingRepoCoordinates)
+            if (repoCoordinateToOverwrite) {
+                repoCoordinates.remove(repoCoordinateToOverwrite)
+                log.debug("Replacing existing repo coordinate ${existingRepoCoordinates} with new one: ${newRepoCoordinate}")
+            }
         }
-        repoCoordinates << entry
+        repoCoordinates << newRepoCoordinate
     }
 
     static boolean isCommit(File repoPath, String ref) {
@@ -344,11 +379,26 @@ class Content extends Feature {
 
         @Override
         String toString() {
-            return "RepoCoordinates{ namespace='$namespace', repoName='$repoName', repoConfig='$repoConfig', newContent=$newContent'  }"
+            return "RepoCoordinates{ namespace='$namespace', repoName='$repoName', repoConfig.type='${repoConfig.type}', repoConfig.overrideMode='${repoConfig.overrideMode}', newContent=$newContent' }"
         }
 
         String getFullRepoName() {
             return "${namespace}/${repoName}"
+        }
+
+        /**
+         * @return all epoCoordinate with the same fullRepoName. There can be one with either COPY/FOLDER_BASED and many MIRRORs.
+         */
+        List<RepoCoordinate> findSame(List<RepoCoordinate> repoCoordinates) {
+            repoCoordinates.findAll() {it.fullRepoName == fullRepoName }
+        }
+
+        /**
+         * @return RepoCoordinate with the same fullRepoName and repoConfig.type not MIRROR. There can only ever be one!
+         */
+        RepoCoordinate findSameNotMirror(List<RepoCoordinate> repoCoordinates) {
+            repoCoordinates.find() {it.fullRepoName == fullRepoName
+                 && ContentRepoType.MIRROR != it.repoConfig.type}
         }
     }
 
