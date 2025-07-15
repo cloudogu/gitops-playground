@@ -187,11 +187,11 @@
               },
               "ref" : {
                 "type" : [ "string", "null" ],
-                "description" : "Reference for a specific branch, tag, or commit. Emtpy defaults to default branch of the repo"
+                "description" : "Reference for a specific branch, tag, or commit. Emtpy defaults to default branch of the repo. With type MIRROR: ref must not be a commit hash; Choosing a ref only mirrors the ref but does not delete other branches/tags!"
               },
               "target" : {
                 "type" : [ "string", "null" ],
-                "description" : "Target path for the repository"
+                "description" : "Target repo for the repository in the for of namespace/name. Must contain one slash to separate namespace from name."
               },
               "templating" : {
                 "type" : [ "boolean", "null" ],
@@ -204,11 +204,11 @@
                   "type" : "string",
                   "enum" : [ "FOLDER_BASED", "COPY", "MIRROR" ]
                 } ],
-                "description" : "Content Repos can either be:\ncopied (only the files, starting on ref, starting at path within the repo)\n, mirrored (the whole git repo)\nfolderBased (folder structure is interpreted as repos. That is, root folder becomes namespace in SCM, sub folders become repository names in SCM, files are copied)"
+                "description" : "Content Repos can either be:\ncopied (only the files, starting on ref, starting at path within the repo. Requires target)\n, mirrored (the whole git repo. Requires target, does not allow path and template.)\nfolderBased (folder structure is interpreted as repos. That is, root folder becomes namespace in SCM, sub folders become repository names in SCM, files are copied. Requires target.)"
               },
               "url" : {
                 "type" : [ "string", "null" ],
-                "description" : "URL of the content repo"
+                "description" : "URL of the content repo. Mandatory for each type."
               },
               "username" : {
                 "type" : [ "string", "null" ],
