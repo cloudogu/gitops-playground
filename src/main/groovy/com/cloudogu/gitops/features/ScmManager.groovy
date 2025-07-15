@@ -4,11 +4,7 @@ import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.deployment.HelmStrategy
-import com.cloudogu.gitops.utils.CommandExecutor
-import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.K8sClient
-import com.cloudogu.gitops.utils.MapUtils
-import com.cloudogu.gitops.utils.NetworkingUtils
+import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
@@ -35,6 +31,7 @@ class ScmManager extends Feature {
     private GitLabApi gitlabApi
     private K8sClient k8sClient
     private NetworkingUtils networkingUtils
+    String centralSCMUrl
 
     ScmManager(
             Config config,
@@ -53,6 +50,7 @@ class ScmManager extends Feature {
         this.gitlabApi.enableRequestResponseLogging(Level.ALL)
         this.k8sClient = k8sClient
         this.networkingUtils = networkingUtils
+        this.centralSCMUrl = config.multiTenant.centralScmUrl
     }
 
     @Override
@@ -62,10 +60,11 @@ class ScmManager extends Feature {
 
     @Override
     void enable() {
-        String centralSCMUrl = config.multiTenant.centralScmUrl
+        if (config.multiTenant.useDedicatedInstance) {
+            this.centralSCMUrl = !config.multiTenant.internal ? config.multiTenant.centralScmUrl : "http://scmm.scm-manager.svc.cluster.local/scm"
+        }
 
         if (config.scmm.internal) {
-
             String releaseName = 'scmm'
 
             k8sClient.createNamespace(namespace)
@@ -73,11 +72,11 @@ class ScmManager extends Feature {
             def helmConfig = config.scmm.helm
 
             def templatedMap = templateToMap(HELM_VALUES_PATH, [
-                    host    : config.scmm.ingress,
-                    remote  : config.application.remote,
-                    username: config.scmm.username,
-                    password: config.scmm.password,
-                    helm    : config.scmm.helm,
+                    host       : config.scmm.ingress,
+                    remote     : config.application.remote,
+                    username   : config.scmm.username,
+                    password   : config.scmm.password,
+                    helm       : config.scmm.helm,
                     releaseName: releaseName
             ])
 
@@ -93,11 +92,11 @@ class ScmManager extends Feature {
                     'scmm',
                     tempValuesPath
             )
-            
+
             // Update scmm.url after it is deployed (and ports are known)
             // Defined here: https://github.com/scm-manager/scm-manager/blob/3.2.1/scm-packaging/helm/src/main/chart/templates/_helpers.tpl#L14-L25
             String contentPath = "/scm"
-            
+
             if (config.application.runningInsideK8s) {
                 log.debug("Setting scmm url to k8s service, since installation is running inside k8s")
                 config.scmm.url = networkingUtils.createUrl("${releaseName}.${namespace}.svc.cluster.local", "80", contentPath)
@@ -107,8 +106,8 @@ class ScmManager extends Feature {
                 String clusterBindAddress = networkingUtils.findClusterBindAddress()
                 config.scmm.url = networkingUtils.createUrl(clusterBindAddress, port, contentPath)
 
-                if(config.multiTenant.useDedicatedInstance && config.multiTenant.internal){
-                    log.debug("Setting internal configs for local single node cluster with internal scmm. Waiting for NodePort...")
+                if (config.multiTenant.useDedicatedInstance && config.multiTenant.internal) {
+                    log.debug("Setting internal configs for local single node cluster with internal central scmm. Waiting for NodePort...")
                     def portCentralScm = k8sClient.waitForNodePort(releaseName, "scm-manager")
                     centralSCMUrl = networkingUtils.createUrl(clusterBindAddress, portCentralScm, contentPath)
                 }

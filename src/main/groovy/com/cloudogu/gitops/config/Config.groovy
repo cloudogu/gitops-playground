@@ -357,9 +357,13 @@ class Config {
         @JsonPropertyDescription(CENTRAL_SCMM_PASSWORD_DESCRIPTION)
         String password = ''
 
-        @Option(names = ['--central-scm-namespace'], description = CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
+        @Option(names = ['--central-argocd-namespace'], description = CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
         @JsonPropertyDescription(CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
         String centralArgocdNamespace = 'argocd'
+
+        @Option(names = ['--central-scm-namespace'], description = CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
+        @JsonPropertyDescription(CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
+        String centralSCMamespace = 'scm-manager'
     }
 
     static class ApplicationSchema {

@@ -180,7 +180,8 @@ function configureScmmManager() {
   setPermissionForUser "${METRICS_USERNAME}" "metrics:read"
 
  USE_CENTRAL_SCM=$([[ -n "${CENTRAL_SCM_URL// /}" ]] && echo true || echo false)
-
+ echo "CENTRAL_SCM_URL='$CENTRAL_SCM_URL'"
+ echo "USE_CENTRAL_SCM=$USE_CENTRAL_SCM"
   ### ArgoCD Repos
   if [[ $INSTALL_ARGOCD == true ]]; then
 
