@@ -193,6 +193,10 @@
                 "type" : [ "string", "null" ],
                 "description" : "Target repo for the repository in the for of namespace/name. Must contain one slash to separate namespace from name."
               },
+              "targetRef" : {
+                "type" : [ "string", "null" ],
+                "description" : "Reference for a specific branch or tag in the target repo of a MIRROR or COPY repo. If ref is a tag, targetRef is treated as tag as well. Except: targetRef is full ref like refs/heads/my-branch or refs/tags/my-tag. Empty defaults to the source ref."
+              },
               "templating" : {
                 "type" : [ "boolean", "null" ],
                 "description" : "When true, template all files ending in .ftl within the repo"

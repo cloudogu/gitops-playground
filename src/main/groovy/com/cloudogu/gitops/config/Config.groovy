@@ -116,6 +116,9 @@ class Config {
 
             @JsonPropertyDescription(CONTENT_REPO_REF_DESCRIPTION)
             String ref = ''
+            
+            @JsonPropertyDescription(CONTENT_REPO_TARGET_REF_DESCRIPTION)
+            String targetRef = ''
 
             @JsonPropertyDescription(CONTENT_REPO_USERNAME_DESCRIPTION)
             String username = ''

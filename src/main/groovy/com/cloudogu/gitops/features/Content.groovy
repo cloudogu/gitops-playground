@@ -116,14 +116,15 @@ class Content extends Feature {
 
             switch (repoConfig.type) {
                 case ContentRepoType.FOLDER_BASED:
+                    boolean refIsTag = isTag(repoTmpDir, repoConfig.ref)
                     findRepoDirectories(contentRepoDir)
                             .each { contentRepoNamespaceDir ->
                                 findRepoDirectories(contentRepoNamespaceDir)
                                         .each { contentRepoRepoDir ->
                                             String namespace = contentRepoNamespaceDir.name
                                             String repoName = contentRepoRepoDir.name
-                                            mergeRepoDirs(contentRepoRepoDir, namespace, repoName, mergedReposFolder,
-                                                    repoConfig, repoCoordinates)
+                                            def repoCoordinate = mergeRepoDirs(contentRepoRepoDir, namespace, repoName, mergedReposFolder, repoConfig, repoCoordinates)
+                                            repoCoordinate.refIsTag = refIsTag
                                         }
                             }
                     repoTmpDir.deleteDir()
@@ -132,7 +133,8 @@ class Content extends Feature {
                     String namespace = repoConfig.target.split('/')[0]
                     String repoName = repoConfig.target.split('/')[1]
 
-                    mergeRepoDirs(contentRepoDir, namespace, repoName, mergedReposFolder, repoConfig, repoCoordinates)
+                    def repoCoordinate = mergeRepoDirs(contentRepoDir, namespace, repoName, mergedReposFolder, repoConfig, repoCoordinates)
+                    repoCoordinate.refIsTag = isTag(repoTmpDir, repoConfig.ref)
                     repoTmpDir.deleteDir()
                     break
                 case ContentRepoType.MIRROR:
@@ -145,6 +147,7 @@ class Content extends Feature {
                             repoName: repoName,
                             newContent: repoTmpDir,
                             repoConfig: repoConfig,
+                            refIsTag: isTag(repoTmpDir, repoConfig.ref)
                     )
                     repoCoordinates << repoCoordinate
                     break
@@ -160,7 +163,7 @@ class Content extends Feature {
      *
      * Note that existing repoCoordinate objects with different overrideMode are overwritten. The last repo to be mentioned within config.content.repos wins!
      */
-    private static void mergeRepoDirs(File src, String namespace, String repoName, File mergedRepoFolder,
+    private static RepoCoordinate mergeRepoDirs(File src, String namespace, String repoName, File mergedRepoFolder,
                                       ContentRepositorySchema repoConfig, List<RepoCoordinate> repoCoordinates) {
         File target = new File(new File(mergedRepoFolder, namespace), repoName)
         log.debug("Merging content repo, namespace ${namespace}, repoName ${repoName} from ${src} to ${target}")
@@ -173,6 +176,7 @@ class Content extends Feature {
                 repoConfig: repoConfig,
         )
         addRepoCoordinates(repoCoordinates, repoCoordinate)
+        return repoCoordinate
     }
 
     private static List<File> findRepoDirectories(File srcRepo) {
@@ -297,7 +301,23 @@ class Content extends Feature {
         // git pack files are typically read-only, leading to IllegalArgumentException:
         // File parameter 'destFile is not writable: .git/objects/pack/pack-123.pack
         targetRepo.copyDirectoryContents(repoCoordinate.newContent.absolutePath, new FileSystemUtils.IgnoreDotGitFolderFilter())
-        targetRepo.commitAndPush("Initialize content repo ${repoCoordinate.namespace}/${repoCoordinate.repoName}")
+
+        String commitMessage = "Initialize content repo ${repoCoordinate.namespace}/${repoCoordinate.repoName}"
+        String targetRefShort = repoCoordinate.repoConfig.targetRef.replace('refs/heads/', '').replace('refs/tags/', '')
+        if (targetRefShort) {
+            String refSpec
+            if ((repoCoordinate.refIsTag && !repoCoordinate.repoConfig.targetRef.startsWith('refs/heads')) 
+                    || repoCoordinate.repoConfig.targetRef.startsWith('refs/tags')) {
+                refSpec = "refs/tags/${targetRefShort}:refs/tags/${targetRefShort}"
+            } else {
+                refSpec = "HEAD:refs/heads/${targetRefShort}" 
+            }
+            
+            targetRepo.commitAndPush(commitMessage, targetRefShort, refSpec)
+        } else {
+            targetRepo.commitAndPush(commitMessage)
+        }
+            
     }
 
     /**
@@ -320,9 +340,15 @@ class Content extends Feature {
                 // We would have to branch, push, delete remote branch. Considering this an edge case at the moment!
                 throw new RuntimeException("Mirroring commit references is not supported for content repos at the moment. content repository '${repoCoordinate.repoConfig.url}', ref: ${repoCoordinate.repoConfig.ref}")
             }
-            log.debug("Mirroring ref '${repoCoordinate.repoConfig.ref}' to target repo ${repoCoordinate.fullRepoName} from source ${}")
-            targetRepo.pushRef(repoCoordinate.repoConfig.ref, true)
+            if (repoCoordinate.repoConfig.targetRef) {
+                log.debug("Mirroring repo '${repoCoordinate.repoConfig.url}' ref '${repoCoordinate.repoConfig.ref}' to target repo ${repoCoordinate.fullRepoName}, targetRef: '${repoCoordinate.repoConfig.targetRef}'")
+                targetRepo.pushRef(repoCoordinate.repoConfig.ref, repoCoordinate.repoConfig.targetRef, true)
+            } else {
+                log.debug("Mirroring repo '${repoCoordinate.repoConfig.url}' ref '${repoCoordinate.repoConfig.ref}' to target repo ${repoCoordinate.fullRepoName}")
+                targetRepo.pushRef(repoCoordinate.repoConfig.ref, true)
+            } 
         } else {
+            log.debug("Mirroring whole repo '${repoCoordinate.repoConfig.url}' to target repo ${repoCoordinate.fullRepoName}")
             targetRepo.pushAll(true)
         }
     }
@@ -443,15 +469,25 @@ class Content extends Feature {
         return false
     }
 
+    static boolean isTag(File repo, String ref) {
+        if (!ref) {
+            return false
+        }
+        try (def git = Git.open(repo)) {
+            git.tagList().call().any { it.name.endsWith("/" + ref) || it.name == ref } 
+        }
+    }
+
     static class RepoCoordinate {
         String namespace
         String repoName
         File newContent
         ContentRepositorySchema repoConfig
+        boolean refIsTag
 
         @Override
         String toString() {
-            return "RepoCoordinates{ namespace='$namespace', repoName='$repoName', repoConfig.type='${repoConfig.type}', repoConfig.overrideMode='${repoConfig.overrideMode}', newContent=$newContent' }"
+            return "RepoCoordinates{ namespace='$namespace', repoName='$repoName', repoConfig.type='${repoConfig.type}', repoConfig.overrideMode='${repoConfig.overrideMode}', newContent=$newContent', refIsTag='${refIsTag}' }"
         }
 
         String getFullRepoName() {

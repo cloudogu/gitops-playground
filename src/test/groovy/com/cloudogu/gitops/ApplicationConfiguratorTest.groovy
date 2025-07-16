@@ -188,6 +188,15 @@ class ApplicationConfiguratorTest {
             applicationConfigurator.validateConfig(testConfig)
         }
         assertThat(exception.message).isEqualTo('content.repos.type FOLDER_BASED does not support target parameter. Repo: abc')
+        
+        
+        testConfig.content.repos = [
+                new Config.ContentSchema.ContentRepositorySchema(url: 'abc', type: Config.ContentRepoType.FOLDER_BASED, targetRef: 'someRef'),
+        ]
+        exception = shouldFail(RuntimeException) {
+            applicationConfigurator.validateConfig(testConfig)
+        }
+        assertThat(exception.message).isEqualTo('content.repos.type FOLDER_BASED does not support targetRef parameter. Repo: abc')
     }
 
     @Test

@@ -137,14 +137,15 @@ class ScmmRepo {
         new TemplatingEngine().replaceTemplates(new File(absoluteLocalRepoTmpDir), parameters)
     }
 
-    def commitAndPush(String commitMessage, String tag = null) {
-        log.debug("Checking out main, adding files for repo: ${scmmRepoTarget}")
+    def commitAndPush(String commitMessage, String tag = null, String refSpec = 'HEAD:refs/heads/main') {
+        log.debug("Adding files to repo: ${scmmRepoTarget}")
         getGit()
                 .add()
                 .addFilepattern(".")
                 .call()
 
         if (getGit().status().call().hasUncommittedChanges()) {
+            log.debug("Committing repo: ${scmmRepoTarget}")
             getGit()
                     .commit()
                     .setSign(false)
@@ -153,7 +154,7 @@ class ScmmRepo {
                     .setCommitter(gitName, gitEmail)
                     .call()
 
-            def pushCommand = createPushCommand('HEAD:refs/heads/main')
+            def pushCommand = createPushCommand(refSpec)
 
             if (tag) {
                 log.debug("Setting tag '${tag}' on repo: ${scmmRepoTarget}")
@@ -167,8 +168,10 @@ class ScmmRepo {
                 pushCommand.setPushTags()
             }
 
-            log.debug("Pushing repo: ${scmmRepoTarget}")
+            log.debug("Pushing repo: ${scmmRepoTarget}, refSpec: ${refSpec}")
             pushCommand.call()
+        } else {
+            log.debug("No changes after add, nothing to commit or push on repo: ${scmmRepoTarget}")
         }
     }
 
@@ -179,8 +182,12 @@ class ScmmRepo {
         createPushCommand('refs/*:refs/*').setForce(force).call()
     }
     
+    def pushRef(String ref, String targetRef, boolean force = false) {
+        createPushCommand("${ref}:${targetRef}").setForce(force).call()
+    }
+    
     def pushRef(String ref, boolean force = false) {
-        createPushCommand("${ref}:${ref}").setForce(force).call()
+        pushRef(ref, ref, force)
     }
 
     private PushCommand createPushCommand(String refSpec) {

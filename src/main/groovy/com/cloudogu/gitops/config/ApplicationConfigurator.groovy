@@ -291,6 +291,9 @@ class ApplicationConfigurator {
                     if (repo.target) {
                         throw new RuntimeException("content.repos.type ${ContentRepoType.FOLDER_BASED} does not support target parameter. Repo: ${repo.url}")
                     }
+                    if (repo.targetRef) {
+                        throw new RuntimeException("content.repos.type ${ContentRepoType.FOLDER_BASED} does not support targetRef parameter. Repo: ${repo.url}")
+                    }
                     break
                 case ContentRepoType.MIRROR:
                     if (!repo.target) {

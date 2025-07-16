@@ -34,6 +34,7 @@ interface ConfigConstants {
     String CONTENT_REPO_URL_DESCRIPTION = "URL of the content repo. Mandatory for each type."
     String CONTENT_REPO_PATH_DESCRIPTION = "Path within the content repo to process"
     String CONTENT_REPO_REF_DESCRIPTION = "Reference for a specific branch, tag, or commit. Emtpy defaults to default branch of the repo. With type MIRROR: ref must not be a commit hash; Choosing a ref only mirrors the ref but does not delete other branches/tags!"
+    String CONTENT_REPO_TARGET_REF_DESCRIPTION = "Reference for a specific branch or tag in the target repo of a MIRROR or COPY repo. If ref is a tag, targetRef is treated as tag as well. Except: targetRef is full ref like refs/heads/my-branch or refs/tags/my-tag. Empty defaults to the source ref."
     String CONTENT_REPO_USERNAME_DESCRIPTION = "Username to authenticate against content repo"
     String CONTENT_REPO_PASSWORD_DESCRIPTION = "Password to authenticate against content repo"
     String CONTENT_REPO_TEMPLATING_DESCRIPTION = "When true, template all files ending in .ftl within the repo"
