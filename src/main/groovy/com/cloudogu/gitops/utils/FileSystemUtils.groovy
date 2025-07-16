@@ -111,17 +111,6 @@ class FileSystemUtils {
         }
     }
 
-    static void makeWritable(File directory) {
-        if (!directory.exists()) {
-            return
-        } 
-        directory.eachFileRecurse { file ->
-            if (!file.canWrite()) {
-                file.setWritable(true)
-            }
-        }
-    }
-
     void copyDirectory(String source, String destination) {
         copyDirectory(source, destination, null)
     }

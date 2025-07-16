@@ -113,27 +113,44 @@ class Content extends Feature {
             def contentRepoDir = new File(repoTmpDir, repoConfig.path)
             doTemplating(repoConfig, engine, contentRepoDir)
 
-            if (ContentRepoType.FOLDER_BASED == repoConfig.type) {
-                findRepoDirectories(contentRepoDir)
-                        .each { contentRepoNamespaceDir ->
-                            findRepoDirectories(contentRepoNamespaceDir)
-                                    .each { contentRepoRepoDir ->
-                                        String namespace = contentRepoNamespaceDir.name
-                                        String repoName = contentRepoRepoDir.name
-                                        mergeRepoDirs(contentRepoRepoDir, namespace, repoName, mergedReposFolder,
-                                                repoConfig, repoCoordinates)
-                                    }
-                        }
-            } else {
-                String namespace = repoConfig.target.split('/')[0]
-                String repoName = repoConfig.target.split('/')[1]
 
-                mergeRepoDirs(contentRepoDir, namespace, repoName, mergedReposFolder, repoConfig, repoCoordinates)
+            switch (repoConfig.type) {
+                case ContentRepoType.FOLDER_BASED:
+                    findRepoDirectories(contentRepoDir)
+                            .each { contentRepoNamespaceDir ->
+                                findRepoDirectories(contentRepoNamespaceDir)
+                                        .each { contentRepoRepoDir ->
+                                            String namespace = contentRepoNamespaceDir.name
+                                            String repoName = contentRepoRepoDir.name
+                                            mergeRepoDirs(contentRepoRepoDir, namespace, repoName, mergedReposFolder,
+                                                    repoConfig, repoCoordinates)
+                                        }
+                            }
+                    repoTmpDir.deleteDir()
+                    break
+                case ContentRepoType.COPY:
+                    String namespace = repoConfig.target.split('/')[0]
+                    String repoName = repoConfig.target.split('/')[1]
+
+                    mergeRepoDirs(contentRepoDir, namespace, repoName, mergedReposFolder, repoConfig, repoCoordinates)
+                    repoTmpDir.deleteDir()
+                    break
+                case ContentRepoType.MIRROR:
+                    // Don't merge but keep these in separate dirs.
+                    // This avoids messing up .git folders with possible confusing exceptions for the user
+                    String namespace = repoConfig.target.split('/')[0]
+                    String repoName = repoConfig.target.split('/')[1]
+                    def repoCoordinate = new RepoCoordinate(
+                            namespace: namespace,
+                            repoName: repoName,
+                            newContent: repoTmpDir,
+                            repoConfig: repoConfig,
+                    )
+                    repoCoordinates << repoCoordinate
+                    break
             }
 
-
-            repoTmpDir.deleteDir()
-            log.debug("Finished merging content repo, ${repoConfig.url} into ${mergedReposFolder}")
+            log.debug("Finished cloning content repos. repoCoordinates=${repoCoordinates}")
         }
         return repoCoordinates
     }
@@ -147,22 +164,7 @@ class Content extends Feature {
                                       ContentRepositorySchema repoConfig, List<RepoCoordinate> repoCoordinates) {
         File target = new File(new File(mergedRepoFolder, namespace), repoName)
         log.debug("Merging content repo, namespace ${namespace}, repoName ${repoName} from ${src} to ${target}")
-        if (ContentRepoType.MIRROR == repoConfig.type) {
-            // In mirror mode, we need not only the files but also commits, tags, branches of content repo.
-            // -> Include .git folder
-            // BUT: When two MIRROR repos with the same name are specified (e.g. with different refs) .git needs to
-            // be overwritten.
-            // However, git pack files are typically read-only, leading to IllegalArgumentException: 
-            // File parameter 'destFile is not writable: .git/objects/pack/pack-123.pack
-            // So: Make writable first
-            FileSystemUtils.makeWritable(new File(target, '.git'))
-
-            FileUtils.copyDirectory(src, target)
-        } else {
-            // In all other cases we want to keep the commits of the target repo -> Ignore .git
-            FileUtils.copyDirectory(src, target, new FileSystemUtils.IgnoreDotGitFolderFilter())
-        }
-
+        FileUtils.copyDirectory(src, target, new FileSystemUtils.IgnoreDotGitFolderFilter())
 
         def repoCoordinate = new RepoCoordinate(
                 namespace: namespace,
@@ -259,7 +261,9 @@ class Content extends Feature {
                         "and repo already exists in target:  Not pushing content!" +
                         "If you want to override, set ${OverrideMode.UPGRADE} or ${OverrideMode.RESET} .")
             } else {
+                
                 targetRepo.cloneRepo()
+                
                 if (ContentRepoType.MIRROR == repoCoordinate.repoConfig.type) {
                     handleRepoMirroring(repoCoordinate, targetRepo)
                 } else {
@@ -350,6 +354,7 @@ class Content extends Feature {
         if (!existingRepoCoordinates.isEmpty()) {
             log.debug("Found existing repo coordinates for ${newRepoCoordinate}: ${existingRepoCoordinates}")
 
+            // Don't replace MIRROR coordinates, they are separate git operations
             def repoCoordinateToOverwrite = newRepoCoordinate.findSameNotMirror(existingRepoCoordinates)
             if (repoCoordinateToOverwrite) {
                 repoCoordinates.remove(repoCoordinateToOverwrite)
@@ -360,20 +365,34 @@ class Content extends Feature {
     }
 
     static boolean isCommit(File repoPath, String ref) {
-        if (!ObjectId.isId(ref)) {
-            // This avoids exception on ObjectId.fromString if not ref not a SHA
+        if (!ref) {
             return false
         }
+
         try (Git git = Git.open(repoPath)) {
-            ObjectId objectId = ObjectId.fromString(ref)
-            if (objectId == null) {
+            // Get all branch and tag names
+            def allRefs = []
+
+            // Add all branch names (without refs/heads/ prefix)
+            git.branchList().call().each { branch ->
+                allRefs.add(branch.name.replaceFirst('refs/heads/', ''))
+            }
+
+            // Add all tag names (without refs/tags/ prefix)
+            git.tagList().call().each { tag ->
+                allRefs.add(tag.name.replaceFirst('refs/tags/', ''))
+            }
+
+            // If the ref matches any branch or tag name, it's not a commit hash
+            if (allRefs.contains(ref)) {
                 return false
             }
-            // Make sure the ref that looks like a SHA is an actual commit
-            try (RevWalk revWalk = new RevWalk(git.repository)) {
-                return revWalk.parseAny(objectId) instanceof RevCommit
-            }
-        }
+
+            // If it's not a branch or tag, try to resolve it as a commit
+            def objectId = git.repository.resolve(ref)
+            return objectId != null
+
+        } 
     }
     /**
      * checks, if file exists in repo in some branch.

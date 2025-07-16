@@ -17,6 +17,7 @@ import org.eclipse.jgit.util.SystemReader
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 import org.mockito.ArgumentCaptor
 
 import static com.cloudogu.gitops.config.Config.*
@@ -47,6 +48,10 @@ class ContentTest {
     TestScmmRepoProvider scmmRepoProvider = new TestScmmRepoProvider(config, new FileSystemUtils())
     TestScmmApiClient scmmApiClient = new TestScmmApiClient(config)
     Jenkins jenkins = mock(Jenkins.class)
+
+    @TempDir
+    File repoFolder
+
 
     List<RepoCoordinate> expectedTargetRepos = [
             new RepoCoordinate(namespace: "common", repoName: "repo"),
@@ -223,7 +228,7 @@ class ContentTest {
     @Test
     void 'Checks out default branch when no ref set'() {
         config.content.repos = [
-                new ContentRepositorySchema(url: createContentRepo('', 'git-repo-different-default-branch'), target: 'common/default'),
+                new ContentRepositorySchema(url: createContentRepo('', 'git-repo-different-default-branch'), target: 'common/default', type: ContentRepoType.COPY ),
         ]
 
         def repos = createContent().cloneContentRepos()
@@ -231,9 +236,9 @@ class ContentTest {
         assertThat(new File(findRoot(repos), "common/default/README.md")).exists().isFile()
         assertThat(new File(findRoot(repos), "common/default/README.md").text).contains("different")
     }
-
+    
     @Test
-    void 'Fails if commit ref does not exit'() {
+    void 'Fails if commit ref does not exist'() {
         config.content.repos = [
                 new ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'), ref: 'someTag', type: ContentRepoType.COPY, target: 'common/tag'),
                 new ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'), ref: 'does/not/exist', type: ContentRepoType.FOLDER_BASED, target: 'does not matter'),
@@ -261,7 +266,6 @@ class ContentTest {
         // Last repo "wins"
     }
 
-
     @Test
     void 'Is able to COPY into MIRRORED repo'() {
         config.content.repos = [
@@ -275,7 +279,6 @@ class ContentTest {
         createContent().install()
 
         def expectedRepo = 'common/repo'
-        def repoFolder = File.createTempDir('cloned-repo')
         // clone target repo, to ensure, changes in remote repo.
         try (def git = cloneRepo(expectedRepo, repoFolder)) {
             assertThat(new File(repoFolder, "file").text).contains("nonFolderBasedRepo2") // Last repo "wins"
@@ -290,36 +293,82 @@ class ContentTest {
             assertBranch(git, 'someBranch')
         }
     }
-        
     @Test
-    void 'Handles multiple mirrors of the same repo with different refs'() {
-        // TODO implement
-        def repoToMirror = createContentRepo('nonFolderBasedRepo1', 'git-repository-with-branches-tags')
+    void 'Handles MIRRORING COPYed repo'() {
         config.content.repos = [
-                new ContentRepositorySchema(url: repoToMirror, type: ContentRepoType.MIRROR, ref: 'main', target: 'common/repo'),
-                new ContentRepositorySchema(url: repoToMirror, type: ContentRepoType.MIRROR, ref: 'someBranch', target: 'common/repo'),
-                new ContentRepositorySchema(url: repoToMirror, type: ContentRepoType.MIRROR, ref: 'someTag', target: 'common/repo'),
-                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), type: ContentRepoType.COPY, target: 'common/repo', overrideMode: OverrideMode.UPGRADE,  path: 'subPath')
+                new ContentRepositorySchema(url: createContentRepo('folderBasedRepo1'), type: ContentRepoType.FOLDER_BASED),
+                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), type: ContentRepoType.COPY, target: 'common/repo', overrideMode: OverrideMode.UPGRADE, path: 'subPath'),
+                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, overrideMode: OverrideMode.RESET, target: 'common/repo'),
         ]
 
-/*        scmmApiClient.mockRepoApiBehaviour()
+        scmmApiClient.mockRepoApiBehaviour()
 
         createContent().install()
 
         def expectedRepo = 'common/repo'
-        def repoFolder = File.createTempDir('cloned-repo')
         // clone target repo, to ensure, changes in remote repo.
         try (def git = cloneRepo(expectedRepo, repoFolder)) {
-            assertThat(new File(repoFolder, "file").text).contains("nonFolderBasedRepo2") // Last repo "wins"
-            assertThat(new File(repoFolder, "nonFolderBasedRepo1")).exists().isFile()
-            
+            assertThat(new File(repoFolder, "file").text).contains("nonFolderBasedRepo1") // Last repo "wins"
+            assertThat(new File(repoFolder, "folderBasedRepo1")).doesNotExist()
+            assertThat(new File(repoFolder, "nonFolderBasedRepo2")).doesNotExist()
+
             // Assert mirrors branches and tags of non-folderBased repos
             // Verify tag exists and points to correct content
             git.fetch().setRefSpecs("refs/*:refs/*").call() // Fetch all tags and branches
 
             assertTag(git, 'someTag')
             assertBranch(git, 'someBranch')
-        }*/
+        }
+    }
+        
+    @Test
+    void 'Handles multiple mirrors of the same repo with different refs'() {
+        def repoToMirror = createContentRepo('nonFolderBasedRepo1', 'git-repository-with-branches-tags')
+        config.content.repos = [
+                new ContentRepositorySchema(url: repoToMirror, type: ContentRepoType.MIRROR, ref: 'main', target: 'common/repo'),
+                new ContentRepositorySchema(url: repoToMirror, type: ContentRepoType.MIRROR, ref: 'someBranch', target: 'common/repo', overrideMode: OverrideMode.UPGRADE),
+                new ContentRepositorySchema(url: repoToMirror, type: ContentRepoType.MIRROR, ref: 'someTag', target: 'common/repo', overrideMode: OverrideMode.UPGRADE),
+                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), type: ContentRepoType.COPY, target: 'common/repo', overrideMode: OverrideMode.UPGRADE,  path: 'subPath')
+        ]
+
+        scmmApiClient.mockRepoApiBehaviour()
+
+        createContent().install()
+
+        def expectedRepo = 'common/repo'
+        // clone target repo, to ensure, changes in remote repo.
+        try (def git = cloneRepo(expectedRepo, repoFolder)) {
+            assertThat(new File(repoFolder, "file").text).contains("nonFolderBasedRepo2") // Last repo "wins"
+            assertThat(new File(repoFolder, "nonFolderBasedRepo1")).exists().isFile()
+            
+            git.fetch().setRefSpecs("refs/*:refs/*").call() // Fetch all tags and branches
+
+            assertTag(git, 'someTag')
+            assertBranch(git, 'someBranch')
+        }
+    }
+    
+    @Test
+    void 'Handles multiple mirrors of the same repo with different refs, where one is not pushed'() {
+        // This test case does not make too much sense but used to cause git problems when we merged all content repos into a single folder, like 
+        // TransportException: Missing unknown 5bcf50f0537bf4d2719a82e9b0950fbac92b3ecc
+        def repoToMirror = createContentRepo('nonFolderBasedRepo1', 'git-repository-with-branches-tags')
+        config.content.repos = [
+                new ContentRepositorySchema(url: repoToMirror, type: ContentRepoType.MIRROR, ref: 'main', target: 'common/repo'),
+                new ContentRepositorySchema(url: repoToMirror, type: ContentRepoType.MIRROR, ref: 'someBranch', target: 'common/repo') /* Deliberately not use overrideMode here !*/,
+                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), type: ContentRepoType.COPY, target: 'common/repo', overrideMode: OverrideMode.UPGRADE,  path: 'subPath')
+        ]
+
+        scmmApiClient.mockRepoApiBehaviour()
+
+        createContent().install()
+
+        def expectedRepo = 'common/repo'
+        // clone target repo, to ensure, changes in remote repo.
+        try (def git = cloneRepo(expectedRepo, repoFolder)) {
+            assertThat(new File(repoFolder, "file").text).contains("nonFolderBasedRepo2") // Last repo "wins"
+            assertThat(new File(repoFolder, "nonFolderBasedRepo1")).exists().isFile()
+        }
     }
     
     @Test
@@ -362,7 +411,6 @@ class ContentTest {
         createContent().install()
 
         def expectedRepo = 'nonFolderBased/repo1'
-        def repoFolder = File.createTempDir('cloned-repo')
         // clone target repo, to ensure, changes in remote repo.
         try (def git = cloneRepo(expectedRepo, repoFolder)) {
 
@@ -374,7 +422,7 @@ class ContentTest {
         }
 
         expectedRepo = 'common/mirror'
-        try (def git = cloneRepo(expectedRepo, File.createTempDir('cloned-repo'))) {
+        try (def git = cloneRepo(expectedRepo, createRandomSubDir())) {
             // Assert mirrors branches and tags of non-folderBased repos
             // Verify tag exists and points to correct content
             git.fetch().setRefSpecs("refs/*:refs/*").call() // Fetch all tags and branches
@@ -384,7 +432,7 @@ class ContentTest {
         }
 
         expectedRepo = 'common/mirrorWithBranchRef'
-        try (def git = cloneRepo(expectedRepo, File.createTempDir('cloned-repo'))) {
+        try (def git = cloneRepo(expectedRepo, createRandomSubDir())) {
 
             git.fetch().setRefSpecs("refs/*:refs/*").call()
 
@@ -393,7 +441,7 @@ class ContentTest {
         }
 
         expectedRepo = 'common/mirrorWithTagRef'
-        try (def git = cloneRepo(expectedRepo, File.createTempDir('cloned-repo'))) {
+        try (def git = cloneRepo(expectedRepo, createRandomSubDir())) {
 
             git.fetch().setRefSpecs("refs/*:refs/*").call()
 
@@ -411,6 +459,15 @@ class ContentTest {
         assertThat(exception.message).endsWith('ref: 8bc1d1165468359b16d9771d4a9a3df26afc03e8')
 
 
+        // Mirroring short commit references is not supported as well
+        config.content.repos = [new ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, ref: '8bc1d11', target: 'common/mirrorWithShortCommitRef')]
+
+        exception = shouldFail(RuntimeException) {
+            createContent().install()
+        }
+        assertThat(exception.message).startsWith('Mirroring commit references is not supported for content repos at the moment. content repository')
+        assertThat(exception.message).endsWith('ref: 8bc1d11')
+        
         // Don't bother validating all other repos here.
         // If it works for the most complex one, the other ones will work as well.
         // The other tests are already asserting correct combining (including order) and parsing of the repos.
@@ -419,27 +476,31 @@ class ContentTest {
     static void assertOnlyBranch(Git git, String branch) {
         def branches = assertBranch(git, branch)
         def otherBranches = branches.findAll { !it.name.contains(branch) }
-        assertThat(otherBranches).hasSize(0)
+        assertThat(otherBranches)
                 .withFailMessage("More than the expected branch main found. Available branches: ${otherBranches.collect { it.name }}")
+                .hasSize(0)
     }
 
     static void assertNoTags(Git git) {
         def tags = git.tagList().call()
-        assertThat(tags).hasSize(0)
+        assertThat(tags)
                 .withFailMessage("No tags in mirrored repo with ref expected. Available tags: ${tags.collect { it.name }}")
+                .hasSize(0)
     }
 
     static List<Ref> assertBranch(Git git, String someBranch) {
         def branches = git.branchList().call()
-        assertThat(branches.findAll { it.name == "refs/heads/${someBranch}" }).hasSize(1)
+        assertThat(branches.findAll { it.name == "refs/heads/${someBranch}" })
                 .withFailMessage("Branch '${someBranch}' not found in git repository. Available branches: ${branches.collect { it.name }}")
+                .hasSize(1)
         return branches
     }
 
     static void assertTag(Git git, String expectedTag) {
         def tags = git.tagList().call()
-        assertThat(tags.findAll { it.name == "refs/tags/$expectedTag" }).hasSize(1)
+        assertThat(tags.findAll { it.name == "refs/tags/$expectedTag" })
                 .withFailMessage("Tag '$expectedTag' not found in git repository. Available tags: ${tags.collect { it.name }}")
+                .hasSize(1)
     }
 
     @Test
@@ -467,7 +528,6 @@ class ContentTest {
         def repo = scmmRepoProvider.getRepo(expectedRepo)
 
         def url = repo.getGitRepositoryUrl()
-        def repoFolder = File.createTempDir('cloned-repo')
         // clone repo, to ensure, changes in remote repo.
         def git = Git.cloneRepository().setURI(url).setBranch('main').setDirectory(repoFolder).call()
 
@@ -496,6 +556,7 @@ class ContentTest {
         createContent().install()
 
         def folderAfterReset = File.createTempDir('second-cloned-repo')
+        folderAfterReset.deleteOnExit()
         // clone repo, to ensure, changes in remote repo.
         Git.cloneRepository().setURI(url).setBranch('main').setDirectory(folderAfterReset).call()
         // because nonFolderBasedRepo1 is only part of repo1
@@ -528,7 +589,6 @@ class ContentTest {
         def repo = scmmRepoProvider.getRepo(expectedRepo)
 
         def url = repo.getGitRepositoryUrl()
-        def repoFolder = File.createTempDir('cloned-repo')
         // clone repo, to ensure, changes in remote repo.
         def git = Git.cloneRepository().setURI(url).setBranch('main').setDirectory(repoFolder).call()
 
@@ -557,6 +617,7 @@ class ContentTest {
         createContent().install()
 
         def folderAfterReset = File.createTempDir('second-cloned-repo')
+        folderAfterReset.deleteOnExit()
         // clone repo, to ensure, changes in remote repo.
         Git.cloneRepository().setURI(url).setBranch('main').setDirectory(folderAfterReset).call()
         // because nonFolderBasedRepo1 is only part of repo1
@@ -591,7 +652,6 @@ class ContentTest {
         def repo = scmmRepoProvider.getRepo(expectedRepo)
 
         def url = repo.getGitRepositoryUrl()
-        def repoFolder = File.createTempDir('cloned-repo')
         // clone repo, to ensure, changes in remote repo.
         def git = Git.cloneRepository().setURI(url).setBranch('main').setDirectory(repoFolder).call()
 
@@ -621,6 +681,7 @@ class ContentTest {
         createContent().install()
 
         def folderAfterReset = File.createTempDir('second-cloned-repo')
+        folderAfterReset.deleteOnExit()
         // clone repo, to ensure, changes in remote repo.
         Git.cloneRepository().setURI(url).setBranch('main').setDirectory(folderAfterReset).call()
         // because nonFolderBasedRepo1 is only part of repo1
@@ -766,6 +827,14 @@ class ContentTest {
         repoFolder.deleteOnExit()
         return Git.cloneRepository().setURI(url).setBranch('main').setDirectory(repoFolder).call()
     }
+
+
+    private File createRandomSubDir(String prefix = "clonedRepo") {
+        def randomDir = repoFolder.toPath().resolve("${prefix}-${UUID.randomUUID()}").toFile()
+        randomDir.mkdirs()
+        return randomDir
+    }
+
 
 
     class ContentForTest extends Content {
