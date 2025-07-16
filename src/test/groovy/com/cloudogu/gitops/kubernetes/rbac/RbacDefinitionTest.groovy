@@ -37,6 +37,7 @@ class RbacDefinitionTest {
                 .withNamespace("testing")
                 .withServiceAccountsFrom("testing", ["reader"])
                 .withRepo(repo)
+                .withConfig(config)
                 .generate()
 
         File outputDir = new File(repo.getAbsoluteLocalRepoTmpDir(), "rbac")
@@ -49,38 +50,61 @@ class RbacDefinitionTest {
 
     @Test
     void 'fails if name is missing'() {
-        IllegalStateException ex = assertThrows(IllegalStateException) {
+        def ex = assertThrows(IllegalArgumentException) {
             new RbacDefinition(Role.Variant.ARGOCD)
                     .withNamespace("testing")
                     .withServiceAccountsFrom("testing", ["reader"])
                     .withRepo(repo)
+                    .withConfig(config)
                     .generate()
         }
-        assertThat(ex.message).contains("RBAC definition requires a non-empty name")
+
+        assertThat(ex.message).contains("name must not be blank")
     }
+
 
     @Test
     void 'fails if namespace is missing'() {
-        IllegalStateException ex = assertThrows(IllegalStateException) {
+        def ex = assertThrows(IllegalArgumentException) {
             new RbacDefinition(Role.Variant.ARGOCD)
                     .withName("access")
                     .withServiceAccountsFrom("testing", ["reader"])
                     .withRepo(repo)
+                    .withConfig(config)
                     .generate()
         }
-        assertThat(ex.message).contains("RBAC definition requires a non-empty namespace")
+
+        assertThat(ex.message).contains("namespace must not be blank")
     }
 
     @Test
     void 'fails if service accounts are empty'() {
-        IllegalStateException ex = assertThrows(IllegalStateException) {
+        def ex = assertThrows(IllegalArgumentException) {
             new RbacDefinition(Role.Variant.ARGOCD)
                     .withName("access")
                     .withNamespace("testing")
                     .withRepo(repo)
+                    .withConfig(config)
+                    .withServiceAccounts([]) // leer übergeben
                     .generate()
         }
-        assertThat(ex.message).contains("at least one service account")
+        assertThat(ex.message).contains("At least one service account")
+    }
+
+    @Test
+    void 'accepts service accounts via withServiceAccounts directly'() {
+        def sa = new ServiceAccountRef("myns", "mysa")
+
+        new RbacDefinition(Role.Variant.ARGOCD)
+                .withName("direct")
+                .withNamespace("myns")
+                .withServiceAccounts([sa])
+                .withRepo(repo)
+                .withConfig(config)
+                .generate()
+
+        File f = new File(repo.getAbsoluteLocalRepoTmpDir(), "rbac/rolebinding-direct-myns.yaml")
+        assertThat(f).exists()
     }
 
     @Test
@@ -92,6 +116,7 @@ class RbacDefinitionTest {
                 .withSubfolder(custom)
                 .withServiceAccountsFrom("testing", ["reader"])
                 .withRepo(repo)
+                .withConfig(config)
                 .generate()
 
         File out = new File(repo.getAbsoluteLocalRepoTmpDir(), custom)
@@ -109,6 +134,7 @@ class RbacDefinitionTest {
                 .withNamespace("testing")
                 .withServiceAccountsFrom("testing", ["reader", "writer", "admin"])
                 .withRepo(repo)
+                .withConfig(config)
                 .generate()
 
         File[] files = new File(repo.getAbsoluteLocalRepoTmpDir(), "rbac").listFiles()
@@ -123,6 +149,7 @@ class RbacDefinitionTest {
                 .withNamespace("custom-ns")
                 .withServiceAccountsFrom("custom-ns", ["sa1"])
                 .withRepo(repo)
+                .withConfig(config)
                 .generate()
 
         File outputDir = new File(repo.getAbsoluteLocalRepoTmpDir(), "rbac")
@@ -140,6 +167,7 @@ class RbacDefinitionTest {
                 .withServiceAccountsFrom("ns", ["sa1"])
                 .withSubfolder(nested)
                 .withRepo(repo)
+                .withConfig(config)
                 .generate()
 
         File outputDir = new File(repo.getAbsoluteLocalRepoTmpDir(), nested)
@@ -155,6 +183,7 @@ class RbacDefinitionTest {
                     .withName("failtest")
                     .withNamespace("ns")
                     .withServiceAccountsFrom("ns", ["sa1"])
+                    .withConfig(config)
                     .generate()
         }
 
@@ -171,6 +200,7 @@ class RbacDefinitionTest {
                 .withNamespace(ns)
                 .withServiceAccountsFrom(ns, saList)
                 .withRepo(repo)
+                .withConfig(config)
                 .generate()
 
         String path = "rbac/rolebinding-test-${ns}.yaml".toString()
@@ -200,6 +230,7 @@ class RbacDefinitionTest {
                 .withNamespace(ns)
                 .withServiceAccountsFrom(ns, ["sa1"])
                 .withRepo(repo)
+                .withConfig(config)
                 .generate()
 
         String path = "rbac/role-${name}-${ns}.yaml".toString()
@@ -209,4 +240,69 @@ class RbacDefinitionTest {
         assertThat(yaml["metadata"]["name"]).isEqualTo(name)
         assertThat(yaml["metadata"]["namespace"]).isEqualTo(ns)
     }
+
+    @Test
+    void 'renders node access rules in argocd-role only when not on OpenShift'() {
+        config.application.openshift = false
+
+        ScmmRepo tempRepo = new ScmmRepo(config, "rbac-test", new FileSystemUtils())
+
+        new RbacDefinition(Role.Variant.ARGOCD)
+                .withName("nodecheck")
+                .withNamespace("monitoring")
+                .withServiceAccountsFrom("monitoring", ["sa1"])
+                .withRepo(tempRepo)
+                .withConfig(config)
+                .generate()
+
+        File roleFile = new File(tempRepo.getAbsoluteLocalRepoTmpDir(), "rbac/role-nodecheck-monitoring.yaml")
+        Map yaml = new YamlSlurper().parse(roleFile) as Map
+        List<Map> rules = yaml["rules"] as List<Map>
+
+        assertThat(rules).anyMatch { rule ->
+            List<String> resources = rule["resources"] as List<String>
+            List<String> verbs = rule["verbs"] as List<String>
+            resources.containsAll(["nodes", "nodes/metrics"]) &&
+                    verbs.containsAll(["get", "list", "watch"])
+        }
+    }
+
+    @Test
+    void 'does not render node access rules in argocd-role  when on OpenShift'() {
+        config.application.openshift = true
+
+        ScmmRepo tempRepo = new ScmmRepo(config, "rbac-test", new FileSystemUtils())
+
+        new RbacDefinition(Role.Variant.ARGOCD)
+                .withName("nodecheck")
+                .withNamespace("monitoring")
+                .withServiceAccountsFrom("monitoring", ["sa1"])
+                .withRepo(tempRepo)
+                .withConfig(config)
+                .generate()
+
+        File roleFile = new File(tempRepo.getAbsoluteLocalRepoTmpDir(), "rbac/role-nodecheck-monitoring.yaml")
+        Map yaml = new YamlSlurper().parse(roleFile) as Map
+        List<Map> rules = yaml["rules"] as List<Map>
+
+        assertThat(rules).noneMatch { rule ->
+            List<String> resources = rule["resources"] as List<String>
+            resources.contains("nodes") && resources.contains("nodes/metrics")
+        }
+    }
+
+    @Test
+    void 'fails if config is not set'() {
+        def ex = assertThrows(IllegalArgumentException) {
+            new RbacDefinition(Role.Variant.ARGOCD)
+                    .withName("failtest")
+                    .withNamespace("ns")
+                    .withServiceAccountsFrom("ns", ["sa"])
+                    .withRepo(repo)
+                    .generate()
+        }
+
+        assertThat(ex.message).contains("Config must not be null") // oder je nach deiner tatsächlichen Exception-Message
+    }
+
 }
