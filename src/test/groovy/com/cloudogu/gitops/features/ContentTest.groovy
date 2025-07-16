@@ -644,6 +644,7 @@ class ContentTest {
                 new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, ignoreJenkins: false, target: 'common/repo'),
         ]
         scmmApiClient.mockRepoApiBehaviour()
+        when(jenkins.isEnabled()).thenReturn(true)
 
         createContent().install()
         verify(jenkins).createJenkinsjob(any(), any())
@@ -662,6 +663,28 @@ class ContentTest {
                 new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, ignoreJenkins: true, target: 'common/repo'),
         ]
         scmmApiClient.mockRepoApiBehaviour()
+        when(jenkins.isEnabled()).thenReturn(true)
+        createContent().install()
+        verify(jenkins, never()).createJenkinsjob(any(), any())
+    }
+
+    @Test
+    void 'ensure Jenkinsjob will not be created, if jenkins is not enables'() {
+        /**
+         * Prepare Testcase
+         * using all defined repos ->  common/repo is used by nonFolderRepo1 + 2
+         * file content after that: nonFolderRepo2
+         *
+         * Then again "RESET" to nonFolderRepo1.
+         * file content after that should be: nonFolderRepo1
+         */
+        config.content.repos = [
+                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, ignoreJenkins: false, target: 'common/repo'),
+        ]
+        def response = scmmApiClient.mockSuccessfulResponse(201)
+        when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response)
+        when(scmmApiClient.repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(response)
+        when(jenkins.isEnabled()).thenReturn(false)
 
         createContent().install()
         verify(jenkins, never()).createJenkinsjob(any(), any())

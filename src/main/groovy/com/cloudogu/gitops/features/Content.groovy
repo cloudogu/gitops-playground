@@ -17,12 +17,16 @@ import jakarta.inject.Singleton
 import org.apache.commons.io.FileUtils
 import org.eclipse.jgit.api.CloneCommand
 import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.api.ListBranchCommand
 import org.eclipse.jgit.lib.ObjectId
 import org.eclipse.jgit.lib.Ref
 import org.eclipse.jgit.lib.Repository
 import org.eclipse.jgit.revwalk.RevCommit
 import org.eclipse.jgit.revwalk.RevWalk
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
+import org.eclipse.jgit.treewalk.TreeWalk
+import org.eclipse.jgit.treewalk.filter.PathFilter
 
 import static com.cloudogu.gitops.config.Config.ContentRepoType
 import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositorySchema
@@ -152,13 +156,13 @@ class Content extends Feature {
             // File parameter 'destFile is not writable: .git/objects/pack/pack-123.pack
             // So: Make writable first
             FileSystemUtils.makeWritable(new File(target, '.git'))
-            
+
             FileUtils.copyDirectory(src, target)
         } else {
             // In all other cases we want to keep the commits of the target repo -> Ignore .git
             FileUtils.copyDirectory(src, target, new FileSystemUtils.IgnoreDotGitFolderFilter())
         }
-            
+
 
         def repoCoordinate = new RepoCoordinate(
                 namespace: namespace,
@@ -261,11 +265,9 @@ class Content extends Feature {
                 } else {
                     handleRepoCopying(repoCoordinate, targetRepo)
                 }
-                
-                if (!repoCoordinate.repoConfig.ignoreJenkins) {
-                    createJenkinsJob(targetRepo, repoCoordinate)
-                }
-                
+
+                createJenkinsJob(repoCoordinate, targetRepo)
+
                 new File(targetRepo.absoluteLocalRepoTmpDir).deleteDir()
             }
         }
@@ -307,7 +309,7 @@ class Content extends Feature {
             targetGit.repository.config.setString('remote', 'origin', 'url', remoteUrl)
             targetGit.repository.config.save()
         }
-        
+
         if (repoCoordinate.repoConfig.ref) {
             if (isCommit(repoCoordinate.newContent, repoCoordinate.repoConfig.ref)) {
                 // Mirroring detached commits does not make a lot of sense and is complicated
@@ -321,10 +323,13 @@ class Content extends Feature {
         }
     }
 
-    private void createJenkinsJob(ScmmRepo repo, RepoCoordinate repoCoordinate) {
-        if (new File(repo.absoluteLocalRepoTmpDir, 'Jenkinsfile').exists()) {
-            // namespaces includes all jobs, thats why in this case namespace is uses as job and namespace.
-            jenkins.createJenkinsjob(repoCoordinate.namespace, repoCoordinate.namespace)
+    private void createJenkinsJob(RepoCoordinate repoCoordinate, ScmmRepo repo) {
+        // easy condition
+        if (!repoCoordinate.repoConfig.ignoreJenkins && jenkins.isEnabled()) {
+            // this conditions iterates over all branches
+            if (existFileInSomeBranch(repo.absoluteLocalRepoTmpDir, 'Jenkinsfile')) {
+                jenkins.createJenkinsjob(repoCoordinate.namespace, repoCoordinate.namespace)
+            }
         }
     }
 
@@ -341,10 +346,10 @@ class Content extends Feature {
      */
     static void addRepoCoordinates(List<RepoCoordinate> repoCoordinates, RepoCoordinate newRepoCoordinate) {
         def existingRepoCoordinates = newRepoCoordinate.findSame(repoCoordinates)
-        
+
         if (!existingRepoCoordinates.isEmpty()) {
             log.debug("Found existing repo coordinates for ${newRepoCoordinate}: ${existingRepoCoordinates}")
-            
+
             def repoCoordinateToOverwrite = newRepoCoordinate.findSameNotMirror(existingRepoCoordinates)
             if (repoCoordinateToOverwrite) {
                 repoCoordinates.remove(repoCoordinateToOverwrite)
@@ -368,7 +373,55 @@ class Content extends Feature {
             try (RevWalk revWalk = new RevWalk(git.repository)) {
                 return revWalk.parseAny(objectId) instanceof RevCommit
             }
-        } 
+        }
+    }
+    /**
+     * checks, if file exists in repo in some branch.
+     * @param pathToRepo
+     * @param filename
+     */
+    boolean existFileInSomeBranch(String repo, String filename) {
+        String filenameToSearch = filename
+        File repoPath = new File(repo + '/.git')
+        def repository = new FileRepositoryBuilder()
+                .setGitDir(repoPath)
+                .build()
+
+        try (def git = Git.open(repoPath)) {
+            List<Ref> branches = git
+                    .branchList()
+                    .setListMode(ListBranchCommand.ListMode.ALL)
+                    .call()
+
+            for (Ref branch : branches) {
+                String branchName = branch.getName()
+
+                ObjectId commitId = repository.resolve(branchName)
+                if (commitId == null) {
+                    continue
+                }
+                try (RevWalk revWalk = new RevWalk(repository)) {
+                    RevCommit commit = revWalk.parseCommit(commitId)
+                    TreeWalk treeWalk = new TreeWalk(repository)
+                    treeWalk.addTree(commit.getTree())
+                    treeWalk.setRecursive(true)
+                    treeWalk.setFilter(PathFilter.create(filenameToSearch))
+
+                    if (treeWalk.next()) {
+                        log.info("File ${filename} found in branch ${branchName}")
+                        treeWalk.close()
+                        revWalk.close()
+                        return true
+                    }
+
+                    treeWalk.close()
+                    revWalk.close()
+
+                }
+            }
+        }
+        log.info("File ${filename} not found in repository ${repoPath}")
+        return false
     }
 
     static class RepoCoordinate {
@@ -390,15 +443,17 @@ class Content extends Feature {
          * @return all epoCoordinate with the same fullRepoName. There can be one with either COPY/FOLDER_BASED and many MIRRORs.
          */
         List<RepoCoordinate> findSame(List<RepoCoordinate> repoCoordinates) {
-            repoCoordinates.findAll() {it.fullRepoName == fullRepoName }
+            repoCoordinates.findAll() { it.fullRepoName == fullRepoName }
         }
 
         /**
          * @return RepoCoordinate with the same fullRepoName and repoConfig.type not MIRROR. There can only ever be one!
          */
         RepoCoordinate findSameNotMirror(List<RepoCoordinate> repoCoordinates) {
-            repoCoordinates.find() {it.fullRepoName == fullRepoName
-                 && ContentRepoType.MIRROR != it.repoConfig.type}
+            repoCoordinates.find() {
+                it.fullRepoName == fullRepoName
+                        && ContentRepoType.MIRROR != it.repoConfig.type
+            }
         }
     }
 
