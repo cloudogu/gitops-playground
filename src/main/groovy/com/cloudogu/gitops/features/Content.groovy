@@ -363,9 +363,7 @@ class Content extends Feature {
     }
 
     private void createJenkinsJob(RepoCoordinate repoCoordinate, ScmmRepo repo) {
-        // easy condition
-        if (!repoCoordinate.repoConfig.ignoreJenkins && jenkins.isEnabled()) {
-            // this conditions iterates over all branches
+        if (repoCoordinate.repoConfig.createJenkinsJob && jenkins.isEnabled()) {
             if (existFileInSomeBranch(repo.absoluteLocalRepoTmpDir, 'Jenkinsfile')) {
                 jenkins.createJenkinsjob(repoCoordinate.namespace, repoCoordinate.namespace)
             }

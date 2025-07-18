@@ -749,7 +749,7 @@ class ContentTest {
          * file content after that should be: nonFolderRepo1
          */
         config.content.repos = [
-                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, ignoreJenkins: false, target: 'common/repo'),
+                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, createJenkinsJob: true, target: 'common/repo'),
         ]
         scmmApiClient.mockRepoApiBehaviour()
         when(jenkins.isEnabled()).thenReturn(true)
@@ -768,10 +768,10 @@ class ContentTest {
          * file content after that should be: nonFolderRepo1
          */
         config.content.repos = [
-                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, ignoreJenkins: true, target: 'common/repo'),
+                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, createJenkinsJob: false, target: 'common/repo'),
         ]
         scmmApiClient.mockRepoApiBehaviour()
-        when(jenkins.isEnabled()).thenReturn(true)
+        when(jenkins.isEnabled()).thenReturn(false)
         createContent().install()
         verify(jenkins, never()).createJenkinsjob(any(), any())
     }
@@ -787,7 +787,7 @@ class ContentTest {
          * file content after that should be: nonFolderRepo1
          */
         config.content.repos = [
-                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, ignoreJenkins: false, target: 'common/repo'),
+                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, createJenkinsJob: false, target: 'common/repo'),
         ]
         def response = scmmApiClient.mockSuccessfulResponse(201)
         when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response)
