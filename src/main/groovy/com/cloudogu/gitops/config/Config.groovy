@@ -135,8 +135,8 @@ class Config {
             @JsonPropertyDescription(CONTENT_REPO_TARGET_DESCRIPTION)
             String target = ''
 
-            @JsonPropertyDescription(CONTENT_REPO_TARGET_OVERRIDE_MODE)
-            OverrideMode overrideMode = OverrideMode.INIT // Defensively use init to not override existing files by default
+            @JsonPropertyDescription(CONTENT_REPO_TARGET_OVERWRITE_MODE)
+            OverwriteMode overwriteMode = OverwriteMode.INIT // Defensively use init to not override existing files by default
 
             @JsonPropertyDescription(CONTENT_REPO_IGNORE_JENKINS)
             Boolean ignoreJenkins = false
@@ -806,9 +806,9 @@ class Config {
 
     /**
      * This defines, how customer repos will be updated.
-     * See {@link ConfigConstants#CONTENT_REPO_TARGET_OVERRIDE_MODE}
+     * See {@link ConfigConstants#CONTENT_REPO_TARGET_OVERWRITE_MODE}
      */
-    static enum OverrideMode {
+    static enum OverwriteMode {
         INIT, RESET, UPGRADE
     }
 

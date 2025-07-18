@@ -168,7 +168,7 @@
                 "type" : [ "boolean", "null" ],
                 "description" : "If true, no Jenkinsjob will be created."
               },
-              "overrideMode" : {
+              "overwriteMode" : {
                 "anyOf" : [ {
                   "type" : "null"
                 }, {

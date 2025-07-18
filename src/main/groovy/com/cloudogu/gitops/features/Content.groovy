@@ -2,7 +2,7 @@ package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.config.Config.OverrideMode
+import com.cloudogu.gitops.config.Config.OverwriteMode
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import com.cloudogu.gitops.scmm.api.ScmmApiClient
@@ -106,7 +106,7 @@ class Content extends Feature {
         config.content.repos.each { repoConfig ->
 
             def repoTmpDir = File.createTempDir('gitops-playground-folder-based-single-content-repo-')
-            log.debug("Cloning content repo, ${repoConfig.url}, revision ${repoConfig.ref}, path ${repoConfig.path}, overrideMode ${repoConfig.overrideMode}")
+            log.debug("Cloning content repo, ${repoConfig.url}, revision ${repoConfig.ref}, path ${repoConfig.path}, overwriteMode ${repoConfig.overwriteMode}")
 
             cloneToLocalFolder(repoConfig, repoTmpDir)
 
@@ -161,7 +161,7 @@ class Content extends Feature {
     /**
      * Merges the files of src into the mergeRepoFolder/namespace/name and adds a new object to repoCoordinates.
      *
-     * Note that existing repoCoordinate objects with different overrideMode are overwritten. The last repo to be mentioned within config.content.repos wins!
+     * Note that existing repoCoordinate objects with different overwriteMode are overwritten. The last repo to be mentioned within config.content.repos wins!
      */
     private static RepoCoordinate mergeRepoDirs(File src, String namespace, String repoName, File mergedRepoFolder,
                                       ContentRepositorySchema repoConfig, List<RepoCoordinate> repoCoordinates) {
@@ -260,10 +260,10 @@ class Content extends Feature {
             ScmmRepo targetRepo = repoProvider.getRepo(repoCoordinate.fullRepoName)
             def isRepoCreated = targetRepo.create('', scmmApiClient)
 
-            if (!isRepoCreated && OverrideMode.INIT == repoCoordinate.repoConfig.overrideMode) {
-                log.warn("OverrideMode ${OverrideMode.INIT} set for repo '${repoCoordinate.fullRepoName}' " +
+            if (!isRepoCreated && OverwriteMode.INIT == repoCoordinate.repoConfig.overwriteMode) {
+                log.warn("OverwriteMode ${OverwriteMode.INIT} set for repo '${repoCoordinate.fullRepoName}' " +
                         "and repo already exists in target:  Not pushing content!" +
-                        "If you want to override, set ${OverrideMode.UPGRADE} or ${OverrideMode.RESET} .")
+                        "If you want to override, set ${OverwriteMode.UPGRADE} or ${OverwriteMode.RESET} .")
             } else {
                 
                 targetRepo.cloneRepo()
@@ -287,13 +287,13 @@ class Content extends Feature {
      * Same logic for both FOLDER_BASED and COPY repo types.
      */
     private static void handleRepoCopying(RepoCoordinate repoCoordinate, ScmmRepo targetRepo) {
-        if (OverrideMode.INIT != repoCoordinate.repoConfig.overrideMode) {
-            if (OverrideMode.RESET == repoCoordinate.repoConfig.overrideMode) {
-                log.info("OverrideMode ${OverrideMode.RESET} set for repo '${repoCoordinate.fullRepoName}': " +
+        if (OverwriteMode.INIT != repoCoordinate.repoConfig.overwriteMode) {
+            if (OverwriteMode.RESET == repoCoordinate.repoConfig.overwriteMode) {
+                log.info("OverwriteMode ${Config.OverwriteMode.RESET} set for repo '${repoCoordinate.fullRepoName}': " +
                         "Deleting existing files in repo and replacing them with new content.")
                 targetRepo.clearRepo()
             } else {
-                log.info("OverrideMode ${OverrideMode.UPGRADE} set for repo '${repoCoordinate.fullRepoName}': " +
+                log.info("OverwriteMode ${OverwriteMode.UPGRADE} set for repo '${repoCoordinate.fullRepoName}': " +
                         "Merging new content into existing repo. ")
             }
         }
@@ -496,7 +496,7 @@ class Content extends Feature {
 
         @Override
         String toString() {
-            return "RepoCoordinates{ namespace='$namespace', repoName='$repoName', repoConfig.type='${repoConfig.type}', repoConfig.overrideMode='${repoConfig.overrideMode}', newContent=$newContent', refIsTag='${refIsTag}' }"
+            return "RepoCoordinates{ namespace='$namespace', repoName='$repoName', repoConfig.type='${repoConfig.type}', repoConfig.overwriteMode='${repoConfig.overwriteMode}', newContent=$newContent', refIsTag='${refIsTag}' }"
         }
 
         String getFullRepoName() {

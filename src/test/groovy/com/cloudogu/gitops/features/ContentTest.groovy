@@ -269,8 +269,8 @@ class ContentTest {
     void 'Is able to COPY into MIRRORED repo'() {
         config.content.repos = [
                 new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, target: 'common/repo'),
-                new ContentRepositorySchema(url: createContentRepo('folderBasedRepo1'), type: ContentRepoType.FOLDER_BASED, overrideMode: OverrideMode.UPGRADE),
-                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), type: ContentRepoType.COPY, target: 'common/repo', overrideMode: OverrideMode.UPGRADE, path: 'subPath')
+                new ContentRepositorySchema(url: createContentRepo('folderBasedRepo1'), type: ContentRepoType.FOLDER_BASED, overwriteMode: OverwriteMode.UPGRADE),
+                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), type: ContentRepoType.COPY, target: 'common/repo', overwriteMode: OverwriteMode.UPGRADE, path: 'subPath')
         ]
 
         scmmApiClient.mockRepoApiBehaviour()
@@ -297,8 +297,8 @@ class ContentTest {
     void 'Handles MIRRORING COPYed repo'() {
         config.content.repos = [
                 new ContentRepositorySchema(url: createContentRepo('folderBasedRepo1'), type: ContentRepoType.FOLDER_BASED),
-                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), type: ContentRepoType.COPY, target: 'common/repo', overrideMode: OverrideMode.UPGRADE, path: 'subPath'),
-                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, overrideMode: OverrideMode.RESET, target: 'common/repo'),
+                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), type: ContentRepoType.COPY, target: 'common/repo', overwriteMode: OverwriteMode.UPGRADE, path: 'subPath'),
+                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, overwriteMode: OverwriteMode.RESET, target: 'common/repo'),
         ]
 
         scmmApiClient.mockRepoApiBehaviour()
@@ -326,9 +326,9 @@ class ContentTest {
         def repoToMirror = createContentRepo('nonFolderBasedRepo1', 'git-repository-with-branches-tags')
         config.content.repos = [
                 new ContentRepositorySchema(url: repoToMirror, type: ContentRepoType.MIRROR, ref: 'main', target: 'common/repo'),
-                new ContentRepositorySchema(url: repoToMirror, type: ContentRepoType.MIRROR, ref: 'someBranch', target: 'common/repo', overrideMode: OverrideMode.UPGRADE),
-                new ContentRepositorySchema(url: repoToMirror, type: ContentRepoType.MIRROR, ref: 'someTag', target: 'common/repo', overrideMode: OverrideMode.UPGRADE),
-                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), type: ContentRepoType.COPY, target: 'common/repo', overrideMode: OverrideMode.UPGRADE,  path: 'subPath')
+                new ContentRepositorySchema(url: repoToMirror, type: ContentRepoType.MIRROR, ref: 'someBranch', target: 'common/repo', overwriteMode: OverwriteMode.UPGRADE),
+                new ContentRepositorySchema(url: repoToMirror, type: ContentRepoType.MIRROR, ref: 'someTag', target: 'common/repo', overwriteMode: OverwriteMode.UPGRADE),
+                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), type: ContentRepoType.COPY, target: 'common/repo', overwriteMode: OverwriteMode.UPGRADE,  path: 'subPath')
         ]
 
         scmmApiClient.mockRepoApiBehaviour()
@@ -390,8 +390,8 @@ class ContentTest {
         def repoToMirror = createContentRepo('nonFolderBasedRepo1', 'git-repository-with-branches-tags')
         config.content.repos = [
                 new ContentRepositorySchema(url: repoToMirror, type: ContentRepoType.MIRROR, ref: 'main', target: 'common/repo'),
-                new ContentRepositorySchema(url: repoToMirror, type: ContentRepoType.MIRROR, ref: 'someBranch', target: 'common/repo') /* Deliberately not use overrideMode here !*/,
-                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), type: ContentRepoType.COPY, target: 'common/repo', overrideMode: OverrideMode.UPGRADE,  path: 'subPath')
+                new ContentRepositorySchema(url: repoToMirror, type: ContentRepoType.MIRROR, ref: 'someBranch', target: 'common/repo') /* Deliberately not use overwriteMode here !*/,
+                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), type: ContentRepoType.COPY, target: 'common/repo', overwriteMode: OverwriteMode.UPGRADE,  path: 'subPath')
         ]
 
         scmmApiClient.mockRepoApiBehaviour()
@@ -409,7 +409,7 @@ class ContentTest {
         // So for our testcase we just mirror the same repo twice
         config.content.repos = [
                 new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, target: 'common/repo'),
-                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, target: 'common/repo', overrideMode: OverrideMode.RESET),
+                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, target: 'common/repo', overwriteMode: OverwriteMode.RESET),
         ]
 
         scmmApiClient.mockRepoApiBehaviour()
@@ -593,7 +593,7 @@ class ContentTest {
          * Now Reset to nonFolderBased1
          */
         config.content.repos = [
-                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, target: 'common/repo', overrideMode: OverrideMode.RESET),
+                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, target: 'common/repo', overwriteMode: OverwriteMode.RESET),
         ]
 
         def resourceExistsAnswer = scmmApiClient.mockErrorResponse(409)
@@ -654,7 +654,7 @@ class ContentTest {
          * Now Upgrade to nonFolderBased2
          */
         config.content.repos = [
-                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), type: ContentRepoType.COPY, target: 'common/repo', path: 'subPath', overrideMode: OverrideMode.UPGRADE)
+                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), type: ContentRepoType.COPY, target: 'common/repo', path: 'subPath', overwriteMode: OverwriteMode.UPGRADE)
         ]
 
         def resourceExistsAnswer = scmmApiClient.mockErrorResponse(409)
@@ -718,7 +718,7 @@ class ContentTest {
          * no changes expected, file still has nonFolderBasedRepo2 and so on
          */
         config.content.repos = [
-                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, target: 'common/repo', overrideMode: OverrideMode.INIT),
+                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, target: 'common/repo', overwriteMode: OverwriteMode.INIT),
         ]
 
         def resourceExistsAnswer = scmmApiClient.mockErrorResponse(409)
