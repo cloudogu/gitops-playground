@@ -85,13 +85,15 @@ class GitopsPlaygroundCliMainScripted {
 
                 def airGappedUtils = new AirGappedUtils(config, scmmRepoProvider, scmmApiClient, fileSystemUtils, helmClient)
                 def networkingUtils = new NetworkingUtils()
-                
+
+                def jenkins = new Jenkins(config, executor, fileSystemUtils, new GlobalPropertyManager(jenkinsApiClient),
+                        new JobManager(jenkinsApiClient), new UserManager(jenkinsApiClient),
+                        new PrometheusConfigurator(jenkinsApiClient), helmStrategy, k8sClient, networkingUtils)
+
                 context.registerSingleton(new Application(config, [
                         new Registry(config, fileSystemUtils, k8sClient, helmStrategy),
                         new ScmManager(config, executor, fileSystemUtils, helmStrategy, k8sClient, networkingUtils),
-                        new Jenkins(config, executor, fileSystemUtils, new GlobalPropertyManager(jenkinsApiClient),
-                                new JobManager(jenkinsApiClient), new UserManager(jenkinsApiClient),
-                                new PrometheusConfigurator(jenkinsApiClient), helmStrategy, k8sClient, networkingUtils),
+                        jenkins,
                         new ArgoCD(config, k8sClient, helmClient, fileSystemUtils, scmmRepoProvider),
                         new IngressNginx(config, fileSystemUtils, deployer, k8sClient, airGappedUtils),
                         new CertManager(config, fileSystemUtils, deployer, k8sClient, airGappedUtils),
@@ -99,7 +101,7 @@ class GitopsPlaygroundCliMainScripted {
                         new PrometheusStack(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, scmmRepoProvider),
                         new ExternalSecretsOperator(config, fileSystemUtils, deployer, k8sClient, airGappedUtils),
                         new Vault(config, fileSystemUtils, k8sClient, deployer, airGappedUtils),
-                        new Content(config, k8sClient, scmmRepoProvider, scmmApiClient),
+                        new Content(config, k8sClient, scmmRepoProvider, scmmApiClient, jenkins),
                 ]))
             }
         }

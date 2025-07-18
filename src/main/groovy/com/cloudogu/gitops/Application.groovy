@@ -47,6 +47,7 @@ class Application {
                     statics             : new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels()
             ]))
         }
+        config.content.namespaces = namespaces.toList()
 
         //iterates over all FeatureWithImages and gets their namespaces
         namespaces.addAll(this.features

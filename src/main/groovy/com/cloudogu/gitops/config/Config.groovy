@@ -102,14 +102,23 @@ class Config {
         Map<String, Object> variables = [:]
 
         static class ContentRepositorySchema {
+            static final String DEFAULT_PATH = '.'
+            // This is controversial. Forcing users to explicitly choose a type requires them to understand the concept
+            // of types. What would be a good default? The simplest use case ist MIRROR from url to target.
+            // COPY and FOLDER_BASED are more advanced use cases. So we choose MIRROR as the default.
+            static final ContentRepoType DEFAULT_TYPE = ContentRepoType.MIRROR
+
             @JsonPropertyDescription(CONTENT_REPO_URL_DESCRIPTION)
             String url = ''
 
             @JsonPropertyDescription(CONTENT_REPO_PATH_DESCRIPTION)
-            String path = '.'
+            String path = DEFAULT_PATH
 
             @JsonPropertyDescription(CONTENT_REPO_REF_DESCRIPTION)
             String ref = ''
+            
+            @JsonPropertyDescription(CONTENT_REPO_TARGET_REF_DESCRIPTION)
+            String targetRef = ''
 
             @JsonPropertyDescription(CONTENT_REPO_USERNAME_DESCRIPTION)
             String username = ''
@@ -120,14 +129,17 @@ class Config {
             @JsonPropertyDescription(CONTENT_REPO_TEMPLATING_DESCRIPTION)
             Boolean templating = false
 
-            @JsonPropertyDescription(CONTENT_REPO_FOLDER_BASED_REPOS_DESCRIPTION)
-            Boolean folderBased = false
+            @JsonPropertyDescription(CONTENT_REPO_TYPE_DESCRIPTION)
+            ContentRepoType type = DEFAULT_TYPE
 
             @JsonPropertyDescription(CONTENT_REPO_TARGET_DESCRIPTION)
             String target = ''
 
-            @JsonPropertyDescription(CONTENT_REPO_TARGET_OVERRIDE_MODE)
-            OverrideMode overrideMode = OverrideMode.INIT // Defensively use init to not override existing files by default
+            @JsonPropertyDescription(CONTENT_REPO_TARGET_OVERWRITE_MODE_DESCRIPTION)
+            OverwriteMode overwriteMode = OverwriteMode.INIT // Defensively use init to not override existing files by default
+
+            @JsonPropertyDescription(CONTENT_REPO_CREATE_JENKINS_JOB_DESCRIPTION)
+            Boolean createJenkinsJob = false
         }
     }
 
@@ -784,6 +796,9 @@ class Config {
         }
     }
 
+    static enum ContentRepoType {
+        FOLDER_BASED, COPY, MIRROR
+    }
 
     static enum VaultMode {
         dev, prod
@@ -791,9 +806,9 @@ class Config {
 
     /**
      * This defines, how customer repos will be updated.
-     * See {@link ConfigConstants#CONTENT_REPO_TARGET_OVERRIDE_MODE}
+     * See {@link ConfigConstants#CONTENT_REPO_TARGET_OVERWRITE_MODE_DESCRIPTION}
      */
-    static enum OverrideMode {
+    static enum OverwriteMode {
         INIT, RESET, UPGRADE
     }
 

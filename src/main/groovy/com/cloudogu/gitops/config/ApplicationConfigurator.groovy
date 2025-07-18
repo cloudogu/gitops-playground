@@ -3,6 +3,9 @@ package com.cloudogu.gitops.config
 import com.cloudogu.gitops.utils.FileSystemUtils
 import groovy.util.logging.Slf4j
 
+import static com.cloudogu.gitops.config.Config.ContentRepoType
+import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositorySchema
+
 @Slf4j
 class ApplicationConfigurator {
 
@@ -268,18 +271,41 @@ class ApplicationConfigurator {
 
     static void validateContent(Config config) {
         config.content.repos.each { repo ->
+            
             if (!repo.url) {
                 throw new RuntimeException("content.repos requires a url parameter.")
             }
-            if (!repo.folderBased && !repo.target) {
-                throw new RuntimeException("content.repos.folderBased: false requires folder content.repos.target to be set. ${repo.url}")
-            }
             if (repo.target) {
                 if (repo.target.count('/') == 0) {
-                    throw new RuntimeException("content.target needs / to separate namespace/group from repo name. ${repo.url}")
+                    throw new RuntimeException("content.target needs / to separate namespace/group from repo name. Repo: ${repo.url}")
                 }
+            }
 
-
+            switch (repo.type) {
+                case ContentRepoType.COPY:
+                    if (!repo.target) {
+                        throw new RuntimeException("content.repos.type ${ContentRepoType.COPY} requires content.repos.target to be set. Repo: ${repo.url}")
+                    }
+                    break
+                case ContentRepoType.FOLDER_BASED:
+                    if (repo.target) {
+                        throw new RuntimeException("content.repos.type ${ContentRepoType.FOLDER_BASED} does not support target parameter. Repo: ${repo.url}")
+                    }
+                    if (repo.targetRef) {
+                        throw new RuntimeException("content.repos.type ${ContentRepoType.FOLDER_BASED} does not support targetRef parameter. Repo: ${repo.url}")
+                    }
+                    break
+                case ContentRepoType.MIRROR:
+                    if (!repo.target) {
+                        throw new RuntimeException("content.repos.type ${ContentRepoType.MIRROR} requires content.repos.target to be set. Repo: ${repo.url}")
+                    }
+                    if (repo.path != ContentRepositorySchema.DEFAULT_PATH) {
+                        throw new RuntimeException("content.repos.type ${ContentRepoType.MIRROR} does not support path. Current path: ${repo.path}. Repo: ${repo.url}")
+                    }
+                    if (repo.templating) {
+                        throw new RuntimeException("content.repos.type ${ContentRepoType.MIRROR} does not support templating. Repo: ${repo.url}")
+                    }
+                    break
             }
         }
     }

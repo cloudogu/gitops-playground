@@ -9,6 +9,7 @@ import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
 import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.api.PushCommand
 import org.eclipse.jgit.transport.ChainingCredentialsProvider
 import org.eclipse.jgit.transport.CredentialsProvider
 import org.eclipse.jgit.transport.RefSpec
@@ -85,14 +86,9 @@ class ScmmRepo {
         gitClone()
         checkoutOrCreateBranch('main')
     }
+    
     /**
-     * if repo creation is succesfull or it still exist, then returns HTTP Code
-     *
-     * otherwise exception.
-     *
-     * @param description
-     * @param scmmApiClient
-     * @return 201 or 409
+     * @return true if created, false if already exists. Throw exception on all other errors
      */
     boolean create(String description, ScmmApiClient scmmApiClient) {
         def namespace = scmmRepoTarget.split('/', 2)[0]
@@ -100,6 +96,7 @@ class ScmmRepo {
 
         def repositoryApi = scmmApiClient.repositoryApi()
         def repo = new Repository(namespace, repoName, description)
+        log.debug("Creating repo: ${namespace}/${repoName}")
         def createResponse = repositoryApi.create(repo, true).execute()
         handleResponse(createResponse, repo)
 
@@ -127,27 +124,28 @@ class ScmmRepo {
         file.text = content
     }
 
-    void copyDirectoryContents(String srcDir) {
+    void copyDirectoryContents(String srcDir, FileFilter fileFilter = null) {
         log.debug("Initializing repo $scmmRepoTarget with content of folder $srcDir")
         String absoluteSrcDirLocation = srcDir
         if (!new File(absoluteSrcDirLocation).isAbsolute()) {
             absoluteSrcDirLocation = fileSystemUtils.getRootDir() + "/" + srcDir
         }
-        fileSystemUtils.copyDirectory(absoluteSrcDirLocation, absoluteLocalRepoTmpDir)
+        fileSystemUtils.copyDirectory(absoluteSrcDirLocation, absoluteLocalRepoTmpDir, fileFilter)
     }
 
     void replaceTemplates(Map parameters) {
         new TemplatingEngine().replaceTemplates(new File(absoluteLocalRepoTmpDir), parameters)
     }
 
-    void commitAndPush(String commitMessage, String tag = null) {
-        log.debug("Checking out main, adding files for repo: ${scmmRepoTarget}")
+    def commitAndPush(String commitMessage, String tag = null, String refSpec = 'HEAD:refs/heads/main') {
+        log.debug("Adding files to repo: ${scmmRepoTarget}")
         getGit()
                 .add()
                 .addFilepattern(".")
                 .call()
 
         if (getGit().status().call().hasUncommittedChanges()) {
+            log.debug("Committing repo: ${scmmRepoTarget}")
             getGit()
                     .commit()
                     .setSign(false)
@@ -156,11 +154,7 @@ class ScmmRepo {
                     .setCommitter(gitName, gitEmail)
                     .call()
 
-            def pushCommand = getGit()
-                    .push()
-                    .setRemote(getGitRepositoryUrl())
-                    .setRefSpecs(new RefSpec("HEAD:refs/heads/main"))
-                    .setCredentialsProvider(getCredentialProvider())
+            def pushCommand = createPushCommand(refSpec)
 
             if (tag) {
                 log.debug("Setting tag '${tag}' on repo: ${scmmRepoTarget}")
@@ -174,9 +168,34 @@ class ScmmRepo {
                 pushCommand.setPushTags()
             }
 
-            log.debug("Pushing repo: ${scmmRepoTarget}")
+            log.debug("Pushing repo: ${scmmRepoTarget}, refSpec: ${refSpec}")
             pushCommand.call()
+        } else {
+            log.debug("No changes after add, nothing to commit or push on repo: ${scmmRepoTarget}")
         }
+    }
+
+    /**
+     * Push all refs, i.e. all tags and branches
+     */
+    def pushAll(boolean force = false) {
+        createPushCommand('refs/*:refs/*').setForce(force).call()
+    }
+    
+    def pushRef(String ref, String targetRef, boolean force = false) {
+        createPushCommand("${ref}:${targetRef}").setForce(force).call()
+    }
+    
+    def pushRef(String ref, boolean force = false) {
+        pushRef(ref, ref, force)
+    }
+
+    private PushCommand createPushCommand(String refSpec) {
+        getGit()
+                .push()
+                .setRemote(getGitRepositoryUrl())
+                .setRefSpecs(new RefSpec(refSpec))
+                .setCredentialsProvider(getCredentialProvider())
     }
 
     void checkoutOrCreateBranch(String branch) {

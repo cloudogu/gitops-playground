@@ -151,32 +151,84 @@ class ApplicationConfiguratorTest {
     @Test
     void 'Fails if content repo is set without mandatory params'() {
         testConfig.content.repos = [
-                new Config.ContentSchema.ContentRepositorySchema(url: '', folderBased: true),
+                new Config.ContentSchema.ContentRepositorySchema(url: ''),
         ]
         def exception = shouldFail(RuntimeException) {
             applicationConfigurator.validateConfig(testConfig)
         }
         assertThat(exception.message).isEqualTo('content.repos requires a url parameter.')
-
+        
+        
         testConfig.content.repos = [
-                new Config.ContentSchema.ContentRepositorySchema(url: 'abc', folderBased: false),
+                new Config.ContentSchema.ContentRepositorySchema(url: 'abc', type: Config.ContentRepoType.COPY, target: "missing_slash"),
         ]
         exception = shouldFail(RuntimeException) {
             applicationConfigurator.validateConfig(testConfig)
         }
-        assertThat(exception.message).isEqualTo('content.repos.folderBased: false requires folder content.repos.target to be set. abc')
+        assertThat(exception.message).isEqualTo('content.target needs / to separate namespace/group from repo name. Repo: abc')
+    }
 
+    @Test
+    void 'Fails if COPY repo misses target parameter'() {
         testConfig.content.repos = [
-                new Config.ContentSchema.ContentRepositorySchema(url: 'abc', folderBased: false, target: "missing_slash"),
+                new Config.ContentSchema.ContentRepositorySchema(url: 'abc', type: Config.ContentRepoType.COPY),
+        ]
+        def exception = shouldFail(RuntimeException) {
+            applicationConfigurator.validateConfig(testConfig)
+        }
+        assertThat(exception.message).isEqualTo('content.repos.type COPY requires content.repos.target to be set. Repo: abc')
+    }
+    
+    @Test
+    void 'Fails if FOLDER_BASED repo has target parameter'() {
+        testConfig.content.repos = [
+                new Config.ContentSchema.ContentRepositorySchema(url: 'abc', type: Config.ContentRepoType.FOLDER_BASED, target: 'namespace/repo'),
+        ]
+        def exception = shouldFail(RuntimeException) {
+            applicationConfigurator.validateConfig(testConfig)
+        }
+        assertThat(exception.message).isEqualTo('content.repos.type FOLDER_BASED does not support target parameter. Repo: abc')
+        
+        
+        testConfig.content.repos = [
+                new Config.ContentSchema.ContentRepositorySchema(url: 'abc', type: Config.ContentRepoType.FOLDER_BASED, targetRef: 'someRef'),
         ]
         exception = shouldFail(RuntimeException) {
             applicationConfigurator.validateConfig(testConfig)
         }
-        assertThat(exception.message).isEqualTo('content.target needs / to separate namespace/group from repo name. abc')
+        assertThat(exception.message).isEqualTo('content.repos.type FOLDER_BASED does not support targetRef parameter. Repo: abc')
+    }
 
+    @Test
+    void 'Fails if MIRROR repo has invalid configuration'() {
+        // Test missing target parameter
+        testConfig.content.repos = [
+                new Config.ContentSchema.ContentRepositorySchema(url: 'abc', type: Config.ContentRepoType.MIRROR),
+        ]
+        def exception = shouldFail(RuntimeException) {
+            applicationConfigurator.validateConfig(testConfig)
+        }
+        assertThat(exception.message).isEqualTo('content.repos.type MIRROR requires content.repos.target to be set. Repo: abc')
 
-        //  mandatory params:url
-        //   folderBasedRepo: false requires target
+        // Test setting path
+        testConfig.content.repos = [
+                new Config.ContentSchema.ContentRepositorySchema(url: 'abc', type: Config.ContentRepoType.MIRROR,
+                        target: 'namespace/repo', path: 'non-default-path'),
+        ]
+        exception = shouldFail(RuntimeException) {
+            applicationConfigurator.validateConfig(testConfig)
+        }
+        assertThat(exception.message).isEqualTo("content.repos.type MIRROR does not support path. Current path: non-default-path. Repo: abc")
+
+        // Test templating enabled
+        testConfig.content.repos = [
+                new Config.ContentSchema.ContentRepositorySchema(url: 'abc', type: Config.ContentRepoType.MIRROR,
+                        target: 'namespace/repo', templating: true),
+        ]
+        exception = shouldFail(RuntimeException) {
+            applicationConfigurator.validateConfig(testConfig)
+        }
+        assertThat(exception.message).isEqualTo('content.repos.type MIRROR does not support templating. Repo: abc')
     }
 
     @Test
