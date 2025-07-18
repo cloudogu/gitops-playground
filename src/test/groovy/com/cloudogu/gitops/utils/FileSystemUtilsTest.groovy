@@ -27,6 +27,44 @@ class FileSystemUtilsTest {
     }
     
     @Test
+    void 'makes read-only folders writable recursively'() {
+        // Create temporary directory with nested structure
+        Path parentDir = Files.createTempDirectory(this.class.getSimpleName())
+
+        // Create some regular files
+        File regularFile = new File(parentDir.toFile(), "regularFile.txt")
+        regularFile.createNewFile()
+
+        // Create nested directory
+        File nestedDir = new File(parentDir.toFile(), "nestedDir")
+        nestedDir.mkdir()
+
+        // Create read-only file in nested directory
+        File readOnlyFile = new File(nestedDir, "readOnlyFile.txt")
+        readOnlyFile.createNewFile()
+        readOnlyFile.setWritable(false)
+
+        // Create another read-only file in parent directory
+        File anotherReadOnlyFile = new File(parentDir.toFile(), "anotherReadOnlyFile.txt")
+        anotherReadOnlyFile.createNewFile()
+        anotherReadOnlyFile.setWritable(false)
+
+        // Verify files are indeed read-only
+        assertThat(readOnlyFile.canWrite()).isFalse()
+        assertThat(anotherReadOnlyFile.canWrite()).isFalse()
+
+        FileSystemUtils.makeWritable(parentDir.toFile())
+
+        // Verify all files are now writable
+        assertThat(regularFile.canWrite()).isTrue()
+        assertThat(readOnlyFile.canWrite()).isTrue()
+        assertThat(anotherReadOnlyFile.canWrite()).isTrue()
+
+        // Clean up
+        parentDir.toFile().deleteDir()
+    }
+    
+    @Test
     void 'deletes files except'() {
         Path parentDir = Files.createTempDirectory(this.class.getSimpleName())
         for (i in 0..<3) {

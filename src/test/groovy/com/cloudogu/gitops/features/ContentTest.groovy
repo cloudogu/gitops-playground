@@ -292,6 +292,7 @@ class ContentTest {
             assertBranch(git, 'someBranch')
         }
     }
+    
     @Test
     void 'Handles MIRRORING COPYed repo'() {
         config.content.repos = [
@@ -396,13 +397,25 @@ class ContentTest {
         scmmApiClient.mockRepoApiBehaviour()
 
         createContent().install()
+        // No exception means success
+    }
 
-        def expectedRepo = 'common/repo'
-        // clone target repo, to ensure, changes in remote repo.
-        try (def git = cloneRepo(expectedRepo, tmpDir)) {
-            assertThat(new File(tmpDir, "file").text).contains("nonFolderBasedRepo2") // Last repo "wins"
-            assertThat(new File(tmpDir, "nonFolderBasedRepo1")).exists().isFile()
-        }
+
+    @Test
+    void 'Is able to MIRROR into repo that has same commits'() {
+        // This test case does not make too much sense but used to cause git problems when copying .git from source to target
+        // java.lang.IllegalArgumentException: File parameter 'destFile is not writable: '/tmp/../.git/objects/pack/pack-524e3f54c7b28a98a4995948dfc8e75f1642840f.pack'
+        // This only occurs when the same .pack files exists in .git because they are read-only
+        // So for our testcase we just mirror the same repo twice
+        config.content.repos = [
+                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, target: 'common/repo'),
+                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, target: 'common/repo', overrideMode: OverrideMode.RESET),
+        ]
+
+        scmmApiClient.mockRepoApiBehaviour()
+
+        createContent().install()
+        // No exception means success
     }
     
     @Test

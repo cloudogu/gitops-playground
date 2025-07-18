@@ -327,6 +327,15 @@ class Content extends Feature {
         try (def targetGit = Git.open(new File(targetRepo.absoluteLocalRepoTmpDir))) {
             def remoteUrl = targetGit.repository.config.getString('remote', 'origin', 'url')
 
+            // In mirror mode, we mainly need the .git folder to push the whole git history, branches and tags.
+            // So copying source to target repo, .git folders are merged.
+            // git pack files are typically read-only, leading to  
+            // IllegalArgumentException: File parameter 'destFile is not writable: .git/objects/pack/pack-123.pack
+            // Workaround: make .git writable.
+            // Note: Setting target remote in source repo and pushing from there causes other problems like
+            // IOException: Source ref someBranch doesn't resolve to any object.
+            FileSystemUtils.makeWritable(new File(targetRepo.absoluteLocalRepoTmpDir, '.git'))
+
             targetRepo.copyDirectoryContents(repoCoordinate.newContent.absolutePath)
 
             // Restore remote, it could have been overwritten due to a copied .git folder in MIRROR mode
