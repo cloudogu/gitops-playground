@@ -439,7 +439,7 @@ class ContentTest {
                     "Could not find repo with namespace=${expected.namespace} and repo=${expected.repoName} in ${actualTargetRepos}"
             ).hasSize(1)
 
-            assertThat(actual[0].newContent.absolutePath).isEqualTo(
+            assertThat(actual[0].clonedContentRepo.absolutePath).isEqualTo(
                     new File(findRoot(repos), "${expected.namespace}/${expected.repoName}").absolutePath)
         }
     }
@@ -551,7 +551,7 @@ class ContentTest {
     }
 
     @Test
-    void 'Reset common_repo to repo '() {
+    void 'Reset common repo to repo '() {
         /**
          * Prepare Testcase
          * using all defined repos ->  common/repo is used by nonFolderRepo1 + 2
@@ -614,7 +614,7 @@ class ContentTest {
     }
 
     @Test
-    void 'Update common_repo test '() {
+    void 'Update common repo test '() {
         /**
          * Prepare Testcase
          * using all defined repos ->  common/repo is used by nonFolderRepo1 + 2
@@ -675,7 +675,7 @@ class ContentTest {
     }
 
     @Test
-    void 'init common_repo, expect unchanged repo'() {
+    void 'init common repo, expect unchanged repo'() {
         /**
          * Prepare Testcase
          * using all defined repos ->  common/repo is used by nonFolderRepo1 + 2
@@ -863,7 +863,7 @@ class ContentTest {
     }
 
     String findRoot(List<RepoCoordinate> repos) {
-        def result = new File(repos.get(0).getNewContent().getParent()).getParent()
+        def result = new File(repos.get(0).getClonedContentRepo().getParent()).getParent()
         return result;
 
     }

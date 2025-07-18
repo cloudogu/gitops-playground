@@ -193,11 +193,6 @@ class Jenkins extends Feature {
 
     }
 
-    /**
-     * creates a Jenkinsjob
-     * @param jobName
-     * @param repoName
-     */
     void createJenkinsjob(String namespace, String repoName) {
         def credentialId = "scmm-user"
         String prefixedNamespace = "${config.application.namePrefix}${namespace}"

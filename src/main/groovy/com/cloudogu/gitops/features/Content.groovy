@@ -23,7 +23,6 @@ import org.eclipse.jgit.lib.Ref
 import org.eclipse.jgit.lib.Repository
 import org.eclipse.jgit.revwalk.RevCommit
 import org.eclipse.jgit.revwalk.RevWalk
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 import org.eclipse.jgit.treewalk.TreeWalk
 import org.eclipse.jgit.treewalk.filter.PathFilter
@@ -145,7 +144,7 @@ class Content extends Feature {
                     def repoCoordinate = new RepoCoordinate(
                             namespace: namespace,
                             repoName: repoName,
-                            newContent: repoTmpDir,
+                            clonedContentRepo: repoTmpDir,
                             repoConfig: repoConfig,
                             refIsTag: isTag(repoTmpDir, repoConfig.ref)
                     )
@@ -164,7 +163,7 @@ class Content extends Feature {
      * Note that existing repoCoordinate objects with different overwriteMode are overwritten. The last repo to be mentioned within config.content.repos wins!
      */
     private static RepoCoordinate mergeRepoDirs(File src, String namespace, String repoName, File mergedRepoFolder,
-                                      ContentRepositorySchema repoConfig, List<RepoCoordinate> repoCoordinates) {
+                                                ContentRepositorySchema repoConfig, List<RepoCoordinate> repoCoordinates) {
         File target = new File(new File(mergedRepoFolder, namespace), repoName)
         log.debug("Merging content repo, namespace ${namespace}, repoName ${repoName} from ${src} to ${target}")
         FileUtils.copyDirectory(src, target, new FileSystemUtils.IgnoreDotGitFolderFilter())
@@ -172,7 +171,7 @@ class Content extends Feature {
         def repoCoordinate = new RepoCoordinate(
                 namespace: namespace,
                 repoName: repoName,
-                newContent: target,
+                clonedContentRepo: target,
                 repoConfig: repoConfig,
         )
         addRepoCoordinates(repoCoordinates, repoCoordinate)
@@ -209,7 +208,6 @@ class Content extends Feature {
             cloneCommand.setCredentialsProvider(
                     new UsernamePasswordCredentialsProvider(repoConfig.username, repoConfig.password))
         }
-
 
         def git = cloneCommand.call()
 
@@ -265,9 +263,9 @@ class Content extends Feature {
                         "and repo already exists in target:  Not pushing content!" +
                         "If you want to override, set ${OverwriteMode.UPGRADE} or ${OverwriteMode.RESET} .")
             } else {
-                
+
                 targetRepo.cloneRepo()
-                
+
                 if (ContentRepoType.MIRROR == repoCoordinate.repoConfig.type) {
                     handleRepoMirroring(repoCoordinate, targetRepo)
                 } else {
@@ -289,7 +287,7 @@ class Content extends Feature {
     private static void handleRepoCopying(RepoCoordinate repoCoordinate, ScmmRepo targetRepo) {
         if (OverwriteMode.INIT != repoCoordinate.repoConfig.overwriteMode) {
             if (OverwriteMode.RESET == repoCoordinate.repoConfig.overwriteMode) {
-                log.info("OverwriteMode ${Config.OverwriteMode.RESET} set for repo '${repoCoordinate.fullRepoName}': " +
+                log.info("OverwriteMode ${OverwriteMode.RESET} set for repo '${repoCoordinate.fullRepoName}': " +
                         "Deleting existing files in repo and replacing them with new content.")
                 targetRepo.clearRepo()
             } else {
@@ -300,24 +298,24 @@ class Content extends Feature {
         // Avoid overwriting .git in target to avoid, because we don't need it for copying and
         // git pack files are typically read-only, leading to IllegalArgumentException:
         // File parameter 'destFile is not writable: .git/objects/pack/pack-123.pack
-        targetRepo.copyDirectoryContents(repoCoordinate.newContent.absolutePath, new FileSystemUtils.IgnoreDotGitFolderFilter())
+        targetRepo.copyDirectoryContents(repoCoordinate.clonedContentRepo.absolutePath, new FileSystemUtils.IgnoreDotGitFolderFilter())
 
         String commitMessage = "Initialize content repo ${repoCoordinate.namespace}/${repoCoordinate.repoName}"
         String targetRefShort = repoCoordinate.repoConfig.targetRef.replace('refs/heads/', '').replace('refs/tags/', '')
         if (targetRefShort) {
             String refSpec
-            if ((repoCoordinate.refIsTag && !repoCoordinate.repoConfig.targetRef.startsWith('refs/heads')) 
+            if ((repoCoordinate.refIsTag && !repoCoordinate.repoConfig.targetRef.startsWith('refs/heads'))
                     || repoCoordinate.repoConfig.targetRef.startsWith('refs/tags')) {
                 refSpec = "refs/tags/${targetRefShort}:refs/tags/${targetRefShort}"
             } else {
-                refSpec = "HEAD:refs/heads/${targetRefShort}" 
+                refSpec = "HEAD:refs/heads/${targetRefShort}"
             }
-            
+
             targetRepo.commitAndPush(commitMessage, targetRefShort, refSpec)
         } else {
             targetRepo.commitAndPush(commitMessage)
         }
-            
+
     }
 
     /**
@@ -336,7 +334,7 @@ class Content extends Feature {
             // IOException: Source ref someBranch doesn't resolve to any object.
             FileSystemUtils.makeWritable(new File(targetRepo.absoluteLocalRepoTmpDir, '.git'))
 
-            targetRepo.copyDirectoryContents(repoCoordinate.newContent.absolutePath)
+            targetRepo.copyDirectoryContents(repoCoordinate.clonedContentRepo.absolutePath)
 
             // Restore remote, it could have been overwritten due to a copied .git folder in MIRROR mode
             targetGit.repository.config.setString('remote', 'origin', 'url', remoteUrl)
@@ -344,7 +342,7 @@ class Content extends Feature {
         }
 
         if (repoCoordinate.repoConfig.ref) {
-            if (isCommit(repoCoordinate.newContent, repoCoordinate.repoConfig.ref)) {
+            if (isCommit(repoCoordinate.clonedContentRepo, repoCoordinate.repoConfig.ref)) {
                 // Mirroring detached commits does not make a lot of sense and is complicated
                 // We would have to branch, push, delete remote branch. Considering this an edge case at the moment!
                 throw new RuntimeException("Mirroring commit references is not supported for content repos at the moment. content repository '${repoCoordinate.repoConfig.url}', ref: ${repoCoordinate.repoConfig.ref}")
@@ -355,7 +353,7 @@ class Content extends Feature {
             } else {
                 log.debug("Mirroring repo '${repoCoordinate.repoConfig.url}' ref '${repoCoordinate.repoConfig.ref}' to target repo ${repoCoordinate.fullRepoName}")
                 targetRepo.pushRef(repoCoordinate.repoConfig.ref, true)
-            } 
+            }
         } else {
             log.debug("Mirroring whole repo '${repoCoordinate.repoConfig.url}' to target repo ${repoCoordinate.fullRepoName}")
             targetRepo.pushAll(true)
@@ -425,19 +423,17 @@ class Content extends Feature {
             def objectId = git.repository.resolve(ref)
             return objectId != null
 
-        } 
+        }
     }
+    
     /**
      * checks, if file exists in repo in some branch.
      * @param pathToRepo
      * @param filename
      */
-    boolean existFileInSomeBranch(String repo, String filename) {
+    static boolean existFileInSomeBranch(String repo, String filename) {
         String filenameToSearch = filename
         File repoPath = new File(repo + '/.git')
-        def repository = new FileRepositoryBuilder()
-                .setGitDir(repoPath)
-                .build()
 
         try (def git = Git.open(repoPath)) {
             List<Ref> branches = git
@@ -448,31 +444,27 @@ class Content extends Feature {
             for (Ref branch : branches) {
                 String branchName = branch.getName()
 
-                ObjectId commitId = repository.resolve(branchName)
+                ObjectId commitId = git.repository.resolve(branchName)
                 if (commitId == null) {
                     continue
                 }
-                try (RevWalk revWalk = new RevWalk(repository)) {
+                try (RevWalk revWalk = new RevWalk(git.repository)) {
                     RevCommit commit = revWalk.parseCommit(commitId)
-                    TreeWalk treeWalk = new TreeWalk(repository)
-                    treeWalk.addTree(commit.getTree())
-                    treeWalk.setRecursive(true)
-                    treeWalk.setFilter(PathFilter.create(filenameToSearch))
+                    try (TreeWalk treeWalk = new TreeWalk(git.repository)) {
 
-                    if (treeWalk.next()) {
-                        log.info("File ${filename} found in branch ${branchName}")
-                        treeWalk.close()
-                        revWalk.close()
-                        return true
+                        treeWalk.addTree(commit.getTree())
+                        treeWalk.setFilter(PathFilter.create(filenameToSearch))
+
+                        if (treeWalk.next()) {
+                            log.debug("File ${filename} found in branch ${branchName}")
+
+                            return true
+                        }
                     }
-
-                    treeWalk.close()
-                    revWalk.close()
-
                 }
             }
         }
-        log.info("File ${filename} not found in repository ${repoPath}")
+        log.debug("File ${filename} not found in repository ${repoPath}")
         return false
     }
 
@@ -481,20 +473,20 @@ class Content extends Feature {
             return false
         }
         try (def git = Git.open(repo)) {
-            git.tagList().call().any { it.name.endsWith("/" + ref) || it.name == ref } 
+            git.tagList().call().any { it.name.endsWith("/" + ref) || it.name == ref }
         }
     }
 
     static class RepoCoordinate {
         String namespace
         String repoName
-        File newContent
+        File clonedContentRepo
         ContentRepositorySchema repoConfig
         boolean refIsTag
 
         @Override
         String toString() {
-            return "RepoCoordinates{ namespace='$namespace', repoName='$repoName', repoConfig.type='${repoConfig.type}', repoConfig.overwriteMode='${repoConfig.overwriteMode}', newContent=$newContent', refIsTag='${refIsTag}' }"
+            return "RepoCoordinates{ namespace='$namespace', repoName='$repoName', repoConfig.type='${repoConfig.type}', repoConfig.overwriteMode='${repoConfig.overwriteMode}', clonedContentRepo=$clonedContentRepo', refIsTag='${refIsTag}' }"
         }
 
         String getFullRepoName() {
