@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: ${namePrefix}projects
-  namespace: argocd
+  namespace: ${config.multiTenant.centralArgocdNamespace}
 # finalizer disabled, because otherwise everything under this Application would be deleted as well, if this Application is deleted by accident
 #  finalizers:
 #    - resources-finalizer.argocd.argoproj.io

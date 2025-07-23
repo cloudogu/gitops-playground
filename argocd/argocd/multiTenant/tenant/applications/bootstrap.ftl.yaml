@@ -11,7 +11,7 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: ${namePrefix}argocd
-  project: default
+  project: argocd
   source:
     path: applications/
     repoURL: ${scmm.repoUrl}argocd/argocd
@@ -36,7 +36,7 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: ${namePrefix}argocd
-  project: default
+  project: argocd
   source:
     path: projects/
     repoURL: ${scmm.repoUrl}argocd/argocd
@@ -49,7 +49,7 @@ spec:
       selfHeal: true
 ---
 #duplicate from argocd/projects/
-<#if config.multiTenant.useDedicatedInstance>
+<#if config.multiTenant.useDedicatedInstance && config.content.examples>
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:

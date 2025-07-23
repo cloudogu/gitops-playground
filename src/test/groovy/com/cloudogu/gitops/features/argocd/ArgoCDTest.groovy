@@ -44,7 +44,7 @@ class ArgoCDTest {
                     gitEmail            : 'hello@cloudogu.com',
                     namespaces          : [
                             dedicatedNamespaces: ["argocd", "monitoring", "ingress-nginx", "secrets"],
-                            tenantNamespaces: ["example-apps-staging", "example-apps-production"]
+                            tenantNamespaces   : ["example-apps-staging", "example-apps-production"]
                     ]
             ],
             scmm: [
@@ -1211,7 +1211,7 @@ class ArgoCDTest {
                 "ingress-nginx",
                 "example-apps-staging",
                 "example-apps-production"
-                ])
+        ])
 
         def argoCD = setupOperatorTest(openshift: false)
         argoCD.install()
@@ -1500,6 +1500,16 @@ class ArgoCDTest {
     }
 
     @Test
+    void 'Central Bootstrapping for Tenant Applications'() {
+        setup()
+        def ingressFile = new File(argocdRepo.getAbsoluteLocalRepoTmpDir(), "operator/ingress.yaml")
+        assertThat(ingressFile)
+                .as("Ingress file should not be generated when both flags are false")
+                .doesNotExist()
+    }
+
+
+    @Test
     void 'GOP DedicatedInstances Central templating works correctly'() {
         setup()
         //Central Applications
@@ -1521,6 +1531,7 @@ class ArgoCDTest {
         assertThat(bootstrapYaml['metadata']['name']).isEqualTo('testPrefix-bootstrap')
         assertThat(bootstrapYaml['metadata']['namespace']).isEqualTo('argocd')
         assertThat(bootstrapYaml['spec']['project']).isEqualTo('testPrefix')
+        assertThat(bootstrapYaml['spec']['source']['repoURL']).isEqualTo("scmm.testhost/scm/repo/testPrefix-argocd/argocd")
 
         assertThat(clusterResourcesYaml['metadata']['name']).isEqualTo('testPrefix-cluster-resources')
         assertThat(clusterResourcesYaml['metadata']['namespace']).isEqualTo('argocd')
@@ -1614,10 +1625,44 @@ class ArgoCDTest {
     }
 
     @Test
-    void 'ArgoCD uses central multi tenant scm for repos'() {
-        setup()
-        def argocdYaml = new YamlSlurper().parse(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), "${prefixPathCentral}applications/argocd.yaml"))
-        assertThat(argocdYaml['spec']['source']['repoURL']).isEqualTo('scmm.testhost/scm/repo/testPrefix-argocd/argocd')
+    void 'Operator RBAC includes node access rules when not on OpenShift'() {
+        config.application.namePrefix = "testprefix-"
+
+        def argoCD = setupOperatorTest(openshift: false)
+        argoCD.install()
+
+        print config.toMap()
+
+        File rbacDir = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_RBAC_PATH).toFile()
+        File roleFile = new File(rbacDir, "role-argocd-testprefix-monitoring.yaml")
+
+        Map yaml = new YamlSlurper().parse(roleFile) as Map
+        List<Map<String, Object>> rules = yaml["rules"] as List<Map<String, Object>>
+
+        assertThat(rules).anyMatch { rule ->
+            List<String> resources = rule["resources"] as List<String>
+            resources.contains("nodes") && resources.contains("nodes/metrics")
+        }
+    }
+
+    @Test
+    void 'Operator RBAC does not include node access rules when on OpenShift'() {
+        config.application.namePrefix = "testprefix-"
+
+        def argoCD = setupOperatorTest(openshift: true)
+        argoCD.install()
+
+        File rbacDir = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_RBAC_PATH).toFile()
+        File roleFile = new File(rbacDir, "role-argocd-testprefix-monitoring.yaml")
+        println roleFile
+
+        Map yaml = new YamlSlurper().parse(roleFile) as Map
+        List<Map<String, Object>> rules = yaml["rules"] as List<Map<String, Object>>
+
+        assertThat(rules).noneMatch { rule ->
+            List<String> resources = rule["resources"] as List<String>
+            resources.contains("nodes") && resources.contains("nodes/metrics")
+        }
     }
 
     void setup() {
@@ -1709,7 +1754,7 @@ class ArgoCDTest {
         )
     }
 
-    private static mockPrefixActiveNamespaces(Config config) {
+    private static void mockPrefixActiveNamespaces(Config config) {
         def prefix = config.application.namePrefix ?: ""
 
         config.application.namespaces.with {

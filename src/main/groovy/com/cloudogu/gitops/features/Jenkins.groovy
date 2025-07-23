@@ -142,7 +142,6 @@ class Jenkins extends Feature {
                 INSECURE                  : config.application.insecure,
                 SKIP_RESTART              : config.jenkins.skipRestart,
                 SKIP_PLUGINS              : config.jenkins.skipPlugins
-
         ])
 
         globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}SCMM_URL", config.scmm.urlForJenkins)

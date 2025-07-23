@@ -262,6 +262,10 @@
                 }
               }
             },
+            "namespace" : {
+              "type" : [ "string", "null" ],
+              "description" : "Defines the kubernetes namespace for ArgoCD"
+            },
             "operator" : {
               "type" : [ "boolean", "null" ],
               "description" : "Install ArgoCD via an already running ArgoCD Operator"
@@ -709,6 +713,14 @@
     "multiTenant" : {
       "type" : [ "object", "null" ],
       "properties" : {
+        "centralArgocdNamespace" : {
+          "type" : [ "string", "null" ],
+          "description" : "CENTRAL Argocd Repo Namespace"
+        },
+        "centralSCMamespace" : {
+          "type" : [ "string", "null" ],
+          "description" : "CENTRAL Argocd Repo Namespace"
+        },
         "centralScmUrl" : {
           "type" : [ "string", "null" ],
           "description" : "URL for the centralized Management Repo"

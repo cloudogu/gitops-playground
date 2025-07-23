@@ -76,6 +76,7 @@ interface ConfigConstants {
     String CENTRAL_MGMT_REPO_DESCRIPTION = 'URL for the centralized Management Repo'
     String CENTRAL_SCMM_USERNAME_DESCRIPTION = 'CENTRAL SCMM USERNAME'
     String CENTRAL_SCMM_PASSWORD_DESCRIPTION = 'CENTRAL SCMM Password'
+    String CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION = 'CENTRAL Argocd Repo Namespace'
 
     // group remote
     String REMOTE_DESCRIPTION = 'Expose services as LoadBalancers'
@@ -166,7 +167,7 @@ interface ConfigConstants {
     String ARGOCD_OPERATOR_DESCRIPTION = 'Install ArgoCD via an already running ArgoCD Operator'
     String ARGOCD_ENV_DESCRIPTION = 'Pass a list of env vars to Argo CD components. Currently only works with operator'
     String ARGOCD_RESOURCE_INCLUSIONS_CLUSTER = 'Internal Kubernetes API Server URL https://IP:PORT (kubernetes.default.svc). Needed in argocd-operator resourceInclusions. Use this parameter if argocd.operator=true and NOT running inside a Pod (remote mode). Full URL needed, for example: https://100.125.0.1:443'
-
+    String ARGOCD_CUSTOM_NAMESPACE_DESCRIPTION= 'Defines the kubernetes namespace for ArgoCD'
     // group example apps
     String EXAMPLE_APPS_DESCRIPTION = 'Config parameters for the example apps and exercises'
     String BASE_DOMAIN_DESCRIPTION = 'The domain under which a subdomain these applications will be made available'
