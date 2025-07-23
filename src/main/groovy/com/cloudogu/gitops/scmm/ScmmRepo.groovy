@@ -35,14 +35,21 @@ class ScmmRepo {
     private String scmProvider
     private Config config
 
-    ScmmRepo(Config config, String scmmRepoTarget, FileSystemUtils fileSystemUtils) {
+    Boolean isCentralRepo
+
+    ScmmRepo(Config config, String scmmRepoTarget, FileSystemUtils fileSystemUtils, Boolean isCentralRepo = false) {
         def tmpDir = File.createTempDir()
         tmpDir.deleteOnExit()
-        this.username = config.scmm.username
-        this.password = config.scmm.password
-        this.scmmUrl = "${config.scmm.protocol}://${config.scmm.host}"
+        this.isCentralRepo = isCentralRepo
+        this.username = !this.isCentralRepo ? config.scmm.username : config.multiTenant.username
+        this.password = !this.isCentralRepo ? config.scmm.password : config.multiTenant.password
+
+        //switching from normal scm path to the central path
+        this.scmmUrl = !this.isCentralRepo ? "${config.scmm.protocol}://${config.scmm.host}" : "${config.multiTenant.centralScmUrl.toString()}"
+
         this.scmmRepoTarget = scmmRepoTarget.startsWith(NAMESPACE_3RD_PARTY_DEPENDENCIES) ? scmmRepoTarget :
                 "${config.application.namePrefix}${scmmRepoTarget}"
+
         this.absoluteLocalRepoTmpDir = tmpDir.absolutePath
         this.fileSystemUtils = fileSystemUtils
         this.insecure = config.application.insecure
@@ -86,7 +93,7 @@ class ScmmRepo {
         gitClone()
         checkoutOrCreateBranch('main')
     }
-    
+
     /**
      * @return true if created, false if already exists. Throw exception on all other errors
      */
@@ -125,6 +132,11 @@ class ScmmRepo {
     }
 
     void copyDirectoryContents(String srcDir, FileFilter fileFilter = null) {
+        if (!srcDir) {
+            println "Source directory is not defined. Nothing to copy?"
+            return
+        }
+
         log.debug("Initializing repo $scmmRepoTarget with content of folder $srcDir")
         String absoluteSrcDirLocation = srcDir
         if (!new File(absoluteSrcDirLocation).isAbsolute()) {
@@ -181,11 +193,11 @@ class ScmmRepo {
     def pushAll(boolean force = false) {
         createPushCommand('refs/*:refs/*').setForce(force).call()
     }
-    
+
     def pushRef(String ref, String targetRef, boolean force = false) {
         createPushCommand("${ref}:${targetRef}").setForce(force).call()
     }
-    
+
     def pushRef(String ref, boolean force = false) {
         pushRef(ref, ref, force)
     }
@@ -222,6 +234,7 @@ class ScmmRepo {
                 .setNoCheckout(true)
                 .setCredentialsProvider(getCredentialProvider())
                 .call()
+
     }
 
     private CredentialsProvider getCredentialProvider() {

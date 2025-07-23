@@ -54,6 +54,15 @@ class K8sClientTest {
     }
 
     @Test
+    void 'get secret'() {
+        k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', 'Test', 0))
+        k8sClient.getArgoCDNamespacesSecret('my-secret', 'my-ns')
+
+        assertThat(commandExecutor.actualCommands[0]).isEqualTo(
+                "kubectl get secret my-secret -nmy-ns -ojsonpath={.data.namespaces}")
+    }
+
+    @Test
     void 'Creates secret without namespace'() {
         k8sClient.createSecret('generic', 'my-secret', new Tuple2('key1', 'value1'))
 
@@ -93,7 +102,7 @@ class K8sClientTest {
     @Test
     void 'Ensure in secret creation, nullable String become empty string'() {
 
-        def secret = k8sClient.createSecret("generic", "very-secret", new Tuple2('isnullbecomeempty', null))
+        k8sClient.createSecret("generic", "very-secret", new Tuple2('isnullbecomeempty', null))
 
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
                 "kubectl create secret generic very-secret --from-literal isnullbecomeempty= --dry-run=client -oyaml" +

@@ -21,7 +21,6 @@ class ApplicationConfigurator {
     Config initConfig(Config newConfig) {
 
         addAdditionalApplicationConfig(newConfig)
-
         addNamePrefix(newConfig)
 
         addScmmConfig(newConfig)
@@ -37,6 +36,8 @@ class ApplicationConfigurator {
         evaluateBaseUrl(newConfig)
 
         setResourceInclusionsCluster(newConfig)
+
+        setMultiTenantModeConfig(newConfig)
 
         return newConfig
     }
@@ -94,6 +95,7 @@ class ApplicationConfigurator {
                So, always use localhost.
                Allow overriding the port, in case multiple playground instance run on a single host in different 
                k3d clusters. */
+            newConfig.registry.internal = true
             newConfig.registry.url = "localhost:${newConfig.registry.internalPort}"
         } else {
             // Registry not active, no need to set the following values
@@ -137,7 +139,7 @@ class ApplicationConfigurator {
 
         // We probably could get rid of some of the complexity by refactoring url, host and ingress into a single var
         if (newConfig.application.baseUrl) {
-            newConfig.scmm.ingress = new URL(injectSubdomain('scmm',
+            newConfig.scmm.ingress = new URL(injectSubdomain("${newConfig.application.namePrefix}scmm",
                     newConfig.application.baseUrl as String, newConfig.application.urlSeparatorHyphen as Boolean)).host
         }
         // When specific user/pw are not set, set them to global values
@@ -172,7 +174,7 @@ class ApplicationConfigurator {
         }
 
         if (newConfig.application.baseUrl) {
-            newConfig.jenkins.ingress = new URL(injectSubdomain('jenkins',
+            newConfig.jenkins.ingress = new URL(injectSubdomain("${newConfig.application.namePrefix}jenkins",
                     newConfig.application.baseUrl, newConfig.application.urlSeparatorHyphen)).host
         }
         // When specific user/pw are not set, set them to global values
@@ -197,7 +199,7 @@ class ApplicationConfigurator {
         boolean urlSeparatorHyphen = newConfig.application.urlSeparatorHyphen
 
         if (argocd.active && !argocd.url) {
-            argocd.url = injectSubdomain('argocd', baseUrl, urlSeparatorHyphen)
+            argocd.url = injectSubdomain("${newConfig.application.namePrefix}argocd", baseUrl, urlSeparatorHyphen)
             log.debug("Setting ArgoCD URL ${argocd.url}")
         }
         if (mail.mailhog && !mail.mailhogUrl) {
@@ -224,6 +226,37 @@ class ApplicationConfigurator {
             newConfig.features.exampleApps.nginx.baseDomain =
                     new URL(injectSubdomain('nginx', baseUrl, urlSeparatorHyphen)).host
             log.debug("Setting Nginx URL ${newConfig.features.exampleApps.nginx.baseDomain}")
+        }
+    }
+
+    void setMultiTenantModeConfig(Config newConfig) {
+        if (newConfig.multiTenant.useDedicatedInstance) {
+            if (!newConfig.application.namePrefix) {
+                throw new RuntimeException('To enable Central Multi-Tenant mode, you must define a name prefix to distinguish between instances.')
+            }
+
+            if (!newConfig.multiTenant.username || !newConfig.multiTenant.password) {
+                throw new RuntimeException('To use Central Multi Tenant mode define the username and password for the central SCM instance.')
+            }
+
+            if (!newConfig.features.argocd.operator) {
+                newConfig.features.argocd.operator = true
+            }
+
+            // Removes trailing slash from the input URL to avoid duplicated slashes in further URL handling
+            if (newConfig.multiTenant.centralScmUrl) {
+                String urlString = newConfig.multiTenant.centralScmUrl.toString()
+                if (urlString.endsWith("/")) {
+                    urlString = urlString[0..-2]
+                }
+                newConfig.multiTenant.centralScmUrl= urlString
+            }
+
+            //Disabling IngressNginx in DedicatedInstances Mode for now.
+            //Ingress has to be handled by Cluster, not by this tenant.
+            //Ingress has to be handled manually for local dev.
+            //See /scripts/local/ for local dev.
+            newConfig.features.ingressNginx.active = false
         }
     }
 

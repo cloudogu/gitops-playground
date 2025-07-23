@@ -17,4 +17,8 @@ class ScmmRepoProvider {
     ScmmRepo getRepo(String repoTarget) {
         return new ScmmRepo(config ,repoTarget, fileSystemUtils)
     }
+
+    ScmmRepo getRepo(String repoTarget, Boolean isCentralRepo) {
+        return new ScmmRepo(config ,repoTarget, fileSystemUtils, isCentralRepo)
+    }
 }

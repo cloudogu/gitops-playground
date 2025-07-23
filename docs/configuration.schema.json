@@ -706,6 +706,33 @@
       "additionalProperties" : false,
       "description" : "Config parameters for Jenkins CI/CD Pipeline Server"
     },
+    "multiTenant" : {
+      "type" : [ "object", "null" ],
+      "properties" : {
+        "centralScmUrl" : {
+          "type" : [ "string", "null" ],
+          "description" : "URL for the centralized Management Repo"
+        },
+        "internal" : {
+          "type" : [ "boolean", "null" ],
+          "description" : "SCM for Central Management is running on the same cluster, so k8s internal URLs can be used for access"
+        },
+        "password" : {
+          "type" : [ "string", "null" ],
+          "description" : "CENTRAL SCMM Password"
+        },
+        "useDedicatedInstance" : {
+          "type" : [ "boolean", "null" ],
+          "description" : "Toggles the Dedicated Instances Mode"
+        },
+        "username" : {
+          "type" : [ "string", "null" ],
+          "description" : "CENTRAL SCMM USERNAME"
+        }
+      },
+      "additionalProperties" : false,
+      "description" : "Multi Tenant Configs"
+    },
     "registry" : {
       "type" : [ "object", "null" ],
       "properties" : {

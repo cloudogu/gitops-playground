@@ -37,10 +37,10 @@ class K8sClient {
 
         log.debug(logMessage)
         while (output.isEmpty() && tryCount < maxTries) {
-            if(!additionalCommand){
+            if (!additionalCommand) {
                 output = commandExecutor.execute(command).stdOut
-            }else{
-                output = commandExecutor.execute(command,additionalCommand).stdOut
+            } else {
+                output = commandExecutor.execute(command, additionalCommand).stdOut
             }
 
             if (output.isEmpty()) {
@@ -83,7 +83,7 @@ class K8sClient {
                 .namespace(namespace)
                 .mandatory("-o", "jsonpath={.spec.ports[0].nodePort}")
                 .build()
-        
+
         String output = waitForOutput(
                 command,
                 "Getting node port for service $serviceName, ns=$namespace",
@@ -126,7 +126,7 @@ class K8sClient {
      */
     void createNamespace(String name) {
         validateNamespace(name)
-        
+
         if (!exists(name)) {
 
             log.debug("Namespace ${name} does not exist, proceeding to create.")
@@ -191,6 +191,17 @@ class K8sClient {
 
         commandExecutor.execute(command1, APPLY_FROM_STDIN)
     }
+
+    String getArgoCDNamespacesSecret(String name, String namespace = '') {
+        String[] command = ["kubectl", "get", 'secret',name,"-n${namespace}", '-ojsonpath={.data.namespaces}']
+        String output = waitForOutput(
+                command,
+                "Getting Secret from Cluster",
+                "Failed getting Secret from Cluster"
+        )
+        return output
+    }
+
 
     /**
      * Idempotent create, i.e. overwrites if exists.

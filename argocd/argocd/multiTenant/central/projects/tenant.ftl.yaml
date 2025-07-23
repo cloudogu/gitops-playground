@@ -1,0 +1,40 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: ${tenantName}
+  namespace: argocd
+spec:
+  description: Contains Cluster Ressources for MultiTentant Mode
+  destinations:
+    - namespace: '*'
+      server: https://kubernetes.default.svc
+  sourceRepos:
+    - ${scmm.centralScmmUrl}/repo/${namePrefix}argocd/argocd
+    - ${scmm.centralScmmUrl}/repo/${namePrefix}argocd/cluster-resources
+<#if mirrorRepos>
+    - ${scmm.repoUrl}3rd-party-dependencies/kube-prometheus-stack<#if scmm.provider == "gitlab">.git</#if>
+    - ${scmm.repoUrl}3rd-party-dependencies/mailhog<#if scmm.provider == "gitlab">.git</#if>
+    - ${scmm.repoUrl}3rd-party-dependencies/ingress-nginx<#if scmm.provider == "gitlab">.git</#if>
+    - ${scmm.repoUrl}3rd-party-dependencies/external-secrets<#if scmm.provider == "gitlab">.git</#if>
+    - ${scmm.repoUrl}3rd-party-dependencies/vault<#if scmm.provider == "gitlab">.git</#if>
+    - ${scmm.repoUrl}3rd-party-dependencies/cert-manager<#if scmm.provider == "gitlab">.git</#if>
+<#else>
+    - https://prometheus-community.github.io/helm-charts
+    - https://codecentric.github.io/helm-charts
+    - https://kubernetes.github.io/ingress-nginx
+    - https://helm.releases.hashicorp.com
+    - https://charts.external-secrets.io
+    - https://charts.jetstack.io
+</#if>
+
+  # allow to only see application resources from the specified namespace
+  sourceNamespaces:
+    - '*'
+
+  # Allow all namespaced-scoped resources to be created
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'
+
+  # Deny all cluster-scoped resources from being created. Least privilege.
+  clusterResourceWhitelist:

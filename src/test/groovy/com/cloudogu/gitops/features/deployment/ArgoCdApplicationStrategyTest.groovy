@@ -7,7 +7,7 @@ import com.cloudogu.gitops.utils.TestScmmRepoProvider
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 
-import static org.assertj.core.api.Assertions.assertThat 
+import static org.assertj.core.api.Assertions.assertThat
 
 class ArgoCdApplicationStrategyTest {
     private File localTempDir
@@ -100,29 +100,36 @@ spec:
     }
 
     private ArgoCdApplicationStrategy createStrategy(boolean argocdOperator = false) {
-            Config config = new Config(
-                    application: new Config.ApplicationSchema(
-                            namePrefix: 'foo-',
-                            gitName: 'Cloudogu',
-                            gitEmail: 'hello@cloudogu.com'
-                    ),
-                    scmm: new Config.ScmmSchema(
-                            username: "dont-care-username",
-                            password: "dont-care-password",
-                    ),
-                    features: new Config.FeaturesSchema(
-                            argocd: new Config.ArgoCDSchema(
-                                    operator: argocdOperator
-                            )
-                    )
-            )
-
+        Config config = new Config(
+                application: new Config.ApplicationSchema(
+                        namePrefix: 'foo-',
+                        gitName: 'Cloudogu',
+                        gitEmail: 'hello@cloudogu.com'
+                ),
+                scmm: new Config.ScmmSchema(
+                        username: "dont-care-username",
+                        password: "dont-care-password",
+                ),
+                features: new Config.FeaturesSchema(
+                        argocd: new Config.ArgoCDSchema(
+                                operator: argocdOperator
+                        )
+                )
+        )
 
 
         def repoProvider = new TestScmmRepoProvider(config, new FileSystemUtils()) {
             @Override
             ScmmRepo getRepo(String repoTarget) {
                 def repo = super.getRepo(repoTarget)
+                localTempDir = new File(repo.getAbsoluteLocalRepoTmpDir())
+
+                return repo
+            }
+
+            @Override
+            ScmmRepo getRepo(String repoTarget, Boolean isCentralRepo) {
+                def repo = super.getRepo(repoTarget, isCentralRepo)
                 localTempDir = new File(repo.getAbsoluteLocalRepoTmpDir())
 
                 return repo

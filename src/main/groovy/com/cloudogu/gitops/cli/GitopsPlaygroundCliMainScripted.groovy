@@ -22,7 +22,8 @@ import com.cloudogu.gitops.scmm.api.ScmmApiClient
 import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
 import io.micronaut.context.ApplicationContext
-import jakarta.inject.Provider 
+import jakarta.inject.Provider
+
 /**
  * Micronaut's dependency injection relies on statically compiled class files with seems incompatible with groovy 
  * scripting/interpretation (without prior compilation).
