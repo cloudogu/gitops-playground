@@ -205,7 +205,7 @@ class Jenkins extends Feature {
                 prefixedNamespace,
                 credentialId)
 
-        if (config.scmm.provider == 'scm-manager') {
+        if (config.scmm.provider == Config.ScmProviderType.SCM_MANAGER) {
             jobManager.createCredential(
                     jobName,
                     credentialId,
@@ -214,7 +214,7 @@ class Jenkins extends Feature {
                     'credentials for accessing scm-manager')
         }
 
-        if (config.scmm.provider == 'gitlab') {
+        if (config.scmm.provider == Config.ScmProviderType.GITLAB) {
             jobManager.createCredential(
                     jobName,
                     credentialId,

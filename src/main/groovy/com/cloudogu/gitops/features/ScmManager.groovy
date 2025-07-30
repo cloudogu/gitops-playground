@@ -9,10 +9,6 @@ import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
 import org.gitlab4j.api.GitLabApi
-import org.gitlab4j.api.models.Group
-import org.gitlab4j.api.models.Project
-
-import java.util.function.Supplier
 import java.util.logging.Level
 
 @Slf4j

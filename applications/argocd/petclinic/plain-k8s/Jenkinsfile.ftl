@@ -154,7 +154,7 @@ node {
 /** Initializations might not be needed in a real-world setup, but are necessary to work in an air-gapped env, for example */
 String createSpecificGitOpsConfig() {
     [
-        // In the GitOps playground, we're loading the build libs from our local SCM so it also works in an offline context
+        // In the GitOps playground, we're loading the build libs from our local SCMHandler so it also works in an offline context
         // As the gitops-build-lib also uses the ces-build-lib we need to pass those parameters on.
         // If you can access the internet, you can rely on the defaults, which load the lib from GitHub.
         cesBuildLibRepo: cesBuildLibRepo,
@@ -214,7 +214,7 @@ String createImageTag() {
 }
 
 def loadLibraries() {
-    // In the GitOps playground, we're loading the build libs from our local SCM so it also works in an offline context
+    // In the GitOps playground, we're loading the build libs from our local SCMHandler so it also works in an offline context
     // If you can access the internet, you could also load the libraries directly from github like so
     // @Library(["github.com/cloudogu/ces-build-lib@${cesBuildLibVersion}", "github.com/cloudogu/gitops-build-lib@${gitOpsBuildLibRepo}"]) _
     //import com.cloudogu.ces.cesbuildlib.*

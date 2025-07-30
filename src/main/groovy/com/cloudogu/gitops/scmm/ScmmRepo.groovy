@@ -32,7 +32,7 @@ class ScmmRepo {
     private String gitName
     private String gitEmail
     private String rootPath
-    private String scmProvider
+    private Config.ScmProviderType scmProvider
     private Config config
 
     Boolean isCentralRepo
@@ -54,7 +54,6 @@ class ScmmRepo {
             this.scmmUrl = useInternal ? internalUrl : externalUrl
         }
 
-
         this.scmmRepoTarget = scmmRepoTarget.startsWith(NAMESPACE_3RD_PARTY_DEPENDENCIES) ? scmmRepoTarget :
                 "${config.application.namePrefix}${scmmRepoTarget}"
 
@@ -75,6 +74,26 @@ class ScmmRepo {
     String getScmmRepoTarget() {
         return scmmRepoTarget
     }
+
+    static String createScmmUrl(Config config) {
+        return "${config.scmm.protocol}://${config.scmm.host}"
+    }
+
+    static String createSCMBaseUrl(Config config) {
+        switch (config.scmm.provider) {
+            case Config.ScmProviderType.SCM_MANAGER:
+                if(config.scmm.internal){
+                    return "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm/${config.scmm.rootPath}/${config.application.namePrefix}"
+                }
+                return createScmmUrl(config) + "/${config.scmm.rootPath}/${config.application.namePrefix}"
+            case Config.ScmProviderType.GITLAB :
+                return createScmmUrl(config) + "/${config.application.namePrefix}${config.scmm.rootPath}"
+            default:
+                log.error("No SCMHandler Provider found. Failing to create RepoBaseUrls!")
+                return ""
+        }
+    }
+
 
     void cloneRepo() {
         log.debug("Cloning $scmmRepoTarget repo")
@@ -202,7 +221,7 @@ class ScmmRepo {
     }
 
     private CredentialsProvider getCredentialProvider() {
-        if (scmProvider == "gitlab") {
+        if (scmProvider == Config.ScmProviderType.GITLAB) {
             username = "oauth2"
         }
         def passwordAuthentication = new UsernamePasswordCredentialsProvider(username, password)
