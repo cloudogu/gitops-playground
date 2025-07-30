@@ -118,7 +118,7 @@ class ApplicationConfigurator {
     }
 
     private void addScmmConfig(Config newConfig) {
-        log.debug("Adding additional config for SCM-Manager")
+        log.debug("Adding additional config for SCMHandler-Manager")
 
         newConfig.scmm.gitOpsUsername = "${newConfig.application.namePrefix}gitops"
 
@@ -127,7 +127,7 @@ class ApplicationConfigurator {
             newConfig.scmm.internal = false
             newConfig.scmm.urlForJenkins = newConfig.scmm.url
         } else {
-            log.debug("Setting configs for internal SCM-Manager")
+            log.debug("Setting configs for internal SCMHandler-Manager")
             // We use the K8s service as default name here, because it is the only option:
             // "scmm.localhost" will not work inside the Pods and k3d-container IP + Port (e.g. 172.x.y.z:9091) 
             // will not work on Windows and MacOS.
@@ -236,7 +236,7 @@ class ApplicationConfigurator {
             }
 
             if (!newConfig.multiTenant.username || !newConfig.multiTenant.password) {
-                throw new RuntimeException('To use Central Multi Tenant mode define the username and password for the central SCM instance.')
+                throw new RuntimeException('To use Central Multi Tenant mode define the username and password for the central SCMHandler instance.')
             }
 
             if (!newConfig.features.argocd.operator) {

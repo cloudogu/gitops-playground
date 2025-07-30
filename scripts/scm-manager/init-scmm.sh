@@ -269,7 +269,7 @@ function installScmmPlugins() {
   installScmmPlugin "scm-ci-plugin" "false"
   # Last plugin usually triggers restart
   installScmmPlugin "scm-metrics-prometheus-plugin" "$restart_flag"
-  # Wait for SCM-Manager to restart
+  # Wait for SCMHandler-Manager to restart
   if [[ "$restart_flag" == "true" ]]; then
     sleep 1
     waitForScmManager
@@ -397,7 +397,7 @@ function installScmmPlugin() {
 function configJenkins() {
 
   if [ -n "${JENKINS_URL_FOR_SCMM}" ]; then
-    printf 'Configuring Jenkins plugin in SCM-Manager ... '
+    printf 'Configuring Jenkins plugin in SCMHandler-Manager ... '
 
     STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X PUT -H 'Content-Type: application/json' \
       --data-raw "{\"disableRepositoryConfiguration\":false,\"disableMercurialTrigger\":false,\"disableGitTrigger\":false,\"disableEventTrigger\":false,\"url\":\"${JENKINS_URL_FOR_SCMM}\"}" \

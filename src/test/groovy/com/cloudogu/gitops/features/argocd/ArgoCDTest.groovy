@@ -1873,10 +1873,10 @@ class ArgoCDTest {
                 queueUpAllNamespacesExist(),
                 new CommandExecutor.Output('', '', 0), // Monitoring CRDs applied
 
-                new CommandExecutor.Output('', '', 0), // ArgoCD SCM Secret applied
-                new CommandExecutor.Output('', '', 0), // Labeling ArgoCD SCM Secret
-                new CommandExecutor.Output('', '', 0), // ArgoCD SCM central Secret applied
-                new CommandExecutor.Output('', '', 0), // Labeling ArgoCD central SCM Secret
+                new CommandExecutor.Output('', '', 0), // ArgoCD SCMHandler Secret applied
+                new CommandExecutor.Output('', '', 0), // Labeling ArgoCD SCMHandler Secret
+                new CommandExecutor.Output('', '', 0), // ArgoCD SCMHandler central Secret applied
+                new CommandExecutor.Output('', '', 0), // Labeling ArgoCD central SCMHandler Secret
 
                 new CommandExecutor.Output('', '', 0), // ArgoCD operator YAML applied
                 new CommandExecutor.Output('', 'Available', 0), // ArgoCD resource reached desired phase

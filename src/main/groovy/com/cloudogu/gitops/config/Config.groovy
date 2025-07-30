@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ser.BeanSerializerModifier
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 import groovy.transform.MapConstructor
 import jakarta.inject.Singleton
+import picocli.CommandLine
 import picocli.CommandLine.Command
 import picocli.CommandLine.Mixin
 import picocli.CommandLine.Option
@@ -289,7 +290,18 @@ class Config {
                 version: '5.8.43')
     }
 
+
     static class ScmmSchema {
+
+        enum ScmProviderType {
+            GITLAB,
+            SCM_MANAGER
+        }
+
+        @Option(names = ['--scm-provider'], description = SCM_PROVIDER_DESCRIPTION)
+        @JsonPropertyDescription(SCM_PROVIDER_DESCRIPTION)
+        ScmProviderType provider = ScmProviderType.SCM_MANAGER
+
         Boolean internal = true
         String gitOpsUsername = ''
         /* When installing from via Docker we have to distinguish scmm.url (which is a local IP address) from 
@@ -340,10 +352,6 @@ class Config {
         @JsonPropertyDescription(SCM_ROOT_PATH_DESCRIPTION)
         String rootPath = 'repo'
 
-        @Option(names = ['--scm-provider'], description = SCM_PROVIDER_DESCRIPTION)
-        @JsonPropertyDescription(SCM_PROVIDER_DESCRIPTION)
-        String provider = 'scm-manager'
-
     }
 
     static class MultiTentantSchema {
@@ -375,6 +383,10 @@ class Config {
         @Option(names = ['--central-scm-namespace'], description = CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
         @JsonPropertyDescription(CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
         String centralSCMamespace = 'scm-manager'
+
+        @Option(names = ['--scm-central-provider'], description = SCM_PROVIDER_DESCRIPTION)
+        @JsonPropertyDescription(SCM_PROVIDER_DESCRIPTION)
+        ScmProviderType provider = ScmProviderType.SCM_MANAGER
     }
 
     static class ApplicationSchema {
@@ -846,6 +858,11 @@ class Config {
             @JsonPropertyDescription(BASE_DOMAIN_DESCRIPTION)
             String baseDomain = ''
         }
+    }
+
+    static enum ScmProviderType {
+        GITLAB,
+        SCM_MANAGER
     }
 
     static enum ContentRepoType {
