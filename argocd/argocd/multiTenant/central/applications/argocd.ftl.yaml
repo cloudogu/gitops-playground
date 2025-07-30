@@ -4,8 +4,8 @@ metadata:
   name: ${namePrefix}argocd
   namespace: ${config.multiTenant.centralArgocdNamespace}
   annotations:
-    # Only app with the sync-status-unknown alert, so that we only get one alert when SCM is not reachable.
-    # Otherwise, there would be a spam wave by every application everytime the SCM is not reachable.
+    # Only app with the sync-status-unknown alert, so that we only get one alert when SCMHandler is not reachable.
+    # Otherwise, there would be a spam wave by every application everytime the SCMHandler is not reachable.
 <#if mail.active?? && mail.active>
     notifications.argoproj.io/subscribe.on-sync-status-unknown.email: ${argocd.emailToAdmin}
 </#if>

@@ -32,7 +32,7 @@ class ScmmRepo {
     private String gitName
     private String gitEmail
     private String rootPath
-    private String scmProvider
+    private Config.ScmProviderType scmProvider
     private Config config
 
     Boolean isCentralRepo
@@ -49,7 +49,6 @@ class ScmmRepo {
         if(this.isCentralRepo) {
             this.scmmUrl= !config.multiTenant.internal? "${config.multiTenant.centralScmUrl.toString()}" : "http://scmm.${config.multiTenant.centralSCMamespace}.svc.cluster.local/scm"
         }
-
 
         this.scmmRepoTarget = scmmRepoTarget.startsWith(NAMESPACE_3RD_PARTY_DEPENDENCIES) ? scmmRepoTarget :
                 "${config.application.namePrefix}${scmmRepoTarget}"
@@ -78,15 +77,15 @@ class ScmmRepo {
 
     static String createSCMBaseUrl(Config config) {
         switch (config.scmm.provider) {
-            case "scm-manager":
+            case Config.ScmProviderType.SCM_MANAGER:
                 if(config.scmm.internal){
                     return "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm/${config.scmm.rootPath}/${config.application.namePrefix}"
                 }
                 return createScmmUrl(config) + "/${config.scmm.rootPath}/${config.application.namePrefix}"
-            case "gitlab":
+            case Config.ScmProviderType.GITLAB :
                 return createScmmUrl(config) + "/${config.application.namePrefix}${config.scmm.rootPath}"
             default:
-                log.error("No SCM Provider found. Failing to create RepoBaseUrls!")
+                log.error("No SCMHandler Provider found. Failing to create RepoBaseUrls!")
                 return ""
         }
     }
@@ -242,7 +241,7 @@ class ScmmRepo {
     }
 
     private CredentialsProvider getCredentialProvider() {
-        if (scmProvider == "gitlab") {
+        if (scmProvider == Config.ScmProviderType.GITLAB) {
             username = "oauth2"
         }
         def passwordAuthentication = new UsernamePasswordCredentialsProvider(username, password)

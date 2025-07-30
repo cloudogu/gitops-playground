@@ -432,7 +432,7 @@ class ArgoCD extends Feature {
 
     protected void createSCMCredentialsSecret() {
 
-        log.debug('Creating repo credential secret that is used by argocd to access repos in SCM-Manager')
+        log.debug('Creating repo credential secret that is used by argocd to access repos in SCMHandler-Manager')
         // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo
         def repoTemplateSecretName = 'argocd-repo-creds-scmm'
 
@@ -448,7 +448,7 @@ class ArgoCD extends Feature {
 
 
         if (config.multiTenant.useDedicatedInstance) {
-            log.debug('Creating central repo credential secret that is used by argocd to access repos in SCM-Manager')
+            log.debug('Creating central repo credential secret that is used by argocd to access repos in SCMHandler-Manager')
             // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo
             def centralRepoTemplateSecretName = 'argocd-repo-creds-central-scmm'
 

@@ -17,7 +17,7 @@ class RepoInitializationAction {
     }
 
     /**
-     * Clone repo from SCM and initialize it with default basic files. Afterwards we can edit these files.
+     * Clone repo from SCMHandler and initialize it with default basic files. Afterwards we can edit these files.
      */
     void initLocalRepo() {
         repo.cloneRepo()

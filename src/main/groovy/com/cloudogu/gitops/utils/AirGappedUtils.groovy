@@ -32,7 +32,7 @@ class AirGappedUtils {
     /**
      * In air-gapped mode, the chart's dependencies can't be resolved.
      * As helm does not provide an option for changing them interactively, we push the charts into a separate repo. 
-     * We alter these repos to resolve dependencies locally from SCM.
+     * We alter these repos to resolve dependencies locally from SCMHandler.
      * 
      * @return the repo namespace and name
      */
@@ -63,7 +63,7 @@ class AirGappedUtils {
     }
 
     private void validateChart(repoNamespaceAndName, String localHelmChartFolder, String repoName) {
-        log.debug("Validating helm chart before pushing it to SCM, by running helm template.\n" +
+        log.debug("Validating helm chart before pushing it to SCMHandler, by running helm template.\n" +
                 "Potential repo: ${repoNamespaceAndName}, chart folder: ${localHelmChartFolder}")
         try {
             helmClient.template(repoName, localHelmChartFolder)
