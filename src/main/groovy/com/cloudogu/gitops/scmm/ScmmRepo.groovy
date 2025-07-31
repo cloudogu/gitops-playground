@@ -47,7 +47,11 @@ class ScmmRepo {
         //switching from normal scm path to the central path
         this.scmmUrl = "${config.scmm.protocol}://${config.scmm.host}"
         if(this.isCentralRepo) {
-            this.scmmUrl= !config.multiTenant.internal? "${config.multiTenant.centralScmUrl.toString()}" : "http://scmm.${config.multiTenant.centralSCMamespace}.svc.cluster.local/scm"
+            boolean useInternal = config.multiTenant.internal
+            String internalUrl = "http://scmm.${config.multiTenant.centralSCMamespace}.svc.cluster.local/scm"
+            String externalUrl = config.multiTenant.centralScmUrl.toString()
+
+            this.scmmUrl = useInternal ? internalUrl : externalUrl
         }
 
 
