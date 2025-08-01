@@ -31,7 +31,7 @@ class ArgoCD extends Feature {
     static final String DEDICATED_INSTANCE_PATH = 'multiTenant/central/'
     static final String MONITORING_RESOURCES_PATH = '/misc/monitoring/'
 
-    private String namespace = "${config.application.namePrefix}argocd"
+    private String namespace = "${config.application.namePrefix}${config.features.argocd.namespace}"
     private Config config
     private List<RepoInitializationAction> gitRepos = []
 
@@ -106,7 +106,6 @@ class ArgoCD extends Feature {
 
         if (config.content.examples) {
             prepareApplicationNginxHelmJenkins()
-
             preparePetClinicRepos()
         }
 
@@ -149,6 +148,8 @@ class ArgoCD extends Feature {
             //Bootstrapping dedicated instance
             k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), "${DEDICATED_INSTANCE_PATH}projects/tenant.yaml").toString())
             k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), "${DEDICATED_INSTANCE_PATH}applications/bootstrap.yaml").toString())
+            //Bootstrapping tenant Argocd projects
+            k8sClient.applyYaml(Path.of(tenantBootstrapInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'projects/argocd.yaml').toString())
             k8sClient.applyYaml(Path.of(tenantBootstrapInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'applications/bootstrap.yaml').toString())
         } else {
             // Bootstrap root application
@@ -244,7 +245,7 @@ class ArgoCD extends Feature {
                 new ArgoApplication(
                         'example-apps',
                         ScmmRepo.createSCMBaseUrl(config)+'argocd/example-apps',
-                        "${config.application.namePrefix}argocd",
+                        namespace,
                         'argocd/')
                         .generate(tenantBootstrapInitializationAction.repo, 'applications')
             }
@@ -325,11 +326,7 @@ class ArgoCD extends Feature {
         log.debug("Apply RBAC permissions for ArgoCD in all managed namespaces imperatively")
         // Apply rbac yamls from operator/rbac folder
         String argocdRbacPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), OPERATOR_RBAC_PATH)
-        k8sClient.applyYaml(argocdRbacPath)
-
-        if (config.multiTenant.useDedicatedInstance) {
-            k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), "${OPERATOR_RBAC_PATH}/tenant") as String)
-        }
+        k8sClient.applyYaml("${argocdRbacPath} --recursive")
     }
 
     // The ArgoCD instance installed via an operator only manages its deployment namespace.
@@ -386,7 +383,7 @@ class ArgoCD extends Feature {
                         .withName('argocd-central')
                         .withNamespace(ns)
                         .withServiceAccountsFrom(
-                                'argocd',
+                                config.multiTenant.centralArgocdNamespace,
                                 ["argocd-argocd-server", "argocd-argocd-application-controller", "argocd-applicationset-controller"]
                         )
                         .withConfig(config)
@@ -498,20 +495,6 @@ class ArgoCD extends Feature {
         }
 
         argocdRepoInitializationAction.repo.commitAndPush("Initial Commit")
-    }
-
-    private void deleteFile(String path) {
-        boolean successfullyDeleted = new File(path).delete()
-        if (!successfullyDeleted) {
-            log.warn("Faild to delete file ${path}")
-        }
-    }
-
-    private void deleteDir(String path) {
-        boolean successfullyDeleted = new File(path).deleteDir()
-        if (!successfullyDeleted) {
-            log.warn("Faild to delete dir ${path}")
-        }
     }
 
     protected RepoInitializationAction createRepoInitializationAction(String localSrcDir, String scmmRepoTarget) {

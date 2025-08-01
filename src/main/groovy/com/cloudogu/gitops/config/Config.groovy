@@ -304,12 +304,8 @@ class Config {
 
            See ApplicationConfigurator.addScmmConfig() and the comment at jenkins.urlForScmm */
         String urlForJenkins = ''
-
-        @JsonIgnore
-        String getHost() { return NetworkingUtils.getHost(url) }
-
-        @JsonIgnore
-        String getProtocol() { return NetworkingUtils.getProtocol(url) }
+        @JsonIgnore String getHost() { return NetworkingUtils.getHost(url)}
+        @JsonIgnore String getProtocol() { return NetworkingUtils.getProtocol(url)}
         String ingress = ''
 
         @Option(names = ['--scmm-skip-restart'], description = SCMM_SKIP_RESTART_DESCRIPTION)
@@ -336,7 +332,7 @@ class Config {
         HelmConfigWithValues helm = new HelmConfigWithValues(
                 chart: 'scm-manager',
                 repoURL: 'https://packages.scm-manager.org/repository/helm-v2-releases/',
-                version: '3.2.1',
+                version: '3.8.0',
                 values: [:]
         )
 
@@ -368,9 +364,17 @@ class Config {
         @JsonPropertyDescription(CENTRAL_SCMM_USERNAME_DESCRIPTION)
         String username = ''
 
-        @Option(names = ['--central-scm-password'], description = SCMM_PASSWORD_DESCRIPTION)
+        @Option(names = ['--central-scm-password'], description = CENTRAL_SCMM_PASSWORD_DESCRIPTION)
         @JsonPropertyDescription(CENTRAL_SCMM_PASSWORD_DESCRIPTION)
         String password = ''
+
+        @Option(names = ['--central-argocd-namespace'], description = CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
+        @JsonPropertyDescription(CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
+        String centralArgocdNamespace = 'argocd'
+
+        @Option(names = ['--central-scm-namespace'], description = CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
+        @JsonPropertyDescription(CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
+        String centralSCMamespace = 'scm-manager'
     }
 
     static class ApplicationSchema {
@@ -613,6 +617,9 @@ class Config {
         @JsonPropertyDescription(ARGOCD_RESOURCE_INCLUSIONS_CLUSTER)
         String resourceInclusionsCluster = ''
 
+        @Option(names = ['--argocd-namespace'], description = ARGOCD_CUSTOM_NAMESPACE_DESCRIPTION)
+        @JsonPropertyDescription(ARGOCD_CUSTOM_NAMESPACE_DESCRIPTION)
+        String namespace = 'argocd'
     }
 
     static class MailSchema {

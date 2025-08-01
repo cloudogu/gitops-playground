@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: ${namePrefix}argocd
-  namespace: argocd
+  namespace: ${config.multiTenant.centralArgocdNamespace}
   annotations:
     # Only app with the sync-status-unknown alert, so that we only get one alert when SCM is not reachable.
     # Otherwise, there would be a spam wave by every application everytime the SCM is not reachable.
