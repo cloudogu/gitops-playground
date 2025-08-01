@@ -50,6 +50,11 @@ class Registry extends Feature {
     }
 
     @Override
+    boolean isNamespaceNeeded(){
+        return config.registry.active && config.registry.internal
+    }
+
+    @Override
     void enable() {
 
         if (config.registry.internal) {

@@ -60,6 +60,10 @@ abstract class Feature {
         return null
     }
 
+    boolean isNamespaceNeeded(){
+        return true
+    }
+
     static Map templateToMap(String filePath, Map parameters) {
         def hydratedString = new TemplatingEngine().template(new File(filePath), parameters)
 
@@ -71,7 +75,6 @@ abstract class Feature {
     }
 
     abstract boolean isEnabled()
-    
     /*
      *  Hooks for enabling or disabling a feature. Both optional, because not always needed.
      */

@@ -52,7 +52,7 @@ class Application {
 
         //iterates over all FeatureWithImages and gets their namespaces
         dedicatedNamespaces.addAll(this.features
-                .collect { it.activeNamespaceFromFeature }
+                .collect { it.isNamespaceNeeded() }
                 .findAll { it }
                 .unique()
                 .collect { "${it}".toString() })

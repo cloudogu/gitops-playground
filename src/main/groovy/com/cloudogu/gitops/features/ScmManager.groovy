@@ -59,6 +59,11 @@ class ScmManager extends Feature {
     }
 
     @Override
+    boolean isNamespaceNeeded(){
+        return config.scmm.internal
+    }
+
+    @Override
     void enable() {
         if (config.multiTenant.useDedicatedInstance) {
             this.centralSCMUrl = !config.multiTenant.internal ? config.multiTenant.centralScmUrl : "http://scmm.scm-manager.svc.cluster.local/scm"
