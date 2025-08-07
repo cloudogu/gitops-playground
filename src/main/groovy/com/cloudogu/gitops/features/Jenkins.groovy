@@ -27,8 +27,7 @@ class Jenkins extends Feature {
 
     static final String HELM_VALUES_PATH = "jenkins/values.ftl.yaml"
 
-    String namespace = "${config.application.namePrefix}jenkins"
-
+    String namespace
     private Config config
     private CommandExecutor commandExecutor
     private FileSystemUtils fileSystemUtils
@@ -62,6 +61,10 @@ class Jenkins extends Feature {
         this.deployer = deployer
         this.k8sClient = k8sClient
         this.networkingUtils = networkingUtils
+
+        if(config.jenkins.internal) {
+            this.namespace = "${config.application.namePrefix}jenkins"
+        }
     }
 
     @Override

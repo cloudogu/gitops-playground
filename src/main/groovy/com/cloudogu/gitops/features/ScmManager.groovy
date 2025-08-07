@@ -22,8 +22,7 @@ class ScmManager extends Feature {
 
     static final String HELM_VALUES_PATH = "scm-manager/values.ftl.yaml"
 
-    String namespace = "${config.application.namePrefix}scm-manager"
-
+    String namespace
     private Config config
     private CommandExecutor commandExecutor
     private FileSystemUtils fileSystemUtils
@@ -51,6 +50,10 @@ class ScmManager extends Feature {
         this.k8sClient = k8sClient
         this.networkingUtils = networkingUtils
         this.centralSCMUrl = config.multiTenant.centralScmUrl
+
+        if(config.scmm.internal) {
+            this.namespace = "${config.application.namePrefix}scm-manager"
+        }
     }
 
     @Override
