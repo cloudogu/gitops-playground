@@ -28,6 +28,14 @@ class ScmmApiClient {
         return retrofit().create(RepositoryApi)
     }
 
+    ScmmApi generalApi() {
+        return retrofit().create(ScmmApi)
+    }
+
+    PluginApi pluginApi() {
+        return retrofit().create(PluginApi)
+    }
+
     protected Retrofit retrofit() {
         return new Retrofit.Builder()
                 .baseUrl(config.scmm.url + '/api/')
