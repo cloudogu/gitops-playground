@@ -41,6 +41,8 @@ class Content extends Feature {
     private ScmmRepoProvider repoProvider
     private ScmmApiClient scmmApiClient
     private Jenkins jenkins
+    // set by lazy initialisation
+    private TemplatingEngine templatingEngine
 
     Content(
             Config config, K8sClient k8sClient, ScmmRepoProvider repoProvider, ScmmApiClient scmmApiClient, Jenkins jenkins
@@ -91,70 +93,99 @@ class Content extends Feature {
     }
 
     void createContentRepos() {
-        List<RepoCoordinate> repoCoordinates = cloneContentRepos()
+        List<RepoCoordinate> repoCoordinates = prepareCloneContentRepos()
         pushTargetRepos(repoCoordinates)
     }
 
-    protected List<RepoCoordinate> cloneContentRepos() {
+    protected List<RepoCoordinate> prepareCloneContentRepos() {
         List<RepoCoordinate> repoCoordinates = []
         def mergedReposFolder = File.createTempDir('gitops-playground-folder-based-content-repos-')
         mergedReposFolder.deleteOnExit()
-        def engine = new TemplatingEngine()
+
 
         log.debug("Aggregating folder structure for all ${config.content.repos.size()} folder based-repos")
         config.content.repos.each { repoConfig ->
 
-            def repoTmpDir = File.createTempDir('gitops-playground-folder-based-single-content-repo-')
-            log.debug("Cloning content repo, ${repoConfig.url}, revision ${repoConfig.ref}, path ${repoConfig.path}, overwriteMode ${repoConfig.overwriteMode}")
-
-            cloneToLocalFolder(repoConfig, repoTmpDir)
-
-            def contentRepoDir = new File(repoTmpDir, repoConfig.path)
-            doTemplating(repoConfig, engine, contentRepoDir)
-
-
-            switch (repoConfig.type) {
-                case ContentRepoType.FOLDER_BASED:
-                    boolean refIsTag = isTag(repoTmpDir, repoConfig.ref)
-                    findRepoDirectories(contentRepoDir)
-                            .each { contentRepoNamespaceDir ->
-                                findRepoDirectories(contentRepoNamespaceDir)
-                                        .each { contentRepoRepoDir ->
-                                            String namespace = contentRepoNamespaceDir.name
-                                            String repoName = contentRepoRepoDir.name
-                                            def repoCoordinate = mergeRepoDirs(contentRepoRepoDir, namespace, repoName, mergedReposFolder, repoConfig, repoCoordinates)
-                                            repoCoordinate.refIsTag = refIsTag
-                                        }
-                            }
-                    repoTmpDir.deleteDir()
-                    break
-                case ContentRepoType.COPY:
-                    String namespace = repoConfig.target.split('/')[0]
-                    String repoName = repoConfig.target.split('/')[1]
-
-                    def repoCoordinate = mergeRepoDirs(contentRepoDir, namespace, repoName, mergedReposFolder, repoConfig, repoCoordinates)
-                    repoCoordinate.refIsTag = isTag(repoTmpDir, repoConfig.ref)
-                    repoTmpDir.deleteDir()
-                    break
-                case ContentRepoType.MIRROR:
-                    // Don't merge but keep these in separate dirs.
-                    // This avoids messing up .git folders with possible confusing exceptions for the user
-                    String namespace = repoConfig.target.split('/')[0]
-                    String repoName = repoConfig.target.split('/')[1]
-                    def repoCoordinate = new RepoCoordinate(
-                            namespace: namespace,
-                            repoName: repoName,
-                            clonedContentRepo: repoTmpDir,
-                            repoConfig: repoConfig,
-                            refIsTag: isTag(repoTmpDir, repoConfig.ref)
-                    )
-                    repoCoordinates << repoCoordinate
-                    break
-            }
-
-            log.debug("Finished cloning content repos. repoCoordinates=${repoCoordinates}")
+            createRepoCoordinates(repoConfig, mergedReposFolder, repoCoordinates)
         }
         return repoCoordinates
+    }
+
+
+    private TemplatingEngine getTemplatingEngine() {
+        if (templatingEngine == null) {
+            templatingEngine = new TemplatingEngine()
+        }
+        return templatingEngine
+    }
+
+
+    private void createRepoCoordinates(ContentRepositorySchema repoConfig, File mergedReposFolder, List<RepoCoordinate> repoCoordinates) {
+        def repoTmpDir = File.createTempDir('gitops-playground-folder-based-single-content-repo-')
+        log.debug("Cloning content repo, ${repoConfig.url}, revision ${repoConfig.ref}, path ${repoConfig.path}, overwriteMode ${repoConfig.overwriteMode}")
+
+        cloneToLocalFolder(repoConfig, repoTmpDir)
+
+        def contentRepoDir = new File(repoTmpDir, repoConfig.path)
+        applyTemplatingIfNeeded(repoConfig, contentRepoDir)
+
+
+        switch (repoConfig.type) {
+            case ContentRepoType.FOLDER_BASED:
+                createRepoCoordinatesForTypeFolderBased(repoConfig, repoTmpDir, contentRepoDir, mergedReposFolder, repoCoordinates)
+                break
+            case ContentRepoType.COPY:
+                def repoCoordinate = createRepoCoordinatesForTypeCopy(repoConfig, contentRepoDir, mergedReposFolder, repoTmpDir)
+                addRepoCoordinates(repoCoordinates, repoCoordinate)
+                break
+            case ContentRepoType.MIRROR:
+                def repoCoordinate = createRepoCoordinateForTypeMirror(repoConfig, repoTmpDir)
+                addRepoCoordinates(repoCoordinates, repoCoordinate)
+                break
+        }
+
+        log.debug("Finished cloning content repos. repoCoordinates=${repoCoordinates}")
+    }
+
+    private static RepoCoordinate createRepoCoordinatesForTypeCopy(ContentRepositorySchema repoConfig, File contentRepoDir, File mergedReposFolder, File repoTmpDir) {
+        String namespace = repoConfig.target.split('/')[0]
+        String repoName = repoConfig.target.split('/')[1]
+
+        def repoCoordinate = mergeRepoDirs(contentRepoDir, namespace, repoName, mergedReposFolder, repoConfig)
+        repoCoordinate.refIsTag = isTag(repoTmpDir, repoConfig.ref)
+        return repoCoordinate
+    }
+
+    private static void createRepoCoordinatesForTypeFolderBased(ContentRepositorySchema repoConfig, File repoTmpDir, File contentRepoDir, File mergedReposFolder, List<RepoCoordinate> repoCoordinates) {
+        boolean refIsTag = isTag(repoTmpDir, repoConfig.ref)
+        findRepoDirectories(contentRepoDir)
+                .each { contentRepoNamespaceDir ->
+                    findRepoDirectories(contentRepoNamespaceDir)
+                            .each { contentRepoRepoDir ->
+                                String namespace = contentRepoNamespaceDir.name
+                                String repoName = contentRepoRepoDir.name
+                                def repoCoordinate = mergeRepoDirs(contentRepoRepoDir, namespace, repoName, mergedReposFolder, repoConfig)
+                                repoCoordinate.refIsTag = refIsTag
+
+                                addRepoCoordinates(repoCoordinates, repoCoordinate)
+                            }
+                }
+
+    }
+
+    private static RepoCoordinate createRepoCoordinateForTypeMirror(ContentRepositorySchema repoConfig, File repoTmpDir) {
+        // Don't merge but keep these in separate dirs.
+        // This avoids messing up .git folders with possible confusing exceptions for the user
+        String namespace = repoConfig.target.split('/')[0]
+        String repoName = repoConfig.target.split('/')[1]
+        def repoCoordinate = new RepoCoordinate(
+                namespace: namespace,
+                repoName: repoName,
+                clonedContentRepo: repoTmpDir,
+                repoConfig: repoConfig,
+                refIsTag: isTag(repoTmpDir, repoConfig.ref)
+        )
+        return repoCoordinate
     }
 
     /**
@@ -163,7 +194,7 @@ class Content extends Feature {
      * Note that existing repoCoordinate objects with different overwriteMode are overwritten. The last repo to be mentioned within config.content.repos wins!
      */
     private static RepoCoordinate mergeRepoDirs(File src, String namespace, String repoName, File mergedRepoFolder,
-                                                ContentRepositorySchema repoConfig, List<RepoCoordinate> repoCoordinates) {
+                                                ContentRepositorySchema repoConfig) {
         File target = new File(new File(mergedRepoFolder, namespace), repoName)
         log.debug("Merging content repo, namespace ${namespace}, repoName ${repoName} from ${src} to ${target}")
         FileUtils.copyDirectory(src, target, new FileSystemUtils.IgnoreDotGitFolderFilter())
@@ -174,7 +205,7 @@ class Content extends Feature {
                 clonedContentRepo: target,
                 repoConfig: repoConfig,
         )
-        addRepoCoordinates(repoCoordinates, repoCoordinate)
+//        addRepoCoordinates(repoCoordinates, repoCoordinate) // TODO: Thomas delete line
         return repoCoordinate
     }
 
@@ -186,8 +217,9 @@ class Content extends Feature {
         }
     }
 
-    private void doTemplating(ContentRepositorySchema repoConfig, TemplatingEngine engine, File srcPath) {
+    private void applyTemplatingIfNeeded(ContentRepositorySchema repoConfig, File srcPath) {
         if (repoConfig.templating) {
+            def engine = getTemplatingEngine()
             engine.replaceTemplates(srcPath, [
                     config : config,
                     // Allow for using static classes inside the templates
@@ -271,9 +303,10 @@ class Content extends Feature {
                 } else {
                     handleRepoCopying(repoCoordinate, targetRepo)
                 }
-
                 createJenkinsJob(repoCoordinate, targetRepo)
 
+                // cleaning
+                repoCoordinate.clonedContentRepo.deleteDir()
                 new File(targetRepo.absoluteLocalRepoTmpDir).deleteDir()
             }
         }
@@ -425,7 +458,7 @@ class Content extends Feature {
 
         }
     }
-    
+
     /**
      * checks, if file exists in repo in some branch.
      * @param pathToRepo

@@ -149,7 +149,7 @@ class ContentTest {
 
         config.content.repos = contentRepos
 
-        def repos = createContent().cloneContentRepos()
+        def repos = createContent().prepareCloneContentRepos()
 
         expectedTargetRepos.each { expected ->
             assertThat(new File(findRoot(repos), "${expected.namespace}/${expected.repoName}/file")).exists().isFile()
@@ -178,7 +178,7 @@ class ContentTest {
         ]
         config.content.variables.someapp = [somevalue: 'this is a custom variable']
 
-        def repos = createContent().cloneContentRepos()
+        def repos = createContent().prepareCloneContentRepos()
 
         // Assert Templating
         assertThat(new File(findRoot(repos), "common/repo/some.yaml")).exists()
@@ -193,7 +193,7 @@ class ContentTest {
         ]
 
         def content = createContent()
-        content.cloneContentRepos()
+        content.prepareCloneContentRepos()
 
         ArgumentCaptor<UsernamePasswordCredentialsProvider> captor = ArgumentCaptor.forClass(UsernamePasswordCredentialsProvider)
         verify(content.cloneSpy).setCredentialsProvider(captor.capture())
@@ -212,7 +212,7 @@ class ContentTest {
                 new ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'), ref: 'someBranch', type: ContentRepoType.COPY, target: 'common/branch')
         ]
 
-        def repos = createContent().cloneContentRepos()
+        def repos = createContent().prepareCloneContentRepos()
 
         assertThat(new File(findRoot(repos), "common/tag/README.md")).exists().isFile()
         assertThat(new File(findRoot(repos), "common/tag/README.md").text).contains("someTag")
@@ -230,7 +230,7 @@ class ContentTest {
                 new ContentRepositorySchema(url: createContentRepo('', 'git-repo-different-default-branch'), target: 'common/default', type: ContentRepoType.COPY ),
         ]
 
-        def repos = createContent().cloneContentRepos()
+        def repos = createContent().prepareCloneContentRepos()
 
         assertThat(new File(findRoot(repos), "common/default/README.md")).exists().isFile()
         assertThat(new File(findRoot(repos), "common/default/README.md").text).contains("different")
@@ -244,7 +244,7 @@ class ContentTest {
         ]
 
         def exception = shouldFail(RuntimeException) {
-            createContent().cloneContentRepos()
+            createContent().prepareCloneContentRepos()
         }
         assertThat(exception.message).startsWith("Reference 'does/not/exist' not found in content repository")
     }
@@ -259,7 +259,7 @@ class ContentTest {
                 new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, target: 'common/repo'),
         ]
 
-        def repos = createContent().cloneContentRepos()
+        def repos = createContent().prepareCloneContentRepos()
 
         assertThat(new File(findRoot(repos), "common/repo/file").text).contains("nonFolderBasedRepo1")
         // Last repo "wins"
@@ -425,7 +425,7 @@ class ContentTest {
 
         def content = createContent()
 
-        def actualTargetRepos = content.cloneContentRepos()
+        def actualTargetRepos = content.prepareCloneContentRepos()
         def repos = actualTargetRepos
 
         assertThat(actualTargetRepos).hasSameSizeAs(expectedTargetRepos)
