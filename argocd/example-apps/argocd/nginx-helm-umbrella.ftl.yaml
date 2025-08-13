@@ -3,13 +3,13 @@ kind: Application
 metadata:
   name: nginx-helm-umbrella
 <#if argocd.isOperator>
-  namespace: ${namePrefix}argocd
+  namespace: config.application.namePrefix.argocd
 <#else>
-  namespace: ${namePrefix}example-apps-production
+  namespace: config.application.namePrefix.example-apps-production
 </#if>
 spec:
   destination:
-    namespace: ${namePrefix}example-apps-production
+    namespace: config.application.namePrefix.example-apps-production
     server: https://kubernetes.default.svc
   project: example-apps
   source:

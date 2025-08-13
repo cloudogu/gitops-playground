@@ -3,7 +3,7 @@
 String getApplication() { "spring-petclinic-helm" }
 String getScmManagerCredentials() { 'scmm-user' }
 String getConfigRepositoryPRBaseUrl() { env.${namePrefixForEnvVars}SCMM_URL }
-String getConfigRepositoryPRRepo() { '${namePrefix}argocd/example-apps' }
+String getConfigRepositoryPRRepo() { 'config.application.namePrefix.argocd/example-apps' }
 
 String getDockerRegistryBaseUrl() { env.${namePrefixForEnvVars}REGISTRY_URL }
 String getDockerRegistryPath() { env.${namePrefixForEnvVars}REGISTRY_PATH }
@@ -163,10 +163,10 @@ node {
                         ],
                         stages: [
                                 staging: [
-                                        namespace: '${namePrefix}example-apps-staging',
+                                        namespace: 'config.application.namePrefix.example-apps-staging',
                                         deployDirectly: true ],
                                 production: [
-                                        namespace: '${namePrefix}example-apps-production',
+                                        namespace: 'config.application.namePrefix.example-apps-production',
                                         deployDirectly: false ]
                         ]
                 ]

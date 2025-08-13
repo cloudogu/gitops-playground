@@ -2,10 +2,10 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: kube-prometheus-stack-ingress-nginx-dashboard
-  namespace: ${namePrefix}monitoring
+  namespace: config.application.namePrefix.monitoring
   labels:
     grafana_dashboard: "1"
-  <#noparse>
+<#noparse>
 data:
   ingress-nginx-dashboard.json: |-
     {
@@ -2005,4 +2005,4 @@ data:
     "version": 1,
     "weekStart": ""
     }
-  </#noparse>
+</#noparse>

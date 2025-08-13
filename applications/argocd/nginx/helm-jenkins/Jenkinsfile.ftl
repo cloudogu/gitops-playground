@@ -3,7 +3,7 @@
 String getApplication() { "nginx-helm-jenkins" }
 String getScmManagerCredentials() { 'scmm-user' }
 String getConfigRepositoryPRBaseUrl() { env.${namePrefixForEnvVars}SCMM_URL }
-String getConfigRepositoryPRRepo() { '${namePrefix}argocd/example-apps' }
+String getConfigRepositoryPRRepo() { 'config.application.namePrefix.argocd/example-apps' }
 <#noparse>
 
 String getCesBuildLibRepo() { configRepositoryPRBaseUrl+"/repo/3rd-party-dependencies/ces-build-lib/" }
@@ -78,11 +78,11 @@ node('docker') {
                     ],
                     stages: [
                             staging: [
-                                namespace: '${namePrefix}example-apps-staging',
+                                namespace: 'config.application.namePrefix.example-apps-staging',
                                 deployDirectly: true
                                 ],
                             production: [
-                                namespace: '${namePrefix}example-apps-production',
+                                namespace: 'config.application.namePrefix.example-apps-production',
                                 deployDirectly: false
                                 ],
                     ],

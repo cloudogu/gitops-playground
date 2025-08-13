@@ -27,7 +27,7 @@ class RepoInitializationAction {
 
     void replaceTemplates() {
         repo.replaceTemplates([
-                namePrefix          : config.application.namePrefix,
+//                namePrefix          : config.application.namePrefix,
                 namePrefixForEnvVars: config.application.namePrefixForEnvVars,
                 tenantName          : config.application.namePrefix.replaceAll(/-$/, ""),
                 podResources        : config.application.podResources,

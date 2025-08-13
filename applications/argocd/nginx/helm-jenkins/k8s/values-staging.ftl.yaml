@@ -1,4 +1,4 @@
-namespaceOverride: ${namePrefix}example-apps-staging
+namespaceOverride: config.application.namePrefixexample-apps-staging
 
 <#if exampleApps.nginx.baseDomain?has_content>
 ingress:
