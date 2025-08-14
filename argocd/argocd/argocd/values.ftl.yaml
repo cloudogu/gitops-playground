@@ -23,7 +23,7 @@ argo-cd:
 <#if monitoring.active == true>
       serviceMonitor:
         enabled: true
-        namespace: config.application.namePrefix.monitoring
+        namespace: ${config.application.namePrefix}monitoring
         selector:
           release: kube-prometheus-stack
 </#if>
@@ -33,7 +33,7 @@ argo-cd:
 <#if monitoring.active == true>
       serviceMonitor:
         enabled: true
-        namespace: config.application.namePrefix.monitoring
+        namespace: ${config.application.namePrefix}monitoring
         selector:
           release: kube-prometheus-stack
 </#if>
@@ -43,7 +43,7 @@ argo-cd:
 <#if monitoring.active == true>
       serviceMonitor:
         enabled: true
-        namespace: config.application.namePrefix.monitoring
+        namespace: ${config.application.namePrefix}monitoring
         selector:
           release: kube-prometheus-stack
 </#if>
@@ -83,7 +83,7 @@ argo-cd:
         <#if mail.smtpUser?has_content>username: $email-username</#if>
         <#if mail.smtpPassword?has_content>password: $email-password</#if>
       <#else>
-        host: mailhog.config.application.namePrefix.monitoring.svc.cluster.local
+        host: mailhog.${config.application.namePrefix}monitoring.svc.cluster.local
         port: 1025
       </#if>
         from: ${argocd.emailFrom}

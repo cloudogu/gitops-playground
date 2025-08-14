@@ -3,14 +3,14 @@ kind: Application
 metadata:
 <#if argocd.isOperator>
   name: petclinic-helm-staging
-  namespace: config.application.namePrefix.argocd
+  namespace: ${config.application.namePrefix}argocd
 <#else>
   name: petclinic-helm
-  namespace: config.application.namePrefix.example-apps-staging
+  namespace: ${config.application.namePrefix}example-apps-staging
 </#if>
 spec:
   destination:
-    namespace: config.application.namePrefix.example-apps-staging
+    namespace: ${config.application.namePrefix}example-apps-staging
     server: https://kubernetes.default.svc
   project: example-apps
   source:
@@ -30,14 +30,14 @@ kind: Application
 metadata:
 <#if argocd.isOperator>
   name: petclinic-helm-production
-  namespace: config.application.namePrefix.argocd
+  namespace: ${config.application.namePrefix}argocd
 <#else>
   name: petclinic-helm
-  namespace: config.application.namePrefix.example-apps-production
+  namespace: ${config.application.namePrefix}example-apps-production
 </#if>
 spec:
   destination:
-    namespace: config.application.namePrefix.example-apps-production
+    namespace: ${config.application.namePrefix}example-apps-production
     server: https://kubernetes.default.svc
   project: example-apps
   source:

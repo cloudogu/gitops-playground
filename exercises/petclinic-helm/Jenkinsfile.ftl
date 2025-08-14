@@ -3,7 +3,7 @@
 String getApplication() { "exercise-spring-petclinic-helm" }
 String getScmManagerCredentials() { 'scmm-user' }
 String getConfigRepositoryPRBaseUrl() { env.SCMM_URL }
-String getConfigRepositoryPRRepo() { 'config.application.namePrefix.argocd/example-apps' }
+String getConfigRepositoryPRRepo() { '${config.application.namePrefix}argocd/example-apps' }
 
 String getDockerRegistryBaseUrl() { env.${namePrefixForEnvVars}REGISTRY_URL }
 String getDockerRegistryPath() { env.${namePrefixForEnvVars}REGISTRY_PATH }

@@ -3,7 +3,7 @@
   kind: Ingress
   metadata:
     name: argocd
-    namespace: "config.application.namePrefix.argocd"
+    namespace: "${config.application.namePrefix}argocd"
     labels:
       app: argocd-server
     annotations:

@@ -2,11 +2,11 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: config.application.namePrefix.example-apps-staging
+  name: ${config.application.namePrefix}example-apps-staging
 ---
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: config.application.namePrefix.example-apps-production
+  name: ${config.application.namePrefix}example-apps-production
 ---
 </#if>

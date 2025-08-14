@@ -3,7 +3,7 @@ kind: AppProject
 metadata:
   name: cluster-resources
   # In a real-world scenario these might to into a separate namespace
-  namespace: config.application.namePrefix.argocd
+  namespace: ${config.application.namePrefix}argocd
   annotations:
 <#if mail.active?? && mail.active>
     notifications.argoproj.io/subscribe.email: ${argocd.emailToAdmin}
@@ -33,7 +33,7 @@ spec:
 
   # allow to only see application resources from the specified namespace
   sourceNamespaces:
-    - 'config.application.namePrefix.argocd'
+    - '${config.application.namePrefix}argocd'
 
   # Allow all namespaced-scoped resources to be created
   namespaceResourceWhitelist:

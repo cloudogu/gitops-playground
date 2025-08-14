@@ -245,7 +245,7 @@ grafana:
   env:
     GF_SMTP_ENABLED: true
     GF_SMTP_FROM_ADDRESS: ${monitoring.grafanaEmailFrom}
-    GF_SMTP_HOST: mailhog.config.application.namePrefix.monitoring.svc.cluster.local:1025
+    GF_SMTP_HOST: mailhog.${config.application.namePrefix}monitoring.svc.cluster.local:1025
  </#if>
 </#if>
 <#if podResources == true>
@@ -347,7 +347,7 @@ prometheus:
         scheme: ${scmm.protocol}
         metrics_path: '${scmm.path}'
         basic_auth:
-          username: 'config.application.namePrefix.metrics'
+          username: '${config.application.namePrefix}metrics'
           password_file: '/etc/prometheus/secrets/prometheus-metrics-creds-scmm/password'
       - job_name: 'jenkins'
         static_configs:

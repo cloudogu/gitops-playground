@@ -5,10 +5,10 @@ kind: Application
 metadata:
 <#if argocd.isOperator>
   name: misc-example-apps-production
-  namespace: config.application.namePrefix.argocd
+  namespace: ${config.application.namePrefix}argocd
 <#else>
   name: misc
-  namespace: config.application.namePrefix.example-apps-production
+  namespace: ${config.application.namePrefix}example-apps-production
 </#if>
 spec:
   project: example-apps
@@ -16,7 +16,7 @@ spec:
     server: https://kubernetes.default.svc
     # a namespace must be specified here, because teams are not allowed to deploy cluster-wide.
     # You can specify a different namespace in the ressource YAMLs, if you are permitted to deploy in them
-    namespace: config.application.namePrefix.example-apps-production
+    namespace: ${config.application.namePrefix}example-apps-production
   source:
     path: misc/
     repoURL: ${scmm.repoUrl}argocd/example-apps
@@ -33,24 +33,24 @@ apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
   name: example-apps
-  namespace: config.application.namePrefix.argocd
+  namespace: ${config.application.namePrefix}argocd
 spec:
   description: Contains examples of end-user application
   destinations:
-    - namespace: config.application.namePrefix.example-apps-production
+    - namespace: ${config.application.namePrefix}example-apps-production
       server: https://kubernetes.default.svc
-    - namespace: config.application.namePrefix.example-apps-staging
+    - namespace: ${config.application.namePrefix}example-apps-staging
       server: https://kubernetes.default.svc
-    - namespace: config.application.namePrefix.argocd
+    - namespace: ${config.application.namePrefix}argocd
       server: https://kubernetes.default.svc
   sourceRepos:
-    - http://scmm.config.application.namePrefix.scm-manager.svc.cluster.local/scm/repo/config.application.namePrefix.argocd/example-apps
-    - http://scmm.config.application.namePrefix.scm-manager.svc.cluster.local/scm/repo/config.application.namePrefix.argocd/nginx-helm-umbrella
+    - http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm/repo/${config.application.namePrefix}argocd/example-apps
+    - http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm/repo/${config.application.namePrefix}argocd/nginx-helm-umbrella
 
   sourceNamespaces:
-    - config.application.namePrefix.example-apps-staging
-    - config.application.namePrefix.example-apps-production
-    - config.application.namePrefix.argocd
+    - ${config.application.namePrefix}example-apps-staging
+    - ${config.application.namePrefix}example-apps-production
+    - ${config.application.namePrefix}argocd
 
   namespaceResourceWhitelist:
     - group: '*'

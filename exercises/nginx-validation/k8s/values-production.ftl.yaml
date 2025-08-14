@@ -1,4 +1,4 @@
-namespaceOverride: config.application.namePrefix.example-apps-production
+namespaceOverride: ${config.application.namePrefix}example-apps-production
 
 <#if exampleApps.nginx.baseDomain?has_content>
 ingress:

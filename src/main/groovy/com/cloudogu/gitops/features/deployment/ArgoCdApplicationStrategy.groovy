@@ -50,7 +50,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
         if (config.multiTenant.useDedicatedInstance) {
             repoName = "${config.application.namePrefix}${repoName}"
             namespaceName = "argocd"
-            project = config.application.namePrefix.replaceFirst(/-$/, "")
+            project = ${config.application.namePrefix}replaceFirst(/-$/, "")
         }
 
         // Prepare ArgoCD Application YAML

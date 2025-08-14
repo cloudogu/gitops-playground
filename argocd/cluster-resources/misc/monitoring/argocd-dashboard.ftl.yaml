@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: kube-prometheus-stack-argocd-dashboard
-  namespace: config.application.namePrefix.monitoring
+  namespace: ${config.application.namePrefix}monitoring
   labels:
     grafana_dashboard: "1"
 <#noparse>

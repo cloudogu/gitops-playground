@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1beta1
 kind: ArgoCD
 metadata:
   name: argocd
-  namespace: "config.application.namePrefix.argocd"
+  namespace: "${config.application.namePrefix}argocd"
 spec:
   applicationSet:
     enabled: true

@@ -1,7 +1,7 @@
 #!groovy
 
 String getApplication() { 'spring-petclinic-plain' }
-String getConfigRepositoryPRRepo() { 'config.application.namePrefix.argocd/example-apps' }
+String getConfigRepositoryPRRepo() { '${config.application.namePrefix}argocd/example-apps' }
 String getScmManagerCredentials() { 'scmm-user' }
 String getConfigRepositoryPRBaseUrl() { env.${namePrefixForEnvVars}SCMM_URL }
 
@@ -130,10 +130,10 @@ node {
                         ],
                         stages: [
                                 staging: [
-                                        namespace: 'config.application.namePrefix.example-apps-staging',
+                                        namespace: '${config.application.namePrefix}example-apps-staging',
                                         deployDirectly: true ],
                                 production: [
-                                        namespace: 'config.application.namePrefix.example-apps-production',
+                                        namespace: '${config.application.namePrefix}example-apps-production',
                                         deployDirectly: false ],
                         ]
                 ]
