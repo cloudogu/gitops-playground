@@ -268,7 +268,7 @@ class ContentTest {
     @Test
     void 'Is able to COPY into MIRRORED repo'() {
         config.content.repos = [
-                new ContentRepositorySchema(url: createContentRepo('copyBasedRepo1', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, target: 'common/repo'),
+                new ContentRepositorySchema(url: createContentRepo('mirrorBasedRepo1', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, target: 'common/repo'),
                 new ContentRepositorySchema(url: createContentRepo('folderBasedRepo1'), type: ContentRepoType.FOLDER_BASED, overwriteMode: OverwriteMode.UPGRADE),
                 new ContentRepositorySchema(url: createContentRepo('copyBasedRepo2'), type: ContentRepoType.COPY, target: 'common/repo', overwriteMode: OverwriteMode.UPGRADE, path: 'subPath')
         ]
@@ -281,8 +281,9 @@ class ContentTest {
         // clone target repo, to ensure, changes in remote repo.
         try (def git = cloneRepo(expectedRepo, tmpDir)) {
             assertThat(new File(tmpDir, "file").text).contains("copyBasedRepo2") // Last repo "wins"
+            assertThat(new File(tmpDir, "mirrorBasedRepo1")).exists().isFile()
+            assertThat(new File(tmpDir, "copyBasedRepo2")).exists().isFile()
             assertThat(new File(tmpDir, "folderBasedRepo1")).exists().isFile()
-            assertThat(new File(tmpDir, "copyBasedRepo1")).exists().isFile()
 
             // Assert mirrors branches and tags of non-folderBased repos
             // Verify tag exists and points to correct content
@@ -298,7 +299,7 @@ class ContentTest {
         config.content.repos = [
                 new ContentRepositorySchema(url: createContentRepo('folderBasedRepo1'), type: ContentRepoType.FOLDER_BASED),
                 new ContentRepositorySchema(url: createContentRepo('copyBasedRepo2'), type: ContentRepoType.COPY, target: 'common/repo', overwriteMode: OverwriteMode.UPGRADE, path: 'subPath'),
-                new ContentRepositorySchema(url: createContentRepo('copyBasedRepo1', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, overwriteMode: OverwriteMode.RESET, target: 'common/repo'),
+                new ContentRepositorySchema(url: createContentRepo('mirrorBasedRepo1', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, overwriteMode: OverwriteMode.RESET, target: 'common/repo'),
         ]
 
         scmmApiClient.mockRepoApiBehaviour()
@@ -308,7 +309,7 @@ class ContentTest {
         def expectedRepo = 'common/repo'
         // clone target repo, to ensure, changes in remote repo.
         try (def git = cloneRepo(expectedRepo, tmpDir)) {
-            assertThat(new File(tmpDir, "file").text).contains("copyBasedRepo1") // Last repo "wins"
+            assertThat(new File(tmpDir, "file").text).contains("mirrorBasedRepo1") // Last repo "wins"
             assertThat(new File(tmpDir, "folderBasedRepo1")).doesNotExist()
             assertThat(new File(tmpDir, "copyBasedRepo2")).doesNotExist()
 
@@ -323,7 +324,7 @@ class ContentTest {
         
     @Test
     void 'Handles multiple mirrors of the same repo with different refs'() {
-        def repoToMirror = createContentRepo('copyBasedRepo1', 'git-repository-with-branches-tags')
+        def repoToMirror = createContentRepo('mirrorBasedRepo1', 'git-repository-with-branches-tags')
         config.content.repos = [
                 new ContentRepositorySchema(url: repoToMirror, type: ContentRepoType.MIRROR, ref: 'main', target: 'common/repo'),
                 new ContentRepositorySchema(url: repoToMirror, type: ContentRepoType.MIRROR, ref: 'someBranch', target: 'common/repo', overwriteMode: OverwriteMode.UPGRADE),
@@ -339,7 +340,7 @@ class ContentTest {
         // clone target repo, to ensure, changes in remote repo.
         try (def git = cloneRepo(expectedRepo, tmpDir)) {
             assertThat(new File(tmpDir, "file").text).contains("copyBasedRepo2") // Last repo "wins"
-            assertThat(new File(tmpDir, "copyBasedRepo1")).exists().isFile()
+            assertThat(new File(tmpDir, "mirrorBasedRepo1")).exists().isFile()
             
             git.fetch().setRefSpecs("refs/*:refs/*").call() // Fetch all tags and branches
 
@@ -408,8 +409,8 @@ class ContentTest {
         // This only occurs when the same .pack files exists in .git because they are read-only
         // So for our testcase we just mirror the same repo twice
         config.content.repos = [
-                new ContentRepositorySchema(url: createContentRepo('copyBasedRepo1', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, target: 'common/repo'),
-                new ContentRepositorySchema(url: createContentRepo('copyBasedRepo1', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, target: 'common/repo', overwriteMode: OverwriteMode.RESET),
+                new ContentRepositorySchema(url: createContentRepo('mirrorBasedRepo1', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, target: 'common/repo'),
+                new ContentRepositorySchema(url: createContentRepo('mirrorBasedRepo1', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, target: 'common/repo', overwriteMode: OverwriteMode.RESET),
         ]
 
         scmmApiClient.mockRepoApiBehaviour()
