@@ -74,7 +74,7 @@ spec:
   sourceNamespaces:
     - '${config.application.namePrefix}example-apps-staging'
     - '${config.application.namePrefix}example-apps-production'
-    <#if argocd.isOperator>
+    <#if config.features.argocd.operator>
     - '${config.application.namePrefix}argocd'
     </#if>
 

@@ -18,11 +18,11 @@ spec:
     namespace: ${config.application.namePrefix}argocd
   project: ${tenantName}
   source:
-    path: ${argocd.isOperator?string("operator/", "argocd/")}
+    path: ${config.features.argocd.operator?string("operator/", "argocd/")}
     repoURL: ${scmm.centralScmmUrl}/repo/${config.application.namePrefix}argocd/argocd
     targetRevision: main
     # needed to sync the operator/rbac folder
-    <#if argocd.isOperator??>
+    <#if config.features.argocd.operator??>
     directory:
       recurse: true
     </#if>

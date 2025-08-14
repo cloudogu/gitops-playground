@@ -18,11 +18,11 @@ spec:
     namespace: ${config.application.namePrefix}argocd
   project: argocd
   source:
-    path: ${argocd.isOperator?string("operator/", "argocd/")}
+    path: ${config.features.argocd.operator?string("operator/", "argocd/")}
     repoURL: ${scmm.repoUrl}argocd/argocd<#if scmm.provider == "gitlab">.git</#if>
     targetRevision: main
     # needed to sync the operator/rbac folder
-    <#if argocd.isOperator>
+    <#if config.features.argocd.operator>
     directory:
       recurse: true
     </#if>

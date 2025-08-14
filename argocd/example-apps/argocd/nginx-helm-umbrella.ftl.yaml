@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: nginx-helm-umbrella
-<#if argocd.isOperator>
+<#if config.features.argocd.operator>
   namespace: ${config.application.namePrefix}argocd
 <#else>
   namespace: ${config.application.namePrefix}example-apps-production

@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-<#if argocd.isOperator>
+<#if config.features.argocd.operator>
   name: exercise-petclinic-helm-staging
   namespace: ${config.application.namePrefix}argocd
 <#else>
@@ -29,7 +29,7 @@ spec:
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-<#if argocd.isOperator>
+<#if config.features.argocd.operator>
   name: exercise-petclinic-helm-production
   namespace: ${config.application.namePrefix}argocd
 <#else>

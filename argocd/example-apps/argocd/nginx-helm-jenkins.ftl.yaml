@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-<#if argocd.isOperator>
+<#if config.features.argocd.operator>
   name: nginx-helm-jenkins-staging
   namespace: ${config.application.namePrefix}argocd
 <#else>
@@ -28,7 +28,7 @@ spec:
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-<#if argocd.isOperator>
+<#if config.features.argocd.operator>
   name: nginx-helm-jenkins-production
   namespace: ${config.application.namePrefix}argocd
 <#else>

@@ -13,9 +13,9 @@ spec:
       requests:
         cpu: 250m
         memory: 512Mi
-    <#if argocd.env?has_content>
+    <#if config.features.argocd.env?has_content>
     env:
-    <#list argocd.env as envVar>
+    <#list config.features.argocd.env as envVar>
       - name: ${envVar.name}
         value: ${envVar.value}
     </#list>
@@ -29,9 +29,9 @@ spec:
       requests:
         cpu: 100m
         memory: 128Mi
-    <#if argocd.env?has_content>
+    <#if config.features.argocd.env?has_content>
     env:
-    <#list argocd.env as envVar>
+    <#list config.features.argocd.env as envVar>
       - name: ${envVar.name}
         value: ${envVar.value}
     </#list>
@@ -44,9 +44,9 @@ spec:
       requests:
         cpu: "250m"
         memory: "1024Mi"
-    <#if argocd.env?has_content>
+    <#if config.features.argocd.env?has_content>
     env:
-    <#list argocd.env as envVar>
+    <#list config.features.argocd.env as envVar>
       - name: ${envVar.name}
         value: ${envVar.value}
     </#list>
@@ -95,9 +95,9 @@ spec:
       requests:
         cpu: "250m"
         memory: "256Mi"
-    <#if argocd.env?has_content>
+    <#if config.features.argocd.env?has_content>
     env:
-    <#list argocd.env as envVar>
+    <#list config.features.argocd.env as envVar>
       - name: ${envVar.name}
         value: ${envVar.value}
     </#list>
@@ -111,9 +111,9 @@ spec:
       requests:
         cpu: "125m"
         memory: "128Mi"
-    <#if argocd.env?has_content>
+    <#if config.features.argocd.env?has_content>
     env:
-    <#list argocd.env as envVar>
+    <#list config.features.argocd.env as envVar>
       - name: ${envVar.name}
         value: ${envVar.value}
     </#list>

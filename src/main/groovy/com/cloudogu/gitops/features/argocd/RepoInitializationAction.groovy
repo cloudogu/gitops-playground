@@ -43,8 +43,8 @@ class RepoInitializationAction {
                 argocd              : [
                         // Note that passing the URL object here leads to problems in Graal Native image, see Git history
                         host                     : config.features.argocd.url ? new URL(config.features.argocd.url).host : "",
-                        env                      : config.features.argocd.env,
-                        isOperator               : config.features.argocd.operator,
+//                        env                      : config.features.argocd.env,
+//                        isOperator               : config.features.argocd.operator,
                         emailFrom                : config.features.argocd.emailFrom,
                         emailToUser              : config.features.argocd.emailToUser,
                         emailToAdmin             : config.features.argocd.emailToAdmin,
