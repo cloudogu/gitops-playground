@@ -31,7 +31,7 @@ class RepoInitializationAction {
 //                namePrefixForEnvVars: config.application.namePrefixForEnvVars,
                 tenantName          : config.application.namePrefix.replaceAll(/-$/, ""),
 //                podResources        : config.application.podResources,
-                images              : config.images,
+//                images              : config.images,
                 nginxImage          : config.images.nginx ? DockerImageParser.parse(config.images.nginx) : null,
                 isRemote            : config.application.remote,
                 isInsecure          : config.application.insecure,

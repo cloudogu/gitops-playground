@@ -40,11 +40,11 @@ properties([
 node {
 
 </#noparse>
-<#if images.maven?has_content>
+<#if config.images.maven?has_content>
   <#if registry.twoRegistries>
-      mvn = cesBuildLib.MavenInDocker.new(this, '${images.maven}', dockerRegistryProxyCredentials)
+      mvn = cesBuildLib.MavenInDocker.new(this, '${config.images.maven}', dockerRegistryProxyCredentials)
   <#else>
-      mvn = cesBuildLib.MavenInDocker.new(this, '${images.maven}')
+      mvn = cesBuildLib.MavenInDocker.new(this, '${config.images.maven}')
   </#if>
 <#else>
     mvn = cesBuildLib.MavenWrapper.new(this)
@@ -123,31 +123,31 @@ node {
                         buildImages          : [
 <#if registry.twoRegistries>
                                 helm:       [
-                                        image: '${images.helm}',
+                                        image: '${config.images.helm}',
                                         credentialsId: dockerRegistryProxyCredentials
                                 ],
                                 kubectl:    [
-                                        image: '${images.kubectl}',
+                                        image: '${config.images.kubectl}',
                                         credentialsId: dockerRegistryProxyCredentials
                                 ],
                                 kubeval:    [
-                                        image: '${images.kubeval}',
+                                        image: '${config.images.kubeval}',
                                         credentialsId: dockerRegistryProxyCredentials
                                 ],
                                 helmKubeval: [
-                                        image: '${images.helmKubeval}',
+                                        image: '${config.images.helmKubeval}',
                                         credentialsId: dockerRegistryProxyCredentials
                                 ],
                                 yamllint:   [
-                                        image: '${images.yamllint}',
+                                        image: '${config.images.yamllint}',
                                         credentialsId: dockerRegistryProxyCredentials
                                 ]
 <#else>
-                                helm: '${images.helm}',
-                                kubectl: '${images.kubectl}',
-                                kubeval: '${images.kubeval}',
-                                helmKubeval: '${images.helmKubeval}',
-                                yamllint: '${images.yamllint}'
+                                helm: '${config.images.helm}',
+                                kubectl: '${config.images.kubectl}',
+                                kubeval: '${config.images.kubeval}',
+                                helmKubeval: '${config.images.helmKubeval}',
+                                yamllint: '${config.images.yamllint}'
 </#if>
                         ],
                         deployments: [

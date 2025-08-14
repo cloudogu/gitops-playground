@@ -57,11 +57,11 @@ node('docker') {
 </#noparse>
                     k8sVersion : env.${config.application.namePrefixForEnvVars}K8S_VERSION,
                     buildImages          : [
-                        helm: '${images.helm}',
-                        kubectl: '${images.kubectl}',
-                        kubeval: '${images.kubeval}',
-                        helmKubeval: '${images.helmKubeval}',
-                        yamllint: '${images.yamllint}'
+                        helm: '${config.images.helm}',
+                        kubectl: '${config.images.kubectl}',
+                        kubeval: '${config.images.kubeval}',
+                        helmKubeval: '${config.images.helmKubeval}',
+                        yamllint: '${config.images.yamllint}'
                     ],
                     deployments: [
                         sourcePath: 'k8s',
