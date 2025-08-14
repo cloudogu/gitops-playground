@@ -36,11 +36,11 @@ import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositoryS
 // We want to evaluate content last, to allow for changing all other repos
 class Content extends Feature {
 
-    private Config config
-    private K8sClient k8sClient
-    private ScmmRepoProvider repoProvider
-    private ScmmApiClient scmmApiClient
-    private Jenkins jenkins
+    protected Config config
+    protected K8sClient k8sClient
+    protected ScmmRepoProvider repoProvider
+    protected ScmmApiClient scmmApiClient
+    protected Jenkins jenkins
     // set by lazy initialisation
     private TemplatingEngine templatingEngine
 
@@ -120,7 +120,7 @@ class Content extends Feature {
     }
 
 
-    private void createRepoCoordinates(ContentRepositorySchema repoConfig, File mergedReposFolder, List<RepoCoordinate> repoCoordinates) {
+    protected void createRepoCoordinates(ContentRepositorySchema repoConfig, File mergedReposFolder, List<RepoCoordinate> repoCoordinates) {
         def repoTmpDir = File.createTempDir('gitops-playground-folder-based-single-content-repo-')
         log.debug("Cloning content repo, ${repoConfig.url}, revision ${repoConfig.ref}, path ${repoConfig.path}, overwriteMode ${repoConfig.overwriteMode}")
 
@@ -288,27 +288,26 @@ class Content extends Feature {
         repoCoordinates.each { repoCoordinate ->
 
             ScmmRepo targetRepo = repoProvider.getRepo(repoCoordinate.fullRepoName)
-            def isRepoCreated = targetRepo.create('', scmmApiClient)
-
-            if (!isRepoCreated && OverwriteMode.INIT == repoCoordinate.repoConfig.overwriteMode) {
-                log.warn("OverwriteMode ${OverwriteMode.INIT} set for repo '${repoCoordinate.fullRepoName}' " +
-                        "and repo already exists in target:  Not pushing content!" +
-                        "If you want to override, set ${OverwriteMode.UPGRADE} or ${OverwriteMode.RESET} .")
-            } else {
-
+            if (isValidForPush(targetRepo, repoCoordinate)) {
                 targetRepo.cloneRepo()
 
-                if (ContentRepoType.MIRROR == repoCoordinate.repoConfig.type) {
-                    handleRepoMirroring(repoCoordinate, targetRepo)
-                } else {
-                    handleRepoCopying(repoCoordinate, targetRepo)
+                switch (repoCoordinate.repoConfig.type) {
+                    case ContentRepoType.MIRROR:
+                        handleRepoMirroring(repoCoordinate, targetRepo)
+                        break
+                        // COPY and FOLDER_BASED same treatment
+                    case ContentRepoType.FOLDER_BASED:
+                    case ContentRepoType.COPY:
+                        handleRepoCopyingOrFolderBased(repoCoordinate, targetRepo)
+                        break
                 }
-                createJenkinsJob(repoCoordinate, targetRepo)
+
+                createJenkinsJobIfAppplicable(repoCoordinate, targetRepo)
 
                 // cleaning
                 repoCoordinate.clonedContentRepo.deleteDir()
                 new File(targetRepo.absoluteLocalRepoTmpDir).deleteDir()
-            }
+            } // no else needed
         }
 
     }
@@ -317,7 +316,36 @@ class Content extends Feature {
      * Copies repoCoordinate to targetRepo, commits and pushes
      * Same logic for both FOLDER_BASED and COPY repo types.
      */
-    private static void handleRepoCopying(RepoCoordinate repoCoordinate, ScmmRepo targetRepo) {
+    protected static void handleRepoCopyingOrFolderBased(RepoCoordinate repoCoordinate, ScmmRepo targetRepo) {
+        clearTargetRepoIfApplicable(repoCoordinate, targetRepo)
+        // Avoid overwriting .git in target to avoid, because we don't need it for copying and
+        // git pack files are typically read-only, leading to IllegalArgumentException:
+        // File parameter 'destFile is not writable: .git/objects/pack/pack-123.pack
+        targetRepo.copyDirectoryContents(repoCoordinate.clonedContentRepo.absolutePath, new FileSystemUtils.IgnoreDotGitFolderFilter())
+
+        String commitMessage = "Initialize content repo ${repoCoordinate.namespace}/${repoCoordinate.repoName}"
+        String targetRefShort = repoCoordinate.repoConfig.targetRef.replace('refs/heads/', '').replace('refs/tags/', '')
+        if (targetRefShort) {
+            String refSpec = setRefSpec(repoCoordinate, targetRefShort)
+            targetRepo.commitAndPush(commitMessage, targetRefShort, refSpec)
+        } else {
+            targetRepo.commitAndPush(commitMessage)
+        }
+
+    }
+
+    protected static String setRefSpec(RepoCoordinate repoCoordinate, String targetRefShort) {
+        String refSpec
+        if ((repoCoordinate.refIsTag && !repoCoordinate.repoConfig.targetRef.startsWith('refs/heads'))
+                || repoCoordinate.repoConfig.targetRef.startsWith('refs/tags')) {
+            refSpec = "refs/tags/${targetRefShort}:refs/tags/${targetRefShort}"
+        } else {
+            refSpec = "HEAD:refs/heads/${targetRefShort}"
+        }
+        refSpec
+    }
+
+    private static void clearTargetRepoIfApplicable(RepoCoordinate repoCoordinate, ScmmRepo targetRepo) {
         if (OverwriteMode.INIT != repoCoordinate.repoConfig.overwriteMode) {
             if (OverwriteMode.RESET == repoCoordinate.repoConfig.overwriteMode) {
                 log.info("OverwriteMode ${OverwriteMode.RESET} set for repo '${repoCoordinate.fullRepoName}': " +
@@ -328,33 +356,12 @@ class Content extends Feature {
                         "Merging new content into existing repo. ")
             }
         }
-        // Avoid overwriting .git in target to avoid, because we don't need it for copying and
-        // git pack files are typically read-only, leading to IllegalArgumentException:
-        // File parameter 'destFile is not writable: .git/objects/pack/pack-123.pack
-        targetRepo.copyDirectoryContents(repoCoordinate.clonedContentRepo.absolutePath, new FileSystemUtils.IgnoreDotGitFolderFilter())
-
-        String commitMessage = "Initialize content repo ${repoCoordinate.namespace}/${repoCoordinate.repoName}"
-        String targetRefShort = repoCoordinate.repoConfig.targetRef.replace('refs/heads/', '').replace('refs/tags/', '')
-        if (targetRefShort) {
-            String refSpec
-            if ((repoCoordinate.refIsTag && !repoCoordinate.repoConfig.targetRef.startsWith('refs/heads'))
-                    || repoCoordinate.repoConfig.targetRef.startsWith('refs/tags')) {
-                refSpec = "refs/tags/${targetRefShort}:refs/tags/${targetRefShort}"
-            } else {
-                refSpec = "HEAD:refs/heads/${targetRefShort}"
-            }
-
-            targetRepo.commitAndPush(commitMessage, targetRefShort, refSpec)
-        } else {
-            targetRepo.commitAndPush(commitMessage)
-        }
-
     }
 
     /**
      * Force pushes repoCoordinate.repoConfig.ref or all refs to targetRepo
      */
-    private static void handleRepoMirroring(RepoCoordinate repoCoordinate, ScmmRepo targetRepo) {
+    protected static void handleRepoMirroring(RepoCoordinate repoCoordinate, ScmmRepo targetRepo) {
         try (def targetGit = Git.open(new File(targetRepo.absoluteLocalRepoTmpDir))) {
             def remoteUrl = targetGit.repository.config.getString('remote', 'origin', 'url')
 
@@ -375,11 +382,7 @@ class Content extends Feature {
         }
 
         if (repoCoordinate.repoConfig.ref) {
-            if (isCommit(repoCoordinate.clonedContentRepo, repoCoordinate.repoConfig.ref)) {
-                // Mirroring detached commits does not make a lot of sense and is complicated
-                // We would have to branch, push, delete remote branch. Considering this an edge case at the moment!
-                throw new RuntimeException("Mirroring commit references is not supported for content repos at the moment. content repository '${repoCoordinate.repoConfig.url}', ref: ${repoCoordinate.repoConfig.ref}")
-            }
+            validateCommitReferences(repoCoordinate)
             if (repoCoordinate.repoConfig.targetRef) {
                 log.debug("Mirroring repo '${repoCoordinate.repoConfig.url}' ref '${repoCoordinate.repoConfig.ref}' to target repo ${repoCoordinate.fullRepoName}, targetRef: '${repoCoordinate.repoConfig.targetRef}'")
                 targetRepo.pushRef(repoCoordinate.repoConfig.ref, repoCoordinate.repoConfig.targetRef, true)
@@ -393,7 +396,15 @@ class Content extends Feature {
         }
     }
 
-    private void createJenkinsJob(RepoCoordinate repoCoordinate, ScmmRepo repo) {
+    private static void validateCommitReferences(RepoCoordinate repoCoordinate) {
+        if (isCommit(repoCoordinate.clonedContentRepo, repoCoordinate.repoConfig.ref)) {
+            // Mirroring detached commits does not make a lot of sense and is complicated
+            // We would have to branch, push, delete remote branch. Considering this an edge case at the moment!
+            throw new RuntimeException("Mirroring commit references is not supported for content repos at the moment. content repository '${repoCoordinate.repoConfig.url}', ref: ${repoCoordinate.repoConfig.ref}")
+        }
+    }
+
+    protected void createJenkinsJobIfAppplicable(RepoCoordinate repoCoordinate, ScmmRepo repo) {
         if (repoCoordinate.repoConfig.createJenkinsJob && jenkins.isEnabled()) {
             if (existFileInSomeBranch(repo.absoluteLocalRepoTmpDir, 'Jenkinsfile')) {
                 jenkins.createJenkinsjob(repoCoordinate.namespace, repoCoordinate.namespace)
@@ -508,6 +519,22 @@ class Content extends Feature {
         try (def git = Git.open(repo)) {
             git.tagList().call().any { it.name.endsWith("/" + ref) || it.name == ref }
         }
+    }
+    /**
+     * INIT only for new and not for existing repos.
+     * @param repo
+     * @param repoCoordinate
+     * @return
+     */
+    boolean isValidForPush(ScmmRepo repo, RepoCoordinate repoCoordinate) {
+        def isRepoCreated = repo.create('', scmmApiClient)
+        if (!isRepoCreated && OverwriteMode.INIT == repoCoordinate.repoConfig.overwriteMode) {
+            log.warn("OverwriteMode ${OverwriteMode.INIT} set for repo '${repoCoordinate.fullRepoName}' " +
+                    "and repo already exists in target:  Not pushing content!" +
+                    "If you want to override, set ${OverwriteMode.UPGRADE} or ${OverwriteMode.RESET} .")
+            return false;
+        }
+        return true
     }
 
     static class RepoCoordinate {
