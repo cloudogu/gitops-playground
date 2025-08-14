@@ -12,7 +12,7 @@ podinfo:
   ui:
     color: '#456456'
 
-<#if podResources == true>
+<#if config.application.podResources == true>
 resources:
   limits:
     cpu: '1'

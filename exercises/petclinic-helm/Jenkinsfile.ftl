@@ -5,13 +5,13 @@ String getScmManagerCredentials() { 'scmm-user' }
 String getConfigRepositoryPRBaseUrl() { env.SCMM_URL }
 String getConfigRepositoryPRRepo() { '${config.application.namePrefix}argocd/example-apps' }
 
-String getDockerRegistryBaseUrl() { env.${namePrefixForEnvVars}REGISTRY_URL }
-String getDockerRegistryPath() { env.${namePrefixForEnvVars}REGISTRY_PATH }
+String getDockerRegistryBaseUrl() { env.${config.application.namePrefixForEnvVars}REGISTRY_URL }
+String getDockerRegistryPath() { env.${config.application.namePrefixForEnvVars}REGISTRY_PATH }
 String getDockerRegistryCredentials() { 'registry-user' }
 
 <#if registry.twoRegistries>
 String getDockerRegistryProxyCredentials() { 'registry-proxy-user' }
-String getDockerRegistryProxyBaseUrl() { env.${namePrefixForEnvVars}REGISTRY_PROXY_URL }
+String getDockerRegistryProxyBaseUrl() { env.${config.application.namePrefixForEnvVars}REGISTRY_PROXY_URL }
 </#if>
 <#noparse>
 String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/3rd-party-dependencies/ces-build-lib/" }
@@ -34,7 +34,7 @@ node {
     mvn = cesBuildLib.MavenWrapper.new(this)
 </#noparse>
 <#if jenkins.mavenCentralMirror?has_content>
-    mvn.useMirrors([name: 'maven-central-mirror', mirrorOf: 'central', url:  env.${namePrefixForEnvVars}MAVEN_CENTRAL_MIRROR])
+    mvn.useMirrors([name: 'maven-central-mirror', mirrorOf: 'central', url:  env.${config.application.namePrefixForEnvVars}MAVEN_CENTRAL_MIRROR])
 </#if>
 <#noparse>
 

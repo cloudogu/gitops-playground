@@ -28,9 +28,9 @@ class RepoInitializationAction {
     void replaceTemplates() {
         repo.replaceTemplates([
 //                namePrefix          : config.application.namePrefix,
-                namePrefixForEnvVars: config.application.namePrefixForEnvVars,
+//                namePrefixForEnvVars: config.application.namePrefixForEnvVars,
                 tenantName          : config.application.namePrefix.replaceAll(/-$/, ""),
-                podResources        : config.application.podResources,
+//                podResources        : config.application.podResources,
                 images              : config.images,
                 nginxImage          : config.images.nginx ? DockerImageParser.parse(config.images.nginx) : null,
                 isRemote            : config.application.remote,

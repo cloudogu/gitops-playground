@@ -2,15 +2,15 @@
 
 String getApplication() { "spring-petclinic-helm" }
 String getScmManagerCredentials() { 'scmm-user' }
-String getConfigRepositoryPRBaseUrl() { env.${namePrefixForEnvVars}SCMM_URL }
+String getConfigRepositoryPRBaseUrl() { env.${config.application.namePrefixForEnvVars}SCMM_URL }
 String getConfigRepositoryPRRepo() { '${config.application.namePrefix}argocd/example-apps' }
 
-String getDockerRegistryBaseUrl() { env.${namePrefixForEnvVars}REGISTRY_URL }
-String getDockerRegistryPath() { env.${namePrefixForEnvVars}REGISTRY_PATH }
+String getDockerRegistryBaseUrl() { env.${config.application.namePrefixForEnvVars}REGISTRY_URL }
+String getDockerRegistryPath() { env.${config.application.namePrefixForEnvVars}REGISTRY_PATH }
 String getDockerRegistryCredentials() { 'registry-user' }
 
 <#if registry.twoRegistries>
-String getDockerRegistryProxyBaseUrl() { env.${namePrefixForEnvVars}REGISTRY_PROXY_URL }
+String getDockerRegistryProxyBaseUrl() { env.${config.application.namePrefixForEnvVars}REGISTRY_PROXY_URL }
 String getDockerRegistryProxyCredentials() { 'registry-proxy-user' }
 </#if>
 
@@ -51,7 +51,7 @@ node {
 </#if>
 
 <#if jenkins.mavenCentralMirror?has_content>
-    mvn.useMirrors([name: 'maven-central-mirror', mirrorOf: 'central', url:  env.${namePrefixForEnvVars}MAVEN_CENTRAL_MIRROR])
+    mvn.useMirrors([name: 'maven-central-mirror', mirrorOf: 'central', url:  env.${config.application.namePrefixForEnvVars}MAVEN_CENTRAL_MIRROR])
 </#if>
 <#noparse>
 
@@ -119,7 +119,7 @@ node {
                         gitopsTool: 'ARGO',
                         folderStructureStrategy: 'ENV_PER_APP',
 </#noparse>
-                        k8sVersion : env.${namePrefixForEnvVars}K8S_VERSION,
+                        k8sVersion : env.${config.application.namePrefixForEnvVars}K8S_VERSION,
                         buildImages          : [
 <#if registry.twoRegistries>
                                 helm:       [

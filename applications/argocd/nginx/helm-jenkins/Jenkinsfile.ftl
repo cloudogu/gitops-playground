@@ -2,7 +2,7 @@
 
 String getApplication() { "nginx-helm-jenkins" }
 String getScmManagerCredentials() { 'scmm-user' }
-String getConfigRepositoryPRBaseUrl() { env.${namePrefixForEnvVars}SCMM_URL }
+String getConfigRepositoryPRBaseUrl() { env.${config.application.namePrefixForEnvVars}SCMM_URL }
 String getConfigRepositoryPRRepo() { '${config.application.namePrefix}argocd/example-apps' }
 <#noparse>
 
@@ -58,7 +58,7 @@ node('docker') {
                     gitopsTool: 'ARGO',
                     folderStructureStrategy: 'ENV_PER_APP',
 </#noparse>
-                    k8sVersion : env.${namePrefixForEnvVars}K8S_VERSION,
+                    k8sVersion : env.${config.application.namePrefixForEnvVars}K8S_VERSION,
                     buildImages          : [
                             helm: '${images.helm}',
                             kubectl: '${images.kubectl}',

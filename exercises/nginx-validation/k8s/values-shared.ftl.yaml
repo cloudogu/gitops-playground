@@ -26,7 +26,7 @@ serverBlock: |-
     }
   }
 
-<#if podResources == true>
+<#if config.application.podResources == true>
 resources:
   limits:
     cpu: 100m

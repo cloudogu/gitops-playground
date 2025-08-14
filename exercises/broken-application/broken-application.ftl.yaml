@@ -21,7 +21,7 @@ spec:
           image: <#if nginxImage??>${nginxImage}<#else>bitnami/nginx:1.25.1</#if>
           ports:
             - containerPort: 8080
-<#if podResources == true>
+<#if config.application.podResources == true>
           resources:
             limits:
               cpu: 100m

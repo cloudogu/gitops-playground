@@ -15,7 +15,7 @@ nginx:
     ports:
       http: 80
     type: <#if isRemote>LoadBalancer<#else>ClusterIP</#if>
-<#if podResources == true>
+<#if config.application.podResources == true>
   resources:
     limits:
       cpu: 100m

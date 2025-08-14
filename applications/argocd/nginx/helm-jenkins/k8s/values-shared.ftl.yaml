@@ -40,7 +40,7 @@ extraVolumeMounts:
     readOnly: true
   </#if>
 
-<#if podResources == true>
+<#if config.application.podResources == true>
 resources:
   limits:
     cpu: 1
