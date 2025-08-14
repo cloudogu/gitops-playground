@@ -33,7 +33,7 @@ class RepoInitializationAction {
 //                podResources        : config.application.podResources,
 //                images              : config.images,
                 nginxImage          : config.images.nginx ? DockerImageParser.parse(config.images.nginx) : null,
-                isRemote            : config.application.remote,
+//                isRemote            : config.application.remote,
                 isInsecure          : config.application.insecure,
                 isOpenshift         : config.application.openshift,
                 urlSeparatorHyphen  : config.application.urlSeparatorHyphen,

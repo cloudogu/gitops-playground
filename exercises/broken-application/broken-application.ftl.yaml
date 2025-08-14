@@ -40,7 +40,7 @@ metadata:
   labels:
     app: broken-application
 spec:
-  type: <#if isRemote>LoadBalancer<#else>ClusterIP</#if>
+  type: <#if config.application.remote>LoadBalancer<#else>ClusterIP</#if>
   ports:
     - name: http
       port: 80
