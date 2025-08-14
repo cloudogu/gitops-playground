@@ -62,18 +62,18 @@ class ContentTest {
             new RepoCoordinate(namespace: "ns2a", repoName: "repo2a2"),
             new RepoCoordinate(namespace: "ns2b", repoName: "repo2b1"),
             new RepoCoordinate(namespace: "ns2b", repoName: "repo2b2"),
-            new RepoCoordinate(namespace: "nonFolderBased", repoName: "repo1"),
-            new RepoCoordinate(namespace: "nonFolderBased", repoName: "repo2")
+            new RepoCoordinate(namespace: "copyBased", repoName: "repo1"),
+            new RepoCoordinate(namespace: "copyBased", repoName: "repo2")
     ]
 
     List<ContentRepositorySchema> contentRepos = [
             // Non-folder-based repo writing to their own target
-            new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), type: ContentRepoType.COPY, target: 'nonFolderBased/repo1'),
-            new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), type: ContentRepoType.COPY, target: 'nonFolderBased/repo2', path: 'subPath'),
+            new ContentRepositorySchema(url: createContentRepo('copyBasedRepo1'), type: ContentRepoType.COPY, target: 'copyBased/repo1'),
+            new ContentRepositorySchema(url: createContentRepo('copyBasedRepo2'), type: ContentRepoType.COPY, target: 'copyBased/repo2', path: 'subPath'),
 
             // Same folder as in folderBasedRepos -> Should be combined
-            new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, target: 'common/repo'),
-            new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), type: ContentRepoType.COPY, target: 'common/repo', path: 'subPath'),
+            new ContentRepositorySchema(url: createContentRepo('copyBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, target: 'common/repo'),
+            new ContentRepositorySchema(url: createContentRepo('copyBasedRepo2'), type: ContentRepoType.COPY, target: 'common/repo', path: 'subPath'),
 
             // Contains ftl
             new ContentRepositorySchema(url: createContentRepo('folderBasedRepo1'), type: ContentRepoType.FOLDER_BASED, templating: true),
@@ -149,7 +149,7 @@ class ContentTest {
 
         config.content.repos = contentRepos
 
-        def repos = createContent().prepareCloneContentRepos()
+        def repos = createContent().cloneContentRepos()
 
         expectedTargetRepos.each { expected ->
             assertThat(new File(findRoot(repos), "${expected.namespace}/${expected.repoName}/file")).exists().isFile()
@@ -159,8 +159,8 @@ class ContentTest {
 
         assertThat(new File(findRoot(repos), "common/repo/folderBasedRepo1")).exists().isFile()
         assertThat(new File(findRoot(repos), "common/repo/folderBasedRepo2")).exists().isFile()
-        assertThat(new File(findRoot(repos), "common/repo/nonFolderBasedRepo1")).exists().isFile()
-        assertThat(new File(findRoot(repos), "common/repo/nonFolderBasedRepo2")).exists().isFile()
+        assertThat(new File(findRoot(repos), "common/repo/copyBasedRepo1")).exists().isFile()
+        assertThat(new File(findRoot(repos), "common/repo/copyBasedRepo2")).exists().isFile()
 
         // Assert Templating
         assertThat(new File(findRoot(repos), "common/repo/some.yaml")).exists()
@@ -178,7 +178,7 @@ class ContentTest {
         ]
         config.content.variables.someapp = [somevalue: 'this is a custom variable']
 
-        def repos = createContent().prepareCloneContentRepos()
+        def repos = createContent().cloneContentRepos()
 
         // Assert Templating
         assertThat(new File(findRoot(repos), "common/repo/some.yaml")).exists()
@@ -189,11 +189,11 @@ class ContentTest {
     @Test
     void 'Authenticates content Repos'() {
         config.content.repos = [
-                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, target: 'common/repo', username: 'user', password: 'pw')
+                new ContentRepositorySchema(url: createContentRepo('copyBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, target: 'common/repo', username: 'user', password: 'pw')
         ]
 
         def content = createContent()
-        content.prepareCloneContentRepos()
+        content.cloneContentRepos()
 
         ArgumentCaptor<UsernamePasswordCredentialsProvider> captor = ArgumentCaptor.forClass(UsernamePasswordCredentialsProvider)
         verify(content.cloneSpy).setCredentialsProvider(captor.capture())
@@ -212,7 +212,7 @@ class ContentTest {
                 new ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'), ref: 'someBranch', type: ContentRepoType.COPY, target: 'common/branch')
         ]
 
-        def repos = createContent().prepareCloneContentRepos()
+        def repos = createContent().cloneContentRepos()
 
         assertThat(new File(findRoot(repos), "common/tag/README.md")).exists().isFile()
         assertThat(new File(findRoot(repos), "common/tag/README.md").text).contains("someTag")
@@ -230,7 +230,7 @@ class ContentTest {
                 new ContentRepositorySchema(url: createContentRepo('', 'git-repo-different-default-branch'), target: 'common/default', type: ContentRepoType.COPY ),
         ]
 
-        def repos = createContent().prepareCloneContentRepos()
+        def repos = createContent().cloneContentRepos()
 
         assertThat(new File(findRoot(repos), "common/default/README.md")).exists().isFile()
         assertThat(new File(findRoot(repos), "common/default/README.md").text).contains("different")
@@ -244,7 +244,7 @@ class ContentTest {
         ]
 
         def exception = shouldFail(RuntimeException) {
-            createContent().prepareCloneContentRepos()
+            createContent().cloneContentRepos()
         }
         assertThat(exception.message).startsWith("Reference 'does/not/exist' not found in content repository")
     }
@@ -255,22 +255,22 @@ class ContentTest {
                 // Note the different order!
                 new ContentRepositorySchema(url: createContentRepo('folderBasedRepo1'), ref: 'main', type: ContentRepoType.FOLDER_BASED),
                 new ContentRepositorySchema(url: createContentRepo('folderBasedRepo2'), ref: 'main', type: ContentRepoType.FOLDER_BASED, path: 'subPath'),
-                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), ref: 'main', type: ContentRepoType.COPY, target: 'common/repo', path: 'subPath'),
-                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, target: 'common/repo'),
+                new ContentRepositorySchema(url: createContentRepo('copyBasedRepo2'), ref: 'main', type: ContentRepoType.COPY, target: 'common/repo', path: 'subPath'),
+                new ContentRepositorySchema(url: createContentRepo('copyBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, target: 'common/repo'),
         ]
 
-        def repos = createContent().prepareCloneContentRepos()
+        def repos = createContent().cloneContentRepos()
 
-        assertThat(new File(findRoot(repos), "common/repo/file").text).contains("nonFolderBasedRepo1")
+        assertThat(new File(findRoot(repos), "common/repo/file").text).contains("copyBasedRepo1")
         // Last repo "wins"
     }
 
     @Test
     void 'Is able to COPY into MIRRORED repo'() {
         config.content.repos = [
-                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, target: 'common/repo'),
+                new ContentRepositorySchema(url: createContentRepo('copyBasedRepo1', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, target: 'common/repo'),
                 new ContentRepositorySchema(url: createContentRepo('folderBasedRepo1'), type: ContentRepoType.FOLDER_BASED, overwriteMode: OverwriteMode.UPGRADE),
-                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), type: ContentRepoType.COPY, target: 'common/repo', overwriteMode: OverwriteMode.UPGRADE, path: 'subPath')
+                new ContentRepositorySchema(url: createContentRepo('copyBasedRepo2'), type: ContentRepoType.COPY, target: 'common/repo', overwriteMode: OverwriteMode.UPGRADE, path: 'subPath')
         ]
 
         scmmApiClient.mockRepoApiBehaviour()
@@ -280,9 +280,9 @@ class ContentTest {
         def expectedRepo = 'common/repo'
         // clone target repo, to ensure, changes in remote repo.
         try (def git = cloneRepo(expectedRepo, tmpDir)) {
-            assertThat(new File(tmpDir, "file").text).contains("nonFolderBasedRepo2") // Last repo "wins"
+            assertThat(new File(tmpDir, "file").text).contains("copyBasedRepo2") // Last repo "wins"
             assertThat(new File(tmpDir, "folderBasedRepo1")).exists().isFile()
-            assertThat(new File(tmpDir, "nonFolderBasedRepo1")).exists().isFile()
+            assertThat(new File(tmpDir, "copyBasedRepo1")).exists().isFile()
 
             // Assert mirrors branches and tags of non-folderBased repos
             // Verify tag exists and points to correct content
@@ -297,8 +297,8 @@ class ContentTest {
     void 'Handles MIRRORING COPYed repo'() {
         config.content.repos = [
                 new ContentRepositorySchema(url: createContentRepo('folderBasedRepo1'), type: ContentRepoType.FOLDER_BASED),
-                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), type: ContentRepoType.COPY, target: 'common/repo', overwriteMode: OverwriteMode.UPGRADE, path: 'subPath'),
-                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, overwriteMode: OverwriteMode.RESET, target: 'common/repo'),
+                new ContentRepositorySchema(url: createContentRepo('copyBasedRepo2'), type: ContentRepoType.COPY, target: 'common/repo', overwriteMode: OverwriteMode.UPGRADE, path: 'subPath'),
+                new ContentRepositorySchema(url: createContentRepo('copyBasedRepo1', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, overwriteMode: OverwriteMode.RESET, target: 'common/repo'),
         ]
 
         scmmApiClient.mockRepoApiBehaviour()
@@ -308,9 +308,9 @@ class ContentTest {
         def expectedRepo = 'common/repo'
         // clone target repo, to ensure, changes in remote repo.
         try (def git = cloneRepo(expectedRepo, tmpDir)) {
-            assertThat(new File(tmpDir, "file").text).contains("nonFolderBasedRepo1") // Last repo "wins"
+            assertThat(new File(tmpDir, "file").text).contains("copyBasedRepo1") // Last repo "wins"
             assertThat(new File(tmpDir, "folderBasedRepo1")).doesNotExist()
-            assertThat(new File(tmpDir, "nonFolderBasedRepo2")).doesNotExist()
+            assertThat(new File(tmpDir, "copyBasedRepo2")).doesNotExist()
 
             // Assert mirrors branches and tags of non-folderBased repos
             // Verify tag exists and points to correct content
@@ -323,12 +323,12 @@ class ContentTest {
         
     @Test
     void 'Handles multiple mirrors of the same repo with different refs'() {
-        def repoToMirror = createContentRepo('nonFolderBasedRepo1', 'git-repository-with-branches-tags')
+        def repoToMirror = createContentRepo('copyBasedRepo1', 'git-repository-with-branches-tags')
         config.content.repos = [
                 new ContentRepositorySchema(url: repoToMirror, type: ContentRepoType.MIRROR, ref: 'main', target: 'common/repo'),
                 new ContentRepositorySchema(url: repoToMirror, type: ContentRepoType.MIRROR, ref: 'someBranch', target: 'common/repo', overwriteMode: OverwriteMode.UPGRADE),
                 new ContentRepositorySchema(url: repoToMirror, type: ContentRepoType.MIRROR, ref: 'someTag', target: 'common/repo', overwriteMode: OverwriteMode.UPGRADE),
-                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), type: ContentRepoType.COPY, target: 'common/repo', overwriteMode: OverwriteMode.UPGRADE,  path: 'subPath')
+                new ContentRepositorySchema(url: createContentRepo('copyBasedRepo2'), type: ContentRepoType.COPY, target: 'common/repo', overwriteMode: OverwriteMode.UPGRADE,  path: 'subPath')
         ]
 
         scmmApiClient.mockRepoApiBehaviour()
@@ -338,8 +338,8 @@ class ContentTest {
         def expectedRepo = 'common/repo'
         // clone target repo, to ensure, changes in remote repo.
         try (def git = cloneRepo(expectedRepo, tmpDir)) {
-            assertThat(new File(tmpDir, "file").text).contains("nonFolderBasedRepo2") // Last repo "wins"
-            assertThat(new File(tmpDir, "nonFolderBasedRepo1")).exists().isFile()
+            assertThat(new File(tmpDir, "file").text).contains("copyBasedRepo2") // Last repo "wins"
+            assertThat(new File(tmpDir, "copyBasedRepo1")).exists().isFile()
             
             git.fetch().setRefSpecs("refs/*:refs/*").call() // Fetch all tags and branches
 
@@ -387,11 +387,11 @@ class ContentTest {
     void 'Handles multiple mirrors of the same repo with different refs, where one is not pushed'() {
         // This test case does not make too much sense but used to cause git problems when we merged all content repos into a single folder, like 
         // TransportException: Missing unknown 5bcf50f0537bf4d2719a82e9b0950fbac92b3ecc
-        def repoToMirror = createContentRepo('nonFolderBasedRepo1', 'git-repository-with-branches-tags')
+        def repoToMirror = createContentRepo('copyBasedRepo1', 'git-repository-with-branches-tags')
         config.content.repos = [
                 new ContentRepositorySchema(url: repoToMirror, type: ContentRepoType.MIRROR, ref: 'main', target: 'common/repo'),
                 new ContentRepositorySchema(url: repoToMirror, type: ContentRepoType.MIRROR, ref: 'someBranch', target: 'common/repo') /* Deliberately not use overwriteMode here !*/,
-                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), type: ContentRepoType.COPY, target: 'common/repo', overwriteMode: OverwriteMode.UPGRADE,  path: 'subPath')
+                new ContentRepositorySchema(url: createContentRepo('copyBasedRepo2'), type: ContentRepoType.COPY, target: 'common/repo', overwriteMode: OverwriteMode.UPGRADE,  path: 'subPath')
         ]
 
         scmmApiClient.mockRepoApiBehaviour()
@@ -408,8 +408,8 @@ class ContentTest {
         // This only occurs when the same .pack files exists in .git because they are read-only
         // So for our testcase we just mirror the same repo twice
         config.content.repos = [
-                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, target: 'common/repo'),
-                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, target: 'common/repo', overwriteMode: OverwriteMode.RESET),
+                new ContentRepositorySchema(url: createContentRepo('copyBasedRepo1', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, target: 'common/repo'),
+                new ContentRepositorySchema(url: createContentRepo('copyBasedRepo1', 'git-repository-with-branches-tags'), type: ContentRepoType.MIRROR, target: 'common/repo', overwriteMode: OverwriteMode.RESET),
         ]
 
         scmmApiClient.mockRepoApiBehaviour()
@@ -425,7 +425,7 @@ class ContentTest {
 
         def content = createContent()
 
-        def actualTargetRepos = content.prepareCloneContentRepos()
+        def actualTargetRepos = content.cloneContentRepos()
         def repos = actualTargetRepos
 
         assertThat(actualTargetRepos).hasSameSizeAs(expectedTargetRepos)
@@ -457,15 +457,15 @@ class ContentTest {
 
         createContent().install()
 
-        def expectedRepo = 'nonFolderBased/repo1'
+        def expectedRepo = 'copyBased/repo1'
         // clone target repo, to ensure, changes in remote repo.
         try (def git = cloneRepo(expectedRepo, tmpDir)) {
 
             def commitMsg = git.log().call().iterator().next().getFullMessage()
             assertThat(commitMsg).isEqualTo("Initialize content repo ${expectedRepo}".toString())
 
-            assertThat(new File(tmpDir, "file").text).contains("nonFolderBasedRepo1")
-            assertThat(new File(tmpDir, "nonFolderBasedRepo1")).exists().isFile()
+            assertThat(new File(tmpDir, "file").text).contains("copyBasedRepo1")
+            assertThat(new File(tmpDir, "copyBasedRepo1")).exists().isFile()
         }
 
         expectedRepo = 'common/mirror'
@@ -554,15 +554,15 @@ class ContentTest {
     void 'Reset common repo to repo '() {
         /**
          * Prepare Testcase
-         * using all defined repos ->  common/repo is used by nonFolderRepo1 + 2
-         * file content after that: nonFolderRepo2
+         * using all defined repos ->  common/repo is used by copyRepo1 + 2
+         * file content after that: copyRepo2
          *
-         * Then again "RESET" to nonFolderRepo1.
-         * file content after that should be: nonFolderRepo1
+         * Then again "RESET" to copyRepo1.
+         * file content after that should be: copyRepo1
          */
         config.content.repos = [
-                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, target: 'common/repo'),
-                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), type: ContentRepoType.COPY, target: 'common/repo', path: 'subPath')
+                new ContentRepositorySchema(url: createContentRepo('copyBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, target: 'common/repo'),
+                new ContentRepositorySchema(url: createContentRepo('copyBasedRepo2'), type: ContentRepoType.COPY, target: 'common/repo', path: 'subPath')
 
         ]
         def response = scmmApiClient.mockSuccessfulResponse(201)
@@ -584,16 +584,16 @@ class ContentTest {
         def commitMsg = git.log().call().iterator().next().getFullMessage()
         assertThat(commitMsg).isEqualTo("Initialize content repo ${expectedRepo}".toString())
 
-        assertThat(new File(tmpDir, "file").text).contains("nonFolderBasedRepo2")
-        assertThat(new File(tmpDir, "nonFolderBasedRepo2")).exists().isFile()
+        assertThat(new File(tmpDir, "file").text).contains("copyBasedRepo2")
+        assertThat(new File(tmpDir, "copyBasedRepo2")).exists().isFile()
 
         /**
          * End of preparation
          *
-         * Now Reset to nonFolderBased1
+         * Now Reset to copyBased1
          */
         config.content.repos = [
-                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, target: 'common/repo', overwriteMode: OverwriteMode.RESET),
+                new ContentRepositorySchema(url: createContentRepo('copyBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, target: 'common/repo', overwriteMode: OverwriteMode.RESET),
         ]
 
         def resourceExistsAnswer = scmmApiClient.mockErrorResponse(409)
@@ -606,10 +606,10 @@ class ContentTest {
         folderAfterReset.deleteOnExit()
         // clone repo, to ensure, changes in remote repo.
         Git.cloneRepository().setURI(url).setBranch('main').setDirectory(folderAfterReset).call()
-        // because nonFolderBasedRepo1 is only part of repo1
-        assertThat(new File(folderAfterReset, "file").text).contains("nonFolderBasedRepo1")
+        // because copyBasedRepo1 is only part of repo1
+        assertThat(new File(folderAfterReset, "file").text).contains("copyBasedRepo1")
         // should not exists, if RESET to first repo
-        assertThat(new File(folderAfterReset, "nonFolderBasedRepo2").exists()).isFalse()
+        assertThat(new File(folderAfterReset, "copyBasedRepo2").exists()).isFalse()
 
     }
 
@@ -617,14 +617,14 @@ class ContentTest {
     void 'Update common repo test '() {
         /**
          * Prepare Testcase
-         * using all defined repos ->  common/repo is used by nonFolderRepo1 + 2
-         * file content after that: nonFolderRepo2
+         * using all defined repos ->  common/repo is used by copyRepo1 + 2
+         * file content after that: copyRepo2
          *
-         * Then again "RESET" to nonFolderRepo1.
-         * file content after that should be: nonFolderRepo1
+         * Then again "RESET" to copyRepo1.
+         * file content after that should be: copyRepo1
          */
         config.content.repos = [
-                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, target: 'common/repo'),
+                new ContentRepositorySchema(url: createContentRepo('copyBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, target: 'common/repo'),
         ]
         def response = scmmApiClient.mockSuccessfulResponse(201)
         when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response)
@@ -645,16 +645,16 @@ class ContentTest {
         def commitMsg = git.log().call().iterator().next().getFullMessage()
         assertThat(commitMsg).isEqualTo("Initialize content repo ${expectedRepo}".toString())
 
-        assertThat(new File(tmpDir, "file").text).contains("nonFolderBasedRepo1")
-        assertThat(new File(tmpDir, "nonFolderBasedRepo1")).exists().isFile()
+        assertThat(new File(tmpDir, "file").text).contains("copyBasedRepo1")
+        assertThat(new File(tmpDir, "copyBasedRepo1")).exists().isFile()
 
         /**
          * End of preparation
          *
-         * Now Upgrade to nonFolderBased2
+         * Now Upgrade to copyBased2
          */
         config.content.repos = [
-                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), type: ContentRepoType.COPY, target: 'common/repo', path: 'subPath', overwriteMode: OverwriteMode.UPGRADE)
+                new ContentRepositorySchema(url: createContentRepo('copyBasedRepo2'), type: ContentRepoType.COPY, target: 'common/repo', path: 'subPath', overwriteMode: OverwriteMode.UPGRADE)
         ]
 
         def resourceExistsAnswer = scmmApiClient.mockErrorResponse(409)
@@ -667,10 +667,10 @@ class ContentTest {
         folderAfterReset.deleteOnExit()
         // clone repo, to ensure, changes in remote repo.
         Git.cloneRepository().setURI(url).setBranch('main').setDirectory(folderAfterReset).call()
-        // because nonFolderBasedRepo1 is only part of repo1
-        assertThat(new File(folderAfterReset, "file").text).contains("nonFolderBasedRepo2")
+        // because copyBasedRepo1 is only part of repo1
+        assertThat(new File(folderAfterReset, "file").text).contains("copyBasedRepo2")
         // should not exists, if RESET to first repo
-        assertThat(new File(folderAfterReset, "nonFolderBasedRepo2").exists()).isTrue()
+        assertThat(new File(folderAfterReset, "copyBasedRepo2").exists()).isTrue()
 
     }
 
@@ -678,15 +678,15 @@ class ContentTest {
     void 'init common repo, expect unchanged repo'() {
         /**
          * Prepare Testcase
-         * using all defined repos ->  common/repo is used by nonFolderRepo1 + 2
-         * file content after that: nonFolderRepo2
+         * using all defined repos ->  common/repo is used by copyRepo1 + 2
+         * file content after that: copyRepo2
          *
-         * Then again "RESET" to nonFolderRepo1.
-         * file content after that should be: nonFolderRepo1
+         * Then again "RESET" to copyRepo1.
+         * file content after that should be: copyRepo1
          */
         config.content.repos = [
-                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, target: 'common/repo'),
-                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo2'), type: ContentRepoType.COPY, target: 'common/repo', path: 'subPath')
+                new ContentRepositorySchema(url: createContentRepo('copyBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, target: 'common/repo'),
+                new ContentRepositorySchema(url: createContentRepo('copyBasedRepo2'), type: ContentRepoType.COPY, target: 'common/repo', path: 'subPath')
 
         ]
         def response = scmmApiClient.mockSuccessfulResponse(201)
@@ -708,17 +708,17 @@ class ContentTest {
         def commitMsg = git.log().call().iterator().next().getFullMessage()
         assertThat(commitMsg).isEqualTo("Initialize content repo ${expectedRepo}".toString())
 
-        assertThat(new File(tmpDir, "file").text).contains("nonFolderBasedRepo2")
-        assertThat(new File(tmpDir, "nonFolderBasedRepo2")).exists().isFile()
+        assertThat(new File(tmpDir, "file").text).contains("copyBasedRepo2")
+        assertThat(new File(tmpDir, "copyBasedRepo2")).exists().isFile()
 
         /**
          * End of preparation
          *
-         * Now INit to nonFolderBased1
-         * no changes expected, file still has nonFolderBasedRepo2 and so on
+         * Now INit to copyBased1
+         * no changes expected, file still has copyBasedRepo2 and so on
          */
         config.content.repos = [
-                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, target: 'common/repo', overwriteMode: OverwriteMode.INIT),
+                new ContentRepositorySchema(url: createContentRepo('copyBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, target: 'common/repo', overwriteMode: OverwriteMode.INIT),
         ]
 
         def resourceExistsAnswer = scmmApiClient.mockErrorResponse(409)
@@ -731,10 +731,10 @@ class ContentTest {
         folderAfterReset.deleteOnExit()
         // clone repo, to ensure, changes in remote repo.
         Git.cloneRepository().setURI(url).setBranch('main').setDirectory(folderAfterReset).call()
-        // because nonFolderBasedRepo1 is only part of repo1
-        assertThat(new File(folderAfterReset, "file").text).contains("nonFolderBasedRepo2")
+        // because copyBasedRepo1 is only part of repo1
+        assertThat(new File(folderAfterReset, "file").text).contains("copyBasedRepo2")
         // should not exists, if RESET to first repo
-        assertThat(new File(folderAfterReset, "nonFolderBasedRepo2").exists()).isTrue()
+        assertThat(new File(folderAfterReset, "copyBasedRepo2").exists()).isTrue()
 
     }
 
@@ -742,14 +742,14 @@ class ContentTest {
     void 'ensure Jenkinsjob will be created'() {
         /**
          * Prepare Testcase
-         * using all defined repos ->  common/repo is used by nonFolderRepo1 + 2
-         * file content after that: nonFolderRepo2
+         * using all defined repos ->  common/repo is used by copyRepo1 + 2
+         * file content after that: copyRepo2
          *
-         * Then again "RESET" to nonFolderRepo1.
-         * file content after that should be: nonFolderRepo1
+         * Then again "RESET" to copyRepo1.
+         * file content after that should be: copyRepo1
          */
         config.content.repos = [
-                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, createJenkinsJob: true, target: 'common/repo'),
+                new ContentRepositorySchema(url: createContentRepo('copyBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, createJenkinsJob: true, target: 'common/repo'),
         ]
         scmmApiClient.mockRepoApiBehaviour()
         when(jenkins.isEnabled()).thenReturn(true)
@@ -761,14 +761,14 @@ class ContentTest {
     void 'ensure Jenkinsjob creation will be ignored'() {
         /**
          * Prepare Testcase
-         * using all defined repos ->  common/repo is used by nonFolderRepo1 + 2
-         * file content after that: nonFolderRepo2
+         * using all defined repos ->  common/repo is used by copyRepo1 + 2
+         * file content after that: copyRepo2
          *
-         * Then again "RESET" to nonFolderRepo1.
-         * file content after that should be: nonFolderRepo1
+         * Then again "RESET" to copyRepo1.
+         * file content after that should be: copyRepo1
          */
         config.content.repos = [
-                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, createJenkinsJob: false, target: 'common/repo'),
+                new ContentRepositorySchema(url: createContentRepo('copyBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, createJenkinsJob: false, target: 'common/repo'),
         ]
         scmmApiClient.mockRepoApiBehaviour()
         when(jenkins.isEnabled()).thenReturn(false)
@@ -780,14 +780,14 @@ class ContentTest {
     void 'ensure Jenkinsjob will not be created, if jenkins is not enables'() {
         /**
          * Prepare Testcase
-         * using all defined repos ->  common/repo is used by nonFolderRepo1 + 2
-         * file content after that: nonFolderRepo2
+         * using all defined repos ->  common/repo is used by copyRepo1 + 2
+         * file content after that: copyRepo2
          *
-         * Then again "RESET" to nonFolderRepo1.
-         * file content after that should be: nonFolderRepo1
+         * Then again "RESET" to copyRepo1.
+         * file content after that should be: copyRepo1
          */
         config.content.repos = [
-                new ContentRepositorySchema(url: createContentRepo('nonFolderBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, createJenkinsJob: false, target: 'common/repo'),
+                new ContentRepositorySchema(url: createContentRepo('copyBasedRepo1'), ref: 'main', type: ContentRepoType.COPY, createJenkinsJob: false, target: 'common/repo'),
         ]
         def response = scmmApiClient.mockSuccessfulResponse(201)
         when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response)

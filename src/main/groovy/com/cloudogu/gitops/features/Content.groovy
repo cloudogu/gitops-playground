@@ -93,11 +93,11 @@ class Content extends Feature {
     }
 
     void createContentRepos() {
-        List<RepoCoordinate> repoCoordinates = prepareCloneContentRepos()
+        List<RepoCoordinate> repoCoordinates = cloneContentRepos()
         pushTargetRepos(repoCoordinates)
     }
 
-    protected List<RepoCoordinate> prepareCloneContentRepos() {
+    protected List<RepoCoordinate> cloneContentRepos() {
         List<RepoCoordinate> repoCoordinates = []
         def mergedReposFolder = File.createTempDir('gitops-playground-folder-based-content-repos-')
         mergedReposFolder.deleteOnExit()
