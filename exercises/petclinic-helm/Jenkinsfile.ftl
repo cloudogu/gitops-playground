@@ -9,7 +9,7 @@ String getDockerRegistryBaseUrl() { env.${config.application.namePrefixForEnvVar
 String getDockerRegistryPath() { env.${config.application.namePrefixForEnvVars}REGISTRY_PATH }
 String getDockerRegistryCredentials() { 'registry-user' }
 
-<#if registry.twoRegistries>
+<#if config.registry.twoRegistries>
 String getDockerRegistryProxyCredentials() { 'registry-proxy-user' }
 String getDockerRegistryProxyBaseUrl() { env.${config.application.namePrefixForEnvVars}REGISTRY_PROXY_URL }
 </#if>
@@ -62,7 +62,7 @@ node {
             String pathPrefix = !dockerRegistryPath?.trim() ? "" : "${dockerRegistryPath}/"
             imageName = "${dockerRegistryBaseUrl}/${pathPrefix}${application}:${imageTag}"
 </#noparse>
-<#if registry.twoRegistries>
+<#if config.registry.twoRegistries>
 <#noparse>
             docker.withRegistry("https://${dockerRegistryProxyBaseUrl}", dockerRegistryProxyCredentials) {
                 image = docker.build(imageName, '.')

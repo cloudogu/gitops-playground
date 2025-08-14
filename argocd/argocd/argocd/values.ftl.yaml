@@ -20,7 +20,7 @@ argo-cd:
       type: <#if config.application.remote>LoadBalancer<#else>ClusterIP</#if>
     metrics:
       enabled: true
-<#if monitoring.active == true>
+<#if config.features.monitoring.active == true>
       serviceMonitor:
         enabled: true
         namespace: ${config.application.namePrefix}monitoring
@@ -30,7 +30,7 @@ argo-cd:
   controller:
     metrics:
       enabled: true
-<#if monitoring.active == true>
+<#if config.features.monitoring.active == true>
       serviceMonitor:
         enabled: true
         namespace: ${config.application.namePrefix}monitoring
@@ -40,7 +40,7 @@ argo-cd:
   repoServer:
     metrics:
       enabled: true
-<#if monitoring.active == true>
+<#if config.features.monitoring.active == true>
       serviceMonitor:
         enabled: true
         namespace: ${config.application.namePrefix}monitoring
@@ -86,7 +86,7 @@ argo-cd:
         host: mailhog.${config.application.namePrefix}monitoring.svc.cluster.local
         port: 1025
       </#if>
-        from: ${argocd.emailFrom}
+        from: ${config.features.argocd.emailFrom}
 <#noparse>
     templates:
       template.app-deployed: |

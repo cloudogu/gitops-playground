@@ -9,7 +9,7 @@ String getDockerRegistryBaseUrl() { env.${config.application.namePrefixForEnvVar
 String getDockerRegistryPath() { env.${config.application.namePrefixForEnvVars}REGISTRY_PATH }
 String getDockerRegistryCredentials() { 'registry-user' }
 
-<#if registry.twoRegistries>
+<#if config.registry.twoRegistries>
 String getDockerRegistryProxyBaseUrl() { env.${config.application.namePrefixForEnvVars}REGISTRY_PROXY_URL }
 String getDockerRegistryProxyCredentials() { 'registry-proxy-user' }
 </#if>
@@ -34,7 +34,7 @@ node {
 </#noparse>
 
 <#if config.images.maven?has_content>
-    <#if registry.twoRegistries>
+    <#if config.registry.twoRegistries>
         mvn = cesBuildLib.MavenInDocker.new(this, '${config.images.maven}', dockerRegistryProxyCredentials)
     <#else>
         mvn = cesBuildLib.MavenInDocker.new(this, '${config.images.maven}')
@@ -73,7 +73,7 @@ node {
             String pathPrefix = !dockerRegistryPath?.trim() ? "" : "${dockerRegistryPath}/"
             imageName = "${dockerRegistryBaseUrl}/${pathPrefix}${application}:${imageTag}"
 </#noparse>
-<#if registry.twoRegistries>
+<#if config.registry.twoRegistries>
 <#noparse>
             docker.withRegistry("https://${dockerRegistryProxyBaseUrl}", dockerRegistryProxyCredentials) {
                 image = docker.build(imageName, '.')
@@ -168,7 +168,7 @@ String createSpecificGitOpsConfig() {
         // If you can access the internet, you can rely on the defaults, which load the images from public registries.
         buildImages          : [
 </#noparse>
-<#if registry.twoRegistries>
+<#if config.registry.twoRegistries>
             helm:       [
                      image: '${config.images.helm}',
                      credentialsId: dockerRegistryProxyCredentials

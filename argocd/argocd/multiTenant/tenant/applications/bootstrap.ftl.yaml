@@ -57,7 +57,7 @@ metadata:
   namespace: ${config.application.namePrefix}argocd
   annotations:
   <#if mail.active?? && mail.active>
-notifications.argoproj.io/subscribe.email: ${argocd.emailToUser}
+notifications.argoproj.io/subscribe.email: ${config.features.argocd.emailToUser}
   </#if>
 spec:
   description: Contains examples of end-user applications

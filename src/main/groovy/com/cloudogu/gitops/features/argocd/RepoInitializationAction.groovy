@@ -45,19 +45,19 @@ class RepoInitializationAction {
                         host                     : config.features.argocd.url ? new URL(config.features.argocd.url).host : "",
 //                        env                      : config.features.argocd.env,
 //                        isOperator               : config.features.argocd.operator,
-                        emailFrom                : config.features.argocd.emailFrom,
-                        emailToUser              : config.features.argocd.emailToUser,
-                        emailToAdmin             : config.features.argocd.emailToAdmin,
-                        resourceInclusionsCluster: config.features.argocd.resourceInclusionsCluster
+//                        emailFrom                : config.features.argocd.emailFrom,
+//                        emailToUser              : config.features.argocd.emailToUser,
+//                        emailToAdmin             : config.features.argocd.emailToAdmin,
+//                        resourceInclusionsCluster: config.features.argocd.resourceInclusionsCluster
                 ],
-                registry            : [
-                        twoRegistries: config.registry.twoRegistries
-                ],
+//                registry            : [
+//                        twoRegistries: config.registry.twoRegistries
+//                ],
                 monitoring          : [
                         grafana: [
                                 url: config.features.monitoring.grafanaUrl ? new URL(config.features.monitoring.grafanaUrl) : null,
                         ],
-                        active : config.features.monitoring.active
+//                        active : config.features.monitoring.active
                 ],
                 mail                : [
                         active      : config.features.mail.active,
