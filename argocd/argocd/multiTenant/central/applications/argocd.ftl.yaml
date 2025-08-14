@@ -6,7 +6,7 @@ metadata:
   annotations:
     # Only app with the sync-status-unknown alert, so that we only get one alert when SCM is not reachable.
     # Otherwise, there would be a spam wave by every application everytime the SCM is not reachable.
-<#if mail.active?? && mail.active>
+<#if config.features.mail.active?? && config.features.mail.active>
     notifications.argoproj.io/subscribe.on-sync-status-unknown.email: ${config.features.argocd.emailToAdmin}
 </#if>
 # finalizer disabled, because otherwise everything under this Application would be deleted as well, if this Application is deleted by accident

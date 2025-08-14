@@ -56,7 +56,7 @@ metadata:
   name: example-apps
   namespace: ${config.application.namePrefix}argocd
   annotations:
-  <#if mail.active?? && mail.active>
+  <#if config.features.mail.active?? && config.features.mail.active>
 notifications.argoproj.io/subscribe.email: ${config.features.argocd.emailToUser}
   </#if>
 spec:

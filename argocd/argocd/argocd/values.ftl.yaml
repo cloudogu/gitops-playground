@@ -69,19 +69,19 @@ argo-cd:
     # secrets are created dynamically in groovy, so they are not stored in git
     secret:
       create: false
-    enabled: <#if mail.active == true>true<#else>false</#if>
+    enabled: <#if config.features.mail.active == true>true<#else>false</#if>
     <#-- When url is null, this field is left empty. This leads to notifications that dont contain a host. 
          But what could we do differently? When ingress is not used locally, we could set the IP of the k3d container.
          But: It is only reachable in linux and it also might change. So we can as well just save the effort. -->
     argocdUrl: ${config.features.argocd.url}
-<#if mail.active?? && mail.active>
+<#if config.features.mail.active?? && config.features.mail.active>
     notifiers:
       service.email: |
-      <#if mail.smtpAddress?has_content>
-        host: ${mail.smtpAddress}
-        <#if mail.smtpPort??>port: ${mail.smtpPort?c}</#if>
-        <#if mail.smtpUser?has_content>username: $email-username</#if>
-        <#if mail.smtpPassword?has_content>password: $email-password</#if>
+      <#if config.features.mail.smtpAddress?has_content>
+        host: ${config.features.mail.smtpAddress}
+        <#if config.features.mail.smtpPort??>port: ${config.features.mail.smtpPort?c}</#if>
+        <#if config.features.mail.smtpUser?has_content>username: $email-username</#if>
+        <#if config.features.mail.smtpPassword?has_content>password: $email-password</#if>
       <#else>
         host: mailhog.${config.application.namePrefix}monitoring.svc.cluster.local
         port: 1025
