@@ -34,7 +34,7 @@ class RepoInitializationAction {
 //                images              : config.images,
                 nginxImage          : config.images.nginx ? DockerImageParser.parse(config.images.nginx) : null,
 //                isRemote            : config.application.remote,
-                isInsecure          : config.application.insecure,
+//                isInsecure          : config.application.insecure,
                 isOpenshift         : config.application.openshift,
                 urlSeparatorHyphen  : config.application.urlSeparatorHyphen,
                 mirrorRepos         : config.application.mirrorRepos,

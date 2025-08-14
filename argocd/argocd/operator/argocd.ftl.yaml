@@ -103,7 +103,7 @@ spec:
     </#list>
     </#if>
   server:
-    insecure: ${isInsecure?c}
+    insecure: ${config.application.insecure?c}
     resources:
       limits:
         cpu: "500m"
@@ -125,7 +125,7 @@ spec:
     # Note: When insecure mode is enabled, forced HTTP redirect to HTTPS cannot be disabled here(likely due to a bug),
     # so we cannot use this ingress for insecure mode. For insecure mode we use a separate file (ingress.ftl.yaml).
     ingress:
-      enabled: ${((!isOpenshift) && (!isInsecure))?c}
+      enabled: ${((!isOpenshift) && (!config.application.insecure))?c}
   initialRepositories: |
 <#if !(scmm.centralScmmUrl?has_content)>
     - name: argocd
