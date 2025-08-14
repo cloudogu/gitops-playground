@@ -11,7 +11,7 @@ spec:
   sourceRepos:
     - ${scmm.centralScmmUrl}/repo/${config.application.namePrefix}argocd/argocd
     - ${scmm.centralScmmUrl}/repo/${config.application.namePrefix}argocd/cluster-resources
-<#if mirrorRepos>
+<#if config.application.mirrorRepos>
     - ${scmm.repoUrl}3rd-party-dependencies/kube-prometheus-stack<#if scmm.provider == "gitlab">.git</#if>
     - ${scmm.repoUrl}3rd-party-dependencies/mailhog<#if scmm.provider == "gitlab">.git</#if>
     - ${scmm.repoUrl}3rd-party-dependencies/ingress-nginx<#if scmm.provider == "gitlab">.git</#if>

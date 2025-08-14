@@ -7,7 +7,7 @@ metadata:
     app: spring-petclinic-plain
 spec:
   rules:
-    <#if urlSeparatorHyphen>
+    <#if config.application.urlSeparatorHyphen>
     - host: staging-petclinic-plain-${exampleApps.petclinic.baseDomain}
     <#else>
     - host: staging.petclinic-plain.${exampleApps.petclinic.baseDomain}

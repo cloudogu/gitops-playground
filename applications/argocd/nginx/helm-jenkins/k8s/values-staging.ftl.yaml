@@ -4,7 +4,7 @@ namespaceOverride: config.application.namePrefixexample-apps-staging
 ingress:
   enabled: true
   pathType: Prefix
-  <#if urlSeparatorHyphen>
+  <#if config.application.urlSeparatorHyphen>
   hostname: staging-nginx-helm-${exampleApps.nginx.baseDomain}
   <#else>
   hostname: staging.nginx-helm.${exampleApps.nginx.baseDomain}

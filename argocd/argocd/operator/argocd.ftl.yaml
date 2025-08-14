@@ -60,7 +60,7 @@ spec:
       requests:
         cpu: "250m"
         memory: "128Mi"
-  <#if isOpenshift>
+  <#if config.application.openshift>
   sso:
     dex:
       openShiftOAuth: true
@@ -119,13 +119,13 @@ spec:
     </#list>
     </#if>
     route:
-      enabled: ${isOpenshift?c}
+      enabled: ${config.application.openshift?c}
     host: "${argocd.host}"
     # Enable ingress only if we are not on OpenShift and insecure mode is NOT enabled.
     # Note: When insecure mode is enabled, forced HTTP redirect to HTTPS cannot be disabled here(likely due to a bug),
     # so we cannot use this ingress for insecure mode. For insecure mode we use a separate file (ingress.ftl.yaml).
     ingress:
-      enabled: ${((!isOpenshift) && (!config.application.insecure))?c}
+      enabled: ${((!config.application.openshift) && (!config.application.insecure))?c}
   initialRepositories: |
 <#if !(scmm.centralScmmUrl?has_content)>
     - name: argocd
@@ -206,7 +206,7 @@ spec:
       clusters:
       - "https://kubernetes.default.svc"
       - "${argocd.resourceInclusionsCluster}"
-    <#if isOpenshift>
+    <#if config.application.openshift>
     - apiGroups:
       - "route.openshift.io"
       kinds:

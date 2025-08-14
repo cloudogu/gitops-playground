@@ -4,7 +4,7 @@ service:
 <#if exampleApps.petclinic.baseDomain?has_content>
 ingress:
   hosts:
-    <#if urlSeparatorHyphen>
+    <#if config.application.urlSeparatorHyphen>
     - host: production-petclinic-helm-${exampleApps.petclinic.baseDomain}
     <#else>
     - host: production.petclinic-helm.${exampleApps.petclinic.baseDomain}

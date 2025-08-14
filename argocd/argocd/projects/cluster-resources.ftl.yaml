@@ -15,7 +15,7 @@ spec:
       server: https://kubernetes.default.svc
   sourceRepos:
   - ${scmm.repoUrl}argocd/cluster-resources<#if scmm.provider == "gitlab">.git</#if>
-<#if mirrorRepos>
+<#if config.application.mirrorRepos>
   - ${scmm.repoUrl}3rd-party-dependencies/kube-prometheus-stack<#if scmm.provider == "gitlab">.git</#if>
   - ${scmm.repoUrl}3rd-party-dependencies/mailhog<#if scmm.provider == "gitlab">.git</#if>
   - ${scmm.repoUrl}3rd-party-dependencies/ingress-nginx<#if scmm.provider == "gitlab">.git</#if>

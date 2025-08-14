@@ -1,6 +1,6 @@
 # See possible values here: https://github.com/argoproj/argo-helm/blob/main/charts/argo-cd/values.yaml
 argo-cd:
-<#if skipCrds==true>
+<#if config.application.skipCrds==true>
   crds:
     install: false
 </#if>

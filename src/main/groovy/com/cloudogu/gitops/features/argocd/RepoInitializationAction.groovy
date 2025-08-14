@@ -35,11 +35,11 @@ class RepoInitializationAction {
                 nginxImage          : config.images.nginx ? DockerImageParser.parse(config.images.nginx) : null,
 //                isRemote            : config.application.remote,
 //                isInsecure          : config.application.insecure,
-                isOpenshift         : config.application.openshift,
-                urlSeparatorHyphen  : config.application.urlSeparatorHyphen,
-                mirrorRepos         : config.application.mirrorRepos,
-                skipCrds            : config.application.skipCrds,
-                netpols             : config.application.netpols,
+//                isOpenshift         : config.application.openshift,
+//                urlSeparatorHyphen  : config.application.urlSeparatorHyphen,
+//                mirrorRepos         : config.application.mirrorRepos,
+//                skipCrds            : config.application.skipCrds,
+//                netpols             : config.application.netpols,
                 argocd              : [
                         // Note that passing the URL object here leads to problems in Graal Native image, see Git history
                         host                     : config.features.argocd.url ? new URL(config.features.argocd.url).host : "",

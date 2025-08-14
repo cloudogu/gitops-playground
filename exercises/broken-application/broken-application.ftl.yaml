@@ -59,7 +59,7 @@ metadata:
     app: broken-application
 spec:
   rules:
-    <#if urlSeparatorHyphen>
+    <#if config.application.urlSeparatorHyphen>
     - host: broken-application-${exampleApps.nginx.baseDomain}
     <#else>
     - host: broken-application.${exampleApps.nginx.baseDomain}
