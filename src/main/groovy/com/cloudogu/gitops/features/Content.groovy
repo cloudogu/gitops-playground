@@ -44,6 +44,10 @@ class Content extends Feature {
     // set by lazy initialisation
     private TemplatingEngine templatingEngine
 
+
+    private List<RepoCoordinate> cachedRepoCoordinates = new ArrayList<>()
+
+
     Content(
             Config config, K8sClient k8sClient, ScmmRepoProvider repoProvider, ScmmApiClient scmmApiClient, Jenkins jenkins
     ) {
@@ -65,6 +69,17 @@ class Content extends Feature {
 
         createContentRepos()
     }
+
+    @Override
+    void validate() {
+        try {
+            cachedRepoCoordinates = cloneContentRepos()
+        } catch (Exception e) {
+            log.error('Error validate Content Feature', e)
+            throw new RuntimeException('Feature content has problem.  Please check configuration.')
+        }
+    }
+
 
     void createImagePullSecrets() {
         if (config.registry.createImagePullSecrets) {
@@ -93,8 +108,13 @@ class Content extends Feature {
     }
 
     void createContentRepos() {
-        List<RepoCoordinate> repoCoordinates = cloneContentRepos()
+        List<RepoCoordinate> repoCoordinates
+        if (cachedRepoCoordinates.empty) {
+            cachedRepoCoordinates = cloneContentRepos()
+        }
+        repoCoordinates = cachedRepoCoordinates
         pushTargetRepos(repoCoordinates)
+        cachedRepoCoordinates.clear()
     }
 
     protected List<RepoCoordinate> cloneContentRepos() {
