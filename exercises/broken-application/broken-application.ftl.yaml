@@ -48,7 +48,7 @@ spec:
   selector:
     app: broken-application
 
-<#if exampleApps.nginx.baseDomain?has_content>
+<#if config.features.exampleApps.nginx.baseDomain?has_content>
 ---
 
 apiVersion: networking.k8s.io/v1
@@ -60,9 +60,9 @@ metadata:
 spec:
   rules:
     <#if config.application.urlSeparatorHyphen>
-    - host: broken-application-${exampleApps.nginx.baseDomain}
+    - host: broken-application-${config.features.exampleApps.nginx.baseDomain}
     <#else>
-    - host: broken-application.${exampleApps.nginx.baseDomain}
+    - host: broken-application.${config.features.exampleApps.nginx.baseDomain}
     </#if>
       http:
         paths:

@@ -80,17 +80,17 @@ class RepoInitializationAction {
 //                        provider      : config.scmm.provider,
                         centralScmmUrl: !config.multiTenant.internal? config.multiTenant.centralScmUrl : "http://scmm.scm-manager.svc.cluster.local/scm"
                 ],
-                jenkins             : [
+  /*              jenkins             : [
                         mavenCentralMirror: config.jenkins.mavenCentralMirror,
-                ],
-                exampleApps         : [
-                        petclinic: [
-                                baseDomain: config.features.exampleApps.petclinic.baseDomain
-                        ],
-                        nginx    : [
-                                baseDomain: config.features.exampleApps.nginx.baseDomain
-                        ],
-                ],
+                ],*/
+//                exampleApps         : [
+//       /*                 petclinic: [
+//                                baseDomain: config.features.exampleApps.petclinic.baseDomain
+//                        ],*/
+///*                        nginx    : [
+//                                baseDomain: config.features.exampleApps.nginx.baseDomain
+//                        ],*/
+//                ],
                 config              : config,
                 // Allow for using static classes inside the templates
                 statics             : new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()

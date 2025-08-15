@@ -50,7 +50,7 @@ node {
     mvn = cesBuildLib.MavenWrapper.new(this)
 </#if>
 
-<#if jenkins.mavenCentralMirror?has_content>
+<#if config.jenkins.mavenCentralMirror?has_content>
     mvn.useMirrors([name: 'maven-central-mirror', mirrorOf: 'central', url:  env.${config.application.namePrefixForEnvVars}MAVEN_CENTRAL_MIRROR])
 </#if>
 <#noparse>

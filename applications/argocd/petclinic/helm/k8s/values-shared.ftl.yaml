@@ -6,7 +6,7 @@ service:
   type: <#if config.application.remote>LoadBalancer<#else>ClusterIP</#if>
 
 ingress:
-  enabled: <#if exampleApps.petclinic.baseDomain?has_content>true<#else>false</#if>
+  enabled: <#if config.features.exampleApps.petclinic.baseDomain?has_content>true<#else>false</#if>
 
 # this is a helm chart dependency
 podinfo:
