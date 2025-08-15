@@ -67,7 +67,7 @@ class RepoInitializationAction {
 ////                        smtpPassword: config.features.mail.smtpPassword
 //                ],
                 secrets             : [
-                        active: config.features.secrets.active,
+//                        active: config.features.secrets.active,
                         vault : [
                                 url: config.features.secrets.vault.url ? new URL(config.features.secrets.vault.url) : null,
                         ],
