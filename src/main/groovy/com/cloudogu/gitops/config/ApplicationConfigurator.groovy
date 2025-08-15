@@ -23,7 +23,7 @@ class ApplicationConfigurator {
         addAdditionalApplicationConfig(newConfig)
         addNamePrefix(newConfig)
 
-        addScmmConfig(newConfig)
+        addScmConfig(newConfig)
 
         addRegistryConfig(newConfig)
 
@@ -117,21 +117,29 @@ class ApplicationConfigurator {
         }
     }
 
-    private void addScmmConfig(Config newConfig) {
-        log.debug("Adding additional config for SCMHandler-Manager")
+     private void addScmConfig(Config newConfig) {
+        log.debug("Adding additional config for SCM")
 
-        newConfig.scmm.gitOpsUsername = "${newConfig.application.namePrefix}gitops"
+         if(ScmSchema.ScmmCentralConfig)
+        //TODO
+        /*if(newConfig.scm.gitlabConfig.url && newConfig.scm.gitlabConfig.password){
+            newConfig.scm.provider= ScmSchema.ScmProviderType.GITLAB
+        }else if(newConfig.scm.scmmConfig.url){
+            throw new RuntimeException(
+        }*/
 
-        if (newConfig.scmm.url) {
+        newConfig.scm.scmmConfig.gitOpsUsername = "${newConfig.application.namePrefix}gitops"
+
+        if (newConfig.scm.scmmConfig.url) {
             log.debug("Setting external scmm config")
-            newConfig.scmm.internal = false
-            newConfig.scmm.urlForJenkins = newConfig.scmm.url
+            newConfig.scm.scmmConfig.internal = false
+            newConfig.scm.scmmConfig.urlForJenkins = newConfig.scm.scmmConfig.url
         } else {
             log.debug("Setting configs for internal SCMHandler-Manager")
             // We use the K8s service as default name here, because it is the only option:
             // "scmm.localhost" will not work inside the Pods and k3d-container IP + Port (e.g. 172.x.y.z:9091) 
             // will not work on Windows and MacOS.
-            newConfig.scmm.urlForJenkins =
+            newConfig.scm.scmmConfig.urlForJenkins =
                     "http://scmm.${newConfig.application.namePrefix}scm-manager.svc.cluster.local/scm"
 
             // More internal fields are set lazily in ScmManger.groovy (after SCMM is deployed and ports are known) 
@@ -139,15 +147,15 @@ class ApplicationConfigurator {
 
         // We probably could get rid of some of the complexity by refactoring url, host and ingress into a single var
         if (newConfig.application.baseUrl) {
-            newConfig.scmm.ingress = new URL(injectSubdomain("${newConfig.application.namePrefix}scmm",
+            newConfig.scm.scmmConfig.ingress = new URL(injectSubdomain("${newConfig.application.namePrefix}scmm",
                     newConfig.application.baseUrl as String, newConfig.application.urlSeparatorHyphen as Boolean)).host
         }
         // When specific user/pw are not set, set them to global values
-        if (newConfig.scmm.password === Config.DEFAULT_ADMIN_PW) {
-            newConfig.scmm.password = newConfig.application.password
+        if (newConfig.scm.scmmConfig.password === Config.DEFAULT_ADMIN_PW) {
+            newConfig.scm.scmmConfig.password = newConfig.application.password
         }
-        if (newConfig.scmm.username === Config.DEFAULT_ADMIN_USER) {
-            newConfig.scmm.username = newConfig.application.username
+        if (newConfig.scm.scmmConfig.username === Config.DEFAULT_ADMIN_USER) {
+            newConfig.scm.scmmConfig.username = newConfig.application.username
         }
 
 
