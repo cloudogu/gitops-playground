@@ -2,8 +2,6 @@ package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.scmm.ScmmRepoProvider
-import com.cloudogu.gitops.scmm.api.Permission
-import com.cloudogu.gitops.scmm.api.Repository
 import com.cloudogu.gitops.scmm.api.ScmmApiClient
 import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
@@ -24,7 +22,8 @@ import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositoryS
 import static com.cloudogu.gitops.features.Content.RepoCoordinate
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
-import static org.mockito.ArgumentMatchers.*
+import static org.mockito.ArgumentMatchers.any
+import static org.mockito.ArgumentMatchers.eq
 import static org.mockito.Mockito.*
 
 @Slf4j
@@ -64,7 +63,6 @@ class ContentTest {
             new RepoCoordinate(namespace: "ns2b", repoName: "repo2b2"),
             new RepoCoordinate(namespace: "copyBased", repoName: "repo1"),
             new RepoCoordinate(namespace: "copyBased", repoName: "repo2"),
-//            new RepoCoordinate(namespace: "mirrorBased", repoName: "repo3")
     ]
 
     List<ContentRepositorySchema> contentRepos = [
@@ -80,9 +78,6 @@ class ContentTest {
             new ContentRepositorySchema(url: createContentRepo('folderBasedRepo1'), type: ContentRepoType.FOLDER_BASED, templating: true),
             // Contains a templated file that should be ignored
             new ContentRepositorySchema(url: createContentRepo('folderBasedRepo2'), type: ContentRepoType.FOLDER_BASED, path: 'subPath'),
-
-            // copy-based repo writing to their own target
-//            new ContentRepositorySchema(url: createContentRepo('mirrorBasedRepo1'), type: ContentRepoType.MIRROR),
 
     ]
 
@@ -166,7 +161,6 @@ class ContentTest {
         assertThat(new File(findRoot(repos), "common/repo/folderBasedRepo2")).exists().isFile()
         assertThat(new File(findRoot(repos), "common/repo/copyBasedRepo1")).exists().isFile()
         assertThat(new File(findRoot(repos), "common/repo/copyBasedRepo2")).exists().isFile()
-//        assertThat(new File(findRoot(repos), "common/repo/mirrorBasedRepo1")).exists().isFile()
 
         // Assert Templating
         assertThat(new File(findRoot(repos), "common/repo/some.yaml")).exists()
