@@ -43,6 +43,8 @@ class Content extends Feature {
     protected Jenkins jenkins
     // set by lazy initialisation
     private TemplatingEngine templatingEngine
+    // used to clone repos in validation phase
+    private List<RepoCoordinate> cachedRepoCoordinates = new ArrayList<>()
 
     Content(
             Config config, K8sClient k8sClient, ScmmRepoProvider repoProvider, ScmmApiClient scmmApiClient, Jenkins jenkins
@@ -64,6 +66,16 @@ class Content extends Feature {
         createImagePullSecrets()
 
         createContentRepos()
+    }
+
+    @Override
+    void validate() {
+        try {
+            cachedRepoCoordinates = cloneContentRepos()
+        } catch (Exception e) {
+            log.error('Error validate Content Feature', e)
+            throw new RuntimeException('Feature content has problem. Please check configuration.')
+        }
     }
 
     void createImagePullSecrets() {
@@ -93,19 +105,19 @@ class Content extends Feature {
     }
 
     void createContentRepos() {
-        List<RepoCoordinate> repoCoordinates = cloneContentRepos()
-        pushTargetRepos(repoCoordinates)
+        if (cachedRepoCoordinates.empty) {
+            cachedRepoCoordinates = cloneContentRepos()
+        }
+        pushTargetRepos(cachedRepoCoordinates)
+        cachedRepoCoordinates.clear()
     }
 
     protected List<RepoCoordinate> cloneContentRepos() {
         List<RepoCoordinate> repoCoordinates = []
         def mergedReposFolder = File.createTempDir('gitops-playground-folder-based-content-repos-')
         mergedReposFolder.deleteOnExit()
-
-
         log.debug("Aggregating folder structure for all ${config.content.repos.size()} folder based-repos")
         config.content.repos.each { repoConfig ->
-
             createRepoCoordinates(repoConfig, mergedReposFolder, repoCoordinates)
         }
         return repoCoordinates
@@ -127,7 +139,7 @@ class Content extends Feature {
         cloneToLocalFolder(repoConfig, repoTmpDir)
 
         def contentRepoDir = new File(repoTmpDir, repoConfig.path)
-        applyTemplatingIfNeeded(repoConfig, contentRepoDir)
+        applyTemplatingIfApplicable(repoConfig, contentRepoDir)
 
 
         switch (repoConfig.type) {
@@ -143,7 +155,6 @@ class Content extends Feature {
                 addRepoCoordinates(repoCoordinates, repoCoordinate)
                 break
         }
-
         log.debug("Finished cloning content repos. repoCoordinates=${repoCoordinates}")
     }
 
@@ -166,11 +177,9 @@ class Content extends Feature {
                                 String repoName = contentRepoRepoDir.name
                                 def repoCoordinate = mergeRepoDirs(contentRepoRepoDir, namespace, repoName, mergedReposFolder, repoConfig)
                                 repoCoordinate.refIsTag = refIsTag
-
                                 addRepoCoordinates(repoCoordinates, repoCoordinate)
                             }
                 }
-
     }
 
     private static RepoCoordinate createRepoCoordinateForTypeMirror(ContentRepositorySchema repoConfig, File repoTmpDir) {
@@ -205,7 +214,6 @@ class Content extends Feature {
                 clonedContentRepo: target,
                 repoConfig: repoConfig,
         )
-//        addRepoCoordinates(repoCoordinates, repoCoordinate) // TODO: Thomas delete line
         return repoCoordinate
     }
 
@@ -217,7 +225,7 @@ class Content extends Feature {
         }
     }
 
-    private void applyTemplatingIfNeeded(ContentRepositorySchema repoConfig, File srcPath) {
+    private void applyTemplatingIfApplicable(ContentRepositorySchema repoConfig, File srcPath) {
         if (repoConfig.templating) {
             def engine = getTemplatingEngine()
             engine.replaceTemplates(srcPath, [
@@ -302,9 +310,9 @@ class Content extends Feature {
                         break
                 }
 
-                createJenkinsJobIfAppplicable(repoCoordinate, targetRepo)
+                createJenkinsJobIfApplicable(repoCoordinate, targetRepo)
 
-                // cleaning
+                // cleaning tmp folders
                 repoCoordinate.clonedContentRepo.deleteDir()
                 new File(targetRepo.absoluteLocalRepoTmpDir).deleteDir()
             } // no else needed
@@ -404,7 +412,7 @@ class Content extends Feature {
         }
     }
 
-    protected void createJenkinsJobIfAppplicable(RepoCoordinate repoCoordinate, ScmmRepo repo) {
+    protected void createJenkinsJobIfApplicable(RepoCoordinate repoCoordinate, ScmmRepo repo) {
         if (repoCoordinate.repoConfig.createJenkinsJob && jenkins.isEnabled()) {
             if (existFileInSomeBranch(repo.absoluteLocalRepoTmpDir, 'Jenkinsfile')) {
                 jenkins.createJenkinsjob(repoCoordinate.namespace, repoCoordinate.namespace)
@@ -521,10 +529,7 @@ class Content extends Feature {
         }
     }
     /**
-     * INIT only for new and not for existing repos.
-     * @param repo
-     * @param repoCoordinate
-     * @return
+     * Checks whether the repo already exists and overwrite Mode matches.
      */
     boolean isValidForPush(ScmmRepo repo, RepoCoordinate repoCoordinate) {
         def isRepoCreated = repo.create('', scmmApiClient)
