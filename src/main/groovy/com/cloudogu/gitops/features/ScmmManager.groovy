@@ -14,7 +14,7 @@ import java.util.logging.Level
 @Slf4j
 @Singleton
 @Order(60)
-class ScmManager extends Feature {
+class ScmmManager extends Feature {
 
     static final String HELM_VALUES_PATH = "scm-manager/values.ftl.yaml"
 
@@ -28,7 +28,7 @@ class ScmManager extends Feature {
     private NetworkingUtils networkingUtils
     String centralSCMUrl
 
-    ScmManager(
+    ScmmManager(
             Config config,
             CommandExecutor commandExecutor,
             FileSystemUtils fileSystemUtils,
