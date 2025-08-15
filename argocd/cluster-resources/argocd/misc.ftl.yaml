@@ -15,7 +15,7 @@ spec:
 <#if config.multiTenant.useDedicatedInstance>
     repoURL: ${scmm.centralScmmUrl}/repo/${config.application.namePrefix}argocd/cluster-resources
 <#else>
-    repoURL: ${scmm.repoUrl}argocd/cluster-resources<#if scmm.provider == "gitlab">.git</#if>
+    repoURL: ${scmm.repoUrl}argocd/cluster-resources<#if config.scmm.provider == "gitlab">.git</#if>
 </#if>
     targetRevision: main
     directory:
