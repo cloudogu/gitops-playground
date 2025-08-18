@@ -61,27 +61,27 @@ class PrometheusStack extends Feature implements FeatureWithImage {
         def namePrefix = config.application.namePrefix
 
         def templatedMap = templateToMap(HELM_VALUES_PATH, [
-                namePrefix        : namePrefix,
-                podResources      : config.application.podResources,
+//                namePrefix        : namePrefix,
+//                podResources      : config.application.podResources,
                 monitoring        : [
-                        grafanaEmailFrom: config.features.monitoring.grafanaEmailFrom,
-                        grafanaEmailTo  : config.features.monitoring.grafanaEmailTo,
+//                        grafanaEmailFrom: config.features.monitoring.grafanaEmailFrom,
+//                        grafanaEmailTo  : config.features.monitoring.grafanaEmailTo,
                         grafana         : [
                                 // Note that passing the URL object here leads to problems in Graal Native image, see Git history
                                 host: config.features.monitoring.grafanaUrl ? new URL(config.features.monitoring.grafanaUrl).host : ""
                         ]
                 ],
-                remote            : config.application.remote,
-                skipCrds          : config.application.skipCrds,
-                namespaceIsolation: config.application.namespaceIsolation,
+//                remote            : config.application.remote,
+//                skipCrds          : config.application.skipCrds,
+//                namespaceIsolation: config.application.namespaceIsolation,
                 namespaces        : config.application.namespaces.getActiveNamespaces(),
-                mail              : [
-                        active      : config.features.mail.active,
-                        smtpAddress : config.features.mail.smtpAddress,
-                        smtpPort    : config.features.mail.smtpPort,
-                        smtpUser    : config.features.mail.smtpUser,
-                        smtpPassword: config.features.mail.smtpPassword
-                ],
+//                mail              : [
+////                        active      : config.features.mail.active,
+////                        smtpAddress : config.features.mail.smtpAddress,
+////                        smtpPort    : config.features.mail.smtpPort,
+////                        smtpUser    : config.features.mail.smtpUser,
+////                        smtpPassword: config.features.mail.smtpPassword
+//                ],
                 scmm              : getScmmConfiguration(),
                 jenkins           : getJenkinsConfiguration(),
                 config            : config,
