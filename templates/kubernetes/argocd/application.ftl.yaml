@@ -9,7 +9,7 @@ metadata:
 spec:
   destination:
     server: https://kubernetes.default.svc
-    namespace: ${namePrefix}argocd
+    namespace: ${destinationNamespace}
   project: default
   source:
     path: ${path}

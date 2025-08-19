@@ -345,14 +345,14 @@ class ArgoCD extends Feature {
             // Append new namespaces to existing ones from the secret.
             // `kubectl patch` can't merge list subfields, so we read, decode, merge, and update the secret.
             // This ensures all centrally managed namespaces are preserved.
-            String base64Namespaces = k8sClient.getArgoCDNamespacesSecret('argocd-default-cluster-config', 'argocd')
+            String base64Namespaces = k8sClient.getArgoCDNamespacesSecret('argocd-default-cluster-config', config.multiTenant.centralArgocdNamespace)
             byte[] decodedBytes = Base64.decoder.decode(base64Namespaces)
             String decoded = new String(decodedBytes, "UTF-8")
             def decodedList = decoded?.split(',') as List ?: []
             def activeList = config.application.namespaces.activeNamespaces?.flatten() as List ?: []
             def merged = (decodedList + activeList).unique().join(',')
             log.debug("Updating Central Argocd 'argocd-default-cluster-config' secret")
-            k8sClient.patch('secret', 'argocd-default-cluster-config', 'argocd',
+            k8sClient.patch('secret', 'argocd-default-cluster-config', config.multiTenant.centralArgocdNamespace,
                     [stringData: ['namespaces': merged]])
         }
     }
