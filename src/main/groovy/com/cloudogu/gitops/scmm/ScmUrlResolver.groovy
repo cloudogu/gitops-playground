@@ -4,12 +4,12 @@ import com.cloudogu.gitops.config.Config
 
 class ScmUrlResolver {
     // Basis-URL: intern → Service-URL mit /scm; extern → konfigurierte URL
-    static URI baseUri(Config cfg) {
-        if(cfg.scmm.internal){
-            return new URI("http://scmm.${cfg.application.namePrefix}scm-manager.svc.cluster.local/scm/")
+    static URI baseUri(Config config) {
+        if(config.scmm.internal){
+            return new URI("http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm/")
         }
 
-        def urlString = cfg.scmm?.url?.strip() ?: ""
+        def urlString = config.scmm?.url?.strip() ?: ""
         if (!urlString) {
             throw new IllegalArgumentException("config.scmm.url must be set when config.scmm.internal = false")
         }
@@ -20,5 +20,9 @@ class ScmUrlResolver {
 
     static URI metricsUri(Config cfg) {
         return baseUri(cfg).resolve("api/v2/metrics/prometheus")
+    }
+
+    static String repoUrl(Config cfg, String repoNamespaceAndName) {
+        return baseUri(cfg).resolve("repo/${repoNamespaceAndName}").toString()
     }
 }

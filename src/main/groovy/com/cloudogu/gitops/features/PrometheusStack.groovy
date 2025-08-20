@@ -167,10 +167,8 @@ class PrometheusStack extends Feature implements FeatureWithImage {
                     new YamlSlurper().parse(Path.of("${config.application.localHelmChartFolder}/${helmConfig.chart}",
                             'Chart.yaml'))['version']
 
-            URI repoUrl = getScmUri().resolve("repo/${repoNamespaceAndName}")
-
             deployer.deployFeature(
-                    repoUrl.toString(),
+                    ScmUrlResolver.repoUrl(config, repoNamespaceAndName),
                     'prometheusstack',
                     '.',
                     prometheusVersion,
@@ -214,9 +212,9 @@ class PrometheusStack extends Feature implements FeatureWithImage {
 //        ]
 //    }
 
-    private URI getScmUri() {
-        ScmUrlResolver.baseUri(config)
-    }
+//    private URI getScmUri() {
+//        ScmUrlResolver.baseUri(config)
+//    }
 
 //    private Map getJenkinsConfiguration() {
 //        String path = 'prometheus'
