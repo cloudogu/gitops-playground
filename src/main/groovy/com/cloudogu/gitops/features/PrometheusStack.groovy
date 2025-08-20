@@ -93,16 +93,16 @@ class PrometheusStack extends Feature implements FeatureWithImage {
 //                uid               : config.application.openshift ? findValidOpenShiftUid() : ''
 //        ])
 
-        def ctx = new PrometheusTemplateContextBuilder(
+        Map<String, Object> templateContext = new PrometheusTemplateContextBuilder(
                 config,
                 this.&findValidOpenShiftUid
         ).valuesContext()
 
-        ctx.statics = new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32)
+        templateContext.statics = new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32)
                 .build()
                 .getStaticModels()
 
-        def values    = templateToMap(HELM_VALUES_PATH, ctx)
+        def values    = templateToMap(HELM_VALUES_PATH, templateContext)
 
         def helmConfig = config.features.monitoring.helm
         def mergedMap = MapUtils.deepMerge(helmConfig.values, values)
