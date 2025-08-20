@@ -252,7 +252,10 @@ class Content extends Feature {
         def git = cloneCommand.call()
 
         if (ContentRepoType.MIRROR == repoConfig.type) {
-            git.fetch().setRefSpecs("+refs/*:refs/*").call() // Fetch all branches and tags
+            def fetch = git.fetch()
+            // fetch also needs CredentialProvider, jgit behaviour.
+            fetch.setCredentialsProvider(new UsernamePasswordCredentialsProvider(repoConfig.username, repoConfig.password))
+            fetch.setRefSpecs("+refs/*:refs/*").call() // Fetch all branches and tags
         }
 
         if (repoConfig.ref) {
