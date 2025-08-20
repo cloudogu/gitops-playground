@@ -484,6 +484,11 @@ class Config {
                 return new LinkedHashSet<>(dedicatedNamespaces + tenantNamespaces)
             }
         }
+
+        @JsonIgnore
+        String getTenantName(){
+            return namePrefix.replaceAll(/-$/, "")
+        }
     }
 
     static class ImagesSchema {

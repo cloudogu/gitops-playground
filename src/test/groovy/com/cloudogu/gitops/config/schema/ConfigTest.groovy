@@ -52,4 +52,10 @@ registry:
         assertThat(actualValues.application.namePrefix).isEqualTo(expectedValues.application.namePrefix)
         assertThat(actualValues.registry.internalPort).isEqualTo(expectedValues.registry.internalPort)
     }
+
+    @Test
+    void 'getting Tenantname from Config'(){
+        testConfig.application.namePrefix='testprefix-'
+        assertThat(testConfig.application.getTenantName()).isEqualTo("testprefix")
+    }
 }

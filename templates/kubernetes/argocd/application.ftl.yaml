@@ -10,7 +10,7 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: ${destinationNamespace}
-  project: default
+  project: ${project}
   source:
     path: ${path}
     repoURL: ${repoUrl}
