@@ -5,6 +5,7 @@ import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Config
 
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
+import com.cloudogu.gitops.scmm.ScmUrlResolver
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
@@ -92,7 +93,7 @@ class Mailhog extends Feature implements FeatureWithImage {
                             'Chart.yaml'))['version']
 
             deployer.deployFeature(
-                    "${scmmUri}/repo/${repoNamespaceAndName}",
+                    ScmUrlResolver.repoUrl(config, repoNamespaceAndName),
                     'mailhog',
                     '.',
                     mailhogVersion,
@@ -108,14 +109,6 @@ class Mailhog extends Feature implements FeatureWithImage {
                     namespace,
                     'mailhog',
                     tempValuesPath)
-        }
-    }
-
-    private URI getScmmUri() {
-        if (config.scmm.internal) {
-            new URI("http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm")
-        } else {
-            new URI("${config.scmm.url}")
         }
     }
 }

@@ -2,6 +2,7 @@ package com.cloudogu.gitops.templating
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.scmm.ScmUrlResolver
+import com.cloudogu.gitops.utils.DockerImageParser
 
 class PrometheusTemplateContextBuilder {
     private final Config config
@@ -22,6 +23,13 @@ class PrometheusTemplateContextBuilder {
                 scmm     : (scmConfigurationMetrics() ?: [:]),
                 jenkins  : (jenkinsConfigurationMetrics() ?: [:]),
                 uid      : (config.application?.openshift ? safeUid() : ""),
+                images : [
+                        prometheus : imageMapOrNull(config.features.monitoring.helm?.prometheusImage),
+                        operator   : imageMapOrNull(config.features.monitoring.helm?.prometheusOperatorImage),
+                        reloader   : imageMapOrNull(config.features.monitoring.helm?.prometheusConfigReloaderImage),
+                        grafana    : imageMapOrNull(config.features.monitoring.helm?.grafanaImage),
+                        grafanaSideCar : imageMapOrNull(config.features.monitoring.helm?.grafanaSidecarImage)
+                ],
                 config   : config
         ] as Map<String, Object>
 
@@ -67,5 +75,12 @@ class PrometheusTemplateContextBuilder {
         catch (Exception ignored) {
             return ""
         }
+    }
+
+    private static Map imageMapOrNull(String imageRef) {
+        def ref = (imageRef ?: "").trim()
+        if (!ref) return null
+        def img = DockerImageParser.parse(ref)
+        [registry: img.registry, repository: img.repository, tag: img.tag]
     }
 }

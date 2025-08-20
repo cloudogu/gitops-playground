@@ -5,6 +5,7 @@ import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Config
 
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
+import com.cloudogu.gitops.scmm.ScmUrlResolver
 import com.cloudogu.gitops.utils.*
 import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
@@ -132,7 +133,7 @@ class Vault extends Feature implements FeatureWithImage {
                             'Chart.yaml'))['version']
 
             deployer.deployFeature(
-                    "${scmmUri}/repo/${repoNamespaceAndName}",
+                    ScmUrlResolver.repoUrl(config, repoNamespaceAndName),
                     'vault',
                     '.',
                     vaultVersion,
@@ -150,14 +151,6 @@ class Vault extends Feature implements FeatureWithImage {
                     'vault',
                     tempValuesPath
             )
-        }
-    }
-
-    private URI getScmmUri() {
-        if (config.scmm.internal) {
-            new URI("http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm")
-        } else {
-            new URI("${config.scmm.url}")
         }
     }
 }

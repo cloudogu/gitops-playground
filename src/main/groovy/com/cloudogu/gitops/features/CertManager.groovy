@@ -98,13 +98,4 @@ class CertManager extends Feature implements FeatureWithImage {
             )
         }
     }
-
-/*    private URI getScmUri() {
-        if (config.scmm.internal) {
-            new URI("http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm")
-        } else {
-            new URI("${config.scmm.url}")
-        }
-    }*/
-
 }
