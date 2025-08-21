@@ -1,6 +1,6 @@
 package com.cloudogu.gitops.kubernetes.argocd
 
-import com.cloudogu.gitops.config.Config
+
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
@@ -14,28 +14,30 @@ class ArgoApplication {
 
     String name
     String namespace
+    String destinationNamespace
     String path
     String repoUrl
     String project
 
     private final TemplatingEngine templater = new TemplatingEngine()
 
-    ArgoApplication(String name, String repoUrl, String namespace, String path, String project = 'default') {
+    ArgoApplication(String name, String repoUrl, String namespace, String destinationNamespace, String path, String project = 'default') {
         this.name = name
+        this.namespace = namespace
+        this.destinationNamespace = destinationNamespace
         this.project = project
         this.repoUrl = repoUrl
-        this.namespace = namespace
         this.path = path
     }
 
     Map<String, Object> toTemplateParams() {
         return [
-                name      : name,
-                namespace : namespace,
-                project   : project,
-                path      : path,
-                namePrefix: new Config().application.namePrefix,
-                repoUrl   : repoUrl
+                name                : this.name,
+                namespace           : this.namespace,
+                project             : this.project,
+                path                : this.path,
+                destinationNamespace: this.destinationNamespace,
+                repoUrl             : this.repoUrl
         ]
     }
 

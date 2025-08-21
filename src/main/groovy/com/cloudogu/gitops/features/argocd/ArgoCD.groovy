@@ -246,7 +246,9 @@ class ArgoCD extends Feature {
                         'example-apps',
                         ScmmRepo.createSCMBaseUrl(config)+'argocd/example-apps',
                         namespace,
-                        'argocd/')
+                        namespace,
+                        'argocd/',
+                        config.application.getTenantName())
                         .generate(tenantBootstrapInitializationAction.repo, 'applications')
             }
         }
@@ -345,14 +347,14 @@ class ArgoCD extends Feature {
             // Append new namespaces to existing ones from the secret.
             // `kubectl patch` can't merge list subfields, so we read, decode, merge, and update the secret.
             // This ensures all centrally managed namespaces are preserved.
-            String base64Namespaces = k8sClient.getArgoCDNamespacesSecret('argocd-default-cluster-config', 'argocd')
+            String base64Namespaces = k8sClient.getArgoCDNamespacesSecret('argocd-default-cluster-config', config.multiTenant.centralArgocdNamespace)
             byte[] decodedBytes = Base64.decoder.decode(base64Namespaces)
             String decoded = new String(decodedBytes, "UTF-8")
             def decodedList = decoded?.split(',') as List ?: []
             def activeList = config.application.namespaces.activeNamespaces?.flatten() as List ?: []
             def merged = (decodedList + activeList).unique().join(',')
             log.debug("Updating Central Argocd 'argocd-default-cluster-config' secret")
-            k8sClient.patch('secret', 'argocd-default-cluster-config', 'argocd',
+            k8sClient.patch('secret', 'argocd-default-cluster-config', config.multiTenant.centralArgocdNamespace,
                     [stringData: ['namespaces': merged]])
         }
     }
@@ -446,19 +448,18 @@ class ArgoCD extends Feature {
         k8sClient.label('secret', repoTemplateSecretName, namespace,
                 new Tuple2(' argocd.argoproj.io/secret-type', 'repo-creds'))
 
-
         if (config.multiTenant.useDedicatedInstance) {
             log.debug('Creating central repo credential secret that is used by argocd to access repos in SCM-Manager')
             // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo
             def centralRepoTemplateSecretName = 'argocd-repo-creds-central-scmm'
 
-            k8sClient.createSecret('generic', centralRepoTemplateSecretName, "argocd",
+            k8sClient.createSecret('generic', centralRepoTemplateSecretName, config.multiTenant.centralArgocdNamespace,
                     new Tuple2('url', config.multiTenant.centralScmUrl),
                     new Tuple2('username', config.multiTenant.username),
                     new Tuple2('password', config.multiTenant.password)
             )
 
-            k8sClient.label('secret', centralRepoTemplateSecretName, "argocd",
+            k8sClient.label('secret', centralRepoTemplateSecretName, config.multiTenant.centralArgocdNamespace,
                     new Tuple2(' argocd.argoproj.io/secret-type', 'repo-creds'))
         }
     }
