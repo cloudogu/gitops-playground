@@ -1,7 +1,8 @@
-package com.cloudogu.gitops.scm
+package com.cloudogu.gitops.scm.gitlab
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
+import com.cloudogu.gitops.scm.ISCM
 import groovy.util.logging.Slf4j
 import jakarta.inject.Named
 import org.gitlab4j.api.GitLabApi
@@ -114,8 +115,6 @@ class Gitlab implements ISCM {
         removeBranchProtection(project.get())
         return project as Project
     }
-
-
 
     void removeBranchProtection(Project project) {
         try {
