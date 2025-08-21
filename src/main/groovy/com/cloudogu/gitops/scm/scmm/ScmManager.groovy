@@ -1,15 +1,19 @@
 package com.cloudogu.gitops.scm.scmm
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.config.ScmmSchema
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.scm.ISCM
+import com.cloudogu.gitops.scmm.api.Permission
+import com.cloudogu.gitops.scmm.api.Repository
 import com.cloudogu.gitops.scmm.api.ScmmApiClient
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.MapUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
+import retrofit2.Response
 
 @Slf4j
 class ScmManager implements ISCM {
@@ -25,12 +29,15 @@ class ScmManager implements ISCM {
     FileSystemUtils fileSystemUtils
     ScmmSchema scmmConfig
 
+    Credentials credentials
+
     ScmManager(Config config, ScmmSchema scmmConfig, ScmmApiClient scmmApiClient, HelmStrategy deployer, FileSystemUtils fileSystemUtils) {
         this.config = config
         this.scmmApiClient = scmmApiClient
         this.deployer = deployer
         this.fileSystemUtils = fileSystemUtils
-        this.scmmConfig=scmmConfig
+        this.scmmConfig = scmmConfig
+        this.credentials = new Credentials(scmmConfig.username, scmmConfig.password)
     }
 
     void setupHelm() {
@@ -72,7 +79,6 @@ class ScmManager implements ISCM {
             restart = false
         }
 
-
         def pluginNames = [
                 "scm-mail-plugin",
                 "scm-review-plugin",
@@ -110,6 +116,36 @@ class ScmManager implements ISCM {
             }
         }
 
+    }
+
+    /**
+     * @return true if created, false if already exists. Throw exception on all other errors
+     */
+    boolean create(String description, ScmmApiClient scmmApiClient) {
+        def namespace = scmmRepoTarget.split('/', 2)[0]
+        def repoName = scmmRepoTarget.split('/', 2)[1]
+
+        def repositoryApi = scmmApiClient.repositoryApi()
+        def repo = new Repository(namespace, repoName, description)
+        log.debug("Creating repo: ${namespace}/${repoName}")
+        def createResponse = repositoryApi.create(repo, true).execute()
+        handleResponse(createResponse, repo)
+
+        def permission = new Permission(config.scmm.gitOpsUsername as String, Permission.Role.WRITE)
+        def permissionResponse = repositoryApi.createPermission(namespace, repoName, permission).execute()
+        return handleResponse(permissionResponse, permission, "for repo $namespace/$repoName")
+    }
+
+    private static boolean handleResponse(Response<Void> response, Object body, String additionalMessage = '') {
+        if (response.code() == 409) {
+            // Here, we could consider sending another request for changing the existing object to become proper idempotent
+            log.debug("${body.class.simpleName} already exists ${additionalMessage}, ignoring: ${body}")
+            return false // because repo exists
+        } else if (response.code() != 201) {
+            throw new RuntimeException("Could not create ${body.class.simpleName} ${additionalMessage}.\n${body}\n" +
+                    "HTTP Details: ${response.code()} ${response.message()}: ${response.errorBody().string()}")
+        }
+        return true// because its created
     }
 
     public void configureJenkinsPlugin() {

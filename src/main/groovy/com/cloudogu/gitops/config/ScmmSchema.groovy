@@ -4,9 +4,8 @@ package com.cloudogu.gitops.config
 
 
 interface ScmmSchema {
-    String username = Config.DEFAULT_ADMIN_USER
-
-    String password = Config.DEFAULT_ADMIN_PW
+    public String username = Config.DEFAULT_ADMIN_USER
+    public String password = Config.DEFAULT_ADMIN_PW
     Config.HelmConfigWithValues helm = new Config.HelmConfigWithValues(
             chart: 'scm-manager',
             repoURL: 'https://packages.scm-manager.org/repository/helm-v2-releases/',

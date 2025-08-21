@@ -50,6 +50,7 @@ class ScmSchema {
         @JsonPropertyDescription(SCMM_PASSWORD_DESCRIPTION)
         String parentProjectid = ''
 
+
     }
 
     static class ScmmTenantConfig implements ScmmSchema {

@@ -1,6 +1,8 @@
 package com.cloudogu.gitops.scmm
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.config.Credentials
+import com.cloudogu.gitops.scm.ISCM
 import com.cloudogu.gitops.scmm.api.Permission
 import com.cloudogu.gitops.scmm.api.Repository
 import com.cloudogu.gitops.scmm.api.ScmmApiClient
@@ -35,11 +37,15 @@ class ScmmRepo {
     private Config.ScmProviderType scmProvider
     private Config config
 
+    private ISCM scm
     Boolean isCentralRepo
 
-    ScmmRepo(Config config, String scmmRepoTarget, FileSystemUtils fileSystemUtils, Boolean isCentralRepo = false) {
+    ScmmRepo(Config config, ISCM scm,String scmmRepoTarget, FileSystemUtils fileSystemUtils) {
         def tmpDir = File.createTempDir()
         tmpDir.deleteOnExit()
+
+        this.scm.credentials
+
         this.isCentralRepo = isCentralRepo
         this.username = !this.isCentralRepo ? config.scmm.username : config.multiTenant.username
         this.password = !this.isCentralRepo ? config.scmm.password : config.multiTenant.password

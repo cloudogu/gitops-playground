@@ -43,7 +43,6 @@ function initSCMM() {
   fi
 }
 
-
 function pushHelmChartRepo() {
   TARGET_REPO_SCMM="$1"
 
