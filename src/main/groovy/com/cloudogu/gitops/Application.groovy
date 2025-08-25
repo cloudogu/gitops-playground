@@ -26,6 +26,10 @@ class Application {
         log.debug("Starting Application")
 
         setNamespaceListToConfig(config)
+
+        features.forEach(feature -> {
+            feature.validate()
+        })
         features.forEach(feature -> {
             feature.install()
         })
