@@ -30,7 +30,13 @@ class ScmSchema {
     ScmmSchema scmmConfig
 
 
-    static class GitlabConfig {
+    interface ScmConfig {
+        String url
+        String username = ''
+        String password = ''
+    }
+
+    static class GitlabConfig implements ScmConfig{
         // Only supports external Gitlab for now
         Boolean internal = false
 
