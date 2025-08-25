@@ -8,11 +8,15 @@ import com.cloudogu.gitops.scm.ISCM
 import com.cloudogu.gitops.scmm.api.Permission
 import com.cloudogu.gitops.scmm.api.Repository
 import com.cloudogu.gitops.scmm.api.ScmmApiClient
+import com.cloudogu.gitops.scmm.jgit.InsecureCredentialProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.MapUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
+import org.eclipse.jgit.transport.ChainingCredentialsProvider
+import org.eclipse.jgit.transport.CredentialsProvider
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 import retrofit2.Response
 
 @Slf4j
@@ -65,6 +69,11 @@ class ScmManager implements ISCM {
         )
         waitForScmmAvailable()
     }
+
+    String getInternalUrl() {
+        return "http://scmm.${namespace}.svc.cluster.local/scm"
+    }
+
 
     //TODO System.env to config Object
     def installScmmPlugins(Boolean restart = true) {

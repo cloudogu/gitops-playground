@@ -2,12 +2,17 @@ package com.cloudogu.gitops.scm.gitlab
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
+import com.cloudogu.gitops.config.ScmSchema.ScmProviderType
 import com.cloudogu.gitops.scm.ISCM
+import com.cloudogu.gitops.scmm.jgit.InsecureCredentialProvider
 import groovy.util.logging.Slf4j
-import jakarta.inject.Named
+import org.eclipse.jgit.transport.ChainingCredentialsProvider
+import org.eclipse.jgit.transport.CredentialsProvider
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 import org.gitlab4j.api.GitLabApi
 import org.gitlab4j.api.models.Group
 import org.gitlab4j.api.models.Project
+
 
 import java.util.logging.Level
 
@@ -15,13 +20,15 @@ import java.util.logging.Level
 class Gitlab implements ISCM {
 
 
-    private Credentials gitlabCredentials
+    Credentials credentials
     private GitLabApi gitlabApi
     private Config config
 
-    Gitlab(@Named("gitlabCredentials") Credentials credentials, Config config) {
+    ScmProviderType scmProviderType= ScmProviderType.GITLAB
+
+    Gitlab(Credentials credentials, Config config) {
         this.config = config
-        this.gitlabCredentials = credentials
+        this.credentials = credentials
         this.gitlabApi = new GitLabApi(credentials.toString(), credentials.password)
         this.gitlabApi.enableRequestResponseLogging(Level.ALL)
     }
@@ -125,6 +132,14 @@ class Gitlab implements ISCM {
         }
     }
 
+    private CredentialsProvider getCredentialProvider() {
+        def passwordAuthentication = new UsernamePasswordCredentialsProvider("oauth2", )
+        if (!config.application.insecure) {
+            return passwordAuthentication
+        }
+        return new ChainingCredentialsProvider(new InsecureCredentialProvider(), passwordAuthentication)
+    }
+
     private Optional<Group> getGroup(String groupName) {
         try {
             return Optional.ofNullable(this.gitlabApi.groupApi.getGroup(groupName))
@@ -149,4 +164,8 @@ class Gitlab implements ISCM {
         }
     }
 
+    @Override
+    void init() {
+
+    }
 }

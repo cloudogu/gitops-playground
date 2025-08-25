@@ -34,7 +34,7 @@ class ScmmRepo {
     private String gitName
     private String gitEmail
     private String rootPath
-    private Config.ScmProviderType scmProvider
+    private scmProvider
     private Config config
 
     private ISCM scm
@@ -44,7 +44,6 @@ class ScmmRepo {
         def tmpDir = File.createTempDir()
         tmpDir.deleteOnExit()
 
-        this.scm.credentials
 
         this.isCentralRepo = isCentralRepo
         this.username = !this.isCentralRepo ? config.scmm.username : config.multiTenant.username
