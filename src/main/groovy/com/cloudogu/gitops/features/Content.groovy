@@ -150,11 +150,11 @@ class Content extends Feature {
                 repoTmpDir.deleteDir()
                 break
             case ContentRepoType.COPY:
-                def repoCoordinate = createRepoCoordinatesForTypeCopy(repoConfig, contentRepoDir, mergedReposFolder, repoTmpDir, repoCoordinates)
+                createRepoCoordinatesForTypeCopy(repoConfig, contentRepoDir, mergedReposFolder, repoTmpDir, repoCoordinates)
                 repoTmpDir.deleteDir()
                 break
             case ContentRepoType.MIRROR:
-                def repoCoordinate = createRepoCoordinateForTypeMirror(repoConfig, repoTmpDir, repoCoordinates)
+                createRepoCoordinateForTypeMirror(repoConfig, repoTmpDir, repoCoordinates)
                 //  intentionally not deleting repoTmpDir, it is contained in RepoCoordinates for MIRROR usage
                 break
         }
@@ -304,7 +304,8 @@ class Content extends Feature {
         repoCoordinates.each { repoCoordinate ->
 
             ScmmRepo targetRepo = repoProvider.getRepo(repoCoordinate.fullRepoName)
-            if (isValidForPush(targetRepo, repoCoordinate)) {
+            def isNewRepo = targetRepo.create('', scmmApiClient, false)
+            if (isValidForPush(isNewRepo, repoCoordinate)) {
                 targetRepo.cloneRepo()
 
                 switch (repoCoordinate.repoConfig.type) {
@@ -314,7 +315,7 @@ class Content extends Feature {
                         // COPY and FOLDER_BASED same treatment
                     case ContentRepoType.FOLDER_BASED:
                     case ContentRepoType.COPY:
-                        handleRepoCopyingOrFolderBased(repoCoordinate, targetRepo)
+                        handleRepoCopyingOrFolderBased(repoCoordinate, targetRepo, isNewRepo)
                         break
                 }
 
@@ -332,8 +333,10 @@ class Content extends Feature {
      * Copies repoCoordinate to targetRepo, commits and pushes
      * Same logic for both FOLDER_BASED and COPY repo types.
      */
-    private static void handleRepoCopyingOrFolderBased(RepoCoordinate repoCoordinate, ScmmRepo targetRepo) {
-        clearTargetRepoIfApplicable(repoCoordinate, targetRepo)
+    private static void handleRepoCopyingOrFolderBased(RepoCoordinate repoCoordinate, ScmmRepo targetRepo, boolean isNewRepo) {
+        if (!isNewRepo) {
+            clearTargetRepoIfApplicable(repoCoordinate, targetRepo)
+        }
         // Avoid overwriting .git in target to avoid, because we don't need it for copying and
         // git pack files are typically read-only, leading to IllegalArgumentException:
         // File parameter 'destFile is not writable: .git/objects/pack/pack-123.pack
@@ -368,7 +371,7 @@ class Content extends Feature {
                         "Deleting existing files in repo and replacing them with new content.")
                 targetRepo.clearRepo()
             } else {
-                log.info("OverwriteMode ${OverwriteMode.UPGRADE} set for repo '${repoCoordinate.fullRepoName}': " +
+                log.debug("OverwriteMode ${OverwriteMode.UPGRADE} set for repo '${repoCoordinate.fullRepoName}': " +
                         "Merging new content into existing repo. ")
             }
         }
@@ -539,9 +542,9 @@ class Content extends Feature {
     /**
      * Checks whether the repo already exists and overwrite Mode matches.
      */
-    boolean isValidForPush(ScmmRepo repo, RepoCoordinate repoCoordinate) {
-        def isRepoCreated = repo.create('', scmmApiClient, false)
-        if (!isRepoCreated && OverwriteMode.INIT == repoCoordinate.repoConfig.overwriteMode) {
+    static boolean isValidForPush(boolean isNewRepo, RepoCoordinate repoCoordinate) {
+
+        if (!isNewRepo && OverwriteMode.INIT == repoCoordinate.repoConfig.overwriteMode) {
             log.warn("OverwriteMode ${OverwriteMode.INIT} set for repo '${repoCoordinate.fullRepoName}' " +
                     "and repo already exists in target:  Not pushing content!" +
                     "If you want to override, set ${OverwriteMode.UPGRADE} or ${OverwriteMode.RESET} .")
