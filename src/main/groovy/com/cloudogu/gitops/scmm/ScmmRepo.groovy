@@ -96,23 +96,25 @@ class ScmmRepo {
     }
 
 
-    void cloneRepo() {
+    void cloneRepo(String checkoutBranch = 'main') {
         log.debug("Cloning $scmmRepoTarget repo")
         gitClone()
-        checkoutOrCreateBranch('main')
+        if (checkoutBranch) {
+            checkoutOrCreateBranch(checkoutBranch)
+        }
     }
 
     /**
      * @return true if created, false if already exists. Throw exception on all other errors
      */
-    boolean create(String description, ScmmApiClient scmmApiClient) {
+    boolean create(String description, ScmmApiClient scmmApiClient, boolean initialize = true) {
         def namespace = scmmRepoTarget.split('/', 2)[0]
         def repoName = scmmRepoTarget.split('/', 2)[1]
 
         def repositoryApi = scmmApiClient.repositoryApi()
         def repo = new Repository(namespace, repoName, description)
         log.debug("Creating repo: ${namespace}/${repoName}")
-        def createResponse = repositoryApi.create(repo, true).execute()
+        def createResponse = repositoryApi.create(repo, initialize).execute()
         handleResponse(createResponse, repo)
 
         def permission = new Permission(config.scmm.gitOpsUsername as String, Permission.Role.WRITE)
