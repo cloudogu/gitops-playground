@@ -4,9 +4,8 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import org.apache.commons.io.FileUtils
-import org.eclipse.jgit.api.Git
 
-import static org.mockito.Mockito.spy
+import static org.mockito.Mockito.spy 
 
 class TestScmmRepoProvider extends ScmmRepoProvider {
     Map<String, ScmmRepo> repos = [:]
@@ -45,24 +44,6 @@ class TestScmmRepoProvider extends ScmmRepoProvider {
                 return remoteGitRepopUrl
             }
 
-            @Override
-            protected Git gitClone() {
-                // Cloning from filepath does not work without setting branch
-                try {
-                    Git.cloneRepository()
-                            .setURI(getGitRepositoryUrl())
-                            .setDirectory(new File(absoluteLocalRepoTmpDir))
-                            .setNoCheckout(true)
-                            .setBranch('main')
-                            .call()
-
-                } catch (Exception e) {
-                    // test workaround for testing same repo again. Clean folder with .git and do it again.
-                    // it need 2-3 tries
-                    fileSystemUtils.deleteFilesExcept(new File(absoluteLocalRepoTmpDir))
-                    gitClone()
-                }
-            }
         }
         // Create a spy to enable verification while keeping real behavior
         ScmmRepo spyRepo = spy(repoNew)

@@ -540,12 +540,12 @@ class Content extends Feature {
      * Checks whether the repo already exists and overwrite Mode matches.
      */
     boolean isValidForPush(ScmmRepo repo, RepoCoordinate repoCoordinate) {
-        def isRepoCreated = repo.create('', scmmApiClient)
+        def isRepoCreated = repo.create('', scmmApiClient, false)
         if (!isRepoCreated && OverwriteMode.INIT == repoCoordinate.repoConfig.overwriteMode) {
             log.warn("OverwriteMode ${OverwriteMode.INIT} set for repo '${repoCoordinate.fullRepoName}' " +
                     "and repo already exists in target:  Not pushing content!" +
                     "If you want to override, set ${OverwriteMode.UPGRADE} or ${OverwriteMode.RESET} .")
-            return false;
+            return false
         }
         return true
     }

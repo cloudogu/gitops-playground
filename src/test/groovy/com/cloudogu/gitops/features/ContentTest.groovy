@@ -578,7 +578,7 @@ class ContentTest {
         try (def git = Git.cloneRepository().setURI(url).setBranch('main').setDirectory(tmpDir).call()) {
 
 
-            verify(repo).create(eq(''), any(ScmmApiClient))
+            verify(repo).create(eq(''),  any(ScmmApiClient), eq(false))
 
             def commitMsg = git.log().call().iterator().next().getFullMessage()
             assertThat(commitMsg).isEqualTo("Initialize content repo ${expectedRepo}".toString())
@@ -639,7 +639,7 @@ class ContentTest {
         try (def git = Git.cloneRepository().setURI(url).setBranch('main').setDirectory(tmpDir).call()) {
 
 
-            verify(repo).create(eq(''), any(ScmmApiClient))
+            verify(repo).create(eq(''),  any(ScmmApiClient), eq(false))
 
             def commitMsg = git.log().call().iterator().next().getFullMessage()
             assertThat(commitMsg).isEqualTo("Initialize content repo ${expectedRepo}".toString())
@@ -700,7 +700,7 @@ class ContentTest {
         // clone repo, to ensure, changes in remote repo.
         try (def git = Git.cloneRepository().setURI(url).setBranch('main').setDirectory(tmpDir).call()) {
 
-            verify(repo).create(eq(''), any(ScmmApiClient))
+            verify(repo).create(eq(''),  any(ScmmApiClient), eq(false))
 
             def commitMsg = git.log().call().iterator().next().getFullMessage()
             assertThat(commitMsg).isEqualTo("Initialize content repo ${expectedRepo}".toString())
