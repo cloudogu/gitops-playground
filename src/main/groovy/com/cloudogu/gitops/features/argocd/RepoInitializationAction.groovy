@@ -26,11 +26,6 @@ class RepoInitializationAction {
 
     void replaceTemplates() {
         Map<String, Object> templateModel = new ArgoCDTemplateContextBuilder(config).build()
-
-        templateModel.statics = new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32)
-                .build()
-                .getStaticModels()
-
         repo.replaceTemplates(templateModel)
     }
 
