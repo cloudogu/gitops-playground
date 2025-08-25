@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.features
+package com.cloudogu.gitops.features.prometheus
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.FeatureWithImage
@@ -7,9 +7,7 @@ import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import com.cloudogu.gitops.utils.*
-import com.cloudogu.gitops.templating.PrometheusTemplateContextBuilder
 import com.cloudogu.gitops.scmm.ScmUrlResolver
-import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 import io.micronaut.core.annotation.Order
@@ -62,12 +60,14 @@ class PrometheusStack extends Feature implements FeatureWithImage {
     void enable() {
         def namePrefix = config.application.namePrefix
 
-        Map<String, Object> templateContext = new PrometheusTemplateContextBuilder(
-                config,
-                this.&findValidOpenShiftUid
-        ).valuesContext()
+        String uid = ""
+        if (config.application.openshift) {
+            uid = findValidOpenShiftUid()
+        }
 
-        def values    = templateToMap(HELM_VALUES_PATH, templateContext)
+        Map<String, Object> templateModel = new PrometheusTemplateContextBuilder(config, uid).build()
+
+        def values    = templateToMap(HELM_VALUES_PATH, templateModel)
 
         def helmConfig = config.features.monitoring.helm
         def mergedMap = MapUtils.deepMerge(helmConfig.values, values)
