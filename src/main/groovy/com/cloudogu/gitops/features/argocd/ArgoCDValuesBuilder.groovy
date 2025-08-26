@@ -3,10 +3,10 @@ package com.cloudogu.gitops.features.argocd
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.scmm.ScmmRepo
 
-class ArgoCDTemplateContextBuilder {
+class ArgoCDValuesBuilder {
     private final Config config
 
-    ArgoCDTemplateContextBuilder(Config config) {
+    ArgoCDValuesBuilder(Config config) {
         this.config = config
     }
 
@@ -20,7 +20,7 @@ class ArgoCDTemplateContextBuilder {
                         host          : config.scmm.internal ? "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local" : config.scmm.host,
                         protocol      : config.scmm.internal ? 'http' : config.scmm.protocol,
                         repoUrl       : ScmmRepo.createSCMBaseUrl(config),
-                        centralScmmUrl: !config.multiTenant.internal ? config.multiTenant.centralScmUrl : "http://scmm.scm-manager.svc.cluster.local/scm"
+                        centralScmmUrl: config.multiTenant.internal ? "http://scmm.scm-manager.svc.cluster.local/scm" : config.multiTenant.centralScmUrl
                 ],
                 config    : config
         ] as Map<String, Object>

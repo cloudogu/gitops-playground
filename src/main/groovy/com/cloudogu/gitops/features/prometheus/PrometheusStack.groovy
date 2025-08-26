@@ -65,9 +65,9 @@ class PrometheusStack extends Feature implements FeatureWithImage {
             uid = findValidOpenShiftUid()
         }
 
-        Map<String, Object> templateModel = new PrometheusTemplateContextBuilder(config, uid).build()
+        Map<String, Object> templateValues = new PrometheusValuesBuilder(config, uid).build()
 
-        def values    = templateToMap(HELM_VALUES_PATH, templateModel)
+        def values    = templateToMap(HELM_VALUES_PATH, templateValues)
 
         def helmConfig = config.features.monitoring.helm
         def mergedMap = MapUtils.deepMerge(helmConfig.values, values)

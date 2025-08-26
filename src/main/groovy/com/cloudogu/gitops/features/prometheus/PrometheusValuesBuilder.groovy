@@ -3,13 +3,13 @@ package com.cloudogu.gitops.features.prometheus
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.scmm.ScmUrlResolver
 
-class PrometheusTemplateContextBuilder {
+class PrometheusValuesBuilder {
     private final Config config
 
     // Used only when OpenShift is enabled; ignored otherwise.
     private final String uid
 
-    PrometheusTemplateContextBuilder(Config config, String uid) {
+    PrometheusValuesBuilder(Config config, String uid) {
         this.config = config
         this.uid = uid
     }
@@ -36,7 +36,7 @@ class PrometheusTemplateContextBuilder {
     }
 
     private Map scmConfigurationMetrics() {
-        def uri = ScmUrlResolver.metricsUri(config)
+        def uri = ScmUrlResolver.baseUri(config).resolve("api/v2/metrics/prometheus")
         [
                 protocol: uri.scheme ?: "",
                 host    : uri.authority ?: "",

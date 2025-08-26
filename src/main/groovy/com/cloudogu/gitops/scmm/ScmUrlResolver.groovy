@@ -20,13 +20,8 @@ class ScmUrlResolver {
         return url.toString().endsWith("/") ? url : URI.create(url.toString() + "/")
     }
 
-
-    static URI metricsUri(Config config) {
-        return baseUri(config).resolve("api/v2/metrics/prometheus")
-    }
-
-    static String repoUrl(Config config, String repoNamespaceAndName) {
-        return baseUri(config).resolve("repo/${repoNamespaceAndName}").toString()
+    static String repoUrl(Config config, String prefix) {
+        return baseUri(config).resolve("${config.scmm.rootPath}/${prefix}").toString()
     }
 
 }
