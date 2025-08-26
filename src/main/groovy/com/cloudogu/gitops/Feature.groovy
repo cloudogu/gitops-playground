@@ -71,10 +71,19 @@ abstract class Feature {
     }
 
     abstract boolean isEnabled()
-    
+
+
+
     /*
      *  Hooks for enabling or disabling a feature. Both optional, because not always needed.
      */
     protected void enable() {}
     protected void disable() {}
+
+    /*
+     * Hook for special feature validation. Optional.
+     * Feature should throw RuntimeException to stop immediately.
+     */
+    protected void validate() { }
+
 }
