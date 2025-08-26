@@ -2,6 +2,7 @@ package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.scmm.ScmmRepo
+import freemarker.template.DefaultObjectWrapperBuilder
 
 class RepoInitializationAction {
     private ScmmRepo repo
@@ -24,8 +25,8 @@ class RepoInitializationAction {
     }
 
     void replaceTemplates() {
-        Map<String, Object> templateValues = new ArgoCDValuesBuilder(config).build()
-        repo.replaceTemplates(templateValues)
+        Map<String, Object> templateModel = new ArgoCDTemplateContextBuilder(config).build()
+        repo.replaceTemplates(templateModel)
     }
 
     ScmmRepo getRepo() {
