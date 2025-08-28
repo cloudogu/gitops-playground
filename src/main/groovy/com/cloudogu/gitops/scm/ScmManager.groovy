@@ -1,30 +1,26 @@
-package com.cloudogu.gitops.scm.scmm
+package com.cloudogu.gitops.scm
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
-import com.cloudogu.gitops.config.ScmmSchema
+import com.cloudogu.gitops.scm.config.util.ScmProviderType
+import com.cloudogu.gitops.scm.config.util.ScmmSchema
 import com.cloudogu.gitops.features.deployment.HelmStrategy
-import com.cloudogu.gitops.scm.ISCM
 import com.cloudogu.gitops.scmm.api.Permission
 import com.cloudogu.gitops.scmm.api.Repository
 import com.cloudogu.gitops.scmm.api.ScmmApiClient
-import com.cloudogu.gitops.scmm.jgit.InsecureCredentialProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.MapUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
-import org.eclipse.jgit.transport.ChainingCredentialsProvider
-import org.eclipse.jgit.transport.CredentialsProvider
-import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
-import retrofit2.Response
+import okhttp3.Response
 
 @Slf4j
 class ScmManager implements ISCM {
 
     static final String HELM_VALUES_PATH = "scm-manager/values.ftl.yaml"
 
-    String namespace = ''
+    String namespace = 'scm-manager'
     String releaseName = 'scm'
     Boolean internal
     HelmStrategy deployer
@@ -37,11 +33,28 @@ class ScmManager implements ISCM {
 
     ScmManager(Config config, ScmmSchema scmmConfig, ScmmApiClient scmmApiClient, HelmStrategy deployer, FileSystemUtils fileSystemUtils) {
         this.config = config
+        this.namespace = namespace
         this.scmmApiClient = scmmApiClient
         this.deployer = deployer
         this.fileSystemUtils = fileSystemUtils
         this.scmmConfig = scmmConfig
         this.credentials = new Credentials(scmmConfig.username, scmmConfig.password)
+    }
+
+    void setup(){
+        setupHelm()
+        installScmmPlugins()
+        configureJenkinsPlugin()
+    }
+
+    void setupInternalScm(String namespace) {
+        this.namespace = namespace
+        setInternalUrl()
+        setupHelm()
+    }
+
+    String setInternalUrl() {
+        this. "http://scmm.${namespace}.svc.cluster.local/scm"
     }
 
     void setupHelm() {
@@ -69,11 +82,6 @@ class ScmManager implements ISCM {
         )
         waitForScmmAvailable()
     }
-
-    String getInternalUrl() {
-        return "http://scmm.${namespace}.svc.cluster.local/scm"
-    }
-
 
     //TODO System.env to config Object
     def installScmmPlugins(Boolean restart = true) {
@@ -124,7 +132,6 @@ class ScmManager implements ISCM {
                 throw new RuntimeException("Installing Plugin '${pluginName}' failed", e)
             }
         }
-
     }
 
     /**
@@ -209,6 +216,14 @@ class ScmManager implements ISCM {
     void init() {
 
     }
-}
 
+    @Override
+    ScmProviderType getScmProviderType() {
+        return null
+    }
+
+    @Override
+    String getUrl() {
+        return null
+    }
 }

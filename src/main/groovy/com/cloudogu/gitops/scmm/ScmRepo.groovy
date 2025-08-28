@@ -4,6 +4,8 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.scm.ISCM
 import com.cloudogu.gitops.scmm.jgit.InsecureCredentialProvider
+import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.PushCommand
@@ -23,22 +25,49 @@ class ScmRepo {
     String scmmRepoTarget
 
     private Git gitMemoization = null
+    FileSystemUtils fileSystemUtils
 
-    ScmRepo(Config config, ISCM scm, String scmmRepoTarget) {
+    ScmRepo(Config config, ISCM scm, String scmmRepoTarget, FileSystemUtils fileSystemUtils) {
         def tmpDir = File.createTempDir()
         tmpDir.deleteOnExit()
         this.config = config
         this.scm = scm
-        this.scmmRepoTarget=scmmRepoTarget
-
+        this.scmmRepoTarget = scmmRepoTarget
+        this.fileSystemUtils = fileSystemUtils
 
         setAbsoluteLocalRepoTmpDir()
         setCredentialProvider(this.scm.getCredentials())
     }
 
+    void writeFile(String path, String content) {
+        def file = new File("$absoluteLocalRepoTmpDir/$path")
+        this.fileSystemUtils.createDirectory(file.parent)
+        file.createNewFile()
+        file.text = content
+    }
+
+    void copyDirectoryContents(String srcDir, FileFilter fileFilter = null) {
+        if (!srcDir) {
+            println "Source directory is not defined. Nothing to copy?"
+            return
+        }
+
+        log.debug("Initializing repo $scmmRepoTarget with content of folder $srcDir")
+        String absoluteSrcDirLocation = srcDir
+        if (!new File(absoluteSrcDirLocation).isAbsolute()) {
+            absoluteSrcDirLocation = fileSystemUtils.getRootDir() + "/" + srcDir
+        }
+        fileSystemUtils.copyDirectory(absoluteSrcDirLocation, absoluteLocalRepoTmpDir, fileFilter)
+    }
+
+    void replaceTemplates(Map parameters) {
+        new TemplatingEngine().replaceTemplates(new File(absoluteLocalRepoTmpDir), parameters)
+    }
+
 /*
 GIT Functions
  */
+
     private Git getGit() {
         if (gitMemoization != null) {
             return gitMemoization
@@ -98,6 +127,21 @@ GIT Functions
         } else {
             log.debug("No changes after add, nothing to commit or push on repo: ${scmmRepoTarget}")
         }
+    }
+
+    /**
+     * Push all refs, i.e. all tags and branches
+     */
+    def pushAll(boolean force = false) {
+        createPushCommand('refs/*:refs/*').setForce(force).call()
+    }
+
+    def pushRef(String ref, String targetRef, boolean force = false) {
+        createPushCommand("${ref}:${targetRef}").setForce(force).call()
+    }
+
+    def pushRef(String ref, boolean force = false) {
+        pushRef(ref, ref, force)
     }
 
     private PushCommand createPushCommand(String refSpec) {
