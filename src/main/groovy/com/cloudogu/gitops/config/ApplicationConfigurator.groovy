@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.config
 
+import com.cloudogu.gitops.scm.config.ScmTenantSchema
 import com.cloudogu.gitops.utils.FileSystemUtils
 import groovy.util.logging.Slf4j
 
@@ -120,10 +121,10 @@ class ApplicationConfigurator {
      private void addScmConfig(Config newConfig) {
         log.debug("Adding additional config for SCM")
 
-         if(ScmSchema.ScmmCentralConfig)
+         if(ScmTenantSchema.ScmmCentralConfig)
         //TODO
         /*if(newConfig.scm.gitlabConfig.url && newConfig.scm.gitlabConfig.password){
-            newConfig.scm.provider= ScmSchema.ScmProviderType.GITLAB
+            newConfig.scm.provider= ScmTenantSchema.ScmProviderType.GITLAB
         }else if(newConfig.scm.scmmConfig.url){
             throw new RuntimeException(
         }*/

@@ -12,6 +12,8 @@ import com.cloudogu.gitops.features.argocd.ArgoCD
 import com.cloudogu.gitops.features.deployment.ArgoCdApplicationStrategy
 import com.cloudogu.gitops.features.deployment.Deployer
 import com.cloudogu.gitops.features.deployment.HelmStrategy
+import com.cloudogu.gitops.features.scm.MultiTenant
+import com.cloudogu.gitops.features.scm.SingleTenant
 import com.cloudogu.gitops.jenkins.GlobalPropertyManager
 import com.cloudogu.gitops.jenkins.JenkinsApiClient
 import com.cloudogu.gitops.jenkins.JobManager
@@ -93,7 +95,8 @@ class GitopsPlaygroundCliMainScripted {
 
                 context.registerSingleton(new Application(config, [
                         new Registry(config, fileSystemUtils, k8sClient, helmStrategy),
-                        new ScmManager(config, executor, fileSystemUtils, helmStrategy, k8sClient, networkingUtils),
+                        new SingleTenant(config,scmmApiClient, helmStrategy,fileSystemUtils),
+                        new MultiTenant(config,scmmApiClient, helmStrategy,fileSystemUtils),
                         jenkins,
                         new ArgoCD(config, k8sClient, helmClient, fileSystemUtils, scmmRepoProvider),
                         new IngressNginx(config, fileSystemUtils, deployer, k8sClient, airGappedUtils),

@@ -1,7 +1,8 @@
 package com.cloudogu.gitops.config
 
-import com.cloudogu.gitops.utils.NetworkingUtils
-import com.fasterxml.jackson.annotation.JsonIgnore
+import com.cloudogu.gitops.scm.config.MultiTenantSchema
+import com.cloudogu.gitops.scm.config.ScmCentralSchema
+import com.cloudogu.gitops.scm.config.ScmTenantSchema
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.databind.*
@@ -66,11 +67,11 @@ class Config {
 
     @JsonPropertyDescription(MULTITENANT_DESCRIPTION)
     @Mixin
-    MultiTentantSchema multiTenant = new MultiTentantSchema()
+    MultiTenantSchema multiTenant = new MultiTenantSchema()
 
     @JsonPropertyDescription(SCMM_DESCRIPTION)
     @Mixin
-    ScmSchema scm = new ScmSchema()
+    ScmTenantSchema scm = new ScmTenantSchema()
 
     @JsonPropertyDescription(APPLICATION_DESCRIPTION)
     @Mixin
@@ -288,41 +289,6 @@ class Config {
                 chart: 'jenkins',
                 repoURL: 'https://charts.jenkins.io',
                 version: '5.8.43')
-    }
-
-    static class MultiTentantSchema {
-
-        ScmSchema.ScmProviderType centalScmProviderType
-
-        @Option(names = ['--dedicated-internal'], description = CENTRAL_SCM_INTERNAL_DESCRIPTION)
-        @JsonPropertyDescription(CENTRAL_SCM_INTERNAL_DESCRIPTION)
-        Boolean internal = false
-
-        @Option(names = ['--dedicated-instance'], description = CENTRAL_USEDEDICATED_DESCRIPTION)
-        @JsonPropertyDescription(CENTRAL_USEDEDICATED_DESCRIPTION)
-        Boolean useDedicatedInstance = false
-
-        @Option(names = ['--central-scm-url'], description = CENTRAL_MGMT_REPO_DESCRIPTION)
-        @JsonPropertyDescription(CENTRAL_MGMT_REPO_DESCRIPTION)
-        String centralScmUrl = ''
-
-        @Option(names = ['--central-scm-username'], description = CENTRAL_SCMM_USERNAME_DESCRIPTION)
-        @JsonPropertyDescription(CENTRAL_SCMM_USERNAME_DESCRIPTION)
-        String username = ''
-
-        @Option(names = ['--central-scm-password'], description = CENTRAL_SCMM_PASSWORD_DESCRIPTION)
-        @JsonPropertyDescription(CENTRAL_SCMM_PASSWORD_DESCRIPTION)
-        String password = ''
-
-        @Option(names = ['--central-argocd-namespace'], description = CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
-        @JsonPropertyDescription(CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
-        String centralArgocdNamespace = 'argocd'
-
-        @Option(names = ['--central-scm-namespace'], description = CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
-        @JsonPropertyDescription(CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
-        String centralSCMamespace = 'scm-manager'
-
-
     }
 
     static class ApplicationSchema {

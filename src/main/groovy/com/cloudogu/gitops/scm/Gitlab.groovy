@@ -1,9 +1,8 @@
-package com.cloudogu.gitops.scm.gitlab
+package com.cloudogu.gitops.scm
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
-import com.cloudogu.gitops.config.ScmSchema.ScmProviderType
-import com.cloudogu.gitops.scm.ISCM
+import com.cloudogu.gitops.scm.config.util.GitlabConfig
 import com.cloudogu.gitops.scmm.jgit.InsecureCredentialProvider
 import groovy.util.logging.Slf4j
 import org.eclipse.jgit.transport.ChainingCredentialsProvider
@@ -13,27 +12,24 @@ import org.gitlab4j.api.GitLabApi
 import org.gitlab4j.api.models.Group
 import org.gitlab4j.api.models.Project
 
-
 import java.util.logging.Level
 
 @Slf4j
 class Gitlab implements ISCM {
 
-
-    Credentials credentials
     private GitLabApi gitlabApi
     private Config config
 
-    ScmProviderType scmProviderType= ScmProviderType.GITLAB
+    GitlabConfig gitlabConfig
 
-    Gitlab(Credentials credentials, Config config) {
+    Gitlab(Config config, GitlabConfig gitlabConfig) {
         this.config = config
-        this.credentials = credentials
+        this.gitlabConfig = gitlabConfig
         this.gitlabApi = new GitLabApi(credentials.toString(), credentials.password)
         this.gitlabApi.enableRequestResponseLogging(Level.ALL)
     }
 
-    Group createGroup(String groupName,String mainGroupName=''){
+    Group createGroup(String groupName, String mainGroupName = '') {
         Group group = this.gitlabApi.groupApi.getGroup(groupName)
         if (!mainGroupName) {
             def tempGroup = new Group()
@@ -41,7 +37,7 @@ class Gitlab implements ISCM {
                     .withPath(mainGroupName.toLowerCase())
                     .withParentId(null)
 
-           return this.gitlabApi.groupApi.addGroup(tempGroup)
+            return this.gitlabApi.groupApi.addGroup(tempGroup)
         }
         return group
     }
@@ -102,7 +98,7 @@ class Gitlab implements ISCM {
         exercisesGroup.ifPresent(this.&createExercisesRepos)
     }
 
-    Project createRepo(String name, String description, Group parentGroup) {
+    Project createRepo(String name, String description) {
         Optional<Project> project = getProject("${parentGroup.getFullPath()}/${name}".toString())
         if (project.isEmpty()) {
             Project projectSpec = new Project()
@@ -113,7 +109,7 @@ class Gitlab implements ISCM {
                     .withWikiEnabled(true)
                     .withSnippetsEnabled(true)
                     .withPublic(false)
-                    .withNamespaceId(parentGroup.getId())
+                    .withNamespaceId(this.gitlabConfig.parentGroup)
                     .withInitializeWithReadme(true)
 
             project = Optional.ofNullable(this.gitlabApi.projectApi.createProject(projectSpec))
@@ -133,7 +129,7 @@ class Gitlab implements ISCM {
     }
 
     private CredentialsProvider getCredentialProvider() {
-        def passwordAuthentication = new UsernamePasswordCredentialsProvider("oauth2", )
+        def passwordAuthentication = new UsernamePasswordCredentialsProvider("oauth2",)
         if (!config.application.insecure) {
             return passwordAuthentication
         }
@@ -165,7 +161,17 @@ class Gitlab implements ISCM {
     }
 
     @Override
+    Credentials getCredentials() {
+        return this.gitlabConfig.credentials
+    }
+
+    @Override
     void init() {
 
+    }
+
+    @Override
+    String getUrl() {
+        return null
     }
 }

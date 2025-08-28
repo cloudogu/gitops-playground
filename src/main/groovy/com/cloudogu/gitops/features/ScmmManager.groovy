@@ -41,8 +41,6 @@ class ScmmManager extends Feature {
         this.commandExecutor = commandExecutor
         this.fileSystemUtils = fileSystemUtils
         this.deployer = deployer
-        this.gitlabApi = new GitLabApi(config.scmm.url, config.scmm.password)
-        this.gitlabApi.enableRequestResponseLogging(Level.ALL)
         this.k8sClient = k8sClient
         this.networkingUtils = networkingUtils
         this.centralSCMUrl = config.multiTenant.centralScmUrl
