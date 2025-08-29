@@ -23,8 +23,7 @@ class Registry extends Feature {
      */
     public static final String CONTAINER_PORT = '5000'
 
-    String namespace = "${config.application.namePrefix}registry"
-
+    String namespace
     private Config config
     private DeploymentStrategy deployer
     private FileSystemUtils fileSystemUtils
@@ -42,6 +41,10 @@ class Registry extends Feature {
         this.config = config
         this.fileSystemUtils = fileSystemUtils
         this.k8sClient = k8sClient
+
+        if(config.registry.internal) {
+            this.namespace = "${config.application.namePrefix}registry"
+        }
     }
 
     @Override

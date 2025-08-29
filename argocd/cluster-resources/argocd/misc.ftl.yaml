@@ -4,7 +4,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: <#if config.multiTenant.useDedicatedInstance>${config.application.namePrefix}misc<#else>misc</#if>
-  namespace: <#if config.multiTenant.useDedicatedInstance>argocd<#else>${config.application.namePrefix}argocd</#if>
+  namespace: <#if config.multiTenant.useDedicatedInstance>${config.multiTenant.centralArgocdNamespace}<#else>${config.application.namePrefix}argocd</#i
 spec:
   project: <#if config.multiTenant.useDedicatedInstance>${tenantName}<#else>cluster-resources</#if>
   destination:

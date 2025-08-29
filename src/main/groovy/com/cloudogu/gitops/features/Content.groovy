@@ -41,6 +41,11 @@ class Content extends Feature {
     private ScmmRepoProvider repoProvider
     private ScmmApiClient scmmApiClient
     private Jenkins jenkins
+    // set by lazy initialisation
+    private TemplatingEngine templatingEngine
+    // used to clone repos in validation phase
+    private List<RepoCoordinate> cachedRepoCoordinates = new ArrayList<>()
+    private File mergedReposFolder
 
     Content(
             Config config, K8sClient k8sClient, ScmmRepoProvider repoProvider, ScmmApiClient scmmApiClient, Jenkins jenkins
@@ -62,6 +67,15 @@ class Content extends Feature {
         createImagePullSecrets()
 
         createContentRepos()
+    }
+
+    @Override
+    void validate() {
+        // ensure cache is cleaned
+        clearCache()
+        // clones repo to check valid configuration and reuse result for further step.
+        cachedRepoCoordinates = cloneContentRepos()
+
     }
 
     void createImagePullSecrets() {
@@ -91,70 +105,99 @@ class Content extends Feature {
     }
 
     void createContentRepos() {
-        List<RepoCoordinate> repoCoordinates = cloneContentRepos()
-        pushTargetRepos(repoCoordinates)
+        if (cachedRepoCoordinates.empty) {
+            cachedRepoCoordinates = cloneContentRepos()
+        }
+        pushTargetRepos(cachedRepoCoordinates)
+        // after all, clean folders and list
+        clearCache()
+
     }
 
     protected List<RepoCoordinate> cloneContentRepos() {
+        mergedReposFolder = File.createTempDir('gitops-playground-based-content-repos-')
         List<RepoCoordinate> repoCoordinates = []
-        def mergedReposFolder = File.createTempDir('gitops-playground-folder-based-content-repos-')
-        mergedReposFolder.deleteOnExit()
-        def engine = new TemplatingEngine()
 
-        log.debug("Aggregating folder structure for all ${config.content.repos.size()} folder based-repos")
+        log.debug("Aggregating structure for all ${config.content.repos.size()} repos.")
         config.content.repos.each { repoConfig ->
-
-            def repoTmpDir = File.createTempDir('gitops-playground-folder-based-single-content-repo-')
-            log.debug("Cloning content repo, ${repoConfig.url}, revision ${repoConfig.ref}, path ${repoConfig.path}, overwriteMode ${repoConfig.overwriteMode}")
-
-            cloneToLocalFolder(repoConfig, repoTmpDir)
-
-            def contentRepoDir = new File(repoTmpDir, repoConfig.path)
-            doTemplating(repoConfig, engine, contentRepoDir)
-
-
-            switch (repoConfig.type) {
-                case ContentRepoType.FOLDER_BASED:
-                    boolean refIsTag = isTag(repoTmpDir, repoConfig.ref)
-                    findRepoDirectories(contentRepoDir)
-                            .each { contentRepoNamespaceDir ->
-                                findRepoDirectories(contentRepoNamespaceDir)
-                                        .each { contentRepoRepoDir ->
-                                            String namespace = contentRepoNamespaceDir.name
-                                            String repoName = contentRepoRepoDir.name
-                                            def repoCoordinate = mergeRepoDirs(contentRepoRepoDir, namespace, repoName, mergedReposFolder, repoConfig, repoCoordinates)
-                                            repoCoordinate.refIsTag = refIsTag
-                                        }
-                            }
-                    repoTmpDir.deleteDir()
-                    break
-                case ContentRepoType.COPY:
-                    String namespace = repoConfig.target.split('/')[0]
-                    String repoName = repoConfig.target.split('/')[1]
-
-                    def repoCoordinate = mergeRepoDirs(contentRepoDir, namespace, repoName, mergedReposFolder, repoConfig, repoCoordinates)
-                    repoCoordinate.refIsTag = isTag(repoTmpDir, repoConfig.ref)
-                    repoTmpDir.deleteDir()
-                    break
-                case ContentRepoType.MIRROR:
-                    // Don't merge but keep these in separate dirs.
-                    // This avoids messing up .git folders with possible confusing exceptions for the user
-                    String namespace = repoConfig.target.split('/')[0]
-                    String repoName = repoConfig.target.split('/')[1]
-                    def repoCoordinate = new RepoCoordinate(
-                            namespace: namespace,
-                            repoName: repoName,
-                            clonedContentRepo: repoTmpDir,
-                            repoConfig: repoConfig,
-                            refIsTag: isTag(repoTmpDir, repoConfig.ref)
-                    )
-                    repoCoordinates << repoCoordinate
-                    break
-            }
-
-            log.debug("Finished cloning content repos. repoCoordinates=${repoCoordinates}")
+            createRepoCoordinates(repoConfig, mergedReposFolder, repoCoordinates)
         }
         return repoCoordinates
+    }
+
+
+    private TemplatingEngine getTemplatingEngine() {
+        if (templatingEngine == null) {
+            templatingEngine = new TemplatingEngine()
+        }
+        return templatingEngine
+    }
+
+
+    private void createRepoCoordinates(ContentRepositorySchema repoConfig, File mergedReposFolder, List<RepoCoordinate> repoCoordinates) {
+        def repoTmpDir = File.createTempDir('gitops-playground-content-repo-')
+        log.debug("Cloning content repo, ${repoConfig.url}, revision ${repoConfig.ref}, path ${repoConfig.path}, overwriteMode ${repoConfig.overwriteMode}")
+
+        cloneToLocalFolder(repoConfig, repoTmpDir)
+
+        def contentRepoDir = new File(repoTmpDir, repoConfig.path)
+        applyTemplatingIfApplicable(repoConfig, contentRepoDir)
+
+
+        switch (repoConfig.type) {
+            case ContentRepoType.FOLDER_BASED:
+                createRepoCoordinatesForTypeFolderBased(repoConfig, repoTmpDir, contentRepoDir, mergedReposFolder, repoCoordinates)
+                repoTmpDir.deleteDir()
+                break
+            case ContentRepoType.COPY:
+                createRepoCoordinatesForTypeCopy(repoConfig, contentRepoDir, mergedReposFolder, repoTmpDir, repoCoordinates)
+                repoTmpDir.deleteDir()
+                break
+            case ContentRepoType.MIRROR:
+                createRepoCoordinateForTypeMirror(repoConfig, repoTmpDir, repoCoordinates)
+                //  intentionally not deleting repoTmpDir, it is contained in RepoCoordinates for MIRROR usage
+                break
+        }
+        log.debug("Finished cloning content repos. repoCoordinates=${repoCoordinates}")
+    }
+
+    private static void createRepoCoordinatesForTypeCopy(ContentRepositorySchema repoConfig, File contentRepoDir, File mergedReposFolder, File repoTmpDir, List<RepoCoordinate> repoCoordinates) {
+        String namespace = repoConfig.target.split('/')[0]
+        String repoName = repoConfig.target.split('/')[1]
+
+        def repoCoordinate = mergeRepoDirs(contentRepoDir, namespace, repoName, mergedReposFolder, repoConfig)
+        repoCoordinate.refIsTag = isTag(repoTmpDir, repoConfig.ref)
+        addRepoCoordinates(repoCoordinates, repoCoordinate)
+    }
+
+    private static void createRepoCoordinatesForTypeFolderBased(ContentRepositorySchema repoConfig, File repoTmpDir, File contentRepoDir, File mergedReposFolder, List<RepoCoordinate> repoCoordinates) {
+        boolean refIsTag = isTag(repoTmpDir, repoConfig.ref)
+        findRepoDirectories(contentRepoDir)
+                .each { contentRepoNamespaceDir ->
+                    findRepoDirectories(contentRepoNamespaceDir)
+                            .each { contentRepoFolder ->
+                                String namespace = contentRepoNamespaceDir.name
+                                String repoName = contentRepoFolder.name
+                                def repoCoordinate = mergeRepoDirs(contentRepoFolder, namespace, repoName, mergedReposFolder, repoConfig)
+                                repoCoordinate.refIsTag = refIsTag
+                                addRepoCoordinates(repoCoordinates, repoCoordinate)
+                            }
+                }
+    }
+
+    private static void createRepoCoordinateForTypeMirror(ContentRepositorySchema repoConfig, File repoTmpDir, List<RepoCoordinate> repoCoordinates) {
+        // Don't merge but keep these in separate dirs.
+        // This avoids messing up .git folders with possible confusing exceptions for the user
+        String namespace = repoConfig.target.split('/')[0]
+        String repoName = repoConfig.target.split('/')[1]
+        def repoCoordinate = new RepoCoordinate(
+                namespace: namespace,
+                repoName: repoName,
+                clonedContentRepo: repoTmpDir,
+                repoConfig: repoConfig,
+                refIsTag: isTag(repoTmpDir, repoConfig.ref)
+        )
+        addRepoCoordinates(repoCoordinates, repoCoordinate)
     }
 
     /**
@@ -163,7 +206,7 @@ class Content extends Feature {
      * Note that existing repoCoordinate objects with different overwriteMode are overwritten. The last repo to be mentioned within config.content.repos wins!
      */
     private static RepoCoordinate mergeRepoDirs(File src, String namespace, String repoName, File mergedRepoFolder,
-                                                ContentRepositorySchema repoConfig, List<RepoCoordinate> repoCoordinates) {
+                                                ContentRepositorySchema repoConfig) {
         File target = new File(new File(mergedRepoFolder, namespace), repoName)
         log.debug("Merging content repo, namespace ${namespace}, repoName ${repoName} from ${src} to ${target}")
         FileUtils.copyDirectory(src, target, new FileSystemUtils.IgnoreDotGitFolderFilter())
@@ -174,7 +217,6 @@ class Content extends Feature {
                 clonedContentRepo: target,
                 repoConfig: repoConfig,
         )
-        addRepoCoordinates(repoCoordinates, repoCoordinate)
         return repoCoordinate
     }
 
@@ -186,8 +228,9 @@ class Content extends Feature {
         }
     }
 
-    private void doTemplating(ContentRepositorySchema repoConfig, TemplatingEngine engine, File srcPath) {
+    private void applyTemplatingIfApplicable(ContentRepositorySchema repoConfig, File srcPath) {
         if (repoConfig.templating) {
+            def engine = getTemplatingEngine()
             engine.replaceTemplates(srcPath, [
                     config : config,
                     // Allow for using static classes inside the templates
@@ -212,7 +255,12 @@ class Content extends Feature {
         def git = cloneCommand.call()
 
         if (ContentRepoType.MIRROR == repoConfig.type) {
-            git.fetch().setRefSpecs("+refs/*:refs/*").call() // Fetch all branches and tags
+            def fetch = git.fetch()
+            if (repoConfig.username != null && repoConfig.password != null) {
+                // fetch also needs CredentialProvider, jgit behaviour.
+                fetch.setCredentialsProvider(new UsernamePasswordCredentialsProvider(repoConfig.username, repoConfig.password))
+            }
+            fetch.setRefSpecs("+refs/*:refs/*").call() // Fetch all branches and tags
         }
 
         if (repoConfig.ref) {
@@ -252,30 +300,31 @@ class Content extends Feature {
     }
 
 
-    protected void pushTargetRepos(List<RepoCoordinate> repoCoordinates) {
+    private void pushTargetRepos(List<RepoCoordinate> repoCoordinates) {
         repoCoordinates.each { repoCoordinate ->
 
             ScmmRepo targetRepo = repoProvider.getRepo(repoCoordinate.fullRepoName)
-            def isRepoCreated = targetRepo.create('', scmmApiClient)
-
-            if (!isRepoCreated && OverwriteMode.INIT == repoCoordinate.repoConfig.overwriteMode) {
-                log.warn("OverwriteMode ${OverwriteMode.INIT} set for repo '${repoCoordinate.fullRepoName}' " +
-                        "and repo already exists in target:  Not pushing content!" +
-                        "If you want to override, set ${OverwriteMode.UPGRADE} or ${OverwriteMode.RESET} .")
-            } else {
-
+            def isNewRepo = targetRepo.create('', scmmApiClient, false)
+            if (isValidForPush(isNewRepo, repoCoordinate)) {
                 targetRepo.cloneRepo()
 
-                if (ContentRepoType.MIRROR == repoCoordinate.repoConfig.type) {
-                    handleRepoMirroring(repoCoordinate, targetRepo)
-                } else {
-                    handleRepoCopying(repoCoordinate, targetRepo)
+                switch (repoCoordinate.repoConfig.type) {
+                    case ContentRepoType.MIRROR:
+                        handleRepoMirroring(repoCoordinate, targetRepo)
+                        break
+                        // COPY and FOLDER_BASED same treatment
+                    case ContentRepoType.FOLDER_BASED:
+                    case ContentRepoType.COPY:
+                        handleRepoCopyingOrFolderBased(repoCoordinate, targetRepo, isNewRepo)
+                        break
                 }
 
-                createJenkinsJob(repoCoordinate, targetRepo)
+                createJenkinsJobIfApplicable(repoCoordinate, targetRepo)
 
+                // cleaning tmp folders
+                repoCoordinate.clonedContentRepo.deleteDir()
                 new File(targetRepo.absoluteLocalRepoTmpDir).deleteDir()
-            }
+            } // no else needed
         }
 
     }
@@ -284,16 +333,9 @@ class Content extends Feature {
      * Copies repoCoordinate to targetRepo, commits and pushes
      * Same logic for both FOLDER_BASED and COPY repo types.
      */
-    private static void handleRepoCopying(RepoCoordinate repoCoordinate, ScmmRepo targetRepo) {
-        if (OverwriteMode.INIT != repoCoordinate.repoConfig.overwriteMode) {
-            if (OverwriteMode.RESET == repoCoordinate.repoConfig.overwriteMode) {
-                log.info("OverwriteMode ${OverwriteMode.RESET} set for repo '${repoCoordinate.fullRepoName}': " +
-                        "Deleting existing files in repo and replacing them with new content.")
-                targetRepo.clearRepo()
-            } else {
-                log.info("OverwriteMode ${OverwriteMode.UPGRADE} set for repo '${repoCoordinate.fullRepoName}': " +
-                        "Merging new content into existing repo. ")
-            }
+    private static void handleRepoCopyingOrFolderBased(RepoCoordinate repoCoordinate, ScmmRepo targetRepo, boolean isNewRepo) {
+        if (!isNewRepo) {
+            clearTargetRepoIfApplicable(repoCoordinate, targetRepo)
         }
         // Avoid overwriting .git in target to avoid, because we don't need it for copying and
         // git pack files are typically read-only, leading to IllegalArgumentException:
@@ -303,19 +345,36 @@ class Content extends Feature {
         String commitMessage = "Initialize content repo ${repoCoordinate.namespace}/${repoCoordinate.repoName}"
         String targetRefShort = repoCoordinate.repoConfig.targetRef.replace('refs/heads/', '').replace('refs/tags/', '')
         if (targetRefShort) {
-            String refSpec
-            if ((repoCoordinate.refIsTag && !repoCoordinate.repoConfig.targetRef.startsWith('refs/heads'))
-                    || repoCoordinate.repoConfig.targetRef.startsWith('refs/tags')) {
-                refSpec = "refs/tags/${targetRefShort}:refs/tags/${targetRefShort}"
-            } else {
-                refSpec = "HEAD:refs/heads/${targetRefShort}"
-            }
-
+            String refSpec = setRefSpec(repoCoordinate, targetRefShort)
             targetRepo.commitAndPush(commitMessage, targetRefShort, refSpec)
         } else {
             targetRepo.commitAndPush(commitMessage)
         }
 
+    }
+
+    private static String setRefSpec(RepoCoordinate repoCoordinate, String targetRefShort) {
+        String refSpec
+        if ((repoCoordinate.refIsTag && !repoCoordinate.repoConfig.targetRef.startsWith('refs/heads'))
+                || repoCoordinate.repoConfig.targetRef.startsWith('refs/tags')) {
+            refSpec = "refs/tags/${targetRefShort}:refs/tags/${targetRefShort}"
+        } else {
+            refSpec = "HEAD:refs/heads/${targetRefShort}"
+        }
+        refSpec
+    }
+
+    private static void clearTargetRepoIfApplicable(RepoCoordinate repoCoordinate, ScmmRepo targetRepo) {
+        if (OverwriteMode.INIT != repoCoordinate.repoConfig.overwriteMode) {
+            if (OverwriteMode.RESET == repoCoordinate.repoConfig.overwriteMode) {
+                log.info("OverwriteMode ${OverwriteMode.RESET} set for repo '${repoCoordinate.fullRepoName}': " +
+                        "Deleting existing files in repo and replacing them with new content.")
+                targetRepo.clearRepo()
+            } else {
+                log.debug("OverwriteMode ${OverwriteMode.UPGRADE} set for repo '${repoCoordinate.fullRepoName}': " +
+                        "Merging new content into existing repo. ")
+            }
+        }
     }
 
     /**
@@ -342,11 +401,7 @@ class Content extends Feature {
         }
 
         if (repoCoordinate.repoConfig.ref) {
-            if (isCommit(repoCoordinate.clonedContentRepo, repoCoordinate.repoConfig.ref)) {
-                // Mirroring detached commits does not make a lot of sense and is complicated
-                // We would have to branch, push, delete remote branch. Considering this an edge case at the moment!
-                throw new RuntimeException("Mirroring commit references is not supported for content repos at the moment. content repository '${repoCoordinate.repoConfig.url}', ref: ${repoCoordinate.repoConfig.ref}")
-            }
+            validateCommitReferences(repoCoordinate)
             if (repoCoordinate.repoConfig.targetRef) {
                 log.debug("Mirroring repo '${repoCoordinate.repoConfig.url}' ref '${repoCoordinate.repoConfig.ref}' to target repo ${repoCoordinate.fullRepoName}, targetRef: '${repoCoordinate.repoConfig.targetRef}'")
                 targetRepo.pushRef(repoCoordinate.repoConfig.ref, repoCoordinate.repoConfig.targetRef, true)
@@ -360,7 +415,15 @@ class Content extends Feature {
         }
     }
 
-    private void createJenkinsJob(RepoCoordinate repoCoordinate, ScmmRepo repo) {
+    private static void validateCommitReferences(RepoCoordinate repoCoordinate) {
+        if (isCommit(repoCoordinate.clonedContentRepo, repoCoordinate.repoConfig.ref)) {
+            // Mirroring detached commits does not make a lot of sense and is complicated
+            // We would have to branch, push, delete remote branch. Considering this an edge case at the moment!
+            throw new RuntimeException("Mirroring commit references is not supported for content repos at the moment. content repository '${repoCoordinate.repoConfig.url}', ref: ${repoCoordinate.repoConfig.ref}")
+        }
+    }
+
+    private void createJenkinsJobIfApplicable(RepoCoordinate repoCoordinate, ScmmRepo repo) {
         if (repoCoordinate.repoConfig.createJenkinsJob && jenkins.isEnabled()) {
             if (existFileInSomeBranch(repo.absoluteLocalRepoTmpDir, 'Jenkinsfile')) {
                 jenkins.createJenkinsjob(repoCoordinate.namespace, repoCoordinate.namespace)
@@ -425,7 +488,7 @@ class Content extends Feature {
 
         }
     }
-    
+
     /**
      * checks, if file exists in repo in some branch.
      * @param pathToRepo
@@ -475,6 +538,27 @@ class Content extends Feature {
         try (def git = Git.open(repo)) {
             git.tagList().call().any { it.name.endsWith("/" + ref) || it.name == ref }
         }
+    }
+    /**
+     * Checks whether the repo already exists and overwrite Mode matches.
+     */
+    static boolean isValidForPush(boolean isNewRepo, RepoCoordinate repoCoordinate) {
+
+        if (!isNewRepo && OverwriteMode.INIT == repoCoordinate.repoConfig.overwriteMode) {
+            log.warn("OverwriteMode ${OverwriteMode.INIT} set for repo '${repoCoordinate.fullRepoName}' " +
+                    "and repo already exists in target:  Not pushing content!" +
+                    "If you want to override, set ${OverwriteMode.UPGRADE} or ${OverwriteMode.RESET} .")
+            return false
+        }
+        return true
+    }
+
+    private void clearCache() {
+        if (mergedReposFolder) {
+            mergedReposFolder.deleteDir()
+        }
+        cachedRepoCoordinates.clear()
+        mergedReposFolder = null
     }
 
     static class RepoCoordinate {
