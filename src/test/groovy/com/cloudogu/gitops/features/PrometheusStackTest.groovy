@@ -2,7 +2,6 @@ package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
-import com.cloudogu.gitops.features.prometheus.PrometheusStack
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.utils.*
 import groovy.yaml.YamlSlurper

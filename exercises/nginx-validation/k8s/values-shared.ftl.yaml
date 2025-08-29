@@ -1,8 +1,10 @@
-<#if nginxImage??>
+<#assign DockerImageParser=statics['com.cloudogu.gitops.utils.DockerImageParser']>
+<#if config.images.nginx?has_content>
+<#assign nginxImageObject = DockerImageParser.parse(config.images.nginx)>
 image:
-  registry: ${nginxImage.registry}
-  repository: ${nginxImage.repository}
-  tag: ${nginxImage.tag}
+  registry: ${nginxImageObject.registry}
+  repository: ${nginxImageObject.repository}
+  tag: ${nginxImageObject.tag}
 </#if>
 <#if config.registry.createImagePullSecrets == true>
 global:

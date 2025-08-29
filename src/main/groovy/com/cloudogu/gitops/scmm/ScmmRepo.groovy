@@ -76,26 +76,6 @@ class ScmmRepo {
         return scmmRepoTarget
     }
 
-    static String createScmmUrl(Config config) {
-        return "${config.scmm.protocol}://${config.scmm.host}"
-    }
-
-    static String createSCMBaseUrl(Config config) {
-        switch (config.scmm.provider) {
-            case "scm-manager":
-                if(config.scmm.internal){
-                    return "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm/${config.scmm.rootPath}/${config.application.namePrefix}"
-                }
-                return createScmmUrl(config) + "/${config.scmm.rootPath}/${config.application.namePrefix}"
-            case "gitlab":
-                return createScmmUrl(config) + "/${config.application.namePrefix}${config.scmm.rootPath}"
-            default:
-                log.error("No SCM Provider found. Failing to create RepoBaseUrls!")
-                return ""
-        }
-    }
-
-
     void cloneRepo() {
         log.debug("Cloning $scmmRepoTarget repo")
         gitClone()

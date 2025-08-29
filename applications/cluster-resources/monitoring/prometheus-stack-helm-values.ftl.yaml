@@ -1,3 +1,4 @@
+<#assign DockerImageParser=statics['com.cloudogu.gitops.utils.DockerImageParser']>
 <#if config.application.skipCrds == true>
 crds:
   enabled: false
@@ -98,18 +99,20 @@ prometheusOperator:
       memory: 40Mi
 </#if>
 <#if config.features.monitoring.helm.prometheusOperatorImage?has_content>
+<#assign operatorImageObject = DockerImageParser.parse(config.features.monitoring.helm.prometheusOperatorImage)>
   image:
-    registry  : ${images.operator.registry}
-    repository: ${images.operator.repository}
-    tag       : ${images.operator.tag}
+    registry  : ${operatorImageObject.registry}
+    repository: ${operatorImageObject.repository}
+    tag       : ${operatorImageObject.tag}
 </#if>
 <#if config.features.monitoring.helm.prometheusConfigReloaderImage?has_content || config.application.podResources == true>
   prometheusConfigReloader:
   <#if config.features.monitoring.helm.prometheusConfigReloaderImage?has_content>
+  <#assign reloaderImageObject = DockerImageParser.parse(config.features.monitoring.helm.prometheusConfigReloaderImage)>
     image:
-        registry  : ${images.reloader.registry}
-        repository: ${images.reloader.repository}
-        tag       : ${images.reloader.tag}
+        registry  : ${reloaderImageObject.registry}
+        repository: ${reloaderImageObject.repository}
+        tag       : ${reloaderImageObject.tag}
   </#if>
   <#if config.application.podResources == true>
     resources:
@@ -163,10 +166,11 @@ grafana:
     hosts: [${monitoring.grafana.host}]
 </#if>
 <#if config.features.monitoring.helm.grafanaImage?has_content>
+<#assign grafanImageObject = DockerImageParser.parse(config.features.monitoring.helm.grafanaImage)>
   image:
-    registry: ${images.grafana.registry}
-    repository: ${images.grafana.repository}
-    tag: ${images.grafana.tag}
+    registry: ${grafanImageObject.registry}
+    repository: ${grafanImageObject.repository}
+    tag: ${grafanImageObject.tag}
 </#if>
   sidecar:
     dashboards:
@@ -187,10 +191,11 @@ grafana:
         memory: 65Mi
 </#if>
 <#if config.features.monitoring.helm.grafanaSidecarImage?has_content>
+<#assign sidecarImageObject = DockerImageParser.parse(config.features.monitoring.helm.grafanaSidecarImage)>
     image:
-      registry: ${images.grafanaSideCar.registry}
-      repository: ${images.grafanaSideCar.repository}
-      tag: ${images.grafanaSideCar.tag}
+      registry: ${sidecarImageObject.registry}
+      repository: ${sidecarImageObject.repository}
+      tag: ${sidecarImageObject.tag}
 </#if>
 <#if config.features.mail.active?? && config.features.mail.active>
   notifiers:
@@ -326,10 +331,11 @@ prometheus:
         memory: 450Mi
 </#if>
 <#if config.features.monitoring.helm.prometheusImage?has_content>
+<#assign prometheusImageObject = DockerImageParser.parse(config.features.monitoring.helm.prometheusImage)>
     image:
-      registry  : ${images.prometheus.registry}
-      repository: ${images.prometheus.repository}
-      tag       : ${images.prometheus.tag}
+      registry  : ${prometheusImageObject.registry}
+      repository: ${prometheusImageObject.repository}
+      tag       : ${prometheusImageObject.tag}
   </#if>
     secrets:
       - prometheus-metrics-creds-scmm

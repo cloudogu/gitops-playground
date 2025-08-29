@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.features.prometheus
+package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.FeatureWithImage
@@ -8,6 +8,7 @@ import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import com.cloudogu.gitops.utils.*
 import com.cloudogu.gitops.scmm.ScmUrlResolver
+import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 import io.micronaut.core.annotation.Order
@@ -65,7 +66,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
             uid = findValidOpenShiftUid()
         }
 
-        Map<String, Object> templateModel = new PrometheusTemplateContextBuilder(config, uid).build()
+        Map<String, Object> templateModel = buildTemplateValues(config, uid)
 
         def values    = templateToMap(HELM_VALUES_PATH, templateModel)
 
@@ -133,7 +134,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
                             'Chart.yaml'))['version']
 
             deployer.deployFeature(
-                    ScmUrlResolver.repoUrl(config, repoNamespaceAndName),
+                    ScmUrlResolver.scmmRepoUrl(config, repoNamespaceAndName),
                     'prometheusstack',
                     '.',
                     prometheusVersion,
@@ -151,6 +152,52 @@ class PrometheusStack extends Feature implements FeatureWithImage {
                     'kube-prometheus-stack',
                     tempValuesPath)
         }
+    }
+
+    private Map<String, Object> buildTemplateValues(Config config, String uid){
+        def model = [
+                monitoring: [grafana: [host: config.features.monitoring.grafanaUrl ? new URL(config.features.monitoring.grafanaUrl).host : ""]],
+                namespaces: (config.application.namespaces.activeNamespaces ?: []) as LinkedHashSet<String>,
+                scmm      : scmConfigurationMetrics(),
+                jenkins   : jenkinsConfigurationMetrics(),
+                uid       : uid,
+                config    : config,
+                // Allow for using static classes inside the templates
+                statics : new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
+        ] as Map<String, Object>
+
+        return model
+    }
+
+    private Map scmConfigurationMetrics() {
+        def uri = ScmUrlResolver.scmmBaseUri(config).resolve("api/v2/metrics/prometheus")
+        [
+                protocol: uri.scheme ?: "",
+                host    : uri.authority ?: "",
+                path    : uri.path ?: ""
+        ]
+    }
+
+    private Map jenkinsConfigurationMetrics() {
+        def uri = baseUriJenkins(config).resolve("prometheus")
+        [
+                metricsUsername: config.jenkins.metricsUsername ?: "",
+                protocol       : uri.scheme ?: "",
+                host           : uri.authority ?: "",
+                path           : uri.path ?: ""
+        ]
+    }
+
+    private static URI baseUriJenkins(Config config) {
+        if (config.jenkins.internal) {
+            return new URI("http://jenkins.${config.application.namePrefix}jenkins.svc.cluster.local/")
+        }
+        def urlString = config.jenkins?.url?.strip() ?: ""
+        if (!urlString) {
+            throw new IllegalArgumentException("config.jenkins.url must be set when config.jenkins.internal = false")
+        }
+        def url = URI.create(urlString)
+        return url.toString().endsWith("/") ? url : URI.create(url.toString() + "/")
     }
 
     private String findValidOpenShiftUid() {

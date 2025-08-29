@@ -10,7 +10,6 @@ import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.MapUtils
-import com.cloudogu.gitops.utils.TemplatingEngine
 import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
@@ -93,7 +92,7 @@ class Mailhog extends Feature implements FeatureWithImage {
                             'Chart.yaml'))['version']
 
             deployer.deployFeature(
-                    ScmUrlResolver.repoUrl(config, repoNamespaceAndName),
+                    ScmUrlResolver.scmmRepoUrl(config, repoNamespaceAndName),
                     'mailhog',
                     '.',
                     mailhogVersion,

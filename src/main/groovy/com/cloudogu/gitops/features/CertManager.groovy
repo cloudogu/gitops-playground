@@ -79,7 +79,7 @@ class CertManager extends Feature implements FeatureWithImage {
                             'Chart.yaml'))['version']
 
             deployer.deployFeature(
-                    ScmUrlResolver.repoUrl(config, repoNamespaceAndName),
+                    ScmUrlResolver.scmmRepoUrl(config, repoNamespaceAndName),
                     'cert-manager',
                     '.',
                     certManagerVersion,
