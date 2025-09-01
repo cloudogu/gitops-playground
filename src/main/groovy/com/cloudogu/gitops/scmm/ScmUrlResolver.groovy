@@ -3,7 +3,6 @@ package com.cloudogu.gitops.scmm
 import com.cloudogu.gitops.config.Config
 
 class ScmUrlResolver {
-
     /**
      * Returns the tenant/namespace base URL **without** a trailing slash.
      *
@@ -16,10 +15,10 @@ class ScmUrlResolver {
         switch (config.scmm.provider) {
             case "scm-manager":
                 // scmmBaseUri ends with /scm/
-                return scmmBaseUri(config).resolve("${config.scmm.rootPath}/${config.application.namePrefix}")
+                return scmmBaseUri(config).resolve("${config.scmm.rootPath}/${config.application.namePrefix}").toString()
             case "gitlab":
                 // for GitLab, do not append /scm/
-                return externalHost(config).resolve("${config.application.namePrefix}${config.scmm.rootPath}")
+                return externalHost(config).resolve("${config.application.namePrefix}${config.scmm.rootPath}").toString()
             default:
                 throw new IllegalArgumentException("Unknown SCM provider: ${config.scmm.provider}")
         }
