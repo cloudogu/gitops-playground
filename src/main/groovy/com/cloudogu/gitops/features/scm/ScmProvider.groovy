@@ -1,7 +1,7 @@
 package com.cloudogu.gitops.features.scm
 
+import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.scm.Gitlab
 import com.cloudogu.gitops.scm.ISCM
@@ -15,8 +15,8 @@ import jakarta.inject.Singleton
 
 @Slf4j
 @Singleton
-@Order(60)
-class SingleTenant {
+@Order(70)
+class ScmProvider extends Feature {
 
     Config config
 
@@ -25,10 +25,10 @@ class SingleTenant {
     HelmStrategy helmStrategy
     FileSystemUtils fileSystemUtils
 
+    ISCM tenant
+    ISCM central
 
-    ISCM scm
-
-    SingleTenant(Config config, ScmmApiClient scmmApiClient, HelmStrategy helmStrategy, FileSystemUtils fileSystemUtils) {
+    ScmProvider(Config config, ScmmApiClient scmmApiClient, HelmStrategy helmStrategy, FileSystemUtils fileSystemUtils) {
         this.config = config
 
         this.helmStrategy = helmStrategy
@@ -38,7 +38,7 @@ class SingleTenant {
 
     @Override
     boolean isEnabled() {
-        return !config.multiTenant.useDedicatedInstance
+        return true
     }
 
     //TODO Check settings
@@ -49,17 +49,30 @@ class SingleTenant {
     void init() {
         validate()
 
+        //TenantSCM
         switch (config.scm.scmProviderType) {
             case ScmProviderType.GITLAB:
-                this.scm = new Gitlab(this.config, null)
+                this.tenant = new Gitlab(this.config,this.config.scm.gitlabConfig)
                 break
             case ScmProviderType.SCM_MANAGER:
-                this.scm = new ScmManager(this.config, config.scm.scmmConfig, scmmApiClient, this.helmStrategy, fileSystemUtils)
+                this.tenant = new ScmManager(this.config, config.scm.scmmConfig, scmmApiClient, this.helmStrategy, fileSystemUtils)
                 break
             default:
-                throw new IllegalArgumentException("Unsupported SCM provider: ${config.scm.scmProviderType}")
+                throw new IllegalArgumentException("Unsupported SCM provider found in TenantSCM")
         }
 
+        //CentralSCM
+        switch (config.multiTenant.scmProviderType) {
+            case ScmProviderType.GITLAB:
+                this.central = new Gitlab(this.config,this.config.multiTenant.gitlabConfig)
+                break
+            case ScmProviderType.SCM_MANAGER:
+                this.central = new ScmManager(this.config, config.multiTenant.scmmConfig, scmmApiClient, this.helmStrategy, fileSystemUtils)
+                break
+            default:
+                throw new IllegalArgumentException("Unsupported SCM-Central provider: ${config.scm.scmProviderType}")
+        }
     }
+
 
 }

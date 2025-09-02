@@ -1,8 +1,8 @@
 package com.cloudogu.gitops.scmm
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.scm.ISCM
+import com.cloudogu.gitops.scm.config.util.ScmProviderType
 import com.cloudogu.gitops.scmm.api.Permission
 import com.cloudogu.gitops.scmm.api.Repository
 import com.cloudogu.gitops.scmm.api.ScmmApiClient
@@ -19,7 +19,7 @@ import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 import retrofit2.Response
 
 @Slf4j
-class ScmmRepo {
+class ScmRepo {
 
     static final String NAMESPACE_3RD_PARTY_DEPENDENCIES = '3rd-party-dependencies'
 
@@ -40,10 +40,9 @@ class ScmmRepo {
     private ISCM scm
     Boolean isCentralRepo
 
-    ScmmRepo(Config config, ISCM scm,String scmmRepoTarget, FileSystemUtils fileSystemUtils) {
+    ScmRepo(Config config, ISCM scm, String scmmRepoTarget, FileSystemUtils fileSystemUtils) {
         def tmpDir = File.createTempDir()
         tmpDir.deleteOnExit()
-
 
         this.isCentralRepo = isCentralRepo
         this.username = !this.isCentralRepo ? config.scmm.username : config.multiTenant.username
@@ -226,7 +225,7 @@ class ScmmRepo {
     }
 
     private CredentialsProvider getCredentialProvider() {
-        if (scmProvider == Config.ScmProviderType.GITLAB) {
+        if (scmProvider == ScmProviderType.GITLAB) {
             username = "oauth2"
         }
         def passwordAuthentication = new UsernamePasswordCredentialsProvider(username, password)

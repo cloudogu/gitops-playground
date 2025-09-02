@@ -2,12 +2,12 @@ package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.scmm.ScmmRepo
-import com.cloudogu.gitops.scmm.ScmmRepoProvider
+import com.cloudogu.gitops.scmm.ScmRepoProvider
 import org.apache.commons.io.FileUtils
 
 import static org.mockito.Mockito.spy 
 
-class TestScmmRepoProvider extends ScmmRepoProvider {
+class TestScmmRepoProvider extends ScmRepoProvider {
     Map<String, ScmmRepo> repos = [:]
 
     TestScmmRepoProvider(Config config, FileSystemUtils fileSystemUtils) {
