@@ -4,7 +4,7 @@ import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Config.OverwriteMode
 import com.cloudogu.gitops.scmm.ScmmRepo
-import com.cloudogu.gitops.scmm.ScmmRepoProvider
+import com.cloudogu.gitops.scmm.ScmRepoProvider
 import com.cloudogu.gitops.scmm.api.ScmmApiClient
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
@@ -38,12 +38,12 @@ class Content extends Feature {
 
     private Config config
     private K8sClient k8sClient
-    private ScmmRepoProvider repoProvider
+    private ScmRepoProvider repoProvider
     private ScmmApiClient scmmApiClient
     private Jenkins jenkins
 
     Content(
-            Config config, K8sClient k8sClient, ScmmRepoProvider repoProvider, ScmmApiClient scmmApiClient, Jenkins jenkins
+            Config config, K8sClient k8sClient, ScmRepoProvider repoProvider, ScmmApiClient scmmApiClient, Jenkins jenkins
     ) {
         this.config = config
         this.k8sClient = k8sClient
