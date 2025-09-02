@@ -1,8 +1,7 @@
-package com.cloudogu.gitops.scmm
+package com.cloudogu.gitops.scm
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
-import com.cloudogu.gitops.scm.ISCM
 import com.cloudogu.gitops.scmm.jgit.InsecureCredentialProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
@@ -22,17 +21,17 @@ class ScmRepo {
     Config config
     private String absoluteLocalRepoTmpDir
     CredentialsProvider credentialsProvider
-    String scmmRepoTarget
+    String scmRepoTarget
 
     private Git gitMemoization = null
     FileSystemUtils fileSystemUtils
 
-    ScmRepo(Config config, ISCM scm, String scmmRepoTarget, FileSystemUtils fileSystemUtils) {
+    ScmRepo(Config config, ISCM scm, String scmRepoTarget, FileSystemUtils fileSystemUtils) {
         def tmpDir = File.createTempDir()
         tmpDir.deleteOnExit()
         this.config = config
         this.scm = scm
-        this.scmmRepoTarget = scmmRepoTarget
+        this.scmRepoTarget = scmRepoTarget
         this.fileSystemUtils = fileSystemUtils
 
         setAbsoluteLocalRepoTmpDir()
@@ -52,7 +51,7 @@ class ScmRepo {
             return
         }
 
-        log.debug("Initializing repo $scmmRepoTarget with content of folder $srcDir")
+        log.debug("Initializing repo $scmRepoTarget with content of folder $srcDir")
         String absoluteSrcDirLocation = srcDir
         if (!new File(absoluteSrcDirLocation).isAbsolute()) {
             absoluteSrcDirLocation = fileSystemUtils.getRootDir() + "/" + srcDir
@@ -77,7 +76,7 @@ GIT Functions
     }
 
     void cloneRepo() {
-        log.debug("Cloning $scmmRepoTarget repo")
+        log.debug("Cloning $scmRepoTarget repo")
         gitClone()
         checkoutOrCreateBranch('main')
     }
@@ -92,14 +91,14 @@ GIT Functions
     }
 
     def commitAndPush(String commitMessage, String tag = null, String refSpec = 'HEAD:refs/heads/main') {
-        log.debug("Adding files to repo: ${scmmRepoTarget}")
+        log.debug("Adding files to repo: ${scmRepoTarget}")
         getGit()
                 .add()
                 .addFilepattern(".")
                 .call()
 
         if (getGit().status().call().hasUncommittedChanges()) {
-            log.debug("Committing repo: ${scmmRepoTarget}")
+            log.debug("Committing repo: ${scmRepoTarget}")
             getGit()
                     .commit()
                     .setSign(false)
@@ -111,7 +110,7 @@ GIT Functions
             def pushCommand = createPushCommand(refSpec)
 
             if (tag) {
-                log.debug("Setting tag '${tag}' on repo: ${scmmRepoTarget}")
+                log.debug("Setting tag '${tag}' on repo: ${scmRepoTarget}")
                 // Delete existing tags first to get idempotence
                 getGit().tagDelete().setTags(tag).call()
                 getGit()
@@ -122,10 +121,10 @@ GIT Functions
                 pushCommand.setPushTags()
             }
 
-            log.debug("Pushing repo: ${scmmRepoTarget}, refSpec: ${refSpec}")
+            log.debug("Pushing repo: ${scmRepoTarget}, refSpec: ${refSpec}")
             pushCommand.call()
         } else {
-            log.debug("No changes after add, nothing to commit or push on repo: ${scmmRepoTarget}")
+            log.debug("No changes after add, nothing to commit or push on repo: ${scmRepoTarget}")
         }
     }
 
@@ -153,7 +152,7 @@ GIT Functions
     }
 
     void checkoutOrCreateBranch(String branch) {
-        log.debug("Checking out $branch for repo $scmmRepoTarget")
+        log.debug("Checking out $branch for repo $scmRepoTarget")
         getGit()
                 .checkout()
                 .setCreateBranch(!branchExists(branch))

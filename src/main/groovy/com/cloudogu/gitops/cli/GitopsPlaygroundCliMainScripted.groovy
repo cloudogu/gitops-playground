@@ -12,14 +12,14 @@ import com.cloudogu.gitops.features.argocd.ArgoCD
 import com.cloudogu.gitops.features.deployment.ArgoCdApplicationStrategy
 import com.cloudogu.gitops.features.deployment.Deployer
 import com.cloudogu.gitops.features.deployment.HelmStrategy
-import com.cloudogu.gitops.features.scm.MultiTenant
+import com.cloudogu.gitops.features.scm.ScmProvider
 import com.cloudogu.gitops.features.scm.SingleTenant
 import com.cloudogu.gitops.jenkins.GlobalPropertyManager
 import com.cloudogu.gitops.jenkins.JenkinsApiClient
 import com.cloudogu.gitops.jenkins.JobManager
 import com.cloudogu.gitops.jenkins.PrometheusConfigurator
 import com.cloudogu.gitops.jenkins.UserManager
-import com.cloudogu.gitops.scmm.ScmmRepoProvider
+import com.cloudogu.gitops.scmm.ScmRepoProvider
 import com.cloudogu.gitops.scmm.api.ScmmApiClient
 import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
@@ -59,7 +59,7 @@ class GitopsPlaygroundCliMainScripted {
 
             def httpClientFactory = new HttpClientFactory()
 
-            def scmmRepoProvider = new ScmmRepoProvider(config, fileSystemUtils)
+            def scmmRepoProvider = new ScmRepoProvider(config, fileSystemUtils)
 
             def insecureSslContextProvider = new Provider<HttpClientFactory.InsecureSslContext>() {
                 @Override
@@ -93,12 +93,13 @@ class GitopsPlaygroundCliMainScripted {
                         new JobManager(jenkinsApiClient), new UserManager(jenkinsApiClient),
                         new PrometheusConfigurator(jenkinsApiClient), helmStrategy, k8sClient, networkingUtils)
 
+                def scmProvider=new ScmProvider(config,scmmApiClient, helmStrategy,fileSystemUtils)
+
                 context.registerSingleton(new Application(config, [
                         new Registry(config, fileSystemUtils, k8sClient, helmStrategy),
-                        new SingleTenant(config,scmmApiClient, helmStrategy,fileSystemUtils),
-                        new MultiTenant(config,scmmApiClient, helmStrategy,fileSystemUtils),
+                        scmProvider,
                         jenkins,
-                        new ArgoCD(config, k8sClient, helmClient, fileSystemUtils, scmmRepoProvider),
+                        new ArgoCD(config, k8sClient, helmClient, fileSystemUtils, scmmRepoProvider,scmProvider),
                         new IngressNginx(config, fileSystemUtils, deployer, k8sClient, airGappedUtils),
                         new CertManager(config, fileSystemUtils, deployer, k8sClient, airGappedUtils),
                         new Mailhog(config, fileSystemUtils, deployer, k8sClient, airGappedUtils),

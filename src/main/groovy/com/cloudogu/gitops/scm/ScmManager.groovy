@@ -3,7 +3,7 @@ package com.cloudogu.gitops.scm
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.scm.config.util.ScmProviderType
-import com.cloudogu.gitops.scm.config.util.ScmmSchema
+import com.cloudogu.gitops.scm.config.util.ScmmConfig
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.scmm.api.Permission
 import com.cloudogu.gitops.scmm.api.Repository
@@ -27,21 +27,21 @@ class ScmManager implements ISCM {
     ScmmApiClient scmmApiClient
     Config config
     FileSystemUtils fileSystemUtils
-    ScmmSchema scmmConfig
-
+    ScmmConfig scmmConfig
     Credentials credentials
 
-    ScmManager(Config config, ScmmSchema scmmConfig, ScmmApiClient scmmApiClient, HelmStrategy deployer, FileSystemUtils fileSystemUtils) {
+    ScmManager(Config config, ScmmConfig scmmConfig, ScmmApiClient scmmApiClient, HelmStrategy deployer, FileSystemUtils fileSystemUtils) {
         this.config = config
         this.namespace = namespace
         this.scmmApiClient = scmmApiClient
         this.deployer = deployer
         this.fileSystemUtils = fileSystemUtils
         this.scmmConfig = scmmConfig
-        this.credentials = new Credentials(scmmConfig.username, scmmConfig.password)
+        this.credentials= scmmConfig.credentials
     }
 
     void setup(){
+        setupInternalScm(this.namespace)
         setupHelm()
         installScmmPlugins()
         configureJenkinsPlugin()
@@ -50,20 +50,19 @@ class ScmManager implements ISCM {
     void setupInternalScm(String namespace) {
         this.namespace = namespace
         setInternalUrl()
-        setupHelm()
     }
 
     String setInternalUrl() {
-        this. "http://scmm.${namespace}.svc.cluster.local/scm"
+        this.url="http://scmm.${namespace}.svc.cluster.local/scm"
     }
 
     void setupHelm() {
         def templatedMap = templateToMap(HELM_VALUES_PATH, [
                 host       : scmmConfig.ingress,
                 remote     : config.application.remote,
-                username   : scmmConfig.username,
-                password   : scmmConfig.password,
-                helm       : scmmConfig.helm,
+                username   : this.scmmConfig.credentials.username,
+                password   : this.scmmConfig.credentials.password,
+                helm       : this.scmmConfig.helm,
                 releaseName: releaseName
         ])
 
@@ -112,7 +111,6 @@ class ScmManager implements ISCM {
         if (jenkinsUrl) {
             pluginNames.add("scm-jenkins-plugin")
         }
-
 
         for (String pluginName : pluginNames) {
             log.info("Installing Plugin ${pluginName} ...")

@@ -1928,8 +1928,8 @@ class ArgoCDTest {
         }
 
         @Override
-        protected initRepos() {
-            super.initRepos()
+        protected initTenantRepos() {
+            super.initTenantRepos()
 
             argocdRepo = argocdRepoInitializationAction.repo
             actualHelmValuesFile = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), HELM_VALUES_PATH)

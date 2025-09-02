@@ -2,15 +2,18 @@ package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.features.scm.ScmProvider
 import com.cloudogu.gitops.kubernetes.argocd.ArgoApplication
 import com.cloudogu.gitops.kubernetes.rbac.RbacDefinition
 import com.cloudogu.gitops.kubernetes.rbac.Role
+import com.cloudogu.gitops.scm.ISCM
+import com.cloudogu.gitops.scmm.ScmRepoProvider
+import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.scmm.ScmUrlResolver
 import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.HelmClient
 import com.cloudogu.gitops.utils.K8sClient
-import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
@@ -53,21 +56,24 @@ class ArgoCD extends Feature {
     protected HelmClient helmClient
 
     protected FileSystemUtils fileSystemUtils
-    private ScmmRepoProvider repoProvider
+    private ScmRepoProvider repoProvider
+
+    ScmProvider scmProvider
 
     ArgoCD(
             Config config,
             K8sClient k8sClient,
             HelmClient helmClient,
             FileSystemUtils fileSystemUtils,
-            ScmmRepoProvider repoProvider
+            ScmRepoProvider repoProvider,
+            ScmProvider scmProvider
     ) {
         this.repoProvider = repoProvider
         this.config = config
         this.k8sClient = k8sClient
         this.helmClient = helmClient
         this.fileSystemUtils = fileSystemUtils
-
+        this.scmProvider = scmProvider
         this.password = this.config.application.password
     }
 
@@ -78,8 +84,10 @@ class ArgoCD extends Feature {
 
     @Override
     void enable() {
-        initRepos()
-        
+
+        initTenantRepos()
+        initCentralRepos()
+
         log.debug('Cloning Repositories')
 
         if (config.content.examples) {
@@ -164,50 +172,27 @@ class ArgoCD extends Feature {
                 new Tuple2('owner', 'helm'), new Tuple2('name', 'argocd'))
     }
 
-    protected initRepos() {
-        argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd', config.multiTenant.useDedicatedInstance)
+    protected initTenantRepos() {
+        if (!config.multiTenant.useDedicatedInstance) {
+            argocdRepoInitializationAction = createRepoInitializationAction(this.scmProvider.getTenant(), 'argocd/argocd', 'argocd/argocd')
+            gitRepos += argocdRepoInitializationAction
 
-        clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources', config.multiTenant.useDedicatedInstance)
-        gitRepos += clusterResourcesInitializationAction
-
-        if (config.multiTenant.useDedicatedInstance) {
-            tenantBootstrapInitializationAction = createRepoInitializationAction('argocd/argocd/multiTenant/tenant', 'argocd/argocd')
+            clusterResourcesInitializationAction = createRepoInitializationAction(this.scmProvider.getTenant(), 'argocd/cluster-resources', 'argocd/cluster-resources')
+            gitRepos += clusterResourcesInitializationAction
+        } else {
+            tenantBootstrapInitializationAction = createRepoInitializationAction(this.scmProvider.getTenant(),'argocd/argocd/multiTenant/tenant', 'argocd/argocd')
             gitRepos += tenantBootstrapInitializationAction
         }
+    }
 
-        if (config.content.examples) {
-            exampleAppsInitializationAction = createRepoInitializationAction('argocd/example-apps', 'argocd/example-apps')
-            gitRepos += exampleAppsInitializationAction
-    
-            nginxHelmJenkinsInitializationAction = createRepoInitializationAction('applications/argocd/nginx/helm-jenkins', 'argocd/nginx-helm-jenkins')
-            gitRepos += nginxHelmJenkinsInitializationAction
-    
-            nginxValidationInitializationAction = createRepoInitializationAction('exercises/nginx-validation', 'exercises/nginx-validation')
-            gitRepos += nginxValidationInitializationAction
-    
-            brokenApplicationInitializationAction = createRepoInitializationAction('exercises/broken-application', 'exercises/broken-application')
-            gitRepos += brokenApplicationInitializationAction
-            
-            remotePetClinicRepoTmpDir = File.createTempDir('gitops-playground-petclinic')
+    protected initCentralRepos() {
+        if (config.multiTenant.useDedicatedInstance) {
+            argocdRepoInitializationAction = createRepoInitializationAction(this.scmProvider.getCentral(), 'argocd/argocd', 'argocd/argocd')
+            gitRepos += argocdRepoInitializationAction
+
+            clusterResourcesInitializationAction = createRepoInitializationAction(this.scmProvider.getCentral(), 'argocd/cluster-resources', 'argocd/cluster-resources')
+            gitRepos += clusterResourcesInitializationAction
         }
-    }
-
-    private void cloneRemotePetclinicRepo() {
-        log.debug("Cloning petclinic base repo, revision ${config.repositories.springPetclinic.ref}," +
-                " from ${config.repositories.springPetclinic.url}")
-        Git git = gitClone()
-                .setURI(config.repositories.springPetclinic.url)
-                .setDirectory(remotePetClinicRepoTmpDir)
-                .call()
-        git.checkout().setName(config.repositories.springPetclinic.ref).call()
-        log.debug('Finished cloning petclinic base repo')
-    }
-
-    /**
-     * Overwrite for testing purposes
-     */
-    protected CloneCommand gitClone() {
-        Git.cloneRepository()
     }
 
     private void prepareGitOpsRepos() {
@@ -226,10 +211,10 @@ class ArgoCD extends Feature {
         }
 
         if (!config.scmm.internal) {
-            String externalScmmUrl = ScmUrlResolver.externalHost(config)
+            String externalScmmUrl = ScmmRepo.createScmmUrl(config)
             log.debug("Configuring all yaml files in gitops repos to use the external scmm url: ${externalScmmUrl}")
             replaceFileContentInYamls(new File(clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()), scmmUrlInternal, externalScmmUrl)
-            
+
             if (config.content.examples) {
                 replaceFileContentInYamls(new File(exampleAppsInitializationAction.repo.getAbsoluteLocalRepoTmpDir()), scmmUrlInternal, externalScmmUrl)
             }
@@ -262,21 +247,6 @@ class ArgoCD extends Feature {
         }
     }
 
-    private void preparePetClinicRepos() {
-        for (def repoInitAction : petClinicInitializationActions) {
-            def tmpDir = repoInitAction.repo.getAbsoluteLocalRepoTmpDir()
-
-            log.debug("Copying original petclinic files for petclinic repo: $tmpDir")
-            fileSystemUtils.copyDirectory(remotePetClinicRepoTmpDir.toString(), tmpDir, new FileSystemUtils.IgnoreDotGitFolderFilter())
-            fileSystemUtils.deleteEmptyFiles(Path.of(tmpDir), ~/k8s\/.*\.yaml/)
-
-            new TemplatingEngine().template(
-                    new File("${fileSystemUtils.getRootDir()}/applications/argocd/petclinic/Dockerfile.ftl"),
-                    new File("${tmpDir}/Dockerfile"),
-                    [baseImage: config.images.petclinic as String]
-            )
-        }
-    }
 
     private void deployWithHelm() {
         // Install umbrella chart from folder
@@ -498,14 +468,9 @@ class ArgoCD extends Feature {
         argocdRepoInitializationAction.repo.commitAndPush("Initial Commit")
     }
 
-    protected RepoInitializationAction createRepoInitializationAction(String localSrcDir, String scmmRepoTarget) {
-        new RepoInitializationAction(config, repoProvider.getRepo(scmmRepoTarget), localSrcDir)
+    protected RepoInitializationAction createRepoInitializationAction(ISCM targetScm, String localSrcDir, String scmmRepoTarget) {
+        new RepoInitializationAction(config, repoProvider.getRepo(targetScm, scmmRepoTarget), localSrcDir)
     }
-
-    protected RepoInitializationAction createRepoInitializationAction(String localSrcDir, String scmmRepoTarget, Boolean isCentralRepo) {
-        new RepoInitializationAction(config, repoProvider.getRepo(scmmRepoTarget, isCentralRepo), localSrcDir)
-    }
-
 
     private void replaceFileContentInYamls(File folder, String from, String to) {
         fileSystemUtils.getAllFilesFromDirectoryWithEnding(folder.absolutePath, ".yaml").forEach(file -> {

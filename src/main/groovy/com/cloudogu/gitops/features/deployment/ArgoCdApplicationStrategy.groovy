@@ -2,7 +2,7 @@ package com.cloudogu.gitops.features.deployment
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.scmm.ScmmRepo
-import com.cloudogu.gitops.scmm.ScmmRepoProvider
+import com.cloudogu.gitops.scmm.ScmRepoProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
@@ -16,12 +16,12 @@ import java.nio.file.Path
 class ArgoCdApplicationStrategy implements DeploymentStrategy {
     private FileSystemUtils fileSystemUtils
     private Config config
-    private final ScmmRepoProvider scmmRepoProvider
+    private final ScmRepoProvider scmmRepoProvider
 
     ArgoCdApplicationStrategy(
             Config config,
             FileSystemUtils fileSystemUtils,
-            ScmmRepoProvider scmmRepoProvider
+            ScmRepoProvider scmmRepoProvider
     ) {
         this.scmmRepoProvider = scmmRepoProvider
         this.fileSystemUtils = fileSystemUtils

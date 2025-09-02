@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.scm.config
 
+import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.scm.config.util.GitlabConfig
 import com.cloudogu.gitops.scm.config.util.ScmmConfig
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
@@ -44,6 +45,11 @@ class ScmCentralSchema {
         @Option(names = ['-gitlab-central-parent-id'], description = SCMM_PASSWORD_DESCRIPTION)
         @JsonPropertyDescription(SCMM_PASSWORD_DESCRIPTION)
         String parentGroupId = ''
+
+        Credentials getCredentials(){
+            return new Credentials(username,password)
+        }
+
     }
 
     static class ScmmCentralConfig implements ScmmConfig {
@@ -63,5 +69,10 @@ class ScmCentralSchema {
         @Option(names = ['--central-scm-password'], description = CENTRAL_SCMM_PASSWORD_DESCRIPTION)
         @JsonPropertyDescription(CENTRAL_SCMM_PASSWORD_DESCRIPTION)
         String password = ''
+
+        Credentials getCredentials(){
+            return new Credentials(username,password)
+        }
+
     }
 }

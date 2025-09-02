@@ -5,7 +5,7 @@ import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.scmm.ScmmRepo
-import com.cloudogu.gitops.scmm.ScmmRepoProvider
+import com.cloudogu.gitops.scmm.ScmRepoProvider
 import com.cloudogu.gitops.utils.*
 import com.cloudogu.gitops.scmm.ScmUrlResolver
 import freemarker.template.DefaultObjectWrapperBuilder
@@ -31,7 +31,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
     Config config
     K8sClient k8sClient
 
-    ScmmRepoProvider scmmRepoProvider
+    ScmRepoProvider scmmRepoProvider
     private FileSystemUtils fileSystemUtils
     private DeploymentStrategy deployer
     private AirGappedUtils airGappedUtils
@@ -42,7 +42,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
             DeploymentStrategy deployer,
             K8sClient k8sClient,
             AirGappedUtils airGappedUtils,
-            ScmmRepoProvider scmmRepoProvider
+            ScmRepoProvider scmmRepoProvider
     ) {
         this.deployer = deployer
         this.config = config
