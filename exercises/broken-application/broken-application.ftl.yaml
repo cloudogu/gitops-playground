@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: broken-application
-          image: <#if nginxImage??>${nginxImage}<#else>bitnami/nginx:1.25.1</#if>
+          image: <#if nginxImage??>${nginxImage}<#else>bitnamilegacy/nginx:1.25.1</#if>
           ports:
             - containerPort: 8080
 <#if podResources == true>
