@@ -1,16 +1,16 @@
 package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.scm.ScmRepo
+import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.utils.DockerImageParser
 import freemarker.template.DefaultObjectWrapperBuilder
 
 class RepoInitializationAction {
-    private ScmRepo repo
+    private GitRepo repo
     private String copyFromDirectory
     private Config config
 
-    RepoInitializationAction(Config config, ScmRepo repo, String copyFromDirectory) {
+    RepoInitializationAction(Config config, GitRepo repo, String copyFromDirectory) {
         this.config = config
         this.repo = repo
         this.copyFromDirectory = copyFromDirectory
@@ -97,7 +97,7 @@ class RepoInitializationAction {
         ])
     }
 
-    ScmRepo getRepo() {
+    GitRepo getRepo() {
         return repo
     }
 }
