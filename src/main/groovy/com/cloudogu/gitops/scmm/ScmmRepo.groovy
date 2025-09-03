@@ -51,11 +51,7 @@ class ScmRepo {
         //switching from normal scm path to the central path
         this.scmmUrl = "${config.scmm.protocol}://${config.scmm.host}"
         if(this.isCentralRepo) {
-            boolean useInternal = config.multiTenant.internal
-            String internalUrl = "http://scmm.${config.multiTenant.centralSCMamespace}.svc.cluster.local/scm"
-            String externalUrl = config.multiTenant.centralScmUrl.toString()
-
-            this.scmmUrl = useInternal ? internalUrl : externalUrl
+            this.scmmUrl= !config.multiTenant.internal? "${config.multiTenant.centralScmUrl.toString()}" : "http://scmm.${config.multiTenant.centralSCMamespace}.svc.cluster.local/scm"
         }
 
         this.scmmRepoTarget = scmmRepoTarget.startsWith(NAMESPACE_3RD_PARTY_DEPENDENCIES) ? scmmRepoTarget :
@@ -101,24 +97,21 @@ class ScmRepo {
 
     void cloneRepo() {
         log.debug("Cloning $scmmRepoTarget repo")
-        Git.cloneRepository()
-                .setURI(getGitRepositoryUrl())
-                .setDirectory(new File(absoluteLocalRepoTmpDir))
-                .setCredentialsProvider(getCredentialProvider())
-                .call()
+        gitClone()
+        checkoutOrCreateBranch('main')
     }
 
     /**
      * @return true if created, false if already exists. Throw exception on all other errors
      */
-    boolean create(String description, ScmmApiClient scmmApiClient, boolean initialize = true) {
+    boolean create(String description, ScmmApiClient scmmApiClient) {
         def namespace = scmmRepoTarget.split('/', 2)[0]
         def repoName = scmmRepoTarget.split('/', 2)[1]
 
         def repositoryApi = scmmApiClient.repositoryApi()
         def repo = new Repository(namespace, repoName, description)
         log.debug("Creating repo: ${namespace}/${repoName}")
-        def createResponse = repositoryApi.create(repo, initialize).execute()
+        def createResponse = repositoryApi.create(repo, true).execute()
         handleResponse(createResponse, repo)
 
         def permission = new Permission(config.scmm.gitOpsUsername as String, Permission.Role.WRITE)
@@ -222,6 +215,33 @@ class ScmRepo {
                 .setRemote(getGitRepositoryUrl())
                 .setRefSpecs(new RefSpec(refSpec))
                 .setCredentialsProvider(getCredentialProvider())
+    }
+
+    void checkoutOrCreateBranch(String branch) {
+        log.debug("Checking out $branch for repo $scmmRepoTarget")
+        getGit()
+                .checkout()
+                .setCreateBranch(!branchExists(branch))
+                .setName(branch)
+                .call()
+    }
+
+    private boolean branchExists(String branch) {
+        return getGit()
+                .branchList()
+                .call()
+                .collect { it.name.replace("refs/heads/", "") }
+                .contains(branch)
+    }
+
+    protected Git gitClone() {
+        Git.cloneRepository()
+                .setURI(getGitRepositoryUrl())
+                .setDirectory(new File(absoluteLocalRepoTmpDir))
+                .setNoCheckout(true)
+                .setCredentialsProvider(getCredentialProvider())
+                .call()
+
     }
 
     private CredentialsProvider getCredentialProvider() {

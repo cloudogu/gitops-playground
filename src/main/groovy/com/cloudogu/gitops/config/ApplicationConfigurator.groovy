@@ -1,6 +1,6 @@
 package com.cloudogu.gitops.config
 
-import com.cloudogu.gitops.scm.config.ScmTenantSchema
+import com.cloudogu.gitops.git.config.ScmTenantSchema
 import com.cloudogu.gitops.utils.FileSystemUtils
 import groovy.util.logging.Slf4j
 

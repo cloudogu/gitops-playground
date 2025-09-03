@@ -1,8 +1,6 @@
 package com.cloudogu.gitops.config
 
-import com.cloudogu.gitops.scm.config.MultiTenantSchema
-import com.cloudogu.gitops.scm.config.ScmCentralSchema
-import com.cloudogu.gitops.scm.config.ScmTenantSchema
+import com.cloudogu.gitops.features.scm.config.ScmTenantSchema
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.databind.*

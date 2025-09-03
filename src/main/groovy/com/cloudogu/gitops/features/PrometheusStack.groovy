@@ -4,7 +4,7 @@ import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
-import com.cloudogu.gitops.scmm.ScmmRepo
+import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.scmm.ScmRepoProvider
 import com.cloudogu.gitops.utils.*
 import com.cloudogu.gitops.scmm.ScmUrlResolver
@@ -31,7 +31,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
     Config config
     K8sClient k8sClient
 
-    ScmRepoProvider scmmRepoProvider
+    ScmRepoProvider scmRepoProvider
     private FileSystemUtils fileSystemUtils
     private DeploymentStrategy deployer
     private AirGappedUtils airGappedUtils
@@ -42,14 +42,14 @@ class PrometheusStack extends Feature implements FeatureWithImage {
             DeploymentStrategy deployer,
             K8sClient k8sClient,
             AirGappedUtils airGappedUtils,
-            ScmRepoProvider scmmRepoProvider
+            ScmRepoProvider scmRepoProvider
     ) {
         this.deployer = deployer
         this.config = config
         this.fileSystemUtils = fileSystemUtils
         this.k8sClient = k8sClient
         this.airGappedUtils = airGappedUtils
-        this.scmmRepoProvider = scmmRepoProvider
+        this.scmRepoProvider = scmRepoProvider
     }
 
     @Override
@@ -99,7 +99,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
         }
 
         if (config.application.namespaceIsolation || config.application.netpols) {
-            ScmmRepo clusterResourcesRepo = scmmRepoProvider.getRepo('argocd/cluster-resources', config.multiTenant.useDedicatedInstance)
+            GitRepo clusterResourcesRepo = scmRepoProvider.getRepo('argocd/cluster-resources', config.multiTenant.useDedicatedInstance)
             clusterResourcesRepo.cloneRepo()
             for (String currentNamespace : config.application.namespaces.activeNamespaces) {
 
