@@ -589,6 +589,8 @@ skopeo copy docker://quay.io/jetstack/cert-manager-webhook:v1.16.1 --dest-creds 
 skopeo copy docker://bitnami/kubectl:1.29 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/bitnami/kubectl:1.29
 skopeo copy docker://eclipse-temurin:17-jre-alpine --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/eclipse-temurin:17-jre-alpine
 skopeo copy docker://ghcr.io/cloudogu/helm:3.16.1-1  --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/helm:latest 
+skopeo copy docker://cytopia/yamllint:1.25-0.7  --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/yamllint:latest 
+
 ```
 
 * Deploy playground:
@@ -614,6 +616,9 @@ docker run --rm -t -u $(id -u) \
     --registry-password-read-only=RegistryRead12345 \
     --kubectl-image=localhost:30000/proxy/bitnami/kubectl:1.29 \
     --helm-image=localhost:30000/proxy/helm:latest \
+    --helmkubeval-image=localhost:30000/proxy/helm:latest \
+    --kubeval-image=localhost:30000/proxy/helm:latest \
+    --yamllint-image=localhost:30000/proxy/yamllint:latest \
     --petclinic-image=localhost:30000/proxy/eclipse-temurin:17-jre-alpine \
     --mailhog-image=localhost:30000/proxy/mailhog:latest \
     --vault-image=localhost:30000/proxy/vault:latest \
