@@ -1,8 +1,11 @@
-<#if nginxImage??>
+<#if nginxImage?has_content>
 image:
   registry: ${nginxImage.registry}
   repository: ${nginxImage.repository}
   tag: ${nginxImage.tag}
+<#else>
+image:
+  repository: bitnamilegacy/nginx
 </#if>
 <#if config.registry.createImagePullSecrets == true>
 
