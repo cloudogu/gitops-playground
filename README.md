@@ -469,7 +469,7 @@ def gitopsConfig = [
     ...
     buildImages          : [
             helm: 'ghcr.io/cloudogu/helm:3.10.3-1',
-            kubectl: 'bitnami/kubectl:1.29',
+            kubectl: 'bitnamilegacy/kubectl:1.29',
             kubeval: 'ghcr.io/cloudogu/helm:3.10.3-1',
             helmKubeval: 'ghcr.io/cloudogu/helm:3.10.3-1',
             yamllint: 'cytopia/yamllint:1.25-0.7'
@@ -624,7 +624,7 @@ When you encounter errors with port 80 you might want to use e.g.
 * If you must, you can also run using Docker Desktop from native Windows console (see bellow)
 * However, there seems to be a problem when the Jenkins Jobs running the playground access docker, e.g.   
 ```
-$ docker run -t -d -u 0:133 -v ... -e ******** bitnami/kubectl:1.25.4 cat
+$ docker run -t -d -u 0:133 -v ... -e ******** bitnamilegacy/kubectl:1.25.4 cat
 docker top e69b92070acf3c1d242f4341eb1fa225cc40b98733b0335f7237a01b4425aff3 -eo pid,comm
 process apparently never started in /tmp/gitops-playground-jenkins-agent/workspace/xample-apps_petclinic-plain_main/.configRepoTempDir@tmp/durable-7f109066
 (running Jenkins temporarily with -Dorg.jenkinsci.plugins.durabletask.BourneShellScript.LAUNCH_DIAGNOSTICS=true might make the problem clearer)

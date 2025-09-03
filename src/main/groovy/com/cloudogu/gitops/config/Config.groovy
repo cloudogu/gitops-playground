@@ -494,7 +494,7 @@ class Config {
     static class ImagesSchema {
         @Option(names = ['--kubectl-image'], description = KUBECTL_IMAGE_DESCRIPTION)
         @JsonPropertyDescription(KUBECTL_IMAGE_DESCRIPTION)
-        String kubectl = "bitnami/kubectl:$K8S_VERSION"
+        String kubectl = "bitnamilegacy/kubectl:$K8S_VERSION"
 
         // cloudogu/helm also contains kubeval and helm kubeval plugin. Using the same image makes builds faster
         @Option(names = ['--helm-image'], description = HELM_IMAGE_DESCRIPTION)

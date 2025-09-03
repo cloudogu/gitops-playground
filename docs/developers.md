@@ -453,7 +453,7 @@ curl -X PUT -u admin:Harbor12345 'http://localhost:30002/api/v2.0/projects/1'  -
 
 Then either import external images like so (requires `skopeo` but no prior pulling or insecure config necessary):
 ```bash
-skopeo copy docker://bitnami/nginx:1.25.1 --dest-creds admin:Harbor12345 --dest-tls-verify=false  docker://localhost:30002/library/nginx:1.25.1
+skopeo copy docker://bitnamilegacy/nginx:1.25.1 --dest-creds admin:Harbor12345 --dest-tls-verify=false  docker://localhost:30002/library/nginx:1.25.1
 ```
 
 Alternatively, you could push existing images from your docker daemon.
@@ -461,7 +461,7 @@ However, this takes longer (pull first) and you'll have to make sure to add `loc
 
 ```bash
 docker login localhost:30002 -u admin -p Harbor12345
-docker tag bitnami/nginx:1.25.1 localhost:30002/library/nginx:1.25.1
+docker tag bitnamilegacy/nginx:1.25.1 localhost:30002/library/nginx:1.25.1
 docker push localhost:30002/library/nginx:1.25.1
 ```
 
@@ -567,7 +567,7 @@ curl  --fail "http://localhost:30000/api/v2.0/projects/${projectId}/members" -X 
 skopeo copy docker://ghcr.io/cloudogu/mailhog:v1.0.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/mailhog
 skopeo copy docker://ghcr.io/external-secrets/external-secrets:v0.9.16 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/external-secrets
 skopeo copy docker://hashicorp/vault:1.14.0 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/vault
-skopeo copy docker://bitnami/nginx:1.23.3-debian-11-r8 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/nginx
+skopeo copy docker://bitnamilegacy/nginx:1.23.3-debian-11-r8 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/nginx
 skopeo copy docker://registry.k8s.io/ingress-nginx/controller:v1.12.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/ingress-nginx
 
 # Monitoring
@@ -586,7 +586,7 @@ skopeo copy docker://quay.io/jetstack/cert-manager-cainjector:v1.16.1 --dest-cre
 skopeo copy docker://quay.io/jetstack/cert-manager-webhook:v1.16.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/cert-manager-webhook
 
 # Needed for the builds to work with proxy-registry
-skopeo copy docker://bitnami/kubectl:1.29 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/bitnami/kubectl:1.29
+skopeo copy docker://bitnamilegacy/kubectl:1.29 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/bitnami/kubectl:1.29
 skopeo copy docker://eclipse-temurin:17-jre-alpine --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/eclipse-temurin:17-jre-alpine
 skopeo copy docker://ghcr.io/cloudogu/helm:3.16.1-1  --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/helm:latest 
 ```
@@ -612,7 +612,7 @@ docker run --rm -t -u $(id -u) \
     --registry-proxy-password=Proxy12345 \
     --registry-username-read-only=RegistryRead \
     --registry-password-read-only=RegistryRead12345 \
-    --kubectl-image=localhost:30000/proxy/bitnami/kubectl:1.29 \
+    --kubectl-image=localhost:30000/proxy/bitnamilegacy/kubectl:1.29 \
     --helm-image=localhost:30000/proxy/helm:latest \
     --petclinic-image=localhost:30000/proxy/eclipse-temurin:17-jre-alpine \
     --mailhog-image=localhost:30000/proxy/mailhog:latest \
