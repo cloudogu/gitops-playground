@@ -2,7 +2,7 @@ package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.scm.ScmHandler
+import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.scmm.ScmRepoProvider
 import com.cloudogu.gitops.kubernetes.rbac.RbacDefinition
 import com.cloudogu.gitops.kubernetes.rbac.Role
@@ -51,7 +51,7 @@ class ArgoCD extends Feature {
     protected FileSystemUtils fileSystemUtils
     private ScmRepoProvider repoProvider
 
-    ScmHandler scmProvider
+    GitHandler scmProvider
 
     ArgoCD(
             Config config,
@@ -59,7 +59,7 @@ class ArgoCD extends Feature {
             HelmClient helmClient,
             FileSystemUtils fileSystemUtils,
             ScmRepoProvider repoProvider,
-            ScmHandler scmProvider
+            GitHandler scmProvider
     ) {
         this.repoProvider = repoProvider
         this.config = config

@@ -1,10 +1,10 @@
-package com.cloudogu.gitops.features.scm.config
+package com.cloudogu.gitops.features.git.config
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
-import com.cloudogu.gitops.features.scm.config.util.GitlabConfig
-import com.cloudogu.gitops.features.scm.config.util.ScmProviderType
-import com.cloudogu.gitops.features.scm.config.util.ScmmConfig
+import com.cloudogu.gitops.features.git.config.util.GitlabConfig
+import com.cloudogu.gitops.features.git.config.util.ScmProviderType
+import com.cloudogu.gitops.features.git.config.util.ScmmConfig
 import com.cloudogu.gitops.utils.NetworkingUtils
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonPropertyDescription

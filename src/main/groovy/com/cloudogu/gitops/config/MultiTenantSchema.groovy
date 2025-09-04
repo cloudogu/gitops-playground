@@ -1,7 +1,7 @@
 package com.cloudogu.gitops.config
 
-import com.cloudogu.gitops.features.scm.config.ScmCentralSchema
-import com.cloudogu.gitops.features.scm.config.util.ScmProviderType
+import com.cloudogu.gitops.features.git.config.ScmCentralSchema
+import com.cloudogu.gitops.features.git.config.util.ScmProviderType
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import picocli.CommandLine.Option
 
