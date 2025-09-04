@@ -12,7 +12,7 @@ import com.cloudogu.gitops.features.argocd.ArgoCD
 import com.cloudogu.gitops.features.deployment.ArgoCdApplicationStrategy
 import com.cloudogu.gitops.features.deployment.Deployer
 import com.cloudogu.gitops.features.deployment.HelmStrategy
-import com.cloudogu.gitops.features.scm.ScmHandler
+import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.scmm.api.ScmmApiClient
 import com.cloudogu.gitops.jenkins.GlobalPropertyManager
 import com.cloudogu.gitops.jenkins.JenkinsApiClient
@@ -91,7 +91,7 @@ class GitopsPlaygroundCliMainScripted {
                         new JobManager(jenkinsApiClient), new UserManager(jenkinsApiClient),
                         new PrometheusConfigurator(jenkinsApiClient), helmStrategy, k8sClient, networkingUtils)
 
-                def scmProvider=new ScmHandler(config,scmmApiClient, helmStrategy,fileSystemUtils)
+                def scmProvider=new GitHandler(config,scmmApiClient, helmStrategy,fileSystemUtils)
 
                 context.registerSingleton(new Application(config, [
                         new Registry(config, fileSystemUtils, k8sClient, helmStrategy),

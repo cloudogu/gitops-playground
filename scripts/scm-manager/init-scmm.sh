@@ -218,7 +218,7 @@ function configureScmmManager() {
     addRepo "3rd-party-dependencies" "spring-boot-helm-chart-with-dependency"
     setPermission "3rd-party-dependencies" "spring-boot-helm-chart-with-dependency" "${GITOPS_USERNAME}" "WRITE"
 
-    addRepo "3rd-party-dependencies" "gitops-build-lib" "Jenkins pipeline shared library for automating deployments via GitOps "
+    addRepo "3rd-party-dependencies" "gitops-build-lib" "Jenkins pipeline shared library for automating deployments via GitOps"
     setPermission "3rd-party-dependencies" "gitops-build-lib" "${GITOPS_USERNAME}" "WRITE"
 
     addRepo "3rd-party-dependencies" "ces-build-lib" "Jenkins pipeline shared library adding features for Maven, Gradle, Docker, SonarQube, Git and others"

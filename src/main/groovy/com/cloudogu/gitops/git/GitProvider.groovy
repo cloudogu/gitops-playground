@@ -8,4 +8,5 @@ interface GitProvider {
     void init()
     String getUrl()
     GitRepo getRepo(String target)
+    void createRepo(String target,String description)
 }
