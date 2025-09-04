@@ -2,7 +2,7 @@ package com.cloudogu.gitops.git
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
-import com.cloudogu.gitops.scmm.jgit.InsecureCredentialProvider
+import com.cloudogu.gitops.git.scmm.jgit.InsecureCredentialProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j

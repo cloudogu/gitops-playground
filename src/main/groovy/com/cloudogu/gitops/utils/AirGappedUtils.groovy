@@ -1,9 +1,9 @@
 package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.scmm.ScmmRepo
-import com.cloudogu.gitops.scmm.ScmRepoProvider
-import com.cloudogu.gitops.scmm.api.ScmmApiClient
+import com.cloudogu.gitops.git.GitRepo
+import com.cloudogu.gitops.git.scmm.ScmRepoProvider
+import com.cloudogu.gitops.git.scmm.api.ScmmApiClient
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 import jakarta.inject.Singleton
@@ -44,7 +44,7 @@ class AirGappedUtils {
 
         validateChart(repoNamespaceAndName, localHelmChartFolder, repoName)
 
-        ScmmRepo repo = repoProvider.getRepo(repoNamespaceAndName)
+        GitRepo repo = repoProvider.getRepo(repoNamespaceAndName)
         repo.create("Mirror of Helm chart $repoName from ${helmConfig.repoURL}", scmmApiClient)
         repo.cloneRepo()
 
@@ -72,7 +72,7 @@ class AirGappedUtils {
         }
     }
 
-    private Map localizeChartYaml(ScmmRepo scmmRepo) {
+    private Map localizeChartYaml(GitRepo scmmRepo) {
         log.debug("Preparing repo ${scmmRepo.scmmRepoTarget} for air-gapped use: Changing Chart.yaml to resolve depencies locally")
 
         def chartYamlPath = Path.of(scmmRepo.absoluteLocalRepoTmpDir, 'Chart.yaml')
@@ -91,7 +91,7 @@ class AirGappedUtils {
         return chartYaml
     }
 
-    private static Map parseChartLockIfExists(ScmmRepo scmmRepo) {
+    private static Map parseChartLockIfExists(GitRepo scmmRepo) {
         def chartLock = Path.of(scmmRepo.absoluteLocalRepoTmpDir, 'Chart.lock')
         if (!chartLock.toFile().exists()) {
             return [:]
@@ -102,7 +102,7 @@ class AirGappedUtils {
     /**
      * Resolve proper dependency version from Chart.lock, e.g. 5.18.* -> 5.18.1
      */
-    private void resolveDependencyVersion(Map chartLock, Map chartYamlDep, ScmmRepo scmmRepo) {
+    private void resolveDependencyVersion(Map chartLock, Map chartYamlDep, GitRepo scmmRepo) {
         def chartLockDep = findByName(chartLock.dependencies as List, chartYamlDep.name as String)
         if (chartLockDep) {
             chartYamlDep.version = chartLockDep.version
