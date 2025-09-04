@@ -2,10 +2,10 @@ package com.cloudogu.gitops.git.scmm
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
-import com.cloudogu.gitops.features.scm.config.util.ScmProviderType
+import com.cloudogu.gitops.features.git.config.util.ScmProviderType
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.GitProvider
-import com.cloudogu.gitops.features.scm.config.util.ScmmConfig
+import com.cloudogu.gitops.features.git.config.util.ScmmConfig
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.git.scmm.api.Permission
 import com.cloudogu.gitops.git.scmm.api.Repository
@@ -230,5 +230,10 @@ class ScmManager implements GitProvider {
     @Override
     GitRepo getRepo(String target) {
         return null
+    }
+
+    @Override
+    void createRepo(String target, String description) {
+
     }
 }

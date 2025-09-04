@@ -2,7 +2,7 @@ package com.cloudogu.gitops.git.gitlab
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
-import com.cloudogu.gitops.features.scm.config.util.GitlabConfig
+import com.cloudogu.gitops.features.git.config.util.GitlabConfig
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.GitProvider
 import com.cloudogu.gitops.git.scmm.jgit.InsecureCredentialProvider
@@ -100,7 +100,7 @@ class Gitlab implements GitProvider {
         exercisesGroup.ifPresent(this.&createExercisesRepos)
     }
 
-    Project createRepo(String name, String description) {
+    void createRepo(String name, String description) {
         Optional<Project> project = getProject("${parentGroup.getFullPath()}/${name}".toString())
         if (project.isEmpty()) {
             Project projectSpec = new Project()
@@ -118,7 +118,6 @@ class Gitlab implements GitProvider {
             log.info("Project ${projectSpec} created in Gitlab!")
         }
         removeBranchProtection(project.get())
-        return project as Project
     }
 
     void removeBranchProtection(Project project) {

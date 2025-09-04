@@ -1,8 +1,8 @@
-package com.cloudogu.gitops.features.scm.config
+package com.cloudogu.gitops.features.git.config
 
 import com.cloudogu.gitops.config.Credentials
-import com.cloudogu.gitops.features.scm.config.util.GitlabConfig
-import com.cloudogu.gitops.features.scm.config.util.ScmmConfig
+import com.cloudogu.gitops.features.git.config.util.GitlabConfig
+import com.cloudogu.gitops.features.git.config.util.ScmmConfig
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import picocli.CommandLine.Option
 
