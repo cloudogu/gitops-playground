@@ -16,7 +16,7 @@ import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 @Slf4j
 class GitRepo {
 
-    private ISCM scm
+    private GitProvider scm
 
     Config config
     String absoluteLocalRepoTmpDir
@@ -26,7 +26,7 @@ class GitRepo {
     private Git gitMemoization = null
     FileSystemUtils fileSystemUtils
 
-    GitRepo(Config config, ISCM scm, String scmRepoTarget, FileSystemUtils fileSystemUtils) {
+    GitRepo(Config config, GitProvider scm, String scmRepoTarget, FileSystemUtils fileSystemUtils) {
         def tmpDir = File.createTempDir()
         tmpDir.deleteOnExit()
         this.config = config

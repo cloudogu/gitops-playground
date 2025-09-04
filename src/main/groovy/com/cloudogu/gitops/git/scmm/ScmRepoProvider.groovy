@@ -2,7 +2,7 @@ package com.cloudogu.gitops.git.scmm
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.scm.ScmHandler
-import com.cloudogu.gitops.git.ISCM
+import com.cloudogu.gitops.git.GitProvider
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.utils.FileSystemUtils
 import jakarta.inject.Singleton
@@ -19,7 +19,7 @@ class ScmRepoProvider {
         this.scmProvider = scmProvider
     }
 
-    GitRepo getRepo(ISCM scm, String repoTarget) {
+    GitRepo getRepo(GitProvider scm, String repoTarget) {
         return new GitRepo(config, scm, repoTarget, fileSystemUtils)
     }
 }

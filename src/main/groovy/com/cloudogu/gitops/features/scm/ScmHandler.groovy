@@ -4,7 +4,7 @@ import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.features.scm.config.util.ScmProviderType
-import com.cloudogu.gitops.git.ISCM
+import com.cloudogu.gitops.git.GitProvider
 import com.cloudogu.gitops.git.gitlab.Gitlab
 import com.cloudogu.gitops.git.scmm.ScmManager
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -24,8 +24,8 @@ class ScmHandler extends Feature {
     HelmStrategy helmStrategy
     FileSystemUtils fileSystemUtils
 
-    ISCM tenant
-    ISCM central
+    GitProvider tenant
+    GitProvider central
 
     ScmHandler(Config config, ScmmApiClient scmmApiClient, HelmStrategy helmStrategy, FileSystemUtils fileSystemUtils) {
         this.config = config

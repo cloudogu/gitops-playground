@@ -2,7 +2,7 @@ package com.cloudogu.gitops.git
 
 import com.cloudogu.gitops.config.Credentials
 
-interface ISCM {
+interface GitProvider {
 
     Credentials getCredentials()
     void init()
