@@ -4,7 +4,7 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.features.scm.config.util.GitlabConfig
 import com.cloudogu.gitops.git.GitRepo
-import com.cloudogu.gitops.git.ISCM
+import com.cloudogu.gitops.git.GitProvider
 import com.cloudogu.gitops.git.scmm.jgit.InsecureCredentialProvider
 import groovy.util.logging.Slf4j
 import org.eclipse.jgit.transport.ChainingCredentialsProvider
@@ -17,7 +17,7 @@ import org.gitlab4j.api.models.Project
 import java.util.logging.Level
 
 @Slf4j
-class Gitlab implements ISCM {
+class Gitlab implements GitProvider {
 
     private GitLabApi gitlabApi
     private Config config

@@ -4,7 +4,7 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.features.scm.config.util.ScmProviderType
 import com.cloudogu.gitops.git.GitRepo
-import com.cloudogu.gitops.git.ISCM
+import com.cloudogu.gitops.git.GitProvider
 import com.cloudogu.gitops.features.scm.config.util.ScmmConfig
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.git.scmm.api.Permission
@@ -18,7 +18,7 @@ import groovy.yaml.YamlSlurper
 import okhttp3.Response
 
 @Slf4j
-class ScmManager implements ISCM {
+class ScmManager implements GitProvider {
 
     static final String HELM_VALUES_PATH = "scm-manager/values.ftl.yaml"
 
