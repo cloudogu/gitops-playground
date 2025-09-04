@@ -5,7 +5,7 @@ import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.git.GitRepo
-import com.cloudogu.gitops.scmm.ScmRepoProvider
+import com.cloudogu.gitops.git.scmm.ScmRepoProvider
 import com.cloudogu.gitops.utils.*
 import com.cloudogu.gitops.scmm.ScmUrlResolver
 import freemarker.template.DefaultObjectWrapperBuilder

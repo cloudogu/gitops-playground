@@ -1,8 +1,8 @@
 package com.cloudogu.gitops.destroy
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.scmm.ScmmRepo
-import com.cloudogu.gitops.scmm.ScmRepoProvider
+import com.cloudogu.gitops.git.GitRepo
+import com.cloudogu.gitops.git.scmm.ScmRepoProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.HelmClient
 import com.cloudogu.gitops.utils.K8sClient
@@ -85,7 +85,7 @@ class ArgoCDDestructionHandler implements DestructionHandler {
         k8sClient.delete('secret', 'default', 'argocd-repo-creds-scmm')
     }
 
-    void installArgoCDViaHelm(ScmmRepo repo) {
+    void installArgoCDViaHelm(GitRepo repo) {
         // this is a hack to be able to uninstall using helm
         def namePrefix = config.application.namePrefix
 
