@@ -3,9 +3,9 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Config.OverwriteMode
-import com.cloudogu.gitops.scmm.ScmmRepo
-import com.cloudogu.gitops.scmm.ScmRepoProvider
-import com.cloudogu.gitops.scmm.api.ScmmApiClient
+import com.cloudogu.gitops.git.GitRepo
+import com.cloudogu.gitops.git.scmm.ScmRepoProvider
+import com.cloudogu.gitops.git.scmm.api.ScmmApiClient
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.TemplatingEngine
@@ -380,7 +380,7 @@ class Content extends Feature {
     /**
      * Force pushes repoCoordinate.repoConfig.ref or all refs to targetRepo
      */
-    private static void handleRepoMirroring(RepoCoordinate repoCoordinate, ScmmRepo targetRepo) {
+    private static void handleRepoMirroring(RepoCoordinate repoCoordinate, GitRepo targetRepo) {
         try (def targetGit = Git.open(new File(targetRepo.absoluteLocalRepoTmpDir))) {
             def remoteUrl = targetGit.repository.config.getString('remote', 'origin', 'url')
 

@@ -1,8 +1,8 @@
 package com.cloudogu.gitops.dependencyinjection
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.git.scmm.api.AuthorizationInterceptor
 import com.cloudogu.gitops.okhttp.RetryInterceptor
-import com.cloudogu.gitops.scmm.api.AuthorizationInterceptor
 import groovy.transform.TupleConstructor
 import io.micronaut.context.annotation.Factory
 import io.micronaut.context.annotation.Prototype
@@ -44,7 +44,7 @@ class HttpClientFactory {
     @Named("scmm")
     OkHttpClient okHttpClientScmm(HttpLoggingInterceptor loggingInterceptor, Config config, Provider<HttpClientFactory.InsecureSslContext> insecureSslContext) {
         def builder = new OkHttpClient.Builder()
-                .addInterceptor(new AuthorizationInterceptor(config.scmm.username, config.scmm.password))
+                .addInterceptor(new AuthorizationInterceptor(config.scm.username, config.scmm.password))
                 .addInterceptor(loggingInterceptor)
                 .addInterceptor(new RetryInterceptor())
 

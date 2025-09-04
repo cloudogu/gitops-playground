@@ -5,6 +5,7 @@ import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.features.scm.config.util.GitlabConfig
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.ISCM
+import com.cloudogu.gitops.git.scmm.jgit.InsecureCredentialProvider
 import groovy.util.logging.Slf4j
 import org.eclipse.jgit.transport.ChainingCredentialsProvider
 import org.eclipse.jgit.transport.CredentialsProvider
@@ -110,7 +111,7 @@ class Gitlab implements ISCM {
                     .withWikiEnabled(true)
                     .withSnippetsEnabled(true)
                     .withPublic(false)
-                    .withNamespaceId(this.gitlabConfig.parentGroup)
+                    .withNamespaceId(this.gitlabConfig.parentGroup.toLong())
                     .withInitializeWithReadme(true)
 
             project = Optional.ofNullable(this.gitlabApi.projectApi.createProject(projectSpec))

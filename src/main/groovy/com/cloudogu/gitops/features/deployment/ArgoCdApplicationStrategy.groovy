@@ -1,8 +1,8 @@
 package com.cloudogu.gitops.features.deployment
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.scmm.ScmmRepo
-import com.cloudogu.gitops.scmm.ScmRepoProvider
+import com.cloudogu.gitops.git.GitRepo
+import com.cloudogu.gitops.git.scmm.ScmRepoProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
@@ -37,7 +37,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
         def namePrefix = config.application.namePrefix
         def shallCreateNamespace = config.features['argocd']['operator'] ? "CreateNamespace=false" : "CreateNamespace=true"
 
-        ScmmRepo clusterResourcesRepo = scmmRepoProvider.getRepo('argocd/cluster-resources', config.multiTenant.useDedicatedInstance)
+        GitRepo clusterResourcesRepo = scmmRepoProvider.getRepo('argocd/cluster-resources', config.multiTenant.useDedicatedInstance)
         clusterResourcesRepo.cloneRepo()
 
         // Inline values from tmpHelmValues file into ArgoCD Application YAML

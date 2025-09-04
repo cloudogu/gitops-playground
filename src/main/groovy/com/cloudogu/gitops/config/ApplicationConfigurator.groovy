@@ -1,6 +1,5 @@
 package com.cloudogu.gitops.config
 
-import com.cloudogu.gitops.git.config.ScmTenantSchema
 import com.cloudogu.gitops.utils.FileSystemUtils
 import groovy.util.logging.Slf4j
 
@@ -118,10 +117,10 @@ class ApplicationConfigurator {
         }
     }
 
-     private void addScmConfig(Config newConfig) {
+    private void addScmConfig(Config newConfig) {
         log.debug("Adding additional config for SCM")
 
-         if(ScmTenantSchema.ScmmCentralConfig)
+        if (ScmTenantSchema.ScmmCentralConfig)
         //TODO
         /*if(newConfig.scm.gitlabConfig.url && newConfig.scm.gitlabConfig.password){
             newConfig.scm.provider= ScmTenantSchema.ScmProviderType.GITLAB
@@ -129,7 +128,7 @@ class ApplicationConfigurator {
             throw new RuntimeException(
         }*/
 
-        newConfig.scm.scmmConfig.gitOpsUsername = "${newConfig.application.namePrefix}gitops"
+            newConfig.scm.scmmConfig.gitOpsUsername = "${newConfig.application.namePrefix}gitops"
 
         if (newConfig.scm.scmmConfig.url) {
             log.debug("Setting external scmm config")
@@ -258,7 +257,7 @@ class ApplicationConfigurator {
                 if (urlString.endsWith("/")) {
                     urlString = urlString[0..-2]
                 }
-                newConfig.multiTenant.centralScmUrl= urlString
+                newConfig.multiTenant.centralScmUrl = urlString
             }
 
             //Disabling IngressNginx in DedicatedInstances Mode for now.
@@ -313,7 +312,7 @@ class ApplicationConfigurator {
 
     static void validateContent(Config config) {
         config.content.repos.each { repo ->
-            
+
             if (!repo.url) {
                 throw new RuntimeException("content.repos requires a url parameter.")
             }
