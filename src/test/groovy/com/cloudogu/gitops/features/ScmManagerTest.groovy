@@ -179,10 +179,10 @@ class ScmManagerTest {
         return ys.parse(temporaryYamlFile) as Map
     }
 
-    private ScmManager createScmManager() {
+    private ScmmManager createScmManager() {
         when(networkingUtils.createUrl(anyString(), anyString(), anyString())).thenCallRealMethod()
         when(networkingUtils.createUrl(anyString(), anyString())).thenCallRealMethod()
-        new ScmManager(config, commandExecutor, new FileSystemUtils() {
+        new ScmmManager(config, commandExecutor, new FileSystemUtils() {
             @Override
             Path writeTempFile(Map mapValues) {
                 def ret = super.writeTempFile(mapValues)

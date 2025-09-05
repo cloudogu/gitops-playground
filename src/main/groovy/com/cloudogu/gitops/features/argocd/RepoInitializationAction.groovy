@@ -73,12 +73,14 @@ class RepoInitializationAction {
                         ],
                 ],
                 scmm                : [
-                        baseUrl       : config.scmm.internal ? "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm" : ScmmRepo.createScmmUrl(config),
-                        host          : config.scmm.internal ? "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local" : config.scmm.host,
-                        protocol      : config.scmm.internal ? 'http' : config.scmm.protocol,
-                        repoUrl       : ScmmRepo.createSCMBaseUrl(config),
-                        provider      : config.scmm.provider,
-                        centralScmmUrl: !config.multiTenant.internal? config.multiTenant.centralScmUrl : "http://scmm.scm-manager.svc.cluster.local/scm"
+                        //TODO
+                        baseUrl       : this.repo.gitProvider.url,
+                        //only needed in prometheus? maybe we can get rid of it?
+                        // host          : this.repo.gitProvider.internal ? "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local" : config.scmm.host,
+                        // protocol      : this.repo.gitProvider.internal ? 'http' : config.scm.protocol,
+                        repoUrl       : GitRepo.createSCMBaseUrl(config),
+                        provider      : this.repo.gitProvider.getClass().getSimpleName(),
+                        centralScmmUrl: !config.multiTenant.internal ? config.multiTenant. : "http://scmm.scm-manager.svc.cluster.local/scm", //?? hard to solve. We only inject 1 GitProvider here. Needs extra care
                 ],
                 jenkins             : [
                         mavenCentralMirror: config.jenkins.mavenCentralMirror,

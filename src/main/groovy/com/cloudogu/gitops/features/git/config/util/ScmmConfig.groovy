@@ -5,6 +5,7 @@ import com.cloudogu.gitops.config.Credentials
 
 
 interface ScmmConfig {
+    Boolean internal
     String url
     public String username = Config.DEFAULT_ADMIN_USER
     public String password = Config.DEFAULT_ADMIN_PW
@@ -12,4 +13,5 @@ interface ScmmConfig {
     String ingress
     Config.HelmConfigWithValues helm
     Credentials getCredentials()
+    String rootPath
 }
