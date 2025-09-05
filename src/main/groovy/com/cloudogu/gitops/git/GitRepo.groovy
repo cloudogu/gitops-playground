@@ -16,7 +16,7 @@ import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 @Slf4j
 class GitRepo {
 
-    private GitProvider scm
+    GitProvider gitProvider
 
     Config config
     String absoluteLocalRepoTmpDir
@@ -35,7 +35,7 @@ class GitRepo {
         this.fileSystemUtils = fileSystemUtils
 
         setAbsoluteLocalRepoTmpDir()
-        setCredentialProvider(this.scm.getCredentials())
+        setCredentialProvider(this.gitProvider.getCredentials())
     }
 
     void writeFile(String path, String content) {
@@ -83,7 +83,7 @@ GIT Functions
 
     protected Git gitClone() {
         Git.cloneRepository()
-                .setURI(this.scm.getUrl())
+                .setURI(this.gitProvider.getUrl())
                 .setDirectory(new File(absoluteLocalRepoTmpDir))
                 .setNoCheckout(true)
                 .setCredentialsProvider(this.getCredentialsProvider())
@@ -146,7 +146,7 @@ GIT Functions
     private PushCommand createPushCommand(String refSpec) {
         getGit()
                 .push()
-                .setRemote(this.scm.getUrl())
+                .setRemote(this.gitProvider.getUrl())
                 .setRefSpecs(new RefSpec(refSpec))
                 .setCredentialsProvider(this.getCredentialsProvider())
     }

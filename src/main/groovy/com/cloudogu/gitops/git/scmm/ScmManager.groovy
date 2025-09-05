@@ -2,7 +2,6 @@ package com.cloudogu.gitops.git.scmm
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
-import com.cloudogu.gitops.features.git.config.util.ScmProviderType
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.GitProvider
 import com.cloudogu.gitops.features.git.config.util.ScmmConfig
@@ -54,6 +53,7 @@ class ScmManager implements GitProvider {
         setInternalUrl()
     }
 
+    //TODO URL handling by object
     String setInternalUrl() {
         this.url="http://scmm.${namespace}.svc.cluster.local/scm"
     }
@@ -147,7 +147,7 @@ class ScmManager implements GitProvider {
         def createResponse = repositoryApi.create(repo, true).execute()
         handleResponse(createResponse, repo)
 
-        def permission = new Permission(config.scmm.gitOpsUsername as String, Permission.Role.WRITE)
+        def permission = new Permission(config.scm.gitOpsUsername as String, Permission.Role.WRITE)
         def permissionResponse = repositoryApi.createPermission(namespace, repoName, permission).execute()
         return handleResponse(permissionResponse, permission, "for repo $namespace/$repoName")
     }
@@ -208,8 +208,8 @@ class ScmManager implements GitProvider {
     }
 
     @Override
-    def createRepo() {
-        return null
+    def createRepo(String name) {
+        this.create(name)
     }
 
     @Override
@@ -218,13 +218,11 @@ class ScmManager implements GitProvider {
     }
 
     @Override
-    ScmProviderType getScmProviderType() {
-        return null
-    }
-
-    @Override
     String getUrl() {
-        return null
+        if(this.scmmConfig.internal){
+            return "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm/${this.scmmConfig.rootPath}"
+        }
+        return this.scmmConfig.url
     }
 
     @Override
@@ -232,8 +230,14 @@ class ScmManager implements GitProvider {
         return null
     }
 
+    //TODO
     @Override
     void createRepo(String target, String description) {
 
+    }
+
+    @Override
+    Boolean isInternal() {
+        return this.scmmConfig.internal
     }
 }

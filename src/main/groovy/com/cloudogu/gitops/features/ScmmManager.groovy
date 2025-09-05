@@ -23,7 +23,6 @@ class ScmmManager extends Feature {
     private CommandExecutor commandExecutor
     private FileSystemUtils fileSystemUtils
     private DeploymentStrategy deployer
-    private GitLabApi gitlabApi
     private K8sClient k8sClient
     private NetworkingUtils networkingUtils
     String centralSCMUrl
@@ -103,7 +102,7 @@ class ScmmManager extends Feature {
                 String clusterBindAddress = networkingUtils.findClusterBindAddress()
                 config.scmm.url = networkingUtils.createUrl(clusterBindAddress, port, contentPath)
 
-                if (config.multiTenant.useDedicatedInstance && config.multiTenant.internal) {
+                if (config.multiTenant.useDedicatedInstance && config.multiTenant) {
                     log.debug("Setting internal configs for local single node cluster with internal central scmm. Waiting for NodePort...")
                     def portCentralScm = k8sClient.waitForNodePort(releaseName, "scm-manager")
                     centralSCMUrl = networkingUtils.createUrl(clusterBindAddress, portCentralScm, contentPath)
@@ -119,11 +118,11 @@ class ScmmManager extends Feature {
                 GIT_AUTHOR_EMAIL             : config.application.gitEmail,
                 GITOPS_USERNAME              : config.scmm.gitOpsUsername,
                 TRACE                        : config.application.trace,
-                SCMM_URL                     : config.scmm.url,
-                SCMM_USERNAME                : config.scmm.username,
-                SCMM_PASSWORD                : config.scmm.password,
+                SCMM_URL                     : config.scm.getScmmConfig().url,
+                SCMM_USERNAME                : config.scm.getScmmConfig(),
+                SCMM_PASSWORD                : config.scm.getScmmConfig(),
                 JENKINS_URL                  : config.jenkins.url,
-                INTERNAL_SCMM                : config.scmm.internal,
+                INTERNAL_SCMM                : config.scm.internal,
                 JENKINS_URL_FOR_SCMM         : config.jenkins.urlForScmm,
                 SCMM_URL_FOR_JENKINS         : config.scmm.urlForJenkins,
                 // Used indirectly in utils.sh 😬
@@ -135,14 +134,14 @@ class ScmmManager extends Feature {
                 CES_BUILD_LIB_REPO           : config.repositories.cesBuildLib.url,
                 NAME_PREFIX                  : config.application.namePrefix,
                 INSECURE                     : config.application.insecure,
-                SCM_ROOT_PATH                : config.scmm.rootPath,
-                SCM_PROVIDER                 : config.scmm.provider,
+                SCM_ROOT_PATH                : config.scm.scmmConfig.rootPath,
+                SCM_PROVIDER                 : 'scm-manager',
                 CONTENT_EXAMPLES             : config.content.examples,
-                SKIP_RESTART                 : config.scmm.skipRestart,
-                SKIP_PLUGINS                 : config.scmm.skipPlugins,
+                SKIP_RESTART                 : config.scm.scmmConfig.skipRestart,
+                SKIP_PLUGINS                 : config.scm.scmmConfig.skipPlugins,
                 CENTRAL_SCM_URL              : centralSCMUrl,
-                CENTRAL_SCM_USERNAME         : config.multiTenant.username,
-                CENTRAL_SCM_PASSWORD         : config.multiTenant.password
+                CENTRAL_SCM_USERNAME         : config.multiTenant.scmmConfig.username,
+                CENTRAL_SCM_PASSWORD         : config.multiTenant.scmmConfig.password
         ])
     }
 }
