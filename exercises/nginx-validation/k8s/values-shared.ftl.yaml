@@ -5,7 +5,11 @@ image:
   registry: ${nginxImageObject.registry}
   repository: ${nginxImageObject.repository}
   tag: ${nginxImageObject.tag}
+<#else>
+image:
+  repository: bitnamilegacy/nginx
 </#if>
+
 <#if config.registry.createImagePullSecrets == true>
 global:
   imagePullSecrets:

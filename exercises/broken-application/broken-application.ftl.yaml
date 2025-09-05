@@ -22,7 +22,7 @@ spec:
           image: <#if config.images.nginx?has_content>
                 ${DockerImageParser.parse(config.images.nginx)}
             <#else>
-                bitnami/nginx:1.25.1
+                bitnamilegacy/nginx:1.25.1
             </#if>
           ports:
             - containerPort: 8080

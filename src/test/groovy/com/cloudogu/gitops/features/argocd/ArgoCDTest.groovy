@@ -1665,6 +1665,158 @@ class ArgoCDTest {
         }
     }
 
+    @Test
+    void 'If not using mirror, ensure source repos in cluster-resources got right URL'() {
+        config.application.mirrorRepos = false
+
+        createArgoCD().install()
+
+        def clusterRessourcesYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/cluster-resources.yaml')
+        clusterRessourcesYaml['spec']['sourceRepos']
+
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains(
+                'https://charts.external-secrets.io',
+                'https://codecentric.github.io/helm-charts',
+                'https://prometheus-community.github.io/helm-charts',
+                'https://kubernetes.github.io/ingress-nginx',
+                'https://helm.releases.hashicorp.com',
+                'https://charts.jetstack.io'
+        )
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain(
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/mailhog',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/ingress-nginx',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/external-secrets',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/vault',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/cert-manager'
+        )
+
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain(
+                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/kube-prometheus-stack.git',
+                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/mailhog.git',
+                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/ingress-nginx.git',
+                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/external-secrets.git',
+                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/vault.git',
+                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/cert-manager.git'
+        )
+    }
+
+    @Test
+    void 'If using mirror, ensure source repos in cluster-resources got right URL'() {
+        config.application.mirrorRepos = true
+
+        createArgoCD().install()
+
+        def clusterRessourcesYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/cluster-resources.yaml')
+        clusterRessourcesYaml['spec']['sourceRepos']
+
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains(
+                'http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack',
+                'http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/mailhog',
+                'http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/ingress-nginx',
+                'http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/external-secrets',
+                'http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/vault',
+                'http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/cert-manager'
+
+        )
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain(
+                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/kube-prometheus-stack.git',
+                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/mailhog.git',
+                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/ingress-nginx.git',
+                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/external-secrets.git',
+                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/vault.git',
+                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/cert-manager.git'
+        )
+    }
+    @Test
+    void 'If using mirror with GitLab, ensure source repos in cluster-resources got right URL'() {
+        config.application.mirrorRepos = true
+        config.scmm.provider = 'gitlab'
+
+        createArgoCD().install()
+
+        def clusterRessourcesYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/cluster-resources.yaml')
+        clusterRessourcesYaml['spec']['sourceRepos']
+
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains(
+                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/kube-prometheus-stack.git',
+                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/mailhog.git',
+                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/ingress-nginx.git',
+                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/external-secrets.git',
+                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/vault.git',
+                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/cert-manager.git'
+        )
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain(
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/mailhog',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/ingress-nginx',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/external-secrets',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/vault',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/cert-manager'
+        )
+    }
+
+
+    @Test
+    void 'If using mirror with GitLab with prefix, ensure source repos in cluster-resources got right URL'() {
+        config.application.mirrorRepos = true
+        config.scmm.provider = 'gitlab'
+        config.application.namePrefix = 'test1-'
+
+        createArgoCD().install()
+
+        def clusterRessourcesYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/cluster-resources.yaml')
+        clusterRessourcesYaml['spec']['sourceRepos']
+
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains(
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/kube-prometheus-stack.git',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/mailhog.git',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/ingress-nginx.git',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/external-secrets.git',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/vault.git',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/cert-manager.git'
+        )
+
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain(
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/mailhog',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/ingress-nginx',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/external-secrets',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/vault',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/cert-manager'
+        )
+    }
+    @Test
+    void 'If using mirror with name-prefix, ensure source repos in cluster-resources got right URL'() {
+        config.application.mirrorRepos = true
+        config.application.namePrefix = 'test1-'
+
+        createArgoCD().install()
+
+        def clusterRessourcesYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/cluster-resources.yaml')
+        clusterRessourcesYaml['spec']['sourceRepos']
+
+
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains(
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/mailhog',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/ingress-nginx',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/external-secrets',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/vault',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/cert-manager'
+        )
+
+        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain(
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/kube-prometheus-stack.git',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/mailhog.git',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/ingress-nginx.git',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/external-secrets.git',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/vault.git',
+                'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/cert-manager.git'
+        )
+    }
+
+
     void setup() {
         config.application.namePrefix = 'testPrefix-'
         config.multiTenant.centralScmUrl = 'scmm.testhost/scm'

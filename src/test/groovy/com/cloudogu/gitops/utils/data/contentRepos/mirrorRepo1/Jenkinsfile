@@ -128,7 +128,7 @@ void addSpecificGitOpsConfig(gitopsConfig) {
         // If you can access the internet, you can rely on the defaults, which load the images from public registries.
         buildImages          : [
             helm: 'ghcr.io/cloudogu/helm:3.16.4-1',
-            kubectl: 'bitnami/kubectl:1.29',
+            kubectl: 'bitnamilegacy/kubectl:1.29',
             kubeval: 'ghcr.io/cloudogu/helm:3.16.4-1',
             helmKubeval: 'ghcr.io/cloudogu/helm:3.16.4-1',
             yamllint: 'cytopia/yamllint:1.25-0.7'
