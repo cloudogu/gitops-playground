@@ -70,6 +70,10 @@ class ScmCentralSchema {
         @JsonPropertyDescription(CENTRAL_SCMM_PASSWORD_DESCRIPTION)
         String password = ''
 
+        @Option(names = ['--central-scm-path'], description = CENTRAL_SCMM_PASSWORD_DESCRIPTION)
+        @JsonPropertyDescription(CENTRAL_SCMM_PASSWORD_DESCRIPTION)
+        String rootPath
+
         Credentials getCredentials(){
             return new Credentials(username,password)
         }

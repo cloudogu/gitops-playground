@@ -9,7 +9,6 @@ import com.cloudogu.gitops.utils.NetworkingUtils
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import picocli.CommandLine.Option
-
 import static com.cloudogu.gitops.config.ConfigConstants.HELM_CONFIG_DESCRIPTION
 import static com.cloudogu.gitops.config.ConfigConstants.SCMM_PASSWORD_DESCRIPTION
 import static com.cloudogu.gitops.config.ConfigConstants.SCMM_SKIP_PLUGINS_DESCRIPTION
@@ -20,11 +19,16 @@ import static com.cloudogu.gitops.config.ConfigConstants.SCM_ROOT_PATH_DESCRIPTI
 
 class ScmTenantSchema {
 
+    //TODO type via setter if gitlabConfig is set
     ScmProviderType scmProviderType = ScmProviderType.SCM_MANAGER
 
     GitlabTenantConfig gitlabConfig
 
     ScmmTenantConfig scmmConfig
+
+    Boolean isInternal = { ->
+        return (gitlabConfig.internal || scmmConfig.internal)
+    }
 
     static class GitlabTenantConfig implements GitlabConfig{
         // Only supports external Gitlab for now

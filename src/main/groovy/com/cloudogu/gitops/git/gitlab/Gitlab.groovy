@@ -3,8 +3,8 @@ package com.cloudogu.gitops.git.gitlab
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.features.git.config.util.GitlabConfig
-import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.GitProvider
+import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.scmm.jgit.InsecureCredentialProvider
 import groovy.util.logging.Slf4j
 import org.eclipse.jgit.transport.ChainingCredentialsProvider
@@ -44,10 +44,28 @@ class Gitlab implements GitProvider {
         return group
     }
 
+    //TODO
     @Override
-    def createRepo() {
-        return null
+    def createRepo(String name, String description) {
+        Optional<Project> project = getProject("${this.gitlabConfig.parentGroup.getFullPath()}/${name}".toString())
+        if (project.isEmpty()) {
+            Project projectSpec = new Project()
+                    .withName(name)
+                    .withDescription(description)
+                    .withIssuesEnabled(true)
+                    .withMergeRequestsEnabled(true)
+                    .withWikiEnabled(true)
+                    .withSnippetsEnabled(true)
+                    .withPublic(false)
+                    .withNamespaceId(this.gitlabConfig.parentGroup.toLong())
+                    .withInitializeWithReadme(true)
+
+            project = Optional.ofNullable(this.gitlabApi.projectApi.createProject(projectSpec))
+            log.info("Project ${projectSpec} created in Gitlab!")
+        }
+        removeBranchProtection(project.get())
     }
+
 
     void setup() {
         log.info("Creating Gitlab Groups")
@@ -166,18 +184,30 @@ class Gitlab implements GitProvider {
         return this.gitlabConfig.credentials
     }
 
+//TODO
     @Override
     void init() {
 
     }
 
     @Override
+    Boolean isInternal() {
+        return false
+    }
+
+    @Override
     String getUrl() {
-        return null
+        //Gitlab is not supporting internal URLs for now.
+        return this.url
     }
 
     @Override
     GitRepo getRepo(String target) {
+        return null
+    }
+
+    @Override
+    GitRepo getRepo(String name, String description) {
         return null
     }
 }

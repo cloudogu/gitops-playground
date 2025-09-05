@@ -12,6 +12,7 @@ import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
 import com.cloudogu.gitops.git.scmm.api.ScmmApiClient
+
 @Slf4j
 @Singleton
 @Order(70)
@@ -55,6 +56,7 @@ class GitHandler extends Feature {
                 break
             case ScmProviderType.SCM_MANAGER:
                 this.tenant = new ScmManager(this.config, config.scm.scmmConfig, scmmApiClient, this.helmStrategy, fileSystemUtils)
+                // this.tenant.setup() setup will be here in future
                 break
             default:
                 throw new IllegalArgumentException("Unsupported SCM provider found in TenantSCM")
@@ -84,7 +86,6 @@ class GitHandler extends Feature {
         createExampleApps(this.tenant)
         createExercises(this.tenant)
     }
-
 
     static void setupRepos(GitProvider gitProvider){
         gitProvider.createRepo("argocd/argocd","GitOps repo for administration of ArgoCD")

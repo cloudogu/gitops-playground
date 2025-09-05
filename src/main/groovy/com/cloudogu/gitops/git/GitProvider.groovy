@@ -9,4 +9,5 @@ interface GitProvider {
     String getUrl()
     GitRepo getRepo(String target)
     void createRepo(String target,String description)
+    Boolean isInternal()
 }

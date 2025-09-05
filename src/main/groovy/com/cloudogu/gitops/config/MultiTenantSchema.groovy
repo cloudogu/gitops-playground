@@ -16,6 +16,8 @@ class MultiTenantSchema {
 
     ScmCentralSchema.ScmmCentralConfig scmmConfig
 
+    Boolean isInternal = false
+
     @Option(names = ['--central-argocd-namespace'], description = CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
     @JsonPropertyDescription(CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
     String centralArgocdNamespace = 'argocd'
@@ -24,4 +26,8 @@ class MultiTenantSchema {
     @JsonPropertyDescription(CENTRAL_USEDEDICATED_DESCRIPTION)
     Boolean useDedicatedInstance = false
 
+//TODO
+    Boolean isInternal() {
+            return scmmConfig.internal
+    }
 }
