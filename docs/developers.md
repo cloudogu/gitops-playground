@@ -946,16 +946,14 @@ A GitHub release containing all merged PRs since the last release is create auto
 
 ## Installing ArgoCD Operator
 
-This guide provides instructions for developers to install the ArgoCD Operator locally. Installing the operator can be non-trivial, especially when deploying it without certain dependencies like cert-manager. This guide simplifies the process by providing a single script that you can copy and paste to set up the operator in your local environment.
+This guide provides instructions for developers to install the ArgoCD Operator locally.
 
 ### Prerequisites:
 
 Ensure you have the following installed on your system:
 
 - Git: For cloning the repository. 
-- Patch: To apply modifications to the codebase. 
-- Kubectl: To interact with your Kubernetes cluster. 
-- Kustomize: Included with kubectl version ≥1.14.
+- golang: Version >= 1.24
 
 ### Installation Script
 
@@ -964,27 +962,8 @@ Copy the following script, paste it into your Terminal and execute it.
 ```shell
 git clone https://github.com/argoproj-labs/argocd-operator && \
 cd argocd-operator && \
-git checkout release-0.11 && \
-
-# Disable webhook by commenting out lines in config/default/kustomization.yaml
-sed -i 's|^- ../webhook|# - ../webhook|' config/default/kustomization.yaml && \
-sed -i 's|^- path: manager_webhook_patch.yaml|# - path: manager_webhook_patch.yaml|' config/default/kustomization.yaml && \
-
-# Change the image tag from v0.11.1 to v0.11.0 in config/manager/kustomization.yaml
-sed -i 's|newTag: v0.11.1|newTag: v0.11.0|' config/manager/kustomization.yaml && \
-
-# Install Prometheus CRDs
-kubectl create -f https://raw.githubusercontent.com/prometheus-community/helm-charts/main/charts/kube-prometheus-stack/charts/crds/crds/crd-alertmanagerconfigs.yaml || true && \
-kubectl create -f https://raw.githubusercontent.com/prometheus-community/helm-charts/main/charts/kube-prometheus-stack/charts/crds/crds/crd-alertmanagers.yaml || true && \
-kubectl create -f https://raw.githubusercontent.com/prometheus-community/helm-charts/main/charts/kube-prometheus-stack/charts/crds/crds/crd-podmonitors.yaml || true && \
-kubectl create -f https://raw.githubusercontent.com/prometheus-community/helm-charts/main/charts/kube-prometheus-stack/charts/crds/crds/crd-probes.yaml || true && \
-kubectl create -f https://raw.githubusercontent.com/prometheus-community/helm-charts/main/charts/kube-prometheus-stack/charts/crds/crds/crd-prometheuses.yaml || true && \
-kubectl create -f https://raw.githubusercontent.com/prometheus-community/helm-charts/main/charts/kube-prometheus-stack/charts/crds/crds/crd-prometheusrules.yaml || true && \
-kubectl create -f https://raw.githubusercontent.com/prometheus-community/helm-charts/main/charts/kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml || true && \
-kubectl create -f https://raw.githubusercontent.com/prometheus-community/helm-charts/main/charts/kube-prometheus-stack/charts/crds/crds/crd-thanosrulers.yaml || true && \
-
-# Install ArgoCD Operator CRDs and components
-kubectl kustomize config/default | kubectl create -f - || true
+git checkout release-0.16 && \
+make deploy IMG=quay.io/argoprojlabs/argocd-operator:v0.14.1
 ```
 
 ### Steps in depth
