@@ -20,6 +20,7 @@ class AirGappedUtils {
     private FileSystemUtils fileSystemUtils
     private HelmClient helmClient
 
+    // TODO: Anna how to get GitProvider?
     AirGappedUtils(Config config, ScmRepoProvider repoProvider, ScmmApiClient scmmApiClient,
                    FileSystemUtils fileSystemUtils, HelmClient helmClient) {
         this.config = config
@@ -38,13 +39,13 @@ class AirGappedUtils {
      */
     String mirrorHelmRepoToGit(Config.HelmConfig helmConfig) {
         String repoName = helmConfig.chart
-        String namespace = ScmmRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES
-        def repoNamespaceAndName = "${namespace}/${repoName}"
-        def localHelmChartFolder = "${config.application.localHelmChartFolder}/${repoName}"
+        String namespace = "a/b"//ScmmRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES // TODO: Anna how to get correct info
+        String repoNamespaceAndName = "${namespace}/${repoName}"
+        String localHelmChartFolder = "${config.application.localHelmChartFolder}/${repoName}"
 
         validateChart(repoNamespaceAndName, localHelmChartFolder, repoName)
 
-        GitRepo repo = repoProvider.getRepo(repoNamespaceAndName)
+        GitRepo repo = repoProvider.getRepo(null, repoNamespaceAndName) //TODO: Anna need gitProviver
         repo.create("Mirror of Helm chart $repoName from ${helmConfig.repoURL}", scmmApiClient)
         repo.cloneRepo()
 
@@ -73,7 +74,7 @@ class AirGappedUtils {
     }
 
     private Map localizeChartYaml(GitRepo scmmRepo) {
-        log.debug("Preparing repo ${scmmRepo.scmmRepoTarget} for air-gapped use: Changing Chart.yaml to resolve depencies locally")
+        log.debug("Preparing repo ${scmmRepo.scmRepoTarget} for air-gapped use: Changing Chart.yaml to resolve depencies locally")
 
         def chartYamlPath = Path.of(scmmRepo.absoluteLocalRepoTmpDir, 'Chart.yaml')
 
@@ -108,7 +109,7 @@ class AirGappedUtils {
             chartYamlDep.version = chartLockDep.version
         } else if ((chartYamlDep.version as String).contains('*')) {
             throw new RuntimeException("Unable to determine proper version for dependency " +
-                    "${chartYamlDep.name} (version: ${chartYamlDep.version}) from repo ${scmmRepo.scmmRepoTarget}")
+                    "${chartYamlDep.name} (version: ${chartYamlDep.version}) from repo ${scmmRepo.scmRepoTarget}")
         }
     }
 

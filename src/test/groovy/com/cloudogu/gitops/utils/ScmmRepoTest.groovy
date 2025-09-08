@@ -1,6 +1,9 @@
 package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.config.MultiTenantSchema
+import com.cloudogu.gitops.features.git.config.ScmCentralSchema
+import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.scmm.api.Permission
 import com.cloudogu.gitops.scmm.api.Repository
@@ -25,10 +28,10 @@ class ScmmRepoTest {
                     gitName: "Cloudogu",
                     gitEmail: "hello@cloudogu.com",)
             ,
-            scmm: new Config.ScmmSchema(
+            scmm: new ScmCentralSchema.ScmmCentralConfig(
                     username: "dont-care-username",
                     password: "dont-care-password",
-                    gitOpsUsername: 'foo-gitops'
+//                    gitOpsUsername: 'foo-gitops' // TODO:
             ))
     TestScmmRepoProvider scmmRepoProvider = new TestScmmRepoProvider(config, new FileSystemUtils())
     TestScmmApiClient scmmApiClient = new TestScmmApiClient(config)
@@ -248,7 +251,7 @@ class ScmmRepoTest {
         assertThat(permissionCreateArgument.allValues[0].role).isEqualTo(Permission.Role.WRITE)
     }
     
-    private ScmmRepo createRepo(String repoTarget = "${expectedNamespace}/${expectedRepo}") {
+    private GitRepo createRepo(String repoTarget = "${expectedNamespace}/${expectedRepo}") {
         return scmmRepoProvider.getRepo(repoTarget)
     }
 }
