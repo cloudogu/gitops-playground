@@ -11,15 +11,16 @@ import jakarta.inject.Singleton
 class ScmRepoProvider {
     protected final Config config
     protected final FileSystemUtils fileSystemUtils
-    protected GitHandler scmProvider
 
-    ScmRepoProvider(Config config, FileSystemUtils fileSystemUtils, GitHandler scmProvider) {
+    // GitHandler (Helper), Zugriffsschicht für Argo CD (und ggf. andere features) auf die Git-Abstraktion , sollte in ArgoCD etc genutzt werden
+//    protected GitHandler scmProvider
+
+    ScmRepoProvider(Config config, FileSystemUtils fileSystemUtils) {
         this.fileSystemUtils = fileSystemUtils
         this.config = config
-        this.scmProvider = scmProvider
     }
 
-    GitRepo getRepo(GitProvider scm, String repoTarget) {
-        return new GitRepo(config, scm, repoTarget, fileSystemUtils)
+    GitRepo getRepo(String repoTarget) {
+        return new GitRepo(config, repoTarget, fileSystemUtils)
     }
 }
