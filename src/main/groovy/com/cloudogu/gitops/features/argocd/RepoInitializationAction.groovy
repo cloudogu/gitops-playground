@@ -80,7 +80,7 @@ class RepoInitializationAction {
                         // protocol      : this.repo.gitProvider.internal ? 'http' : config.scm.protocol,
                         repoUrl       : GitRepo.createSCMBaseUrl(config),
                         provider      : this.repo.gitProvider.getClass().getSimpleName(),
-                        centralScmmUrl: !config.multiTenant.internal ? config.multiTenant. : "http://scmm.scm-manager.svc.cluster.local/scm", //?? hard to solve. We only inject 1 GitProvider here. Needs extra care
+                        centralScmmUrl: !config.multiTenant.internal ? config.multiTenant.internal : "http://scmm.scm-manager.svc.cluster.local/scm", //?? hard to solve. We only inject 1 GitProvider here. Needs extra care
                 ],
                 jenkins             : [
                         mavenCentralMirror: config.jenkins.mavenCentralMirror,

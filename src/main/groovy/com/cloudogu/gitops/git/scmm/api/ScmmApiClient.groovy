@@ -38,7 +38,7 @@ class ScmmApiClient {
 
     protected Retrofit retrofit() {
         return new Retrofit.Builder()
-                .baseUrl(config.scmm.url + '/api/')
+                .baseUrl(config.multiTenant.scmmConfig.centralScmUrl + '/api/') // TODO: Anna right URL
                 .client(okHttpClient)
         // Converts HTTP body objects from groovy to JSON
                 .addConverterFactory(JacksonConverterFactory.create())
