@@ -120,7 +120,7 @@ class ApplicationConfigurator {
     private void addScmConfig(Config newConfig) {
         log.debug("Adding additional config for SCM")
 
-        if (ScmTenantSchema.ScmmCentralConfig)
+//        if (ScmTenantSchema.ScmmCentralConfig)
         //TODO
         /*if(newConfig.scm.gitlabConfig.url && newConfig.scm.gitlabConfig.password){
             newConfig.scm.provider= ScmTenantSchema.ScmProviderType.GITLAB
@@ -128,7 +128,7 @@ class ApplicationConfigurator {
             throw new RuntimeException(
         }*/
 
-            newConfig.scm.scmmConfig.gitOpsUsername = "${newConfig.application.namePrefix}gitops"
+        newConfig.scm.scmmConfig.gitOpsUsername = "${newConfig.application.namePrefix}gitops"
 
         if (newConfig.scm.scmmConfig.url) {
             log.debug("Setting external scmm config")
