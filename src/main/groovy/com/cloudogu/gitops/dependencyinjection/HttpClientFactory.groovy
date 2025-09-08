@@ -44,7 +44,7 @@ class HttpClientFactory {
     @Named("scmm")
     OkHttpClient okHttpClientScmm(HttpLoggingInterceptor loggingInterceptor, Config config, Provider<HttpClientFactory.InsecureSslContext> insecureSslContext) {
         def builder = new OkHttpClient.Builder()
-                .addInterceptor(new AuthorizationInterceptor(config.scm.username, config.scmm.password))
+                .addInterceptor(new AuthorizationInterceptor(config.scm.getScmmConfig().username, config.scm.getScmmConfig().password))
                 .addInterceptor(loggingInterceptor)
                 .addInterceptor(new RetryInterceptor())
 
