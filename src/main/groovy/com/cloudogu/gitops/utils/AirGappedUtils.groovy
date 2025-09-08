@@ -45,7 +45,7 @@ class AirGappedUtils {
 
         validateChart(repoNamespaceAndName, localHelmChartFolder, repoName)
 
-        GitRepo repo = repoProvider.getRepo(null, repoNamespaceAndName) //TODO: Anna need gitProviver
+        GitRepo repo = repoProvider.getRepo(repoNamespaceAndName)
         repo.create("Mirror of Helm chart $repoName from ${helmConfig.repoURL}", scmmApiClient)
         repo.cloneRepo()
 
