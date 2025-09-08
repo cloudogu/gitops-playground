@@ -1,33 +1,34 @@
 package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.scmm.ScmmRepo
-import com.cloudogu.gitops.scmm.ScmRepoProvider
+import com.cloudogu.gitops.git.GitProvider
+import com.cloudogu.gitops.git.GitRepo
+import com.cloudogu.gitops.git.scmm.ScmRepoProvider
 import org.apache.commons.io.FileUtils
 
 import static org.mockito.Mockito.spy 
 
 class TestScmmRepoProvider extends ScmRepoProvider {
-    Map<String, ScmmRepo> repos = [:]
+    Map<String, GitRepo> repos = [:]
 
     TestScmmRepoProvider(Config config, FileSystemUtils fileSystemUtils) {
         super(config, fileSystemUtils)
     }
     @Override
-    ScmmRepo getRepo(String repoTarget){
+    GitRepo getRepo(GitProvider scm, String repoTarget){
         return getRepo(repoTarget,false)
     }
 
     @Override
-    ScmmRepo getRepo(String repoTarget, Boolean centralRepo) {
+    GitRepo getRepo(GitProvider scm, String repoTarget, Boolean centralRepo) {
         // Check if we already have a mock for this repo
-        ScmmRepo repo = repos[repoTarget]
+        GitRepo repo = repos[repoTarget]
         // Check if we already have a mock for this repo
         if (repo != null && repo.isCentralRepo == centralRepo) {
             return repo
         }
 
-        ScmmRepo repoNew = new ScmmRepo(config, repoTarget, fileSystemUtils, centralRepo) {
+        GitRepo repoNew = new GitRepo(config,scm, repoTarget, fileSystemUtils) {
             String remoteGitRepopUrl = ''
 
             @Override
@@ -46,7 +47,7 @@ class TestScmmRepoProvider extends ScmRepoProvider {
 
         }
         // Create a spy to enable verification while keeping real behavior
-        ScmmRepo spyRepo = spy(repoNew)
+        GitRepo spyRepo = spy(repoNew)
         repos.put(repoTarget, spyRepo)
         return spyRepo
     }

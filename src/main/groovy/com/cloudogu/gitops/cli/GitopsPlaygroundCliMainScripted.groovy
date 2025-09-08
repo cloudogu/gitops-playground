@@ -57,7 +57,7 @@ class GitopsPlaygroundCliMainScripted {
 
             def httpClientFactory = new HttpClientFactory()
 
-            def scmmRepoProvider = new com.cloudogu.gitops.git.scmm.ScmRepoProvider(config, fileSystemUtils)
+            def scmmRepoProvider = new com.cloudogu.gitops.git.scmm.ScmRepoProvider(config, fileSystemUtils, null) // TODO: Anna
 
             def insecureSslContextProvider = new Provider<HttpClientFactory.InsecureSslContext>() {
                 @Override

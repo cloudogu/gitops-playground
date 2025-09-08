@@ -30,6 +30,8 @@ class ScmManager implements GitProvider {
     FileSystemUtils fileSystemUtils
     ScmmConfig scmmConfig
     Credentials credentials
+    String url // TODO:
+    String scmmRepoTarget // TODO:
 
     ScmManager(Config config, ScmmConfig scmmConfig, ScmmApiClient scmmApiClient, HelmStrategy deployer, FileSystemUtils fileSystemUtils) {
         this.config = config
@@ -138,6 +140,7 @@ class ScmManager implements GitProvider {
      * @return true if created, false if already exists. Throw exception on all other errors
      */
     boolean create(String description, ScmmApiClient scmmApiClient) {
+
         def namespace = scmmRepoTarget.split('/', 2)[0]
         def repoName = scmmRepoTarget.split('/', 2)[1]
 
@@ -151,8 +154,8 @@ class ScmManager implements GitProvider {
         def permissionResponse = repositoryApi.createPermission(namespace, repoName, permission).execute()
         return handleResponse(permissionResponse, permission, "for repo $namespace/$repoName")
     }
-
-    private static boolean handleResponse(Response<Void> response, Object body, String additionalMessage = '') {
+    // TODO: Anna Check Response generic <Void>
+    private static boolean handleResponse(Response response, Object body, String additionalMessage = '') {
         if (response.code() == 409) {
             // Here, we could consider sending another request for changing the existing object to become proper idempotent
             log.debug("${body.class.simpleName} already exists ${additionalMessage}, ignoring: ${body}")
@@ -207,9 +210,8 @@ class ScmManager implements GitProvider {
         return new YamlSlurper().parseText(hydratedString) as Map
     }
 
-    @Override
     def createRepo(String name) {
-        this.create(name)
+        this.create(name, this.scmmApiClient) // TODO: Anna
     }
 
     @Override
@@ -227,13 +229,14 @@ class ScmManager implements GitProvider {
 
     @Override
     GitRepo getRepo(String target) {
-        return null
+        // TODO: check
+        return new GitRepo(this.config, this, this.scmmRepoTarget, this.fileSystemUtils )
     }
 
     //TODO
     @Override
     void createRepo(String target, String description) {
-
+        this.create(target + "/" + description, this.scmmApiClient) // TODO: Anna
     }
 
     @Override

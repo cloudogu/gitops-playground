@@ -236,14 +236,14 @@ class ApplicationConfigurator {
             log.debug("Setting Nginx URL ${newConfig.features.exampleApps.nginx.baseDomain}")
         }
     }
-
+        // TODO: Anna check all condig.multitenant.*
     void setMultiTenantModeConfig(Config newConfig) {
         if (newConfig.multiTenant.useDedicatedInstance) {
             if (!newConfig.application.namePrefix) {
                 throw new RuntimeException('To enable Central Multi-Tenant mode, you must define a name prefix to distinguish between instances.')
             }
 
-            if (!newConfig.multiTenant.username || !newConfig.multiTenant.password) {
+            if (!newConfig.multiTenant.scmmConfig.username || !newConfig.multiTenant.scmmConfig.password) {
                 throw new RuntimeException('To use Central Multi Tenant mode define the username and password for the central SCMHandler instance.')
             }
 
@@ -252,12 +252,12 @@ class ApplicationConfigurator {
             }
 
             // Removes trailing slash from the input URL to avoid duplicated slashes in further URL handling
-            if (newConfig.multiTenant.centralScmUrl) {
-                String urlString = newConfig.multiTenant.centralScmUrl.toString()
+            if (newConfig.multiTenant.scmmConfig.centralScmUrl) {
+                String urlString = newConfig.multiTenant.scmmConfig.centralScmUrl.toString()
                 if (urlString.endsWith("/")) {
                     urlString = urlString[0..-2]
                 }
-                newConfig.multiTenant.centralScmUrl = urlString
+                newConfig.multiTenant.scmmConfig.centralScmUrl = urlString
             }
 
             //Disabling IngressNginx in DedicatedInstances Mode for now.
@@ -352,11 +352,12 @@ class ApplicationConfigurator {
     }
 
     private void validateScmmAndJenkinsAreBothSet(Config configToSet) {
-        if (configToSet.jenkins.active &&
-                (configToSet.scmm.url && !configToSet.jenkins.url ||
-                        !configToSet.scmm.url && configToSet.jenkins.url)) {
-            throw new RuntimeException('When setting jenkins URL, scmm URL must also be set and the other way round')
-        }
+// TODO: Anna check multitenant and tenants!
+//        if (configToSet.jenkins.active &&
+//                (configToSet.scmm.url && !configToSet.jenkins.url ||
+//                        !configToSet.scmm.url && configToSet.jenkins.url)) {
+//            throw new RuntimeException('When setting jenkins URL, scmm URL must also be set and the other way round')
+//        }
     }
 
     // Validate that the env list has proper maps with 'name' and 'value'
