@@ -1,12 +1,12 @@
-namespaceOverride: ${namePrefix}example-apps-staging
+namespaceOverride: ${config.application.namePrefix}example-apps-staging
 
-<#if exampleApps.nginx.baseDomain?has_content>
+<#if config.features.exampleApps.nginx.baseDomain?has_content>
 ingress:
   enabled: true
   pathType: Prefix
-  <#if urlSeparatorHyphen>
-  hostname: staging-nginx-helm-${exampleApps.nginx.baseDomain}
+  <#if config.application.urlSeparatorHyphen>
+  hostname: staging-nginx-helm-${config.features.exampleApps.nginx.baseDomain}
   <#else>
-  hostname: staging.nginx-helm.${exampleApps.nginx.baseDomain}
+  hostname: staging.nginx-helm.${config.features.exampleApps.nginx.baseDomain}
   </#if>
 </#if>

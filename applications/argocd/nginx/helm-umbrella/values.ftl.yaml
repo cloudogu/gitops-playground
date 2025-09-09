@@ -1,9 +1,11 @@
+<#assign DockerImageParser=statics['com.cloudogu.gitops.utils.DockerImageParser']>
 nginx:
-<#if nginxImage?has_content>
+<#if config.images.nginx?has_content>
+<#assign nginxImageObject = DockerImageParser.parse(config.images.nginx)>
   image:
-    registry: ${nginxImage.registry}
-    repository: ${nginxImage.repository}
-    tag: ${nginxImage.tag}
+    registry: ${nginxImageObject.registry}
+    repository: ${nginxImageObject.repository}
+    tag: ${nginxImageObject.tag}
 <#else>
   image:
     repository: bitnamilegacy/nginx
@@ -18,8 +20,8 @@ nginx:
   service:
     ports:
       http: 80
-    type: <#if isRemote>LoadBalancer<#else>ClusterIP</#if>
-<#if podResources == true>
+    type: <#if config.application.remote>LoadBalancer<#else>ClusterIP</#if>
+<#if config.application.podResources == true>
   resources:
     limits:
       cpu: 100m
@@ -29,13 +31,13 @@ nginx:
       memory: 15Mi
 </#if>
 
-<#if exampleApps.nginx.baseDomain?has_content>
+<#if config.features.exampleApps.nginx.baseDomain?has_content>
   ingress:
     enabled: true
     pathType: Prefix
-    <#if urlSeparatorHyphen>
-    hostname: production-nginx-helm-umbrella-${exampleApps.nginx.baseDomain}
+    <#if config.application.urlSeparatorHyphen>
+    hostname: production-nginx-helm-umbrella-${config.features.exampleApps.nginx.baseDomain}
     <#else>
-    hostname: production.nginx-helm-umbrella.${exampleApps.nginx.baseDomain}
+    hostname: production.nginx-helm-umbrella.${config.features.exampleApps.nginx.baseDomain}
     </#if>
 </#if>

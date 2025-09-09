@@ -2,17 +2,17 @@ extraEnv: |
   - name: TZ
     value: Europe/Berlin
 service:
-  type: <#if isRemote>LoadBalancer<#else>ClusterIP</#if>
+  type: <#if config.application.remote>LoadBalancer<#else>ClusterIP</#if>
 
 ingress:
-  enabled: <#if exampleApps.petclinic.baseDomain?has_content>true<#else>false</#if>
+  enabled: <#if config.features.exampleApps.petclinic.baseDomain?has_content>true<#else>false</#if>
 
 # this is a helm chart dependency
 podinfo:
   ui:
     color: '#456456'
 
-<#if podResources == true>
+<#if config.application.podResources == true>
 resources:
   limits:
     cpu: '1'

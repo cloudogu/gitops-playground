@@ -1,16 +1,16 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-<#if argocd.isOperator>
+<#if config.features.argocd.operator>
   name: exercise-petclinic-helm-staging
-  namespace: ${namePrefix}argocd
+  namespace: ${config.application.namePrefix}argocd
 <#else>
   name: exercise-petclinic-helm
-  namespace: ${namePrefix}example-apps-staging
+  namespace: ${config.application.namePrefix}example-apps-staging
 </#if>
 spec:
   destination:
-    namespace: ${namePrefix}example-apps-staging
+    namespace: ${config.application.namePrefix}example-apps-staging
     server: https://kubernetes.default.svc
   project: example-apps
   source:
@@ -29,16 +29,16 @@ spec:
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-<#if argocd.isOperator>
+<#if config.features.argocd.operator>
   name: exercise-petclinic-helm-production
-  namespace: ${namePrefix}argocd
+  namespace: ${config.application.namePrefix}argocd
 <#else>
   name: exercise-petclinic-helm
-  namespace: ${namePrefix}example-apps-production
+  namespace: ${config.application.namePrefix}example-apps-production
 </#if>
 spec:
   destination:
-    namespace: ${namePrefix}example-apps-production
+    namespace: ${config.application.namePrefix}example-apps-production
     server: https://kubernetes.default.svc
   project: example-apps
   source:

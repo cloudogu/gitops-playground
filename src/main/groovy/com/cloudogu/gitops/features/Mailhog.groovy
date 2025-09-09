@@ -5,11 +5,11 @@ import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Config
 
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
+import com.cloudogu.gitops.scmm.ScmUrlResolver
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.MapUtils
-import com.cloudogu.gitops.utils.TemplatingEngine
 import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
@@ -45,7 +45,6 @@ class Mailhog extends Feature implements FeatureWithImage {
     ) {
         this.deployer = deployer
         this.config = config
-        this.username = this.config.application.username
         this.password = this.config.application.password
         this.k8sClient = k8sClient
         this.fileSystemUtils = fileSystemUtils
@@ -67,10 +66,7 @@ class Mailhog extends Feature implements FeatureWithImage {
                         // Note that passing the URL object here leads to problems in Graal Native image, see Git history
                         host: config.features.mail.mailhogUrl ? new URL(config.features.mail.mailhogUrl ).host : "",
                 ],
-                isRemote     : config.application.remote,
-                username     : username,
                 passwordCrypt: bcryptMailhogPassword,
-                podResources: config.application.podResources,
                 config : config,
                 // Allow for using static classes inside the templates
                 statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
@@ -92,7 +88,7 @@ class Mailhog extends Feature implements FeatureWithImage {
                             'Chart.yaml'))['version']
 
             deployer.deployFeature(
-                    "${scmmUri}/repo/${repoNamespaceAndName}",
+                    ScmUrlResolver.scmmRepoUrl(config, repoNamespaceAndName),
                     'mailhog',
                     '.',
                     mailhogVersion,
@@ -108,14 +104,6 @@ class Mailhog extends Feature implements FeatureWithImage {
                     namespace,
                     'mailhog',
                     tempValuesPath)
-        }
-    }
-
-    private URI getScmmUri() {
-        if (config.scmm.internal) {
-            new URI("http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm")
-        } else {
-            new URI("${config.scmm.url}")
         }
     }
 }

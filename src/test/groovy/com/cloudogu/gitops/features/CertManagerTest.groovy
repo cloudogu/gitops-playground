@@ -85,7 +85,7 @@ class CertManagerTest {
         // check existing value, but its not used in deploy.
         assertThat(helmConfig.value.repoURL).isEqualTo('https://charts.jetstack.io')
         assertThat(helmConfig.value.version).isEqualTo(chartVersion)
-        // important check: repoUrl is overridden with our values.
+        // important check: scmmRepoUrl is overridden with our values.
         verify(deploymentStrategy).deployFeature(
                 'http://scmm.scm-manager.svc.cluster.local/scm/repo/a/b',
                 'cert-manager', '.', chartVersion, 'cert-manager',

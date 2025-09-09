@@ -2,15 +2,15 @@
 
 String getApplication() { "spring-petclinic-helm" }
 String getScmManagerCredentials() { 'scmm-user' }
-String getConfigRepositoryPRBaseUrl() { env.${namePrefixForEnvVars}SCMM_URL }
-String getConfigRepositoryPRRepo() { '${namePrefix}argocd/example-apps' }
+String getConfigRepositoryPRBaseUrl() { env.${config.application.namePrefixForEnvVars}SCMM_URL }
+String getConfigRepositoryPRRepo() { '${config.application.namePrefix}argocd/example-apps' }
 
-String getDockerRegistryBaseUrl() { env.${namePrefixForEnvVars}REGISTRY_URL }
-String getDockerRegistryPath() { env.${namePrefixForEnvVars}REGISTRY_PATH }
+String getDockerRegistryBaseUrl() { env.${config.application.namePrefixForEnvVars}REGISTRY_URL }
+String getDockerRegistryPath() { env.${config.application.namePrefixForEnvVars}REGISTRY_PATH }
 String getDockerRegistryCredentials() { 'registry-user' }
 
-<#if registry.twoRegistries>
-String getDockerRegistryProxyBaseUrl() { env.${namePrefixForEnvVars}REGISTRY_PROXY_URL }
+<#if config.registry.twoRegistries>
+String getDockerRegistryProxyBaseUrl() { env.${config.application.namePrefixForEnvVars}REGISTRY_PROXY_URL }
 String getDockerRegistryProxyCredentials() { 'registry-proxy-user' }
 </#if>
 
@@ -40,18 +40,18 @@ properties([
 node {
 
 </#noparse>
-<#if images.maven?has_content>
-  <#if registry.twoRegistries>
-      mvn = cesBuildLib.MavenInDocker.new(this, '${images.maven}', dockerRegistryProxyCredentials)
+<#if config.images.maven?has_content>
+  <#if config.registry.twoRegistries>
+      mvn = cesBuildLib.MavenInDocker.new(this, '${config.images.maven}', dockerRegistryProxyCredentials)
   <#else>
-      mvn = cesBuildLib.MavenInDocker.new(this, '${images.maven}')
+      mvn = cesBuildLib.MavenInDocker.new(this, '${config.images.maven}')
   </#if>
 <#else>
     mvn = cesBuildLib.MavenWrapper.new(this)
 </#if>
 
-<#if jenkins.mavenCentralMirror?has_content>
-    mvn.useMirrors([name: 'maven-central-mirror', mirrorOf: 'central', url:  env.${namePrefixForEnvVars}MAVEN_CENTRAL_MIRROR])
+<#if config.jenkins.mavenCentralMirror?has_content>
+    mvn.useMirrors([name: 'maven-central-mirror', mirrorOf: 'central', url:  env.${config.application.namePrefixForEnvVars}MAVEN_CENTRAL_MIRROR])
 </#if>
 <#noparse>
 
@@ -80,7 +80,7 @@ node {
             String pathPrefix = !dockerRegistryPath?.trim() ? "" : "${dockerRegistryPath}/"
             imageName = "${dockerRegistryBaseUrl}/${pathPrefix}${application}:${imageTag}"
 </#noparse>
-<#if registry.twoRegistries>
+<#if config.registry.twoRegistries>
 <#noparse>
             docker.withRegistry("https://${dockerRegistryProxyBaseUrl}", dockerRegistryProxyCredentials) {
                 image = docker.build(imageName, '.')
@@ -119,35 +119,35 @@ node {
                         gitopsTool: 'ARGO',
                         folderStructureStrategy: 'ENV_PER_APP',
 </#noparse>
-                        k8sVersion : env.${namePrefixForEnvVars}K8S_VERSION,
+                        k8sVersion : env.${config.application.namePrefixForEnvVars}K8S_VERSION,
                         buildImages          : [
-<#if registry.twoRegistries>
+<#if config.registry.twoRegistries>
                                 helm:       [
-                                        image: '${images.helm}',
+                                        image: '${config.images.helm}',
                                         credentialsId: dockerRegistryProxyCredentials
                                 ],
                                 kubectl:    [
-                                        image: '${images.kubectl}',
+                                        image: '${config.images.kubectl}',
                                         credentialsId: dockerRegistryProxyCredentials
                                 ],
                                 kubeval:    [
-                                        image: '${images.kubeval}',
+                                        image: '${config.images.kubeval}',
                                         credentialsId: dockerRegistryProxyCredentials
                                 ],
                                 helmKubeval: [
-                                        image: '${images.helmKubeval}',
+                                        image: '${config.images.helmKubeval}',
                                         credentialsId: dockerRegistryProxyCredentials
                                 ],
                                 yamllint:   [
-                                        image: '${images.yamllint}',
+                                        image: '${config.images.yamllint}',
                                         credentialsId: dockerRegistryProxyCredentials
                                 ]
 <#else>
-                                helm: '${images.helm}',
-                                kubectl: '${images.kubectl}',
-                                kubeval: '${images.kubeval}',
-                                helmKubeval: '${images.helmKubeval}',
-                                yamllint: '${images.yamllint}'
+                                helm: '${config.images.helm}',
+                                kubectl: '${config.images.kubectl}',
+                                kubeval: '${config.images.kubeval}',
+                                helmKubeval: '${config.images.helmKubeval}',
+                                yamllint: '${config.images.yamllint}'
 </#if>
                         ],
                         deployments: [
@@ -163,10 +163,10 @@ node {
                         ],
                         stages: [
                                 staging: [
-                                        namespace: '${namePrefix}example-apps-staging',
+                                        namespace: '${config.application.namePrefix}example-apps-staging',
                                         deployDirectly: true ],
                                 production: [
-                                        namespace: '${namePrefix}example-apps-production',
+                                        namespace: '${config.application.namePrefix}example-apps-production',
                                         deployDirectly: false ]
                         ]
                 ]

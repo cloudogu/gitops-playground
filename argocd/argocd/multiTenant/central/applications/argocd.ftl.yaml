@@ -1,13 +1,13 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: ${namePrefix}argocd
+  name: ${config.application.namePrefix}argocd
   namespace: ${config.multiTenant.centralArgocdNamespace}
   annotations:
     # Only app with the sync-status-unknown alert, so that we only get one alert when SCM is not reachable.
     # Otherwise, there would be a spam wave by every application everytime the SCM is not reachable.
-<#if mail.active?? && mail.active>
-    notifications.argoproj.io/subscribe.on-sync-status-unknown.email: ${argocd.emailToAdmin}
+<#if config.features.mail.active?? && config.features.mail.active>
+    notifications.argoproj.io/subscribe.on-sync-status-unknown.email: ${config.features.argocd.emailToAdmin}
 </#if>
 # finalizer disabled, because otherwise everything under this Application would be deleted as well, if this Application is deleted by accident
 #  finalizers:
@@ -15,14 +15,14 @@ metadata:
 spec:
   destination:
     server: https://kubernetes.default.svc
-    namespace: ${namePrefix}argocd
+    namespace: ${config.application.namePrefix}argocd
   project: ${tenantName}
   source:
-    path: ${argocd.isOperator?string("operator/", "argocd/")}
-    repoURL: ${scmm.centralScmmUrl}/repo/${namePrefix}argocd/argocd
+    path: ${config.features.argocd.operator?string("operator/", "argocd/")}
+    repoURL: ${scmm.centralScmmUrl}/repo/${config.application.namePrefix}argocd/argocd
     targetRevision: main
     # needed to sync the operator/rbac folder
-    <#if argocd.isOperator??>
+    <#if config.features.argocd.operator??>
     directory:
       recurse: true
     </#if>

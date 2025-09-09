@@ -7,6 +7,7 @@ import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import com.cloudogu.gitops.utils.*
+import com.cloudogu.gitops.scmm.ScmUrlResolver
 import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
@@ -60,39 +61,17 @@ class PrometheusStack extends Feature implements FeatureWithImage {
     void enable() {
         def namePrefix = config.application.namePrefix
 
-        def templatedMap = templateToMap(HELM_VALUES_PATH, [
-                namePrefix        : namePrefix,
-                podResources      : config.application.podResources,
-                monitoring        : [
-                        grafanaEmailFrom: config.features.monitoring.grafanaEmailFrom,
-                        grafanaEmailTo  : config.features.monitoring.grafanaEmailTo,
-                        grafana         : [
-                                // Note that passing the URL object here leads to problems in Graal Native image, see Git history
-                                host: config.features.monitoring.grafanaUrl ? new URL(config.features.monitoring.grafanaUrl).host : ""
-                        ]
-                ],
-                remote            : config.application.remote,
-                skipCrds          : config.application.skipCrds,
-                namespaceIsolation: config.application.namespaceIsolation,
-                namespaces        : config.application.namespaces.getActiveNamespaces(),
-                mail              : [
-                        active      : config.features.mail.active,
-                        smtpAddress : config.features.mail.smtpAddress,
-                        smtpPort    : config.features.mail.smtpPort,
-                        smtpUser    : config.features.mail.smtpUser,
-                        smtpPassword: config.features.mail.smtpPassword
-                ],
-                scmm              : getScmmConfiguration(),
-                jenkins           : getJenkinsConfiguration(),
-                config            : config,
-                // Allow for using static classes inside the templates
-                statics           : new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels(),
-                uid               : config.application.openshift ? findValidOpenShiftUid() : ''
-        ])
+        String uid = ""
+        if (config.application.openshift) {
+            uid = findValidOpenShiftUid()
+        }
 
+        Map<String, Object> templateModel = buildTemplateValues(config, uid)
+
+        def values    = templateToMap(HELM_VALUES_PATH, templateModel)
 
         def helmConfig = config.features.monitoring.helm
-        def mergedMap = MapUtils.deepMerge(helmConfig.values, templatedMap)
+        def mergedMap = MapUtils.deepMerge(helmConfig.values, values)
 
         // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo
         k8sClient.createSecret(
@@ -155,7 +134,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
                             'Chart.yaml'))['version']
 
             deployer.deployFeature(
-                    "${scmmUri}/repo/${repoNamespaceAndName}",
+                    ScmUrlResolver.scmmRepoUrl(config, repoNamespaceAndName),
                     'prometheusstack',
                     '.',
                     prometheusVersion,
@@ -175,6 +154,52 @@ class PrometheusStack extends Feature implements FeatureWithImage {
         }
     }
 
+    private Map<String, Object> buildTemplateValues(Config config, String uid){
+        def model = [
+                monitoring: [grafana: [host: config.features.monitoring.grafanaUrl ? new URL(config.features.monitoring.grafanaUrl).host : ""]],
+                namespaces: (config.application.namespaces.activeNamespaces ?: []) as LinkedHashSet<String>,
+                scmm      : scmConfigurationMetrics(),
+                jenkins   : jenkinsConfigurationMetrics(),
+                uid       : uid,
+                config    : config,
+                // Allow for using static classes inside the templates
+                statics : new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
+        ] as Map<String, Object>
+
+        return model
+    }
+
+    private Map scmConfigurationMetrics() {
+        def uri = ScmUrlResolver.scmmBaseUri(config).resolve("api/v2/metrics/prometheus")
+        [
+                protocol: uri.scheme ?: "",
+                host    : uri.authority ?: "",
+                path    : uri.path ?: ""
+        ]
+    }
+
+    private Map jenkinsConfigurationMetrics() {
+        def uri = baseUriJenkins(config).resolve("prometheus")
+        [
+                metricsUsername: config.jenkins.metricsUsername ?: "",
+                protocol       : uri.scheme ?: "",
+                host           : uri.authority ?: "",
+                path           : uri.path ?: ""
+        ]
+    }
+
+    private static URI baseUriJenkins(Config config) {
+        if (config.jenkins.internal) {
+            return new URI("http://jenkins.${config.application.namePrefix}jenkins.svc.cluster.local/")
+        }
+        def urlString = config.jenkins?.url?.strip() ?: ""
+        if (!urlString) {
+            throw new IllegalArgumentException("config.jenkins.url must be set when config.jenkins.internal = false")
+        }
+        def url = URI.create(urlString)
+        return url.toString().endsWith("/") ? url : URI.create(url.toString() + "/")
+    }
+
     private String findValidOpenShiftUid() {
         String uidRange = k8sClient.getAnnotation('namespace', 'monitoring', 'openshift.io/sa.scc.uid-range')
 
@@ -185,42 +210,5 @@ class PrometheusStack extends Feature implements FeatureWithImage {
         } else {
             throw new RuntimeException("Could not find a valid UID! Really running on openshift?")
         }
-    }
-
-
-    private Map getScmmConfiguration() {
-        // Note that URI.resolve() seems to throw away the existing path. So we create a new URI object.
-        URI uri = new URI("${scmmUri}/api/v2/metrics/prometheus")
-
-        return [
-                protocol: uri.scheme,
-                host    : uri.authority,
-                path    : uri.path
-        ]
-    }
-
-    private URI getScmmUri() {
-        if (config.scmm.internal) {
-            new URI("http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm")
-        } else {
-            new URI("${config.scmm.url}")
-        }
-    }
-
-    private Map getJenkinsConfiguration() {
-        String path = 'prometheus'
-        URI uri
-        if (config.jenkins.internal) {
-            uri = new URI("http://jenkins.${config.application.namePrefix}jenkins.svc.cluster.local/${path}")
-        } else {
-            uri = new URI("${config.jenkins.url}/${path}")
-        }
-
-        return [
-                metricsUsername: config.jenkins.metricsUsername,
-                protocol       : uri.scheme,
-                host           : uri.authority,
-                path           : uri.path
-        ]
     }
 }

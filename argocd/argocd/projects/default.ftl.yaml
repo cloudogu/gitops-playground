@@ -2,10 +2,10 @@ apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
   name: default
-  namespace: ${namePrefix}argocd
+  namespace: ${config.application.namePrefix}argocd
   annotations:
-<#if mail.active?? && mail.active>
-    notifications.argoproj.io/subscribe.email: ${argocd.emailToAdmin}
+<#if config.features.mail.active?? && config.features.mail.active>
+    notifications.argoproj.io/subscribe.email: ${config.features.argocd.emailToAdmin}
 </#if>
 spec:
   description: Default fallback AppProject if none other is specified. Is not allowed to do anything.

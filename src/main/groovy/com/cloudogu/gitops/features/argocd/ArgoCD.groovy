@@ -5,7 +5,7 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.kubernetes.argocd.ArgoApplication
 import com.cloudogu.gitops.kubernetes.rbac.RbacDefinition
 import com.cloudogu.gitops.kubernetes.rbac.Role
-import com.cloudogu.gitops.scmm.ScmmRepo
+import com.cloudogu.gitops.scmm.ScmUrlResolver
 import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.HelmClient
@@ -226,7 +226,7 @@ class ArgoCD extends Feature {
         }
 
         if (!config.scmm.internal) {
-            String externalScmmUrl = ScmmRepo.createScmmUrl(config)
+            String externalScmmUrl = ScmUrlResolver.externalHost(config)
             log.debug("Configuring all yaml files in gitops repos to use the external scmm url: ${externalScmmUrl}")
             replaceFileContentInYamls(new File(clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()), scmmUrlInternal, externalScmmUrl)
             
@@ -244,7 +244,7 @@ class ArgoCD extends Feature {
             if (config.multiTenant.useDedicatedInstance) {
                 new ArgoApplication(
                         'example-apps',
-                        ScmmRepo.createSCMBaseUrl(config)+'argocd/example-apps',
+                        ScmUrlResolver.tenantBaseUrl(config)+'argocd/example-apps',
                         namespace,
                         namespace,
                         'argocd/',
@@ -438,7 +438,7 @@ class ArgoCD extends Feature {
         // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo
         def repoTemplateSecretName = 'argocd-repo-creds-scmm'
 
-        String scmmUrlForArgoCD = config.scmm.internal ? scmmUrlInternal : ScmmRepo.createScmmUrl(config)
+        String scmmUrlForArgoCD = config.scmm.internal ? scmmUrlInternal : ScmUrlResolver.externalHost(config)
         k8sClient.createSecret('generic', repoTemplateSecretName, namespace,
                 new Tuple2('url', scmmUrlForArgoCD),
                 new Tuple2('username', config.scmm.username),
@@ -480,7 +480,7 @@ class ArgoCD extends Feature {
         }
 
         if (!config.scmm.internal) {
-            String externalScmmUrl = ScmmRepo.createScmmUrl(config)
+            String externalScmmUrl = ScmUrlResolver.externalHost(config)
             log.debug("Configuring all yaml files in argocd repo to use the external scmm url: ${externalScmmUrl}")
             replaceFileContentInYamls(new File(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()), scmmUrlInternal, externalScmmUrl)
         }

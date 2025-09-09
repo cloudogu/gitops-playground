@@ -1,13 +1,13 @@
 service:
   port: 80
 
-<#if exampleApps.petclinic.baseDomain?has_content>
+<#if config.features.exampleApps.petclinic.baseDomain?has_content>
 ingress:
   hosts:
-    <#if urlSeparatorHyphen>
-    - host: staging-petclinic-helm-${exampleApps.petclinic.baseDomain}
+    <#if config.application.urlSeparatorHyphen>
+    - host: staging-petclinic-helm-${config.features.exampleApps.petclinic.baseDomain}
     <#else>
-    - host: staging.petclinic-helm.${exampleApps.petclinic.baseDomain}
+    - host: staging.petclinic-helm.${config.features.exampleApps.petclinic.baseDomain}
     </#if>
       paths: ['/']
 </#if>

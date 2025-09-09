@@ -37,7 +37,7 @@ spec:
             - name: tmp
               # Make /tmp writable with readOnlyRootFilesystem
               mountPath: /tmp
-<#if podResources == true>
+<#if config.application.podResources == true>
           resources:
             limits:
               cpu: '1'

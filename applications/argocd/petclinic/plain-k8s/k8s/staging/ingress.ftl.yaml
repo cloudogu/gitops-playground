@@ -1,4 +1,4 @@
-<#if exampleApps.petclinic.baseDomain?has_content>
+<#if config.features.exampleApps.petclinic.baseDomain?has_content>
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -7,10 +7,10 @@ metadata:
     app: spring-petclinic-plain
 spec:
   rules:
-    <#if urlSeparatorHyphen>
-    - host: staging-petclinic-plain-${exampleApps.petclinic.baseDomain}
+    <#if config.application.urlSeparatorHyphen>
+    - host: staging-petclinic-plain-${config.features.exampleApps.petclinic.baseDomain}
     <#else>
-    - host: staging.petclinic-plain.${exampleApps.petclinic.baseDomain}
+    - host: staging.petclinic-plain.${config.features.exampleApps.petclinic.baseDomain}
     </#if>
       http:
         paths:

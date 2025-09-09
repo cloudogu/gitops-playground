@@ -1,8 +1,10 @@
-<#if nginxImage?has_content>
+<#assign DockerImageParser=statics['com.cloudogu.gitops.utils.DockerImageParser']>
+<#if config.images.nginx?has_content>
+<#assign nginxImageObject = DockerImageParser.parse(config.images.nginx)>
 image:
-  registry: ${nginxImage.registry}
-  repository: ${nginxImage.repository}
-  tag: ${nginxImage.tag}
+  registry: ${nginxImageObject.registry}
+  repository: ${nginxImageObject.repository}
+  tag: ${nginxImageObject.tag}
 <#else>
 image:
   repository: bitnamilegacy/nginx
@@ -30,7 +32,7 @@ serverBlock: |-
     }
   }
 
-<#if podResources == true>
+<#if config.application.podResources == true>
 resources:
   limits:
     cpu: 100m

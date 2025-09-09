@@ -1,9 +1,9 @@
-  <#if (!isOpenshift && isInsecure)>
+  <#if (!config.application.openshift && config.application.insecure)>
   apiVersion: networking.k8s.io/v1
   kind: Ingress
   metadata:
     name: argocd
-    namespace: "${namePrefix}argocd"
+    namespace: "${config.application.namePrefix}argocd"
     labels:
       app: argocd-server
     annotations:

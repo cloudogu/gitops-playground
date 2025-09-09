@@ -1,3 +1,4 @@
+<#assign DockerImageParser=statics['com.cloudogu.gitops.utils.DockerImageParser']>
 apiVersion: apps/v1
 kind: Deploymentz
 metadata:
@@ -18,10 +19,14 @@ spec:
     spec:
       containers:
         - name: broken-application
-          image: <#if nginxImage??>${nginxImage}<#else>bitnamilegacy/nginx:1.25.1</#if>
+          image: <#if config.images.nginx?has_content>
+                ${DockerImageParser.parse(config.images.nginx)}
+            <#else>
+                bitnamilegacy/nginx:1.25.1
+            </#if>
           ports:
             - containerPort: 8080
-<#if podResources == true>
+<#if config.application.podResources == true>
           resources:
             limits:
               cpu: 100m
@@ -40,7 +45,7 @@ metadata:
   labels:
     app: broken-application
 spec:
-  type: <#if isRemote>LoadBalancer<#else>ClusterIP</#if>
+  type: <#if config.application.remote>LoadBalancer<#else>ClusterIP</#if>
   ports:
     - name: http
       port: 80
@@ -48,7 +53,7 @@ spec:
   selector:
     app: broken-application
 
-<#if exampleApps.nginx.baseDomain?has_content>
+<#if config.features.exampleApps.nginx.baseDomain?has_content>
 ---
 
 apiVersion: networking.k8s.io/v1
@@ -59,10 +64,10 @@ metadata:
     app: broken-application
 spec:
   rules:
-    <#if urlSeparatorHyphen>
-    - host: broken-application-${exampleApps.nginx.baseDomain}
+    <#if config.application.urlSeparatorHyphen>
+    - host: broken-application-${config.features.exampleApps.nginx.baseDomain}
     <#else>
-    - host: broken-application.${exampleApps.nginx.baseDomain}
+    - host: broken-application.${config.features.exampleApps.nginx.baseDomain}
     </#if>
       http:
         paths:

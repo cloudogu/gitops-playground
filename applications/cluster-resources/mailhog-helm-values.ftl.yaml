@@ -10,13 +10,13 @@ imagePullSecrets:
  - name: proxy-registry
 </#if>
 service:
-  type: <#if isRemote>LoadBalancer<#else>ClusterIP</#if>
+  type: <#if config.application.remote>LoadBalancer<#else>ClusterIP</#if>
   port:
     http: 80
 auth:
   enabled: true
   fileName: auth.txt
-  fileContents: "${username}:${passwordCrypt}"
+  fileContents: "${config.application.username}:${passwordCrypt}"
 <#if mail.host?has_content>
 
 ingress:
@@ -27,7 +27,7 @@ ingress:
         - path: "/"
           pathType: Prefix
 </#if>
-<#if podResources == true>
+<#if config.application.podResources == true>
 
 resources:
   limits:

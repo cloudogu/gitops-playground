@@ -1,8 +1,10 @@
-<#if nginxImage?has_content>
+<#assign DockerImageParser=statics['com.cloudogu.gitops.utils.DockerImageParser']>
+<#if config.images.nginx?has_content>
+<#assign nginxImageObject = DockerImageParser.parse(config.images.nginx)>
 image:
-  registry: ${nginxImage.registry}
-  repository: ${nginxImage.repository}
-  tag: ${nginxImage.tag}
+  registry: ${nginxImageObject.registry}
+  repository: ${nginxImageObject.repository}
+  tag: ${nginxImageObject.tag}
 <#else>
 image:
   repository: bitnamilegacy/nginx
@@ -16,7 +18,7 @@ global:
 service:
   ports:
     http: 80
-  type: <#if isRemote>LoadBalancer<#else>ClusterIP</#if>
+  type: <#if config.application.remote>LoadBalancer<#else>ClusterIP</#if>
 # We don't use staticSiteConfigmap, so this is extensible for our secret example. See ArgoCD.groovy
 extraVolumes:
   - name: index
@@ -25,7 +27,7 @@ extraVolumes:
       items:
         - key: index.html
           path: index.html
-  <#if secrets.active>
+  <#if config.features.secrets.active>
   - name: secret
     secret:
       secretName: nginx-helm-jenkins
@@ -37,13 +39,13 @@ extraVolumeMounts:
   - name: index
     mountPath: /app
     readOnly: true
-  <#if secrets.active>
+  <#if config.features.secrets.active>
   - name: secret
     mountPath: /app/secret
     readOnly: true
   </#if>
 
-<#if podResources == true>
+<#if config.application.podResources == true>
 resources:
   limits:
     cpu: 1

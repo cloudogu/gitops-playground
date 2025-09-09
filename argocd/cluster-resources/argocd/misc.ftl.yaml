@@ -3,19 +3,19 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: <#if config.multiTenant.useDedicatedInstance>${namePrefix}misc<#else>misc</#if>
-  namespace: <#if config.multiTenant.useDedicatedInstance>${config.multiTenant.centralArgocdNamespace}<#else>${namePrefix}argocd</#if>
+  name: <#if config.multiTenant.useDedicatedInstance>${config.application.namePrefix}misc<#else>misc</#if>
+  namespace: <#if config.multiTenant.useDedicatedInstance>${config.multiTenant.centralArgocdNamespace}<#else>${config.application.namePrefix}argocd</#if>
 spec:
   project: <#if config.multiTenant.useDedicatedInstance>${tenantName}<#else>cluster-resources</#if>
   destination:
     server: https://kubernetes.default.svc
-    namespace: <#if config.multiTenant.useDedicatedInstance>argocd<#else>${namePrefix}argocd</#if>
+    namespace: <#if config.multiTenant.useDedicatedInstance>argocd<#else>${config.application.namePrefix}argocd</#if>
   source:
     path: misc/
 <#if config.multiTenant.useDedicatedInstance>
-    repoURL: ${scmm.centralScmmUrl}/repo/${namePrefix}argocd/cluster-resources
+    repoURL: ${scmm.centralScmmUrl}/repo/${config.application.namePrefix}argocd/cluster-resources
 <#else>
-    repoURL: ${scmm.repoUrl}argocd/cluster-resources<#if scmm.provider == "gitlab">.git</#if>
+    repoURL: ${scmm.repoUrl}argocd/cluster-resources<#if config.scmm.provider == "gitlab">.git</#if>
 </#if>
     targetRevision: main
     directory:
