@@ -5,6 +5,7 @@ import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.deployment.HelmStrategy
+import com.cloudogu.gitops.features.git.config.util.ScmProviderType
 import com.cloudogu.gitops.jenkins.GlobalPropertyManager
 import com.cloudogu.gitops.jenkins.JobManager
 import com.cloudogu.gitops.jenkins.PrometheusConfigurator
@@ -137,9 +138,9 @@ class Jenkins extends Feature {
                 JENKINS_PASSWORD          : config.jenkins.password,
                 // Used indirectly in utils.sh 😬
                 REMOTE_CLUSTER            : config.application.remote,
-                SCMM_URL                  : config.scmm.urlForJenkins,
-                SCMM_PASSWORD             : config.scmm.password,
-                SCM_PROVIDER              : config.scmm.provider,
+                SCMM_URL                  : config.scm.getScmmConfig().urlForJenkins,
+                SCMM_PASSWORD             : config.scm.getScmmConfig().password,
+                SCM_PROVIDER              : config.scm.scmProviderType,
                 INSTALL_ARGOCD            : config.features.argocd.active,
                 NAME_PREFIX               : config.application.namePrefix,
                 INSECURE                  : config.application.insecure,
@@ -147,7 +148,7 @@ class Jenkins extends Feature {
                 SKIP_PLUGINS              : config.jenkins.skipPlugins
         ])
 
-        globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}SCMM_URL", config.scmm.urlForJenkins)
+        globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}SCMM_URL", config.scm.getScmmConfig().urlForJenkins)
 
         if (config.jenkins.additionalEnvs) {
             for (entry in (config.jenkins.additionalEnvs as Map).entrySet()) {
@@ -201,25 +202,24 @@ class Jenkins extends Feature {
         String prefixedNamespace = "${config.application.namePrefix}${namespace}"
         String jobName = "${config.application.namePrefix}${repoName}"
         jobManager.createJob(jobName,
-                config.scmm.urlForJenkins,
+                config.scm.getScmmConfig().urlForJenkins,
                 prefixedNamespace,
                 credentialId)
-
-        if (config.scmm.provider == Config.ScmProviderType.SCM_MANAGER) {
+        if (config.scm.scmProviderType == ScmProviderType.SCM_MANAGER) {
             jobManager.createCredential(
                     jobName,
                     credentialId,
                     "${config.application.namePrefix}gitops",
-                    "${config.scmm.password}",
+                    "${config.scm.getScmmConfig().password}",
                     'credentials for accessing scm-manager')
         }
 
-        if (config.scmm.provider == Config.ScmProviderType.GITLAB) {
+        if (config.scm.scmProviderType == ScmProviderType.GITLAB) {
             jobManager.createCredential(
                     jobName,
                     credentialId,
-                    "${config.scmm.username}",
-                    "${config.scmm.password}",
+                    "${config.scm.getScmmConfig().username}",
+                    "${config.scm.getScmmConfig().password}",
                     'credentials for accessing gitlab')
         }
 
