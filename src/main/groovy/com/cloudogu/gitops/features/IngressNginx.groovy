@@ -94,10 +94,10 @@ class IngressNginx extends Feature implements FeatureWithImage {
     }
 
     private URI getScmmUri() {
-        if (config.scmm.internal) {
+        if (config.scm.getScmmConfig().internal) {
             new URI("http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm")
         } else {
-            new URI("${config.scmm.url}")
+            new URI("${config.scm.getScmmConfig().url}")
         }
     }
 }
