@@ -332,7 +332,7 @@ class Config {
         HelmConfigWithValues helm = new HelmConfigWithValues(
                 chart: 'scm-manager',
                 repoURL: 'https://packages.scm-manager.org/repository/helm-v2-releases/',
-                version: '3.8.0',
+                version: '3.10.2',
                 values: [:]
         )
 
