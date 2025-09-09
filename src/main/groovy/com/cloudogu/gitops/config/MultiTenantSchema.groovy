@@ -30,4 +30,8 @@ class MultiTenantSchema {
     Boolean isInternal() {
             return scmmConfig.internal
     }
+
+    String centralSCMamespace = 'scm-manager'
+
+
 }
