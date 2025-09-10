@@ -24,7 +24,8 @@
     
     <!--suppress UnresolvedMavenProperty -->
     <!-- git is provided by git-commit-id-maven-plugin -->
-    <versionName>${git.tags} (${git.commit.id.abbrev})\n${project.licenses[0].comments}\n${project.licenses[0].name}\n${project.licenses[0].url}</versionName>
+    <versionName>${git.tags} (${git.commit.id.abbrev}, ${maven.build.timestamp})\n${project.licenses[0].comments}\n${project.licenses[0].name}\n${project.licenses[0].url}</versionName>
+    <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
     
     <versionNameVersion>2.2.0</versionNameVersion>
     <mockitoVersion>4.8.0</mockitoVersion>
