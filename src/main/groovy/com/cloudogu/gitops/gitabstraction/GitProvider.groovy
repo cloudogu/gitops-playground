@@ -1,5 +1,7 @@
 package com.cloudogu.gitops.gitabstraction
 
+import com.cloudogu.gitops.scmm.api.Permission
+
 
 interface GitProvider {
     /**
@@ -10,7 +12,7 @@ interface GitProvider {
 
     void setDefaultBranch(String repoTarget, String branch)
 
-    void setRepositoryPermission(String repoTarget, String principal, String role, boolean groupPermission)
+    void setRepositoryPermission(String repoTarget, String principal, Permission.Role role, boolean groupPermission)
 
     String computePushUrl(String repoTarget)
 
