@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.gitabstraction
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.scmm.ScmUrlResolver
 import com.cloudogu.gitops.scmm.api.Permission
 import com.cloudogu.gitops.scmm.api.Repository
 import com.cloudogu.gitops.scmm.api.ScmmApiClient
@@ -46,12 +47,9 @@ class ScmGitProvider extends BaseGitProvider implements GitProvider{
         handle201or409(response, "Permission on ${namespace}/${repoName}")
     }
 
-    //TODO here use the right URL
     @Override
     String computePushUrl(String repoTarget) {
-        // SCMM Push-URL: <protocol>://<host>/<rootPath>/<namespace>/<name>
-        return "${config.scmm.protocol}://${config.scmm.host}/${config.scmm.rootPath}/${repoTarget}"
-
+        return ScmUrlResolver.scmmRepoUrl(config, repoTarget)
     }
 
     private static boolean handle201or409(Response<?> response, String what) {

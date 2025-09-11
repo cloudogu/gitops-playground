@@ -1,5 +1,7 @@
 package com.cloudogu.gitops.gitabstraction;
 
+import com.cloudogu.gitops.scmm.api.Permission;
+
 public class GitlabProvider extends BaseGitProvider implements GitProvider {
     @Override
     public boolean createRepository(String repoTarget, String description, boolean initialize) {
@@ -12,9 +14,10 @@ public class GitlabProvider extends BaseGitProvider implements GitProvider {
     }
 
     @Override
-    public void setRepositoryPermission(String repoTarget, String principal, String role, boolean groupPermission) {
+    public void setRepositoryPermission(String repoTarget, String principal, Permission.Role role, boolean groupPermission) {
 
     }
+
 
     @Override
     public String computePushUrl(String repoTarget) {
