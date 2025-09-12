@@ -13,10 +13,12 @@ class ScmGitProvider extends BaseGitProvider implements GitProvider{
 
     private final Config config
     private final ScmmApiClient scmmApiClient
+    private final ScmUrlResolver urlResolver
 
-    ScmGitProvider(Config config, ScmmApiClient scmmApiClient) {
+    ScmGitProvider(Config config, ScmmApiClient scmmApiClient, ScmUrlResolver urlResolver) {
         this.config = config
         this.scmmApiClient = scmmApiClient
+        this.urlResolver = urlResolver
     }
 
     @Override
@@ -26,16 +28,6 @@ class ScmGitProvider extends BaseGitProvider implements GitProvider{
         def repo = new Repository(namespace, repoName, description ?: "")
         Response<Void> response = scmmApiClient.repositoryApi().create(repo, initialize).execute()
         return handle201or409(response, "Repository ${namespace}/${repoName}")
-    }
-
-    @Override
-    void setDefaultBranch(String repoTarget, String branch) {
-        def namespace = repoTarget.split('/', 2)[0]
-        def repoName = repoTarget.split('/', 2)[1]
-        def body = [ defaultBranch: (branch ?: "main") ]
-        Response<Void> response = scmmApiClient.gitConfigApi().setDefaultBranch(namespace, repoName, body).execute()
-        handleOk(response, "set default branch for ${namespace}/${repoName}") // accept 200/204
-
     }
 
     @Override
@@ -49,7 +41,7 @@ class ScmGitProvider extends BaseGitProvider implements GitProvider{
 
     @Override
     String computePushUrl(String repoTarget) {
-        return ScmUrlResolver.scmmRepoUrl(config, repoTarget)
+        return urlResolver.scmmRepoUrl(config, repoTarget)
     }
 
     private static boolean handle201or409(Response<?> response, String what) {
@@ -63,15 +55,5 @@ class ScmGitProvider extends BaseGitProvider implements GitProvider{
         }
         return true// because its created
     }
-
-    // For PUT/PATCH/DELETE : 200/204 are interpreted as OK
-    private static void handleOk(Response<?> response, String what, Set<Integer> ok = [200, 204] as Set) {
-        int code = response.code()
-        if (!ok.contains(code)) {
-            throw new RuntimeException("Failde to ${what}" +
-                    "HTTP Details: ${response.code()} ${response.message()}: ${response.errorBody().string()}")
-        }
-    }
-
 
 }

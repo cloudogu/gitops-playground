@@ -6,11 +6,9 @@ import com.cloudogu.gitops.scmm.api.Permission
 interface GitProvider {
     /**
      * @param repoTarget "namespace/name"
-     * @return true wenn neu angelegt, false wenn bereits vorhanden
+     * @return true when repo new added, false when repo already exists
      */
     boolean createRepository(String repoTarget, String description, boolean initialize)
-
-    void setDefaultBranch(String repoTarget, String branch)
 
     void setRepositoryPermission(String repoTarget, String principal, Permission.Role role, boolean groupPermission)
 

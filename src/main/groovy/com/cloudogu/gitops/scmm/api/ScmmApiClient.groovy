@@ -1,7 +1,7 @@
 package com.cloudogu.gitops.scmm.api
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.gitabstraction.GitConfigApi
+
 import jakarta.inject.Named
 import jakarta.inject.Singleton
 import okhttp3.OkHttpClient
@@ -28,9 +28,6 @@ class ScmmApiClient {
     RepositoryApi repositoryApi() {
         return retrofit().create(RepositoryApi)
     }
-
-    GitConfigApi gitConfigApi() {
-        return retrofit().create(GitConfigApi) }
 
     protected Retrofit retrofit() {
         return new Retrofit.Builder()

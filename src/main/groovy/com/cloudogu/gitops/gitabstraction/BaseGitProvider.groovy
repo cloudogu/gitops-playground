@@ -1,7 +1,9 @@
 package com.cloudogu.gitops.gitabstraction
 
+import com.cloudogu.gitops.scmm.api.Permission
 
-/** Bequeme Overloads mit Defaults */
+
+/** Easy overloads with defaults */
 abstract class BaseGitProvider implements GitProvider {
     boolean createRepository(String repoTarget) {
         return createRepository(repoTarget, "", true)
@@ -11,11 +13,8 @@ abstract class BaseGitProvider implements GitProvider {
         return createRepository(repoTarget, description, true)
     }
 
-    void setDefaultBranch(String repoTarget) {
-        setDefaultBranch(repoTarget, "main")
-    }
-
-    void setRepositoryPermission(String repoTarget, String principal, String role) {
+    //TODO check the needed default groupPermission for gitlab and scm-manager, if there are differences, make it configurable
+    void setRepositoryPermission(String repoTarget, String principal, Permission.Role role) {
         setRepositoryPermission(repoTarget, principal, role, false)
     }
 }

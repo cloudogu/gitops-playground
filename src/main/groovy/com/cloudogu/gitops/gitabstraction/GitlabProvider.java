@@ -9,11 +9,6 @@ public class GitlabProvider extends BaseGitProvider implements GitProvider {
     }
 
     @Override
-    public void setDefaultBranch(String repoTarget, String branch) {
-
-    }
-
-    @Override
     public void setRepositoryPermission(String repoTarget, String principal, Permission.Role role, boolean groupPermission) {
 
     }
