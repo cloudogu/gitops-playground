@@ -28,7 +28,7 @@
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
     
     <versionNameVersion>2.2.0</versionNameVersion>
-    <mockitoVersion>4.8.0</mockitoVersion>
+    <mockitoVersion>5.14.2</mockitoVersion>
     <okhttpVersion>4.11.0</okhttpVersion>
     <retrofitVersion>2.9.0</retrofitVersion>
     <groovy.version>4.0.12</groovy.version>
@@ -363,7 +363,7 @@
 
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.22.2</version>
+        <version>3.2.5</version>
         <configuration>
           <!-- Needed to allow unit tests to do reflection, e.g. for SystemLambda's withEnvironmentVariable -->
           <argLine>--add-opens java.base/java.util=ALL-UNNAMED</argLine>
