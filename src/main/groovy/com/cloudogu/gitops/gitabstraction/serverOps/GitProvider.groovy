@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.gitabstraction
+package com.cloudogu.gitops.gitabstraction.serverOps
 
 import com.cloudogu.gitops.scmm.api.Permission
 

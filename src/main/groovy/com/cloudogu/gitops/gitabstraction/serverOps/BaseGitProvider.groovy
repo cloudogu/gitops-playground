@@ -1,9 +1,13 @@
-package com.cloudogu.gitops.gitabstraction
+package com.cloudogu.gitops.gitabstraction.serverOps
 
 import com.cloudogu.gitops.scmm.api.Permission
 
 
-/** Easy overloads with defaults */
+/** Server-Ops:  easy overloads with defaults
+ *  Server-Ops are actions performed against the remote SCM server (e.g., SCM-Manager, GitLab)
+ *  via their HTTP/REST APIs.
+ *  These operations change the server-side state and do not require a local Git checkout.
+ * */
 abstract class BaseGitProvider implements GitProvider {
     boolean createRepository(String repoTarget) {
         return createRepository(repoTarget, "", true)

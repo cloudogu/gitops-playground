@@ -1,6 +1,8 @@
 package com.cloudogu.gitops.scmm
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.gitabstraction.worktreeOps.BaseGitRepo
+import com.cloudogu.gitops.gitabstraction.worktreeOps.GitRepo
 import com.cloudogu.gitops.scmm.api.Permission
 import com.cloudogu.gitops.scmm.api.Repository
 import com.cloudogu.gitops.scmm.api.ScmmApiClient
@@ -17,7 +19,7 @@ import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 import retrofit2.Response
 
 @Slf4j
-class ScmmRepo {
+class ScmmRepo extends BaseGitRepo implements GitRepo {
 
     static final String NAMESPACE_3RD_PARTY_DEPENDENCIES = '3rd-party-dependencies'
 
@@ -66,6 +68,11 @@ class ScmmRepo {
         this.scmProvider = config.scmm.provider
         this.rootPath = config.scmm.rootPath
         this.config = config
+    }
+
+    @Override
+    String getRepoTarget() {
+        return null
     }
 
     String getAbsoluteLocalRepoTmpDir() {
