@@ -1,6 +1,6 @@
 package com.cloudogu.gitops.scmm.api
 
-import com.cloudogu.gitops.gitabstraction.serverOps.Permission
+import com.cloudogu.gitops.gitHandling.gitServerClients.Permission
 import okhttp3.ResponseBody
 import retrofit2.Call
 import retrofit2.http.*

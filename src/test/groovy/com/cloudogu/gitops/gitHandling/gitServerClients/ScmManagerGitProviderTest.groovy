@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.gitabstraction.serverOps
+package com.cloudogu.gitops.gitHandling.gitServerClients
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.scmm.api.Repository
@@ -26,7 +26,7 @@ import static org.mockito.Mockito.verify
 import static org.mockito.Mockito.when
 
 @ExtendWith(MockitoExtension.class)
-class ScmGitProviderTest {
+class ScmManagerGitProviderTest {
     @Mock
     Config config;
     @Mock
@@ -37,7 +37,7 @@ class ScmGitProviderTest {
     Call<Void> call
 
     @InjectMocks
-    ScmGitProvider scmGitProvider;
+    ScmManagerGitProvider scmGitProvider;
 
     @BeforeEach
     void setup() {

@@ -12,7 +12,7 @@ import com.cloudogu.gitops.features.argocd.ArgoCD
 import com.cloudogu.gitops.features.deployment.ArgoCdApplicationStrategy
 import com.cloudogu.gitops.features.deployment.Deployer
 import com.cloudogu.gitops.features.deployment.HelmStrategy
-import com.cloudogu.gitops.gitabstraction.serverOps.GitProviderFactory
+import com.cloudogu.gitops.gitHandling.gitServerClients.GitProviderFactory
 import com.cloudogu.gitops.jenkins.GlobalPropertyManager
 import com.cloudogu.gitops.jenkins.JenkinsApiClient
 import com.cloudogu.gitops.jenkins.JobManager
@@ -90,7 +90,7 @@ class GitopsPlaygroundCliMainScripted {
 
                 def deployer = new Deployer(config, new ArgoCdApplicationStrategy(config, fileSystemUtils, repoProvider), helmStrategy)
 
-                def airGappedUtils = new AirGappedUtils(config, repoProvider, scmmApiClient, fileSystemUtils, helmClient)
+                def airGappedUtils = new AirGappedUtils(config, repoProvider, scmmApiClient, fileSystemUtils, helmClient, gitProvider)
                 def networkingUtils = new NetworkingUtils()
 
                 def jenkins = new Jenkins(config, executor, fileSystemUtils, new GlobalPropertyManager(jenkinsApiClient),

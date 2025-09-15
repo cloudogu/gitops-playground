@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.gitabstraction.worktreeOps
+package com.cloudogu.gitops.gitHandling.git
 
 /** Worktree-Ops:
  * Worktree operations are local Git actions (JGit) on a checked-out repository:
@@ -13,19 +13,17 @@ interface GitRepo {
     void cloneRepo()
 
     void commitAndPush(String message)
-
+    void commitAndPush(String message, String tag)
     void commitAndPush(String message, String tag, String refSpec)
 
     void pushAll(boolean force)
 
     void pushRef(String ref, boolean force)
-
     void pushRef(String ref, String targetRef, boolean force)
 
     void clearRepo()
 
     void copyDirectoryContents(String srcDir)
-
     void copyDirectoryContents(String srcDir, FileFilter fileFilter)
 
     void writeFile(String path, String content)

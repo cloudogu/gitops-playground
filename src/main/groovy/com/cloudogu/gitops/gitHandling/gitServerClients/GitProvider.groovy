@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.gitabstraction.serverOps
+package com.cloudogu.gitops.gitHandling.gitServerClients
 
 interface GitProvider {
     /**

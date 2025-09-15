@@ -1,6 +1,6 @@
 package com.cloudogu.gitops.kubernetes.argocd
 
-import com.cloudogu.gitops.gitabstraction.worktreeOps.GitRepo
+import com.cloudogu.gitops.gitHandling.git.GitRepo
 import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
 

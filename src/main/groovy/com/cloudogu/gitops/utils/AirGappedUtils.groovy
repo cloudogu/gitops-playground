@@ -1,6 +1,9 @@
 package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.gitHandling.gitServerClients.GitProvider
+import com.cloudogu.gitops.gitHandling.gitServerClients.Permission
+import com.cloudogu.gitops.gitHandling.git.GitRepo
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import com.cloudogu.gitops.scmm.api.ScmmApiClient
@@ -19,14 +22,16 @@ class AirGappedUtils {
     private ScmmApiClient scmmApiClient
     private FileSystemUtils fileSystemUtils
     private HelmClient helmClient
+    private final GitProvider gitProvider;
 
     AirGappedUtils(Config config, ScmmRepoProvider repoProvider, ScmmApiClient scmmApiClient,
-                   FileSystemUtils fileSystemUtils, HelmClient helmClient) {
+                   FileSystemUtils fileSystemUtils, HelmClient helmClient, GitProvider gitProvider) {
         this.config = config
         this.repoProvider = repoProvider
         this.scmmApiClient = scmmApiClient
         this.fileSystemUtils = fileSystemUtils
         this.helmClient = helmClient
+        this.gitProvider = gitProvider
     }
 
     /**
@@ -44,8 +49,23 @@ class AirGappedUtils {
 
         validateChart(repoNamespaceAndName, localHelmChartFolder, repoName)
 
-        ScmmRepo repo = repoProvider.getRepo(repoNamespaceAndName)
-        repo.create("Mirror of Helm chart $repoName from ${helmConfig.repoURL}", scmmApiClient)
+        GitRepo repo = repoProvider.getRepo(repoNamespaceAndName)
+
+        boolean isNewRepo = gitProvider.createRepository(
+                repoNamespaceAndName,
+                "Mirror of Helm chart $repoName from ${helmConfig.repoURL}",
+                false
+        )
+
+        // A previous create(..) granted WRITE access to the gitOps user — apply the same
+        if (isNewRepo && config.scmm?.gitOpsUsername) {
+            gitProvider.setRepositoryPermission(
+                    repoNamespaceAndName,
+                    config.scmm.gitOpsUsername as String,
+                    Permission.Role.WRITE,
+                    false
+            )
+        }
         repo.cloneRepo()
 
         repo.copyDirectoryContents(localHelmChartFolder)
@@ -72,8 +92,8 @@ class AirGappedUtils {
         }
     }
 
-    private Map localizeChartYaml(ScmmRepo scmmRepo) {
-        log.debug("Preparing repo ${scmmRepo.scmmRepoTarget} for air-gapped use: Changing Chart.yaml to resolve depencies locally")
+    private Map localizeChartYaml(GitRepo scmmRepo) {
+        log.debug("Preparing repo ${scmmRepo.getRepoTarget()} for air-gapped use: Changing Chart.yaml to resolve depencies locally")
 
         def chartYamlPath = Path.of(scmmRepo.absoluteLocalRepoTmpDir, 'Chart.yaml')
 
@@ -91,7 +111,7 @@ class AirGappedUtils {
         return chartYaml
     }
 
-    private static Map parseChartLockIfExists(ScmmRepo scmmRepo) {
+    private static Map parseChartLockIfExists(GitRepo scmmRepo) {
         def chartLock = Path.of(scmmRepo.absoluteLocalRepoTmpDir, 'Chart.lock')
         if (!chartLock.toFile().exists()) {
             return [:]
@@ -102,13 +122,13 @@ class AirGappedUtils {
     /**
      * Resolve proper dependency version from Chart.lock, e.g. 5.18.* -> 5.18.1
      */
-    private void resolveDependencyVersion(Map chartLock, Map chartYamlDep, ScmmRepo scmmRepo) {
+    private void resolveDependencyVersion(Map chartLock, Map chartYamlDep, GitRepo scmmRepo) {
         def chartLockDep = findByName(chartLock.dependencies as List, chartYamlDep.name as String)
         if (chartLockDep) {
             chartYamlDep.version = chartLockDep.version
         } else if ((chartYamlDep.version as String).contains('*')) {
             throw new RuntimeException("Unable to determine proper version for dependency " +
-                    "${chartYamlDep.name} (version: ${chartYamlDep.version}) from repo ${scmmRepo.scmmRepoTarget}")
+                    "${chartYamlDep.name} (version: ${chartYamlDep.version}) from repo ${scmmRepo.getRepoTarget()}")
         }
     }
 

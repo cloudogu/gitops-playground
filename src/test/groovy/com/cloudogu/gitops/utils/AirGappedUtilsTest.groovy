@@ -2,7 +2,7 @@ package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.scmm.ScmmRepo
-import com.cloudogu.gitops.gitabstraction.serverOps.Permission
+import com.cloudogu.gitops.gitHandling.gitServerClients.Permission
 import com.cloudogu.gitops.scmm.api.Repository
 import com.cloudogu.gitops.scmm.api.ScmmApiClient
 import groovy.yaml.YamlSlurper

@@ -1,9 +1,8 @@
 package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.gitabstraction.worktreeOps.GitRepo
+import com.cloudogu.gitops.gitHandling.git.GitRepo
 import com.cloudogu.gitops.scmm.ScmUrlResolver
-import com.cloudogu.gitops.scmm.ScmmRepo
 import freemarker.template.DefaultObjectWrapperBuilder
 
 class RepoInitializationAction {

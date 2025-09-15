@@ -1,8 +1,8 @@
 package com.cloudogu.gitops.scmm
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.gitabstraction.serverOps.GitProvider
-import com.cloudogu.gitops.gitabstraction.worktreeOps.GitRepo
+import com.cloudogu.gitops.gitHandling.gitServerClients.GitProvider
+import com.cloudogu.gitops.gitHandling.git.GitRepo
 import com.cloudogu.gitops.utils.FileSystemUtils
 import jakarta.inject.Singleton
 

@@ -1,8 +1,8 @@
-package com.cloudogu.gitops.gitabstraction.serverOps
+package com.cloudogu.gitops.gitHandling.gitServerClients
 
 import com.cloudogu.gitops.config.Config
 
-class GitlabGitProvider extends BaseGitProvider implements GitProvider {
+class GitlabGitProvider implements GitProvider {
     private final Config config
 
     GitlabGitProvider (Config config){

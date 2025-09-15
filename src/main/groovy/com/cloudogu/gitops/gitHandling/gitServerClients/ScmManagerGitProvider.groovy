@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.gitabstraction.serverOps
+package com.cloudogu.gitops.gitHandling.gitServerClients
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.scmm.ScmUrlResolver
@@ -8,12 +8,12 @@ import groovy.util.logging.Slf4j
 import retrofit2.Response
 
 @Slf4j
-class ScmGitProvider extends BaseGitProvider implements GitProvider{
+class ScmManagerGitProvider implements GitProvider{
 
     private final Config config
     private final ScmmApiClient scmmApiClient
 
-    ScmGitProvider(Config config, ScmmApiClient scmmApiClient) {
+    ScmManagerGitProvider(Config config, ScmmApiClient scmmApiClient) {
         this.config = config
         this.scmmApiClient = scmmApiClient
     }

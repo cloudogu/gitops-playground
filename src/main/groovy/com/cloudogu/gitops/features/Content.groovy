@@ -3,10 +3,10 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Config.OverwriteMode
-import com.cloudogu.gitops.gitabstraction.serverOps.GitProvider
-import com.cloudogu.gitops.gitabstraction.worktreeOps.GitRepo
+import com.cloudogu.gitops.gitHandling.gitServerClients.GitProvider
+import com.cloudogu.gitops.gitHandling.git.GitRepo
 import com.cloudogu.gitops.scmm.ScmmRepoProvider
-import com.cloudogu.gitops.gitabstraction.serverOps.Permission
+import com.cloudogu.gitops.gitHandling.gitServerClients.Permission
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.TemplatingEngine
@@ -304,8 +304,6 @@ class Content extends Feature {
     private void pushTargetRepos(List<RepoCoordinate> repoCoordinates) {
         repoCoordinates.each { repoCoordinate ->
 
-//            ScmmRepo targetRepo = repoProvider.getRepo(repoCoordinate.fullRepoName)
-//            def isNewRepo = targetRepo.create('', scmmApiClient, false)
             // Server-side: instead of targetRepo.create(...)
             boolean isNewRepo = gitProvider.createRepository(
                     repoCoordinate.fullRepoName,
