@@ -1,6 +1,8 @@
 package com.cloudogu.gitops.scmm
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.gitabstraction.serverOps.GitProvider
+import com.cloudogu.gitops.gitabstraction.worktreeOps.GitRepo
 import com.cloudogu.gitops.utils.FileSystemUtils
 import jakarta.inject.Singleton
 
@@ -8,17 +10,19 @@ import jakarta.inject.Singleton
 class ScmmRepoProvider {
     protected final Config config
     protected final FileSystemUtils fileSystemUtils
+    private final GitProvider gitProvider
 
-    ScmmRepoProvider(Config config, FileSystemUtils fileSystemUtils) {
+    ScmmRepoProvider(Config config, FileSystemUtils fileSystemUtils, GitProvider gitProvider) {
         this.fileSystemUtils = fileSystemUtils
         this.config = config
+        this.gitProvider = gitProvider
     }
 
-    ScmmRepo getRepo(String repoTarget) {
-        return new ScmmRepo(config ,repoTarget, fileSystemUtils)
+    GitRepo getRepo(String repoTarget) {
+        return new ScmmRepo(config, gitProvider, repoTarget, fileSystemUtils)
     }
 
-    ScmmRepo getRepo(String repoTarget, Boolean isCentralRepo) {
-        return new ScmmRepo(config ,repoTarget, fileSystemUtils, isCentralRepo)
+    GitRepo getRepo(String repoTarget, Boolean isCentralRepo) {
+        return new ScmmRepo(config, gitProvider, repoTarget, fileSystemUtils, isCentralRepo)
     }
 }

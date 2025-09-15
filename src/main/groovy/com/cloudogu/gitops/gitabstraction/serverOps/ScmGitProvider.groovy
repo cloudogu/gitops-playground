@@ -13,12 +13,10 @@ class ScmGitProvider extends BaseGitProvider implements GitProvider{
 
     private final Config config
     private final ScmmApiClient scmmApiClient
-    private final ScmUrlResolver urlResolver
 
-    ScmGitProvider(Config config, ScmmApiClient scmmApiClient, ScmUrlResolver urlResolver) {
+    ScmGitProvider(Config config, ScmmApiClient scmmApiClient) {
         this.config = config
         this.scmmApiClient = scmmApiClient
-        this.urlResolver = urlResolver
     }
 
     @Override
@@ -41,7 +39,7 @@ class ScmGitProvider extends BaseGitProvider implements GitProvider{
 
     @Override
     String computePushUrl(String repoTarget) {
-        return urlResolver.scmmRepoUrl(config, repoTarget)
+        return ScmUrlResolver.scmmRepoUrl(config, repoTarget)
     }
 
     @Override

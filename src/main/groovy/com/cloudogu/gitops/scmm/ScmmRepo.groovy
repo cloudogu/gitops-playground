@@ -1,11 +1,9 @@
 package com.cloudogu.gitops.scmm
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.gitabstraction.serverOps.GitProvider
 import com.cloudogu.gitops.gitabstraction.worktreeOps.BaseGitRepo
 import com.cloudogu.gitops.gitabstraction.worktreeOps.GitRepo
-import com.cloudogu.gitops.scmm.api.Permission
-import com.cloudogu.gitops.scmm.api.Repository
-import com.cloudogu.gitops.scmm.api.ScmmApiClient
 import com.cloudogu.gitops.scmm.jgit.InsecureCredentialProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
@@ -16,148 +14,78 @@ import org.eclipse.jgit.transport.ChainingCredentialsProvider
 import org.eclipse.jgit.transport.CredentialsProvider
 import org.eclipse.jgit.transport.RefSpec
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
-import retrofit2.Response
 
 @Slf4j
 class ScmmRepo extends BaseGitRepo implements GitRepo {
 
     static final String NAMESPACE_3RD_PARTY_DEPENDENCIES = '3rd-party-dependencies'
 
-    private String scmmRepoTarget
-    private String username
-    private String password
-    private String scmmUrl
-    private String absoluteLocalRepoTmpDir
-    protected FileSystemUtils fileSystemUtils
-    private boolean insecure
-    private Git gitMemoization = null
-    private String gitName
-    private String gitEmail
-    private String rootPath
-    private String scmProvider
-    private Config config
+    private final Config config
+    private final GitProvider gitProvider
+    private final FileSystemUtils fileSystemUtils
 
-    Boolean isCentralRepo
+    private final String repoTarget        // before scmmRepoTarget (neutral)
+    private final boolean isCentralRepo
+    private final boolean insecure
+    private final String gitName
+    private final String gitEmail
+    private final String usernameForAuth   // inclusive central/normal switch
+    private final String passwordForAuth
 
-    ScmmRepo(Config config, String scmmRepoTarget, FileSystemUtils fileSystemUtils, Boolean isCentralRepo = false) {
+    private Git gitMemoization
+    private final String absoluteLocalRepoTmpDir
+
+    ScmmRepo(Config config, GitProvider gitProvider, String scmmRepoTarget, FileSystemUtils fileSystemUtils, Boolean isCentralRepo = false) {
         def tmpDir = File.createTempDir()
         tmpDir.deleteOnExit()
+        this.absoluteLocalRepoTmpDir = tmpDir.absolutePath
+        this.config = config
+        this.gitProvider = gitProvider
+        this.fileSystemUtils = fileSystemUtils
         this.isCentralRepo = isCentralRepo
-        this.username = !this.isCentralRepo ? config.scmm.username : config.multiTenant.username
-        this.password = !this.isCentralRepo ? config.scmm.password : config.multiTenant.password
 
-        //switching from normal scm path to the central path
-        this.scmmUrl = "${config.scmm.protocol}://${config.scmm.host}"
-        if(this.isCentralRepo) {
-            boolean useInternal = config.multiTenant.internal
-            String internalUrl = "http://scmm.${config.multiTenant.centralSCMamespace}.svc.cluster.local/scm"
-            String externalUrl = config.multiTenant.centralScmUrl.toString()
-
-            this.scmmUrl = useInternal ? internalUrl : externalUrl
-        }
-
-
-        this.scmmRepoTarget = scmmRepoTarget.startsWith(NAMESPACE_3RD_PARTY_DEPENDENCIES) ? scmmRepoTarget :
+        this.repoTarget = scmmRepoTarget.startsWith(NAMESPACE_3RD_PARTY_DEPENDENCIES) ? scmmRepoTarget :
                 "${config.application.namePrefix}${scmmRepoTarget}"
 
-        this.absoluteLocalRepoTmpDir = tmpDir.absolutePath
-        this.fileSystemUtils = fileSystemUtils
         this.insecure = config.application.insecure
         this.gitName = config.application.gitName
         this.gitEmail = config.application.gitEmail
-        this.scmProvider = config.scmm.provider
-        this.rootPath = config.scmm.rootPath
-        this.config = config
+
+        // Auth from config (central vs. normal)
+        this.usernameForAuth = isCentralRepo ? (config.multiTenant.username as String) : (config.scmm.username as String)
+        this.passwordForAuth = isCentralRepo ? (config.multiTenant.password as String) : (config.scmm.password as String)
+    }
+
+    // ---------- GitRepo ----------
+    @Override
+    String getRepoTarget() {
+        return repoTarget
     }
 
     @Override
-    String getRepoTarget() {
-        return null
-    }
-
     String getAbsoluteLocalRepoTmpDir() {
         return absoluteLocalRepoTmpDir
     }
 
-    String getScmmRepoTarget() {
-        return scmmRepoTarget
-    }
-
+    @Override
     void cloneRepo() {
-        log.debug("Cloning $scmmRepoTarget repo")
+        log.debug("Cloning ${repoTarget}")
         Git.cloneRepository()
-                .setURI(getGitRepositoryUrl())
+                .setURI(gitProvider.computePushUrl(repoTarget))     // URL from provider
                 .setDirectory(new File(absoluteLocalRepoTmpDir))
                 .setCredentialsProvider(getCredentialProvider())
                 .call()
     }
 
-    /**
-     * @return true if created, false if already exists. Throw exception on all other errors
-     */
-    boolean create(String description, ScmmApiClient scmmApiClient, boolean initialize = true) {
-        def namespace = scmmRepoTarget.split('/', 2)[0]
-        def repoName = scmmRepoTarget.split('/', 2)[1]
+    @Override
+    void commitAndPush(String commitMessage, String tag, String refSpec) {
+        log.debug("Adding files to ${repoTarget}")
+        def git = getGit()
+        git.add().addFilepattern(".").call()
 
-        def repositoryApi = scmmApiClient.repositoryApi()
-        def repo = new Repository(namespace, repoName, description)
-        log.debug("Creating repo: ${namespace}/${repoName}")
-        def createResponse = repositoryApi.create(repo, initialize).execute()
-        handleResponse(createResponse, repo)
-
-        def permission = new Permission(config.scmm.gitOpsUsername as String, Permission.Role.WRITE)
-        def permissionResponse = repositoryApi.createPermission(namespace, repoName, permission).execute()
-        return handleResponse(permissionResponse, permission, "for repo $namespace/$repoName")
-    }
-
-    private static boolean handleResponse(Response<Void> response, Object body, String additionalMessage = '') {
-        if (response.code() == 409) {
-            // Here, we could consider sending another request for changing the existing object to become proper idempotent
-            log.debug("${body.class.simpleName} already exists ${additionalMessage}, ignoring: ${body}")
-            return false // because repo exists
-        } else if (response.code() != 201) {
-            throw new RuntimeException("Could not create ${body.class.simpleName} ${additionalMessage}.\n${body}\n" +
-                    "HTTP Details: ${response.code()} ${response.message()}: ${response.errorBody().string()}")
-        }
-        return true// because its created
-    }
-
-    void writeFile(String path, String content) {
-        def file = new File("$absoluteLocalRepoTmpDir/$path")
-        fileSystemUtils.createDirectory(file.parent)
-        file.createNewFile()
-        file.text = content
-    }
-
-    void copyDirectoryContents(String srcDir, FileFilter fileFilter = null) {
-        if (!srcDir) {
-            println "Source directory is not defined. Nothing to copy?"
-            return
-        }
-
-        log.debug("Initializing repo $scmmRepoTarget with content of folder $srcDir")
-        String absoluteSrcDirLocation = srcDir
-        if (!new File(absoluteSrcDirLocation).isAbsolute()) {
-            absoluteSrcDirLocation = fileSystemUtils.getRootDir() + "/" + srcDir
-        }
-        fileSystemUtils.copyDirectory(absoluteSrcDirLocation, absoluteLocalRepoTmpDir, fileFilter)
-    }
-
-    void replaceTemplates(Map parameters) {
-        new TemplatingEngine().replaceTemplates(new File(absoluteLocalRepoTmpDir), parameters)
-    }
-
-    def commitAndPush(String commitMessage, String tag = null, String refSpec = 'HEAD:refs/heads/main') {
-        log.debug("Adding files to repo: ${scmmRepoTarget}")
-        getGit()
-                .add()
-                .addFilepattern(".")
-                .call()
-
-        if (getGit().status().call().hasUncommittedChanges()) {
-            log.debug("Committing repo: ${scmmRepoTarget}")
-            getGit()
-                    .commit()
+        if (git.status().call().hasUncommittedChanges()) {
+            log.debug("Commiting ${repoTarget}")
+            git.commit()
                     .setSign(false)
                     .setMessage(commitMessage)
                     .setAuthor(gitName, gitEmail)
@@ -167,58 +95,79 @@ class ScmmRepo extends BaseGitRepo implements GitRepo {
             def pushCommand = createPushCommand(refSpec)
 
             if (tag) {
-                log.debug("Setting tag '${tag}' on repo: ${scmmRepoTarget}")
+                log.debug("Setting tag '${tag}' on repo: ${repoTarget}")
                 // Delete existing tags first to get idempotence
-                getGit().tagDelete().setTags(tag).call()
-                getGit()
-                        .tag()
+                git.tagDelete().setTags(tag).call()
+                git.tag()
                         .setName(tag)
                         .call()
-
                 pushCommand.setPushTags()
             }
 
-            log.debug("Pushing repo: ${scmmRepoTarget}, refSpec: ${refSpec}")
+            log.debug("Pushing repo: ${repoTarget}, refSpec: ${refSpec}")
             pushCommand.call()
         } else {
-            log.debug("No changes after add, nothing to commit or push on repo: ${scmmRepoTarget}")
+            log.debug("No changes after add, nothing to commit or push on repo: ${repoTarget}")
         }
     }
 
+    @Override
+    void commitAndPush(String commitMessage) {
+        commitAndPush(commitMessage, null, 'HEAD:refs/heads/main')
+    }
     /**
      * Push all refs, i.e. all tags and branches
      */
-    def pushAll(boolean force = false) {
+    @Override
+    void pushAll(boolean force) {
         createPushCommand('refs/*:refs/*').setForce(force).call()
     }
 
-    def pushRef(String ref, String targetRef, boolean force = false) {
+    @Override
+    void pushRef(String ref, String targetRef, boolean force) {
         createPushCommand("${ref}:${targetRef}").setForce(force).call()
     }
 
-    def pushRef(String ref, boolean force = false) {
-        pushRef(ref, ref, force)
+    @Override
+    /**
+     * Delete all files in this repository
+     */
+    void clearRepo() {
+        fileSystemUtils.deleteFilesExcept(new File(absoluteLocalRepoTmpDir), ".git")
     }
 
+    // ---------- extras (like before) ----------
+    void writeFile(String path, String content) {
+        def file = new File("$absoluteLocalRepoTmpDir/$path")
+        fileSystemUtils.createDirectory(file.parent)
+        file.createNewFile()
+        file.text = content
+    }
+
+    void copyDirectoryContents(String srcDir, FileFilter fileFilter = null) {
+        if (!srcDir) {
+            log.warn("Source directory is not defined. Nothing to copy?")
+            return
+        }
+
+        log.debug("Initializing repo $repoTarget from $srcDir")
+        String absoluteSrcDirLocation = new File(srcDir).isAbsolute()
+                ? srcDir
+                : "${fileSystemUtils.getRootDir()}/${srcDir}"
+        fileSystemUtils.copyDirectory(absoluteSrcDirLocation, absoluteLocalRepoTmpDir, fileFilter)
+    }
+
+    void replaceTemplates(Map parameters) {
+        new TemplatingEngine().replaceTemplates(new File(absoluteLocalRepoTmpDir), parameters)
+    }
+
+    // ---------- intern ----------
     private PushCommand createPushCommand(String refSpec) {
         getGit()
                 .push()
-                .setRemote(getGitRepositoryUrl())
+                .setRemote(gitProvider.computePushUrl(repoTarget))
                 .setRefSpecs(new RefSpec(refSpec))
                 .setCredentialsProvider(getCredentialProvider())
-    }
-
-    private CredentialsProvider getCredentialProvider() {
-        if (scmProvider == "gitlab") {
-            username = "oauth2"
-        }
-        def passwordAuthentication = new UsernamePasswordCredentialsProvider(username, password)
-
-        if (!insecure) {
-            return passwordAuthentication
-        }
-
-        return new ChainingCredentialsProvider(new InsecureCredentialProvider(), passwordAuthentication)
     }
 
     private Git getGit() {
@@ -229,13 +178,10 @@ class ScmmRepo extends BaseGitRepo implements GitRepo {
         return gitMemoization = Git.open(new File(absoluteLocalRepoTmpDir))
     }
 
-    String getGitRepositoryUrl() {
-        return "${scmmUrl}/${rootPath}/${scmmRepoTarget}"
+    private CredentialsProvider getCredentialProvider() {
+        def auth = gitProvider.pushAuth(isCentralRepo)
+        def passwordAuthentication = new UsernamePasswordCredentialsProvider(auth.username, auth.password)
+        return insecure ? new ChainingCredentialsProvider(new InsecureCredentialProvider(), passwordAuthentication) : passwordAuthentication
     }
-    /**
-     * Delete all files in this repository
-     */
-    void clearRepo() {
-        fileSystemUtils.deleteFilesExcept(new File(absoluteLocalRepoTmpDir), ".git")
-    }
+
 }

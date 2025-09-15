@@ -17,7 +17,6 @@ abstract class BaseGitProvider implements GitProvider {
         return createRepository(repoTarget, description, true)
     }
 
-    //TODO check the needed default groupPermission for gitlab and scm-manager, if there are differences, make it configurable
     void setRepositoryPermission(String repoTarget, String principal, Permission.Role role) {
         setRepositoryPermission(repoTarget, principal, role, false)
     }
