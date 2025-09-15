@@ -4,7 +4,7 @@ import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
-import com.cloudogu.gitops.scmm.ScmmRepo
+import com.cloudogu.gitops.gitabstraction.worktreeOps.GitRepo
 import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import com.cloudogu.gitops.utils.*
 import com.cloudogu.gitops.scmm.ScmUrlResolver
@@ -99,7 +99,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
         }
 
         if (config.application.namespaceIsolation || config.application.netpols) {
-            ScmmRepo clusterResourcesRepo = scmmRepoProvider.getRepo('argocd/cluster-resources', config.multiTenant.useDedicatedInstance)
+            GitRepo clusterResourcesRepo = scmmRepoProvider.getRepo('argocd/cluster-resources', config.multiTenant.useDedicatedInstance)
             clusterResourcesRepo.cloneRepo()
             for (String currentNamespace : config.application.namespaces.activeNamespaces) {
 

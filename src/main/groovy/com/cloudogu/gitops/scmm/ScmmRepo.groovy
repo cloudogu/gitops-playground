@@ -151,15 +151,13 @@ class ScmmRepo extends BaseGitRepo implements GitRepo {
         fileSystemUtils.copyDirectory(absoluteSrcDirLocation, absoluteLocalRepoTmpDir, fileFilter)
     }
 
-
-    // ---------- extras (like before) ----------
+    @Override
     void writeFile(String path, String content) {
         def file = new File("$absoluteLocalRepoTmpDir/$path")
         fileSystemUtils.createDirectory(file.parent)
         file.createNewFile()
         file.text = content
     }
-
 
 
     void replaceTemplates(Map parameters) {

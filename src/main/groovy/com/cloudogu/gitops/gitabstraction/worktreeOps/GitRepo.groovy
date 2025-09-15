@@ -28,4 +28,6 @@ interface GitRepo {
 
     void copyDirectoryContents(String srcDir, FileFilter fileFilter)
 
+    void writeFile(String path, String content)
+
 }

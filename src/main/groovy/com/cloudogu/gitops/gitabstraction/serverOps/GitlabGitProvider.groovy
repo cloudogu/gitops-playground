@@ -5,6 +5,10 @@ import com.cloudogu.gitops.config.Config
 class GitlabGitProvider extends BaseGitProvider implements GitProvider {
     private final Config config
 
+    GitlabGitProvider (Config config){
+        this.config = config
+    }
+
     @Override
     boolean createRepository(String repoTarget, String description, boolean initialize) {
         return false;
