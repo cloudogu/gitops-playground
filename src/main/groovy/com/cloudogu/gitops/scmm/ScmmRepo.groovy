@@ -160,6 +160,7 @@ class ScmmRepo extends BaseGitRepo implements GitRepo {
     }
 
 
+    @Override
     void replaceTemplates(Map parameters) {
         new TemplatingEngine().replaceTemplates(new File(absoluteLocalRepoTmpDir), parameters)
     }

@@ -30,4 +30,6 @@ interface GitRepo {
 
     void writeFile(String path, String content)
 
+    void replaceTemplates(Map parameters)
+
 }
