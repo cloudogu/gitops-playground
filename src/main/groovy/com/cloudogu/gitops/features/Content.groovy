@@ -3,9 +3,10 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Config.OverwriteMode
-import com.cloudogu.gitops.scmm.ScmmRepo
+import com.cloudogu.gitops.gitabstraction.serverOps.GitProvider
+import com.cloudogu.gitops.gitabstraction.worktreeOps.GitRepo
 import com.cloudogu.gitops.scmm.ScmmRepoProvider
-import com.cloudogu.gitops.scmm.api.ScmmApiClient
+import com.cloudogu.gitops.gitabstraction.serverOps.Permission
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.TemplatingEngine
@@ -39,7 +40,7 @@ class Content extends Feature {
     private Config config
     private K8sClient k8sClient
     private ScmmRepoProvider repoProvider
-    private ScmmApiClient scmmApiClient
+    private final GitProvider gitProvider;
     private Jenkins jenkins
     // set by lazy initialisation
     private TemplatingEngine templatingEngine
@@ -48,13 +49,13 @@ class Content extends Feature {
     private File mergedReposFolder
 
     Content(
-            Config config, K8sClient k8sClient, ScmmRepoProvider repoProvider, ScmmApiClient scmmApiClient, Jenkins jenkins
+            Config config, K8sClient k8sClient, ScmmRepoProvider repoProvider, Jenkins jenkins, GitProvider gitProvider
     ) {
         this.config = config
         this.k8sClient = k8sClient
         this.repoProvider = repoProvider
-        this.scmmApiClient = scmmApiClient
         this.jenkins = jenkins
+        this.gitProvider = gitProvider
     }
 
     @Override
@@ -303,8 +304,25 @@ class Content extends Feature {
     private void pushTargetRepos(List<RepoCoordinate> repoCoordinates) {
         repoCoordinates.each { repoCoordinate ->
 
-            ScmmRepo targetRepo = repoProvider.getRepo(repoCoordinate.fullRepoName)
-            def isNewRepo = targetRepo.create('', scmmApiClient, false)
+//            ScmmRepo targetRepo = repoProvider.getRepo(repoCoordinate.fullRepoName)
+//            def isNewRepo = targetRepo.create('', scmmApiClient, false)
+            // Server-side: instead of targetRepo.create(...)
+            boolean isNewRepo = gitProvider.createRepository(
+                    repoCoordinate.fullRepoName,
+                    "",
+                    false               // initialize: like before
+            )
+            // A previous create(..) granted WRITE access to the gitOps user — apply the same
+            if (isNewRepo && config.scmm?.gitOpsUsername) {
+                gitProvider.setRepositoryPermission(
+                        repoCoordinate.fullRepoName,
+                        config.scmm.gitOpsUsername as String,
+                        Permission.Role.WRITE,
+                        false
+                )
+            }
+
+            GitRepo targetRepo = repoProvider.getRepo(repoCoordinate.fullRepoName)
             if (isValidForPush(isNewRepo, repoCoordinate)) {
                 targetRepo.cloneRepo()
 
@@ -333,7 +351,7 @@ class Content extends Feature {
      * Copies repoCoordinate to targetRepo, commits and pushes
      * Same logic for both FOLDER_BASED and COPY repo types.
      */
-    private static void handleRepoCopyingOrFolderBased(RepoCoordinate repoCoordinate, ScmmRepo targetRepo, boolean isNewRepo) {
+    private static void handleRepoCopyingOrFolderBased(RepoCoordinate repoCoordinate, GitRepo targetRepo, boolean isNewRepo) {
         if (!isNewRepo) {
             clearTargetRepoIfApplicable(repoCoordinate, targetRepo)
         }
@@ -364,7 +382,7 @@ class Content extends Feature {
         refSpec
     }
 
-    private static void clearTargetRepoIfApplicable(RepoCoordinate repoCoordinate, ScmmRepo targetRepo) {
+    private static void clearTargetRepoIfApplicable(RepoCoordinate repoCoordinate, GitRepo targetRepo) {
         if (OverwriteMode.INIT != repoCoordinate.repoConfig.overwriteMode) {
             if (OverwriteMode.RESET == repoCoordinate.repoConfig.overwriteMode) {
                 log.info("OverwriteMode ${OverwriteMode.RESET} set for repo '${repoCoordinate.fullRepoName}': " +
@@ -380,7 +398,7 @@ class Content extends Feature {
     /**
      * Force pushes repoCoordinate.repoConfig.ref or all refs to targetRepo
      */
-    private static void handleRepoMirroring(RepoCoordinate repoCoordinate, ScmmRepo targetRepo) {
+    private static void handleRepoMirroring(RepoCoordinate repoCoordinate, GitRepo targetRepo) {
         try (def targetGit = Git.open(new File(targetRepo.absoluteLocalRepoTmpDir))) {
             def remoteUrl = targetGit.repository.config.getString('remote', 'origin', 'url')
 
@@ -423,7 +441,7 @@ class Content extends Feature {
         }
     }
 
-    private void createJenkinsJobIfApplicable(RepoCoordinate repoCoordinate, ScmmRepo repo) {
+    private void createJenkinsJobIfApplicable(RepoCoordinate repoCoordinate, GitRepo repo) {
         if (repoCoordinate.repoConfig.createJenkinsJob && jenkins.isEnabled()) {
             if (existFileInSomeBranch(repo.absoluteLocalRepoTmpDir, 'Jenkinsfile')) {
                 jenkins.createJenkinsjob(repoCoordinate.namespace, repoCoordinate.namespace)
