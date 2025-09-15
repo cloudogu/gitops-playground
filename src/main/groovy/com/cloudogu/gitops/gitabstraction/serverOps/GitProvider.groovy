@@ -14,4 +14,6 @@ interface GitProvider {
 
     String computePushUrl(String repoTarget)
 
+    GitPushAuth pushAuth(boolean isCentralRepo)
+
 }

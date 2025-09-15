@@ -44,6 +44,13 @@ class ScmGitProvider extends BaseGitProvider implements GitProvider{
         return urlResolver.scmmRepoUrl(config, repoTarget)
     }
 
+    @Override
+    GitPushAuth pushAuth(boolean isCentralRepo) {
+        def username = isCentralRepo ? config.multiTenant.username : config.scmm.username
+        def password = isCentralRepo ? config.multiTenant.password : config.scmm.password
+        return new GitPushAuth(username as String, password as String)
+    }
+
     private static boolean handle201or409(Response<?> response, String what) {
         int code = response.code()
         if (code == 409) {
