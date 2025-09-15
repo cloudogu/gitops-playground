@@ -1,8 +1,4 @@
 package com.cloudogu.gitops.gitabstraction.serverOps
-
-import com.cloudogu.gitops.scmm.api.Permission
-
-
 /** Server-Ops:  easy overloads with defaults
  *  Server-Ops are actions performed against the remote SCM server (e.g., SCM-Manager, GitLab)
  *  via their HTTP/REST APIs.
