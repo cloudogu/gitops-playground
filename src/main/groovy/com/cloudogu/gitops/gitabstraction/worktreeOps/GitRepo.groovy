@@ -18,8 +18,14 @@ interface GitRepo {
 
     void pushAll(boolean force)
 
+    void pushRef(String ref, boolean force)
+
     void pushRef(String ref, String targetRef, boolean force)
 
     void clearRepo()
+
+    void copyDirectoryContents(String srcDir)
+
+    void copyDirectoryContents(String srcDir, FileFilter fileFilter)
 
 }

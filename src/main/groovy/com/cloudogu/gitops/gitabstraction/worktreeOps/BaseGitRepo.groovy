@@ -7,16 +7,13 @@ abstract class BaseGitRepo implements GitRepo {
         commitAndPush(message, null, 'HEAD:refs/heads/main')
     }
 
-    // Convenience overloads (optional)
-    void pushAll() {
-        pushAll(false)
-    }
-
-    void pushRef(String ref) {
-        pushRef(ref, ref, false)
-    }
-
+    @Override
     void pushRef(String ref, boolean force) {
         pushRef(ref, ref, force)
+    }
+
+    @Override
+    void copyDirectoryContents(String srcDir) {
+        copyDirectoryContents(srcDir, (FileFilter) null)
     }
 }

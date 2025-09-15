@@ -137,15 +137,7 @@ class ScmmRepo extends BaseGitRepo implements GitRepo {
     }
 
 
-
-    // ---------- extras (like before) ----------
-    void writeFile(String path, String content) {
-        def file = new File("$absoluteLocalRepoTmpDir/$path")
-        fileSystemUtils.createDirectory(file.parent)
-        file.createNewFile()
-        file.text = content
-    }
-
+    @Override
     void copyDirectoryContents(String srcDir, FileFilter fileFilter) {
         if (!srcDir) {
             log.warn("Source directory is not defined. Nothing to copy?")
@@ -158,6 +150,17 @@ class ScmmRepo extends BaseGitRepo implements GitRepo {
                 : "${fileSystemUtils.getRootDir()}/${srcDir}"
         fileSystemUtils.copyDirectory(absoluteSrcDirLocation, absoluteLocalRepoTmpDir, fileFilter)
     }
+
+
+    // ---------- extras (like before) ----------
+    void writeFile(String path, String content) {
+        def file = new File("$absoluteLocalRepoTmpDir/$path")
+        fileSystemUtils.createDirectory(file.parent)
+        file.createNewFile()
+        file.text = content
+    }
+
+
 
     void replaceTemplates(Map parameters) {
         new TemplatingEngine().replaceTemplates(new File(absoluteLocalRepoTmpDir), parameters)
