@@ -136,8 +136,6 @@ class ScmmRepo extends BaseGitRepo implements GitRepo {
         fileSystemUtils.deleteFilesExcept(new File(absoluteLocalRepoTmpDir), ".git")
     }
 
-
-
     // ---------- extras (like before) ----------
     void writeFile(String path, String content) {
         def file = new File("$absoluteLocalRepoTmpDir/$path")
@@ -146,7 +144,7 @@ class ScmmRepo extends BaseGitRepo implements GitRepo {
         file.text = content
     }
 
-    void copyDirectoryContents(String srcDir, FileFilter fileFilter) {
+    void copyDirectoryContents(String srcDir, FileFilter fileFilter = null) {
         if (!srcDir) {
             log.warn("Source directory is not defined. Nothing to copy?")
             return

@@ -21,5 +21,4 @@ interface GitRepo {
     void pushRef(String ref, String targetRef, boolean force)
 
     void clearRepo()
-
 }
