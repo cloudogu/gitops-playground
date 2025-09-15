@@ -1,7 +1,6 @@
 package com.cloudogu.gitops.gitabstraction.serverOps
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.scmm.api.Permission
 import com.cloudogu.gitops.scmm.api.Repository
 import com.cloudogu.gitops.scmm.api.RepositoryApi
 import com.cloudogu.gitops.scmm.api.ScmmApiClient

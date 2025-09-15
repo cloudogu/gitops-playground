@@ -2,7 +2,7 @@ package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.scmm.ScmmRepo
-import com.cloudogu.gitops.scmm.api.Permission
+import com.cloudogu.gitops.gitabstraction.serverOps.Permission
 import com.cloudogu.gitops.scmm.api.Repository
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Ref

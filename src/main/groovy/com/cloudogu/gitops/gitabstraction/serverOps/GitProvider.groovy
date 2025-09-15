@@ -1,8 +1,5 @@
 package com.cloudogu.gitops.gitabstraction.serverOps
 
-import com.cloudogu.gitops.scmm.api.Permission
-
-
 interface GitProvider {
     /**
      * @param repoTarget "namespace/name"

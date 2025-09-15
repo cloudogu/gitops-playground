@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.scmm.api
+package com.cloudogu.gitops.gitabstraction.serverOps
 
 class Permission {
     final String name
@@ -19,6 +19,6 @@ class Permission {
     }
 
     enum Role {
-        READ, WRITE,OWNER
+        READ, WRITE, OWNER
     }
 }

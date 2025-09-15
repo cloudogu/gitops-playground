@@ -1,7 +1,6 @@
 package com.cloudogu.gitops.gitabstraction.serverOps
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.scmm.api.Permission
 
 class GitlabGitProvider extends BaseGitProvider implements GitProvider {
     private final Config config
