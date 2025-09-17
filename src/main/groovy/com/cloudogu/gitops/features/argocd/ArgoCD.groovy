@@ -5,8 +5,8 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.kubernetes.argocd.ArgoApplication
 import com.cloudogu.gitops.kubernetes.rbac.RbacDefinition
 import com.cloudogu.gitops.kubernetes.rbac.Role
-import com.cloudogu.gitops.gitHandling.providers.ScmUrlResolver
-import com.cloudogu.gitops.gitHandling.local.LocalRepositoryFactory
+import com.cloudogu.gitops.git.providers.ScmUrlResolver
+import com.cloudogu.gitops.git.local.LocalRepositoryFactory
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.HelmClient
 import com.cloudogu.gitops.utils.K8sClient

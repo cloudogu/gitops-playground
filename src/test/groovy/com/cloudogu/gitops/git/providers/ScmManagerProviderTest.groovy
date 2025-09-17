@@ -1,10 +1,10 @@
-package com.cloudogu.gitops.gitHandling.providers
+package com.cloudogu.gitops.git.providers
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.gitHandling.providers.scmmanager.ScmManagerProvider
-import com.cloudogu.gitops.gitHandling.providers.scmmanager.api.Repository
-import com.cloudogu.gitops.gitHandling.providers.scmmanager.api.RepositoryApi
-import com.cloudogu.gitops.gitHandling.providers.scmmanager.api.ScmmApiClient
+import com.cloudogu.gitops.git.providers.scmmanager.ScmManagerProvider
+import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
+import com.cloudogu.gitops.git.providers.scmmanager.api.RepositoryApi
+import com.cloudogu.gitops.git.providers.scmmanager.api.ScmmApiClient
 import okhttp3.MediaType
 import okhttp3.Protocol
 import okhttp3.Request

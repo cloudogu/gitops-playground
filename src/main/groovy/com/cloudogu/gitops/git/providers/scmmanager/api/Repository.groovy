@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.gitHandling.providers.scmmanager.api
+package com.cloudogu.gitops.git.providers.scmmanager.api
 
 class Repository {
     final String name

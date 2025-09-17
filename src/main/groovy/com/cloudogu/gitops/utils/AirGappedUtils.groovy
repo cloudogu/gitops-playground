@@ -1,12 +1,12 @@
 package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.gitHandling.providers.GitProvider
-import com.cloudogu.gitops.gitHandling.providers.Permission
+import com.cloudogu.gitops.git.providers.GitProvider
+import com.cloudogu.gitops.git.providers.Permission
 
-import com.cloudogu.gitops.gitHandling.local.LocalRepository
-import com.cloudogu.gitops.gitHandling.local.LocalRepositoryFactory
-import com.cloudogu.gitops.gitHandling.providers.scmmanager.api.ScmmApiClient
+import com.cloudogu.gitops.git.local.LocalRepository
+import com.cloudogu.gitops.git.local.LocalRepositoryFactory
+import com.cloudogu.gitops.git.providers.scmmanager.api.ScmmApiClient
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 import jakarta.inject.Singleton
@@ -92,17 +92,17 @@ class AirGappedUtils {
         }
     }
 
-    private Map localizeChartYaml(LocalRepository scmmRepo) {
-        log.debug("Preparing repo ${scmmRepo.getRepoTarget()} for air-gapped use: Changing Chart.yaml to resolve depencies locally")
+    private Map localizeChartYaml(LocalRepository repo) {
+        log.debug("Preparing repo ${repo.getRepoTarget()} for air-gapped use: Changing Chart.yaml to resolve depencies locally")
 
-        def chartYamlPath = Path.of(scmmRepo.absoluteLocalRepoTmpDir, 'Chart.yaml')
+        def chartYamlPath = Path.of(repo.absoluteLocalRepoTmpDir, 'Chart.yaml')
 
         Map chartYaml = new YamlSlurper().parse(chartYamlPath) as Map
-        Map chartLock = parseChartLockIfExists(scmmRepo)
+        Map chartLock = parseChartLockIfExists(repo)
 
         List<Map> dependencies = chartYaml.dependencies as List<Map> ?: []
         for (Map chartYamlDep : dependencies) {
-            resolveDependencyVersion(chartLock, chartYamlDep, scmmRepo)
+            resolveDependencyVersion(chartLock, chartYamlDep, repo)
 
             // Remove link to external repo, to force using local one
             chartYamlDep.repository = ''
@@ -111,8 +111,8 @@ class AirGappedUtils {
         return chartYaml
     }
 
-    private static Map parseChartLockIfExists(LocalRepository scmmRepo) {
-        def chartLock = Path.of(scmmRepo.absoluteLocalRepoTmpDir, 'Chart.lock')
+    private static Map parseChartLockIfExists(LocalRepository repo) {
+        def chartLock = Path.of(repo.absoluteLocalRepoTmpDir, 'Chart.lock')
         if (!chartLock.toFile().exists()) {
             return [:]
         }
@@ -122,13 +122,13 @@ class AirGappedUtils {
     /**
      * Resolve proper dependency version from Chart.lock, e.g. 5.18.* -> 5.18.1
      */
-    private void resolveDependencyVersion(Map chartLock, Map chartYamlDep, LocalRepository scmmRepo) {
+    private void resolveDependencyVersion(Map chartLock, Map chartYamlDep, LocalRepository repo) {
         def chartLockDep = findByName(chartLock.dependencies as List, chartYamlDep.name as String)
         if (chartLockDep) {
             chartYamlDep.version = chartLockDep.version
         } else if ((chartYamlDep.version as String).contains('*')) {
             throw new RuntimeException("Unable to determine proper version for dependency " +
-                    "${chartYamlDep.name} (version: ${chartYamlDep.version}) from repo ${scmmRepo.getRepoTarget()}")
+                    "${chartYamlDep.name} (version: ${chartYamlDep.version}) from repo ${repo.getRepoTarget()}")
         }
     }
 

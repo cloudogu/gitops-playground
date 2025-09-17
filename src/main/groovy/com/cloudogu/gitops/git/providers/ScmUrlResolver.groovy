@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.gitHandling.providers
+package com.cloudogu.gitops.git.providers
 
 import com.cloudogu.gitops.config.Config
 

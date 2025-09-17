@@ -1,9 +1,9 @@
-package com.cloudogu.gitops.gitHandling.providers.gitlab
+package com.cloudogu.gitops.git.providers.gitlab
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.gitHandling.providers.GitProvider
-import com.cloudogu.gitops.gitHandling.providers.GitPushAuth
-import com.cloudogu.gitops.gitHandling.providers.Permission
+import com.cloudogu.gitops.git.providers.GitProvider
+import com.cloudogu.gitops.git.providers.GitPushAuth
+import com.cloudogu.gitops.git.providers.Permission
 import jakarta.inject.Named
 
 

@@ -1,8 +1,8 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.gitHandling.local.LocalRepositoryFactory
-import com.cloudogu.gitops.gitHandling.providers.scmmanager.api.ScmmApiClient
+import com.cloudogu.gitops.git.local.LocalRepositoryFactory
+import com.cloudogu.gitops.git.providers.scmmanager.api.ScmmApiClient
 import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper

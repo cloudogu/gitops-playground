@@ -3,11 +3,11 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Config.OverwriteMode
-import com.cloudogu.gitops.gitHandling.local.LocalRepository
-import com.cloudogu.gitops.gitHandling.providers.GitProvider
+import com.cloudogu.gitops.git.local.LocalRepository
+import com.cloudogu.gitops.git.providers.GitProvider
 
-import com.cloudogu.gitops.gitHandling.local.LocalRepositoryFactory
-import com.cloudogu.gitops.gitHandling.providers.Permission
+import com.cloudogu.gitops.git.local.LocalRepositoryFactory
+import com.cloudogu.gitops.git.providers.Permission
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.TemplatingEngine

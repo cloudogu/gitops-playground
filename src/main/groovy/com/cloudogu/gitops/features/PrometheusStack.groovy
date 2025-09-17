@@ -4,10 +4,10 @@ import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
-import com.cloudogu.gitops.gitHandling.local.LocalRepository
-import com.cloudogu.gitops.gitHandling.local.LocalRepositoryFactory
+import com.cloudogu.gitops.git.local.LocalRepository
+import com.cloudogu.gitops.git.local.LocalRepositoryFactory
 import com.cloudogu.gitops.utils.*
-import com.cloudogu.gitops.gitHandling.providers.ScmUrlResolver
+import com.cloudogu.gitops.git.providers.ScmUrlResolver
 import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper

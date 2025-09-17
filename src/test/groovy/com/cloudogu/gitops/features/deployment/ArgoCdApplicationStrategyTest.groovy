@@ -1,7 +1,7 @@
 package com.cloudogu.gitops.features.deployment
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.gitHandling.local.LocalRepository
+import com.cloudogu.gitops.git.local.LocalRepository
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TestLocalRepositoryFactory
 import groovy.yaml.YamlSlurper

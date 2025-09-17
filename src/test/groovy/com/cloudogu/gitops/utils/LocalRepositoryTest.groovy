@@ -1,9 +1,9 @@
 package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.gitHandling.local.LocalRepository
-import com.cloudogu.gitops.gitHandling.providers.Permission
-import com.cloudogu.gitops.gitHandling.providers.scmmanager.api.Repository
+import com.cloudogu.gitops.git.local.LocalRepository
+import com.cloudogu.gitops.git.providers.Permission
+import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Ref
 import org.junit.jupiter.api.Test

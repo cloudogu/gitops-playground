@@ -1,7 +1,7 @@
 package com.cloudogu.gitops.kubernetes.rbac
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.gitHandling.local.LocalRepository
+import com.cloudogu.gitops.git.local.LocalRepository
 import com.cloudogu.gitops.utils.FileSystemUtils
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test

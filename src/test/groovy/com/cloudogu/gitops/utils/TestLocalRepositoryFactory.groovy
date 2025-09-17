@@ -1,8 +1,8 @@
 package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.gitHandling.local.LocalRepository
-import com.cloudogu.gitops.gitHandling.local.LocalRepositoryFactory
+import com.cloudogu.gitops.git.local.LocalRepository
+import com.cloudogu.gitops.git.local.LocalRepositoryFactory
 import org.apache.commons.io.FileUtils
 
 import static org.mockito.Mockito.spy 

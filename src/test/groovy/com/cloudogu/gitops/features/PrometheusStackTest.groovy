@@ -2,7 +2,7 @@ package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
-import com.cloudogu.gitops.gitHandling.local.LocalRepository
+import com.cloudogu.gitops.git.local.LocalRepository
 import com.cloudogu.gitops.utils.*
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
