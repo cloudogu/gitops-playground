@@ -1,8 +1,8 @@
 package com.cloudogu.gitops.gitHandling.gitServerClients
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.gitHandling.gitServerClients.scmm.ScmManagerGitProvider
-import com.cloudogu.gitops.gitHandling.gitServerClients.scmm.api.ScmmApiClient
+import com.cloudogu.gitops.gitHandling.gitServerClients.scmmanager.ScmManagerProvider
+import com.cloudogu.gitops.gitHandling.gitServerClients.scmmanager.api.ScmmApiClient
 
 //TODO as enum
 
@@ -12,7 +12,7 @@ class GitProviderFactory {
         switch ((config?.scmm?.provider ?: "scm-manager").toLowerCase()) {
             case "scm-manager":
                 require(deps.scmmApiClient, "ScmmApiClient is missing for scm-manager")
-                return new ScmManagerGitProvider(config, deps.scmmApiClient)
+                return new ScmManagerProvider(config, deps.scmmApiClient)
             case "gitlab":
 //                require(deps.gitlabApiClient, "GitlabApiClient is missing for  gitlab")
 //                return new GitlabGitProvider(config, deps.gitlabApiClient)

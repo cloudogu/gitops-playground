@@ -6,7 +6,7 @@ import com.cloudogu.gitops.gitHandling.gitServerClients.Permission
 
 import com.cloudogu.gitops.gitHandling.git.GitRepo
 import com.cloudogu.gitops.gitHandling.git.GitRepoProvider
-import com.cloudogu.gitops.gitHandling.gitServerClients.scmm.api.ScmmApiClient
+import com.cloudogu.gitops.gitHandling.gitServerClients.scmmanager.api.ScmmApiClient
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 import jakarta.inject.Singleton

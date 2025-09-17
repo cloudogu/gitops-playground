@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.gitHandling.gitServerClients.scmm.api
+package com.cloudogu.gitops.gitHandling.gitServerClients.scmmanager.api
 
 
 import okhttp3.Credentials

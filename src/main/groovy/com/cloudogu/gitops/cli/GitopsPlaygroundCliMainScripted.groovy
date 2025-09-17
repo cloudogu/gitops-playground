@@ -19,7 +19,7 @@ import com.cloudogu.gitops.jenkins.JobManager
 import com.cloudogu.gitops.jenkins.PrometheusConfigurator
 import com.cloudogu.gitops.jenkins.UserManager
 import com.cloudogu.gitops.gitHandling.git.GitRepoProvider
-import com.cloudogu.gitops.gitHandling.gitServerClients.scmm.api.ScmmApiClient
+import com.cloudogu.gitops.gitHandling.gitServerClients.scmmanager.api.ScmmApiClient
 import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
 import io.micronaut.context.ApplicationContext

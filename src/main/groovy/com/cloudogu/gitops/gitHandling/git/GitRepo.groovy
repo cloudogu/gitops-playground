@@ -3,7 +3,7 @@ package com.cloudogu.gitops.gitHandling.git
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.gitHandling.gitServerClients.GitProvider
 
-import com.cloudogu.gitops.gitHandling.gitServerClients.scmm.jgit.InsecureCredentialProvider
+import com.cloudogu.gitops.gitHandling.git.jgit.helpers.InsecureCredentialProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j

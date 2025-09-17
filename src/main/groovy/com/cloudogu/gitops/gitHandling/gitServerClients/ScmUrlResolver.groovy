@@ -4,7 +4,6 @@ import com.cloudogu.gitops.config.Config
 
 class ScmUrlResolver {
 
-    //TODO maybe make this instance based, because it has logic based on config etc..
     /**
      * Returns the tenant/namespace base URL **without** a trailing slash.
      *

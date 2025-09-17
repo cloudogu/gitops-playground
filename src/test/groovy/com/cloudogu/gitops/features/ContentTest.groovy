@@ -2,7 +2,7 @@ package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.gitHandling.git.GitRepoProvider
-import com.cloudogu.gitops.gitHandling.gitServerClients.scmm.api.ScmmApiClient
+import com.cloudogu.gitops.gitHandling.gitServerClients.scmmanager.api.ScmmApiClient
 import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper

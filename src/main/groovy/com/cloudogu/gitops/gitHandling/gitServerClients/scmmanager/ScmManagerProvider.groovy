@@ -1,22 +1,24 @@
-package com.cloudogu.gitops.gitHandling.gitServerClients.scmm
+package com.cloudogu.gitops.gitHandling.gitServerClients.scmmanager
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.gitHandling.gitServerClients.GitProvider
 import com.cloudogu.gitops.gitHandling.gitServerClients.GitPushAuth
 import com.cloudogu.gitops.gitHandling.gitServerClients.Permission
 import com.cloudogu.gitops.gitHandling.gitServerClients.ScmUrlResolver
-import com.cloudogu.gitops.gitHandling.gitServerClients.scmm.api.Repository
-import com.cloudogu.gitops.gitHandling.gitServerClients.scmm.api.ScmmApiClient
+import com.cloudogu.gitops.gitHandling.gitServerClients.scmmanager.api.Repository
+import com.cloudogu.gitops.gitHandling.gitServerClients.scmmanager.api.ScmmApiClient
 import groovy.util.logging.Slf4j
+import jakarta.inject.Named
 import retrofit2.Response
 
 @Slf4j
-class ScmManagerGitProvider implements GitProvider{
+@Named("gitlab")
+class ScmManagerProvider implements GitProvider{
 
     private final Config config
     private final ScmmApiClient scmmApiClient
 
-    ScmManagerGitProvider(Config config, ScmmApiClient scmmApiClient) {
+    ScmManagerProvider(Config config, ScmmApiClient scmmApiClient) {
         this.config = config
         this.scmmApiClient = scmmApiClient
     }

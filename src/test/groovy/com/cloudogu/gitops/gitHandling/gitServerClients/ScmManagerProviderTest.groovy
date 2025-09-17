@@ -1,10 +1,10 @@
 package com.cloudogu.gitops.gitHandling.gitServerClients
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.gitHandling.gitServerClients.scmm.ScmManagerGitProvider
-import com.cloudogu.gitops.gitHandling.gitServerClients.scmm.api.Repository
-import com.cloudogu.gitops.gitHandling.gitServerClients.scmm.api.RepositoryApi
-import com.cloudogu.gitops.gitHandling.gitServerClients.scmm.api.ScmmApiClient
+import com.cloudogu.gitops.gitHandling.gitServerClients.scmmanager.ScmManagerProvider
+import com.cloudogu.gitops.gitHandling.gitServerClients.scmmanager.api.Repository
+import com.cloudogu.gitops.gitHandling.gitServerClients.scmmanager.api.RepositoryApi
+import com.cloudogu.gitops.gitHandling.gitServerClients.scmmanager.api.ScmmApiClient
 import okhttp3.MediaType
 import okhttp3.Protocol
 import okhttp3.Request
@@ -27,7 +27,7 @@ import static org.mockito.Mockito.verify
 import static org.mockito.Mockito.when
 
 @ExtendWith(MockitoExtension.class)
-class ScmManagerGitProviderTest {
+class ScmManagerProviderTest {
     @Mock
     Config config;
     @Mock
@@ -38,7 +38,7 @@ class ScmManagerGitProviderTest {
     Call<Void> call
 
     @InjectMocks
-    ScmManagerGitProvider scmGitProvider;
+    ScmManagerProvider scmGitProvider;
 
     @BeforeEach
     void setup() {

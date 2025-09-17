@@ -4,12 +4,14 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.gitHandling.gitServerClients.GitProvider
 import com.cloudogu.gitops.gitHandling.gitServerClients.GitPushAuth
 import com.cloudogu.gitops.gitHandling.gitServerClients.Permission
+import jakarta.inject.Named
 
 
-class GitlabGitProvider implements GitProvider {
+@Named("gitlab")
+class GitlabProvider implements GitProvider {
     private final Config config
 
-    GitlabGitProvider (Config config){
+    GitlabProvider(Config config){
         this.config = config
     }
 

@@ -3,7 +3,7 @@ package com.cloudogu.gitops.utils
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.gitHandling.git.GitRepo
 import com.cloudogu.gitops.gitHandling.gitServerClients.Permission
-import com.cloudogu.gitops.gitHandling.gitServerClients.scmm.api.Repository
+import com.cloudogu.gitops.gitHandling.gitServerClients.scmmanager.api.Repository
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Ref
 import org.junit.jupiter.api.Test
