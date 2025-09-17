@@ -1,6 +1,9 @@
-package com.cloudogu.gitops.gitHandling.gitServerClients
+package com.cloudogu.gitops.gitHandling.gitServerClients.gitlab
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.gitHandling.gitServerClients.GitProvider
+import com.cloudogu.gitops.gitHandling.gitServerClients.GitPushAuth
+import com.cloudogu.gitops.gitHandling.gitServerClients.Permission
 
 
 class GitlabGitProvider implements GitProvider {

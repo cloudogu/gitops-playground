@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.gitHandling.gitServerClients
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.gitHandling.gitServerClients.scmm.ScmManagerGitProvider
 import com.cloudogu.gitops.gitHandling.gitServerClients.scmm.api.Repository
 import com.cloudogu.gitops.gitHandling.gitServerClients.scmm.api.RepositoryApi
 import com.cloudogu.gitops.gitHandling.gitServerClients.scmm.api.ScmmApiClient

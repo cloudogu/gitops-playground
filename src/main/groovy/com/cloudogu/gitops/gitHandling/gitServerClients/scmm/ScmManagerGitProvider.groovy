@@ -1,6 +1,10 @@
-package com.cloudogu.gitops.gitHandling.gitServerClients
+package com.cloudogu.gitops.gitHandling.gitServerClients.scmm
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.gitHandling.gitServerClients.GitProvider
+import com.cloudogu.gitops.gitHandling.gitServerClients.GitPushAuth
+import com.cloudogu.gitops.gitHandling.gitServerClients.Permission
+import com.cloudogu.gitops.gitHandling.gitServerClients.ScmUrlResolver
 import com.cloudogu.gitops.gitHandling.gitServerClients.scmm.api.Repository
 import com.cloudogu.gitops.gitHandling.gitServerClients.scmm.api.ScmmApiClient
 import groovy.util.logging.Slf4j
