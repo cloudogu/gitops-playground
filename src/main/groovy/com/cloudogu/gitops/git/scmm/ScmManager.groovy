@@ -43,7 +43,65 @@ class ScmManager implements GitProvider {
         this.credentials= scmmConfig.credentials
     }
 
-    void setup(){
+
+
+    /**
+     * @return true if created, false if already exists. Throw exception on all other errors
+     */
+    /* TODO Code übernehmen
+    boolean create(String description, ScmmApiClient scmmApiClient) {
+
+        def namespace = scmmRepoTarget.split('/', 2)[0]
+        def repoName = scmmRepoTarget.split('/', 2)[1]
+
+        def repositoryApi = scmmApiClient.repositoryApi()
+        def repo = new Repository(namespace, repoName, description)
+        log.debug("Creating repo: ${namespace}/${repoName}")
+        def createResponse = repositoryApi.create(repo, true).execute()
+        handleResponse(createResponse, repo)
+
+        def permission = new Permission(config.scm.gitOpsUsername as String, Permission.Role.WRITE)
+        def permissionResponse = repositoryApi.createPermission(namespace, repoName, permission).execute()
+        return handleResponse(permissionResponse, permission, "for repo $namespace/$repoName")
+    }
+
+    private static boolean handleResponse(Response response, Object body, String additionalMessage = '') {
+        if (response.code() == 409) {
+            // Here, we could consider sending another request for changing the existing object to become proper idempotent
+            log.debug("${body.class.simpleName} already exists ${additionalMessage}, ignoring: ${body}")
+            return false // because repo exists
+        } else if (response.code() != 201) {
+            throw new RuntimeException("Could not create ${body.class.simpleName} ${additionalMessage}.\n${body}\n" +
+                    "HTTP Details: ${response.code()} ${response.message()}: ${response.errorBody().string()}")
+        }
+        return true// because its created
+    }
+
+
+    /* SETUP FOR LATER
+    void waitForScmmAvailable(int timeoutSeconds = 60, int intervalMillis = 2000) {
+        long startTime = System.currentTimeMillis()
+        long timeoutMillis = timeoutSeconds * 1000L
+
+        while (System.currentTimeMillis() - startTime < timeoutMillis) {
+            try {
+                def call = this.scmmApiClient.generalApi().checkScmmAvailable()
+                def response = call.execute()
+
+                if (response.successful) {
+                    return
+                } else {
+                    println "SCM-Manager not ready yet: HTTP ${response.code()}"
+                }
+            } catch (Exception e) {
+                println "Waiting for SCM-Manager... Error: ${e.message}"
+            }
+
+            sleep(intervalMillis)
+        }
+        throw new RuntimeException("Timeout: SCM-Manager did not respond with 200 OK within ${timeoutSeconds} seconds")
+    }
+      void setup(){
         setupInternalScm(this.namespace)
         setupHelm()
         installScmmPlugins()
@@ -136,70 +194,7 @@ class ScmManager implements GitProvider {
         }
     }
 
-    /**
-     * @return true if created, false if already exists. Throw exception on all other errors
-     */
-    boolean create(String description, ScmmApiClient scmmApiClient) {
-
-        def namespace = scmmRepoTarget.split('/', 2)[0]
-        def repoName = scmmRepoTarget.split('/', 2)[1]
-
-        def repositoryApi = scmmApiClient.repositoryApi()
-        def repo = new Repository(namespace, repoName, description)
-        log.debug("Creating repo: ${namespace}/${repoName}")
-        def createResponse = repositoryApi.create(repo, true).execute()
-        handleResponse(createResponse, repo)
-
-        def permission = new Permission(config.scm.gitOpsUsername as String, Permission.Role.WRITE)
-        def permissionResponse = repositoryApi.createPermission(namespace, repoName, permission).execute()
-        return handleResponse(permissionResponse, permission, "for repo $namespace/$repoName")
-    }
-    // TODO: Anna Check Response generic <Void>
-    private static boolean handleResponse(Response response, Object body, String additionalMessage = '') {
-        if (response.code() == 409) {
-            // Here, we could consider sending another request for changing the existing object to become proper idempotent
-            log.debug("${body.class.simpleName} already exists ${additionalMessage}, ignoring: ${body}")
-            return false // because repo exists
-        } else if (response.code() != 201) {
-            throw new RuntimeException("Could not create ${body.class.simpleName} ${additionalMessage}.\n${body}\n" +
-                    "HTTP Details: ${response.code()} ${response.message()}: ${response.errorBody().string()}")
-        }
-        return true// because its created
-    }
-
-    public void configureJenkinsPlugin() {
-        def config = [
-                disableRepositoryConfiguration: false,
-                disableMercurialTrigger       : false,
-                disableGitTrigger             : false,
-                disableEventTrigger           : false,
-                url                           : jenkinsUrlForScmm
-        ]
-    }
-
-    void waitForScmmAvailable(int timeoutSeconds = 60, int intervalMillis = 2000) {
-        long startTime = System.currentTimeMillis()
-        long timeoutMillis = timeoutSeconds * 1000L
-
-        while (System.currentTimeMillis() - startTime < timeoutMillis) {
-            try {
-                def call = this.scmmApiClient.generalApi().checkScmmAvailable()
-                def response = call.execute()
-
-                if (response.successful) {
-                    return
-                } else {
-                    println "SCM-Manager not ready yet: HTTP ${response.code()}"
-                }
-            } catch (Exception e) {
-                println "Waiting for SCM-Manager... Error: ${e.message}"
-            }
-
-            sleep(intervalMillis)
-        }
-        throw new RuntimeException("Timeout: SCM-Manager did not respond with 200 OK within ${timeoutSeconds} seconds")
-    }
-
+ */
     static Map templateToMap(String filePath, Map parameters) {
         def hydratedString = new TemplatingEngine().template(new File(filePath), parameters)
 
@@ -210,9 +205,6 @@ class ScmManager implements GitProvider {
         return new YamlSlurper().parseText(hydratedString) as Map
     }
 
-    def createRepo(String name) {
-        this.create(name, this.scmmApiClient) // TODO: Anna
-    }
 
     @Override
     void init() {
@@ -236,7 +228,7 @@ class ScmManager implements GitProvider {
     //TODO
     @Override
     void createRepo(String target, String description) {
-        this.create(target + "/" + description, this.scmmApiClient) // TODO: Anna
+       // this.create(target + "/" + description, this.scmmApiClient) // TODO: Anna
     }
 
     @Override

@@ -12,9 +12,6 @@ class ScmRepoProvider {
     protected final Config config
     protected final FileSystemUtils fileSystemUtils
 
-    // GitHandler (Helper), Zugriffsschicht für Argo CD (und ggf. andere features) auf die Git-Abstraktion , sollte in ArgoCD etc genutzt werden
-//    protected GitHandler scmProvider
-
     ScmRepoProvider(Config config, FileSystemUtils fileSystemUtils) {
         this.fileSystemUtils = fileSystemUtils
         this.config = config
@@ -23,4 +20,5 @@ class ScmRepoProvider {
     GitRepo getRepo(String repoTarget) {
         return new GitRepo(config, repoTarget, fileSystemUtils)
     }
+
 }
