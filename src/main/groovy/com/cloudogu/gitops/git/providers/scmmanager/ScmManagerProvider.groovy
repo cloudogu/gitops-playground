@@ -12,7 +12,6 @@ import jakarta.inject.Named
 import retrofit2.Response
 
 @Slf4j
-@Named("gitlab")
 class ScmManagerProvider implements GitProvider{
 
     private final Config config
@@ -51,6 +50,24 @@ class ScmManagerProvider implements GitProvider{
         def username = isCentralRepo ? config.multiTenant.username : config.scmm.username
         def password = isCentralRepo ? config.multiTenant.password : config.scmm.password
         return new GitPushAuth(username as String, password as String)
+    }
+
+    //TODO implement
+    @Override
+    void deleteRepository(String namespace, String repository, boolean prefixNamespace) {
+
+    }
+
+    //TODO implement
+    @Override
+    void deleteUser(String name) {
+
+    }
+
+    //TODO implement
+    @Override
+    void setDefaultBranch(String repoTarget, String branch) {
+
     }
 
     private static boolean handle201or409(Response<?> response, String what) {

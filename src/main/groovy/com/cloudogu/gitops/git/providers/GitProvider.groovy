@@ -11,8 +11,15 @@ interface GitProvider {
 
     String computePushUrl(String repoTarget)
 
-    //TODO put this into config package
     GitPushAuth pushAuth(boolean isCentralRepo)
 
-    //TODO add deleteRepository , delete User (src/main/groovy/com/cloudogu/gitops/destroy/ScmmDestructionHandler.groovy)
+    //TODO implement
+    void deleteRepository(String namespace, String repository, boolean prefixNamespace)
+
+    //TODO implement
+    void deleteUser(String name)
+
+    //TODO implement
+    void setDefaultBranch(String repoTarget, String branch)
+
 }

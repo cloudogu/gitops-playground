@@ -7,7 +7,6 @@ import com.cloudogu.gitops.git.providers.Permission
 import jakarta.inject.Named
 
 
-@Named("gitlab")
 class GitlabProvider implements GitProvider {
     private final Config config
 
@@ -33,5 +32,23 @@ class GitlabProvider implements GitProvider {
     @Override
     GitPushAuth pushAuth(boolean isCentralRepo) {
         return new GitPushAuth("oauth2", config.scmm.password as String) // token in password
+    }
+
+    //TODO implement
+    @Override
+    void deleteRepository(String namespace, String repository, boolean prefixNamespace) {
+
+    }
+
+    //TODO implement
+    @Override
+    void deleteUser(String name) {
+
+    }
+
+    //TODO implement
+    @Override
+    void setDefaultBranch(String repoTarget, String branch) {
+
     }
 }
