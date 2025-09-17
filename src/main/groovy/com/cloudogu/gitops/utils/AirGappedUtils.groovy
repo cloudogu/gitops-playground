@@ -3,10 +3,10 @@ package com.cloudogu.gitops.utils
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.gitHandling.gitServerClients.GitProvider
 import com.cloudogu.gitops.gitHandling.gitServerClients.Permission
+
 import com.cloudogu.gitops.gitHandling.git.GitRepo
-import com.cloudogu.gitops.scmm.ScmmRepo
-import com.cloudogu.gitops.scmm.ScmmRepoProvider
-import com.cloudogu.gitops.scmm.api.ScmmApiClient
+import com.cloudogu.gitops.gitHandling.git.GitRepoProvider
+import com.cloudogu.gitops.gitHandling.gitServerClients.scmm.api.ScmmApiClient
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 import jakarta.inject.Singleton
@@ -18,13 +18,13 @@ import java.nio.file.Path
 class AirGappedUtils {
 
     private Config config
-    private ScmmRepoProvider repoProvider
+    private GitRepoProvider repoProvider
     private ScmmApiClient scmmApiClient
     private FileSystemUtils fileSystemUtils
     private HelmClient helmClient
     private final GitProvider gitProvider;
 
-    AirGappedUtils(Config config, ScmmRepoProvider repoProvider, ScmmApiClient scmmApiClient,
+    AirGappedUtils(Config config, GitRepoProvider repoProvider, ScmmApiClient scmmApiClient,
                    FileSystemUtils fileSystemUtils, HelmClient helmClient, GitProvider gitProvider) {
         this.config = config
         this.repoProvider = repoProvider
@@ -43,7 +43,7 @@ class AirGappedUtils {
      */
     String mirrorHelmRepoToGit(Config.HelmConfig helmConfig) {
         String repoName = helmConfig.chart
-        String namespace = ScmmRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES
+        String namespace = GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES
         def repoNamespaceAndName = "${namespace}/${repoName}"
         def localHelmChartFolder = "${config.application.localHelmChartFolder}/${repoName}"
 

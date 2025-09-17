@@ -1,33 +1,205 @@
 package com.cloudogu.gitops.gitHandling.git
 
-/** Worktree-Ops:
- * Worktree operations are local Git actions (JGit) on a checked-out repository:
- * Clone, add/commit, tag, push/pull, clear working directory, push refs/mirrors.
- * Use the URL from Server-Ops (computePushUrl) and a credentials provider.
- * Do not call provider REST APIs.*/
-interface GitRepo {
-    String getRepoTarget()
+import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.gitHandling.gitServerClients.GitProvider
 
-    String getAbsoluteLocalRepoTmpDir()
+import com.cloudogu.gitops.gitHandling.gitServerClients.scmm.jgit.InsecureCredentialProvider
+import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.utils.TemplatingEngine
+import groovy.util.logging.Slf4j
+import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.api.PushCommand
+import org.eclipse.jgit.transport.ChainingCredentialsProvider
+import org.eclipse.jgit.transport.CredentialsProvider
+import org.eclipse.jgit.transport.RefSpec
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 
-    void cloneRepo()
+@Slf4j
+class GitRepo {
 
-    void commitAndPush(String message)
-    void commitAndPush(String message, String tag)
-    void commitAndPush(String message, String tag, String refSpec)
+    static final String NAMESPACE_3RD_PARTY_DEPENDENCIES = '3rd-party-dependencies'
 
-    void pushAll(boolean force)
+    private final Config config
+    private final GitProvider gitProvider
+    private final FileSystemUtils fileSystemUtils
 
-    void pushRef(String ref, boolean force)
-    void pushRef(String ref, String targetRef, boolean force)
+    private final String repoTarget        // before scmmRepoTarget (neutral)
+    private final boolean isCentralRepo
+    private final boolean insecure
+    private final String gitName
+    private final String gitEmail
+    private final String usernameForAuth   // inclusive central/normal switch
+    private final String passwordForAuth
 
-    void clearRepo()
+    private Git gitMemoization
+    private final String absoluteLocalRepoTmpDir
 
-    void copyDirectoryContents(String srcDir)
-    void copyDirectoryContents(String srcDir, FileFilter fileFilter)
+    GitRepo(Config config, GitProvider gitProvider, String scmmRepoTarget, FileSystemUtils fileSystemUtils, Boolean isCentralRepo = false) {
+        def tmpDir = File.createTempDir()
+        tmpDir.deleteOnExit()
+        this.absoluteLocalRepoTmpDir = tmpDir.absolutePath
+        this.config = config
+        this.gitProvider = gitProvider
+        this.fileSystemUtils = fileSystemUtils
+        this.isCentralRepo = isCentralRepo
 
-    void writeFile(String path, String content)
+        this.repoTarget = scmmRepoTarget.startsWith(NAMESPACE_3RD_PARTY_DEPENDENCIES) ? scmmRepoTarget :
+                "${config.application.namePrefix}${scmmRepoTarget}"
 
-    void replaceTemplates(Map parameters)
+        this.insecure = config.application.insecure
+        this.gitName = config.application.gitName
+        this.gitEmail = config.application.gitEmail
+
+        // Auth from config (central vs. normal)
+        this.usernameForAuth = isCentralRepo ? (config.multiTenant.username as String) : (config.scmm.username as String)
+        this.passwordForAuth = isCentralRepo ? (config.multiTenant.password as String) : (config.scmm.password as String)
+    }
+
+    // ---------- GitRepo ----------
+    
+    String getRepoTarget() {
+        return repoTarget
+    }
+
+    
+    String getAbsoluteLocalRepoTmpDir() {
+        return absoluteLocalRepoTmpDir
+    }
+
+    
+    void cloneRepo() {
+        log.debug("Cloning ${repoTarget}")
+        Git.cloneRepository()
+                .setURI(gitProvider.computePushUrl(repoTarget))     // URL from provider
+                .setDirectory(new File(absoluteLocalRepoTmpDir))
+                .setCredentialsProvider(getCredentialProvider())
+                .call()
+    }
+
+    
+    void commitAndPush(String message, String tag) {
+        commitAndPush(message, tag, 'HEAD:refs/heads/main')
+    }
+
+    
+    void commitAndPush(String commitMessage, String tag, String refSpec) {
+        log.debug("Adding files to ${repoTarget}")
+        def git = getGit()
+        git.add().addFilepattern(".").call()
+
+        if (git.status().call().hasUncommittedChanges()) {
+            log.debug("Commiting ${repoTarget}")
+            git.commit()
+                    .setSign(false)
+                    .setMessage(commitMessage)
+                    .setAuthor(gitName, gitEmail)
+                    .setCommitter(gitName, gitEmail)
+                    .call()
+
+            def pushCommand = createPushCommand(refSpec)
+
+            if (tag) {
+                log.debug("Setting tag '${tag}' on repo: ${repoTarget}")
+                // Delete existing tags first to get idempotence
+                git.tagDelete().setTags(tag).call()
+                git.tag()
+                        .setName(tag)
+                        .call()
+                pushCommand.setPushTags()
+            }
+
+            log.debug("Pushing repo: ${repoTarget}, refSpec: ${refSpec}")
+            pushCommand.call()
+        } else {
+            log.debug("No changes after add, nothing to commit or push on repo: ${repoTarget}")
+        }
+    }
+
+    
+    void commitAndPush(String commitMessage) {
+        commitAndPush(commitMessage, null, 'HEAD:refs/heads/main')
+    }
+    /**
+     * Push all refs, i.e. all tags and branches
+     */
+    
+    void pushAll(boolean force) {
+        createPushCommand('refs/*:refs/*').setForce(force).call()
+    }
+
+    
+    void pushRef(String ref, boolean force) {
+        pushRef(ref, ref, force)
+    }
+
+    
+    void pushRef(String ref, String targetRef, boolean force) {
+        createPushCommand("${ref}:${targetRef}").setForce(force).call()
+    }
+
+    
+    /**
+     * Delete all files in this repository
+     */
+    void clearRepo() {
+        fileSystemUtils.deleteFilesExcept(new File(absoluteLocalRepoTmpDir), ".git")
+    }
+
+
+    
+    void copyDirectoryContents(String srcDir) {
+        copyDirectoryContents(srcDir, (FileFilter) null)
+    }
+
+    
+    void copyDirectoryContents(String srcDir, FileFilter fileFilter) {
+        if (!srcDir) {
+            log.warn("Source directory is not defined. Nothing to copy?")
+            return
+        }
+
+        log.debug("Initializing repo $repoTarget from $srcDir")
+        String absoluteSrcDirLocation = new File(srcDir).isAbsolute()
+                ? srcDir
+                : "${fileSystemUtils.getRootDir()}/${srcDir}"
+        fileSystemUtils.copyDirectory(absoluteSrcDirLocation, absoluteLocalRepoTmpDir, fileFilter)
+    }
+
+    
+    void writeFile(String path, String content) {
+        def file = new File("$absoluteLocalRepoTmpDir/$path")
+        fileSystemUtils.createDirectory(file.parent)
+        file.createNewFile()
+        file.text = content
+    }
+
+
+    
+    void replaceTemplates(Map parameters) {
+        new TemplatingEngine().replaceTemplates(new File(absoluteLocalRepoTmpDir), parameters)
+    }
+
+    // ---------- intern ----------
+    private PushCommand createPushCommand(String refSpec) {
+        getGit()
+                .push()
+                .setRemote(gitProvider.computePushUrl(repoTarget))
+                .setRefSpecs(new RefSpec(refSpec))
+                .setCredentialsProvider(getCredentialProvider())
+    }
+
+    private Git getGit() {
+        if (gitMemoization != null) {
+            return gitMemoization
+        }
+
+        return gitMemoization = Git.open(new File(absoluteLocalRepoTmpDir))
+    }
+
+    private CredentialsProvider getCredentialProvider() {
+        def auth = gitProvider.pushAuth(isCentralRepo)
+        def passwordAuthentication = new UsernamePasswordCredentialsProvider(auth.username, auth.password)
+        return insecure ? new ChainingCredentialsProvider(new InsecureCredentialProvider(), passwordAuthentication) : passwordAuthentication
+    }
 
 }

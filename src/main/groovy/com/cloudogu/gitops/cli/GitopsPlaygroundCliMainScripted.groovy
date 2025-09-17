@@ -18,8 +18,8 @@ import com.cloudogu.gitops.jenkins.JenkinsApiClient
 import com.cloudogu.gitops.jenkins.JobManager
 import com.cloudogu.gitops.jenkins.PrometheusConfigurator
 import com.cloudogu.gitops.jenkins.UserManager
-import com.cloudogu.gitops.scmm.ScmmRepoProvider
-import com.cloudogu.gitops.scmm.api.ScmmApiClient
+import com.cloudogu.gitops.gitHandling.git.GitRepoProvider
+import com.cloudogu.gitops.gitHandling.gitServerClients.scmm.api.ScmmApiClient
 import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
 import io.micronaut.context.ApplicationContext
@@ -70,9 +70,13 @@ class GitopsPlaygroundCliMainScripted {
             def httpClientScmm = httpClientFactory.okHttpClientScmm(httpClientFactory.createLoggingInterceptor(), config, insecureSslContextProvider)
             def scmmApiClient = new ScmmApiClient(config, httpClientScmm)
 
-            def gitProvider = GitProviderFactory.create(config, scmmApiClient)
+//            def gitProvider = GitProviderFactory.create(config, scmmApiClient)
+            def gitProvider = GitProviderFactory.fromConfig(
+                    config,
+                    new GitProviderFactory.Deps(scmmApiClient: scmmApiClient) // oder gitlabApiClient
+            )
 
-            def repoProvider = new ScmmRepoProvider(config, fileSystemUtils, gitProvider)
+            def repoProvider = new GitRepoProvider(config, fileSystemUtils, gitProvider)
 
             def jenkinsApiClient = new JenkinsApiClient(config,
                     httpClientFactory.okHttpClientJenkins(httpClientFactory.createLoggingInterceptor(), config, insecureSslContextProvider))

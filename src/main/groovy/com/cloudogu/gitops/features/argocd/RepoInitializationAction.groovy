@@ -2,7 +2,7 @@ package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.gitHandling.git.GitRepo
-import com.cloudogu.gitops.scmm.ScmUrlResolver
+import com.cloudogu.gitops.gitHandling.gitServerClients.ScmUrlResolver
 import freemarker.template.DefaultObjectWrapperBuilder
 
 class RepoInitializationAction {

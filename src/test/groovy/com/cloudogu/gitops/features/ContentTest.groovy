@@ -1,8 +1,8 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.scmm.ScmmRepoProvider
-import com.cloudogu.gitops.scmm.api.ScmmApiClient
+import com.cloudogu.gitops.gitHandling.git.GitRepoProvider
+import com.cloudogu.gitops.gitHandling.gitServerClients.scmm.api.ScmmApiClient
 import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
@@ -43,7 +43,7 @@ class ContentTest {
 
     CommandExecutorForTest k8sCommands = new CommandExecutorForTest()
     K8sClientForTest k8sClient = new K8sClientForTest(config, k8sCommands)
-    TestScmmRepoProvider scmmRepoProvider = new TestScmmRepoProvider(config, new FileSystemUtils())
+    TestGitRepoProvider scmmRepoProvider = new TestGitRepoProvider(config, new FileSystemUtils())
     TestScmmApiClient scmmApiClient = new TestScmmApiClient(config)
     Jenkins jenkins = mock(Jenkins.class)
 
@@ -908,7 +908,7 @@ class ContentTest {
     class ContentForTest extends Content {
         CloneCommand cloneSpy
 
-        ContentForTest(Config config, K8sClient k8sClient, ScmmRepoProvider repoProvider, ScmmApiClient scmmApiClient, Jenkins jenkins) {
+        ContentForTest(Config config, K8sClient k8sClient, GitRepoProvider repoProvider, ScmmApiClient scmmApiClient, Jenkins jenkins) {
             super(config, k8sClient, repoProvider, scmmApiClient, jenkins)
         }
 

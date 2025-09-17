@@ -1,10 +1,10 @@
 package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.scmm.ScmmRepo
+import com.cloudogu.gitops.gitHandling.git.GitRepo
 import com.cloudogu.gitops.gitHandling.gitServerClients.Permission
-import com.cloudogu.gitops.scmm.api.Repository
-import com.cloudogu.gitops.scmm.api.ScmmApiClient
+import com.cloudogu.gitops.gitHandling.gitServerClients.scmm.api.Repository
+import com.cloudogu.gitops.gitHandling.gitServerClients.scmm.api.ScmmApiClient
 import groovy.yaml.YamlSlurper
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Ref
@@ -36,7 +36,7 @@ class AirGappedUtilsTest {
     ])
     
     Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
-    TestScmmRepoProvider scmmRepoProvider = new TestScmmRepoProvider(config, new FileSystemUtils())
+    TestGitRepoProvider scmmRepoProvider = new TestGitRepoProvider(config, new FileSystemUtils())
     FileSystemUtils fileSystemUtils = new FileSystemUtils()
     TestScmmApiClient scmmApiClient = new TestScmmApiClient(config)
     HelmClient helmClient = mock(HelmClient)
@@ -56,7 +56,7 @@ class AirGappedUtilsTest {
         def actualRepoNamespaceAndName = createAirGappedUtils().mirrorHelmRepoToGit(helmConfig)
         
         assertThat(actualRepoNamespaceAndName).isEqualTo(
-                "${ScmmRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/kube-prometheus-stack".toString())
+                "${GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/kube-prometheus-stack".toString())
         assertAirGapped()
     }
 
@@ -78,7 +78,7 @@ class AirGappedUtilsTest {
         setupForAirgappedUse(null, [])
         createAirGappedUtils().mirrorHelmRepoToGit(helmConfig)
 
-        ScmmRepo prometheusRepo = scmmRepoProvider.repos['3rd-party-dependencies/kube-prometheus-stack']
+        GitRepo prometheusRepo = scmmRepoProvider.repos['3rd-party-dependencies/kube-prometheus-stack']
         def actualPrometheusChartYaml = new YamlSlurper().parse(Path.of(prometheusRepo.absoluteLocalRepoTmpDir, 'Chart.yaml'))
 
         def dependencies = actualPrometheusChartYaml['dependencies'] 
@@ -155,7 +155,7 @@ class AirGappedUtilsTest {
     }
 
     protected void assertAirGapped() {
-        ScmmRepo prometheusRepo = scmmRepoProvider.repos['3rd-party-dependencies/kube-prometheus-stack']
+        GitRepo prometheusRepo = scmmRepoProvider.repos['3rd-party-dependencies/kube-prometheus-stack']
         assertThat(prometheusRepo).isNotNull()
         assertThat(Path.of(prometheusRepo.absoluteLocalRepoTmpDir, 'Chart.lock')).doesNotExist()
 
@@ -179,7 +179,7 @@ class AirGappedUtilsTest {
     }
 
 
-    void assertHelmRepoCommits(ScmmRepo repo, String expectedTag, String expectedCommitMessage) {
+    void assertHelmRepoCommits(GitRepo repo, String expectedTag, String expectedCommitMessage) {
         def commits = Git.open(new File(repo.absoluteLocalRepoTmpDir)).log().setMaxCount(1).all().call().collect()
         assertThat(commits.size()).isEqualTo(1)
         assertThat(commits[0].fullMessage).isEqualTo(expectedCommitMessage)

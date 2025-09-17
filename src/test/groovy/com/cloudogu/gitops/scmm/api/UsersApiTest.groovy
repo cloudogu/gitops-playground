@@ -2,6 +2,7 @@ package com.cloudogu.gitops.scmm.api
 
 import com.cloudogu.gitops.common.MockWebServerHttpsFactory
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.gitHandling.gitServerClients.scmm.api.UsersApi
 import io.micronaut.context.ApplicationContext
 import io.micronaut.inject.qualifiers.Qualifiers
 import okhttp3.OkHttpClient

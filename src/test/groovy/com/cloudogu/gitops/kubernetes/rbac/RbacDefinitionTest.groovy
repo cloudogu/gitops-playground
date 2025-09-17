@@ -1,7 +1,7 @@
 package com.cloudogu.gitops.kubernetes.rbac
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.scmm.ScmmRepo
+import com.cloudogu.gitops.gitHandling.git.GitRepo
 import com.cloudogu.gitops.utils.FileSystemUtils
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
@@ -28,7 +28,7 @@ class RbacDefinitionTest {
             ]
     ])
 
-    private final ScmmRepo repo = new ScmmRepo(config, "my-repo", new FileSystemUtils())
+    private final GitRepo repo = new GitRepo(config, "my-repo", new FileSystemUtils())
 
     @Test
     void 'generates at least one RBAC YAML file'() {
@@ -245,7 +245,7 @@ class RbacDefinitionTest {
     void 'renders node access rules in argocd-role only when not on OpenShift'() {
         config.application.openshift = false
 
-        ScmmRepo tempRepo = new ScmmRepo(config, "rbac-test", new FileSystemUtils())
+        GitRepo tempRepo = new GitRepo(config, "rbac-test", new FileSystemUtils())
 
         new RbacDefinition(Role.Variant.ARGOCD)
                 .withName("nodecheck")
@@ -271,7 +271,7 @@ class RbacDefinitionTest {
     void 'does not render node access rules in argocd-role  when on OpenShift'() {
         config.application.openshift = true
 
-        ScmmRepo tempRepo = new ScmmRepo(config, "rbac-test", new FileSystemUtils())
+        GitRepo tempRepo = new GitRepo(config, "rbac-test", new FileSystemUtils())
 
         new RbacDefinition(Role.Variant.ARGOCD)
                 .withName("nodecheck")

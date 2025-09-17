@@ -1,9 +1,8 @@
 package com.cloudogu.gitops.gitHandling.gitServerClients
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.scmm.ScmUrlResolver
-import com.cloudogu.gitops.scmm.api.Repository
-import com.cloudogu.gitops.scmm.api.ScmmApiClient
+import com.cloudogu.gitops.gitHandling.gitServerClients.scmm.api.Repository
+import com.cloudogu.gitops.gitHandling.gitServerClients.scmm.api.ScmmApiClient
 import groovy.util.logging.Slf4j
 import retrofit2.Response
 

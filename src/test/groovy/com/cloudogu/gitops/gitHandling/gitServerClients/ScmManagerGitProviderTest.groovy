@@ -1,9 +1,9 @@
 package com.cloudogu.gitops.gitHandling.gitServerClients
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.scmm.api.Repository
-import com.cloudogu.gitops.scmm.api.RepositoryApi
-import com.cloudogu.gitops.scmm.api.ScmmApiClient
+import com.cloudogu.gitops.gitHandling.gitServerClients.scmm.api.Repository
+import com.cloudogu.gitops.gitHandling.gitServerClients.scmm.api.RepositoryApi
+import com.cloudogu.gitops.gitHandling.gitServerClients.scmm.api.ScmmApiClient
 import okhttp3.MediaType
 import okhttp3.Protocol
 import okhttp3.Request

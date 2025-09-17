@@ -2,6 +2,7 @@ package com.cloudogu.gitops.gitHandling.gitServerClients
 
 import com.cloudogu.gitops.config.Config
 
+
 class GitlabGitProvider implements GitProvider {
     private final Config config
 

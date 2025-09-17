@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.scmm.api
+package com.cloudogu.gitops.gitHandling.gitServerClients.scmm.api
 
 import com.cloudogu.gitops.config.Config
 

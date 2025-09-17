@@ -1,18 +1,32 @@
 package com.cloudogu.gitops.gitHandling.gitServerClients
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.scmm.api.ScmmApiClient
+import com.cloudogu.gitops.gitHandling.gitServerClients.scmm.api.ScmmApiClient
 
 //TODO as enum
+
 class GitProviderFactory {
-    static GitProvider create(Config config, ScmmApiClient scmmApiClient) {
-        switch ((config.scmm.provider ?: "scm-manager").toLowerCase()) {
+    // take provider from config
+    static GitProvider fromConfig(Config config, Deps deps) {
+        switch ((config?.scmm?.provider ?: "scm-manager").toLowerCase()) {
             case "scm-manager":
-                return new ScmManagerGitProvider(config, scmmApiClient)
+                require(deps.scmmApiClient, "ScmmApiClient is missing for scm-manager")
+                return new ScmManagerGitProvider(config, deps.scmmApiClient)
             case "gitlab":
-                return new GitlabGitProvider(config)
+//                require(deps.gitlabApiClient, "GitlabApiClient is missing for  gitlab")
+//                return new GitlabGitProvider(config, deps.gitlabApiClient)
+                return null
             default:
-                throw new IllegalArgumentException("Unknown SCM provider: ${config.scmm.provider}")
+                throw new IllegalStateException("Unbekannter scmm.provider: ${config?.scmm?.provider}")
         }
+    }
+
+    static class Deps {
+        ScmmApiClient scmmApiClient
+        //TODO add  GitlabApiClient
+    }
+
+    private static void require(Object object, String msg) {
+        if (object == null) throw new IllegalStateException(msg)
     }
 }
