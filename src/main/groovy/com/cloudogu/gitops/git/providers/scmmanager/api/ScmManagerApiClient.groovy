@@ -12,11 +12,11 @@ import retrofit2.converter.jackson.JacksonConverterFactory
  * Parent class for all SCMM Apis that lazily creates the APIs, so the latest SCMM-URL is used
  */
 @Singleton
-class ScmmApiClient {
+class ScmManagerApiClient {
     Config config
     OkHttpClient okHttpClient
 
-    ScmmApiClient(Config config, @Named("scmm") OkHttpClient okHttpClient) {
+    ScmManagerApiClient(Config config, @Named("scmm") OkHttpClient okHttpClient) {
         this.config = config
         this.okHttpClient = okHttpClient
     }

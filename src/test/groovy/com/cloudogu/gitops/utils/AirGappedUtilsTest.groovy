@@ -4,7 +4,7 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.git.local.LocalRepository
 import com.cloudogu.gitops.git.providers.Permission
 import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
-import com.cloudogu.gitops.git.providers.scmmanager.api.ScmmApiClient
+import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
 import groovy.yaml.YamlSlurper
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Ref
@@ -38,7 +38,7 @@ class AirGappedUtilsTest {
     Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
     TestLocalRepositoryFactory scmmRepoProvider = new TestLocalRepositoryFactory(config, new FileSystemUtils())
     FileSystemUtils fileSystemUtils = new FileSystemUtils()
-    TestScmmApiClient scmmApiClient = new TestScmmApiClient(config)
+    TestScmManagerApiClient scmmApiClient = new TestScmManagerApiClient(config)
     HelmClient helmClient = mock(HelmClient)
 
     @BeforeEach
@@ -175,7 +175,7 @@ class AirGappedUtilsTest {
         assertHelmRepoCommits(prometheusRepo, '1.2.3', 'Chart kube-prometheus-stack-chart, version: 1.2.3\n\n' +
                 'Source: https://kube-prometheus-stack-repo-url\nDependencies localized to run in air-gapped environments')
 
-        verify(prometheusRepo).create(eq('Mirror of Helm chart kube-prometheus-stack from https://kube-prometheus-stack-repo-url'), any(ScmmApiClient))
+        verify(prometheusRepo).create(eq('Mirror of Helm chart kube-prometheus-stack from https://kube-prometheus-stack-repo-url'), any(ScmManagerApiClient))
     }
 
 

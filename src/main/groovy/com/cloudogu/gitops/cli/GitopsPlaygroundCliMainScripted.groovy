@@ -19,7 +19,7 @@ import com.cloudogu.gitops.jenkins.JobManager
 import com.cloudogu.gitops.jenkins.PrometheusConfigurator
 import com.cloudogu.gitops.jenkins.UserManager
 import com.cloudogu.gitops.git.local.LocalRepositoryFactory
-import com.cloudogu.gitops.git.providers.scmmanager.api.ScmmApiClient
+import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
 import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
 import io.micronaut.context.ApplicationContext
@@ -68,7 +68,7 @@ class GitopsPlaygroundCliMainScripted {
                 }
             }
             def httpClientScmm = httpClientFactory.okHttpClientScmm(httpClientFactory.createLoggingInterceptor(), config, insecureSslContextProvider)
-            def scmmApiClient = new ScmmApiClient(config, httpClientScmm)
+            def scmmApiClient = new ScmManagerApiClient(config, httpClientScmm)
 
 //            def gitProvider = GitProviderFactory.create(config, scmmApiClient)
             def gitProvider = GitProviderFactory.fromConfig(

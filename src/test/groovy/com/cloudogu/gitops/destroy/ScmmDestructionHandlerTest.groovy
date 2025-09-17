@@ -1,7 +1,7 @@
 package com.cloudogu.gitops.destroy
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.git.providers.scmmanager.api.ScmmApiClient
+import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat
 
 class ScmmDestructionHandlerTest {
 
-    private ScmmApiClient scmmApiClient
+    private ScmManagerApiClient scmmApiClient
     private MockWebServer mockWebServer
 
     @BeforeEach
@@ -24,7 +24,7 @@ class ScmmDestructionHandlerTest {
         def retrofit = new Retrofit.Builder()
                 .baseUrl(mockWebServer.url(""))
                 .build()
-        scmmApiClient = new ScmmApiClient(Mockito.mock(Config), Mockito.mock(OkHttpClient)) {
+        scmmApiClient = new ScmManagerApiClient(Mockito.mock(Config), Mockito.mock(OkHttpClient)) {
             @Override
             protected Retrofit retrofit() {
                 return retrofit

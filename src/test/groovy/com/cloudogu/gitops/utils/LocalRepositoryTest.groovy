@@ -31,8 +31,8 @@ class LocalRepositoryTest {
                     gitOpsUsername: 'foo-gitops'
             ))
     TestLocalRepositoryFactory scmmRepoProvider = new TestLocalRepositoryFactory(config, new FileSystemUtils())
-    TestScmmApiClient scmmApiClient = new TestScmmApiClient(config)
-    Call<Void>  response201 = TestScmmApiClient.mockSuccessfulResponse(201)
+    TestScmManagerApiClient scmmApiClient = new TestScmManagerApiClient(config)
+    Call<Void>  response201 = TestScmManagerApiClient.mockSuccessfulResponse(201)
     Call<Void> response409 = scmmApiClient.mockErrorResponse(409)
     Call<Void> response500 = scmmApiClient.mockErrorResponse(500)
     

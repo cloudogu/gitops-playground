@@ -2,7 +2,7 @@ package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.git.local.LocalRepositoryFactory
-import com.cloudogu.gitops.git.providers.scmmanager.api.ScmmApiClient
+import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
 import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
@@ -44,7 +44,7 @@ class ContentTest {
     CommandExecutorForTest k8sCommands = new CommandExecutorForTest()
     K8sClientForTest k8sClient = new K8sClientForTest(config, k8sCommands)
     TestLocalRepositoryFactory scmmRepoProvider = new TestLocalRepositoryFactory(config, new FileSystemUtils())
-    TestScmmApiClient scmmApiClient = new TestScmmApiClient(config)
+    TestScmManagerApiClient scmmApiClient = new TestScmManagerApiClient(config)
     Jenkins jenkins = mock(Jenkins.class)
 
     @TempDir
@@ -578,7 +578,7 @@ class ContentTest {
         try (def git = Git.cloneRepository().setURI(url).setBranch('main').setDirectory(tmpDir).call()) {
 
 
-            verify(repo).create(eq(''),  any(ScmmApiClient), eq(false))
+            verify(repo).create(eq(''),  any(ScmManagerApiClient), eq(false))
 
             def commitMsg = git.log().call().iterator().next().getFullMessage()
             assertThat(commitMsg).isEqualTo("Initialize content repo ${expectedRepo}".toString())
@@ -639,7 +639,7 @@ class ContentTest {
         try (def git = Git.cloneRepository().setURI(url).setBranch('main').setDirectory(tmpDir).call()) {
 
 
-            verify(repo).create(eq(''),  any(ScmmApiClient), eq(false))
+            verify(repo).create(eq(''),  any(ScmManagerApiClient), eq(false))
 
             def commitMsg = git.log().call().iterator().next().getFullMessage()
             assertThat(commitMsg).isEqualTo("Initialize content repo ${expectedRepo}".toString())
@@ -700,7 +700,7 @@ class ContentTest {
         // clone repo, to ensure, changes in remote repo.
         try (def git = Git.cloneRepository().setURI(url).setBranch('main').setDirectory(tmpDir).call()) {
 
-            verify(repo).create(eq(''),  any(ScmmApiClient), eq(false))
+            verify(repo).create(eq(''),  any(ScmManagerApiClient), eq(false))
 
             def commitMsg = git.log().call().iterator().next().getFullMessage()
             assertThat(commitMsg).isEqualTo("Initialize content repo ${expectedRepo}".toString())
@@ -908,7 +908,7 @@ class ContentTest {
     class ContentForTest extends Content {
         CloneCommand cloneSpy
 
-        ContentForTest(Config config, K8sClient k8sClient, LocalRepositoryFactory repoProvider, ScmmApiClient scmmApiClient, Jenkins jenkins) {
+        ContentForTest(Config config, K8sClient k8sClient, LocalRepositoryFactory repoProvider, ScmManagerApiClient scmmApiClient, Jenkins jenkins) {
             super(config, k8sClient, repoProvider, scmmApiClient, jenkins)
         }
 

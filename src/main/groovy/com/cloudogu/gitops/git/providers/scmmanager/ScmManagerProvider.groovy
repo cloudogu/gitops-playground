@@ -6,18 +6,17 @@ import com.cloudogu.gitops.git.providers.GitPushAuth
 import com.cloudogu.gitops.git.providers.Permission
 import com.cloudogu.gitops.git.providers.ScmUrlResolver
 import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
-import com.cloudogu.gitops.git.providers.scmmanager.api.ScmmApiClient
+import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
 import groovy.util.logging.Slf4j
-import jakarta.inject.Named
 import retrofit2.Response
 
 @Slf4j
 class ScmManagerProvider implements GitProvider{
 
     private final Config config
-    private final ScmmApiClient scmmApiClient
+    private final ScmManagerApiClient scmmApiClient
 
-    ScmManagerProvider(Config config, ScmmApiClient scmmApiClient) {
+    ScmManagerProvider(Config config, ScmManagerApiClient scmmApiClient) {
         this.config = config
         this.scmmApiClient = scmmApiClient
     }

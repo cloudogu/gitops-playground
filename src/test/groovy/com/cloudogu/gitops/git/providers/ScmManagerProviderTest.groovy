@@ -4,7 +4,7 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.git.providers.scmmanager.ScmManagerProvider
 import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
 import com.cloudogu.gitops.git.providers.scmmanager.api.RepositoryApi
-import com.cloudogu.gitops.git.providers.scmmanager.api.ScmmApiClient
+import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
 import okhttp3.MediaType
 import okhttp3.Protocol
 import okhttp3.Request
@@ -31,7 +31,7 @@ class ScmManagerProviderTest {
     @Mock
     Config config;
     @Mock
-    ScmmApiClient scmmApiClient;
+    ScmManagerApiClient scmmApiClient;
     @Mock
     RepositoryApi repositoryApi;
     @Mock
