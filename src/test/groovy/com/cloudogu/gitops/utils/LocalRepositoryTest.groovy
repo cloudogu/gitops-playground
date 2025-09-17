@@ -1,9 +1,9 @@
 package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.gitHandling.git.GitRepo
-import com.cloudogu.gitops.gitHandling.gitServerClients.Permission
-import com.cloudogu.gitops.gitHandling.gitServerClients.scmmanager.api.Repository
+import com.cloudogu.gitops.gitHandling.local.LocalRepository
+import com.cloudogu.gitops.gitHandling.providers.Permission
+import com.cloudogu.gitops.gitHandling.providers.scmmanager.api.Repository
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Ref
 import org.junit.jupiter.api.Test
@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.*
 
-class GitRepoTest {
+class LocalRepositoryTest {
 
 
     public static final String expectedNamespace = "namespace"
@@ -30,7 +30,7 @@ class GitRepoTest {
                     password: "dont-care-password",
                     gitOpsUsername: 'foo-gitops'
             ))
-    TestGitRepoProvider scmmRepoProvider = new TestGitRepoProvider(config, new FileSystemUtils())
+    TestLocalRepositoryFactory scmmRepoProvider = new TestLocalRepositoryFactory(config, new FileSystemUtils())
     TestScmmApiClient scmmApiClient = new TestScmmApiClient(config)
     Call<Void>  response201 = TestScmmApiClient.mockSuccessfulResponse(201)
     Call<Void> response409 = scmmApiClient.mockErrorResponse(409)
@@ -97,8 +97,8 @@ class GitRepoTest {
     @Test
     void 'Creates repo without name-prefix when in namespace 3rd-party-deps'() {
         config.application.namePrefix = 'abc-'
-        def repo = createRepo("${GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/foo")
-        assertThat(repo.scmmRepoTarget).isEqualTo("${GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/foo".toString())
+        def repo = createRepo("${LocalRepository.NAMESPACE_3RD_PARTY_DEPENDENCIES}/foo")
+        assertThat(repo.scmmRepoTarget).isEqualTo("${LocalRepository.NAMESPACE_3RD_PARTY_DEPENDENCIES}/foo".toString())
     }
 
     @Test
@@ -248,7 +248,7 @@ class GitRepoTest {
         assertThat(permissionCreateArgument.allValues[0].role).isEqualTo(Permission.Role.WRITE)
     }
     
-    private GitRepo createRepo(String repoTarget = "${expectedNamespace}/${expectedRepo}") {
+    private LocalRepository createRepo(String repoTarget = "${expectedNamespace}/${expectedRepo}") {
         return scmmRepoProvider.getRepo(repoTarget)
     }
 }

@@ -1,12 +1,12 @@
-package com.cloudogu.gitops.gitHandling.gitServerClients.scmmanager
+package com.cloudogu.gitops.gitHandling.providers.scmmanager
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.gitHandling.gitServerClients.GitProvider
-import com.cloudogu.gitops.gitHandling.gitServerClients.GitPushAuth
-import com.cloudogu.gitops.gitHandling.gitServerClients.Permission
-import com.cloudogu.gitops.gitHandling.gitServerClients.ScmUrlResolver
-import com.cloudogu.gitops.gitHandling.gitServerClients.scmmanager.api.Repository
-import com.cloudogu.gitops.gitHandling.gitServerClients.scmmanager.api.ScmmApiClient
+import com.cloudogu.gitops.gitHandling.providers.GitProvider
+import com.cloudogu.gitops.gitHandling.providers.GitPushAuth
+import com.cloudogu.gitops.gitHandling.providers.Permission
+import com.cloudogu.gitops.gitHandling.providers.ScmUrlResolver
+import com.cloudogu.gitops.gitHandling.providers.scmmanager.api.Repository
+import com.cloudogu.gitops.gitHandling.providers.scmmanager.api.ScmmApiClient
 import groovy.util.logging.Slf4j
 import jakarta.inject.Named
 import retrofit2.Response

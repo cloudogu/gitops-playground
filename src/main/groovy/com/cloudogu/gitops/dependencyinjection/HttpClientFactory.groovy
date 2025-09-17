@@ -2,7 +2,7 @@ package com.cloudogu.gitops.dependencyinjection
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.okhttp.RetryInterceptor
-import com.cloudogu.gitops.gitHandling.gitServerClients.scmmanager.api.AuthorizationInterceptor
+import com.cloudogu.gitops.gitHandling.providers.scmmanager.api.AuthorizationInterceptor
 import groovy.transform.TupleConstructor
 import io.micronaut.context.annotation.Factory
 import io.micronaut.context.annotation.Prototype

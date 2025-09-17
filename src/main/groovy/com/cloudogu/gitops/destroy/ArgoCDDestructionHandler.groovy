@@ -1,8 +1,8 @@
 package com.cloudogu.gitops.destroy
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.gitHandling.git.GitRepo
-import com.cloudogu.gitops.gitHandling.git.GitRepoProvider
+import com.cloudogu.gitops.gitHandling.local.LocalRepository
+import com.cloudogu.gitops.gitHandling.local.LocalRepositoryFactory
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.HelmClient
 import com.cloudogu.gitops.utils.K8sClient
@@ -15,7 +15,7 @@ import java.nio.file.Path
 @Order(100)
 class ArgoCDDestructionHandler implements DestructionHandler {
     private K8sClient k8sClient
-    private GitRepoProvider repoProvider
+    private LocalRepositoryFactory repoProvider
     private HelmClient helmClient
     private Config config
     private FileSystemUtils fileSystemUtils
@@ -23,7 +23,7 @@ class ArgoCDDestructionHandler implements DestructionHandler {
     ArgoCDDestructionHandler(
             Config config,
             K8sClient k8sClient,
-            GitRepoProvider repoProvider,
+            LocalRepositoryFactory repoProvider,
             HelmClient helmClient,
             FileSystemUtils fileSystemUtils
     ) {
@@ -85,7 +85,7 @@ class ArgoCDDestructionHandler implements DestructionHandler {
         k8sClient.delete('secret', 'default', 'argocd-repo-creds-scmm')
     }
 
-    void installArgoCDViaHelm(GitRepo repo) {
+    void installArgoCDViaHelm(LocalRepository repo) {
         // this is a hack to be able to uninstall using helm
         def namePrefix = config.application.namePrefix
 

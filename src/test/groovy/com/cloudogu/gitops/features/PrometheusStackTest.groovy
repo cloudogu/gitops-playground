@@ -2,7 +2,7 @@ package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
-import com.cloudogu.gitops.gitHandling.git.GitRepo
+import com.cloudogu.gitops.gitHandling.local.LocalRepository
 import com.cloudogu.gitops.utils.*
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
@@ -601,9 +601,9 @@ matchExpressions:
         // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
 
         def configuration = config
-        def repoProvider = new TestGitRepoProvider(config, new FileSystemUtils()) {
+        def repoProvider = new TestLocalRepositoryFactory(config, new FileSystemUtils()) {
             @Override
-            GitRepo getRepo(String repoTarget) {
+            LocalRepository getRepo(String repoTarget) {
                 def repo = super.getRepo(repoTarget)
                 clusterResourcesRepoDir = new File(repo.getAbsoluteLocalRepoTmpDir())
 
@@ -611,7 +611,7 @@ matchExpressions:
             }
 
             @Override
-            GitRepo getRepo(String repoTarget, Boolean isCentralRepo) {
+            LocalRepository getRepo(String repoTarget, Boolean isCentralRepo) {
                 def repo = super.getRepo(repoTarget, isCentralRepo)
                 clusterResourcesRepoDir = new File(repo.getAbsoluteLocalRepoTmpDir())
 

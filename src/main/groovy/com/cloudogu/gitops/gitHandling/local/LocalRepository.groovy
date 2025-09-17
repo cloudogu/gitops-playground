@@ -1,9 +1,9 @@
-package com.cloudogu.gitops.gitHandling.git
+package com.cloudogu.gitops.gitHandling.local
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.gitHandling.gitServerClients.GitProvider
+import com.cloudogu.gitops.gitHandling.providers.GitProvider
 
-import com.cloudogu.gitops.gitHandling.git.jgit.helpers.InsecureCredentialProvider
+import com.cloudogu.gitops.gitHandling.local.jgit.helpers.InsecureCredentialProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
@@ -15,7 +15,7 @@ import org.eclipse.jgit.transport.RefSpec
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 
 @Slf4j
-class GitRepo {
+class LocalRepository {
 
     static final String NAMESPACE_3RD_PARTY_DEPENDENCIES = '3rd-party-dependencies'
 
@@ -34,7 +34,7 @@ class GitRepo {
     private Git gitMemoization
     private final String absoluteLocalRepoTmpDir
 
-    GitRepo(Config config, GitProvider gitProvider, String scmmRepoTarget, FileSystemUtils fileSystemUtils, Boolean isCentralRepo = false) {
+    LocalRepository(Config config, GitProvider gitProvider, String scmmRepoTarget, FileSystemUtils fileSystemUtils, Boolean isCentralRepo = false) {
         def tmpDir = File.createTempDir()
         tmpDir.deleteOnExit()
         this.absoluteLocalRepoTmpDir = tmpDir.absolutePath

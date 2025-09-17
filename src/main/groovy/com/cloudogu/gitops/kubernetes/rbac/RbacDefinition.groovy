@@ -1,7 +1,7 @@
 package com.cloudogu.gitops.kubernetes.rbac
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.gitHandling.git.GitRepo
+import com.cloudogu.gitops.gitHandling.local.LocalRepository
 import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
 
@@ -15,7 +15,7 @@ class RbacDefinition {
     private String namespace
     private List<ServiceAccountRef> serviceAccounts = []
     private String subfolder = "rbac"
-    private GitRepo repo
+    private LocalRepository repo
     private Config config
 
     private final TemplatingEngine templater = new TemplatingEngine()
@@ -48,7 +48,7 @@ class RbacDefinition {
         return this
     }
 
-    RbacDefinition withRepo(GitRepo repo) {
+    RbacDefinition withRepo(LocalRepository repo) {
         this.repo = repo
         return this
     }

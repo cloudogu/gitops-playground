@@ -1,7 +1,7 @@
 package com.cloudogu.gitops.destroy
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.gitHandling.gitServerClients.scmmanager.api.ScmmApiClient
+import com.cloudogu.gitops.gitHandling.providers.scmmanager.api.ScmmApiClient
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
 

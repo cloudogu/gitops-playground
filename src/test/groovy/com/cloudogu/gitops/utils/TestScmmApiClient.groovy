@@ -1,10 +1,10 @@
 package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.gitHandling.gitServerClients.Permission
-import com.cloudogu.gitops.gitHandling.gitServerClients.scmmanager.api.Repository
-import com.cloudogu.gitops.gitHandling.gitServerClients.scmmanager.api.RepositoryApi
-import com.cloudogu.gitops.gitHandling.gitServerClients.scmmanager.api.ScmmApiClient
+import com.cloudogu.gitops.gitHandling.providers.Permission
+import com.cloudogu.gitops.gitHandling.providers.scmmanager.api.Repository
+import com.cloudogu.gitops.gitHandling.providers.scmmanager.api.RepositoryApi
+import com.cloudogu.gitops.gitHandling.providers.scmmanager.api.ScmmApiClient
 import okhttp3.internal.http.RealResponseBody
 import okio.BufferedSource
 import retrofit2.Call

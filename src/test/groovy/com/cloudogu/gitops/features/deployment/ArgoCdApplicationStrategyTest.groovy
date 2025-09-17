@@ -1,9 +1,9 @@
 package com.cloudogu.gitops.features.deployment
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.gitHandling.git.GitRepo
+import com.cloudogu.gitops.gitHandling.local.LocalRepository
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.TestGitRepoProvider
+import com.cloudogu.gitops.utils.TestLocalRepositoryFactory
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 
@@ -118,9 +118,9 @@ spec:
         )
 
 
-        def repoProvider = new TestGitRepoProvider(config, new FileSystemUtils()) {
+        def repoProvider = new TestLocalRepositoryFactory(config, new FileSystemUtils()) {
             @Override
-            GitRepo getRepo(String repoTarget) {
+            LocalRepository getRepo(String repoTarget) {
                 def repo = super.getRepo(repoTarget)
                 localTempDir = new File(repo.getAbsoluteLocalRepoTmpDir())
 
@@ -128,7 +128,7 @@ spec:
             }
 
             @Override
-            GitRepo getRepo(String repoTarget, Boolean isCentralRepo) {
+            LocalRepository getRepo(String repoTarget, Boolean isCentralRepo) {
                 def repo = super.getRepo(repoTarget, isCentralRepo)
                 localTempDir = new File(repo.getAbsoluteLocalRepoTmpDir())
 

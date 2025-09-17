@@ -1,33 +1,33 @@
 package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.gitHandling.git.GitRepo
-import com.cloudogu.gitops.gitHandling.git.GitRepoProvider
+import com.cloudogu.gitops.gitHandling.local.LocalRepository
+import com.cloudogu.gitops.gitHandling.local.LocalRepositoryFactory
 import org.apache.commons.io.FileUtils
 
 import static org.mockito.Mockito.spy 
 
-class TestGitRepoProvider extends GitRepoProvider {
-    Map<String, GitRepo> repos = [:]
+class TestLocalRepositoryFactory extends LocalRepositoryFactory {
+    Map<String, LocalRepository> repos = [:]
 
-    TestGitRepoProvider(Config config, FileSystemUtils fileSystemUtils) {
+    TestLocalRepositoryFactory(Config config, FileSystemUtils fileSystemUtils) {
         super(config, fileSystemUtils)
     }
     @Override
-    GitRepo getRepo(String repoTarget){
+    LocalRepository getRepo(String repoTarget){
         return getRepo(repoTarget,false)
     }
 
     @Override
-    GitRepo getRepo(String repoTarget, Boolean centralRepo) {
+    LocalRepository getRepo(String repoTarget, Boolean centralRepo) {
         // Check if we already have a mock for this repo
-        GitRepo repo = repos[repoTarget]
+        LocalRepository repo = repos[repoTarget]
         // Check if we already have a mock for this repo
         if (repo != null && repo.isCentralRepo == centralRepo) {
             return repo
         }
 
-        GitRepo repoNew = new GitRepo(config, repoTarget, fileSystemUtils, centralRepo) {
+        LocalRepository repoNew = new LocalRepository(config, repoTarget, fileSystemUtils, centralRepo) {
             String remoteGitRepopUrl = ''
 
             @Override
@@ -46,7 +46,7 @@ class TestGitRepoProvider extends GitRepoProvider {
 
         }
         // Create a spy to enable verification while keeping real behavior
-        GitRepo spyRepo = spy(repoNew)
+        LocalRepository spyRepo = spy(repoNew)
         repos.put(repoTarget, spyRepo)
         return spyRepo
     }

@@ -1,16 +1,16 @@
 package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.gitHandling.git.GitRepo
-import com.cloudogu.gitops.gitHandling.gitServerClients.ScmUrlResolver
+import com.cloudogu.gitops.gitHandling.local.LocalRepository
+import com.cloudogu.gitops.gitHandling.providers.ScmUrlResolver
 import freemarker.template.DefaultObjectWrapperBuilder
 
 class RepoInitializationAction {
-    private GitRepo repo
+    private LocalRepository repo
     private String copyFromDirectory
     private Config config
 
-    RepoInitializationAction(Config config, GitRepo repo, String copyFromDirectory) {
+    RepoInitializationAction(Config config, LocalRepository repo, String copyFromDirectory) {
         this.config = config
         this.repo = repo
         this.copyFromDirectory = copyFromDirectory
@@ -30,7 +30,7 @@ class RepoInitializationAction {
         repo.replaceTemplates(templateModel)
     }
 
-    GitRepo getRepo() {
+    LocalRepository getRepo() {
         return repo
     }
 

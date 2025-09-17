@@ -4,10 +4,10 @@ import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
-import com.cloudogu.gitops.gitHandling.git.GitRepo
-import com.cloudogu.gitops.gitHandling.git.GitRepoProvider
+import com.cloudogu.gitops.gitHandling.local.LocalRepository
+import com.cloudogu.gitops.gitHandling.local.LocalRepositoryFactory
 import com.cloudogu.gitops.utils.*
-import com.cloudogu.gitops.gitHandling.gitServerClients.ScmUrlResolver
+import com.cloudogu.gitops.gitHandling.providers.ScmUrlResolver
 import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
@@ -31,7 +31,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
     Config config
     K8sClient k8sClient
 
-    GitRepoProvider scmmRepoProvider
+    LocalRepositoryFactory scmmRepoProvider
     private FileSystemUtils fileSystemUtils
     private DeploymentStrategy deployer
     private AirGappedUtils airGappedUtils
@@ -42,7 +42,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
             DeploymentStrategy deployer,
             K8sClient k8sClient,
             AirGappedUtils airGappedUtils,
-            GitRepoProvider scmmRepoProvider
+            LocalRepositoryFactory scmmRepoProvider
     ) {
         this.deployer = deployer
         this.config = config
@@ -99,7 +99,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
         }
 
         if (config.application.namespaceIsolation || config.application.netpols) {
-            GitRepo clusterResourcesRepo = scmmRepoProvider.getRepo('argocd/cluster-resources', config.multiTenant.useDedicatedInstance)
+            LocalRepository clusterResourcesRepo = scmmRepoProvider.getRepo('argocd/cluster-resources', config.multiTenant.useDedicatedInstance)
             clusterResourcesRepo.cloneRepo()
             for (String currentNamespace : config.application.namespaces.activeNamespaces) {
 

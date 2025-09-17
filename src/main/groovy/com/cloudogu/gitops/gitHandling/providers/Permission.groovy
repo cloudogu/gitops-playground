@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.gitHandling.gitServerClients
+package com.cloudogu.gitops.gitHandling.providers
 
 class Permission {
     final String name

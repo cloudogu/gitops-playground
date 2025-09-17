@@ -1,8 +1,8 @@
-package com.cloudogu.gitops.gitHandling.gitServerClients
+package com.cloudogu.gitops.gitHandling.providers
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.gitHandling.gitServerClients.scmmanager.ScmManagerProvider
-import com.cloudogu.gitops.gitHandling.gitServerClients.scmmanager.api.ScmmApiClient
+import com.cloudogu.gitops.gitHandling.providers.scmmanager.ScmManagerProvider
+import com.cloudogu.gitops.gitHandling.providers.scmmanager.api.ScmmApiClient
 
 //TODO as enum
 
