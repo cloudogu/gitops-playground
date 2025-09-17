@@ -92,15 +92,15 @@ class ArgoCD extends Feature {
             def petclinicInitAction = createRepoInitializationAction('applications/argocd/petclinic/plain-k8s', 'argocd/petclinic-plain')
             petClinicInitializationActions += petclinicInitAction
             gitRepos += petclinicInitAction
-    
+
             petclinicInitAction = createRepoInitializationAction('applications/argocd/petclinic/helm', 'argocd/petclinic-helm')
             petClinicInitializationActions += petclinicInitAction
             gitRepos += petclinicInitAction
-    
+
             petclinicInitAction = createRepoInitializationAction('exercises/petclinic-helm', 'exercises/petclinic-helm')
             petClinicInitializationActions += petclinicInitAction
             gitRepos += petclinicInitAction
-        
+
             cloneRemotePetclinicRepo()
         }
 
@@ -208,15 +208,16 @@ class ArgoCD extends Feature {
             FileSystemUtils.deleteFile clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + MONITORING_RESOURCES_PATH + 'ingress-nginx-dashboard-requests-handling.yaml'
         }
 
-        if (!config.scm.internal) {
-            String externalScmmUrl = ScmRepo.createScmmUrl(config)
-            log.debug("Configuring all yaml files in gitops repos to use the external scmm url: ${externalScmmUrl}")
-            replaceFileContentInYamls(new File(clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()), scmmUrlInternal, externalScmmUrl)
+        //TODO do we need this? Or just pass the correct URL directly?
+        /*if (!config.scm.isInternal) {
+            String externalScmUrl = ScmmRepo.createScmmUrl(config)
+            log.debug("Configuring all yaml files in gitops repos to use the external scm url: ${externalScmUrl}")
+            replaceFileContentInYamls(new File(clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()), scmmUrlInternal, externalScmUrl)
 
             if (config.content.examples) {
-                replaceFileContentInYamls(new File(exampleAppsInitializationAction.repo.getAbsoluteLocalRepoTmpDir()), scmmUrlInternal, externalScmmUrl)
+                replaceFileContentInYamls(new File(exampleAppsInitializationAction.repo.getAbsoluteLocalRepoTmpDir()), scmmUrlInternal, externalScmUrl)
             }
-        }
+        } */
 
         if (config.content.examples) {
             fileSystemUtils.copyDirectory("${fileSystemUtils.rootDir}/applications/argocd/nginx/helm-umbrella",
@@ -446,11 +447,13 @@ class ArgoCD extends Feature {
             FileSystemUtils.deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/operator'
         }
 
+        /* TODO
         if (!config.scmm.internal) {
             String externalScmmUrl = ScmUrlResolver.externalHost(config)
             log.debug("Configuring all yaml files in argocd repo to use the external scmm url: ${externalScmmUrl}")
             replaceFileContentInYamls(new File(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()), scmmUrlInternal, externalScmmUrl)
         }
+        */
 
         if (!config.application.netpols) {
             log.debug("Deleting argocd netpols.")
@@ -469,6 +472,9 @@ class ArgoCD extends Feature {
         new RepoInitializationAction(config, repoProvider.getRepo(scmRepoTarget), localSrcDir)
     }
 
+    protected RepoInitializationAction createRepoInitializationAction(String localSrcDir, String scmRepoTarget, Boolean isCentral) {
+        new RepoInitializationAction(config, repoProvider.getRepo(scmRepoTarget), localSrcDir)
+    }
 
     private void replaceFileContentInYamls(File folder, String from, String to) {
         fileSystemUtils.getAllFilesFromDirectoryWithEnding(folder.absolutePath, ".yaml").forEach(file -> {

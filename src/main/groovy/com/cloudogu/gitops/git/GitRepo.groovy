@@ -30,7 +30,7 @@ class GitRepo {
         def tmpDir = File.createTempDir()
         tmpDir.deleteOnExit()
         this.config = config
-        this.scm = scm
+        this.gitProvider = scm
         this.scmRepoTarget = scmRepoTarget
         this.fileSystemUtils = fileSystemUtils
 
