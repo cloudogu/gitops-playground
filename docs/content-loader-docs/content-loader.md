@@ -33,9 +33,9 @@ It also applies to end-user applications, for example, replacing the example Pet
 
 - The content deployed by GOP can be completely defined via configuration.
 - The content is defined in Git repositories, known as content repos.
-- There are different types of content repos: `MIRROR`, `COPY`, and `FOLDER_BASED` ([see below](#different-types-of-content-repos)).
-- For these types of Content Repos, the `overrideMode` determines how to handle previously existing files in the repo: `INIT`, `UPGRADE`, `RESET` ([see below](#the-overridemode))
-- Templating with [Freemarker](https://freemarker.apache.org/) is available in the content files ([see below](#templating)).
+- There are different types of content repos: `MIRROR`, `COPY`, and `FOLDER_BASED` ([see different types of content repos below](#different-types-of-content-repos)).
+- For these types of Content Repos, the `overrideMode` determines how to handle previously existing files in the repo: `INIT`, `UPGRADE`, `RESET` ([see overrideMode below](#the-overridemode))
+- Templating with [Freemarker](https://freemarker.apache.org/) is available in the content files ([see templating below](#templating)).
 - Multiple content repos can be specified in the `content.repos` field.
   - See the [sample configuration file](content-loader-config.yaml).
 - These are merged by the GOP in the defined order in a directory structure.
@@ -63,7 +63,7 @@ It also applies to end-user applications, for example, replacing the example Pet
 ## Different Types of Content Repos
 
 There are different types of content repos: `MIRROR`, `COPY`, and `FOLDER_BASED`.
-- `MIRROR` (default): The entire content repo is mirrored to the target repo if it does not yet exist (see overrideMode).
+- `MIRROR` (default): The entire content repo is mirrored to the target repo if it does not yet exist ([see overrideMode below](#the-overridemode).
 - `COPY`: Only the files (no Git history) are copied to the target repository and committed.
 - `FOLDER_BASED`: Using the folder structure in the content repository, multiple repositories can be created and initialized or expanded in the target.
 
@@ -74,7 +74,7 @@ There are different types of content repos: `MIRROR`, `COPY`, and `FOLDER_BASED`
   Default:
   - `COPY` / `FOLDER_BASED`: Default branch of Repo.
   - `MIRROR`: All branches und tags of Repo
-- `overrideMode` (`INIT`, `UPGRADE`, `RESET`) defines how to handle pre-existing files in the repository ([see below](#the-overridemode)).
+- `overrideMode` (`INIT`, `UPGRADE`, `RESET`) defines how to handle pre-existing files in the repository ([see overrideMode below](#the-overridemode)).
 - `username`
 - `password`
 - `createJenkinsJob` - If `true` and Jenkins is active in GOP, and there is a `Jenkinsfile` in one of the content repositories or the specified `refs`, a Jenkins job is created for the associated SCM Manager namespace.
@@ -108,7 +108,7 @@ Only the files (no Git history) are copied and committed to the target repo.
   - Exception:` targetRef` is a complete `ref `such as `refs/heads/my-branch` or `refs/tags/my-tag`. 
   - If` targetRef` is empty, the source `ref `is used by default.
 - `path `- Folder within the content repo from which to copy
-- `templating `- If `true`, all `.ftl` files are rendered by [Freemarker](https://freemarker.apache.org/) before being pushed to the target ([see below](#templating)).
+- `templating `- If `true`, all `.ftl` files are rendered by [Freemarker](https://freemarker.apache.org/) before being pushed to the target ([see templating below](#templating)).
 
 
 #### `FOLDER_BASED`
@@ -124,7 +124,7 @@ This allows, for example, additional Argo CD applications to be added and even y
 
 - `target` (required)
 - `path` - source folder in the content repository used for copying<
-- `templating` - If `true`, all `.ftl` files are rendered by [Freemarker](https://freemarker.apache.org/) before being pushed to the target ([see below](#templating)).
+- `templating` - If `true`, all `.ftl` files are rendered by [Freemarker](https://freemarker.apache.org/) before being pushed to the target ([see templating below](#templating)).
 
 # The overrideMode
 
