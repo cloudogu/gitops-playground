@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.git.scmm
+package com.cloudogu.gitops.git.providers.scmmanager
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
@@ -6,7 +6,7 @@ import com.cloudogu.gitops.git.local.GitRepo
 import com.cloudogu.gitops.git.GitProvider
 import com.cloudogu.gitops.features.git.config.util.ScmmConfig
 import com.cloudogu.gitops.features.deployment.HelmStrategy
-import com.cloudogu.gitops.git.scmm.api.ScmmApiClient
+import com.cloudogu.gitops.git.providers.scmmanager.api.ScmmApiClient
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j

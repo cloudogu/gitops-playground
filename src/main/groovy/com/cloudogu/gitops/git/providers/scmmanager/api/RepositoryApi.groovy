@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.git.scmm.api
+package com.cloudogu.gitops.git.providers.scmmanager.api
 
 import okhttp3.ResponseBody
 import retrofit2.Call

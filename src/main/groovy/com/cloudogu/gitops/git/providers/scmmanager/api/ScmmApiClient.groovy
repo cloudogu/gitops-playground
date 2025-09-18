@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.git.scmm.api
+package com.cloudogu.gitops.git.providers.scmmanager.api
 
 import com.cloudogu.gitops.config.Config
 import jakarta.inject.Named

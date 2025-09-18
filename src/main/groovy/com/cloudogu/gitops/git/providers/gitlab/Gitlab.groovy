@@ -1,11 +1,11 @@
-package com.cloudogu.gitops.git.gitlab
+package com.cloudogu.gitops.git.providers.gitlab
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.features.git.config.util.GitlabConfig
 import com.cloudogu.gitops.git.GitProvider
 import com.cloudogu.gitops.git.local.GitRepo
-import com.cloudogu.gitops.git.scmm.jgit.InsecureCredentialProvider
+import com.cloudogu.gitops.git.local.jgit.helpers.InsecureCredentialProvider
 import groovy.util.logging.Slf4j
 import org.eclipse.jgit.transport.ChainingCredentialsProvider
 import org.eclipse.jgit.transport.CredentialsProvider

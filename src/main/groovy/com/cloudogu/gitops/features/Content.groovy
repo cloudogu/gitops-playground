@@ -6,7 +6,7 @@ import com.cloudogu.gitops.config.Config.OverwriteMode
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.local.GitRepo
 import com.cloudogu.gitops.git.local.ScmRepoProvider
-import com.cloudogu.gitops.git.scmm.api.ScmmApiClient
+import com.cloudogu.gitops.git.providers.scmmanager.api.ScmmApiClient
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.TemplatingEngine

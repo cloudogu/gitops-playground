@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.git.scmm.jgit
+package com.cloudogu.gitops.git.local.jgit.helpers
 
 import org.eclipse.jgit.errors.UnsupportedCredentialItem
 import org.eclipse.jgit.transport.CredentialItem
