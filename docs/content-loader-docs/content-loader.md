@@ -191,7 +191,7 @@ For example, to create a `Dockerfile` and `Jenkinsfile` and then create a Jenkin
       createJenkinsJob: true
     - url: 'https://example.com/scm/repo/gop/content'
       username: 'abc'
-      password: 'ey...' # zB API Token von SCM-Manager
+      password: 'ey...' # e.g., API token from SCM-Manager
       templating: true
       type: FOLDER_BASED
       overrideMode: UPGRADE
