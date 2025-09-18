@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.scmm
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.features.git.config.util.ScmProviderType
 
 class ScmUrlResolver {
     /**
@@ -12,13 +13,13 @@ class ScmUrlResolver {
      *   template logic.
      */
     static String tenantBaseUrl(Config config) {
-        switch (config.scmm.provider) {
-            case "scm-manager":
+        switch (config.scm.scmProviderType) {
+            case ScmProviderType.SCM_MANAGER:
                 // scmmBaseUri ends with /scm/
                 return scmmBaseUri(config).resolve("${config.scmm.rootPath}/${config.application.namePrefix}").toString()
-            case "gitlab":
+            case ScmProviderType.GITLAB:
                 // for GitLab, do not append /scm/
-                return externalHost(config).resolve("${config.application.namePrefix}${config.scmm.rootPath}").toString()
+                return externalHost(config).resolve("${config.application.namePrefix}${config.scm.rootPath}").toString()
             default:
                 throw new IllegalArgumentException("Unknown SCM provider: ${config.scmm.provider}")
         }
@@ -63,11 +64,11 @@ class ScmUrlResolver {
      *  - IllegalArgumentException if external mode is selected (config.scmm.internal = false) but config.scmm.url is empty.
      */
     static URI scmmBaseUri(Config config) {
-        if (config.scmm.internal) {
+        if (config.scm.isInternal) {
             return new URI("http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm/")
         }
 
-        def urlString = config.scmm?.url?.strip() ?: ""
+        def urlString = config.scm?.url?.strip() ?: ""
         if (!urlString) {
             throw new IllegalArgumentException("config.scmm.url must be set when config.scmm.internal = false")
         }

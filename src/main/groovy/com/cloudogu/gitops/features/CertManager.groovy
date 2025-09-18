@@ -4,6 +4,7 @@ import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
+import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.scmm.ScmUrlResolver
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -30,19 +31,22 @@ class CertManager extends Feature implements FeatureWithImage {
     final K8sClient k8sClient
     final Config config
     final String namespace = "${config.application.namePrefix}cert-manager"
+    GitHandler gitHandler
 
     CertManager(
             Config config,
             FileSystemUtils fileSystemUtils,
             DeploymentStrategy deployer,
             K8sClient k8sClient,
-            AirGappedUtils airGappedUtils
+            AirGappedUtils airGappedUtils,
+            GitHandler gitHandler
     ) {
         this.deployer = deployer
         this.config = config
         this.fileSystemUtils = fileSystemUtils
         this.k8sClient = k8sClient
         this.airGappedUtils = airGappedUtils
+        this.gitHandler = gitHandler
     }
 
     @Override
@@ -61,7 +65,6 @@ class CertManager extends Feature implements FeatureWithImage {
                                 .getStaticModels(),
                 ]) as Map
 
-
         def valuesFromConfig = config.features.certManager.helm.values
 
         def mergedMap = MapUtils.deepMerge(valuesFromConfig, templatedMap)
@@ -79,7 +82,7 @@ class CertManager extends Feature implements FeatureWithImage {
                             'Chart.yaml'))['version']
 
             deployer.deployFeature(
-                    ScmUrlResolver.scmmRepoUrl(config, repoNamespaceAndName),
+                    gitHandler.getResourcesScm().url+"${repoNamespaceAndName}",
                     'cert-manager',
                     '.',
                     certManagerVersion,

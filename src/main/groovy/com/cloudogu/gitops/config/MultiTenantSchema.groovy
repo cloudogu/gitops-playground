@@ -16,8 +16,6 @@ class MultiTenantSchema {
 
     ScmCentralSchema.ScmmCentralConfig scmmConfig
 
-    Boolean isInternal = false
-
     @Option(names = ['--central-argocd-namespace'], description = CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
     @JsonPropertyDescription(CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
     String centralArgocdNamespace = 'argocd'
@@ -31,7 +29,7 @@ class MultiTenantSchema {
             return scmmConfig.internal
     }
 
+    @Option(names = ['--central-scm-namespace'], description = 'Namespace where the central scm resides in')
+    @JsonPropertyDescription(CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
     String centralSCMamespace = 'scm-manager'
-
-
 }

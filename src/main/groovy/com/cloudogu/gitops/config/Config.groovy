@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.config
 
 import com.cloudogu.gitops.features.git.config.ScmTenantSchema
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.databind.*

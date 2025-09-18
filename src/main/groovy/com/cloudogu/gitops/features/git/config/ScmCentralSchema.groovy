@@ -46,8 +46,8 @@ class ScmCentralSchema {
         @JsonPropertyDescription(SCMM_PASSWORD_DESCRIPTION)
         String parentGroupId = ''
 
-        Credentials getCredentials(){
-            return new Credentials(username,password)
+        Credentials getCredentials() {
+            return new Credentials(username, password)
         }
 
     }
@@ -74,8 +74,8 @@ class ScmCentralSchema {
         @JsonPropertyDescription(CENTRAL_SCMM_PASSWORD_DESCRIPTION)
         String rootPath
 
-        Credentials getCredentials(){
-            return new Credentials(username,password)
+        Credentials getCredentials() {
+            return new Credentials(username, password)
         }
 
     }

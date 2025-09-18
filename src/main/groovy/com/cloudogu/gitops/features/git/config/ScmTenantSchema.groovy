@@ -9,13 +9,8 @@ import com.cloudogu.gitops.utils.NetworkingUtils
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import picocli.CommandLine.Option
-import static com.cloudogu.gitops.config.ConfigConstants.HELM_CONFIG_DESCRIPTION
-import static com.cloudogu.gitops.config.ConfigConstants.SCMM_PASSWORD_DESCRIPTION
-import static com.cloudogu.gitops.config.ConfigConstants.SCMM_SKIP_PLUGINS_DESCRIPTION
-import static com.cloudogu.gitops.config.ConfigConstants.SCMM_SKIP_RESTART_DESCRIPTION
-import static com.cloudogu.gitops.config.ConfigConstants.SCMM_URL_DESCRIPTION
-import static com.cloudogu.gitops.config.ConfigConstants.SCMM_USERNAME_DESCRIPTION
-import static com.cloudogu.gitops.config.ConfigConstants.SCM_ROOT_PATH_DESCRIPTION
+
+import static com.cloudogu.gitops.config.ConfigConstants.*
 
 class ScmTenantSchema {
 
@@ -30,7 +25,7 @@ class ScmTenantSchema {
         return (gitlabConfig.internal || scmmConfig.internal)
     }
 
-    static class GitlabTenantConfig implements GitlabConfig{
+    static class GitlabTenantConfig implements GitlabConfig {
         // Only supports external Gitlab for now
         Boolean internal = false
 
@@ -50,8 +45,8 @@ class ScmTenantSchema {
         @JsonPropertyDescription(SCMM_PASSWORD_DESCRIPTION)
         String parentProjectid = ''
 
-        Credentials getCredentials(){
-            return new Credentials(username,password)
+        Credentials getCredentials() {
+            return new Credentials(username, password)
         }
     }
 
@@ -97,8 +92,11 @@ class ScmTenantSchema {
 
         String urlForJenkins = ''
 
-        @JsonIgnore String getHost() { return NetworkingUtils.getHost(url)}
-        @JsonIgnore String getProtocol() { return NetworkingUtils.getProtocol(url)}
+        @JsonIgnore
+        String getHost() { return NetworkingUtils.getHost(url) }
+
+        @JsonIgnore
+        String getProtocol() { return NetworkingUtils.getProtocol(url) }
         String ingress = ''
 
         @Option(names = ['--scmm-skip-restart'], description = SCMM_SKIP_RESTART_DESCRIPTION)
@@ -109,8 +107,8 @@ class ScmTenantSchema {
         @JsonPropertyDescription(SCMM_SKIP_PLUGINS_DESCRIPTION)
         Boolean skipPlugins = false
 
-        Credentials getCredentials(){
-            return new Credentials(username,password)
+        Credentials getCredentials() {
+            return new Credentials(username, password)
         }
     }
 }

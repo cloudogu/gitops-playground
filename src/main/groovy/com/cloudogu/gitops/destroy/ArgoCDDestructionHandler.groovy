@@ -2,7 +2,7 @@ package com.cloudogu.gitops.destroy
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.git.GitRepo
-import com.cloudogu.gitops.git.scmm.ScmRepoProvider
+import com.cloudogu.gitops.git.ScmRepoProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.HelmClient
 import com.cloudogu.gitops.utils.K8sClient

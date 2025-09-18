@@ -3,14 +3,10 @@ package com.cloudogu.gitops.features.argocd
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.git.GitHandler
-import com.cloudogu.gitops.git.scmm.ScmRepoProvider
+import com.cloudogu.gitops.git.ScmRepoProvider
+import com.cloudogu.gitops.kubernetes.argocd.ArgoApplication
 import com.cloudogu.gitops.kubernetes.rbac.RbacDefinition
 import com.cloudogu.gitops.kubernetes.rbac.Role
-import com.cloudogu.gitops.scm.ISCM
-import com.cloudogu.gitops.scmm.ScmRepoProvider
-import com.cloudogu.gitops.scmm.ScmmRepo
-import com.cloudogu.gitops.scmm.ScmUrlResolver
-import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.HelmClient
 import com.cloudogu.gitops.utils.K8sClient
@@ -56,7 +52,7 @@ class ArgoCD extends Feature {
     protected FileSystemUtils fileSystemUtils
     private ScmRepoProvider repoProvider
 
-    GitHandler scmProvider
+    GitHandler gitHandler
 
     ArgoCD(
             Config config,
@@ -64,14 +60,14 @@ class ArgoCD extends Feature {
             HelmClient helmClient,
             FileSystemUtils fileSystemUtils,
             ScmRepoProvider repoProvider,
-            GitHandler scmProvider
+            GitHandler gitHandler
     ) {
         this.repoProvider = repoProvider
         this.config = config
         this.k8sClient = k8sClient
         this.helmClient = helmClient
         this.fileSystemUtils = fileSystemUtils
-        this.scmProvider = scmProvider
+        this.gitHandler = gitHandler
         this.password = this.config.application.password
     }
 
@@ -228,11 +224,11 @@ class ArgoCD extends Feature {
             if (config.multiTenant.useDedicatedInstance) {
                 new ArgoApplication(
                         'example-apps',
-                        ScmUrlResolver.tenantBaseUrl(config)+'argocd/example-apps',
+                        gitHandler.tenant.url+'argocd/example-apps',
                         namespace,
                         namespace,
                         'argocd/',
-                        config.application.getTenantName())
+                        config.application.tenantName)
                         .generate(tenantBootstrapInitializationAction.repo, 'applications')
             }
         }
@@ -406,11 +402,11 @@ class ArgoCD extends Feature {
         // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo
         def repoTemplateSecretName = 'argocd-repo-creds-scmm'
 
-        String scmmUrlForArgoCD = config.scmm.internal ? scmmUrlInternal : ScmUrlResolver.externalHost(config)
+
         k8sClient.createSecret('generic', repoTemplateSecretName, namespace,
-                new Tuple2('url', this.scmProvider.tenant.url),
-                new Tuple2('username', this.scmProvider.tenant.credentials.username),
-                new Tuple2('password', this.scmProvider.tenant.credentials.password)
+                new Tuple2('url', this.gitHandler.tenant.url), //TODO URL Check
+                new Tuple2('username', this.gitHandler.tenant.credentials.username),
+                new Tuple2('password', this.gitHandler.tenant.credentials.password)
         )
 
         k8sClient.label('secret', repoTemplateSecretName, namespace,
@@ -422,9 +418,9 @@ class ArgoCD extends Feature {
             def centralRepoTemplateSecretName = 'argocd-repo-creds-central-scmm'
 
             k8sClient.createSecret('generic', centralRepoTemplateSecretName, config.multiTenant.centralArgocdNamespace,
-                    new Tuple2('url', this.scmProvider.central.url),
-                    new Tuple2('username', this.scmProvider.central.credentials.username),
-                    new Tuple2('password', this.scmProvider.central.credentials.password)
+                    new Tuple2('url', this.gitHandler.central.url), //TODO URL Check
+                    new Tuple2('username', this.gitHandler.central.credentials.username),
+                    new Tuple2('password', this.gitHandler.central.credentials.password)
             )
 
             k8sClient.label('secret', centralRepoTemplateSecretName, config.multiTenant.centralArgocdNamespace,
@@ -447,7 +443,7 @@ class ArgoCD extends Feature {
             FileSystemUtils.deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/operator'
         }
 
-        /* TODO
+        /* TODO do we need this?
         if (!config.scmm.internal) {
             String externalScmmUrl = ScmUrlResolver.externalHost(config)
             log.debug("Configuring all yaml files in argocd repo to use the external scmm url: ${externalScmmUrl}")
