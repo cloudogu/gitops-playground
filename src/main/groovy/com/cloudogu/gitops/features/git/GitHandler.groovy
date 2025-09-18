@@ -46,6 +46,11 @@ class GitHandler extends Feature {
 
     }
 
+
+    GitProvider getResourcesScm() {
+        central ?: tenant ?: { throw new IllegalStateException("No SCM provider found.") }()
+    }
+
     void init() {
         validate()
 

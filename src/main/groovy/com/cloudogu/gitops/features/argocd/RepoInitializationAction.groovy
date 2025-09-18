@@ -2,9 +2,7 @@ package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.git.GitRepo
-import com.cloudogu.gitops.utils.DockerImageParser
 import com.cloudogu.gitops.scmm.ScmUrlResolver
-import com.cloudogu.gitops.scmm.ScmmRepo
 import freemarker.template.DefaultObjectWrapperBuilder
 
 class RepoInitializationAction {
@@ -32,20 +30,21 @@ class RepoInitializationAction {
         repo.replaceTemplates(templateModel)
     }
 
-    ScmmRepo getRepo() {
+    GitRepo getRepo() {
         return repo
     }
 
     private static Map<String, Object> buildTemplateValues(Config config){
         def model = [
-                tenantName: tenantName(config.application.namePrefix),
-                argocd    : [host: config.features.argocd.url ? new URL(config.features.argocd.url).host : ""],
+                tenantName: config.application.tenantName,
+                argocd    : [host: config.features.argocd.url ? new URL(config.features.argocd.url).host : ""], //TODO move this to argocd class and get the url from there
                 scmm      : [
-                        baseUrl       : config.scmm.internal ? "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm" : ScmUrlResolver.externalHost(config),
-                        host          : config.scmm.internal ? "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local" : config.scmm.host,
-                        protocol      : config.scmm.internal ? 'http' : config.scmm.protocol,
+                        baseUrl       : config.scm.isInternal ? "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm" : ScmUrlResolver.externalHost(config),
+                        host          : config.scm.getUrl ? "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local" : config.scm.host,
+                        protocol      : config.scm.isInternal ? 'http' : config.scm.protocol,
                         repoUrl       : ScmUrlResolver.tenantBaseUrl(config),
-                        centralScmmUrl: !config.multiTenant.internal ? config.multiTenant.centralScmUrl : "http://scmm.scm-manager.svc.cluster.local/scm"
+                        //TODO centralScmmURL from config.multiTenant
+                        //centralScmmUrl: !config.multiTenant.internal ? config.multiTenant.get : "http://scmm.scm-manager.svc.cluster.local/scm"
                 ],
                 config    : config,
                 // Allow for using static classes inside the templates
@@ -55,12 +54,4 @@ class RepoInitializationAction {
         return model
     }
 
-    GitRepo getRepo() {
-        return repo
-    }
-
-    private static String tenantName(String namePrefix) {
-        if (!namePrefix) return ""
-        return namePrefix.replaceAll(/-$/, "")
-    }
 }
