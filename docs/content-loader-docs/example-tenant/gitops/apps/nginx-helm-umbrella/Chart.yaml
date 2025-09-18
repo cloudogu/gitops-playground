@@ -1,0 +1,7 @@
+apiVersion: v2
+version: 13.2.21
+name: nginx
+dependencies:
+  - name: nginx
+    version: 13.2.21
+    repository: https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami
