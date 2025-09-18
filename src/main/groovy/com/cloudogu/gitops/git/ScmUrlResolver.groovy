@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.scmm
+package com.cloudogu.gitops.git
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.git.config.util.ScmProviderType

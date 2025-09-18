@@ -5,13 +5,13 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.features.git.config.util.ScmProviderType
 import com.cloudogu.gitops.git.GitProvider
-import com.cloudogu.gitops.git.gitlab.Gitlab
-import com.cloudogu.gitops.git.scmm.ScmManager
+import com.cloudogu.gitops.git.providers.gitlab.Gitlab
+import com.cloudogu.gitops.git.providers.scmmanager.ScmManager
 import com.cloudogu.gitops.utils.FileSystemUtils
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
-import com.cloudogu.gitops.git.scmm.api.ScmmApiClient
+import com.cloudogu.gitops.git.providers.scmmanager.api.ScmmApiClient
 
 @Slf4j
 @Singleton

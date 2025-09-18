@@ -5,7 +5,7 @@ import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Config
 
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
-import com.cloudogu.gitops.scmm.ScmUrlResolver
+import com.cloudogu.gitops.git.ScmUrlResolver
 import com.cloudogu.gitops.utils.*
 import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j

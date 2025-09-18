@@ -14,7 +14,7 @@ import com.cloudogu.gitops.features.deployment.Deployer
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.local.ScmRepoProvider
-import com.cloudogu.gitops.git.scmm.api.ScmmApiClient
+import com.cloudogu.gitops.git.providers.scmmanager.api.ScmmApiClient
 import com.cloudogu.gitops.jenkins.*
 import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j

@@ -3,7 +3,7 @@ package com.cloudogu.gitops.utils
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.git.local.GitRepo
 import com.cloudogu.gitops.git.local.ScmRepoProvider
-import com.cloudogu.gitops.git.scmm.api.ScmmApiClient
+import com.cloudogu.gitops.git.providers.scmmanager.api.ScmmApiClient
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 import jakarta.inject.Singleton
