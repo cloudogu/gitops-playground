@@ -96,72 +96,55 @@ If the source repo has a default branch != `main`, it is not applied.
   - If `targetRef` is empty, the source ref is used by default.
 
 
-#### COPY
+#### `COPY`
 
 Only the files (no Git history) are copied and committed to the target repo.
 
-```
 **Properties**
 
 - `target` (required) Target repo, e.g. `namespace/name`
-
 - `targetRef` - Git reference in `target` to which is pushed (branch or tag). \
-If ref is a tag, targetRef is also treated as a tag. \
-Exception:` targetRef` is a complete `ref `such as `refs/heads/my-branch` or `refs/tags/my-tag`. \
-If` targetRef` is empty, the source `ref `is used by default.
-
+  - If ref is a tag, targetRef is also treated as a tag. \
+  - Exception:` targetRef` is a complete `ref `such as `refs/heads/my-branch` or `refs/tags/my-tag`. \
+  - If` targetRef` is empty, the source `ref `is used by default.
 - `path `- Folder within the content repo from which to copy
+- `templating `- If `true`, all `.ftl` files are rendered by [Freemarker](https://freemarker.apache.org/) before being pushed to the target ([see below](# Templating)).
 
-- `templating `- If `true`, all` .ftl` files are rendered by Freemarker before being pushed to the target ([see below](https://ecosystem.cloudogu.com/scm/repo/gop/content/code/sources/main/#templating)).
 
+#### `FOLDER_BASED`
+- Using the folder structure in the content repository, multiple repositories can be created in the target and initialized or expanded using `COPY`.
+- Specifically: The top two directory levels of the repository determine the target repositories in the GOP.
+- Example: The contents of the `example-tenant/petclinic-plain` folder are pushed to the `gitops` repository in the `example-tenant` namespace.
 
-#### ```
-[FOLDER_BASED](https://ecosystem.cloudogu.com/scm/repo/gop/content/code/sources/main/#folder_based)
-
-Using the folder structure in the content repository, multiple repositories can be created in the target and initialized or expanded using `COPY`.
-
-```
-Specifically: The top two directory levels of the repository determine the target repositories in the GOP.
-
-Example: The contents of the `example-tenant/petclinic-plain` folder are pushed to the `gitops` repository in the `example-tenant` namespace.
-
-![Enter image alt description](Images/8Mc_Image_1.png)
+![content-hook-folderbased.png](Images/8Mc_Image_1.png)
 
 This allows, for example, additional Argo CD applications to be added and even your own tenants to be deployed.
 
 **Properties**
 
 - `target` (required)
-
-- `path` - source folder in the content repository used for copying
-
-- `templating` - If `true`, all `.ftl` files are rendered by Freemarker before being pushed to the target ([see below](https://ecosystem.cloudogu.com/scm/repo/gop/content/code/sources/main/#templating)).
+- `path` - source folder in the content repository used for copying<
+- `templating` - If `true`, all `.ftl` files are rendered by [Freemarker](https://freemarker.apache.org/) before being pushed to the target ([see below](# Templating)).
 
 # The overrideMode
 
 For these types of Content Repos, the `overrideMode` determines how to handle previously existing files in the repo: `INIT`, `UPGRADE`, `RESET`.
-
 - `INIT` (default): Only push if the repository does not exist
-
 - `UPGRADE`: Delete all files after cloning the source – files that are not in the content will be deleted.
+- `RESET`: Clone and copy – existing files are overwritten, files that are not in the content are retained. \
 
-- `RESET`: Clone and copy – existing files are overwritten, files that are not in the content are retained.
+**Note** \
+With `MIRROR`, `RESET` does not reset the entire repository. Specific effect: Branches that exist in the target but not in the source are retained.
 
-Note: With `MIRROR`, `RESET` does not reset the entire repository. Specific effect: Branches that exist in the target but not in the source are retained.
-
-Important: If existing repositories of the GOP are to be extended, e.g., `cluster-resources`, the `overrideMode` must be set to `UPGRADE`.
+**Important** \
+If existing repositories of the GOP are to be extended, e.g., `cluster-resources`, the `overrideMode` must be set to `UPGRADE`.
 
 # Templating
-
-When `templating `is enabled, all files ending in `.ftl` are rendered using Freemarker during GOP installation and the result is created under the same name without the `.ftl` extension.
-
+When `templating `is enabled, all files ending in `.ftl` are rendered using [Freemarker](https://freemarker.apache.org/) during GOP installation and the result is created under the same name without the `.ftl` extension.
 The entire configuration of the GOP is available as` config` in the templates.
-
 In addition, the people who write the content have the option of defining their own variables (`content.variables`).
-
 This makes it possible to write parameterizable content that can be used for many instances.
-
-In Freemarker, you can use static methods from GOP and JDK. An [example from the GOP code](https://github.com/cloudogu/gitops-playground/blob/0.11.0/applications/cluster-resources/monitoring/prometheus-stack-helm-values.ftl.yaml#L111):
+In [Freemarker](https://freemarker.apache.org/), you can use static methods from GOP and JDK. An [example from the GOP code](https://github.com/cloudogu/gitops-playground/blob/0.11.0/applications/cluster-resources/monitoring/prometheus-stack-helm-values.ftl.yaml#L111):
 
 BLANK_LINE_FOUND_IN_GOOGLE_DOCS_2MD_PRO`<#assign`` ``DockerImageParser=statics['com.cloudogu.gitops.utils.DockerImageParser']>`
 BLANK_LINE_FOUND_IN_GOOGLE_DOCS_2MD_PRO...BLANK_LINE_FOUND_IN_GOOGLE_DOCS_2MD_PRO` ``<#if`` ``config.features.monitoring.helm.prometheusOperatorImage?has_content>`
