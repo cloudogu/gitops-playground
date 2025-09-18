@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.git
+package com.cloudogu.gitops.git.local
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.utils.FileSystemUtils

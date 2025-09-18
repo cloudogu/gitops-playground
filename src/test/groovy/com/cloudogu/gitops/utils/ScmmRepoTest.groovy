@@ -1,9 +1,8 @@
 package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.config.MultiTenantSchema
 import com.cloudogu.gitops.features.git.config.ScmCentralSchema
-import com.cloudogu.gitops.git.GitRepo
+import com.cloudogu.gitops.git.local.GitRepo
 import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.scmm.api.Permission
 import com.cloudogu.gitops.scmm.api.Repository
