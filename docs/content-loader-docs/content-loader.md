@@ -4,8 +4,8 @@ This documentation shows the Content Loader feature and its usage. The Content L
 
 Example for a GOP (GitOps Playground) content repository:
 
-- Sample [configuration file](https://ecosystem.cloudogu.com/scm/repo/gop/content/code/sources/main/gop-config.yaml/).
-- [Directory structure](https://ecosystem.cloudogu.com/scm/repo/gop/content/code/sources) as an example of a folder-based content repository.
+- Sample [configuration file](content-loader-config.yaml).
+- [Directory structure](.) as an example of a folder-based content repository.
 
 # Purpose of the Content Loader
 
@@ -33,11 +33,11 @@ It also applies to end-user applications, for example, replacing the example Pet
 
 - The content deployed by GOP can be completely defined via configuration.
 - The content is defined in Git repositories, known as content repos.
-- There are different types of content repos: `MIRROR`, `COPY`, and `FOLDER_BASED` ([see below](# Different Types of Content Repos)).
-- For these types of Content Repos, the `overrideMode` determines how to handle previously existing files in the repo: `INIT`, `UPGRADE`, `RESET` ([see below](# The overrideMode))
-- Templating with [Freemarker](https://freemarker.apache.org/) is available in the content files ([see below](# Templating)).
+- There are different types of content repos: `MIRROR`, `COPY`, and `FOLDER_BASED` ([see below](#different-types-of-content-repos)).
+- For these types of Content Repos, the `overrideMode` determines how to handle previously existing files in the repo: `INIT`, `UPGRADE`, `RESET` ([see below](#the-overridemode))
+- Templating with [Freemarker](https://freemarker.apache.org/) is available in the content files ([see below](#templating)).
 - Multiple content repos can be specified in the `content.repos` field.
-  - See the [sample configuration file](https://ecosystem.cloudogu.com/scm/repo/gop/content/code/sources/gop-config.yaml).
+  - See the [sample configuration file](content-loader-config.yaml).
 - These are merged by the GOP in the defined order in a directory structure.
 - This allows you to overwrite files from all repos created by GOP.
   - One use case for this is, for example, a base repository that specifies the basic structure of all GOP instances in a cloud environment and more specialized repositories that contain specific applications.
@@ -74,7 +74,7 @@ There are different types of content repos: `MIRROR`, `COPY`, and `FOLDER_BASED`
   Default:
   - `COPY` / `FOLDER_BASED`: Default branch of Repo.
   - `MIRROR`: All branches und tags of Repo
-- `overrideMode` (`INIT`, `UPGRADE`, `RESET`) defines how to handle pre-existing files in the repository ([see below](# The overrideMode).
+- `overrideMode` (`INIT`, `UPGRADE`, `RESET`) defines how to handle pre-existing files in the repository ([see below](#the-overridemode)).
 - `username`
 - `password`
 - `createJenkinsJob` - If `true` and Jenkins is active in GOP, and there is a `Jenkinsfile` in one of the content repositories or the specified `refs`, a Jenkins job is created for the associated SCM Manager namespace.
@@ -103,12 +103,12 @@ Only the files (no Git history) are copied and committed to the target repo.
 **Properties**
 
 - `target` (required) Target repo, e.g. `namespace/name`
-- `targetRef` - Git reference in `target` to which is pushed (branch or tag). \
-  - If ref is a tag, targetRef is also treated as a tag. \
-  - Exception:` targetRef` is a complete `ref `such as `refs/heads/my-branch` or `refs/tags/my-tag`. \
+- `targetRef` - Git reference in `target` to which is pushed (branch or tag). 
+  - If ref is a tag, targetRef is also treated as a tag. 
+  - Exception:` targetRef` is a complete `ref `such as `refs/heads/my-branch` or `refs/tags/my-tag`. 
   - If` targetRef` is empty, the source `ref `is used by default.
 - `path `- Folder within the content repo from which to copy
-- `templating `- If `true`, all `.ftl` files are rendered by [Freemarker](https://freemarker.apache.org/) before being pushed to the target ([see below](# Templating)).
+- `templating `- If `true`, all `.ftl` files are rendered by [Freemarker](https://freemarker.apache.org/) before being pushed to the target ([see below](#templating)).
 
 
 #### `FOLDER_BASED`
@@ -124,14 +124,14 @@ This allows, for example, additional Argo CD applications to be added and even y
 
 - `target` (required)
 - `path` - source folder in the content repository used for copying<
-- `templating` - If `true`, all `.ftl` files are rendered by [Freemarker](https://freemarker.apache.org/) before being pushed to the target ([see below](# Templating)).
+- `templating` - If `true`, all `.ftl` files are rendered by [Freemarker](https://freemarker.apache.org/) before being pushed to the target ([see below](#templating)).
 
 # The overrideMode
 
 For these types of Content Repos, the `overrideMode` determines how to handle previously existing files in the repo: `INIT`, `UPGRADE`, `RESET`.
 - `INIT` (default): Only push if the repository does not exist
 - `UPGRADE`: Delete all files after cloning the source – files that are not in the content will be deleted.
-- `RESET`: Clone and copy – existing files are overwritten, files that are not in the content are retained. \
+- `RESET`: Clone and copy – existing files are overwritten, files that are not in the content are retained. 
 
 **Note** \
 With `MIRROR`, `RESET` does not reset the entire repository. Specific effect: Branches that exist in the target but not in the source are retained.
@@ -160,7 +160,7 @@ image:
 
 # Example-Use Cases
 
-## [Mirror the entire repository on every call](https://ecosystem.cloudogu.com/scm/repo/gop/content/code/sources/main/#komplettes-repo-bei-jedem-aufruf-spiegeln)
+## Mirror the entire repository on every call
 ```yaml
     - url: 'https://github.com/cloudogu/spring-boot-helm-chart'
       target: '3rd-party/spring-boot-helm'
@@ -178,7 +178,7 @@ image:
       overrideMode: UPGRADE
 ```
 
-In this repo, the folder structure is as follows: [argocd/argocd.](https://ecosystem.cloudogu.com/scm/repo/gop/content/code/sources/argocd/argocd)
+In this repo, the folder structure is as follows: [argocd/argocd.](argocd/argocd)
 
 ## Mirror/copy repo and add specific files
 For example, to create a `Dockerfile` and `Jenkinsfile` and then create a Jenkins job. This example shows the `MIRROR` use case. As an alternative you can add type `COPY` in the first repo (petclinic). Reminder: no type means MIRROR (default).
