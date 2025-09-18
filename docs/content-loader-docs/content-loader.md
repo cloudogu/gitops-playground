@@ -116,7 +116,7 @@ Only the files (no Git history) are copied and committed to the target repo.
 - Specifically: The top two directory levels of the repository determine the target repositories in the GOP.
 - Example: The contents of the `example-tenant/petclinic-plain` folder are pushed to the `gitops` repository in the `example-tenant` namespace.
 
-![content-hook-folderbased.png](Images/8Mc_Image_1.png)
+![content-hooks-folder-based.png](content-hooks-folder-based.png)
 
 This allows, for example, additional Argo CD applications to be added and even your own tenants to be deployed.
 
