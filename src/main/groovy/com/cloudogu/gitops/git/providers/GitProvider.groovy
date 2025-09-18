@@ -1,5 +1,7 @@
 package com.cloudogu.gitops.git.providers
 
+import com.cloudogu.gitops.config.Credentials
+
 interface GitProvider {
     /**
      * @param repoTarget "namespace/name"
@@ -11,7 +13,7 @@ interface GitProvider {
 
     String computePushUrl(String repoTarget)
 
-    GitPushAuth pushAuth(boolean isCentralRepo)
+    Credentials pushAuth(boolean isCentralRepo)
 
     //TODO implement
     void deleteRepository(String namespace, String repository, boolean prefixNamespace)

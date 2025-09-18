@@ -71,6 +71,11 @@ class Config {
     @Mixin
     ScmmSchema scmm = new ScmmSchema()
 
+    @JsonPropertyDescription()
+    //TODO add description
+    @Mixin
+    GitlabSchema gitlab = new GitlabSchema()
+
     @JsonPropertyDescription(APPLICATION_DESCRIPTION)
     @Mixin
     ApplicationSchema application = new ApplicationSchema()
@@ -119,7 +124,7 @@ class Config {
 
             @JsonPropertyDescription(CONTENT_REPO_REF_DESCRIPTION)
             String ref = ''
-            
+
             @JsonPropertyDescription(CONTENT_REPO_TARGET_REF_DESCRIPTION)
             String targetRef = ''
 
@@ -139,7 +144,8 @@ class Config {
             String target = ''
 
             @JsonPropertyDescription(CONTENT_REPO_TARGET_OVERWRITE_MODE_DESCRIPTION)
-            OverwriteMode overwriteMode = OverwriteMode.INIT // Defensively use init to not override existing files by default
+            OverwriteMode overwriteMode = OverwriteMode.INIT
+            // Defensively use init to not override existing files by default
 
             @JsonPropertyDescription(CONTENT_REPO_CREATE_JENKINS_JOB_DESCRIPTION)
             Boolean createJenkinsJob = false
@@ -216,8 +222,7 @@ class Config {
         Boolean createImagePullSecrets = false
 
         @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
-        HelmConfigWithValues helm = new HelmConfigWithValues(
-                chart: 'docker-registry',
+        HelmConfigWithValues helm = new HelmConfigWithValues(chart: 'docker-registry',
                 repoURL: 'https://helm.twun.io',
                 version: '2.2.3')
     }
@@ -283,8 +288,7 @@ class Config {
         Map<String, String> additionalEnvs = [:]
 
         @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
-        HelmConfigWithValues helm = new HelmConfigWithValues(
-                chart: 'jenkins',
+        HelmConfigWithValues helm = new HelmConfigWithValues(chart: 'jenkins',
                 repoURL: 'https://charts.jenkins.io',
                 version: '5.8.43')
     }
@@ -304,8 +308,12 @@ class Config {
 
            See ApplicationConfigurator.addScmmConfig() and the comment at jenkins.urlForScmm */
         String urlForJenkins = ''
-        @JsonIgnore String getHost() { return NetworkingUtils.getHost(url)}
-        @JsonIgnore String getProtocol() { return NetworkingUtils.getProtocol(url)}
+
+        @JsonIgnore
+        String getHost() { return NetworkingUtils.getHost(url) }
+
+        @JsonIgnore
+        String getProtocol() { return NetworkingUtils.getProtocol(url) }
         String ingress = ''
 
         @Option(names = ['--scmm-skip-restart'], description = SCMM_SKIP_RESTART_DESCRIPTION)
@@ -329,12 +337,10 @@ class Config {
         String password = DEFAULT_ADMIN_PW
 
         @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
-        HelmConfigWithValues helm = new HelmConfigWithValues(
-                chart: 'scm-manager',
+        HelmConfigWithValues helm = new HelmConfigWithValues(chart: 'scm-manager',
                 repoURL: 'https://packages.scm-manager.org/repository/helm-v2-releases/',
                 version: '3.10.2',
-                values: [:]
-        )
+                values: [:])
 
         @Option(names = ['--scm-root-path'], description = SCM_ROOT_PATH_DESCRIPTION)
         @JsonPropertyDescription(SCM_ROOT_PATH_DESCRIPTION)
@@ -344,6 +350,30 @@ class Config {
         @JsonPropertyDescription(SCM_PROVIDER_DESCRIPTION)
         String provider = 'scm-manager'
 
+    }
+
+    // --- NEU: gitlab specific schema ---
+    static class GitlabSchema {
+        @Option(names = ['--gitlab-url'])
+        String url = ''
+
+        @Option(names = ['--gitlab-token'])
+        String personalAccessToken = ''
+
+        @Option(names = ['--gitlab-parent-group'])
+        String parentGroup = ''        // z.B. "scm" oder "scm/sub"
+
+        @Option(names = ['--gitlab-default-visibility'])
+        String defaultVisibility = 'private' // private|internal|public
+
+        @Option(names = ['--gitlab-auto-create-groups'])
+        boolean autoCreateGroups = true
+
+        @Option(names = ['--gitlab-username-for-pat'])
+        String usernameForPat = 'oauth2'
+
+        @Option(names = ['--gitlab-push-ssh'])
+        boolean pushUseSsh = false
     }
 
     static class MultiTentantSchema {
@@ -486,7 +516,7 @@ class Config {
         }
 
         @JsonIgnore
-        String getTenantName(){
+        String getTenantName() {
             return namePrefix.replaceAll(/-$/, "")
         }
     }
@@ -531,21 +561,14 @@ class Config {
         RepositorySchemaWithRef springBootHelmChart = new RepositorySchemaWithRef(
                 // Take from env or use default because the Dockerfile provides a local copy of the repo
                 url: System.getenv('SPRING_BOOT_HELM_CHART_REPO') ?: 'https://github.com/cloudogu/spring-boot-helm-chart.git',
-                ref: '0.4.0'
-        )
+                ref: '0.4.0')
         @JsonPropertyDescription(SPRING_PETCLINIC_DESCRIPTION)
-        RepositorySchemaWithRef springPetclinic = new RepositorySchemaWithRef(
-                url: System.getenv('SPRING_PETCLINIC_REPO') ?: 'https://github.com/cloudogu/spring-petclinic.git',
-                ref: 'b0738b2'
-        )
+        RepositorySchemaWithRef springPetclinic = new RepositorySchemaWithRef(url: System.getenv('SPRING_PETCLINIC_REPO') ?: 'https://github.com/cloudogu/spring-petclinic.git',
+                ref: 'b0738b2')
         @JsonPropertyDescription(GITOPS_BUILD_LIB_DESCRIPTION)
-        RepositorySchema gitopsBuildLib = new RepositorySchema(
-                url: System.getenv('GITOPS_BUILD_LIB_REPO') ?: 'https://github.com/cloudogu/gitops-build-lib.git'
-        )
+        RepositorySchema gitopsBuildLib = new RepositorySchema(url: System.getenv('GITOPS_BUILD_LIB_REPO') ?: 'https://github.com/cloudogu/gitops-build-lib.git')
         @JsonPropertyDescription(CES_BUILD_LIB_DESCRIPTION)
-        RepositorySchema cesBuildLib = new RepositorySchema(
-                url: System.getenv('CES_BUILD_LIB_REPO') ?: 'https://github.com/cloudogu/ces-build-lib.git'
-        )
+        RepositorySchema cesBuildLib = new RepositorySchema(url: System.getenv('CES_BUILD_LIB_REPO') ?: 'https://github.com/cloudogu/ces-build-lib.git')
     }
 
     static class RepositorySchema {
@@ -657,8 +680,7 @@ class Config {
 
         @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
         @Mixin
-        MailHelmSchema helm = new MailHelmSchema(
-                chart: 'mailhog',
+        MailHelmSchema helm = new MailHelmSchema(chart: 'mailhog',
                 repoURL: 'https://codecentric.github.io/helm-charts',
                 version: '5.0.1')
 
@@ -690,8 +712,7 @@ class Config {
         @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
         @SuppressWarnings('GroovyAssignabilityCheck')
         // Because of values
-        MonitoringHelmSchema helm = new MonitoringHelmSchema(
-                chart: 'kube-prometheus-stack',
+        MonitoringHelmSchema helm = new MonitoringHelmSchema(chart: 'kube-prometheus-stack',
                 repoURL: 'https://prometheus-community.github.io/helm-charts',
                 /* When updating this make sure to also test if air-gapped mode still works */
                 version: '69.7.4',
@@ -735,11 +756,9 @@ class Config {
 
             @Mixin
             @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
-            ESOHelmSchema helm = new ESOHelmSchema(
-                    chart: 'external-secrets',
+            ESOHelmSchema helm = new ESOHelmSchema(chart: 'external-secrets',
                     repoURL: 'https://charts.external-secrets.io',
-                    version: '0.9.16'
-            )
+                    version: '0.9.16')
             static class ESOHelmSchema extends HelmConfigWithValues {
                 @Option(names = ['--external-secrets-image'], description = EXTERNAL_SECRETS_IMAGE_DESCRIPTION)
                 @JsonPropertyDescription(EXTERNAL_SECRETS_IMAGE_DESCRIPTION)
@@ -766,11 +785,9 @@ class Config {
 
             @Mixin
             @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
-            VaultHelmSchema helm = new VaultHelmSchema(
-                    chart: 'vault',
+            VaultHelmSchema helm = new VaultHelmSchema(chart: 'vault',
                     repoURL: 'https://helm.releases.hashicorp.com',
-                    version: '0.25.0'
-            )
+                    version: '0.25.0')
             static class VaultHelmSchema extends HelmConfigWithValues {
                 @Option(names = ['--vault-image'], description = VAULT_IMAGE_DESCRIPTION)
                 @JsonPropertyDescription(VAULT_IMAGE_DESCRIPTION)
@@ -787,11 +804,9 @@ class Config {
 
         @Mixin
         @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
-        IngressNginxHelmSchema helm = new IngressNginxHelmSchema(
-                chart: 'ingress-nginx',
+        IngressNginxHelmSchema helm = new IngressNginxHelmSchema(chart: 'ingress-nginx',
                 repoURL: 'https://kubernetes.github.io/ingress-nginx',
-                version: '4.12.1'
-        )
+                version: '4.12.1')
         static class IngressNginxHelmSchema extends HelmConfigWithValues {
             @Option(names = ['--ingress-nginx-image'], description = HELM_CONFIG_IMAGE_DESCRIPTION)
             @JsonPropertyDescription(HELM_CONFIG_IMAGE_DESCRIPTION)
@@ -806,11 +821,9 @@ class Config {
 
         @Mixin
         @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
-        CertManagerHelmSchema helm = new CertManagerHelmSchema(
-                chart: 'cert-manager',
+        CertManagerHelmSchema helm = new CertManagerHelmSchema(chart: 'cert-manager',
                 repoURL: 'https://charts.jetstack.io',
-                version: '1.16.1'
-        )
+                version: '1.16.1')
         static class CertManagerHelmSchema extends HelmConfigWithValues {
 
             @Option(names = ['--cert-manager-image'], description = CERTMANAGER_IMAGE_DESCRIPTION)

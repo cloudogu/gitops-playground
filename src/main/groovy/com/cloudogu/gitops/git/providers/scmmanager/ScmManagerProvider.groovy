@@ -2,7 +2,7 @@ package com.cloudogu.gitops.git.providers.scmmanager
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.git.providers.GitProvider
-import com.cloudogu.gitops.git.providers.GitPushAuth
+import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.git.providers.Permission
 import com.cloudogu.gitops.git.providers.ScmUrlResolver
 import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
@@ -45,10 +45,10 @@ class ScmManagerProvider implements GitProvider{
     }
 
     @Override
-    GitPushAuth pushAuth(boolean isCentralRepo) {
+    Credentials pushAuth(boolean isCentralRepo) {
         def username = isCentralRepo ? config.multiTenant.username : config.scmm.username
         def password = isCentralRepo ? config.multiTenant.password : config.scmm.password
-        return new GitPushAuth(username as String, password as String)
+        return new Credentials(username as String, password as String)
     }
 
     //TODO implement
