@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.git
 
 import com.cloudogu.gitops.config.Credentials
+import com.cloudogu.gitops.git.local.GitRepo
 
 interface GitProvider {
 

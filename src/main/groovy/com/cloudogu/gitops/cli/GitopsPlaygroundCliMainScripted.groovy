@@ -13,7 +13,7 @@ import com.cloudogu.gitops.features.deployment.ArgoCdApplicationStrategy
 import com.cloudogu.gitops.features.deployment.Deployer
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.features.git.GitHandler
-import com.cloudogu.gitops.git.ScmRepoProvider
+import com.cloudogu.gitops.git.local.ScmRepoProvider
 import com.cloudogu.gitops.git.scmm.api.ScmmApiClient
 import com.cloudogu.gitops.jenkins.*
 import com.cloudogu.gitops.utils.*

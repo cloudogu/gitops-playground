@@ -1,7 +1,7 @@
 package com.cloudogu.gitops.kubernetes.rbac
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.git.GitRepo
+import com.cloudogu.gitops.git.local.GitRepo
 import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
 

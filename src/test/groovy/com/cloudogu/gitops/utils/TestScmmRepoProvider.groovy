@@ -2,8 +2,8 @@ package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.git.GitProvider
-import com.cloudogu.gitops.git.GitRepo
-import com.cloudogu.gitops.git.ScmRepoProvider
+import com.cloudogu.gitops.git.local.GitRepo
+import com.cloudogu.gitops.git.local.ScmRepoProvider
 import org.apache.commons.io.FileUtils
 
 import static org.mockito.Mockito.spy 

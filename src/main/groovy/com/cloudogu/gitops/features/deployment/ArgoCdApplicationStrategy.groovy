@@ -1,8 +1,8 @@
 package com.cloudogu.gitops.features.deployment
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.git.GitRepo
-import com.cloudogu.gitops.git.ScmRepoProvider
+import com.cloudogu.gitops.git.local.GitRepo
+import com.cloudogu.gitops.git.local.ScmRepoProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper

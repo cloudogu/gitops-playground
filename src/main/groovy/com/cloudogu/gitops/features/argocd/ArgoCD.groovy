@@ -3,7 +3,7 @@ package com.cloudogu.gitops.features.argocd
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.git.GitHandler
-import com.cloudogu.gitops.git.ScmRepoProvider
+import com.cloudogu.gitops.git.local.ScmRepoProvider
 import com.cloudogu.gitops.kubernetes.argocd.ArgoApplication
 import com.cloudogu.gitops.kubernetes.rbac.RbacDefinition
 import com.cloudogu.gitops.kubernetes.rbac.Role

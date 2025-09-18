@@ -4,7 +4,7 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.features.git.config.util.GitlabConfig
 import com.cloudogu.gitops.git.GitProvider
-import com.cloudogu.gitops.git.GitRepo
+import com.cloudogu.gitops.git.local.GitRepo
 import com.cloudogu.gitops.git.scmm.jgit.InsecureCredentialProvider
 import groovy.util.logging.Slf4j
 import org.eclipse.jgit.transport.ChainingCredentialsProvider

@@ -2,19 +2,15 @@ package com.cloudogu.gitops.git.scmm
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
-import com.cloudogu.gitops.git.GitRepo
+import com.cloudogu.gitops.git.local.GitRepo
 import com.cloudogu.gitops.git.GitProvider
 import com.cloudogu.gitops.features.git.config.util.ScmmConfig
 import com.cloudogu.gitops.features.deployment.HelmStrategy
-import com.cloudogu.gitops.git.scmm.api.Permission
-import com.cloudogu.gitops.git.scmm.api.Repository
 import com.cloudogu.gitops.git.scmm.api.ScmmApiClient
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.MapUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
-import okhttp3.Response
 
 @Slf4j
 class ScmManager implements GitProvider {
