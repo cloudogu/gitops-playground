@@ -146,50 +146,54 @@ In addition, the people who write the content have the option of defining their 
 This makes it possible to write parameterizable content that can be used for many instances.
 In [Freemarker](https://freemarker.apache.org/), you can use static methods from GOP and JDK. An [example from the GOP code](https://github.com/cloudogu/gitops-playground/blob/0.11.0/applications/cluster-resources/monitoring/prometheus-stack-helm-values.ftl.yaml#L111):
 
-BLANK_LINE_FOUND_IN_GOOGLE_DOCS_2MD_PRO`<#assign`` ``DockerImageParser=statics['com.cloudogu.gitops.utils.DockerImageParser']>`
-BLANK_LINE_FOUND_IN_GOOGLE_DOCS_2MD_PRO...BLANK_LINE_FOUND_IN_GOOGLE_DOCS_2MD_PRO` ``<#if`` ``config.features.monitoring.helm.prometheusOperatorImage?has_content>`
-BLANK_LINE_FOUND_IN_GOOGLE_DOCS_2MD_PRO` ``<#assign`` ``operatorImageObject`` ``=`` ``DockerImageParser.parse(config.features.monitoring.helm.prometheusOperatorImage)>`
-BLANK_LINE_FOUND_IN_GOOGLE_DOCS_2MD_PRO```
-image:` ``registry``  ``:`` ``${operatorImageObject.registry}`
-` ``repository:`` ``${operatorImageObject.repository}`
-` ``tag``       ``:`` ``${operatorImageObject.tag}`
-` ``</#if>`
-
-
+```yaml
+<#assign DockerImageParser=statics['com.cloudogu.gitops.utils.DockerImageParser']>
+# ...
+  <#if config.features.monitoring.helm.prometheusOperatorImage?has_content>
+  <#assign operatorImageObject = DockerImageParser.parse(config.features.monitoring.helm.prometheusOperatorImage)>
+image:
+  registry  : ${operatorImageObject.registry}
+  repository: ${operatorImageObject.repository}
+  tag       : ${operatorImageObject.tag}
+  </#if>
+```
 
 # Example-Use Cases
 
-```
 ## [Mirror the entire repository on every call](https://ecosystem.cloudogu.com/scm/repo/gop/content/code/sources/main/#komplettes-repo-bei-jedem-aufruf-spiegeln)
+```yaml
+    - url: 'https://github.com/cloudogu/spring-boot-helm-chart'
+      target: '3rd-party/spring-boot-helm'
+      overrideMode: RESET
+```
 
-BLANK_LINE_FOUND_IN_GOOGLE_DOCS_2MD_PRO`   ``-`` ``url:`` ``'``https://github.com/cloudogu/spring-boot-helm-chart``'`
-BLANK_LINE_FOUND_IN_GOOGLE_DOCS_2MD_PRO`     ``target:`` ``'``3rd-party``/spring-boot-helm``'`
-BLANK_LINE_FOUND_IN_GOOGLE_DOCS_2MD_PRO`     ``overrideMode:`` ``RESET`
 
 ## Create additional tenant in Argo CD
-
-## BLANK_LINE_FOUND_IN_GOOGLE_DOCS_2MD_PRO`   ``-`` ``url:`` ``'https://example.com/scm/repo/gop/content'`
-BLANK_LINE_FOUND_IN_GOOGLE_DOCS_2MD_PRO`     ``username:`` ``'abc'`
-BLANK_LINE_FOUND_IN_GOOGLE_DOCS_2MD_PRO`     ``password:`` ``'ey...'`` ``#`` ``zB`` ``API`` ``Token`` ``von`` ``SCM-Manager`
-BLANK_LINE_FOUND_IN_GOOGLE_DOCS_2MD_PRO`     ``templating:`` ``true`
-BLANK_LINE_FOUND_IN_GOOGLE_DOCS_2MD_PRO`     ``type:`` ``FOLDER_BASED`
-BLANK_LINE_FOUND_IN_GOOGLE_DOCS_2MD_PRO`     ``overrideMode:`` ``UPGRADE`
+```yaml
+    - url: 'https://example.com/scm/repo/gop/content'
+      username: 'abc'
+      password: 'ey...' # zB API Token von SCM-Manager
+      templating: true
+      type: FOLDER_BASED
+      overrideMode: UPGRADE
+```
 
 In this repo, the folder structure is as follows: [argocd/argocd.](https://ecosystem.cloudogu.com/scm/repo/gop/content/code/sources/argocd/argocd)
 
 ## Mirror/copy repo and add specific files
-
 For example, to create a `Dockerfile` and `Jenkinsfile` and then create a Jenkins job. This example shows the `MIRROR` use case. As an alternative you can add type `COPY` in the first repo (petclinic). Reminder: no type means MIRROR (default).
+```yaml
+    - url: https://github.com/cloudogu/spring-petclinic
+      target: argocd/petclinic-plain
+      ref: feature/gitops_ready
+      targetRef: main
+      overrideMode: UPGRADE
+      createJenkinsJob: true
+    - url: 'https://example.com/scm/repo/gop/content'
+      username: 'abc'
+      password: 'ey...' # zB API Token von SCM-Manager
+      templating: true
+      type: FOLDER_BASED
+      overrideMode: UPGRADE
+```
 
-BLANK_LINE_FOUND_IN_GOOGLE_DOCS_2MD_PRO`   ``-`` ``url:`` ``https://github.com/cloudogu/spring-petclinic`
-BLANK_LINE_FOUND_IN_GOOGLE_DOCS_2MD_PRO`     ``target:`` ``argocd/petclinic-plain`
-BLANK_LINE_FOUND_IN_GOOGLE_DOCS_2MD_PRO`     ``ref:`` ``feature/gitops_ready`
-BLANK_LINE_FOUND_IN_GOOGLE_DOCS_2MD_PRO`     ``targetRef:`` ``main`
-BLANK_LINE_FOUND_IN_GOOGLE_DOCS_2MD_PRO`     ``overrideMode:`` ``UPGRADE`
-BLANK_LINE_FOUND_IN_GOOGLE_DOCS_2MD_PRO`     ``createJenkinsJob:`` ``true`
-BLANK_LINE_FOUND_IN_GOOGLE_DOCS_2MD_PRO`   ``-`` ``url:`` ``'https://github.com/cloudogu/gitops-playground'`
-BLANK_LINE_FOUND_IN_GOOGLE_DOCS_2MD_PRO`     ``templating:`` ``true`
-BLANK_LINE_FOUND_IN_GOOGLE_DOCS_2MD_PRO`     ``type:`` ``FOLDER_BASED`
-BLANK_LINE_FOUND_IN_GOOGLE_DOCS_2MD_PRO`     ``overrideMode:`` ``UPGRADE`
-
-# 
