@@ -4,7 +4,7 @@ import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.features.git.config.util.ScmProviderType
-import com.cloudogu.gitops.git.GitProvider
+import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.git.providers.gitlab.Gitlab
 import com.cloudogu.gitops.git.providers.scmmanager.ScmManager
 import com.cloudogu.gitops.utils.FileSystemUtils

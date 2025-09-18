@@ -2,7 +2,7 @@ package com.cloudogu.gitops.git.local
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
-import com.cloudogu.gitops.git.GitProvider
+import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.git.local.jgit.helpers.InsecureCredentialProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TemplatingEngine

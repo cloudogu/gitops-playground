@@ -3,7 +3,7 @@ package com.cloudogu.gitops.git.providers.gitlab
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.features.git.config.util.GitlabConfig
-import com.cloudogu.gitops.git.GitProvider
+import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.git.local.GitRepo
 import com.cloudogu.gitops.git.local.jgit.helpers.InsecureCredentialProvider
 import groovy.util.logging.Slf4j

@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.git
+package com.cloudogu.gitops.git.providers
 
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.git.local.GitRepo

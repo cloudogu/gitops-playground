@@ -3,7 +3,7 @@ package com.cloudogu.gitops.git.providers.scmmanager
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.git.local.GitRepo
-import com.cloudogu.gitops.git.GitProvider
+import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.features.git.config.util.ScmmConfig
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.git.providers.scmmanager.api.ScmmApiClient
