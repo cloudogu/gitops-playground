@@ -1,0 +1,54 @@
+# $schema: https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/configuration.schema.json
+content:
+  repos:
+    - url: https://github.com/cloudogu/gitops-build-lib
+      target: 3rd-party-dependencies/gitops-build-lib
+      overwriteMode: RESET
+    - url: https://github.com/cloudogu/ces-build-lib
+      target: 3rd-party-dependencies/ces-build-lib
+      overwriteMode: RESET
+    - url: https://github.com/cloudogu/spring-boot-helm-chart
+      target: 3rd-party-dependencies/spring-boot-helm-chart
+      overwriteMode: RESET
+    - url: https://github.com/cloudogu/spring-petclinic
+      target: example-tenant/petclinic-plain
+      ref: feature/gitops_ready
+      targetRef: main
+      #      ref: b0738b2
+      overwriteMode: UPGRADE
+      createJenkinsJob: true
+    - url: https://github.com/cloudogu/spring-petclinic
+      target: example-tenant/petclinic-helm
+      ref: feature/gitops_ready
+      targetRef: main
+      overwriteMode: UPGRADE
+      createJenkinsJob: true
+    - url: 'https://ecosystem.cloudogu.com/scm/repo/gop/content'
+      ref: main
+      username: ''
+      password: ''
+      templating: true
+      type: FOLDER_BASED
+      overwriteMode: UPGRADE
+
+  namespaces:
+    - ${config.application.namePrefix}example-tenant-production
+    - ${config.application.namePrefix}example-tenant-staging
+  variables:
+    umbrella:
+      nginxAnnotation: 'my value'
+    some: other
+
+application:
+  yes: true
+  baseUrl: http://localhost
+  namePrefix: customer-1
+jenkins:
+  active: true
+registry:
+  active: true
+features:
+  argocd:
+    active: true
+  ingressNginx:
+    active: true
