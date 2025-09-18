@@ -84,32 +84,11 @@ class ArgoCD extends Feature {
 
         log.debug('Cloning Repositories')
 
-        if (config.content.examples) {
-            def petclinicInitAction = createRepoInitializationAction('applications/argocd/petclinic/plain-k8s', 'argocd/petclinic-plain')
-            petClinicInitializationActions += petclinicInitAction
-            gitRepos += petclinicInitAction
-
-            petclinicInitAction = createRepoInitializationAction('applications/argocd/petclinic/helm', 'argocd/petclinic-helm')
-            petClinicInitializationActions += petclinicInitAction
-            gitRepos += petclinicInitAction
-
-            petclinicInitAction = createRepoInitializationAction('exercises/petclinic-helm', 'exercises/petclinic-helm')
-            petClinicInitializationActions += petclinicInitAction
-            gitRepos += petclinicInitAction
-
-            cloneRemotePetclinicRepo()
-        }
-
         gitRepos.forEach(repoInitializationAction -> {
             repoInitializationAction.initLocalRepo()
         })
 
         prepareGitOpsRepos()
-
-        if (config.content.examples) {
-            prepareApplicationNginxHelmJenkins()
-            preparePetClinicRepos()
-        }
 
         gitRepos.forEach(repoInitializationAction -> {
             repoInitializationAction.repo.commitAndPush('Initial Commit')
@@ -215,23 +194,6 @@ class ArgoCD extends Feature {
             }
         } */
 
-        if (config.content.examples) {
-            fileSystemUtils.copyDirectory("${fileSystemUtils.rootDir}/applications/argocd/nginx/helm-umbrella",
-                    Path.of(exampleAppsInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'apps/nginx-helm-umbrella/').toString())
-            exampleAppsInitializationAction.replaceTemplates()
-
-            //generating the bootstrap application in a app of app pattern for example apps in the /argocd applications folder
-            if (config.multiTenant.useDedicatedInstance) {
-                new ArgoApplication(
-                        'example-apps',
-                        gitHandler.tenant.url+'argocd/example-apps',
-                        namespace,
-                        namespace,
-                        'argocd/',
-                        config.application.tenantName)
-                        .generate(tenantBootstrapInitializationAction.repo, 'applications')
-            }
-        }
     }
 
     private void prepareApplicationNginxHelmJenkins() {
@@ -454,11 +416,6 @@ class ArgoCD extends Feature {
         if (!config.application.netpols) {
             log.debug("Deleting argocd netpols.")
             FileSystemUtils.deleteFile argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/argocd/templates/allow-namespaces.yaml'
-        }
-
-        if (!config.content.examples) {
-            FileSystemUtils.deleteFile argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/applications/example-apps.yaml'
-            FileSystemUtils.deleteFile argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/projects/example-apps.yaml'
         }
 
         argocdRepoInitializationAction.repo.commitAndPush("Initial Commit")

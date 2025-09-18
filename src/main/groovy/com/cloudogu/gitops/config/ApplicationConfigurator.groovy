@@ -56,13 +56,6 @@ class ApplicationConfigurator {
         if (newConfig.features.ingressNginx.active && !newConfig.application.baseUrl) {
             log.warn("Ingress-controller is activated without baseUrl parameter. Services will not be accessible by hostnames. To avoid this use baseUrl with ingress. ")
         }
-        if (newConfig.content.examples) {
-            if (!newConfig.registry.active) {
-                throw new RuntimeException("content.examples requires either registry.active or registry.url")
-            }
-            String prefix = newConfig.application.namePrefix
-            newConfig.content.namespaces += [prefix + "example-apps-staging", prefix + "example-apps-production"]
-        }
     }
 
     private void addNamePrefix(Config newConfig) {
@@ -223,18 +216,6 @@ class ApplicationConfigurator {
             log.debug("Setting Vault URL ${vault.url}")
         }
 
-        if (!newConfig.features.exampleApps.petclinic.baseDomain) {
-            // This param only requires the host / domain
-            newConfig.features.exampleApps.petclinic.baseDomain =
-                    new URL(injectSubdomain('petclinic', baseUrl, urlSeparatorHyphen)).host
-            log.debug("Setting Petclinic URL ${newConfig.features.exampleApps.petclinic.baseDomain}")
-        }
-        if (!newConfig.features.exampleApps.nginx.baseDomain) {
-            // This param only requires the host / domain
-            newConfig.features.exampleApps.nginx.baseDomain =
-                    new URL(injectSubdomain('nginx', baseUrl, urlSeparatorHyphen)).host
-            log.debug("Setting Nginx URL ${newConfig.features.exampleApps.nginx.baseDomain}")
-        }
     }
         // TODO: Anna check all condig.multitenant.*
     void setMultiTenantModeConfig(Config newConfig) {
