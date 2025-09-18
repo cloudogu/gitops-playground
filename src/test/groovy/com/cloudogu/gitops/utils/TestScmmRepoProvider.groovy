@@ -1,7 +1,7 @@
 package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.git.GitProvider
+import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.git.local.GitRepo
 import com.cloudogu.gitops.git.local.ScmRepoProvider
 import org.apache.commons.io.FileUtils

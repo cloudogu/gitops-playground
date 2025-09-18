@@ -1,7 +1,7 @@
 package com.cloudogu.gitops.scmm
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.git.ScmUrlResolver
+import com.cloudogu.gitops.git.providers.ScmUrlResolver
 import org.junit.jupiter.api.Test
 import static org.junit.jupiter.api.Assertions.*
 

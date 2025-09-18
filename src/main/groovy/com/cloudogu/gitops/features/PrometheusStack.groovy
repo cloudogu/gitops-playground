@@ -7,7 +7,7 @@ import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.git.local.GitRepo
 import com.cloudogu.gitops.git.local.ScmRepoProvider
 import com.cloudogu.gitops.utils.*
-import com.cloudogu.gitops.git.ScmUrlResolver
+import com.cloudogu.gitops.git.providers.ScmUrlResolver
 import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
