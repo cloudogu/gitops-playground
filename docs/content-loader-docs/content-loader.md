@@ -160,6 +160,19 @@ image:
 
 # Example-Use Cases
 
+## How to start with content?
+Use this file as config ``` --config-file=<your path>/docs/content-loader-docs/content-loader-config.yaml ```
+```shell
+bash <(curl -s \
+  https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh) \
+  && docker run --rm -t --pull=always -u $(id -u) \
+    -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
+    --net=host \
+    ghcr.io/cloudogu/gitops-playground --config-file=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/content-loader-docs/content-loader-config.yaml
+# More IDP-features: --mailhog --monitoring --vault=dev --cert-manager
+# More features for developers: --jenkins --registry --content-examples
+```
+
 ## Mirror the entire repository on every call
 ```yaml
     - url: 'https://github.com/cloudogu/spring-boot-helm-chart'
@@ -170,8 +183,10 @@ image:
 
 ## Create additional tenant in Argo CD
 ```yaml
-    - url: 'https://example.com/scm/repo/gop/content'
-      username: 'abc'
+    - url: 'https://github.com/cloudogu/gitops-playground.git'
+      path: 'docs/content-loader-docs'
+      ref: main
+      username: 'abc' # not necessary if git repo is openSource
       password: 'ey...' # e.g. API Token from SCM-Manager
       templating: true
       type: FOLDER_BASED
@@ -184,14 +199,16 @@ In this repo, the folder structure is as follows: [argocd/argocd.](argocd/argocd
 For example, to create a `Dockerfile` and `Jenkinsfile` and then create a Jenkins job. This example shows the `MIRROR` use case. As an alternative you can add type `COPY` in the first repo (petclinic). Reminder: no type means MIRROR (default).
 ```yaml
     - url: https://github.com/cloudogu/spring-petclinic
-      target: argocd/petclinic-plain
+      target: example-tenant/petclinic-plain
       ref: feature/gitops_ready
       targetRef: main
       overrideMode: UPGRADE
       createJenkinsJob: true
-    - url: 'https://example.com/scm/repo/gop/content'
-      username: 'abc'
-      password: 'ey...' # e.g., API token from SCM-Manager
+    - url: https://github.com/cloudogu/gitops-playground.git
+      path: 'docs/content-loader-docs'
+      ref: main
+      username: 'abc' # not necessary if git repo is openSource
+      password: 'ey...' # e.g. API Token from SCM-Manager
       templating: true
       type: FOLDER_BASED
       overrideMode: UPGRADE

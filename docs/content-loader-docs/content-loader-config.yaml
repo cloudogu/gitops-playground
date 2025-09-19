@@ -23,10 +23,9 @@ content:
       targetRef: main
       overwriteMode: UPGRADE
       createJenkinsJob: true
-    - url: 'https://ecosystem.cloudogu.com/scm/repo/gop/content'
+    - url: 'https://github.com/cloudogu/gitops-playground.git'
+      path: 'docs/content-loader-docs'
       ref: main
-      username: ''
-      password: ''
       templating: true
       type: FOLDER_BASED
       overwriteMode: UPGRADE
