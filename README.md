@@ -2,7 +2,7 @@
 
 Creates a complete GitOps-based operational stack that can be used as an internal developer platform (IDP) on your 
 Kubernetes clusters:
-
+* Content Loader: Customization and extension of GOP content enables to deploy and operate any application ([content-loader-docs](docs/content-loader-docs))
 * Deployment: GitOps via Argo CD with a ready-to-use [repo structure](#argo-cd)
 * Monitoring: [Prometheus and Grafana](#monitoring-tools)
 * Secrets Management:  [Vault and External Secrets Operator](#secrets-management-tools)
