@@ -123,7 +123,7 @@ This allows, for example, additional Argo CD applications to be added and even y
 **Properties**
 
 - `target` (required)
-- `path` - source folder in the content repository used for copying<
+- `path` - source folder in the content repository used for copying
 - `templating` - If `true`, all `.ftl` files are rendered by [Freemarker](https://freemarker.apache.org/) before being pushed to the target ([see templating below](#templating)).
 
 # The overrideMode
@@ -172,7 +172,7 @@ image:
 ```yaml
     - url: 'https://example.com/scm/repo/gop/content'
       username: 'abc'
-      password: 'ey...' # zB API Token von SCM-Manager
+      password: 'ey...' # e.g. API Token from SCM-Manager
       templating: true
       type: FOLDER_BASED
       overrideMode: UPGRADE
