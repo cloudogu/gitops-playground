@@ -51,11 +51,6 @@ class ScmManagerProvider implements GitProvider{
     }
 
     @Override
-    Credentials pushAuth() {
-        return new Credentials(config.username, config.password)
-    }
-
-    @Override
     Credentials getCredentials() {
         return this.config.credentials
     }

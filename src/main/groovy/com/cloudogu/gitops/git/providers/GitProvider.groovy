@@ -18,8 +18,6 @@ interface GitProvider {
 
     String computePushUrl(String repoTarget)
 
-    Credentials pushAuth()
-
     Credentials getCredentials()
 
     //TODO implement

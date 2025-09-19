@@ -78,11 +78,6 @@ class GitlabProvider implements GitProvider {
     }
 
     @Override
-    Credentials pushAuth() {
-        return new Credentials(gitlabConfig.credentials.username, gitlabConfig.credentials.password)
-    }
-
-    @Override
     Credentials getCredentials() {
         return this.gitlabConfig.credentials
     }
