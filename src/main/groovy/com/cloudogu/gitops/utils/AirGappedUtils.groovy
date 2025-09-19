@@ -2,10 +2,10 @@ package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.git.providers.GitProvider
-import com.cloudogu.gitops.git.providers.Permission
+import com.cloudogu.gitops.git.providers.scmmanager.Permission
 
-import com.cloudogu.gitops.git.local.LocalRepository
-import com.cloudogu.gitops.git.local.LocalRepositoryFactory
+import com.cloudogu.gitops.git.local.GitRepo
+import com.cloudogu.gitops.git.local.GitRepoFactory
 import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
@@ -18,13 +18,13 @@ import java.nio.file.Path
 class AirGappedUtils {
 
     private Config config
-    private LocalRepositoryFactory repoProvider
+    private GitRepoFactory repoProvider
     private ScmManagerApiClient scmmApiClient
     private FileSystemUtils fileSystemUtils
     private HelmClient helmClient
     private final GitProvider gitProvider;
 
-    AirGappedUtils(Config config, LocalRepositoryFactory repoProvider, ScmManagerApiClient scmmApiClient,
+    AirGappedUtils(Config config, GitRepoFactory repoProvider, ScmManagerApiClient scmmApiClient,
                    FileSystemUtils fileSystemUtils, HelmClient helmClient, GitProvider gitProvider) {
         this.config = config
         this.repoProvider = repoProvider
@@ -43,13 +43,13 @@ class AirGappedUtils {
      */
     String mirrorHelmRepoToGit(Config.HelmConfig helmConfig) {
         String repoName = helmConfig.chart
-        String namespace = LocalRepository.NAMESPACE_3RD_PARTY_DEPENDENCIES
+        String namespace = GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES
         def repoNamespaceAndName = "${namespace}/${repoName}"
         def localHelmChartFolder = "${config.application.localHelmChartFolder}/${repoName}"
 
         validateChart(repoNamespaceAndName, localHelmChartFolder, repoName)
 
-        LocalRepository repo = repoProvider.getRepo(repoNamespaceAndName)
+        GitRepo repo = repoProvider.getRepo(repoNamespaceAndName)
 
         boolean isNewRepo = gitProvider.createRepository(
                 repoNamespaceAndName,
@@ -92,7 +92,7 @@ class AirGappedUtils {
         }
     }
 
-    private Map localizeChartYaml(LocalRepository repo) {
+    private Map localizeChartYaml(GitRepo repo) {
         log.debug("Preparing repo ${repo.getRepoTarget()} for air-gapped use: Changing Chart.yaml to resolve depencies locally")
 
         def chartYamlPath = Path.of(repo.absoluteLocalRepoTmpDir, 'Chart.yaml')
@@ -111,7 +111,7 @@ class AirGappedUtils {
         return chartYaml
     }
 
-    private static Map parseChartLockIfExists(LocalRepository repo) {
+    private static Map parseChartLockIfExists(GitRepo repo) {
         def chartLock = Path.of(repo.absoluteLocalRepoTmpDir, 'Chart.lock')
         if (!chartLock.toFile().exists()) {
             return [:]
@@ -122,7 +122,7 @@ class AirGappedUtils {
     /**
      * Resolve proper dependency version from Chart.lock, e.g. 5.18.* -> 5.18.1
      */
-    private void resolveDependencyVersion(Map chartLock, Map chartYamlDep, LocalRepository repo) {
+    private void resolveDependencyVersion(Map chartLock, Map chartYamlDep, GitRepo repo) {
         def chartLockDep = findByName(chartLock.dependencies as List, chartYamlDep.name as String)
         if (chartLockDep) {
             chartYamlDep.version = chartLockDep.version

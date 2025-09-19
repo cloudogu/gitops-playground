@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.git.providers
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.git.providers.scmmanager.Permission
 import com.cloudogu.gitops.git.providers.scmmanager.ScmManagerProvider
 import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
 import com.cloudogu.gitops.git.providers.scmmanager.api.RepositoryApi

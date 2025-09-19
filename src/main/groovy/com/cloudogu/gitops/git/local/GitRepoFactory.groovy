@@ -6,22 +6,22 @@ import com.cloudogu.gitops.utils.FileSystemUtils
 import jakarta.inject.Singleton
 
 @Singleton
-class LocalRepositoryFactory {
+class GitRepoFactory {
     protected final Config config
     protected final FileSystemUtils fileSystemUtils
     private final GitProvider gitProvider
 
-    LocalRepositoryFactory(Config config, FileSystemUtils fileSystemUtils, GitProvider gitProvider) {
+    GitRepoFactory(Config config, FileSystemUtils fileSystemUtils, GitProvider gitProvider) {
         this.fileSystemUtils = fileSystemUtils
         this.config = config
         this.gitProvider = gitProvider
     }
 
-    LocalRepository getRepo(String repoTarget) {
-        return new LocalRepository(config, gitProvider, repoTarget, fileSystemUtils)
+    GitRepo getRepo(String repoTarget) {
+        return new GitRepo(config, gitProvider, repoTarget, fileSystemUtils)
     }
 
-    LocalRepository getRepo(String repoTarget, Boolean isCentralRepo) {
-        return new LocalRepository(config, gitProvider, repoTarget, fileSystemUtils, isCentralRepo)
+    GitRepo getRepo(String repoTarget, Boolean isCentralRepo) {
+        return new GitRepo(config, gitProvider, repoTarget, fileSystemUtils, isCentralRepo)
     }
 }

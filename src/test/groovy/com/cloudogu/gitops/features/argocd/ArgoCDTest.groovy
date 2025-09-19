@@ -1,7 +1,7 @@
 package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.git.local.LocalRepository
+import com.cloudogu.gitops.git.local.GitRepo
 import com.cloudogu.gitops.utils.*
 import groovy.io.FileType
 import groovy.json.JsonSlurper
@@ -103,15 +103,15 @@ class ArgoCDTest {
 
     CommandExecutorForTest k8sCommands = new CommandExecutorForTest()
     CommandExecutorForTest helmCommands = new CommandExecutorForTest()
-    LocalRepository argocdRepo
+    GitRepo argocdRepo
     String actualHelmValuesFile
-    LocalRepository clusterResourcesRepo
-    LocalRepository exampleAppsRepo
-    LocalRepository nginxHelmJenkinsRepo
-    LocalRepository nginxValidationRepo
-    LocalRepository brokenApplicationRepo
-    LocalRepository tenantBootstrap
-    List<LocalRepository> petClinicRepos = []
+    GitRepo clusterResourcesRepo
+    GitRepo exampleAppsRepo
+    GitRepo nginxHelmJenkinsRepo
+    GitRepo nginxValidationRepo
+    GitRepo brokenApplicationRepo
+    GitRepo tenantBootstrap
+    List<GitRepo> petClinicRepos = []
     CloneCommand gitCloneMock = mock(CloneCommand.class, RETURNS_DEEP_STUBS)
     String prefixPathCentral = '/multiTenant/central/'
     ArgoCD argocd
@@ -1011,7 +1011,7 @@ class ArgoCDTest {
         boolean separatorHyphen = config.application.urlSeparatorHyphen
         boolean podResources = config.application.podResources
 
-        for (LocalRepository repo : petClinicRepos) {
+        for (GitRepo repo : petClinicRepos) {
 
             def tmpDir = repo.absoluteLocalRepoTmpDir
             def jenkinsfile = new File(tmpDir, 'Jenkinsfile')
@@ -1923,7 +1923,7 @@ class ArgoCDTest {
     class ArgoCDForTest extends ArgoCD {
         ArgoCDForTest(Config config, CommandExecutorForTest k8sCommands, CommandExecutorForTest helmCommands) {
             super(config, new K8sClientForTest(config, k8sCommands), new HelmClient(helmCommands), new FileSystemUtils(),
-                    new TestLocalRepositoryFactory(config, new FileSystemUtils()))
+                    new TestGitRepoFactory(config, new FileSystemUtils()))
             mockPrefixActiveNamespaces(config)
         }
 

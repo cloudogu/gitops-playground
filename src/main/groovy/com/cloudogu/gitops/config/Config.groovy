@@ -361,7 +361,7 @@ class Config {
         String personalAccessToken = ''
 
         @Option(names = ['--gitlab-parent-group'])
-        String parentGroup = ''        // z.B. "scm" oder "scm/sub"
+        String parentGroup = ''        // e.g. "scm" or "scm/sub"
 
         @Option(names = ['--gitlab-default-visibility'])
         String defaultVisibility = 'private' // private|internal|public
@@ -369,9 +369,10 @@ class Config {
         @Option(names = ['--gitlab-auto-create-groups'])
         boolean autoCreateGroups = true
 
-        @Option(names = ['--gitlab-username-for-pat'])
-        String usernameForPat = 'oauth2'
+        @Option(names = ['--gitlab-username'])
+        String username = 'oauth2'
 
+        //TODO check if really needed
         @Option(names = ['--gitlab-push-ssh'])
         boolean pushUseSsh = false
     }

@@ -1,7 +1,7 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.git.local.LocalRepositoryFactory
+import com.cloudogu.gitops.git.local.GitRepoFactory
 import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
 import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
@@ -43,7 +43,7 @@ class ContentTest {
 
     CommandExecutorForTest k8sCommands = new CommandExecutorForTest()
     K8sClientForTest k8sClient = new K8sClientForTest(config, k8sCommands)
-    TestLocalRepositoryFactory scmmRepoProvider = new TestLocalRepositoryFactory(config, new FileSystemUtils())
+    TestGitRepoFactory scmmRepoProvider = new TestGitRepoFactory(config, new FileSystemUtils())
     TestScmManagerApiClient scmmApiClient = new TestScmManagerApiClient(config)
     Jenkins jenkins = mock(Jenkins.class)
 
@@ -908,7 +908,7 @@ class ContentTest {
     class ContentForTest extends Content {
         CloneCommand cloneSpy
 
-        ContentForTest(Config config, K8sClient k8sClient, LocalRepositoryFactory repoProvider, ScmManagerApiClient scmmApiClient, Jenkins jenkins) {
+        ContentForTest(Config config, K8sClient k8sClient, GitRepoFactory repoProvider, ScmManagerApiClient scmmApiClient, Jenkins jenkins) {
             super(config, k8sClient, repoProvider, scmmApiClient, jenkins)
         }
 

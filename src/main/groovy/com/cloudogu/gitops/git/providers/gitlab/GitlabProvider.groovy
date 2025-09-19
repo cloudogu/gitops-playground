@@ -3,9 +3,10 @@ package com.cloudogu.gitops.git.providers.gitlab
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.git.providers.GitProvider
-import com.cloudogu.gitops.git.providers.Permission
+import com.cloudogu.gitops.git.providers.scmmanager.Permission
 import groovy.util.logging.Slf4j
 import org.gitlab4j.api.GitLabApi
+import org.gitlab4j.api.models.AccessLevel
 import org.gitlab4j.api.models.Group
 import org.gitlab4j.api.models.Namespace
 import org.gitlab4j.api.models.Project
@@ -13,6 +14,8 @@ import org.gitlab4j.api.models.Visibility
 
 @Slf4j
 class GitlabProvider implements GitProvider {
+
+    //TODO use gitlab config from Niklas and refactor the values
     private final Config.GitlabSchema config
     private final GitLabApi api
 
@@ -27,7 +30,6 @@ class GitlabProvider implements GitProvider {
 
         //check if there is already a project with the same fullPath
         if (findProject(fullPath).present) return false
-
 
         long namespaceId = ensureNamespaceId(fullPath)
         def project = new Project()
@@ -47,8 +49,25 @@ class GitlabProvider implements GitProvider {
     }
 
     @Override
-    void setRepositoryPermission(String repoTarget, String principal, Permission.Role role, boolean groupPermission) {
+    String getUrl() {
+        return null // TODO get Url
+    }
 
+    @Override
+    void setRepositoryPermission(String repoTarget, String principal, Permission.Role role, boolean groupPermission) {
+        String fullPath = resolveFullPath(repoTarget)
+        Project project = findProjectOrThrow(fullPath)
+        AccessLevel level = toAccessLevel(role)
+
+        if (groupPermission) {
+            def group = api.groupApi.getGroups(principal).find { it.fullPath == principal }
+            if (!group) throw new IllegalArgumentException("Group '${principal}' not found")
+            api.projectApi.shareProject(project.id, group.id, level, null)
+        } else {
+            def user = api.userApi.findUsers(principal).find { it.username == principal || it.email == principal }
+            if (!user) throw new IllegalArgumentException("User '${principal}' not found")
+            api.projectApi.addMember(project.id, user.id, level)
+        }
     }
 
     @Override
@@ -58,7 +77,7 @@ class GitlabProvider implements GitProvider {
 
     @Override
     Credentials pushAuth(boolean isCentralRepo) {
-        return new Credentials(config.usernameForPat, config.personalAccessToken)
+        return new Credentials(config.username, config.personalAccessToken)
     }
 
     //TODO implement
@@ -89,6 +108,12 @@ class GitlabProvider implements GitProvider {
         }
     }
 
+    private Project findProjectOrThrow(String fullPath) {
+        return findProject(fullPath).orElseThrow {
+            new IllegalStateException("GitLab project '${fullPath}' not found")
+        }
+    }
+
     private String resolveFullPath(String repoTarget) {
         if (repoTarget?.contains("/")) return repoTarget
         if (!config.parentGroup) {
@@ -109,7 +134,6 @@ class GitlabProvider implements GitProvider {
      *  - returns the existing namespace ID if found
      *  - throws an {@link IllegalStateException} if not found and {@code autoCreateGroups} is {@code false}
      *  - otherwise creates the full group chain and returns the newly created namespace ID.
-     *
      *
      * @param fullPath the fully qualified project path, e.g. {@code "group/subgroup/my-project"}; the method
      *                 uses the part before the last slash as the namespace path (e.g. {@code "group/subgroup"}).
@@ -146,7 +170,8 @@ class GitlabProvider implements GitProvider {
      * creating any missing groups along the way, and returns the deepest (last) group.
      *
      * The method splits {@code namespacePath} by {@code '/'} into path segments (e.g. {@code "group/subgroup"}),
-     * iteratively builds the accumulated path (e.g. {@code "group"}, then {@code "group/subgroup"}), and for each level:
+     * iteratively builds the accumulated path (e.g. {@code "group"}, then {@code "group/subgroup"}),
+     * and for each level:
      *
      * Checks whether a group with that exact {@code fullPath} already exists.
      *   If it exists, uses it as the parent for the next level.
@@ -214,6 +239,17 @@ class GitlabProvider implements GitProvider {
             case "public": return Visibility.PUBLIC
             case "internal": return Visibility.INTERNAL
             default: return Visibility.PRIVATE
+        }
+    }
+
+    // mapping of permission role(READ, WRITE, OWNER) to gitlab specific access level
+    private static AccessLevel toAccessLevel(Permission.Role role) {
+        switch (role) {
+            case Permission.Role.READ:   return AccessLevel.REPORTER   // read-only
+            case Permission.Role.WRITE:  return AccessLevel.MAINTAINER // push/merge etc.
+            case Permission.Role.OWNER:  return AccessLevel.OWNER      // full rights
+            default:
+                throw new IllegalArgumentException("Unknown role: ${role}")
         }
     }
 }

@@ -3,7 +3,6 @@ package com.cloudogu.gitops.git.providers.scmmanager
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.config.Credentials
-import com.cloudogu.gitops.git.providers.Permission
 import com.cloudogu.gitops.git.providers.ScmUrlResolver
 import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
 import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
@@ -28,6 +27,11 @@ class ScmManagerProvider implements GitProvider{
         def repo = new Repository(namespace, repoName, description ?: "")
         Response<Void> response = scmmApiClient.repositoryApi().create(repo, initialize).execute()
         return handle201or409(response, "Repository ${namespace}/${repoName}")
+    }
+
+    @Override
+    String getUrl() {
+        return ""
     }
 
     @Override

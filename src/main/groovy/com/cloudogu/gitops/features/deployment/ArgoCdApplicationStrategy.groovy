@@ -1,8 +1,8 @@
 package com.cloudogu.gitops.features.deployment
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.git.local.LocalRepository
-import com.cloudogu.gitops.git.local.LocalRepositoryFactory
+import com.cloudogu.gitops.git.local.GitRepo
+import com.cloudogu.gitops.git.local.GitRepoFactory
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
@@ -16,12 +16,12 @@ import java.nio.file.Path
 class ArgoCdApplicationStrategy implements DeploymentStrategy {
     private FileSystemUtils fileSystemUtils
     private Config config
-    private final LocalRepositoryFactory scmmRepoProvider
+    private final GitRepoFactory scmmRepoProvider
 
     ArgoCdApplicationStrategy(
             Config config,
             FileSystemUtils fileSystemUtils,
-            LocalRepositoryFactory scmmRepoProvider
+            GitRepoFactory scmmRepoProvider
     ) {
         this.scmmRepoProvider = scmmRepoProvider
         this.fileSystemUtils = fileSystemUtils
@@ -37,7 +37,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
         def namePrefix = config.application.namePrefix
         def shallCreateNamespace = config.features['argocd']['operator'] ? "CreateNamespace=false" : "CreateNamespace=true"
 
-        LocalRepository clusterResourcesRepo = scmmRepoProvider.getRepo('argocd/cluster-resources', config.multiTenant.useDedicatedInstance)
+        GitRepo clusterResourcesRepo = scmmRepoProvider.getRepo('argocd/cluster-resources', config.multiTenant.useDedicatedInstance)
         clusterResourcesRepo.cloneRepo()
 
         // Inline values from tmpHelmValues file into ArgoCD Application YAML

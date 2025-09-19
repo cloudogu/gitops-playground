@@ -2,7 +2,7 @@ package com.cloudogu.gitops.kubernetes.rbac
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.kubernetes.argocd.ArgoApplication
-import com.cloudogu.gitops.git.local.LocalRepository
+import com.cloudogu.gitops.git.local.GitRepo
 import com.cloudogu.gitops.utils.FileSystemUtils
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
@@ -33,7 +33,7 @@ class ArgocdApplicationTest {
     @Test
     void 'simple ArgoCD Application with common values'() {
 
-        LocalRepository repo = new LocalRepository(config, "my-repo", new FileSystemUtils())
+        GitRepo repo = new GitRepo(config, "my-repo", new FileSystemUtils())
 
         new ArgoApplication(
                 'example-apps',

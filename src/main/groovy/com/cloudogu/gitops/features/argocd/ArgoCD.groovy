@@ -6,7 +6,7 @@ import com.cloudogu.gitops.kubernetes.argocd.ArgoApplication
 import com.cloudogu.gitops.kubernetes.rbac.RbacDefinition
 import com.cloudogu.gitops.kubernetes.rbac.Role
 import com.cloudogu.gitops.git.providers.ScmUrlResolver
-import com.cloudogu.gitops.git.local.LocalRepositoryFactory
+import com.cloudogu.gitops.git.local.GitRepoFactory
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.HelmClient
 import com.cloudogu.gitops.utils.K8sClient
@@ -53,14 +53,14 @@ class ArgoCD extends Feature {
     protected HelmClient helmClient
 
     protected FileSystemUtils fileSystemUtils
-    private LocalRepositoryFactory repoProvider
+    private GitRepoFactory repoProvider
 
     ArgoCD(
             Config config,
             K8sClient k8sClient,
             HelmClient helmClient,
             FileSystemUtils fileSystemUtils,
-            LocalRepositoryFactory repoProvider
+            GitRepoFactory repoProvider
     ) {
         this.repoProvider = repoProvider
         this.config = config

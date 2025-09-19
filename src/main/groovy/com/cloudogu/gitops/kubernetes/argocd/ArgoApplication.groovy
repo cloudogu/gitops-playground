@@ -1,6 +1,6 @@
 package com.cloudogu.gitops.kubernetes.argocd
 
-import com.cloudogu.gitops.git.local.LocalRepository
+import com.cloudogu.gitops.git.local.GitRepo
 import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
 
@@ -49,7 +49,7 @@ class ArgoApplication {
         return new File(outputDir, filename)
     }
 
-    void generate(LocalRepository repo, String subfolder) {
+    void generate(GitRepo repo, String subfolder) {
         log.debug("Generating ArgoCDApplication for name='${name}', namespace='${namespace}''")
 
         def outputDir = Path.of(repo.absoluteLocalRepoTmpDir, subfolder).toFile()

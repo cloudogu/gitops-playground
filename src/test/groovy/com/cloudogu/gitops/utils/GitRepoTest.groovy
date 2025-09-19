@@ -1,8 +1,8 @@
 package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.git.local.LocalRepository
-import com.cloudogu.gitops.git.providers.Permission
+import com.cloudogu.gitops.git.local.GitRepo
+import com.cloudogu.gitops.git.providers.scmmanager.Permission
 import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Ref
@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.*
 
-class LocalRepositoryTest {
+class GitRepoTest {
 
 
     public static final String expectedNamespace = "namespace"
@@ -30,7 +30,7 @@ class LocalRepositoryTest {
                     password: "dont-care-password",
                     gitOpsUsername: 'foo-gitops'
             ))
-    TestLocalRepositoryFactory scmmRepoProvider = new TestLocalRepositoryFactory(config, new FileSystemUtils())
+    TestGitRepoFactory scmmRepoProvider = new TestGitRepoFactory(config, new FileSystemUtils())
     TestScmManagerApiClient scmmApiClient = new TestScmManagerApiClient(config)
     Call<Void>  response201 = TestScmManagerApiClient.mockSuccessfulResponse(201)
     Call<Void> response409 = scmmApiClient.mockErrorResponse(409)
@@ -97,8 +97,8 @@ class LocalRepositoryTest {
     @Test
     void 'Creates repo without name-prefix when in namespace 3rd-party-deps'() {
         config.application.namePrefix = 'abc-'
-        def repo = createRepo("${LocalRepository.NAMESPACE_3RD_PARTY_DEPENDENCIES}/foo")
-        assertThat(repo.scmmRepoTarget).isEqualTo("${LocalRepository.NAMESPACE_3RD_PARTY_DEPENDENCIES}/foo".toString())
+        def repo = createRepo("${GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/foo")
+        assertThat(repo.scmmRepoTarget).isEqualTo("${GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/foo".toString())
     }
 
     @Test
@@ -248,7 +248,7 @@ class LocalRepositoryTest {
         assertThat(permissionCreateArgument.allValues[0].role).isEqualTo(Permission.Role.WRITE)
     }
     
-    private LocalRepository createRepo(String repoTarget = "${expectedNamespace}/${expectedRepo}") {
+    private GitRepo createRepo(String repoTarget = "${expectedNamespace}/${expectedRepo}") {
         return scmmRepoProvider.getRepo(repoTarget)
     }
 }

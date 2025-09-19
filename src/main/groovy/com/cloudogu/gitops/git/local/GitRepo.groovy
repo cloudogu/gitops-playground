@@ -15,7 +15,7 @@ import org.eclipse.jgit.transport.RefSpec
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 
 @Slf4j
-class LocalRepository {
+class GitRepo {
 
     static final String NAMESPACE_3RD_PARTY_DEPENDENCIES = '3rd-party-dependencies'
 
@@ -34,7 +34,7 @@ class LocalRepository {
     private Git gitMemoization
     private final String absoluteLocalRepoTmpDir
 
-    LocalRepository(Config config, GitProvider gitProvider, String scmmRepoTarget, FileSystemUtils fileSystemUtils, Boolean isCentralRepo = false) {
+    GitRepo(Config config, GitProvider gitProvider, String scmmRepoTarget, FileSystemUtils fileSystemUtils, Boolean isCentralRepo = false) {
         def tmpDir = File.createTempDir()
         tmpDir.deleteOnExit()
         this.absoluteLocalRepoTmpDir = tmpDir.absolutePath
@@ -61,6 +61,11 @@ class LocalRepository {
         return repoTarget
     }
 
+
+    //TODO AUfruf gitPRovider.createRepository
+    void createRepository(){
+
+    }
     
     String getAbsoluteLocalRepoTmpDir() {
         return absoluteLocalRepoTmpDir
