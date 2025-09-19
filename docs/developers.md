@@ -22,6 +22,7 @@ The versions are also specified in the `Config.groovy` file, so it is recommende
   - [Options](#options)
 - [Jenkins plugin installation issues](#jenkins-plugin-installation-issues)
   - [Solution](#solution)
+  - [Updating all plugins](#updating-all-plugins)
 - [Local development](#local-development)
 - [Development image](#development-image)
 - [Running multiple instances on one machine](#running-multiple-instances-on-one-machine)
@@ -51,6 +52,12 @@ The versions are also specified in the `Config.groovy` file, so it is recommende
     - [Troubleshooting](#troubleshooting-1)
 - [Generate schema.json](#generate-schemajson)
 - [Releasing](#releasing)
+- [Installing ArgoCD Operator](#installing-argocd-operator)
+  - [Prerequisites:](#prerequisites)
+  - [Installation Script](#installation-script)
+  - [Install ingress manually](#install-ingress-manually)
+- [Gitlab (Experimental)](#gitlab-experimental)
+  - [Disclaimer](#disclaimer)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -968,16 +975,53 @@ Copy the following script, paste it into your Terminal and execute it.
 git clone https://github.com/argoproj-labs/argocd-operator && \
 cd argocd-operator && \
 git checkout release-0.16 && \
-make deploy IMG=quay.io/argoprojlabs/argocd-operator:v0.14.1
+make deploy IMG=quay.io/argoprojlabs/argocd-operator:v0.15.0
 ```
 
-### Steps in depth
+### Install ingress manually
 
-1. Clone the repository from GitHub and switch to the release-0.11 branch.
-2. Apply a patch that disables the Cert-Manager webhooks by commenting out certain sections in the kustomization.yaml file in the default configuration. The ArgoCD Operator fails at startup if this webhook is not disabled and no cert-manager is present in the cluster.
-3. The patch also changes the image tag in the kustomization.yaml file located in the manager directory from version v0.11.1 to v0.11.0. The Version v0.11.1 does not exist in the Repository anymore, but is referenced in the Kustomization.
-4. Install the Prometheus CRDs. These Custom Resource Definitions are necessary for monitoring the operator and will prevent a successful startup if not present. 
-5. Install the ArgoCD Operator CRDs and components using kubectl kustomize.
+The ArgoCD installed via Operator is namespace isolated and therefor can not deploy an ingress-controller, because of global scoped configurations.
+GOP has to be startet with ``` --insecure ``` because of we do not use https locally.
+We have to install the ingress-controller manually:
+
+
+```shell
+cat <<'EOF' | helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+  --version 4.12.1 \
+  --namespace ingress-nginx \
+  --create-namespace \
+  -f -
+controller:
+  annotations:
+    ingressclass.kubernetes.io/is-default-class: "true"
+  watchIngressWithoutClass: true
+  admissionWebhooks:
+    enabled: false
+  kind: Deployment
+  service:
+    externalTrafficPolicy: Local
+  replicaCount: 2
+  resources: null
+  ingressClassResource:
+    enabled: true
+    default: true
+  config:
+    use-gzip: "true"
+    enable-brotli: "true"
+    log-format-upstream: >
+      $remote_addr - $remote_user [$time_local] "$request" $status $body_bytes_sent
+      "$http_referer" "$http_user_agent" "$host" $request_length $request_time
+      [$proxy_upstream_name] [$proxy_alternative_upstream_name] $upstream_addr
+      $upstream_response_length $upstream_response_time $upstream_status $req_id
+EOF
+```
+
+If the helm repos are not present or up-to-date:
+
+```shell
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm repo update
+```
 
 ## Gitlab (Experimental)
 
