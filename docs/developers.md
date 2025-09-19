@@ -981,7 +981,9 @@ make deploy IMG=quay.io/argoprojlabs/argocd-operator:v0.15.0
 ### Install ingress manually
 
 The ArgoCD installed via Operator is namespace isolated and therefor can not deploy an ingress-controller, because of global scoped configurations.
+GOP has to be startet with ``` --insecure ``` because of we do not use https locally.
 We have to install the ingress-controller manually:
+
 
 ```shell
 cat <<'EOF' | helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
