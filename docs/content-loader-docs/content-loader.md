@@ -63,7 +63,7 @@ It also applies to end-user applications, for example, replacing the example Pet
 ## Different Types of Content Repos
 
 There are different types of content repos: `MIRROR`, `COPY`, and `FOLDER_BASED`.
-- `MIRROR` (default): The entire content repo is mirrored to the target repo if it does not yet exist ([see overrideMode below](#the-overridemode).
+- `MIRROR` (default): The entire content repo is mirrored to the target repo if it does not yet exist ([see overrideMode below](#the-overridemode)).
 - `COPY`: Only the files (no Git history) are copied to the target repository and committed.
 - `FOLDER_BASED`: Using the folder structure in the content repository, multiple repositories can be created and initialized or expanded in the target.
 
