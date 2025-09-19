@@ -12,6 +12,7 @@ import com.cloudogu.gitops.features.argocd.ArgoCD
 import com.cloudogu.gitops.features.deployment.ArgoCdApplicationStrategy
 import com.cloudogu.gitops.features.deployment.Deployer
 import com.cloudogu.gitops.features.deployment.HelmStrategy
+import com.cloudogu.gitops.features.git.config.util.ScmmConfig
 import com.cloudogu.gitops.git.providers.GitProviderFactory
 import com.cloudogu.gitops.jenkins.GlobalPropertyManager
 import com.cloudogu.gitops.jenkins.JenkinsApiClient
@@ -72,7 +73,7 @@ class GitopsPlaygroundCliMainScripted {
 
 //            def gitProvider = GitProviderFactory.create(config, scmmApiClient)
             def gitProvider = GitProviderFactory.fromConfig(
-                    config,
+                    config as Config,
                     new GitProviderFactory.Deps(scmmApiClient: scmmApiClient) // oder gitlabApiClient
             )
 

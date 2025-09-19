@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.git.providers.scmmanager
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.features.git.config.util.ScmmConfig
 import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.git.providers.ScmUrlResolver
@@ -12,10 +13,10 @@ import retrofit2.Response
 @Slf4j
 class ScmManagerProvider implements GitProvider{
 
-    private final Config config
+    private final ScmmConfig config
     private final ScmManagerApiClient scmmApiClient
 
-    ScmManagerProvider(Config config, ScmManagerApiClient scmmApiClient) {
+    ScmManagerProvider(ScmmConfig config, ScmManagerApiClient scmmApiClient) {
         this.config = config
         this.scmmApiClient = scmmApiClient
     }
@@ -45,17 +46,20 @@ class ScmManagerProvider implements GitProvider{
 
     @Override
     String computePushUrl(String repoTarget) {
-        return ScmUrlResolver.scmmRepoUrl(config, repoTarget)
+//        return ScmUrlResolver.scmmRepoUrl(config, repoTarget) //TODO
+        return ""
     }
 
     @Override
-    Credentials pushAuth(boolean isCentralRepo) {
-        def username = isCentralRepo ? config.multiTenant.username : config.scmm.username
-        def password = isCentralRepo ? config.multiTenant.password : config.scmm.password
-        return new Credentials(username as String, password as String)
+    Credentials pushAuth() {
+        return new Credentials(config.username, config.password)
     }
 
-    //TODO implement
+    @Override
+    Credentials getCredentials() {
+        return this.config.credentials
+    }
+//TODO implement
     @Override
     void deleteRepository(String namespace, String repository, boolean prefixNamespace) {
 

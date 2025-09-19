@@ -1,5 +1,8 @@
 package com.cloudogu.gitops.config
 
+import com.cloudogu.gitops.features.git.config.ScmCentralSchema
+import com.cloudogu.gitops.features.git.config.ScmTenantSchema
+import com.cloudogu.gitops.features.git.config.util.ScmProviderType
 import com.cloudogu.gitops.utils.NetworkingUtils
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
@@ -70,6 +73,10 @@ class Config {
     @JsonPropertyDescription(SCMM_DESCRIPTION)
     @Mixin
     ScmmSchema scmm = new ScmmSchema()
+
+    @JsonPropertyDescription(SCMM_DESCRIPTION)
+    @Mixin
+    ScmTenantSchema scm = new ScmTenantSchema()
 
     @JsonPropertyDescription()
     //TODO add description
@@ -296,14 +303,14 @@ class Config {
     static class ScmmSchema {
         Boolean internal = true
         String gitOpsUsername = ''
-        /* When installing from via Docker we have to distinguish scmm.url (which is a local IP address) from 
+        /* When installing from via Docker we have to distinguish scmm.url (which is a local IP address) from
            the SCMM URL used by jenkins.
-           
-           This is necessary to make the build on push feature (webhooks from SCMM to Jenkins that trigger builds) work 
+
+           This is necessary to make the build on push feature (webhooks from SCMM to Jenkins that trigger builds) work
            in k3d.
            The webhook contains repository URLs that start with the "Base URL" Setting of SCMM.
            Jenkins checks these repo URLs and triggers all builds that match repo URLs.
-           
+
            This value is set as "Base URL" in SCMM Settings and in Jenkins Job.
 
            See ApplicationConfigurator.addScmmConfig() and the comment at jenkins.urlForScmm */
@@ -378,6 +385,11 @@ class Config {
     }
 
     static class MultiTentantSchema {
+        ScmProviderType scmProviderType = ScmProviderType.SCM_MANAGER
+
+        ScmCentralSchema.GitlabCentralConfig gitlabConfig
+
+        ScmCentralSchema.ScmmCentralConfig scmmConfig
 
         @Option(names = ['--dedicated-internal'], description = CENTRAL_SCM_INTERNAL_DESCRIPTION)
         @JsonPropertyDescription(CENTRAL_SCM_INTERNAL_DESCRIPTION)

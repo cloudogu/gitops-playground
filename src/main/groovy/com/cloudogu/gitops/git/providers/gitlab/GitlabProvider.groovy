@@ -1,7 +1,8 @@
 package com.cloudogu.gitops.git.providers.gitlab
 
-import com.cloudogu.gitops.config.Config
+
 import com.cloudogu.gitops.config.Credentials
+import com.cloudogu.gitops.features.git.config.util.GitlabConfig
 import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.git.providers.scmmanager.Permission
 import groovy.util.logging.Slf4j
@@ -16,12 +17,12 @@ import org.gitlab4j.api.models.Visibility
 class GitlabProvider implements GitProvider {
 
     //TODO use gitlab config from Niklas and refactor the values
-    private final Config.GitlabSchema config
+    private final GitlabConfig gitlabConfig
     private final GitLabApi api
 
-    GitlabProvider(Config.GitlabSchema config) {
-        this.config = config
-        this.api = new GitLabApi(config.url, config.personalAccessToken)
+    GitlabProvider(GitlabConfig gitlabConfig) {
+        this.gitlabConfig = gitlabConfig
+        this.api = new GitLabApi(gitlabConfig.url, gitlabConfig.credentials.password)
     }
 
     @Override
@@ -41,7 +42,7 @@ class GitlabProvider implements GitProvider {
                 .withSnippetsEnabled(true)
                 .withNamespaceId(namespaceId)
                 .withInitializeWithReadme(initialize)
-        project.visibility = toVisibility(config.defaultVisibility)
+        project.visibility = toVisibility(gitlabConfig.defaultVisibility)
 
         api.projectApi.createProject(project)
         log.info("Created GitLab project ${fullPath}")
@@ -52,6 +53,7 @@ class GitlabProvider implements GitProvider {
     String getUrl() {
         return null // TODO get Url
     }
+
 
     @Override
     void setRepositoryPermission(String repoTarget, String principal, Permission.Role role, boolean groupPermission) {
@@ -76,8 +78,13 @@ class GitlabProvider implements GitProvider {
     }
 
     @Override
-    Credentials pushAuth(boolean isCentralRepo) {
-        return new Credentials(config.username, config.personalAccessToken)
+    Credentials pushAuth() {
+        return new Credentials(gitlabConfig.credentials.username, gitlabConfig.credentials.password)
+    }
+
+    @Override
+    Credentials getCredentials() {
+        return this.gitlabConfig.credentials
     }
 
     //TODO implement
@@ -116,10 +123,10 @@ class GitlabProvider implements GitProvider {
 
     private String resolveFullPath(String repoTarget) {
         if (repoTarget?.contains("/")) return repoTarget
-        if (!config.parentGroup) {
+        if (!gitlabConfig.parentGroup) {
             throw new IllegalStateException("gitlab.parentGroup is not set")
         }
-        return "${config.parentGroup}/${repoTarget}"
+        return "${gitlabConfig.parentGroup}/${repoTarget}"
     }
 
     private static String projectName(String fullPath) {
@@ -158,7 +165,7 @@ class GitlabProvider implements GitProvider {
             return namespace.id
         }
 
-        if (!config.autoCreateGroups) {
+        if (!gitlabConfig.autoCreateGroups) {
             throw new IllegalStateException("Namespace '${namespacePath}' does not exist (autoCreateGroups=false).")
         }
 

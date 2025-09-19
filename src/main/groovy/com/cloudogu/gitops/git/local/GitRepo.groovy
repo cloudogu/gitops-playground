@@ -202,7 +202,7 @@ class GitRepo {
     }
 
     private CredentialsProvider getCredentialProvider() {
-        def auth = gitProvider.pushAuth(isCentralRepo)
+        def auth = gitProvider.getCredentials()
         def passwordAuthentication = new UsernamePasswordCredentialsProvider(auth.username, auth.password)
         return insecure ? new ChainingCredentialsProvider(new InsecureCredentialProvider(), passwordAuthentication) : passwordAuthentication
     }

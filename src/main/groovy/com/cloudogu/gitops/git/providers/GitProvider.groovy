@@ -18,7 +18,9 @@ interface GitProvider {
 
     String computePushUrl(String repoTarget)
 
-    Credentials pushAuth(boolean isCentralRepo)
+    Credentials pushAuth()
+
+    Credentials getCredentials()
 
     //TODO implement
     void deleteRepository(String namespace, String repository, boolean prefixNamespace)
