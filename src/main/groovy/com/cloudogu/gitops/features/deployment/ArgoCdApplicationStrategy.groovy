@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.features.deployment
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.local.GitRepo
 import com.cloudogu.gitops.git.local.ScmRepoProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -18,14 +19,18 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
     private Config config
     private final ScmRepoProvider scmmRepoProvider
 
+    private GitHandler gitHandler
+
     ArgoCdApplicationStrategy(
             Config config,
             FileSystemUtils fileSystemUtils,
-            ScmRepoProvider scmmRepoProvider
+            ScmRepoProvider scmmRepoProvider,
+            GitHandler gitHandler
     ) {
         this.scmmRepoProvider = scmmRepoProvider
         this.fileSystemUtils = fileSystemUtils
         this.config = config
+        this.gitHandler = gitHandler
     }
 
     @Override
@@ -37,7 +42,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
         def namePrefix = config.application.namePrefix
         def shallCreateNamespace = config.features['argocd']['operator'] ? "CreateNamespace=false" : "CreateNamespace=true"
 
-        GitRepo clusterResourcesRepo = scmmRepoProvider.getRepo('argocd/cluster-resources', config.multiTenant.useDedicatedInstance)
+        GitRepo clusterResourcesRepo = scmmRepoProvider.getRepo('argocd/cluster-resources', this.gitHandler.resourcesScm)
         clusterResourcesRepo.cloneRepo()
 
         // Inline values from tmpHelmValues file into ArgoCD Application YAML
@@ -72,10 +77,10 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
                         ],
                         project    : project,
                         sources    : [[
-                                              repoURL                         : repoURL,
+                                              repoURL                            : repoURL,
                                               "${chooseKeyChartOrPath(repoType)}": chartOrPath,
-                                              targetRevision                  : version,
-                                              helm                            : [
+                                              targetRevision                     : version,
+                                              helm                               : [
                                                       releaseName: releaseName,
                                                       values     : inlineValues
                                               ]
