@@ -12,6 +12,6 @@ interface ScmmApi {
     Call<Void> checkScmmAvailable()
 
     @PUT("api/v2/config")
-    @Headers("Content-Type: application/vnd.scmm-config+json;v=2")
+    @Headers("ContentLoader-Type: application/vnd.scmm-config+json;v=2")
     Call<Void> setConfig(@Body Map<String, Object> config)
 }

@@ -79,29 +79,30 @@ class GitopsPlaygroundCliMainScripted {
             } else {
                 def helmStrategy = new HelmStrategy(config, helmClient)
 
+                def gitHandler = new GitHandler(config, scmmApiClient, helmStrategy, fileSystemUtils)
+
                 def deployer = new Deployer(config, new ArgoCdApplicationStrategy(config, fileSystemUtils, scmmRepoProvider), helmStrategy)
 
-                def airGappedUtils = new AirGappedUtils(config, scmmRepoProvider, scmmApiClient, fileSystemUtils, helmClient)
+                def airGappedUtils = new AirGappedUtils(config, scmmRepoProvider, scmmApiClient, fileSystemUtils, helmClient, gitHandler)
                 def networkingUtils = new NetworkingUtils()
 
                 def jenkins = new Jenkins(config, executor, fileSystemUtils, new GlobalPropertyManager(jenkinsApiClient),
                         new JobManager(jenkinsApiClient), new UserManager(jenkinsApiClient),
                         new PrometheusConfigurator(jenkinsApiClient), helmStrategy, k8sClient, networkingUtils)
 
-                def gitHandler = new GitHandler(config, scmmApiClient, helmStrategy, fileSystemUtils)
-
                 context.registerSingleton(new Application(config, [
                         new Registry(config, fileSystemUtils, k8sClient, helmStrategy),
                         gitHandler,
                         jenkins,
+                        new ScmmManager(config, executor, fileSystemUtils, helmStrategy, k8sClient, networkingUtils),
                         new ArgoCD(config, k8sClient, helmClient, fileSystemUtils, scmmRepoProvider, gitHandler),
-                        new IngressNginx(config, fileSystemUtils, deployer, k8sClient, airGappedUtils),
+                        new IngressNginx(config, fileSystemUtils, deployer, k8sClient, airGappedUtils,gitHandler),
                         new CertManager(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
-                        new Mailhog(config, fileSystemUtils, deployer, k8sClient, airGappedUtils),
-                        new PrometheusStack(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, scmmRepoProvider),
-                        new ExternalSecretsOperator(config, fileSystemUtils, deployer, k8sClient, airGappedUtils),
-                        new Vault(config, fileSystemUtils, k8sClient, deployer, airGappedUtils),
-                        new Content(config, k8sClient, scmmRepoProvider, scmmApiClient, jenkins, gitHandler),
+                        new Mailhog(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
+                        new PrometheusStack(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, scmmRepoProvider, gitHandler),
+                        new ExternalSecretsOperator(config, fileSystemUtils, deployer, k8sClient, airGappedUtils,gitHandler),
+                        new Vault(config, fileSystemUtils, k8sClient, deployer, airGappedUtils,gitHandler),
+                        new ContentLoader(config, k8sClient, scmmRepoProvider, scmmApiClient, jenkins, gitHandler),
                 ]))
             }
         }

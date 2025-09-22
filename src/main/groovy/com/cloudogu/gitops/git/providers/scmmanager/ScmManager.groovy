@@ -6,6 +6,7 @@ import com.cloudogu.gitops.git.local.GitRepo
 import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.features.git.config.util.ScmmConfig
 import com.cloudogu.gitops.features.deployment.HelmStrategy
+
 import com.cloudogu.gitops.git.providers.scmmanager.api.ScmmApiClient
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
@@ -38,8 +39,6 @@ class ScmManager implements GitProvider {
         this.scmmConfig = scmmConfig
         this.credentials= scmmConfig.credentials
     }
-
-
 
     /**
      * @return true if created, false if already exists. Throw exception on all other errors
@@ -201,24 +200,12 @@ class ScmManager implements GitProvider {
         return new YamlSlurper().parseText(hydratedString) as Map
     }
 
-
-    @Override
-    void init() {
-
-    }
-
     @Override
     String getUrl() {
         if(this.scmmConfig.internal){
             return "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm/${this.scmmConfig.rootPath}"
         }
         return this.scmmConfig.url
-    }
-
-    @Override
-    GitRepo getRepo(String target) {
-        // TODO: check
-        return new GitRepo(this.config, this, this.scmmRepoTarget, this.fileSystemUtils )
     }
 
     //TODO
@@ -230,5 +217,45 @@ class ScmManager implements GitProvider {
     @Override
     Boolean isInternal() {
         return this.scmmConfig.internal
+    }
+
+    @Override
+    boolean createRepository(String repoTarget, String description, boolean initialize) {
+        return false
+    }
+
+    @Override
+    String computePushUrl(String repoTarget) {
+        return null
+    }
+
+    @Override
+    Credentials pushAuth() {
+        return null
+    }
+
+    @Override
+    void deleteRepository(String namespace, String repository, boolean prefixNamespace) {
+
+    }
+
+    @Override
+    void deleteUser(String name) {
+
+    }
+
+    @Override
+    void setDefaultBranch(String repoTarget, String branch) {
+
+    }
+
+    @Override
+    String getProtocol() {
+        return null
+    }
+
+    @Override
+    String getHost() {
+        return null
     }
 }

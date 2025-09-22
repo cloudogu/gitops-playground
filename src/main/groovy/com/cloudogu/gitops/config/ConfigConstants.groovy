@@ -27,10 +27,10 @@ interface ConfigConstants {
 
     String CONTENT_DESCRIPTION = 'Config parameters for content, i.e. end-user or tenant applications as opposed to cluster-resources'
 
-    // Content
+    // ContentLoader
     String CONTENT_EXAMPLES_DESCRIPTION = 'Deploy example content: source repos, GitOps repos, Jenkins Job, Argo CD apps/project'
     String CONTENT_NAMESPACES_DESCRIPTION = 'Additional kubernetes namespaces. These are authorized to Argo CD, supplied with image pull secrets, monitored by prometheus, etc. Namespaces can be templates, e.g. ${config.application.namePrefix}staging'
-    String CONTENT_REPO_DESCRIPTION = "Content repos to push into target environment"
+    String CONTENT_REPO_DESCRIPTION = "ContentLoader repos to push into target environment"
     String CONTENT_REPO_URL_DESCRIPTION = "URL of the content repo. Mandatory for each type."
     String CONTENT_REPO_PATH_DESCRIPTION = "Path within the content repo to process"
     String CONTENT_REPO_REF_DESCRIPTION = "Reference for a specific branch, tag, or commit. Emtpy defaults to default branch of the repo. With type MIRROR: ref must not be a commit hash; Choosing a ref only mirrors the ref but does not delete other branches/tags!"
@@ -38,7 +38,7 @@ interface ConfigConstants {
     String CONTENT_REPO_USERNAME_DESCRIPTION = "Username to authenticate against content repo"
     String CONTENT_REPO_PASSWORD_DESCRIPTION = "Password to authenticate against content repo"
     String CONTENT_REPO_TEMPLATING_DESCRIPTION = "When true, template all files ending in .ftl within the repo"
-    String CONTENT_REPO_TYPE_DESCRIPTION = "Content Repos can either be:\ncopied (only the files, starting on ref, starting at path within the repo. Requires target)\n, mirrored (FORCE pushes ref or the whole git repo if no ref set). Requires target, does not allow path and template.)\nfolderBased (folder structure is interpreted as repos. That is, root folder becomes namespace in SCMHandler, sub folders become repository names in SCMHandler, files are copied. Requires target.)"
+    String CONTENT_REPO_TYPE_DESCRIPTION = "ContentLoader Repos can either be:\ncopied (only the files, starting on ref, starting at path within the repo. Requires target)\n, mirrored (FORCE pushes ref or the whole git repo if no ref set). Requires target, does not allow path and template.)\nfolderBased (folder structure is interpreted as repos. That is, root folder becomes namespace in SCMHandler, sub folders become repository names in SCMHandler, files are copied. Requires target.)"
     String CONTENT_REPO_TARGET_DESCRIPTION = "Target repo for the repository in the for of namespace/name. Must contain one slash to separate namespace from name."
     String CONTENT_REPO_TARGET_OVERWRITE_MODE_DESCRIPTION = "This defines, how customer repos will be updated.\nINIT - push only if repo does not exist.\nRESET - delete all files after cloning source - files not in content are deleted\nUPGRADE - clone and copy - existing files will be overwritten, files not in content are kept. For type: MIRROR reset and upgrade have same result: in both cases source repo will be force pushed to target repo."
     String CONTENT_REPO_CREATE_JENKINS_JOB_DESCRIPTION = "If true, creates a Jenkins job, if jenkinsfile exists in one of the content repo's branches."

@@ -159,7 +159,7 @@ function setDefaultBranch() {
   TARGET_REPO_SCMM="$1"
   DEFAULT_BRANCH="${2:-main}"
 
-  curl -s -L -X PUT -H 'Content-Type: application/vnd.scmm-gitConfig+json' \
+  curl -s -L -X PUT -H 'ContentLoader-Type: application/vnd.scmm-gitConfig+json' \
     --data-raw "{\"defaultBranch\":\"${DEFAULT_BRANCH}\"}" \
     "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/api/v2/config/git/${TARGET_REPO_SCMM}"
 }
@@ -398,7 +398,7 @@ function configJenkins() {
   if [ -n "${JENKINS_URL_FOR_SCMM}" ]; then
     printf 'Configuring Jenkins plugin in SCMHandler-Manager ... '
 
-    STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X PUT -H 'Content-Type: application/json' \
+    STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X PUT -H 'ContentLoader-Type: application/json' \
       --data-raw "{\"disableRepositoryConfiguration\":false,\"disableMercurialTrigger\":false,\"disableGitTrigger\":false,\"disableEventTrigger\":false,\"url\":\"${JENKINS_URL_FOR_SCMM}\"}" \
       "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/api/v2/config/jenkins/") && EXIT_STATUS=$? || EXIT_STATUS=$?
     if [ $EXIT_STATUS != 0 ]; then

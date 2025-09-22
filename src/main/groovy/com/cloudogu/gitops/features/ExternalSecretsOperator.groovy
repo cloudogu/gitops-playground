@@ -4,7 +4,7 @@ import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
-import com.cloudogu.gitops.git.providers.ScmUrlResolver
+import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
@@ -31,19 +31,22 @@ class ExternalSecretsOperator extends Feature implements FeatureWithImage {
     private FileSystemUtils fileSystemUtils
     private DeploymentStrategy deployer
     private AirGappedUtils airGappedUtils
+    private GitHandler gitHandler
 
     ExternalSecretsOperator(
             Config config,
             FileSystemUtils fileSystemUtils,
             DeploymentStrategy deployer,
             K8sClient k8sClient,
-            AirGappedUtils airGappedUtils
+            AirGappedUtils airGappedUtils,
+            GitHandler gitHandler
     ) {
         this.deployer = deployer
         this.config = config
         this.fileSystemUtils = fileSystemUtils
         this.k8sClient = k8sClient
         this.airGappedUtils = airGappedUtils
+        this.gitHandler=gitHandler
     }
 
     @Override
@@ -59,7 +62,7 @@ class ExternalSecretsOperator extends Feature implements FeatureWithImage {
                 // Allow for using static classes inside the templates
                 statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
         ])
-        
+
         def helmConfig = config.features.secrets.externalSecrets.helm
         def mergedMap = MapUtils.deepMerge(helmConfig.values, templatedMap)
         def tempValuesPath = fileSystemUtils.writeTempFile(mergedMap)
@@ -75,7 +78,7 @@ class ExternalSecretsOperator extends Feature implements FeatureWithImage {
                             'Chart.yaml'))['version']
 
             deployer.deployFeature(
-                    ScmUrlResolver.scmmRepoUrl(config, repoNamespaceAndName),
+                    this.gitHandler.resourcesScm.url+repoNamespaceAndName,
                     "external-secrets",
                     '.',
                     externalSecretsVersion,

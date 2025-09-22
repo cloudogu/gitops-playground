@@ -12,7 +12,7 @@ interface UsersApi {
     @DELETE("v2/users/{id}")
     Call<ResponseBody> delete(@Path("id") String id)
 
-    @Headers(["Content-Type: application/vnd.scmm-user+json;v=2"])
+    @Headers(["ContentLoader-Type: application/vnd.scmm-user+json;v=2"])
     @POST("/api/v2/users")
     Call<Void> addUser(@Body ScmUser user)
 }

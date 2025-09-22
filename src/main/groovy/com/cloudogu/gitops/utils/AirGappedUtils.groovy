@@ -1,13 +1,15 @@
 package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.config.Config.HelmConfig
+import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.local.GitRepo
 import com.cloudogu.gitops.git.local.ScmRepoProvider
+
 import com.cloudogu.gitops.git.providers.scmmanager.api.ScmmApiClient
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 import jakarta.inject.Singleton
-
 import java.nio.file.Path
 
 @Slf4j
@@ -19,34 +21,40 @@ class AirGappedUtils {
     private ScmmApiClient scmmApiClient
     private FileSystemUtils fileSystemUtils
     private HelmClient helmClient
+    private GitHandler gitHandler
 
-    // TODO: Anna how to get GitProvider?
     AirGappedUtils(Config config, ScmRepoProvider repoProvider, ScmmApiClient scmmApiClient,
-                   FileSystemUtils fileSystemUtils, HelmClient helmClient) {
+                   FileSystemUtils fileSystemUtils, HelmClient helmClient, GitHandler gitHandler) {
         this.config = config
         this.repoProvider = repoProvider
         this.scmmApiClient = scmmApiClient
         this.fileSystemUtils = fileSystemUtils
         this.helmClient = helmClient
+        this.gitHandler = gitHandler
     }
 
     /**
      * In air-gapped mode, the chart's dependencies can't be resolved.
      * As helm does not provide an option for changing them interactively, we push the charts into a separate repo. 
      * We alter these repos to resolve dependencies locally from SCMHandler.
-     * 
+     *
      * @return the repo namespace and name
      */
-    String mirrorHelmRepoToGit(Config.HelmConfig helmConfig) {
+    String mirrorHelmRepoToGit(HelmConfig helmConfig) {
         String repoName = helmConfig.chart
-        String namespace = "a/b"//ScmmRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES // TODO: Anna how to get correct info
+        String namespace = GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES
         String repoNamespaceAndName = "${namespace}/${repoName}"
         String localHelmChartFolder = "${config.application.localHelmChartFolder}/${repoName}"
 
         validateChart(repoNamespaceAndName, localHelmChartFolder, repoName)
 
         GitRepo repo = repoProvider.getRepo(repoNamespaceAndName)
-        repo.create("Mirror of Helm chart $repoName from ${helmConfig.repoURL}", scmmApiClient)
+        boolean isNewRepo = gitHandler.tenant.createRepository(
+                repoNamespaceAndName,
+                "Mirror of Helm chart $repoName from ${helmConfig.repoURL}",
+                false
+        )
+
         repo.cloneRepo()
 
         repo.copyDirectoryContents(localHelmChartFolder)

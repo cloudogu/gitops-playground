@@ -16,6 +16,7 @@ import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 
 @Slf4j
 class GitRepo {
+    static final String NAMESPACE_3RD_PARTY_DEPENDENCIES = '3rd-party-dependencies'
 
     GitProvider gitProvider
 
@@ -27,11 +28,11 @@ class GitRepo {
     private Git gitMemoization = null
     FileSystemUtils fileSystemUtils
 
-    GitRepo(Config config, GitProvider scm, String scmRepoTarget, FileSystemUtils fileSystemUtils) {
+    GitRepo(Config config, GitProvider gitProvider, String scmRepoTarget, FileSystemUtils fileSystemUtils) {
         def tmpDir = File.createTempDir()
         tmpDir.deleteOnExit()
         this.config = config
-        this.gitProvider = scm
+        this.gitProvider = gitProvider
         this.scmRepoTarget = scmRepoTarget
         this.fileSystemUtils = fileSystemUtils
 
@@ -64,6 +65,11 @@ class GitRepo {
         new TemplatingEngine().replaceTemplates(new File(absoluteLocalRepoTmpDir), parameters)
     }
 
+    //TODO
+    void create(){
+        this.gitProvider.createRepo(scmRepoTarget,"")
+    }
+
 /*
 GIT Functions
  */
@@ -87,7 +93,7 @@ GIT Functions
                 .setURI(this.gitProvider.getUrl())
                 .setDirectory(new File(absoluteLocalRepoTmpDir))
                 .setNoCheckout(true)
-                .setCredentialsProvider(this.getCredentialsProvider())
+                .setCredentialsProvider(this.gitProvider.cr)
                 .call()
     }
 

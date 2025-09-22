@@ -3,9 +3,8 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Config
-
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
-import com.cloudogu.gitops.git.providers.ScmUrlResolver
+import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
@@ -29,19 +28,21 @@ class Mailhog extends Feature implements FeatureWithImage {
     String namespace = "${config.application.namePrefix}monitoring"
     Config config
     K8sClient k8sClient
-    
+
     private String username
     private String password
     private FileSystemUtils fileSystemUtils
     private DeploymentStrategy deployer
     private AirGappedUtils airGappedUtils
+    private GitHandler gitHandler
 
     Mailhog(
             Config config,
             FileSystemUtils fileSystemUtils,
             DeploymentStrategy deployer,
             K8sClient k8sClient,
-            AirGappedUtils airGappedUtils
+            AirGappedUtils airGappedUtils,
+            GitHandler gitHandler
     ) {
         this.deployer = deployer
         this.config = config
@@ -49,6 +50,7 @@ class Mailhog extends Feature implements FeatureWithImage {
         this.k8sClient = k8sClient
         this.fileSystemUtils = fileSystemUtils
         this.airGappedUtils = airGappedUtils
+        this.gitHandler = gitHandler
     }
 
 
@@ -64,12 +66,12 @@ class Mailhog extends Feature implements FeatureWithImage {
         def templatedMap = templateToMap(HELM_VALUES_PATH, [
                 mail         : [
                         // Note that passing the URL object here leads to problems in Graal Native image, see Git history
-                        host: config.features.mail.mailhogUrl ? new URL(config.features.mail.mailhogUrl ).host : "",
+                        host: config.features.mail.mailhogUrl ? new URL(config.features.mail.mailhogUrl).host : "",
                 ],
                 passwordCrypt: bcryptMailhogPassword,
-                config : config,
+                config       : config,
                 // Allow for using static classes inside the templates
-                statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
+                statics      : new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
         ])
 
         def helmConfig = config.features.mail.helm
@@ -88,7 +90,7 @@ class Mailhog extends Feature implements FeatureWithImage {
                             'Chart.yaml'))['version']
 
             deployer.deployFeature(
-                    ScmUrlResolver.scmmRepoUrl(config, repoNamespaceAndName),
+                    this.gitHandler.resourcesScm.url + repoNamespaceAndName,
                     'mailhog',
                     '.',
                     mailhogVersion,
@@ -97,10 +99,10 @@ class Mailhog extends Feature implements FeatureWithImage {
                     tempValuesPath, DeploymentStrategy.RepoType.GIT)
         } else {
             deployer.deployFeature(
-                    helmConfig.repoURL ,
+                    helmConfig.repoURL,
                     'mailhog',
-                    helmConfig.chart ,
-                    helmConfig.version ,
+                    helmConfig.chart,
+                    helmConfig.version,
                     namespace,
                     'mailhog',
                     tempValuesPath)

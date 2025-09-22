@@ -2,9 +2,6 @@ package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.scmm.ScmRepoProvider
-import com.cloudogu.gitops.scmm.api.Permission
-import com.cloudogu.gitops.scmm.api.Repository
-import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import com.cloudogu.gitops.scmm.api.ScmmApiClient
 import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
@@ -22,7 +19,7 @@ import org.mockito.ArgumentCaptor
 
 import static com.cloudogu.gitops.config.Config.*
 import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositorySchema
-import static com.cloudogu.gitops.features.Content.RepoCoordinate
+import static ContentLoader.RepoCoordinate
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.any
@@ -30,7 +27,7 @@ import static org.mockito.ArgumentMatchers.eq
 import static org.mockito.Mockito.*
 
 @Slf4j
-class ContentTest {
+class ContentLoaderTest {
     // bareRepo
     static List<File> foldersToDelete = new ArrayList<File>()
 
@@ -854,8 +851,8 @@ class ContentTest {
         }
     }
 
-    private ContentForTest createContent() {
-        new ContentForTest(config, k8sClient, scmmRepoProvider, scmmApiClient, jenkins)
+    private ContentLoaderForTest createContent() {
+        new ContentLoaderForTest(config, k8sClient, scmmRepoProvider, scmmApiClient, jenkins)
     }
 
     private static parseActualYaml(File pathToYamlFile) {
@@ -908,10 +905,10 @@ class ContentTest {
             assertThat(new File(repoFolder, "README.md").text).contains(expectedReadmeContent)
         }
     }
-    class ContentForTest extends Content {
+    class ContentLoaderForTest extends ContentLoader {
         CloneCommand cloneSpy
 
-        ContentForTest(Config config, K8sClient k8sClient, ScmRepoProvider repoProvider, ScmmApiClient scmmApiClient, Jenkins jenkins) {
+        ContentLoaderForTest(Config config, K8sClient k8sClient, ScmRepoProvider repoProvider, ScmmApiClient scmmApiClient, Jenkins jenkins) {
             super(config, k8sClient, repoProvider, scmmApiClient, jenkins)
         }
 
