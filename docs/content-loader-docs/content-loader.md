@@ -1,8 +1,8 @@
 # Content Loader Documentation
 
-This documentation shows the Content Loader feature and its usage. The Content Loader offers the ability of hooking into the GOP installation to deliver your own content.
+This documentation shows the Content Loader feature and its usage. The Content Loader offers the ability of hooking into the GitOps Playground (GOP) installation to deliver your own content.
 
-Example for a GOP (GitOps Playground) content repository:
+Example for a GOP content repository:
 
 - Sample [configuration file](content-loader-config.yaml).
 - [Directory structure](.) as an example of a folder-based content repository.
@@ -160,9 +160,13 @@ image:
 
 # Example-Use Cases
 
-## How to start with content?
-Use this file as config ``` --config-file=<your path>/docs/content-loader-docs/content-loader-config.yaml 
-This command uses included content-config-file. 
+## TL;DR: How to start with content loader?
+The following chapter describes sample use cases that can be tried after executing the TL;DR command. \
+Use this file as config ``` --config-file=<your path>/docs/content-loader-docs/content-loader-config.yaml```. However, you can apply individual config.yaml files to deploy your own content.
+
+### Start the GOP
+The following command uses the `content-loader-config-file.yaml` mentioned above. Run this command once to set up GOP with Content Loader: 
+
 ```shell
 bash <(curl -s \
   https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh) \
@@ -175,6 +179,8 @@ bash <(curl -s \
 # More IDP-features: --mailhog --monitoring --vault=dev --cert-manager
 # More features for developers: --jenkins --registry --content-examples
 ```
+
+Once the GOP is started you can try the following sample use cases. Most applications mentioned in the [Stack-chapter](https://github.com/cloudogu/gitops-playground?tab=readme-ov-file#stack) are deployed now.
 
 ## Mirror the entire repository on every call
 ```yaml
