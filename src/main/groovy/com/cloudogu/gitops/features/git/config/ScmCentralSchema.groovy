@@ -60,7 +60,7 @@ class ScmCentralSchema {
 
         @Option(names = ['--central-scm-url'], description = CENTRAL_MGMT_REPO_DESCRIPTION)
         @JsonPropertyDescription(CENTRAL_MGMT_REPO_DESCRIPTION)
-        String centralScmUrl = ''
+        String url = ''
 
         @Option(names = ['--central-scm-username'], description = CENTRAL_SCMM_USERNAME_DESCRIPTION)
         @JsonPropertyDescription(CENTRAL_SCMM_USERNAME_DESCRIPTION)

@@ -186,7 +186,7 @@ class ArgoCDTest {
         assertThat(argocdYaml['spec']['source']['path']).isEqualTo('argocd/')
         // The other application files should be validated here as well!
 
-        // Content examples
+        // ContentLoader examples
         assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/example-apps.yaml')).exists()
         assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'applications/example-apps.yaml')).exists()
     }

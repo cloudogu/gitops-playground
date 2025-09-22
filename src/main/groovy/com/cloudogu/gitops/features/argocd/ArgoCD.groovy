@@ -422,11 +422,11 @@ class ArgoCD extends Feature {
     }
 
     protected RepoInitializationAction createRepoInitializationAction(String localSrcDir, String scmRepoTarget) {
-        new RepoInitializationAction(config, repoProvider.getRepo(scmRepoTarget), localSrcDir)
+        new RepoInitializationAction(config, repoProvider.getRepo(scmRepoTarget),this.gitHandler, localSrcDir)
     }
 
     protected RepoInitializationAction createRepoInitializationAction(String localSrcDir, String scmRepoTarget, Boolean isCentral) {
-        new RepoInitializationAction(config, repoProvider.getRepo(scmRepoTarget), localSrcDir)
+        new RepoInitializationAction(config, repoProvider.getRepo(scmRepoTarget), this.gitHandler,localSrcDir)
     }
 
     private void replaceFileContentInYamls(File folder, String from, String to) {

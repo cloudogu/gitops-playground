@@ -46,7 +46,7 @@ class GitHandler extends Feature {
 
     }
 
-
+    //Retrieves the appropriate SCM for cluster resources depending on whether the environment is multi-tenant or not.
     GitProvider getResourcesScm() {
         central ?: tenant ?: { throw new IllegalStateException("No SCM provider found.") }()
     }
@@ -88,20 +88,11 @@ class GitHandler extends Feature {
             setupRepos(this.tenant)
             create3thPartyDependecies(this.tenant)
         }
-        createExampleApps(this.tenant)
-        createExercises(this.tenant)
     }
 
     static void setupRepos(GitProvider gitProvider){
         gitProvider.createRepo("argocd/argocd","GitOps repo for administration of ArgoCD")
         gitProvider.createRepo("argocd/cluster-resources","GitOps repo for basic cluster-resources")
-    }
-
-    static createExampleApps(GitProvider gitProvider){
-        gitProvider.createRepo("argocd/nginx-helm-jenkins","3rd Party app (NGINX) with helm, templated in Jenkins (gitops-build-lib)")
-        gitProvider.createRepo("argocd/petclinic-plain","Java app with plain k8s resources")
-        gitProvider.createRepo("argocd/petclinic-helm","Java app with custom helm chart")
-        gitProvider.createRepo("argocd/example-apps","GitOps repo for examples of end-user applications")
     }
 
     static create3thPartyDependecies(GitProvider gitProvider){
@@ -111,9 +102,4 @@ class GitHandler extends Feature {
         gitProvider.createRepo("3rd-party-dependencies/ces-build-lib","Jenkins pipeline shared library adding features for Maven, Gradle, Docker, SonarQube, Git and others")
     }
 
-    static createExercises(GitProvider gitProvider){
-        gitProvider.createRepo("exercises/petclinic-helm","3rd Party app (NGINX) with helm, templated in Jenkins (gitops-build-lib)")
-        gitProvider.createRepo("exercises/nginx-validation","Java app with plain k8s resources")
-        gitProvider.createRepo("exercises/broken-application","Java app with custom helm chart")
-    }
 }

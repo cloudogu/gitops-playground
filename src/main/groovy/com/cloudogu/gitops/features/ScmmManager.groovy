@@ -4,6 +4,7 @@ import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.deployment.HelmStrategy
+import com.cloudogu.gitops.features.git.config.util.ScmProviderType
 import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
@@ -42,37 +43,32 @@ class ScmmManager extends Feature {
         this.deployer = deployer
         this.k8sClient = k8sClient
         this.networkingUtils = networkingUtils
-        this.centralSCMUrl = config.multiTenant.centralScmUrl
 
-        if(config.scmm.internal) {
+        if(config.scm.isInternal) {
             this.namespace = "${config.application.namePrefix}scm-manager"
         }
     }
 
     @Override
     boolean isEnabled() {
-        return true // For now, we either deploy an internal or configure an external instance
+        return config.scm.scmProviderType == ScmProviderType.SCM_MANAGER
     }
 
     @Override
     void enable() {
-        if (config.multiTenant.useDedicatedInstance) {
-            this.centralSCMUrl = !config.multiTenant.internal ? config.multiTenant.centralScmUrl : "http://scmm.scm-manager.svc.cluster.local/scm"
-        }
-
-        if (config.scmm.internal) {
+        if (config.scm.isInternal) {
             String releaseName = 'scmm'
 
             k8sClient.createNamespace(namespace)
 
-            def helmConfig = config.scmm.helm
+            def helmConfig = config.scm.scmmConfig.helm
 
             def templatedMap = templateToMap(HELM_VALUES_PATH, [
-                    host       : config.scmm.ingress,
+                    host       : config.scm.scmmConfig.ingress,
                     remote     : config.application.remote,
-                    username   : config.scmm.username,
-                    password   : config.scmm.password,
-                    helm       : config.scmm.helm,
+                    username   : config.scm.scmmConfig.username,
+                    password   : config.scm.scmmConfig.password,
+                    helm       : config.scm.scmmConfig.helm,
                     releaseName: releaseName
             ])
 
@@ -95,12 +91,12 @@ class ScmmManager extends Feature {
 
             if (config.application.runningInsideK8s) {
                 log.debug("Setting scmm url to k8s service, since installation is running inside k8s")
-                config.scmm.url = networkingUtils.createUrl("${releaseName}.${namespace}.svc.cluster.local", "80", contentPath)
+                config.scm.scmmConfig.url = networkingUtils.createUrl("${releaseName}.${namespace}.svc.cluster.local", "80", contentPath)
             } else {
                 log.debug("Setting internal configs for local single node cluster with internal scmm. Waiting for NodePort...")
                 def port = k8sClient.waitForNodePort(releaseName, namespace)
                 String clusterBindAddress = networkingUtils.findClusterBindAddress()
-                config.scmm.url = networkingUtils.createUrl(clusterBindAddress, port, contentPath)
+                config.scm.scmmConfig.url = networkingUtils.createUrl(clusterBindAddress, port, contentPath)
 
                 if (config.multiTenant.useDedicatedInstance && config.multiTenant) {
                     log.debug("Setting internal configs for local single node cluster with internal central scmm. Waiting for NodePort...")
@@ -116,15 +112,15 @@ class ScmmManager extends Feature {
                 GIT_COMMITTER_EMAIL          : config.application.gitEmail,
                 GIT_AUTHOR_NAME              : config.application.gitName,
                 GIT_AUTHOR_EMAIL             : config.application.gitEmail,
-                GITOPS_USERNAME              : config.multiTenant.scmmConfig.gitOpsUsername,
+                GITOPS_USERNAME              : config.multiTenant.scmmConfig,
                 TRACE                        : config.application.trace,
-                SCMM_URL                     : config.scm.getScmmConfig().url,
-                SCMM_USERNAME                : config.scm.getScmmConfig(),
-                SCMM_PASSWORD                : config.scm.getScmmConfig(),
+                SCMM_URL                     : config.scm.scmmConfig.url,
+                SCMM_USERNAME                : config.scm.scmmConfig,
+                SCMM_PASSWORD                : config.scm.scmmConfig,
                 JENKINS_URL                  : config.jenkins.url,
-                INTERNAL_SCMM                : config.scm.internal,
+                INTERNAL_SCMM                : config.scm.isInternal,
                 JENKINS_URL_FOR_SCMM         : config.jenkins.urlForScmm,
-                SCMM_URL_FOR_JENKINS         : config.scmm.urlForJenkins,
+                SCMM_URL_FOR_JENKINS         : config.scm.scmmConfig.urlForJenkins,
                 // Used indirectly in utils.sh 😬
                 REMOTE_CLUSTER               : config.application.remote,
                 INSTALL_ARGOCD               : config.features.argocd.active,

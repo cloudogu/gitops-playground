@@ -4,7 +4,7 @@ import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
-import com.cloudogu.gitops.git.providers.ScmUrlResolver
+import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
@@ -31,19 +31,22 @@ class IngressNginx extends Feature implements FeatureWithImage {
     private FileSystemUtils fileSystemUtils
     private DeploymentStrategy deployer
     private AirGappedUtils airGappedUtils
+    private GitHandler gitHandler
 
     IngressNginx(
             Config config,
             FileSystemUtils fileSystemUtils,
             DeploymentStrategy deployer,
             K8sClient k8sClient,
-            AirGappedUtils airGappedUtils
+            AirGappedUtils airGappedUtils,
+            GitHandler gitHandler
     ) {
         this.deployer = deployer
         this.config = config
         this.fileSystemUtils = fileSystemUtils
         this.k8sClient = k8sClient
         this.airGappedUtils = airGappedUtils
+        this.gitHandler = gitHandler
     }
 
     @Override
@@ -74,7 +77,7 @@ class IngressNginx extends Feature implements FeatureWithImage {
                             'Chart.yaml'))['version']
 
             deployer.deployFeature(
-                    ScmUrlResolver.scmmRepoUrl(config, repoNamespaceAndName),
+                    gitHandler.resourcesScm.url+repoNamespaceAndName,
                     'ingress-nginx',
                     '.',
                     ingressNginxVersion,

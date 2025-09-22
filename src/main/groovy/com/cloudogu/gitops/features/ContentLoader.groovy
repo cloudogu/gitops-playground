@@ -35,7 +35,7 @@ import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositoryS
 @Singleton
 @Order(999)
 // We want to evaluate content last, to allow for changing all other repos
-class Content extends Feature {
+class ContentLoader extends Feature {
 
     private Config config
     private K8sClient k8sClient
@@ -50,7 +50,7 @@ class Content extends Feature {
 
     private GitHandler gitHandler
 
-    Content(
+    ContentLoader(
             Config config, K8sClient k8sClient, ScmRepoProvider repoProvider, ScmmApiClient scmmApiClient, Jenkins jenkins, GitHandler gitHandler
     ) {
         this.config = config
@@ -242,7 +242,6 @@ class Content extends Feature {
             ])
         }
     }
-
 
     private void cloneToLocalFolder(ContentRepositorySchema repoConfig, File repoTmpDir) {
 

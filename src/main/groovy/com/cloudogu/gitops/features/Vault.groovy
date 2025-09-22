@@ -3,9 +3,8 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Config
-
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
-import com.cloudogu.gitops.git.providers.ScmUrlResolver
+import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.utils.*
 import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
@@ -22,26 +21,29 @@ class Vault extends Feature implements FeatureWithImage {
     static final String VAULT_START_SCRIPT_PATH = '/applications/cluster-resources/secrets/vault/dev-post-start.ftl.sh'
     static final String HELM_VALUES_PATH = 'applications/cluster-resources/secrets/vault/values.ftl.yaml'
 
-    String namespace =  "${config.application.namePrefix}secrets"
+    String namespace = "${config.application.namePrefix}secrets"
     Config config
     K8sClient k8sClient
 
     private FileSystemUtils fileSystemUtils
     private DeploymentStrategy deployer
     private AirGappedUtils airGappedUtils
+    private GitHandler gitHandler
 
     Vault(
             Config config,
             FileSystemUtils fileSystemUtils,
             K8sClient k8sClient,
             DeploymentStrategy deployer,
-            AirGappedUtils airGappedUtils
+            AirGappedUtils airGappedUtils,
+            GitHandler gitHandler
     ) {
         this.deployer = deployer
         this.config = config
         this.fileSystemUtils = fileSystemUtils
         this.k8sClient = k8sClient
         this.airGappedUtils = airGappedUtils
+        this.gitHandler = gitHandler
     }
 
     @Override
@@ -133,7 +135,7 @@ class Vault extends Feature implements FeatureWithImage {
                             'Chart.yaml'))['version']
 
             deployer.deployFeature(
-                    ScmUrlResolver.scmmRepoUrl(config, repoNamespaceAndName),
+                    this.gitHandler.resourcesScm.url + repoNamespaceAndName,
                     'vault',
                     '.',
                     vaultVersion,

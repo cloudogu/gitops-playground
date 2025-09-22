@@ -5,11 +5,7 @@ import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.features.git.config.util.GitlabConfig
 import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.git.local.GitRepo
-import com.cloudogu.gitops.git.local.jgit.helpers.InsecureCredentialProvider
 import groovy.util.logging.Slf4j
-import org.eclipse.jgit.transport.ChainingCredentialsProvider
-import org.eclipse.jgit.transport.CredentialsProvider
-import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 import org.gitlab4j.api.GitLabApi
 import org.gitlab4j.api.models.Group
 import org.gitlab4j.api.models.Project
@@ -65,7 +61,6 @@ class Gitlab implements GitProvider {
         }
         removeBranchProtection(project.get())
     }
-
 
 //    void setup() {
 //        log.info("Creating Gitlab Groups")
@@ -147,13 +142,6 @@ class Gitlab implements GitProvider {
         }
     }
 
-    private CredentialsProvider getCredentialProvider() {
-        def passwordAuthentication = new UsernamePasswordCredentialsProvider("oauth2",)
-        if (!config.application.insecure) {
-            return passwordAuthentication
-        }
-        return new ChainingCredentialsProvider(new InsecureCredentialProvider(), passwordAuthentication)
-    }
 
     private Optional<Group> getGroup(String groupName) {
         try {
@@ -185,14 +173,50 @@ class Gitlab implements GitProvider {
     }
 
 //TODO
-    @Override
-    void init() {
-
-    }
 
     @Override
     Boolean isInternal() {
         return false
+    }
+
+    @Override
+    boolean createRepository(String repoTarget, String description, boolean initialize) {
+        return false
+    }
+
+    @Override
+    String computePushUrl(String repoTarget) {
+        return null
+    }
+
+    @Override
+    Credentials pushAuth() {
+        return null
+    }
+
+    @Override
+    void deleteRepository(String namespace, String repository, boolean prefixNamespace) {
+
+    }
+
+    @Override
+    void deleteUser(String name) {
+
+    }
+
+    @Override
+    void setDefaultBranch(String repoTarget, String branch) {
+
+    }
+
+    @Override
+    String getProtocol() {
+        return null
+    }
+
+    @Override
+    String getHost() {
+        return null
     }
 
     @Override
@@ -201,13 +225,4 @@ class Gitlab implements GitProvider {
         return this.url
     }
 
-    @Override
-    GitRepo getRepo(String target) {
-        return null
-    }
-
-//    @Override
-//    GitRepo getRepo(String name, String description) {
-//       return null
-//    }
 }
