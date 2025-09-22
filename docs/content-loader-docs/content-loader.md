@@ -161,14 +161,17 @@ image:
 # Example-Use Cases
 
 ## How to start with content?
-Use this file as config ``` --config-file=<your path>/docs/content-loader-docs/content-loader-config.yaml ```
+Use this file as config ``` --config-file=<your path>/docs/content-loader-docs/content-loader-config.yaml 
+This command uses included content-config-file. 
 ```shell
 bash <(curl -s \
   https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh) \
+  && curl -s "https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/content-loader-docs/content-loader-config.yaml" > contentConfig.yaml \
   && docker run --rm -t --pull=always -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
+    -v "$(pwd)/contentConfig.yaml:/app/contentConfig.yaml" \
     --net=host \
-    ghcr.io/cloudogu/gitops-playground --config-file=https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/content-loader-docs/content-loader-config.yaml
+    ghcr.io/cloudogu/gitops-playground --config-file=contentConfig.yaml 
 # More IDP-features: --mailhog --monitoring --vault=dev --cert-manager
 # More features for developers: --jenkins --registry --content-examples
 ```
