@@ -37,7 +37,6 @@ class GitRepo {
         this.fileSystemUtils = fileSystemUtils
 
         setAbsoluteLocalRepoTmpDir()
-        setCredentialProvider(this.gitProvider.getCredentials())
     }
 
     void writeFile(String path, String content) {
@@ -93,7 +92,7 @@ GIT Functions
                 .setURI(this.gitProvider.getUrl())
                 .setDirectory(new File(absoluteLocalRepoTmpDir))
                 .setNoCheckout(true)
-                .setCredentialsProvider(this.gitProvider.cr)
+                .setCredentialsProvider(getCredentialProvider(this.gitProvider.credentials))
                 .call()
     }
 
@@ -182,7 +181,7 @@ GIT Functions
     }
 
 
-    private CredentialsProvider setCredentialProvider(Credentials credentials) {
+    private CredentialsProvider getCredentialProvider(Credentials credentials) {
         def passwordAuthentication = new UsernamePasswordCredentialsProvider(credentials.username, credentials.password)
 
         if (!config.application.insecure) {

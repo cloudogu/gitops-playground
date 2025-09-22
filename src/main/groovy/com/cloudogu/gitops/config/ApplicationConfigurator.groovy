@@ -233,12 +233,12 @@ class ApplicationConfigurator {
             }
 
             // Removes trailing slash from the input URL to avoid duplicated slashes in further URL handling
-            if (newConfig.multiTenant.scmmConfig.centralScmUrl) {
-                String urlString = newConfig.multiTenant.scmmConfig.centralScmUrl.toString()
+            if (newConfig.multiTenant.scmmConfig.url) {
+                String urlString = newConfig.multiTenant.scmmConfig.url.toString()
                 if (urlString.endsWith("/")) {
                     urlString = urlString[0..-2]
                 }
-                newConfig.multiTenant.scmmConfig.centralScmUrl = urlString
+                newConfig.multiTenant.scmmConfig.url = urlString
             }
 
             //Disabling IngressNginx in DedicatedInstances Mode for now.

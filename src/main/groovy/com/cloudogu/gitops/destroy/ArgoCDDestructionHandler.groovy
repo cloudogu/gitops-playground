@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.destroy
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.local.GitRepo
 import com.cloudogu.gitops.git.local.ScmRepoProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -19,25 +20,27 @@ class ArgoCDDestructionHandler implements DestructionHandler {
     private HelmClient helmClient
     private Config config
     private FileSystemUtils fileSystemUtils
-
+    private GitHandler gitHandler
     ArgoCDDestructionHandler(
             Config config,
             K8sClient k8sClient,
             ScmRepoProvider repoProvider,
             HelmClient helmClient,
-            FileSystemUtils fileSystemUtils
+            FileSystemUtils fileSystemUtils,
+            GitHandler gitHandler
     ) {
         this.k8sClient = k8sClient
         this.repoProvider = repoProvider
         this.helmClient = helmClient
         this.config = config
         this.fileSystemUtils = fileSystemUtils
+        this.gitHandler = gitHandler
     }
 
     @Override
     void destroy() {
 
-        def repo = repoProvider.getRepo("argocd/argocd")
+        def repo = repoProvider.getRepo("argocd/argocd", gitHandler.resourcesScm)
         repo.cloneRepo()
 
         for (def app in k8sClient.getCustomResource("app")) {

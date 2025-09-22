@@ -48,7 +48,13 @@ class GitHandler extends Feature {
 
     //Retrieves the appropriate SCM for cluster resources depending on whether the environment is multi-tenant or not.
     GitProvider getResourcesScm() {
-        central ?: tenant ?: { throw new IllegalStateException("No SCM provider found.") }()
+        if (central) {
+            return central
+        } else if (tenant) {
+            return tenant
+        } else {
+            throw new IllegalStateException("No SCM provider found.")
+        }
     }
 
     void init() {

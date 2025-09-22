@@ -306,8 +306,8 @@ class ContentLoader extends Feature {
     private void pushTargetRepos(List<RepoCoordinate> repoCoordinates) {
         repoCoordinates.each { repoCoordinate ->
 
-            GitRepo targetRepo = repoProvider.getRepo(repoCoordinate.fullRepoName)
-            def isNewRepo = targetRepo.create('', scmmApiClient, false)
+            GitRepo targetRepo = repoProvider.getRepo(repoCoordinate.fullRepoName,this.gitHandler.tenant)
+            def isNewRepo = targetRepo.create('', , false) //TODO what infos do we need here?
             if (isValidForPush(isNewRepo, repoCoordinate)) {
                 targetRepo.cloneRepo()
 
