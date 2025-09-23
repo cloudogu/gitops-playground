@@ -40,7 +40,6 @@ class ContentLoader extends Feature {
     private Config config
     private K8sClient k8sClient
     private GitRepoFactory repoProvider
-    private ScmManagerApiClient scmmApiClient
     private Jenkins jenkins
     // set by lazy initialisation
     private TemplatingEngine templatingEngine
@@ -51,12 +50,11 @@ class ContentLoader extends Feature {
     private GitHandler gitHandler
 
     ContentLoader(
-            Config config, K8sClient k8sClient, GitRepoFactory repoProvider, ScmManagerApiClient scmmApiClient, Jenkins jenkins, GitHandler gitHandler
+            Config config, K8sClient k8sClient, GitRepoFactory repoProvider, Jenkins jenkins, GitHandler gitHandler
     ) {
         this.config = config
         this.k8sClient = k8sClient
         this.repoProvider = repoProvider
-        this.scmmApiClient = scmmApiClient
         this.jenkins = jenkins
         this.gitHandler = gitHandler
     }

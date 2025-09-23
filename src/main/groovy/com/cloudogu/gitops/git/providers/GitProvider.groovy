@@ -1,8 +1,6 @@
 package com.cloudogu.gitops.git.providers
 
 import com.cloudogu.gitops.config.Credentials
-import com.cloudogu.gitops.git.local.GitRepo
-import org.eclipse.jgit.transport.CredentialsProvider
 
 interface GitProvider {
 
@@ -15,7 +13,6 @@ interface GitProvider {
     Boolean isInternal()
 
     boolean createRepository(String repoTarget, String description, boolean initialize)
-
 
     String computePushUrl(String repoTarget)
 

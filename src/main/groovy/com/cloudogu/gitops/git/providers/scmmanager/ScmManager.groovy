@@ -5,8 +5,7 @@ import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.features.git.config.util.ScmmConfig
 import com.cloudogu.gitops.features.deployment.HelmStrategy
-
-import com.cloudogu.gitops.git.providers.scmmanager.api.ScmmApiClient
+import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
@@ -15,27 +14,22 @@ import groovy.yaml.YamlSlurper
 @Slf4j
 class ScmManager implements GitProvider {
 
-    static final String HELM_VALUES_PATH = "scm-manager/values.ftl.yaml"
-
     String namespace = 'scm-manager'
-    String releaseName = 'scm'
-    Boolean internal
     HelmStrategy deployer
-    ScmmApiClient scmmApiClient
+    ScmManagerApiClient scmmApiClient
     Config config
     FileSystemUtils fileSystemUtils
     ScmmConfig scmmConfig
     Credentials credentials
     String url // TODO:
-    String scmmRepoTarget // TODO:
 
-    ScmManager(Config config, ScmmConfig scmmConfig, ScmmApiClient scmmApiClient, HelmStrategy deployer, FileSystemUtils fileSystemUtils) {
+    ScmManager(Config config, ScmmConfig scmmConfig, HelmStrategy deployer, FileSystemUtils fileSystemUtils) {
         this.config = config
+        this.scmmConfig = scmmConfig
         this.namespace = namespace
-        this.scmmApiClient = scmmApiClient
+        this.scmmApiClient = new ScmManagerApiClient(scmmConfig)
         this.deployer = deployer
         this.fileSystemUtils = fileSystemUtils
-        this.scmmConfig = scmmConfig
         this.credentials= scmmConfig.credentials
     }
 
@@ -61,6 +55,16 @@ class ScmManager implements GitProvider {
     }
 
     @Override
+    void createRepo(String target, String description) {
+
+    }
+
+    @Override
+    Boolean isInternal() {
+        return null
+    }
+
+    @Override
     boolean createRepository(String repoTarget, String description, boolean initialize) {
         return false
     }
@@ -75,7 +79,11 @@ class ScmManager implements GitProvider {
         return null
     }
 
-    //TODO implement
+    @Override
+    Credentials pushAuth() {
+        return null
+    }
+//TODO implement
     @Override
     void deleteRepository(String namespace, String repository, boolean prefixNamespace) {
 

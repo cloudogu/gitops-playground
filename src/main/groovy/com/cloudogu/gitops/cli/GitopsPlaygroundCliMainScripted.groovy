@@ -14,7 +14,6 @@ import com.cloudogu.gitops.features.deployment.Deployer
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepoFactory
-import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
 import com.cloudogu.gitops.jenkins.*
 import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
@@ -56,20 +55,11 @@ class GitopsPlaygroundCliMainScripted {
 
             def scmmRepoProvider = new GitRepoFactory(config, fileSystemUtils)
 
-            def insecureSslContextProvider = new Provider<HttpClientFactory.InsecureSslContext>() {
-                @Override
-                HttpClientFactory.InsecureSslContext get() {
-                    return httpClientFactory.insecureSslContext()
-                }
-            }
-            def httpClientScmm = httpClientFactory.okHttpClientScmm(httpClientFactory.createLoggingInterceptor(), config, insecureSslContextProvider)
-            def scmmApiClient = new ScmManagerApiClient(config, httpClientScmm)
-
 
             //TODO check if moving this up here is correct
             def helmStrategy = new HelmStrategy(config, helmClient)
 
-            def gitHandler = new GitHandler(config, scmmApiClient, helmStrategy, fileSystemUtils)
+            def gitHandler = new GitHandler(config, helmStrategy, fileSystemUtils)
 
             def jenkinsApiClient = new JenkinsApiClient(config,
                     httpClientFactory.okHttpClientJenkins(httpClientFactory.createLoggingInterceptor(), config, insecureSslContextProvider))
@@ -79,13 +69,13 @@ class GitopsPlaygroundCliMainScripted {
             if (config.application.destroy) {
                 context.registerSingleton(new Destroyer([
                         new ArgoCDDestructionHandler(config, k8sClient, scmmRepoProvider, helmClient, fileSystemUtils, gitHandler),
-                        new ScmmDestructionHandler(config, scmmApiClient),
+                        new ScmmDestructionHandler(config),
                         new JenkinsDestructionHandler(new JobManager(jenkinsApiClient), config, new GlobalPropertyManager(jenkinsApiClient))
                 ]))
             } else {
                 def deployer = new Deployer(config, new ArgoCdApplicationStrategy(config, fileSystemUtils, scmmRepoProvider, gitHandler), helmStrategy)
 
-                def airGappedUtils = new AirGappedUtils(config, scmmRepoProvider, scmmApiClient, fileSystemUtils, helmClient, gitHandler)
+                def airGappedUtils = new AirGappedUtils(config, scmmRepoProvider, fileSystemUtils, helmClient, gitHandler)
                 def networkingUtils = new NetworkingUtils()
 
                 def jenkins = new Jenkins(config, executor, fileSystemUtils, new GlobalPropertyManager(jenkinsApiClient),
@@ -104,7 +94,7 @@ class GitopsPlaygroundCliMainScripted {
                         new PrometheusStack(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, scmmRepoProvider, gitHandler),
                         new ExternalSecretsOperator(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
                         new Vault(config, fileSystemUtils, k8sClient, deployer, airGappedUtils, gitHandler),
-                        new ContentLoader(config, k8sClient, scmmRepoProvider, scmmApiClient, jenkins, gitHandler),
+                        new ContentLoader(config, k8sClient, scmmRepoProvider, jenkins, gitHandler),
                 ]))
             }
         }

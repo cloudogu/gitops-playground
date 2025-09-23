@@ -14,4 +14,5 @@ interface ScmmConfig {
     Config.HelmConfigWithValues helm
     Credentials getCredentials()
     String rootPath
+    Boolean insecure
 }
