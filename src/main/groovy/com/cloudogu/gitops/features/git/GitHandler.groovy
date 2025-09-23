@@ -11,7 +11,7 @@ import com.cloudogu.gitops.utils.FileSystemUtils
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
-import com.cloudogu.gitops.git.providers.scmmanager.api.ScmmApiClient
+import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
 
 @Slf4j
 @Singleton
@@ -21,14 +21,14 @@ class GitHandler extends Feature {
     Config config
 
     //SCMM
-    ScmmApiClient scmmApiClient
+    ScmManagerApiClient scmmApiClient
     HelmStrategy helmStrategy
     FileSystemUtils fileSystemUtils
 
     GitProvider tenant
     GitProvider central
 
-    GitHandler(Config config, ScmmApiClient scmmApiClient, HelmStrategy helmStrategy, FileSystemUtils fileSystemUtils) {
+    GitHandler(Config config, ScmManagerApiClient scmmApiClient, HelmStrategy helmStrategy, FileSystemUtils fileSystemUtils) {
         this.config = config
 
         this.helmStrategy = helmStrategy

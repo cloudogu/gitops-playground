@@ -6,7 +6,7 @@ import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.GitRepoFactory
 
-import com.cloudogu.gitops.git.providers.scmmanager.api.ScmmApiClient
+import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 import jakarta.inject.Singleton
@@ -18,12 +18,12 @@ class AirGappedUtils {
 
     private Config config
     private GitRepoFactory repoProvider
-    private ScmmApiClient scmmApiClient
+    private ScmManagerApiClient scmmApiClient
     private FileSystemUtils fileSystemUtils
     private HelmClient helmClient
     private GitHandler gitHandler
 
-    AirGappedUtils(Config config, GitRepoFactory repoProvider, ScmmApiClient scmmApiClient,
+    AirGappedUtils(Config config, GitRepoFactory repoProvider, ScmManagerApiClient scmmApiClient,
                    FileSystemUtils fileSystemUtils, HelmClient helmClient, GitHandler gitHandler) {
         this.config = config
         this.repoProvider = repoProvider

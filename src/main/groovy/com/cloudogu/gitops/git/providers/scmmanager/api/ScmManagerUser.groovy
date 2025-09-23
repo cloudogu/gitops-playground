@@ -1,6 +1,6 @@
 package com.cloudogu.gitops.git.providers.scmmanager.api
 
-class ScmUser {
+class ScmManagerUser {
     String name
     String displayName
     String mail

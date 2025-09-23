@@ -6,7 +6,7 @@ import retrofit2.http.GET
 import retrofit2.http.Headers
 import retrofit2.http.PUT
 
-interface ScmmApi {
+interface ScmManagerApi {
 
     @GET("api/v2")
     Call<Void> checkScmmAvailable()

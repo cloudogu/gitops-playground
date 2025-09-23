@@ -1,19 +1,19 @@
 package com.cloudogu.gitops.destroy
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.git.providers.scmmanager.api.ScmmApiClient
+import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
 
 @Singleton
 @Order(200)
 class ScmmDestructionHandler implements DestructionHandler {
-    private ScmmApiClient scmmApiClient
+    private ScmManagerApiClient scmmApiClient
     private Config config
 
     ScmmDestructionHandler(
             Config config,
-            ScmmApiClient scmmApiClient
+            ScmManagerApiClient scmmApiClient
     ) {
         this.config = config
         this.scmmApiClient = scmmApiClient
