@@ -307,7 +307,7 @@ class ContentLoader extends Feature {
         repoCoordinates.each { repoCoordinate ->
 
             GitRepo targetRepo = repoProvider.getRepo(repoCoordinate.fullRepoName,this.gitHandler.tenant)
-            def isNewRepo = targetRepo.create('', , false) //TODO what infos do we need here?
+            boolean isNewRepo = targetRepo.create() //TODO what infos do we need here?
             if (isValidForPush(isNewRepo, repoCoordinate)) {
                 targetRepo.cloneRepo()
 

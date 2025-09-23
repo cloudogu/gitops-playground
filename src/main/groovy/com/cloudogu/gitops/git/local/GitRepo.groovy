@@ -149,6 +149,13 @@ GIT Functions
         pushRef(ref, ref, force)
     }
 
+    /**
+     * Delete all files in this repository
+     */
+    void clearRepo() {
+        fileSystemUtils.deleteFilesExcept(new File(absoluteLocalRepoTmpDir), ".git")
+    }
+
     private PushCommand createPushCommand(String refSpec) {
         getGit()
                 .push()
