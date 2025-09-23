@@ -12,8 +12,7 @@ class ScmmDestructionHandler implements DestructionHandler {
     private Config config
 
     ScmmDestructionHandler(
-            Config config,
-            ScmManagerApiClient scmmApiClient
+            Config config
     ) {
         this.config = config
         this.scmmApiClient = scmmApiClient

@@ -1,6 +1,8 @@
 package com.cloudogu.gitops.git.providers.scmmanager.api
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.dependencyinjection.HttpClientFactory
+import com.cloudogu.gitops.features.git.config.util.ScmmConfig
 import jakarta.inject.Named
 import jakarta.inject.Singleton
 import okhttp3.OkHttpClient
@@ -12,12 +14,12 @@ import retrofit2.converter.jackson.JacksonConverterFactory
  */
 @Singleton
 class ScmManagerApiClient {
-    Config config
+    ScmmConfig scmmConfig
     OkHttpClient okHttpClient
 
-    ScmManagerApiClient(Config config, @Named("scmm") OkHttpClient okHttpClient) {
-        this.config = config
-        this.okHttpClient = okHttpClient
+    ScmManagerApiClient(ScmmConfig scmmConfig) {
+        this.scmmConfig = scmmConfig
+        this.okHttpClient = HttpClientFactory.buildOkHttpClient(scmmConfig)
     }
 
     UsersApi usersApi() {
