@@ -4,11 +4,10 @@ import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.git.providers.scmmanager.Permission
 
 interface GitProvider {
-    /**
-     * @param repoTarget "namespace/name"
-     * @return true when repo new added, false when repo already exists
-     */
+
     boolean createRepository(String repoTarget, String description, boolean initialize)
+
+
 
     String getUrl() // TODO Gitlab and ScmManager should implement this:
 

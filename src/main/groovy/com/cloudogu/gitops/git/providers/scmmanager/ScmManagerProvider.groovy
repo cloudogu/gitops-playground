@@ -13,11 +13,17 @@ import retrofit2.Response
 class ScmManagerProvider implements GitProvider{
 
     private final ScmmConfig scmmConfig
-    private final ScmManagerApiClient scmmApiClient
+    private final ScmManagerApiClient scmmApiClient  //TODO apiclient erstellen(jede Instanz erstellt selber einen apiclient)
 
+    //TODO add genearal config for nameprefix in internal
     ScmManagerProvider(ScmmConfig scmmConfig, ScmManagerApiClient scmmApiClient) {
         this.scmmConfig = scmmConfig
         this.scmmApiClient = scmmApiClient
+    }
+
+    /** …/scm/api/ */  // apiBase for ScmManagerApiClient ?
+    private URI apiBase() {
+        return withSlash(base()).resolve("api/")
     }
 
     @Override
@@ -55,12 +61,10 @@ class ScmManagerProvider implements GitProvider{
         return this.scmmConfig.credentials
     }
 
-    //TODO implement
     @Override
     void deleteRepository(String namespace, String repository, boolean prefixNamespace) {
-
+       log.info("test")
     }
-
     //TODO implement
     @Override
     void deleteUser(String name) {
@@ -111,8 +115,8 @@ class ScmManagerProvider implements GitProvider{
 
     // --- helpers ---
     private URI internalOrExternal() {
-        if (scmmConfig.internal) {
-            return URI.create("http://scmm.${scmmConfig.namespace ?: 'scm-manager'}.svc.cluster.local/")
+        if (scmmConfig.internal) { //TODO namePrefix should be here
+            return URI.create("http://scmm.${scmmConfig.namespace}.svc.cluster.local")
         }
         def urlString = (scmmConfig.url ?: '').strip()
         if (!urlString) {

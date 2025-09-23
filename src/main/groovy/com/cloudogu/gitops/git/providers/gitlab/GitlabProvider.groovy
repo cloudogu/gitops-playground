@@ -1,6 +1,6 @@
 package com.cloudogu.gitops.git.providers.gitlab
 
-
+import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.features.git.config.util.GitlabConfig
 import com.cloudogu.gitops.git.providers.GitProvider
@@ -17,10 +17,12 @@ import org.gitlab4j.api.models.Visibility
 class GitlabProvider implements GitProvider {
 
     //TODO use gitlab config from Niklas and refactor the values
+    private final Config config
     private final GitlabConfig gitlabConfig
     private final GitLabApi api
 
-    GitlabProvider(GitlabConfig gitlabConfig) {
+    GitlabProvider(Config config, GitlabConfig gitlabConfig) {
+        this.config = config
         this.gitlabConfig = gitlabConfig
         this.api = new GitLabApi(gitlabConfig.url, gitlabConfig.credentials.password)
     }
@@ -85,10 +87,8 @@ class GitlabProvider implements GitProvider {
     //TODO implement
     @Override
     void deleteRepository(String namespace, String repository, boolean prefixNamespace) {
-
     }
-
-    //TODO implement
+//TODO implement
     @Override
     void deleteUser(String name) {
 
