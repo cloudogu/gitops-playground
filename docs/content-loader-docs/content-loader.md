@@ -7,6 +7,23 @@ Example for a GOP content repository:
 - Sample [configuration file](content-loader-config.yaml).
 - [Directory structure](.) as an example of a folder-based content repository.
 
+# Table of contents
+- [Purpose of the Content Loader](#purpose-of-the-content-loader)
+- [What does the term “content” mean?](#what-does-the-term-content-mean)
+- [Content Loader Concepts](#content-loader-concepts)
+  -  [Different Types of Content Repos](#different-types-of-content-repos)
+      - [`MIRROR`](#mirror)
+      - [`COPY`](#copy)
+      - [`FOLDER_BASED`](#folder_based)
+- [The OverrideMode](#the-overridemode)
+- [Templating](#templating)
+- [TL;DR: How to start with content loader?](#tldr-how-to-start-with-content-loader)
+- [Example Use Cases](#example-use-cases)
+  - [Mirror the entire repository on every call](#mirror-the-entire-repository-on-every-call)
+  - [Create additional tenant in Argo CD](#create-additional-tenant-in-argo-cd)
+  - [Mirror/copy repo and add specific files](#mirrorcopy-repo-and-add-specific-files)
+
+
 # Purpose of the Content Loader
 
 The content loader feature makes your application cloud ready. It gives you the ability to deploy and operate any application in cloud environments with the GOP. \
@@ -79,9 +96,8 @@ There are different types of content repos: `MIRROR`, `COPY`, and `FOLDER_BASED`
 - `password`
 - `createJenkinsJob` - If `true` and Jenkins is active in GOP, and there is a `Jenkinsfile` in one of the content repositories or the specified `refs`, a Jenkins job is created for the associated SCM Manager namespace.
 
-### Different Types of Content Repos in Detail
 
-#### `MIRROR`
+### `MIRROR`
 
 A content repo is mirrored completely (or only a `ref`) to the target repo (including Git history). Caution: Force push is used here! By default, however, only on new repos. If existing repos are also to be written, `overrideMode: RESET` must be set.
 Note: The default branch of the source repo is not explicitly set.
@@ -96,7 +112,7 @@ If the source repo has a default branch != `main`, it is not applied.
   - If `targetRef` is empty, the source ref is used by default.
 
 
-#### `COPY`
+### `COPY`
 
 Only the files (no Git history) are copied and committed to the target repo.
 
@@ -111,7 +127,7 @@ Only the files (no Git history) are copied and committed to the target repo.
 - `templating `- If `true`, all `.ftl` files are rendered by [Freemarker](https://freemarker.apache.org/) before being pushed to the target ([see templating below](#templating)).
 
 
-#### `FOLDER_BASED`
+### `FOLDER_BASED`
 - Using the folder structure in the content repository, multiple repositories can be created in the target and initialized or expanded using `COPY`.
 - Specifically: The top two directory levels of the repository determine the target repositories in the GOP.
 - Example: The contents of the `example-tenant/petclinic-plain` folder are pushed to the `gitops` repository in the `example-tenant` namespace.
@@ -140,7 +156,7 @@ With `MIRROR`, `RESET` does not reset the entire repository. Specific effect: Br
 If existing repositories of the GOP are to be extended, e.g., `cluster-resources`, the `overrideMode` must be set to `UPGRADE`.
 
 # Templating
-When `templating `is enabled, all files ending in `.ftl` are rendered using [Freemarker](https://freemarker.apache.org/) during GOP installation and the result is created under the same name without the `.ftl` extension.
+When `templating` is enabled, all files ending in `.ftl` are rendered using [Freemarker](https://freemarker.apache.org/) during GOP installation and the result is created under the same name without the `.ftl` extension.
 The entire configuration of the GOP is available as` config` in the templates.
 In addition, the people who write the content have the option of defining their own variables (`content.variables`).
 This makes it possible to write parameterizable content that can be used for many instances.
@@ -158,14 +174,8 @@ image:
   </#if>
 ```
 
-# Example-Use Cases
-
-## TL;DR: How to start with content loader?
-The following chapter describes sample use cases that can be tried after executing the TL;DR command. \
-Use this file as config ``` --config-file=<your path>/docs/content-loader-docs/content-loader-config.yaml```. However, you can apply individual config.yaml files to deploy your own content.
-
-### Start the GOP
-The following command uses the `content-loader-config-file.yaml` mentioned above. Run this command once to set up GOP with Content Loader: 
+# TL;DR: How to start with content loader?
+To start with the content loader feature start the GOP with the `content-loader-config-file.yaml`. Run this command once to set up GOP with Content Loader: 
 
 ```shell
 bash <(curl -s \
@@ -181,6 +191,10 @@ bash <(curl -s \
 ```
 
 Once the GOP is started you can try the following sample use cases. Most applications mentioned in the [Stack-chapter](https://github.com/cloudogu/gitops-playground?tab=readme-ov-file#stack) are deployed now.
+
+# Example-Use Cases
+This chapter describes sample use cases that can be tried after executing the TL;DR command. \
+However, you can apply individual config.yaml files to deploy your own content.
 
 ## Mirror the entire repository on every call
 ```yaml
