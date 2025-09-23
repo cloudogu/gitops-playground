@@ -9,8 +9,8 @@ Example for a GOP content repository:
 
 # Purpose of the Content Loader
 
-The content loader feature makes your application cloud ready. It gives you the ability to deploy and operate your own application in cloud environments with the GOP. \
-It provides the flexibility to deliver more applications using GOP. This customization applies to the Internal Developer Platform (IDP), for example, other ops tools such as monitoring. \
+The content loader feature makes your application cloud ready. It gives you the ability to deploy and operate any application in cloud environments with the GOP. \
+This customization applies to the Internal Developer Platform (IDP), for example, other ops tools such as monitoring. \
 It also applies to end-user applications, for example, replacing the example Petclinic content with real-world applications.
 
 # What does the term “content” mean? 
