@@ -3,15 +3,15 @@ package com.cloudogu.gitops.utils
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.git.local.GitRepo
-import com.cloudogu.gitops.git.local.ScmRepoProvider
+import com.cloudogu.gitops.git.local.GitRepoFactory
 import org.apache.commons.io.FileUtils
 
 import static org.mockito.Mockito.spy 
 
-class TestScmmRepoProvider extends ScmRepoProvider {
+class TestGitRepoFactory extends GitRepoFactory {
     Map<String, GitRepo> repos = [:]
 
-    TestScmmRepoProvider(Config config, FileSystemUtils fileSystemUtils) {
+    TestGitRepoFactory(Config config, FileSystemUtils fileSystemUtils) {
         super(config, fileSystemUtils)
     }
     @Override

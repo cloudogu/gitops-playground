@@ -2,6 +2,7 @@ package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.HelmStrategy
+import com.cloudogu.gitops.features.git.config.ScmTenantSchema
 import com.cloudogu.gitops.utils.*
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
@@ -13,7 +14,7 @@ import static org.mockito.ArgumentMatchers.anyString
 import static org.mockito.Mockito.mock
 import static org.mockito.Mockito.when 
 
-class ScmManagerTest {
+class ScmManagerProviderTest {
 
     Config config = new Config(
             application: new Config.ApplicationSchema(
@@ -26,7 +27,7 @@ class ScmManagerTest {
                     gitEmail: 'hello@cloudogu.com',
                     runningInsideK8s : true
             ),
-            scmm: new Config.ScmmSchema(
+            scmm: new ScmTenantSchema.ScmmTenantConfig(
                     url: 'http://scmm',
                     internal: true,
                     ingress: 'scmm.localhost',
@@ -179,10 +180,10 @@ class ScmManagerTest {
         return ys.parse(temporaryYamlFile) as Map
     }
 
-    private ScmmManager createScmManager() {
+    private ScmManagerSetup createScmManager() {
         when(networkingUtils.createUrl(anyString(), anyString(), anyString())).thenCallRealMethod()
         when(networkingUtils.createUrl(anyString(), anyString())).thenCallRealMethod()
-        new ScmmManager(config, commandExecutor, new FileSystemUtils() {
+        new ScmManagerSetup(config, commandExecutor, new FileSystemUtils() {
             @Override
             Path writeTempFile(Map mapValues) {
                 def ret = super.writeTempFile(mapValues)

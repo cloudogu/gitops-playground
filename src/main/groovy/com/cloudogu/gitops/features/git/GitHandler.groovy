@@ -5,8 +5,8 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.features.git.config.util.ScmProviderType
 import com.cloudogu.gitops.git.providers.GitProvider
-import com.cloudogu.gitops.git.providers.gitlab.Gitlab
-import com.cloudogu.gitops.git.providers.scmmanager.ScmManager
+import com.cloudogu.gitops.git.providers.gitlab.GitlabProvider
+import com.cloudogu.gitops.git.providers.scmmanager.ScmManagerProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
@@ -63,10 +63,10 @@ class GitHandler extends Feature {
         //TenantSCM
         switch (config.scm.scmProviderType) {
             case ScmProviderType.GITLAB:
-                this.tenant = new Gitlab(this.config, this.config.scm.gitlabConfig)
+                this.tenant = new GitlabProvider(this.config, this.config.scm.gitlabConfig)
                 break
             case ScmProviderType.SCM_MANAGER:
-                this.tenant = new ScmManager(this.config, config.scm.scmmConfig, scmmApiClient, this.helmStrategy, fileSystemUtils)
+                this.tenant = new ScmManagerProvider(this.config, config.scm.scmmConfig, scmmApiClient, this.helmStrategy, fileSystemUtils)
                 // this.tenant.setup() setup will be here in future
                 break
             default:
@@ -76,10 +76,10 @@ class GitHandler extends Feature {
         //CentralSCM
         switch (config.multiTenant.scmProviderType) {
             case ScmProviderType.GITLAB:
-                this.central = new Gitlab(this.config, this.config.multiTenant.gitlabConfig)
+                this.central = new GitlabProvider(this.config, this.config.multiTenant.gitlabConfig)
                 break
             case ScmProviderType.SCM_MANAGER:
-                this.central = new ScmManager(this.config, config.multiTenant.scmmConfig, scmmApiClient, this.helmStrategy, fileSystemUtils)
+                this.central = new ScmManagerProvider(this.config, config.multiTenant.scmmConfig, scmmApiClient, this.helmStrategy, fileSystemUtils)
                 break
             default:
                 throw new IllegalArgumentException("Unsupported SCM-Central provider: ${config.scm.scmProviderType}")

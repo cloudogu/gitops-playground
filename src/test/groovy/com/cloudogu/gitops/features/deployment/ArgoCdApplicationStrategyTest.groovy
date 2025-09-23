@@ -1,9 +1,10 @@
 package com.cloudogu.gitops.features.deployment
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.scmm.ScmmRepo
+import com.cloudogu.gitops.features.git.config.ScmTenantSchema
+import com.cloudogu.gitops.git.local.GitRepo
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.TestScmmRepoProvider
+import com.cloudogu.gitops.utils.TestGitRepoFactory
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 
@@ -106,7 +107,7 @@ spec:
                         gitName: 'Cloudogu',
                         gitEmail: 'hello@cloudogu.com'
                 ),
-                scmm: new Config.ScmmSchema(
+                scmm: new ScmTenantSchema.ScmmTenantConfig(
                         username: "dont-care-username",
                         password: "dont-care-password",
                 ),
@@ -118,9 +119,9 @@ spec:
         )
 
 
-        def repoProvider = new TestScmmRepoProvider(config, new FileSystemUtils()) {
+        def repoProvider = new TestGitRepoFactory(config, new FileSystemUtils()) {
             @Override
-            ScmmRepo getRepo(String repoTarget) {
+            GitRepo getRepo(String repoTarget) {
                 def repo = super.getRepo(repoTarget)
                 localTempDir = new File(repo.getAbsoluteLocalRepoTmpDir())
 
@@ -128,7 +129,7 @@ spec:
             }
 
             @Override
-            ScmmRepo getRepo(String repoTarget, Boolean isCentralRepo) {
+            GitRepo getRepo(String repoTarget, Boolean isCentralRepo) {
                 def repo = super.getRepo(repoTarget, isCentralRepo)
                 localTempDir = new File(repo.getAbsoluteLocalRepoTmpDir())
 

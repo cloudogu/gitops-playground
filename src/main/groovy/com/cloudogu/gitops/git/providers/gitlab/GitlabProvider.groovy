@@ -4,7 +4,6 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.features.git.config.util.GitlabConfig
 import com.cloudogu.gitops.git.providers.GitProvider
-import com.cloudogu.gitops.git.local.GitRepo
 import groovy.util.logging.Slf4j
 import org.gitlab4j.api.GitLabApi
 import org.gitlab4j.api.models.Group
@@ -13,14 +12,14 @@ import org.gitlab4j.api.models.Project
 import java.util.logging.Level
 
 @Slf4j
-class Gitlab implements GitProvider {
+class GitlabProvider implements GitProvider {
 
     private GitLabApi gitlabApi
     private Config config
 
     GitlabConfig gitlabConfig
 
-    Gitlab(Config config, GitlabConfig gitlabConfig) {
+    GitlabProvider(Config config, GitlabConfig gitlabConfig) {
         this.config = config
         this.gitlabConfig = gitlabConfig
         this.gitlabApi = new GitLabApi(credentials.toString(), credentials.password)

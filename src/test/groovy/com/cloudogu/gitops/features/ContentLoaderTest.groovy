@@ -1,8 +1,8 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.scmm.ScmRepoProvider
-import com.cloudogu.gitops.scmm.api.ScmmApiClient
+import com.cloudogu.gitops.git.local.GitRepoFactory
+import com.cloudogu.gitops.git.providers.scmmanager.api.ScmmApiClient
 import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
@@ -17,9 +17,9 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.mockito.ArgumentCaptor
 
+import static ContentLoader.RepoCoordinate
 import static com.cloudogu.gitops.config.Config.*
 import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositorySchema
-import static ContentLoader.RepoCoordinate
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.any
@@ -43,7 +43,7 @@ class ContentLoaderTest {
 
     CommandExecutorForTest k8sCommands = new CommandExecutorForTest()
     K8sClientForTest k8sClient = new K8sClientForTest(config, k8sCommands)
-    TestScmmRepoProvider scmmRepoProvider = new TestScmmRepoProvider(config, new FileSystemUtils())
+    TestGitRepoFactory scmmRepoProvider = new TestGitRepoFactory(config, new FileSystemUtils())
     TestScmmApiClient scmmApiClient = new TestScmmApiClient(config)
     Jenkins jenkins = mock(Jenkins.class)
 
@@ -908,7 +908,7 @@ class ContentLoaderTest {
     class ContentLoaderForTest extends ContentLoader {
         CloneCommand cloneSpy
 
-        ContentLoaderForTest(Config config, K8sClient k8sClient, ScmRepoProvider repoProvider, ScmmApiClient scmmApiClient, Jenkins jenkins) {
+        ContentLoaderForTest(Config config, K8sClient k8sClient, GitRepoFactory repoProvider, ScmmApiClient scmmApiClient, Jenkins jenkins) {
             super(config, k8sClient, repoProvider, scmmApiClient, jenkins)
         }
 

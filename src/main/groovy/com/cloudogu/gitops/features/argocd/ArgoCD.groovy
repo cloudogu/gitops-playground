@@ -3,9 +3,8 @@ package com.cloudogu.gitops.features.argocd
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.git.GitHandler
-import com.cloudogu.gitops.git.local.ScmRepoProvider
+import com.cloudogu.gitops.git.local.GitRepoFactory
 import com.cloudogu.gitops.git.providers.GitProvider
-import com.cloudogu.gitops.kubernetes.argocd.ArgoApplication
 import com.cloudogu.gitops.kubernetes.rbac.RbacDefinition
 import com.cloudogu.gitops.kubernetes.rbac.Role
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -51,7 +50,7 @@ class ArgoCD extends Feature {
     protected HelmClient helmClient
 
     protected FileSystemUtils fileSystemUtils
-    private ScmRepoProvider repoProvider
+    private GitRepoFactory repoProvider
 
     GitHandler gitHandler
 
@@ -60,7 +59,7 @@ class ArgoCD extends Feature {
             K8sClient k8sClient,
             HelmClient helmClient,
             FileSystemUtils fileSystemUtils,
-            ScmRepoProvider repoProvider,
+            GitRepoFactory repoProvider,
             GitHandler gitHandler
     ) {
         this.repoProvider = repoProvider

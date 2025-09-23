@@ -4,7 +4,7 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Config.HelmConfig
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.local.GitRepo
-import com.cloudogu.gitops.git.local.ScmRepoProvider
+import com.cloudogu.gitops.git.local.GitRepoFactory
 
 import com.cloudogu.gitops.git.providers.scmmanager.api.ScmmApiClient
 import groovy.util.logging.Slf4j
@@ -17,13 +17,13 @@ import java.nio.file.Path
 class AirGappedUtils {
 
     private Config config
-    private ScmRepoProvider repoProvider
+    private GitRepoFactory repoProvider
     private ScmmApiClient scmmApiClient
     private FileSystemUtils fileSystemUtils
     private HelmClient helmClient
     private GitHandler gitHandler
 
-    AirGappedUtils(Config config, ScmRepoProvider repoProvider, ScmmApiClient scmmApiClient,
+    AirGappedUtils(Config config, GitRepoFactory repoProvider, ScmmApiClient scmmApiClient,
                    FileSystemUtils fileSystemUtils, HelmClient helmClient, GitHandler gitHandler) {
         this.config = config
         this.repoProvider = repoProvider

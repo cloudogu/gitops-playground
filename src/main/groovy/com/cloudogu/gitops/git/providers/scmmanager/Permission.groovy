@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.git.providers.scmmanager.api
+package com.cloudogu.gitops.git.providers.scmmanager
 
 class Permission {
     final String name
