@@ -6,7 +6,7 @@ import com.cloudogu.gitops.config.Credentials
 
 interface ScmmConfig {
     Boolean internal
-    String url
+    String url  //TODO maybe rename to externalUrl?
     public String username = Config.DEFAULT_ADMIN_USER
     public String password = Config.DEFAULT_ADMIN_PW
     String namespace ='scm-manager'

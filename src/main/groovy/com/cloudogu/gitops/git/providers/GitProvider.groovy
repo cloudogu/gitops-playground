@@ -10,7 +10,7 @@ interface GitProvider {
      */
     boolean createRepository(String repoTarget, String description, boolean initialize)
 
-    String getUrl() // TODO Gitlab and ScmManager should impelent this:
+    String getUrl() // TODO Gitlab and ScmManager should implement this:
 
     //TODO role should be a string, because gitlab and scmmanager have different permissions role.
     // In both provider we have to match the role or the role will cmome from config ??
