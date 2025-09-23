@@ -3,8 +3,8 @@ package com.cloudogu.gitops.utils
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Config.HelmConfig
 import com.cloudogu.gitops.features.git.GitHandler
-import com.cloudogu.gitops.git.local.GitRepo
-import com.cloudogu.gitops.git.local.GitRepoFactory
+import com.cloudogu.gitops.git.GitRepo
+import com.cloudogu.gitops.git.GitRepoFactory
 
 import com.cloudogu.gitops.git.providers.scmmanager.api.ScmmApiClient
 import groovy.util.logging.Slf4j
