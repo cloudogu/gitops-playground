@@ -29,9 +29,10 @@ class ScmManagerProvider implements GitProvider{
         return handle201or409(response, "Repository ${namespace}/${repoName}")
     }
 
+    // TODO what kind of url (repoUrl/repoBase)? than rename to repoUrl?
     @Override
     String getUrl() {
-        return ""
+        return repoBase()
     }
 
     @Override
@@ -53,7 +54,8 @@ class ScmManagerProvider implements GitProvider{
     Credentials getCredentials() {
         return this.scmmConfig.credentials
     }
-//TODO implement
+
+    //TODO implement
     @Override
     void deleteRepository(String namespace, String repository, boolean prefixNamespace) {
 
@@ -72,6 +74,11 @@ class ScmManagerProvider implements GitProvider{
     }
 
     // ---------------- URL components  ----------------
+    /** …/scm/api/v2/metrics/prometheus */
+    URI prometheusMetricsEndpoint() {
+        return withSlash(base()).resolve("api/v2/metrics/prometheus")
+    }
+
     /** …/scm  (without trailing slash) */
     URI base() {
         return withoutTrailingSlash(withScm(internalOrExternal()))
