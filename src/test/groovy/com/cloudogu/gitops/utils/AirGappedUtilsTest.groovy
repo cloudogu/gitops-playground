@@ -35,7 +35,7 @@ class AirGappedUtilsTest {
     Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
     TestGitRepoFactory scmmRepoProvider = new TestGitRepoFactory(config, new FileSystemUtils())
     FileSystemUtils fileSystemUtils = new FileSystemUtils()
-    TestScmmApiClient scmmApiClient = new TestScmmApiClient(config)
+    TestScmManagerApiClient scmmApiClient = new TestScmManagerApiClient(config)
     HelmClient helmClient = mock(HelmClient)
 
     @BeforeEach

@@ -14,5 +14,5 @@ interface UsersApi {
 
     @Headers(["ContentLoader-Type: application/vnd.scmm-user+json;v=2"])
     @POST("/api/v2/users")
-    Call<Void> addUser(@Body ScmUser user)
+    Call<Void> addUser(@Body ScmManagerUser user)
 }

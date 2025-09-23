@@ -3,7 +3,7 @@ package com.cloudogu.gitops.utils
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
 import com.cloudogu.gitops.git.providers.scmmanager.api.RepositoryApi
-import com.cloudogu.gitops.git.providers.scmmanager.api.ScmmApiClient
+import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
 
 import okhttp3.internal.http.RealResponseBody
 import okio.BufferedSource
@@ -14,13 +14,13 @@ import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.mock
 import static org.mockito.Mockito.when 
 
-class TestScmmApiClient extends ScmmApiClient {
+class TestScmManagerApiClient extends ScmManagerApiClient {
 
     RepositoryApi repositoryApi = mock(RepositoryApi)
     Set<String> createdRepos = new HashSet<>()
     Set<String> createdPermissions = new HashSet<>()
 
-    TestScmmApiClient(Config config) {
+    TestScmManagerApiClient(Config config) {
         super(config, null)
     }
 

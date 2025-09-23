@@ -14,7 +14,7 @@ import com.cloudogu.gitops.features.deployment.Deployer
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepoFactory
-import com.cloudogu.gitops.git.providers.scmmanager.api.ScmmApiClient
+import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
 import com.cloudogu.gitops.jenkins.*
 import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
@@ -63,7 +63,7 @@ class GitopsPlaygroundCliMainScripted {
                 }
             }
             def httpClientScmm = httpClientFactory.okHttpClientScmm(httpClientFactory.createLoggingInterceptor(), config, insecureSslContextProvider)
-            def scmmApiClient = new ScmmApiClient(config, httpClientScmm)
+            def scmmApiClient = new ScmManagerApiClient(config, httpClientScmm)
 
 
             //TODO check if moving this up here is correct
