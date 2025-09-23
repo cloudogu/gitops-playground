@@ -1,7 +1,7 @@
 package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.git.local.GitRepo
+import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.utils.*
 import groovy.io.FileType
 import groovy.json.JsonSlurper

@@ -14,7 +14,7 @@ import static org.mockito.ArgumentMatchers.anyString
 import static org.mockito.Mockito.mock
 import static org.mockito.Mockito.when 
 
-class ScmManagerProviderTest {
+class ScmManagerTest {
 
     Config config = new Config(
             application: new Config.ApplicationSchema(

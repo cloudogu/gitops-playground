@@ -4,6 +4,7 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.features.git.config.util.GitlabConfig
 import com.cloudogu.gitops.git.providers.GitProvider
+import com.cloudogu.gitops.git.providers.scmmanager.Permission
 import groovy.util.logging.Slf4j
 import org.gitlab4j.api.GitLabApi
 import org.gitlab4j.api.models.Group
@@ -12,14 +13,14 @@ import org.gitlab4j.api.models.Project
 import java.util.logging.Level
 
 @Slf4j
-class GitlabProvider implements GitProvider {
+class Gitlab implements GitProvider {
 
     private GitLabApi gitlabApi
     private Config config
 
     GitlabConfig gitlabConfig
 
-    GitlabProvider(Config config, GitlabConfig gitlabConfig) {
+    Gitlab(Config config, GitlabConfig gitlabConfig) {
         this.config = config
         this.gitlabConfig = gitlabConfig
         this.gitlabApi = new GitLabApi(credentials.toString(), credentials.password)
@@ -39,27 +40,6 @@ class GitlabProvider implements GitProvider {
         return group
     }
 
-    //TODO
-    @Override
-    void createRepo(String name, String description) {
-        Optional<Project> project = getProject("${this.gitlabConfig.parentGroup}/${name}".toString()) // TODO: fullpath
-        if (project.isEmpty()) {
-            Project projectSpec = new Project()
-                    .withName(name)
-                    .withDescription(description)
-                    .withIssuesEnabled(true)
-                    .withMergeRequestsEnabled(true)
-                    .withWikiEnabled(true)
-                    .withSnippetsEnabled(true)
-                    .withPublic(false)
-                    .withNamespaceId(this.gitlabConfig.parentGroup.toLong())
-                    .withInitializeWithReadme(true)
-
-            project = Optional.ofNullable(this.gitlabApi.projectApi.createProject(projectSpec))
-            log.info("Project ${projectSpec} created in Gitlab!")
-        }
-        removeBranchProtection(project.get())
-    }
 
 //    void setup() {
 //        log.info("Creating Gitlab Groups")
@@ -171,12 +151,6 @@ class GitlabProvider implements GitProvider {
         return this.gitlabConfig.credentials
     }
 
-//TODO
-
-    @Override
-    Boolean isInternal() {
-        return false
-    }
 
     @Override
     boolean createRepository(String repoTarget, String description, boolean initialize) {
@@ -184,14 +158,15 @@ class GitlabProvider implements GitProvider {
     }
 
     @Override
+    void setRepositoryPermission(String repoTarget, String principal, Permission.Role role, boolean groupPermission) {
+
+    }
+
+    @Override
     String computePushUrl(String repoTarget) {
         return null
     }
 
-    @Override
-    Credentials pushAuth() {
-        return null
-    }
 
     @Override
     void deleteRepository(String namespace, String repository, boolean prefixNamespace) {

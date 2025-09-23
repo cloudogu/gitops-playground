@@ -2,8 +2,8 @@ package com.cloudogu.gitops.destroy
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.git.GitHandler
-import com.cloudogu.gitops.git.local.GitRepo
-import com.cloudogu.gitops.git.local.GitRepoFactory
+import com.cloudogu.gitops.git.GitRepo
+import com.cloudogu.gitops.git.GitRepoFactory
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.HelmClient
 import com.cloudogu.gitops.utils.K8sClient
