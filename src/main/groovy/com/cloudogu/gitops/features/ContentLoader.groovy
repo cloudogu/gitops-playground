@@ -5,7 +5,7 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Config.OverwriteMode
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.local.GitRepo
-import com.cloudogu.gitops.git.local.ScmRepoProvider
+import com.cloudogu.gitops.git.local.GitRepoFactory
 import com.cloudogu.gitops.git.providers.scmmanager.api.ScmmApiClient
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
@@ -39,7 +39,7 @@ class ContentLoader extends Feature {
 
     private Config config
     private K8sClient k8sClient
-    private ScmRepoProvider repoProvider
+    private GitRepoFactory repoProvider
     private ScmmApiClient scmmApiClient
     private Jenkins jenkins
     // set by lazy initialisation
@@ -51,7 +51,7 @@ class ContentLoader extends Feature {
     private GitHandler gitHandler
 
     ContentLoader(
-            Config config, K8sClient k8sClient, ScmRepoProvider repoProvider, ScmmApiClient scmmApiClient, Jenkins jenkins, GitHandler gitHandler
+            Config config, K8sClient k8sClient, GitRepoFactory repoProvider, ScmmApiClient scmmApiClient, Jenkins jenkins, GitHandler gitHandler
     ) {
         this.config = config
         this.k8sClient = k8sClient

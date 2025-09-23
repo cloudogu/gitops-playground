@@ -3,9 +3,6 @@ package com.cloudogu.gitops.utils
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.git.config.ScmCentralSchema
 import com.cloudogu.gitops.git.local.GitRepo
-import com.cloudogu.gitops.scmm.ScmmRepo
-import com.cloudogu.gitops.scmm.api.Permission
-import com.cloudogu.gitops.scmm.api.Repository
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Ref
 import org.junit.jupiter.api.Test
@@ -17,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.*
 
-class ScmmRepoTest {
+class GitRepoTest {
 
 
     public static final String expectedNamespace = "namespace"
@@ -32,7 +29,7 @@ class ScmmRepoTest {
                     password: "dont-care-password",
 //                    gitOpsUsername: 'foo-gitops' // TODO:
             ))
-    TestScmmRepoProvider scmmRepoProvider = new TestScmmRepoProvider(config, new FileSystemUtils())
+    TestGitRepoFactory scmmRepoProvider = new TestGitRepoFactory(config, new FileSystemUtils())
     TestScmmApiClient scmmApiClient = new TestScmmApiClient(config)
     Call<Void>  response201 = TestScmmApiClient.mockSuccessfulResponse(201)
     Call<Void> response409 = scmmApiClient.mockErrorResponse(409)

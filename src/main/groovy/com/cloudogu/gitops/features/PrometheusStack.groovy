@@ -6,7 +6,7 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.local.GitRepo
-import com.cloudogu.gitops.git.local.ScmRepoProvider
+import com.cloudogu.gitops.git.local.GitRepoFactory
 import com.cloudogu.gitops.utils.*
 import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
@@ -31,7 +31,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
     Config config
     K8sClient k8sClient
 
-    ScmRepoProvider scmRepoProvider
+    GitRepoFactory scmRepoProvider
     private FileSystemUtils fileSystemUtils
     private DeploymentStrategy deployer
     private AirGappedUtils airGappedUtils
@@ -43,7 +43,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
             DeploymentStrategy deployer,
             K8sClient k8sClient,
             AirGappedUtils airGappedUtils,
-            ScmRepoProvider scmRepoProvider,
+            GitRepoFactory scmRepoProvider,
             GitHandler gitHandler
     ) {
         this.deployer = deployer

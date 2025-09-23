@@ -13,7 +13,7 @@ import com.cloudogu.gitops.features.deployment.ArgoCdApplicationStrategy
 import com.cloudogu.gitops.features.deployment.Deployer
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.features.git.GitHandler
-import com.cloudogu.gitops.git.local.ScmRepoProvider
+import com.cloudogu.gitops.git.local.GitRepoFactory
 import com.cloudogu.gitops.git.providers.scmmanager.api.ScmmApiClient
 import com.cloudogu.gitops.jenkins.*
 import com.cloudogu.gitops.utils.*
@@ -54,7 +54,7 @@ class GitopsPlaygroundCliMainScripted {
 
             def httpClientFactory = new HttpClientFactory()
 
-            def scmmRepoProvider = new ScmRepoProvider(config, fileSystemUtils)
+            def scmmRepoProvider = new GitRepoFactory(config, fileSystemUtils)
 
             def insecureSslContextProvider = new Provider<HttpClientFactory.InsecureSslContext>() {
                 @Override
@@ -96,7 +96,7 @@ class GitopsPlaygroundCliMainScripted {
                         new Registry(config, fileSystemUtils, k8sClient, helmStrategy),
                         gitHandler,
                         jenkins,
-                        new ScmmManager(config, executor, fileSystemUtils, helmStrategy, k8sClient, networkingUtils),
+                        new ScmManagerSetup(config, executor, fileSystemUtils, helmStrategy, k8sClient, networkingUtils),
                         new ArgoCD(config, k8sClient, helmClient, fileSystemUtils, scmmRepoProvider, gitHandler),
                         new IngressNginx(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
                         new CertManager(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),

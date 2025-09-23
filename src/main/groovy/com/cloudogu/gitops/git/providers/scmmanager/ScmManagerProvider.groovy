@@ -2,7 +2,6 @@ package com.cloudogu.gitops.git.providers.scmmanager
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
-import com.cloudogu.gitops.git.local.GitRepo
 import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.features.git.config.util.ScmmConfig
 import com.cloudogu.gitops.features.deployment.HelmStrategy
@@ -14,7 +13,7 @@ import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 
 @Slf4j
-class ScmManager implements GitProvider {
+class ScmManagerProvider implements GitProvider {
 
     static final String HELM_VALUES_PATH = "scm-manager/values.ftl.yaml"
 
@@ -30,7 +29,7 @@ class ScmManager implements GitProvider {
     String url // TODO:
     String scmmRepoTarget // TODO:
 
-    ScmManager(Config config, ScmmConfig scmmConfig, ScmmApiClient scmmApiClient, HelmStrategy deployer, FileSystemUtils fileSystemUtils) {
+    ScmManagerProvider(Config config, ScmmConfig scmmConfig, ScmmApiClient scmmApiClient, HelmStrategy deployer, FileSystemUtils fileSystemUtils) {
         this.config = config
         this.namespace = namespace
         this.scmmApiClient = scmmApiClient

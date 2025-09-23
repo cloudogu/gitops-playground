@@ -9,13 +9,11 @@ import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
-import org.gitlab4j.api.GitLabApi
-import java.util.logging.Level
 
 @Slf4j
 @Singleton
 @Order(60)
-class ScmmManager extends Feature {
+class ScmManagerSetup extends Feature {
 
     static final String HELM_VALUES_PATH = "scm-manager/values.ftl.yaml"
 
@@ -28,7 +26,7 @@ class ScmmManager extends Feature {
     private NetworkingUtils networkingUtils
     String centralSCMUrl
 
-    ScmmManager(
+    ScmManagerSetup(
             Config config,
             CommandExecutor commandExecutor,
             FileSystemUtils fileSystemUtils,

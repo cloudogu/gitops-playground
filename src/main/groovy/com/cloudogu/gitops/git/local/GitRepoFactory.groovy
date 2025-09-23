@@ -6,11 +6,11 @@ import com.cloudogu.gitops.utils.FileSystemUtils
 import jakarta.inject.Singleton
 
 @Singleton
-class ScmRepoProvider {
+class GitRepoFactory {
     protected final Config config
     protected final FileSystemUtils fileSystemUtils
 
-    ScmRepoProvider(Config config, FileSystemUtils fileSystemUtils) {
+    GitRepoFactory(Config config, FileSystemUtils fileSystemUtils) {
         this.fileSystemUtils = fileSystemUtils
         this.config = config
     }

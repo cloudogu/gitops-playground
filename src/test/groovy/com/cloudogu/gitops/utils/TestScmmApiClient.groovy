@@ -1,10 +1,10 @@
 package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.scmm.api.Permission
-import com.cloudogu.gitops.scmm.api.Repository
-import com.cloudogu.gitops.scmm.api.RepositoryApi
-import com.cloudogu.gitops.scmm.api.ScmmApiClient
+import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
+import com.cloudogu.gitops.git.providers.scmmanager.api.RepositoryApi
+import com.cloudogu.gitops.git.providers.scmmanager.api.ScmmApiClient
+
 import okhttp3.internal.http.RealResponseBody
 import okio.BufferedSource
 import retrofit2.Call

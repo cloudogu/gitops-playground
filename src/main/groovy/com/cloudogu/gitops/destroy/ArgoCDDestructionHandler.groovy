@@ -3,7 +3,7 @@ package com.cloudogu.gitops.destroy
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.local.GitRepo
-import com.cloudogu.gitops.git.local.ScmRepoProvider
+import com.cloudogu.gitops.git.local.GitRepoFactory
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.HelmClient
 import com.cloudogu.gitops.utils.K8sClient
@@ -16,7 +16,7 @@ import java.nio.file.Path
 @Order(100)
 class ArgoCDDestructionHandler implements DestructionHandler {
     private K8sClient k8sClient
-    private ScmRepoProvider repoProvider
+    private GitRepoFactory repoProvider
     private HelmClient helmClient
     private Config config
     private FileSystemUtils fileSystemUtils
@@ -24,7 +24,7 @@ class ArgoCDDestructionHandler implements DestructionHandler {
     ArgoCDDestructionHandler(
             Config config,
             K8sClient k8sClient,
-            ScmRepoProvider repoProvider,
+            GitRepoFactory repoProvider,
             HelmClient helmClient,
             FileSystemUtils fileSystemUtils,
             GitHandler gitHandler
