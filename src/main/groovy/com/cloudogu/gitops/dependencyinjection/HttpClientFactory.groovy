@@ -27,21 +27,14 @@ import java.security.cert.X509Certificate
 @Factory
 class HttpClientFactory {
 
-
-    static OkHttpClient buildOkHttpClient(Credentials credentials, Boolean isSecure) {
+    static OkHttpClient buildOkHttpClient(Credentials credentials, Boolean isInsecure) {
         def builder = new OkHttpClient.Builder()
                 .addInterceptor(new AuthorizationInterceptor(credentials.username, credentials.password))
                 .addInterceptor(createLoggingInterceptor())
                 .addInterceptor(new RetryInterceptor())
 
-        if (isSecure) {
-            def insecureSslContextProvider = new Provider<InsecureSslContext>() {
-                @Override
-                InsecureSslContext get() {
-                    return insecureSslContext()
-                }
-            }
-            def context = insecureSslContextProvider.get()
+        if (isInsecure) {
+            def context = insecureSslContext()
             builder.sslSocketFactory(context.socketFactory, context.trustManager)
         }
 
@@ -50,21 +43,20 @@ class HttpClientFactory {
 
     @Singleton
     @Named("jenkins")
-    OkHttpClient okHttpClientJenkins(HttpLoggingInterceptor httpLoggingInterceptor, Config config, Provider<InsecureSslContext> insecureSslContextProvider) {
+    OkHttpClient okHttpClientJenkins(Config config) {
         def builder = new OkHttpClient.Builder()
                 .cookieJar(new JavaNetCookieJar(new CookieManager()))
-                .addInterceptor(httpLoggingInterceptor)
+                .addInterceptor(createLoggingInterceptor())
                 .addInterceptor(new RetryInterceptor())
 
         if (config.application.insecure) {
-            def context = insecureSslContextProvider.get()
+            def context = insecureSslContext()
             builder.sslSocketFactory(context.socketFactory, context.trustManager)
         }
 
         return builder.build()
     }
 
-    @Singleton
     static HttpLoggingInterceptor createLoggingInterceptor() {
         def logger = LoggerFactory.getLogger("com.cloudogu.gitops.HttpClient")
 
@@ -81,7 +73,6 @@ class HttpClientFactory {
         return ret
     }
 
-    @Prototype
     static InsecureSslContext insecureSslContext() {
         def noCheckTrustManager = new X509TrustManager() {
             @Override

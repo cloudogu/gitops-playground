@@ -157,16 +157,16 @@ class Gitlab implements GitProvider {
         return false
     }
 
-    @Override
-    void setRepositoryPermission(String repoTarget, String principal, Permission.Role role, boolean groupPermission) {
-
-    }
 
     @Override
     String computePushUrl(String repoTarget) {
         return null
     }
 
+    @Override
+    Credentials pushAuth() {
+        return null
+    }
 
     @Override
     void deleteRepository(String namespace, String repository, boolean prefixNamespace) {
@@ -199,4 +199,13 @@ class Gitlab implements GitProvider {
         return this.url
     }
 
+    @Override
+    void createRepo(String target, String description) {
+
+    }
+
+    @Override
+    Boolean isInternal() {
+        return null
+    }
 }
