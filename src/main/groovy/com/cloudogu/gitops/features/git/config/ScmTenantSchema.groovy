@@ -59,7 +59,7 @@ class ScmTenantSchema {
     }
 
     static class ScmManagerTenantConfig implements ScmManagerConfig {
-        Boolean internal = false
+        Boolean internal = true
 
         @Option(names = ['--scmm-url'], description = SCMM_URL_DESCRIPTION)
         @JsonPropertyDescription(SCMM_URL_DESCRIPTION)

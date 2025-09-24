@@ -11,7 +11,6 @@ import com.cloudogu.gitops.utils.FileSystemUtils
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
-import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
 
 @Slf4j
 @Singleton
@@ -30,6 +29,7 @@ class GitHandler extends Feature {
         this.config = config
         this.helmStrategy = helmStrategy
         this.fileSystemUtils = fileSystemUtils
+        init()
     }
 
     @Override
