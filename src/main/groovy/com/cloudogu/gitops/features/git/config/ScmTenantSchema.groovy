@@ -51,6 +51,8 @@ class ScmTenantSchema {
         @JsonPropertyDescription(SCMM_PASSWORD_DESCRIPTION)
         String parentProjectid = ''
 
+        String gitOpsUsername = ''
+
         Credentials getCredentials() {
             return new Credentials(username, password)
         }

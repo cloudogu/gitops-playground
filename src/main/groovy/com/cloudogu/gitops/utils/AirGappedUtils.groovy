@@ -77,17 +77,17 @@ class AirGappedUtils {
         }
     }
 
-    private Map localizeChartYaml(GitRepo scmmRepo) {
-        log.debug("Preparing repo ${scmmRepo.scmRepoTarget} for air-gapped use: Changing Chart.yaml to resolve depencies locally")
+    private Map localizeChartYaml(GitRepo gitRepo) {
+        log.debug("Preparing repo ${gitRepo.repoTarget} for air-gapped use: Changing Chart.yaml to resolve depencies locally")
 
-        def chartYamlPath = Path.of(scmmRepo.absoluteLocalRepoTmpDir, 'Chart.yaml')
+        def chartYamlPath = Path.of(gitRepo.absoluteLocalRepoTmpDir, 'Chart.yaml')
 
         Map chartYaml = new YamlSlurper().parse(chartYamlPath) as Map
-        Map chartLock = parseChartLockIfExists(scmmRepo)
+        Map chartLock = parseChartLockIfExists(gitRepo)
 
         List<Map> dependencies = chartYaml.dependencies as List<Map> ?: []
         for (Map chartYamlDep : dependencies) {
-            resolveDependencyVersion(chartLock, chartYamlDep, scmmRepo)
+            resolveDependencyVersion(chartLock, chartYamlDep, gitRepo)
 
             // Remove link to external repo, to force using local one
             chartYamlDep.repository = ''
@@ -107,13 +107,13 @@ class AirGappedUtils {
     /**
      * Resolve proper dependency version from Chart.lock, e.g. 5.18.* -> 5.18.1
      */
-    private void resolveDependencyVersion(Map chartLock, Map chartYamlDep, GitRepo scmmRepo) {
+    private void resolveDependencyVersion(Map chartLock, Map chartYamlDep, GitRepo gitRepo) {
         def chartLockDep = findByName(chartLock.dependencies as List, chartYamlDep.name as String)
         if (chartLockDep) {
             chartYamlDep.version = chartLockDep.version
         } else if ((chartYamlDep.version as String).contains('*')) {
             throw new RuntimeException("Unable to determine proper version for dependency " +
-                    "${chartYamlDep.name} (version: ${chartYamlDep.version}) from repo ${scmmRepo.scmRepoTarget}")
+                    "${chartYamlDep.name} (version: ${chartYamlDep.version}) from repo ${gitRepo.repoTarget}")
         }
     }
 

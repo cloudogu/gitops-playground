@@ -33,6 +33,8 @@ class ScmCentralSchema {
             return new Credentials(username, password)
         }
 
+        String gitOpsUsername = ''
+
     }
 
     static class ScmmCentralConfig implements ScmmConfig {
@@ -60,6 +62,8 @@ class ScmCentralSchema {
         Credentials getCredentials() {
             return new Credentials(username, password)
         }
+
+        String gitOpsUsername = ''
 
     }
 }
