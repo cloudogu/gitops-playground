@@ -5,26 +5,9 @@ import com.cloudogu.gitops.features.git.config.util.GitlabConfig
 import com.cloudogu.gitops.features.git.config.util.ScmmConfig
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import picocli.CommandLine.Option
-
 import static com.cloudogu.gitops.config.ConfigConstants.*
 
 class ScmCentralSchema {
-
-    GitlabCentralConfig gitlabConfig
-
-    ScmmCentralConfig scmmConfig
-
-    @Option(names = ['--central-argocd-namespace'], description = CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
-    @JsonPropertyDescription(CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
-    String centralArgocdNamespace = 'argocd'
-
-    @Option(names = ['--dedicated-instance'], description = CENTRAL_USEDEDICATED_DESCRIPTION)
-    @JsonPropertyDescription(CENTRAL_USEDEDICATED_DESCRIPTION)
-    Boolean useDedicatedInstance = false
-
-    @Option(names = ['--central-scm-namespace'], description = CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
-    @JsonPropertyDescription(CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
-    String centralSCMnamespace = 'scm-manager'
 
     static class GitlabCentralConfig implements GitlabConfig {
         // Only supports external Gitlab for now

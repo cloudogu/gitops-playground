@@ -9,6 +9,7 @@ import com.cloudogu.gitops.utils.NetworkingUtils
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import picocli.CommandLine.Option
+import picocli.CommandLine.Mixin
 
 import static com.cloudogu.gitops.config.ConfigConstants.*
 
@@ -17,10 +18,15 @@ class ScmTenantSchema {
     //TODO type via setter if gitlabConfig is set
     ScmProviderType scmProviderType = ScmProviderType.SCM_MANAGER
 
+    @JsonPropertyDescription("GitlabConfig")
+    @Mixin
     GitlabTenantConfig gitlabConfig
 
+    @JsonPropertyDescription("GitlabConfig")
+    @Mixin
     ScmmTenantConfig scmmConfig
 
+    @JsonIgnore
     Boolean isInternal = { ->
         return (gitlabConfig.internal || scmmConfig.internal)
     }
@@ -107,6 +113,7 @@ class ScmTenantSchema {
         @JsonPropertyDescription(SCMM_SKIP_PLUGINS_DESCRIPTION)
         Boolean skipPlugins = false
 
+        @JsonIgnore
         Credentials getCredentials() {
             return new Credentials(username, password)
         }
