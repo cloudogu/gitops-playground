@@ -62,7 +62,7 @@ class GitopsPlaygroundCliMainScripted {
             def gitHandler = new GitHandler(config, helmStrategy, fileSystemUtils)
 
             def jenkinsApiClient = new JenkinsApiClient(config,
-                    httpClientFactory.okHttpClientJenkins(httpClientFactory.createLoggingInterceptor(), config, insecureSslContextProvider))
+                    httpClientFactory.okHttpClientJenkins(config))
 
             context.registerSingleton(k8sClient)
 

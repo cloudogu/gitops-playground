@@ -27,13 +27,11 @@ class ScmManager implements GitProvider {
         this.config = config
         this.scmmConfig = scmmConfig
         this.namespace = namespace
-        this.scmmApiClient = new ScmManagerApiClient(scmmConfig)
+        this.scmmApiClient = new ScmManagerApiClient(this.url,scmmConfig.credentials,config.application.insecure)
         this.deployer = deployer
         this.fileSystemUtils = fileSystemUtils
         this.credentials= scmmConfig.credentials
     }
-
-
 
     static Map templateToMap(String filePath, Map parameters) {
         def hydratedString = new TemplatingEngine().template(new File(filePath), parameters)
@@ -67,11 +65,6 @@ class ScmManager implements GitProvider {
     @Override
     boolean createRepository(String repoTarget, String description, boolean initialize) {
         return false
-    }
-
-    @Override
-    void setRepositoryPermission(String repoTarget, String principal, Permission.Role role, boolean groupPermission) {
-
     }
 
     @Override
