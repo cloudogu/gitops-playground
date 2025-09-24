@@ -39,7 +39,7 @@ class ScmManagerApiClient {
 
     protected Retrofit retrofit() {
         return new Retrofit.Builder()
-                .baseUrl(url+'/api/') //TODO check urls
+                .baseUrl(this.url)
                 .client(okHttpClient)
         // Converts HTTP body objects from groovy to JSON
                 .addConverterFactory(JacksonConverterFactory.create())
