@@ -107,7 +107,7 @@ spec:
                         gitName: 'Cloudogu',
                         gitEmail: 'hello@cloudogu.com'
                 ),
-                scmm: new ScmTenantSchema.ScmmTenantConfig(
+                scmm: new ScmTenantSchema.ScmManagerTenantConfig(
                         username: "dont-care-username",
                         password: "dont-care-password",
                 ),

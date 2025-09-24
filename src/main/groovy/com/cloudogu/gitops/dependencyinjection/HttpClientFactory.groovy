@@ -2,14 +2,11 @@ package com.cloudogu.gitops.dependencyinjection
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
-import com.cloudogu.gitops.features.git.config.util.ScmmConfig
 import com.cloudogu.gitops.git.providers.scmmanager.api.AuthorizationInterceptor
 import com.cloudogu.gitops.okhttp.RetryInterceptor
 import groovy.transform.TupleConstructor
 import io.micronaut.context.annotation.Factory
-import io.micronaut.context.annotation.Prototype
 import jakarta.inject.Named
-import jakarta.inject.Provider
 import jakarta.inject.Singleton
 import okhttp3.JavaNetCookieJar
 import okhttp3.OkHttpClient

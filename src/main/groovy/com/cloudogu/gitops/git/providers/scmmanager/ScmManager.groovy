@@ -2,26 +2,25 @@ package com.cloudogu.gitops.git.providers.scmmanager
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
+import com.cloudogu.gitops.features.git.config.util.ScmManagerConfig
 import com.cloudogu.gitops.git.providers.GitProvider
-import com.cloudogu.gitops.features.git.config.util.ScmmConfig
 import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
 import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
 import groovy.util.logging.Slf4j
-import okhttp3.OkHttpClient
 import retrofit2.Response
 
 @Slf4j
 class ScmManager implements GitProvider {
 
     private final Config config
-    private final ScmmConfig scmmConfig
-    private final ScmManagerApiClient scmmApiClient //TODO apiclient erstellen(jede Instanz erstellt selber einen apiclient)
+    private final ScmManagerConfig scmmConfig
+    private final ScmManagerApiClient scmmApiClient
 
     //TODO unit tests für scmmanager rüberziehen und restlichen Sachen implementieren
-    ScmManager(Config config, ScmmConfig scmmConfig) {
+    ScmManager(Config config, ScmManagerConfig scmmConfig) {
         this.config = config
         this.scmmConfig = scmmConfig
-        this.scmmApiClient = new ScmManagerApiClient(this.url,scmmConfig.credentials,config.application.insecure)
+        this.scmmApiClient = new ScmManagerApiClient(this.url, scmmConfig.credentials, config.application.insecure)
     }
 
     @Override
@@ -32,6 +31,7 @@ class ScmManager implements GitProvider {
         Response<Void> response = scmmApiClient.repositoryApi().create(repo, initialize).execute()
         return handle201or409(response, "Repository ${namespace}/${repoName}")
     }
+
     @Override
     void setRepositoryPermission(String repoTarget, String principal, Permission.Role role, boolean groupPermission) {
         def namespace = repoTarget.split('/', 2)[0]
@@ -52,11 +52,10 @@ class ScmManager implements GitProvider {
         return this.scmmConfig.credentials
     }
 
-
-    // TODO what kind of url (repoUrl/repoBase)? than rename to repoUrl?
     @Override
     String getUrl() {
-        return ""
+        /** …/scm/<rootPath>/nameprefix */
+        return withoutTrailingSlash(withSlash(repoBase()).resolve("${config.application.namePrefix}")).toString()
     }
 
     @Override
@@ -92,13 +91,13 @@ class ScmManager implements GitProvider {
     }
 
 
+    // ---------------- URI components  ----------------
+
     /** …/scm/api/ */  // apiBase for ScmManagerApiClient ?
     private URI apiBase() {
         return withSlash(base()).resolve("api/")
     }
 
-
-    // ---------------- URL components  ----------------
     /** …/scm/api/v2/metrics/prometheus */
     URI prometheusMetricsEndpoint() {
         return withSlash(base()).resolve("api/v2/metrics/prometheus")
@@ -111,9 +110,9 @@ class ScmManager implements GitProvider {
     /** …/scm/<rootPath>  (without trailing slash; rootPath default = "repo") */
     URI repoBase() {
         def root = trimBoth(scmmConfig.rootPath ?: "repo")   // <— default & trim
-        if (!root) return base()
-        return withoutTrailingSlash( withSlash(base()).resolve("${root}/"))
+        return withoutTrailingSlash(withSlash(base()).resolve("${root}/"))
     }
+
 
     /** …/scm/<rootPath>/<ns>/<name>  (without trailing slash) */
     URI repoUrl(String repoTarget) {
@@ -158,14 +157,14 @@ class ScmManager implements GitProvider {
         return urlString.endsWith('/') ? uri : URI.create(urlString + '/')
     }
 
-    private static URI withoutTrailingSlash(URI uri){
+    private static URI withoutTrailingSlash(URI uri) {
         def urlString = uri.toString()
         return urlString.endsWith('/') ? URI.create(urlString.substring(0, urlString.length() - 1)) : uri
     }
 
     //Removes leading and trailing slashes (prevents absolute paths when using resolve).
     private static String trimBoth(String str) {
-        return (str ?: "").replaceAll('^/+', '').replaceAll('/+$','')
+        return (str ?: "").replaceAll('^/+', '').replaceAll('/+$', '')
     }
 
     //TODO when git abctraction feature is ready, we will create before merge to main a branch, that

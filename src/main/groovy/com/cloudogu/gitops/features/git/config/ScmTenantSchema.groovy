@@ -4,7 +4,7 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.features.git.config.util.GitlabConfig
 import com.cloudogu.gitops.features.git.config.util.ScmProviderType
-import com.cloudogu.gitops.features.git.config.util.ScmmConfig
+import com.cloudogu.gitops.features.git.config.util.ScmManagerConfig
 import com.cloudogu.gitops.utils.NetworkingUtils
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
@@ -24,7 +24,7 @@ class ScmTenantSchema {
 
     @JsonPropertyDescription("GitlabConfig")
     @Mixin
-    ScmmTenantConfig scmmConfig
+    ScmManagerTenantConfig scmmConfig
 
     @JsonIgnore
     Boolean isInternal = { ->
@@ -58,7 +58,7 @@ class ScmTenantSchema {
         }
     }
 
-    static class ScmmTenantConfig implements ScmmConfig {
+    static class ScmManagerTenantConfig implements ScmManagerConfig {
         Boolean internal = false
 
         @Option(names = ['--scmm-url'], description = SCMM_URL_DESCRIPTION)
