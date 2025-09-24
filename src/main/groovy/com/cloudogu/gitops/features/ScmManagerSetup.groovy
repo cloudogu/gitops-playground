@@ -110,13 +110,13 @@ class ScmManagerSetup extends Feature {
                 GIT_COMMITTER_EMAIL          : config.application.gitEmail,
                 GIT_AUTHOR_NAME              : config.application.gitName,
                 GIT_AUTHOR_EMAIL             : config.application.gitEmail,
-                GITOPS_USERNAME              : config.multiTenant.scmmConfig,
+                GITOPS_USERNAME              : config.scm.scmmConfig.gitOpsUsername,
                 TRACE                        : config.application.trace,
                 SCMM_URL                     : config.scm.scmmConfig.url,
-                SCMM_USERNAME                : config.scm.scmmConfig,
-                SCMM_PASSWORD                : config.scm.scmmConfig,
+                SCMM_USERNAME                : config.scm.scmmConfig.username,
+                SCMM_PASSWORD                : config.scm.scmmConfig.password,
                 JENKINS_URL                  : config.jenkins.url,
-                INTERNAL_SCMM                : config.scm.isInternal,
+                INTERNAL_SCMM                : config.scm.scmmConfig.internal,
                 JENKINS_URL_FOR_SCMM         : config.jenkins.urlForScmm,
                 SCMM_URL_FOR_JENKINS         : config.scm.scmmConfig.urlForJenkins,
                 // Used indirectly in utils.sh 😬
@@ -130,10 +130,10 @@ class ScmManagerSetup extends Feature {
                 INSECURE                     : config.application.insecure,
                 SCM_ROOT_PATH                : config.scm.scmmConfig.rootPath,
                 SCM_PROVIDER                 : 'scm-manager',
-                CONTENT_EXAMPLES             : config.content.examples,
+                CONTENT_EXAMPLES             : false,
                 SKIP_RESTART                 : config.scm.scmmConfig.skipRestart,
                 SKIP_PLUGINS                 : config.scm.scmmConfig.skipPlugins,
-                CENTRAL_SCM_URL              : centralSCMUrl,
+                CENTRAL_SCM_URL              : "", //TODO
                 CENTRAL_SCM_USERNAME         : config.multiTenant.scmmConfig.username,
                 CENTRAL_SCM_PASSWORD         : config.multiTenant.scmmConfig.password
         ])

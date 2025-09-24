@@ -59,6 +59,10 @@ class ScmCentralSchema {
         @JsonPropertyDescription(CENTRAL_SCMM_PASSWORD_DESCRIPTION)
         String rootPath
 
+        @Option(names = ['--central-scm-namespace'], description = 'Namespace where the central scm resides in')
+        @JsonPropertyDescription(CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
+        String namespace = 'scm-manager'
+
         Credentials getCredentials() {
             return new Credentials(username, password)
         }
