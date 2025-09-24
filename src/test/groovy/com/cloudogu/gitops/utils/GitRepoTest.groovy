@@ -24,7 +24,7 @@ class GitRepoTest {
                     gitName: "Cloudogu",
                     gitEmail: "hello@cloudogu.com",)
             ,
-            scmm: new ScmCentralSchema.ScmmCentralConfig(
+            scmm: new ScmCentralSchema.ScmManagerCentralConfig(
                     username: "dont-care-username",
                     password: "dont-care-password",
 //                    gitOpsUsername: 'foo-gitops' // TODO:

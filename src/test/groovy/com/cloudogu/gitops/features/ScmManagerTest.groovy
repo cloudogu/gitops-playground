@@ -27,7 +27,7 @@ class ScmManagerTest {
                     gitEmail: 'hello@cloudogu.com',
                     runningInsideK8s : true
             ),
-            scmm: new ScmTenantSchema.ScmmTenantConfig(
+            scmm: new ScmTenantSchema.ScmManagerTenantConfig(
                     url: 'http://scmm',
                     internal: true,
                     ingress: 'scmm.localhost',

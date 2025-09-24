@@ -4,7 +4,7 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 
 
-interface ScmmConfig {
+interface ScmManagerConfig {
     Boolean internal
     String url
     public String username = Config.DEFAULT_ADMIN_USER

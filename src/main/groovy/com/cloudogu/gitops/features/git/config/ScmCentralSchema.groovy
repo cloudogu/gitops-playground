@@ -2,7 +2,7 @@ package com.cloudogu.gitops.features.git.config
 
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.features.git.config.util.GitlabConfig
-import com.cloudogu.gitops.features.git.config.util.ScmmConfig
+import com.cloudogu.gitops.features.git.config.util.ScmManagerConfig
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import picocli.CommandLine.Option
 import static com.cloudogu.gitops.config.ConfigConstants.*
@@ -37,7 +37,7 @@ class ScmCentralSchema {
 
     }
 
-    static class ScmmCentralConfig implements ScmmConfig {
+    static class ScmManagerCentralConfig implements ScmManagerConfig {
 
         @Option(names = ['--dedicated-internal'], description = CENTRAL_SCM_INTERNAL_DESCRIPTION)
         @JsonPropertyDescription(CENTRAL_SCM_INTERNAL_DESCRIPTION)
