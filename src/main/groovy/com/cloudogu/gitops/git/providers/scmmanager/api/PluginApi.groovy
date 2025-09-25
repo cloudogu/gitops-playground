@@ -14,6 +14,6 @@ interface PluginApi {
     Call<ResponseBody> install(@Path("name") String name, @Query("restart") Boolean restart)
 
     @PUT("api/v2/config/jenkins/")
-    @Headers("ContentLoader-Type: application/json")
+    @Headers("Content-Type: application/json")
     Call<Void> configureJenkinsPlugin(@Body Map<String, Object> config)
 }
