@@ -49,7 +49,7 @@ class GitopsPlaygroundCliMainScripted {
                 Config get() {
                     return config
                 }
-            },networkingUtils)
+            })
             def helmClient = new HelmClient(executor)
 
             def httpClientFactory = new HttpClientFactory()
@@ -59,7 +59,7 @@ class GitopsPlaygroundCliMainScripted {
             //TODO check if moving this up here is correct
             def helmStrategy = new HelmStrategy(config, helmClient)
 
-            def gitHandler = new GitHandler(config, helmStrategy, fileSystemUtils)
+            def gitHandler = new GitHandler(config, helmStrategy, fileSystemUtils, k8sClient, networkingUtils)
 
             def jenkinsApiClient = new JenkinsApiClient(config,
                     httpClientFactory.okHttpClientJenkins(config))
