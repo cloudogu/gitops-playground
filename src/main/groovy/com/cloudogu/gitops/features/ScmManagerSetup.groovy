@@ -54,7 +54,7 @@ class ScmManagerSetup extends Feature {
 
     @Override
     void enable() {
-        if (config.scm.isInternal) {
+        if (config.scm.scmmConfig.internal) {
             String releaseName = 'scmm'
 
             k8sClient.createNamespace(namespace)

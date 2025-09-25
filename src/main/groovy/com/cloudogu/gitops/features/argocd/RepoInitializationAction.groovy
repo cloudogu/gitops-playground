@@ -41,10 +41,10 @@ class RepoInitializationAction {
                 tenantName: config.application.tenantName,
                 argocd    : [host: config.features.argocd.url ? new URL(config.features.argocd.url).host : ""], //TODO move this to argocd class and get the url from there
                 scmm      : [
-                        baseUrl : this.gitHandler.tenant.url, //TODO baseURL vs RepoURL?
+                        baseUrl : this.gitHandler.tenant.url,
                         host    : this.gitHandler.tenant.host,
                         protocol: this.gitHandler.tenant.protocol,
-                        repoUrl : this.gitHandler.tenant.url, //TODO baseURL vs RepoURL?
+                        repoUrl : this.gitHandler.tenant.url,
                         centralScmmURL: this.gitHandler.central.url
                 ],
                 config    : config,
