@@ -20,7 +20,11 @@ class ScmManager implements GitProvider {
     ScmManager(Config config, ScmManagerConfig scmmConfig) {
         this.config = config
         this.scmmConfig = scmmConfig
-        this.scmmApiClient = new ScmManagerApiClient(apiBase().toString(), scmmConfig.credentials, config.application.insecure)
+        this.scmmApiClient = createScmManagerApiClient()
+    }
+
+    ScmManagerApiClient createScmManagerApiClient(){
+        return new ScmManagerApiClient(this.apiBase().toString(), scmmConfig.credentials, config.application.insecure)
     }
 
     @Override
