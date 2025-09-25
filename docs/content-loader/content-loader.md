@@ -1,6 +1,10 @@
 # Content Loader Documentation
 
-This documentation shows the Content Loader feature and its usage. The Content Loader offers the ability of hooking into the GitOps Playground (GOP) installation to deliver your own content.
+This documentation shows the Content Loader feature and its usage. 
+
+Content Loader offers the ability of hooking into the GitOps Playground (GOP) installation process, allowing for 
+customization of what is pushed to Git.
+This can be used to deploy your own content, e.g. your own applications, or adding tenants to Argo CD, etc.  
 
 Example for a GOP content repository:
 
@@ -8,34 +12,46 @@ Example for a GOP content repository:
 - [Directory structure](.) as an example of a folder-based content repository.
 
 # Table of contents
-- [Purpose of the Content Loader](#purpose-of-the-content-loader)
-- [What does the term “content” mean?](#what-does-the-term-content-mean)
-- [Content Loader Concepts](#content-loader-concepts)
-  -  [Different Types of Content Repos](#different-types-of-content-repos)
-      - [`MIRROR`](#mirror)
-      - [`COPY`](#copy)
-      - [`FOLDER_BASED`](#folder_based)
-- [The OverrideMode](#the-overridemode)
-- [Templating](#templating)
-- [TL;DR: How to start with content loader?](#tldr-how-to-start-with-content-loader)
-- [Example Use Cases](#example-use-cases)
+<!-- Update with `doctoc --notitle docs/content-loader/content-loader.md --maxlevel 2`. See https://github.com/thlorenz/doctoc -->
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Purpose of Content Loader](#purpose-of-content-loader)
+- [Meaning of the term "content"](#meaning-of-the-term-content)
+- [Content Loader concepts](#content-loader-concepts)
+  - [Content repos](#content-repos)
+  - [Additional options](#additional-options)
+  - [Different types of content repos](#different-types-of-content-repos)
+  - [The overrideMode](#the-overridemode)
+  - [Templating](#templating)
+- [TL;DR](#tldr)
+- [Example use cases](#example-use-cases)
   - [Mirror the entire repository on every call](#mirror-the-entire-repository-on-every-call)
   - [Create additional tenant in Argo CD](#create-additional-tenant-in-argo-cd)
   - [Mirror/copy repo and add specific files](#mirrorcopy-repo-and-add-specific-files)
 
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-# Purpose of the Content Loader
 
-The content loader feature makes your application cloud ready. It gives you the ability to deploy and operate any application in cloud environments with the GOP. \
-This customization applies to the Internal Developer Platform (IDP), for example, other ops tools such as monitoring. \
-It also applies to end-user applications, for example, replacing the example Petclinic content with real-world applications.
+# Purpose of Content Loader
 
-# What does the term “content” mean? 
+You like the idea of automatically rolling out IDPs using GOP but
 
-- Currently, the GOP (version > 0.11.0) consists of sample applications and exercises and their dependencies, in addition to the actual IDP (ArgoCD, Prometheus, etc.).
-  - ➡️ “Ready-to-use” provision of GitOps pipelines
-- We refer to this as “content”.
-- When rolling out GOP the `--content-examples` parameter leads to sample applications being  pushed to Git.
+* want to initialize it with your own real-world end-user application that is automatically deployed as a turnkey solution,
+* want to add multiple tenants with Argo CD,
+* want to have different or additional IDP tools, e.g. logging/backup/tracing, etc. 
+
+Then Content Loader is for you!
+It allows you to define content using a folder structure inside a Git repo (so-called content repo) that is picked up
+during GOP apply optionally run through a templating engine and then pushed to the target Git.
+
+# Meaning of the term "content"
+
+- Currently, GOP (version > 0.11.0) consists of example applications and exercises and their dependencies, 
+  in addition to the actual IDP (ArgoCD, Prometheus, etc.).  
+  ➡️ Turnkey-solution deployed via GitOps pipelines
+- We refer to these applications as "content".
+- When rolling out GOP, the `--content-examples` parameter leads to example applications being pushed to Git.
 - These applications include:
   - Code (e.g., repo `argocd/petclinic-helm`)
   - Configuration (Argo CD `Application` and YAML resources in the GitOps repo `argocd/example-tenant`)
@@ -43,73 +59,117 @@ It also applies to end-user applications, for example, replacing the example Pet
   - Some of them contain Jenkins files that describe how to build and push images and start the GitOps process.
   - Dependencies, e.g., `3rd-party-dependencies/gitops-build-lib` and `3rd-party-dependencies/spring-boot-helm-chart`
   - Jenkins job that clones the repos, builds images, and triggers the GitOps process
-- After installing the GOP, the sample applications are built by Jenkins and deployed by ArgoCD via GitOps.
-- The content loader feature provides the possibility to deliver your own custom content, i.e. real-world applications instead of demos.
+- After installing GOP, the example applications are built by Jenkins and deployed by ArgoCD via GitOps.  
+  Finally, these end-user applications can be reached via HTTP(S) via their ingress (turnkey-solution).
+- The content loader feature provides the possibility to deliver your own custom content, i.e. real-world applications instead of examples.
 
-# Content Loader Concepts
+# Content Loader concepts
 
-- The content deployed by GOP can be completely defined via configuration.
-- The content is defined in Git repositories, known as content repos.
-- There are different types of content repos: `MIRROR`, `COPY`, and `FOLDER_BASED` ([see different types of content repos below](#different-types-of-content-repos)).
-- For these types of Content Repos, the `overrideMode` determines how to handle previously existing files in the repo: `INIT`, `UPGRADE`, `RESET` ([see overrideMode below](#the-overridemode))
-- Templating with [Freemarker](https://freemarker.apache.org/) is available in the content files ([see templating below](#templating)).
-- Multiple content repos can be specified in the `content.repos` field.
-  - See the [sample configuration file](content-loader-config.yaml).
-- These are merged by the GOP in the defined order in a directory structure.
+The content deployed by GOP can be completely defined via configuration.
+
+This allows for 
+* changing all Git repos created by GOP. 
+* adding new Git repos, e.g. for end-user applications (including their dependencies such as Helm charts or build libraries) as well as IDP applications, such as monitoring tools.
+
+This is done by means of a `content` section within GOP's config file (the one being specified by `--config-file`).
+
+Here is a schematic example of the `content` section that will be described in the following:
+
+```yaml
+content:
+  repos:
+    - url: 'https://...'
+      path: 'a/b'
+      ref: branch
+      templating: true
+      type: FOLDER_BASED
+      overwriteMode: UPGRADE
+      createJenkinsJob: true
+    - ...
+
+  namespaces:
+    - prod
+    - ...
+
+  variables:
+    my: value
+    another: value
+    
+  examples: true
+```
+
+See [here for a full example](content-loader-config.yaml). 
+The [TL;DR](#tldr) sections shows how to see this example in action.
+
+## Content repos
+- The content is defined in Git repositories, known as content repos (`content.repos`)
+- There are different `type`s of content repos: `MIRROR`, `COPY`, and `FOLDER_BASED` ([see different types of content repos](#different-types-of-content-repos)).
+- For these types of content repos, the `overrideMode` determines how to handle previously existing files in the repo: `INIT`, `UPGRADE`, `RESET` ([see overrideMode](#the-overridemode)).
+- Templating with [Freemarker](https://freemarker.apache.org/) can be enabled for each content repo.
+  - The templates can access the config and custom variables defined in `content.variables`. 
+  - See [templating](#templating).
+- Multiple content repos can be specified in the `content.repos` field
+- GOP merges these repos in the defined order into a directory structure.
 - This allows you to overwrite files from all repos created by GOP.
-  - One use case for this is, for example, a base repository that specifies the basic structure of all GOP instances in a cloud environment and more specialized repositories that contain specific applications.
-  - Another use case is to keep the configuration (YAML) in one repo and the code in another in order to deploy multiple examples with the same code. \
-    Current examples are `petclinic-plain` and `petclinic-helm`.
-- This also allows you to control the configuration of Argo CD and, for example, define different tenants.
-- Different content repositories can be created for end-user applications (including their dependencies such as Helm charts or build libraries) as well as IDP applications,  such as monitoring tools.
-- To accommodate these different tasks, each repository can be parameterized differently.
-- ArgoCD `AppProjects` and `Applications` can be defined in the content.
-- Existing repositories, e.g., `argocd/argocd`, can be extended by content (“merge” or git clone + push).
-- Jenkins: Automatic generation of Jenkins jobs based on the content.
-  - For each SCM Manager namespace found in the content and
-  - that contains a `Jenkinsfile`.
-- The example content can be activated via the `content.examples` field.
-- You have the option to change this via `content.repos`.
-- Kubernetes namespaces, e.g., for sample applications (currently `example-tenant-staging`), can be specified via a separate `content.namespaces` field.
-  - The namespaces listed therein are deployed by the GOP via GitOps.
-  - In each namespace, the configured ImagePullSecrets are automatically generated and RBAC resources and `NetworkPolicies` are set up, which enable Prometheus to access the metrics.
-  - This also allows the GOP to create `ProjectRequests` instead of `Namespaces` under OpenShift.
-  - The list may contain more namespaces than are used in the content.
-  - The namespaces allow templating, e.g., `‘${config.application.namePrefix}example-tenant-staging’, ‘${config.application.namePrefix}example-tenant-production’`
+    - One use case for this is, for example, a base repository that specifies the basic structure of all GOP instances in a cloud environment and more specialized repositories that contain specific applications.
+    - Another use case is to keep the configuration (YAML) in one repo and the code in another to deploy different configg with the same code.  
+      Current examples are `petclinic-plain` and `petclinic-helm`.
+- Existing repositories, e.g., `argocd/argocd`, can be extended by  `COPY`, and `FOLDER_BASED` content repos.
+  - ArgoCD `AppProjects` and `Applications` can be defined in the content.  
+  - This also allows you to hook into the configuration of Argo CD and, for example, define different tenants.
 
-## Different Types of Content Repos
+## Additional options
+
+- **Kubernetes namespaces** needed for the content (e.g. `example-tenant-staging`) can be specified via the `content.namespaces` field.
+    - GOP deploys the namespaces listed therein via GitOps.
+    - In each namespace, the configured ImagePullSecrets are automatically generated and RBAC resources and `NetworkPolicies` are set up, which enable Prometheus to access the metrics.
+    - This also allows GOP to create `ProjectRequests` instead of `Namespaces` under OpenShift.
+    - The list may contain more namespaces than are used in the content.
+    - The namespaces allow templating, e.g., `‘${config.application.namePrefix}example-tenant-staging’, ‘${config.application.namePrefix}example-tenant-production’`
+- **Jenkins**: Automatic generation of Jenkins jobs based on the content is possible.  
+  When enable for a content repo (via `content.repos.createJenkinsJob` set to `true`) a job is created...
+    - for each SCM Manager namespace found in the content
+    - that contains a `Jenkinsfile`.
+- The **example content** (see [README/Example Applications](../../README.md#example-applications)) can be activated via the `content.examples` field.
+
+
+## Different types of content repos
 
 There are different types of content repos: `MIRROR`, `COPY`, and `FOLDER_BASED`.
-- `MIRROR` (default): The entire content repo is mirrored to the target repo if it does not yet exist ([see overrideMode below](#the-overridemode)).
+- `MIRROR` (default): The entire content repo is mirrored to the target repo if it does not yet exist ([see overrideMode](#the-overridemode)).
 - `COPY`: Only the files (no Git history) are copied to the target repository and committed.
-- `FOLDER_BASED`: Using the folder structure in the content repository, multiple repositories can be created and initialized or expanded in the target.
+- `FOLDER_BASED`: Using the folder structure in the content repository, multiple repositories can be created and initialized or changed in the target.
 
 **Global Properties**
 
-- `url` (required field)
-- `ref` - Git Reference, that is cloned in Content Repo (branch, tag, commit). \
-  Default:
+- `url` (required) — url of the content repo
+- `ref` - Git reference that is cloned in Content Repo (branch, tag, commit).  
+  Defaults:
   - `COPY` / `FOLDER_BASED`: Default branch of Repo.
   - `MIRROR`: All branches und tags of Repo
-- `overrideMode` (`INIT`, `UPGRADE`, `RESET`) defines how to handle pre-existing files in the repository ([see overrideMode below](#the-overridemode)).
-- `username`
-- `password`
+- `overrideMode` (`INIT`, `UPGRADE`, `RESET`) defines how to handle existing files in the target repository ([see overrideMode](#the-overridemode)).
+- `username`, `password` - credentials
 - `createJenkinsJob` - If `true` and Jenkins is active in GOP, and there is a `Jenkinsfile` in one of the content repositories or the specified `refs`, a Jenkins job is created for the associated SCM Manager namespace.
 
 
 ### `MIRROR`
 
-A content repo is mirrored completely (or only a `ref`) to the target repo (including Git history). Caution: Force push is used here! By default, however, only on new repos. If existing repos are also to be written, `overrideMode: RESET` must be set.
+A content repo is mirrored completely (or only a `ref`) to the target repo (including Git history).  
+
+Caution: Force push is used here! 
+Note that by default only new repos are mirrored.
+To overwrite `overrideMode: RESET` must be set ([see overrideMode](#the-overridemode)).
+
 Note: The default branch of the source repo is not explicitly set.
 If the source repo has a default branch != `main`, it is not applied.
 
 **Properties**
 
-- `target` (required field) target repo, e.g. `namespace/name`
-- `targetRef` - Git reference in `target` to which it is pushed(branch or tag).
+- `target` (required) - target repo, e.g. `namespace/name`
+- `targetRef` - Git reference in `target` to which it is pushed (branch or tag).
   - If `ref `is a tag,` targetRef` is also treated as a tag.
   - Exception:` targetRef` is a full ref such as` refs/heads/my-branch` or `refs/tags/my-tag`.
-  - If `targetRef` is empty, the source ref is used by default.
+  - If `targetRef` is empty, the source `ref` is used by default.
 
 
 ### `COPY`
@@ -118,18 +178,18 @@ Only the files (no Git history) are copied and committed to the target repo.
 
 **Properties**
 
-- `target` (required) Target repo, e.g. `namespace/name`
+- `target` (required) - target repo, e.g. `namespace/name`
 - `targetRef` - Git reference in `target` to which is pushed (branch or tag). 
-  - If ref is a tag, targetRef is also treated as a tag. 
+  - If `ref `is a tag,` targetRef` is also treated as a tag.
   - Exception:` targetRef` is a complete `ref `such as `refs/heads/my-branch` or `refs/tags/my-tag`. 
   - If` targetRef` is empty, the source `ref `is used by default.
 - `path `- Folder within the content repo from which to copy
-- `templating `- If `true`, all `.ftl` files are rendered by [Freemarker](https://freemarker.apache.org/) before being pushed to the target ([see templating below](#templating)).
+- `templating `- If `true`, all `.ftl` files are rendered using [Freemarker](https://freemarker.apache.org/) before being pushed to `target` ([see templating](#templating)).
 
 
 ### `FOLDER_BASED`
-- Using the folder structure in the content repository, multiple repositories can be created in the target and initialized or expanded using `COPY`.
-- Specifically: The top two directory levels of the repository determine the target repositories in the GOP.
+- Using the folder structure in the content repository, multiple repositories can be created in the target and initialized or extended using `COPY`.
+- That is, The top two directory levels of the repository determine the target repositories in GOP.
 - Example: The contents of the `example-tenant/petclinic-plain` folder are pushed to the `gitops` repository in the `example-tenant` namespace.
 
 ![content-hooks-folder-based.png](content-hooks-folder-based.png)
@@ -138,29 +198,34 @@ This allows, for example, additional Argo CD applications to be added and even y
 
 **Properties**
 
-- `target` (required)
+- `target` (required) - target repo, e.g. `namespace/name`
 - `path` - source folder in the content repository used for copying
-- `templating` - If `true`, all `.ftl` files are rendered by [Freemarker](https://freemarker.apache.org/) before being pushed to the target ([see templating below](#templating)).
+- `templating` - If `true`, all `.ftl` files are rendered using [Freemarker](https://freemarker.apache.org/) before being pushed to `target` ([see templating](#templating)).
 
-# The overrideMode
+## The overrideMode
 
-For these types of Content Repos, the `overrideMode` determines how to handle previously existing files in the repo: `INIT`, `UPGRADE`, `RESET`.
+For all types of content repos, the `overrideMode` determines how to handle previously existing files in the repo: `INIT`, `UPGRADE`, `RESET`.
 - `INIT` (default): Only push if the repository does not exist
-- `UPGRADE`: Delete all files after cloning the source – files that are not in the content will be deleted.
-- `RESET`: Clone and copy – existing files are overwritten, files that are not in the content are retained. 
+- `UPGRADE`: Clone and copy – existing files are overwritten, files that are not in the content are retained.
+- `RESET`: Delete all files after cloning the source, then copy new files.
+  This results in files that are not in the content being deleted.
 
-**Note** \
+**Note**  
 With `MIRROR`, `RESET` does not reset the entire repository. Specific effect: Branches that exist in the target but not in the source are retained.
 
-**Important** \
-If existing repositories of the GOP are to be extended, e.g., `cluster-resources`, the `overrideMode` must be set to `UPGRADE`.
+**Important**  
+If existing repositories of GOP are to be extended, e.g., `cluster-resources`, the `overrideMode` must be set to `UPGRADE`.
 
-# Templating
+## Templating
 When `templating` is enabled, all files ending in `.ftl` are rendered using [Freemarker](https://freemarker.apache.org/) during GOP installation and the result is created under the same name without the `.ftl` extension.
-The entire configuration of the GOP is available as` config` in the templates.
-In addition, the people who write the content have the option of defining their own variables (`content.variables`).
-This makes it possible to write parameterizable content that can be used for many instances.
-In [Freemarker](https://freemarker.apache.org/), you can use static methods from GOP and JDK. An [example from the GOP code](https://github.com/cloudogu/gitops-playground/blob/0.11.0/applications/cluster-resources/monitoring/prometheus-stack-helm-values.ftl.yaml#L111):
+
+The entire configuration of GOP is available as` config` variable in the templates.
+
+In addition, you can define your own variables (`content.variables`).
+This makes it possible to write parameterizable content that can be used for different instances.
+
+In [Freemarker](https://freemarker.apache.org/), you can use static methods from GOP and JDK. 
+An [example from GOP code](https://github.com/cloudogu/gitops-playground/blob/0.11.0/applications/cluster-resources/monitoring/prometheus-stack-helm-values.ftl.yaml#L111):
 
 ```yaml
 <#assign DockerImageParser=statics['com.cloudogu.gitops.utils.DockerImageParser']>
@@ -174,27 +239,32 @@ image:
   </#if>
 ```
 
-# TL;DR: How to start with content loader?
-To start with the content loader feature start the GOP with the `content-loader-config-file.yaml`. Run this command once to set up GOP with Content Loader: 
+# TL;DR
+
+How to get started with Content Loader?
+
+You can deploy the GitOps Playground with customized content defined in a config file on a local Kubernetes by running 
+a single command:
 
 ```shell
 bash <(curl -s \
   https://raw.githubusercontent.com/cloudogu/gitops-playground/main/scripts/init-cluster.sh) \
-  && curl -s "https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/content-loader-docs/content-loader-config.yaml" > contentConfig.yaml \
+  && curl -s "https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/content-loader/content-loader-config.yaml" > contentConfig.yaml \
   && docker run --rm -t --pull=always -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     -v "$(pwd)/contentConfig.yaml:/app/contentConfig.yaml" \
     --net=host \
-    ghcr.io/cloudogu/gitops-playground --config-file=contentConfig.yaml 
-# More IDP-features: --mailhog --monitoring --vault=dev --cert-manager
-# More features for developers: --jenkins --registry --content-examples
+    ghcr.io/cloudogu/gitops-playground --config-file=contentConfig.yaml --jenkins --registry  
 ```
 
-Once the GOP is started you can try the following sample use cases. Most applications mentioned in the [Stack-chapter](https://github.com/cloudogu/gitops-playground?tab=readme-ov-file#stack) are deployed now.
+Once GOP is started, you can try the following example use cases.
+Most applications mentioned in [README/Example Applications](../../README.md#example-applications) are deployed now.
 
-# Example-Use Cases
-This chapter describes sample use cases that can be tried after executing the TL;DR command. \
-However, you can apply individual config.yaml files to deploy your own content.
+# Example use cases
+
+This chapter describes real-world use cases that can be done via Content Loader.
+
+You can try them out by editing `content-loader-config.yaml` created in [TL;DR](#tldr).
 
 ## Mirror the entire repository on every call
 ```yaml
@@ -207,10 +277,10 @@ However, you can apply individual config.yaml files to deploy your own content.
 ## Create additional tenant in Argo CD
 ```yaml
     - url: 'https://github.com/cloudogu/gitops-playground.git'
-      path: 'docs/content-loader-docs'
+      path: 'docs/content-loader'
       ref: main
-      username: 'abc' # not necessary if git repo is openSource
-      password: 'ey...' # e.g. API Token from SCM-Manager
+      # username: 'abc' # necessary if git repo requires credentials
+      # password: 'ey...' # e.g. API Token from SCM-Manager
       templating: true
       type: FOLDER_BASED
       overrideMode: UPGRADE
@@ -219,7 +289,12 @@ However, you can apply individual config.yaml files to deploy your own content.
 In this repo, the folder structure is as follows: [argocd/argocd.](argocd/argocd)
 
 ## Mirror/copy repo and add specific files
-For example, to create a `Dockerfile` and `Jenkinsfile` and then create a Jenkins job. This example shows the `MIRROR` use case. As an alternative you can add type `COPY` in the first repo (petclinic). Reminder: no type means MIRROR (default).
+
+This example first `MIRROR`s a repo, then adds a `Dockerfile` and `Jenkinsfile` and a Jenkins job.
+
+As an alternative you can add type `COPY` in the first repo (petclinic), resulting in only the files not the git history being pushed to `target`.  
+Reminder: no type means MIRROR (default).
+
 ```yaml
     - url: https://github.com/cloudogu/spring-petclinic
       target: example-tenant/petclinic-plain
@@ -228,10 +303,10 @@ For example, to create a `Dockerfile` and `Jenkinsfile` and then create a Jenkin
       overrideMode: UPGRADE
       createJenkinsJob: true
     - url: https://github.com/cloudogu/gitops-playground.git
-      path: 'docs/content-loader-docs'
+      path: 'docs/content-loader'
       ref: main
-      username: 'abc' # not necessary if git repo is openSource
-      password: 'ey...' # e.g. API Token from SCM-Manager
+      # username: 'abc' # necessary if git repo requires credentials
+      # password: 'ey...' # e.g. API Token from SCM-Manager
       templating: true
       type: FOLDER_BASED
       overrideMode: UPGRADE

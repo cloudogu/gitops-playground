@@ -10,7 +10,8 @@ Kubernetes clusters:
 * Pipelines: Example applications using [Jenkins](#jenkins) with the [gitops-build-lib](https://github.com/cloudogu/gitops-build-lib) and [SCM-Manager](#scm-manager)
 * Ingress Controller: [ingress-nginx](https://github.com/kubernetes/ingress-nginx/)
 * Certificate Management: [cert-manager](#certificate-management)
-* [Content Loader](docs/content-loader/content-loader.md): Completely customize what is pushed to Git during installation
+* [Content Loader](docs/content-loader/content-loader.md): Completely customize what is pushed to Git during installation.
+  This allows for adding your own end-user or IDP apps, creating repos, adding Argo CD tenants, etc.
 * Runs on: 
   * local cluster (try it [with only one command](#tldr)), 
   * in the public cloud, 
