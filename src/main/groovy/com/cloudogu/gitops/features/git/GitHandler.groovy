@@ -29,7 +29,6 @@ class GitHandler extends Feature {
         this.config = config
         this.helmStrategy = helmStrategy
         this.fileSystemUtils = fileSystemUtils
-        init()
     }
 
     @Override
@@ -53,7 +52,9 @@ class GitHandler extends Feature {
         }
     }
 
-    void init() {
+    @Override
+    void enable() {
+
         validate()
 
         //TenantSCM

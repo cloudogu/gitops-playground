@@ -104,7 +104,8 @@ class ScmManagerSetup extends Feature {
             }
         }
 
-        commandExecutor.execute("${fileSystemUtils.rootDir}/scripts/scm-manager/init-scmm.sh", [
+        //disabled setup for faster testing
+  /*      commandExecutor.execute("${fileSystemUtils.rootDir}/scripts/scm-manager/init-scmm.sh", [
 
                 GIT_COMMITTER_NAME           : config.application.gitName,
                 GIT_COMMITTER_EMAIL          : config.application.gitEmail,
@@ -136,6 +137,6 @@ class ScmManagerSetup extends Feature {
                 CENTRAL_SCM_URL              : "", //TODO
                 CENTRAL_SCM_USERNAME         : config.multiTenant.scmmConfig.username,
                 CENTRAL_SCM_PASSWORD         : config.multiTenant.scmmConfig.password
-        ])
+        ])*/
     }
 }
