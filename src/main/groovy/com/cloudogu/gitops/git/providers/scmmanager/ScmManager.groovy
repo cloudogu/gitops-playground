@@ -79,12 +79,17 @@ class ScmManager implements GitProvider {
 
     @Override
     String getProtocol() {
-        return null
+        if (scmmConfig.internal) {
+            return "http"
+        } else {
+            return scmmConfig.url
+        }
     }
 
     @Override
     String getHost() {
-        return null
+        //in main before:  host : config.scmm.internal ? "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local" : config.scmm.host(host was config.scmm.url),
+        return internalOrExternal().toString()
     }
 
     @Override
@@ -150,6 +155,36 @@ class ScmManager implements GitProvider {
         }
         return true// because its created
     }
+
+    // ---------- Endpoint-Resolution ----------
+    private URI resolveEndpoint() {
+        return scmmConfig.internal ? internalEndpoint() : externalEndpoint()
+    }
+
+    private URI internalEndpoint() {
+        def namespace = resolvedNamespace()  // namePrefix + namespace
+        if (config.application.runningInsideK8s) {
+            // im Cluster: Service-DNS
+            return URI.create("http://scmm.${namespace}.svc.cluster.local/scm")
+        } else {
+            def port = k8sClient.waitForNodePort(releaseName(), namespace)
+            def host = networkingUtils.findClusterBindAddress()
+            return URI.create("http://${host}:${port}/scm")
+        }
+    }
+
+    private String resolvedNamespace() {
+        def prefix = (config.application.namePrefix ?: "")
+        def ns = (scmmConfig.namespace ?: "scm-manager")
+        return "${prefix}${ns}"
+    }
+
+
+    private String releaseName() {
+        // Helm-Release-Name; in GOP i. d. R. "scmm"
+        return scmmConfig.helm?.releaseName ?: "scmm"
+    }
+
 
     // --- helpers ---
     private URI internalOrExternal() {
