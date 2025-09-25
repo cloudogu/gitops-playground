@@ -43,12 +43,13 @@ class GitopsPlaygroundCliMainScripted {
 
             def fileSystemUtils = new FileSystemUtils()
             def executor = new CommandExecutor()
+            def networkingUtils = new NetworkingUtils()
             def k8sClient = new K8sClient(executor, fileSystemUtils, new Provider<Config>() {
                 @Override
                 Config get() {
                     return config
                 }
-            })
+            },networkingUtils)
             def helmClient = new HelmClient(executor)
 
             def httpClientFactory = new HttpClientFactory()
@@ -75,7 +76,6 @@ class GitopsPlaygroundCliMainScripted {
                 def deployer = new Deployer(config, new ArgoCdApplicationStrategy(config, fileSystemUtils, scmmRepoProvider, gitHandler), helmStrategy)
 
                 def airGappedUtils = new AirGappedUtils(config, scmmRepoProvider, fileSystemUtils, helmClient, gitHandler)
-                def networkingUtils = new NetworkingUtils()
 
                 def jenkins = new Jenkins(config, executor, fileSystemUtils, new GlobalPropertyManager(jenkinsApiClient),
                         new JobManager(jenkinsApiClient), new UserManager(jenkinsApiClient),

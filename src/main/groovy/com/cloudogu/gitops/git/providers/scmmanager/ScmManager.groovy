@@ -6,25 +6,40 @@ import com.cloudogu.gitops.features.git.config.util.ScmManagerConfig
 import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
 import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
+import com.cloudogu.gitops.utils.K8sClient
+import com.cloudogu.gitops.utils.NetworkingUtils
 import groovy.util.logging.Slf4j
 import retrofit2.Response
 
 @Slf4j
 class ScmManager implements GitProvider {
 
+    private final String releaseName = 'scmm'
+
     private final Config config
     private final ScmManagerConfig scmmConfig
     private final ScmManagerApiClient scmmApiClient
+    private final K8sClient k8sClient
+    private final NetworkingUtils networkingUtils
 
     //TODO unit tests für scmmanager rüberziehen und restlichen Sachen implementieren
-    ScmManager(Config config, ScmManagerConfig scmmConfig) {
+    ScmManager(Config config, ScmManagerConfig scmmConfig, K8sClient k8sClient, NetworkingUtils networkingUtils) {
         this.config = config
         this.scmmConfig = scmmConfig
+        this.k8sClient = k8sClient
+        this.networkingUtils = networkingUtils
+
         this.scmmApiClient = createScmManagerApiClient()
     }
 
-    ScmManagerApiClient createScmManagerApiClient(){
-        return new ScmManagerApiClient(this.apiBase().toString(), scmmConfig.credentials, config.application.insecure)
+    ScmManagerApiClient createScmManagerApiClient() {
+        if (config.application.runningInsideK8s) {
+            return new ScmManagerApiClient(this.apiBase().toString(), scmmConfig.credentials, config.application.insecure)
+        } else {
+            def port = k8sClient.waitForNodePort(releaseName, scmmConfig.namespace)
+            def clusterBindAddress = "http://${this.networkingUtils.findClusterBindAddress()}:${port}/scm/api/".toString()
+            return new ScmManagerApiClient(clusterBindAddress, scmmConfig.credentials, config.application.insecure)
+        }
     }
 
     @Override
