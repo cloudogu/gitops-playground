@@ -2,7 +2,7 @@
 
 Creates a complete GitOps-based operational stack that can be used as an internal developer platform (IDP) on your 
 Kubernetes clusters:
-* Content Loader: Customization and extension of GOP content enables to deploy and operate any application ([content-loader-docs](docs/content-loader-docs))
+
 * Deployment: GitOps via Argo CD with a ready-to-use [repo structure](#argo-cd)
 * Monitoring: [Prometheus and Grafana](#monitoring-tools)
 * Secrets Management:  [Vault and External Secrets Operator](#secrets-management-tools)
@@ -10,6 +10,7 @@ Kubernetes clusters:
 * Pipelines: Example applications using [Jenkins](#jenkins) with the [gitops-build-lib](https://github.com/cloudogu/gitops-build-lib) and [SCM-Manager](#scm-manager)
 * Ingress Controller: [ingress-nginx](https://github.com/kubernetes/ingress-nginx/)
 * Certificate Management: [cert-manager](#certificate-management)
+* [Content Loader](docs/content-loader/content-loader.md): Completely customize what is pushed to Git during installation
 * Runs on: 
   * local cluster (try it [with only one command](#tldr)), 
   * in the public cloud, 
