@@ -243,7 +243,7 @@ image:
 
 How to get started with content loader?
 
-You can deploy the GOP with customized content defined in a config file on a local Kubernetes cluster by running 
+You can deploy GOP with customized content defined in a config file on a local Kubernetes cluster by running 
 a single command:
 
 ```shell
@@ -254,7 +254,7 @@ bash <(curl -s \
     -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     -v "$(pwd)/contentConfig.yaml:/app/contentConfig.yaml" \
     --net=host \
-    ghcr.io/cloudogu/gitops-playground --config-file=contentConfig.yaml --jenkins --registry  
+    ghcr.io/cloudogu/gitops-playground --config-file=contentConfig.yaml --debug
 ```
 
 Once GOP is started, you can try the following example use cases.

@@ -24,15 +24,17 @@ content:
       overwriteMode: UPGRADE
       createJenkinsJob: true
     - url: 'https://github.com/cloudogu/gitops-playground.git'
-      path: 'docs/content-loader-docs'
+      path: 'docs/content-loader'
       ref: main
       templating: true
       type: FOLDER_BASED
       overwriteMode: UPGRADE
 
   namespaces:
-    - ${config.application.namePrefix}example-tenant-production
-    - ${config.application.namePrefix}example-tenant-staging
+#    - ${config.application.namePrefix}example-tenant-production
+#    - ${config.application.namePrefix}example-tenant-staging
+    - example-tenant-production
+    - example-tenant-staging
   variables:
     umbrella:
       nginxAnnotation: 'my value'
@@ -41,7 +43,7 @@ content:
 application:
   yes: true
   baseUrl: http://localhost
-  namePrefix: customer-1
+#  namePrefix: customer-1
 jenkins:
   active: true
 registry:

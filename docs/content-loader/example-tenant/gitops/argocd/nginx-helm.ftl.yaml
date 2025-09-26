@@ -31,3 +31,7 @@ spec:
           hostname: production.nginx-helm.nginx.localhost
         image:
           repository: bitnamilegacy/nginx
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
