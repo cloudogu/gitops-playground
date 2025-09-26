@@ -93,11 +93,10 @@ class GitHandler extends Feature {
         if (this.central) {
             setupRepos(this.central)
             this.tenant.createRepository("argocd/argocd", "GitOps repo for administration of ArgoCD")
-            create3thPartyDependecies(this.central)
         } else {
             setupRepos(this.tenant)
-            create3thPartyDependecies(this.tenant)
         }
+        create3thPartyDependecies(this.tenant)
     }
 
     static void setupRepos(GitProvider gitProvider) {
@@ -111,5 +110,4 @@ class GitHandler extends Feature {
         gitProvider.createRepository("3rd-party-dependencies/gitops-build-lib", "Jenkins pipeline shared library for automating deployments via GitOps")
         gitProvider.createRepository("3rd-party-dependencies/ces-build-lib", "Jenkins pipeline shared library adding features for Maven, Gradle, Docker, SonarQube, Git and others")
     }
-
 }

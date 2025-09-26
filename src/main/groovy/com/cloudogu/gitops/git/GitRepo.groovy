@@ -30,7 +30,6 @@ class GitRepo {
     private final String gitName
     private final String gitEmail
 
-
     private Git gitMemoization
     private final String absoluteLocalRepoTmpDir
 
@@ -81,7 +80,6 @@ class GitRepo {
                 .setCredentialsProvider(getCredentialProvider())
                 .call()
     }
-
 
     void commitAndPush(String message, String tag) {
         commitAndPush(message, tag, 'HEAD:refs/heads/main')
