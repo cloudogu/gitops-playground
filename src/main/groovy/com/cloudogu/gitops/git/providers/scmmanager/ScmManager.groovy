@@ -22,6 +22,7 @@ class ScmManager implements GitProvider {
     private final K8sClient k8sClient
     private final NetworkingUtils networkingUtils
 
+    private String clusterBindAddress
     //TODO unit tests für scmmanager rüberziehen und restlichen Sachen implementieren
     ScmManager(Config config, ScmManagerConfig scmmConfig, K8sClient k8sClient, NetworkingUtils networkingUtils) {
         this.config = config
@@ -37,8 +38,8 @@ class ScmManager implements GitProvider {
             return new ScmManagerApiClient(this.apiBase().toString(), scmmConfig.credentials, config.application.insecure)
         } else {
             def port = k8sClient.waitForNodePort(releaseName, scmmConfig.namespace)
-            def clusterBindAddress = "http://${this.networkingUtils.findClusterBindAddress()}:${port}/scm/api/".toString()
-            return new ScmManagerApiClient(clusterBindAddress, scmmConfig.credentials, config.application.insecure)
+            this.clusterBindAddress="http://${this.networkingUtils.findClusterBindAddress()}:${port}"
+            return new ScmManagerApiClient("${this.clusterBindAddress}/scm/api/".toString(), scmmConfig.credentials, config.application.insecure)
         }
     }
 
@@ -46,7 +47,7 @@ class ScmManager implements GitProvider {
     boolean createRepository(String repoTarget, String description, boolean initialize) {
         def namespace = repoTarget.split('/', 2)[0]
         def repoName = repoTarget.split('/', 2)[1]
-        def repo = new Repository(namespace, repoName, description ?: "")
+        def repo = new Repository(config.application.namePrefix+namespace, repoName, description ?: "")
         Response<Void> response = scmmApiClient.repositoryApi().create(repo, initialize).execute()
         return handle201or409(response, "Repository ${namespace}/${repoName}")
     }
@@ -160,6 +161,9 @@ class ScmManager implements GitProvider {
     // --- helpers ---
     private URI internalOrExternal() {
         if (scmmConfig.internal) {
+            if(!this.config.application.runningInsideK8s){
+                return URI.create(this.clusterBindAddress)
+            }
             return URI.create("http://scmm.${config.application.namePrefix}${scmmConfig.namespace}.svc.cluster.local")
         }
         def urlString = (scmmConfig.url ?: '').strip()

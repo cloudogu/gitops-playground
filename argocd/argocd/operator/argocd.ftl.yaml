@@ -129,9 +129,9 @@ spec:
   initialRepositories: |
 <#if !(scmm.centralScmmUrl?has_content)>
     - name: argocd
-      url: ${scmm.repoUrl}argocd/argocd<#if config.scmm.provider == "gitlab">.git</#if>
+      url: ${scmm.repoUrl}argocd/argocd<#if config.scm.scmProviderType == "gitlab">.git</#if>
     - name: cluster-resources
-      url: ${scmm.repoUrl}argocd/cluster-resources<#if config.scmm.provider == "gitlab">.git</#if>
+      url: ${scmm.repoUrl}argocd/cluster-resources<#if config.scm.scmProviderType == "gitlab">.git</#if>
     - name: prometheus-community
       type: helm
       url: https://prometheus-community.github.io/helm-charts
@@ -143,11 +143,11 @@ spec:
       url: https://kubernetes.github.io/ingress-nginx
 </#if>
     - name: example-apps
-      url: ${scmm.repoUrl}argocd/example-apps<#if config.scmm.provider == "gitlab">.git</#if>
+      url: ${scmm.repoUrl}argocd/example-apps<#if config.scm.scmProviderType == "gitlab">.git</#if>
     - name: nginx-helm-jenkins
-      url: ${scmm.repoUrl}argocd/nginx-helm-jenkins<#if config.scmm.provider == "gitlab">.git</#if>
+      url: ${scmm.repoUrl}argocd/nginx-helm-jenkins<#if config.scm.scmProviderType == "gitlab">.git</#if>
     - name: nginx-helm-umbrella
-      url: ${scmm.repoUrl}argocd/nginx-helm-umbrella<#if config.scmm.provider == "gitlab">.git</#if>
+      url: ${scmm.repoUrl}argocd/nginx-helm-umbrella<#if config.scm.scmProviderType == "gitlab">.git</#if>
     - name: bitnami
       type: helm
       url: https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami

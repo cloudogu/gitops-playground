@@ -1731,7 +1731,7 @@ class ArgoCDTest {
     @Test
     void 'If using mirror with GitLab, ensure source repos in cluster-resources got right URL'() {
         config.application.mirrorRepos = true
-        config.scmm.provider = 'gitlab'
+        config.scm.scmProviderType = 'gitlab'
 
         createArgoCD().install()
 
@@ -1760,7 +1760,7 @@ class ArgoCDTest {
     @Test
     void 'If using mirror with GitLab with prefix, ensure source repos in cluster-resources got right URL'() {
         config.application.mirrorRepos = true
-        config.scmm.provider = 'gitlab'
+        config.scm.scmProviderType = 'gitlab'
         config.application.namePrefix = 'test1-'
 
         createArgoCD().install()
