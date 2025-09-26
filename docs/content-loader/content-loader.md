@@ -1,8 +1,8 @@
-# Content Loader Documentation
+# Content loader Documentation
 
-This documentation shows the Content Loader feature and its usage. 
+This documentation shows the content loader feature and its usage. 
 
-Content Loader offers the ability of hooking into the GitOps Playground (GOP) installation process, allowing for 
+Content loader offers the ability of hooking into the GitOps Playground (GOP) installation process, allowing for 
 customization of what is pushed to Git.
 This can be used to deploy your own content, e.g. your own applications, or adding tenants to Argo CD, etc.  
 
@@ -16,9 +16,9 @@ Example for a GOP content repository:
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-- [Purpose of Content Loader](#purpose-of-content-loader)
+- [Purpose of content loader](#purpose-of-content-loader)
 - [Meaning of the term "content"](#meaning-of-the-term-content)
-- [Content Loader concepts](#content-loader-concepts)
+- [Content loader concepts](#content-loader-concepts)
   - [Content repos](#content-repos)
   - [Additional options](#additional-options)
   - [Different types of content repos](#different-types-of-content-repos)
@@ -33,7 +33,7 @@ Example for a GOP content repository:
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 
-# Purpose of Content Loader
+# Purpose of content loader
 
 You like the idea of automatically rolling out IDPs using GOP but
 
@@ -41,7 +41,7 @@ You like the idea of automatically rolling out IDPs using GOP but
 * want to add multiple tenants with Argo CD,
 * want to have different or additional IDP tools, e.g. logging/backup/tracing, etc. 
 
-Then Content Loader is for you!
+Then content loader is for you!
 It allows you to define content using a folder structure inside a Git repo (so-called content repo) that is picked up
 during GOP apply optionally run through a templating engine and then pushed to the target Git.
 
@@ -63,7 +63,7 @@ during GOP apply optionally run through a templating engine and then pushed to t
   Finally, these end-user applications can be reached via HTTP(S) via their ingress (turnkey-solution).
 - The content loader feature provides the possibility to deliver your own custom content, i.e. real-world applications instead of examples.
 
-# Content Loader concepts
+# Content loader concepts
 
 The content deployed by GOP can be completely defined via configuration.
 
@@ -112,7 +112,7 @@ The [TL;DR](#tldr) sections shows how to see this example in action.
 - GOP merges these repos in the defined order into a directory structure.
 - This allows you to overwrite files from all repos created by GOP.
     - One use case for this is, for example, a base repository that specifies the basic structure of all GOP instances in a cloud environment and more specialized repositories that contain specific applications.
-    - Another use case is to keep the configuration (YAML) in one repo and the code in another to deploy different configg with the same code.  
+    - Another use case is to keep the configuration (YAML) in one repo and the code in another to deploy different config with the same code.  
       Current examples are `petclinic-plain` and `petclinic-helm`.
 - Existing repositories, e.g., `argocd/argocd`, can be extended by  `COPY`, and `FOLDER_BASED` content repos.
   - ArgoCD `AppProjects` and `Applications` can be defined in the content.  
@@ -180,11 +180,11 @@ Only the files (no Git history) are copied and committed to the target repo.
 
 - `target` (required) - target repo, e.g. `namespace/name`
 - `targetRef` - Git reference in `target` to which is pushed (branch or tag). 
-  - If `ref `is a tag,` targetRef` is also treated as a tag.
+  - If `ref `is a tag, `targetRef` is also treated as a tag.
   - Exception:` targetRef` is a complete `ref `such as `refs/heads/my-branch` or `refs/tags/my-tag`. 
   - If` targetRef` is empty, the source `ref `is used by default.
 - `path `- Folder within the content repo from which to copy
-- `templating `- If `true`, all `.ftl` files are rendered using [Freemarker](https://freemarker.apache.org/) before being pushed to `target` ([see templating](#templating)).
+- `templating`- If `true`, all `.ftl` files are rendered using [Freemarker](https://freemarker.apache.org/) before being pushed to `target` ([see templating](#templating)).
 
 
 ### `FOLDER_BASED`
@@ -219,7 +219,7 @@ If existing repositories of GOP are to be extended, e.g., `cluster-resources`, t
 ## Templating
 When `templating` is enabled, all files ending in `.ftl` are rendered using [Freemarker](https://freemarker.apache.org/) during GOP installation and the result is created under the same name without the `.ftl` extension.
 
-The entire configuration of GOP is available as` config` variable in the templates.
+The entire configuration of GOP is available as `config` variable in the templates.
 
 In addition, you can define your own variables (`content.variables`).
 This makes it possible to write parameterizable content that can be used for different instances.
@@ -241,9 +241,9 @@ image:
 
 # TL;DR
 
-How to get started with Content Loader?
+How to get started with content loader?
 
-You can deploy the GitOps Playground with customized content defined in a config file on a local Kubernetes by running 
+You can deploy the GOP with customized content defined in a config file on a local Kubernetes cluster by running 
 a single command:
 
 ```shell
@@ -262,7 +262,7 @@ Most applications mentioned in [README/Example Applications](../../README.md#exa
 
 # Example use cases
 
-This chapter describes real-world use cases that can be done via Content Loader.
+This chapter describes real-world use cases that can be done via content loader.
 
 You can try them out by editing `content-loader-config.yaml` created in [TL;DR](#tldr).
 
