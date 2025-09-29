@@ -6,7 +6,6 @@ import com.cloudogu.gitops.features.git.config.util.GitlabConfig
 import com.cloudogu.gitops.git.providers.AccessRole
 import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.git.providers.Scope
-import com.cloudogu.gitops.git.providers.scmmanager.Permission
 import groovy.util.logging.Slf4j
 import org.gitlab4j.api.GitLabApi
 import org.gitlab4j.api.models.*

@@ -24,27 +24,14 @@ class ScmManager implements GitProvider {
     private final K8sClient k8sClient
     private final NetworkingUtils networkingUtils
 
-    private String clusterBindAddress
     //TODO unit tests für scmmanager rüberziehen und restlichen Sachen implementieren
     ScmManager(Config config, ScmManagerConfig scmmConfig, K8sClient k8sClient, NetworkingUtils networkingUtils) {
         this.config = config
         this.scmmConfig = scmmConfig
         this.k8sClient = k8sClient
         this.networkingUtils = networkingUtils
-
-        this.scmmApiClient = createScmManagerApiClient()
+        this.scmmApiClient = new ScmManagerApiClient(apiBase().toString(), scmmConfig.credentials, config.application.insecure)
     }
-
-    ScmManagerApiClient createScmManagerApiClient() {
-        if (config.application.runningInsideK8s) {
-            return new ScmManagerApiClient(this.apiBase().toString(), scmmConfig.credentials, config.application.insecure)
-        } else {
-            def port = k8sClient.waitForNodePort(releaseName, scmmConfig.namespace)
-            this.clusterBindAddress = "http://${this.networkingUtils.findClusterBindAddress()}:${port}".toString()
-            return new ScmManagerApiClient(this.clusterBindAddress+"/scm/api/", scmmConfig.credentials, config.application.insecure)
-        }
-    }
-
 
     @Override
     boolean createRepository(String repoTarget, String description, boolean initialize) {
@@ -97,7 +84,7 @@ class ScmManager implements GitProvider {
     @Override
     String getHost() {
         //in main before:  host : config.scmm.internal ? "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local" : config.scmm.host(host was config.scmm.url),
-        return internalOrExternal().toString()
+        return resolveEndpoint().toString()
     }
 
     @Override
@@ -138,19 +125,17 @@ class ScmManager implements GitProvider {
 
     // ---------------- URI components  ----------------
 
+
+    /** …/scm  (without trailing slash) */
+    URI base() {
+        return withoutTrailingSlash(withScm(resolveEndpoint()))
+    }
+
     /** …/scm/api/ */  // apiBase for ScmManagerApiClient ?
     private URI apiBase() {
         return withSlash(base()).resolve("api/")
     }
 
-    /** …/scm/api/v2/metrics/prometheus */
-    URI prometheusMetricsEndpoint() {
-        return withSlash(base()).resolve("api/v2/metrics/prometheus")
-    }
-    /** …/scm  (without trailing slash) */
-    URI base() {
-        return withoutTrailingSlash(withScm(internalOrExternal()))
-    }
 
     /** …/scm/<rootPath>  (without trailing slash; rootPath default = "repo") */
     URI repoBase() {
@@ -163,6 +148,12 @@ class ScmManager implements GitProvider {
     URI repoUrl(String repoTarget) {
         def trimmedRepoTarget = trimBoth(repoTarget)
         return withoutTrailingSlash(withSlash(repoBase()).resolve("${trimmedRepoTarget}/"))
+    }
+
+
+    /** …/scm/api/v2/metrics/prometheus */
+    URI prometheusMetricsEndpoint() {
+        return withSlash(base()).resolve("api/v2/metrics/prometheus")
     }
 
     private static boolean handle201or409(Response<?> response, String what) {
@@ -179,43 +170,43 @@ class ScmManager implements GitProvider {
 
 
     // --- helpers ---
-    private URI internalOrExternal() {
-        if (scmmConfig.internal) {
-            if(!config.application.runningInsideK8s){
-                return new URI(this.clusterBindAddress)
-            }
-            return URI.create("http://scmm.${config.application.namePrefix}${scmmConfig.namespace}.svc.cluster.local")
-        }
-        def urlString = (scmmConfig.url ?: '').strip()
-        if (!urlString) {
-            throw new IllegalArgumentException("scmmConfig.url must be set when scmmConfig.internal = false")
-        }
-        // TODO do we need here to consider scmmConfig.ingeress? URI.create("https://${scmmConfig.ingress}"
-        return URI.create(urlString)
+//    private URI internalOrExternal() {
+//        if (scmmConfig.internal) {
+//            if(!config.application.runningInsideK8s){
+//                return new URI(this.clusterBindAddress)
+//            }
+//            return URI.create("http://scmm.${config.application.namePrefix}${scmmConfig.namespace}.svc.cluster.local")
+//        }
+//        def urlString = (scmmConfig.url ?: '').strip()
+//        if (!urlString) {
+//            throw new IllegalArgumentException("scmmConfig.url must be set when scmmConfig.internal = false")
+//        }
+//        // TODO do we need here to consider scmmConfig.ingeress? URI.create("https://${scmmConfig.ingress}"
+//        return URI.create(urlString)
+//    }
+
+    private URI resolveEndpoint() {
+        return scmmConfig.internal ? internalEndpoint() : externalEndpoint()
     }
 
-//    private URI resolveEndpoint() {
-//        return scmmConfig.internal ? internalEndpoint() : externalEndpoint()
-//    }
-//
-//    private URI internalEndpoint() {
-//        def namespace = resolvedNamespace() // namePrefix + namespace
-//        if (config.application.runningInsideK8s) {
-//            return URI.create("http://scmm.${namespace}.svc.cluster.local/scm")
-//        } else {
-//            def port = k8sClient.waitForNodePort(releaseName, namespace)
-//            def host = networkingUtils.findClusterBindAddress()
-//            return URI.create("http://${host}:${port}/scm")
-//        }
-//    }
-//
-//    private URI externalEndpoint() {
-//        def urlString = (scmmConfig.url ?: '').strip()
-//        if (urlString) return URI.create(urlString)
-//        def host = (scmmConfig.ingress ?: '').strip()
-//        if (host) return URI.create("http://${host}/scm")
-//        throw new IllegalArgumentException("Either scmmConfig.url or scmmConfig.ingress must be set when scmmConfig.internal=false")
-//    }
+    private URI internalEndpoint() {
+        def namespace = resolvedNamespace() // namePrefix + namespace
+        if (config.application.runningInsideK8s) {
+            return URI.create("http://scmm.${namespace}.svc.cluster.local/scm")
+        } else {
+            def port = k8sClient.waitForNodePort(releaseName, namespace)
+            def host = networkingUtils.findClusterBindAddress()
+            return URI.create("http://${host}:${port}/scm")
+        }
+    }
+
+    private URI externalEndpoint() {
+        def urlString = (scmmConfig.url ?: '').strip()
+        if (urlString) return URI.create(urlString)
+        def host = (scmmConfig.ingress ?: '').strip()
+        if (host) return URI.create("http://${host}/scm")
+        throw new IllegalArgumentException("Either scmmConfig.url or scmmConfig.ingress must be set when scmmConfig.internal=false")
+    }
 
     private String resolvedNamespace() {
         def prefix = (config.application.namePrefix ?: "")
