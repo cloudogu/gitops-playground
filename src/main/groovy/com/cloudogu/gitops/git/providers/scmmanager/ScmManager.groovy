@@ -57,10 +57,10 @@ class ScmManager implements GitProvider {
         handle201or409(response, "Permission on ${namespace}/${repoName}")
     }
 
-    /** …/scm/<rootPath>/<ns>/<name>.git */
+    /** …/scm/<rootPath>/<ns>/<name> */
     @Override
     String computePushUrl(String repoTarget) {
-        repoUrl(repoTarget).toString() + ".git"
+        repoUrl(repoTarget).toString()
     }
 
     @Override
