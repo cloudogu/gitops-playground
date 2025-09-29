@@ -35,7 +35,7 @@ class ScmManager implements GitProvider {
         this.scmmApiClient = createScmManagerApiClient()
     }
 
-    ScmManagerApiClient createScmManagerApiClient(){
+    ScmManagerApiClient createScmManagerApiClient() {
         if (config.application.runningInsideK8s) {
             return new ScmManagerApiClient(this.apiBase().toString(), scmmConfig.credentials, config.application.insecure)
         } else {
@@ -50,7 +50,7 @@ class ScmManager implements GitProvider {
     boolean createRepository(String repoTarget, String description, boolean initialize) {
         def namespace = repoTarget.split('/', 2)[0]
         def repoName = repoTarget.split('/', 2)[1]
-        def repo = new Repository(config.application.namePrefix+namespace, repoName, description ?: "")
+        def repo = new Repository(config.application.namePrefix + namespace, repoName, description ?: "")
         Response<Void> response = scmmApiClient.repositoryApi().create(repo, initialize).execute()
         return handle201or409(response, "Repository ${namespace}/${repoName}")
     }
@@ -124,14 +124,14 @@ class ScmManager implements GitProvider {
 
     private static Permission.Role mapToScmManager(AccessRole role) {
         switch (role) {
-            case AccessRole.READ:     return Permission.Role.READ
-            case AccessRole.WRITE:    return Permission.Role.WRITE
+            case AccessRole.READ: return Permission.Role.READ
+            case AccessRole.WRITE: return Permission.Role.WRITE
             case AccessRole.MAINTAIN:
                 // SCM-manager doesn't know  MAINTAIN -> downgrade to WRITE
                 log.warn("SCM-Manager: Mapping MAINTAIN → WRITE")
                 return Permission.Role.WRITE
-            case AccessRole.ADMIN:    return Permission.Role.OWNER
-            case AccessRole.OWNER:    return Permission.Role.OWNER
+            case AccessRole.ADMIN: return Permission.Role.OWNER
+            case AccessRole.OWNER: return Permission.Role.OWNER
         }
     }
 
@@ -216,7 +216,7 @@ class ScmManager implements GitProvider {
 
     private String resolvedNamespace() {
         def prefix = (config.application.namePrefix ?: "")
-        def ns     = (scmmConfig.namespace ?: "scm-manager")
+        def ns = (scmmConfig.namespace ?: "scm-manager")
         return "${prefix}${ns}"
     }
 

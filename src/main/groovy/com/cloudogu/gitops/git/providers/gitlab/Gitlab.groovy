@@ -53,25 +53,21 @@ class Gitlab implements GitProvider {
 
     @Override
     void setRepositoryPermission(String repoTarget, String principal, AccessRole role, Scope scope) {
-
+        String fullPath = resolveFullPath(repoTarget)
+        Project project = findProjectOrThrow(fullPath)
+        AccessLevel level = toAccessLevel(role, scope)
+        if (scope == Scope.GROUP) {
+            def group = gitlabApi.groupApi.getGroups(principal)
+                    .find { it.fullPath == principal || it.path == principal || it.name == principal }
+            if (!group) throw new IllegalArgumentException("Group '${principal}' not found")
+            gitlabApi.projectApi.shareProject(project.id, group.id, level, null)
+        } else {
+            def user = gitlabApi.userApi.findUsers(principal)
+                    .find { it.username == principal || it.email == principal }
+            if (!user) throw new IllegalArgumentException("User '${principal}' not found")
+            gitlabApi.projectApi.addMember(project.id, user.id, level)
+        }
     }
-////TODO use gitlab specific access rights
-//    @Override
-//    void setRepositoryPermission(String repoTarget, String principal, Permission.Role role, boolean groupPermission) {
-//        String fullPath = resolveFullPath(repoTarget)
-//        Project project = findProjectOrThrow(fullPath)
-//        AccessLevel level = toAccessLevel(role)
-//
-//        if (groupPermission) {
-//            def group = gitlabApi.groupApi.getGroups(principal).find { it.fullPath == principal }
-//            if (!group) throw new IllegalArgumentException("Group '${principal}' not found")
-//            gitlabApi.projectApi.shareProject(project.id, group.id, level, null)
-//        } else {
-//            def user = gitlabApi.userApi.findUsers(principal).find { it.username == principal || it.email == principal }
-//            if (!user) throw new IllegalArgumentException("User '${principal}' not found")
-//            gitlabApi.projectApi.addMember(project.id, user.id, level)
-//        }
-//    }
 
     @Override
     String computePushUrl(String repoTarget) {
@@ -266,16 +262,25 @@ class Gitlab implements GitProvider {
         }
     }
 
-    //TODO it has to be own accessLevel and the inface should provide String or a general ENUM
-    // mapping of permission role(READ, WRITE, OWNER) to gitlab specific access level
-    private static AccessLevel toAccessLevel(Permission.Role role) {
+// provider-agnostic AccessRole → GitLab AccessLevel
+    private static AccessLevel toAccessLevel(AccessRole role, Scope scope) {
         switch (role) {
-            case Permission.Role.READ: return AccessLevel.REPORTER   // read-only
-            case Permission.Role.WRITE: return AccessLevel.MAINTAINER // push/merge etc.
-            case Permission.Role.OWNER: return AccessLevel.OWNER      // full rights
+            case AccessRole.READ:
+                // GitLab: Guests usually can't read private repo code; Reporter can.
+                return AccessLevel.REPORTER
+            case AccessRole.WRITE:
+                // Typical push/merge permissions
+                return AccessLevel.DEVELOPER
+            case AccessRole.MAINTAIN:
+                return AccessLevel.MAINTAINER
+            case AccessRole.ADMIN:
+                // No separate project-level "admin" → cap at Maintainer
+                return AccessLevel.MAINTAINER
+            case AccessRole.OWNER:
+                // OWNER is meaningful for groups/namespaces; for users on a project we cap to MAINTAINER
+                return (scope == Scope.GROUP) ? AccessLevel.OWNER : AccessLevel.MAINTAINER
             default:
-                throw new IllegalArgumentException("Unknown role: ${role}"
-                )
+                throw new IllegalArgumentException("Unknown role: ${role}")
         }
     }
 
