@@ -75,7 +75,7 @@ class GitRepo {
 
     void cloneRepo() {
         def cloneUrl=gitProvider.computePushUrl(repoTarget)
-        log.debug("Cloning ${repoTarget},Origin: ${cloneUrl}")
+        log.debug("Cloning ${repoTarget}, Origin: ${cloneUrl}")
         Git.cloneRepository()
                 .setURI(cloneUrl)
                 .setDirectory(new File(absoluteLocalRepoTmpDir))

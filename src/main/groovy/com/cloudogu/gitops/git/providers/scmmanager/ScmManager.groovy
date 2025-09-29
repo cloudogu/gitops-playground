@@ -79,7 +79,7 @@ class ScmManager implements GitProvider {
         if (scmmConfig.internal) {
             return "http"
         } else {
-            return scmmConfig.url
+            return scmmConfig.url //TODO internal we return http and external the full url? Guess we have to check that
         }
     }
 
