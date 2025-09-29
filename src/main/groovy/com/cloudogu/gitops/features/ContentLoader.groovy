@@ -6,7 +6,6 @@ import com.cloudogu.gitops.config.Config.OverwriteMode
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.GitRepoFactory
-import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.TemplatingEngine
@@ -305,7 +304,7 @@ class ContentLoader extends Feature {
         repoCoordinates.each { repoCoordinate ->
 
             GitRepo targetRepo = repoProvider.getRepo(repoCoordinate.fullRepoName,this.gitHandler.tenant)
-            boolean isNewRepo = targetRepo.createRepository(repoCoordinate.fullRepoName, "", false)
+            boolean isNewRepo = targetRepo.createRepositoryAndSetPermission(repoCoordinate.fullRepoName, "", false)
 
             if (isValidForPush(isNewRepo, repoCoordinate)) {
                 targetRepo.cloneRepo()

@@ -10,9 +10,8 @@ interface GitProvider {
     }
 
     boolean createRepository(String repoTarget, String description, boolean initialize)
-    //TODO role should be a string, because gitlab and scmmanager have different permissions role.
-    // In both provider we have to match the role or the role will cmome from config ??
-    void setRepositoryPermission(String repoTarget, String principal, Permission.Role role, boolean groupPermission)
+
+    void setRepositoryPermission(String repoTarget, String principal, AccessRole role, Scope scope)
 
     String computePushUrl(String repoTarget)
 
@@ -28,9 +27,19 @@ interface GitProvider {
     void setDefaultBranch(String repoTarget, String branch)
 
     String getUrl()
+
     String getProtocol()
+
     String getHost() //TODO? can we maybe get this via helper and config?
 
-    String getGitOpsUsername ()
+    String getGitOpsUsername()
 
+}
+
+enum AccessRole {
+    READ, WRITE, MAINTAIN, ADMIN, OWNER
+}
+
+enum Scope {
+    USER, GROUP
 }

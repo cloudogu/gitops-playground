@@ -1,10 +1,10 @@
 package com.cloudogu.gitops.git
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.config.Credentials
+import com.cloudogu.gitops.git.providers.AccessRole
 import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.git.jgit.helpers.InsecureCredentialProvider
-import com.cloudogu.gitops.git.providers.scmmanager.Permission
+import com.cloudogu.gitops.git.providers.Scope
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
@@ -54,14 +54,15 @@ class GitRepo {
         return repoTarget
     }
 
-    boolean createRepository(String repoTarget, String description, boolean initialize = true){
+    // TODO maybe it is better to have two methods: create and setPermission, because here we have default permission set to USER. in Gitlab it is maybe different...
+    boolean createRepositoryAndSetPermission(String repoTarget, String description, boolean initialize = true){
         def isNewRepo = this.gitProvider.createRepository(repoTarget, description, initialize)
         if (isNewRepo && gitProvider.getGitOpsUsername()) {
             gitProvider.setRepositoryPermission(
                     repoTarget,
                     gitProvider.getGitOpsUsername(),
-                    Permission.Role.WRITE,   //TODO here schould be an general ENUM
-                    false
+                    AccessRole.WRITE,
+                    Scope.USER
             )
         }
         return isNewRepo

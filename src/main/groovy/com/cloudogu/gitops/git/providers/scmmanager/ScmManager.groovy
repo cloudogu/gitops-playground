@@ -3,7 +3,9 @@ package com.cloudogu.gitops.git.providers.scmmanager
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.features.git.config.util.ScmManagerConfig
+import com.cloudogu.gitops.git.providers.AccessRole
 import com.cloudogu.gitops.git.providers.GitProvider
+import com.cloudogu.gitops.git.providers.Scope
 import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
 import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
 import com.cloudogu.gitops.utils.K8sClient
@@ -33,15 +35,16 @@ class ScmManager implements GitProvider {
         this.scmmApiClient = createScmManagerApiClient()
     }
 
-    ScmManagerApiClient createScmManagerApiClient() {
+    ScmManagerApiClient createScmManagerApiClient(){
         if (config.application.runningInsideK8s) {
             return new ScmManagerApiClient(this.apiBase().toString(), scmmConfig.credentials, config.application.insecure)
         } else {
             def port = k8sClient.waitForNodePort(releaseName, scmmConfig.namespace)
-            this.clusterBindAddress="http://${this.networkingUtils.findClusterBindAddress()}:${port}"
-            return new ScmManagerApiClient("${this.clusterBindAddress}/scm/api/".toString(), scmmConfig.credentials, config.application.insecure)
+            def clusterBindAddress = "http://${this.networkingUtils.findClusterBindAddress()}:${port}/scm/api/".toString()
+            return new ScmManagerApiClient(clusterBindAddress, scmmConfig.credentials, config.application.insecure)
         }
     }
+
 
     @Override
     boolean createRepository(String repoTarget, String description, boolean initialize) {
@@ -53,10 +56,14 @@ class ScmManager implements GitProvider {
     }
 
     @Override
-    void setRepositoryPermission(String repoTarget, String principal, Permission.Role role, boolean groupPermission) {
+    void setRepositoryPermission(String repoTarget, String principal, AccessRole role, Scope scope) {
         def namespace = repoTarget.split('/', 2)[0]
         def repoName = repoTarget.split('/', 2)[1]
-        def permission = new Permission(principal, role, groupPermission)
+
+        boolean isGroup = (scope == Scope.GROUP)
+        Permission.Role scmManagerRole = mapToScmManager(role)
+        def permission = new Permission(principal, scmManagerRole, isGroup)
+
         Response<Void> response = scmmApiClient.repositoryApi().createPermission(namespace, repoName, permission).execute()
         handle201or409(response, "Permission on ${namespace}/${repoName}")
     }
@@ -115,6 +122,19 @@ class ScmManager implements GitProvider {
 
     }
 
+    private static Permission.Role mapToScmManager(AccessRole role) {
+        switch (role) {
+            case AccessRole.READ:     return Permission.Role.READ
+            case AccessRole.WRITE:    return Permission.Role.WRITE
+            case AccessRole.MAINTAIN:
+                // SCM-manager doesn't know  MAINTAIN -> downgrade to WRITE
+                log.warn("SCM-Manager: Mapping MAINTAIN → WRITE")
+                return Permission.Role.WRITE
+            case AccessRole.ADMIN:    return Permission.Role.OWNER
+            case AccessRole.OWNER:    return Permission.Role.OWNER
+        }
+    }
+
 
     // ---------------- URI components  ----------------
 
@@ -161,9 +181,6 @@ class ScmManager implements GitProvider {
     // --- helpers ---
     private URI internalOrExternal() {
         if (scmmConfig.internal) {
-            if(!this.config.application.runningInsideK8s){
-                return URI.create(this.clusterBindAddress)
-            }
             return URI.create("http://scmm.${config.application.namePrefix}${scmmConfig.namespace}.svc.cluster.local")
         }
         def urlString = (scmmConfig.url ?: '').strip()
@@ -172,6 +189,35 @@ class ScmManager implements GitProvider {
         }
         // TODO do we need here to consider scmmConfig.ingeress? URI.create("https://${scmmConfig.ingress}"
         return URI.create(urlString)
+    }
+
+//    private URI resolveEndpoint() {
+//        return scmmConfig.internal ? internalEndpoint() : externalEndpoint()
+//    }
+//
+//    private URI internalEndpoint() {
+//        def namespace = resolvedNamespace() // namePrefix + namespace
+//        if (config.application.runningInsideK8s) {
+//            return URI.create("http://scmm.${namespace}.svc.cluster.local/scm")
+//        } else {
+//            def port = k8sClient.waitForNodePort(releaseName, namespace)
+//            def host = networkingUtils.findClusterBindAddress()
+//            return URI.create("http://${host}:${port}/scm")
+//        }
+//    }
+//
+//    private URI externalEndpoint() {
+//        def urlString = (scmmConfig.url ?: '').strip()
+//        if (urlString) return URI.create(urlString)
+//        def host = (scmmConfig.ingress ?: '').strip()
+//        if (host) return URI.create("http://${host}/scm")
+//        throw new IllegalArgumentException("Either scmmConfig.url or scmmConfig.ingress must be set when scmmConfig.internal=false")
+//    }
+
+    private String resolvedNamespace() {
+        def prefix = (config.application.namePrefix ?: "")
+        def ns     = (scmmConfig.namespace ?: "scm-manager")
+        return "${prefix}${ns}"
     }
 
     private static URI withScm(URI uri) {

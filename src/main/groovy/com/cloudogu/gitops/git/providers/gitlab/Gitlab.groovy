@@ -3,7 +3,9 @@ package com.cloudogu.gitops.git.providers.gitlab
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.features.git.config.util.GitlabConfig
+import com.cloudogu.gitops.git.providers.AccessRole
 import com.cloudogu.gitops.git.providers.GitProvider
+import com.cloudogu.gitops.git.providers.Scope
 import com.cloudogu.gitops.git.providers.scmmanager.Permission
 import groovy.util.logging.Slf4j
 import org.gitlab4j.api.GitLabApi
@@ -49,23 +51,27 @@ class Gitlab implements GitProvider {
         return true
     }
 
-    //TODO use gitlab specific access rights
     @Override
-    void setRepositoryPermission(String repoTarget, String principal, Permission.Role role, boolean groupPermission) {
-        String fullPath = resolveFullPath(repoTarget)
-        Project project = findProjectOrThrow(fullPath)
-        AccessLevel level = toAccessLevel(role)
+    void setRepositoryPermission(String repoTarget, String principal, AccessRole role, Scope scope) {
 
-        if (groupPermission) {
-            def group = gitlabApi.groupApi.getGroups(principal).find { it.fullPath == principal }
-            if (!group) throw new IllegalArgumentException("Group '${principal}' not found")
-            gitlabApi.projectApi.shareProject(project.id, group.id, level, null)
-        } else {
-            def user = gitlabApi.userApi.findUsers(principal).find { it.username == principal || it.email == principal }
-            if (!user) throw new IllegalArgumentException("User '${principal}' not found")
-            gitlabApi.projectApi.addMember(project.id, user.id, level)
-        }
     }
+////TODO use gitlab specific access rights
+//    @Override
+//    void setRepositoryPermission(String repoTarget, String principal, Permission.Role role, boolean groupPermission) {
+//        String fullPath = resolveFullPath(repoTarget)
+//        Project project = findProjectOrThrow(fullPath)
+//        AccessLevel level = toAccessLevel(role)
+//
+//        if (groupPermission) {
+//            def group = gitlabApi.groupApi.getGroups(principal).find { it.fullPath == principal }
+//            if (!group) throw new IllegalArgumentException("Group '${principal}' not found")
+//            gitlabApi.projectApi.shareProject(project.id, group.id, level, null)
+//        } else {
+//            def user = gitlabApi.userApi.findUsers(principal).find { it.username == principal || it.email == principal }
+//            if (!user) throw new IllegalArgumentException("User '${principal}' not found")
+//            gitlabApi.projectApi.addMember(project.id, user.id, level)
+//        }
+//    }
 
     @Override
     String computePushUrl(String repoTarget) {
