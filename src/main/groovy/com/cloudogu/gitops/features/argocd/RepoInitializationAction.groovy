@@ -45,7 +45,7 @@ class RepoInitializationAction {
                         host    : this.gitHandler.tenant.host,
                         protocol: this.gitHandler.tenant.protocol,
                         repoUrl : this.gitHandler.tenant.url,
-                        centralScmmURL: this.gitHandler.central.url
+                        centralScmmUrl: this.gitHandler.central.url
                 ],
                 config    : config,
                 // Allow for using static classes inside the templates

@@ -40,8 +40,8 @@ class ScmManager implements GitProvider {
             return new ScmManagerApiClient(this.apiBase().toString(), scmmConfig.credentials, config.application.insecure)
         } else {
             def port = k8sClient.waitForNodePort(releaseName, scmmConfig.namespace)
-            def clusterBindAddress = "http://${this.networkingUtils.findClusterBindAddress()}:${port}/scm/api/".toString()
-            return new ScmManagerApiClient(clusterBindAddress, scmmConfig.credentials, config.application.insecure)
+            this.clusterBindAddress = "http://${this.networkingUtils.findClusterBindAddress()}:${port}".toString()
+            return new ScmManagerApiClient(this.clusterBindAddress+"/scm/api/", scmmConfig.credentials, config.application.insecure)
         }
     }
 
@@ -181,6 +181,9 @@ class ScmManager implements GitProvider {
     // --- helpers ---
     private URI internalOrExternal() {
         if (scmmConfig.internal) {
+            if(!config.application.runningInsideK8s){
+                return new URI(this.clusterBindAddress)
+            }
             return URI.create("http://scmm.${config.application.namePrefix}${scmmConfig.namespace}.svc.cluster.local")
         }
         def urlString = (scmmConfig.url ?: '').strip()
