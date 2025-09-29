@@ -24,6 +24,8 @@ class ScmManager implements GitProvider {
     private final K8sClient k8sClient
     private final NetworkingUtils networkingUtils
 
+    URI clusterBindAddress
+
     //TODO unit tests für scmmanager rüberziehen und restlichen Sachen implementieren
     ScmManager(Config config, ScmManagerConfig scmmConfig, K8sClient k8sClient, NetworkingUtils networkingUtils) {
         this.config = config
@@ -168,7 +170,6 @@ class ScmManager implements GitProvider {
         return true// because its created
     }
 
-
     // --- helpers ---
 //    private URI internalOrExternal() {
 //        if (scmmConfig.internal) {
@@ -194,9 +195,13 @@ class ScmManager implements GitProvider {
         if (config.application.runningInsideK8s) {
             return URI.create("http://scmm.${namespace}.svc.cluster.local/scm")
         } else {
+            if(this.clusterBindAddress){
+                return this.clusterBindAddress
+            }
             def port = k8sClient.waitForNodePort(releaseName, namespace)
             def host = networkingUtils.findClusterBindAddress()
-            return URI.create("http://${host}:${port}/scm")
+            this.clusterBindAddress=new URI("http://${host}:${port}")
+            return this.clusterBindAddress.resolve("/scm")
         }
     }
 
