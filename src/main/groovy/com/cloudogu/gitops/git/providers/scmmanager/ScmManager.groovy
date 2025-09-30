@@ -37,24 +37,24 @@ class ScmManager implements GitProvider {
 
     @Override
     boolean createRepository(String repoTarget, String description, boolean initialize) {
-        def namespace = repoTarget.split('/', 2)[0]
+        def repoNamespace = repoTarget.split('/', 2)[0]
         def repoName = repoTarget.split('/', 2)[1]
-        def repo = new Repository(config.application.namePrefix + namespace, repoName, description ?: "")
+        def repo = new Repository(config.application.namePrefix + repoNamespace, repoName, description ?: "")
         Response<Void> response = scmmApiClient.repositoryApi().create(repo, initialize).execute()
-        return handle201or409(response, "Repository ${namespace}/${repoName}")
+        return handle201or409(response, "Repository ${repoNamespace}/${repoName}")
     }
 
     @Override
     void setRepositoryPermission(String repoTarget, String principal, AccessRole role, Scope scope) {
-        def namespace = repoTarget.split('/', 2)[0]
+        def repoNamespace = repoTarget.split('/', 2)[0]
         def repoName = repoTarget.split('/', 2)[1]
 
         boolean isGroup = (scope == Scope.GROUP)
         Permission.Role scmManagerRole = mapToScmManager(role)
         def permission = new Permission(principal, scmManagerRole, isGroup)
 
-        Response<Void> response = scmmApiClient.repositoryApi().createPermission(namespace, repoName, permission).execute()
-        handle201or409(response, "Permission on ${namespace}/${repoName}")
+        Response<Void> response = scmmApiClient.repositoryApi().createPermission(repoNamespace, repoName, permission).execute()
+        handle201or409(response, "Permission on ${repoNamespace}/${repoName}")
     }
 
     /** …/scm/<rootPath>/<ns>/<name> */
@@ -191,17 +191,16 @@ class ScmManager implements GitProvider {
     }
 
     private URI internalEndpoint() {
-        def namespace = resolvedNamespace() // namePrefix + namespace
+        final String k8sNs = resolvedNamespace()
         if (config.application.runningInsideK8s) {
-            return URI.create("http://scmm.${namespace}.svc.cluster.local/scm")
-        } else {
+            return URI.create("http://scmm.${k8sNs}.svc.cluster.local")
+        } else{
             if(this.clusterBindAddress){
                 return this.clusterBindAddress
             }
-            def port = k8sClient.waitForNodePort(releaseName, namespace)
+            def port = k8sClient.waitForNodePort(releaseName, k8sNs)
             def host = networkingUtils.findClusterBindAddress()
-            this.clusterBindAddress=new URI("http://${host}:${port}")
-            return this.clusterBindAddress.resolve("/scm")
+            return URI.create("http://${host}:${port}")
         }
     }
 
