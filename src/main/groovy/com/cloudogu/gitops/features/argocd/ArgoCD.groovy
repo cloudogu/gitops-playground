@@ -365,13 +365,13 @@ class ArgoCD extends Feature {
 
 
         k8sClient.createSecret('generic', repoTemplateSecretName, namespace,
-                new Tuple2('url', this.gitHandler.tenant.url), //TODO URL Check
+                new Tuple2('url', this.gitHandler.tenant.url),
                 new Tuple2('username', this.gitHandler.tenant.credentials.username),
                 new Tuple2('password', this.gitHandler.tenant.credentials.password)
         )
 
         k8sClient.label('secret', repoTemplateSecretName, namespace,
-                new Tuple2(' argocd.argoproj.io/secret-type', 'repo-creds'))
+                new Tuple2('argocd.argoproj.io/secret-type', 'repo-creds'))
 
         if (config.multiTenant.useDedicatedInstance) {
             log.debug('Creating central repo credential secret that is used by argocd to access repos in SCMHandler-Manager')
@@ -385,7 +385,7 @@ class ArgoCD extends Feature {
             )
 
             k8sClient.label('secret', centralRepoTemplateSecretName, config.multiTenant.centralArgocdNamespace,
-                    new Tuple2(' argocd.argoproj.io/secret-type', 'repo-creds'))
+                    new Tuple2('argocd.argoproj.io/secret-type', 'repo-creds'))
         }
     }
 
