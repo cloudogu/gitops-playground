@@ -1,7 +1,7 @@
 package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
-
+import com.cloudogu.gitops.kubernetes.K8sClient
 import jakarta.inject.Provider
 
 class K8sClientForTest extends K8sClient {

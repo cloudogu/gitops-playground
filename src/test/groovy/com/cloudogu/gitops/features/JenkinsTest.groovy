@@ -8,7 +8,7 @@ import com.cloudogu.gitops.jenkins.PrometheusConfigurator
 import com.cloudogu.gitops.jenkins.UserManager
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.K8sClient
+import com.cloudogu.gitops.kubernetes.K8sClient
 import com.cloudogu.gitops.utils.NetworkingUtils
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.BeforeEach

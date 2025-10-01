@@ -8,8 +8,8 @@ import com.cloudogu.gitops.kubernetes.rbac.Role
 import com.cloudogu.gitops.scmm.ScmUrlResolver
 import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.HelmClient
-import com.cloudogu.gitops.utils.K8sClient
+import com.cloudogu.gitops.kubernetes.HelmClient
+import com.cloudogu.gitops.kubernetes.K8sClient
 import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
