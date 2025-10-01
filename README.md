@@ -267,262 +267,241 @@ That is, if you pass a param via CLI, for example, it will overwrite the corresp
 
 ##### Overview of all CLI and config options
 
-- [Registry Configuration](#registry-configuration)
-- [Jenkins Configuration](#jenkins-configuration)
-- [Multi-Tenant Configuration](#multi-tenant-configuration)
-- [SCM Manager Configuration](#scm-manager-configuration)
-- [Application Configuration](#application-configuration)
-- [Images Configuration](#images-configuration)
-- [Content Configuration](#content-configuration)
-- [Repositories Configuration](#repositories-configuration)
-- [ArgoCD Configuration](#argocd-configuration)
-- [Cert Manager Configuration](#cert-manager-configuration)
-- [Example Apps Configuration](#example-apps-configuration)
-- [Ingress NGINX Configuration](#ingress-nginx-configuration)
-- [Mail Configuration](#mail-configuration)
-- [Monitoring Configuration](#monitoring-configuration)
-- [Secrets Management Configuration](#secrets-management-configuration)
+- [Registry](#registry)
+- [Jenkins](#jenkins)
+- [Multitenant](#multitenant)
+- [SCMM](#scmm)
+- [Application](#application)
+- [Images](#images)
+- [Features](#features)
+  - [ArgoCD](#argocd)
+  - [Mail](#mail)
+  - [Monitoring](#monitoring)
+  - [Secrets](#secrets)
+  - [Ingress Nginx](#ingress-nginx)
+  - [Cert Manager](#cert-manager)
+- [Content](#content)
 
-###### Registry Configuration
+###### Registry
 
-| CLI | Config | Description |
-|-----|---------|-------------|
-| `--registry` | `registry.active` | Installs a simple cluster-local registry for demonstration purposes. Warning: Registry does not provide authentication! |
-| `--internal-registry-port` | `registry.internalPort` | Port of registry registry. Ignored when a registry*url params are set |
-| `--registry-url` | `registry.url` | The url of your external registry, used for pushing images |
-| `--registry-path` | `registry.path` | Optional when registry-url is set |
-| `--registry-username` | `registry.username` | Optional when registry-url is set |
-| `--registry-password` | `registry.password` | Optional when registry-url is set |
-| `--registry-proxy-url` | `registry.proxyUrl` | The url of your proxy-registry. Used in pipelines to authorize pull base images. Use in conjunction with petclinic base image. Used in helm charts when create-image-pull-secrets is set. Use in conjunction with helm.*image fields. |
-| `--registry-proxy-username` | `registry.proxyUsername` | Use with registry-proxy-url, added to Jenkins as credentials and created as pull secrets, when create-image-pull-secrets is set. |
-| `--registry-proxy-password` | `registry.proxyPassword` | Use with registry-proxy-url, added to Jenkins as credentials and created as pull secrets, when create-image-pull-secrets is set. |
-| `--registry-username-read-only` | `registry.readOnlyUsername` | Optional alternative username for registry-url with read-only permissions that is used when create-image-pull-secrets is set. |
-| `--registry-password-read-only` | `registry.readOnlyPassword` | Optional alternative password for registry-url with read-only permissions that is used when create-image-pull-secrets is set. |
-| `--create-image-pull-secrets` | `registry.createImagePullSecrets` | Create image pull secrets for registry and proxy-registry for all GOP namespaces and helm charts. Uses proxy-username, read-only-username or registry-username (in this order). Use this if your cluster is not auto-provisioned with credentials for your private registries or if you configure individual helm images to be pulled from the proxy-registry that requires authentication. |
-| N/A | `registry.helm.chart` | Name of the Helm chart |
-| N/A | `registry.helm.repoURL` | Repository url from which the Helm chart should be obtained |
-| N/A | `registry.helm.version` | The version of the Helm chart to be installed |
-| N/A | `registry.helm.values` | Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration |
+| CLI | Config | Default | Type | Description |
+|-----|--------|---------|------|-------------|
+| `--registry` | `registry.active` | `false` | Boolean | Installs a simple cluster-local registry for demonstration purposes. Warning: Registry does not provide authentication! |
+| `--internal-registry-port` | `registry.internalPort` | `30000` | Integer | Port of registry registry. Ignored when a registry*url params are set |
+| `--registry-url` | `registry.url` | `''` | String | The url of your external registry, used for pushing images |
+| `--registry-path` | `registry.path` | `''` | String | Optional when registry-url is set |
+| `--registry-username` | `registry.username` | `''` | String | Optional when registry-url is set |
+| `--registry-password` | `registry.password` | `''` | String | Optional when registry-url is set |
+| `--registry-proxy-url` | `registry.proxyUrl` | `''` | String | The url of your proxy-registry. Used in pipelines to authorize pull base images |
+| `--registry-proxy-username` | `registry.proxyUsername` | `''` | String | Use with registry-proxy-url, added to Jenkins as credentials and created as pull secrets |
+| `--registry-proxy-password` | `registry.proxyPassword` | `''` | String | Use with registry-proxy-url, added to Jenkins as credentials and created as pull secrets |
+| `--registry-username-read-only` | `registry.readOnlyUsername` | `''` | String | Optional alternative username for registry-url with read-only permissions |
+| `--registry-password-read-only` | `registry.readOnlyPassword` | `''` | String | Optional alternative password for registry-url with read-only permissions |
+| `--create-image-pull-secrets` | `registry.createImagePullSecrets` | `false` | Boolean | Create image pull secrets for registry and proxy-registry for all GOP namespaces |
+| - | `registry.helm.chart` | `'docker-registry'` | String | Name of the Helm chart |
+| - | `registry.helm.repoURL` | `'https://helm.twun.io'` | String | Repository url from which the Helm chart should be obtained |
+| - | `registry.helm.version` | `'2.2.3'` | String | The version of the Helm chart to be installed |
+| - | `registry.helm.values` | `[:]` | Map | Helm values of the chart |
 
-###### Jenkins Configuration
+###### Jenkins
 
-| CLI | Config | Description |
-|-----|---------|-------------|
-| `--jenkins` | `jenkins.active` | Installs Jenkins as CI server |
-| `--jenkins-skip-restart` | `jenkins.skipRestart` | Skips restarting Jenkins after plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades. |
-| `--jenkins-skip-plugins` | `jenkins.skipPlugins` | Skips plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades. |
-| `--jenkins-url` | `jenkins.url` | The url of your external jenkins |
-| `--jenkins-username` | `jenkins.username` | Mandatory when jenkins-url is set |
-| `--jenkins-password` | `jenkins.password` | Mandatory when jenkins-url is set |
-| `--jenkins-metrics-username` | `jenkins.metricsUsername` | Mandatory when jenkins-url is set and monitoring enabled |
-| `--jenkins-metrics-password` | `jenkins.metricsPassword` | Mandatory when jenkins-url is set and monitoring enabled |
-| `--maven-central-mirror` | `jenkins.mavenCentralMirror` | URL for maven mirror, used by applications built in Jenkins |
-| `--jenkins-additional-envs` | `jenkins.additionalEnvs` | Set additional environments to Jenkins |
-| N/A | `jenkins.helm.chart` | Name of the Helm chart |
-| N/A | `jenkins.helm.repoURL` | Repository url from which the Helm chart should be obtained |
-| N/A | `jenkins.helm.version` | The version of the Helm chart to be installed |
-| N/A | `jenkins.helm.values` | Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration |
+| CLI | Config | Default | Type | Description |
+|-----|--------|---------|------|-------------|
+| `--jenkins` | `jenkins.active` | `false` | Boolean | Installs Jenkins as CI server |
+| `--jenkins-skip-restart` | `jenkins.skipRestart` | `false` | Boolean | Skips restarting Jenkins after plugin installation |
+| `--jenkins-skip-plugins` | `jenkins.skipPlugins` | `false` | Boolean | Skips plugin installation |
+| `--jenkins-url` | `jenkins.url` | `''` | String | The url of your external jenkins |
+| `--jenkins-username` | `jenkins.username` | `'admin'` | String | Mandatory when jenkins-url is set |
+| `--jenkins-password` | `jenkins.password` | `'admin'` | String | Mandatory when jenkins-url is set |
+| `--jenkins-metrics-username` | `jenkins.metricsUsername` | `'metrics'` | String | Mandatory when jenkins-url is set and monitoring enabled |
+| `--jenkins-metrics-password` | `jenkins.metricsPassword` | `'metrics'` | String | Mandatory when jenkins-url is set and monitoring enabled |
+| `--maven-central-mirror` | `jenkins.mavenCentralMirror` | `''` | String | URL for maven mirror, used by applications built in Jenkins |
+| `--jenkins-additional-envs` | `jenkins.additionalEnvs` | `[:]` | Map | Set additional environments to Jenkins |
+| - | `jenkins.helm.chart` | `'jenkins'` | String | Name of the Helm chart |
+| - | `jenkins.helm.repoURL` | `'https://charts.jenkins.io'` | String | Repository url from which the Helm chart should be obtained |
+| - | `jenkins.helm.version` | `'5.8.43'` | String | The version of the Helm chart to be installed |
+| - | `jenkins.helm.values` | `[:]` | Map | Helm values of the chart |
 
-###### Multi-Tenant Configuration
+###### Multitenant
 
-| CLI | Config | Description |
-|-----|---------|-------------|
-| `--dedicated-internal` | `multiTenant.internal` | SCM for Central Management is running on the same cluster, so k8s internal URLs can be used for access |
-| `--dedicated-instance` | `multiTenant.useDedicatedInstance` | Toggles the Dedicated Instances Mode |
-| `--central-scm-url` | `multiTenant.centralScmUrl` | URL for the centralized Management Repo |
-| `--central-scm-username` | `multiTenant.username` | CENTRAL SCMM USERNAME |
-| `--central-scm-password` | `multiTenant.password` | CENTRAL SCMM Password |
-| `--central-argocd-namespace` | `multiTenant.centralArgocdNamespace` | CENTRAL Argocd Repo Namespace |
-| `--central-scm-namespace` | `multiTenant.centralSCMamespace` | CENTRAL Argocd Repo Namespace |
+| CLI | Config | Default | Type | Description |
+|-----|--------|---------|------|-------------|
+| `--dedicated-internal` | `multiTenant.internal` | `false` | Boolean | SCM for Central Management is running on the same cluster |
+| `--dedicated-instance` | `multiTenant.useDedicatedInstance` | `false` | Boolean | Toggles the Dedicated Instances Mode |
+| `--central-scm-url` | `multiTenant.centralScmUrl` | `''` | String | URL for the centralized Management Repo |
+| `--central-scm-username` | `multiTenant.username` | `''` | String | CENTRAL SCMM USERNAME |
+| `--central-scm-password` | `multiTenant.password` | `''` | String | CENTRAL SCMM Password |
+| `--central-argocd-namespace` | `multiTenant.centralArgocdNamespace` | `'argocd'` | String | CENTRAL Argocd Repo Namespace |
+| `--central-scm-namespace` | `multiTenant.centralSCMamespace` | `'scm-manager'` | String | Central SCM namespace |
 
-###### SCM Manager Configuration
+###### SCMM
 
-| CLI | Config | Description |
-|-----|---------|-------------|
-| `--scmm-skip-restart` | `scmm.skipRestart` | Skips restarting SCM-Manager after plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades. |
-| `--scmm-skip-plugins` | `scmm.skipPlugins` | Skips plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades. |
-| `--scmm-url` | `scmm.url` | The host of your external scm-manager |
-| `--scmm-username` | `scmm.username` | Mandatory when scmm-url is set |
-| `--scmm-password` | `scmm.password` | Mandatory when scmm-url is set |
-| `--scm-root-path` | `scmm.rootPath` | Sets the root path for the Git Repositories. In SCM-Manager it is always "repo" |
-| `--scm-provider` | `scmm.provider` | Sets the scm Provider. Possible Options are "scm-manager" and "gitlab" |
-| N/A | `scmm.helm.chart` | Name of the Helm chart |
-| N/A | `scmm.helm.repoURL` | Repository url from which the Helm chart should be obtained |
-| N/A | `scmm.helm.version` | The version of the Helm chart to be installed |
-| N/A | `scmm.helm.values` | Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration |
+| CLI | Config | Default | Type | Description |
+|-----|--------|---------|------|-------------|
+| `--scmm-skip-restart` | `scmm.skipRestart` | `false` | Boolean | Skips restarting SCM-Manager after plugin installation |
+| `--scmm-skip-plugins` | `scmm.skipPlugins` | `false` | Boolean | Skips plugin installation |
+| `--scmm-url` | `scmm.url` | `''` | String | The host of your external scm-manager |
+| `--scmm-username` | `scmm.username` | `'admin'` | String | Mandatory when scmm-url is set |
+| `--scmm-password` | `scmm.password` | `'admin'` | String | Mandatory when scmm-url is set |
+| `--scm-root-path` | `scmm.rootPath` | `'repo'` | String | Sets the root path for the Git Repositories |
+| `--scm-provider` | `scmm.provider` | `'scm-manager'` | String | Sets the scm Provider. Possible Options are "scm-manager" and "gitlab" |
+| - | `scmm.helm.chart` | `'scm-manager'` | String | Name of the Helm chart |
+| - | `scmm.helm.repoURL` | `'https://packages.scm-manager.org/repository/helm-v2-releases/'` | String | Repository url from which the Helm chart should be obtained |
+| - | `scmm.helm.version` | `'3.10.2'` | String | The version of the Helm chart to be installed |
+| - | `scmm.helm.values` | `[:]` | Map | Helm values of the chart |
 
-###### Application Configuration
+###### Application
 
-| CLI | Config | Description |
-|-----|---------|-------------|
-| `--config-file` | N/A | Config file for the application |
-| `--config-map` | N/A | Kubernetes configuration map. Should contain a key `config.yaml`. |
-| `-d, --debug` | N/A | Debug output |
-| `-x, --trace` | N/A | Debug + Show each command executed (set -x) |
-| `--output-config-file` | N/A | Output current config as config file as much as possible |
-| `-v, --version` | N/A | Display version and license info |
-| `-h, --help` | N/A | Display this help message |
-| `--remote` | `application.remote` | Expose services as LoadBalancers |
-| `--insecure` | `application.insecure` | Sets insecure-mode in cURL which skips cert validation |
-| `--openshift` | `application.openshift` | When set, openshift specific resources and configurations are applied |
-| `--username` | `application.username` | Set initial admin username |
-| `--password` | `application.password` | Set initial admin passwords |
-| `-y, --yes` | `application.yes` | Skip confirmation |
-| `--name-prefix` | `application.namePrefix` | Set name-prefix for repos, jobs, namespaces |
-| `--destroy` | `application.destroy` | Unroll playground |
-| `--pod-resources` | `application.podResources` | Write kubernetes resource requests and limits on each pod |
-| `--git-name` | `application.gitName` | Sets git author and committer name used for initial commits |
-| `--git-email` | `application.gitEmail` | Sets git author and committer email used for initial commits |
-| `--base-url` | `application.baseUrl` | the external base url (TLD) for all tools, e.g. https://example.com or http://localhost:8080. The individual -url params for argocd, grafana, vault and mailhog take precedence. |
-| `--url-separator-hyphen` | `application.urlSeparatorHyphen` | Use hyphens instead of dots to separate application name from base-url |
-| `--mirror-repos` | `application.mirrorRepos` | Changes the sources of deployed tools so they are not pulled from the internet, but are pulled from git and work in air-gapped environments. |
-| `--skip-crds` | `application.skipCrds` | Skip installation of CRDs. This requires prior installation of CRDs |
-| `--namespace-isolation` | `application.namespaceIsolation` | Configure tools to explicitly work with the given namespaces only, and not cluster-wide. This way GOP can be installed without having cluster-admin permissions. |
-| `--netpols` | `application.netpols` | Sets Network Policies |
+| CLI | Config | Default | Type | Description |
+|-----|--------|---------|------|-------------|
+| `--config-file` | - | `''` | String | Config file path |
+| `--config-map` | - | `''` | String | Config map name |
+| `-d, --debug` | `application.debug` | - | Boolean | Enable debug mode |
+| `-x, --trace` | `application.trace` | - | Boolean | Enable trace mode |
+| `--output-config-file` | `application.outputConfigFile` | `false` | Boolean | Output configuration file |
+| `-v, --version` | `application.versionInfoRequested` | `false` | Boolean | Display version and license info |
+| `-h, --help` | `application.usageHelpRequested` | `false` | Boolean | Display help message |
+| `--remote` | `application.remote` | `false` | Boolean | Expose services as LoadBalancers |
+| `--insecure` | `application.insecure` | `false` | Boolean | Sets insecure-mode in cURL which skips cert validation |
+| `--openshift` | `application.openshift` | `false` | Boolean | When set, openshift specific resources and configurations are applied |
+| `--username` | `application.username` | `'admin'` | String | Set initial admin username |
+| `--password` | `application.password` | `'admin'` | String | Set initial admin passwords |
+| `-y, --yes` | `application.yes` | `false` | Boolean | Skip confirmation |
+| `--name-prefix` | `application.namePrefix` | `''` | String | Set name-prefix for repos, jobs, namespaces |
+| `--destroy` | `application.destroy` | `false` | Boolean | Unroll playground |
+| `--pod-resources` | `application.podResources` | `false` | Boolean | Write kubernetes resource requests and limits on each pod |
+| `--git-name` | `application.gitName` | `'Cloudogu'` | String | Sets git author and committer name used for initial commits |
+| `--git-email` | `application.gitEmail` | `'hello@cloudogu.com'` | String | Sets git author and committer email used for initial commits |
+| `--base-url` | `application.baseUrl` | `''` | String | The external base url (TLD) for all tools |
+| `--url-separator-hyphen` | `application.urlSeparatorHyphen` | `false` | Boolean | Use hyphens instead of dots to separate application name from base-url |
+| `--mirror-repos` | `application.mirrorRepos` | `false` | Boolean | Changes the sources of deployed tools so they work in air-gapped environments |
+| `--skip-crds` | `application.skipCrds` | `false` | Boolean | Skip installation of CRDs |
+| `--namespace-isolation` | `application.namespaceIsolation` | `false` | Boolean | Configure tools to work with given namespaces only |
+| `--netpols` | `application.netpols` | `false` | Boolean | Sets Network Policies |
 
-###### Images Configuration
+###### Images
 
-| CLI | Config | Description |
-|-----|---------|-------------|
-| `--kubectl-image` | `images.kubectl` | Sets image for kubectl |
-| `--helm-image` | `images.helm` | Sets image for helm |
-| `--kubeval-image` | `images.kubeval` | Sets image for kubeval |
-| `--helmkubeval-image` | `images.helmKubeval` | Sets image for helmkubeval |
-| `--yamllint-image` | `images.yamllint` | Sets image for yamllint |
-| `--nginx-image` | `images.nginx` | Sets image for nginx used in various applications |
-| `--petclinic-image` | `images.petclinic` | Sets image for petclinic used in various applications |
-| `--maven-image` | `images.maven` | Sets image for maven |
+| CLI | Config | Default | Type | Description |
+|-----|--------|---------|------|-------------|
+| `--kubectl-image` | `images.kubectl` | `"bitnamilegacy/kubectl:1.29"` | String | Sets image for kubectl |
+| `--helm-image` | `images.helm` | `"ghcr.io/cloudogu/helm:3.16.4-1"` | String | Sets image for helm |
+| `--kubeval-image` | `images.kubeval` | `"ghcr.io/cloudogu/helm:3.16.4-1"` | String | Sets image for kubeval |
+| `--helmkubeval-image` | `images.helmKubeval` | `"ghcr.io/cloudogu/helm:3.16.4-1"` | String | Sets image for helmkubeval |
+| `--yamllint-image` | `images.yamllint` | `"cytopia/yamllint:1.25-0.7"` | String | Sets image for yamllint |
+| `--nginx-image` | `images.nginx` | `''` | String | Sets image for nginx |
+| `--petclinic-image` | `images.petclinic` | `'eclipse-temurin:17-jre-alpine'` | String | Sets image for petclinic |
+| `--maven-image` | `images.maven` | `''` | String | Sets image for maven |
 
-###### Content Configuration
+###### ArgoCD
 
-| CLI | Config | Description |
-|-----|---------|-------------|
-| `--content-examples` | `content.examples` | Deploy example content: source repos, GitOps repos, Jenkins Job, Argo CD apps/project |
-| N/A | `content.namespaces` | Additional kubernetes namespaces. These are authorized to Argo CD, supplied with image pull secrets, monitored by prometheus, etc. Namespaces can be templates, e.g. ${config.application.namePrefix}staging |
-| N/A | `content.repos` | Content repos to push into target environment |
-| N/A | `content.repos[].url` | URL of the content repo. Mandatory for each type. |
-| N/A | `content.repos[].path` | Path within the content repo to process |
-| N/A | `content.repos[].ref` | Reference for a specific branch, tag, or commit. Emtpy defaults to default branch of the repo. With type MIRROR: ref must not be a commit hash; Choosing a ref only mirrors the ref but does not delete other branches/tags! |
-| N/A | `content.repos[].targetRef` | Reference for a specific branch or tag in the target repo of a MIRROR or COPY repo. If ref is a tag, targetRef is treated as tag as well. Except: targetRef is full ref like refs/heads/my-branch or refs/tags/my-tag. Empty defaults to the source ref. |
-| N/A | `content.repos[].username` | Username to authenticate against content repo |
-| N/A | `content.repos[].password` | Password to authenticate against content repo |
-| N/A | `content.repos[].templating` | When true, template all files ending in .ftl within the repo |
-| N/A | `content.repos[].type` | Content Repos can either be: copied (only the files, starting on ref, starting at path within the repo. Requires target), mirrored (FORCE pushes ref or the whole git repo if no ref set). Requires target, does not allow path and template.) folderBased (folder structure is interpreted as repos. That is, root folder becomes namespace in SCM, sub folders become repository names in SCM, files are copied. Requires target.) |
-| N/A | `content.repos[].target` | Target repo for the repository in the for of namespace/name. Must contain one slash to separate namespace from name. |
-| N/A | `content.repos[].overwriteMode` | This defines, how customer repos will be updated. INIT - push only if repo does not exist. RESET - delete all files after cloning source - files not in content are deleted UPGRADE - clone and copy - existing files will be overwritten, files not in content are kept. For type: MIRROR reset and upgrade have same result: in both cases source repo will be force pushed to target repo. |
-| N/A | `content.repos[].createJenkinsJob` | If true, creates a Jenkins job, if jenkinsfile exists in one of the content repo's branches. |
-| N/A | `content.variables` | Additional variables to use in custom templates. |
+| CLI | Config | Default | Type | Description |
+|-----|--------|---------|------|-------------|
+| `--argocd` | `features.argocd.active` | `false` | Boolean | Installs ArgoCD as GitOps CD tool |
+| `--argocd-operator` | `features.argocd.operator` | `false` | Boolean | Install ArgoCD operator |
+| `--argocd-url` | `features.argocd.url` | `''` | String | The url of your external argocd |
+| `--argocd-email-from` | `features.argocd.emailFrom` | `'argocd@example.org'` | String | Email from address for ArgoCD notifications |
+| `--argocd-email-to-user` | `features.argocd.emailToUser` | `'app-team@example.org'` | String | Email to address for user notifications |
+| `--argocd-email-to-admin` | `features.argocd.emailToAdmin` | `'infra@example.org'` | String | Email to address for admin notifications |
+| `--argocd-resource-inclusions-cluster` | `features.argocd.resourceInclusionsCluster` | `''` | String | ArgoCD resource inclusions for cluster |
+| `--argocd-namespace` | `features.argocd.namespace` | `'argocd'` | String | ArgoCD namespace |
+| - | `features.argocd.env` | - | List | Environment variables for ArgoCD |
 
-###### Repositories Configuration
+###### Mail
 
-| CLI | Config | Description |
-|-----|---------|-------------|
-| N/A | `repositories.springBootHelmChart.url` | HTTP URL of the repo |
-| N/A | `repositories.springBootHelmChart.ref` | Ref of the repo to use, e.g. a tag, commit or branch |
-| N/A | `repositories.springPetclinic.url` | HTTP URL of the repo |
-| N/A | `repositories.springPetclinic.ref` | Ref of the repo to use, e.g. a tag, commit or branch |
-| N/A | `repositories.gitopsBuildLib.url` | HTTP URL of the repo |
-| N/A | `repositories.cesBuildLib.url` | HTTP URL of the repo |
+| CLI | Config | Default | Type | Description |
+|-----|--------|---------|------|-------------|
+| `--mailhog, --mail` | `features.mail.mailhog` | `false` | Boolean | Installs Mailhog as email testing tool |
+| `--mailhog-url` | `features.mail.mailhogUrl` | `''` | String | The url of your external mailhog |
+| `--smtp-address` | `features.mail.smtpAddress` | `''` | String | SMTP server address |
+| `--smtp-port` | `features.mail.smtpPort` | `null` | Integer | SMTP server port |
+| `--smtp-user` | `features.mail.smtpUser` | `''` | String | SMTP username |
+| `--smtp-password` | `features.mail.smtpPassword` | `''` | String | SMTP password |
+| `--mailhog-image` | `features.mail.helm.image` | `'ghcr.io/cloudogu/mailhog:v1.0.1'` | String | Mailhog container image |
+| - | `features.mail.helm.chart` | `'mailhog'` | String | Name of the Helm chart |
+| - | `features.mail.helm.repoURL` | `'https://codecentric.github.io/helm-charts'` | String | Repository url from which the Helm chart should be obtained |
+| - | `features.mail.helm.version` | `'5.0.1'` | String | The version of the Helm chart to be installed |
+| - | `features.mail.helm.values` | `[:]` | Map | Helm values of the chart |
 
-###### ArgoCD Configuration
+###### Monitoring
 
-| CLI | Config | Description |
-|-----|---------|-------------|
-| `--argocd` | `features.argocd.active` | Install ArgoCD |
-| `--argocd-operator` | `features.argocd.operator` | Install ArgoCD via an already running ArgoCD Operator |
-| `--argocd-url` | `features.argocd.url` | The URL where argocd is accessible. It has to be the full URL with http:// or https:// |
-| `--argocd-email-from` | `features.argocd.emailFrom` | Notifications, define Argo CD sender email address |
-| `--argocd-email-to-user` | `features.argocd.emailToUser` | Notifications, define Argo CD user / app-team recipient email address |
-| `--argocd-email-to-admin` | `features.argocd.emailToAdmin` | Notifications, define Argo CD admin recipient email address |
-| `--argocd-resource-inclusions-cluster` | `features.argocd.resourceInclusionsCluster` | Internal Kubernetes API Server URL https://IP:PORT (kubernetes.default.svc). Needed in argocd-operator resourceInclusions. Use this parameter if argocd.operator=true and NOT running inside a Pod (remote mode). Full URL needed, for example: https://100.125.0.1:443 |
-| `--argocd-namespace` | `features.argocd.namespace` | Defines the kubernetes namespace for ArgoCD |
-| N/A | `features.argocd.env` | Pass a list of env vars to Argo CD components. Currently only works with operator |
+| CLI | Config | Default | Type | Description |
+|-----|--------|---------|------|-------------|
+| `--metrics, --monitoring` | `features.monitoring.active` | `false` | Boolean | Installs monitoring stack (Prometheus, Grafana) |
+| `--grafana-url` | `features.monitoring.grafanaUrl` | `''` | String | The url of your external grafana |
+| `--grafana-email-from` | `features.monitoring.grafanaEmailFrom` | `'grafana@example.org'` | String | Email from address for Grafana notifications |
+| `--grafana-email-to` | `features.monitoring.grafanaEmailTo` | `'infra@example.org'` | String | Email to address for Grafana notifications |
+| `--grafana-image` | `features.monitoring.helm.grafanaImage` | `''` | String | Grafana container image |
+| `--grafana-sidecar-image` | `features.monitoring.helm.grafanaSidecarImage` | `''` | String | Grafana sidecar container image |
+| `--prometheus-image` | `features.monitoring.helm.prometheusImage` | `''` | String | Prometheus container image |
+| `--prometheus-operator-image` | `features.monitoring.helm.prometheusOperatorImage` | `''` | String | Prometheus operator container image |
+| `--prometheus-config-reloader-image` | `features.monitoring.helm.prometheusConfigReloaderImage` | `''` | String | Prometheus config reloader container image |
+| - | `features.monitoring.helm.chart` | `'kube-prometheus-stack'` | String | Name of the Helm chart |
+| - | `features.monitoring.helm.repoURL` | `'https://prometheus-community.github.io/helm-charts'` | String | Repository url from which the Helm chart should be obtained |
+| - | `features.monitoring.helm.version` | `'69.7.4'` | String | The version of the Helm chart to be installed |
+| - | `features.monitoring.helm.values` | `[:]` | Map | Helm values of the chart |
 
-###### Cert Manager Configuration
+###### Secrets
 
-| CLI | Config | Description |
-|-----|---------|-------------|
-| `--cert-manager` | `features.certManager.active` | Sets and enables Cert Manager |
-| `--cert-manager-image` | `features.certManager.helm.image` | Sets image for Cert Manager |
-| `--cert-manager-webhook-image` | `features.certManager.helm.webhookImage` | Sets webhook Image for Cert Manager |
-| `--cert-manager-cainjector-image` | `features.certManager.helm.cainjectorImage` | Sets cainjector Image for Cert Manager |
-| `--cert-manager-acme-solver-image` | `features.certManager.helm.acmeSolverImage` | Sets acmeSolver Image for Cert Manager |
-| `--cert-manager-startup-api-check-image` | `features.certManager.helm.startupAPICheckImage` | Sets startupAPICheck Image for Cert Manager |
-| N/A | `features.certManager.helm.chart` | Name of the Helm chart |
-| N/A | `features.certManager.helm.repoURL` | Repository url from which the Helm chart should be obtained |
-| N/A | `features.certManager.helm.version` | The version of the Helm chart to be installed |
-| N/A | `features.certManager.helm.values` | Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration |
+| CLI | Config | Default | Type | Description |
+|-----|--------|---------|------|-------------|
+| `--vault` | `features.secrets.vault.mode` | - | VaultMode | Install Vault for secrets management |
+| `--vault-url` | `features.secrets.vault.url` | `''` | String | The url of your external vault |
+| `--vault-image` | `features.secrets.vault.helm.image` | `''` | String | Vault container image |
+| `--external-secrets-image` | `features.secrets.externalSecrets.helm.image` | `''` | String | External secrets operator image |
+| `--external-secrets-certcontroller-image` | `features.secrets.externalSecrets.helm.certControllerImage` | `''` | String | External secrets cert controller image |
+| `--external-secrets-webhook-image` | `features.secrets.externalSecrets.helm.webhookImage` | `''` | String | External secrets webhook image |
+| - | `features.secrets.vault.helm.chart` | `'vault'` | String | Name of the Helm chart |
+| - | `features.secrets.vault.helm.repoURL` | `'https://helm.releases.hashicorp.com'` | String | Repository url from which the Helm chart should be obtained |
+| - | `features.secrets.vault.helm.version` | `'0.25.0'` | String | The version of the Helm chart to be installed |
+| - | `features.secrets.externalSecrets.helm.chart` | `'external-secrets'` | String | Name of the Helm chart |
+| - | `features.secrets.externalSecrets.helm.repoURL` | `'https://charts.external-secrets.io'` | String | Repository url from which the Helm chart should be obtained |
+| - | `features.secrets.externalSecrets.helm.version` | `'0.9.16'` | String | The version of the Helm chart to be installed |
 
-###### Example Apps Configuration
+###### Ingress Nginx
 
-| CLI | Config | Description |
-|-----|---------|-------------|
-| N/A | `features.exampleApps.nginx.baseDomain` | The domain under which a subdomain these applications will be made available |
-| N/A | `features.exampleApps.petclinic.baseDomain` | The domain under which a subdomain these applications will be made available |
+| CLI | Config | Default | Type | Description |
+|-----|--------|---------|------|-------------|
+| `--ingress-nginx` | `features.ingressNginx.active` | `false` | Boolean | Install Ingress Nginx controller |
+| `--ingress-nginx-image` | `features.ingressNginx.helm.image` | `''` | String | Ingress Nginx controller image |
+| - | `features.ingressNginx.helm.chart` | `'ingress-nginx'` | String | Name of the Helm chart |
+| - | `features.ingressNginx.helm.repoURL` | `'https://kubernetes.github.io/ingress-nginx'` | String | Repository url from which the Helm chart should be obtained |
+| - | `features.ingressNginx.helm.version` | `'4.12.1'` | String | The version of the Helm chart to be installed |
+| - | `features.ingressNginx.helm.values` | `[:]` | Map | Helm values of the chart |
 
-###### Ingress NGINX Configuration
+###### Cert Manager
 
-| CLI | Config | Description |
-|-----|---------|-------------|
-| `--ingress-nginx` | `features.ingressNginx.active` | Sets and enables Nginx Ingress Controller |
-| `--ingress-nginx-image` | `features.ingressNginx.helm.image` | The image of the Helm chart to be installed |
-| N/A | `features.ingressNginx.helm.chart` | Name of the Helm chart |
-| N/A | `features.ingressNginx.helm.repoURL` | Repository url from which the Helm chart should be obtained |
-| N/A | `features.ingressNginx.helm.version` | The version of the Helm chart to be installed |
-| N/A | `features.ingressNginx.helm.values` | Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration |
+| CLI | Config | Default | Type | Description |
+|-----|--------|---------|------|-------------|
+| `--cert-manager` | `features.certManager.active` | `false` | Boolean | Install cert-manager for TLS certificate management |
+| `--cert-manager-image` | `features.certManager.helm.image` | `''` | String | Cert-manager controller image |
+| `--cert-manager-webhook-image` | `features.certManager.helm.webhookImage` | `''` | String | Cert-manager webhook image |
+| `--cert-manager-cainjector-image` | `features.certManager.helm.cainjectorImage` | `''` | String | Cert-manager CA injector image |
+| `--cert-manager-acme-solver-image` | `features.certManager.helm.acmeSolverImage` | `''` | String | Cert-manager ACME solver image |
+| `--cert-manager-startup-api-check-image` | `features.certManager.helm.startupAPICheckImage` | `''` | String | Cert-manager startup API check image |
+| - | `features.certManager.helm.chart` | `'cert-manager'` | String | Name of the Helm chart |
+| - | `features.certManager.helm.repoURL` | `'https://charts.jetstack.io'` | String | Repository url from which the Helm chart should be obtained |
+| - | `features.certManager.helm.version` | `'1.16.1'` | String | The version of the Helm chart to be installed |
+| - | `features.certManager.helm.values` | `[:]` | Map | Helm values of the chart |
 
-###### Mail Configuration
+###### Content
 
-| CLI | Config | Description |
-|-----|---------|-------------|
-| `--mailhog, --mail` | `features.mail.mailhog` | Installs MailHog as Mail server. |
-| `--mailhog-url` | `features.mail.mailhogUrl` | Sets url for MailHog |
-| `--smtp-address` | `features.mail.smtpAddress` | Sets smtp port of external Mailserver |
-| `--smtp-port` | `features.mail.smtpPort` | Sets smtp port of external Mailserver |
-| `--smtp-user` | `features.mail.smtpUser` | Sets smtp username for external Mailserver |
-| `--smtp-password` | `features.mail.smtpPassword` | Sets smtp password of external Mailserver |
-| `--mailhog-image` | `features.mail.helm.image` | The image of the Helm chart to be installed |
-| N/A | `features.mail.helm.chart` | Name of the Helm chart |
-| N/A | `features.mail.helm.repoURL` | Repository url from which the Helm chart should be obtained |
-| N/A | `features.mail.helm.version` | The version of the Helm chart to be installed |
-| N/A | `features.mail.helm.values` | Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration |
-
-###### Monitoring Configuration
-
-| CLI | Config | Description |
-|-----|---------|-------------|
-| `--metrics, --monitoring` | `features.monitoring.active` | Installs the Kube-Prometheus-Stack. This includes Prometheus, the Prometheus operator, Grafana and some extra resources |
-| `--grafana-url` | `features.monitoring.grafanaUrl` | Sets url for grafana |
-| `--grafana-email-from` | `features.monitoring.grafanaEmailFrom` | Notifications, define grafana alerts sender email address |
-| `--grafana-email-to` | `features.monitoring.grafanaEmailTo` | Notifications, define grafana alerts recipient email address |
-| `--grafana-image` | `features.monitoring.helm.grafanaImage` | Sets image for grafana |
-| `--grafana-sidecar-image` | `features.monitoring.helm.grafanaSidecarImage` | Sets image for grafana's sidecar |
-| `--prometheus-image` | `features.monitoring.helm.prometheusImage` | Sets image for prometheus |
-| `--prometheus-operator-image` | `features.monitoring.helm.prometheusOperatorImage` | Sets image for prometheus-operator |
-| `--prometheus-config-reloader-image` | `features.monitoring.helm.prometheusConfigReloaderImage` | Sets image for prometheus-operator's config-reloader |
-| N/A | `features.monitoring.helm.chart` | Name of the Helm chart |
-| N/A | `features.monitoring.helm.repoURL` | Repository url from which the Helm chart should be obtained |
-| N/A | `features.monitoring.helm.version` | The version of the Helm chart to be installed |
-| N/A | `features.monitoring.helm.values` | Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration |
-
-###### Secrets Management Configuration
-
-| CLI | Config | Description |
-|-----|---------|-------------|
-| `--vault` | `features.secrets.vault.mode` | Installs Hashicorp vault and the external secrets operator. Possible values: dev, prod. |
-| `--vault-url` | `features.secrets.vault.url` | Sets url for vault ui |
-| `--vault-image` | `features.secrets.vault.helm.image` | Sets image for vault |
-| `--external-secrets-image` | `features.secrets.externalSecrets.helm.image` | Sets image for external secrets operator |
-| `--external-secrets-certcontroller-image` | `features.secrets.externalSecrets.helm.certControllerImage` | Sets image for external secrets operator's controller |
-| `--external-secrets-webhook-image` | `features.secrets.externalSecrets.helm.webhookImage` | Sets image for external secrets operator's webhook |
-| N/A | `features.secrets.vault.helm.chart` | Name of the Helm chart |
-| N/A | `features.secrets.vault.helm.repoURL` | Repository url from which the Helm chart should be obtained |
-| N/A | `features.secrets.vault.helm.version` | The version of the Helm chart to be installed |
-| N/A | `features.secrets.vault.helm.values` | Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration |
-| N/A | `features.secrets.externalSecrets.helm.chart` | Name of the Helm chart |
-| N/A | `features.secrets.externalSecrets.helm.repoURL` | Repository url from which the Helm chart should be obtained |
-| N/A | `features.secrets.externalSecrets.helm.version` | The version of the Helm chart to be installed |
-| N/A | `features.secrets.externalSecrets.helm.values` | Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration |
+| CLI | Config | Default | Type | Description |
+|-----|--------|---------|------|-------------|
+| `--content-examples` | `content.examples` | `false` | Boolean | Deploy example content: source repos, GitOps repos, Jenkins Job, Argo CD apps/project |
+| - | `content.namespaces` | `[]` | List | Additional kubernetes namespaces |
+| - | `content.repos` | `[]` | List | Content repos to push into target environment |
+| - | `content.variables` | `[:]` | Map | Additional variables to use in custom templates |
+| - | `content.repos[].url` | `''` | String | URL of the content repo. Mandatory for each type |
+| - | `content.repos[].path` | `'.'` | String | Path within the content repo to process |
+| - | `content.repos[].ref` | `''` | String | Reference for a specific branch, tag, or commit |
+| - | `content.repos[].targetRef` | `''` | String | Reference for a specific branch or tag in the target repo |
+| - | `content.repos[].username` | `''` | String | Username to authenticate against content repo |
+| - | `content.repos[].password` | `''` | String | Password to authenticate against content repo |
+| - | `content.repos[].templating` | `false` | Boolean | When true, template all files ending in .ftl within the repo |
+| - | `content.repos[].type` | `MIRROR` | ContentRepoType | Content repo type (FOLDER_BASED, COPY, MIRROR) |
+| - | `content.repos[].target` | `''` | String | Target repo for the repository in the form of namespace/name |
+| - | `content.repos[].overwriteMode` | `INIT` | OverwriteMode | How customer repos will be updated (INIT, RESET, UPGRADE) |
+| - | `content.repos[].createJenkinsJob` | `false` | Boolean | If true, creates a Jenkins job |
 
 ##### Configuration file
 
