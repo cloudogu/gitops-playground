@@ -99,6 +99,11 @@ class Gitlab implements GitProvider {
         return this.url
     }
 
+    @Override
+    URI prometheusMetricsEndpoint() {
+        return null
+    }
+
     //TODO implement
     @Override
     void deleteRepository(String namespace, String repository, boolean prefixNamespace) {

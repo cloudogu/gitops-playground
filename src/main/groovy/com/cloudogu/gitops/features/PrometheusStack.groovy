@@ -137,7 +137,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
                             'Chart.yaml'))['version']
 
             deployer.deployFeature(
-                    this.gitHandler.resourcesScm.url + repoNamespaceAndName,
+                    this.gitHandler.resourcesScm.url + repoNamespaceAndName,  //TODO  /** …/scm/<rootPath>/nameprefix */ this is actual URL, do we need prefix here?
                     'prometheusstack',
                     '.',
                     prometheusVersion,
@@ -173,7 +173,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
     }
 
     private Map scmConfigurationMetrics() {
-        def uri = new URI(this.gitHandler.resourcesScm.url).resolve("api/v2/metrics/prometheus") //TODO BaseUrl? //TODO Gitlab URL
+        def uri = this.gitHandler.resourcesScm.prometheusMetricsEndpoint()
         [
                 protocol: uri.scheme ?: "",
                 host    : uri.authority ?: "",

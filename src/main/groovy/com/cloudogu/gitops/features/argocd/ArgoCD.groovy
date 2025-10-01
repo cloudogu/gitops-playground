@@ -147,22 +147,22 @@ class ArgoCD extends Feature {
 
     protected initTenantRepos() {
         if (!config.multiTenant.useDedicatedInstance) {
-            argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd',this.gitHandler.tenant)
+            argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd', this.gitHandler.tenant)
             gitRepos += argocdRepoInitializationAction
 
-            clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources',this.gitHandler.tenant)
+            clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources', this.gitHandler.tenant)
             gitRepos += clusterResourcesInitializationAction
         } else {
-            tenantBootstrapInitializationAction = createRepoInitializationAction('argocd/argocd/multiTenant/tenant', 'argocd/argocd',this.gitHandler.central)
+            tenantBootstrapInitializationAction = createRepoInitializationAction('argocd/argocd/multiTenant/tenant', 'argocd/argocd', this.gitHandler.central)
             gitRepos += tenantBootstrapInitializationAction
         }
     }
 
     protected initCentralRepos() {
         if (config.multiTenant.useDedicatedInstance) {
-            argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd',true)
+            argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd', true)
 
-            clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources',true)
+            clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources', true)
             gitRepos += clusterResourcesInitializationAction
         }
     }
@@ -420,13 +420,13 @@ class ArgoCD extends Feature {
         argocdRepoInitializationAction.repo.commitAndPush("Initial Commit")
     }
 
-    protected RepoInitializationAction createRepoInitializationAction(String localSrcDir, String scmRepoTarget,Boolean isCentral) {
-        GitProvider provider= isCentral? this.gitHandler.central: this.gitHandler.tenant
-        new RepoInitializationAction(config, repoProvider.getRepo(scmRepoTarget,provider),this.gitHandler, localSrcDir)
+    protected RepoInitializationAction createRepoInitializationAction(String localSrcDir, String scmRepoTarget, Boolean isCentral) {
+        GitProvider provider = isCentral ? this.gitHandler.central : this.gitHandler.tenant
+        new RepoInitializationAction(config, repoProvider.getRepo(scmRepoTarget, provider), this.gitHandler, localSrcDir)
     }
 
-    protected RepoInitializationAction createRepoInitializationAction(String localSrcDir, String scmRepoTarget,GitProvider gitProvider) {
-        new RepoInitializationAction(config, repoProvider.getRepo(scmRepoTarget,gitProvider), this.gitHandler,localSrcDir)
+    protected RepoInitializationAction createRepoInitializationAction(String localSrcDir, String scmRepoTarget, GitProvider gitProvider) {
+        new RepoInitializationAction(config, repoProvider.getRepo(scmRepoTarget, gitProvider), this.gitHandler, localSrcDir)
     }
 
     private void replaceFileContentInYamls(File folder, String from, String to) {

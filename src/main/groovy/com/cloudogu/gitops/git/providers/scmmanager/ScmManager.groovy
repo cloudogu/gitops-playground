@@ -75,8 +75,6 @@ class ScmManager implements GitProvider {
         return computePullUrlPrefixForInCluster(true)
     }
 
-
-
     @Override
     String getProtocol() {
         return baseForInCluster().toString()
@@ -91,6 +89,12 @@ class ScmManager implements GitProvider {
     @Override
     String getGitOpsUsername() {
         return scmmConfig.gitOpsUsername
+    }
+
+    /** …/scm/api/v2/metrics/prometheus */
+    @Override
+    URI prometheusMetricsEndpoint() {
+        return withSlash(base()).resolve("api/v2/metrics/prometheus")
     }
 
 //TODO implement
@@ -160,10 +164,6 @@ class ScmManager implements GitProvider {
     }
 
 
-    /** …/scm/api/v2/metrics/prometheus */
-    URI prometheusMetricsEndpoint() {
-        return withSlash(base()).resolve("api/v2/metrics/prometheus")
-    }
 
     private static boolean handle201or409(Response<?> response, String what) {
         int code = response.code()
@@ -184,9 +184,9 @@ class ScmManager implements GitProvider {
     String computePullUrlPrefixForInCluster(boolean includeNamePrefix = true) {
         def base = withoutTrailingSlash(withSlash(baseForInCluster()))     // service DNS oder ingress base
         def root = trimBoth(scmmConfig.rootPath ?: "repo")
-        def pref = trimBoth(config.application.namePrefix ?: "")
+        def prefix = trimBoth(config.application.namePrefix ?: "")
         def url = withSlash(base).resolve("scm/${root}/").toString()
-        return includeNamePrefix && pref ? withoutTrailingSlash(URI.create(url + pref)).toString()
+        return includeNamePrefix && prefix ? withoutTrailingSlash(URI.create(url + prefix)).toString()
                 : withoutTrailingSlash(URI.create(url)).toString()
     }
 

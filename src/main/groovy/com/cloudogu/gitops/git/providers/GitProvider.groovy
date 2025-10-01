@@ -17,6 +17,8 @@ interface GitProvider {
 
     Credentials getCredentials()
 
+    URI prometheusMetricsEndpoint()
+
     //TODO implement
     void deleteRepository(String namespace, String repository, boolean prefixNamespace)
 
