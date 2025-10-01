@@ -9,7 +9,7 @@ spec:
   project: <#if config.multiTenant.useDedicatedInstance>${tenantName}<#else>cluster-resources</#if>
   destination:
     server: https://kubernetes.default.svc
-    namespace: <#if config.multiTenant.useDedicatedInstance>argocd<#else>${config.application.namePrefix}argocd</#if>
+    namespace: <#if config.multiTenant.useDedicatedInstance>${config.multiTenant.centralArgocdNamespace}<#else>${namePrefix}argocd</#if>
   source:
     path: misc/
 <#if config.multiTenant.useDedicatedInstance>
