@@ -1,6 +1,6 @@
-package com.cloudogu.gitops.utils
+package com.cloudogu.gitops.kubernetes
 
-
+import com.cloudogu.gitops.utils.CommandExecutor
 import groovy.util.logging.Slf4j
 import jakarta.inject.Singleton
 

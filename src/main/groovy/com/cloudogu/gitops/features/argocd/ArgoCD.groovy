@@ -8,8 +8,8 @@ import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.kubernetes.rbac.RbacDefinition
 import com.cloudogu.gitops.kubernetes.rbac.Role
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.HelmClient
-import com.cloudogu.gitops.utils.K8sClient
+import com.cloudogu.gitops.kubernetes.HelmClient
+import com.cloudogu.gitops.kubernetes.K8sClient
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton

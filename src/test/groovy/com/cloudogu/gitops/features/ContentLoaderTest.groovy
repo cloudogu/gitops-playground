@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.kubernetes.K8sClient
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepoFactory
 import com.cloudogu.gitops.utils.git.GitHandlerForTests

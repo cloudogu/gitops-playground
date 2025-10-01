@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.kubernetes.HelmClient
 import com.cloudogu.gitops.config.Config.HelmConfig
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepo

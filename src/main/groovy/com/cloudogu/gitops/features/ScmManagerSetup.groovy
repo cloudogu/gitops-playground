@@ -5,6 +5,7 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.features.git.config.util.ScmProviderType
+import com.cloudogu.gitops.kubernetes.K8sClient
 import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order

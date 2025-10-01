@@ -7,6 +7,8 @@ import com.cloudogu.gitops.features.git.config.ScmCentralSchema
 import com.cloudogu.gitops.features.git.config.ScmTenantSchema
 import com.cloudogu.gitops.features.git.config.ScmTenantSchema.ScmManagerTenantConfig
 import com.cloudogu.gitops.utils.*
+import com.cloudogu.gitops.kubernetes.HelmClient
+import com.cloudogu.gitops.kubernetes.K8sClient
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 

@@ -1,6 +1,9 @@
-package com.cloudogu.gitops.utils
+package com.cloudogu.gitops.kubernetes
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.kubernetes.api.KubenetesApi
+import com.cloudogu.gitops.utils.CommandExecutor
+import com.cloudogu.gitops.utils.FileSystemUtils
 import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
 import groovy.transform.Immutable
@@ -19,6 +22,7 @@ class K8sClient {
     private CommandExecutor commandExecutor
     private FileSystemUtils fileSystemUtils
     private Provider<Config> configProvider
+    private KubenetesApi kubenetesApi
 
     K8sClient(
             CommandExecutor commandExecutor,
@@ -28,6 +32,7 @@ class K8sClient {
         this.fileSystemUtils = fileSystemUtils
         this.commandExecutor = commandExecutor
         this.configProvider = configProvider
+        this.kubenetesApi = new KubenetesApi()
     }
 
 
@@ -140,8 +145,6 @@ class K8sClient {
                 throw new RuntimeException("Failed to create namespace ${name} (possibly due to insufficient permissions)", e)
             }
         }
-
-
     }
 
     private boolean exists(String namespace) {

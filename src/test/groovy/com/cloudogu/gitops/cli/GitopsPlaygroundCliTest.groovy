@@ -8,7 +8,7 @@ import com.cloudogu.gitops.Application
 import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.destroy.Destroyer
-import com.cloudogu.gitops.utils.K8sClient
+import com.cloudogu.gitops.kubernetes.K8sClient
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 import io.micronaut.context.ApplicationContext
 import org.junit.jupiter.api.AfterEach

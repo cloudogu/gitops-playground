@@ -7,8 +7,8 @@ import com.cloudogu.gitops.features.git.config.util.ScmProviderType
 import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.git.providers.gitlab.Gitlab
 import com.cloudogu.gitops.git.providers.scmmanager.ScmManager
+import com.cloudogu.gitops.kubernetes.K8sClient
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.NetworkingUtils
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
@@ -57,7 +57,7 @@ class GitHandler extends Feature {
 
             // More internal fields are set lazily in ScmManger.groovy (after SCMM is deployed and ports are known)
         }
-        config.scm.scmManager.gitOpsUsername="${config.application.namePrefix}gitops"
+        config.scm.scmManager.gitOpsUsername = "${config.application.namePrefix}gitops"
 
         if (config.scm.gitlab.url) {
             config.scm.scmProviderType = ScmProviderType.GITLAB
