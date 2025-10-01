@@ -77,13 +77,13 @@ class ScmManager implements GitProvider {
 
     @Override
     String getProtocol() {
-        return baseForInCluster().toString()
+        return serviceDnsBase().toString()
     }
 
     @Override
     String getHost() {
         //in main before:  host : config.scmm.internal ? "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local" : config.scmm.host(host was config.scmm.url),
-        return baseForInCluster().toString()
+        return serviceDnsBase().toString()
     }
 
     @Override
@@ -135,7 +135,7 @@ class ScmManager implements GitProvider {
     String computePullUrlForInCluster(String repoTarget) {
         def rt = trimBoth(repoTarget)
         def root = trimBoth(scmmConfig.rootPath ?: "repo")
-        return withoutTrailingSlash(withSlash(baseForInCluster()).resolve("scm/${scmmConfig.rootPath}/${rt}/")).toString()
+        return withoutTrailingSlash(withSlash(serviceDnsBase()).resolve("scm/${scmmConfig.rootPath}/${rt}/")).toString()
     }
 
 
@@ -182,7 +182,7 @@ class ScmManager implements GitProvider {
 
     /** In-cluster Repo-Prefix: …/scm/<rootPath>/[<namePrefix>]  */
     String computePullUrlPrefixForInCluster(boolean includeNamePrefix = true) {
-        def base = withoutTrailingSlash(withSlash(baseForInCluster()))     // service DNS oder ingress base
+        def base = withoutTrailingSlash(withSlash(serviceDnsBase()))     // service DNS oder ingress base
         def root = trimBoth(scmmConfig.rootPath ?: "repo")
         def prefix = trimBoth(config.application.namePrefix ?: "")
         def url = withSlash(base).resolve("scm/${root}/").toString()
@@ -195,13 +195,8 @@ class ScmManager implements GitProvider {
         if (scmmConfig.internal) {
             return config.application.runningInsideK8s ? serviceDnsBase() : hostAccessBase()
         } else {
-            return ingressBase()
+            return serviceDnsBase()
         }
-    }
-
-    // Basis für *in-cluster* Konsumenten (Argo CD, Jobs)
-    URI baseForInCluster() {
-        return scmmConfig.internal ? serviceDnsBase() : ingressBase()
     }
 
     private URI serviceDnsBase() {
@@ -222,16 +217,7 @@ class ScmManager implements GitProvider {
             return this.cachedHostAccessBase
         }
     }
-
-    // TODO not sure if we need this..
-    private URI ingressBase() {
-        def urlString = (scmmConfig.url ?: '').strip()
-        if (urlString) return URI.create(urlString)
-        def host = (scmmConfig.ingress ?: '').strip()
-        if (host) return URI.create("http://${host}")
-        throw new IllegalArgumentException("Either scmmConfig.url or scmmConfig.ingress must be set when internal=false")
-    }
-
+    
     void invalidateHostAccessCache() {
         this.cachedHostAccessBase = null
     }

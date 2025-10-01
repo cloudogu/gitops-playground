@@ -379,7 +379,7 @@ class ArgoCD extends Feature {
             def centralRepoTemplateSecretName = 'argocd-repo-creds-central-scmm'
 
             k8sClient.createSecret('generic', centralRepoTemplateSecretName, config.multiTenant.centralArgocdNamespace,
-                    new Tuple2('url', this.gitHandler.central.url), //TODO URL Check
+                    new Tuple2('url', this.gitHandler.central.url),
                     new Tuple2('username', this.gitHandler.central.credentials.username),
                     new Tuple2('password', this.gitHandler.central.credentials.password)
             )

@@ -139,7 +139,7 @@ class ApplicationConfigurator {
         }
 
         // We probably could get rid of some of the complexity by refactoring url, host and ingress into a single var
-        if (newConfig.application.baseUrl) {
+        if (newConfig.application.baseUrl) {    //TODO check, do we need ingerss? During ScmManager setup --> redesign by oop concept
             newConfig.scm.scmmConfig.ingress = new URL(injectSubdomain("${newConfig.application.namePrefix}scmm",
                     newConfig.application.baseUrl as String, newConfig.application.urlSeparatorHyphen as Boolean)).host
         }
