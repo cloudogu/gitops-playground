@@ -4,6 +4,8 @@ import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
+import com.cloudogu.gitops.kubernetes.K8sClient
+import com.cloudogu.gitops.scmm.ScmUrlResolver
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.utils.*
 import freemarker.template.DefaultObjectWrapperBuilder

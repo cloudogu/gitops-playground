@@ -2,7 +2,7 @@ package com.cloudogu.gitops.features.deployment
 
 import com.cloudogu.gitops.config.Config
 
-import com.cloudogu.gitops.utils.HelmClient
+import com.cloudogu.gitops.kubernetes.HelmClient
 import groovy.util.logging.Slf4j
 import jakarta.inject.Singleton
 

@@ -1,7 +1,7 @@
 package com.cloudogu.gitops
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.utils.K8sClient
+import com.cloudogu.gitops.kubernetes.K8sClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 

@@ -9,7 +9,7 @@ import com.cloudogu.gitops.git.GitRepoFactory
 import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.utils.AllowListFreemarkerObjectWrapper
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.K8sClient
+import com.cloudogu.gitops.kubernetes.K8sClient
 import com.cloudogu.gitops.utils.TemplatingEngine
 import freemarker.template.Configuration
 import freemarker.template.DefaultObjectWrapperBuilder
