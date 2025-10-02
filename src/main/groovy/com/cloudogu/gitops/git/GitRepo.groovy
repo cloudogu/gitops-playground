@@ -1,9 +1,9 @@
 package com.cloudogu.gitops.git
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.git.jgit.helpers.InsecureCredentialProvider
 import com.cloudogu.gitops.git.providers.AccessRole
 import com.cloudogu.gitops.git.providers.GitProvider
-import com.cloudogu.gitops.git.jgit.helpers.InsecureCredentialProvider
 import com.cloudogu.gitops.git.providers.Scope
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
@@ -55,7 +55,7 @@ class GitRepo {
     }
 
     // TODO maybe it is better to have two methods: create and setPermission, because here we have default permission set to USER. in Gitlab it is maybe different...
-    boolean createRepositoryAndSetPermission(String repoTarget, String description, boolean initialize = true){
+    boolean createRepositoryAndSetPermission(String repoTarget, String description, boolean initialize = true) {
         def isNewRepo = this.gitProvider.createRepository(repoTarget, description, initialize)
         if (isNewRepo && gitProvider.getGitOpsUsername()) {
             gitProvider.setRepositoryPermission(
@@ -74,7 +74,7 @@ class GitRepo {
     }
 
     void cloneRepo() {
-        def cloneUrl=gitProvider.computePushUrl(repoTarget)
+        def cloneUrl = gitProvider.computePushUrl(repoTarget)
         log.debug("Cloning ${repoTarget}, Origin: ${cloneUrl}")
         Git.cloneRepository()
                 .setURI(cloneUrl)

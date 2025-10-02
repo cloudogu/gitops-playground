@@ -24,9 +24,7 @@ class ScmManager implements GitProvider {
     private final K8sClient k8sClient
     private final NetworkingUtils networkingUtils
 
-    private URI cachedHostAccessBase
-
-
+    URI clusterBindAddress
     //TODO unit tests für scmmanager rüberziehen und restlichen Sachen implementieren
     ScmManager(Config config, ScmManagerConfig scmmConfig, K8sClient k8sClient, NetworkingUtils networkingUtils) {
         this.config = config
@@ -77,13 +75,13 @@ class ScmManager implements GitProvider {
 
     @Override
     String getProtocol() {
-        return serviceDnsBase().toString()
+        return baseForInCluster().toString()
     }
 
     @Override
     String getHost() {
         //in main before:  host : config.scmm.internal ? "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local" : config.scmm.host(host was config.scmm.url),
-        return serviceDnsBase().toString()
+        return baseForInCluster().toString()
     }
 
     @Override
@@ -135,7 +133,7 @@ class ScmManager implements GitProvider {
     String computePullUrlForInCluster(String repoTarget) {
         def rt = trimBoth(repoTarget)
         def root = trimBoth(scmmConfig.rootPath ?: "repo")
-        return withoutTrailingSlash(withSlash(serviceDnsBase()).resolve("scm/${scmmConfig.rootPath}/${rt}/")).toString()
+        return withoutTrailingSlash(withSlash(baseForInCluster()).resolve("scm/${scmmConfig.rootPath}/${rt}/")).toString()
     }
 
 
@@ -182,7 +180,7 @@ class ScmManager implements GitProvider {
 
     /** In-cluster Repo-Prefix: …/scm/<rootPath>/[<namePrefix>]  */
     String computePullUrlPrefixForInCluster(boolean includeNamePrefix = true) {
-        def base = withoutTrailingSlash(withSlash(serviceDnsBase()))     // service DNS oder ingress base
+        def base = withoutTrailingSlash(withSlash(baseForInCluster()))     // service DNS oder ingress base
         def root = trimBoth(scmmConfig.rootPath ?: "repo")
         def prefix = trimBoth(config.application.namePrefix ?: "")
         def url = withSlash(base).resolve("scm/${root}/").toString()
@@ -192,34 +190,49 @@ class ScmManager implements GitProvider {
 
     // Basis für *diesen Prozess* (API-Client, lokale Git-Operationen)
     private URI baseForClient() {
-        if (scmmConfig.internal) {
+        if (Boolean.TRUE == scmmConfig.internal) {
             return config.application.runningInsideK8s ? serviceDnsBase() : hostAccessBase()
         } else {
-            return serviceDnsBase()
+            return externalBase()
         }
     }
+
+
+    // Basis für *in-cluster* Konsumenten (Argo CD, Jobs)
+    URI baseForInCluster() {
+        return scmmConfig.internal ? serviceDnsBase() : externalBase()
+    }
+
 
     private URI serviceDnsBase() {
         final String k8sNs = resolvedNamespace()
         return URI.create("http://scmm.${k8sNs}.svc.cluster.local")
     }
 
-    private URI hostAccessBase() {
-        def cached = this.cachedHostAccessBase
-        if (cached != null) return cached
+    private URI externalBase() {
+        // 1) bevorzugt vollständige URL (mit Schema)
+        def urlString = (scmmConfig.url ?: "").strip()
+        if (urlString) return URI.create(urlString)
 
-        synchronized (this) {
-            if (this.cachedHostAccessBase != null) return this.cachedHostAccessBase
-            final String k8sNs = resolvedNamespace()
-            final def port = k8sClient.waitForNodePort(releaseName, k8sNs)
-            final def host = networkingUtils.findClusterBindAddress()
-            this.cachedHostAccessBase = URI.create("http://${host}:${port}")
-            return this.cachedHostAccessBase
-        }
+        // 2) sonst Hostname vom Ingress (ohne Schema), default http
+        def ingressHost = (scmmConfig.ingress ?: "").strip()
+        if (ingressHost) return URI.create("http://${ingressHost}")
+
+        // 3) hart abbrechen – bei external MUSS eins gesetzt sein
+        throw new IllegalArgumentException(
+                "Either scmmConfig.url or scmmConfig.ingress must be set when internal=false"
+        )
     }
-    
-    void invalidateHostAccessCache() {
-        this.cachedHostAccessBase = null
+
+    private URI hostAccessBase() {
+        if(this.clusterBindAddress){
+            return this.clusterBindAddress
+        }
+        final String k8sNs = resolvedNamespace()
+        final def port = k8sClient.waitForNodePort(releaseName, k8sNs)
+        final def host = networkingUtils.findClusterBindAddress()
+        this.clusterBindAddress=new URI("http://${host}:${port}")
+        return this.clusterBindAddress
     }
 
     private String resolvedNamespace() {

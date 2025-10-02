@@ -137,7 +137,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
                             'Chart.yaml'))['version']
 
             deployer.deployFeature(
-                    this.gitHandler.resourcesScm.url + repoNamespaceAndName,  //TODO  /** …/scm/<rootPath>/nameprefix */ this is actual URL, do we need prefix here?
+                    this.gitHandler.resourcesScm.url + repoNamespaceAndName,  //TODO  /** …/scm/<rootPath>/nameprefix */ change to NO prefix
                     'prometheusstack',
                     '.',
                     prometheusVersion,
