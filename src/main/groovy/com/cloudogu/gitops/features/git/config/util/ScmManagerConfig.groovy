@@ -9,7 +9,7 @@ interface ScmManagerConfig {
     String url
     public String username = Config.DEFAULT_ADMIN_USER
     public String password = Config.DEFAULT_ADMIN_PW
-    String namespace ='scm-manager'
+    String namespace
     String ingress
     Config.HelmConfigWithValues helm
     Credentials getCredentials()

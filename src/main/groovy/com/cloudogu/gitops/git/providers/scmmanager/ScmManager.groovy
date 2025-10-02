@@ -205,8 +205,7 @@ class ScmManager implements GitProvider {
 
 
     private URI serviceDnsBase() {
-        final String k8sNs = resolvedNamespace()
-        return URI.create("http://scmm.${k8sNs}.svc.cluster.local")
+        return URI.create("http://scmm.${scmmConfig.namespace}.svc.cluster.local")
     }
 
     private URI externalBase() {
@@ -228,17 +227,10 @@ class ScmManager implements GitProvider {
         if(this.clusterBindAddress){
             return this.clusterBindAddress
         }
-        final String k8sNs = resolvedNamespace()
-        final def port = k8sClient.waitForNodePort(releaseName, k8sNs)
+        final def port = k8sClient.waitForNodePort(releaseName, scmmConfig.namespace)
         final def host = networkingUtils.findClusterBindAddress()
         this.clusterBindAddress=new URI("http://${host}:${port}")
         return this.clusterBindAddress
-    }
-
-    private String resolvedNamespace() {
-        def prefix = (config.application.namePrefix ?: "")
-        def ns = (scmmConfig.namespace ?: "scm-manager")
-        return "${prefix}${ns}"
     }
 
     private static URI withScm(URI uri) {

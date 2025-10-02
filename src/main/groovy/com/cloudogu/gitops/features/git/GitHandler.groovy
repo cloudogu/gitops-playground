@@ -70,6 +70,8 @@ class GitHandler extends Feature {
                 this.tenant = new Gitlab(this.config, this.config.scm.gitlabConfig)
                 break
             case ScmProviderType.SCM_MANAGER:
+                def prefixedNamespace = "${config.application.namePrefix}scm-manager".toString()
+                config.scm.scmmConfig.namespace = prefixedNamespace
                 this.tenant = new ScmManager(this.config, config.scm.scmmConfig,k8sClient,networkingUtils)
                 // this.tenant.setup() setup will be here in future
                 break

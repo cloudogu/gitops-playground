@@ -65,6 +65,10 @@ class ScmTenantSchema {
         @JsonPropertyDescription(SCMM_URL_DESCRIPTION)
         String url = ''
 
+        @Option(names = ['--scm-namespace'], description = 'Namespace where the tenant scm resides in')
+        @JsonPropertyDescription(CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)  //TODO DESCRIPTION
+        String namespace = 'scm-manager'
+
         @Option(names = ['--scmm-username'], description = SCMM_USERNAME_DESCRIPTION)
         @JsonPropertyDescription(SCMM_USERNAME_DESCRIPTION)
         String username = Config.DEFAULT_ADMIN_USER
