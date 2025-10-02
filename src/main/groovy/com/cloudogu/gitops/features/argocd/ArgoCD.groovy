@@ -153,7 +153,7 @@ class ArgoCD extends Feature {
             clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources', this.gitHandler.tenant)
             gitRepos += clusterResourcesInitializationAction
         } else {
-            tenantBootstrapInitializationAction = createRepoInitializationAction('argocd/argocd/multiTenant/tenant', 'argocd/argocd', this.gitHandler.central)
+            tenantBootstrapInitializationAction = createRepoInitializationAction('argocd/argocd/multiTenant/tenant', 'argocd/argocd', this.gitHandler.tenant)
             gitRepos += tenantBootstrapInitializationAction
         }
     }
@@ -361,11 +361,11 @@ class ArgoCD extends Feature {
 
         log.debug('Creating repo credential secret that is used by argocd to access repos in SCMHandler-Manager')
         // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo
-        def repoTemplateSecretName = 'argocd-repo-creds-scmm'
+        def repoTemplateSecretName = 'argocd-repo-creds-scm'
 
 
         k8sClient.createSecret('generic', repoTemplateSecretName, namespace,
-                new Tuple2('url', this.gitHandler.tenant.url),
+                new Tuple2('url', this.gitHandler.tenant.url), //TODO http://scmm.fv40-scm-manager.svc.cluster.local/scm/repo/fv40- -> http://scmm.fv40-scm-manager.svc.cluster.local/scm
                 new Tuple2('username', this.gitHandler.tenant.credentials.username),
                 new Tuple2('password', this.gitHandler.tenant.credentials.password)
         )
@@ -379,7 +379,7 @@ class ArgoCD extends Feature {
             def centralRepoTemplateSecretName = 'argocd-repo-creds-central-scmm'
 
             k8sClient.createSecret('generic', centralRepoTemplateSecretName, config.multiTenant.centralArgocdNamespace,
-                    new Tuple2('url', this.gitHandler.central.url),
+                    new Tuple2('url', this.gitHandler.central.url), //TODO http://scmm.fv40-scm-manager.svc.cluster.local/scm/repo/fv40- -> http://scmm.fv40-scm-manager.svc.cluster.local/scm
                     new Tuple2('username', this.gitHandler.central.credentials.username),
                     new Tuple2('password', this.gitHandler.central.credentials.password)
             )
