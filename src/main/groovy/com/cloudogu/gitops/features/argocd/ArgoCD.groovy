@@ -363,7 +363,6 @@ class ArgoCD extends Feature {
         // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo
         def repoTemplateSecretName = 'argocd-repo-creds-scm'
 
-
         k8sClient.createSecret('generic', repoTemplateSecretName, namespace,
                 new Tuple2('url', this.gitHandler.tenant.url), //TODO http://scmm.fv40-scm-manager.svc.cluster.local/scm/repo/fv40- -> http://scmm.fv40-scm-manager.svc.cluster.local/scm
                 new Tuple2('username', this.gitHandler.tenant.credentials.username),

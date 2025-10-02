@@ -12,12 +12,12 @@ spec:
     - ${scmm.centralScmmUrl}/repo/${config.application.namePrefix}argocd/argocd
     - ${scmm.centralScmmUrl}/repo/${config.application.namePrefix}argocd/cluster-resources
 <#if config.application.mirrorRepos>
-    - ${scmm.repoUrl}3rd-party-dependencies/kube-prometheus-stack<#if config.scm.scmProviderType == "gitlab">.git</#if>
-    - ${scmm.repoUrl}3rd-party-dependencies/mailhog<#if config.scm.scmProviderType == "gitlab">.git</#if>
-    - ${scmm.repoUrl}3rd-party-dependencies/ingress-nginx<#if config.scm.scmProviderType == "gitlab">.git</#if>
-    - ${scmm.repoUrl}3rd-party-dependencies/external-secrets<#if config.scm.scmProviderType == "gitlab">.git</#if>
-    - ${scmm.repoUrl}3rd-party-dependencies/vault<#if config.scm.scmProviderType == "gitlab">.git</#if>
-    - ${scmm.repoUrl}3rd-party-dependencies/cert-manager<#if config.scm.scmProviderType == "gitlab">.git</#if>
+    - ${scmm.repoUrl}3rd-party-dependencies/kube-prometheus-stack.git
+    - ${scmm.repoUrl}3rd-party-dependencies/mailhog.git
+    - ${scmm.repoUrl}3rd-party-dependencies/ingress-nginx.git
+    - ${scmm.repoUrl}3rd-party-dependencies/external-secrets.git
+    - ${scmm.repoUrl}3rd-party-dependencies/vault.git
+    - ${scmm.repoUrl}3rd-party-dependencies/cert-manager.git
 <#else>
     - https://prometheus-community.github.io/helm-charts
     - https://codecentric.github.io/helm-charts

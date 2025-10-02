@@ -15,8 +15,8 @@ spec:
   - namespace: ${config.application.namePrefix}example-apps-staging
     server: https://kubernetes.default.svc
   sourceRepos:
-  - ${scmm.repoUrl}argocd/example-apps<#if config.scm.scmProviderType == "gitlab">.git</#if>
-  - ${scmm.repoUrl}argocd/nginx-helm-umbrella<#if config.scm.scmProviderType == "gitlab">.git</#if>
+  - ${scmm.repoUrl}argocd/example-apps.git
+  - ${scmm.repoUrl}argocd/nginx-helm-umbrella.git
   
   
   # allow to only see application resources from the specified namespace

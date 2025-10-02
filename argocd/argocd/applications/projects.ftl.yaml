@@ -13,7 +13,7 @@ spec:
   project: argocd
   source:
     path: projects/
-    repoURL: ${scmm.repoUrl}argocd/argocd<#if config.scm.scmProviderType == "gitlab">.git</#if>
+    repoURL: ${scmm.repoUrl}argocd/argocd.git
     targetRevision: main
     directory:
       recurse: true
