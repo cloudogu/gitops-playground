@@ -201,7 +201,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
     }
 
     private String findValidOpenShiftUid() {
-        String uidRange = k8sClient.getAnnotation('namespace', 'monitoring', 'openshift.io/sa.scc.uid-range')
+        String uidRange = k8sClient.getAnnotation('namespace', namespace, 'openshift.io/sa.scc.uid-range')
 
         if (uidRange) {
             log.debug("found UID=${uidRange}")
