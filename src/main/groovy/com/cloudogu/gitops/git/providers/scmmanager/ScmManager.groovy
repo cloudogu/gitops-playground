@@ -73,7 +73,17 @@ class ScmManager implements GitProvider {
         return withScm(baseForInCluster()).toString()
     }
 
-
+    /** In-cluster Repo-Prefix: …/scm/<rootPath>/[<namePrefix>]  */
+    @Override
+    String computeRepoUrlPrefixForInCluster(boolean includeNamePrefix) {  //TODO add default
+        includeNamePrefix = true
+        def base = withoutTrailingSlash(withSlash(baseForInCluster()))     // service DNS oder ingress base
+        def root = trimBoth(scmmConfig.rootPath ?: "repo")
+        def prefix = trimBoth(config.application.namePrefix ?: "")
+        def url = withSlash(base).resolve("scm/${root}/").toString()
+        return includeNamePrefix && prefix ? withoutTrailingSlash(URI.create(url + prefix)).toString()
+                : withoutTrailingSlash(URI.create(url)).toString()
+    }
 
     /** …/scm/repo/<ns>/<name> — für *in-cluster* (Argo CD, Jobs) */
     @Override

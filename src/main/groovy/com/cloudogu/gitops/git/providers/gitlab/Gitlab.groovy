@@ -79,6 +79,11 @@ class Gitlab implements GitProvider {
     }
 
     @Override
+    String computeRepoUrlPrefixForInCluster(boolean includeNamePrefix) {
+        return null
+    }
+
+    @Override
     Credentials getCredentials() {
         return this.gitlabConfig.credentials
     }

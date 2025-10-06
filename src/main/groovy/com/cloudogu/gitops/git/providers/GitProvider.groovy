@@ -17,6 +17,8 @@ interface GitProvider {
 
     String computePullUrlForInCluster(String repoTarget)
 
+    String computeRepoUrlPrefixForInCluster(boolean includeNamePrefix)
+
     Credentials getCredentials()
 
     URI prometheusMetricsEndpoint()
