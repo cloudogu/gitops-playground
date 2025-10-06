@@ -70,16 +70,16 @@ class ScmManager implements GitProvider {
     @Override
     String getUrl() {
         /** ../scm   -_> base URL*/
-        return withScm(baseForInCluster()).toString()
+        return withoutTrailingSlash(withScm(baseForInCluster())).toString()
     }
 
     /** In-cluster Repo-Prefix: …/scm/<rootPath>/[<namePrefix>]  */
     @Override
     String computeRepoUrlPrefixForInCluster(boolean includeNamePrefix) {
-        def base = withoutTrailingSlash(withSlash(baseForInCluster()))     // service DNS oder ingress base
+        def base = withSlash(baseForInCluster())    // service DNS oder ingress base
         def root = trimBoth(scmmConfig.rootPath ?: "repo")
         def prefix = trimBoth(config.application.namePrefix ?: "")
-        def url = withSlash(base).resolve("scm/${root}/").toString()
+        def url = withSlash(base.resolve("scm/${root}")).toString()
         return includeNamePrefix && prefix ? withoutTrailingSlash(URI.create(url + prefix)).toString()
                 : withoutTrailingSlash(URI.create(url)).toString()
     }

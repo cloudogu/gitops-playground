@@ -44,7 +44,7 @@ class RepoInitializationAction {
                         baseUrl : this.gitHandler.tenant.url,
                         host    : this.gitHandler.tenant.host,
                         protocol: this.gitHandler.tenant.protocol,
-                        repoUrl : this.gitHandler.tenant.computeRepoUrlPrefixForInCluster(),
+                        repoUrl : this.gitHandler.tenant.computeRepoUrlPrefixForInCluster(true),
                         centralScmmUrl: this.gitHandler.central.url
                 ],
                 config    : config,
