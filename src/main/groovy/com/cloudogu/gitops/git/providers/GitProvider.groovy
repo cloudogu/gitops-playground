@@ -17,6 +17,10 @@ interface GitProvider {
 
     String computePullUrlForInCluster(String repoTarget)
 
+    default boolean computeRepoUrlPrefixForInCluster() {
+        return computeRepoUrlPrefixForInCluster(true)
+    }
+
     String computeRepoUrlPrefixForInCluster(boolean includeNamePrefix)
 
     Credentials getCredentials()
