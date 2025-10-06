@@ -50,7 +50,7 @@ class ScmManagerSetup extends Feature {
     @Override
     boolean isEnabled() {
 //        return config.scm.scmProviderType == ScmProviderType.SCM_MANAGER
-        return false
+        return true
     }
 
     @Override
