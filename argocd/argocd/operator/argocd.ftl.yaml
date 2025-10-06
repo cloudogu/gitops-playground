@@ -8,7 +8,7 @@ spec:
     enabled: true
     resources:
       limits:
-        cpu: 500m
+        cpu: '2'
         memory: 1Gi
       requests:
         cpu: 250m
