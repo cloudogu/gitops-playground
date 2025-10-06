@@ -39,7 +39,7 @@ spec:
   controller:
     resources:
       limits:
-        cpu: "500m"
+        cpu: "2000m"
         memory: "2048Mi"
       requests:
         cpu: "250m"
