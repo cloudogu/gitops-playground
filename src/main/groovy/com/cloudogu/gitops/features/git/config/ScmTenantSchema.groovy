@@ -15,8 +15,12 @@ import static com.cloudogu.gitops.config.ConfigConstants.*
 
 class ScmTenantSchema {
 
-    //TODO type via setter if gitlabConfig is set
-    ScmProviderType scmProviderType = ScmProviderType.SCM_MANAGER
+    @Option(
+            names = ['--scm-provider'],
+            description = "The SCM provider type. Possible values: SCM_MANAGER, GITLAB",
+            defaultValue = "SCM_MANAGER"
+    )
+    ScmProviderType scmProviderType
 
     @JsonPropertyDescription("GitlabConfig")
     @Mixin
