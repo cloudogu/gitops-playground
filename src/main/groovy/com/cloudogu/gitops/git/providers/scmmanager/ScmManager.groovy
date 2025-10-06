@@ -69,9 +69,20 @@ class ScmManager implements GitProvider {
 
     @Override
     String getUrl() {
-        /** …/scm/<rootPath>/nameprefix */
-        return computePullUrlPrefixForInCluster(true)
+        /** ../scm   -_> base URL*/
+        return withScm(baseForInCluster()).toString()
     }
+
+
+
+    /** …/scm/repo/<ns>/<name> — für *in-cluster* (Argo CD, Jobs) */
+    @Override
+    String computePullUrlForInCluster(String repoTarget) {
+        def rt = trimBoth(repoTarget)
+        def root = trimBoth(scmmConfig.rootPath ?: "repo")
+        return withoutTrailingSlash(withSlash(baseForInCluster()).resolve("scm/${scmmConfig.rootPath}/${rt}/")).toString()
+    }
+
 
     @Override
     String getProtocol() {
@@ -129,14 +140,6 @@ class ScmManager implements GitProvider {
     // ---------------- URI components  ----------------
 
 
-    /** …/scm/repo/<ns>/<name> — für *in-cluster* (Argo CD, Jobs) */
-    String computePullUrlForInCluster(String repoTarget) {
-        def rt = trimBoth(repoTarget)
-        def root = trimBoth(scmmConfig.rootPath ?: "repo")
-        return withoutTrailingSlash(withSlash(baseForInCluster()).resolve("scm/${scmmConfig.rootPath}/${rt}/")).toString()
-    }
-
-
     /** …/scm  (without trailing slash) */
     URI base() {
         return withoutTrailingSlash(withScm(baseForClient()))
@@ -176,17 +179,6 @@ class ScmManager implements GitProvider {
     }
 
     // --- helpers ---
-
-
-    /** In-cluster Repo-Prefix: …/scm/<rootPath>/[<namePrefix>]  */
-    String computePullUrlPrefixForInCluster(boolean includeNamePrefix = true) {
-        def base = withoutTrailingSlash(withSlash(baseForInCluster()))     // service DNS oder ingress base
-        def root = trimBoth(scmmConfig.rootPath ?: "repo")
-        def prefix = trimBoth(config.application.namePrefix ?: "")
-        def url = withSlash(base).resolve("scm/${root}/").toString()
-        return includeNamePrefix && prefix ? withoutTrailingSlash(URI.create(url + prefix)).toString()
-                : withoutTrailingSlash(URI.create(url)).toString()
-    }
 
     // Basis für *diesen Prozess* (API-Client, lokale Git-Operationen)
     private URI baseForClient() {

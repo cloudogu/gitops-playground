@@ -73,6 +73,10 @@ class Gitlab implements GitProvider {
         return null
     }
 
+    @Override
+    String computePullUrlForInCluster(String repoTarget) {
+        return null
+    }
 
     @Override
     Credentials getCredentials() {

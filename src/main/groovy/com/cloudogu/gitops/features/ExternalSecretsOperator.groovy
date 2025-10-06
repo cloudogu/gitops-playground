@@ -78,7 +78,7 @@ class ExternalSecretsOperator extends Feature implements FeatureWithImage {
                             'Chart.yaml'))['version']
 
             deployer.deployFeature(
-                    this.gitHandler.resourcesScm.url+repoNamespaceAndName,
+                    this.gitHandler.resourcesScm.computePullUrlForInCluster(repoNamespaceAndName),
                     "external-secrets",
                     '.',
                     externalSecretsVersion,
