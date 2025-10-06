@@ -79,7 +79,7 @@ class Gitlab implements GitProvider {
     }
 
     @Override
-    String computeRepoUrlPrefixForInCluster(boolean includeNamePrefix) {
+    String computeRepoPrefixForInCluster(boolean includeNamePrefix) {
         return null
     }
 

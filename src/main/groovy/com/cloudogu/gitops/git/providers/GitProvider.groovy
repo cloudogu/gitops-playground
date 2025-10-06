@@ -1,7 +1,6 @@
 package com.cloudogu.gitops.git.providers
 
 import com.cloudogu.gitops.config.Credentials
-import com.cloudogu.gitops.git.providers.scmmanager.Permission
 
 interface GitProvider {
 
@@ -17,11 +16,7 @@ interface GitProvider {
 
     String computePullUrlForInCluster(String repoTarget)
 
-    default boolean computeRepoUrlPrefixForInCluster() {
-        return computeRepoUrlPrefixForInCluster(true)
-    }
-
-    String computeRepoUrlPrefixForInCluster(boolean includeNamePrefix)
+    String computeRepoPrefixForInCluster(boolean includeNamePrefix)
 
     Credentials getCredentials()
 
