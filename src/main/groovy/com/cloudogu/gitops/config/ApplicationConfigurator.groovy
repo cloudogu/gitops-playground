@@ -139,7 +139,7 @@ class ApplicationConfigurator {
 
         // We probably could get rid of some of the complexity by refactoring url, host and ingress into a single var
         if (newConfig.application.baseUrl) {
-            newConfig.scmm.ingress = new URL(injectSubdomain("${newConfig.application.namePrefix}scmm",
+            newConfig.scmm.ingress = new URL(injectSubdomain("scmm",
                     newConfig.application.baseUrl as String, newConfig.application.urlSeparatorHyphen as Boolean)).host
         }
         // When specific user/pw are not set, set them to global values
@@ -174,7 +174,7 @@ class ApplicationConfigurator {
         }
 
         if (newConfig.application.baseUrl) {
-            newConfig.jenkins.ingress = new URL(injectSubdomain("${newConfig.application.namePrefix}jenkins",
+            newConfig.jenkins.ingress = new URL(injectSubdomain("jenkins",
                     newConfig.application.baseUrl, newConfig.application.urlSeparatorHyphen)).host
         }
         // When specific user/pw are not set, set them to global values
@@ -199,7 +199,7 @@ class ApplicationConfigurator {
         boolean urlSeparatorHyphen = newConfig.application.urlSeparatorHyphen
 
         if (argocd.active && !argocd.url) {
-            argocd.url = injectSubdomain("${newConfig.application.namePrefix}argocd", baseUrl, urlSeparatorHyphen)
+            argocd.url = injectSubdomain("argocd", baseUrl, urlSeparatorHyphen)
             log.debug("Setting ArgoCD URL ${argocd.url}")
         }
         if (mail.mailhog && !mail.mailhogUrl) {
