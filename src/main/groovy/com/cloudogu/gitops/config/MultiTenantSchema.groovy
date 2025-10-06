@@ -12,7 +12,12 @@ import static com.cloudogu.gitops.config.ConfigConstants.CENTRAL_USEDEDICATED_DE
 
 class MultiTenantSchema {
 
-    ScmProviderType scmProviderType = ScmProviderType.SCM_MANAGER
+    @Option(
+            names = ['--scm-central-provider'],
+            description = "The SCM provider type. Possible values: SCM_MANAGER, GITLAB",
+            defaultValue = "SCM_MANAGER"
+    )
+    ScmProviderType scmProviderType
 
     @JsonPropertyDescription("GitlabConfig")
     @Mixin

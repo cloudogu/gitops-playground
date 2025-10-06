@@ -43,6 +43,11 @@ class GitHandler extends Feature {
         return true
     }
 
+    //TODO configure  settings
+    void configure(){
+
+
+    }
     //TODO Check settings
     void validate() {
 
@@ -63,7 +68,7 @@ class GitHandler extends Feature {
     void enable() {
 
         validate()
-
+        configure()
         //TenantSCM
         switch (config.scm.scmProviderType) {
             case ScmProviderType.GITLAB:
