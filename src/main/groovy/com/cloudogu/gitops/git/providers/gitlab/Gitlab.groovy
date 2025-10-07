@@ -22,31 +22,31 @@ class Gitlab implements GitProvider {
     Gitlab(Config config, GitlabConfig gitlabConfig) {
         this.config = config
         this.gitlabConfig = gitlabConfig
-        this.gitlabApi = new GitLabApi(credentials.toString(), credentials.password)
+        this.gitlabApi = new GitLabApi(gitlabConfig.url, credentials.password)
         this.gitlabApi.enableRequestResponseLogging(Level.ALL)
     }
 
     @Override
     boolean createRepository(String repoTarget, String description, boolean initialize) {
-        String fullPath = resolveFullPath(repoTarget)
+      /*  String fullPath = resolveFullPath(repoTarget)
 
         //check if there is already a project with the same fullPath
         if (findProject(fullPath).present) return false
 
-        long namespaceId = ensureNamespaceId(fullPath)
+        long namespaceId = ensureNamespaceId(fullPath)*/
         def project = new Project()
-                .withName(projectName(fullPath))
+                .withName(projectName(repoTarget))
                 .withDescription(description ?: "")
-                .withIssuesEnabled(true)
-                .withMergeRequestsEnabled(true)
-                .withWikiEnabled(true)
-                .withSnippetsEnabled(true)
-                .withNamespaceId(namespaceId)
+                .withIssuesEnabled(false)
+                .withMergeRequestsEnabled(false)
+                .withWikiEnabled(false)
+                .withSnippetsEnabled(false)
+                .withNamespaceId(gitlabConfig.parentGroup.toLong())
                 .withInitializeWithReadme(initialize)
         project.visibility = toVisibility(gitlabConfig.defaultVisibility)
 
         gitlabApi.projectApi.createProject(project)
-        log.info("Created GitLab project ${fullPath}")
+        log.info("Created GitLab project ${repoTarget}")
         return true
     }
 
