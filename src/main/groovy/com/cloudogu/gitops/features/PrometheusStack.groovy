@@ -137,7 +137,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
                             'Chart.yaml'))['version']
 
             deployer.deployFeature(
-                    this.gitHandler.resourcesScm.computePullUrlForInCluster(repoNamespaceAndName),
+                    this.gitHandler.resourcesScm.computeRepoUrlForInCluster(repoNamespaceAndName),
                     'prometheusstack',
                     '.',
                     prometheusVersion,

@@ -74,12 +74,12 @@ class Gitlab implements GitProvider {
     }
 
     @Override
-    String computePullUrlForInCluster(String repoTarget) {
+    String computeRepoUrlForInCluster(String repoTarget) {
         return null
     }
 
     @Override
-    String computeRepoPrefixForInCluster(boolean includeNamePrefix) {
+    String computeRepoPrefixUrlForInCluster(boolean includeNamePrefix) {
         return null
     }
 

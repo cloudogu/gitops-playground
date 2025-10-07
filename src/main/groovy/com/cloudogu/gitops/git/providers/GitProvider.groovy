@@ -14,9 +14,9 @@ interface GitProvider {
 
     String computePushUrl(String repoTarget)
 
-    String computePullUrlForInCluster(String repoTarget)
+    String computeRepoUrlForInCluster(String repoTarget)
 
-    String computeRepoPrefixForInCluster(boolean includeNamePrefix)
+    String computeRepoPrefixUrlForInCluster(boolean includeNamePrefix)
 
     Credentials getCredentials()
 

@@ -108,7 +108,7 @@ class ScmManager implements GitProvider {
 
     /** In-cluster repo prefix: …/scm/<rootPath>/[<namePrefix>] */
     @Override
-    String computeRepoPrefixForInCluster(boolean includeNamePrefix) {
+    String computeRepoPrefixUrlForInCluster(boolean includeNamePrefix) {
         def base = withSlash(baseForInCluster())    // service DNS oder ingress base
         def root = trimBoth(scmmConfig.rootPath ?: "repo")
         def prefix = trimBoth(config.application.namePrefix ?: "")
@@ -119,7 +119,7 @@ class ScmManager implements GitProvider {
 
     /** In-cluster pull: …/scm/<rootPath>/<ns>/<name> */
     @Override
-    String computePullUrlForInCluster(String repoTarget) {
+    String computeRepoUrlForInCluster(String repoTarget) {
         def rt = trimBoth(repoTarget)
         def root = trimBoth(scmmConfig.rootPath ?: "repo")
         return withoutTrailingSlash(withSlash(baseForInCluster()).resolve("scm/${scmmConfig.rootPath}/${rt}/")).toString()
@@ -145,7 +145,7 @@ class ScmManager implements GitProvider {
     }
 
     // =========================================================================================
-    // 3) URI BUILDING — separated by Client vs. In-Cluster
+    // 3) URI BUILDING — Client
     // =========================================================================================
 
     /** Client base …/scm (without trailing slash) */
@@ -158,25 +158,17 @@ class ScmManager implements GitProvider {
         return withSlash(base()).resolve("api/")
     }
 
-    /** In-cluster base …/scm (without trailing slash) — for potential in-cluster API calls */
-    private URI baseForInClusterScm() {
-        return withoutTrailingSlash(withScm(baseForInCluster()))
-    }
-
-
-    /** In-cluster: …/scm/<rootPath> (without trailing slash) */
-    URI repoBaseForInCluster() {
+    /** Client: …/scm/<rootPath> (without trailing slash) */
+    URI repoBaseForInClient() {
         def root = trimBoth(scmmConfig.rootPath ?: "repo")   // <— default & trim
         return withoutTrailingSlash(withSlash(base()).resolve("${root}/"))
     }
 
-
     /** Client: …/scm/<rootPath>/<ns>/<name> (without trailing slash) */
     URI repoUrlForClient(String repoTarget) {
         def trimmedRepoTarget = trimBoth(repoTarget)
-        return withoutTrailingSlash(withSlash(repoBaseForInCluster()).resolve("${trimmedRepoTarget}/"))
+        return withoutTrailingSlash(withSlash(repoBaseForInClient()).resolve("${trimmedRepoTarget}/"))
     }
-
 
     // =========================================================================================
     // 4) HELPERS & BASE RESOLUTION
