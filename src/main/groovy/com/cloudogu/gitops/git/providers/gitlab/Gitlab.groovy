@@ -105,7 +105,7 @@ class Gitlab implements GitProvider {
     @Override
     String getUrl() {
         //Gitlab is not supporting internal URLs for now.
-        return this.url
+        return this.gitlabConfig.url
     }
 
     @Override
