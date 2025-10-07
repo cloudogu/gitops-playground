@@ -84,17 +84,17 @@ class GitHandler extends Feature {
                 throw new IllegalArgumentException("Unsupported SCM provider found in TenantSCM")
         }
 
-        //CentralSCM
-        switch (config.multiTenant.scmProviderType) {
-            case ScmProviderType.GITLAB:
-                this.central = new Gitlab(this.config, this.config.multiTenant.gitlabConfig)
-                break
-            case ScmProviderType.SCM_MANAGER:
-                this.central = new ScmManager(this.config, config.multiTenant.scmmConfig,k8sClient,networkingUtils)
-                break
-            default:
-                throw new IllegalArgumentException("Unsupported SCM-Central provider: ${config.scm.scmProviderType}")
-        }
+        if (config.multiTenant.useDedicatedInstance) {
+            switch (config.multiTenant.scmProviderType) {
+                case ScmProviderType.GITLAB:
+                    this.central = new Gitlab(this.config, this.config.multiTenant.gitlabConfig)
+                    break
+                case ScmProviderType.SCM_MANAGER:
+                    this.central = new ScmManager(this.config, config.multiTenant.scmmConfig,k8sClient,networkingUtils)
+                    break
+                default:
+                    throw new IllegalArgumentException("Unsupported SCM-Central provider: ${config.scm.scmProviderType}")
+        }}
 
         //can be removed if we combine argocd and cluster-resources
         if (this.central) {

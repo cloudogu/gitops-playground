@@ -148,7 +148,6 @@ class ArgoCD extends Feature {
     protected initTenantRepos() {
         if (!config.multiTenant.useDedicatedInstance) {
             argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd', this.gitHandler.tenant)
-            gitRepos += argocdRepoInitializationAction
 
             clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources', this.gitHandler.tenant)
             gitRepos += clusterResourcesInitializationAction

@@ -138,8 +138,8 @@ class Jenkins extends Feature {
                 JENKINS_PASSWORD          : config.jenkins.password,
                 // Used indirectly in utils.sh 😬
                 REMOTE_CLUSTER            : config.application.remote,
-                SCMM_URL                  : config.scm.getScmmConfig().urlForJenkins,
-                SCMM_PASSWORD             : config.scm.getScmmConfig().password,
+                SCMM_URL                  : config.scm.scmmConfig.urlForJenkins,
+                SCMM_PASSWORD             : config.scm.scmmConfig.password,
                 SCM_PROVIDER              : config.scm.scmProviderType,
                 INSTALL_ARGOCD            : config.features.argocd.active,
                 NAME_PREFIX               : config.application.namePrefix,
@@ -148,7 +148,7 @@ class Jenkins extends Feature {
                 SKIP_PLUGINS              : config.jenkins.skipPlugins
         ])
 
-        globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}SCMM_URL", config.scm.getScmmConfig().urlForJenkins)
+        globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}SCMM_URL", config.scm.scmmConfig.urlForJenkins)
 
         if (config.jenkins.additionalEnvs) {
             for (entry in (config.jenkins.additionalEnvs as Map).entrySet()) {
