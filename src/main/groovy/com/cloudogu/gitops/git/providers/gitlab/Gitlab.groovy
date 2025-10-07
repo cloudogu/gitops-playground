@@ -148,7 +148,6 @@ class Gitlab implements GitProvider {
     }
 
     private String resolveFullPath(String repoTarget) {
-        if (repoTarget?.contains("/")) return repoTarget
         if (!gitlabConfig.parentGroup) {
             throw new IllegalStateException("gitlab.parentGroup is not set")
         }
@@ -410,4 +409,3 @@ class Gitlab implements GitProvider {
   */
 
 }
-

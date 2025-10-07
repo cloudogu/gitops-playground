@@ -50,7 +50,7 @@ class ScmManagerSetup extends Feature {
     @Override
     boolean isEnabled() {
 //        return config.scm.scmProviderType == ScmProviderType.SCM_MANAGER
-        return true
+        return false
     }
 
     @Override
@@ -97,7 +97,7 @@ class ScmManagerSetup extends Feature {
                 String clusterBindAddress = networkingUtils.findClusterBindAddress()
                 config.scm.scmmConfig.url = networkingUtils.createUrl(clusterBindAddress, port, contentPath)
 
-                if (config.multiTenant.useDedicatedInstance && config.multiTenant) {
+                if (config.multiTenant.useDedicatedInstance && config.multiTenant.scmProviderType==ScmProviderType.SCM_MANAGER) {
                     log.debug("Setting internal configs for local single node cluster with internal central scmm. Waiting for NodePort...")
                     def portCentralScm = k8sClient.waitForNodePort(releaseName, "scm-manager")
                     centralSCMUrl = networkingUtils.createUrl(clusterBindAddress, portCentralScm, contentPath)
@@ -135,7 +135,7 @@ class ScmManagerSetup extends Feature {
                 CONTENT_EXAMPLES             : false,
                 SKIP_RESTART                 : config.scm.scmmConfig.skipRestart,
                 SKIP_PLUGINS                 : config.scm.scmmConfig.skipPlugins,
-                CENTRAL_SCM_URL              : "", //TODO
+                CENTRAL_SCM_URL              : config.multiTenant.gitlabConfig.url, //TODO
                 CENTRAL_SCM_USERNAME         : config.multiTenant.scmmConfig.username,
                 CENTRAL_SCM_PASSWORD         : config.multiTenant.scmmConfig.password
         ])

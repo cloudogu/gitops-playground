@@ -224,9 +224,10 @@ class ApplicationConfigurator {
                 throw new RuntimeException('To enable Central Multi-Tenant mode, you must define a name prefix to distinguish between instances.')
             }
 
-            if (!newConfig.multiTenant.scmmConfig.username || !newConfig.multiTenant.scmmConfig.password) {
+            //TODO move this into scm validation
+            /*if (!newConfig.multiTenant.scmmConfig.username || !newConfig.multiTenant.scmmConfig.password) {
                 throw new RuntimeException('To use Central Multi Tenant mode define the username and password for the central SCMHandler instance.')
-            }
+            }*/
 
             if (!newConfig.features.argocd.operator) {
                 newConfig.features.argocd.operator = true

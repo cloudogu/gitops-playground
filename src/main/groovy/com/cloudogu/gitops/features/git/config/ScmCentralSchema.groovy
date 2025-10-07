@@ -21,13 +21,13 @@ class ScmCentralSchema {
         @JsonPropertyDescription(SCMM_USERNAME_DESCRIPTION)
         String username = 'oauth2.0'
 
-        @Option(names = ['-gitlab-central-token'], description = SCMM_PASSWORD_DESCRIPTION)
+        @Option(names = ['--gitlab-central-token'], description = SCMM_PASSWORD_DESCRIPTION)
         @JsonPropertyDescription(SCMM_PASSWORD_DESCRIPTION)
         String password = ''
 
-        @Option(names = ['-gitlab-central-parent-id'], description = SCMM_PASSWORD_DESCRIPTION)
+        @Option(names = ['--gitlab-central-parent-id'], description = SCMM_PASSWORD_DESCRIPTION)
         @JsonPropertyDescription(SCMM_PASSWORD_DESCRIPTION)
-        String parentGroupId = ''
+        String parentGroup = ''
 
         Credentials getCredentials() {
             return new Credentials(username, password)
