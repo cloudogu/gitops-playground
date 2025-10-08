@@ -341,6 +341,7 @@ prometheus:
       - prometheus-metrics-creds-scmm
       - prometheus-metrics-creds-jenkins
     additionalScrapeConfigs:
+<#if config.scm.scmProviderType == "scm-manager">
       - job_name: 'scm-manager'
         static_configs:
           - targets: [ '${scmm.host}' ]
@@ -349,6 +350,7 @@ prometheus:
         basic_auth:
           username: '${config.application.namePrefix}metrics'
           password_file: '/etc/prometheus/secrets/prometheus-metrics-creds-scmm/password'
+</#if>
       - job_name: 'jenkins'
         static_configs:
           - targets: [ '${jenkins.host}' ]

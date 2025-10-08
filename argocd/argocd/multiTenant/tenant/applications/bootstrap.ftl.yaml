@@ -14,7 +14,7 @@ spec:
   project: argocd
   source:
     path: applications/
-    repoURL: ${scmm.repoUrl}argocd/argocd
+    repoURL: ${scmm.repoUrl}argocd/argocd.git
     targetRevision: main
     directory:
       recurse: true

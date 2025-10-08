@@ -36,9 +36,10 @@ class Gitlab implements GitProvider {
         def repoNamespace = repoTarget.split('/', 2)[0]
         def repoName = repoTarget.split('/', 2)[1]
 
+        def repoNamespacePrefixed = config.application.namePrefix + repoNamespace
         // 1) Resolve parent by numeric ID (do NOT treat the ID as a path!)
         Group parent = parentGroup()
-        String repoNamespacePath = repoNamespace.toLowerCase()
+        String repoNamespacePath = repoNamespacePrefixed.toLowerCase()
         String projectPath = repoName.toLowerCase()
 
         long subgroupId = ensureSubgroupUnderParentId(parent, repoNamespacePath)
@@ -130,6 +131,7 @@ class Gitlab implements GitProvider {
         return this.gitlabConfig.url
     }
 
+    //TODO do we dee
     @Override
     URI prometheusMetricsEndpoint() {
         return null

@@ -13,7 +13,7 @@ spec:
   project: ${tenantName}
   source:
     path: argocd/
-    repoURL: ${scmm.centralScmmUrl}/repo/${config.application.namePrefix}argocd/cluster-resources
+    repoURL: ${scmm.centralScmmUrl}/repo/${config.application.namePrefix}argocd/cluster-resources.git
     targetRevision: main
     directory:
       recurse: true

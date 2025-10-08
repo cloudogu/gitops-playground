@@ -175,9 +175,9 @@ class PrometheusStack extends Feature implements FeatureWithImage {
     private Map scmConfigurationMetrics() {
         def uri = this.gitHandler.resourcesScm.prometheusMetricsEndpoint()
         [
-                protocol: uri.scheme ?: "",
-                host    : uri.authority ?: "",
-                path    : uri.path ?: ""
+                protocol: uri?.scheme ?: "",
+                host    : uri?.authority ?: "",
+                path    : uri?.path ?: ""
         ]
     }
 
