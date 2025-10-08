@@ -6,10 +6,14 @@ import com.cloudogu.gitops.features.git.config.util.GitlabConfig
 import com.cloudogu.gitops.git.providers.AccessRole
 import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.git.providers.Scope
+import com.cloudogu.gitops.git.utils.StringUtils
 import groovy.util.logging.Slf4j
 import org.gitlab4j.api.GitLabApi
 import org.gitlab4j.api.GitLabApiException
-import org.gitlab4j.api.models.*
+import org.gitlab4j.api.models.AccessLevel
+import org.gitlab4j.api.models.Group
+import org.gitlab4j.api.models.Project
+import org.gitlab4j.api.models.Visibility
 
 import java.util.logging.Level
 
@@ -33,12 +37,12 @@ class Gitlab implements GitProvider {
         def repoName = repoTarget.split('/', 2)[1]
 
         // 1) Resolve parent by numeric ID (do NOT treat the ID as a path!)
-        Group parent = gitlabApi.groupApi.getGroup(gitlabConfig.parentGroupId as Long)
+        Group parent = parentGroup()
         String repoNamespacePath = repoNamespace.toLowerCase()
         String projectPath = repoName.toLowerCase()
 
         long subgroupId = ensureSubgroupUnderParentId(parent, repoNamespacePath)
-        String fullProjectPath = "${parent.fullPath}/${repoNamespacePath}/${projectPath}"
+        String fullProjectPath = "${parentFullPath()}/${repoNamespacePath}/${projectPath}"
 
 
         if (findProject(fullProjectPath).present) {
@@ -63,6 +67,105 @@ class Gitlab implements GitProvider {
         return true
     }
 
+    @Override
+    void setRepositoryPermission(String repoTarget, String principal, AccessRole role, Scope scope) {
+        //TODO check of this is allright
+        String fullPath = resolveFullPath(repoTarget)
+        Project project = findProjectOrThrow(fullPath)
+        AccessLevel level = toAccessLevel(role, scope)
+        if (scope == Scope.GROUP) {
+            def group = gitlabApi.groupApi.getGroups(principal)
+                    .find { it.fullPath == principal || it.path == principal || it.name == principal }
+            if (!group) throw new IllegalArgumentException("Group '${principal}' not found")
+            gitlabApi.projectApi.shareProject(project.id, group.id, level, null)
+        } else {
+            def user = gitlabApi.userApi.findUsers(principal)
+                    .find { it.username == principal || it.email == principal }
+            if (!user) throw new IllegalArgumentException("User '${principal}' not found")
+            gitlabApi.projectApi.addMember(project.id, user.id, level)
+        }
+    }
+
+    @Override
+    String computePushUrl(String repoTarget) {
+        String base = StringUtils.trimBoth(gitlabConfig.url)
+        return "${base}/${parentFullPath()}/${repoTarget}.git"
+    }
+
+    @Override
+    String computeRepoUrlForInCluster(String repoTarget) {
+        return computePushUrl(repoTarget)
+    }
+
+    @Override
+    String computeRepoPrefixUrlForInCluster(boolean includeNamePrefix) {
+        String base = StringUtils.trimBoth(gitlabConfig.url)
+        def prefix = StringUtils.trimBoth(config.application.namePrefix ?: "")
+        return includeNamePrefix && prefix
+                ? "${base}/${prefix}"
+                : "${base}"
+    }
+
+    @Override
+    Credentials getCredentials() {
+        return this.gitlabConfig.credentials
+    }
+
+    @Override
+    String getProtocol() {
+        return gitlabConfig.url
+    }
+
+    String getHost() {
+        return gitlabConfig.url
+    }
+
+    @Override
+    String getGitOpsUsername() {
+        return gitlabConfig.gitOpsUsername
+    }
+
+    @Override
+    String getUrl() {
+        return this.gitlabConfig.url
+    }
+
+    @Override
+    URI prometheusMetricsEndpoint() {
+        return null
+    }
+
+    //TODO implement
+    @Override
+    void deleteRepository(String namespace, String repository, boolean prefixNamespace) {
+
+    }
+
+    //TODO implement
+    @Override
+    void deleteUser(String name) {
+
+    }
+
+    //TODO implement
+    @Override
+    void setDefaultBranch(String repoTarget, String branch) {
+
+    }
+
+
+    private Group parentGroup() {
+        try {
+            return gitlabApi.groupApi.getGroup(gitlabConfig.parentGroupId as Long)
+        } catch (GitLabApiException e) {
+            throw new IllegalStateException(
+                    "Parent group '${gitlabConfig.parentGroupId}' not found or inaccessible: ${e.message}", e)
+        }
+    }
+
+    private long parentGroupId() { parentGroup().id as Long }
+
+    private String parentFullPath() { parentGroup().fullPath }
 
     /** Ensure a single-level subgroup exists under 'parent'; return its namespace (group) ID. */
     private long ensureSubgroupUnderParentId(Group parent, String segPath) {
@@ -119,87 +222,6 @@ class Gitlab implements GitProvider {
         // uses the overload: getProjects(Object idOrPath)
         List<Project> projects = gitlabApi.groupApi.getProjects(parentId)
         return projects?.find { Project project -> project.path == path }
-    }
-
-    @Override
-    void setRepositoryPermission(String repoTarget, String principal, AccessRole role, Scope scope) {
-        String fullPath = resolveFullPath(repoTarget)
-        Project project = findProjectOrThrow(fullPath)
-        AccessLevel level = toAccessLevel(role, scope)
-        if (scope == Scope.GROUP) {
-            def group = gitlabApi.groupApi.getGroups(principal)
-                    .find { it.fullPath == principal || it.path == principal || it.name == principal }
-            if (!group) throw new IllegalArgumentException("Group '${principal}' not found")
-            gitlabApi.projectApi.shareProject(project.id, group.id, level, null)
-        } else {
-            def user = gitlabApi.userApi.findUsers(principal)
-                    .find { it.username == principal || it.email == principal }
-            if (!user) throw new IllegalArgumentException("User '${principal}' not found")
-            gitlabApi.projectApi.addMember(project.id, user.id, level)
-        }
-    }
-
-    @Override
-    String computePushUrl(String repoTarget) {
-        return null
-    }
-
-    @Override
-    String computeRepoUrlForInCluster(String repoTarget) {
-        return null
-    }
-
-    @Override
-    String computeRepoPrefixUrlForInCluster(boolean includeNamePrefix) {
-        return null
-    }
-
-    @Override
-    Credentials getCredentials() {
-        return this.gitlabConfig.credentials
-    }
-
-    @Override
-    String getProtocol() {
-        return null
-    }
-
-    String getHost() {
-        return null
-    }
-
-    @Override
-    String getGitOpsUsername() {
-        return gitlabConfig.gitOpsUsername
-    }
-
-    @Override
-    String getUrl() {
-        //Gitlab is not supporting internal URLs for now.
-        return this.gitlabConfig.url
-    }
-
-    @Override
-    URI prometheusMetricsEndpoint() {
-        return null
-    }
-
-    //TODO implement
-    @Override
-    void deleteRepository(String namespace, String repository, boolean prefixNamespace) {
-
-    }
-
-    //TODO implement
-    @Override
-    void deleteUser(String name) {
-
-    }
-
-    //TODO implement
-    @Override
-    void setDefaultBranch(String repoTarget, String branch) {
-
     }
 
 

@@ -6,6 +6,7 @@ import com.cloudogu.gitops.features.git.config.util.ScmManagerConfig
 import com.cloudogu.gitops.git.providers.AccessRole
 import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.git.providers.Scope
+import com.cloudogu.gitops.git.utils.StringUtils
 import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
 import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
 import com.cloudogu.gitops.utils.K8sClient
@@ -110,18 +111,19 @@ class ScmManager implements GitProvider {
     @Override
     String computeRepoPrefixUrlForInCluster(boolean includeNamePrefix) {
         def base = withSlash(baseForInCluster())    // service DNS oder ingress base
-        def root = trimBoth(scmmConfig.rootPath ?: "repo")
-        def prefix = trimBoth(config.application.namePrefix ?: "")
+        def root = StringUtils.trimBoth(scmmConfig.rootPath ?: "repo")
+        def prefix =StringUtils.trimBoth(config.application.namePrefix ?: "")
         def url = withSlash(base.resolve("scm/${root}")).toString()
-        return includeNamePrefix && prefix ? withoutTrailingSlash(URI.create(url + prefix)).toString()
+        return includeNamePrefix && prefix
+                ? withoutTrailingSlash(URI.create(url + prefix)).toString()
                 : withoutTrailingSlash(URI.create(url)).toString()
     }
 
     /** In-cluster pull: …/scm/<rootPath>/<ns>/<name> */
     @Override
     String computeRepoUrlForInCluster(String repoTarget) {
-        def rt = trimBoth(repoTarget)
-        def root = trimBoth(scmmConfig.rootPath ?: "repo")
+        def rt =StringUtils.trimBoth(repoTarget)
+        def root =StringUtils.trimBoth(scmmConfig.rootPath ?: "repo")
         return withoutTrailingSlash(withSlash(baseForInCluster()).resolve("scm/${scmmConfig.rootPath}/${rt}/")).toString()
     }
 
@@ -160,13 +162,13 @@ class ScmManager implements GitProvider {
 
     /** Client: …/scm/<rootPath> (without trailing slash) */
     URI repoBaseForInClient() {
-        def root = trimBoth(scmmConfig.rootPath ?: "repo")   // <— default & trim
+        def root =StringUtils.trimBoth(scmmConfig.rootPath ?: "repo")   // <— default & trim
         return withoutTrailingSlash(withSlash(base()).resolve("${root}/"))
     }
 
     /** Client: …/scm/<rootPath>/<ns>/<name> (without trailing slash) */
     URI repoUrlForClient(String repoTarget) {
-        def trimmedRepoTarget = trimBoth(repoTarget)
+        def trimmedRepoTarget =StringUtils.trimBoth(repoTarget)
         return withoutTrailingSlash(withSlash(repoBaseForInClient()).resolve("${trimmedRepoTarget}/"))
     }
 
@@ -263,10 +265,7 @@ class ScmManager implements GitProvider {
         return urlString.endsWith('/') ? URI.create(urlString.substring(0, urlString.length() - 1)) : uri
     }
 
-    //Removes leading and trailing slashes (prevents absolute paths when using resolve).
-    private static String trimBoth(String str) {
-        return (str ?: "").replaceAll('^/+', '').replaceAll('/+$', '')
-    }
+
 
     //TODO when git abctraction feature is ready, we will create before merge to main a branch, that
     // contain this code as preservation for oop
