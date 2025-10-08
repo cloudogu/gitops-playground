@@ -18,7 +18,7 @@ class ScmTenantSchema {
     @Option(
             names = ['--scm-provider'],
             description = "The SCM provider type. Possible values: SCM_MANAGER, GITLAB",
-            defaultValue = "SCM_MANAGER"
+            defaultValue = "GITLAB"
     )
     ScmProviderType scmProviderType
 
@@ -55,7 +55,7 @@ class ScmTenantSchema {
 
         @Option(names = ['--gitlab-parent-id'], description = SCMM_PASSWORD_DESCRIPTION)
         @JsonPropertyDescription(SCMM_PASSWORD_DESCRIPTION)
-        String parentProjectid = ''
+        String parentGroupId = ''
 
 
 
