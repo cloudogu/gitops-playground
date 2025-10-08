@@ -27,7 +27,7 @@ class ScmCentralSchema {
 
         @Option(names = ['--gitlab-central-parent-id'], description = SCMM_PASSWORD_DESCRIPTION)
         @JsonPropertyDescription(SCMM_PASSWORD_DESCRIPTION)
-        String parentGroup = ''
+        String parentGroupId = ''
 
         Credentials getCredentials() {
             return new Credentials(username, password)

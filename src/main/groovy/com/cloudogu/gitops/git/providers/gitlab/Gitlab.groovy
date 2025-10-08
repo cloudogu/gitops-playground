@@ -8,6 +8,7 @@ import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.git.providers.Scope
 import groovy.util.logging.Slf4j
 import org.gitlab4j.api.GitLabApi
+import org.gitlab4j.api.GitLabApiException
 import org.gitlab4j.api.models.*
 
 import java.util.logging.Level
@@ -28,26 +29,96 @@ class Gitlab implements GitProvider {
 
     @Override
     boolean createRepository(String repoTarget, String description, boolean initialize) {
-      /*  String fullPath = resolveFullPath(repoTarget)
+        def repoNamespace = repoTarget.split('/', 2)[0]
+        def repoName = repoTarget.split('/', 2)[1]
 
-        //check if there is already a project with the same fullPath
-        if (findProject(fullPath).present) return false
+        // 1) Resolve parent by numeric ID (do NOT treat the ID as a path!)
+        Group parent = gitlabApi.groupApi.getGroup(gitlabConfig.parentGroupId as Long)
+        String repoNamespacePath = repoNamespace.toLowerCase()
+        String projectPath = repoName.toLowerCase()
 
-        long namespaceId = ensureNamespaceId(fullPath)*/
+        long subgroupId = ensureSubgroupUnderParentId(parent, repoNamespacePath)
+        String fullProjectPath = "${parent.fullPath}/${repoNamespacePath}/${projectPath}"
+
+
+        if (findProject(fullProjectPath).present) {
+            log.info("GitLab project already exists: ${fullProjectPath}")
+            return false
+        }
+
         def project = new Project()
-                .withName(projectName(repoTarget))
+                .withName(repoName)
+                .withPath(projectPath)
                 .withDescription(description ?: "")
                 .withIssuesEnabled(false)
                 .withMergeRequestsEnabled(false)
                 .withWikiEnabled(false)
                 .withSnippetsEnabled(false)
-                .withNamespaceId(gitlabConfig.parentGroup.toLong())
+                .withNamespaceId(subgroupId)
                 .withInitializeWithReadme(initialize)
         project.visibility = toVisibility(gitlabConfig.defaultVisibility)
 
-        gitlabApi.projectApi.createProject(project)
-        log.info("Created GitLab project ${repoTarget}")
+        def created = gitlabApi.projectApi.createProject(project)
+        log.info("Created GitLab project ${created.getPathWithNamespace()} (id=${created.id})")
         return true
+    }
+
+
+    /** Ensure a single-level subgroup exists under 'parent'; return its namespace (group) ID. */
+    private long ensureSubgroupUnderParentId(Group parent, String segPath) {
+        // 1) Already there?
+        Group existing = findDirectSubgroupByPath(parent.id as Long, segPath)
+        if (existing != null) return existing.id as Long
+
+
+        // 2) Guard against project/subgroup name collision in the same parent
+        Project collision = findDirectProjectByPath(parent.id as Long, segPath)
+        if (collision != null) {
+            throw new IllegalStateException(
+                    "Cannot create subgroup '${segPath}' under '${parent.fullPath}': " +
+                            "a project with that path already exists at '${parent.fullPath}/${segPath}'. " +
+                            "Rename/transfer the project first or choose a different subgroup name."
+            )
+        }
+
+        // 3) Create subgroup
+        Group toCreate = new Group()
+                .withName(segPath)  // display name
+                .withPath(segPath)        // (lowercase etc.)
+                .withParentId(parent.id)
+
+
+        try {
+            Group created = gitlabApi.groupApi.addGroup(toCreate)
+            log.info("Created group {}", created.fullPath)
+            return created.id as Long
+        } catch (GitLabApiException e) {
+            // If someone created it in parallel, treat 400/409 as "exists" and re-fetch
+            if (e.httpStatus in [400, 409]) {
+                Group retry = findDirectSubgroupByPath(parent.id as Long, segPath)
+                if (retry != null) return retry.id as Long
+            }
+            def ve = e.hasValidationErrors() ? e.getValidationErrors() : null
+            log.error("addGroup failed (parent={}, segPath={}, status={}, message={}, validationErrors={})",
+                    parent.fullPath, segPath, e.httpStatus, e.getMessage(), ve)
+            throw e
+        }
+    }
+
+
+    /** Find a direct subgroup of 'parentId' with the exact path . */
+    private Group findDirectSubgroupByPath(Long parentId, String segPath) {
+        // uses the overload: getSubGroups(Object idOrPath)
+        List<Group> subGroups = gitlabApi.groupApi.getSubGroups(parentId)
+        return subGroups?.find { Group subGroup -> subGroup.path == segPath }
+    }
+
+
+    /** Find a direct project of 'parentId' with the exact path . */
+    private Project findDirectProjectByPath(Long parentId, String path) {
+        // uses the overload: getProjects(Object idOrPath)
+        List<Project> projects = gitlabApi.groupApi.getProjects(parentId)
+        return projects?.find { Project project -> project.path == path }
     }
 
     @Override
@@ -148,121 +219,10 @@ class Gitlab implements GitProvider {
     }
 
     private String resolveFullPath(String repoTarget) {
-        if (!gitlabConfig.parentGroup) {
+        if (!gitlabConfig.parentGroupId) {
             throw new IllegalStateException("gitlab.parentGroup is not set")
         }
-        return "${gitlabConfig.parentGroup}/${repoTarget}"
-    }
-
-    private static String projectName(String fullPath) {
-        return fullPath.substring(fullPath.lastIndexOf('/') + 1)
-    }
-
-    /**
-     * Resolves the namespace (group/subgroup) for the given full project path and returns its namespace ID.
-     * <p>
-     * The method extracts the namespace portion from {@code fullPath} (everything before the last slash),
-     * looks it up via the GitLab API, and:
-     *  - returns the existing namespace ID if found
-     *  - throws an {@link IllegalStateException} if not found and {@code autoCreateGroups} is {@code false}
-     *  - otherwise creates the full group chain and returns the newly created namespace ID.
-     *
-     * @param fullPath the fully qualified project path, e.g. {@code "group/subgroup/my-project"}; the method
-     *                 uses the part before the last slash as the namespace path (e.g. {@code "group/subgroup"}).
-     * @return the GitLab namespace ID corresponding to the extracted namespace path
-     * @throws IllegalStateException if the namespace does not exist and automatic creation is disabled
-     *                               ({@code config.autoCreateGroups == false})
-     * @implNote Requires API credentials with sufficient permissions to create groups when
-     * {@code config.autoCreateGroups} is {@code true}.
-     */
-    private long ensureNamespaceId(String fullPath) {
-        String namespacePath = fullPath.substring(0, fullPath.lastIndexOf('/'))
-
-        def candidates = gitlabApi.namespaceApi.findNamespaces(namespacePath)
-        Namespace namespace = null
-        for (Namespace namespaceCandidate : candidates) {
-            if (namespacePath == namespaceCandidate.fullPath) {
-                namespace = namespaceCandidate
-                break
-            }
-        }
-        if (namespace != null) {
-            return namespace.id
-        }
-
-        if (!gitlabConfig.autoCreateGroups) {
-            throw new IllegalStateException("Namespace '${namespacePath}' does not exist (autoCreateGroups=false).")
-        }
-
-        return createNamespaceChain(namespacePath).id
-    }
-
-    /**
-     * Ensures that the full group hierarchy specified by {@code namespacePath} exists in GitLab,
-     * creating any missing groups along the way, and returns the deepest (last) group.
-     *
-     * The method splits {@code namespacePath} by {@code '/'} into path segments (e.g. {@code "group/subgroup"}),
-     * iteratively builds the accumulated path (e.g. {@code "group"}, then {@code "group/subgroup"}),
-     * and for each level:
-     *
-     * Checks whether a group with that exact {@code fullPath} already exists.
-     *   If it exists, uses it as the parent for the next level.
-     *   If it does not exist, creates the group with:
-     * {@code name} = the current segment
-     * {@code path} = the current segment lowercased
-     * {@code parentId} = the previously resolved/created parent (if any)
-     *
-     * Existing groups are reused, and only missing segments are created.
-     * Requires API credentials with permissions to create groups within the target hierarchy.
-     *
-     * @param namespacePath a slash-separated group path, e.g. {@code "group/subgroup/subsub"}
-     * @return the deepest {@link Group} corresponding to the last segment of {@code namespacePath}
-     * @implNote Uses {@code groupApi.getGroups(accumulativePathSegment)} to look up existing groups by {@code fullPath} at each level.
-     *           The created group's {@code path} is normalized to lowercase; ensure this matches your naming policy.
-     * @throws RuntimeException if the underlying GitLab API calls fail (e.g., insufficient permissions or network errors)
-     */
-    private Group createNamespaceChain(String namespacePath) {
-        Group parent = null
-        def accumulativePathSegment = ""
-
-        // Split on '/', skip empty segments (leading, double, or trailing '/')
-        def segments = namespacePath.split('/')
-        for (String pathSegment : segments) {
-            if (pathSegment == null || pathSegment.isEmpty()) {
-                continue
-            }
-
-            // Build "group", then "group/subgroup", then ...
-            accumulativePathSegment = accumulativePathSegment.isEmpty()
-                    ? pathSegment
-                    : accumulativePathSegment + "/" + pathSegment
-
-            // use an explicit for-loop to check each candidate
-            def candidates = gitlabApi.groupApi.getGroups(accumulativePathSegment)
-            Group existing = null
-            for (Group g : candidates) {
-                if (accumulativePathSegment == g.fullPath) {
-                    existing = g
-                    break
-                }
-            }
-
-            if (existing != null) {
-                parent = existing
-                continue
-            }
-
-            // Create the group if it does not exist
-            Group group = new Group()
-                    .withName(pathSegment)
-                    .withPath(pathSegment.toLowerCase())
-                    .withParentId(parent != null ? parent.id : null)
-
-            parent = gitlabApi.groupApi.addGroup(group)
-            log.info("Created group {}", accumulativePathSegment)
-        }
-
-        return parent
+        return "${gitlabConfig.parentGroupId}/${repoTarget}"
     }
 
 
