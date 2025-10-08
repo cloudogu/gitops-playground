@@ -41,11 +41,11 @@ class RepoInitializationAction {
                 tenantName: config.application.tenantName,
                 argocd    : [host: config.features.argocd.url ? new URL(config.features.argocd.url).host : ""], //TODO move this to argocd class and get the url from there
                 scmm      : [
-                        baseUrl : this.gitHandler.tenant.url,
-                        host    : this.gitHandler.tenant.host,
-                        protocol: this.gitHandler.tenant.protocol,
-                        repoUrl : this.gitHandler.tenant.computeRepoPrefixUrlForInCluster(true),
-                        centralScmmUrl: this.gitHandler.central?.url ?: ''
+                        baseUrl : this.repo.gitProvider.url,
+                        host    : this.repo.gitProvider.host,
+                        protocol: this.repo.gitProvider.protocol,
+                        repoUrl : this.repo.gitProvider.computeRepoPrefixUrlForInCluster(true),
+                        centralScmmUrl: this.gitHandler.central?.computeRepoPrefixUrlForInCluster(true) ?: ''
                 ],
                 config    : config,
                 // Allow for using static classes inside the templates

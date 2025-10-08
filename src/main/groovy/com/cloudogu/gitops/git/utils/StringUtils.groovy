@@ -5,4 +5,9 @@ class StringUtils {
     static String trimBoth(String str) {
         return (str ?: "").replaceAll('^/+', '').replaceAll('/+$', '')
     }
+
+    static URI withSlash(URI uri) {
+        def urlString = uri.toString()
+        return urlString.endsWith('/') ? uri : URI.create(urlString + '/')
+    }
 }

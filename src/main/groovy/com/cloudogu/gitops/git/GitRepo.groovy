@@ -21,7 +21,7 @@ class GitRepo {
     static final String NAMESPACE_3RD_PARTY_DEPENDENCIES = '3rd-party-dependencies'
 
     private final Config config
-    private final GitProvider gitProvider
+    final GitProvider gitProvider
     private final FileSystemUtils fileSystemUtils
 
     private final String repoTarget        // before scmmRepoTarget (neutral)

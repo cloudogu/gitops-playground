@@ -101,10 +101,12 @@ class Gitlab implements GitProvider {
     @Override
     String computeRepoPrefixUrlForInCluster(boolean includeNamePrefix) {
         String base = StringUtils.trimBoth(gitlabConfig.url)
+
         def prefix = StringUtils.trimBoth(config.application.namePrefix ?: "")
+
         return includeNamePrefix && prefix
-                ? "${base}/${prefix}"
-                : "${base}"
+                ? "${base}/${parentFullPath()}/${prefix}"
+                : "${base}/${parentFullPath()}/"
     }
 
     @Override
