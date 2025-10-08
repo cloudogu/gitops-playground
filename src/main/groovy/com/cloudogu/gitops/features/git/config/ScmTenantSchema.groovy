@@ -30,6 +30,8 @@ class ScmTenantSchema {
     @Mixin
     ScmManagerTenantConfig scmmConfig
 
+    String gitOpsUsername = ''
+
     @JsonIgnore
     Boolean isInternal = { ->
         return (gitlabConfig.internal || scmmConfig.internal)
@@ -55,7 +57,7 @@ class ScmTenantSchema {
         @JsonPropertyDescription(SCMM_PASSWORD_DESCRIPTION)
         String parentProjectid = ''
 
-        String gitOpsUsername = ''
+
 
         Credentials getCredentials() {
             return new Credentials(username, password)
@@ -93,7 +95,6 @@ class ScmTenantSchema {
         @JsonPropertyDescription(SCM_ROOT_PATH_DESCRIPTION)
         String rootPath = 'repo'
 
-        String gitOpsUsername = ''
         /* When installing from via Docker we have to distinguish scmm.url (which is a local IP address) from
            the SCMM URL used by jenkins.
 
