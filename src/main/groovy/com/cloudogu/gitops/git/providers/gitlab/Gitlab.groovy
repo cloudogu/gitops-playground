@@ -109,6 +109,7 @@ class Gitlab implements GitProvider {
                 : "${base}/${parentFullPath()}/"
     }
 
+    //TODo getCredentials
     @Override
     Credentials getCredentials() {
         return this.gitlabConfig.credentials

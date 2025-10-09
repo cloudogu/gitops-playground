@@ -205,7 +205,7 @@ class ScmManager implements GitProvider {
 
     /** Base for *this process* (API client, local git operations) */
     private URI baseForClient() {
-        if (Boolean.TRUE == scmmConfig.internal) {
+        if (scmmConfig.internal) {
             return config.application.runningInsideK8s ? serviceDnsBase() : hostAccessBase()
         } else {
             return externalBase()
