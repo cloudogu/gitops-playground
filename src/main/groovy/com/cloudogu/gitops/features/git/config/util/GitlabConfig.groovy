@@ -7,6 +7,5 @@ interface GitlabConfig {
     Credentials credentials
     String parentGroupId
     String defaultVisibility
-    Boolean autoCreateGroups
     String gitOpsUsername
 }

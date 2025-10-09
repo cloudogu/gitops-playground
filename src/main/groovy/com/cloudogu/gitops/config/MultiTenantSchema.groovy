@@ -15,7 +15,7 @@ class MultiTenantSchema {
     @Option(
             names = ['--scm-central-provider'],
             description = "The SCM provider type. Possible values: SCM_MANAGER, GITLAB",
-            defaultValue = "GITLAB"
+            defaultValue = "SCM_MANAGER"
     )
     ScmProviderType scmProviderType
 
