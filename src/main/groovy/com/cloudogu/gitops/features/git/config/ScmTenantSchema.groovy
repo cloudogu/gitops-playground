@@ -18,7 +18,7 @@ class ScmTenantSchema {
     @Option(
             names = ['--scm-provider'],
             description = "The SCM provider type. Possible values: SCM_MANAGER, GITLAB",
-            defaultValue = "GITLAB"
+            defaultValue = "SCM_MANAGER"
     )
     ScmProviderType scmProviderType
 
