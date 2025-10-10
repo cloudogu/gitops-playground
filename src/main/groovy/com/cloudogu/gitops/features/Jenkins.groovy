@@ -73,6 +73,7 @@ class Jenkins extends Feature {
         return config.jenkins.active
     }
 
+
     @Override
     void enable() {
 
@@ -85,7 +86,6 @@ class Jenkins extends Feature {
             k8sClient.labelRemove('node', '--all', '', 'node')
             def nodeName = k8sClient.waitForNode().replace('node/', '')
             k8sClient.label('node', nodeName, new Tuple2('node', 'jenkins'))
-
 
             k8sClient.createSecret('generic', 'jenkins-credentials', namespace,
                     new Tuple2('jenkins-admin-user', config.jenkins.username),

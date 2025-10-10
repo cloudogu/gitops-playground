@@ -53,7 +53,7 @@ class AirGappedUtilsTest {
         def actualRepoNamespaceAndName = createAirGappedUtils().mirrorHelmRepoToGit(helmConfig)
         
         assertThat(actualRepoNamespaceAndName).isEqualTo(
-                "${ScmmRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/kube-prometheus-stack".toString())
+                "${GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/kube-prometheus-stack".toString())
         assertAirGapped()
     }
 

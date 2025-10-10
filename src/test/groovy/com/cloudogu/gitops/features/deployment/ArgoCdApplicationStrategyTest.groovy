@@ -1,7 +1,7 @@
 package com.cloudogu.gitops.features.deployment
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.git.config.ScmTenantSchema
+import com.cloudogu.gitops.features.git.config.ScmTenantSchema.ScmManagerTenantConfig
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TestGitRepoFactory
@@ -107,7 +107,7 @@ spec:
                         gitName: 'Cloudogu',
                         gitEmail: 'hello@cloudogu.com'
                 ),
-                scmm: new ScmTenantSchema.ScmManagerTenantConfig(
+                scm: new ScmManagerTenantConfig(
                         username: "dont-care-username",
                         password: "dont-care-password",
                 ),
@@ -122,15 +122,7 @@ spec:
         def repoProvider = new TestGitRepoFactory(config, new FileSystemUtils()) {
             @Override
             GitRepo getRepo(String repoTarget) {
-                def repo = super.getRepo(repoTarget)
-                localTempDir = new File(repo.getAbsoluteLocalRepoTmpDir())
-
-                return repo
-            }
-
-            @Override
-            GitRepo getRepo(String repoTarget, Boolean isCentralRepo) {
-                def repo = super.getRepo(repoTarget, isCentralRepo)
+                def repo = super.getRepo(repoTarget,null)
                 localTempDir = new File(repo.getAbsoluteLocalRepoTmpDir())
 
                 return repo

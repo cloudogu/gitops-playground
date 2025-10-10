@@ -151,7 +151,6 @@ class ApplicationConfigurator {
             newConfig.scm.scmmConfig.username = newConfig.application.username
         }
 
-
     }
 
     private void addJenkinsConfig(Config newConfig) {
@@ -375,8 +374,6 @@ class ApplicationConfigurator {
             // If features.argocd.resourceInclusionsClus<ter is not set, attempt to determine it via Kubernetes ENVs
             buildAndValidateURLFromEnvironment(configToSet)
         }
-
-
     }
 
     boolean isUrlSetAndValid(Config config) {

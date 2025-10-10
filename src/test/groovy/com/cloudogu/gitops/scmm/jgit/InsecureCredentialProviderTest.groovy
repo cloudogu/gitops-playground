@@ -1,6 +1,6 @@
 package com.cloudogu.gitops.scmm.jgit
 
-
+import com.cloudogu.gitops.git.jgit.helpers.InsecureCredentialProvider
 import org.eclipse.jgit.transport.CredentialItem
 import org.eclipse.jgit.transport.URIish
 import org.junit.jupiter.api.Test

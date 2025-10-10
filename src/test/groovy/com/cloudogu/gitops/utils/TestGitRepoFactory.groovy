@@ -14,17 +14,13 @@ class TestGitRepoFactory extends GitRepoFactory {
     TestGitRepoFactory(Config config, FileSystemUtils fileSystemUtils) {
         super(config, fileSystemUtils)
     }
-    @Override
-    GitRepo getRepo(GitProvider scm, String repoTarget){
-        return getRepo(repoTarget,false)
-    }
 
     @Override
-    GitRepo getRepo(GitProvider scm, String repoTarget, Boolean centralRepo) {
+    GitRepo getRepo(String repoTarget,GitProvider scm) {
         // Check if we already have a mock for this repo
         GitRepo repo = repos[repoTarget]
         // Check if we already have a mock for this repo
-        if (repo != null && repo.isCentralRepo == centralRepo) {
+        if (!repo) {
             return repo
         }
 

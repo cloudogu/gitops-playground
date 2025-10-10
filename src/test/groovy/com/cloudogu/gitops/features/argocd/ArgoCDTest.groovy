@@ -47,7 +47,7 @@ class ArgoCDTest {
                             tenantNamespaces   : ["example-apps-staging", "example-apps-production"]
                     ]
             ],
-            scmm: [
+            scm: [
                     internal: true,
                     url     : 'https://abc'
             ],
@@ -1947,10 +1947,6 @@ class ArgoCDTest {
             }
         }
 
-        @Override
-        protected CloneCommand gitClone() {
-            return gitCloneMock
-        }
     }
 
     private Map parseActualYaml(File folder, String file) {
