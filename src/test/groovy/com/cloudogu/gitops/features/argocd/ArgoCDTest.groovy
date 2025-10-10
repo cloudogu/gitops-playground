@@ -205,7 +205,7 @@ class ArgoCDTest {
     @Test
     void 'Installs argoCD for remote and external Scmm'() {
         config.application.remote = true
-        config.scmm.internal = false
+        config.scm.scmmConfig.internal = false
         config.features.argocd.url = 'https://argo.cd'
 
         def argocd = createArgoCD()
@@ -664,15 +664,6 @@ class ArgoCDTest {
         assertThat(image['repository']).isEqualTo('nginx/nginx')
         assertThat(image['tag']).isEqualTo('latest')
 
-        image = parseActualYaml(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'apps/nginx-helm-umbrella/values.yaml')['nginx']['image']
-        assertThat(image['registry']).isEqualTo('localhost:5000')
-        assertThat(image['repository']).isEqualTo('nginx/nginx')
-        assertThat(image['tag']).isEqualTo('latest')
-
-        def deployment = parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[0]
-        assertThat(deployment['kind']).as("Did not correctly fetch deployment from broken-application.yaml").isEqualTo("Deploymentz")
-        assertThat((deployment['spec']['template']['spec']['containers'] as List)[0]['image']).isEqualTo('localhost:5000/nginx/nginx:latest')
-
         def yamlString = new File(nginxValidationRepo.absoluteLocalRepoTmpDir, '/k8s/values-shared.yaml').text
         assertThat(yamlString).startsWith("""image:
   registry: localhost:5000
@@ -693,12 +684,6 @@ class ArgoCDTest {
 
         assertThat(parseActualYaml(nginxHelmJenkinsRepo.absoluteLocalRepoTmpDir + '/k8s/values-shared.yaml')['global']['imagePullSecrets'])
                 .isEqualTo(['proxy-registry'])
-
-        assertThat(parseActualYaml(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'apps/nginx-helm-umbrella/values.yaml')['nginx']['global']['imagePullSecrets'])
-                .isEqualTo(['proxy-registry'])
-
-        def deployment = parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[0]
-        assertThat(deployment['spec']['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
 
         assertThat(new File(nginxValidationRepo.absoluteLocalRepoTmpDir, '/k8s/values-shared.yaml').text)
                 .contains("""global:

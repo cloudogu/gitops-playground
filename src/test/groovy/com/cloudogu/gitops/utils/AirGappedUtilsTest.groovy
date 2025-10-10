@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.providers.scmmanager.Permission
 import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
@@ -35,10 +36,11 @@ class AirGappedUtilsTest {
     ])
 
     Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
-    TestGitRepoFactory scmmRepoProvider = new TestGitRepoFactory(config, new FileSystemUtils())
+    TestGitRepoFactory gitRepoFactory = new TestGitRepoFactory(config, new FileSystemUtils())
     FileSystemUtils fileSystemUtils = new FileSystemUtils()
     TestScmManagerApiClient scmmApiClient = new TestScmManagerApiClient(config)
     HelmClient helmClient = mock(HelmClient)
+    GitHandler gitHandler = mock(GitHandler)
 
     @BeforeEach
     void setUp() {
@@ -77,7 +79,7 @@ class AirGappedUtilsTest {
         setupForAirgappedUse(null, [])
         createAirGappedUtils().mirrorHelmRepoToGit(helmConfig)
 
-        GitRepo prometheusRepo = scmmRepoProvider.repos['3rd-party-dependencies/kube-prometheus-stack']
+        GitRepo prometheusRepo = gitRepoFactory.repos['3rd-party-dependencies/kube-prometheus-stack']
         def actualPrometheusChartYaml = new YamlSlurper().parse(Path.of(prometheusRepo.absoluteLocalRepoTmpDir, 'Chart.yaml'))
 
         def dependencies = actualPrometheusChartYaml['dependencies']
@@ -154,7 +156,7 @@ class AirGappedUtilsTest {
     }
 
     protected void assertAirGapped() {
-        GitRepo prometheusRepo = scmmRepoProvider.repos['3rd-party-dependencies/kube-prometheus-stack']
+        GitRepo prometheusRepo = gitRepoFactory.repos['3rd-party-dependencies/kube-prometheus-stack']
         assertThat(prometheusRepo).isNotNull()
         assertThat(Path.of(prometheusRepo.absoluteLocalRepoTmpDir, 'Chart.lock')).doesNotExist()
 
@@ -189,6 +191,6 @@ class AirGappedUtilsTest {
     }
 
     AirGappedUtils createAirGappedUtils() {
-        new AirGappedUtils(config, scmmRepoProvider, scmmApiClient, fileSystemUtils, helmClient,null)
+        new AirGappedUtils(config, gitRepoFactory, fileSystemUtils, helmClient, gitHandler)
     }
 }

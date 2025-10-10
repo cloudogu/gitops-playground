@@ -30,13 +30,4 @@ class GitlabTest {
 //            parentGroup: 19
 //    )
 
-    @BeforeEach
-    void setUp() {
-        when(gitLabApiMock.getGroupApi()).thenReturn(groupApiMock)
-        gitlab = new Gitlab(this.config, gitlabConfig) {
-            {
-                this.gitlabApi = gitLabApiMock;
-            }
-        }
-    }
 }

@@ -191,6 +191,10 @@ class GitRepo {
                 .setCredentialsProvider(getCredentialProvider())
     }
 
+    String getGitRepositoryUrl(){
+        return this.gitProvider.computePushUrl(repoTarget)
+    }
+
     private Git getGit() {
         if (gitMemoization != null) {
             return gitMemoization

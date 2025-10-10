@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepoFactory
 import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
 import com.cloudogu.gitops.utils.*
@@ -46,6 +47,7 @@ class ContentLoaderTest {
     TestGitRepoFactory scmmRepoProvider = new TestGitRepoFactory(config, new FileSystemUtils())
     TestScmManagerApiClient scmmApiClient = new TestScmManagerApiClient(config)
     Jenkins jenkins = mock(Jenkins.class)
+    GitHandler gitHandler = mock(GitHandler.class)
 
     @TempDir
     File tmpDir
@@ -149,7 +151,7 @@ class ContentLoaderTest {
 
         config.content.repos = contentRepos
 
-        def repos =createContent().cloneContentRepos()
+        def repos = createContent().cloneContentRepos()
 
         expectedTargetRepos.each { expected ->
             assertThat(new File(findRoot(repos), "${expected.namespace}/${expected.repoName}/file")).exists().isFile()
@@ -178,7 +180,7 @@ class ContentLoaderTest {
         ]
         config.content.variables.someapp = [somevalue: 'this is a custom variable']
 
-        def repos =createContent().cloneContentRepos()
+        def repos = createContent().cloneContentRepos()
 
         // Assert Templating
         assertThat(new File(findRoot(repos), "common/repo/some.yaml")).exists()
@@ -212,7 +214,7 @@ class ContentLoaderTest {
                 new ContentRepositorySchema(url: createContentRepo('', 'git-repository-with-branches-tags'), ref: 'someBranch', type: ContentRepoType.COPY, target: 'common/branch')
         ]
 
-        def repos =createContent().cloneContentRepos()
+        def repos = createContent().cloneContentRepos()
 
         assertThat(new File(findRoot(repos), "common/tag/README.md")).exists().isFile()
         assertThat(new File(findRoot(repos), "common/tag/README.md").text).contains("someTag")
@@ -230,7 +232,7 @@ class ContentLoaderTest {
                 new ContentRepositorySchema(url: createContentRepo('', 'git-repo-different-default-branch'), target: 'common/default', type: ContentRepoType.COPY),
         ]
 
-        def repos =createContent().cloneContentRepos()
+        def repos = createContent().cloneContentRepos()
 
         assertThat(new File(findRoot(repos), "common/default/README.md")).exists().isFile()
         assertThat(new File(findRoot(repos), "common/default/README.md").text).contains("different")
@@ -244,7 +246,7 @@ class ContentLoaderTest {
         ]
 
         def exception = shouldFail(RuntimeException) {
-           createContent().cloneContentRepos()
+            createContent().cloneContentRepos()
         }
         assertThat(exception.message).startsWith("Reference 'does/not/exist' not found in content repository")
     }
@@ -259,7 +261,7 @@ class ContentLoaderTest {
                 new ContentRepositorySchema(url: createContentRepo('copyRepo1'), ref: 'main', type: ContentRepoType.COPY, target: 'common/repo'),
         ]
 
-        def repos =createContent().cloneContentRepos()
+        def repos = createContent().cloneContentRepos()
 
         assertThat(new File(findRoot(repos), "common/repo/file").text).contains("copyRepo1")
         // Last repo "wins"
@@ -571,14 +573,14 @@ class ContentLoaderTest {
         createContent().install()
 
         def expectedRepo = 'common/repo'
-        def repo = scmmRepoProvider.getRepo(expectedRepo,null)
+        def repo = scmmRepoProvider.getRepo(expectedRepo, null)
 
         String url = repo.getGitRepositoryUrl()
         // clone repo, to ensure, changes in remote repo.
         try (def git = Git.cloneRepository().setURI(url).setBranch('main').setDirectory(tmpDir).call()) {
 
 
-            verify(repo).create(eq(''),  any(ScmManagerApiClient), eq(false))
+            verify(repo).create(eq(''), any(ScmManagerApiClient), eq(false))
 
             def commitMsg = git.log().call().iterator().next().getFullMessage()
             assertThat(commitMsg).isEqualTo("Initialize content repo ${expectedRepo}".toString())
@@ -632,14 +634,14 @@ class ContentLoaderTest {
         createContent().install()
 
         def expectedRepo = 'common/repo'
-        def repo = scmmRepoProvider.getRepo(expectedRepo)
+        def repo = scmmRepoProvider.getRepo(expectedRepo, null)
 
         def url = repo.getGitRepositoryUrl()
         // clone repo, to ensure, changes in remote repo.
         try (def git = Git.cloneRepository().setURI(url).setBranch('main').setDirectory(tmpDir).call()) {
 
 
-            verify(repo).create(eq(''),  any(ScmManagerApiClient), eq(false))
+            verify(repo).create(eq(''), any(ScmManagerApiClient), eq(false))
 
             def commitMsg = git.log().call().iterator().next().getFullMessage()
             assertThat(commitMsg).isEqualTo("Initialize content repo ${expectedRepo}".toString())
@@ -694,13 +696,13 @@ class ContentLoaderTest {
         createContent().install()
 
         def expectedRepo = 'common/repo'
-        def repo = scmmRepoProvider.getRepo(expectedRepo)
+        def repo = scmmRepoProvider.getRepo(expectedRepo, null)
 
         def url = repo.getGitRepositoryUrl()
         // clone repo, to ensure, changes in remote repo.
         try (def git = Git.cloneRepository().setURI(url).setBranch('main').setDirectory(tmpDir).call()) {
 
-            verify(repo).create(eq(''),  any(ScmManagerApiClient), eq(false))
+            verify(repo).create(eq(''), any(ScmManagerApiClient), eq(false))
 
             def commitMsg = git.log().call().iterator().next().getFullMessage()
             assertThat(commitMsg).isEqualTo("Initialize content repo ${expectedRepo}".toString())
@@ -852,7 +854,7 @@ class ContentLoaderTest {
     }
 
     private ContentLoaderForTest createContent() {
-        new ContentLoaderForTest(config, k8sClient, scmmRepoProvider, scmmApiClient, jenkins)
+        new ContentLoaderForTest(config, k8sClient, scmmRepoProvider, jenkins, gitHandler)
     }
 
     private static parseActualYaml(File pathToYamlFile) {
@@ -867,7 +869,7 @@ class ContentLoaderTest {
     }
 
     Git cloneRepo(String expectedRepo, File repoFolder) {
-        def repo = scmmRepoProvider.getRepo(expectedRepo)
+        def repo = scmmRepoProvider.getRepo(expectedRepo, null)
         def url = repo.getGitRepositoryUrl()
 
         def git = Git.cloneRepository().setURI(url).setBranch('main').setDirectory(repoFolder).call()
@@ -905,11 +907,12 @@ class ContentLoaderTest {
             assertThat(new File(repoFolder, "README.md").text).contains(expectedReadmeContent)
         }
     }
+
     class ContentLoaderForTest extends ContentLoader {
         CloneCommand cloneSpy
 
-        ContentLoaderForTest(Config config, K8sClient k8sClient, GitRepoFactory repoProvider, ScmManagerApiClient scmmApiClient, Jenkins jenkins) {
-            super(config, k8sClient, repoProvider, scmmApiClient, jenkins)
+        ContentLoaderForTest(Config config, K8sClient k8sClient, GitRepoFactory repoProvider, Jenkins jenkins, GitHandler gitHandler) {
+            super(config, k8sClient, repoProvider, jenkins, gitHandler)
         }
 
         @Override
