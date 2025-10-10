@@ -571,9 +571,9 @@ class ContentLoaderTest {
         createContent().install()
 
         def expectedRepo = 'common/repo'
-        def repo = scmmRepoProvider.getRepo(expectedRepo)
+        def repo = scmmRepoProvider.getRepo(expectedRepo,null)
 
-        def url = repo.getGitRepositoryUrl()
+        String url = repo.getGitRepositoryUrl()
         // clone repo, to ensure, changes in remote repo.
         try (def git = Git.cloneRepository().setURI(url).setBranch('main').setDirectory(tmpDir).call()) {
 

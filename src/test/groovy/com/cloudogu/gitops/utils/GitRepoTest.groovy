@@ -250,6 +250,6 @@ class GitRepoTest {
     }
     
     private GitRepo createRepo(String repoTarget = "${expectedNamespace}/${expectedRepo}") {
-        return scmmRepoProvider.getRepo(repoTarget)
+        return scmmRepoProvider.getRepo(repoTarget,null)
     }
 }

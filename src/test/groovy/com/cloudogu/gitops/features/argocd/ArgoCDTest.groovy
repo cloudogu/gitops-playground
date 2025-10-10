@@ -1731,28 +1731,20 @@ class ArgoCDTest {
     @Test
     void 'If using mirror with GitLab, ensure source repos in cluster-resources got right URL'() {
         config.application.mirrorRepos = true
-        config.scm.scmProviderType = 'gitlab'
-
+        config.scm.scmProviderType = 'GITLAB'
+        config.scm.gitlabConfig.url='https://testGitLab.com/testgroup/'
         createArgoCD().install()
 
         def clusterRessourcesYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/cluster-resources.yaml')
         clusterRessourcesYaml['spec']['sourceRepos']
 
         assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains(
-                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/kube-prometheus-stack.git',
-                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/mailhog.git',
-                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/ingress-nginx.git',
-                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/external-secrets.git',
-                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/vault.git',
-                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/cert-manager.git'
-        )
-        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain(
-                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack',
-                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/mailhog',
-                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/ingress-nginx',
-                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/external-secrets',
-                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/vault',
-                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/cert-manager'
+                'https://testGitLab.com/testgroup/3rd-party-dependencies/kube-prometheus-stack.git',
+                'https://testGitLab.com/testgroup/3rd-party-dependencies/mailhog.git',
+                'https://testGitLab.com/testgroup/3rd-party-dependencies/ingress-nginx.git',
+                'https://testGitLab.com/testgroup/3rd-party-dependencies/external-secrets.git',
+                'https://testGitLab.com/testgroup/3rd-party-dependencies/vault.git',
+                'https://testGitLab.com/testgroup/3rd-party-dependencies/cert-manager.git'
         )
     }
 
@@ -1760,7 +1752,7 @@ class ArgoCDTest {
     @Test
     void 'If using mirror with GitLab with prefix, ensure source repos in cluster-resources got right URL'() {
         config.application.mirrorRepos = true
-        config.scm.scmProviderType = 'gitlab'
+        config.scm.scmProviderType = 'GITLAB'
         config.application.namePrefix = 'test1-'
 
         createArgoCD().install()
@@ -1769,12 +1761,12 @@ class ArgoCDTest {
         clusterRessourcesYaml['spec']['sourceRepos']
 
         assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains(
-                'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/kube-prometheus-stack.git',
-                'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/mailhog.git',
-                'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/ingress-nginx.git',
-                'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/external-secrets.git',
-                'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/vault.git',
-                'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/cert-manager.git'
+                'https://testGitLab.com/testgroup/3rd-party-dependencies/kube-prometheus-stack.git',
+                'https://testGitLab.com/testgroup/3rd-party-dependencies/mailhog.git',
+                'https://testGitLab.com/testgroup/3rd-party-dependencies/ingress-nginx.git',
+                'https://testGitLab.com/testgroup/3rd-party-dependencies/external-secrets.git',
+                'https://testGitLab.com/testgroup/3rd-party-dependencies/vault.git',
+                'https://testGitLab.com/testgroup/3rd-party-dependencies/cert-manager.git'
         )
 
         assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain(
@@ -1819,9 +1811,9 @@ class ArgoCDTest {
 
     void setup() {
         config.application.namePrefix = 'testPrefix-'
-        config.multiTenant.centralScmUrl = 'scmm.testhost/scm'
-        config.multiTenant.username = 'testUserName'
-        config.multiTenant.password = 'testPassword'
+        config.multiTenant.scmmConfig.url = 'scmm.testhost/scm'
+        config.multiTenant.scmmConfig.username = 'testUserName'
+        config.multiTenant.scmmConfig.password = 'testPassword'
         config.multiTenant.useDedicatedInstance = true
 
         this.argocd = setupOperatorTest()
@@ -1936,14 +1928,6 @@ class ArgoCDTest {
             clusterResourcesRepo = clusterResourcesInitializationAction.repo
             if (config.multiTenant.useDedicatedInstance) {
                 tenantBootstrap = tenantBootstrapInitializationAction.repo
-            }
-
-            if (config.content.examples) {
-                exampleAppsRepo = exampleAppsInitializationAction.repo
-                nginxHelmJenkinsRepo = nginxHelmJenkinsInitializationAction.repo
-                nginxValidationRepo = nginxValidationInitializationAction.repo
-                brokenApplicationRepo = brokenApplicationInitializationAction.repo
-                petClinicRepos = petClinicInitializationActions.collect { it.repo }
             }
         }
 

@@ -104,7 +104,7 @@ class ApplicationConfiguratorTest {
     void 'Fails if jenkins is external and scmm is internal or the other way round'() {
         testConfig.jenkins.active = true
         testConfig.jenkins.url = 'external'
-        testConfig.scmm.url = ''
+        testConfig.scm.scmmConfig.url = ''
 
         def exception = shouldFail(RuntimeException) {
             applicationConfigurator.validateConfig(testConfig)
@@ -112,7 +112,7 @@ class ApplicationConfiguratorTest {
         assertThat(exception.message).isEqualTo('When setting jenkins URL, scmm URL must also be set and the other way round')
 
         testConfig.jenkins.url = ''
-        testConfig.scmm.url = 'external'
+        testConfig.scm.scmmConfig.url = 'external'
 
         exception = shouldFail(RuntimeException) {
             applicationConfigurator.validateConfig(testConfig)

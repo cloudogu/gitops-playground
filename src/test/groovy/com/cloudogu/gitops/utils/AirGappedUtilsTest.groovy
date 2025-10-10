@@ -2,6 +2,8 @@ package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.git.GitRepo
+import com.cloudogu.gitops.git.providers.scmmanager.Permission
+import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
 import groovy.yaml.YamlSlurper
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Ref
@@ -20,18 +22,18 @@ class AirGappedUtilsTest {
 
     Config config = new Config(
             application: new Config.ApplicationSchema(
-                    localHelmChartFolder : '',
-                    gitName : 'Cloudogu',
-                    gitEmail : 'hello@cloudogu.com',
+                    localHelmChartFolder: '',
+                    gitName: 'Cloudogu',
+                    gitEmail: 'hello@cloudogu.com',
             )
     )
 
-    Config.HelmConfig helmConfig = new Config.HelmConfig( [
+    Config.HelmConfig helmConfig = new Config.HelmConfig([
             chart  : 'kube-prometheus-stack',
             repoURL: 'https://kube-prometheus-stack-repo-url',
             version: '58.2.1'
     ])
-    
+
     Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
     TestGitRepoFactory scmmRepoProvider = new TestGitRepoFactory(config, new FileSystemUtils())
     FileSystemUtils fileSystemUtils = new FileSystemUtils()
@@ -45,13 +47,13 @@ class AirGappedUtilsTest {
         when(scmmApiClient.repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(response)
 
     }
-    
+
     @Test
     void 'Prepares repos for air-gapped use'() {
         setupForAirgappedUse()
 
         def actualRepoNamespaceAndName = createAirGappedUtils().mirrorHelmRepoToGit(helmConfig)
-        
+
         assertThat(actualRepoNamespaceAndName).isEqualTo(
                 "${GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/kube-prometheus-stack".toString())
         assertAirGapped()
@@ -78,10 +80,10 @@ class AirGappedUtilsTest {
         GitRepo prometheusRepo = scmmRepoProvider.repos['3rd-party-dependencies/kube-prometheus-stack']
         def actualPrometheusChartYaml = new YamlSlurper().parse(Path.of(prometheusRepo.absoluteLocalRepoTmpDir, 'Chart.yaml'))
 
-        def dependencies = actualPrometheusChartYaml['dependencies'] 
+        def dependencies = actualPrometheusChartYaml['dependencies']
         assertThat(dependencies).isNull()
     }
-    
+
     @Test
     void 'Fails for invalid helm charts'() {
         setupForAirgappedUse()
@@ -92,7 +94,7 @@ class AirGappedUtilsTest {
         def exception = shouldFail(RuntimeException) {
             createAirGappedUtils().mirrorHelmRepoToGit(helmConfig)
         }
-        
+
         assertThat(exception.getMessage()).isEqualTo(
                 "Helm chart in folder ${rootChartsFolder}/kube-prometheus-stack seems invalid.".toString())
         assertThat(exception.getCause()).isSameAs(expectedException)
@@ -106,10 +108,10 @@ class AirGappedUtilsTest {
                 name        : 'kube-prometheus-stack-chart',
                 dependencies: [
                         [
-                                condition: 'crds.enabled',
-                                name: 'crds',
+                                condition : 'crds.enabled',
+                                name      : 'crds',
                                 repository: '',
-                                version: '0.0.0'
+                                version   : '0.0.0'
                         ],
                         [
                                 condition : 'grafana.enabled',
@@ -119,7 +121,7 @@ class AirGappedUtilsTest {
                         ]
                 ]
         ]
-        
+
         if (dependencies != null) {
             if (dependencies.isEmpty()) {
                 prometheusChartYaml.remove('dependencies')
@@ -127,21 +129,21 @@ class AirGappedUtilsTest {
                 prometheusChartYaml.dependencies = dependencies
             }
         }
-        
+
         fileSystemUtils.writeYaml(prometheusChartYaml, sourceChart.resolve('Chart.yaml').toFile())
 
-        if(chartLock == null) {
+        if (chartLock == null) {
             chartLock = [
                     dependencies: [
                             [
-                                    name: 'crds',
+                                    name      : 'crds',
                                     repository: "",
-                                    version: '0.0.0'
+                                    version   : '0.0.0'
                             ],
                             [
-                                    name: 'grafana',
+                                    name      : 'grafana',
                                     repository: 'https://grafana.github.io/helm-charts',
-                                    version: '7.3.9'
+                                    version   : '7.3.9'
                             ]
                     ]
             ]
@@ -187,6 +189,6 @@ class AirGappedUtilsTest {
     }
 
     AirGappedUtils createAirGappedUtils() {
-        new AirGappedUtils(config, scmmRepoProvider, scmmApiClient, fileSystemUtils, helmClient)
+        new AirGappedUtils(config, scmmRepoProvider, scmmApiClient, fileSystemUtils, helmClient,null)
     }
 }

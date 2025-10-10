@@ -156,10 +156,10 @@ me:x:1000:''')
         config.application.trace = true
         config.features.argocd.active = true
         config.content.examples = true
-        config.scmm.url = 'http://scmm'
-        config.scmm.urlForJenkins ='http://scmm/scm'
-        config.scmm.username = 'scmm-usr'
-        config.scmm.password = 'scmm-pw'
+        config.scm.scmmConfig.url = 'http://scmm'
+        config.scm.scmmConfig.urlForJenkins ='http://scmm/scm'
+        config.scm.scmmConfig.username = 'scmm-usr'
+        config.scm.scmmConfig.password = 'scmm-pw'
         config.application.namePrefix = 'my-prefix-'
         config.application.namePrefixForEnvVars = 'MY_PREFIX_'
         config.registry.url = 'reg-url'

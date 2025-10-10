@@ -24,7 +24,7 @@ class GitRepo {
     final GitProvider gitProvider
     private final FileSystemUtils fileSystemUtils
 
-    private final String repoTarget        // before scmmRepoTarget (neutral)
+    private final String repoTarget
     private final boolean isCentralRepo
     private final boolean insecure
     private final String gitName
@@ -40,7 +40,7 @@ class GitRepo {
         this.config = config
         this.gitProvider = gitProvider
         this.fileSystemUtils = fileSystemUtils
-        this.isCentralRepo = isCentralRepo
+        this.isCentralRepo = isCentralRepo //TODO do we need this?
 
         this.repoTarget = repoTarget.startsWith(NAMESPACE_3RD_PARTY_DEPENDENCIES) ? repoTarget :
                 "${config.application.namePrefix}${repoTarget}"

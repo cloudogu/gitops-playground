@@ -27,7 +27,7 @@ class ScmManagerTest {
                     gitEmail: 'hello@cloudogu.com',
                     runningInsideK8s : true
             ),
-            scmm: new ScmTenantSchema.ScmManagerTenantConfig(
+            scm: new ScmTenantSchema( scmmConfig: new ScmTenantSchema.ScmManagerTenantConfig(
                     url: 'http://scmm',
                     internal: true,
                     ingress: 'scmm.localhost',
@@ -41,7 +41,7 @@ class ScmManagerTest {
                             repoURL: 'https://packages.scm-manager.org/repository/helm-v2-releases/',
                             values: [:]
                     )
-            ),
+            )),
             jenkins: new Config.JenkinsSchema(
                     internal: true,
                     url: 'http://jenkins',
@@ -70,11 +70,11 @@ class ScmManagerTest {
 
     @Test
     void 'Installs SCMM and calls script with proper params'() {
-        config.scmm.username = 'scmm-usr'
+        config.scm.scmmConfig.username = 'scmm-usr'
         config.features.ingressNginx.active = true
         config.features.argocd.active = true
-        config.scmm.skipPlugins = true
-        config.scmm.skipRestart = true
+        config.scm.scmmConfig.skipPlugins = true
+        config.scm.scmmConfig.skipRestart = true
         createScmManager().install()
 
         assertThat(parseActualYaml()['extraEnv'] as String).contains('SCM_WEBAPP_INITIALUSER\n  value: "scmm-usr"')
@@ -121,7 +121,7 @@ class ScmManagerTest {
     @Test
     void 'Sets service and host only if enabled'() {
         config.application.remote = true
-        config.scmm.ingress = ''
+        config.scm.scmmConfig.ingress = ''
         createScmManager().install()
 
         Map actualYaml = parseActualYaml() as Map
@@ -132,7 +132,7 @@ class ScmManagerTest {
 
     @Test
     void 'Installs only if internal'() {
-        config.scmm.internal = false
+        config.scm.scmmConfig.internal = false
         createScmManager().install()
 
         assertThat(temporaryYamlFile).isNull()
@@ -140,7 +140,7 @@ class ScmManagerTest {
 
     @Test
     void 'initialDelaySeconds is set properly'() {
-        config.scmm.helm.values = [
+        config.scm.scmmConfig.helm.values = [
                 livenessProbe: [
                         initialDelaySeconds: 140
                 ]
@@ -152,23 +152,23 @@ class ScmManagerTest {
 
     @Test
     void "URL: Use k8s service name if running as k8s pod"() {
-        config.scmm.internal = true
+        config.scm.scmmConfig.internal = true
         config.application.runningInsideK8s = true
         
         createScmManager().install()
-        assertThat(config.scmm.url).isEqualTo("http://scmm.foo-scm-manager.svc.cluster.local:80/scm")
+        assertThat(config.scm.scmmConfig.url).isEqualTo("http://scmm.foo-scm-manager.svc.cluster.local:80/scm")
     }
 
     @Test
     void "URL: Use local ip and nodePort when outside of k8s"() {
-        config.scmm.internal = true
+        config.scm.scmmConfig.internal = true
         config.application.runningInsideK8s = false
 
         when(networkingUtils.findClusterBindAddress()).thenReturn('192.168.16.2')
         when(k8sClient.waitForNodePort(anyString(), anyString())).thenReturn('42')
         
         createScmManager().install()
-        assertThat(config.scmm.url).endsWith('192.168.16.2:42/scm')
+        assertThat(config.scm.scmmConfig.url).endsWith('192.168.16.2:42/scm')
     }
     
     protected Map<String, String> getEnvAsMap() {
