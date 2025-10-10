@@ -42,15 +42,14 @@ class ScmManagerSetup extends Feature {
         this.k8sClient = k8sClient
         this.networkingUtils = networkingUtils
 
-        if(config.scm.isInternal) {
+        if(config.scm.internal) {
             this.namespace = "${config.application.namePrefix}scm-manager"
         }
     }
 
     @Override
     boolean isEnabled() {
-//        return config.scm.scmProviderType == ScmProviderType.SCM_MANAGER
-        return false
+        return config.scm.scmProviderType == ScmProviderType.SCM_MANAGER
     }
 
     @Override

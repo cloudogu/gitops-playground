@@ -96,8 +96,9 @@ class ScmManager implements GitProvider {
 
     /** In-cluster repo prefix: …/scm/<rootPath>/[<namePrefix>] */
     @Override
-    String computeRepoPrefixUrlForInCluster(boolean includeNamePrefix) {
-        return urls.inClusterRepoPrefix(includeNamePrefix)
+    String computeRepoPrefixUrlForInCluster(boolean includeNamePrefix) {        
+    
+    return urls.inClusterRepoPrefix(includeNamePrefix)
     }
 
     /** In-cluster pull: …/scm/<rootPath>/<ns>/<name> */
@@ -149,6 +150,7 @@ class ScmManager implements GitProvider {
         }
         return true// because its created
     }
+
 
 
     //TODO when git abctraction feature is ready, we will create before merge to main a branch, that

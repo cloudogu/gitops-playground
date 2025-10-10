@@ -4,6 +4,7 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.git.config.ScmTenantSchema
 import com.cloudogu.gitops.git.GitRepo
+import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.utils.*
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
@@ -23,7 +24,7 @@ class PrometheusStackTest {
                     internal: true,
                     createImagePullSecrets: false
             ),
-            scmm: new ScmTenantSchema(
+            scm: new ScmTenantSchema(
                     internal: true
             ),
             jenkins: new Config.JenkinsSchema(internal: true,
@@ -287,8 +288,8 @@ policies:
 
     @Test
     void 'uses remote scmm url if requested'() {
-        config.scmm.internal = false
-        config.scmm.url = 'https://localhost:9091/prefix'
+        config.scm.scmmConfig.internal = false
+        config.scm.scmmConfig.url = 'https://localhost:9091/prefix'
         createStack().install()
 
 
@@ -604,16 +605,8 @@ matchExpressions:
         def configuration = config
         def repoProvider = new TestGitRepoFactory(config, new FileSystemUtils()) {
             @Override
-            GitRepo getRepo(String repoTarget) {
-                def repo = super.getRepo(repoTarget)
-                clusterResourcesRepoDir = new File(repo.getAbsoluteLocalRepoTmpDir())
-
-                return repo
-            }
-
-            @Override
-            GitRepo getRepo(String repoTarget, Boolean isCentralRepo) {
-                def repo = super.getRepo(repoTarget, isCentralRepo)
+            GitRepo getRepo(String repoTarget,GitProvider scm) {
+                def repo = super.getRepo(repoTarget,scm)
                 clusterResourcesRepoDir = new File(repo.getAbsoluteLocalRepoTmpDir())
 
                 return repo
@@ -628,7 +621,7 @@ matchExpressions:
                 temporaryYamlFilePrometheus = Path.of(ret.toString().replace(".ftl", ""))
                 return ret
             }
-        }, deploymentStrategy, k8sClient, airGappedUtils, repoProvider)
+        }, deploymentStrategy, k8sClient, airGappedUtils, repoProvider,null)
     }
 
     private Map parseActualYaml() {

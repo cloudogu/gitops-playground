@@ -1,13 +1,15 @@
 package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.git.config.ScmCentralSchema
+import com.cloudogu.gitops.features.git.config.ScmTenantSchema
 import com.cloudogu.gitops.git.GitRepo
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Ref
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
 import retrofit2.Call
+import com.cloudogu.gitops.git.providers.scmmanager.Permission
+import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
 
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
@@ -24,7 +26,7 @@ class GitRepoTest {
                     gitName: "Cloudogu",
                     gitEmail: "hello@cloudogu.com",)
             ,
-            scmm: new ScmCentralSchema.ScmManagerCentralConfig(
+            scm: new ScmTenantSchema.ScmManagerTenantConfig(
                     username: "dont-care-username",
                     password: "dont-care-password",
 //                    gitOpsUsername: 'foo-gitops' // TODO:
@@ -96,8 +98,8 @@ class GitRepoTest {
     @Test
     void 'Creates repo without name-prefix when in namespace 3rd-party-deps'() {
         config.application.namePrefix = 'abc-'
-        def repo = createRepo("${ScmmRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/foo")
-        assertThat(repo.scmmRepoTarget).isEqualTo("${ScmmRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/foo".toString())
+        def repo = createRepo("${GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/foo")
+        assertThat(repo.scmmRepoTarget).isEqualTo("${GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/foo".toString())
     }
 
     @Test

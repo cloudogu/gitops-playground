@@ -2,6 +2,7 @@ package com.cloudogu.gitops.scmm.api
 
 import com.cloudogu.gitops.common.MockWebServerHttpsFactory
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.git.providers.scmmanager.api.UsersApi
 import io.micronaut.context.ApplicationContext
 import io.micronaut.inject.qualifiers.Qualifiers
 import okhttp3.OkHttpClient
@@ -14,7 +15,7 @@ import retrofit2.Retrofit
 import javax.net.ssl.SSLHandshakeException
 
 import static groovy.test.GroovyAssert.shouldFail
-import static org.assertj.core.api.Assertions.assertThat 
+import static org.assertj.core.api.Assertions.assertThat
 
 class UsersApiTest {
     private MockWebServer webServer = new MockWebServer()
