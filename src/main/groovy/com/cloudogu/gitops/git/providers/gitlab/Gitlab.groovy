@@ -168,9 +168,10 @@ class Gitlab implements GitProvider {
         }
     }
 
-    private long parentGroupId() { parentGroup().id as Long }
 
-    private String parentFullPath() { parentGroup().fullPath }
+    private String parentFullPath() {
+        parentGroup().fullPath
+    }
 
     /** Ensure a single-level subgroup exists under 'parent'; return its namespace (group) ID. */
     private long ensureSubgroupUnderParentId(Group parent, String segPath) {

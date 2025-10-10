@@ -110,13 +110,13 @@ class ScmManager implements GitProvider {
     /** In-cluster repo prefix: …/scm/<rootPath>/[<namePrefix>] */
     @Override
     String computeRepoPrefixUrlForInCluster(boolean includeNamePrefix) {
-        def base = StringUtils.withSlash(baseForInCluster())    // service DNS oder ingress base
+        def base = withSlash(baseForInCluster())    // service DNS oder ingress base
         def root = StringUtils.trimBoth(scmmConfig.rootPath ?: "repo")
         def prefix =StringUtils.trimBoth(config.application.namePrefix ?: "")
-        def url = StringUtils.withSlash(base.resolve("scm/${root}")).toString()
+        def url = withSlash(base.resolve("scm/${root}")).toString()
         return includeNamePrefix && prefix
                 ? withoutTrailingSlash(URI.create(url + prefix)).toString()
-                : StringUtils.withSlash(URI.create(url)).toString()
+                : withSlash(URI.create(url)).toString()
     }
 
     /** In-cluster pull: …/scm/<rootPath>/<ns>/<name> */
@@ -124,7 +124,7 @@ class ScmManager implements GitProvider {
     String computeRepoUrlForInCluster(String repoTarget) {
         def rt =StringUtils.trimBoth(repoTarget)
         def root =StringUtils.trimBoth(scmmConfig.rootPath ?: "repo")
-        return withoutTrailingSlash(StringUtils.withSlash(baseForInCluster()).resolve("scm/${scmmConfig.rootPath}/${rt}/")).toString()
+        return withoutTrailingSlash(withSlash(baseForInCluster()).resolve("scm/${scmmConfig.rootPath}/${rt}/")).toString()
     }
 
 
@@ -143,7 +143,7 @@ class ScmManager implements GitProvider {
     /** …/scm/api/v2/metrics/prometheus — client-side, typically scraped externally */
     @Override
     URI prometheusMetricsEndpoint() {
-        return StringUtils.withSlash(base()).resolve("api/v2/metrics/prometheus")
+        return withSlash(base()).resolve("api/v2/metrics/prometheus")
     }
 
     // =========================================================================================
@@ -157,19 +157,19 @@ class ScmManager implements GitProvider {
 
     /** Client API base …/scm/api/ */
     private URI apiBase() {
-        return StringUtils.withSlash(base()).resolve("api/")
+        return withSlash(base()).resolve("api/")
     }
 
     /** Client: …/scm/<rootPath> (without trailing slash) */
     URI repoBaseForInClient() {
         def root =StringUtils.trimBoth(scmmConfig.rootPath ?: "repo")   // <— default & trim
-        return withoutTrailingSlash(StringUtils.withSlash(base()).resolve("${root}/"))
+        return withoutTrailingSlash(withSlash(base()).resolve("${root}/"))
     }
 
     /** Client: …/scm/<rootPath>/<ns>/<name> (without trailing slash) */
     URI repoUrlForClient(String repoTarget) {
         def trimmedRepoTarget =StringUtils.trimBoth(repoTarget)
-        return withoutTrailingSlash(StringUtils.withSlash(repoBaseForInClient()).resolve("${trimmedRepoTarget}/"))
+        return withoutTrailingSlash(withSlash(repoBaseForInClient()).resolve("${trimmedRepoTarget}/"))
     }
 
     // =========================================================================================
@@ -249,13 +249,16 @@ class ScmManager implements GitProvider {
     }
 
     private static URI withScm(URI uri) {
-        def uriWithSlash = StringUtils.withSlash(uri)
+        def uriWithSlash = withSlash(uri)
         def urlPath = uriWithSlash.path ?: ""
         def endsWithScm = urlPath.endsWith("/scm/")
         return endsWithScm ? uriWithSlash : uriWithSlash.resolve("scm/")
     }
 
-
+    private static URI withSlash(URI uri) {
+        def urlString = uri.toString()
+        return urlString.endsWith('/') ? uri : URI.create(urlString + '/')
+    }
 
     private static URI withoutTrailingSlash(URI uri) {
         def urlString = uri.toString()
