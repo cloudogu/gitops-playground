@@ -26,10 +26,6 @@ class ScmManager implements GitProvider {
         this.scmmApiClient = new ScmManagerApiClient(urls.clientApiBase().toString(), scmmConfig.credentials, config.application.insecure)
     }
 
-    // =========================================================================================
-    // 1) GIT OPERATIONS (repos, permissions, push, credentials, branch/user/delete, GitOps user)
-    // =========================================================================================
-
     // --- Git operations ---
     @Override
     boolean createRepository(String repoTarget, String description, boolean initialize) {
