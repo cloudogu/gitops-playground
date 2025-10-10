@@ -4,8 +4,9 @@ import com.cloudogu.gitops.config.Credentials
 
 interface GitlabConfig {
     String url
-    Credentials credentials
     String parentGroupId
     String defaultVisibility
     String gitOpsUsername
+
+    Credentials getCredentials()
 }

@@ -6,7 +6,6 @@ import com.cloudogu.gitops.features.git.config.util.ScmManagerConfig
 import com.cloudogu.gitops.git.providers.AccessRole
 import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.git.providers.Scope
-import com.cloudogu.gitops.git.utils.StringUtils
 import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
 import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
 import com.cloudogu.gitops.utils.K8sClient
@@ -17,29 +16,21 @@ import retrofit2.Response
 @Slf4j
 class ScmManager implements GitProvider {
 
-    private final String releaseName = 'scmm'
-
-    private final Config config
-    private final ScmManagerConfig scmmConfig
+    private final ScmManagerUrlResolver urls
     private final ScmManagerApiClient scmmApiClient
-    private final K8sClient k8sClient
-    private final NetworkingUtils networkingUtils
+    private final ScmManagerConfig scmmConfig
 
-    URI clusterBindAddress
-    //TODO unit tests für scmmanager rüberziehen und restlichen Sachen implementieren
     ScmManager(Config config, ScmManagerConfig scmmConfig, K8sClient k8sClient, NetworkingUtils networkingUtils) {
-        this.config = config
         this.scmmConfig = scmmConfig
-        this.k8sClient = k8sClient
-        this.networkingUtils = networkingUtils
-        this.scmmApiClient = new ScmManagerApiClient(apiBase().toString(), scmmConfig.credentials, config.application.insecure)
+        this.urls = new ScmManagerUrlResolver(config, scmmConfig, k8sClient, networkingUtils)
+        this.scmmApiClient = new ScmManagerApiClient(urls.clientApiBase().toString(), scmmConfig.credentials, config.application.insecure)
     }
-
 
     // =========================================================================================
     // 1) GIT OPERATIONS (repos, permissions, push, credentials, branch/user/delete, GitOps user)
     // =========================================================================================
 
+    // --- Git operations ---
     @Override
     boolean createRepository(String repoTarget, String description, boolean initialize) {
         def repoNamespace = repoTarget.split('/', 2)[0]
@@ -62,11 +53,10 @@ class ScmManager implements GitProvider {
         handle201or409(response, "Permission on ${repoNamespace}/${repoName}")
     }
 
-
     /** Client (this process) pushes to …/scm/<rootPath>/<ns>/<name> */
     @Override
     String computePushUrl(String repoTarget) {
-        return repoUrlForClient(repoTarget).toString()
+        return urls.clientRepoUrl(repoTarget).toString()
     }
 
     @Override
@@ -97,85 +87,44 @@ class ScmManager implements GitProvider {
         return scmmConfig.gitOpsUsername
     }
 
-    // =========================================================================================
-    // 2) IN-CLUSTER / PULL & ENDPOINTS (base URL, pull URL, prefix, protocol/host, Prometheus)
-    // =========================================================================================
-
+    // --- In-cluster / Endpoints ---
     /** In-cluster base …/scm (without trailing slash) */
     @Override
     String getUrl() {
-        return withoutTrailingSlash(withScm(baseForInCluster())).toString()
+        return urls.inClusterBase().toString()
     }
 
     /** In-cluster repo prefix: …/scm/<rootPath>/[<namePrefix>] */
     @Override
     String computeRepoPrefixUrlForInCluster(boolean includeNamePrefix) {
-        def base = StringUtils.withSlash(baseForInCluster())    // service DNS oder ingress base
-        def root = StringUtils.trimBoth(scmmConfig.rootPath ?: "repo")
-        def prefix =StringUtils.trimBoth(config.application.namePrefix ?: "")
-        def url = StringUtils.withSlash(base.resolve("scm/${root}")).toString()
-        return includeNamePrefix && prefix
-                ? withoutTrailingSlash(URI.create(url + prefix)).toString()
-                : StringUtils.withSlash(URI.create(url)).toString()
+        return urls.inClusterRepoPrefix(includeNamePrefix)
     }
 
     /** In-cluster pull: …/scm/<rootPath>/<ns>/<name> */
     @Override
     String computeRepoUrlForInCluster(String repoTarget) {
-        def rt =StringUtils.trimBoth(repoTarget)
-        def root =StringUtils.trimBoth(scmmConfig.rootPath ?: "repo")
-        return withoutTrailingSlash(StringUtils.withSlash(baseForInCluster()).resolve("scm/${scmmConfig.rootPath}/${rt}/")).toString()
+        return urls.inClusterRepoUrl(repoTarget)
     }
-
 
     @Override
     String getProtocol() {
-        return baseForInCluster().toString()
+        return urls.inClusterBase().scheme   // e.g. "http"
     }
 
     @Override
     String getHost() {
         //in main before:  host : config.scmm.internal ? "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local" : config.scmm.host(host was config.scmm.url),
-        return baseForInCluster().toString()
+        return urls.inClusterBase().host // e.g. "scmm.ns.svc.cluster.local"
     }
 
 
     /** …/scm/api/v2/metrics/prometheus — client-side, typically scraped externally */
     @Override
     URI prometheusMetricsEndpoint() {
-        return StringUtils.withSlash(base()).resolve("api/v2/metrics/prometheus")
+        return urls.prometheusEndpoint()
     }
 
-    // =========================================================================================
-    // 3) URI BUILDING — Client
-    // =========================================================================================
-
-    /** Client base …/scm (without trailing slash) */
-    URI base() {
-        return withoutTrailingSlash(withScm(baseForClient()))
-    }
-
-    /** Client API base …/scm/api/ */
-    private URI apiBase() {
-        return StringUtils.withSlash(base()).resolve("api/")
-    }
-
-    /** Client: …/scm/<rootPath> (without trailing slash) */
-    URI repoBaseForInClient() {
-        def root =StringUtils.trimBoth(scmmConfig.rootPath ?: "repo")   // <— default & trim
-        return withoutTrailingSlash(StringUtils.withSlash(base()).resolve("${root}/"))
-    }
-
-    /** Client: …/scm/<rootPath>/<ns>/<name> (without trailing slash) */
-    URI repoUrlForClient(String repoTarget) {
-        def trimmedRepoTarget =StringUtils.trimBoth(repoTarget)
-        return withoutTrailingSlash(StringUtils.withSlash(repoBaseForInClient()).resolve("${trimmedRepoTarget}/"))
-    }
-
-    // =========================================================================================
-    // 4) HELPERS & BASE RESOLUTION
-    // =========================================================================================
-
+    // --- helpers ---
     private static Permission.Role mapToScmManager(AccessRole role) {
         switch (role) {
             case AccessRole.READ: return Permission.Role.READ
@@ -189,7 +138,6 @@ class ScmManager implements GitProvider {
         }
     }
 
-
     private static boolean handle201or409(Response<?> response, String what) {
         int code = response.code()
         if (code == 409) {
@@ -201,67 +149,6 @@ class ScmManager implements GitProvider {
         }
         return true// because its created
     }
-
-
-    /** Base for *this process* (API client, local git operations) */
-    private URI baseForClient() {
-        if (Boolean.TRUE == scmmConfig.isInternal()) {
-            return config.application.runningInsideK8s ? serviceDnsBase() : hostAccessBase()
-        } else {
-            return externalBase()
-        }
-    }
-
-
-    /** Base for *in-cluster* consumers (Argo CD, jobs) */
-    URI baseForInCluster() {
-        return scmmConfig.internal ? serviceDnsBase() : externalBase()
-    }
-
-
-    private URI serviceDnsBase() {
-        return URI.create("http://scmm.${scmmConfig.namespace}.svc.cluster.local")
-    }
-
-    private URI externalBase() {
-        // 1) prefer full URL (with scheme)
-        def urlString = (scmmConfig.url ?: "").strip()
-        if (urlString) return URI.create(urlString)
-
-        // 2) otherwise, ingress host (no scheme), default to http
-        def ingressHost = (scmmConfig.ingress ?: "").strip()
-        if (ingressHost) return URI.create("http://${ingressHost}")
-
-        // 3) hard fail — when internal=false one of the above must be set
-        throw new IllegalArgumentException(
-                "Either scmmConfig.url or scmmConfig.ingress must be set when internal=false"
-        )
-    }
-
-    private URI hostAccessBase() {
-        if(this.clusterBindAddress){
-            return this.clusterBindAddress
-        }
-        final def port = k8sClient.waitForNodePort(releaseName, scmmConfig.namespace)
-        final def host = networkingUtils.findClusterBindAddress()
-        this.clusterBindAddress=new URI("http://${host}:${port}")
-        return this.clusterBindAddress
-    }
-
-    private static URI withScm(URI uri) {
-        def uriWithSlash = StringUtils.withSlash(uri)
-        def urlPath = uriWithSlash.path ?: ""
-        def endsWithScm = urlPath.endsWith("/scm/")
-        return endsWithScm ? uriWithSlash : uriWithSlash.resolve("scm/")
-    }
-
-
-
-    private static URI withoutTrailingSlash(URI uri) {
-        def urlString = uri.toString()
-        return urlString.endsWith('/') ? URI.create(urlString.substring(0, urlString.length() - 1)) : uri
-    }
-
 
 
     //TODO when git abctraction feature is ready, we will create before merge to main a branch, that

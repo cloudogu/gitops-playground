@@ -12,8 +12,9 @@ interface ScmManagerConfig {
     String namespace
     String ingress
     Config.HelmConfigWithValues helm
-    Credentials getCredentials()
     String rootPath
     Boolean insecure
     String gitOpsUsername
+
+    Credentials getCredentials()
 }
