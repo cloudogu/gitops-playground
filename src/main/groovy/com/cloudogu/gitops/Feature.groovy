@@ -1,11 +1,9 @@
 package com.cloudogu.gitops
 
-import com.cloudogu.gitops.utils.MapUtils
+import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
-
-import java.nio.file.Path
 
 /**
  * A single tool to be deployed by GOP.
@@ -86,4 +84,15 @@ abstract class Feature {
      */
     protected void validate() { }
 
+    /**
+     * Hook for preConfigValidation. Optional.
+     * Feature should throw RuntimeException to stop immediately.
+     */
+    void preConfigValidation(Config configToSet) { }
+
+    /**
+     * Hook for postConfigValidation. Optional.
+     * Feature should throw RuntimeException to stop immediately.
+     */
+    void postConfigValidation(Config configToSet) { }
 }

@@ -78,6 +78,48 @@ class Content extends Feature {
 
     }
 
+    @Override
+    void preConfigValidation(Config configToSet) {
+        config.content.repos.each { repo ->
+
+            if (!repo.url) {
+                throw new RuntimeException("content.repos requires a url parameter.")
+            }
+            if (repo.target) {
+                if (repo.target.count('/') == 0) {
+                    throw new RuntimeException("content.target needs / to separate namespace/group from repo name. Repo: ${repo.url}")
+                }
+            }
+
+            switch (repo.type) {
+                case ContentRepoType.COPY:
+                    if (!repo.target) {
+                        throw new RuntimeException("content.repos.type ${ContentRepoType.COPY} requires content.repos.target to be set. Repo: ${repo.url}")
+                    }
+                    break
+                case ContentRepoType.FOLDER_BASED:
+                    if (repo.target) {
+                        throw new RuntimeException("content.repos.type ${ContentRepoType.FOLDER_BASED} does not support target parameter. Repo: ${repo.url}")
+                    }
+                    if (repo.targetRef) {
+                        throw new RuntimeException("content.repos.type ${ContentRepoType.FOLDER_BASED} does not support targetRef parameter. Repo: ${repo.url}")
+                    }
+                    break
+                case ContentRepoType.MIRROR:
+                    if (!repo.target) {
+                        throw new RuntimeException("content.repos.type ${ContentRepoType.MIRROR} requires content.repos.target to be set. Repo: ${repo.url}")
+                    }
+                    if (repo.path != ContentRepositorySchema.DEFAULT_PATH) {
+                        throw new RuntimeException("content.repos.type ${ContentRepoType.MIRROR} does not support path. Current path: ${repo.path}. Repo: ${repo.url}")
+                    }
+                    if (repo.templating) {
+                        throw new RuntimeException("content.repos.type ${ContentRepoType.MIRROR} does not support templating. Repo: ${repo.url}")
+                    }
+                    break
+            }
+        }
+    }
+
     void createImagePullSecrets() {
         if (config.registry.createImagePullSecrets) {
             String registryUsername = config.registry.readOnlyUsername ?: config.registry.username

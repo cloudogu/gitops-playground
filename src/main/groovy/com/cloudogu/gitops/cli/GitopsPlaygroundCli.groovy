@@ -12,6 +12,7 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.schema.JsonSchemaValidator
 import com.cloudogu.gitops.destroy.Destroyer
 import com.cloudogu.gitops.utils.CommandExecutor
+import com.cloudogu.gitops.utils.FeatureUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
 import groovy.util.logging.Slf4j
@@ -19,6 +20,7 @@ import groovy.yaml.YamlSlurper
 import io.micronaut.context.ApplicationContext
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
+
 
 import static com.cloudogu.gitops.config.ConfigConstants.APP_NAME
 import static com.cloudogu.gitops.utils.MapUtils.deepMerge 
@@ -35,7 +37,7 @@ class GitopsPlaygroundCli {
     ApplicationConfigurator applicationConfigurator
 
     GitopsPlaygroundCli(K8sClient k8sClient = new K8sClient(new CommandExecutor(), new FileSystemUtils(), null),
-                        ApplicationConfigurator applicationConfigurator = new ApplicationConfigurator()) {
+                        ApplicationConfigurator applicationConfigurator = new ApplicationConfigurator(null)) {
         this.k8sClient = k8sClient
         this.applicationConfigurator = applicationConfigurator
     }
@@ -59,6 +61,9 @@ class GitopsPlaygroundCli {
             return ReturnCode.SUCCESS
         }
 
+        def context = createApplicationContext()
+        Application app = context.getBean(Application)
+
         def config = readConfigs(args)
         if (config.application.outputConfigFile) {
             println(config.toYaml(false))
@@ -70,7 +75,7 @@ class GitopsPlaygroundCli {
         config = applicationConfigurator.initConfig(config)
         log.debug("Actual config: ${config.toYaml(true)}")
 
-        def context = createApplicationContext()
+        FeatureUtils.runHook(app, 'postConfigValidation', config)
         register(config, context)
 
         if (config.application.destroy) {
@@ -86,7 +91,6 @@ class GitopsPlaygroundCli {
             if (!confirm("Applying gitops playground to kubernetes cluster '${k8sClient.currentContext}'.", config)) {
                 return ReturnCode.NOT_CONFIRMED
             }
-            Application app = context.getBean(Application)
             app.start()
 
             printWelcomeScreen()
@@ -208,7 +212,8 @@ class GitopsPlaygroundCli {
         Config mergedConfig = Config.fromMap(mergedConfigs)
         new CommandLine(mergedConfig).parseArgs(args)
 
-        applicationConfigurator.validateConfig(mergedConfig)
+        def app = ApplicationContext.run().getBean(Application)
+        FeatureUtils.runHook(app, 'preConfigValidation', mergedConfig)
         
         return mergedConfig
     }
