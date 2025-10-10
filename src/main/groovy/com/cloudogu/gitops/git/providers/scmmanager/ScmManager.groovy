@@ -44,7 +44,7 @@ class ScmManager implements GitProvider {
     boolean createRepository(String repoTarget, String description, boolean initialize) {
         def repoNamespace = repoTarget.split('/', 2)[0]
         def repoName = repoTarget.split('/', 2)[1]
-        def repo = new Repository(config.application.namePrefix + repoNamespace, repoName, description ?: "")
+        def repo = new Repository(repoNamespace, repoName, description ?: "")
         Response<Void> response = scmmApiClient.repositoryApi().create(repo, initialize).execute()
         return handle201or409(response, "Repository ${repoNamespace}/${repoName}")
     }
@@ -205,7 +205,7 @@ class ScmManager implements GitProvider {
 
     /** Base for *this process* (API client, local git operations) */
     private URI baseForClient() {
-        if (scmmConfig.internal) {
+        if (Boolean.TRUE == scmmConfig.isInternal()) {
             return config.application.runningInsideK8s ? serviceDnsBase() : hostAccessBase()
         } else {
             return externalBase()

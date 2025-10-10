@@ -28,7 +28,7 @@ class GitHandlerTest {
 
     private GitHandler createGitHandler() {
         // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
-        new GitHandler(testConfig, ,helmClient,new FileSystemUtils() {
+        new GitHandler(testConfig,helmClient,new FileSystemUtils() {
 
         }, deploymentStrategy, k8sClient, airGappedUtils)
     }

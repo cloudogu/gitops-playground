@@ -113,15 +113,15 @@ class ApplicationConfigurator {
     private void addScmConfig(Config newConfig) {
         log.debug("Adding additional config for SCM")
 
-//        if (ScmTenantSchema.ScmmCentralConfig)
-        //TODO
-        /*if(newConfig.scm.gitlabConfig.url && newConfig.scm.gitlabConfig.password){
-            newConfig.scm.provider= ScmTenantSchema.ScmProviderType.GITLAB
-        }else if(newConfig.scm.scmmConfig.url){
-            throw new RuntimeException(
-        }*/
 
-        newConfig.scm.scmmConfig.gitOpsUsername = "${newConfig.application.namePrefix}gitops"
+        newConfig.scm.gitOpsUsername = "${newConfig.application.namePrefix}gitops"
+//        if (ScmTenantSchema.ScmmCentralConfig
+        //TODO
+//        if (newConfig.scm.gitlabConfig.url && newConfig.scm.gitlabConfig.password){
+//            newConfig.scm.provider= ScmTenantSchema.ScmProviderType.GITLAB
+//        }else if(newConfig.scm.scmmConfig.url){
+//            throw new RuntimeException(
+//        }
 
         if (newConfig.scm.scmmConfig.url) {
             log.debug("Setting external scmm config")
@@ -130,12 +130,12 @@ class ApplicationConfigurator {
         } else {
             log.debug("Setting configs for internal SCMHandler-Manager")
             // We use the K8s service as default name here, because it is the only option:
-            // "scmm.localhost" will not work inside the Pods and k3d-container IP + Port (e.g. 172.x.y.z:9091) 
+            // "scmm.localhost" will not work inside the Pods and k3d-container IP + Port (e.g. 172.x.y.z:9091)
             // will not work on Windows and MacOS.
             newConfig.scm.scmmConfig.urlForJenkins =
                     "http://scmm.${newConfig.application.namePrefix}scm-manager.svc.cluster.local/scm"
 
-            // More internal fields are set lazily in ScmManger.groovy (after SCMM is deployed and ports are known) 
+            // More internal fields are set lazily in ScmManger.groovy (after SCMM is deployed and ports are known)
         }
 
         // We probably could get rid of some of the complexity by refactoring url, host and ingress into a single var

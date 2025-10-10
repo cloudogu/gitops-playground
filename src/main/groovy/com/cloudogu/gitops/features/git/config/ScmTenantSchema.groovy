@@ -124,7 +124,10 @@ class ScmTenantSchema {
         @JsonPropertyDescription(SCMM_SKIP_PLUGINS_DESCRIPTION)
         Boolean skipPlugins = false
 
-        @JsonIgnore
+        @Override
+        boolean isInternal() {
+            return internal != null ? internal : Boolean.TRUE
+        }
         Credentials getCredentials() {
             return new Credentials(username, password)
         }

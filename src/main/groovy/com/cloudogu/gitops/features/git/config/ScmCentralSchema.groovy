@@ -63,6 +63,11 @@ class ScmCentralSchema {
         @JsonPropertyDescription(CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
         String namespace = 'scm-manager'
 
+        @Override
+        boolean isInternal() {
+            return internal != null ? internal : Boolean.TRUE
+        }
+
         Credentials getCredentials() {
             return new Credentials(username, password)
         }

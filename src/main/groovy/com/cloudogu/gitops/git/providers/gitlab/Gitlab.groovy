@@ -36,10 +36,10 @@ class Gitlab implements GitProvider {
         def repoNamespace = repoTarget.split('/', 2)[0]
         def repoName = repoTarget.split('/', 2)[1]
 
-        def repoNamespacePrefixed = config.application.namePrefix + repoNamespace
+//        def repoNamespacePrefixed = config.application.namePrefix + repoNamespace
         // 1) Resolve parent by numeric ID (do NOT treat the ID as a path!)
         Group parent = parentGroup()
-        String repoNamespacePath = repoNamespacePrefixed.toLowerCase()
+        String repoNamespacePath = repoNamespace.toLowerCase()
         String projectPath = repoName.toLowerCase()
 
         long subgroupId = ensureSubgroupUnderParentId(parent, repoNamespacePath)

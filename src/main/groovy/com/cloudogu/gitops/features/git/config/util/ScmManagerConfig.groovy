@@ -5,7 +5,7 @@ import com.cloudogu.gitops.config.Credentials
 
 
 interface ScmManagerConfig {
-    Boolean internal
+    boolean isInternal()
     String url
     public String username = Config.DEFAULT_ADMIN_USER
     public String password = Config.DEFAULT_ADMIN_PW

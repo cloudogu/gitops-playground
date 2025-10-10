@@ -70,7 +70,7 @@ interface ConfigConstants {
     String SCM_PROVIDER_DESCRIPTION = 'Sets the scm Provider. Possible Options are "scm-manager" and "gitlab"'
 
     //MutliTentant
-    String CENTRAL_USEDEDICATED_DESCRIPTION = "Toggles the Dedicated Instances Mode"
+    String CENTRAL_USEDEDICATED_DESCRIPTION = "Toggles the Dedicated Instances Mode"  //TODO better decription, what is dedicated mode?
     String CENTRAL_SCM_INTERNAL_DESCRIPTION = 'SCMHandler for Central Management is running on the same cluster, so k8s internal URLs can be used for access'
     String MULTITENANT_DESCRIPTION =   'Multi Tenant Configs'
     String CENTRAL_MGMT_REPO_DESCRIPTION = 'URL for the centralized Management Repo'

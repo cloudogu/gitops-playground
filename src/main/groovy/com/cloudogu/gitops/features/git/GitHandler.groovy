@@ -97,24 +97,44 @@ class GitHandler extends Feature {
         }}
 
         //can be removed if we combine argocd and cluster-resources
+        final String namePrefix = (config?.application?.namePrefix ?: "").trim()
         if (this.central) {
-            setupRepos(this.central)
-            this.tenant.createRepository("argocd/argocd", "GitOps repo for administration of ArgoCD")
+            setupRepos(this.central, namePrefix)
+            setupRepos(this.tenant, namePrefix, false)
         } else {
-            setupRepos(this.tenant)
+            setupRepos(this.tenant, namePrefix, true)
         }
-        create3thPartyDependecies(this.tenant)
+        create3thPartyDependencies(this.tenant, namePrefix)
     }
 
-    static void setupRepos(GitProvider gitProvider) {
-        gitProvider.createRepository("argocd/argocd", "GitOps repo for administration of ArgoCD")
-        gitProvider.createRepository("argocd/cluster-resources", "GitOps repo for basic cluster-resources")
+    // includeClusterResources = true => also create the argocd/cluster-resources repository
+    static void setupRepos(GitProvider gitProvider, String namePrefix = "", boolean includeClusterResources = true) {
+        gitProvider.createRepository(
+                withOrgPrefix(namePrefix, "argocd/argocd"),
+                "GitOps repo for administration of ArgoCD"
+        )
+        if (includeClusterResources) {
+            gitProvider.createRepository(
+                    withOrgPrefix(namePrefix, "argocd/cluster-resources"),
+                    "GitOps repo for basic cluster-resources"
+            )
+        }
     }
 
-    static create3thPartyDependecies(GitProvider gitProvider) {
-        gitProvider.createRepository("3rd-party-dependencies/spring-boot-helm-chart", "spring-boot-helm-chart")
-        gitProvider.createRepository("3rd-party-dependencies/spring-boot-helm-chart-with-dependency", "spring-boot-helm-chart-with-dependency")
-        gitProvider.createRepository("3rd-party-dependencies/gitops-build-lib", "Jenkins pipeline shared library for automating deployments via GitOps")
-        gitProvider.createRepository("3rd-party-dependencies/ces-build-lib", "Jenkins pipeline shared library adding features for Maven, Gradle, Docker, SonarQube, Git and others")
+    static create3thPartyDependencies(GitProvider gitProvider, String namePrefix = "") {
+        gitProvider.createRepository(withOrgPrefix(namePrefix,"3rd-party-dependencies/spring-boot-helm-chart"), "spring-boot-helm-chart")
+        gitProvider.createRepository(withOrgPrefix(namePrefix,"3rd-party-dependencies/spring-boot-helm-chart-with-dependency"), "spring-boot-helm-chart-with-dependency")
+        gitProvider.createRepository(withOrgPrefix(namePrefix,"3rd-party-dependencies/gitops-build-lib"), "Jenkins pipeline shared library for automating deployments via GitOps")
+        gitProvider.createRepository(withOrgPrefix(namePrefix,"3rd-party-dependencies/ces-build-lib"), "Jenkins pipeline shared library adding features for Maven, Gradle, Docker, SonarQube, Git and others")
+    }
+
+
+    /**
+     * Adds a prefix to the ORG part (before the first '/'):
+     * Example: "argocd/argocd" + "foo-" => "foo-argocd/argocd"
+     */
+    static String withOrgPrefix(String prefix, String repoPath) {
+        if (!prefix) return repoPath
+        return prefix + repoPath
     }
 }
