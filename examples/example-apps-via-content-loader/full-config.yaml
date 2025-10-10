@@ -1,0 +1,255 @@
+# $schema: https://raw.githubusercontent.com/cloudogu/gitops-playground/refs/heads/main/docs/configuration.schema.json
+registry:
+  internal: false
+  twoRegistries: false
+  active: true
+  internalPort: 30000
+  url: "localhost:30000"
+  path: ""
+  username: ""
+  password: ""
+  proxyUrl: ""
+  proxyUsername: ""
+  proxyPassword: ""
+  readOnlyUsername: ""
+  readOnlyPassword: ""
+  createImagePullSecrets: false
+  helm:
+    chart: "docker-registry"
+    repoURL: "https://helm.twun.io"
+    version: "2.2.3"
+    values: {}
+jenkins:
+  internal: true
+  urlForScmm: ""
+  ingress: ""
+  internalBashImage: "bash:5"
+  internalDockerClientVersion: "27.1.2"
+  active: false
+  skipRestart: false
+  skipPlugins: false
+  url: ""
+  username: "admin"
+  password: "admin"
+  metricsUsername: "metrics"
+  metricsPassword: "metrics"
+  mavenCentralMirror: ""
+  additionalEnvs: {}
+  helm:
+    chart: "jenkins"
+    repoURL: "https://charts.jenkins.io"
+    version: "5.8.43"
+    values: {}
+multiTenant:
+  internal: false
+  useDedicatedInstance: false
+  centralScmUrl: ""
+  username: ""
+  password: ""
+  centralArgocdNamespace: "argocd"
+  centralSCMamespace: "scm-manager"
+scmm:
+  internal: true
+  gitOpsUsername: "content-gitops"
+  urlForJenkins: "http://scmm.content-scm-manager.svc.cluster.local/scm"
+  ingress: "content-scmm.localhost"
+  skipRestart: false
+  skipPlugins: false
+  url: ""
+  username: "admin"
+  password: "admin"
+  helm:
+    chart: "scm-manager"
+    repoURL: "https://packages.scm-manager.org/repository/helm-v2-releases/"
+    version: "3.10.2"
+    values: {}
+  rootPath: "repo"
+  provider: "scm-manager"
+application:
+  runningInsideK8s: false
+  namePrefixForEnvVars: "CONTENT_"
+  internalKubernetesApiUrl: ""
+  localHelmChartFolder: null
+  namespaces:
+    dedicatedNamespaces: []
+    tenantNamespaces: []
+    activeNamespaces: []
+  configFile: "example-content.yaml"
+  configMap: ""
+  debug: null
+  trace: true
+  outputConfigFile: false
+  versionInfoRequested: false
+  usageHelpRequested: false
+  remote: false
+  insecure: true
+  openshift: false
+  username: "admin"
+  password: "admin"
+  "yes": true
+  namePrefix: "content-"
+  destroy: false
+  podResources: false
+  gitName: "Cloudogu"
+  gitEmail: "hello@cloudogu.com"
+  baseUrl: "http://localhost"
+  urlSeparatorHyphen: false
+  mirrorRepos: false
+  skipCrds: true
+  namespaceIsolation: true
+  netpols: false
+images:
+  kubectl: "bitnamilegacy/kubectl:1.29"
+  helm: "ghcr.io/cloudogu/helm:3.16.4-1"
+  kubeval: "ghcr.io/cloudogu/helm:3.16.4-1"
+  helmKubeval: "ghcr.io/cloudogu/helm:3.16.4-1"
+  yamllint: "cytopia/yamllint:1.25-0.7"
+  nginx: ""
+  petclinic: "eclipse-temurin:17-jre-alpine"
+  maven: ""
+repositories:
+  springBootHelmChart:
+    url: "https://github.com/cloudogu/spring-boot-helm-chart.git"
+    ref: "0.4.0"
+  springPetclinic:
+    url: "https://github.com/cloudogu/spring-petclinic.git"
+    ref: "b0738b2"
+  gitopsBuildLib:
+    url: "https://github.com/cloudogu/gitops-build-lib.git"
+  cesBuildLib:
+    url: "https://github.com/cloudogu/ces-build-lib.git"
+features:
+  argocd:
+    configOnly: false
+    active: true
+    operator: true
+    url: "http://content-argocd.localhost"
+    env: []
+    emailFrom: "argocd@example.org"
+    emailToUser: "app-team@example.org"
+    emailToAdmin: "infra@example.org"
+    resourceInclusionsCluster: "https://10.43.0.1:443"
+    namespace: "argocd"
+  mail:
+    active: false
+    mailhog: false
+    mailhogUrl: ""
+    smtpAddress: ""
+    smtpPort: null
+    smtpUser: ""
+    smtpPassword: ""
+    helm:
+      chart: "mailhog"
+      repoURL: "https://codecentric.github.io/helm-charts"
+      version: "5.0.1"
+      values: {}
+      image: "ghcr.io/cloudogu/mailhog:v1.0.1"
+  monitoring:
+    active: false
+    grafanaUrl: ""
+    grafanaEmailFrom: "grafana@example.org"
+    grafanaEmailTo: "infra@example.org"
+    helm:
+      chart: "kube-prometheus-stack"
+      repoURL: "https://prometheus-community.github.io/helm-charts"
+      version: "69.7.4"
+      values: {}
+      grafanaImage: ""
+      grafanaSidecarImage: ""
+      prometheusImage: ""
+      prometheusOperatorImage: ""
+      prometheusConfigReloaderImage: ""
+  secrets:
+    active: false
+    externalSecrets:
+      helm:
+        chart: "external-secrets"
+        repoURL: "https://charts.external-secrets.io"
+        version: "0.9.16"
+        values: {}
+        image: ""
+        certControllerImage: ""
+        webhookImage: ""
+    vault:
+      mode: null
+      url: ""
+      helm:
+        chart: "vault"
+        repoURL: "https://helm.releases.hashicorp.com"
+        version: "0.25.0"
+        values: {}
+        image: ""
+  ingressNginx:
+    active: false
+    helm:
+      chart: "ingress-nginx"
+      repoURL: "https://kubernetes.github.io/ingress-nginx"
+      version: "4.12.1"
+      values: {}
+      image: ""
+  exampleApps:
+    petclinic:
+      baseDomain: "petclinic.localhost"
+    nginx:
+      baseDomain: "nginx.localhost"
+  certManager:
+    active: false
+    helm:
+      chart: "cert-manager"
+      repoURL: "https://charts.jetstack.io"
+      version: "1.16.1"
+      values: {}
+      image: ""
+      webhookImage: ""
+      cainjectorImage: ""
+      acmeSolverImage: ""
+      startupAPICheckImage: ""
+content:
+  repos:
+    - url: https://github.com/cloudogu/gitops-build-lib
+      target: 3rd-party-dependencies/gitops-build-lib
+      overwriteMode: RESET
+    - url: https://github.com/cloudogu/ces-build-lib
+      target: 3rd-party-dependencies/ces-build-lib
+      overwriteMode: RESET
+    - url: https://github.com/cloudogu/spring-boot-helm-chart
+      target: 3rd-party-dependencies/spring-boot-helm-chart
+      overwriteMode: RESET
+    - url: https://github.com/cloudogu/spring-petclinic
+      target: argocd/petclinic-plain
+      ref: feature/gitops_ready
+      targetRef: main
+      #      ref: b0738b2
+      overwriteMode: UPGRADE
+      createJenkinsJob: true
+    - url: https://github.com/cloudogu/spring-petclinic
+      target: argocd/petclinic-helm
+      ref: feature/gitops_ready
+      targetRef: main
+      overwriteMode: UPGRADE
+      createJenkinsJob: true
+    - url: 'http://central-scmm.localhost/scm/repo/content/examples'
+      ref: main
+      username: 'admin'
+      password: 'admin'
+      templating: true
+      type: FOLDER_BASED
+      overwriteMode: UPGRADE
+
+  namespaces:
+    - ${config.application.namePrefix}example-apps-production
+    - ${config.application.namePrefix}example-apps-staging
+  variables:
+    petclinic:
+      baseDomain: "petclinic.localhost"
+    nginx:
+      baseDomain: "nginx.localhost"
+    images:
+      kubectl: "bitnamilegacy/kubectl:1.29"
+      helm: "ghcr.io/cloudogu/helm:3.16.4-1"
+      kubeval: "ghcr.io/cloudogu/helm:3.16.4-1"
+      helmKubeval: "ghcr.io/cloudogu/helm:3.16.4-1"
+      yamllint: "cytopia/yamllint:1.25-0.7"
+      nginx: ""
+      petclinic: "eclipse-temurin:17-jre-alpine"
+      maven: ""

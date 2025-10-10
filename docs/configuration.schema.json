@@ -1,16 +1,6 @@
 {
   "$schema" : "https://json-schema.org/draft/2020-12/schema",
   "$defs" : {
-    "ExampleAppSchema-nullable" : {
-      "type" : [ "object", "null" ],
-      "properties" : {
-        "baseDomain" : {
-          "type" : [ "string", "null" ],
-          "description" : "The domain under which a subdomain these applications will be made available"
-        }
-      },
-      "additionalProperties" : false
-    },
     "HelmConfigWithValues-nullable" : {
       "type" : [ "object", "null" ],
       "properties" : {
@@ -41,30 +31,6 @@
       "additionalProperties" : {
         "type" : "string"
       }
-    },
-    "RepositorySchema-nullable" : {
-      "type" : [ "object", "null" ],
-      "properties" : {
-        "url" : {
-          "type" : [ "string", "null" ],
-          "description" : "HTTP URL of the repo"
-        }
-      },
-      "additionalProperties" : false
-    },
-    "RepositorySchemaWithRef-nullable" : {
-      "type" : [ "object", "null" ],
-      "properties" : {
-        "ref" : {
-          "type" : [ "string", "null" ],
-          "description" : "Ref of the repo to use, e.g. a tag, commit or branch"
-        },
-        "url" : {
-          "type" : [ "string", "null" ],
-          "description" : "HTTP URL of the repo"
-        }
-      },
-      "additionalProperties" : false
     }
   },
   "type" : "object",
@@ -336,21 +302,6 @@
           "additionalProperties" : false,
           "description" : "Config parameters for the Cert Manager"
         },
-        "exampleApps" : {
-          "type" : [ "object", "null" ],
-          "properties" : {
-            "nginx" : {
-              "$ref" : "#/$defs/ExampleAppSchema-nullable",
-              "description" : "Config parameters for the NGINX example apps apps and exercises"
-            },
-            "petclinic" : {
-              "$ref" : "#/$defs/ExampleAppSchema-nullable",
-              "description" : "Config parameters for the petclinic example apps apps and exercises"
-            }
-          },
-          "additionalProperties" : false,
-          "description" : "Config parameters for the example apps and exercises"
-        },
         "ingressNginx" : {
           "type" : [ "object", "null" ],
           "properties" : {
@@ -613,45 +564,6 @@
       "additionalProperties" : false,
       "description" : "Config parameters for features or tools"
     },
-    "images" : {
-      "type" : [ "object", "null" ],
-      "properties" : {
-        "helm" : {
-          "type" : [ "string", "null" ],
-          "description" : "Sets image for helm"
-        },
-        "helmKubeval" : {
-          "type" : [ "string", "null" ],
-          "description" : "Sets image for helmkubeval"
-        },
-        "kubectl" : {
-          "type" : [ "string", "null" ],
-          "description" : "Sets image for kubectl"
-        },
-        "kubeval" : {
-          "type" : [ "string", "null" ],
-          "description" : "Sets image for kubeval"
-        },
-        "maven" : {
-          "type" : [ "string", "null" ],
-          "description" : "Sets image for maven"
-        },
-        "nginx" : {
-          "type" : [ "string", "null" ],
-          "description" : "Sets image for nginx used in various applications"
-        },
-        "petclinic" : {
-          "type" : [ "string", "null" ],
-          "description" : "Sets image for petclinic used in various applications"
-        },
-        "yamllint" : {
-          "type" : [ "string", "null" ],
-          "description" : "Sets image for yamllint"
-        }
-      },
-      "additionalProperties" : false,
-      "description" : "Config params for images that do not belong to specific features"
-    },
     "jenkins" : {
       "type" : [ "object", "null" ],
       "properties" : {
@@ -803,29 +715,6 @@
       },
       "additionalProperties" : false,
       "description" : "Config parameters for Registry"
-    },
-    "repositories" : {
-      "type" : [ "object", "null" ],
-      "properties" : {
-        "cesBuildLib" : {
-          "$ref" : "#/$defs/RepositorySchema-nullable",
-          "description" : "Repo to pull the ces-build-lib, used in examples and exercises as depedency of the gitops-build-lib"
-        },
-        "gitopsBuildLib" : {
-          "$ref" : "#/$defs/RepositorySchema-nullable",
-          "description" : "Repo to pull the gitops-build-lib, used in examples and exercises"
-        },
-        "springBootHelmChart" : {
-          "$ref" : "#/$defs/RepositorySchemaWithRef-nullable",
-          "description" : "Repo to pull the generic Spring Boot Helm chart, used in examples and exercises"
-        },
-        "springPetclinic" : {
-          "$ref" : "#/$defs/RepositorySchemaWithRef-nullable",
-          "description" : "Repo to pull the Spring Petclinic, used in examples and exercises"
-        }
-      },
-      "additionalProperties" : false,
-      "description" : "Config params for repositories used within GOP"
     },
     "scmm" : {
       "type" : [ "object", "null" ],

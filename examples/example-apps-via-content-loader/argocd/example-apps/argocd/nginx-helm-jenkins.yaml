@@ -1,21 +1,16 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-<#if config.features.argocd.operator>
-  name: exercise-nginx-helm-staging
+  name: nginx-helm-jenkins-staging
   namespace: ${config.application.namePrefix}argocd
-<#else>
-  name: exercise-nginx-helm
-  namespace: ${config.application.namePrefix}example-apps-staging
-</#if>
 spec:
   destination:
     namespace: ${config.application.namePrefix}example-apps-staging
     server: https://kubernetes.default.svc
   project: example-apps
   source:
-    path: apps/exercise-nginx-helm/staging
-    repoURL: ${scmm.repoUrl}argocd/example-apps
+    path: apps/nginx-helm-jenkins/staging
+    repoURL: "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm/repo/${config.application.namePrefix}argocd/example-apps"
     targetRevision: main
     directory:
       recurse: true
@@ -25,25 +20,19 @@ spec:
       selfHeal: true
 
 ---
-
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-<#if config.features.argocd.operator>
-  name: exercise-nginx-helm-production
+  name: nginx-helm-jenkins-production
   namespace: ${config.application.namePrefix}argocd
-<#else>
-  name: exercise-nginx-helm
-  namespace: ${config.application.namePrefix}example-apps-production
-</#if>
 spec:
   destination:
     namespace: ${config.application.namePrefix}example-apps-production
     server: https://kubernetes.default.svc
   project: example-apps
   source:
-    path: apps/exercise-nginx-helm/production
-    repoURL: ${scmm.repoUrl}argocd/example-apps
+    path: apps/nginx-helm-jenkins/production
+    repoURL: "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm/repo/${config.application.namePrefix}argocd/example-apps"
     targetRevision: main
     directory:
       recurse: true
