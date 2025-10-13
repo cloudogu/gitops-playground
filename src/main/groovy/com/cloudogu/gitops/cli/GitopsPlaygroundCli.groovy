@@ -7,12 +7,12 @@ import ch.qos.logback.classic.encoder.PatternLayoutEncoder
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.ConsoleAppender
 import com.cloudogu.gitops.Application
+import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.schema.JsonSchemaValidator
 import com.cloudogu.gitops.destroy.Destroyer
 import com.cloudogu.gitops.utils.CommandExecutor
-import com.cloudogu.gitops.utils.FeatureUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
 import groovy.util.logging.Slf4j
@@ -21,9 +21,8 @@ import io.micronaut.context.ApplicationContext
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
 
-
 import static com.cloudogu.gitops.config.ConfigConstants.APP_NAME
-import static com.cloudogu.gitops.utils.MapUtils.deepMerge 
+import static com.cloudogu.gitops.utils.MapUtils.deepMerge
 /**
  * Provides the entrypoint to the application as well as all config parameters.
  * When changing parameters, make sure to update the Config for the config file as well
@@ -75,7 +74,7 @@ class GitopsPlaygroundCli {
         config = applicationConfigurator.initConfig(config)
         log.debug("Actual config: ${config.toYaml(true)}")
 
-        FeatureUtils.runHook(app, 'postConfigValidation', config)
+        runHook(app, 'postConfigValidation', config)
         register(config, context)
 
         if (config.application.destroy) {
@@ -213,7 +212,7 @@ class GitopsPlaygroundCli {
         new CommandLine(mergedConfig).parseArgs(args)
 
         def app = ApplicationContext.run().getBean(Application)
-        FeatureUtils.runHook(app, 'preConfigValidation', mergedConfig)
+        runHook(app, 'preConfigValidation', mergedConfig)
         
         return mergedConfig
     }
@@ -244,5 +243,19 @@ class GitopsPlaygroundCli {
   | Please be aware, Jenkins and Argo CD may take some time to build and deploy all apps.
   |----------------------------------------------------------------------------------------------|
 '''
+    }
+
+    static void runHook(Application app, String methodName, def config) {
+
+
+
+        app.features.each { feature ->
+            // Executing only the method if the derived feature class has implemented the passed specific hook method
+            def mm = feature.metaClass.getMetaMethod(methodName, config)
+            if (mm && mm.declaringClass.theClass != Feature) {
+                log.debug("Executing ${methodName} hook on feature ${feature.class.name}")
+                mm.invoke(feature, config)
+            }
+        }
     }
 }

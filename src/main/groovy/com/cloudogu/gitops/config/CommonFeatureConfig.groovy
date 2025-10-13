@@ -8,14 +8,10 @@ import jakarta.inject.Singleton
 @Slf4j
 @Singleton
 @Order(40)
-class ConfigValidator extends Feature {
-
-    ConfigValidator() {
-        log.debug("Doing common pre/post config validation...")
-    }
-
+class CommonFeatureConfig extends Feature {
     @Override
     void preConfigValidation(Config configToSet) {
+        log.debug("Doing common preConfigValidation")
         validateScmmAndJenkinsAreBothSet(configToSet)
         validateMirrorReposHelmChartFolderSet(configToSet)
     }
