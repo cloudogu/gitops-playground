@@ -1,10 +1,11 @@
 package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.git.providers.scmmanager.api.RepositoryApi
-import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
+import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.git.providers.scmmanager.Permission
 import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
+import com.cloudogu.gitops.git.providers.scmmanager.api.RepositoryApi
+import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
 import okhttp3.internal.http.RealResponseBody
 import okio.BufferedSource
 import retrofit2.Call
@@ -12,7 +13,7 @@ import retrofit2.Response
 
 import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.mock
-import static org.mockito.Mockito.when 
+import static org.mockito.Mockito.when
 
 class TestScmManagerApiClient extends ScmManagerApiClient {
 
@@ -21,7 +22,7 @@ class TestScmManagerApiClient extends ScmManagerApiClient {
     Set<String> createdPermissions = new HashSet<>()
 
     TestScmManagerApiClient(Config config) {
-        super(config, null)
+        super(config.scm.scmmConfig.url, new Credentials(config.scm.scmmConfig.username, config.scm.scmmConfig.password), null)
     }
 
     @Override
@@ -48,7 +49,7 @@ class TestScmManagerApiClient extends ScmManagerApiClient {
                 }
         when(repositoryApi.createPermission(anyString(), anyString(), any(Permission)))
                 .thenAnswer { invocation ->
-                    String namespace= invocation.getArgument(0)
+                    String namespace = invocation.getArgument(0)
                     String name = invocation.getArgument(1)
                     if (createdPermissions.contains("${namespace}/${name}".toString())) {
                         return responseExists

@@ -28,7 +28,7 @@ class RbacDefinitionTest {
             ]
     ])
 
-    private final GitRepo repo = new GitRepo(config, "my-repo", new FileSystemUtils())
+    private final GitRepo repo = new GitRepo(config,null, "my-repo", new FileSystemUtils())
 
     @Test
     void 'generates at least one RBAC YAML file'() {
@@ -245,7 +245,7 @@ class RbacDefinitionTest {
     void 'renders node access rules in argocd-role only when not on OpenShift'() {
         config.application.openshift = false
 
-        GitRepo tempRepo = new GitRepo(config, "rbac-test", new FileSystemUtils())
+        GitRepo tempRepo = new GitRepo(config,null, "rbac-test", new FileSystemUtils())
 
         new RbacDefinition(Role.Variant.ARGOCD)
                 .withName("nodecheck")
@@ -271,7 +271,7 @@ class RbacDefinitionTest {
     void 'does not render node access rules in argocd-role  when on OpenShift'() {
         config.application.openshift = true
 
-        GitRepo tempRepo = new GitRepo(config, "rbac-test", new FileSystemUtils())
+        GitRepo tempRepo = new GitRepo(config,null, "rbac-test", new FileSystemUtils())
 
         new RbacDefinition(Role.Variant.ARGOCD)
                 .withName("nodecheck")

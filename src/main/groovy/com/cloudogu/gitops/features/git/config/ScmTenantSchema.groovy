@@ -3,13 +3,13 @@ package com.cloudogu.gitops.features.git.config
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.features.git.config.util.GitlabConfig
-import com.cloudogu.gitops.features.git.config.util.ScmProviderType
 import com.cloudogu.gitops.features.git.config.util.ScmManagerConfig
+import com.cloudogu.gitops.features.git.config.util.ScmProviderType
 import com.cloudogu.gitops.utils.NetworkingUtils
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
-import picocli.CommandLine.Option
 import picocli.CommandLine.Mixin
+import picocli.CommandLine.Option
 
 import static com.cloudogu.gitops.config.ConfigConstants.*
 
@@ -58,7 +58,6 @@ class ScmTenantSchema {
         String parentGroupId = ''
 
 
-
         Credentials getCredentials() {
             return new Credentials(username, password)
         }
@@ -72,7 +71,8 @@ class ScmTenantSchema {
         String url = ''
 
         @Option(names = ['--scm-namespace'], description = 'Namespace where the tenant scm resides in')
-        @JsonPropertyDescription(CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)  //TODO DESCRIPTION
+        @JsonPropertyDescription(CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
+        //TODO DESCRIPTION
         String namespace = 'scm-manager'
 
         @Option(names = ['--scmm-username'], description = SCMM_USERNAME_DESCRIPTION)
@@ -128,6 +128,7 @@ class ScmTenantSchema {
         boolean isInternal() {
             return internal != null ? internal : Boolean.TRUE
         }
+
         Credentials getCredentials() {
             return new Credentials(username, password)
         }

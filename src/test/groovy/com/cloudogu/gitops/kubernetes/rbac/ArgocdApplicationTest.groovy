@@ -33,7 +33,7 @@ class ArgocdApplicationTest {
     @Test
     void 'simple ArgoCD Application with common values'() {
 
-        GitRepo repo = new GitRepo(config, "my-repo", new FileSystemUtils())
+        GitRepo repo = new GitRepo(config, null,"my-repo", new FileSystemUtils())
 
         new ArgoApplication(
                 'example-apps',

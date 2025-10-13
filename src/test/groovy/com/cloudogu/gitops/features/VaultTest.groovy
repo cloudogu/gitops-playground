@@ -3,6 +3,7 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.config.Config
 
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
+import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.utils.*
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
@@ -34,6 +35,7 @@ class VaultTest {
     DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
     AirGappedUtils airGappedUtils = mock(AirGappedUtils)
     K8sClientForTest k8sClient = new K8sClientForTest(config)
+    GitHandler gitHandler = mock(GitHandler)
     Path temporaryYamlFile
 
     @Test
@@ -258,7 +260,7 @@ class VaultTest {
                 temporaryYamlFile = Path.of(ret.toString().replace(".ftl", ""))
                 return ret
             }
-        }, k8sClient, deploymentStrategy, airGappedUtils)
+        }, k8sClient, deploymentStrategy, airGappedUtils,gitHandler)
     }
 
     private Map parseActualYaml() {

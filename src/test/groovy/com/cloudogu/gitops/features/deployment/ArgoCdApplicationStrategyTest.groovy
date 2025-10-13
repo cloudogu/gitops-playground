@@ -1,6 +1,8 @@
 package com.cloudogu.gitops.features.deployment
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.features.git.GitHandler
+import com.cloudogu.gitops.features.git.config.ScmTenantSchema
 import com.cloudogu.gitops.features.git.config.ScmTenantSchema.ScmManagerTenantConfig
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -9,9 +11,11 @@ import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 
 import static org.assertj.core.api.Assertions.assertThat
+import static org.mockito.Mockito.mock
 
 class ArgoCdApplicationStrategyTest {
     private File localTempDir
+    GitHandler gitHandler = mock(GitHandler)
 
     @Test
     void 'deploys feature using argo CD'() {
@@ -107,9 +111,11 @@ spec:
                         gitName: 'Cloudogu',
                         gitEmail: 'hello@cloudogu.com'
                 ),
-                scm: new ScmManagerTenantConfig(
-                        username: "dont-care-username",
-                        password: "dont-care-password",
+                scm: new ScmTenantSchema(
+                        scmmConfig: new ScmManagerTenantConfig(
+                            username: "dont-care-username",
+                            password: "dont-care-password"
+                        )
                 ),
                 features: new Config.FeaturesSchema(
                         argocd: new Config.ArgoCDSchema(
@@ -129,6 +135,6 @@ spec:
             }
         }
 
-        return new ArgoCdApplicationStrategy(config, new FileSystemUtils(), repoProvider)
+        return new ArgoCdApplicationStrategy(config, new FileSystemUtils(), repoProvider,gitHandler)
     }
 }

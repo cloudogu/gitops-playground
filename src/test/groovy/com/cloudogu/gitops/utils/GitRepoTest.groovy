@@ -85,21 +85,21 @@ class GitRepoTest {
     @Test
     void 'Creates repo with empty name-prefix'() {
         def repo = createRepo('expectedRepoTarget')
-        assertThat(repo.scmmRepoTarget).isEqualTo('expectedRepoTarget')
+        assertThat(repo.repoTarget).isEqualTo('expectedRepoTarget')
     }
 
     @Test
     void 'Creates repo with name-prefix'() {
         config.application.namePrefix = 'abc-'
         def repo = createRepo('expectedRepoTarget')
-        assertThat(repo.scmmRepoTarget).isEqualTo('abc-expectedRepoTarget')
+        assertThat(repo.repoTarget).isEqualTo('abc-expectedRepoTarget')
     }
 
     @Test
     void 'Creates repo without name-prefix when in namespace 3rd-party-deps'() {
         config.application.namePrefix = 'abc-'
         def repo = createRepo("${GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/foo")
-        assertThat(repo.scmmRepoTarget).isEqualTo("${GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/foo".toString())
+        assertThat(repo.repoTarget).isEqualTo("${GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/foo".toString())
     }
 
     @Test
@@ -163,8 +163,8 @@ class GitRepoTest {
 
         when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response201)
         when(scmmApiClient.repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(response201)
-        
-        repo.create('description', scmmApiClient)
+
+        repo.createRepositoryAndSetPermission('description', 'testdescription')
 
         assertCreatedRepo()
     }
@@ -175,8 +175,8 @@ class GitRepoTest {
 
         when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response409)
         when(scmmApiClient.repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(response201)
-        
-        repo.create('description', scmmApiClient)
+
+        repo.createRepositoryAndSetPermission('description', 'testdescription')
 
         assertCreatedRepo()
     }
@@ -187,8 +187,8 @@ class GitRepoTest {
 
         when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response409)
         when(scmmApiClient.repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(response201)
-        
-        repo.create('description', scmmApiClient)
+
+        repo.createRepositoryAndSetPermission('description', 'testdescription')
 
         assertCreatedRepo()
     }
@@ -200,7 +200,7 @@ class GitRepoTest {
         when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response201)
         when(scmmApiClient.repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(response409)
 
-        repo.create('description', scmmApiClient)
+        repo.createRepositoryAndSetPermission('description', 'testdescription')
 
         assertCreatedRepo()
     }
@@ -212,7 +212,7 @@ class GitRepoTest {
         when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response500)
 
         def exception = shouldFail(RuntimeException) {
-            repo.create('description', scmmApiClient)
+            repo.createRepositoryAndSetPermission('description', 'testdescription')
         }
         assertThat(exception.message).startsWith('Could not create Repository')
         assertThat(exception.message).contains(expectedNamespace)
@@ -228,7 +228,7 @@ class GitRepoTest {
         when(scmmApiClient.repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(response500)
 
         def exception = shouldFail(RuntimeException) {
-            repo.create('description', scmmApiClient)
+            repo.createRepositoryAndSetPermission('description', 'testdescription')
         }
         assertThat(exception.message).startsWith("Could not create Permission for repo $expectedNamespace/$expectedRepo")
         assertThat(exception.message).contains('foo-gitops')

@@ -3,6 +3,7 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.config.Config
 
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
+import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClientForTest
@@ -32,7 +33,7 @@ class MailhogTest {
     Path temporaryYamlFile = null
     FileSystemUtils fileSystemUtils = new FileSystemUtils()
     K8sClientForTest k8sClient = new K8sClientForTest(config)
-
+    GitHandler gitHandler = mock(GitHandler)
     @Test
     void "is disabled via active flag"() {
         config.features.mail.mailhog = false
@@ -223,7 +224,7 @@ class MailhogTest {
                 // Path after template invocation
                 return ret
             }
-        }, deploymentStrategy, k8sClient, airGappedUtils)
+        }, deploymentStrategy, k8sClient, airGappedUtils,gitHandler)
     }
 
     private Map parseActualYaml() {

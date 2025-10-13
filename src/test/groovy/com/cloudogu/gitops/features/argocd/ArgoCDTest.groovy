@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.utils.*
 import groovy.io.FileType
@@ -592,7 +593,7 @@ class ArgoCDTest {
 
     @Test
     void 'For external SCMM: Use external address in gitops repos'() {
-        config.scmm.internal = false
+        config.scm.internal = false
         def argocd = createArgoCD()
         argocd.install()
         List filesWithInternalSCMM = findFilesContaining(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), argocd.scmmUrlInternal)
@@ -642,11 +643,11 @@ class ArgoCDTest {
         createArgoCD().install()
 
         for (def petclinicRepo : petClinicRepos) {
-            if (petclinicRepo.scmmRepoTarget.contains('argocd/petclinic-plain')) {
+            if (petclinicRepo.repoTarget.contains('argocd/petclinic-plain')) {
                 assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, '/k8s/staging/deployment.yaml').text).contains('runAsUser: null')
                 assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, '/k8s/staging/deployment.yaml').text).contains('runAsGroup: null')
             }
-            if (petclinicRepo.scmmRepoTarget.contains('argocd/petclinic-helm')) {
+            if (petclinicRepo.repoTarget.contains('argocd/petclinic-helm')) {
                 assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, '/k8s/values-shared.yaml').text).contains('runAsUser: null')
                 assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, '/k8s/values-shared.yaml').text).contains('runAsGroup: null')
             }
@@ -729,7 +730,7 @@ class ArgoCDTest {
         createArgoCD().install()
 
         for (def petclinicRepo : petClinicRepos) {
-            if (petclinicRepo.scmmRepoTarget.contains('argocd/petclinic-plain')) {
+            if (petclinicRepo.repoTarget.contains('argocd/petclinic-plain')) {
                 assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).contains('mvn = cesBuildLib.MavenInDocker.new(this, \'maven:latest\')')
             }
         }
@@ -743,7 +744,7 @@ class ArgoCDTest {
         createArgoCD().install()
 
         for (def petclinicRepo : petClinicRepos) {
-            if (petclinicRepo.scmmRepoTarget.contains('argocd/petclinic-plain')) {
+            if (petclinicRepo.repoTarget.contains('argocd/petclinic-plain')) {
                 assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).contains('mvn = cesBuildLib.MavenInDocker.new(this, \'latest\', dockerRegistryProxyCredentials)')
             }
         }
@@ -1003,7 +1004,7 @@ class ArgoCDTest {
             assertThat(jenkinsfile).exists()
             assertJenkinsfileRegistryCredentials()
 
-            if (repo.scmmRepoTarget == 'argocd/petclinic-plain') {
+            if (repo.repoTarget == 'argocd/petclinic-plain') {
                 assertBuildImagesInJenkinsfileReplaced(jenkinsfile)
 
                 assertThat(new File(tmpDir, 'Dockerfile').text).startsWith('FROM petclinic-value')
@@ -1041,7 +1042,7 @@ class ArgoCDTest {
                     }
                 }
 
-            } else if (repo.scmmRepoTarget == 'argocd/petclinic-helm') {
+            } else if (repo.repoTarget == 'argocd/petclinic-helm') {
                 assertBuildImagesInJenkinsfileReplaced(jenkinsfile)
                 assertThat(new File(tmpDir, 'k8s/values-shared.yaml').text).contains("type: ${expectedServiceType}")
                 assertThat(new File(tmpDir, 'k8s/values-shared.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
@@ -1070,7 +1071,7 @@ class ArgoCDTest {
                     }
                 }
 
-            } else if (repo.scmmRepoTarget == 'exercises/petclinic-helm') {
+            } else if (repo.repoTarget == 'exercises/petclinic-helm') {
                 // Does not contain the gitops build lib call, so no build images to replace
                 assertThat(new File(tmpDir, 'k8s/values-shared.yaml').text).contains("type: ${expectedServiceType}")
                 assertThat(new File(tmpDir, 'k8s/values-shared.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
@@ -1190,7 +1191,7 @@ class ArgoCDTest {
                 "testPrefix-example-apps-production"
         ]
         // have to prepare activeNamespaces for unit-test, Application.groovy is setting this in integration way
-        config.application.namespaces.dedicatedNamespaces =new LinkedHashSet<String>([
+        config.application.namespaces.dedicatedNamespaces = new LinkedHashSet<String>([
                 "monitoring",
                 "secrets",
                 "ingress-nginx",
@@ -1713,11 +1714,12 @@ class ArgoCDTest {
                 'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/cert-manager.git'
         )
     }
+
     @Test
     void 'If using mirror with GitLab, ensure source repos in cluster-resources got right URL'() {
         config.application.mirrorRepos = true
         config.scm.scmProviderType = 'GITLAB'
-        config.scm.gitlabConfig.url='https://testGitLab.com/testgroup/'
+        config.scm.gitlabConfig.url = 'https://testGitLab.com/testgroup/'
         createArgoCD().install()
 
         def clusterRessourcesYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/cluster-resources.yaml')
@@ -1763,6 +1765,7 @@ class ArgoCDTest {
                 'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/cert-manager'
         )
     }
+
     @Test
     void 'If using mirror with name-prefix, ensure source repos in cluster-resources got right URL'() {
         config.application.mirrorRepos = true
@@ -1900,7 +1903,7 @@ class ArgoCDTest {
     class ArgoCDForTest extends ArgoCD {
         ArgoCDForTest(Config config, CommandExecutorForTest k8sCommands, CommandExecutorForTest helmCommands) {
             super(config, new K8sClientForTest(config, k8sCommands), new HelmClient(helmCommands), new FileSystemUtils(),
-                    new TestGitRepoFactory(config, new FileSystemUtils()))
+                    new TestGitRepoFactory(config, new FileSystemUtils()), new GitHandlerForTests())
             mockPrefixActiveNamespaces(config)
         }
 

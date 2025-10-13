@@ -33,7 +33,11 @@ class GitRepo {
     private Git gitMemoization
     private final String absoluteLocalRepoTmpDir
 
-    GitRepo(Config config, GitProvider gitProvider, String repoTarget, FileSystemUtils fileSystemUtils, Boolean isCentralRepo = false) {
+    GitRepo(Config config,
+            GitProvider gitProvider,
+            String repoTarget,
+            FileSystemUtils fileSystemUtils,
+            Boolean isCentralRepo = false) {
         def tmpDir = File.createTempDir()
         tmpDir.deleteOnExit()
         this.absoluteLocalRepoTmpDir = tmpDir.absolutePath
