@@ -2,7 +2,6 @@ package com.cloudogu.gitops.git.providers.scmmanager
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.git.config.util.ScmManagerConfig
-import com.cloudogu.gitops.git.utils.StringUtils
 import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.NetworkingUtils
 import groovy.util.logging.Slf4j
@@ -43,7 +42,7 @@ class ScmManagerUrlResolver {
 
     /** In-cluster repo prefix …/scm/<root>/[<namePrefix>] */
     String inClusterRepoPrefix(boolean includeNamePrefix) {
-        def prefix = StringUtils.trimBoth(config.application.namePrefix ?: "")
+        def prefix = (config.application.namePrefix ?: "").strip()
         def base = withSlash(inClusterBase())
         def url = withSlash(base.resolve(root()))
         includeNamePrefix && prefix ? noTrailSlash(URI.create(url.toString() + prefix)).toString()
@@ -52,13 +51,13 @@ class ScmManagerUrlResolver {
 
     /** In-cluster repo URL …/scm/<root>/<ns>/<name> */
     String inClusterRepoUrl(String repoTarget) {
-        def repo = StringUtils.trimBoth(repoTarget)
+        def repo = (repoTarget ?: "").strip()
         noTrailSlash(withSlash(inClusterBase()).resolve("${root()}/${repo}/")).toString()
     }
 
     /** Client repo URL …/scm/<root>/<ns>/<name> (no trailing slash) */
     String clientRepoUrl(String repoTarget) {
-        def repo = StringUtils.trimBoth(repoTarget)
+        def repo = (repoTarget ?: "").strip()
         noTrailSlash(withSlash(clientRepoBase()).resolve("${repo}/")).toString()
     }
 
@@ -68,9 +67,8 @@ class ScmManagerUrlResolver {
     // ---------- Base resolution ----------
 
     private URI clientBaseRaw() {
-        if (Boolean.TRUE == scmm.internal) {
+        if (Boolean.TRUE == scmm.internal)
             return config.application.runningInsideK8s ? serviceDnsBase() : nodePortBase()
-        }
         return externalBase()
     }
 
@@ -101,7 +99,9 @@ class ScmManagerUrlResolver {
 
     // ---------- Helpers ----------
 
-    private String root() { StringUtils.trimBoth(scmm.rootPath ?: "repo") }
+    private String root() {
+        (scmm.rootPath ?: "repo").strip()
+    }
 
     private static URI ensureScm(URI u) {
         def us = withSlash(u)
