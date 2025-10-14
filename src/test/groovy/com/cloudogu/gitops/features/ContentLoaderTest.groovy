@@ -580,7 +580,7 @@ class ContentLoaderTest {
         try (def git = Git.cloneRepository().setURI(url).setBranch('main').setDirectory(tmpDir).call()) {
 
 
-            verify(repo).createRepositoryAndSetPermission(eq(''), any(ScmManagerApiClient), eq(false))
+            verify(repo).createRepositoryAndSetPermission(eq(''), any(String.class),eq(false))
 
             def commitMsg = git.log().call().iterator().next().getFullMessage()
             assertThat(commitMsg).isEqualTo("Initialize content repo ${expectedRepo}".toString())
@@ -641,7 +641,7 @@ class ContentLoaderTest {
         try (def git = Git.cloneRepository().setURI(url).setBranch('main').setDirectory(tmpDir).call()) {
 
 
-            verify(repo).create(eq(''), any(ScmManagerApiClient), eq(false))
+            verify(repo).createRepositoryAndSetPermission(eq(''), any(String.class), eq(false))
 
             def commitMsg = git.log().call().iterator().next().getFullMessage()
             assertThat(commitMsg).isEqualTo("Initialize content repo ${expectedRepo}".toString())
@@ -702,7 +702,7 @@ class ContentLoaderTest {
         // clone repo, to ensure, changes in remote repo.
         try (def git = Git.cloneRepository().setURI(url).setBranch('main').setDirectory(tmpDir).call()) {
 
-            verify(repo).create(eq(''), any(ScmManagerApiClient), eq(false))
+            verify(repo).createRepositoryAndSetPermission(eq(''), any(String.class), eq(false))
 
             def commitMsg = git.log().call().iterator().next().getFullMessage()
             assertThat(commitMsg).isEqualTo("Initialize content repo ${expectedRepo}".toString())

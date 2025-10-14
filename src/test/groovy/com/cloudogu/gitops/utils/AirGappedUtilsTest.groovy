@@ -5,6 +5,7 @@ import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.providers.scmmanager.Permission
 import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
+import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
 import groovy.yaml.YamlSlurper
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Ref
@@ -176,7 +177,7 @@ class AirGappedUtilsTest {
         assertHelmRepoCommits(prometheusRepo, '1.2.3', 'Chart kube-prometheus-stack-chart, version: 1.2.3\n\n' +
                 'Source: https://kube-prometheus-stack-repo-url\nDependencies localized to run in air-gapped environments')
 
-        verify(prometheusRepo).create(eq('Mirror of Helm chart kube-prometheus-stack from https://kube-prometheus-stack-repo-url'), any(ScmmApiClient))
+        verify(prometheusRepo).createRepositoryAndSetPermission(eq('Mirror of Helm chart kube-prometheus-stack from https://kube-prometheus-stack-repo-url'), any(String.class))
     }
 
 
