@@ -19,7 +19,7 @@ String getDockerRegistryProxyCredentials() { 'registry-proxy-user' }
 String getCesBuildLibRepo() { configRepositoryPRBaseUrl+"/repo/3rd-party-dependencies/ces-build-lib/" }
 String getCesBuildLibVersion() { '2.5.0' }
 String getGitOpsBuildLibRepo() { configRepositoryPRBaseUrl+"/repo/3rd-party-dependencies/gitops-build-lib" }
-String getGitOpsBuildLibVersion() { '0.7.0'}
+String getGitOpsBuildLibVersion() { '0.8.0'}
 String getHelmChartRepository() { configRepositoryPRBaseUrl+"/repo/3rd-party-dependencies/spring-boot-helm-chart-with-dependency" }
 String getHelmChartVersion() { "1.0.0" }
 String getMainBranch() { 'main' }
