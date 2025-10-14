@@ -9,6 +9,7 @@ import ch.qos.logback.core.ConsoleAppender
 import com.cloudogu.gitops.Application
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.ApplicationConfigurator
+import com.cloudogu.gitops.config.CommonFeatureConfig
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.schema.JsonSchemaValidator
 import com.cloudogu.gitops.destroy.Destroyer
@@ -246,11 +247,8 @@ class GitopsPlaygroundCli {
     }
 
     static void runHook(Application app, String methodName, def config) {
-
-
-
-        app.features.each { feature ->
-            // Executing only the method if the derived feature class has implemented the passed specific hook method
+        ([new CommonFeatureConfig(), *app.features]).each { feature ->
+            // Executing only the method if the derived feature class has implemented the passed methodName
             def mm = feature.metaClass.getMetaMethod(methodName, config)
             if (mm && mm.declaringClass.theClass != Feature) {
                 log.debug("Executing ${methodName} hook on feature ${feature.class.name}")

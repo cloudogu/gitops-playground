@@ -2,16 +2,12 @@ package com.cloudogu.gitops.config
 
 import com.cloudogu.gitops.Feature
 import groovy.util.logging.Slf4j
-import io.micronaut.core.annotation.Order
-import jakarta.inject.Singleton
 
 @Slf4j
-@Singleton
-@Order(40)
 class CommonFeatureConfig extends Feature {
     @Override
     void preConfigValidation(Config configToSet) {
-        log.debug("Doing common preConfigValidation")
+        log.debug("Common preConfigValidation")
         validateScmmAndJenkinsAreBothSet(configToSet)
         validateMirrorReposHelmChartFolderSet(configToSet)
     }
