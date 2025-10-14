@@ -320,7 +320,7 @@ class GitopsPlaygroundCliTest {
 
         assertThat(myconfig.scmm.helm.chart).isEqualTo('scm-manager')
         assertThat(myconfig.scmm.helm.repoURL).isEqualTo('https://packages.scm-manager.org/repository/helm-v2-releases/')
-        assertThat(myconfig.scmm.helm.version).isEqualTo('3.10.2')
+        assertThat(myconfig.scmm.helm.version).isEqualTo('3.11.0')
         assertThat(myconfig.scmm.helm.values.initialDelaySeconds).isEqualTo(120) // overridden
 
         assertThat(cli.lastSchema.features.monitoring.helm.chart).isEqualTo('kube-prometheus-stack')
