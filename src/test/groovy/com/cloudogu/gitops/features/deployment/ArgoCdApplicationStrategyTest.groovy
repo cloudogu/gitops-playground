@@ -5,6 +5,7 @@ import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.features.git.config.ScmTenantSchema
 import com.cloudogu.gitops.features.git.config.ScmTenantSchema.ScmManagerTenantConfig
 import com.cloudogu.gitops.git.GitRepo
+import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TestGitRepoFactory
 import groovy.yaml.YamlSlurper
@@ -124,11 +125,10 @@ spec:
                 )
         )
 
-
         def repoProvider = new TestGitRepoFactory(config, new FileSystemUtils()) {
             @Override
-            GitRepo getRepo(String repoTarget) {
-                def repo = super.getRepo(repoTarget,null)
+            GitRepo getRepo(String repoTarget,GitProvider gitProvider) {
+                def repo = super.getRepo(repoTarget,gitProvider)
                 localTempDir = new File(repo.getAbsoluteLocalRepoTmpDir())
 
                 return repo

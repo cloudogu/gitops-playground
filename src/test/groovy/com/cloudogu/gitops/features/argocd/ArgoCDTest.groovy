@@ -1903,7 +1903,7 @@ class ArgoCDTest {
     class ArgoCDForTest extends ArgoCD {
         ArgoCDForTest(Config config, CommandExecutorForTest k8sCommands, CommandExecutorForTest helmCommands) {
             super(config, new K8sClientForTest(config, k8sCommands), new HelmClient(helmCommands), new FileSystemUtils(),
-                    new TestGitRepoFactory(config, new FileSystemUtils()), new GitHandlerForTests())
+                    new TestGitRepoFactory(config, new FileSystemUtils()), null)
             mockPrefixActiveNamespaces(config)
         }
 
