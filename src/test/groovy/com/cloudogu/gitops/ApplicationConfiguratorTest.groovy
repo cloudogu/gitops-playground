@@ -24,26 +24,28 @@ class ApplicationConfiguratorTest {
     private TestLogger testLogger
     Config testConfig = Config.fromMap([
             application: [
-                    localHelmChartFolder : 'someValue',
-                    namePrefix : ''
+                    localHelmChartFolder: 'someValue',
+                    namePrefix          : ''
             ],
             registry   : [
-                    url         : EXPECTED_REGISTRY_URL,
-                    proxyUrl: "proxy-$EXPECTED_REGISTRY_URL",
+                    url          : EXPECTED_REGISTRY_URL,
+                    proxyUrl     : "proxy-$EXPECTED_REGISTRY_URL",
                     proxyUsername: "proxy-user",
                     proxyPassword: "proxy-pw",
-                    internalPort: EXPECTED_REGISTRY_INTERNAL_PORT,
+                    internalPort : EXPECTED_REGISTRY_INTERNAL_PORT,
             ],
             jenkins    : [
-                    url     : EXPECTED_JENKINS_URL
+                    url: EXPECTED_JENKINS_URL
             ],
-            scmm       : [
-                    url     : EXPECTED_SCMM_URL,
+            scm        : [
+                    scmManager: [
+                            url: EXPECTED_SCMM_URL
+                    ],
             ],
-            features    : [
-                    secrets : [
-                            vault : [
-                                    mode : EXPECTED_VAULT_MODE
+            features   : [
+                    secrets: [
+                            vault: [
+                                    mode: EXPECTED_VAULT_MODE
                             ]
                     ],
             ]
@@ -52,7 +54,7 @@ class ApplicationConfiguratorTest {
     // We have to set this value using env vars, which makes tests complicated, so ignore it
     Config almostEmptyConfig = Config.fromMap([
             application: [
-                    localHelmChartFolder : 'someValue',
+                    localHelmChartFolder: 'someValue',
             ],
     ])
 
@@ -83,28 +85,28 @@ class ApplicationConfiguratorTest {
             assertThat(actualConfig.application.runningInsideK8s).isEqualTo(true)
         }
     }
-    
+
     @Test
     void 'Sets jenkins active if external url is set'() {
         testConfig.jenkins.url = 'external'
         def actualConfig = applicationConfigurator.initConfig(testConfig)
         assertThat(actualConfig.jenkins.active).isEqualTo(true)
     }
-    
+
     @Test
     void 'Leaves Jenkins urlForScmm empty, if not active'() {
         testConfig.jenkins.url = ''
         testConfig.jenkins.active = false
-        
+
         def actualConfig = applicationConfigurator.initConfig(testConfig)
         assertThat(actualConfig.jenkins.urlForScmm).isEmpty()
     }
-    
+
     @Test
     void 'Fails if jenkins is external and scmm is internal or the other way round'() {
         testConfig.jenkins.active = true
         testConfig.jenkins.url = 'external'
-        testConfig.scm.scmmConfig.url = ''
+        testConfig.scm.scmManager.url = ''
 
         def exception = shouldFail(RuntimeException) {
             applicationConfigurator.validateConfig(testConfig)
@@ -112,14 +114,14 @@ class ApplicationConfiguratorTest {
         assertThat(exception.message).isEqualTo('When setting jenkins URL, scmm URL must also be set and the other way round')
 
         testConfig.jenkins.url = ''
-        testConfig.scm.scmmConfig.url = 'external'
+        testConfig.scm.scmManager.url = 'external'
 
         exception = shouldFail(RuntimeException) {
             applicationConfigurator.validateConfig(testConfig)
         }
         assertThat(exception.message).isEqualTo('When setting jenkins URL, scmm URL must also be set and the other way round')
-        
-        
+
+
         testConfig.jenkins.active = false
         applicationConfigurator.validateConfig(testConfig)
         // no exception when jenkins is not active
@@ -157,8 +159,8 @@ class ApplicationConfiguratorTest {
             applicationConfigurator.validateConfig(testConfig)
         }
         assertThat(exception.message).isEqualTo('content.repos requires a url parameter.')
-        
-        
+
+
         testConfig.content.repos = [
                 new Config.ContentSchema.ContentRepositorySchema(url: 'abc', type: Config.ContentRepoType.COPY, target: "missing_slash"),
         ]
@@ -178,7 +180,7 @@ class ApplicationConfiguratorTest {
         }
         assertThat(exception.message).isEqualTo('content.repos.type COPY requires content.repos.target to be set. Repo: abc')
     }
-    
+
     @Test
     void 'Fails if FOLDER_BASED repo has target parameter'() {
         testConfig.content.repos = [
@@ -188,8 +190,8 @@ class ApplicationConfiguratorTest {
             applicationConfigurator.validateConfig(testConfig)
         }
         assertThat(exception.message).isEqualTo('content.repos.type FOLDER_BASED does not support target parameter. Repo: abc')
-        
-        
+
+
         testConfig.content.repos = [
                 new Config.ContentSchema.ContentRepositorySchema(url: 'abc', type: Config.ContentRepoType.FOLDER_BASED, targetRef: 'someRef'),
         ]
@@ -246,8 +248,8 @@ class ApplicationConfiguratorTest {
         testConfig.content.examples = true
         testConfig.registry.internal = false
         testConfig.registry.url = ''
-        
-        
+
+
         def exception = shouldFail(RuntimeException) {
             applicationConfigurator.initConfig(testConfig)
         }
@@ -298,7 +300,7 @@ class ApplicationConfiguratorTest {
         assertThat(actualConfig.features.mail.mailhogUrl).isEqualTo("http://mailhog.localhost")
         assertThat(actualConfig.features.monitoring.grafanaUrl).isEqualTo("http://grafana.localhost")
         assertThat(actualConfig.features.secrets.vault.url).isEqualTo("http://vault.localhost")
-        assertThat(actualConfig.scm.scmmConfig.ingress).isEqualTo("scmm.localhost")
+        assertThat(actualConfig.scm.scmManager.ingress).isEqualTo("scmm.localhost")
         assertThat(actualConfig.jenkins.ingress).isEqualTo("jenkins.localhost")
     }
 
@@ -318,7 +320,7 @@ class ApplicationConfiguratorTest {
         assertThat(actualConfig.features.mail.mailhogUrl).isEqualTo("http://mailhog-localhost")
         assertThat(actualConfig.features.monitoring.grafanaUrl).isEqualTo("http://grafana-localhost")
         assertThat(actualConfig.features.secrets.vault.url).isEqualTo("http://vault-localhost")
-        assertThat(actualConfig.scm.scmmConfig.ingress).isEqualTo("scmm-localhost")
+        assertThat(actualConfig.scm.scmManager.ingress).isEqualTo("scmm-localhost")
         assertThat(actualConfig.jenkins.ingress).isEqualTo("jenkins-localhost")
     }
 
@@ -439,7 +441,7 @@ class ApplicationConfiguratorTest {
         testConfig.features.argocd.operator = true
         testConfig.features.argocd.resourceInclusionsCluster = 'https://100.125.0.1:443'
         testConfig.features.argocd.env = [
-                [name: "ENV_VAR_1", value: "value1"] ,
+                [name: "ENV_VAR_1", value: "value1"],
                 [name: "ENV_VAR_2", value: "value2"]
         ] as List<Map<String, String>>
 
@@ -574,11 +576,11 @@ class ApplicationConfiguratorTest {
     }
 
     @Test
-    void "MultiTenant Mode Central SCM Url"(){
-        testConfig.multiTenant.scmmConfig.url="scmm.localhost/scm"
-        testConfig.application.namePrefix="foo"
+    void "MultiTenant Mode Central SCM Url"() {
+        testConfig.multiTenant.scmManager.url = "scmm.localhost/scm"
+        testConfig.application.namePrefix = "foo"
         applicationConfigurator.initConfig(testConfig)
-        assertThat(testConfig.multiTenant.scmmConfig.url).toString() == "scmm.localhost/scm/"
+        assertThat(testConfig.multiTenant.scmManager.url).toString() == "scmm.localhost/scm/"
     }
 
     @Test

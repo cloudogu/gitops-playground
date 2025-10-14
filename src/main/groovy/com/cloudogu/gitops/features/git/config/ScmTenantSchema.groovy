@@ -20,48 +20,57 @@ class ScmTenantSchema {
             description = "The SCM provider type. Possible values: SCM_MANAGER, GITLAB",
             defaultValue = "SCM_MANAGER"
     )
-    ScmProviderType scmProviderType
+    ScmProviderType scmProviderType = ScmProviderType.SCM_MANAGER
 
     @JsonPropertyDescription("GitlabConfig")
     @Mixin
-    GitlabTenantConfig gitlabConfig
+    GitlabTenantConfig gitlab
 
     @JsonPropertyDescription("scmmTenantConfig")
     @Mixin
-    ScmManagerTenantConfig scmmConfig
+    ScmManagerTenantConfig scmManager
 
     String gitOpsUsername = ''
 
     @JsonIgnore
     Boolean internal = { ->
-        return (gitlabConfig.internal || scmmConfig.internal)
+        return (gitlab.internal || scmManager.internal)
     }
 
     static class GitlabTenantConfig implements GitlabConfig {
-        // Only supports external Gitlab for now
+
+        @JsonPropertyDescription(Description.GITLAB_INTERNAL)
         Boolean internal = false
 
-        @Option(names = ['--gitlab-url'], description = SCMM_URL_DESCRIPTION)
-        @JsonPropertyDescription(SCMM_URL_DESCRIPTION)
+        @Option(names = ['--gitlab-url'], description = Description.GITLAB_URL_DESCRIPTION)
+        @JsonPropertyDescription(Description.GITLAB_URL_DESCRIPTION)
         String url = ''
 
-        @Option(names = ['--gitlab-username'], description = SCMM_USERNAME_DESCRIPTION)
-        @JsonPropertyDescription(SCMM_USERNAME_DESCRIPTION)
+        @Option(names = ['--gitlab-username'], description = Description.GITLAB_USERNAME_DESCRIPTION)
+        @JsonPropertyDescription(Description.GITLAB_USERNAME_DESCRIPTION)
         String username = 'oauth2.0'
 
-        @Option(names = ['--gitlab-token'], description = SCMM_PASSWORD_DESCRIPTION)
-        @JsonPropertyDescription(SCMM_PASSWORD_DESCRIPTION)
+        @Option(names = ['--gitlab-token'], description = Description.GITLAB_TOKEN_DESCRIPTION)
+        @JsonPropertyDescription(Description.GITLAB_TOKEN_DESCRIPTION)
         String password = ''
 
-        @Option(names = ['--gitlab-parent-id'], description = SCMM_PASSWORD_DESCRIPTION)
-        @JsonPropertyDescription(SCMM_PASSWORD_DESCRIPTION)
+        @Option(names = ['--gitlab-parent-id'], description = Description.GITLAB_PARENT_GROUP_ID)
+        @JsonPropertyDescription(Description.GITLAB_PARENT_GROUP_ID)
         String parentGroupId = ''
-
 
         Credentials getCredentials() {
             return new Credentials(username, password)
         }
+
+        static final class Description {
+            String GITLAB_INTERNAL = 'True if Gitlab is running in the same K8s cluster. For now we only support access by external URL'
+            String GITLAB_URL_DESCRIPTION = "Base URL for the Gitlab instance"
+            String GITLAB_USERNAME_DESCRIPTION = 'Gitlab Username.'
+            String GITLAB_TOKEN_DESCRIPTION = 'PAT Token for the account. Needs read/write repo permissions. See docs for mor information'
+            String GITLAB_PARENT_GROUP_ID = 'Number for the Gitlab Group where the repos and subgroups should be created'
+        }
     }
+
 
     static class ScmManagerTenantConfig implements ScmManagerConfig {
         Boolean internal = true
@@ -72,7 +81,6 @@ class ScmTenantSchema {
 
         @Option(names = ['--scm-namespace'], description = 'Namespace where the tenant scm resides in')
         @JsonPropertyDescription(CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
-        //TODO DESCRIPTION
         String namespace = 'scm-manager'
 
         @Option(names = ['--scmm-username'], description = SCMM_USERNAME_DESCRIPTION)

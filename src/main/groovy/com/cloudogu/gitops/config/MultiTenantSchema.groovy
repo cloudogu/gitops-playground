@@ -17,7 +17,7 @@ class MultiTenantSchema {
             description = "The SCM provider type. Possible values: SCM_MANAGER, GITLAB",
             defaultValue = "SCM_MANAGER"
     )
-    ScmProviderType scmProviderType
+    ScmProviderType scmProviderType = ScmProviderType.SCM_MANAGER
 
     @JsonPropertyDescription("GitlabConfig")
     @Mixin
@@ -25,7 +25,7 @@ class MultiTenantSchema {
 
     @JsonPropertyDescription("ScmmConfig")
     @Mixin
-    ScmManagerCentralConfig scmmConfig
+    ScmManagerCentralConfig scmManager
 
     @Option(names = ['--central-argocd-namespace'], description = CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
     @JsonPropertyDescription(CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)

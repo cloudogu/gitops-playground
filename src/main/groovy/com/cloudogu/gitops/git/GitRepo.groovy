@@ -26,7 +26,6 @@ class GitRepo {
     private final FileSystemUtils fileSystemUtils
 
     private final String repoTarget
-    private final boolean isCentralRepo
     private final boolean insecure
     private final String gitName
     private final String gitEmail
@@ -37,15 +36,13 @@ class GitRepo {
     GitRepo(Config config,
             GitProvider gitProvider,
             String repoTarget,
-            FileSystemUtils fileSystemUtils,
-            Boolean isCentralRepo = false) {
+            FileSystemUtils fileSystemUtils) {
         def tmpDir = File.createTempDir()
         tmpDir.deleteOnExit()
         this.absoluteLocalRepoTmpDir = tmpDir.absolutePath
         this.config = config
         this.gitProvider = gitProvider
         this.fileSystemUtils = fileSystemUtils
-        this.isCentralRepo = isCentralRepo //TODO do we need this?
 
         this.repoTarget = repoTarget.startsWith(NAMESPACE_3RD_PARTY_DEPENDENCIES) ? repoTarget :
                 "${config.application.namePrefix}${repoTarget}"
@@ -62,7 +59,7 @@ class GitRepo {
     // TODO maybe it is better to have two methods: create and setPermission, because here we have default permission set to USER. in Gitlab it is maybe different...
     boolean createRepositoryAndSetPermission(String repoTarget, String description, boolean initialize = true) {
         def isNewRepo = this.gitProvider.createRepository(repoTarget, description, initialize)
-        if (isNewRepo && gitProvider.getGitOpsUsername()) {
+        if (isNewRepo && gitProvider.getGitOpsUsername()) { //TODO Anna remove GitOpsUserName
             gitProvider.setRepositoryPermission(
                     repoTarget,
                     gitProvider.getGitOpsUsername(),
@@ -196,7 +193,7 @@ class GitRepo {
                 .setCredentialsProvider(getCredentialProvider())
     }
 
-    String getGitRepositoryUrl(){
+    String getGitRepositoryUrl() {
         return this.gitProvider.repoUrl(repoTarget, RepoUrlScope.CLIENT)
     }
 

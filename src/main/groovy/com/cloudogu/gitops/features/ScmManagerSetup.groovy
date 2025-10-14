@@ -54,19 +54,19 @@ class ScmManagerSetup extends Feature {
 
     @Override
     void enable() {
-        if (config.scm.scmmConfig.internal) {
+        if (config.scm.scmManager.internal) {
             String releaseName = 'scmm'
 
             k8sClient.createNamespace(namespace)
 
-            def helmConfig = config.scm.scmmConfig.helm
+            def helmConfig = config.scm.scmManager.helm
 
             def templatedMap = templateToMap(HELM_VALUES_PATH, [
-                    host       : config.scm.scmmConfig.ingress,
+                    host       : config.scm.scmManager.ingress,
                     remote     : config.application.remote,
-                    username   : config.scm.scmmConfig.username,
-                    password   : config.scm.scmmConfig.password,
-                    helm       : config.scm.scmmConfig.helm,
+                    username   : config.scm.scmManager.username,
+                    password   : config.scm.scmManager.password,
+                    helm       : config.scm.scmManager.helm,
                     releaseName: releaseName
             ])
 
@@ -89,12 +89,12 @@ class ScmManagerSetup extends Feature {
 
             if (config.application.runningInsideK8s) {
                 log.debug("Setting scmm url to k8s service, since installation is running inside k8s")
-                config.scm.scmmConfig.url = networkingUtils.createUrl("${releaseName}.${namespace}.svc.cluster.local", "80", contentPath)
+                config.scm.scmManager.url = networkingUtils.createUrl("${releaseName}.${namespace}.svc.cluster.local", "80", contentPath)
             } else {
                 log.debug("Setting internal configs for local single node cluster with internal scmm. Waiting for NodePort...")
                 def port = k8sClient.waitForNodePort(releaseName, namespace)
                 String clusterBindAddress = networkingUtils.findClusterBindAddress()
-                config.scm.scmmConfig.url = networkingUtils.createUrl(clusterBindAddress, port, contentPath)
+                config.scm.scmManager.url = networkingUtils.createUrl(clusterBindAddress, port, contentPath)
 
                 if (config.multiTenant.useDedicatedInstance && config.multiTenant.scmProviderType==ScmProviderType.SCM_MANAGER) {
                     log.debug("Setting internal configs for local single node cluster with internal central scmm. Waiting for NodePort...")
@@ -111,15 +111,15 @@ class ScmManagerSetup extends Feature {
                 GIT_COMMITTER_EMAIL          : config.application.gitEmail,
                 GIT_AUTHOR_NAME              : config.application.gitName,
                 GIT_AUTHOR_EMAIL             : config.application.gitEmail,
-                GITOPS_USERNAME              : config.scm.scmmConfig.gitOpsUsername,
+                GITOPS_USERNAME              : config.scm.scmManager.gitOpsUsername,
                 TRACE                        : config.application.trace,
-                SCMM_URL                     : config.scm.scmmConfig.url,
-                SCMM_USERNAME                : config.scm.scmmConfig.username,
-                SCMM_PASSWORD                : config.scm.scmmConfig.password,
+                SCMM_URL                     : config.scm.scmManager.url,
+                SCMM_USERNAME                : config.scm.scmManager.username,
+                SCMM_PASSWORD                : config.scm.scmManager.password,
                 JENKINS_URL                  : config.jenkins.url,
-                INTERNAL_SCMM                : config.scm.scmmConfig.internal,
+                INTERNAL_SCMM                : config.scm.scmManager.internal,
                 JENKINS_URL_FOR_SCMM         : config.jenkins.urlForScmm,
-                SCMM_URL_FOR_JENKINS         : config.scm.scmmConfig.urlForJenkins,
+                SCMM_URL_FOR_JENKINS         : config.scm.scmManager.urlForJenkins,
                 // Used indirectly in utils.sh 😬
                 REMOTE_CLUSTER               : config.application.remote,
                 INSTALL_ARGOCD               : config.features.argocd.active,
@@ -129,14 +129,14 @@ class ScmManagerSetup extends Feature {
                 CES_BUILD_LIB_REPO           : config.repositories.cesBuildLib.url,
                 NAME_PREFIX                  : config.application.namePrefix,
                 INSECURE                     : config.application.insecure,
-                SCM_ROOT_PATH                : config.scm.scmmConfig.rootPath,
+                SCM_ROOT_PATH                : config.scm.scmManager.rootPath,
                 SCM_PROVIDER                 : 'scm-manager',
                 CONTENT_EXAMPLES             : false,
-                SKIP_RESTART                 : config.scm.scmmConfig.skipRestart,
-                SKIP_PLUGINS                 : config.scm.scmmConfig.skipPlugins,
+                SKIP_RESTART                 : config.scm.scmManager.skipRestart,
+                SKIP_PLUGINS                 : config.scm.scmManager.skipPlugins,
                 CENTRAL_SCM_URL              : config.multiTenant.gitlabConfig.url, //TODO
-                CENTRAL_SCM_USERNAME         : config.multiTenant.scmmConfig.username,
-                CENTRAL_SCM_PASSWORD         : config.multiTenant.scmmConfig.password
+                CENTRAL_SCM_USERNAME         : config.multiTenant.scmManager.username,
+                CENTRAL_SCM_PASSWORD         : config.multiTenant.scmManager.password
         ])
     }
 }

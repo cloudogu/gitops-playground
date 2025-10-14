@@ -13,13 +13,20 @@ class ArgocdApplicationTest {
 
 
     Config config = Config.fromMap([
-            scmm       : [
-                    username: 'user',
-                    password: 'pass',
-                    protocol: 'http',
-                    host    : 'localhost',
-                    provider: 'scm-manager',
-                    rootPath: 'scm'
+            scm: [
+                    scmManager: [ username: 'user',
+                                  password: 'pass',
+                                  protocol: 'http',
+                                  host    : 'localhost',
+                                  rootPath: 'scm'
+                    ],
+                    gitlab: [ username: 'user',
+                              password: 'pass',
+                              protocol: 'http',
+                              host    : 'localhost',
+                              rootPath: 'scm'
+
+                    ]
             ],
             application: [
                     namePrefix: '',
@@ -28,7 +35,6 @@ class ArgocdApplicationTest {
                     gitEmail  : 'test@example.com'
             ]
     ])
-
 
     @Test
     void 'simple ArgoCD Application with common values'() {

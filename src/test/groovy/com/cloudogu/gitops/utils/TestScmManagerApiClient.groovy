@@ -22,7 +22,7 @@ class TestScmManagerApiClient extends ScmManagerApiClient {
     Set<String> createdPermissions = new HashSet<>()
 
     TestScmManagerApiClient(Config config) {
-        super(config.scm.scmmConfig.url, new Credentials(config.scm.scmmConfig.username, config.scm.scmmConfig.password), null)
+        super(config.scm.scmManager.url, new Credentials(config.scm.scmManager.username, config.scm.scmManager.password), null)
     }
 
     @Override

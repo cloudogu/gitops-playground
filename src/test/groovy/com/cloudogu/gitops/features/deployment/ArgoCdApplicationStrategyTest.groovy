@@ -113,7 +113,7 @@ spec:
                         gitEmail: 'hello@cloudogu.com'
                 ),
                 scm: new ScmTenantSchema(
-                        scmmConfig: new ScmManagerTenantConfig(
+                        scmManager: new ScmManagerTenantConfig(
                             username: "dont-care-username",
                             password: "dont-care-password"
                         )

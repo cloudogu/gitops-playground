@@ -288,8 +288,8 @@ policies:
 
     @Test
     void 'uses remote scmm url if requested'() {
-        config.scm.scmmConfig.internal = false
-        config.scm.scmmConfig.url = 'https://localhost:9091/prefix'
+        config.scm.scmManager.internal = false
+        config.scm.scmManager.url = 'https://localhost:9091/prefix'
         createStack().install()
 
 
