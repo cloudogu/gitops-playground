@@ -5,6 +5,7 @@ import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.features.git.config.util.ScmManagerConfig
 import com.cloudogu.gitops.git.providers.AccessRole
 import com.cloudogu.gitops.git.providers.GitProvider
+import com.cloudogu.gitops.git.providers.RepoUrlScope
 import com.cloudogu.gitops.git.providers.Scope
 import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
 import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
@@ -49,12 +50,6 @@ class ScmManager implements GitProvider {
         handle201or409(response, "Permission on ${repoNamespace}/${repoName}")
     }
 
-    /** Client (this process) pushes to …/scm/<rootPath>/<ns>/<name> */
-    @Override
-    String computePushUrl(String repoTarget) {
-        return urls.clientRepoUrl(repoTarget).toString()
-    }
-
     @Override
     Credentials getCredentials() {
         return this.scmmConfig.credentials
@@ -92,15 +87,22 @@ class ScmManager implements GitProvider {
 
     /** In-cluster repo prefix: …/scm/<rootPath>/[<namePrefix>] */
     @Override
-    String computeRepoPrefixUrlForInCluster(boolean includeNamePrefix) {        
-    
-    return urls.inClusterRepoPrefix(includeNamePrefix)
+    String repoPrefix(boolean includeNamePrefix) {
+        return urls.inClusterRepoPrefix(includeNamePrefix)
     }
 
-    /** In-cluster pull: …/scm/<rootPath>/<ns>/<name> */
+
+    /**  …/scm/<rootPath>/<ns>/<name> */
     @Override
-    String computeRepoUrlForInCluster(String repoTarget) {
-        return urls.inClusterRepoUrl(repoTarget)
+    String repoUrl(String repoTarget, RepoUrlScope scope) {
+        switch (scope) {
+            case RepoUrlScope.CLIENT:
+                return urls.clientRepoUrl(repoTarget).toString()
+            case RepoUrlScope.IN_CLUSTER:
+                return urls.inClusterRepoUrl(repoTarget)
+            default:
+                return urls.inClusterRepoUrl(repoTarget)
+        }
     }
 
     @Override
@@ -146,7 +148,6 @@ class ScmManager implements GitProvider {
         }
         return true// because its created
     }
-
 
 
     //TODO when git abctraction feature is ready, we will create before merge to main a branch, that

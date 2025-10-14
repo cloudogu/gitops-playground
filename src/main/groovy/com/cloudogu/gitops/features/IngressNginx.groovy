@@ -77,7 +77,7 @@ class IngressNginx extends Feature implements FeatureWithImage {
                             'Chart.yaml'))['version']
 
             deployer.deployFeature(
-                    gitHandler.resourcesScm.computeRepoUrlForInCluster(repoNamespaceAndName),
+                    gitHandler.resourcesScm.repoUrl(repoNamespaceAndName),
                     'ingress-nginx',
                     '.',
                     ingressNginxVersion,

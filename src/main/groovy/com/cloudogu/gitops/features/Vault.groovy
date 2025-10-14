@@ -135,7 +135,7 @@ class Vault extends Feature implements FeatureWithImage {
                             'Chart.yaml'))['version']
 
             deployer.deployFeature(
-                    this.gitHandler.resourcesScm.computeRepoUrlForInCluster(repoNamespaceAndName),
+                    this.gitHandler.resourcesScm.repoUrl(repoNamespaceAndName),
                     'vault',
                     '.',
                     vaultVersion,
