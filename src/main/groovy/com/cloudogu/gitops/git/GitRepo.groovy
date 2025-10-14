@@ -4,6 +4,7 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.git.jgit.helpers.InsecureCredentialProvider
 import com.cloudogu.gitops.git.providers.AccessRole
 import com.cloudogu.gitops.git.providers.GitProvider
+import com.cloudogu.gitops.git.providers.RepoUrlScope
 import com.cloudogu.gitops.git.providers.Scope
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
@@ -78,7 +79,7 @@ class GitRepo {
     }
 
     void cloneRepo() {
-        def cloneUrl = gitProvider.computePushUrl(repoTarget)
+        def cloneUrl = gitProvider.repoUrl(repoTarget, RepoUrlScope.CLIENT)
         log.debug("Cloning ${repoTarget}, Origin: ${cloneUrl}")
         Git.cloneRepository()
                 .setURI(cloneUrl)
@@ -190,13 +191,13 @@ class GitRepo {
     private PushCommand createPushCommand(String refSpec) {
         getGit()
                 .push()
-                .setRemote(gitProvider.computePushUrl(repoTarget))
+                .setRemote(gitProvider.repoUrl(repoTarget, RepoUrlScope.CLIENT))
                 .setRefSpecs(new RefSpec(refSpec))
                 .setCredentialsProvider(getCredentialProvider())
     }
 
     String getGitRepositoryUrl(){
-        return this.gitProvider.computePushUrl(repoTarget)
+        return this.gitProvider.repoUrl(repoTarget, RepoUrlScope.CLIENT)
     }
 
     private Git getGit() {

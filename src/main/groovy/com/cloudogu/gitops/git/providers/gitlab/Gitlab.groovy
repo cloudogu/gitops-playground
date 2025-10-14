@@ -5,6 +5,7 @@ import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.features.git.config.util.GitlabConfig
 import com.cloudogu.gitops.git.providers.AccessRole
 import com.cloudogu.gitops.git.providers.GitProvider
+import com.cloudogu.gitops.git.providers.RepoUrlScope
 import com.cloudogu.gitops.git.providers.Scope
 import com.cloudogu.gitops.git.utils.StringUtils
 import groovy.util.logging.Slf4j
@@ -88,18 +89,13 @@ class Gitlab implements GitProvider {
     }
 
     @Override
-    String computePushUrl(String repoTarget) {
+    String repoUrl(String repoTarget, RepoUrlScope scope) {
         String base = StringUtils.trimBoth(gitlabConfig.url)
         return "${base}/${parentFullPath()}/${repoTarget}.git"
     }
 
     @Override
-    String computeRepoUrlForInCluster(String repoTarget) {
-        return computePushUrl(repoTarget)
-    }
-
-    @Override
-    String computeRepoPrefixUrlForInCluster(boolean includeNamePrefix) {
+    String repoPrefix(boolean includeNamePrefix) {
         String base = StringUtils.trimBoth(gitlabConfig.url)
 
         def prefix = StringUtils.trimBoth(config.application.namePrefix ?: "")

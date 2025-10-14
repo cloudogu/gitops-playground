@@ -81,7 +81,7 @@ class CertManager extends Feature implements FeatureWithImage {
                             'Chart.yaml'))['version']
 
             deployer.deployFeature(
-                    gitHandler.getResourcesScm().computeRepoUrlForInCluster(repoNamespaceAndName),
+                    gitHandler.getResourcesScm().repoUrl(repoNamespaceAndName),
                     'cert-manager',
                     '.',
                     certManagerVersion,
