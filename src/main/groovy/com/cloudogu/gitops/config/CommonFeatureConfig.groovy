@@ -6,8 +6,7 @@ import groovy.util.logging.Slf4j
 @Slf4j
 class CommonFeatureConfig extends Feature {
     @Override
-    void preConfigValidation(Config configToSet) {
-        log.debug("Common preConfigValidation")
+    void preConfigInit(Config configToSet) {
         validateScmmAndJenkinsAreBothSet(configToSet)
         validateMirrorReposHelmChartFolderSet(configToSet)
     }

@@ -85,14 +85,14 @@ abstract class Feature {
     protected void validate() { }
 
     /**
-     * Hook for preConfigValidation. Optional.
+     * Hook for preConfigInit. Optional.
      * Feature should throw RuntimeException to stop immediately.
      */
-    void preConfigValidation(Config configToSet) { }
+    void preConfigInit(Config configToSet) { }
 
     /**
-     * Hook for postConfigValidation. Optional.
+     * Hook for postConfigInit. Optional.
      * Feature should throw RuntimeException to stop immediately.
      */
-    void postConfigValidation(Config configToSet) { }
+    void postConfigInit(Config configToSet) { }
 }

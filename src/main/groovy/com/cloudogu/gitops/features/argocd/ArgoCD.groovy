@@ -77,7 +77,7 @@ class ArgoCD extends Feature {
     }
 
     @Override
-    void postConfigValidation(Config configToSet) {
+    void postConfigInit(Config configToSet) {
         // Exit early if not in operator mode or if env list is empty
         if (!configToSet.features.argocd.operator || !configToSet.features.argocd.env) {
             log.debug("Skipping features.argocd.env validation: operator mode is disabled or env list is empty.")

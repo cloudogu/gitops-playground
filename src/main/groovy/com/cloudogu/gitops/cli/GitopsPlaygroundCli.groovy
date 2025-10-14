@@ -24,6 +24,8 @@ import picocli.CommandLine
 
 import static com.cloudogu.gitops.config.ConfigConstants.APP_NAME
 import static com.cloudogu.gitops.utils.MapUtils.deepMerge
+
+
 /**
  * Provides the entrypoint to the application as well as all config parameters.
  * When changing parameters, make sure to update the Config for the config file as well
@@ -37,7 +39,7 @@ class GitopsPlaygroundCli {
     ApplicationConfigurator applicationConfigurator
 
     GitopsPlaygroundCli(K8sClient k8sClient = new K8sClient(new CommandExecutor(), new FileSystemUtils(), null),
-                        ApplicationConfigurator applicationConfigurator = new ApplicationConfigurator(null)) {
+                        ApplicationConfigurator applicationConfigurator = new ApplicationConfigurator()) {
         this.k8sClient = k8sClient
         this.applicationConfigurator = applicationConfigurator
     }
@@ -65,6 +67,8 @@ class GitopsPlaygroundCli {
         Application app = context.getBean(Application)
 
         def config = readConfigs(args)
+        runHook(app, 'preConfigInit', config)
+
         if (config.application.outputConfigFile) {
             println(config.toYaml(false))
             return ReturnCode.SUCCESS
@@ -74,8 +78,9 @@ class GitopsPlaygroundCli {
         // eg a simple docker run .. --help should not fail with connection refused
         config = applicationConfigurator.initConfig(config)
         log.debug("Actual config: ${config.toYaml(true)}")
+        runHook(app, 'postConfigInit', config)
 
-        runHook(app, 'postConfigValidation', config)
+        context = createApplicationContext()
         register(config, context)
 
         if (config.application.destroy) {
@@ -91,6 +96,7 @@ class GitopsPlaygroundCli {
             if (!confirm("Applying gitops playground to kubernetes cluster '${k8sClient.currentContext}'.", config)) {
                 return ReturnCode.NOT_CONFIRMED
             }
+            app = context.getBean(Application)
             app.start()
 
             printWelcomeScreen()
@@ -211,9 +217,6 @@ class GitopsPlaygroundCli {
         log.debug("Writing CLI params into config")
         Config mergedConfig = Config.fromMap(mergedConfigs)
         new CommandLine(mergedConfig).parseArgs(args)
-
-        def app = ApplicationContext.run().getBean(Application)
-        runHook(app, 'preConfigValidation', mergedConfig)
         
         return mergedConfig
     }

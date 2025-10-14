@@ -79,7 +79,7 @@ class Content extends Feature {
     }
 
     @Override
-    void preConfigValidation(Config configToSet) {
+    void preConfigInit(Config configToSet) {
         config.content.repos.each { repo ->
 
             if (!repo.url) {
