@@ -36,11 +36,7 @@ class ScmManagerUrlResolver {
     /** Client repo base …/scm/<root> (no trailing slash) */
     URI clientRepoBase() { noTrailSlash(withSlash(clientBase()).resolve("${root()}/")) }
 
-    /** Client repo URL …/scm/<root>/<ns>/<name> (no trailing slash) */
-    URI clientRepoUrl(String repoTarget) {
-        def rt = StringUtils.trimBoth(repoTarget)
-        noTrailSlash(withSlash(clientRepoBase()).resolve("${rt}/"))
-    }
+
 
     /** In-cluster base …/scm (no trailing slash) */
     URI inClusterBase() { noTrailSlash(ensureScm(inClusterBaseRaw())) }
@@ -56,8 +52,14 @@ class ScmManagerUrlResolver {
 
     /** In-cluster repo URL …/scm/<root>/<ns>/<name> */
     String inClusterRepoUrl(String repoTarget) {
-        def rt = StringUtils.trimBoth(repoTarget)
-        noTrailSlash(withSlash(inClusterBase()).resolve("${root()}/${rt}/")).toString()
+        def repo = StringUtils.trimBoth(repoTarget)
+        noTrailSlash(withSlash(inClusterBase()).resolve("${root()}/${repo}/")).toString()
+    }
+
+    /** Client repo URL …/scm/<root>/<ns>/<name> (no trailing slash) */
+    String clientRepoUrl(String repoTarget) {
+        def repo = StringUtils.trimBoth(repoTarget)
+        noTrailSlash(withSlash(clientRepoBase()).resolve("${repo}/")).toString()
     }
 
     /** …/scm/api/v2/metrics/prometheus */

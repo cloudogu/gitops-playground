@@ -97,7 +97,7 @@ class ScmManager implements GitProvider {
     String repoUrl(String repoTarget, RepoUrlScope scope) {
         switch (scope) {
             case RepoUrlScope.CLIENT:
-                return urls.clientRepoUrl(repoTarget).toString()
+                return urls.clientRepoUrl(repoTarget)
             case RepoUrlScope.IN_CLUSTER:
                 return urls.inClusterRepoUrl(repoTarget)
             default:
