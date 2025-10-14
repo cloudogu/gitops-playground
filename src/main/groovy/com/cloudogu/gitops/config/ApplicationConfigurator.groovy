@@ -119,20 +119,20 @@ class ApplicationConfigurator {
         //TODO
 //        if (newConfig.scm.gitlabConfig.url && newConfig.scm.gitlabConfig.password){
 //            newConfig.scm.provider= ScmTenantSchema.ScmProviderType.GITLAB
-//        }else if(newConfig.scm.scmmConfig.url){
+//        }else if(newConfig.scm.scmManager.url){
 //            throw new RuntimeException(
 //        }
 
-        if (newConfig.scm.scmmConfig.url) {
+        if (newConfig.scm.scmManager.url) {
             log.debug("Setting external scmm config")
-            newConfig.scm.scmmConfig.internal = false
-            newConfig.scm.scmmConfig.urlForJenkins = newConfig.scm.scmmConfig.url
+            newConfig.scm.scmManager.internal = false
+            newConfig.scm.scmManager.urlForJenkins = newConfig.scm.scmManager.url
         } else {
             log.debug("Setting configs for internal SCMHandler-Manager")
             // We use the K8s service as default name here, because it is the only option:
             // "scmm.localhost" will not work inside the Pods and k3d-container IP + Port (e.g. 172.x.y.z:9091)
             // will not work on Windows and MacOS.
-            newConfig.scm.scmmConfig.urlForJenkins =
+            newConfig.scm.scmManager.urlForJenkins =
                     "http://scmm.${newConfig.application.namePrefix}scm-manager.svc.cluster.local/scm"
 
             // More internal fields are set lazily in ScmManger.groovy (after SCMM is deployed and ports are known)
@@ -140,15 +140,15 @@ class ApplicationConfigurator {
 
         // We probably could get rid of some of the complexity by refactoring url, host and ingress into a single var
         if (newConfig.application.baseUrl) {    //TODO check, do we need ingerss? During ScmManager setup --> redesign by oop concept
-            newConfig.scm.scmmConfig.ingress = new URL(injectSubdomain("${newConfig.application.namePrefix}scmm",
+            newConfig.scm.scmManager.ingress = new URL(injectSubdomain("${newConfig.application.namePrefix}scmm",
                     newConfig.application.baseUrl as String, newConfig.application.urlSeparatorHyphen as Boolean)).host
         }
         // When specific user/pw are not set, set them to global values
-        if (newConfig.scm.scmmConfig.password === Config.DEFAULT_ADMIN_PW) {
-            newConfig.scm.scmmConfig.password = newConfig.application.password
+        if (newConfig.scm.scmManager.password === Config.DEFAULT_ADMIN_PW) {
+            newConfig.scm.scmManager.password = newConfig.application.password
         }
-        if (newConfig.scm.scmmConfig.username === Config.DEFAULT_ADMIN_USER) {
-            newConfig.scm.scmmConfig.username = newConfig.application.username
+        if (newConfig.scm.scmManager.username === Config.DEFAULT_ADMIN_USER) {
+            newConfig.scm.scmManager.username = newConfig.application.username
         }
 
     }
@@ -224,7 +224,7 @@ class ApplicationConfigurator {
             }
 
             //TODO move this into scm validation
-            /*if (!newConfig.multiTenant.scmmConfig.username || !newConfig.multiTenant.scmmConfig.password) {
+            /*if (!newConfig.multiTenant.scmManager.username || !newConfig.multiTenant.scmManager.password) {
                 throw new RuntimeException('To use Central Multi Tenant mode define the username and password for the central SCMHandler instance.')
             }*/
 
@@ -233,12 +233,12 @@ class ApplicationConfigurator {
             }
 
             // Removes trailing slash from the input URL to avoid duplicated slashes in further URL handling
-            if (newConfig.multiTenant.scmmConfig.url) {
-                String urlString = newConfig.multiTenant.scmmConfig.url.toString()
+            if (newConfig.multiTenant.scmManager.url) {
+                String urlString = newConfig.multiTenant.scmManager.url.toString()
                 if (urlString.endsWith("/")) {
                     urlString = urlString[0..-2]
                 }
-                newConfig.multiTenant.scmmConfig.url = urlString
+                newConfig.multiTenant.scmManager.url = urlString
             }
 
             //Disabling IngressNginx in DedicatedInstances Mode for now.

@@ -318,10 +318,10 @@ class GitopsPlaygroundCliTest {
         assertThat(myconfig.jenkins.helm.version).isEqualTo('5.8.1') // overridden
 
 
-        assertThat(myconfig.scm.scmmConfig.helm.chart).isEqualTo('scm-manager')
-        assertThat(myconfig.scm.scmmConfig.helm.repoURL).isEqualTo('https://packages.scm-manager.org/repository/helm-v2-releases/')
-        assertThat(myconfig.scm.scmmConfig.helm.version).isEqualTo('3.10.2')
-        assertThat(myconfig.scm.scmmConfig.helm.values.initialDelaySeconds).isEqualTo(120) // overridden
+        assertThat(myconfig.scm.scmManager.helm.chart).isEqualTo('scm-manager')
+        assertThat(myconfig.scm.scmManager.helm.repoURL).isEqualTo('https://packages.scm-manager.org/repository/helm-v2-releases/')
+        assertThat(myconfig.scm.scmManager.helm.version).isEqualTo('3.10.2')
+        assertThat(myconfig.scm.scmManager.helm.values.initialDelaySeconds).isEqualTo(120) // overridden
 
         assertThat(cli.lastSchema.features.monitoring.helm.chart).isEqualTo('kube-prometheus-stack')
         assertThat(cli.lastSchema.features.monitoring.helm.repoURL).isEqualTo('https://prometheus-community.github.io/helm-charts')

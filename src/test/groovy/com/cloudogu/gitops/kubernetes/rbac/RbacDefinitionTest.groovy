@@ -12,23 +12,24 @@ import static org.junit.jupiter.api.Assertions.assertThrows
 class RbacDefinitionTest {
 
     private final Config config = Config.fromMap([
-            scmm: [
-                    username: 'user',
-                    password: 'pass',
-                    protocol: 'http',
-                    host: 'localhost',
-                    provider: 'scm-manager',
-                    rootPath: 'scm'
+            scm        : [
+                    scmManager: [
+                            username: 'user',
+                            password: 'pass',
+                            protocol: 'http',
+                            host    : 'localhost',
+                            rootPath: 'scm'
+                    ],
             ],
             application: [
                     namePrefix: '',
-                    insecure: false,
-                    gitName: 'Test User',
-                    gitEmail: 'test@example.com'
+                    insecure  : false,
+                    gitName   : 'Test User',
+                    gitEmail  : 'test@example.com'
             ]
     ])
 
-    private final GitRepo repo = new GitRepo(config,null, "my-repo", new FileSystemUtils())
+    private final GitRepo repo = new GitRepo(config, null, "my-repo", new FileSystemUtils())
 
     @Test
     void 'generates at least one RBAC YAML file'() {
@@ -245,7 +246,7 @@ class RbacDefinitionTest {
     void 'renders node access rules in argocd-role only when not on OpenShift'() {
         config.application.openshift = false
 
-        GitRepo tempRepo = new GitRepo(config,null, "rbac-test", new FileSystemUtils())
+        GitRepo tempRepo = new GitRepo(config, null, "rbac-test", new FileSystemUtils())
 
         new RbacDefinition(Role.Variant.ARGOCD)
                 .withName("nodecheck")
@@ -271,7 +272,7 @@ class RbacDefinitionTest {
     void 'does not render node access rules in argocd-role  when on OpenShift'() {
         config.application.openshift = true
 
-        GitRepo tempRepo = new GitRepo(config,null, "rbac-test", new FileSystemUtils())
+        GitRepo tempRepo = new GitRepo(config, null, "rbac-test", new FileSystemUtils())
 
         new RbacDefinition(Role.Variant.ARGOCD)
                 .withName("nodecheck")
@@ -302,7 +303,8 @@ class RbacDefinitionTest {
                     .generate()
         }
 
-        assertThat(ex.message).contains("Config must not be null") // oder je nach deiner tatsächlichen Exception-Message
+        assertThat(ex.message).contains("Config must not be null")
+        // oder je nach deiner tatsächlichen Exception-Message
     }
 
 }

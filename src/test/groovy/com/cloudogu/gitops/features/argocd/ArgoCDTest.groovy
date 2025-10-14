@@ -1,7 +1,6 @@
 package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.utils.*
 import groovy.io.FileType
@@ -49,8 +48,9 @@ class ArgoCDTest {
                     ]
             ],
             scm: [
-                    internal: true,
-                    url     : 'https://abc'
+                    scmManager: [
+                            internal: true,
+                            url     : 'https://abc'],
             ],
             images: buildImages + [petclinic: 'petclinic-value'],
             repositories: [
@@ -206,7 +206,7 @@ class ArgoCDTest {
     @Test
     void 'Installs argoCD for remote and external Scmm'() {
         config.application.remote = true
-        config.scm.scmmConfig.internal = false
+        config.scm.scmManager.internal = false
         config.features.argocd.url = 'https://argo.cd'
 
         def argocd = createArgoCD()
@@ -1719,7 +1719,7 @@ class ArgoCDTest {
     void 'If using mirror with GitLab, ensure source repos in cluster-resources got right URL'() {
         config.application.mirrorRepos = true
         config.scm.scmProviderType = 'GITLAB'
-        config.scm.gitlabConfig.url = 'https://testGitLab.com/testgroup/'
+        config.scm.gitlab.url = 'https://testGitLab.com/testgroup/'
         createArgoCD().install()
 
         def clusterRessourcesYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/cluster-resources.yaml')
@@ -1799,9 +1799,9 @@ class ArgoCDTest {
 
     void setup() {
         config.application.namePrefix = 'testPrefix-'
-        config.multiTenant.scmmConfig.url = 'scmm.testhost/scm'
-        config.multiTenant.scmmConfig.username = 'testUserName'
-        config.multiTenant.scmmConfig.password = 'testPassword'
+        config.multiTenant.scmManager.url = 'scmm.testhost/scm'
+        config.multiTenant.scmManager.username = 'testUserName'
+        config.multiTenant.scmManager.password = 'testPassword'
         config.multiTenant.useDedicatedInstance = true
 
         this.argocd = setupOperatorTest()

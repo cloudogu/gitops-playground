@@ -30,7 +30,7 @@ class GitopsPlaygroundCliMainScriptedTest {
     Config config = new Config(
             jenkins: new JenkinsSchema(url: 'http://jenkins'),
             scm: new ScmTenantSchema(
-                    scmmConfig: new ScmManagerTenantConfig(url: 'http://scmm'))
+                    scmManager: new ScmManagerTenantConfig(url: 'http://scmm'))
     )
 
     /**

@@ -1,7 +1,6 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
-import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.deployment.HelmStrategy
@@ -138,8 +137,8 @@ class Jenkins extends Feature {
                 JENKINS_PASSWORD          : config.jenkins.password,
                 // Used indirectly in utils.sh 😬
                 REMOTE_CLUSTER            : config.application.remote,
-                SCMM_URL                  : config.scm.scmmConfig.urlForJenkins,
-                SCMM_PASSWORD             : config.scm.scmmConfig.password,
+                SCMM_URL                  : config.scm.scmManager.urlForJenkins,
+                SCMM_PASSWORD             : config.scm.scmManager.password,
                 SCM_PROVIDER              : config.scm.scmProviderType,
                 INSTALL_ARGOCD            : config.features.argocd.active,
                 NAME_PREFIX               : config.application.namePrefix,
@@ -148,7 +147,7 @@ class Jenkins extends Feature {
                 SKIP_PLUGINS              : config.jenkins.skipPlugins
         ])
 
-        globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}SCMM_URL", config.scm.scmmConfig.urlForJenkins)
+        globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}SCMM_URL", config.scm.scmManager.urlForJenkins)
 
         if (config.jenkins.additionalEnvs) {
             for (entry in (config.jenkins.additionalEnvs as Map).entrySet()) {
@@ -194,7 +193,7 @@ class Jenkins extends Feature {
         String prefixedNamespace = "${config.application.namePrefix}${namespace}"
         String jobName = "${config.application.namePrefix}${repoName}"
         jobManager.createJob(jobName,
-                config.scm.getScmmConfig().urlForJenkins,
+                config.scm.getScmManager().urlForJenkins,
                 prefixedNamespace,
                 credentialId)
         if (config.scm.scmProviderType == ScmProviderType.SCM_MANAGER) {
@@ -202,7 +201,7 @@ class Jenkins extends Feature {
                     jobName,
                     credentialId,
                     "${config.application.namePrefix}gitops",
-                    "${config.scm.getScmmConfig().password}",
+                    "${config.scm.getScmManager().password}",
                     'credentials for accessing scm-manager')
         }
 
@@ -210,8 +209,8 @@ class Jenkins extends Feature {
             jobManager.createCredential(
                     jobName,
                     credentialId,
-                    "${config.scm.getScmmConfig().username}",
-                    "${config.scm.getScmmConfig().password}",
+                    "${config.scm.getScmManager().username}",
+                    "${config.scm.getScmManager().password}",
                     'credentials for accessing gitlab')
         }
 
