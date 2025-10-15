@@ -56,9 +56,9 @@ class ScmManagerMock implements GitProvider {
 
     /** In-cluster repo prefix: …/scm/<rootPath>/[<namePrefix>] */
     @Override
-    String repoPrefix(boolean includeNamePrefix) {
+    String repoPrefix() {
         def base = withoutTrailingSlash(inClusterBase).toString()
-        def prefix = includeNamePrefix && namePrefix ? "${namePrefix}" : ""
+        def prefix = namePrefix ? "${namePrefix}" : ""
         return "${base}/${rootPath}/${prefix}"
     }
 
