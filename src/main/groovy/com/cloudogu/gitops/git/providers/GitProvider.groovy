@@ -18,7 +18,7 @@ interface GitProvider {
 
     String repoUrl(String repoTarget, RepoUrlScope scope);
 
-    String repoPrefix(boolean includeNamePrefix)
+    String repoPrefix()
 
     Credentials getCredentials()
 

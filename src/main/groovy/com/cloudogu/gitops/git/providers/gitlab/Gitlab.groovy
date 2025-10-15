@@ -94,13 +94,11 @@ class Gitlab implements GitProvider {
     }
 
     @Override
-    String repoPrefix(boolean includeNamePrefix) {
+    String repoPrefix() {
         String base = gitlabConfig.url.strip()
         def prefix = (config.application.namePrefix ?: "").strip()
+        return "${base}/${parentFullPath()}/${prefix}"
 
-        return includeNamePrefix && prefix
-                ? "${base}/${parentFullPath()}/${prefix}"
-                : "${base}/${parentFullPath()}/"
     }
 
     //TODo getCredentials

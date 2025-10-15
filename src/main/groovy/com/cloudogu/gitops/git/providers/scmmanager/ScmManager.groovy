@@ -87,8 +87,8 @@ class ScmManager implements GitProvider {
 
     /** In-cluster repo prefix: …/scm/<rootPath>/[<namePrefix>] */
     @Override
-    String repoPrefix(boolean includeNamePrefix) {
-        return urls.inClusterRepoPrefix(includeNamePrefix)
+    String repoPrefix() {
+        return urls.inClusterRepoPrefix()
     }
 
 

@@ -45,8 +45,8 @@ class RepoInitializationAction {
                         baseUrl : this.repo.gitProvider.url,
                         host    : this.repo.gitProvider.host,
                         protocol: this.repo.gitProvider.protocol,
-                        repoUrl : this.repo.gitProvider.repoPrefix(true),
-                        centralScmmUrl: this.gitHandler.central?.repoPrefix(true) ?: ''
+                        repoUrl : this.repo.gitProvider.repoPrefix(),
+                        centralScmmUrl: this.gitHandler.central?.repoPrefix() ?: ''
                 ],
                 config    : config,
                 // Allow for using static classes inside the templates
