@@ -7,7 +7,6 @@ import com.cloudogu.gitops.git.providers.AccessRole
 import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.git.providers.RepoUrlScope
 import com.cloudogu.gitops.git.providers.Scope
-import com.cloudogu.gitops.git.utils.StringUtils
 import groovy.util.logging.Slf4j
 import org.gitlab4j.api.GitLabApi
 import org.gitlab4j.api.GitLabApiException
@@ -22,14 +21,14 @@ import java.util.logging.Level
 class Gitlab implements GitProvider {
 
     private final Config config
-    private final GitLabApi gitlabApi
+    private final GitLabApi api
     private GitlabConfig gitlabConfig
 
     Gitlab(Config config, GitlabConfig gitlabConfig) {
         this.config = config
         this.gitlabConfig = gitlabConfig
-        this.gitlabApi = new GitLabApi(gitlabConfig.url, credentials.password)
-        this.gitlabApi.enableRequestResponseLogging(Level.ALL)
+        this.api = new GitLabApi(gitlabConfig.url, credentials.password)
+        this.api.enableRequestResponseLogging(Level.ALL)
     }
 
     @Override
@@ -64,7 +63,7 @@ class Gitlab implements GitProvider {
                 .withInitializeWithReadme(initialize)
         project.visibility = toVisibility(gitlabConfig.defaultVisibility)
 
-        def created = gitlabApi.projectApi.createProject(project)
+        def created = api.projectApi.createProject(project)
         log.info("Created GitLab project ${created.getPathWithNamespace()} (id=${created.id})")
         return true
     }
@@ -76,29 +75,28 @@ class Gitlab implements GitProvider {
         Project project = findProjectOrThrow(fullPath)
         AccessLevel level = toAccessLevel(role, scope)
         if (scope == Scope.GROUP) {
-            def group = gitlabApi.groupApi.getGroups(principal)
+            def group = api.groupApi.getGroups(principal)
                     .find { it.fullPath == principal || it.path == principal || it.name == principal }
             if (!group) throw new IllegalArgumentException("Group '${principal}' not found")
-            gitlabApi.projectApi.shareProject(project.id, group.id, level, null)
+            api.projectApi.shareProject(project.id, group.id, level, null)
         } else {
-            def user = gitlabApi.userApi.findUsers(principal)
+            def user = api.userApi.findUsers(principal)
                     .find { it.username == principal || it.email == principal }
             if (!user) throw new IllegalArgumentException("User '${principal}' not found")
-            gitlabApi.projectApi.addMember(project.id, user.id, level)
+            api.projectApi.addMember(project.id, user.id, level)
         }
     }
 
     @Override
     String repoUrl(String repoTarget, RepoUrlScope scope) {
-        String base = StringUtils.trimBoth(gitlabConfig.url)
+        String base = gitlabConfig.url.strip()
         return "${base}/${parentFullPath()}/${repoTarget}.git"
     }
 
     @Override
     String repoPrefix(boolean includeNamePrefix) {
-        String base = StringUtils.trimBoth(gitlabConfig.url)
-
-        def prefix = StringUtils.trimBoth(config.application.namePrefix ?: "")
+        String base = gitlabConfig.url.strip()
+        def prefix = (config.application.namePrefix ?: "").strip()
 
         return includeNamePrefix && prefix
                 ? "${base}/${parentFullPath()}/${prefix}"
@@ -157,7 +155,7 @@ class Gitlab implements GitProvider {
 
     private Group parentGroup() {
         try {
-            return gitlabApi.groupApi.getGroup(gitlabConfig.parentGroupId as Long)
+            return api.groupApi.getGroup(gitlabConfig.parentGroupId as Long)
         } catch (GitLabApiException e) {
             throw new IllegalStateException(
                     "Parent group '${gitlabConfig.parentGroupId}' not found or inaccessible: ${e.message}", e)
@@ -194,7 +192,7 @@ class Gitlab implements GitProvider {
 
 
         try {
-            Group created = gitlabApi.groupApi.addGroup(toCreate)
+            Group created = api.groupApi.addGroup(toCreate)
             log.info("Created group {}", created.fullPath)
             return created.id as Long
         } catch (GitLabApiException e) {
@@ -214,7 +212,7 @@ class Gitlab implements GitProvider {
     /** Find a direct subgroup of 'parentId' with the exact path . */
     private Group findDirectSubgroupByPath(Long parentId, String segPath) {
         // uses the overload: getSubGroups(Object idOrPath)
-        List<Group> subGroups = gitlabApi.groupApi.getSubGroups(parentId)
+        List<Group> subGroups = api.groupApi.getSubGroups(parentId)
         return subGroups?.find { Group subGroup -> subGroup.path == segPath }
     }
 
@@ -222,7 +220,7 @@ class Gitlab implements GitProvider {
     /** Find a direct project of 'parentId' with the exact path . */
     private Project findDirectProjectByPath(Long parentId, String path) {
         // uses the overload: getProjects(Object idOrPath)
-        List<Project> projects = gitlabApi.groupApi.getProjects(parentId)
+        List<Project> projects = api.groupApi.getProjects(parentId)
         return projects?.find { Project project -> project.path == path }
     }
 
@@ -230,7 +228,7 @@ class Gitlab implements GitProvider {
     // ---- Helpers ----
     private Optional<Project> findProject(String fullPath) {
         try {
-            return Optional.ofNullable(gitlabApi.projectApi.getProject(fullPath))
+            return Optional.ofNullable(api.projectApi.getProject(fullPath))
         } catch (Exception ignore) {
             return Optional.empty()
         }

@@ -18,13 +18,13 @@ import retrofit2.Response
 class ScmManager implements GitProvider {
 
     private final ScmManagerUrlResolver urls
-    private final ScmManagerApiClient scmmApiClient
+    private final ScmManagerApiClient apiClient
     private final ScmManagerConfig scmmConfig
 
     ScmManager(Config config, ScmManagerConfig scmmConfig, K8sClient k8sClient, NetworkingUtils networkingUtils) {
         this.scmmConfig = scmmConfig
         this.urls = new ScmManagerUrlResolver(config, scmmConfig, k8sClient, networkingUtils)
-        this.scmmApiClient = new ScmManagerApiClient(urls.clientApiBase().toString(), scmmConfig.credentials, config.application.insecure)
+        this.apiClient = new ScmManagerApiClient(urls.clientApiBase().toString(), scmmConfig.credentials, config.application.insecure)
     }
 
     // --- Git operations ---
@@ -33,7 +33,7 @@ class ScmManager implements GitProvider {
         def repoNamespace = repoTarget.split('/', 2)[0]
         def repoName = repoTarget.split('/', 2)[1]
         def repo = new Repository(repoNamespace, repoName, description ?: "")
-        Response<Void> response = scmmApiClient.repositoryApi().create(repo, initialize).execute()
+        Response<Void> response = apiClient.repositoryApi().create(repo, initialize).execute()
         return handle201or409(response, "Repository ${repoNamespace}/${repoName}")
     }
 
@@ -46,7 +46,7 @@ class ScmManager implements GitProvider {
         Permission.Role scmManagerRole = mapToScmManager(role)
         def permission = new Permission(principal, scmManagerRole, isGroup)
 
-        Response<Void> response = scmmApiClient.repositoryApi().createPermission(repoNamespace, repoName, permission).execute()
+        Response<Void> response = apiClient.repositoryApi().createPermission(repoNamespace, repoName, permission).execute()
         handle201or409(response, "Permission on ${repoNamespace}/${repoName}")
     }
 

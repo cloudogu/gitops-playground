@@ -36,6 +36,7 @@ class RepoInitializationAction {
         return repo
     }
 
+    //TODO rename scmm to scm and centralScmmUrl to centralScmUrl
     private Map<String, Object> buildTemplateValues(Config config) {
         def model = [
                 tenantName: config.application.tenantName,
