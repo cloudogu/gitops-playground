@@ -42,7 +42,7 @@ class ScmManagerUrlResolver {
 
     /** In-cluster repo prefix …/scm/<root>/[<namePrefix>] */
     String inClusterRepoPrefix(boolean includeNamePrefix) {
-        def prefix = (config.application.namePrefix ?: "").strip()
+        def prefix = (config.application.namePrefix ?: "").trim()
         def base = withSlash(inClusterBase())
         def url = withSlash(base.resolve(root()))
         includeNamePrefix && prefix ? noTrailSlash(URI.create(url.toString() + prefix)).toString()
@@ -51,13 +51,13 @@ class ScmManagerUrlResolver {
 
     /** In-cluster repo URL …/scm/<root>/<ns>/<name> */
     String inClusterRepoUrl(String repoTarget) {
-        def repo = (repoTarget ?: "").strip()
+        def repo = (repoTarget ?: "").trim()
         noTrailSlash(withSlash(inClusterBase()).resolve("${root()}/${repo}/")).toString()
     }
 
     /** Client repo URL …/scm/<root>/<ns>/<name> (no trailing slash) */
     String clientRepoUrl(String repoTarget) {
-        def repo = (repoTarget ?: "").strip()
+        def repo = (repoTarget ?: "").trim()
         noTrailSlash(withSlash(clientRepoBase()).resolve("${repo}/")).toString()
     }
 
@@ -82,9 +82,9 @@ class ScmManagerUrlResolver {
     }
 
     private URI externalBase() {
-        def url = (scmm.url ?: "").strip()
+        def url = (scmm.url ?: "").trim()
         if (url) return URI.create(url)
-        def ingress = (scmm.ingress ?: "").strip()
+        def ingress = (scmm.ingress ?: "").trim()
         if (ingress) return URI.create("http://${ingress}")
         throw new IllegalArgumentException("Either scmm.url or scmm.ingress must be set when internal=false")
     }
@@ -100,7 +100,7 @@ class ScmManagerUrlResolver {
     // ---------- Helpers ----------
 
     private String root() {
-        (scmm.rootPath ?: "repo").strip()
+        (scmm.rootPath ?: "repo").trim()
     }
 
     private static URI ensureScm(URI u) {
