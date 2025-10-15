@@ -14,6 +14,7 @@ import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
+
 import java.nio.file.Path
 
 import static org.assertj.core.api.Assertions.assertThat
@@ -21,10 +22,15 @@ import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.*
 
 class JenkinsTest {
-    Config config = new Config( jenkins: new Config.JenkinsSchema(active: true))
+    Config config = new Config(
+            scm: [
+                    scmManager: [
+                            urlForJenkins: "testUrlJenkins"
+                    ]],
+            jenkins: new Config.JenkinsSchema(active: true))
 
     String expectedNodeName = 'something'
-    
+
     CommandExecutorForTest commandExecutor = new CommandExecutorForTest()
     GlobalPropertyManager globalPropertyManager = mock(GlobalPropertyManager)
     JobManager jobManger = mock(JobManager)
@@ -41,11 +47,11 @@ class JenkinsTest {
         when(k8sClient.waitForNode()).thenReturn("node/${expectedNodeName}".toString())
         when(k8sClient.run(anyString(), anyString(), anyString(), anyMap(), any())).thenReturn('')
     }
-    
+
     @Test
     void 'Installs Jenkins'() {
         def jenkins = createJenkins()
-        
+
         config.jenkins.url = 'http://jenkins'
         config.jenkins.helm.chart = 'jen-chart'
         config.jenkins.helm.repoURL = 'https://jen-repo'
@@ -54,7 +60,7 @@ class JenkinsTest {
         config.jenkins.password = 'jenpw'
         config.jenkins.internalBashImage = 'bash:42'
         config.jenkins.internalDockerClientVersion = '23'
-        
+
         when(k8sClient.run(anyString(), anyString(), anyString(), anyMap(), any())).thenReturn('''
 root:x:0:
 daemon:x:1:
@@ -62,7 +68,7 @@ docker:x:42:me
 me:x:1000:''')
 
         jenkins.install()
-        
+
         verify(deploymentStrategy).deployFeature('https://jen-repo', 'jenkins',
                 'jen-chart', '4.8.1', 'jenkins',
                 'jenkins', temporaryYamlFile)
@@ -71,11 +77,11 @@ me:x:1000:''')
         verify(k8sClient).createSecret('generic', 'jenkins-credentials', 'jenkins',
                 new Tuple2('jenkins-admin-user', 'jenusr'),
                 new Tuple2('jenkins-admin-password', 'jenpw'))
-        
+
         assertThat(parseActualYaml()['dockerClientVersion'].toString()).isEqualTo('23')
-        
+
         assertThat(parseActualYaml()['controller']['image']['tag']).isEqualTo('4.8.1')
-        
+
         assertThat(parseActualYaml()['controller']['jenkinsUrl']).isEqualTo('http://jenkins')
         assertThat(parseActualYaml()['controller']['serviceType']).isEqualTo('NodePort')
 
@@ -83,7 +89,7 @@ me:x:1000:''')
 
         List customInitContainers = parseActualYaml()['controller']['customInitContainers'] as List
         assertThat(customInitContainers[0]['image']).isEqualTo('bash:42')
-        
+
         assertThat(parseActualYaml()['agent']['runAsUser']).isEqualTo(1000)
         assertThat(parseActualYaml()['agent']['runAsGroup']).isEqualTo(42)
 
@@ -110,11 +116,11 @@ me:x:1000:''')
     @Test
     void 'Installs only if internal'() {
         config.jenkins.internal = false
-        
-       createJenkins().install()
-        verify(deploymentStrategy, never()).deployFeature(anyString(), anyString(), anyString(), anyString(), 
+
+        createJenkins().install()
+        verify(deploymentStrategy, never()).deployFeature(anyString(), anyString(), anyString(), anyString(),
                 anyString(), anyString(), any(Path))
-        
+
         assertThat(temporaryYamlFile).isNull()
     }
 
@@ -122,7 +128,7 @@ me:x:1000:''')
     void 'Additional helm values are merged with default values'() {
         config.jenkins.helm.values = [
                 controller: [
-                        nodePort: 42 
+                        nodePort: 42
                 ]
         ]
 
@@ -135,7 +141,7 @@ me:x:1000:''')
     void 'Enables ingress when baseUrl is set'() {
         config.jenkins.ingress = 'jenkins.localhost'
         config.application.baseUrl = 'someBaseUrl'
-        
+
         createJenkins().install()
 
         assertThat(parseActualYaml()['controller']['ingress']['enabled']).isEqualTo(true)
@@ -149,7 +155,7 @@ me:x:1000:''')
 
         assertThat(parseActualYaml()['controller']['serviceType']).isEqualTo('LoadBalancer')
     }
-    
+
     @Test
     void 'Maps config properly'() {
         config.application.remote = true
@@ -157,7 +163,7 @@ me:x:1000:''')
         config.features.argocd.active = true
         config.content.examples = true
         config.scm.scmManager.url = 'http://scmm'
-        config.scm.scmManager.urlForJenkins ='http://scmm/scm'
+        config.scm.scmManager.urlForJenkins = 'http://scmm/scm'
         config.scm.scmManager.username = 'scmm-usr'
         config.scm.scmManager.password = 'scmm-pw'
         config.application.namePrefix = 'my-prefix-'
@@ -233,27 +239,27 @@ me:x:1000:''')
     void 'Does not configure prometheus when external Jenkins'() {
         config.features.monitoring.active = true
         config.jenkins.internal = false
-        
+
         createJenkins().install()
 
         verify(prometheusConfigurator, never()).enableAuthentication()
     }
-    
+
     @Test
     void 'Does not configure prometheus when monitoring off'() {
         config.features.monitoring.active = false
         config.jenkins.internal = true
-        
+
         createJenkins().install()
 
         verify(prometheusConfigurator, never()).enableAuthentication()
     }
-    
+
     @Test
     void 'Configures prometheus'() {
         config.features.monitoring.active = true
         config.jenkins.internal = true
-        
+
         createJenkins().install()
 
         verify(prometheusConfigurator).enableAuthentication()
@@ -263,7 +269,7 @@ me:x:1000:''')
     void "URL: Use k8s service name if running as k8s pod"() {
         config.jenkins.internal = true
         config.application.runningInsideK8s = true
-        
+
         createJenkins().install()
         assertThat(config.jenkins.url).isEqualTo("http://jenkins.jenkins.svc.cluster.local:80")
     }
@@ -279,14 +285,14 @@ me:x:1000:''')
         createJenkins().install()
         assertThat(config.jenkins.url).endsWith('192.168.16.2:42')
     }
-    
+
     @Test
     void 'Handles two registries'() {
         config.registry.twoRegistries = true
         config.content.examples = true
         config.application.namePrefix = 'my-prefix-'
         config.application.namePrefixForEnvVars = 'MY_PREFIX_'
-        
+
         config.registry.url = 'reg-url'
         config.registry.path = 'reg-path'
         config.registry.username = 'reg-usr'
@@ -354,7 +360,7 @@ me:x:1000:''')
         config.registry.url = 'some value'
         config.jenkins.mavenCentralMirror = 'http://test'
         config.application.namePrefixForEnvVars = 'MY_PREFIX_'
-        
+
         createJenkins().install()
 
         verify(globalPropertyManager).setGlobalProperty(eq('MY_PREFIX_MAVEN_CENTRAL_MIRROR'), eq("http://test"))

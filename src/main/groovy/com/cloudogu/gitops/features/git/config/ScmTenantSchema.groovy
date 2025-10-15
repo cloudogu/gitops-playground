@@ -15,21 +15,28 @@ import static com.cloudogu.gitops.config.ConfigConstants.*
 
 class ScmTenantSchema {
 
+    static final String GITLAB_CONFIG_DESCRIPTION = 'Config for GITLAB'
+    static final String SCMM_CONFIG_DESCRIPTION = 'Config for GITLAB'
+    static final String SCM_PROVIDER_TYPE_DESCRIPTION = 'The SCM provider type. Possible values: SCM_MANAGER, GITLAB'
+    static final String GITOPSUSERNAME_DESCRIPTION = 'Username for the Gitops User'
+
     @Option(
             names = ['--scm-provider'],
-            description = "The SCM provider type. Possible values: SCM_MANAGER, GITLAB",
+            description = SCM_PROVIDER_TYPE_DESCRIPTION,
             defaultValue = "SCM_MANAGER"
     )
+    @JsonPropertyDescription(SCM_PROVIDER_TYPE_DESCRIPTION)
     ScmProviderType scmProviderType = ScmProviderType.SCM_MANAGER
 
-    @JsonPropertyDescription("GitlabConfig")
+    @JsonPropertyDescription(GITLAB_CONFIG_DESCRIPTION)
     @Mixin
     GitlabTenantConfig gitlab
 
-    @JsonPropertyDescription("scmmTenantConfig")
+    @JsonPropertyDescription(SCMM_CONFIG_DESCRIPTION)
     @Mixin
     ScmManagerTenantConfig scmManager
 
+    @JsonPropertyDescription(GITOPSUSERNAME_DESCRIPTION)
     String gitOpsUsername = ''
 
     @JsonIgnore
@@ -39,48 +46,56 @@ class ScmTenantSchema {
 
     static class GitlabTenantConfig implements GitlabConfig {
 
-        @JsonPropertyDescription(Description.GITLAB_INTERNAL)
+        static final String GITLAB_INTERNAL_DESCRIPTION = 'True if Gitlab is running in the same K8s cluster. For now we only support access by external URL'
+        static final String GITLAB_URL_DESCRIPTION = "Base URL for the Gitlab instance"
+        static final String GITLAB_USERNAME_DESCRIPTION = 'Defaults to: oauth2.0 when PAT token is given.'
+        static final String GITLAB_TOKEN_DESCRIPTION = 'PAT Token for the account. Needs read/write repo permissions. See docs for mor information'
+        static final String GITLAB_PARENT_GROUP_ID = 'Number for the Gitlab Group where the repos and subgroups should be created'
+
+        @JsonPropertyDescription(GITLAB_INTERNAL_DESCRIPTION)
         Boolean internal = false
 
-        @Option(names = ['--gitlab-url'], description = Description.GITLAB_URL_DESCRIPTION)
-        @JsonPropertyDescription(Description.GITLAB_URL_DESCRIPTION)
+        @Option(names = ['--gitlab-url'], description = GITLAB_URL_DESCRIPTION)
+        @JsonPropertyDescription(GITLAB_URL_DESCRIPTION)
         String url = ''
 
-        @Option(names = ['--gitlab-username'], description = Description.GITLAB_USERNAME_DESCRIPTION)
-        @JsonPropertyDescription(Description.GITLAB_USERNAME_DESCRIPTION)
+        @Option(names = ['--gitlab-username'], description = GITLAB_USERNAME_DESCRIPTION)
+        @JsonPropertyDescription(GITLAB_USERNAME_DESCRIPTION)
         String username = 'oauth2.0'
 
-        @Option(names = ['--gitlab-token'], description = Description.GITLAB_TOKEN_DESCRIPTION)
-        @JsonPropertyDescription(Description.GITLAB_TOKEN_DESCRIPTION)
+        @Option(names = ['--gitlab-token'], description = GITLAB_TOKEN_DESCRIPTION)
+        @JsonPropertyDescription(GITLAB_TOKEN_DESCRIPTION)
         String password = ''
 
-        @Option(names = ['--gitlab-parent-id'], description = Description.GITLAB_PARENT_GROUP_ID)
-        @JsonPropertyDescription(Description.GITLAB_PARENT_GROUP_ID)
+        @Option(names = ['--gitlab-parent-id'], description = GITLAB_PARENT_GROUP_ID)
+        @JsonPropertyDescription(GITLAB_PARENT_GROUP_ID)
         String parentGroupId = ''
 
         Credentials getCredentials() {
             return new Credentials(username, password)
         }
 
-        static final class Description {
-            String GITLAB_INTERNAL = 'True if Gitlab is running in the same K8s cluster. For now we only support access by external URL'
-            String GITLAB_URL_DESCRIPTION = "Base URL for the Gitlab instance"
-            String GITLAB_USERNAME_DESCRIPTION = 'Gitlab Username.'
-            String GITLAB_TOKEN_DESCRIPTION = 'PAT Token for the account. Needs read/write repo permissions. See docs for mor information'
-            String GITLAB_PARENT_GROUP_ID = 'Number for the Gitlab Group where the repos and subgroups should be created'
-        }
     }
 
 
     static class ScmManagerTenantConfig implements ScmManagerConfig {
+
+        static final String SCMM_SKIP_RESTART_DESCRIPTION = 'Skips restarting SCMHandler-Manager after plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades.\''
+        static final String SCMM_SKIP_PLUGINS_DESCRIPTION = 'Skips plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades.'
+        static final String SCMM_URL_DESCRIPTION = 'The host of your external scm-manager'
+        static final String SCMM_USERNAME_DESCRIPTION = 'Mandatory when scmm-url is set'
+        static final String SCMM_PASSWORD_DESCRIPTION = 'Mandatory when scmm-url is set'
+        static final String SCMM_ROOT_PATH_DESCRIPTION = 'Sets the root path for the Git Repositories. In SCMHandler-Manager it is always "repo"'
+        static final String SCMM_NAMESPACE_DESCRIPTION = 'Namespace where SCM-Manager should run'
+
         Boolean internal = true
 
         @Option(names = ['--scmm-url'], description = SCMM_URL_DESCRIPTION)
         @JsonPropertyDescription(SCMM_URL_DESCRIPTION)
         String url = ''
 
-        @Option(names = ['--scm-namespace'], description = 'Namespace where the tenant scm resides in')
-        @JsonPropertyDescription(CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
+        @Option(names = ['--scm-namespace'], description = SCMM_NAMESPACE_DESCRIPTION)
+        @JsonPropertyDescription(SCMM_NAMESPACE_DESCRIPTION)
         String namespace = 'scm-manager'
 
         @Option(names = ['--scmm-username'], description = SCMM_USERNAME_DESCRIPTION)
@@ -99,8 +114,8 @@ class ScmTenantSchema {
                 values: [:]
         )
 
-        @Option(names = ['--scm-root-path'], description = SCM_ROOT_PATH_DESCRIPTION)
-        @JsonPropertyDescription(SCM_ROOT_PATH_DESCRIPTION)
+        @Option(names = ['--scm-root-path'], description = SCMM_ROOT_PATH_DESCRIPTION)
+        @JsonPropertyDescription(SCMM_ROOT_PATH_DESCRIPTION)
         String rootPath = 'repo'
 
         /* When installing from via Docker we have to distinguish scmm.url (which is a local IP address) from

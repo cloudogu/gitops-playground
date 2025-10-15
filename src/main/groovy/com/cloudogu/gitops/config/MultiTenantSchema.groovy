@@ -7,23 +7,27 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import picocli.CommandLine.Mixin
 import picocli.CommandLine.Option
 
-import static com.cloudogu.gitops.config.ConfigConstants.CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION
-import static com.cloudogu.gitops.config.ConfigConstants.CENTRAL_USEDEDICATED_DESCRIPTION
-
 class MultiTenantSchema {
 
+    static final String SCM_PROVIDER_TYPE_DESCRIPTION = 'The SCM provider type. Possible values: SCM_MANAGER, GITLAB'
+    static final String GITLAB_CONFIG_DESCRIPTION = 'Config for GITLAB'
+    static final String SCMM_CONFIG_DESCRIPTION = 'Config for GITLAB'
+    static final String CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION = 'Namespace for the centralized Argocd'
+    static final String CENTRAL_USEDEDICATED_DESCRIPTION = 'Toggles the Dedicated Instances Mode. See docs for more info'
+
     @Option(
-            names = ['--scm-central-provider'],
-            description = "The SCM provider type. Possible values: SCM_MANAGER, GITLAB",
+            names = ['--central-scm-provider'],
+            description = SCM_PROVIDER_TYPE_DESCRIPTION,
             defaultValue = "SCM_MANAGER"
     )
+    @JsonPropertyDescription(SCM_PROVIDER_TYPE_DESCRIPTION)
     ScmProviderType scmProviderType = ScmProviderType.SCM_MANAGER
 
-    @JsonPropertyDescription("GitlabConfig")
+    @JsonPropertyDescription(GITLAB_CONFIG_DESCRIPTION)
     @Mixin
-    GitlabCentralConfig gitlabConfig
+    GitlabCentralConfig gitlab
 
-    @JsonPropertyDescription("ScmmConfig")
+    @JsonPropertyDescription(SCMM_CONFIG_DESCRIPTION)
     @Mixin
     ScmManagerCentralConfig scmManager
 

@@ -341,7 +341,7 @@ prometheus:
       - prometheus-metrics-creds-scmm
       - prometheus-metrics-creds-jenkins
     additionalScrapeConfigs:
-<#if config.scm.scmProviderType == "scm-manager">
+<#if config.scm.scmProviderType?lower_case == "scm_manager">
       - job_name: 'scm-manager'
         static_configs:
           - targets: [ '${scmm.host}' ]

@@ -2,9 +2,10 @@ package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
-import com.cloudogu.gitops.features.git.config.ScmTenantSchema
+import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.providers.GitProvider
+import com.cloudogu.gitops.git.providers.scmmanager.ScmManager
 import com.cloudogu.gitops.utils.*
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
@@ -19,61 +20,72 @@ import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*
 
 class PrometheusStackTest {
-    Config config = new Config(
-            registry: new Config.RegistrySchema(
-                    internal: true,
+    Config config = Config.fromMap(
+            registry: [
+                    internal              : true,
                     createImagePullSecrets: false
-            ),
-            scm: new ScmTenantSchema(
-                    internal: true
-            ),
-            jenkins: new Config.JenkinsSchema(internal: true,
+            ],
+            scm: [
+                    scmManager: [
+                            internal: true
+                    ]
+            ],
+            jenkins: [
+                    internal       : true,
                     metricsUsername: 'metrics',
-                    metricsPassword: 'metrics',),
-            application: new Config.ApplicationSchema(
-                    username: 'abc',
-                    password: '123',
-                    remote: false,
-                    openshift: false,
-                    namePrefix: "foo-",
-                    mirrorRepos: false,
-                    podResources: false,
-                    skipCrds: false,
+                    metricsPassword: 'metrics'
+            ],
+            application: [
+                    username          : 'abc',
+                    password          : '123',
+                    remote            : false,
+                    openshift         : false,
+                    namePrefix        : 'foo-',
+                    mirrorRepos       : false,
+                    podResources      : false,
+                    skipCrds          : false,
                     namespaceIsolation: false,
-                    gitName: 'Cloudogu',
-                    gitEmail: 'hello@cloudogu.com',
-                    netpols: false,
-                    namespaces: new Config.ApplicationSchema.NamespaceSchema(
-                            dedicatedNamespaces: new LinkedHashSet([
+                    gitName           : 'Cloudogu',
+                    gitEmail          : 'hello@cloudogu.com',
+                    netpols           : false,
+                    namespaces        : [
+                            dedicatedNamespaces: [
                                     "test1-default",
                                     "test1-argocd",
                                     "test1-monitoring",
                                     "test1-secrets"
-                            ]),
-                            tenantNamespaces: new LinkedHashSet(["test1-example-apps-staging",
-                                                                 "test1-example-apps-production"])
-                    )),
-            features: new Config.FeaturesSchema(
-                    argocd: new Config.ArgoCDSchema(active: true),
-                    monitoring: new Config.MonitoringSchema(
-                            active: true,
-                            grafanaUrl: '',
+                            ] as LinkedHashSet,
+                            tenantNamespaces   : [
+                                    "test1-example-apps-staging",
+                                    "test1-example-apps-production"
+                            ] as LinkedHashSet
+                    ]
+            ],
+            features: [
+                    argocd      : [
+                            active: true
+                    ],
+                    monitoring  : [
+                            active          : true,
+                            grafanaUrl      : '',
                             grafanaEmailFrom: 'grafana@example.org',
-                            grafanaEmailTo: 'infra@example.org',
-                            helm: new Config.MonitoringSchema.MonitoringHelmSchema(
-                                    chart: 'kube-prometheus-stack',
+                            grafanaEmailTo  : 'infra@example.org',
+                            helm            : [
+                                    chart  : 'kube-prometheus-stack',
                                     repoURL: 'https://prom',
-                                    version: '19.2.2',
-
-                            )),
-                    secrets: new Config.SecretsSchema(active: true),
-                    ingressNginx: new Config.IngressNginxSchema(active: true),
-                    mail: new Config.MailSchema(
-                            mailhog: true,
-                    ),
-
-            ),
-    )
+                                    version: '19.2.2'
+                            ]
+                    ],
+                    secrets     : [
+                            active: true
+                    ],
+                    ingressNginx: [
+                            active: true
+                    ],
+                    mail        : [
+                            mailhog: true
+                    ]
+            ])
 
     K8sClientForTest k8sClient = new K8sClientForTest(config)
     CommandExecutorForTest k8sCommandExecutor = k8sClient.commandExecutorForTest
@@ -82,6 +94,10 @@ class PrometheusStackTest {
     Path temporaryYamlFilePrometheus = null
     FileSystemUtils fileSystemUtils = new FileSystemUtils()
     File clusterResourcesRepoDir
+
+    GitHandler gitHandler = mock(GitHandler.class)
+    ScmManager scmManager = mock(ScmManager.class)
+
 
     @Test
     void "is disabled via active flag"() {
@@ -601,12 +617,12 @@ matchExpressions:
 
     private PrometheusStack createStack() {
         // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
-
+        when(gitHandler.getResourcesScm()).thenReturn(scmManager)
         def configuration = config
         def repoProvider = new TestGitRepoFactory(config, new FileSystemUtils()) {
             @Override
-            GitRepo getRepo(String repoTarget,GitProvider scm) {
-                def repo = super.getRepo(repoTarget,scm)
+            GitRepo getRepo(String repoTarget, GitProvider scm) {
+                def repo = super.getRepo(repoTarget, scm)
                 clusterResourcesRepoDir = new File(repo.getAbsoluteLocalRepoTmpDir())
 
                 return repo
@@ -621,7 +637,7 @@ matchExpressions:
                 temporaryYamlFilePrometheus = Path.of(ret.toString().replace(".ftl", ""))
                 return ret
             }
-        }, deploymentStrategy, k8sClient, airGappedUtils, repoProvider,null)
+        }, deploymentStrategy, k8sClient, airGappedUtils, repoProvider, gitHandler)
     }
 
     private Map parseActualYaml() {

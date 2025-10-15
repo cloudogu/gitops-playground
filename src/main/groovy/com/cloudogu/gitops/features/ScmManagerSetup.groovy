@@ -107,23 +107,23 @@ class ScmManagerSetup extends Feature {
         //disabled setup for faster testing
        commandExecutor.execute("${fileSystemUtils.rootDir}/scripts/scm-manager/init-scmm.sh", [
 
-                GIT_COMMITTER_NAME           : config.application.gitName,
-                GIT_COMMITTER_EMAIL          : config.application.gitEmail,
-                GIT_AUTHOR_NAME              : config.application.gitName,
-                GIT_AUTHOR_EMAIL             : config.application.gitEmail,
-                GITOPS_USERNAME              : config.scm.scmManager.gitOpsUsername,
-                TRACE                        : config.application.trace,
-                SCMM_URL                     : config.scm.scmManager.url,
-                SCMM_USERNAME                : config.scm.scmManager.username,
-                SCMM_PASSWORD                : config.scm.scmManager.password,
-                JENKINS_URL                  : config.jenkins.url,
-                INTERNAL_SCMM                : config.scm.scmManager.internal,
-                JENKINS_URL_FOR_SCMM         : config.jenkins.urlForScmm,
-                SCMM_URL_FOR_JENKINS         : config.scm.scmManager.urlForJenkins,
-                // Used indirectly in utils.sh 😬
-                REMOTE_CLUSTER               : config.application.remote,
-                INSTALL_ARGOCD               : config.features.argocd.active,
-                SPRING_BOOT_HELM_CHART_COMMIT: config.repositories.springBootHelmChart.ref,
+               GIT_COMMITTER_NAME           : config.application.gitName,
+               GIT_COMMITTER_EMAIL          : config.application.gitEmail,
+               GIT_AUTHOR_NAME              : config.application.gitName,
+               GIT_AUTHOR_EMAIL             : config.application.gitEmail,
+               GITOPS_USERNAME              : config.scm.scmManager.gitOpsUsername,
+               TRACE                        : config.application.trace,
+               SCMM_URL                     : config.scm.scmManager.url,
+               SCMM_USERNAME                : config.scm.scmManager.username,
+               SCMM_PASSWORD                : config.scm.scmManager.password,
+               JENKINS_URL                  : config.jenkins.url,
+               INTERNAL_SCMM                : config.scm.scmManager.internal,
+               JENKINS_URL_FOR_SCMM         : config.jenkins.urlForScmm,
+               SCMM_URL_FOR_JENKINS         : config.scm.scmManager.urlForJenkins,
+               // Used indirectly in utils.sh 😬
+               REMOTE_CLUSTER               : config.application.remote,
+               INSTALL_ARGOCD               : config.features.argocd.active,
+               SPRING_BOOT_HELM_CHART_COMMIT: config.repositories.springBootHelmChart.ref,
                 SPRING_BOOT_HELM_CHART_REPO  : config.repositories.springBootHelmChart.url,
                 GITOPS_BUILD_LIB_REPO        : config.repositories.gitopsBuildLib.url,
                 CES_BUILD_LIB_REPO           : config.repositories.cesBuildLib.url,
@@ -134,7 +134,7 @@ class ScmManagerSetup extends Feature {
                 CONTENT_EXAMPLES             : false,
                 SKIP_RESTART                 : config.scm.scmManager.skipRestart,
                 SKIP_PLUGINS                 : config.scm.scmManager.skipPlugins,
-                CENTRAL_SCM_URL              : config.multiTenant.gitlabConfig.url, //TODO
+                CENTRAL_SCM_URL              : config.multiTenant.gitlab.url, //TODO
                 CENTRAL_SCM_USERNAME         : config.multiTenant.scmManager.username,
                 CENTRAL_SCM_PASSWORD         : config.multiTenant.scmManager.password
         ])
