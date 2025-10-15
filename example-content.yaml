@@ -5,9 +5,9 @@ application:
   username: "admin"
   password: "admin"
   "yes": true
-  namePrefix: "content"
-  namespaceIsolation: true
-  skipCrds: true
+  namePrefix: ""
+  namespaceIsolation: false
+  skipCrds: false
 jenkins:
   active: false
 features:
@@ -15,11 +15,11 @@ features:
     active: false
   argocd:
     active: true
-    operator: true
+    operator: false
     env: []
     resourceInclusionsCluster: "https://10.43.0.1:443"
   ingressNginx:
-    active: false
+    active: true
 content:
   repos:
     - url: https://github.com/cloudogu/gitops-build-lib
@@ -44,7 +44,7 @@ content:
       targetRef: main
       overwriteMode: UPGRADE
       createJenkinsJob: true
-    - url: 'http://central-scmm.localhost/scm/repo/content/examples'
+    - url: 'file:///home/pmarkiewka/example-apps-via-content-loader'
       ref: main
       username: 'admin'
       password: 'admin'
