@@ -1,13 +1,12 @@
 package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.GitRepoFactory
-import com.cloudogu.gitops.git.providers.scmmanager.ScmManager
+import com.cloudogu.gitops.git.providers.GitProvider
 import org.apache.commons.io.FileUtils
 
-import static org.mockito.Mockito.spy 
+import static org.mockito.Mockito.spy
 
 class TestGitRepoFactory extends GitRepoFactory {
     Map<String, GitRepo> repos = [:]
@@ -17,15 +16,13 @@ class TestGitRepoFactory extends GitRepoFactory {
     }
 
     @Override
-    GitRepo getRepo(String repoTarget,GitProvider scm) {
-        // Check if we already have a mock for this repo
-        GitRepo repo = repos[repoTarget]
-        // Check if we already have a mock for this repo
-        if (!repo) {
-            return repo
+    GitRepo getRepo(String repoTarget, GitProvider scm) {
+
+        if (repos[repoTarget]) {
+            return repos[repoTarget]
         }
 
-        GitRepo repoNew = new GitRepo(config,scm, repoTarget, fileSystemUtils) {
+        GitRepo repoNew = new GitRepo(config, scm, repoTarget, fileSystemUtils) {
             String remoteGitRepopUrl = ''
 
             @Override
@@ -43,6 +40,7 @@ class TestGitRepoFactory extends GitRepoFactory {
             }
 
         }
+
         // Create a spy to enable verification while keeping real behavior
         GitRepo spyRepo = spy(repoNew)
         repos.put(repoTarget, spyRepo)
