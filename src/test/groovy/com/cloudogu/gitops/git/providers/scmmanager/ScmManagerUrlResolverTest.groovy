@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.git.providers.scmmanager
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.features.git.config.ScmCentralSchema
 import com.cloudogu.gitops.features.git.config.ScmTenantSchema
 import com.cloudogu.gitops.features.git.config.util.ScmManagerConfig
 import com.cloudogu.gitops.utils.K8sClient
@@ -16,6 +17,8 @@ import static org.mockito.Mockito.*
 
 class ScmManagerUrlResolverTest {
     private Config config
+    private ScmManagerConfig scmmConfig
+
     private K8sClient k8s
     private NetworkingUtils net
 
@@ -29,14 +32,19 @@ class ScmManagerUrlResolverTest {
                         runningInsideK8s: false
                 )
         )
+        scmmConfig = new ScmTenantSchema.ScmManagerTenantConfig(
+                internal: true,
+                namespace: "scm-manager",
+                rootPath: "repo"
+        )
     }
 
     /** Build a fresh immutable ScmManagerConfig with overrides for each test. */
     private ScmManagerConfig smc(Map args = [:]) {
         new ScmTenantSchema.ScmManagerTenantConfig(
-                internal : args.containsKey('internal') ? args.internal : true,
-                namespace: args.containsKey('namespace') ? args.namespace : 'scm-manager',
-                rootPath : args.containsKey('rootPath')  ? args.rootPath  : 'repo',
+                internal : args.containsKey('internal') ? args.internal :  scmmConfig.internal,
+                namespace: args.containsKey('namespace') ? args.namespace : scmmConfig.namespace,
+                rootPath : args.containsKey('rootPath')  ? args.rootPath  : scmmConfig.rootPath,
                 url      : args.get('url'),
                 ingress  : args.get('ingress')
         )

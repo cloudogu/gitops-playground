@@ -16,17 +16,17 @@ import com.cloudogu.gitops.git.providers.Scope
 class ScmManagerMock implements GitProvider {
 
     // --- configurable  ---
-    URI inClusterBase     = new URI("http://scmm.ns.svc.cluster.local/scm")
-    URI clientBase        = new URI("http://localhost:8080/scm")
-    String rootPath       = "repo"            // SCMM rootPath
-    String namePrefix     = ""                // e.g., "fv40-" for tenant mode
+    URI inClusterBase = new URI("http://scmm.ns.svc.cluster.local/scm")
+    URI clientBase = new URI("http://localhost:8080/scm")
+    String rootPath = "repo"            // SCMM rootPath
+    String namePrefix = ""                // e.g., "fv40-" for tenant mode
     Credentials credentials = new Credentials("gitops", "gitops")
     String gitOpsUsername = "gitops"
-    URI prometheus        = new URI("http://localhost:8080/scm/api/v2/metrics/prometheus")
+    URI prometheus = new URI("http://localhost:8080/scm/api/v2/metrics/prometheus")
 
     // --- call recordings for assertions ---
     final List<String> createdRepos = []
-    final List<Map>    permissionCalls = []
+    final List<Map> permissionCalls = []
 
     @Override
     boolean createRepository(String repoTarget, String description, boolean initialize) {
@@ -58,7 +58,7 @@ class ScmManagerMock implements GitProvider {
     @Override
     String repoPrefix() {
         def base = withoutTrailingSlash(inClusterBase).toString()
-        def prefix = namePrefix ? "${namePrefix}" : ""
+        def prefix = (namePrefix ?: "").strip()
         return "${base}/${rootPath}/${prefix}"
     }
 
@@ -112,6 +112,6 @@ class ScmManagerMock implements GitProvider {
     // --- helpers ---
     private static URI withoutTrailingSlash(URI uri) {
         def s = uri.toString()
-        return new URI(s.endsWith("/") ? s.substring(0, s.length()-1) : s)
+        return new URI(s.endsWith("/") ? s.substring(0, s.length() - 1) : s)
     }
 }
