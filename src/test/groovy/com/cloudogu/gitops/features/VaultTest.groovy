@@ -35,7 +35,7 @@ class VaultTest {
     DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
     AirGappedUtils airGappedUtils = mock(AirGappedUtils)
     K8sClientForTest k8sClient = new K8sClientForTest(config)
-    GitHandler gitHandler = mock(GitHandler)
+    GitHandler gitHandler = new GitHandlerForTests(config)
     Path temporaryYamlFile
 
     @Test
@@ -220,7 +220,7 @@ class VaultTest {
         assertThat(helmConfig.value.repoURL).isEqualTo('https://vault-reg')
         assertThat(helmConfig.value.version).isEqualTo('42.23.0')
         verify(deploymentStrategy).deployFeature(
-                'http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
+                'http://scmm.scm-manager.svc.cluster.local/scm/repo/a/b',
                 'vault', '.', '1.2.3', 'foo-secrets',
                 'vault', temporaryYamlFile, DeploymentStrategy.RepoType.GIT)
     }
