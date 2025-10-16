@@ -42,6 +42,11 @@ class ApplicationConfiguratorTest {
                             url: EXPECTED_SCMM_URL
                     ],
             ],
+            multiTenant: [
+                    scmManager: [
+                            url: ''
+                    ]
+            ],
             features   : [
                     secrets: [
                             vault: [
@@ -267,14 +272,6 @@ class ApplicationConfiguratorTest {
 
     @Test
     void "Certain properties are read from env"() {
-        withEnvironmentVariable('SPRING_BOOT_HELM_CHART_REPO', 'value1').execute {
-            def actualConfig = new ApplicationConfigurator(fileSystemUtils).initConfig(new Config())
-            assertThat(actualConfig.repositories.springBootHelmChart.url).isEqualTo('value1')
-        }
-        withEnvironmentVariable('SPRING_PETCLINIC_REPO', 'value2').execute {
-            def actualConfig = new ApplicationConfigurator(fileSystemUtils).initConfig(new Config())
-            assertThat(actualConfig.repositories.springPetclinic.url).isEqualTo('value2')
-        }
         withEnvironmentVariable('GITOPS_BUILD_LIB_REPO', 'value3').execute {
             def actualConfig = new ApplicationConfigurator(fileSystemUtils).initConfig(new Config())
             assertThat(actualConfig.repositories.gitopsBuildLib.url).isEqualTo('value3')
@@ -526,7 +523,7 @@ class ApplicationConfiguratorTest {
         // Calling the method should not make any changes to the config
         applicationConfigurator.initConfig(testConfig)
 
-        assertThat(testLogger.getLogs().search("ArgoCD operator is not enabled. Skipping features.argocd.resourceInclusionsCluster setup."))
+        assertThat(testLogger.getLogs().search("ArgoCD operator is not enabled. Skipping features.argocd.resourceInclusionsCluster setupDedicatedInstanceMode."))
                 .isNotEmpty()
     }
 

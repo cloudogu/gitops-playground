@@ -11,11 +11,10 @@ import static org.mockito.Mockito.mock
 
 class GitHandlerForTests extends GitHandler{
 
-    public ScmManagerConfig scmManagerConfig
-
     GitHandlerForTests(Config config) {
         super(config, mock(HelmStrategy),new FileSystemUtils(), new K8sClientForTest(config),new NetworkingUtils())
     }
+
     @Override
     GitProvider getTenant() {
         return new ScmManagerMock()

@@ -90,7 +90,7 @@ class Mailhog extends Feature implements FeatureWithImage {
                             'Chart.yaml'))['version']
 
             deployer.deployFeature(
-                    this.gitHandler.resourcesScm.url + repoNamespaceAndName,
+                    "${this.gitHandler.resourcesScm.repoUrl(repoNamespaceAndName)}",
                     'mailhog',
                     '.',
                     mailhogVersion,

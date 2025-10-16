@@ -4,6 +4,7 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.GitRepoFactory
 import com.cloudogu.gitops.git.providers.GitProvider
+import com.cloudogu.gitops.git.providers.scmmanager.ScmManagerMock
 import org.apache.commons.io.FileUtils
 
 import static org.mockito.Mockito.spy
@@ -38,7 +39,6 @@ class TestGitRepoFactory extends GitRepoFactory {
                 }
                 return remoteGitRepopUrl
             }
-
         }
 
         // Create a spy to enable verification while keeping real behavior

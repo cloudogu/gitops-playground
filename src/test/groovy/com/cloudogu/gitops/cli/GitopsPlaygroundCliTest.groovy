@@ -263,39 +263,40 @@ class GitopsPlaygroundCliTest {
 
     @Test
     void 'ensure helm defaults are used, if not set'() {
-    // this test sets only a few values for helm configuration and expect, that defaults are used.
+        // this test sets only a few values for helm configuration and expect, that defaults are used.
 
         def fileConfig = [
-                jenkins: [
+                jenkins : [
                         helm: [
-                                    version: '5.8.1'
+                                version: '5.8.1'
                         ]
                 ],
-                scmm: [
-                        helm: [
-                            values: [
-                                    initialDelaySeconds: 120
-                            ]
-                        ]
-                ]
-                ,
-                features: [
-                        monitoring: [
+                scm     : [
+                        scmManager: [
                                 helm: [
-                                        version: '66.2.1',
+                                        values: [
+                                                initialDelaySeconds: 120
+                                        ]
+                                ]
+                        ]
+                ],
+                features: [
+                        monitoring : [
+                                helm: [
+                                        version     : '66.2.1',
                                         grafanaImage: 'localhost:30000/proxy/grafana:latest'
                                 ]
                         ],
-                        secrets: [
+                        secrets    : [
                                 externalSecrets: [
-                                    helm: [
-                                            chart: 'my-secrets'
-                                    ]
+                                        helm: [
+                                                chart: 'my-secrets'
+                                        ]
                                 ],
-                                vault: [
-                                    helm: [
-                                            repoURL: 'localhost:3000/proxy/vault:latest'
-                                    ]
+                                vault          : [
+                                        helm: [
+                                                repoURL: 'localhost:3000/proxy/vault:latest'
+                                        ]
                                 ],
                         ],
                         certManager: [
@@ -311,7 +312,7 @@ class GitopsPlaygroundCliTest {
 
         configFile.text = toYaml(fileConfig)
 
-        cli.run("--config-file=${configFile}","--yes")
+        cli.run("--config-file=${configFile}", "--yes")
         def myconfig = cli.lastSchema;
         assertThat(myconfig.jenkins.helm.chart).isEqualTo('jenkins')
         assertThat(myconfig.jenkins.helm.repoURL).isEqualTo('https://charts.jenkins.io')
@@ -349,6 +350,7 @@ class GitopsPlaygroundCliTest {
         assertThat(cli.lastSchema.features.certManager.helm.acmeSolverImage).isEqualTo('')
         assertThat(cli.lastSchema.features.certManager.helm.image).isEqualTo('localhost:30000/proxy/cert-manager-controller:latest')
     }
+
     static String getLoggingPattern() {
         loggingEncoder.pattern
     }

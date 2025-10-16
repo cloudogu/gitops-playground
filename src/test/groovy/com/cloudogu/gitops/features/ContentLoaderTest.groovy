@@ -3,7 +3,7 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepoFactory
-import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
+import com.cloudogu.gitops.git.providers.scmmanager.ScmManagerMock
 import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
@@ -19,8 +19,9 @@ import org.junit.jupiter.api.io.TempDir
 import org.mockito.ArgumentCaptor
 
 import static ContentLoader.RepoCoordinate
-import static com.cloudogu.gitops.config.Config.*
+import static com.cloudogu.gitops.config.Config.ContentRepoType
 import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositorySchema
+import static com.cloudogu.gitops.config.Config.OverwriteMode
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.any
@@ -32,22 +33,31 @@ class ContentLoaderTest {
     // bareRepo
     static List<File> foldersToDelete = new ArrayList<File>()
 
-    Config config = new Config(
-            application: new ApplicationSchema(
-                    namePrefix: 'foo-'),
-            registry: new RegistrySchema(
-                    url: 'reg-url',
-                    path: 'reg-path',
-                    username: 'reg-user',
-                    password: 'reg-pw',
-                    createImagePullSecrets: false,))
+    Config config = new Config([
+            application: [
+                    namePrefix: 'foo-'
+            ],
+            scm: [
+                    scmManager: [
+                            url: ''
+                    ]
+            ],
+            registry   : [
+                    url                   : 'reg-url',
+                    path                  : 'reg-path',
+                    username              : 'reg-user',
+                    password              : 'reg-pw',
+                    createImagePullSecrets: false
+            ]
+    ])
+
 
     CommandExecutorForTest k8sCommands = new CommandExecutorForTest()
     K8sClientForTest k8sClient = new K8sClientForTest(config, k8sCommands)
     TestGitRepoFactory scmmRepoProvider = new TestGitRepoFactory(config, new FileSystemUtils())
     TestScmManagerApiClient scmmApiClient = new TestScmManagerApiClient(config)
     Jenkins jenkins = mock(Jenkins.class)
-    GitHandler gitHandler = mock(GitHandler.class)
+    GitHandler gitHandler = new GitHandlerForTests(config)
 
     @TempDir
     File tmpDir
@@ -573,14 +583,14 @@ class ContentLoaderTest {
         createContent().install()
 
         def expectedRepo = 'common/repo'
-        def repo = scmmRepoProvider.getRepo(expectedRepo, null)
+        def repo = scmmRepoProvider.getRepo(expectedRepo, new ScmManagerMock())
 
         String url = repo.getGitRepositoryUrl()
         // clone repo, to ensure, changes in remote repo.
         try (def git = Git.cloneRepository().setURI(url).setBranch('main').setDirectory(tmpDir).call()) {
 
 
-            verify(repo).createRepositoryAndSetPermission(eq(''), any(String.class),eq(false))
+            verify(repo).createRepositoryAndSetPermission(eq(''), any(String.class), eq(false))
 
             def commitMsg = git.log().call().iterator().next().getFullMessage()
             assertThat(commitMsg).isEqualTo("Initialize content repo ${expectedRepo}".toString())
@@ -634,7 +644,7 @@ class ContentLoaderTest {
         createContent().install()
 
         def expectedRepo = 'common/repo'
-        def repo = scmmRepoProvider.getRepo(expectedRepo, null)
+        def repo = scmmRepoProvider.getRepo(expectedRepo, new ScmManagerMock())
 
         def url = repo.getGitRepositoryUrl()
         // clone repo, to ensure, changes in remote repo.
@@ -696,7 +706,7 @@ class ContentLoaderTest {
         createContent().install()
 
         def expectedRepo = 'common/repo'
-        def repo = scmmRepoProvider.getRepo(expectedRepo, null)
+        def repo = scmmRepoProvider.getRepo(expectedRepo, new ScmManagerMock())
 
         def url = repo.getGitRepositoryUrl()
         // clone repo, to ensure, changes in remote repo.
@@ -869,7 +879,7 @@ class ContentLoaderTest {
     }
 
     Git cloneRepo(String expectedRepo, File repoFolder) {
-        def repo = scmmRepoProvider.getRepo(expectedRepo, null)
+        def repo = scmmRepoProvider.getRepo(expectedRepo, new ScmManagerMock())
         def url = repo.getGitRepositoryUrl()
 
         def git = Git.cloneRepository().setURI(url).setBranch('main').setDirectory(repoFolder).call()

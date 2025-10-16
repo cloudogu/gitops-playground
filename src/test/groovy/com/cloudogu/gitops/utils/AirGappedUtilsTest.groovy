@@ -21,13 +21,16 @@ import static org.mockito.Mockito.*
 
 class AirGappedUtilsTest {
 
-    Config config = new Config(
-            application: new Config.ApplicationSchema(
+    Config config = Config.fromMap([
+            application: [
                     localHelmChartFolder: '',
-                    gitName: 'Cloudogu',
-                    gitEmail: 'hello@cloudogu.com',
-            )
-    )
+                    gitName             : 'Cloudogu',
+                    gitEmail            : 'hello@cloudogu.com'],
+            scm        : [
+                    scmManager: [
+                            url: '']
+            ]
+    ])
 
     Config.HelmConfig helmConfig = new Config.HelmConfig([
             chart  : 'kube-prometheus-stack',
@@ -40,7 +43,7 @@ class AirGappedUtilsTest {
     FileSystemUtils fileSystemUtils = new FileSystemUtils()
     TestScmManagerApiClient scmmApiClient = new TestScmManagerApiClient(config)
     HelmClient helmClient = mock(HelmClient)
-    GitHandler gitHandler = mock(GitHandler)
+    GitHandler gitHandler = new GitHandlerForTests(config)
 
     @BeforeEach
     void setUp() {

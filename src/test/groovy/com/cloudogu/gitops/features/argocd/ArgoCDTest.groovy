@@ -9,6 +9,7 @@ import groovy.yaml.YamlSlurper
 import org.eclipse.jgit.api.CheckoutCommand
 import org.eclipse.jgit.api.CloneCommand
 import org.junit.jupiter.api.Test
+import org.mockito.Spy
 import org.springframework.security.crypto.bcrypt.BCrypt
 
 import java.nio.file.Files
@@ -51,12 +52,15 @@ class ArgoCDTest {
                     scmManager: [
                             internal: true,
                             url     : 'https://abc'],
-                    gitlab:[
-                            url: 'https://testgitlab'
+                    gitlab    : [
+                            url: ''
                     ]
             ],
             multiTenant: [
-                    scmManager:[
+                    scmManager          : [
+                            url: ''
+                    ],
+                    gitlab              : [
                             url: ''
                     ],
                     useDedicatedInstance: false
@@ -110,6 +114,9 @@ class ArgoCDTest {
                     ]
             ]
     )
+
+    @Spy
+    CommandExecutor test = new CommandExecutor()
 
     CommandExecutorForTest k8sCommands = new CommandExecutorForTest()
     CommandExecutorForTest helmCommands = new CommandExecutorForTest()
@@ -607,12 +614,8 @@ class ArgoCDTest {
         argocd.install()
         List filesWithInternalSCMM = findFilesContaining(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), argocd.scmmUrlInternal)
         assertThat(filesWithInternalSCMM).isEmpty()
-        filesWithInternalSCMM = findFilesContaining(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), argocd.scmmUrlInternal)
-        assertThat(filesWithInternalSCMM).isEmpty()
 
         List filesWithExternalSCMM = findFilesContaining(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), "https://abc")
-        assertThat(filesWithExternalSCMM).isNotEmpty()
-        filesWithExternalSCMM = findFilesContaining(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), "https://abc")
         assertThat(filesWithExternalSCMM).isNotEmpty()
     }
 
@@ -661,45 +664,6 @@ class ArgoCDTest {
                 assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, '/k8s/values-shared.yaml').text).contains('runAsGroup: null')
             }
         }
-    }
-
-
-    @Test
-    void 'configures custom nginx image'() {
-        config.images.nginx = 'localhost:5000/nginx/nginx:latest'
-        createArgoCD().install()
-
-        def image = parseActualYaml(nginxHelmJenkinsRepo.absoluteLocalRepoTmpDir + '/k8s/values-shared.yaml')['image']
-        assertThat(image['registry']).isEqualTo('localhost:5000')
-        assertThat(image['repository']).isEqualTo('nginx/nginx')
-        assertThat(image['tag']).isEqualTo('latest')
-
-        def yamlString = new File(nginxValidationRepo.absoluteLocalRepoTmpDir, '/k8s/values-shared.yaml').text
-        assertThat(yamlString).startsWith("""image:
-  registry: localhost:5000
-  repository: nginx/nginx
-  tag: latest
-""")
-    }
-
-    @Test
-    void 'Sets image pull secrets for nginx'() {
-        config.registry.createImagePullSecrets = true
-        config.registry.twoRegistries = true
-        config.registry.proxyUrl = 'proxy-url'
-        config.registry.proxyUsername = 'proxy-user'
-        config.registry.proxyPassword = 'proxy-pw'
-
-        createArgoCD().install()
-
-        assertThat(parseActualYaml(nginxHelmJenkinsRepo.absoluteLocalRepoTmpDir + '/k8s/values-shared.yaml')['global']['imagePullSecrets'])
-                .isEqualTo(['proxy-registry'])
-
-        assertThat(new File(nginxValidationRepo.absoluteLocalRepoTmpDir, '/k8s/values-shared.yaml').text)
-                .contains("""global:
-  imagePullSecrets:
-    - proxy-registry
-""")
     }
 
     @Test
@@ -761,6 +725,7 @@ class ArgoCDTest {
     }
 
 
+    //TODO Anna remove example apps
     @Test
     void 'Sets pod resource limits and requests'() {
         config.application.podResources = true
@@ -871,7 +836,7 @@ class ArgoCDTest {
             }
         }
 
-        assertAllYamlFiles(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), 'applications', 5) { Path file ->
+        assertAllYamlFiles(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), 'applications', 4) { Path file ->
             def yaml = parseActualYaml(file.toString())
             assertThat(yaml['spec']['source']['repoURL'] as String)
                     .as("$file repoURL have name prefix")
@@ -884,16 +849,6 @@ class ArgoCDTest {
             assertThat(yaml['spec']['destination']['namespace'])
                     .as("$file spec.destination.namspace has name prefix")
                     .isEqualTo("${expectedPrefix}argocd".toString())
-        }
-
-        assertAllYamlFiles(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'argocd', 7) { Path it ->
-            def yaml = parseActualYaml(it.toString())
-            List yamlDocuments = yaml instanceof List ? yaml : [yaml]
-            for (def document in yamlDocuments) {
-                assertThat(document['spec']['source']['repoURL'] as String)
-                        .as("$it repoURL have name prefix")
-                        .startsWith("${scmmUrl}/repo/${expectedPrefix}argocd")
-            }
         }
 
         assertAllYamlFiles(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), 'argocd', 1) { Path it ->
@@ -1496,7 +1451,7 @@ class ArgoCDTest {
 
     @Test
     void 'Central Bootstrapping for Tenant Applications'() {
-        setup()
+        setupDedicatedInstanceMode()
         def ingressFile = new File(argocdRepo.getAbsoluteLocalRepoTmpDir(), "operator/ingress.yaml")
         assertThat(ingressFile)
                 .as("Ingress file should not be generated when both flags are false")
@@ -1506,7 +1461,7 @@ class ArgoCDTest {
 
     @Test
     void 'GOP DedicatedInstances Central templating works correctly'() {
-        setup()
+        setupDedicatedInstanceMode()
         //Central Applications
         assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir() + "${prefixPathCentral}applications/argocd.yaml")).exists()
         assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir() + "${prefixPathCentral}applications/bootstrap.yaml")).exists()
@@ -1550,7 +1505,7 @@ class ArgoCDTest {
 
     @Test
     void 'Cluster Resource Misc templating'() {
-        setup()
+        setupDedicatedInstanceMode()
         assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + "/argocd/misc.yaml")).exists()
         def miscYaml = new YamlSlurper().parse(Path.of clusterResourcesRepo.getAbsoluteLocalRepoTmpDir(), "/argocd/misc.yaml")
         assertThat(miscYaml['metadata']['name']).isEqualTo('testPrefix-misc')
@@ -1559,7 +1514,7 @@ class ArgoCDTest {
 
     @Test
     void 'generate example-apps bootstrapping application via ArgoApplication when true'() {
-        setup()
+        setupDedicatedInstanceMode()
         assertThat(new File(tenantBootstrap.getAbsoluteLocalRepoTmpDir() + "/applications/bootstrap.yaml")).exists()
         assertThat(new File(tenantBootstrap.getAbsoluteLocalRepoTmpDir() + "/applications/argocd-application-example-apps-testPrefix-argocd.yaml")).exists()
     }
@@ -1567,7 +1522,7 @@ class ArgoCDTest {
     @Test
     void 'not generating example-apps bootstrapping application via ArgoApplication when false'() {
         config.content.examples = false
-        setup()
+        setupDedicatedInstanceMode()
         assertThat(new File(tenantBootstrap.getAbsoluteLocalRepoTmpDir() + "/applications/bootstrap.yaml")).exists()
         assertThat(new File(tenantBootstrap.getAbsoluteLocalRepoTmpDir() + "/applications/argocd-application-example-apps-testPrefix-argocd.yaml")).doesNotExist()
     }
@@ -1576,7 +1531,7 @@ class ArgoCDTest {
     void 'Append namespaces to Argocd argocd-default-cluster-config secrets'() {
         config.application.namespaces.dedicatedNamespaces = new LinkedHashSet(['dedi-test1', 'dedi-test2', 'dedi-test3'])
         config.application.namespaces.tenantNamespaces = new LinkedHashSet(['tenant-test1', 'tenant-test2', 'tenant-test3'])
-        setup()
+        setupDedicatedInstanceMode()
         k8sCommands.assertExecuted('kubectl get secret argocd-default-cluster-config -nargocd -ojsonpath={.data.namespaces}')
         k8sCommands.assertExecuted('kubectl patch secret argocd-default-cluster-config -n argocd --patch-file=/tmp/gitops-playground-patch-')
     }
@@ -1584,7 +1539,7 @@ class ArgoCDTest {
     @Test
     void 'RBACs generated correctly'() {
         config.application.namespaces.tenantNamespaces = new LinkedHashSet(['testprefix-tenant-test1', 'testprefix-tenant-test2', 'testprefix-tenant-test3'])
-        setup()
+        setupDedicatedInstanceMode()
 
         File rbacFolder = new File(argocdRepo.getAbsoluteLocalRepoTmpDir() + "/operator/rbac")
         File rbacTenantFolder = new File(argocdRepo.getAbsoluteLocalRepoTmpDir() + "/operator/rbac/tenant")
@@ -1805,14 +1760,12 @@ class ArgoCDTest {
         )
     }
 
-
-    void setup() {
+    void setupDedicatedInstanceMode() {
         config.application.namePrefix = 'testPrefix-'
         config.multiTenant.scmManager.url = 'scmm.testhost/scm'
         config.multiTenant.scmManager.username = 'testUserName'
         config.multiTenant.scmManager.password = 'testPassword'
         config.multiTenant.useDedicatedInstance = true
-
         this.argocd = setupOperatorTest()
         argocd.install()
     }
@@ -1917,14 +1870,24 @@ class ArgoCDTest {
         }
 
         @Override
+        protected initCentralRepos() {
+            super.initCentralRepos()
+            if (config.multiTenant.useDedicatedInstance) {
+                argocdRepo = argocdRepoInitializationAction.repo
+                clusterResourcesRepo = clusterResourcesInitializationAction.repo
+            }
+        }
+
+        @Override
         protected initTenantRepos() {
             super.initTenantRepos()
 
-            argocdRepo = argocdRepoInitializationAction.repo
-            actualHelmValuesFile = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), HELM_VALUES_PATH)
-            clusterResourcesRepo = clusterResourcesInitializationAction.repo
             if (config.multiTenant.useDedicatedInstance) {
                 tenantBootstrap = tenantBootstrapInitializationAction.repo
+            } else {
+                argocdRepo = argocdRepoInitializationAction.repo
+                actualHelmValuesFile = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), HELM_VALUES_PATH)
+                clusterResourcesRepo = clusterResourcesInitializationAction.repo
             }
         }
 

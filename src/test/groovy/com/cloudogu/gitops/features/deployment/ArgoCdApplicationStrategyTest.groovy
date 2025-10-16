@@ -7,6 +7,7 @@ import com.cloudogu.gitops.features.git.config.ScmTenantSchema.ScmManagerTenantC
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.utils.GitHandlerForTests
 import com.cloudogu.gitops.utils.TestGitRepoFactory
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
@@ -16,7 +17,7 @@ import static org.mockito.Mockito.mock
 
 class ArgoCdApplicationStrategyTest {
     private File localTempDir
-    GitHandler gitHandler = mock(GitHandler)
+    GitHandler gitHandler = new GitHandlerForTests(new Config())
 
     @Test
     void 'deploys feature using argo CD'() {

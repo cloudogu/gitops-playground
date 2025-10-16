@@ -16,7 +16,7 @@ import com.cloudogu.gitops.git.providers.Scope
 class ScmManagerMock implements GitProvider {
 
     // --- configurable  ---
-    URI inClusterBase = new URI("http://scmm.ns.svc.cluster.local/scm")
+    URI inClusterBase = new URI("http://scmm.scm-manager.svc.cluster.local/scm")
     URI clientBase = new URI("http://localhost:8080/scm")
     String rootPath = "repo"            // SCMM rootPath
     String namePrefix = ""                // e.g., "fv40-" for tenant mode

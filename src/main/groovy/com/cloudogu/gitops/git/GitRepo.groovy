@@ -22,7 +22,7 @@ class GitRepo {
     static final String NAMESPACE_3RD_PARTY_DEPENDENCIES = '3rd-party-dependencies'
 
     private final Config config
-    final GitProvider gitProvider
+    public GitProvider gitProvider
     private final FileSystemUtils fileSystemUtils
 
     private final String repoTarget
@@ -76,7 +76,7 @@ class GitRepo {
     }
 
     void cloneRepo() {
-        def cloneUrl = gitProvider.repoUrl(repoTarget, RepoUrlScope.CLIENT)
+        def cloneUrl = getGitRepositoryUrl()
         log.debug("Cloning ${repoTarget}, Origin: ${cloneUrl}")
         Git.cloneRepository()
                 .setURI(cloneUrl)
@@ -188,7 +188,7 @@ class GitRepo {
     private PushCommand createPushCommand(String refSpec) {
         getGit()
                 .push()
-                .setRemote(gitProvider.repoUrl(repoTarget, RepoUrlScope.CLIENT))
+                .setRemote(getGitRepositoryUrl())
                 .setRefSpecs(new RefSpec(refSpec))
                 .setCredentialsProvider(getCredentialProvider())
     }
@@ -206,7 +206,7 @@ class GitRepo {
     }
 
     private CredentialsProvider getCredentialProvider() {
-        def auth = gitProvider.getCredentials()
+        def auth = this.gitProvider.getCredentials()
         def passwordAuthentication = new UsernamePasswordCredentialsProvider(auth.username, auth.password)
         return insecure ? new ChainingCredentialsProvider(new InsecureCredentialProvider(), passwordAuthentication) : passwordAuthentication
     }

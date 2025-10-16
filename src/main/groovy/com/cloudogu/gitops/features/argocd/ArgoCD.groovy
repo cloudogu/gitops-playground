@@ -38,13 +38,8 @@ class ArgoCD extends Feature {
 
     protected RepoInitializationAction argocdRepoInitializationAction
     protected RepoInitializationAction clusterResourcesInitializationAction
-    protected RepoInitializationAction exampleAppsInitializationAction
-    protected RepoInitializationAction nginxHelmJenkinsInitializationAction
-    protected RepoInitializationAction nginxValidationInitializationAction
-    protected RepoInitializationAction brokenApplicationInitializationAction
     protected RepoInitializationAction tenantBootstrapInitializationAction
     protected File remotePetClinicRepoTmpDir
-    protected List<RepoInitializationAction> petClinicInitializationActions = []
 
     protected K8sClient k8sClient
     protected HelmClient helmClient
@@ -192,14 +187,6 @@ class ArgoCD extends Feature {
             }
         } */
 
-    }
-
-    private void prepareApplicationNginxHelmJenkins() {
-        if (!config.features.secrets.active) {
-            // External Secrets are not needed in example
-            FileSystemUtils.deleteFile nginxHelmJenkinsInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/k8s/staging/external-secret.yaml'
-            FileSystemUtils.deleteFile nginxHelmJenkinsInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/k8s/production/external-secret.yaml'
-        }
     }
 
     private void deployWithHelm() {
