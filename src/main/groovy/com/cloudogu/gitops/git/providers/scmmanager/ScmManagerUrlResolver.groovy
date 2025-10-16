@@ -41,23 +41,24 @@ class ScmManagerUrlResolver {
     URI inClusterBase() { noTrailSlash(ensureScm(inClusterBaseRaw())) }
 
     /** In-cluster repo prefix …/scm/<root>/[<namePrefix>] */
-    String inClusterRepoPrefix(boolean includeNamePrefix) {
-        def prefix = (config.application.namePrefix ?: "").trim()
+    String inClusterRepoPrefix() {
+        def prefix = config.application.namePrefix?.strip() ?: ""
+
         def base = withSlash(inClusterBase())
         def url = withSlash(base.resolve(root()))
-        includeNamePrefix && prefix ? noTrailSlash(URI.create(url.toString() + prefix)).toString()
-                : url.toString()
+
+        return noTrailSlash(URI.create(url.toString() + prefix)).toString()
     }
 
     /** In-cluster repo URL …/scm/<root>/<ns>/<name> */
     String inClusterRepoUrl(String repoTarget) {
-        def repo = (repoTarget ?: "").trim()
+        def repo = repoTarget?.strip() ?: ""
         noTrailSlash(withSlash(inClusterBase()).resolve("${root()}/${repo}/")).toString()
     }
 
     /** Client repo URL …/scm/<root>/<ns>/<name> (no trailing slash) */
     String clientRepoUrl(String repoTarget) {
-        def repo = (repoTarget ?: "").trim()
+        def repo = repoTarget?.strip() ?: ""
         noTrailSlash(withSlash(clientRepoBase()).resolve("${repo}/")).toString()
     }
 
@@ -77,21 +78,28 @@ class ScmManagerUrlResolver {
     }
 
     private URI serviceDnsBase() {
-        def ns = (scmm.namespace ?: "scm-manager").trim()
-        URI.create("http://scmm.${ns}.svc.cluster.local")
+        def namespace = scmm.namespace?.strip()
+        if (!namespace) namespace = "scm-manager"
+
+        URI.create("http://scmm.${namespace}.svc.cluster.local")
     }
 
     private URI externalBase() {
-        def url = (scmm.url ?: "").trim()
+        def url = scmm.url?.strip()
         if (url) return URI.create(url)
-        def ingress = (scmm.ingress ?: "").trim()
+
+        def ingress = scmm.ingress?.strip()
         if (ingress) return URI.create("http://${ingress}")
         throw new IllegalArgumentException("Either scmm.url or scmm.ingress must be set when internal=false")
     }
 
     private URI nodePortBase() {
         if (cachedClusterBind) return cachedClusterBind
-        final def port = k8s.waitForNodePort(releaseName, scmm.namespace)
+
+        def namespace = scmm.namespace?.strip()
+        if (!namespace) namespace = "scm-manager"
+
+        final def port = k8s.waitForNodePort(releaseName, namespace)
         final def host = net.findClusterBindAddress()
         cachedClusterBind = new URI("http://${host}:${port}")
         return cachedClusterBind
@@ -100,7 +108,7 @@ class ScmManagerUrlResolver {
     // ---------- Helpers ----------
 
     private String root() {
-        (scmm.rootPath ?: "repo").trim()
+        (scmm.rootPath ?: "repo").strip()
     }
 
     private static URI ensureScm(URI u) {
