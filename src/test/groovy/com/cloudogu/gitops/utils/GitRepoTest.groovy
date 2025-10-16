@@ -1,15 +1,15 @@
 package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.git.config.ScmTenantSchema
 import com.cloudogu.gitops.git.GitRepo
+import com.cloudogu.gitops.git.providers.scmmanager.Permission
+import com.cloudogu.gitops.git.providers.scmmanager.ScmManagerMock
+import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Ref
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
 import retrofit2.Call
-import com.cloudogu.gitops.git.providers.scmmanager.Permission
-import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
 
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
@@ -21,22 +21,25 @@ class GitRepoTest {
 
     public static final String expectedNamespace = "namespace"
     public static final String expectedRepo = "repo"
-    Config config = new Config(
-            application: new Config.ApplicationSchema(
-                    gitName: "Cloudogu",
-                    gitEmail: "hello@cloudogu.com",)
-            ,
-            scm: new ScmTenantSchema.ScmManagerTenantConfig(
-                    username: "dont-care-username",
-                    password: "dont-care-password",
-//                    gitOpsUsername: 'foo-gitops' // TODO:
-            ))
+    Config config = Config.fromMap([
+            application: [
+                    gitName : "Cloudogu",
+                    gitEmail: "hello@cloudogu.com"
+            ],
+            scm        : [
+                    scmManager: [
+                            username: "dont-care-username",
+                            password: "dont-care-password"
+                    ]
+            ]
+    ])
+
     TestGitRepoFactory scmmRepoProvider = new TestGitRepoFactory(config, new FileSystemUtils())
     TestScmManagerApiClient scmmApiClient = new TestScmManagerApiClient(config)
-    Call<Void>  response201 = TestScmManagerApiClient.mockSuccessfulResponse(201)
+    Call<Void> response201 = TestScmManagerApiClient.mockSuccessfulResponse(201)
     Call<Void> response409 = scmmApiClient.mockErrorResponse(409)
     Call<Void> response500 = scmmApiClient.mockErrorResponse(500)
-    
+
     @Test
     void "writes file"() {
         def repo = createRepo()
@@ -156,7 +159,7 @@ class GitRepoTest {
         // https://github.com/centic9/jgit-cookbook/blob/d923e18b2ce2e55761858fd2e8e402dd252e0766/src/main/java/org/dstadler/jgit/porcelain/ListTags.java
         // 🤷
     }
-    
+
     @Test
     void 'Create repo'() {
         def repo = createRepo()
@@ -180,7 +183,7 @@ class GitRepoTest {
 
         assertCreatedRepo()
     }
-    
+
     @Test
     void 'Create repo: Ignore existing Repos'() {
         def repo = createRepo()
@@ -192,7 +195,7 @@ class GitRepoTest {
 
         assertCreatedRepo()
     }
-    
+
     @Test
     void 'Create repo: Ignore existing Permissions'() {
         def repo = createRepo()
@@ -248,8 +251,8 @@ class GitRepoTest {
         assertThat(permissionCreateArgument.allValues[0].name).isEqualTo('foo-gitops')
         assertThat(permissionCreateArgument.allValues[0].role).isEqualTo(Permission.Role.WRITE)
     }
-    
+
     private GitRepo createRepo(String repoTarget = "${expectedNamespace}/${expectedRepo}") {
-        return scmmRepoProvider.getRepo(repoTarget,null)
+        return scmmRepoProvider.getRepo(repoTarget, new ScmManagerMock())
     }
 }

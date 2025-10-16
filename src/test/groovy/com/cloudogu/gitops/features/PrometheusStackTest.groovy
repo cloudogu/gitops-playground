@@ -5,7 +5,7 @@ import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.providers.GitProvider
-import com.cloudogu.gitops.git.providers.scmmanager.ScmManager
+import com.cloudogu.gitops.git.providers.scmmanager.ScmManagerMock
 import com.cloudogu.gitops.utils.*
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
@@ -96,8 +96,6 @@ class PrometheusStackTest {
     File clusterResourcesRepoDir
 
     GitHandler gitHandler = mock(GitHandler.class)
-    ScmManager scmManager = mock(ScmManager.class)
-
 
     @Test
     void "is disabled via active flag"() {
@@ -304,15 +302,12 @@ policies:
 
     @Test
     void 'uses remote scmm url if requested'() {
-        config.scm.scmManager.internal = false
-        config.scm.scmManager.url = 'https://localhost:9091/prefix'
         createStack().install()
 
-
         def additionalScrapeConfigs = parseActualYaml()['prometheus']['prometheusSpec']['additionalScrapeConfigs'] as List
-        assertThat(((additionalScrapeConfigs[0]['static_configs'] as List)[0]['targets'] as List)[0]).isEqualTo('localhost:9091')
-        assertThat(additionalScrapeConfigs[0]['metrics_path']).isEqualTo('/prefix/api/v2/metrics/prometheus')
-        assertThat(additionalScrapeConfigs[0]['scheme']).isEqualTo('https')
+        assertThat(((additionalScrapeConfigs[0]['static_configs'] as List)[0]['targets'] as List)[0]).isEqualTo('localhost:8080')
+        assertThat(additionalScrapeConfigs[0]['metrics_path']).isEqualTo('/scm/api/v2/metrics/prometheus')
+        assertThat(additionalScrapeConfigs[0]['scheme']).isEqualTo('http')
 
         // scrape config for jenkins is unchanged
         assertThat(((additionalScrapeConfigs[1]['static_configs'] as List)[0]['targets'] as List)[0]).isEqualTo('jenkins.foo-jenkins.svc.cluster.local')
@@ -325,17 +320,17 @@ policies:
         config.jenkins["internal"] = false
         config.jenkins["url"] = 'https://localhost:9090/jenkins'
         createStack().install()
-
-
         def additionalScrapeConfigs = parseActualYaml()['prometheus']['prometheusSpec']['additionalScrapeConfigs'] as List
+
+        // scrape config for scmm is unchanged
+        assertThat(((additionalScrapeConfigs[0]['static_configs'] as List)[0]['targets'] as List)[0]).isEqualTo('localhost:8080')
+        assertThat(additionalScrapeConfigs[0]['scheme']).isEqualTo('http')
+        assertThat(additionalScrapeConfigs[0]['metrics_path']).isEqualTo('/scm/api/v2/metrics/prometheus')
+
+
         assertThat(((additionalScrapeConfigs[1]['static_configs'] as List)[0]['targets'] as List)[0]).isEqualTo('localhost:9090')
         assertThat(additionalScrapeConfigs[1]['metrics_path']).isEqualTo('/jenkins/prometheus')
         assertThat(additionalScrapeConfigs[1]['scheme']).isEqualTo('https')
-
-        // scrape config for scmm is unchanged
-        assertThat(((additionalScrapeConfigs[0]['static_configs'] as List)[0]['targets'] as List)[0]).isEqualTo('scmm.foo-scm-manager.svc.cluster.local')
-        assertThat(additionalScrapeConfigs[0]['scheme']).isEqualTo('http')
-        assertThat(additionalScrapeConfigs[0]['metrics_path']).isEqualTo('/scm/api/v2/metrics/prometheus')
     }
 
     @Test
@@ -617,12 +612,12 @@ matchExpressions:
 
     private PrometheusStack createStack() {
         // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
-        when(gitHandler.getResourcesScm()).thenReturn(scmManager)
+        when(gitHandler.getResourcesScm()).thenReturn(new ScmManagerMock())
         def configuration = config
-        def repoProvider = new TestGitRepoFactory(config, new FileSystemUtils()) {
+        TestGitRepoFactory repoProvider = new TestGitRepoFactory(config, new FileSystemUtils()) {
             @Override
-            GitRepo getRepo(String repoTarget, GitProvider scm) {
-                def repo = super.getRepo(repoTarget, scm)
+            GitRepo getRepo(String repoTarget,GitProvider scm) {
+                def repo = super.getRepo(repoTarget, new ScmManagerMock())
                 clusterResourcesRepoDir = new File(repo.getAbsoluteLocalRepoTmpDir())
 
                 return repo

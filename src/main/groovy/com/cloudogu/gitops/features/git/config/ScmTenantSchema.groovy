@@ -94,7 +94,7 @@ class ScmTenantSchema {
         @JsonPropertyDescription(SCMM_URL_DESCRIPTION)
         String url = ''
 
-        @Option(names = ['--scm-namespace'], description = SCMM_NAMESPACE_DESCRIPTION)
+        @Option(names = ['--scmm-namespace'], description = SCMM_NAMESPACE_DESCRIPTION)
         @JsonPropertyDescription(SCMM_NAMESPACE_DESCRIPTION)
         String namespace = 'scm-manager'
 
@@ -114,7 +114,7 @@ class ScmTenantSchema {
                 values: [:]
         )
 
-        @Option(names = ['--scm-root-path'], description = SCMM_ROOT_PATH_DESCRIPTION)
+        @Option(names = ['--scmm-root-path'], description = SCMM_ROOT_PATH_DESCRIPTION)
         @JsonPropertyDescription(SCMM_ROOT_PATH_DESCRIPTION)
         String rootPath = 'repo'
 

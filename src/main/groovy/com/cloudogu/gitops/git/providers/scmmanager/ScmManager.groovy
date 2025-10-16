@@ -149,7 +149,6 @@ class ScmManager implements GitProvider {
         return true// because its created
     }
 
-
     //TODO when git abctraction feature is ready, we will create before merge to main a branch, that
     // contain this code as preservation for oop
     /* =============================  SETUP FOR LATER ===========================================

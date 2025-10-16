@@ -51,6 +51,15 @@ class ArgoCDTest {
                     scmManager: [
                             internal: true,
                             url     : 'https://abc'],
+                    gitlab:[
+                            url: 'https://testgitlab'
+                    ]
+            ],
+            multiTenant: [
+                    scmManager:[
+                            url: ''
+                    ],
+                    useDedicatedInstance: false
             ],
             images: buildImages + [petclinic: 'petclinic-value'],
             repositories: [
@@ -1903,7 +1912,7 @@ class ArgoCDTest {
     class ArgoCDForTest extends ArgoCD {
         ArgoCDForTest(Config config, CommandExecutorForTest k8sCommands, CommandExecutorForTest helmCommands) {
             super(config, new K8sClientForTest(config, k8sCommands), new HelmClient(helmCommands), new FileSystemUtils(),
-                    new TestGitRepoFactory(config, new FileSystemUtils()), null)
+                    new TestGitRepoFactory(config, new FileSystemUtils()), new GitHandlerForTests(config))
             mockPrefixActiveNamespaces(config)
         }
 
