@@ -80,12 +80,12 @@ class ScmTenantSchema {
 
     static class ScmManagerTenantConfig implements ScmManagerConfig {
 
-        static final String SCMM_SKIP_RESTART_DESCRIPTION = 'Skips restarting SCMHandler-Manager after plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades.\''
+        static final String SCMM_SKIP_RESTART_DESCRIPTION = 'Skips restarting SCM-Manager after plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades.\''
         static final String SCMM_SKIP_PLUGINS_DESCRIPTION = 'Skips plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades.'
         static final String SCMM_URL_DESCRIPTION = 'The host of your external scm-manager'
         static final String SCMM_USERNAME_DESCRIPTION = 'Mandatory when scmm-url is set'
         static final String SCMM_PASSWORD_DESCRIPTION = 'Mandatory when scmm-url is set'
-        static final String SCMM_ROOT_PATH_DESCRIPTION = 'Sets the root path for the Git Repositories. In SCMHandler-Manager it is always "repo"'
+        static final String SCMM_ROOT_PATH_DESCRIPTION = 'Sets the root path for the Git Repositories. In SCM-Manager it is always "repo"'
         static final String SCMM_NAMESPACE_DESCRIPTION = 'Namespace where SCM-Manager should run'
 
         Boolean internal = true

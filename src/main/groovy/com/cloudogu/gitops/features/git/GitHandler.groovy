@@ -48,7 +48,7 @@ class GitHandler extends Feature {
             config.scm.scmManager.internal = false
             config.scm.scmManager.urlForJenkins = config.scm.scmManager.url
         } else {
-            log.debug("Setting configs for internal SCMHandler-Manager")
+            log.debug("Setting configs for internal SCM-Manager")
             // We use the K8s service as default name here, because it is the only option:
             // "scmm.localhost" will not work inside the Pods and k3d-container IP + Port (e.g. 172.x.y.z:9091)
             // will not work on Windows and MacOS.
