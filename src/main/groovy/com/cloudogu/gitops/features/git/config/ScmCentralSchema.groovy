@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.features.git.config
 
+import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.features.git.config.util.GitlabConfig
 import com.cloudogu.gitops.features.git.config.util.ScmManagerConfig
@@ -64,8 +65,18 @@ class ScmCentralSchema {
         String namespace = 'scm-manager'
 
         @Override
-        boolean isInternal() {
-            return internal != null ? internal : Boolean.TRUE
+        String getIngress() {
+            return null
+        }
+
+        @Override
+        Config.HelmConfigWithValues getHelm() {
+            return null
+        }
+
+        @Override
+        Boolean getInsecure() {
+            return null
         }
 
         Credentials getCredentials() {

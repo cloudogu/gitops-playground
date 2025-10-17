@@ -24,6 +24,7 @@ class ScmManagerUrlResolver {
         this.net = net
     }
 
+
     // ---------- Public API used by ScmManager ----------
 
     /** Client base …/scm (no trailing slash) */
@@ -77,23 +78,9 @@ class ScmManagerUrlResolver {
     }
 
     private URI serviceDnsBase() {
-        if (scmm == null) {
-            log.error("SCMM config is null – cannot compute service DNS base")
-            throw new IllegalStateException("SCMM config is null")
-        }
-
-        if (scmm.namespace == null) {
-            // Nur Diagnose – wir fallen gleich sauber auf den Default zurück
-            log.warn("scmm.namespace ist null ")
-        }
-
-        def ns = (scmm.namespace ?: "scm-manager").toString().trim()
-        if (!ns) {
-            log.warn("scmm.namespace ist leer ")
-        }
-
-
+        System.out.println("serviceDnsBase  namespace: " + scmm.namespace)
         def namespace = (scmm.namespace ?: "scm-manager").strip()
+
 
         URI.create("http://scmm.${namespace}.svc.cluster.local")
     }

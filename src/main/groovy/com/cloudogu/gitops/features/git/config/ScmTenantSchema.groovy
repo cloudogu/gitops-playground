@@ -148,9 +148,11 @@ class ScmTenantSchema {
         Boolean skipPlugins = false
 
         @Override
-        boolean isInternal() {
-            return internal != null ? internal : Boolean.TRUE
+        Boolean getInsecure() {
+            return null
         }
+
+        String gitOpsUsername = ''
 
         Credentials getCredentials() {
             return new Credentials(username, password)

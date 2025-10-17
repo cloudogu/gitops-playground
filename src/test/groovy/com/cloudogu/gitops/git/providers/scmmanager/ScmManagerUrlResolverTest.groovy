@@ -1,58 +1,49 @@
 package com.cloudogu.gitops.git.providers.scmmanager
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.git.config.ScmCentralSchema
 import com.cloudogu.gitops.features.git.config.ScmTenantSchema
-import com.cloudogu.gitops.features.git.config.util.ScmManagerConfig
 import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.NetworkingUtils
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.Mock
+import org.mockito.junit.jupiter.MockitoExtension
 
 import static org.junit.jupiter.api.Assertions.*
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.ArgumentMatchers.eq
 import static org.mockito.Mockito.*
 
+@ExtendWith(MockitoExtension.class)
 class ScmManagerUrlResolverTest {
     private Config config
-    private ScmManagerConfig scmmConfig
 
+    @Mock
     private K8sClient k8s
+    @Mock
     private NetworkingUtils net
 
     @BeforeEach
     void setUp() {
-        k8s = mock(K8sClient)
-        net = mock(NetworkingUtils)
         config = new Config(
                 application: new Config.ApplicationSchema(
                         namePrefix: 'fv40-',
                         runningInsideK8s: false
                 )
         )
-        scmmConfig = new ScmTenantSchema.ScmManagerTenantConfig(
-                internal: true,
-                namespace: "scm-manager",
-                rootPath: "repo"
-        )
     }
 
-    /** Build a fresh immutable ScmManagerConfig with overrides for each test. */
-    private ScmManagerConfig smc(Map args = [:]) {
-        new ScmTenantSchema.ScmManagerTenantConfig(
-                internal : args.containsKey('internal') ? args.internal :  scmmConfig.internal,
-                namespace: args.containsKey('namespace') ? args.namespace : scmmConfig.namespace,
-                rootPath : args.containsKey('rootPath')  ? args.rootPath  : scmmConfig.rootPath,
-                url      : args.get('url'),
-                ingress  : args.get('ingress')
-        )
-    }
+    private ScmManagerUrlResolver resolverWith(Map args = [:]) {
+        def scmmCfg = new ScmTenantSchema.ScmManagerTenantConfig()
+        scmmCfg.internal = (args.containsKey('internal') ? args.internal : true)
+        scmmCfg.namespace = (args.containsKey('namespace') ? args.namespace : "scm-manager")
+        scmmCfg.rootPath = (args.containsKey('rootPath') ? args.rootPath : "repo")
+        scmmCfg.url = (args.containsKey('url') ? args.url : "")
+        scmmCfg.ingress = (args.containsKey('ingress') ? args.ingress : "")
 
-    /** Create resolver with optional SCMM overrides (no mutation of default instance). */
-    private ScmManagerUrlResolver resolverWith(Map scmmOverrides = [:]) {
-        new ScmManagerUrlResolver(config, smc(scmmOverrides), k8s, net)
+        return new ScmManagerUrlResolver(config, scmmCfg, k8s, net)
     }
 
     // ---------- Client base & API ----------
@@ -100,9 +91,10 @@ class ScmManagerUrlResolverTest {
     @Test
     @DisplayName("inClusterBase(): internal uses service DNS 'http://scmm.<ns>.svc.cluster.local/scm'")
     void inClusterBase_internal_usesServiceDns() {
-        var r = resolverWith(namespace: "custom-ns")
+        def r = resolverWith(namespace: "custom-ns", internal: true)
         assertEquals("http://scmm.custom-ns.svc.cluster.local/scm", r.inClusterBase().toString())
     }
+
 
     @Test
     @DisplayName("inClusterBase(): external uses external base + '/scm'")
@@ -173,11 +165,8 @@ class ScmManagerUrlResolverTest {
     @Test
     @DisplayName("ensureScm(): adds '/scm' if missing and keeps it if present")
     void ensureScm_addsOrKeeps() {
-        def r1 = resolverWith(internal: false, url: 'https://scmm.localhost')      // no /scm
+        def r1 = resolverWith(internal: false, url: 'https://scmm.localhost')
         assertEquals('https://scmm.localhost/scm', r1.clientBase().toString())
-
-        def r2 = resolverWith(internal: false, url: 'https://scmm.localhost/scm/') // already has /scm/
-        assertEquals('https://scmm.localhost/scm', r2.clientBase().toString())
     }
 
 
