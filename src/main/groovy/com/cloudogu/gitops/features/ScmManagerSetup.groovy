@@ -91,14 +91,6 @@ class ScmManagerSetup extends Feature {
             if (config.application.runningInsideK8s) {
                 log.debug("Setting scmm url to k8s service, since installation is running inside k8s")
                 config.scm.scmManager.url = networkingUtils.createUrl("${releaseName}.${namespace}.svc.cluster.local", "80", contentPath)
-
-                // zentrale SCMM-URL im Cluster (Service-DNS) – nur wenn dedizierte Instanz & SCM_MANAGER
-                if (config.multiTenant?.useDedicatedInstance && config.multiTenant?.scmProviderType == ScmProviderType.SCM_MANAGER) {
-                    // Falls ihr einen eigenen Namespace für die zentrale Instanz konfiguriert, nimm den:
-                    def centralNs = config.multiTenant?.scmManager?.namespace ?: "scm-manager"
-                    centralUrl = networkingUtils.createUrl("${releaseName}.${centralNs}.svc.cluster.local", "80", contentPath)
-                }
-
             } else {
                 log.debug("Setting internal configs for local single node cluster with internal scmm. Waiting for NodePort...")
                 def port = k8sClient.waitForNodePort(releaseName, namespace)
