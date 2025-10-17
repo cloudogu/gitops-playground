@@ -1,8 +1,11 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.config.MultiTenantSchema
 import com.cloudogu.gitops.features.deployment.HelmStrategy
+import com.cloudogu.gitops.features.git.config.ScmCentralSchema
 import com.cloudogu.gitops.features.git.config.ScmTenantSchema
+import com.cloudogu.gitops.features.git.config.ScmTenantSchema.ScmManagerTenantConfig
 import com.cloudogu.gitops.utils.*
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
@@ -12,9 +15,9 @@ import java.nio.file.Path
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.anyString
 import static org.mockito.Mockito.mock
-import static org.mockito.Mockito.when 
+import static org.mockito.Mockito.when
 
-class ScmManagerTest {
+class ScmManagerSetupTest {
 
     Config config = new Config(
             application: new Config.ApplicationSchema(
@@ -25,9 +28,14 @@ class ScmManagerTest {
                     insecure: false,
                     gitName: 'Cloudogu',
                     gitEmail: 'hello@cloudogu.com',
-                    runningInsideK8s : true
+                    runningInsideK8s: true
             ),
-            scm: new ScmTenantSchema( scmManager: new ScmTenantSchema.ScmManagerTenantConfig(
+            multiTenant: new MultiTenantSchema(
+                    scmManager: new ScmCentralSchema.ScmManagerCentralConfig(
+                            username: 'scmm-usr'
+                    )
+            ),
+            scm: new ScmTenantSchema(scmManager: new ScmManagerTenantConfig(
                     url: 'http://scmm',
                     internal: true,
                     ingress: 'scmm.localhost',
@@ -60,6 +68,7 @@ class ScmManagerTest {
                     )
             )
     )
+
     CommandExecutorForTest commandExecutor = new CommandExecutorForTest()
 
     Path temporaryYamlFile
@@ -70,7 +79,7 @@ class ScmManagerTest {
 
     @Test
     void 'Installs SCMM and calls script with proper params'() {
-        config.scm.scmManager.username = 'scmm-usr'
+        config.multiTenant.scmManager.username = 'scmm-usr'
         config.features.ingressNginx.active = true
         config.features.argocd.active = true
         config.scm.scmManager.skipPlugins = true
@@ -154,7 +163,7 @@ class ScmManagerTest {
     void "URL: Use k8s service name if running as k8s pod"() {
         config.scm.scmManager.internal = true
         config.application.runningInsideK8s = true
-        
+
         createScmManager().install()
         assertThat(config.scm.scmManager.url).isEqualTo("http://scmm.foo-scm-manager.svc.cluster.local:80/scm")
     }
@@ -166,11 +175,11 @@ class ScmManagerTest {
 
         when(networkingUtils.findClusterBindAddress()).thenReturn('192.168.16.2')
         when(k8sClient.waitForNodePort(anyString(), anyString())).thenReturn('42')
-        
+
         createScmManager().install()
         assertThat(config.scm.scmManager.url).endsWith('192.168.16.2:42/scm')
     }
-    
+
     protected Map<String, String> getEnvAsMap() {
         commandExecutor.environment.collectEntries { it.split('=') }
     }
