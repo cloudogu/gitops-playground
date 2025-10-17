@@ -11,7 +11,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import picocli.CommandLine.Mixin
 import picocli.CommandLine.Option
 
-import static com.cloudogu.gitops.config.ConfigConstants.*
+import static com.cloudogu.gitops.config.ConfigConstants.HELM_CONFIG_DESCRIPTION
 
 class ScmTenantSchema {
 
@@ -146,11 +146,6 @@ class ScmTenantSchema {
         @Option(names = ['--scmm-skip-plugins'], description = SCMM_SKIP_PLUGINS_DESCRIPTION)
         @JsonPropertyDescription(SCMM_SKIP_PLUGINS_DESCRIPTION)
         Boolean skipPlugins = false
-
-        @Override
-        Boolean getInsecure() {
-            return null
-        }
 
         String gitOpsUsername = ''
 

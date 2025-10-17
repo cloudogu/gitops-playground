@@ -74,11 +74,6 @@ class ScmCentralSchema {
             return null
         }
 
-        @Override
-        Boolean getInsecure() {
-            return null
-        }
-
         Credentials getCredentials() {
             return new Credentials(username, password)
         }

@@ -35,21 +35,23 @@ class ScmManagerSetupTest {
                             username: 'scmm-usr'
                     )
             ),
-            scm: new ScmTenantSchema(scmManager: new ScmManagerTenantConfig(
-                    url: 'http://scmm',
-                    internal: true,
-                    ingress: 'scmm.localhost',
-                    username: 'scmm-usr',
-                    password: 'scmm-pw',
-                    gitOpsUsername: 'foo-gitops',
-                    urlForJenkins: 'http://scmm4jenkins',
-                    helm: new Config.HelmConfigWithValues(
-                            chart: 'scm-manager-chart',
-                            version: '2.47.0',
-                            repoURL: 'https://packages.scm-manager.org/repository/helm-v2-releases/',
-                            values: [:]
+            scm: new ScmTenantSchema(
+                    scmManager: new ScmManagerTenantConfig(
+                            url: 'http://scmm',
+                            internal: true,
+                            ingress: 'scmm.localhost',
+                            username: 'scmm-usr',
+                            password: 'scmm-pw',
+                            gitOpsUsername: 'foo-gitops',
+                            urlForJenkins: 'http://scmm4jenkins',
+                            helm: new Config.HelmConfigWithValues(
+                                    chart: 'scm-manager-chart',
+                                    version: '2.47.0',
+                                    repoURL: 'https://packages.scm-manager.org/repository/helm-v2-releases/',
+                                    values: [:]
+                            )
                     )
-            )),
+            ),
             jenkins: new Config.JenkinsSchema(
                     internal: true,
                     url: 'http://jenkins',
