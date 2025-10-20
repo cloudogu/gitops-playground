@@ -1,0 +1,4 @@
+name: tenant1
+
+global:
+  url: "http://tenant1.localhost"
