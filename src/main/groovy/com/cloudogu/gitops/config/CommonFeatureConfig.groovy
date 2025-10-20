@@ -7,6 +7,14 @@ import groovy.util.logging.Slf4j
 class CommonFeatureConfig extends Feature {
     @Override
     void preConfigInit(Config configToSet) {
+        validateConfig(configToSet)
+    }
+
+    /**
+     * Make sure that config does not contain contradictory values.
+     * Throws RuntimeException which meaningful message, if invalid.
+     */
+    void validateConfig(Config configToSet) {
         validateScmmAndJenkinsAreBothSet(configToSet)
         validateMirrorReposHelmChartFolderSet(configToSet)
     }
