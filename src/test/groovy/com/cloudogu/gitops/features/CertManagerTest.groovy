@@ -81,6 +81,7 @@ class CertManagerTest {
     void 'helm release is installed in air-gapped mode'() {
         when(gitHandler.getResourcesScm()).thenReturn(gitProvider)
         when(gitProvider.repoUrl(any())).thenReturn("http://scmm.scm-manager.svc.cluster.local/scm/repo/a/b")
+
         config.application.mirrorRepos = true
         when(airGappedUtils.mirrorHelmRepoToGit(any(Config.HelmConfig))).thenReturn('a/b')
 

@@ -3,13 +3,17 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.git.GitHandler
+import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClientForTest
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.ArgumentCaptor
+import org.mockito.Mock
+import org.mockito.junit.jupiter.MockitoExtension
 
 import java.nio.file.Files
 import java.nio.file.Path
@@ -18,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*
 
+@ExtendWith(MockitoExtension.class)
 class ExternalSecretsOperatorTest {
 
     Config config = new Config(
@@ -28,11 +33,17 @@ class ExternalSecretsOperatorTest {
 
     CommandExecutorForTest commandExecutor = new CommandExecutorForTest()
     K8sClientForTest k8sClient = new K8sClientForTest(config)
-    DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
-    AirGappedUtils airGappedUtils = mock(AirGappedUtils)
     FileSystemUtils fileSystemUtils = new FileSystemUtils()
     Path temporaryYamlFile
-    GitHandler gitHandler = mock(GitHandler)
+
+    @Mock
+    DeploymentStrategy deploymentStrategy
+    @Mock
+    AirGappedUtils airGappedUtils
+    @Mock
+    GitHandler gitHandler
+    @Mock
+    GitProvider gitProvider
 
     @Test
     void "is disabled via active flag"() {
@@ -106,8 +117,11 @@ class ExternalSecretsOperatorTest {
 
     @Test
     void 'helm release is installed in air-gapped mode'() {
-        config.application.mirrorRepos = true
+        when(gitHandler.getResourcesScm()).thenReturn(gitProvider)
+        when(gitProvider.repoUrl(any())).thenReturn("http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b")
         when(airGappedUtils.mirrorHelmRepoToGit(any(Config.HelmConfig))).thenReturn('a/b')
+
+        config.application.mirrorRepos = true
 
         Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
         config.application.localHelmChartFolder = rootChartsFolder.toString()
