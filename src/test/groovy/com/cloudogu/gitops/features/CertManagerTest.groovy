@@ -3,20 +3,26 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.git.GitHandler
+import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClientForTest
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.ArgumentCaptor
+import org.mockito.Mock
+import org.mockito.junit.jupiter.MockitoExtension
 
 import java.nio.file.Files
 import java.nio.file.Path
 
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.any
-import static org.mockito.Mockito.*
+import static org.mockito.Mockito.verify
+import static org.mockito.Mockito.when
 
+@ExtendWith(MockitoExtension.class)
 class CertManagerTest {
     String chartVersion = "1.16.1"
     Config config = Config.fromMap([
@@ -34,10 +40,15 @@ class CertManagerTest {
 
     Path temporaryYamlFile
     FileSystemUtils fileSystemUtils = new FileSystemUtils()
-    DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
-    AirGappedUtils airGappedUtils = mock(AirGappedUtils)
 
-    GitHandler gitHandler = mock(GitHandler.class)
+    @Mock
+    DeploymentStrategy deploymentStrategy
+    @Mock
+    AirGappedUtils airGappedUtils
+    @Mock
+    GitHandler gitHandler
+    @Mock
+    GitProvider gitProvider
 
     @Test
     void 'Helm release is installed'() {
@@ -68,6 +79,8 @@ class CertManagerTest {
 
     @Test
     void 'helm release is installed in air-gapped mode'() {
+        when(gitHandler.getResourcesScm()).thenReturn(gitProvider)
+        when(gitProvider.repoUrl(any())).thenReturn("http://scmm.scm-manager.svc.cluster.local/scm/repo/a/b")
         config.application.mirrorRepos = true
         when(airGappedUtils.mirrorHelmRepoToGit(any(Config.HelmConfig))).thenReturn('a/b')
 
@@ -97,6 +110,8 @@ class CertManagerTest {
 
     @Test
     void 'check images are overriddes'() {
+        when(gitHandler.getResourcesScm()).thenReturn(gitProvider)
+        when(gitProvider.repoUrl(any())).thenReturn("http://test")
 
         // Prep
         config.application.mirrorRepos = true
@@ -146,7 +161,7 @@ class CertManagerTest {
                 temporaryYamlFile = Path.of(ret.toString().replace(".ftl", ""))
                 return ret
             }
-        }, deploymentStrategy, new K8sClientForTest(config), airGappedUtils,gitHandler)
+        }, deploymentStrategy, new K8sClientForTest(config), airGappedUtils, gitHandler)
     }
 
     private Map parseActualYaml() {
