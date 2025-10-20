@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.config
 
+import com.cloudogu.gitops.features.git.config.ScmTenantSchema
 import com.cloudogu.gitops.utils.FileSystemUtils
 import groovy.util.logging.Slf4j
 
@@ -333,12 +334,11 @@ class ApplicationConfigurator {
     }
 
     private void validateScmmAndJenkinsAreBothSet(Config configToSet) {
-// TODO: Anna check multitenant and tenants!
-//        if (configToSet.jenkins.active &&
-//                (configToSet.scmm.url && !configToSet.jenkins.url ||
-//                        !configToSet.scmm.url && configToSet.jenkins.url)) {
-//            throw new RuntimeException('When setting jenkins URL, scmm URL must also be set and the other way round')
-//        }
+        if (configToSet.jenkins.active &&
+                (configToSet.scm.scmManager.url && !configToSet.jenkins.url ||
+                        !configToSet.scm.scmManager.url && configToSet.jenkins.url)) {
+            throw new RuntimeException('When setting jenkins URL, scmm URL must also be set and the other way round')
+        }
     }
 
     // Validate that the env list has proper maps with 'name' and 'value'

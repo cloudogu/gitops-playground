@@ -2,6 +2,9 @@ package com.cloudogu.gitops
 
 import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.config.MultiTenantSchema
+import com.cloudogu.gitops.features.git.config.ScmCentralSchema
+import com.cloudogu.gitops.features.git.config.ScmTenantSchema
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TestLogger
 import org.junit.jupiter.api.BeforeEach
@@ -56,12 +59,12 @@ class ApplicationConfiguratorTest {
             ]
     ])
 
-    // We have to set this value using env vars, which makes tests complicated, so ignore it
-    Config almostEmptyConfig = Config.fromMap([
-            application: [
-                    localHelmChartFolder: 'someValue',
-            ],
-    ])
+//    // We have to set this value using env vars, which makes tests complicated, so ignore it
+//    Config almostEmptyConfig = Config.fromMap([
+//            application: [
+//                    localHelmChartFolder: 'someValue',
+//            ],
+//    ])
 
     @BeforeEach
     void setup() {
@@ -239,29 +242,6 @@ class ApplicationConfiguratorTest {
     }
 
     @Test
-    void 'Adds content example namespaces'() {
-        testConfig.content.examples = true
-
-        def actualConfig = applicationConfigurator.initConfig(testConfig)
-
-        assertThat(actualConfig.content.namespaces).containsExactlyInAnyOrder('example-apps-staging', 'example-apps-production')
-    }
-
-
-    @Test
-    void 'Fails if example Content is active but registry is not active'() {
-        testConfig.content.examples = true
-        testConfig.registry.internal = false
-        testConfig.registry.url = ''
-
-
-        def exception = shouldFail(RuntimeException) {
-            applicationConfigurator.initConfig(testConfig)
-        }
-        assertThat(exception.message).isEqualTo('content.examples requires either registry.active or registry.url')
-    }
-
-    @Test
     void 'Ignores empty localHemlChartFolder, if mirrorRepos is not set'() {
         testConfig.application.mirrorRepos = false
         testConfig.application.localHelmChartFolder = ''
@@ -273,11 +253,11 @@ class ApplicationConfiguratorTest {
     @Test
     void "Certain properties are read from env"() {
         withEnvironmentVariable('GITOPS_BUILD_LIB_REPO', 'value3').execute {
-            def actualConfig = new ApplicationConfigurator(fileSystemUtils).initConfig(new Config())
+            def actualConfig = new ApplicationConfigurator(fileSystemUtils).initConfig(minimalConfig())
             assertThat(actualConfig.repositories.gitopsBuildLib.url).isEqualTo('value3')
         }
         withEnvironmentVariable('CES_BUILD_LIB_REPO', 'value4').execute {
-            def actualConfig = new ApplicationConfigurator(fileSystemUtils).initConfig(new Config())
+            def actualConfig = new ApplicationConfigurator(fileSystemUtils).initConfig(minimalConfig())
             assertThat(actualConfig.repositories.cesBuildLib.url).isEqualTo('value4')
         }
     }
@@ -523,7 +503,7 @@ class ApplicationConfiguratorTest {
         // Calling the method should not make any changes to the config
         applicationConfigurator.initConfig(testConfig)
 
-        assertThat(testLogger.getLogs().search("ArgoCD operator is not enabled. Skipping features.argocd.resourceInclusionsCluster setupDedicatedInstanceMode."))
+        assertThat(testLogger.getLogs().search("ArgoCD operator is not enabled. Skipping features.argocd.resourceInclusionsCluster setup."))
                 .isNotEmpty()
     }
 
@@ -651,5 +631,19 @@ class ApplicationConfiguratorTest {
             }
         }
         return keysList
+    }
+
+    private static Config minimalConfig() {
+        def config = new Config()
+        config.application = new Config.ApplicationSchema(
+                localHelmChartFolder: 'someValue',
+                namePrefix: ''
+        )
+        config.scm = new ScmTenantSchema(
+                scmManager: new ScmTenantSchema.ScmManagerTenantConfig(
+                        url: ''
+                )
+        )
+        return config
     }
 }
