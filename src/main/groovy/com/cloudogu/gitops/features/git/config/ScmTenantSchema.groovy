@@ -7,6 +7,7 @@ import com.cloudogu.gitops.features.git.config.util.ScmManagerConfig
 import com.cloudogu.gitops.features.git.config.util.ScmProviderType
 import com.cloudogu.gitops.utils.NetworkingUtils
 import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.annotation.JsonMerge
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import picocli.CommandLine.Mixin
 import picocli.CommandLine.Option
@@ -107,6 +108,7 @@ class ScmTenantSchema {
         String password = Config.DEFAULT_ADMIN_PW
 
         @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
+        @JsonMerge
         Config.HelmConfigWithValues helm = new Config.HelmConfigWithValues(
                 chart: 'scm-manager',
                 repoURL: 'https://packages.scm-manager.org/repository/helm-v2-releases/',

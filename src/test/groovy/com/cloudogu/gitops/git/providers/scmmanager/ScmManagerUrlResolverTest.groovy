@@ -36,14 +36,14 @@ class ScmManagerUrlResolverTest {
     }
 
     private ScmManagerUrlResolver resolverWith(Map args = [:]) {
-        def scmmCfg = new ScmTenantSchema.ScmManagerTenantConfig()
-        scmmCfg.internal = (args.containsKey('internal') ? args.internal : true)
-        scmmCfg.namespace = (args.containsKey('namespace') ? args.namespace : "scm-manager")
-        scmmCfg.rootPath = (args.containsKey('rootPath') ? args.rootPath : "repo")
-        scmmCfg.url = (args.containsKey('url') ? args.url : "")
-        scmmCfg.ingress = (args.containsKey('ingress') ? args.ingress : "")
+        def scmmCofig = new ScmTenantSchema.ScmManagerTenantConfig()
+        scmmCofig.internal = (args.containsKey('internal') ? args.internal : true)
+        scmmCofig.namespace = (args.containsKey('namespace') ? args.namespace : "scm-manager")
+        scmmCofig.rootPath = (args.containsKey('rootPath') ? args.rootPath : "repo")
+        scmmCofig.url = (args.containsKey('url') ? args.url : "")
+        scmmCofig.ingress = (args.containsKey('ingress') ? args.ingress : "")
 
-        return new ScmManagerUrlResolver(config, scmmCfg, k8s, net)
+        return new ScmManagerUrlResolver(config, scmmCofig, k8s, net)
     }
 
     // ---------- Client base & API ----------
