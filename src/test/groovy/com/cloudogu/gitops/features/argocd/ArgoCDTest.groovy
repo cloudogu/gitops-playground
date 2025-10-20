@@ -2,6 +2,7 @@ package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.git.GitRepo
+import com.cloudogu.gitops.git.providers.scmmanager.ScmManagerMock
 import com.cloudogu.gitops.utils.*
 import groovy.io.FileType
 import groovy.json.JsonSlurper
@@ -1863,9 +1864,33 @@ class ArgoCDTest {
 
 
     class ArgoCDForTest extends ArgoCD {
+        ScmManagerMock tenantMock
+
+       // Convenience ctor: create the mock in the arg list (no pre-super statements)
         ArgoCDForTest(Config config, CommandExecutorForTest k8sCommands, CommandExecutorForTest helmCommands) {
-            super(config, new K8sClientForTest(config, k8sCommands), new HelmClient(helmCommands), new FileSystemUtils(),
-                    new TestGitRepoFactory(config, new FileSystemUtils()), new GitHandlerForTests(config))
+            this(
+                    config,
+                    k8sCommands,
+                    helmCommands,
+                    new ScmManagerMock(
+                            inClusterBase: new URI("http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm"),
+                            namePrefix: config.application.namePrefix
+                    )
+            )
+        }
+
+        // Real ctor: can use the mock AFTER super(...)
+        ArgoCDForTest(Config config, CommandExecutorForTest k8sCommands, CommandExecutorForTest helmCommands,
+                      ScmManagerMock tm) {
+            super(
+                    config,
+                    new K8sClientForTest(config, k8sCommands),
+                    new HelmClient(helmCommands),
+                    new FileSystemUtils(),
+                    new TestGitRepoFactory(config, new FileSystemUtils()),
+                    new GitHandlerForTests(config, tm)
+            )
+            this.tenantMock = tm
             mockPrefixActiveNamespaces(config)
         }
 

@@ -3,6 +3,7 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.git.GitHandler
+import com.cloudogu.gitops.git.providers.scmmanager.ScmManagerMock
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.GitHandlerForTests
@@ -38,7 +39,7 @@ class MailhogTest {
     Path temporaryYamlFile = null
     FileSystemUtils fileSystemUtils = new FileSystemUtils()
     K8sClientForTest k8sClient = new K8sClientForTest(config)
-    GitHandler gitHandler = new GitHandlerForTests(config)
+    GitHandler gitHandler = new GitHandlerForTests(config, new ScmManagerMock())
 
     @Test
     void "is disabled via active flag"() {

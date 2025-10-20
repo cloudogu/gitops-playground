@@ -4,6 +4,7 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.providers.scmmanager.Permission
+import com.cloudogu.gitops.git.providers.scmmanager.ScmManagerMock
 import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
 import groovy.yaml.YamlSlurper
 import org.eclipse.jgit.api.Git
@@ -43,7 +44,7 @@ class AirGappedUtilsTest {
     FileSystemUtils fileSystemUtils = new FileSystemUtils()
     TestScmManagerApiClient scmmApiClient = new TestScmManagerApiClient(config)
     HelmClient helmClient = mock(HelmClient)
-    GitHandler gitHandler = new GitHandlerForTests(config)
+    GitHandler gitHandler = new GitHandlerForTests(config, new ScmManagerMock())
 
     @BeforeEach
     void setUp() {

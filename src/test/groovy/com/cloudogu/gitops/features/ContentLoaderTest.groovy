@@ -57,7 +57,7 @@ class ContentLoaderTest {
     TestGitRepoFactory scmmRepoProvider = new TestGitRepoFactory(config, new FileSystemUtils())
     TestScmManagerApiClient scmmApiClient = new TestScmManagerApiClient(config)
     Jenkins jenkins = mock(Jenkins.class)
-    GitHandler gitHandler = new GitHandlerForTests(config)
+    GitHandler gitHandler = new GitHandlerForTests(config, new ScmManagerMock())
 
     @TempDir
     File tmpDir

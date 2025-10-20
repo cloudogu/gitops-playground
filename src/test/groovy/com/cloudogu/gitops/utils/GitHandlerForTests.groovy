@@ -10,19 +10,21 @@ import com.cloudogu.gitops.git.providers.scmmanager.ScmManagerMock
 import static org.mockito.Mockito.mock
 
 class GitHandlerForTests extends GitHandler{
+    final ScmManagerMock scmManagerMock
 
-    GitHandlerForTests(Config config) {
+    GitHandlerForTests(Config config, ScmManagerMock scmManagerMock ) {
         super(config, mock(HelmStrategy),new FileSystemUtils(), new K8sClientForTest(config),new NetworkingUtils())
+        this.scmManagerMock = scmManagerMock
     }
 
     @Override
     GitProvider getTenant() {
-        return new ScmManagerMock()
+        return this.scmManagerMock
     }
 
     @Override
     GitProvider getResourcesScm() {
-        return new ScmManagerMock()
+        return this.scmManagerMock
     }
 
 }
