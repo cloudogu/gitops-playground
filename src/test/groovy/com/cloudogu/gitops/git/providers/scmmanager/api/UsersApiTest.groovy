@@ -1,18 +1,11 @@
-package com.cloudogu.gitops.scmm.api
+package com.cloudogu.gitops.git.providers.scmmanager.api
 
 import com.cloudogu.gitops.common.MockWebServerHttpsFactory
-import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
-import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
-import com.cloudogu.gitops.git.providers.scmmanager.api.UsersApi
-import io.micronaut.context.ApplicationContext
-import io.micronaut.inject.qualifiers.Qualifiers
-import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
-import retrofit2.Retrofit
 
 import javax.net.ssl.SSLHandshakeException
 

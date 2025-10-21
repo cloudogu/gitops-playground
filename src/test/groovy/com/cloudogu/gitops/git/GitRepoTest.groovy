@@ -1,10 +1,11 @@
-package com.cloudogu.gitops.utils
+package com.cloudogu.gitops.git
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.providers.scmmanager.Permission
 import com.cloudogu.gitops.git.providers.scmmanager.ScmManagerMock
 import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
+import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.git.providers.scmmanager.api.TestScmManagerApiClient
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Ref
 import org.junit.jupiter.api.Test

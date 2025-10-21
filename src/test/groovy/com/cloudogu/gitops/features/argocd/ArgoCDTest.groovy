@@ -2,6 +2,7 @@ package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.git.GitRepo
+import com.cloudogu.gitops.git.TestGitRepoFactory
 import com.cloudogu.gitops.git.providers.scmmanager.ScmManagerMock
 import com.cloudogu.gitops.utils.*
 import groovy.io.FileType
