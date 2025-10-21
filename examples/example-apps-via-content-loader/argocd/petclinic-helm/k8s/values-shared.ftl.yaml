@@ -1,0 +1,29 @@
+extraEnv: |
+  - name: TZ
+    value: Europe/Berlin
+
+service:
+  type: <#if config.application.remote>LoadBalancer<#else>ClusterIP</#if>
+
+ingress:
+  enabled: <#if config.content.variables.petclinic.baseDomain?has_content>true<#else>false</#if>
+
+<#if config.application.openshift == true>
+securityContext:
+  runAsUser: null
+  runAsGroup: null
+</#if>  
+
+<#if config.application.podResources == true>
+resources:
+  limits:
+    cpu: '1'
+    memory: 1Gi
+  requests:
+    cpu: 300m
+    memory: 650Mi
+<#else>
+<#-- Explicitly set to null, because the chart sets memory by default
+     https://github.com/cloudogu/spring-boot-helm-chart/blob/0.3.2/values.yaml#L40 -->
+resources: null
+</#if>

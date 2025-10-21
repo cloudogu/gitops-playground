@@ -45,18 +45,6 @@ class ScmManagerTest {
                     internal: true,
                     url: 'http://jenkins',
                     urlForScmm: 'http://jenkins4scm'
-            ),
-            repositories: new Config.RepositoriesSchema(
-                    springBootHelmChart: new Config.RepositorySchemaWithRef(
-                            url: 'springBootHelmChartUrl',
-                            ref: '1.2.3'
-                    ),
-                    gitopsBuildLib: new Config.RepositorySchema(
-                            url: 'gitopsBuildLibUrl'
-                    ),
-                    cesBuildLib: new Config.RepositorySchema(
-                            url: 'cesBuildLibUrl'
-                    )
             )
     )
     CommandExecutorForTest commandExecutor = new CommandExecutorForTest()
@@ -106,13 +94,8 @@ class ScmManagerTest {
         assertThat(env['SCMM_URL_FOR_JENKINS']).isEqualTo('http://scmm4jenkins')
         assertThat(env['REMOTE_CLUSTER']).isEqualTo('false')
         assertThat(env['INSTALL_ARGOCD']).isEqualTo('true')
-        assertThat(env['SPRING_BOOT_HELM_CHART_COMMIT']).isEqualTo('1.2.3')
-        assertThat(env['SPRING_BOOT_HELM_CHART_REPO']).isEqualTo('springBootHelmChartUrl')
-        assertThat(env['GITOPS_BUILD_LIB_REPO']).isEqualTo('gitopsBuildLibUrl')
-        assertThat(env['CES_BUILD_LIB_REPO']).isEqualTo('cesBuildLibUrl')
         assertThat(env['NAME_PREFIX']).isEqualTo('foo-')
         assertThat(env['INSECURE']).isEqualTo('false')
-        assertThat(env['CONTENT_EXAMPLES']).isEqualTo('false')
         assertThat(env['SKIP_PLUGINS']).isEqualTo('true')
         assertThat(env['SKIP_RESTART']).isEqualTo('true')
     }
