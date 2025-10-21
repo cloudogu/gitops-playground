@@ -2,6 +2,8 @@ package com.cloudogu.gitops.scmm.api
 
 import com.cloudogu.gitops.common.MockWebServerHttpsFactory
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.config.Credentials
+import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
 import com.cloudogu.gitops.git.providers.scmmanager.api.UsersApi
 import io.micronaut.context.ApplicationContext
 import io.micronaut.inject.qualifiers.Qualifiers
@@ -19,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat
 
 class UsersApiTest {
     private MockWebServer webServer = new MockWebServer()
+    private Credentials credentials = new Credentials("user", "pass")
 
     @AfterEach
     void tearDown() {
@@ -29,13 +32,12 @@ class UsersApiTest {
     void 'allows self-signed certificates when using insecure option'() {
         webServer.useHttps(MockWebServerHttpsFactory.createSocketFactory().sslSocketFactory(), false)
 
-        OkHttpClient okHttpClient = ApplicationContext.run()
-                .registerSingleton(new Config(application: new Config.ApplicationSchema(insecure: true)))
-                .getBean(OkHttpClient.class, Qualifiers.byName("scmm"))
-        def usersApi = retrofit(okHttpClient).create(UsersApi)
+        def api = usersApi(true)
+        webServer.enqueue(new MockResponse().setResponseCode(204))
 
-        webServer.enqueue(new MockResponse())
-        usersApi.delete('test-user').execute()
+        def resp = api.delete('test-user').execute()
+
+        assertThat(resp.isSuccessful()).isTrue()
         assertThat(webServer.requestCount).isEqualTo(1)
     }
 
@@ -43,17 +45,22 @@ class UsersApiTest {
     void 'does not allow self-signed certificates by default'() {
         webServer.useHttps(MockWebServerHttpsFactory.createSocketFactory().sslSocketFactory(), false)
 
-        def usersApi = retrofit().create(UsersApi)
+        def api = usersApi(false)
+
         shouldFail(SSLHandshakeException) {
-            usersApi.delete('test-user').execute()
+            api.delete('test-user').execute()
         }
+        assertThat(webServer.requestCount).isEqualTo(0)
     }
 
-    private Retrofit retrofit(OkHttpClient okHttpClient = null) {
-        def builder = new Retrofit.Builder()
-                .baseUrl("${webServer.url("scm")}/api/")
-        if (okHttpClient)
-            builder = builder.client(okHttpClient)
-        builder.build()
+
+    private UsersApi usersApi(boolean insecure) {
+        def client = new ScmManagerApiClient(apiBaseUrl(), credentials, insecure)
+        return client.usersApi()
     }
+
+    private String apiBaseUrl() {
+        return "${webServer.url('scm')}/api/"
+    }
+
 }
