@@ -1,21 +1,19 @@
 package com.cloudogu.gitops.git
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.git.providers.scmmanager.Permission
+import com.cloudogu.gitops.git.providers.AccessRole
+import com.cloudogu.gitops.git.providers.GitProvider
+import com.cloudogu.gitops.git.providers.Scope
 import com.cloudogu.gitops.git.providers.scmmanager.ScmManagerMock
-import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.git.providers.scmmanager.api.TestScmManagerApiClient
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Ref
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.ArgumentCaptor
-import retrofit2.Call
+import org.mockito.Mock
 
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
-import static org.mockito.ArgumentMatchers.*
-import static org.mockito.Mockito.*
 
 class GitRepoTest {
 
@@ -35,15 +33,22 @@ class GitRepoTest {
             ]
     ])
 
-    TestGitRepoFactory scmmRepoProvider = new TestGitRepoFactory(config, new FileSystemUtils())
-    TestScmManagerApiClient scmmApiClient = new TestScmManagerApiClient(config)
-    Call<Void> response201 = TestScmManagerApiClient.mockSuccessfulResponse(201)
-    Call<Void> response409 = scmmApiClient.mockErrorResponse(409)
-    Call<Void> response500 = scmmApiClient.mockErrorResponse(500)
+    TestGitRepoFactory repoProvider = new TestGitRepoFactory(config, new FileSystemUtils())
+
+    @Mock
+    GitProvider gitProvider
+
+    ScmManagerMock scmManagerMock
+
+    @BeforeEach
+    void setup() {
+        scmManagerMock = new ScmManagerMock()
+    }
+
 
     @Test
     void "writes file"() {
-        def repo = createRepo()
+        def repo = createRepo("", scmManagerMock)
         repo.writeFile("test.txt", "the file's content")
 
         def expectedFile = new File("$repo.absoluteLocalRepoTmpDir/test.txt")
@@ -52,7 +57,7 @@ class GitRepoTest {
 
     @Test
     void "overwrites file"() {
-        def repo = createRepo()
+        def repo = createRepo("", scmManagerMock)
         def tempDir = repo.absoluteLocalRepoTmpDir
 
         def existingFile = new File("$tempDir/already-exists.txt")
@@ -67,7 +72,7 @@ class GitRepoTest {
 
     @Test
     void "writes file and creates subdirectory"() {
-        def repo = createRepo()
+        def repo = createRepo("", scmManagerMock)
         def tempDir = repo.absoluteLocalRepoTmpDir
         repo.writeFile("subdirectory/test.txt", "the file's content")
 
@@ -77,7 +82,7 @@ class GitRepoTest {
 
     @Test
     void "throws error when directory conflicts with existing file"() {
-        def repo = createRepo()
+        def repo = createRepo("", scmManagerMock)
         def tempDir = repo.absoluteLocalRepoTmpDir
         new File("$tempDir/test.txt").mkdir()
 
@@ -88,27 +93,28 @@ class GitRepoTest {
 
     @Test
     void 'Creates repo with empty name-prefix'() {
-        def repo = createRepo('expectedRepoTarget')
+        def repo = createRepo('expectedRepoTarget', scmManagerMock)
         assertThat(repo.repoTarget).isEqualTo('expectedRepoTarget')
     }
 
     @Test
     void 'Creates repo with name-prefix'() {
         config.application.namePrefix = 'abc-'
-        def repo = createRepo('expectedRepoTarget')
+        def repo = createRepo('expectedRepoTarget', scmManagerMock)
         assertThat(repo.repoTarget).isEqualTo('abc-expectedRepoTarget')
     }
 
     @Test
     void 'Creates repo without name-prefix when in namespace 3rd-party-deps'() {
+
         config.application.namePrefix = 'abc-'
-        def repo = createRepo("${GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/foo")
+        def repo = createRepo("${GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/foo", scmManagerMock)
         assertThat(repo.repoTarget).isEqualTo("${GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/foo".toString())
     }
 
     @Test
     void 'Clones and checks out main'() {
-        def repo = createRepo()
+        def repo = createRepo("", scmManagerMock)
 
         repo.cloneRepo()
         def HEAD = new File(repo.absoluteLocalRepoTmpDir, '.git/HEAD')
@@ -118,7 +124,7 @@ class GitRepoTest {
 
     @Test
     void 'pushes changes to remote directory'() {
-        def repo = createRepo()
+        def repo = createRepo("", scmManagerMock)
 
         repo.cloneRepo()
         def readme = new File(repo.absoluteLocalRepoTmpDir, 'README.md')
@@ -139,7 +145,7 @@ class GitRepoTest {
 
     @Test
     void 'pushes changes to remote directory with tag'() {
-        def repo = createRepo()
+        def repo = createRepo("", scmManagerMock)
         def expectedTag = '1.0'
 
         repo.cloneRepo()
@@ -162,98 +168,72 @@ class GitRepoTest {
     }
 
     @Test
-    void 'Create repo'() {
-        def repo = createRepo()
+    void 'creates repository and sets permission when new and username present'() {
 
-        when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response201)
-        when(scmmApiClient.repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(response201)
+        def repoTarget = "foo/bar"
+        def repo = createRepo(repoTarget, scmManagerMock)
+        scmManagerMock.nextCreateResults = [true]            // simulate "new repo"
+        scmManagerMock.gitOpsUsername = 'foo-gitops'         // username available
 
-        repo.createRepositoryAndSetPermission('description', 'testdescription')
+        def created = repo.createRepositoryAndSetPermission(repoTarget, 'testdescription', true)
 
-        assertCreatedRepo()
+        assertThat(created).isTrue()
+
+        // Verify that repo was created
+        assertThat(scmManagerMock.createdRepos).containsExactly(repoTarget)
+
+        // Verify permission call
+        assertThat(scmManagerMock.permissionCalls).hasSize(1)
+        def call = scmManagerMock.permissionCalls[0]
+        assertThat(call.repoTarget).isEqualTo(repoTarget)
+        assertThat(call.principal).isEqualTo('foo-gitops')
+        assertThat(call.role).isEqualTo(AccessRole.WRITE)
+        assertThat(call.scope).isEqualTo(Scope.USER)
     }
+
 
     @Test
-    void 'Create repo: Ignores existing Repos'() {
-        def repo = createRepo()
+    void 'does not set permission when repository already exists'() {
+        def repoTarget = "foo/bar"
+        def repo = createRepo(repoTarget, scmManagerMock)
 
-        when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response409)
-        when(scmmApiClient.repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(response201)
+        scmManagerMock.nextCreateResults = [false]           // simulate "already exists"
+        scmManagerMock.gitOpsUsername = 'foo-gitops'         // even with username, no permission should be set
 
-        repo.createRepositoryAndSetPermission('description', 'testdescription')
+        def created = repo.createRepositoryAndSetPermission(repoTarget, 'desc', true)
 
-        assertCreatedRepo()
+        assertThat(created).isFalse()
+
+        // Created was attempted once
+        assertThat(scmManagerMock.createdRepos).containsExactly(repoTarget)
+
+        // No permission calls
+        assertThat(scmManagerMock.permissionCalls).isEmpty()
     }
+
 
     @Test
-    void 'Create repo: Ignore existing Repos'() {
-        def repo = createRepo()
+    void 'does not set permission when no GitOps username is configured'() {
+        def repoTarget = "foo/bar"
+        def scmManagerMock = new ScmManagerMock()
+        def repo = createRepo(repoTarget, scmManagerMock)
 
-        when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response409)
-        when(scmmApiClient.repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(response201)
+        scmManagerMock.nextCreateResults = [true]            // repo is new
+        scmManagerMock.gitOpsUsername = null                 // no username
 
-        repo.createRepositoryAndSetPermission('description', 'testdescription')
+        def created = repo.createRepositoryAndSetPermission(repoTarget, 'desc', true)
 
-        assertCreatedRepo()
+        assertThat(created).isTrue()
+
+        // Repo created
+        assertThat(scmManagerMock.createdRepos).containsExactly(repoTarget)
+
+        // No permission calls because username missing
+        assertThat(scmManagerMock.permissionCalls).isEmpty()
     }
 
-    @Test
-    void 'Create repo: Ignore existing Permissions'() {
-        def repo = createRepo()
 
-        when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response201)
-        when(scmmApiClient.repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(response409)
-
-        repo.createRepositoryAndSetPermission('description', 'testdescription')
-
-        assertCreatedRepo()
-    }
-
-    @Test
-    void 'Create repo: Handle failures to SCMM-API for Repos'() {
-        def repo = createRepo()
-
-        when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response500)
-
-        def exception = shouldFail(RuntimeException) {
-            repo.createRepositoryAndSetPermission('description', 'testdescription')
-        }
-        assertThat(exception.message).startsWith('Could not create Repository')
-        assertThat(exception.message).contains(expectedNamespace)
-        assertThat(exception.message).contains(expectedRepo)
-        assertThat(exception.message).contains('500')
-    }
-
-    @Test
-    void 'Create repo: Handle failures to SCMM-API for Permissions'() {
-        def repo = createRepo()
-
-        when(scmmApiClient.repositoryApi.create(any(Repository), anyBoolean())).thenReturn(response201)
-        when(scmmApiClient.repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(response500)
-
-        def exception = shouldFail(RuntimeException) {
-            repo.createRepositoryAndSetPermission('description', 'testdescription')
-        }
-        assertThat(exception.message).startsWith("Could not create Permission for repo $expectedNamespace/$expectedRepo")
-        assertThat(exception.message).contains('foo-gitops')
-        assertThat(exception.message).contains(Permission.Role.WRITE.name())
-        assertThat(exception.message).contains('500')
-    }
-
-    protected void assertCreatedRepo() {
-        def repoCreateArgument = ArgumentCaptor.forClass(Repository)
-        verify(scmmApiClient.repositoryApi, times(1)).create(repoCreateArgument.capture(), eq(true))
-        assertThat(repoCreateArgument.allValues[0].namespace).isEqualTo(expectedNamespace)
-        assertThat(repoCreateArgument.allValues[0].name).isEqualTo(expectedRepo)
-        assertThat(repoCreateArgument.allValues[0].description).isEqualTo('description')
-
-        def permissionCreateArgument = ArgumentCaptor.forClass(Permission)
-        verify(scmmApiClient.repositoryApi, times(1)).createPermission(anyString(), anyString(), permissionCreateArgument.capture())
-        assertThat(permissionCreateArgument.allValues[0].name).isEqualTo('foo-gitops')
-        assertThat(permissionCreateArgument.allValues[0].role).isEqualTo(Permission.Role.WRITE)
-    }
-
-    private GitRepo createRepo(String repoTarget = "${expectedNamespace}/${expectedRepo}") {
-        return scmmRepoProvider.getRepo(repoTarget, new ScmManagerMock())
+    private GitRepo createRepo(String repoTarget = "${expectedNamespace}/${expectedRepo}", ScmManagerMock scmManagerMock) {
+        return repoProvider.getRepo(repoTarget, scmManagerMock)
     }
 }

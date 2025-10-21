@@ -24,20 +24,20 @@ class TestGitRepoFactory extends GitRepoFactory {
         }
 
         GitRepo repoNew = new GitRepo(config, scm, repoTarget, fileSystemUtils) {
-            String remoteGitRepopUrl = ''
+            String remoteGitRepoUrl = ''
 
             @Override
             String getGitRepositoryUrl() {
-                if (!remoteGitRepopUrl) {
+                if (!remoteGitRepoUrl) {
 
                     def tempDir = File.createTempDir('gitops-playground-repocopy')
                     tempDir.deleteOnExit()
                     def originalRepo = System.getProperty("user.dir") + "/src/test/groovy/com/cloudogu/gitops/utils/data/git-repository/"
 
                     FileUtils.copyDirectory(new File(originalRepo), tempDir)
-                    remoteGitRepopUrl = 'file://' + tempDir.absolutePath
+                    remoteGitRepoUrl = 'file://' + tempDir.absolutePath
                 }
-                return remoteGitRepopUrl
+                return remoteGitRepoUrl
             }
         }
 

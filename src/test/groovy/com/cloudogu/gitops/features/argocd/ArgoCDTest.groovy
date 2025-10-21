@@ -123,13 +123,9 @@ class ArgoCDTest {
     GitRepo argocdRepo
     String actualHelmValuesFile
     GitRepo clusterResourcesRepo
-    GitRepo exampleAppsRepo
     GitRepo nginxHelmJenkinsRepo
-    GitRepo nginxValidationRepo
-    GitRepo brokenApplicationRepo
     GitRepo tenantBootstrap
     List<GitRepo> petClinicRepos = []
-    CloneCommand gitCloneMock = mock(CloneCommand.class, RETURNS_DEEP_STUBS)
     String prefixPathCentral = '/multiTenant/central/'
     ArgoCD argocd
 
@@ -1709,7 +1705,7 @@ class ArgoCDTest {
     class ArgoCDForTest extends ArgoCD {
         ScmManagerMock tenantMock
 
-       // Convenience ctor: create the mock in the arg list (no pre-super statements)
+        // Convenience ctor: create the mock in the arg list (no pre-super statements)
         ArgoCDForTest(Config config, CommandExecutorForTest k8sCommands, CommandExecutorForTest helmCommands) {
             this(
                     config,

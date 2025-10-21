@@ -27,13 +27,15 @@ class ScmManagerMock implements GitProvider {
     // --- call recordings for assertions ---
     final List<String> createdRepos = []
     final List<Map> permissionCalls = []
+    /** Optional sequence to control createRepository() return values per call */
+    List<Boolean> nextCreateResults = []  // empty -> default true
 
     @Override
     boolean createRepository(String repoTarget, String description, boolean initialize) {
         createdRepos << repoTarget
         // Pretend repository was created successfully.
         // If you need idempotency checks, examine createdRepos.count(repoTarget) in your tests.
-        return true
+        return nextCreateResults ? nextCreateResults.remove(0) : true
     }
 
     @Override
