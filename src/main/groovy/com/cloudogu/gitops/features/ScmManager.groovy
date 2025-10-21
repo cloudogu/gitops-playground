@@ -142,15 +142,10 @@ class ScmManager extends Feature {
                 // Used indirectly in utils.sh 😬
                 REMOTE_CLUSTER               : config.application.remote,
                 INSTALL_ARGOCD               : config.features.argocd.active,
-                SPRING_BOOT_HELM_CHART_COMMIT: config.repositories.springBootHelmChart.ref,
-                SPRING_BOOT_HELM_CHART_REPO  : config.repositories.springBootHelmChart.url,
-                GITOPS_BUILD_LIB_REPO        : config.repositories.gitopsBuildLib.url,
-                CES_BUILD_LIB_REPO           : config.repositories.cesBuildLib.url,
                 NAME_PREFIX                  : config.application.namePrefix,
                 INSECURE                     : config.application.insecure,
                 SCM_ROOT_PATH                : config.scmm.rootPath,
                 SCM_PROVIDER                 : config.scmm.provider,
-                CONTENT_EXAMPLES             : config.content.examples,
                 SKIP_RESTART                 : config.scmm.skipRestart,
                 SKIP_PLUGINS                 : config.scmm.skipPlugins,
                 CENTRAL_SCM_URL              : centralSCMUrl,
@@ -192,50 +187,14 @@ class ScmManager extends Feature {
         }
 
         argoCDGroup.ifPresent(this.&createArgoCDRepos)
-
-        String dependencysGroupName = '3rd-party-dependencies'
-        Optional<Group> dependencysGroup = getGroup("${mainGroupName}/${dependencysGroupName}")
-        if (dependencysGroup.isEmpty()) {
-            def tempGroup = new Group()
-                    .withName(dependencysGroupName)
-                    .withPath(dependencysGroupName.toLowerCase())
-                    .withParentId(mainSCMGroup.id)
-
-            addGroup(tempGroup)
-        }
-
-        String exercisesGroupName = 'exercises'
-        Optional<Group> exercisesGroup = getGroup("${mainGroupName}/${exercisesGroupName}")
-        if (exercisesGroup.isEmpty()) {
-            def tempGroup = new Group()
-                    .withName(exercisesGroupName)
-                    .withPath(exercisesGroupName.toLowerCase())
-                    .withParentId(mainSCMGroup.id)
-
-            exercisesGroup = addGroup(tempGroup)
-        }
-
-        exercisesGroup.ifPresent(this.&createExercisesRepos)
-    }
-
-    void createExercisesRepos(Group exercisesGroup) {
-        log.info("Creating GitlabRepos for ${exercisesGroup}")
-        createRepo("petclinic-helm", "petclinic-helm", exercisesGroup)
-        createRepo("nginx-validation", "nginx-validation", exercisesGroup)
-        createRepo("broken-application", "broken-application", exercisesGroup)
     }
 
     void createArgoCDRepos(Group argoCDGroup) {
         log.info("Creating GitlabRepos for ${argoCDGroup}")
         createRepo("cluster-resources", "GitOps repo for basic cluster-resources", argoCDGroup)
-        createRepo("petclinic-helm", "Java app with custom helm chart", argoCDGroup)
-        createRepo("petclinic-plain", "Java app with plain k8s resources", argoCDGroup)
-        createRepo("nginx-helm-jenkins", "3rd Party app (NGINX) with helm, templated in Jenkins (gitops-build-lib)", argoCDGroup)
         createRepo("argocd", "GitOps repo for administration of ArgoCD", argoCDGroup)
-        createRepo("example-apps", "GitOps repo for examples of end-user applications", argoCDGroup)
 
     }
-
 
     void removeBranchProtection(Project project) {
         try {

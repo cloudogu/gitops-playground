@@ -13,28 +13,10 @@ class JsonConfigValidatorTest {
     static Stream<Arguments> validSchemas() {
         Stream.Builder<Arguments> ret = Stream.builder()
 
-        ret.add(Arguments.of("empty images", [
-                images: [:]
-        ]))
-
-        ret.add(Arguments.of("defined images", [
-                images: [
-                        kubectl: "localhost:30000/kubectl",
-                        helm: "localhost:30000/helm",
-                        yamllint: "localhost:30000/yamllint",
-                        nginx: "localhost:30000/nginx",
-                ]
-        ]))
-
         ret.add(Arguments.of("multiple values", [
                 features: [
                         argocd: [
                                 url: "http://localhost/argocd"
-                        ],
-                        exampleApps: [
-                                petclinic: [
-                                        baseDomain: "petclinic.localhost"
-                                ]
                         ]
                 ]
         ]))

@@ -186,14 +186,6 @@ class Jenkins extends Feature {
             prometheusConfigurator.enableAuthentication()
         }
 
-        if (config.content.examples) {
-
-            String jobName = "example-apps"
-            String namespace = "argocd"
-            createJenkinsjob(namespace, jobName)
-
-        }
-
     }
 
     void createJenkinsjob(String namespace, String repoName) {

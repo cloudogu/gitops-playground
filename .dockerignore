@@ -3,6 +3,7 @@
 
 # Allowlist
 !applications/
+!examples/
 !exercises/
 !argocd/
 !docker-registry/

@@ -214,19 +214,6 @@ class ApplicationConfigurator {
             vault.url = injectSubdomain('vault', baseUrl, urlSeparatorHyphen)
             log.debug("Setting Vault URL ${vault.url}")
         }
-
-        if (!newConfig.features.exampleApps.petclinic.baseDomain) {
-            // This param only requires the host / domain
-            newConfig.features.exampleApps.petclinic.baseDomain =
-                    new URL(injectSubdomain('petclinic', baseUrl, urlSeparatorHyphen)).host
-            log.debug("Setting Petclinic URL ${newConfig.features.exampleApps.petclinic.baseDomain}")
-        }
-        if (!newConfig.features.exampleApps.nginx.baseDomain) {
-            // This param only requires the host / domain
-            newConfig.features.exampleApps.nginx.baseDomain =
-                    new URL(injectSubdomain('nginx', baseUrl, urlSeparatorHyphen)).host
-            log.debug("Setting Nginx URL ${newConfig.features.exampleApps.nginx.baseDomain}")
-        }
     }
 
     void setMultiTenantModeConfig(Config newConfig) {

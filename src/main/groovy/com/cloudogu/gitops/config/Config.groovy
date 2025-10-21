@@ -75,13 +75,6 @@ class Config {
     @Mixin
     ApplicationSchema application = new ApplicationSchema()
 
-    @JsonPropertyDescription(IMAGES_DESCRIPTION)
-    @Mixin
-    ImagesSchema images = new ImagesSchema()
-
-    @JsonPropertyDescription(REPOSITORIES_DESCRIPTION)
-    RepositoriesSchema repositories = new RepositoriesSchema()
-
     @JsonPropertyDescription(FEATURES_DESCRIPTION)
     @Mixin
     FeaturesSchema features = new FeaturesSchema()
@@ -491,73 +484,6 @@ class Config {
         }
     }
 
-    static class ImagesSchema {
-        @Option(names = ['--kubectl-image'], description = KUBECTL_IMAGE_DESCRIPTION)
-        @JsonPropertyDescription(KUBECTL_IMAGE_DESCRIPTION)
-        String kubectl = "bitnamilegacy/kubectl:$K8S_VERSION"
-
-        // cloudogu/helm also contains kubeval and helm kubeval plugin. Using the same image makes builds faster
-        @Option(names = ['--helm-image'], description = HELM_IMAGE_DESCRIPTION)
-        @JsonPropertyDescription(HELM_IMAGE_DESCRIPTION)
-        String helm = HELM_IMAGE
-
-        @Option(names = ['--kubeval-image'], description = KUBEVAL_IMAGE_DESCRIPTION)
-        @JsonPropertyDescription(KUBEVAL_IMAGE_DESCRIPTION)
-        String kubeval = HELM_IMAGE
-
-        @Option(names = ['--helmkubeval-image'], description = HELMKUBEVAL_IMAGE_DESCRIPTION)
-        @JsonPropertyDescription(HELMKUBEVAL_IMAGE_DESCRIPTION)
-        String helmKubeval = HELM_IMAGE
-
-        @Option(names = ['--yamllint-image'], description = YAMLLINT_IMAGE_DESCRIPTION)
-        @JsonPropertyDescription(YAMLLINT_IMAGE_DESCRIPTION)
-        String yamllint = "cytopia/yamllint:1.25-0.7"
-
-        @Option(names = ['--nginx-image'], description = NGINX_IMAGE_DESCRIPTION)
-        @JsonPropertyDescription(NGINX_IMAGE_DESCRIPTION)
-        String nginx = ''
-
-        @Option(names = ['--petclinic-image'], description = PETCLINIC_IMAGE_DESCRIPTION)
-        @JsonPropertyDescription(PETCLINIC_IMAGE_DESCRIPTION)
-        String petclinic = 'eclipse-temurin:17-jre-alpine'
-
-        @Option(names = ['--maven-image'], description = MAVEN_IMAGE_DESCRIPTION)
-        @JsonPropertyDescription(MAVEN_IMAGE_DESCRIPTION)
-        String maven = ''
-    }
-
-    static class RepositoriesSchema {
-        @JsonPropertyDescription(SPRING_BOOT_HELM_CHART_DESCRIPTION)
-        RepositorySchemaWithRef springBootHelmChart = new RepositorySchemaWithRef(
-                // Take from env or use default because the Dockerfile provides a local copy of the repo
-                url: System.getenv('SPRING_BOOT_HELM_CHART_REPO') ?: 'https://github.com/cloudogu/spring-boot-helm-chart.git',
-                ref: '0.4.0'
-        )
-        @JsonPropertyDescription(SPRING_PETCLINIC_DESCRIPTION)
-        RepositorySchemaWithRef springPetclinic = new RepositorySchemaWithRef(
-                url: System.getenv('SPRING_PETCLINIC_REPO') ?: 'https://github.com/cloudogu/spring-petclinic.git',
-                ref: 'b0738b2'
-        )
-        @JsonPropertyDescription(GITOPS_BUILD_LIB_DESCRIPTION)
-        RepositorySchema gitopsBuildLib = new RepositorySchema(
-                url: System.getenv('GITOPS_BUILD_LIB_REPO') ?: 'https://github.com/cloudogu/gitops-build-lib.git'
-        )
-        @JsonPropertyDescription(CES_BUILD_LIB_DESCRIPTION)
-        RepositorySchema cesBuildLib = new RepositorySchema(
-                url: System.getenv('CES_BUILD_LIB_REPO') ?: 'https://github.com/cloudogu/ces-build-lib.git'
-        )
-    }
-
-    static class RepositorySchema {
-        @JsonPropertyDescription(REPO_URL_DESCRIPTION)
-        String url = ''
-    }
-
-    static class RepositorySchemaWithRef extends RepositorySchema {
-        @JsonPropertyDescription(REPO_REF_DESCRIPTION)
-        String ref = ''
-    }
-
     static class FeaturesSchema {
 
         @Mixin
@@ -579,9 +505,6 @@ class Config {
         @Mixin
         @JsonPropertyDescription(INGRESS_NGINX_DESCRIPTION)
         IngressNginxSchema ingressNginx = new IngressNginxSchema()
-
-        @JsonPropertyDescription(EXAMPLE_APPS_DESCRIPTION)
-        ExampleAppsSchema exampleApps = new ExampleAppsSchema()
 
         @Mixin
         @JsonPropertyDescription(CERTMANAGER_DESCRIPTION)
@@ -833,18 +756,6 @@ class Config {
             @JsonPropertyDescription(CERTMANAGER_STARTUP_API_CHECK_IMAGE_DESCRIPTION)
             String startupAPICheckImage = ''
 
-        }
-    }
-
-    static class ExampleAppsSchema {
-        @JsonPropertyDescription(PETCLINIC_DESCRIPTION)
-        ExampleAppSchema petclinic = new ExampleAppSchema()
-        @JsonPropertyDescription(NGINX_DESCRIPTION)
-        ExampleAppSchema nginx = new ExampleAppSchema()
-
-        static class ExampleAppSchema {
-            @JsonPropertyDescription(BASE_DOMAIN_DESCRIPTION)
-            String baseDomain = ''
         }
     }
 
