@@ -41,13 +41,7 @@ class ArgoCD extends Feature {
 
     protected RepoInitializationAction argocdRepoInitializationAction
     protected RepoInitializationAction clusterResourcesInitializationAction
-    protected RepoInitializationAction exampleAppsInitializationAction
-    protected RepoInitializationAction nginxHelmJenkinsInitializationAction
-    protected RepoInitializationAction nginxValidationInitializationAction
-    protected RepoInitializationAction brokenApplicationInitializationAction
     protected RepoInitializationAction tenantBootstrapInitializationAction
-    protected File remotePetClinicRepoTmpDir
-    protected List<RepoInitializationAction> petClinicInitializationActions = []
 
     protected K8sClient k8sClient
     protected HelmClient helmClient
@@ -82,32 +76,11 @@ class ArgoCD extends Feature {
         
         log.debug('Cloning Repositories')
 
-        if (config.content.examples) {
-            def petclinicInitAction = createRepoInitializationAction('applications/argocd/petclinic/plain-k8s', 'argocd/petclinic-plain')
-            petClinicInitializationActions += petclinicInitAction
-            gitRepos += petclinicInitAction
-    
-            petclinicInitAction = createRepoInitializationAction('applications/argocd/petclinic/helm', 'argocd/petclinic-helm')
-            petClinicInitializationActions += petclinicInitAction
-            gitRepos += petclinicInitAction
-    
-            petclinicInitAction = createRepoInitializationAction('exercises/petclinic-helm', 'exercises/petclinic-helm')
-            petClinicInitializationActions += petclinicInitAction
-            gitRepos += petclinicInitAction
-        
-            cloneRemotePetclinicRepo()
-        }
-
         gitRepos.forEach(repoInitializationAction -> {
             repoInitializationAction.initLocalRepo()
         })
 
         prepareGitOpsRepos()
-
-        if (config.content.examples) {
-            prepareApplicationNginxHelmJenkins()
-            preparePetClinicRepos()
-        }
 
         gitRepos.forEach(repoInitializationAction -> {
             repoInitializationAction.repo.commitAndPush('Initial Commit')
@@ -175,32 +148,6 @@ class ArgoCD extends Feature {
             gitRepos += tenantBootstrapInitializationAction
         }
 
-        if (config.content.examples) {
-            exampleAppsInitializationAction = createRepoInitializationAction('argocd/example-apps', 'argocd/example-apps')
-            gitRepos += exampleAppsInitializationAction
-    
-            nginxHelmJenkinsInitializationAction = createRepoInitializationAction('applications/argocd/nginx/helm-jenkins', 'argocd/nginx-helm-jenkins')
-            gitRepos += nginxHelmJenkinsInitializationAction
-    
-            nginxValidationInitializationAction = createRepoInitializationAction('exercises/nginx-validation', 'exercises/nginx-validation')
-            gitRepos += nginxValidationInitializationAction
-    
-            brokenApplicationInitializationAction = createRepoInitializationAction('exercises/broken-application', 'exercises/broken-application')
-            gitRepos += brokenApplicationInitializationAction
-            
-            remotePetClinicRepoTmpDir = File.createTempDir('gitops-playground-petclinic')
-        }
-    }
-
-    private void cloneRemotePetclinicRepo() {
-        log.debug("Cloning petclinic base repo, revision ${config.repositories.springPetclinic.ref}," +
-                " from ${config.repositories.springPetclinic.url}")
-        Git git = gitClone()
-                .setURI(config.repositories.springPetclinic.url)
-                .setDirectory(remotePetClinicRepoTmpDir)
-                .call()
-        git.checkout().setName(config.repositories.springPetclinic.ref).call()
-        log.debug('Finished cloning petclinic base repo')
     }
 
     /**
@@ -229,52 +176,7 @@ class ArgoCD extends Feature {
             String externalScmmUrl = ScmUrlResolver.externalHost(config)
             log.debug("Configuring all yaml files in gitops repos to use the external scmm url: ${externalScmmUrl}")
             replaceFileContentInYamls(new File(clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()), scmmUrlInternal, externalScmmUrl)
-            
-            if (config.content.examples) {
-                replaceFileContentInYamls(new File(exampleAppsInitializationAction.repo.getAbsoluteLocalRepoTmpDir()), scmmUrlInternal, externalScmmUrl)
-            }
-        }
 
-        if (config.content.examples) {
-            fileSystemUtils.copyDirectory("${fileSystemUtils.rootDir}/applications/argocd/nginx/helm-umbrella",
-                    Path.of(exampleAppsInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'apps/nginx-helm-umbrella/').toString())
-            exampleAppsInitializationAction.replaceTemplates()
-
-            //generating the bootstrap application in a app of app pattern for example apps in the /argocd applications folder
-            if (config.multiTenant.useDedicatedInstance) {
-                new ArgoApplication(
-                        'example-apps',
-                        ScmUrlResolver.tenantBaseUrl(config)+'argocd/example-apps',
-                        namespace,
-                        namespace,
-                        'argocd/',
-                        config.application.getTenantName())
-                        .generate(tenantBootstrapInitializationAction.repo, 'applications')
-            }
-        }
-    }
-
-    private void prepareApplicationNginxHelmJenkins() {
-        if (!config.features.secrets.active) {
-            // External Secrets are not needed in example
-            FileSystemUtils.deleteFile nginxHelmJenkinsInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/k8s/staging/external-secret.yaml'
-            FileSystemUtils.deleteFile nginxHelmJenkinsInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/k8s/production/external-secret.yaml'
-        }
-    }
-
-    private void preparePetClinicRepos() {
-        for (def repoInitAction : petClinicInitializationActions) {
-            def tmpDir = repoInitAction.repo.getAbsoluteLocalRepoTmpDir()
-
-            log.debug("Copying original petclinic files for petclinic repo: $tmpDir")
-            fileSystemUtils.copyDirectory(remotePetClinicRepoTmpDir.toString(), tmpDir, new FileSystemUtils.IgnoreDotGitFolderFilter())
-            fileSystemUtils.deleteEmptyFiles(Path.of(tmpDir), ~/k8s\/.*\.yaml/)
-
-            new TemplatingEngine().template(
-                    new File("${fileSystemUtils.getRootDir()}/applications/argocd/petclinic/Dockerfile.ftl"),
-                    new File("${tmpDir}/Dockerfile"),
-                    [baseImage: config.images.petclinic as String]
-            )
         }
     }
 
@@ -497,11 +399,6 @@ class ArgoCD extends Feature {
         if (!config.application.netpols) {
             log.debug("Deleting argocd netpols.")
             FileSystemUtils.deleteFile argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/argocd/templates/allow-namespaces.yaml'
-        }
-
-        if (!config.content.examples) {
-            FileSystemUtils.deleteFile argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/applications/example-apps.yaml'
-            FileSystemUtils.deleteFile argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/projects/example-apps.yaml'
         }
 
         argocdRepoInitializationAction.repo.commitAndPush("Initial Commit")

@@ -1,1 +1,0 @@
-Contains examples of end-user applications

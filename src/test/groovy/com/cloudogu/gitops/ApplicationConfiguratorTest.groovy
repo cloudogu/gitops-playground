@@ -264,26 +264,6 @@ class ApplicationConfiguratorTest {
     }
 
     @Test
-    void "Certain properties are read from env"() {
-        withEnvironmentVariable('SPRING_BOOT_HELM_CHART_REPO', 'value1').execute {
-            def actualConfig = new ApplicationConfigurator(fileSystemUtils).initConfig(new Config())
-            assertThat(actualConfig.repositories.springBootHelmChart.url).isEqualTo('value1')
-        }
-        withEnvironmentVariable('SPRING_PETCLINIC_REPO', 'value2').execute {
-            def actualConfig = new ApplicationConfigurator(fileSystemUtils).initConfig(new Config())
-            assertThat(actualConfig.repositories.springPetclinic.url).isEqualTo('value2')
-        }
-        withEnvironmentVariable('GITOPS_BUILD_LIB_REPO', 'value3').execute {
-            def actualConfig = new ApplicationConfigurator(fileSystemUtils).initConfig(new Config())
-            assertThat(actualConfig.repositories.gitopsBuildLib.url).isEqualTo('value3')
-        }
-        withEnvironmentVariable('CES_BUILD_LIB_REPO', 'value4').execute {
-            def actualConfig = new ApplicationConfigurator(fileSystemUtils).initConfig(new Config())
-            assertThat(actualConfig.repositories.cesBuildLib.url).isEqualTo('value4')
-        }
-    }
-
-    @Test
     void "base url: evaluates for all tools"() {
         testConfig.application.baseUrl = 'http://localhost'
 
@@ -298,8 +278,6 @@ class ApplicationConfiguratorTest {
         assertThat(actualConfig.features.mail.mailhogUrl).isEqualTo("http://mailhog.localhost")
         assertThat(actualConfig.features.monitoring.grafanaUrl).isEqualTo("http://grafana.localhost")
         assertThat(actualConfig.features.secrets.vault.url).isEqualTo("http://vault.localhost")
-        assertThat(actualConfig.features.exampleApps.petclinic.baseDomain).isEqualTo("petclinic.localhost")
-        assertThat(actualConfig.features.exampleApps.nginx.baseDomain).isEqualTo("nginx.localhost")
         assertThat(actualConfig.scmm.ingress).isEqualTo("scmm.localhost")
         assertThat(actualConfig.jenkins.ingress).isEqualTo("jenkins.localhost")
     }
@@ -320,8 +298,6 @@ class ApplicationConfiguratorTest {
         assertThat(actualConfig.features.mail.mailhogUrl).isEqualTo("http://mailhog-localhost")
         assertThat(actualConfig.features.monitoring.grafanaUrl).isEqualTo("http://grafana-localhost")
         assertThat(actualConfig.features.secrets.vault.url).isEqualTo("http://vault-localhost")
-        assertThat(actualConfig.features.exampleApps.petclinic.baseDomain).isEqualTo("petclinic-localhost")
-        assertThat(actualConfig.features.exampleApps.nginx.baseDomain).isEqualTo("nginx-localhost")
         assertThat(actualConfig.scmm.ingress).isEqualTo("scmm-localhost")
         assertThat(actualConfig.jenkins.ingress).isEqualTo("jenkins-localhost")
     }
@@ -377,8 +353,6 @@ class ApplicationConfiguratorTest {
         testConfig.features.mail.mailhogUrl = 'mailhog'
         testConfig.features.monitoring.grafanaUrl = 'grafana'
         testConfig.features.secrets.vault.url = 'vault'
-        testConfig.features.exampleApps.petclinic.baseDomain = 'petclinic'
-        testConfig.features.exampleApps.nginx.baseDomain = 'nginx'
 
         def actualConfig = applicationConfigurator.initConfig(testConfig)
 
@@ -386,8 +360,6 @@ class ApplicationConfiguratorTest {
         assertThat(actualConfig.features.mail.mailhogUrl).isEqualTo("mailhog")
         assertThat(actualConfig.features.monitoring.grafanaUrl).isEqualTo("grafana")
         assertThat(actualConfig.features.secrets.vault.url).isEqualTo("vault")
-        assertThat(actualConfig.features.exampleApps.petclinic.baseDomain).isEqualTo("petclinic")
-        assertThat(actualConfig.features.exampleApps.nginx.baseDomain).isEqualTo("nginx")
     }
 
     @Test
