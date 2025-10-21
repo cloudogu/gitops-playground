@@ -7,7 +7,6 @@ import com.cloudogu.gitops.utils.*
 import groovy.io.FileType
 import groovy.json.JsonSlurper
 import groovy.yaml.YamlSlurper
-import org.eclipse.jgit.api.CheckoutCommand
 import org.eclipse.jgit.api.CloneCommand
 import org.junit.jupiter.api.Test
 import org.mockito.Spy
@@ -21,9 +20,8 @@ import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironment
 import static org.assertj.core.api.Assertions.assertThat
 import static org.assertj.core.api.Assertions.fail
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode
-import static org.mockito.ArgumentMatchers.any
-import static org.mockito.ArgumentMatchers.anyString
-import static org.mockito.Mockito.*
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS
+import static org.mockito.Mockito.mock
 
 class ArgoCDTest {
     Map buildImages = [
@@ -424,101 +422,10 @@ class ArgoCDTest {
     }
 
     @Test
-    void 'When vault enabled: Pushes external secret, and mounts into example app'() {
-        createArgoCD().install()
-        def valuesYaml = new YamlSlurper().parse(Path.of nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir(), 'k8s/values-shared.yaml')
-
-        assertThat((valuesYaml['extraVolumeMounts'] as List)).hasSize(2)
-        assertThat((valuesYaml['extraVolumes'] as List)).hasSize(2)
-
-        assertThat(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir() + "/k8s/staging/external-secret.yaml")).exists()
-        assertThat(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir() + "/k8s/production/external-secret.yaml")).exists()
-        assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + "/misc/secrets")).exists()
-    }
-
-    @Test
-    void 'When vault disabled: Does not push ExternalSecret and not mount into example app'() {
-        config.features.secrets.active = false
-        createArgoCD().install()
-        def valuesYaml = new YamlSlurper().parse(Path.of nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir(), 'k8s/values-shared.yaml')
-        assertThat((valuesYaml['extraVolumeMounts'] as List)).hasSize(1)
-        assertThat((valuesYaml['extraVolumes'] as List)).hasSize(1)
-        assertThat((valuesYaml['extraVolumeMounts'] as List)[0]['name']).isEqualTo('index')
-        assertThat((valuesYaml['extraVolumes'] as List)[0]['name']).isEqualTo('index')
-
-        assertThat(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir() + "/k8s/staging/external-secret.yaml")).doesNotExist()
-        assertThat(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir() + "/k8s/production/external-secret.yaml")).doesNotExist()
-    }
-
-    @Test
     void 'When vault disabled: Does not push path "secrets" to cluster resources'() {
         config.features.secrets.active = false
         createArgoCD().install()
         assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + "/misc/secrets")).doesNotExist()
-    }
-
-    @Test
-    void 'Pushes example repos for local'() {
-        config.application.remote = false
-        def argocd = createArgoCD()
-
-        def setUriMock = mock(CloneCommand.class, RETURNS_DEEP_STUBS)
-        def checkoutMock = mock(CheckoutCommand.class, RETURNS_DEEP_STUBS)
-        when(gitCloneMock.setURI(anyString())).thenReturn(setUriMock)
-        when(setUriMock.setDirectory(any(File.class)).call().checkout()).thenReturn(checkoutMock)
-
-        argocd.install()
-        def valuesYaml = parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-shared.yaml')
-        assertThat(valuesYaml['service']['type']).isEqualTo('ClusterIP')
-        assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-production.yaml')).doesNotContainKey('ingress')
-        assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-staging.yaml')).doesNotContainKey('ingress')
-        assertThat(valuesYaml).doesNotContainKey('resources')
-
-        valuesYaml = parseActualYaml(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'apps/nginx-helm-umbrella/values.yaml')
-        assertThat(valuesYaml['nginx']['service']['type']).isEqualTo('ClusterIP')
-        assertThat(valuesYaml['nginx'] as Map).doesNotContainKey('ingress')
-        assertThat(valuesYaml['nginx'] as Map).doesNotContainKey('resources')
-
-        assertThat((parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[1]['spec']['type']))
-                .isEqualTo('ClusterIP')
-        assertThat((parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[0]['spec']['template']['spec']['containers'] as List)[0]['resources'])
-                .isNull()
-
-        assertThat(new File(nginxValidationRepo.absoluteLocalRepoTmpDir, '/k8s/values-shared.yaml').text).doesNotContain('resources:')
-
-        // Assert Petclinic repo cloned
-        verify(gitCloneMock).setURI('https://github.com/cloudogu/spring-petclinic.git')
-        verify(setUriMock).setDirectory(argocd.remotePetClinicRepoTmpDir)
-        verify(checkoutMock).setName('32c8653')
-
-        assertPetClinicRepos('ClusterIP', 'LoadBalancer', '')
-    }
-
-    @Test
-    void 'Pushes example repos for remote'() {
-        config.application.remote = true
-        config.features.exampleApps.petclinic.baseDomain = 'petclinic.local'
-        config.features.exampleApps.nginx.baseDomain = 'nginx.local'
-
-        createArgoCD().install()
-
-        assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-shared.yaml').toString())
-                .doesNotContain('ClusterIP')
-        assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-production.yaml')['ingress']['hostname']).isEqualTo('production.nginx-helm.nginx.local')
-        assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-staging.yaml')['ingress']['hostname']).isEqualTo('staging.nginx-helm.nginx.local')
-
-        assertThat(parseActualYaml(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'apps/nginx-helm-umbrella/values.yaml').toString())
-                .doesNotContain('ClusterIP')
-
-        def valuesYaml = parseActualYaml(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'apps/nginx-helm-umbrella/values.yaml')
-        assertThat(valuesYaml['nginx']['ingress']['hostname'] as String).isEqualTo('production.nginx-helm-umbrella.nginx.local')
-
-        assertThat((parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[2]['spec']['rules'] as List)[0]['host'])
-                .isEqualTo('broken-application.nginx.local')
-        assertThat((parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[1]['spec']['type']))
-                .isEqualTo('LoadBalancer')
-
-        assertPetClinicRepos('LoadBalancer', 'ClusterIP', 'petclinic.local')
     }
 
     @Test
@@ -561,50 +468,10 @@ class ArgoCDTest {
     }
 
     @Test
-    void 'If urlSeparatorHyphen is set, ensure that hostnames are build correctly '() {
-        config.application.remote = true
-        config.features.exampleApps.petclinic.baseDomain = 'petclinic-local'
-        config.features.exampleApps.nginx.baseDomain = 'nginx-local'
-        config.application.urlSeparatorHyphen = true
-
-        createArgoCD().install()
-
-        def valuesYaml = parseActualYaml(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'apps/nginx-helm-umbrella/values.yaml')
-        assertThat(valuesYaml['nginx']['ingress']['hostname'] as String).isEqualTo('production-nginx-helm-umbrella-nginx-local')
-
-        assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-production.yaml')['ingress']['hostname']).isEqualTo('production-nginx-helm-nginx-local')
-        assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-staging.yaml')['ingress']['hostname']).isEqualTo('staging-nginx-helm-nginx-local')
-
-        assertThat((parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[2]['spec']['rules'] as List)[0]['host'])
-                .isEqualTo('broken-application-nginx-local')
-
-        assertPetClinicRepos('LoadBalancer', 'ClusterIP', 'petclinic-local')
-    }
-
-    @Test
-    void 'If urlSeparatorHyphen is NOT set, ensure that hostnames are build correctly '() {
-        config.application.remote = true
-        config.features.exampleApps.petclinic.baseDomain = 'petclinic.local'
-        config.features.exampleApps.nginx.baseDomain = 'nginx.local'
-        config.application.urlSeparatorHyphen = false
-
-        createArgoCD().install()
-
-        def valuesYaml = parseActualYaml(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'apps/nginx-helm-umbrella/values.yaml')
-        assertThat(valuesYaml['nginx']['ingress']['hostname'] as String).isEqualTo('production.nginx-helm-umbrella.nginx.local')
-
-        assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-production.yaml')['ingress']['hostname']).isEqualTo('production.nginx-helm.nginx.local')
-        assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-staging.yaml')['ingress']['hostname']).isEqualTo('staging.nginx-helm.nginx.local')
-        assertPetClinicRepos('LoadBalancer', 'ClusterIP', 'petclinic.local')
-    }
-
-    @Test
     void 'For internal SCMM: Use service address in gitops repos'() {
         def argocd = createArgoCD()
         argocd.install()
         List filesWithInternalSCMM = findFilesContaining(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), argocd.scmmUrlInternal)
-        assertThat(filesWithInternalSCMM).isNotEmpty()
-        filesWithInternalSCMM = findFilesContaining(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), argocd.scmmUrlInternal)
         assertThat(filesWithInternalSCMM).isNotEmpty()
     }
 
@@ -626,7 +493,6 @@ class ArgoCDTest {
         argocd.install()
 
         assertArgoCdYamlPrefixes(argocd.scmmUrlInternal, '')
-        assertJenkinsEnvironmentVariablesPrefixes('')
     }
 
     @Test
@@ -634,20 +500,18 @@ class ArgoCDTest {
         config.registry.twoRegistries = true
         createArgoCD().install()
 
-        assertJenkinsEnvironmentVariablesPrefixes('')
         assertJenkinsfileRegistryCredentials()
     }
 
     @Test
     void 'Pushes repos with name-prefix'() {
         config.application.namePrefix = 'abc-'
-        config.application.namePrefixForEnvVars = 'ABC_'
 
         def argocd = createArgoCD()
         argocd.install()
 
         assertArgoCdYamlPrefixes(argocd.scmmUrlInternal, 'abc-')
-        assertJenkinsEnvironmentVariablesPrefixes('ABC_')
+
     }
 
     @Test
@@ -722,30 +586,8 @@ class ArgoCDTest {
                 assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).contains('mvn = cesBuildLib.MavenInDocker.new(this, \'latest\', dockerRegistryProxyCredentials)')
             }
         }
-
     }
 
-
-    //TODO Anna remove example apps
-    @Test
-    void 'Sets pod resource limits and requests'() {
-        config.application.podResources = true
-
-        createArgoCD().install()
-
-        assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-shared.yaml')['resources'] as Map)
-                .containsKeys('limits', 'requests')
-
-        assertThat(parseActualYaml(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'apps/nginx-helm-umbrella/values.yaml')['nginx']['resources'] as Map)
-                .containsKeys('limits', 'requests')
-
-        assertThat(new File(nginxValidationRepo.absoluteLocalRepoTmpDir, '/k8s/values-shared.yaml').text).contains('limits:', 'resources:')
-
-        assertThat((parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[0]['spec']['template']['spec']['containers'] as List)[0]['resources'] as Map)
-                .containsKeys('limits', 'requests')
-
-        assertPetClinicRepos('ClusterIP', 'LoadBalancer', '')
-    }
 
     @Test
     void 'ArgoCD with active network policies'() {
