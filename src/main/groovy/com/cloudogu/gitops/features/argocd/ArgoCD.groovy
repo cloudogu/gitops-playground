@@ -406,7 +406,7 @@ class ArgoCD extends Feature {
     }
 
     protected RepoInitializationAction createRepoInitializationAction(String localSrcDir, String scmRepoTarget, Boolean isCentral) {
-        GitProvider provider = isCentral ? this.gitHandler.central : this.gitHandler.tenant
+        GitProvider provider = (Boolean.TRUE == isCentral) ? gitHandler.central : gitHandler.tenant
         new RepoInitializationAction(config, repoProvider.getRepo(scmRepoTarget, provider), this.gitHandler, localSrcDir)
     }
 

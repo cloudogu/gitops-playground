@@ -4,10 +4,11 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.GitRepoFactory
 import com.cloudogu.gitops.git.providers.GitProvider
-import com.cloudogu.gitops.git.providers.scmmanager.ScmManagerMock
 import org.apache.commons.io.FileUtils
 
+import static org.mockito.Mockito.doAnswer
 import static org.mockito.Mockito.spy
+
 
 class TestGitRepoFactory extends GitRepoFactory {
     Map<String, GitRepo> repos = [:]
@@ -41,9 +42,19 @@ class TestGitRepoFactory extends GitRepoFactory {
             }
         }
 
-        // Create a spy to enable verification while keeping real behavior
+
         GitRepo spyRepo = spy(repoNew)
+
+        // Test-only: remove local clone target before cloning to avoid "not empty" errors
+        doAnswer { invocation ->
+            File target = new File(spyRepo.absoluteLocalRepoTmpDir)
+            if (target?.exists()) {
+                FileUtils.deleteDirectory(target)
+            }
+            invocation.callRealMethod()
+        }.when(spyRepo).cloneRepo()
         repos.put(repoTarget, spyRepo)
         return spyRepo
     }
+
 }

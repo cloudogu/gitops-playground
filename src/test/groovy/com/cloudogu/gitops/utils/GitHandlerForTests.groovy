@@ -23,6 +23,11 @@ class GitHandlerForTests extends GitHandler{
     }
 
     @Override
+    GitProvider getCentral() {
+        return this.scmManagerMock
+    }
+
+    @Override
     GitProvider getResourcesScm() {
         return this.scmManagerMock
     }
