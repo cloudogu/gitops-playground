@@ -65,7 +65,12 @@ class ArgoCDTest {
                     useDedicatedInstance: false
             ],
             content: [
-                    examples: true
+                    examples: true,
+                    variables: [
+                            images: [
+                                    buildImages + [petclinic: 'petclinic-value']
+                            ]
+                    ]
             ],
             features: [
                     argocd      : [
