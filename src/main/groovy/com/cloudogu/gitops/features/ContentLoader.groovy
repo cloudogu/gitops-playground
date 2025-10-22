@@ -116,8 +116,7 @@ class ContentLoader extends Feature {
     }
 
     protected List<RepoCoordinate> cloneContentRepos() {
-        // this.@mergedReposFolder forces direct field access and bypasses propertyMissing.
-        this.@mergedReposFolder = File.createTempDir('gitops-playground-based-content-repos-')
+        mergedReposFolder = File.createTempDir('gitops-playground-based-content-repos-')
         List<RepoCoordinate> repoCoordinates = []
 
         log.debug("Aggregating structure for all ${config.content.repos.size()} repos.")
