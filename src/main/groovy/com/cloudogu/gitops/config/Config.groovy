@@ -399,6 +399,10 @@ class Config {
         @JsonPropertyDescription(NETPOLS_DESCRIPTION)
         Boolean netpols = false
 
+        @Option(names = ['--cluster-admin'], description = CLUSTER_ADMIN_DESCRIPTION)
+        @JsonPropertyDescription(CLUSTER_ADMIN_DESCRIPTION)
+        Boolean clusterAdmin = false
+
         static class NamespaceSchema {
             LinkedHashSet<String> dedicatedNamespaces = new LinkedHashSet<>()
             LinkedHashSet<String> tenantNamespaces = new LinkedHashSet<>()

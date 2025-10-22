@@ -63,19 +63,37 @@ class RbacDefinition {
             throw new IllegalStateException("SCMM repo must be set using withRepo() before calling generate()")
         }
 
-        def role = new Role(name, namespace, variant, config)
-        def binding = new RoleBinding(name, namespace, name, serviceAccounts)
-
         log.trace("Generating RBAC for name='${name}', namespace='${namespace}', subfolder='${subfolder}'")
 
-        def outputDir = Path.of(repo.absoluteLocalRepoTmpDir, subfolder).toFile()
+        File outputDir = Path.of(repo.absoluteLocalRepoTmpDir, subfolder).toFile()
         outputDir.mkdirs()
+
+        generateRole(outputDir)
+
+        generateRoleBinding(outputDir)
+    }
+
+    private void generateRole(File outputDir) {
+        if(variant == Role.Variant.CLUSTER_ADMIN) {
+            log.trace("Skipping creation of ClusterRole cluster-admin")
+            return
+        }
+
+        def role = new Role(name, namespace, variant, config)
 
         templater.template(
                 role.getTemplateFile(),
                 role.getOutputFile(outputDir),
                 role.toTemplateParams()
         )
+    }
+
+    private void generateRoleBinding(File outputDir) {
+        String roleName = name
+        if(variant == Role.Variant.CLUSTER_ADMIN) {
+            roleName = "cluster-admin"
+        }
+        def binding = new RoleBinding(name, namespace, roleName, serviceAccounts)
 
         templater.template(
                 binding.getTemplateFile(),

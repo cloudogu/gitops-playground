@@ -88,6 +88,7 @@ interface ConfigConstants {
     String NAMESPACE_ISOLATION_DESCRIPTION = 'Configure tools to explicitly work with the given namespaces only, and not cluster-wide. This way GOP can be installed without having cluster-admin permissions.'
     String MIRROR_REPOS_DESCRIPTION = 'Changes the sources of deployed tools so they are not pulled from the internet, but are pulled from git and work in air-gapped environments.'
     String NETPOLS_DESCRIPTION = 'Sets Network Policies'
+    String CLUSTER_ADMIN_DESCRIPTION = 'Binds ArgoCD controllers to cluster-admin ClusterRole'
     String OPENSHIFT_DESCRIPTION = 'When set, openshift specific resources and configurations are applied'
 
     // group metrics
