@@ -182,7 +182,11 @@ class AirGappedUtilsTest {
         assertHelmRepoCommits(prometheusRepo, '1.2.3', 'Chart kube-prometheus-stack-chart, version: 1.2.3\n\n' +
                 'Source: https://kube-prometheus-stack-repo-url\nDependencies localized to run in air-gapped environments')
 
-        verify(prometheusRepo).createRepositoryAndSetPermission(eq('Mirror of Helm chart kube-prometheus-stack from https://kube-prometheus-stack-repo-url'), any(String.class))
+        verify(prometheusRepo).createRepositoryAndSetPermission(
+                eq("${GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/kube-prometheus-stack".toString()),
+                eq("Mirror of Helm chart kube-prometheus-stack from https://kube-prometheus-stack-repo-url"),
+                eq(false)
+        )
     }
 
 
