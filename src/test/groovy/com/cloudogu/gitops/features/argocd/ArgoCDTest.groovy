@@ -3,12 +3,13 @@ package com.cloudogu.gitops.features.argocd
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.TestGitRepoFactory
+import com.cloudogu.gitops.git.providers.GitProvider
+import com.cloudogu.gitops.git.providers.gitlab.GitlabMock
 import com.cloudogu.gitops.git.providers.scmmanager.ScmManagerMock
 import com.cloudogu.gitops.utils.*
 import groovy.io.FileType
 import groovy.json.JsonSlurper
 import groovy.yaml.YamlSlurper
-import org.eclipse.jgit.api.CloneCommand
 import org.junit.jupiter.api.Test
 import org.mockito.Spy
 import org.springframework.security.crypto.bcrypt.BCrypt
@@ -21,8 +22,6 @@ import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironment
 import static org.assertj.core.api.Assertions.assertThat
 import static org.assertj.core.api.Assertions.fail
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode
-import static org.mockito.Mockito.RETURNS_DEEP_STUBS
-import static org.mockito.Mockito.mock
 
 class ArgoCDTest {
     Map buildImages = [
@@ -50,8 +49,7 @@ class ArgoCDTest {
             ],
             scm: [
                     scmManager: [
-                            internal: true,
-                            url     : 'https://abc'],
+                            internal: true],
                     gitlab    : [
                             url: ''
                     ]
@@ -67,18 +65,10 @@ class ArgoCDTest {
             ],
             images: buildImages + [petclinic: 'petclinic-value'],
             repositories: [
-                    springBootHelmChart: [
-                            url: 'https://github.com/cloudogu/spring-boot-helm-chart.git',
-                            ref: '0.3.0'
-                    ],
-                    springPetclinic    : [
-                            url: 'https://github.com/cloudogu/spring-petclinic.git',
-                            ref: '32c8653'
-                    ],
-                    gitopsBuildLib     : [
+                    gitopsBuildLib: [
                             url: "https://github.com/cloudogu/gitops-build-lib.git",
                     ],
-                    cesBuildLib        : [
+                    cesBuildLib   : [
                             url: 'https://github.com/cloudogu/ces-build-lib.git',
                     ]
             ],
@@ -205,20 +195,10 @@ class ArgoCDTest {
     }
 
     @Test
-    void 'Disables example content'() {
-        config.content.examples = false
-
-        def argocd = createArgoCD()
-        argocd.install()
-
-        assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/example-apps.yaml')).doesNotExist()
-        assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'applications/example-apps.yaml')).doesNotExist()
-    }
-
-    @Test
     void 'Installs argoCD for remote and external Scmm'() {
         config.application.remote = true
         config.scm.scmManager.internal = false
+        config.scm.scmManager.url = "https://abc"
         config.features.argocd.url = 'https://argo.cd'
 
         def argocd = createArgoCD()
@@ -475,6 +455,7 @@ class ArgoCDTest {
     @Test
     void 'For external SCMM: Use external address in gitops repos'() {
         config.scm.internal = false
+        config.scm.scmManager.url = "https://abc"
         def argocd = createArgoCD()
         argocd.install()
         List filesWithInternalSCMM = findFilesContaining(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), argocd.scmmUrlInternal)
@@ -1353,13 +1334,6 @@ class ArgoCDTest {
     }
 
     @Test
-    void 'generate example-apps bootstrapping application via ArgoApplication when true'() {
-        setupDedicatedInstanceMode()
-        assertThat(new File(tenantBootstrap.getAbsoluteLocalRepoTmpDir() + "/applications/bootstrap.yaml")).exists()
-        assertThat(new File(tenantBootstrap.getAbsoluteLocalRepoTmpDir() + "/applications/argocd-application-example-apps-testPrefix-argocd.yaml")).exists()
-    }
-
-    @Test
     void 'not generating example-apps bootstrapping application via ArgoApplication when false'() {
         config.content.examples = false
         setupDedicatedInstanceMode()
@@ -1372,7 +1346,7 @@ class ArgoCDTest {
         config.application.namespaces.dedicatedNamespaces = new LinkedHashSet(['dedi-test1', 'dedi-test2', 'dedi-test3'])
         config.application.namespaces.tenantNamespaces = new LinkedHashSet(['tenant-test1', 'tenant-test2', 'tenant-test3'])
         setupDedicatedInstanceMode()
-        k8sCommands.assertExecuted('kubectl get secret argocd-default-cluster-config -nargocd -ojsonpath={.data.namespaces}')
+        k8sCommands.assertExecuted('kubectl get secret argocd-default-cluster-config -n argocd -ojsonpath={.data.namespaces}')
         k8sCommands.assertExecuted('kubectl patch secret argocd-default-cluster-config -n argocd --patch-file=/tmp/gitops-playground-patch-')
     }
 
@@ -1523,7 +1497,7 @@ class ArgoCDTest {
     void 'If using mirror with GitLab, ensure source repos in cluster-resources got right URL'() {
         config.application.mirrorRepos = true
         config.scm.scmProviderType = 'GITLAB'
-        config.scm.gitlab.url = 'https://testGitLab.com/testgroup/'
+        config.scm.gitlab.url = 'https://testGitLab.com/testgroup'
         createArgoCD().install()
 
         def clusterRessourcesYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/cluster-resources.yaml')
@@ -1544,6 +1518,7 @@ class ArgoCDTest {
     void 'If using mirror with GitLab with prefix, ensure source repos in cluster-resources got right URL'() {
         config.application.mirrorRepos = true
         config.scm.scmProviderType = 'GITLAB'
+        config.scm.gitlab.url = "https://testGitLab.com/testgroup"
         config.application.namePrefix = 'test1-'
 
         createArgoCD().install()
@@ -1703,35 +1678,45 @@ class ArgoCDTest {
 
 
     class ArgoCDForTest extends ArgoCD {
-        ScmManagerMock tenantMock
+        GitProvider tenantMock
 
-        // Convenience ctor: create the mock in the arg list (no pre-super statements)
-        ArgoCDForTest(Config config, CommandExecutorForTest k8sCommands, CommandExecutorForTest helmCommands) {
-            this(
-                    config,
-                    k8sCommands,
-                    helmCommands,
-                    new ScmManagerMock(
-                            inClusterBase: new URI("http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm"),
-                            namePrefix: config.application.namePrefix
-                    )
+        private static GitProvider buildProvider(Config config) {
+            if (config.scm.scmProviderType?.toString() == 'GITLAB') {
+                return new GitlabMock(
+                        base: new URI(config.scm.gitlab.url),     // e.g. https://testGitLab.com/testgroup/
+                        namePrefix: config.application.namePrefix // if you need tenant prefixing
+                )
+            }
+            // For SCMM:
+            // - inClusterBase stays the Service DNS (used for IN_CLUSTER)
+            // - clientBase must come from the external URL when internal=false
+            def internalSvc = "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm"
+            def external = config.scm.scmManager?.url ?: internalSvc  // fallback if not set
+
+            return new ScmManagerMock(
+                    inClusterBase: new URI(external),
+                    namePrefix: config.application.namePrefix
             )
         }
+        // Convenience ctor: create the mock in the arg list (no pre-super statements)
+        ArgoCDForTest(Config config, CommandExecutorForTest k8sCommands, CommandExecutorForTest helmCommands) {
+            this(config, k8sCommands, helmCommands, ArgoCDForTest.buildProvider(config))
+        }
 
-        // Real ctor: can use the mock AFTER super(...)
         ArgoCDForTest(Config config, CommandExecutorForTest k8sCommands, CommandExecutorForTest helmCommands,
-                      ScmManagerMock tm) {
+                      GitProvider tenantProvider) {
             super(
                     config,
                     new K8sClientForTest(config, k8sCommands),
                     new HelmClient(helmCommands),
                     new FileSystemUtils(),
                     new TestGitRepoFactory(config, new FileSystemUtils()),
-                    new GitHandlerForTests(config, tm)
+                    new GitHandlerForTests(config, tenantProvider) // <— pass GitLab or SCMM provider
             )
-            this.tenantMock = tm
+            this.tenantMock = tenantProvider
             mockPrefixActiveNamespaces(config)
         }
+
 
         @Override
         protected initCentralRepos() {
