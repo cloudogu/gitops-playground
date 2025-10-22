@@ -1,0 +1,38 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: gop-multi-tenancy
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions:
+    - missingkey=error
+  generators:
+    - git:
+        repoURL: http://scmm.scm-manager.svc.cluster.local/scm/repo/argocd/tenant-configs
+        revision: HEAD
+        files:
+          - path: "tenants/*/config.yaml"
+  template:
+    metadata:
+      name: gop-tenant-{{.config.application.namePrefix}}
+    spec:
+      project: argocd
+      sources:
+        - repoURL: http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/gop-helm
+          path: .
+          targetRevision: HEAD
+          helm:
+            valueFiles:
+              - $valuesRef/tenants/values.yaml
+              - $valuesRef/{{ .path.path }}/config.yaml
+        - repoURL: http://scmm.scm-manager.svc.cluster.local/scm/repo/argocd/tenant-configs
+          targetRevision: HEAD
+          ref: valuesRef
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: argocd
+      syncPolicy:
+        automated:
+          selfHeal: true
+          prune: true
