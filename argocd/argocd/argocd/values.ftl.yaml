@@ -53,7 +53,7 @@ argo-cd:
     # Unfortunately, as of argocd 2.6 this leads to failing notifications 
     # https://github.com/argoproj/argo-cd/issues/11252
     params:
-      application.namespaces: "*"
+      application.namespaces: "${config.application.namePrefix}argocd"
       server.insecure: true # tls terminated in ingress
 
     # Repo credential templates are created dynamically in groovy, so they are not stored in git
