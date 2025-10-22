@@ -2,8 +2,10 @@ package com.cloudogu.gitops.kubernetes.rbac
 
 class RoleBinding {
     String name
+    String kind
     String namespace
     String roleName
+    String roleKind
     List<ServiceAccountRef> serviceAccounts
 
     RoleBinding(String name, String namespace, String roleName, List<ServiceAccountRef> serviceAccounts) {
@@ -13,16 +15,25 @@ class RoleBinding {
         if (!serviceAccounts || serviceAccounts.isEmpty()) throw new IllegalArgumentException("At least one service account is required")
 
         this.name = name
+        this.kind = "RoleBinding"
         this.namespace = namespace
         this.roleName = roleName
+        this.roleKind = "Role"
         this.serviceAccounts = serviceAccounts
+
+        if(roleName == "cluster-admin") {
+            this.kind = "ClusterRoleBinding"
+            this.roleKind = "ClusterRole"
+        }
     }
 
     Map<String, Object> toTemplateParams() {
         return [
                 name           : name,
+                kind           : kind,
                 namespace      : namespace,
                 roleName       : roleName,
+                roleKind       : roleKind,
                 serviceAccounts: serviceAccounts.collect { it.toMap() }
         ]
     }

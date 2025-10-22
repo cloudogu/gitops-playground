@@ -116,6 +116,7 @@ interface ConfigConstants {
     String REPO_URL_DESCRIPTION = 'HTTP URL of the repo'
     String REPO_REF_DESCRIPTION = 'Ref of the repo to use, e.g. a tag, commit or branch'
     String NETPOLS_DESCRIPTION = 'Sets Network Policies'
+    String CLUSTER_ADMIN_DESCRIPTION = 'Binds ArgoCD controllers to cluster-admin ClusterRole'
     String OPENSHIFT_DESCRIPTION = 'When set, openshift specific resources and configurations are applied'
 
     // group metrics

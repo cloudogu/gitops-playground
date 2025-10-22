@@ -1,0 +1,23 @@
+image:
+  tag: 7a31651e
+config:
+  application:
+    baseUrl: "http://localhost"
+    insecure: true
+    username: "admin"
+    password: "admin"
+    namePrefix: ""
+    namespaceIsolation: true
+    skipCrds: true
+  jenkins:
+    active: true
+  features:
+    monitoring:
+      active: false
+    argocd:
+      active: true
+      operator: true
+      env: [ ]
+      resourceInclusionsCluster: "https://10.43.0.1:443"
+    ingressNginx:
+      active: false
