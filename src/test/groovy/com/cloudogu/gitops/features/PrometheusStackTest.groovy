@@ -9,6 +9,7 @@ import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.git.providers.scmmanager.ScmManagerMock
 import com.cloudogu.gitops.utils.*
 import groovy.yaml.YamlSlurper
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
 
@@ -97,6 +98,13 @@ class PrometheusStackTest {
     File clusterResourcesRepoDir
 
     GitHandler gitHandler = mock(GitHandler.class)
+    ScmManagerMock scmManagerMock
+
+    @BeforeEach
+    void setup() {
+        scmManagerMock = new ScmManagerMock()
+    }
+
 
     @Test
     void "is disabled via active flag"() {
@@ -545,7 +553,8 @@ policies:
         Map prometheusChartYaml = [version: '1.2.3']
         fileSystemUtils.writeYaml(prometheusChartYaml, prometheusSourceChart.resolve('Chart.yaml').toFile())
 
-        createStack().install()
+        scmManagerMock.inClusterBase = new URI("http://scmm.foo-scm-manager.svc.cluster.local/scm")
+        createStack(scmManagerMock).install()
 
         def helmConfig = ArgumentCaptor.forClass(Config.HelmConfig)
         verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
@@ -611,14 +620,14 @@ matchExpressions:
         ))
     }
 
-    private PrometheusStack createStack() {
+    private PrometheusStack createStack(ScmManagerMock scmManagerMock) {
         // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
-        when(gitHandler.getResourcesScm()).thenReturn(new ScmManagerMock())
+        when(gitHandler.getResourcesScm()).thenReturn(scmManagerMock)
         def configuration = config
         TestGitRepoFactory repoProvider = new TestGitRepoFactory(config, new FileSystemUtils()) {
             @Override
             GitRepo getRepo(String repoTarget,GitProvider scm) {
-                def repo = super.getRepo(repoTarget, new ScmManagerMock())
+                def repo = super.getRepo(repoTarget, scmManagerMock)
                 clusterResourcesRepoDir = new File(repo.getAbsoluteLocalRepoTmpDir())
 
                 return repo
