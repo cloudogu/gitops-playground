@@ -345,7 +345,7 @@ class ArgoCD extends Feature {
 
     protected void createSCMCredentialsSecret() {
 
-        log.debug('Creating repo credential secret that is used by argocd to access repos in SCM-Manager')
+        log.debug("Creating repo credential secret that is used by argocd to access repos in ${config.scm.scmProviderType.toString()}")
         // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo
         def repoTemplateSecretName = 'argocd-repo-creds-scm'
 
@@ -359,9 +359,9 @@ class ArgoCD extends Feature {
                 new Tuple2('argocd.argoproj.io/secret-type', 'repo-creds'))
 
         if (config.multiTenant.useDedicatedInstance) {
-            log.debug('Creating central repo credential secret that is used by argocd to access repos in SCM-Manager')
+            log.debug("Creating central repo credential secret that is used by argocd to access repos in ${config.scm.scmProviderType.toString()}")
             // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo
-            def centralRepoTemplateSecretName = 'argocd-repo-creds-central-scmm'
+            def centralRepoTemplateSecretName = 'argocd-repo-creds-central-scm'
 
             k8sClient.createSecret('generic', centralRepoTemplateSecretName, config.multiTenant.centralArgocdNamespace,
                     new Tuple2('url', this.gitHandler.central.url),

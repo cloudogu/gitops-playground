@@ -85,7 +85,7 @@ class ArgoCDDestructionHandler implements DestructionHandler {
         k8sClient.delete("app", 'argocd', "argocd")
 
         k8sClient.delete('secret', 'default', 'jenkins-credentials')
-        k8sClient.delete('secret', 'default', 'argocd-repo-creds-scmm')
+        k8sClient.delete('secret', 'default', 'argocd-repo-creds-scm')
     }
 
     void installArgoCDViaHelm(GitRepo repo) {
