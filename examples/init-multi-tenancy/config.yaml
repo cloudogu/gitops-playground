@@ -6,7 +6,7 @@ application:
   "yes": true
   namePrefix: ""
   namespaceIsolation: false
-  skipCrds: true
+  skipCrds: false
   clusterAdmin: true
 jenkins:
   active: false
