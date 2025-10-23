@@ -15,6 +15,13 @@ import com.cloudogu.gitops.git.providers.Scope
  */
 class ScmManagerMock implements GitProvider {
 
+    private final Set<String> initOnceRepos = [] as Set
+    private final Map<String,Integer> createCalls = [:].withDefault{0}
+
+    void initOnceRepo(String fullName) { initOnceRepos << fullName }
+    void clearInitOnce() { initOnceRepos.clear(); createCalls.clear() }
+
+
     // --- configurable  ---
     URI inClusterBase = new URI("http://scmm.scm-manager.svc.cluster.local/scm")
     URI clientBase = new URI("http://localhost:8080/scm")
@@ -32,6 +39,9 @@ class ScmManagerMock implements GitProvider {
 
     @Override
     boolean createRepository(String repoTarget, String description, boolean initialize) {
+        if (initOnceRepos.contains(repoTarget)) {
+            return ++createCalls[repoTarget] == 1   // 1. call true, then false
+        }
         createdRepos << repoTarget
         // Pretend repository was created successfully.
         // If you need idempotency checks, examine createdRepos.count(repoTarget) in your tests.

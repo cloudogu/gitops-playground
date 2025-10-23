@@ -13,24 +13,9 @@ class TestGitRepoFactory extends GitRepoFactory {
     Map<String, GitRepo> repos = [:]
     GitProvider defaultProvider
 
-
-    Set<String> initOnceRepos = []                // repos: 1. call -> true, after false
-    Map<String, Integer> createCallCount = [:].withDefault { 0 }
-
     TestGitRepoFactory(Config config, FileSystemUtils fileSystemUtils) {
         super(config, fileSystemUtils)
     }
-
-
-    void initOnce(String fullRepoName) {
-        initOnceRepos << fullRepoName
-    }
-
-    void clearInitOnce() {
-        initOnceRepos.clear()
-        createCallCount.clear()
-    }
-
 
     @Override
     GitRepo getRepo(String repoTarget, GitProvider scm) {
@@ -62,19 +47,6 @@ class TestGitRepoFactory extends GitRepoFactory {
                 }
                 return remoteGitRepoUrl
             }
-
-            @Override
-            boolean createRepositoryAndSetPermission(String repo, String description, boolean initialize) {
-                // only for specific repos
-                if (initOnceRepos.contains(repo)) {
-                    int n = ++createCallCount[repo]
-                    return n == 1   // 1. call-> true, after false
-                }
-                // otherwise: right logic
-                return super.createRepositoryAndSetPermission(repo, description, initialize)
-            }
-
-
         }
 
 
@@ -91,6 +63,4 @@ class TestGitRepoFactory extends GitRepoFactory {
         repos.put(repoTarget, spyRepo)
         return spyRepo
     }
-
-
 }

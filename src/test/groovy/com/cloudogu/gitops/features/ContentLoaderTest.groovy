@@ -59,7 +59,8 @@ class ContentLoaderTest {
     TestGitRepoFactory scmmRepoProvider = new TestGitRepoFactory(config, new FileSystemUtils())
     TestScmManagerApiClient scmmApiClient = new TestScmManagerApiClient(config)
     Jenkins jenkins = mock(Jenkins.class)
-    GitHandler gitHandler = new GitHandlerForTests(config, new ScmManagerMock())
+    ScmManagerMock scmManagerMock = new ScmManagerMock()
+    GitHandler gitHandler = new GitHandlerForTests(config, scmManagerMock)
 
     @TempDir
     File tmpDir
@@ -580,10 +581,10 @@ class ContentLoaderTest {
 
         ]
         def expectedRepo = 'common/repo'
-        scmmRepoProvider.initOnce(expectedRepo)
+        scmManagerMock.initOnceRepo('common/repo')
         createContent().install()
 
-        def repo = scmmRepoProvider.getRepo(expectedRepo, new ScmManagerMock())
+        def repo = scmmRepoProvider.getRepo(expectedRepo, scmManagerMock)
 
         String url = repo.getGitRepositoryUrl()
         // clone repo, to ensure, changes in remote repo.
@@ -609,6 +610,7 @@ class ContentLoaderTest {
         ]
 
         createContent().install()
+        scmManagerMock.clearInitOnce()
 
         def folderAfterReset = File.createTempDir('second-cloned-repo')
         folderAfterReset.deleteOnExit()
@@ -622,6 +624,7 @@ class ContentLoaderTest {
             assertThat(new File(folderAfterReset, "copyRepo2").exists()).isFalse()
 
         }
+
 
     }
 
@@ -702,10 +705,10 @@ class ContentLoaderTest {
 
         ]
         def expectedRepo = 'common/repo'
-        scmmRepoProvider.initOnce(expectedRepo)
+        scmManagerMock.initOnceRepo('common/repo')
         createContent().install()
 
-        def repo = scmmRepoProvider.getRepo(expectedRepo, new ScmManagerMock())
+        def repo = scmmRepoProvider.getRepo(expectedRepo, scmManagerMock)
 
         def url = repo.getGitRepositoryUrl()
         // clone repo, to ensure, changes in remote repo.
@@ -731,9 +734,7 @@ class ContentLoaderTest {
         ]
 
         createContent().install()
-
-        log.info("TEST  AFTER #2  defaultProvider.id={}",
-                System.identityHashCode(scmmRepoProvider.defaultProvider))
+        scmManagerMock.clearInitOnce()
 
         def folderAfterReset = File.createTempDir('second-cloned-repo')
         folderAfterReset.deleteOnExit()
@@ -747,7 +748,7 @@ class ContentLoaderTest {
             assertThat(new File(folderAfterReset, "copyRepo2").exists()).isTrue()
 
         }
-        scmmRepoProvider.clearInitOnce()
+
     }
 
     @Test
