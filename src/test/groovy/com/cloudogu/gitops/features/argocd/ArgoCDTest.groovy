@@ -1883,34 +1883,16 @@ class ArgoCDTest {
         @Override
         protected initCentralRepos() {
             super.initCentralRepos()
-//            if (this.config.multiTenant.useDedicatedInstance) {
-//                argocdRepo = argocdRepoInitializationAction.repo
-//                clusterResourcesRepo = clusterResourcesInitializationAction.repo
-//            }
         }
 
 
         @Override
         protected initTenantRepos() {
             super.initTenantRepos()
-
-//            if (this.config?.multiTenant?.useDedicatedInstance) {
-//                tenantBootstrapRepo = this.tenantBootstrapInitializationAction.repo
-//            } else {
-//                argocdRepo = argocdRepoInitializationAction.repo
-//                actualHelmValuesFile = Path.of(
-//                        argocdRepo.getAbsoluteLocalRepoTmpDir(),
-//                        HELM_VALUES_PATH
-//                )
-//                clusterResourcesRepo = clusterResourcesInitializationAction.repo
-//            }
         }
 
     }
 
-    private Map parseActualYaml(File folder, String file) {
-        return parseActualYaml(Path.of(folder.absolutePath, file).toString())
-    }
 
     private Map parseActualYaml(String pathToYamlFile) {
         File yamlFile = new File(pathToYamlFile)
