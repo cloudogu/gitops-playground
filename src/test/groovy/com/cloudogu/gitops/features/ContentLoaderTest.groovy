@@ -186,7 +186,6 @@ class ContentLoaderTest {
 
     @Test
     void 'supports content variables'() {
-
         config.content.repos = [
                 new ContentRepositorySchema(url: createContentRepo('folderBasedRepo1'), type: ContentRepoType.FOLDER_BASED, templating: true)
         ]
@@ -580,11 +579,10 @@ class ContentLoaderTest {
                 new ContentRepositorySchema(url: createContentRepo('copyRepo2'), type: ContentRepoType.COPY, target: 'common/repo', path: 'subPath')
 
         ]
-        scmmApiClient.mockRepoApiBehaviour()
-
+        def expectedRepo = 'common/repo'
+        scmmRepoProvider.initOnce(expectedRepo)
         createContent().install()
 
-        def expectedRepo = 'common/repo'
         def repo = scmmRepoProvider.getRepo(expectedRepo, new ScmManagerMock())
 
         String url = repo.getGitRepositoryUrl()
@@ -703,18 +701,17 @@ class ContentLoaderTest {
                 new ContentRepositorySchema(url: createContentRepo('copyRepo2'), type: ContentRepoType.COPY, target: 'common/repo', path: 'subPath')
 
         ]
-        scmmApiClient.mockRepoApiBehaviour()
-
+        def expectedRepo = 'common/repo'
+        scmmRepoProvider.initOnce(expectedRepo)
         createContent().install()
 
-        def expectedRepo = 'common/repo'
         def repo = scmmRepoProvider.getRepo(expectedRepo, new ScmManagerMock())
 
         def url = repo.getGitRepositoryUrl()
         // clone repo, to ensure, changes in remote repo.
         try (def git = Git.cloneRepository().setURI(url).setBranch('main').setDirectory(tmpDir).call()) {
 
-            verify(repo).createRepositoryAndSetPermission(eq(''), any(String.class), eq(false))
+            verify(repo).createRepositoryAndSetPermission(eq(expectedRepo), any(String.class), eq(false))
 
             def commitMsg = git.log().call().iterator().next().getFullMessage()
             assertThat(commitMsg).isEqualTo("Initialize content repo ${expectedRepo}".toString())
@@ -735,6 +732,9 @@ class ContentLoaderTest {
 
         createContent().install()
 
+        log.info("TEST  AFTER #2  defaultProvider.id={}",
+                System.identityHashCode(scmmRepoProvider.defaultProvider))
+
         def folderAfterReset = File.createTempDir('second-cloned-repo')
         folderAfterReset.deleteOnExit()
         // clone repo, to ensure, changes in remote repo.
@@ -747,6 +747,7 @@ class ContentLoaderTest {
             assertThat(new File(folderAfterReset, "copyRepo2").exists()).isTrue()
 
         }
+        scmmRepoProvider.clearInitOnce()
     }
 
     @Test

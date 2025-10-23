@@ -1803,44 +1803,12 @@ class ArgoCDTest {
         final Config cfg
         GitProvider tenantMock
 
-        private static Map<String, GitProvider> buildProviders(Config cfg) {
-            if (cfg.scm.scmProviderType?.toString() == 'GITLAB') {
-                def gitlab = new GitlabMock(
-                        base: new URI(cfg.scm.gitlab.url),     // e.g. https://testGitLab.com/testgroup/
-                        namePrefix: cfg.application.namePrefix // if you need tenant prefixing
-                )
-                // dedicated instance might still reuse same provider for central
-                return [tenant: gitlab, central: cfg.multiTenant.useDedicatedInstance ? gitlab : null]
-
-            }
-            def serviceDns = "http://scmm.${cfg.application.namePrefix}scm-manager.svc.cluster.local/scm"
-            // TENANT in-cluster URL:
-            def tenantInCluster =
-                    (cfg.scm.scmManager?.url ?: serviceDns) as String
-            // if external tenant URL is set, in-cluster should use that
-            // CENTRAL in-cluster URL (dedicated instance):
-            def centralInCluster =
-                    (cfg.multiTenant.scmManager?.url ?: tenantInCluster) as String
-
-            def tenantProvider = new ScmManagerMock(
-                    inClusterBase: new URI(tenantInCluster),
-                    namePrefix: cfg.application.namePrefix
-            )
-
-            def centralProvider = cfg.multiTenant.useDedicatedInstance ? new ScmManagerMock(
-                    inClusterBase: new URI(centralInCluster),
-                    namePrefix: cfg.application.namePrefix
-            ) : null
-
-            return [tenant: tenantProvider, central: centralProvider]
-        }
-
-
-        // **Factory** for your tests
+        // **Factory**
         static ArgoCDForTest newWithAutoProviders(Config cfg,
                                                   CommandExecutorForTest k8sCommands,
                                                   CommandExecutorForTest helmCommands) {
-            def prov = buildProviders(cfg)
+
+            def prov = TestGitProvider.buildProviders(cfg)
             return new ArgoCDForTest(
                     cfg,
                     k8sCommands,
