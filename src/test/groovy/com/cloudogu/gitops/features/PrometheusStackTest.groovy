@@ -109,7 +109,7 @@ class PrometheusStackTest {
     @Test
     void "is disabled via active flag"() {
         config.features.monitoring.active = false
-        createStack().install()
+        createStack(scmManagerMock).install()
         assertThat(temporaryYamlFilePrometheus).isNull()
         assertThat(k8sCommandExecutor.actualCommands).isEmpty()
         verifyNoMoreInteractions(deploymentStrategy)
@@ -119,7 +119,7 @@ class PrometheusStackTest {
     void 'When mailhog disabled: Does not include mail configurations into cluster resources'() {
         config.features.mail.active = null // user should not do this in real.
         config.features.mail.mailhog = false
-        createStack().install()
+        createStack(scmManagerMock).install()
 
         def yaml = parseActualYaml()
         assertThat(yaml['grafana']['notifiers']).isNull()
@@ -128,7 +128,7 @@ class PrometheusStackTest {
     @Test
     void 'When mailhog enabled: Includes mail configurations into cluster resources'() {
         config.features.mail.active = true
-        createStack().install()
+        createStack(scmManagerMock).install()
         assertThat(parseActualYaml()['grafana']['notifiers']).isNotNull()
     }
 
@@ -137,7 +137,7 @@ class PrometheusStackTest {
         config.features.mail.active = true
         config.features.monitoring.grafanaEmailFrom = 'grafana@example.com'
         config.features.monitoring.grafanaEmailTo = 'infra@example.com'
-        createStack().install()
+        createStack(scmManagerMock).install()
 
         def notifiersYaml = parseActualYaml()['grafana']['notifiers']['notifiers.yaml']['notifiers']['settings'] as List
         assertThat(notifiersYaml[0]['addresses']).isEqualTo('infra@example.com')
@@ -147,7 +147,7 @@ class PrometheusStackTest {
     @Test
     void "When Email Addresses is NOT set"() {
         config.features.mail.active = true
-        createStack().install()
+        createStack(scmManagerMock).install()
 
         def notifiersYaml = parseActualYaml()['grafana']['notifiers']['notifiers.yaml']['notifiers']['settings'] as List
         assertThat(notifiersYaml[0]['addresses']).isEqualTo('infra@example.org')
@@ -162,7 +162,7 @@ class PrometheusStackTest {
         config.features.monitoring.grafanaEmailTo = 'grafana@example.com'
         // needed to check that yaml is inserted correctly
 
-        createStack().install()
+        createStack(scmManagerMock).install()
         def contactPointsYaml = parseActualYaml()
 
         assertThat(contactPointsYaml['grafana']['alerting']['contactpoints.yaml']).isEqualTo(new YamlSlurper().parseText(
@@ -202,7 +202,7 @@ policies:
         config.features.mail.smtpAddress = 'smtp.example.com'
         config.features.mail.smtpUser = 'mailserver@example.com'
 
-        createStack().install()
+        createStack(scmManagerMock).install()
 
         assertThat(parseActualYaml()['grafana']['smtp']['existingSecret']).isEqualTo('grafana-email-secret')
         k8sCommandExecutor.assertExecuted('kubectl create secret generic grafana-email-secret -n foo-monitoring --from-literal user=mailserver@example.com --from-literal password=')
@@ -214,7 +214,7 @@ policies:
         config.features.mail.smtpAddress = 'smtp.example.com'
         config.features.mail.smtpPassword = '1101ABCabc&/+*~'
 
-        createStack().install()
+        createStack(scmManagerMock).install()
         assertThat(parseActualYaml()['grafana']['smtp']['existingSecret']).isEqualTo('grafana-email-secret')
         k8sCommandExecutor.assertExecuted('kubectl create secret generic grafana-email-secret -n foo-monitoring --from-literal user= --from-literal password=1101ABCabc&/+*~')
     }
@@ -224,7 +224,7 @@ policies:
         config.features.mail.active = true
         config.features.mail.smtpAddress = 'smtp.example.com'
 
-        createStack().install()
+        createStack(scmManagerMock).install()
 
         assertThat(parseActualYaml()['grafana']['valuesFrom']).isNull()
         assertThat(parseActualYaml()['grafana']['smtp']).isNull()
@@ -238,7 +238,7 @@ policies:
         config.features.mail.smtpUser = 'grafana@example.com'
         config.features.mail.smtpPassword = '1101ABCabc&/+*~'
 
-        createStack().install()
+        createStack(scmManagerMock).install()
 
         k8sCommandExecutor.assertExecuted('kubectl create secret generic grafana-email-secret -n foo-monitoring --from-literal user=grafana@example.com --from-literal password=1101ABCabc&/+*~')
     }
@@ -248,7 +248,7 @@ policies:
         config.features.mail.active = true
         config.features.mail.smtpAddress = 'smtp.example.com'
 
-        createStack().install()
+        createStack(scmManagerMock).install()
         def contactPointsYaml = parseActualYaml()
 
         assertThat(contactPointsYaml['grafana']['env']['GF_SMTP_HOST']).isEqualTo('smtp.example.com')
@@ -258,7 +258,7 @@ policies:
     void 'When external Mailserver is NOT set'() {
         config.features.mail.active = null // user should not do this in real.
         config.features.mail.mailhog = false
-        createStack().install()
+        createStack(scmManagerMock).install()
         def contactPointsYaml = parseActualYaml()
 
         assertThat(contactPointsYaml['grafana']['alerting']).isNull()
@@ -267,7 +267,7 @@ policies:
     @Test
     void "service type LoadBalancer when run remotely"() {
         config.application.remote = true
-        createStack().install()
+        createStack(scmManagerMock).install()
 
         assertThat(parseActualYaml()['grafana']['service']['type']).isEqualTo('LoadBalancer')
         assertThat(parseActualYaml()['grafana']['service']['nodePort']).isNull()
@@ -277,7 +277,7 @@ policies:
     void "configures admin user if requested"() {
         config.application.username = "my-user"
         config.application.password = "hunter2"
-        createStack().install()
+        createStack(scmManagerMock).install()
 
         assertThat(parseActualYaml()['grafana']['adminUser']).isEqualTo('my-user')
         assertThat(parseActualYaml()['grafana']['adminPassword']).isEqualTo('hunter2')
@@ -286,7 +286,7 @@ policies:
     @Test
     void 'service type ClusterIP when not run remotely'() {
         config.application.remote = false
-        createStack().install()
+        createStack(scmManagerMock).install()
 
         assertThat(parseActualYaml()['grafana']['service']['type']).isEqualTo('ClusterIP')
     }
@@ -294,7 +294,7 @@ policies:
     @Test
     void 'uses ingress if enabled'() {
         config.features.monitoring.grafanaUrl = 'http://grafana.local'
-        createStack().install()
+        createStack(scmManagerMock).install()
 
 
         def ingressYaml = parseActualYaml()['grafana']['ingress']
@@ -304,14 +304,14 @@ policies:
 
     @Test
     void 'does not use ingress by default'() {
-        createStack().install()
+        createStack(scmManagerMock).install()
 
         assertThat(parseActualYaml()['grafana'] as Map).doesNotContainKey('ingress')
     }
 
     @Test
     void 'uses remote scmm url if requested'() {
-        createStack().install()
+        createStack(scmManagerMock).install()
 
         def additionalScrapeConfigs = parseActualYaml()['prometheus']['prometheusSpec']['additionalScrapeConfigs'] as List
         assertThat(((additionalScrapeConfigs[0]['static_configs'] as List)[0]['targets'] as List)[0]).isEqualTo('localhost:8080')
@@ -328,7 +328,7 @@ policies:
     void 'uses remote jenkins url if requested'() {
         config.jenkins["internal"] = false
         config.jenkins["url"] = 'https://localhost:9090/jenkins'
-        createStack().install()
+        createStack(scmManagerMock).install()
         def additionalScrapeConfigs = parseActualYaml()['prometheus']['prometheusSpec']['additionalScrapeConfigs'] as List
 
         // scrape config for scmm is unchanged
@@ -346,7 +346,7 @@ policies:
     void 'configures custom metrics user for jenkins'() {
         config.jenkins["metricsUsername"] = 'external-metrics-username'
         config.jenkins["metricsPassword"] = 'hunter2'
-        createStack().install()
+        createStack(scmManagerMock).install()
 
         assertThat(k8sCommandExecutor.actualCommands[1]).isEqualTo("kubectl create secret generic prometheus-metrics-creds-jenkins -n foo-monitoring --from-literal password=hunter2 --dry-run=client -oyaml | kubectl apply -f-")
         def additionalScrapeConfigs = parseActualYaml()['prometheus']['prometheusSpec']['additionalScrapeConfigs'] as List
@@ -356,7 +356,7 @@ policies:
     @Test
     void "configures custom image for grafana"() {
         config.features.monitoring.helm.grafanaImage = "localhost:5000/grafana/grafana:the-tag"
-        createStack().install()
+        createStack(scmManagerMock).install()
 
         assertThat(parseActualYaml()['grafana']['image']['registry']).isEqualTo('localhost:5000')
         assertThat(parseActualYaml()['grafana']['image']['repository']).isEqualTo('grafana/grafana')
@@ -366,7 +366,7 @@ policies:
     @Test
     void "configures custom image for grafana-sidecar"() {
         config.features.monitoring.helm.grafanaSidecarImage = "localhost:5000/grafana/sidecar:the-tag"
-        createStack().install()
+        createStack(scmManagerMock).install()
 
         assertThat(parseActualYaml()['grafana']['sidecar']['image']['registry']).isEqualTo('localhost:5000')
         assertThat(parseActualYaml()['grafana']['sidecar']['image']['repository']).isEqualTo('grafana/sidecar')
@@ -379,7 +379,7 @@ policies:
         config.features.monitoring.helm.prometheusOperatorImage = "localhost:5000/prometheus-operator/prometheus-operator:v2"
         config.features.monitoring.helm.prometheusConfigReloaderImage = "localhost:5000/prometheus-operator/prometheus-config-reloader:v3"
 
-        createStack().install()
+        createStack(scmManagerMock).install()
 
         def actualYaml = parseActualYaml()
         assertThat(actualYaml['prometheus']['prometheusSpec']['image']['registry']).isEqualTo('localhost:5000')
@@ -400,7 +400,7 @@ policies:
         config.registry.proxyUsername = 'proxy-user'
         config.registry.proxyPassword = 'proxy-pw'
 
-        createStack().install()
+        createStack(scmManagerMock).install()
 
         k8sClient.commandExecutorForTest.assertExecuted(
                 'kubectl create secret docker-registry proxy-registry -n foo-monitoring' +
@@ -410,7 +410,7 @@ policies:
 
     @Test
     void 'helm release is installed'() {
-        createStack().install()
+        createStack(scmManagerMock).install()
 
         assertThat(k8sCommandExecutor.actualCommands[0].trim()).isEqualTo(
                 'kubectl create secret generic prometheus-metrics-creds-scmm -n foo-monitoring --from-literal password=123 --dry-run=client -oyaml | kubectl apply -f-')
@@ -455,7 +455,7 @@ policies:
     void 'Skips CRDs'() {
         config.application.skipCrds = true
 
-        createStack().install()
+        createStack(scmManagerMock).install()
 
         assertThat(parseActualYaml()['crds']['enabled']).isEqualTo(false)
     }
@@ -464,7 +464,7 @@ policies:
     void 'Sets pod resource limits and requests'() {
         config.application.podResources = true
 
-        createStack().install()
+        createStack(scmManagerMock).install()
 
         def yaml = parseActualYaml()
         assertThat(yaml['prometheusOperator']['resources'] as Map).containsKeys('limits', 'requests')
@@ -481,7 +481,7 @@ policies:
         String realoutput = '{"app.kubernetes.io/created-by":"Internal OpenShift","openshift.io/description":"","openshift.io/display-name":"","openshift.io/requester":"myUser@mydomain.de","openshift.io/sa.scc.mcs":"s0:c30,c25","openshift.io/sa.scc.supplemental-groups":"1000920000/10000","openshift.io/sa.scc.uid-range":"1000920000/10000","project-type":"customer"}'
         k8sCommandExecutor.enqueueOutput(new CommandExecutor.Output('', realoutput, 0))
 
-        createStack().install()
+        createStack(scmManagerMock).install()
 
         def yaml = parseActualYaml()
         assertThat(yaml['prometheusOperator']['securityContext']).isNotNull()
@@ -504,7 +504,7 @@ policies:
     void 'works with namespaceIsolation'() {
         config.application.namespaceIsolation = true
 
-        def prometheusStack = createStack()
+        def prometheusStack = createStack(scmManagerMock)
         prometheusStack.install()
 
         def yaml = parseActualYaml()
@@ -530,7 +530,7 @@ policies:
     void 'network policies are created for prometheus'() {
         config.application.netpols = true
         //config.application.namespaces.dedicatedNamespaces = ["testnamespace1", "testnamespace2"]
-        def prometheusStack = createStack()
+        def prometheusStack = createStack(scmManagerMock)
         prometheusStack.install()
 
         for (String namespace : config.application.namespaces.getActiveNamespaces()) {
@@ -581,7 +581,7 @@ policies:
                 ]
         ]
 
-        createStack().install()
+        createStack(scmManagerMock).install()
         def actual = parseActualYaml()
 
         assertThat(actual['key']['some']).isEqualTo('thing')
@@ -603,7 +603,7 @@ policies:
                 "test1-secrets"
         ]
         config.application.namespaces.dedicatedNamespaces = namespaceList
-        createStack().install()
+        createStack(scmManagerMock).install()
         def actual = parseActualYaml()
 
         assertThat(actual['prometheus']['prometheusSpec']['serviceMonitorNamespaceSelector']).isEqualTo(new YamlSlurper().parseText('''
