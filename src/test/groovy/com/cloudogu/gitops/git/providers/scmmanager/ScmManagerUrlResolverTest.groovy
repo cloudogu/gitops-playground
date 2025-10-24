@@ -48,8 +48,7 @@ class ScmManagerUrlResolverTest {
 
     // ---------- Client base & API ----------
     @Test
-    @DisplayName("clientBase(): internal + outside K8s uses NodePort and appends '/scm' (no trailing slash) and only resolves NodePort once")
-    void clientBase_internalOutsideK8s_usesNodePortWithScm_andIsEffectivelyCached() {
+    void "clientBase(): internal + outside K8s uses NodePort and appends 'scm' (no trailing slash) and only resolves NodePort once"() {
         when(k8s.waitForNodePort(eq('scmm'), any())).thenReturn("30080")
         when(net.findClusterBindAddress()).thenReturn("10.0.0.1")
 
@@ -66,8 +65,7 @@ class ScmManagerUrlResolverTest {
     }
 
     @Test
-    @DisplayName("clientApiBase(): appends 'api/' to the client base")
-    void clientApiBase_appendsApiSlash() {
+    void "clientApiBase(): appends 'api' to the client base"() {
         when(k8s.waitForNodePort("scmm", "scm-manager")).thenReturn("30080")
         when(net.findClusterBindAddress()).thenReturn("10.0.0.1")
 
@@ -77,8 +75,7 @@ class ScmManagerUrlResolverTest {
 
     // ---------- Repo base & URLs ----------
     @Test
-    @DisplayName("clientRepoUrl(): trims repoTarget and removes trailing slash")
-    void clientRepoUrl_trimsAndRemovesTrailingSlash() {
+    void "clientRepoUrl(): trims repoTarget and removes trailing slash"() {
         when(k8s.waitForNodePort("scmm", "scm-manager")).thenReturn("30080")
         when(net.findClusterBindAddress()).thenReturn("10.0.0.1")
 
@@ -89,33 +86,28 @@ class ScmManagerUrlResolverTest {
 
     // ---------- In-cluster base & URLs ----------
     @Test
-    @DisplayName("inClusterBase(): internal uses service DNS 'http://scmm.<ns>.svc.cluster.local/scm'")
-    void inClusterBase_internal_usesServiceDns() {
+    void "inClusterBase(): internal uses service DNS "() {
         def r = resolverWith(namespace: "custom-ns", internal: true)
         assertEquals("http://scmm.custom-ns.svc.cluster.local/scm", r.inClusterBase().toString())
     }
 
 
     @Test
-    @DisplayName("inClusterBase(): external uses external base + '/scm'")
-    void inClusterBase_external_usesExternalBase() {
+    void "inClusterBase(): external uses external base + 'scm'"() {
         var r = resolverWith(internal: false, url: "https://scmm.external")
         assertEquals("https://scmm.external/scm", r.inClusterBase().toString())
     }
 
 
     @Test
-    @DisplayName("inClusterRepoUrl(): builds full in-cluster repo URL without trailing slash")
-    void inClusterRepoUrl_buildsUrl() {
-
+    void "inClusterRepoUrl(): builds full in-cluster repo URL without trailing slash"() {
         var r = resolverWith()
         assertEquals("http://scmm.scm-manager.svc.cluster.local/scm/repo/admin/admin",
                 r.inClusterRepoUrl("admin/admin"))
     }
 
     @Test
-    @DisplayName("inClusterRepoPrefix(): includes configured namePrefix (empty prefix yields base path)")
-    void inClusterRepoPrefix_includesNamePrefixOrBase() {
+    void "inClusterRepoPrefix(): includes configured namePrefix (empty prefix yields base path)"() {
         // with non-empty namePrefix
         config.application.namePrefix = 'fv40-'
         def r1 = resolverWith()
@@ -129,22 +121,19 @@ class ScmManagerUrlResolverTest {
 
     // ---------- externalBase selection & error ----------
     @Test
-    @DisplayName("externalBase(): prefers 'url' over 'ingress'")
-    void externalBase_prefersUrlOverIngress() {
+    void "externalBase(): prefers 'url' over 'ingress'"() {
         def r = resolverWith(internal: false, url: 'https://scmm.external', ingress: 'ingress.example.org')
         assertEquals('https://scmm.external/scm', r.inClusterBase().toString())
     }
 
     @Test
-    @DisplayName("externalBase(): uses 'ingress' when 'url' is missing")
-    void externalBase_usesIngressWhenUrlMissing() {
+    void "externalBase(): uses 'ingress' when 'url' is missing"() {
         def r = resolverWith(internal: false, url: null, ingress: 'ingress.example.org')
         assertEquals('http://ingress.example.org/scm', r.inClusterBase().toString())
     }
 
     @Test
-    @DisplayName("externalBase(): throws when neither 'url' nor 'ingress' is set")
-    void externalBase_throwsWhenBothMissing() {
+    void "externalBase(): throws when neither 'url' nor 'ingress' is set"() {
         def r = resolverWith(internal: false, url: null, ingress: null)
         def ex = assertThrows(IllegalArgumentException) { r.inClusterBase() }
         assertTrue(ex.message.contains('Either scmm.url or scmm.ingress must be set when internal=false'))
@@ -152,8 +141,7 @@ class ScmManagerUrlResolverTest {
 
 
     @Test
-    @DisplayName("nodePortBase(): falls back to default namespace 'scm-manager' when none provided")
-    void nodePortBase_usesDefaultNamespaceWhenMissing() {
+    void "nodePortBase(): falls back to default namespace 'scm-manager' when none provided"() {
         when(k8s.waitForNodePort(eq('scmm'), eq('scm-manager'))).thenReturn("30080")
         when(net.findClusterBindAddress()).thenReturn('10.0.0.1')
 
@@ -163,18 +151,15 @@ class ScmManagerUrlResolverTest {
 
     // ---------- helpers behavior ----------
     @Test
-    @DisplayName("ensureScm(): adds '/scm' if missing and keeps it if present")
-    void ensureScm_addsOrKeeps() {
+    void "ensureScm(): adds 'scm' if missing and keeps it if present"() {
         def r1 = resolverWith(internal: false, url: 'https://scmm.localhost')
         assertEquals('https://scmm.localhost/scm', r1.clientBase().toString())
     }
 
 
     // ---------- prometheus endpoint ----------
-
     @Test
-    @DisplayName("prometheusEndpoint(): resolves to '/scm/api/v2/metrics/prometheus'")
-    void prometheusEndpoint_isUnderApiV2() {
+    void "prometheusEndpoint(): resolves "() {
         def r = resolverWith(internal: false, url: 'https://scmm.localhost')
         assertEquals('https://scmm.localhost/scm/api/v2/metrics/prometheus', r.prometheusEndpoint().toString())
     }
