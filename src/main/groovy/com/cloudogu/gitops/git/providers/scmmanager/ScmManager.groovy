@@ -27,6 +27,7 @@ class ScmManager implements GitProvider {
         this.apiClient = new ScmManagerApiClient(urls.clientApiBase().toString(), scmmConfig.credentials, config.application.insecure)
     }
 
+
     // --- Git operations ---
     @Override
     boolean createRepository(String repoTarget, String description, boolean initialize) {
@@ -112,7 +113,6 @@ class ScmManager implements GitProvider {
 
     @Override
     String getHost() {
-        //in main before:  host : config.scmm.internal ? "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local" : config.scmm.host(host was config.scmm.url),
         return urls.inClusterBase().host // e.g. "scmm.ns.svc.cluster.local"
     }
 
@@ -147,6 +147,19 @@ class ScmManager implements GitProvider {
                     "HTTP Details: ${response.code()} ${response.message()}: ${response.errorBody().string()}")
         }
         return true// because its created
+    }
+
+    /** Test-only constructor (package-private on purpose). */
+    ScmManager(Config config, ScmManagerConfig scmmConfig,
+               ScmManagerUrlResolver urls,
+               ScmManagerApiClient apiClient) {
+        this.scmmConfig = Objects.requireNonNull(scmmConfig, "scmmConfig must not be null")
+        this.urls = Objects.requireNonNull(urls, "urls must not be null")
+        this.apiClient = apiClient ?: new ScmManagerApiClient(
+                urls.clientApiBase().toString(),
+                scmmConfig.credentials,
+                Objects.requireNonNull(config, "config must not be null").application.insecure
+        )
     }
 
     //TODO when git abctraction feature is ready, we will create before merge to main a branch, that
