@@ -116,7 +116,7 @@ class GitHandler extends Feature {
         } else {
             setupRepos(this.tenant, namePrefix, true)
         }
-        create3thPartyDependencies(this.tenant)
+        create3thPartyDependencies(this.tenant, namePrefix)
     }
 
     // includeClusterResources = true => also create the argocd/cluster-resources repository
@@ -133,11 +133,11 @@ class GitHandler extends Feature {
         }
     }
 
-    static create3thPartyDependencies(GitProvider gitProvider) {
-        gitProvider.createRepository("3rd-party-dependencies/spring-boot-helm-chart", "spring-boot-helm-chart")
-        gitProvider.createRepository("3rd-party-dependencies/spring-boot-helm-chart-with-dependency", "spring-boot-helm-chart-with-dependency")
-        gitProvider.createRepository( "3rd-party-dependencies/gitops-build-lib", "Jenkins pipeline shared library for automating deployments via GitOps")
-        gitProvider.createRepository("3rd-party-dependencies/ces-build-lib", "Jenkins pipeline shared library adding features for Maven, Gradle, Docker, SonarQube, Git and others")
+    static create3thPartyDependencies(GitProvider gitProvider, String namePrefix = "") {
+        gitProvider.createRepository(withOrgPrefix(namePrefix, "3rd-party-dependencies/spring-boot-helm-chart"), "spring-boot-helm-chart")
+        gitProvider.createRepository(withOrgPrefix(namePrefix, "3rd-party-dependencies/spring-boot-helm-chart-with-dependency"), "spring-boot-helm-chart-with-dependency")
+        gitProvider.createRepository(withOrgPrefix(namePrefix, "3rd-party-dependencies/gitops-build-lib"), "Jenkins pipeline shared library for automating deployments via GitOps")
+        gitProvider.createRepository(withOrgPrefix(namePrefix, "3rd-party-dependencies/ces-build-lib"), "Jenkins pipeline shared library adding features for Maven, Gradle, Docker, SonarQube, Git and others")
     }
 
 
