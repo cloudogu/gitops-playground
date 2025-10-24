@@ -4,8 +4,9 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.git.providers.AccessRole
 import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.git.providers.Scope
-import com.cloudogu.gitops.git.providers.scmmanager.ScmManagerMock
+import com.cloudogu.gitops.utils.git.ScmManagerMock
 import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.utils.git.TestGitRepoFactory
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Ref
 import org.junit.jupiter.api.BeforeEach

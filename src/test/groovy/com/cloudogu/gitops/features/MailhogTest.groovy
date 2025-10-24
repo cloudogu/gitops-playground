@@ -3,7 +3,7 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.git.GitHandler
-import com.cloudogu.gitops.git.providers.scmmanager.ScmManagerMock
+import com.cloudogu.gitops.utils.git.ScmManagerMock
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.GitHandlerForTests

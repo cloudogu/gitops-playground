@@ -1,9 +1,7 @@
-package com.cloudogu.gitops.utils
+package com.cloudogu.gitops.utils.git
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.git.providers.GitProvider
-import com.cloudogu.gitops.git.providers.gitlab.GitlabMock
-import com.cloudogu.gitops.git.providers.scmmanager.ScmManagerMock
 
 class TestGitProvider {
     static Map<String, GitProvider> buildProviders(Config cfg) {

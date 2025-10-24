@@ -1,10 +1,14 @@
-package com.cloudogu.gitops.git.providers.scmmanager.api
+package com.cloudogu.gitops.utils.git
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.git.providers.scmmanager.Permission
+import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
+import com.cloudogu.gitops.git.providers.scmmanager.api.RepositoryApi
+import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
 import okhttp3.internal.http.RealResponseBody
 import okio.BufferedSource
+import org.mockito.ArgumentMatchers
 import retrofit2.Call
 import retrofit2.Response
 
@@ -34,7 +38,7 @@ class TestScmManagerApiClient extends ScmManagerApiClient {
         def responseCreated = mockSuccessfulResponse(201)
         def responseExists = mockErrorResponse(409)
 
-        when(repositoryApi.create(any(Repository), anyBoolean()))
+        when(repositoryApi.create(ArgumentMatchers.any(Repository), anyBoolean()))
                 .thenAnswer { invocation ->
                     Repository repo = invocation.getArgument(0)
                     if (createdRepos.contains(repo.fullRepoName)) {

@@ -6,10 +6,10 @@ import com.cloudogu.gitops.features.git.config.ScmTenantSchema
 import com.cloudogu.gitops.features.git.config.ScmTenantSchema.ScmManagerTenantConfig
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.providers.GitProvider
-import com.cloudogu.gitops.git.providers.scmmanager.ScmManagerMock
+import com.cloudogu.gitops.utils.git.ScmManagerMock
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.GitHandlerForTests
-import com.cloudogu.gitops.git.TestGitRepoFactory
+import com.cloudogu.gitops.utils.git.TestGitRepoFactory
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 

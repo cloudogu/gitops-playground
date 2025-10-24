@@ -3,9 +3,9 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepoFactory
-import com.cloudogu.gitops.git.TestGitRepoFactory
-import com.cloudogu.gitops.git.providers.scmmanager.ScmManagerMock
-import com.cloudogu.gitops.git.providers.scmmanager.api.TestScmManagerApiClient
+import com.cloudogu.gitops.utils.git.TestGitRepoFactory
+import com.cloudogu.gitops.utils.git.ScmManagerMock
+import com.cloudogu.gitops.utils.git.TestScmManagerApiClient
 import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper

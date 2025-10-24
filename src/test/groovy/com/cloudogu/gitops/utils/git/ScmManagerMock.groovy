@@ -1,4 +1,4 @@
-package com.cloudogu.gitops.git.providers.scmmanager
+package com.cloudogu.gitops.utils.git
 
 import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.git.providers.AccessRole
