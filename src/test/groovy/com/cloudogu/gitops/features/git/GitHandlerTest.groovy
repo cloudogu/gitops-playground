@@ -69,7 +69,7 @@ class GitHandlerTest {
     // ---------- validate() ------------------------------------------------------------
 
     @Test
-    void 'validate(): SCMM external url sets internal=false and urlForJenkins equals url'() {
+    void 'validate(): ScmManager external url sets internal=false and urlForJenkins equals url'() {
         def cfg = config([
                 application: [namePrefix: 'fv40-'],
                 scm: [
