@@ -7,10 +7,10 @@ import com.cloudogu.gitops.features.git.config.util.ScmProviderType
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.NetworkingUtils
+import io.micronaut.core.annotation.Order
 import org.junit.jupiter.api.Test
 
 import static org.mockito.Mockito.mock
-
 
 class GitHandlerTest {
 
@@ -68,8 +68,6 @@ class GitHandlerTest {
     }*/
 
     private GitHandler createGitHandler() {
-        this.gitHandler = new GitHandler(config, helmStrategy, new FileSystemUtils(), k8sClient, new NetworkingUtils()) {
-
-        }
+        this.gitHandler = new GitHandler(config, helmStrategy, new FileSystemUtils(), k8sClient, new NetworkingUtils())
     }
 }

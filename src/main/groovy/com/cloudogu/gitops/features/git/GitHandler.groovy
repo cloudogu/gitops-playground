@@ -16,7 +16,7 @@ import jakarta.inject.Singleton
 
 @Slf4j
 @Singleton
-@Order(70)
+@Order(60)
 class GitHandler extends Feature {
 
     Config config

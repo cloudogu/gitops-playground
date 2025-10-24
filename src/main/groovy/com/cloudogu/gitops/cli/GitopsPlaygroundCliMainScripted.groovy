@@ -81,11 +81,12 @@ class GitopsPlaygroundCliMainScripted {
                         new JobManager(jenkinsApiClient), new UserManager(jenkinsApiClient),
                         new PrometheusConfigurator(jenkinsApiClient), helmStrategy, k8sClient, networkingUtils)
 
+                // make sure the order of features is in same order as the @Order values
                 context.registerSingleton(new Application(config, [
                         new Registry(config, fileSystemUtils, k8sClient, helmStrategy),
+                        new ScmManagerSetup(config, executor, fileSystemUtils, helmStrategy, k8sClient, networkingUtils),
                         gitHandler,
                         jenkins,
-                        new ScmManagerSetup(config, executor, fileSystemUtils, helmStrategy, k8sClient, networkingUtils),
                         new ArgoCD(config, k8sClient, helmClient, fileSystemUtils, scmmRepoProvider, gitHandler),
                         new IngressNginx(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
                         new CertManager(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),

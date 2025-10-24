@@ -83,6 +83,14 @@ class GitopsPlaygroundCliMainScriptedTest {
 
                 if (classInfo.extendsSuperclass(parentClass) ||
                         (parentIsInterface && classInfo.implementsInterface(parentClass))) {
+
+                    // ignore test classes
+                    String location = classInfo.loadClass().protectionDomain?.codeSource?.location?.path ?: ""
+                    if (location == null) location = ""
+                    if (location =~ /[\\/]test-classes[\\/]/ || location =~ /[\\/]classes[\\/]java[\\/]test[\\/]/) {
+                        return
+                    }
+
                     def orderAnnotation = classInfo.getAnnotationInfo(Order)
                     if (orderAnnotation) {
                         def orderValue = orderAnnotation.getParameterValues().getValue('value') as int

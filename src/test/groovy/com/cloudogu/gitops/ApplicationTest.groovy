@@ -1,12 +1,10 @@
 package com.cloudogu.gitops
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.git.config.ScmTenantSchema
 import io.micronaut.context.ApplicationContext
 import org.junit.jupiter.api.Test
 
 import static org.assertj.core.api.Assertions.assertThat
-import static com.cloudogu.gitops.config.Config.*
 
 class ApplicationTest {
 
@@ -18,8 +16,8 @@ class ApplicationTest {
                 .registerSingleton(config)
                 .getBean(Application)
         def features = application.features.collect { it.class.simpleName }
-        
-        assertThat(features).isEqualTo(["Registry", "ScmManagerSetup", "Jenkins", "ArgoCD", "IngressNginx", "CertManager", "Mailhog", "PrometheusStack", "ExternalSecretsOperator", "Vault",  "ContentLoader"])
+
+        assertThat(features).isEqualTo(["Registry", "ScmManagerSetup", "GitHandler" ,"Jenkins", "ArgoCD", "IngressNginx", "CertManager", "Mailhog", "PrometheusStack", "ExternalSecretsOperator", "Vault", "ContentLoader"])
     }
 
     @Test
@@ -51,7 +49,7 @@ class ApplicationTest {
         application.setNamespaceListToConfig(config)
         assertThat(config.application.namespaces.getActiveNamespaces()).containsExactlyInAnyOrderElementsOf(namespaceList)
     }
-    
+
     @Test
     void 'get active namespaces correctly in Openshift'() {
         config.registry.active = true
@@ -98,7 +96,7 @@ class ApplicationTest {
                 "example-apps-production",
         ])
     }
-    
+
     @Test
     void 'handles empty content namespaces'() {
         def application = ApplicationContext.run()

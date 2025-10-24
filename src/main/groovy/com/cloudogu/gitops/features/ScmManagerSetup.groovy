@@ -12,7 +12,7 @@ import jakarta.inject.Singleton
 
 @Slf4j
 @Singleton
-@Order(60)
+@Order(50)
 class ScmManagerSetup extends Feature {
 
     static final String HELM_VALUES_PATH = "scm-manager/values.ftl.yaml"
