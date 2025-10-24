@@ -24,7 +24,7 @@ class ScmManagerSetup extends Feature {
     private DeploymentStrategy deployer
     private K8sClient k8sClient
     private NetworkingUtils networkingUtils
-    String centralUrl
+    String centralSCMUrl
 
     ScmManagerSetup(
             Config config,
@@ -100,7 +100,7 @@ class ScmManagerSetup extends Feature {
                 if (config.multiTenant.useDedicatedInstance && config.multiTenant.scmProviderType == ScmProviderType.SCM_MANAGER) {
                     log.debug("Setting internal configs for local single node cluster with internal central scmm. Waiting for NodePort...")
                     def portCentralScm = k8sClient.waitForNodePort(releaseName, "scm-manager")
-                    centralUrl = networkingUtils.createUrl(clusterBindAddress, portCentralScm, contentPath)
+                    centralSCMUrl = networkingUtils.createUrl(clusterBindAddress, portCentralScm, contentPath)
                 }
             }
         }
@@ -135,7 +135,7 @@ class ScmManagerSetup extends Feature {
                 CONTENT_EXAMPLES             : false,
                 SKIP_RESTART                 : config.scm.scmManager.skipRestart,
                 SKIP_PLUGINS                 : config.scm.scmManager.skipPlugins,
-                CENTRAL_SCM_URL              : centralUrl,
+                CENTRAL_SCM_URL              : config.multiTenant.scmManager.url,
                 CENTRAL_SCM_USERNAME         : config.multiTenant.scmManager.username,
                 CENTRAL_SCM_PASSWORD         : config.multiTenant.scmManager.password
         ])
