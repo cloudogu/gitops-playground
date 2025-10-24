@@ -15,7 +15,7 @@ class GitlabMock implements GitProvider {
 
     @Override
     boolean createRepository(String repoTarget, String description, boolean initialize) {
-        createdRepos << withPrefix(repoTarget)
+        createdRepos << repoTarget
         return true
     }
 
@@ -26,13 +26,13 @@ class GitlabMock implements GitProvider {
 
     @Override
     void setRepositoryPermission(String repoTarget, String principal, AccessRole role, Scope scope) {
-        permissionCalls << [repoTarget: withPrefix(repoTarget), principal: principal, role: role, scope: scope]
+        permissionCalls << [repoTarget: repoTarget, principal: principal, role: role, scope: scope]
     }
 
     @Override
     String repoUrl(String repoTarget, RepoUrlScope scope) {
         def cleaned = base.toString().replaceAll('/+$','')
-        return "${cleaned}/${withPrefix(repoTarget)}.git"
+        return "${cleaned}/${repoTarget}.git"
     }
 
 
@@ -53,8 +53,5 @@ class GitlabMock implements GitProvider {
     @Override String getHost() { return base.host }
     @Override String getGitOpsUsername() { return "gitops" }
 
-    private String withPrefix(String target) {
-        return (namePrefix ? "${namePrefix}${target}" : target).toString()
-    }
 
 }

@@ -6,7 +6,7 @@ import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.utils.git.ScmManagerMock
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.GitHandlerForTests
+import com.cloudogu.gitops.utils.git.GitHandlerForTests
 import com.cloudogu.gitops.utils.K8sClientForTest
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
