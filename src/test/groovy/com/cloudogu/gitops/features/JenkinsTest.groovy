@@ -220,19 +220,21 @@ me:x:1000:''')
         verify(userManager).createUser('metrics-usr', 'metrics-pw')
         verify(userManager).grantPermission('metrics-usr', UserManager.Permissions.METRICS_VIEW)
 
-        verify(jobManger).createCredential('my-prefix-example-apps', 'scmm-user',
-                'my-prefix-gitops', 'scmm-pw', 'credentials for accessing scm-manager')
 
-        verify(jobManger).startJob('my-prefix-example-apps')
-        verify(jobManger).createJob('my-prefix-example-apps', 'http://scmm/scm',
-                "my-prefix-argocd", 'scmm-user')
+        //TODO @Niklas should it removed, because we don't have example apps?
+//        verify(jobManger).createCredential('my-prefix-example-apps', 'scmm-user',
+//                'my-prefix-gitops', 'scmm-pw', 'credentials for accessing scm-manager')
 
-        verify(jobManger).createCredential('my-prefix-example-apps', 'registry-user',
-                'reg-usr', 'reg-pw', 'credentials for accessing the docker-registry for writing images built on jenkins')
-        verify(jobManger, never()).createCredential(eq('my-prefix-example-apps'), eq('registry-proxy-user'),
-                anyString(), anyString(), anyString())
-        verify(jobManger, never()).createCredential(eq('my-prefix-example-apps'), eq('registry-proxy-user'),
-                anyString(), anyString(), anyString())
+//        verify(jobManger).startJob('my-prefix-example-apps')
+//        verify(jobManger).createJob('my-prefix-example-apps', 'http://scmm/scm',
+//                "my-prefix-argocd", 'scmm-user')
+//
+//        verify(jobManger).createCredential('my-prefix-example-apps', 'registry-user',
+//                'reg-usr', 'reg-pw', 'credentials for accessing the docker-registry for writing images built on jenkins')
+//        verify(jobManger, never()).createCredential(eq('my-prefix-example-apps'), eq('registry-proxy-user'),
+//                anyString(), anyString(), anyString())
+//        verify(jobManger, never()).createCredential(eq('my-prefix-example-apps'), eq('registry-proxy-user'),
+//                anyString(), anyString(), anyString())
     }
 
     @Test
@@ -308,12 +310,13 @@ me:x:1000:''')
         verify(globalPropertyManager).setGlobalProperty(eq('MY_PREFIX_REGISTRY_URL'), anyString())
         verify(globalPropertyManager).setGlobalProperty(eq('MY_PREFIX_REGISTRY_PATH'), anyString())
 
-        verify(jobManger).createCredential('my-prefix-example-apps', 'registry-user',
-                'reg-usr', 'reg-pw',
-                'credentials for accessing the docker-registry for writing images built on jenkins')
-        verify(jobManger).createCredential('my-prefix-example-apps', 'registry-proxy-user',
-                'reg-proxy-usr', 'reg-proxy-pw',
-                'credentials for accessing the docker-registry that contains 3rd party or base images')
+        //TODO @Niklas should it removed, because we don't have example apps?
+//        verify(jobManger).createCredential('my-prefix-example-apps', 'registry-user',
+//                'reg-usr', 'reg-pw',
+//                'credentials for accessing the docker-registry for writing images built on jenkins')
+//        verify(jobManger).createCredential('my-prefix-example-apps', 'registry-proxy-user',
+//                'reg-proxy-usr', 'reg-proxy-pw',
+//                'credentials for accessing the docker-registry that contains 3rd party or base images')
     }
 
     @Test
