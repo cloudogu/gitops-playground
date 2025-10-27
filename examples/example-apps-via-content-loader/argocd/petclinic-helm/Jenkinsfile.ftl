@@ -20,8 +20,8 @@ String getCesBuildLibRepo() { configRepositoryPRBaseUrl+"/repo/3rd-party-depende
 String getCesBuildLibVersion() { '2.5.0' }
 String getGitOpsBuildLibRepo() { configRepositoryPRBaseUrl+"/repo/3rd-party-dependencies/gitops-build-lib" }
 String getGitOpsBuildLibVersion() { '0.8.0'}
-String getHelmChartRepository() { configRepositoryPRBaseUrl+"/repo/3rd-party-dependencies/spring-boot-helm-chart-with-dependency" }
-String getHelmChartVersion() { "1.0.0" }
+String getHelmChartRepository() { configRepositoryPRBaseUrl+"/repo/3rd-party-dependencies/spring-boot-helm-chart" }
+String getHelmChartVersion() { "0.4.0" }
 String getMainBranch() { 'main' }
 
 cesBuildLib = library(identifier: "ces-build-lib@${cesBuildLibVersion}",
