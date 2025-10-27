@@ -1,17 +1,14 @@
 #!groovy
 
-String getApplication() { "nginx-helm-jenkins" }
+String getApplication() { "exercise-nginx-helm" }
 String getScmManagerCredentials() { 'scmm-user' }
-String getConfigRepositoryPRBaseUrl() { env.${config.application.namePrefixForEnvVars}SCMM_URL }
+String getConfigRepositoryPRBaseUrl() { env.SCMM_URL }
 String getConfigRepositoryPRRepo() { '${config.application.namePrefix}argocd/example-apps' }
 <#noparse>
-
-String getCesBuildLibRepo() { configRepositoryPRBaseUrl+"/repo/3rd-party-dependencies/ces-build-lib/" }
-String getGitOpsBuildLibRepo() { configRepositoryPRBaseUrl+"/repo/3rd-party-dependencies/gitops-build-lib" }
-
+String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/3rd-party-dependencies/ces-build-lib/" }
 String getCesBuildLibVersion() { '2.5.0' }
-String getGitOpsBuildLibVersion() { '0.8.0'}
-
+String getGitOpsBuildLibRepo() { "${env.SCMM_URL}/repo/3rd-party-dependencies/gitops-build-lib" }
+String getGitOpsBuildLibVersion() { '0.7.0'}
 String getHelmChartRepository() { "https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami" }
 String getHelmChartName() { "nginx" }
 String getHelmChartVersion() { "13.2.21" }
@@ -60,11 +57,11 @@ node('docker') {
 </#noparse>
                     k8sVersion : env.${config.application.namePrefixForEnvVars}K8S_VERSION,
                     buildImages          : [
-                            helm: '${config.images.helm}',
-                            kubectl: '${config.images.kubectl}',
-                            kubeval: '${config.images.kubeval}',
-                            helmKubeval: '${config.images.helmKubeval}',
-                            yamllint: '${config.images.yamllint}'
+                        helm: '${config.images.helm}',
+                        kubectl: '${config.images.kubectl}',
+                        kubeval: '${config.images.kubeval}',
+                        helmKubeval: '${config.images.helmKubeval}',
+                        yamllint: '${config.images.yamllint}'
                     ],
                     deployments: [
                         sourcePath: 'k8s',
@@ -89,7 +86,7 @@ node('docker') {
 <#noparse>
                     fileConfigmaps: [
                             [
-                                name : "index-nginx",
+                                name : "exercise-index-nginx",
                                 sourceFilePath : "../index.html",
                                 stage: ["staging", "production"]
                             ]

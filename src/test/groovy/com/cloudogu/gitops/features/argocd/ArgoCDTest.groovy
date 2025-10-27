@@ -1452,6 +1452,30 @@ class ArgoCDTest {
         k8sCommands.assertExecuted('kubectl patch secret argocd-default-cluster-config -n argocd --patch-file=/tmp/gitops-playground-patch-')
     }
 
+
+    @Test
+    void 'multiTenant folder gets deleted correctly if not in dedicated mode'() {
+        config.multiTenant.useDedicatedInstance = false
+
+        def argocd = createArgoCD()
+        argocd.install()
+
+        assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'multiTenant/')).doesNotExist()
+        assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'applications/')).exists()
+        assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/')).exists()
+    }
+
+    @Test
+    void 'deleting unused folder in dedicated mode'() {
+        config.multiTenant.useDedicatedInstance = true
+
+        def argocd = createArgoCD()
+        argocd.install()
+        assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'multiTenant/')).exists()
+        assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'applications/')).doesNotExist()
+        assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/')).doesNotExist()
+    }
+
     @Test
     void 'RBACs generated correctly'() {
         config.application.namespaces.tenantNamespaces = new LinkedHashSet(['testprefix-tenant-test1', 'testprefix-tenant-test2', 'testprefix-tenant-test3'])

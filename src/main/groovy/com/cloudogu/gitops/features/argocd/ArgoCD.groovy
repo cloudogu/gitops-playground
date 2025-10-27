@@ -389,6 +389,15 @@ class ArgoCD extends Feature {
             FileSystemUtils.deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/operator'
         }
 
+        if (config.multiTenant.useDedicatedInstance) {
+            log.debug("Deleting unnecessary non dedicated instances folders from argocd repo: ${argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
+            FileSystemUtils.deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/applications'
+            FileSystemUtils.deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/projects'
+        } else {
+            log.debug("Deleting unnecessary multiTenant folder from argocd repo: ${argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
+            FileSystemUtils.deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/multiTenant'
+        }
+
         /* TODO do we need this?
         if (!config.scmm.internal) {
             String externalScmmUrl = ScmUrlResolver.externalHost(config)

@@ -54,10 +54,13 @@ rules:
     resources: ["roles", "rolebindings"]
     verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
 
+  <#if config.features.secrets.active == true>
   - apiGroups: ["external-secrets.io"]
     resources: ["secretstores", "externalsecrets"]
     verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
-
+  </#if>
+  
+  <#if config.features.monitoring.active == true>
   - apiGroups: [ "monitoring.coreos.com" ]
     resources: [
       "alertmanagers",
@@ -75,3 +78,4 @@ rules:
       "probes"
     ]
     verbs: [ "create", "delete", "get", "list", "patch", "update", "watch" ]
+  </#if>
