@@ -1379,7 +1379,6 @@ class ArgoCDTest {
                 .doesNotExist()
     }
 
-
     @Test
     void 'GOP DedicatedInstances Central templating works correctly'() {
         setupDedicatedInstanceMode()
@@ -1452,17 +1451,16 @@ class ArgoCDTest {
         k8sCommands.assertExecuted('kubectl patch secret argocd-default-cluster-config -n argocd --patch-file=/tmp/gitops-playground-patch-')
     }
 
-
     @Test
     void 'multiTenant folder gets deleted correctly if not in dedicated mode'() {
         config.multiTenant.useDedicatedInstance = false
 
         def argocd = createArgoCD()
         argocd.install()
-
-        assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'multiTenant/')).doesNotExist()
-        assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'applications/')).exists()
-        assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/')).exists()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
+        assertThat(Path.of(this.argocdRepo.getAbsoluteLocalRepoTmpDir(), 'multiTenant/')).doesNotExist()
+        assertThat(Path.of(this.argocdRepo.getAbsoluteLocalRepoTmpDir(), 'applications/')).exists()
+        assertThat(Path.of(this.argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/')).exists()
     }
 
     @Test
@@ -1471,9 +1469,10 @@ class ArgoCDTest {
 
         def argocd = createArgoCD()
         argocd.install()
-        assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'multiTenant/')).exists()
-        assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'applications/')).doesNotExist()
-        assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/')).doesNotExist()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
+        assertThat(Path.of(this.argocdRepo.getAbsoluteLocalRepoTmpDir(), 'multiTenant/')).exists()
+        assertThat(Path.of(this.argocdRepo.getAbsoluteLocalRepoTmpDir(), 'applications/')).doesNotExist()
+        assertThat(Path.of(this.argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/')).doesNotExist()
     }
 
     @Test
