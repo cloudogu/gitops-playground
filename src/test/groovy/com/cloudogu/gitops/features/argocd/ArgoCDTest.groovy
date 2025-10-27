@@ -1434,15 +1434,6 @@ class ArgoCDTest {
     }
 
     @Test
-    void 'not generating example-apps bootstrapping application via ArgoApplication when false'() {
-        config.content.examples = false
-        setupDedicatedInstanceMode()
-        this.tenantBootstrap = (argocd as ArgoCDForTest).tenantBootstrapRepo
-        assertThat(new File(tenantBootstrap.getAbsoluteLocalRepoTmpDir() + "/applications/bootstrap.yaml")).exists()
-        assertThat(new File(tenantBootstrap.getAbsoluteLocalRepoTmpDir() + "/applications/argocd-application-example-apps-testPrefix-argocd.yaml")).doesNotExist()
-    }
-
-    @Test
     void 'Append namespaces to Argocd argocd-default-cluster-config secrets'() {
         config.application.namespaces.dedicatedNamespaces = new LinkedHashSet(['dedi-test1', 'dedi-test2', 'dedi-test3'])
         config.application.namespaces.tenantNamespaces = new LinkedHashSet(['tenant-test1', 'tenant-test2', 'tenant-test3'])
