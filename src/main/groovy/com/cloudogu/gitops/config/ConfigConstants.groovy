@@ -58,7 +58,7 @@ interface ConfigConstants {
     String JENKINS_ADDITIONAL_ENVS_DESCRIPTION = 'Set additional environments to Jenkins'
 
     // group scmm
-    String SCMM_DESCRIPTION = 'Config parameters for SCMManager (Git repository Server, https://scm-manager.org/)'
+    String SCM_DESCRIPTION = 'Config parameters for Scm'
     String SCMM_SKIP_RESTART_DESCRIPTION = 'Skips restarting SCM-Manager after plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades.\''
     String SCMM_SKIP_PLUGINS_DESCRIPTION = 'Skips plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades.'
     String SCMM_URL_DESCRIPTION = 'The host of your external scm-manager'

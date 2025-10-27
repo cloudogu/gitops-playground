@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.config
 
+import com.cloudogu.gitops.features.git.config.ScmTenantSchema
 import com.cloudogu.gitops.utils.NetworkingUtils
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
@@ -67,7 +68,7 @@ class Config {
     @Mixin
     MultiTenantSchema multiTenant = new MultiTenantSchema()
 
-    @JsonPropertyDescription(SCMM_DESCRIPTION)
+    @JsonPropertyDescription(SCM_DESCRIPTION)
     @Mixin
     ScmTenantSchema scm = new ScmTenantSchema()
 
