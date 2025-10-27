@@ -344,9 +344,9 @@ prometheus:
 <#if config.scm.scmProviderType?lower_case == "scm_manager">
       - job_name: 'scm-manager'
         static_configs:
-          - targets: [ '${scmm.host}' ]
-        scheme: ${scmm.protocol}
-        metrics_path: '${scmm.path}'
+          - targets: [ '${scm.host}' ]
+        scheme: ${scm.protocol}
+        metrics_path: '${scm.path}'
         basic_auth:
           username: '${config.application.namePrefix}metrics'
           password_file: '/etc/prometheus/secrets/prometheus-metrics-creds-scmm/password'

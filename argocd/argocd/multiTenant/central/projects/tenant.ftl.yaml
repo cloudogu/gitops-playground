@@ -9,15 +9,15 @@ spec:
     - namespace: '*'
       server: https://kubernetes.default.svc
   sourceRepos:
-    - ${scmm.centralScmmUrl}argocd/argocd.git
-    - ${scmm.centralScmmUrl}argocd/cluster-resources.git
+    - ${scmm.centralScmUrl}argocd/argocd.git
+    - ${scmm.centralScmUrl}argocd/cluster-resources.git
 <#if config.application.mirrorRepos>
-    - ${scmm.repoUrl}3rd-party-dependencies/kube-prometheus-stack.git
-    - ${scmm.repoUrl}3rd-party-dependencies/mailhog.git
-    - ${scmm.repoUrl}3rd-party-dependencies/ingress-nginx.git
-    - ${scmm.repoUrl}3rd-party-dependencies/external-secrets.git
-    - ${scmm.repoUrl}3rd-party-dependencies/vault.git
-    - ${scmm.repoUrl}3rd-party-dependencies/cert-manager.git
+    - ${scm.repoUrl}3rd-party-dependencies/kube-prometheus-stack.git
+    - ${scm.repoUrl}3rd-party-dependencies/mailhog.git
+    - ${scm.repoUrl}3rd-party-dependencies/ingress-nginx.git
+    - ${scm.repoUrl}3rd-party-dependencies/external-secrets.git
+    - ${scm.repoUrl}3rd-party-dependencies/vault.git
+    - ${scm.repoUrl}3rd-party-dependencies/cert-manager.git
 <#else>
     - https://prometheus-community.github.io/helm-charts
     - https://codecentric.github.io/helm-charts

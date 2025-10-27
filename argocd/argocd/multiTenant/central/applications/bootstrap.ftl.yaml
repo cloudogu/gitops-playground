@@ -14,7 +14,7 @@ spec:
   project: ${tenantName}
   source:
     path: multiTenant/central/applications/
-    repoURL: ${scmm.centralScmmUrl}argocd/argocd.git
+    repoURL: ${scmm.centralScmUrl}argocd/argocd.git
     targetRevision: main
     directory:
       recurse: true

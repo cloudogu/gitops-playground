@@ -55,8 +55,7 @@ class GitRepo {
     String getRepoTarget() {
         return repoTarget
     }
-
-    // TODO maybe it is better to have two methods: create and setPermission, because here we have default permission set to USER. in Gitlab it is maybe different...
+    
     boolean createRepositoryAndSetPermission(String repoTarget, String description, boolean initialize = true) {
         def isNewRepo = this.gitProvider.createRepository(repoTarget, description, initialize)
         if (isNewRepo && gitProvider.getGitOpsUsername()) {

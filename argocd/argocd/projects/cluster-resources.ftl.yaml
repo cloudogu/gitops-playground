@@ -14,7 +14,7 @@ spec:
     - namespace: '*'
       server: https://kubernetes.default.svc
   sourceRepos:
-  - ${scmm.repoUrl}argocd/cluster-resources.git
+  - ${scm.repoUrl}argocd/cluster-resources.git
 <#if config.application.mirrorRepos>
   - ${scmm.baseUrl}<#if config.scm.scmProviderType == "GITLAB">/3rd-party-dependencies/kube-prometheus-stack.git<#else>/repo/3rd-party-dependencies/kube-prometheus-stack</#if>
   - ${scmm.baseUrl}<#if config.scm.scmProviderType == "GITLAB">/3rd-party-dependencies/mailhog.git<#else>/repo/3rd-party-dependencies/mailhog</#if>

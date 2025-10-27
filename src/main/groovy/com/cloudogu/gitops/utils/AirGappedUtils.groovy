@@ -46,7 +46,6 @@ class AirGappedUtils {
 
         GitRepo repo = repoProvider.getRepo(repoNamespaceAndName, gitHandler.tenant)
 
-        //TODO 3th Party where? 3th party is within GitRepo
         repo.createRepositoryAndSetPermission(repoNamespaceAndName, "Mirror of Helm chart $repoName from ${helmConfig.repoURL}", false)
 
         repo.cloneRepo()

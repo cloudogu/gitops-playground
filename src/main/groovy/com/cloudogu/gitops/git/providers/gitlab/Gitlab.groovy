@@ -70,7 +70,6 @@ class Gitlab implements GitProvider {
 
     @Override
     void setRepositoryPermission(String repoTarget, String principal, AccessRole role, Scope scope) {
-        //TODO check of this is allright
         String fullPath = resolveFullPath(repoTarget)
         Project project = findProjectOrThrow(fullPath)
         AccessLevel level = toAccessLevel(role, scope)

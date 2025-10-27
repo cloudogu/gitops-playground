@@ -127,11 +127,11 @@ spec:
     ingress:
       enabled: ${((!config.application.openshift) && (!config.application.insecure))?c}
   initialRepositories: |
-<#if !(scmm.centralScmmUrl?has_content)>
+<#if !(scmm.centralScmUrl?has_content)>
     - name: argocd
-      url: ${scmm.repoUrl}argocd/argocd.git
+      url: ${scm.repoUrl}argocd/argocd.git
     - name: cluster-resources
-      url: ${scmm.repoUrl}argocd/cluster-resources.git
+      url: ${scm.repoUrl}argocd/cluster-resources.git
     - name: prometheus-community
       type: helm
       url: https://prometheus-community.github.io/helm-charts
@@ -143,11 +143,11 @@ spec:
       url: https://kubernetes.github.io/ingress-nginx
 </#if>
     - name: example-apps
-      url: ${scmm.repoUrl}argocd/example-apps.git
+      url: ${scm.repoUrl}argocd/example-apps.git
     - name: nginx-helm-jenkins
-      url: ${scmm.repoUrl}argocd/nginx-helm-jenkins.git
+      url: ${scm.repoUrl}argocd/nginx-helm-jenkins.git
     - name: nginx-helm-umbrella
-      url: ${scmm.repoUrl}argocd/nginx-helm-umbrella.git
+      url: ${scm.repoUrl}argocd/nginx-helm-umbrella.git
     - name: bitnami
       type: helm
       url: https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami

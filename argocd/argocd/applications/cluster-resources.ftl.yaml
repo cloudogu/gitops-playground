@@ -13,7 +13,7 @@ spec:
   project: argocd
   source:
     path: argocd/
-    repoURL: ${scmm.repoUrl}argocd/cluster-resources.git
+    repoURL: ${scm.repoUrl}argocd/cluster-resources.git
     targetRevision: main
     directory:
       recurse: true

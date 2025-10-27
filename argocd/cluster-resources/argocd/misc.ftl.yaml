@@ -13,9 +13,9 @@ spec:
   source:
     path: misc/
 <#if config.multiTenant.useDedicatedInstance>
-    repoURL: ${scmm.centralScmmUrl}argocd/cluster-resources.git
+    repoURL: ${scmm.centralScmUrl}argocd/cluster-resources.git
 <#else>
-    repoURL: ${scmm.repoUrl}argocd/cluster-resources.git
+    repoURL: ${scm.repoUrl}argocd/cluster-resources.git
 </#if>
     targetRevision: main
     directory:

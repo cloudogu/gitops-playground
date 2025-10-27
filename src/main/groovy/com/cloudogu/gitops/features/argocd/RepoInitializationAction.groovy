@@ -36,17 +36,16 @@ class RepoInitializationAction {
         return repo
     }
 
-    //TODO rename scmm to scm and centralScmmUrl to centralScmUrl
     private Map<String, Object> buildTemplateValues(Config config) {
         def model = [
                 tenantName: config.application.tenantName,
                 argocd    : [host: config.features.argocd.url ? new URL(config.features.argocd.url).host : ""], //TODO move this to argocd class and get the url from there
-                scmm      : [
+                scm      : [
                         baseUrl : this.repo.gitProvider.url,
                         host    : this.repo.gitProvider.host,
                         protocol: this.repo.gitProvider.protocol,
                         repoUrl : this.repo.gitProvider.repoPrefix(),
-                        centralScmmUrl: this.gitHandler.central?.repoPrefix() ?: ''
+                        centralScmUrl: this.gitHandler.central?.repoPrefix() ?: ''
                 ],
                 config    : config,
                 // Allow for using static classes inside the templates

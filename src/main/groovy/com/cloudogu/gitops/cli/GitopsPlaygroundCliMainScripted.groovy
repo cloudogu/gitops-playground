@@ -56,7 +56,6 @@ class GitopsPlaygroundCliMainScripted {
 
             def scmmRepoProvider = new GitRepoFactory(config, fileSystemUtils)
 
-            //TODO check if moving this up here is correct
             def helmStrategy = new HelmStrategy(config, helmClient)
 
             def gitHandler = new GitHandler(config, helmStrategy, fileSystemUtils, k8sClient, networkingUtils)

@@ -176,7 +176,7 @@ class ArgoCD extends Feature {
             FileSystemUtils.deleteFile clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + MONITORING_RESOURCES_PATH + 'ingress-nginx-dashboard-requests-handling.yaml'
         }
 
-        //TODO do we need this? Or just pass the correct URL directly?
+        //TODO Anna do we need this? Or just pass the correct URL directly?
         /*if (!config.scm.isInternal) {
             String externalScmUrl = ScmmRepo.createScmmUrl(config)
             log.debug("Configuring all yaml files in gitops repos to use the external scm url: ${externalScmUrl}")
