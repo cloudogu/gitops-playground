@@ -1642,7 +1642,6 @@ class ArgoCDTest {
         )
     }
 
-
     @Test
     void 'If using mirror with GitLab with prefix, ensure source repos in cluster-resources got right URL'() {
         config.application.mirrorRepos = true

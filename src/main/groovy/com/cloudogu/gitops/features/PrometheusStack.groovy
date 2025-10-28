@@ -161,7 +161,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
         def model = [
                 monitoring: [grafana: [host: config.features.monitoring.grafanaUrl ? new URL(config.features.monitoring.grafanaUrl).host : ""]],
                 namespaces: (config.application.namespaces.activeNamespaces ?: []) as LinkedHashSet<String>,
-                scmm      : scmConfigurationMetrics(),
+                scm      : scmConfigurationMetrics(),
                 jenkins   : jenkinsConfigurationMetrics(),
                 uid       : uid,
                 config    : config,

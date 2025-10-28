@@ -127,7 +127,7 @@ spec:
     ingress:
       enabled: ${((!config.application.openshift) && (!config.application.insecure))?c}
   initialRepositories: |
-<#if !(scmm.centralScmUrl?has_content)>
+<#if !(scm.centralScmUrl?has_content)>
     - name: argocd
       url: ${scm.repoUrl}argocd/argocd.git
     - name: cluster-resources
