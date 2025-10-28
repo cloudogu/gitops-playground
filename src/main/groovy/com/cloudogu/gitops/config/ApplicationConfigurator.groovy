@@ -116,13 +116,6 @@ class ApplicationConfigurator {
 
 
         newConfig.scm.gitOpsUsername = "${newConfig.application.namePrefix}gitops"
-//        if (ScmTenantSchema.ScmmCentralConfig
-        //TODO
-//        if (newConfig.scm.gitlabConfig.url && newConfig.scm.gitlabConfig.password){
-//            newConfig.scm.provider= ScmTenantSchema.ScmProviderType.GITLAB
-//        }else if(newConfig.scm.scmManager.url){
-//            throw new RuntimeException(
-//        }
 
         if (newConfig.scm.scmManager.url) {
             log.debug("Setting external scmm config")
@@ -223,11 +216,6 @@ class ApplicationConfigurator {
             if (!newConfig.application.namePrefix) {
                 throw new RuntimeException('To enable Central Multi-Tenant mode, you must define a name prefix to distinguish between instances.')
             }
-
-            //TODO move this into scm validation
-            /*if (!newConfig.multiTenant.scmManager.username || !newConfig.multiTenant.scmManager.password) {
-                throw new RuntimeException('To use Central Multi Tenant mode define the username and password for the central SCM instance.')
-            }*/
 
             if (!newConfig.features.argocd.operator) {
                 newConfig.features.argocd.operator = true

@@ -8,7 +8,7 @@ String getConfigRepositoryPRRepo() { '${config.application.namePrefix}argocd/exa
 String getCesBuildLibRepo() { "${env.SCMM_URL}/repo/3rd-party-dependencies/ces-build-lib/" }
 String getCesBuildLibVersion() { '2.5.0' }
 String getGitOpsBuildLibRepo() { "${env.SCMM_URL}/repo/3rd-party-dependencies/gitops-build-lib" }
-String getGitOpsBuildLibVersion() { '0.7.0'}
+String getGitOpsBuildLibVersion() { '0.8.0'}
 String getHelmChartRepository() { "https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami" }
 String getHelmChartName() { "nginx" }
 String getHelmChartVersion() { "13.2.21" }

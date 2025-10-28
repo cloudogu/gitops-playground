@@ -270,7 +270,9 @@ That is, if you pass a param via CLI, for example, it will overwrite the corresp
 - [Registry](#registry)
 - [Jenkins](#jenkins)
 - [Multitenant](#multitenant)
+- [SCM](#scm)
 - [SCMM](#scmm)
+- [GITLAB](#gitlab)
 - [Application](#application)
 - [Images](#images)
 - [Features](#features)
@@ -334,6 +336,7 @@ That is, if you pass a param via CLI, for example, it will overwrite the corresp
 | `--central-argocd-namespace` | `multiTenant.centralArgocdNamespace` | `'argocd'` | String | CENTRAL Argocd Repo Namespace |
 | `--central-scm-namespace` | `multiTenant.centralSCMamespace` | `'scm-manager'` | String | Central SCM namespace |
 
+###### SCM
 ###### SCMM
 
 | CLI | Config | Default | Type | Description |
@@ -349,6 +352,9 @@ That is, if you pass a param via CLI, for example, it will overwrite the corresp
 | - | `scmm.helm.repoURL` | `'https://packages.scm-manager.org/repository/helm-v2-releases/'` | String | Repository url from which the Helm chart should be obtained |
 | - | `scmm.helm.version` | `'3.10.2'` | String | The version of the Helm chart to be installed |
 | - | `scmm.helm.values` | `[:]` | Map | Helm values of the chart |
+
+
+###### Gitlab
 
 ###### Application
 
@@ -1103,6 +1109,23 @@ To apply additional global environments for jenkins you can use `--jenkins-addit
 
 Note that the [example applications](#example-applications) pipelines will only run on a Jenkins that uses agents that provide
 a docker host. That is, Jenkins must be able to run e.g. `docker ps` successfully on the agent.
+
+### SCM
+
+You can choose between the following Git providers:
+
+- SCM-Manager
+- GitLab
+
+For configuration details, see the CLI or configuration parameters above ([CLI Params](#scm)).
+
+
+### GitLab
+
+When using GitLab, you must provide a valid **parent group ID**.  
+This group will serve as the main group for the GOP to create and manage all required repositories.
+
+[![gitlab ParentID](docs/gitlab-parentid.png)](https://docs.gitlab.com/user/group/#find-the-group-id)
 
 ### SCM-Manager
 
