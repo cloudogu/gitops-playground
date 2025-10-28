@@ -1,0 +1,13 @@
+service:
+  port: 80
+
+<#if config.content.variables.petclinic.baseDomain?has_content>
+ingress:
+  hosts:
+    <#if config.application.urlSeparatorHyphen>
+    - host: production-petclinic-helm-${config.content.variables.petclinic.baseDomain}
+    <#else>
+    - host: production.petclinic-helm.${config.content.variables.petclinic.baseDomain}
+    </#if>
+      paths: ['/']
+</#if>

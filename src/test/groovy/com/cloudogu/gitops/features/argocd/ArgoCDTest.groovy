@@ -31,6 +31,7 @@ class ArgoCDTest {
             helmKubeval: 'helmKubeval-value',
             yamllint   : 'yamllint-value'
     ]
+
     Config config = Config.fromMap(
             application: [
                     openshift           : false,
@@ -51,25 +52,13 @@ class ArgoCDTest {
                     internal: true,
                     url     : 'https://abc'
             ],
-            images: buildImages + [petclinic: 'petclinic-value'],
-            repositories: [
-                    springBootHelmChart: [
-                            url: 'https://github.com/cloudogu/spring-boot-helm-chart.git',
-                            ref: '0.3.0'
-                    ],
-                    springPetclinic    : [
-                            url: 'https://github.com/cloudogu/spring-petclinic.git',
-                            ref: '32c8653'
-                    ],
-                    gitopsBuildLib     : [
-                            url: "https://github.com/cloudogu/gitops-build-lib.git",
-                    ],
-                    cesBuildLib        : [
-                            url: 'https://github.com/cloudogu/ces-build-lib.git',
-                    ]
-            ],
             content: [
-                    examples: true
+                    examples: true,
+                    variables: [
+                            images: [
+                                    buildImages + [petclinic: 'petclinic-value']
+                            ]
+                    ]
             ],
             features: [
                     argocd      : [
@@ -106,10 +95,6 @@ class ArgoCDTest {
     ScmmRepo argocdRepo
     String actualHelmValuesFile
     ScmmRepo clusterResourcesRepo
-    ScmmRepo exampleAppsRepo
-    ScmmRepo nginxHelmJenkinsRepo
-    ScmmRepo nginxValidationRepo
-    ScmmRepo brokenApplicationRepo
     ScmmRepo tenantBootstrap
     List<ScmmRepo> petClinicRepos = []
     CloneCommand gitCloneMock = mock(CloneCommand.class, RETURNS_DEEP_STUBS)
@@ -185,21 +170,6 @@ class ArgoCDTest {
         assertThat(argocdYaml['spec']['source']['directory']).isNull()
         assertThat(argocdYaml['spec']['source']['path']).isEqualTo('argocd/')
         // The other application files should be validated here as well!
-
-        // Content examples
-        assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/example-apps.yaml')).exists()
-        assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'applications/example-apps.yaml')).exists()
-    }
-
-    @Test
-    void 'Disables example content'() {
-        config.content.examples = false
-
-        def argocd = createArgoCD()
-        argocd.install()
-
-        assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/example-apps.yaml')).doesNotExist()
-        assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'applications/example-apps.yaml')).doesNotExist()
     }
 
     @Test
@@ -301,13 +271,11 @@ class ArgoCDTest {
         def clusterRessourcesYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/cluster-resources.yaml')
         def argocdYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'applications/argocd.yaml')
         def defaultYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/default.yaml')
-        def exampleAppsYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/example-apps.yaml')
 
         assertThat(new YamlSlurper().parseText(valuesYaml['argo-cd']['notifications']['notifiers']['service.email'] as String)['from']).isEqualTo("argocd@example.com")
         assertThat(clusterRessourcesYaml['metadata']['annotations']['notifications.argoproj.io/subscribe.email']).isEqualTo('argocd@example.com')
         assertThat(argocdYaml['metadata']['annotations']['notifications.argoproj.io/subscribe.on-sync-status-unknown.email']).isEqualTo('argocd@example.com')
         assertThat(defaultYaml['metadata']['annotations']['notifications.argoproj.io/subscribe.email']).isEqualTo('argocd@example.com')
-        assertThat(exampleAppsYaml['metadata']['annotations']['notifications.argoproj.io/subscribe.email']).isEqualTo('app-team@example.com')
     }
 
     @Test
@@ -319,13 +287,11 @@ class ArgoCDTest {
         def clusterRessourcesYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/cluster-resources.yaml')
         def argocdYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'applications/argocd.yaml')
         def defaultYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/default.yaml')
-        def exampleAppsYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/example-apps.yaml')
 
         assertThat(new YamlSlurper().parseText(valuesYaml['argo-cd']['notifications']['notifiers']['service.email'] as String)['from']).isEqualTo("argocd@example.org")
         assertThat(clusterRessourcesYaml['metadata']['annotations']['notifications.argoproj.io/subscribe.email']).isEqualTo('infra@example.org')
         assertThat(argocdYaml['metadata']['annotations']['notifications.argoproj.io/subscribe.on-sync-status-unknown.email']).isEqualTo('infra@example.org')
         assertThat(defaultYaml['metadata']['annotations']['notifications.argoproj.io/subscribe.email']).isEqualTo('infra@example.org')
-        assertThat(exampleAppsYaml['metadata']['annotations']['notifications.argoproj.io/subscribe.email']).isEqualTo('app-team@example.org')
     }
 
     @Test
@@ -406,101 +372,10 @@ class ArgoCDTest {
     }
 
     @Test
-    void 'When vault enabled: Pushes external secret, and mounts into example app'() {
-        createArgoCD().install()
-        def valuesYaml = new YamlSlurper().parse(Path.of nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir(), 'k8s/values-shared.yaml')
-
-        assertThat((valuesYaml['extraVolumeMounts'] as List)).hasSize(2)
-        assertThat((valuesYaml['extraVolumes'] as List)).hasSize(2)
-
-        assertThat(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir() + "/k8s/staging/external-secret.yaml")).exists()
-        assertThat(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir() + "/k8s/production/external-secret.yaml")).exists()
-        assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + "/misc/secrets")).exists()
-    }
-
-    @Test
-    void 'When vault disabled: Does not push ExternalSecret and not mount into example app'() {
-        config.features.secrets.active = false
-        createArgoCD().install()
-        def valuesYaml = new YamlSlurper().parse(Path.of nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir(), 'k8s/values-shared.yaml')
-        assertThat((valuesYaml['extraVolumeMounts'] as List)).hasSize(1)
-        assertThat((valuesYaml['extraVolumes'] as List)).hasSize(1)
-        assertThat((valuesYaml['extraVolumeMounts'] as List)[0]['name']).isEqualTo('index')
-        assertThat((valuesYaml['extraVolumes'] as List)[0]['name']).isEqualTo('index')
-
-        assertThat(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir() + "/k8s/staging/external-secret.yaml")).doesNotExist()
-        assertThat(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir() + "/k8s/production/external-secret.yaml")).doesNotExist()
-    }
-
-    @Test
     void 'When vault disabled: Does not push path "secrets" to cluster resources'() {
         config.features.secrets.active = false
         createArgoCD().install()
         assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + "/misc/secrets")).doesNotExist()
-    }
-
-    @Test
-    void 'Pushes example repos for local'() {
-        config.application.remote = false
-        def argocd = createArgoCD()
-
-        def setUriMock = mock(CloneCommand.class, RETURNS_DEEP_STUBS)
-        def checkoutMock = mock(CheckoutCommand.class, RETURNS_DEEP_STUBS)
-        when(gitCloneMock.setURI(anyString())).thenReturn(setUriMock)
-        when(setUriMock.setDirectory(any(File.class)).call().checkout()).thenReturn(checkoutMock)
-
-        argocd.install()
-        def valuesYaml = parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-shared.yaml')
-        assertThat(valuesYaml['service']['type']).isEqualTo('ClusterIP')
-        assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-production.yaml')).doesNotContainKey('ingress')
-        assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-staging.yaml')).doesNotContainKey('ingress')
-        assertThat(valuesYaml).doesNotContainKey('resources')
-
-        valuesYaml = parseActualYaml(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'apps/nginx-helm-umbrella/values.yaml')
-        assertThat(valuesYaml['nginx']['service']['type']).isEqualTo('ClusterIP')
-        assertThat(valuesYaml['nginx'] as Map).doesNotContainKey('ingress')
-        assertThat(valuesYaml['nginx'] as Map).doesNotContainKey('resources')
-
-        assertThat((parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[1]['spec']['type']))
-                .isEqualTo('ClusterIP')
-        assertThat((parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[0]['spec']['template']['spec']['containers'] as List)[0]['resources'])
-                .isNull()
-
-        assertThat(new File(nginxValidationRepo.absoluteLocalRepoTmpDir, '/k8s/values-shared.yaml').text).doesNotContain('resources:')
-
-        // Assert Petclinic repo cloned
-        verify(gitCloneMock).setURI('https://github.com/cloudogu/spring-petclinic.git')
-        verify(setUriMock).setDirectory(argocd.remotePetClinicRepoTmpDir)
-        verify(checkoutMock).setName('32c8653')
-
-        assertPetClinicRepos('ClusterIP', 'LoadBalancer', '')
-    }
-
-    @Test
-    void 'Pushes example repos for remote'() {
-        config.application.remote = true
-        config.features.exampleApps.petclinic.baseDomain = 'petclinic.local'
-        config.features.exampleApps.nginx.baseDomain = 'nginx.local'
-
-        createArgoCD().install()
-
-        assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-shared.yaml').toString())
-                .doesNotContain('ClusterIP')
-        assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-production.yaml')['ingress']['hostname']).isEqualTo('production.nginx-helm.nginx.local')
-        assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-staging.yaml')['ingress']['hostname']).isEqualTo('staging.nginx-helm.nginx.local')
-
-        assertThat(parseActualYaml(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'apps/nginx-helm-umbrella/values.yaml').toString())
-                .doesNotContain('ClusterIP')
-
-        def valuesYaml = parseActualYaml(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'apps/nginx-helm-umbrella/values.yaml')
-        assertThat(valuesYaml['nginx']['ingress']['hostname'] as String).isEqualTo('production.nginx-helm-umbrella.nginx.local')
-
-        assertThat((parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[2]['spec']['rules'] as List)[0]['host'])
-                .isEqualTo('broken-application.nginx.local')
-        assertThat((parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[1]['spec']['type']))
-                .isEqualTo('LoadBalancer')
-
-        assertPetClinicRepos('LoadBalancer', 'ClusterIP', 'petclinic.local')
     }
 
     @Test
@@ -543,50 +418,10 @@ class ArgoCDTest {
     }
 
     @Test
-    void 'If urlSeparatorHyphen is set, ensure that hostnames are build correctly '() {
-        config.application.remote = true
-        config.features.exampleApps.petclinic.baseDomain = 'petclinic-local'
-        config.features.exampleApps.nginx.baseDomain = 'nginx-local'
-        config.application.urlSeparatorHyphen = true
-
-        createArgoCD().install()
-
-        def valuesYaml = parseActualYaml(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'apps/nginx-helm-umbrella/values.yaml')
-        assertThat(valuesYaml['nginx']['ingress']['hostname'] as String).isEqualTo('production-nginx-helm-umbrella-nginx-local')
-
-        assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-production.yaml')['ingress']['hostname']).isEqualTo('production-nginx-helm-nginx-local')
-        assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-staging.yaml')['ingress']['hostname']).isEqualTo('staging-nginx-helm-nginx-local')
-
-        assertThat((parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[2]['spec']['rules'] as List)[0]['host'])
-                .isEqualTo('broken-application-nginx-local')
-
-        assertPetClinicRepos('LoadBalancer', 'ClusterIP', 'petclinic-local')
-    }
-
-    @Test
-    void 'If urlSeparatorHyphen is NOT set, ensure that hostnames are build correctly '() {
-        config.application.remote = true
-        config.features.exampleApps.petclinic.baseDomain = 'petclinic.local'
-        config.features.exampleApps.nginx.baseDomain = 'nginx.local'
-        config.application.urlSeparatorHyphen = false
-
-        createArgoCD().install()
-
-        def valuesYaml = parseActualYaml(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'apps/nginx-helm-umbrella/values.yaml')
-        assertThat(valuesYaml['nginx']['ingress']['hostname'] as String).isEqualTo('production.nginx-helm-umbrella.nginx.local')
-
-        assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-production.yaml')['ingress']['hostname']).isEqualTo('production.nginx-helm.nginx.local')
-        assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-staging.yaml')['ingress']['hostname']).isEqualTo('staging.nginx-helm.nginx.local')
-        assertPetClinicRepos('LoadBalancer', 'ClusterIP', 'petclinic.local')
-    }
-
-    @Test
     void 'For internal SCMM: Use service address in gitops repos'() {
         def argocd = createArgoCD()
         argocd.install()
         List filesWithInternalSCMM = findFilesContaining(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), argocd.scmmUrlInternal)
-        assertThat(filesWithInternalSCMM).isNotEmpty()
-        filesWithInternalSCMM = findFilesContaining(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), argocd.scmmUrlInternal)
         assertThat(filesWithInternalSCMM).isNotEmpty()
     }
 
@@ -597,12 +432,8 @@ class ArgoCDTest {
         argocd.install()
         List filesWithInternalSCMM = findFilesContaining(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), argocd.scmmUrlInternal)
         assertThat(filesWithInternalSCMM).isEmpty()
-        filesWithInternalSCMM = findFilesContaining(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), argocd.scmmUrlInternal)
-        assertThat(filesWithInternalSCMM).isEmpty()
 
         List filesWithExternalSCMM = findFilesContaining(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), "https://abc")
-        assertThat(filesWithExternalSCMM).isNotEmpty()
-        filesWithExternalSCMM = findFilesContaining(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), "https://abc")
         assertThat(filesWithExternalSCMM).isNotEmpty()
     }
 
@@ -612,7 +443,6 @@ class ArgoCDTest {
         argocd.install()
 
         assertArgoCdYamlPrefixes(argocd.scmmUrlInternal, '')
-        assertJenkinsEnvironmentVariablesPrefixes('')
     }
 
     @Test
@@ -620,7 +450,6 @@ class ArgoCDTest {
         config.registry.twoRegistries = true
         createArgoCD().install()
 
-        assertJenkinsEnvironmentVariablesPrefixes('')
         assertJenkinsfileRegistryCredentials()
     }
 
@@ -633,7 +462,6 @@ class ArgoCDTest {
         argocd.install()
 
         assertArgoCdYamlPrefixes(argocd.scmmUrlInternal, 'abc-')
-        assertJenkinsEnvironmentVariablesPrefixes('ABC_')
     }
 
     @Test
@@ -651,60 +479,6 @@ class ArgoCDTest {
                 assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, '/k8s/values-shared.yaml').text).contains('runAsGroup: null')
             }
         }
-    }
-
-
-    @Test
-    void 'configures custom nginx image'() {
-        config.images.nginx = 'localhost:5000/nginx/nginx:latest'
-        createArgoCD().install()
-
-        def image = parseActualYaml(nginxHelmJenkinsRepo.absoluteLocalRepoTmpDir + '/k8s/values-shared.yaml')['image']
-        assertThat(image['registry']).isEqualTo('localhost:5000')
-        assertThat(image['repository']).isEqualTo('nginx/nginx')
-        assertThat(image['tag']).isEqualTo('latest')
-
-        image = parseActualYaml(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'apps/nginx-helm-umbrella/values.yaml')['nginx']['image']
-        assertThat(image['registry']).isEqualTo('localhost:5000')
-        assertThat(image['repository']).isEqualTo('nginx/nginx')
-        assertThat(image['tag']).isEqualTo('latest')
-
-        def deployment = parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[0]
-        assertThat(deployment['kind']).as("Did not correctly fetch deployment from broken-application.yaml").isEqualTo("Deploymentz")
-        assertThat((deployment['spec']['template']['spec']['containers'] as List)[0]['image']).isEqualTo('localhost:5000/nginx/nginx:latest')
-
-        def yamlString = new File(nginxValidationRepo.absoluteLocalRepoTmpDir, '/k8s/values-shared.yaml').text
-        assertThat(yamlString).startsWith("""image:
-  registry: localhost:5000
-  repository: nginx/nginx
-  tag: latest
-""")
-    }
-
-    @Test
-    void 'Sets image pull secrets for nginx'() {
-        config.registry.createImagePullSecrets = true
-        config.registry.twoRegistries = true
-        config.registry.proxyUrl = 'proxy-url'
-        config.registry.proxyUsername = 'proxy-user'
-        config.registry.proxyPassword = 'proxy-pw'
-
-        createArgoCD().install()
-
-        assertThat(parseActualYaml(nginxHelmJenkinsRepo.absoluteLocalRepoTmpDir + '/k8s/values-shared.yaml')['global']['imagePullSecrets'])
-                .isEqualTo(['proxy-registry'])
-
-        assertThat(parseActualYaml(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'apps/nginx-helm-umbrella/values.yaml')['nginx']['global']['imagePullSecrets'])
-                .isEqualTo(['proxy-registry'])
-
-        def deployment = parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[0]
-        assertThat(deployment['spec']['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
-
-        assertThat(new File(nginxValidationRepo.absoluteLocalRepoTmpDir, '/k8s/values-shared.yaml').text)
-                .contains("""global:
-  imagePullSecrets:
-    - proxy-registry
-""")
     }
 
     @Test
@@ -735,55 +509,6 @@ class ArgoCDTest {
                     'mvn.useMirrors([name: \'maven-central-mirror\', mirrorOf: \'central\', url:  env.MAVEN_CENTRAL_MIRROR])'
             )
         }
-    }
-
-    @Test
-    void 'use custom maven image'() {
-        config.images.maven = 'maven:latest'
-
-        createArgoCD().install()
-
-        for (def petclinicRepo : petClinicRepos) {
-            if (petclinicRepo.scmmRepoTarget.contains('argocd/petclinic-plain')) {
-                assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).contains('mvn = cesBuildLib.MavenInDocker.new(this, \'maven:latest\')')
-            }
-        }
-    }
-
-    @Test
-    void 'use maven with proxy registry and credentials'() {
-        config.images.maven = 'latest'
-        config.registry.twoRegistries = true
-
-        createArgoCD().install()
-
-        for (def petclinicRepo : petClinicRepos) {
-            if (petclinicRepo.scmmRepoTarget.contains('argocd/petclinic-plain')) {
-                assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).contains('mvn = cesBuildLib.MavenInDocker.new(this, \'latest\', dockerRegistryProxyCredentials)')
-            }
-        }
-
-    }
-
-
-    @Test
-    void 'Sets pod resource limits and requests'() {
-        config.application.podResources = true
-
-        createArgoCD().install()
-
-        assertThat(parseActualYaml(new File(nginxHelmJenkinsRepo.getAbsoluteLocalRepoTmpDir()), 'k8s/values-shared.yaml')['resources'] as Map)
-                .containsKeys('limits', 'requests')
-
-        assertThat(parseActualYaml(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'apps/nginx-helm-umbrella/values.yaml')['nginx']['resources'] as Map)
-                .containsKeys('limits', 'requests')
-
-        assertThat(new File(nginxValidationRepo.absoluteLocalRepoTmpDir, '/k8s/values-shared.yaml').text).contains('limits:', 'resources:')
-
-        assertThat((parseActualYaml(brokenApplicationRepo.absoluteLocalRepoTmpDir + '/broken-application.yaml')[0]['spec']['template']['spec']['containers'] as List)[0]['resources'] as Map)
-                .containsKeys('limits', 'requests')
-
-        assertPetClinicRepos('ClusterIP', 'LoadBalancer', '')
     }
 
     @Test
@@ -843,7 +568,7 @@ class ArgoCDTest {
     }
 
     private void assertArgoCdYamlPrefixes(String scmmUrl, String expectedPrefix) {
-        assertAllYamlFiles(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), 'projects', 4) { Path file ->
+        assertAllYamlFiles(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), 'projects', 3) { Path file ->
             def yaml = parseActualYaml(file.toString())
             List<String> sourceRepos = yaml['spec']['sourceRepos'] as List<String>
             // Some projects might not have sourceRepos
@@ -876,7 +601,7 @@ class ArgoCDTest {
             }
         }
 
-        assertAllYamlFiles(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), 'applications', 5) { Path file ->
+        assertAllYamlFiles(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), 'applications', 4) { Path file ->
             def yaml = parseActualYaml(file.toString())
             assertThat(yaml['spec']['source']['repoURL'] as String)
                     .as("$file repoURL have name prefix")
@@ -889,16 +614,6 @@ class ArgoCDTest {
             assertThat(yaml['spec']['destination']['namespace'])
                     .as("$file spec.destination.namspace has name prefix")
                     .isEqualTo("${expectedPrefix}argocd".toString())
-        }
-
-        assertAllYamlFiles(new File(exampleAppsRepo.getAbsoluteLocalRepoTmpDir()), 'argocd', 7) { Path it ->
-            def yaml = parseActualYaml(it.toString())
-            List yamlDocuments = yaml instanceof List ? yaml : [yaml]
-            for (def document in yamlDocuments) {
-                assertThat(document['spec']['source']['repoURL'] as String)
-                        .as("$it repoURL have name prefix")
-                        .startsWith("${scmmUrl}/repo/${expectedPrefix}argocd")
-            }
         }
 
         assertAllYamlFiles(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), 'argocd', 1) { Path it ->
@@ -946,29 +661,6 @@ class ArgoCDTest {
                 .each(cl)
                 .size()
         assertThat(nFiles).isEqualTo(numberOfFiles)
-    }
-
-    private void assertJenkinsEnvironmentVariablesPrefixes(String prefix) {
-        List defaultRegistryEnvVars = ["env.${prefix}REGISTRY_URL", "env.${prefix}REGISTRY_PATH"]
-        List twoRegistriesEnvVars = ["env.${prefix}REGISTRY_PROXY_URL"]
-
-        assertThat(new File(nginxHelmJenkinsRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).contains("env.${prefix}K8S_VERSION")
-
-        for (def petclinicRepo : petClinicRepos) {
-            defaultRegistryEnvVars.each { expectedEnvVar ->
-                assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).contains(expectedEnvVar)
-            }
-
-            if (config.registry['twoRegistries']) {
-                twoRegistriesEnvVars.each { expectedEnvVar ->
-                    assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).contains(expectedEnvVar)
-                }
-            } else {
-                twoRegistriesEnvVars.each { expectedEnvVar ->
-                    assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).doesNotContain(expectedEnvVar)
-                }
-            }
-        }
     }
 
     private static List findFilesContaining(File folder, String stringToSearch) {
@@ -1563,21 +1255,6 @@ class ArgoCDTest {
     }
 
     @Test
-    void 'generate example-apps bootstrapping application via ArgoApplication when true'() {
-        setup()
-        assertThat(new File(tenantBootstrap.getAbsoluteLocalRepoTmpDir() + "/applications/bootstrap.yaml")).exists()
-        assertThat(new File(tenantBootstrap.getAbsoluteLocalRepoTmpDir() + "/applications/argocd-application-example-apps-testPrefix-argocd.yaml")).exists()
-    }
-
-    @Test
-    void 'not generating example-apps bootstrapping application via ArgoApplication when false'() {
-        config.content.examples = false
-        setup()
-        assertThat(new File(tenantBootstrap.getAbsoluteLocalRepoTmpDir() + "/applications/bootstrap.yaml")).exists()
-        assertThat(new File(tenantBootstrap.getAbsoluteLocalRepoTmpDir() + "/applications/argocd-application-example-apps-testPrefix-argocd.yaml")).doesNotExist()
-    }
-
-    @Test
     void 'Append namespaces to Argocd argocd-default-cluster-config secrets'() {
         config.application.namespaces.dedicatedNamespaces = new LinkedHashSet(['dedi-test1', 'dedi-test2', 'dedi-test3'])
         config.application.namespaces.tenantNamespaces = new LinkedHashSet(['tenant-test1', 'tenant-test2', 'tenant-test3'])
@@ -1962,14 +1639,6 @@ class ArgoCDTest {
             clusterResourcesRepo = clusterResourcesInitializationAction.repo
             if (config.multiTenant.useDedicatedInstance) {
                 tenantBootstrap = tenantBootstrapInitializationAction.repo
-            }
-
-            if (config.content.examples) {
-                exampleAppsRepo = exampleAppsInitializationAction.repo
-                nginxHelmJenkinsRepo = nginxHelmJenkinsInitializationAction.repo
-                nginxValidationRepo = nginxValidationInitializationAction.repo
-                brokenApplicationRepo = brokenApplicationInitializationAction.repo
-                petClinicRepos = petClinicInitializationActions.collect { it.repo }
             }
         }
 
