@@ -267,6 +267,29 @@ me:x:1000:''')
     }
 
     @Test
+    void 'Handles two registries'() {
+        config.registry.twoRegistries = true
+        config.content.examples = true
+        config.application.namePrefix = 'my-prefix-'
+        config.application.namePrefixForEnvVars = 'MY_PREFIX_'
+
+        config.registry.url = 'reg-url'
+        config.registry.path = 'reg-path'
+        config.registry.username = 'reg-usr'
+        config.registry.password = 'reg-pw'
+        config.registry.proxyUrl = 'reg-proxy-url'
+        config.registry.proxyUsername = 'reg-proxy-usr'
+        config.registry.proxyPassword = 'reg-proxy-pw'
+
+        createJenkins().install()
+
+        verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_PROXY_URL', 'reg-proxy-url')
+
+        verify(globalPropertyManager).setGlobalProperty(eq('MY_PREFIX_REGISTRY_URL'), anyString())
+        verify(globalPropertyManager).setGlobalProperty(eq('MY_PREFIX_REGISTRY_PATH'), anyString())
+    }
+
+    @Test
     void 'Does not create create job credentials when argo cd is deactivated'() {
         config.application.namePrefixForEnvVars = 'MY_PREFIX_'
         when(userManager.isUsingCasSecurityRealm()).thenReturn(true)
