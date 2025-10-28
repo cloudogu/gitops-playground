@@ -116,7 +116,7 @@ class ScmManagerUrlResolverTest {
         // with empty/blank namePrefix
         config.application.namePrefix = '   '
         def r2 = resolverWith()
-        assertEquals('http://scmm.scm-manager.svc.cluster.local/scm/repo', r2.inClusterRepoPrefix())
+        assertEquals('http://scmm.scm-manager.svc.cluster.local/scm/repo/', r2.inClusterRepoPrefix())
     }
 
     // ---------- externalBase selection & error ----------

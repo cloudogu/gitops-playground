@@ -47,6 +47,10 @@ class ScmManagerUrlResolver {
         def base = withSlash(inClusterBase())
         def url = withSlash(base.resolve(root()))
 
+        //TODO Anna i had to inject this if no namespace is given
+        if(!prefix){
+            return URI.create(url.toString() + prefix).toString()
+        }
         return noTrailSlash(URI.create(url.toString() + prefix)).toString()
     }
 
