@@ -140,9 +140,8 @@ class GitHandler extends Feature {
         gitProvider.createRepository(withOrgPrefix(namePrefix, "3rd-party-dependencies/ces-build-lib"), "Jenkins pipeline shared library adding features for Maven, Gradle, Docker, SonarQube, Git and others")
     }
 
-
     /**
-     * Adds a prefix to the ORG part (before the first '/'):
+     * Adds a prefix to the group/namespace part (before the first '/'):
      * Example: "argocd/argocd" + "foo-" => "foo-argocd/argocd"
      */
     static String withOrgPrefix(String prefix, String repoPath) {

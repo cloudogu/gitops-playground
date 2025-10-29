@@ -325,19 +325,26 @@ That is, if you pass a param via CLI, for example, it will overwrite the corresp
 | - | `jenkins.helm.values` | `[:]` | Map | Helm values of the chart |
 
 ###### Multitenant
+###### MultiTenantSchema
 
-| CLI | Config | Default | Type | Description |
-|-----|--------|---------|------|-------------|
-| `--dedicated-internal` | `multiTenant.internal` | `false` | Boolean | SCM for Central Management is running on the same cluster |
-| `--dedicated-instance` | `multiTenant.useDedicatedInstance` | `false` | Boolean | Toggles the Dedicated Instances Mode |
-| `--central-scm-url` | `multiTenant.centralScmUrl` | `''` | String | URL for the centralized Management Repo |
-| `--central-scm-username` | `multiTenant.username` | `''` | String | CENTRAL SCMM USERNAME |
-| `--central-scm-password` | `multiTenant.password` | `''` | String | CENTRAL SCMM Password |
-| `--central-argocd-namespace` | `multiTenant.centralArgocdNamespace` | `'argocd'` | String | CENTRAL Argocd Repo Namespace |
-| `--central-scm-namespace` | `multiTenant.centralSCMamespace` | `'scm-manager'` | String | Central SCM namespace |
+| CLI                  | Config                     | Default | Type             | Description                                                                                                |
+|----------------------|----------------------------|---------|------------------|------------------------------------------------------------------------------------------------------------|
+| `--dedicated-instance`          | `multiTenant.enabled`      | `false` | Boolean          | Indicates whether multi-tenancy is enabled.                                                               |
+|                      | `multiTenant.centralArgocdNamespace`  | `''`    | String           | Specifies the default tenant name for a multi-tenant system.                                               |
+|                      | `multiTenant.useDedicatedInstance` | `false` | Boolean          | Determines whether the default tenant logic is used.                                                       |
+|                      | `multiTenant.scm`          | `''`    | ScmTenantSchema  | Contains the SCM tenant configuration, referencing SCM provider type, GitLab setup, and SCM manager setup. |
+|                      | `multiTenant.gitlab`       | `''`    | GitlabTenantSchema | Includes GitLab-specific multi-tenancy configurations, such as URL, user, tokens, and group IDs.           |
 
-###### SCM
-###### SCMM
+###### Scm(Tenant)
+
+| CLI              | Config                          | Default      | Type                    | Description                                                           |
+|------------------|---------------------------------|--------------|-------------------------|-----------------------------------------------------------------------|
+| `--scm-provider` | `scmTenant.scmProviderType`     | `SCM_MANAGER` | ScmProviderType         | Specifies the SCM provider type. Possible values: `SCM_MANAGER`, `GITLAB`. |
+|                  | `scmTenant.gitOpsUsername`      | `''`         | String                  | The username for the GitOps user.                                      |
+|                  | `scmTenant.gitlab`              | `''`         | GitlabTenantConfig      | Configuration for GitLab, including URL, username, token, and parent group ID. |
+|                  | `scmTenant.scmManager`          | `''`         | ScmManagerTenantConfig  | Configuration for SCM Manager, such as internal setup or plugin handling. |
+
+###### SCMM(Tenant)
 
 | CLI | Config | Default | Type | Description |
 |-----|--------|---------|------|-------------|
@@ -354,7 +361,15 @@ That is, if you pass a param via CLI, for example, it will overwrite the corresp
 | - | `scmm.helm.values` | `[:]` | Map | Helm values of the chart |
 
 
-###### Gitlab
+###### Gitlab(Tenant)
+
+| CLI               | Config             | Default   | Type   | Description                                                                                                |
+|-------------------|--------------------|-----------|--------|------------------------------------------------------------------------------------------------------------|
+| `--gitlab-url`    | `gitlabTenant.url` | `''`      | String | Base URL for the GitLab instance.                                                                          |
+| `--gitlab-username` | `gitlabTenant.username` | `'oauth2.0'` | String | Defaults to: `oauth2.0` when a PAT token is provided.                                                      |
+| `--gitlab-token`  | `gitlabTenant.password` | `''`      | String | PAT token for the account.                                                                                 |
+| `--gitlab-parent-id` | `gitlabTenant.parentGroupId` | `''`  | String | The numeric ID for the GitLab Group where repositories and subgroups should be created.                    |
+|                   | `gitlabTenant.internal` | `false`  | Boolean | Indicates if GitLab is running in the same Kubernetes cluster. Currently only external URLs are supported. |
 
 ###### Application
 
@@ -675,8 +690,8 @@ To use them locally,
 * `--argocd` - deploy Argo CD GitOps operator
 
 > ⚠️ **Note** that switching between operators is not supported.  
-That is, expect errors (for example with cluster-resources) if you apply the playground once with Argo CD and the next
-time without it. We recommend resetting the cluster with `init-cluster.sh` beforehand.
+> That is, expect errors (for example with cluster-resources) if you apply the playground once with Argo CD and the next
+> time without it. We recommend resetting the cluster with `init-cluster.sh` beforehand.
 
 ##### Deploy with local Cloudogu Ecosystem
 

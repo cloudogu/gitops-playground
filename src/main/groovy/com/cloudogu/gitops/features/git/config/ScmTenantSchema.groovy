@@ -78,7 +78,6 @@ class ScmTenantSchema {
 
     }
 
-
     static class ScmManagerTenantConfig implements ScmManagerConfig {
 
         static final String SCMM_SKIP_RESTART_DESCRIPTION = 'Skips restarting SCM-Manager after plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades.\''

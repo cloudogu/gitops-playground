@@ -6,28 +6,33 @@ import com.cloudogu.gitops.features.git.config.util.GitlabConfig
 import com.cloudogu.gitops.features.git.config.util.ScmManagerConfig
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import picocli.CommandLine.Option
-import static com.cloudogu.gitops.config.ConfigConstants.*
 
 class ScmCentralSchema {
 
     static class GitlabCentralConfig implements GitlabConfig {
+
+        public static final String CENTRAL_GITLAB_URL_DESCRIPTION = "URL for external Gitlab"
+        public static final String CENTRAL_GITLAB_USERNAME_DESCRIPTION = "S"
+        public static final String CENTRAL_GITLAB_PASSWORD_DESCRIPTION = "Password for SCM Manager authentication"
+        public static final String CENTRAL_GITLAB_PARENTGROUP_ID_DESCRIPTION = "Main Group for Gitlab where the GOP creates it's groups/repos"
+
         // Only supports external Gitlab for now
         Boolean internal = false
 
-        @Option(names = ['--central-gitlab-url'], description = SCMM_URL_DESCRIPTION)
-        @JsonPropertyDescription(SCMM_URL_DESCRIPTION)
+        @Option(names = ['--central-gitlab-url'], description = CENTRAL_GITLAB_URL_DESCRIPTION)
+        @JsonPropertyDescription(CENTRAL_GITLAB_URL_DESCRIPTION)
         String url = ''
 
-        @Option(names = ['--central-gitlab-username'], description = SCMM_USERNAME_DESCRIPTION)
-        @JsonPropertyDescription(SCMM_USERNAME_DESCRIPTION)
+        @Option(names = ['--central-gitlab-username'], description = CENTRAL_GITLAB_USERNAME_DESCRIPTION)
+        @JsonPropertyDescription(CENTRAL_GITLAB_USERNAME_DESCRIPTION)
         String username = 'oauth2.0'
 
-        @Option(names = ['--central-gitlab-token'], description = SCMM_PASSWORD_DESCRIPTION)
-        @JsonPropertyDescription(SCMM_PASSWORD_DESCRIPTION)
+        @Option(names = ['--central-gitlab-token'], description = CENTRAL_GITLAB_PASSWORD_DESCRIPTION)
+        @JsonPropertyDescription(CENTRAL_GITLAB_PASSWORD_DESCRIPTION)
         String password = ''
 
-        @Option(names = ['--central-gitlab-parent-id'], description = SCMM_PASSWORD_DESCRIPTION)
-        @JsonPropertyDescription(SCMM_PASSWORD_DESCRIPTION)
+        @Option(names = ['--central-gitlab-group-id'], description = CENTRAL_GITLAB_PARENTGROUP_ID_DESCRIPTION)
+        @JsonPropertyDescription(CENTRAL_GITLAB_PARENTGROUP_ID_DESCRIPTION)
         String parentGroupId = ''
 
         Credentials getCredentials() {
@@ -35,17 +40,23 @@ class ScmCentralSchema {
         }
 
         String gitOpsUsername = ''
-
     }
 
     static class ScmManagerCentralConfig implements ScmManagerConfig {
 
-        @Option(names = ['--dedicated-internal'], description = CENTRAL_SCM_INTERNAL_DESCRIPTION)
-        @JsonPropertyDescription(CENTRAL_SCM_INTERNAL_DESCRIPTION)
+        public static final String CENTRAL_SCMM_INTERNAL_DESCRIPTION = 'SCM for Central Management is running on the same cluster, so k8s internal URLs can be used for access'
+        public static final String CENTRAL_SCMM_URL_DESCRIPTION = 'URL for the centralized Management Repo'
+        public static final String CENTRAL_SCMM_USERNAME_DESCRIPTION = 'CENTRAL SCMM USERNAME'
+        public static final String CENTRAL_SCMM_PASSWORD_DESCRIPTION = 'CENTRAL SCMM Password'
+        public static final String CENTRAL_SCMM_PATH_DESCRIPTION = 'Root path for SCM Manager'
+        public static final String CENTRAL_SCMM_NAMESPACE_DESCRIPTION = 'Namespace where to find the Central SCMM'
+
+        @Option(names = ['--central-scmm-internal'], description = CENTRAL_SCMM_INTERNAL_DESCRIPTION)
+        @JsonPropertyDescription(CENTRAL_SCMM_INTERNAL_DESCRIPTION)
         Boolean internal = false
 
-        @Option(names = ['--central-scmm-url'], description = CENTRAL_MGMT_REPO_DESCRIPTION)
-        @JsonPropertyDescription(CENTRAL_MGMT_REPO_DESCRIPTION)
+        @Option(names = ['--central-scmm-url'], description = CENTRAL_SCMM_URL_DESCRIPTION)
+        @JsonPropertyDescription(CENTRAL_SCMM_URL_DESCRIPTION)
         String url = ''
 
         @Option(names = ['--central-scmm-username'], description = CENTRAL_SCMM_USERNAME_DESCRIPTION)
@@ -56,22 +67,22 @@ class ScmCentralSchema {
         @JsonPropertyDescription(CENTRAL_SCMM_PASSWORD_DESCRIPTION)
         String password = ''
 
-        @Option(names = ['--central-scmm-path'], description = CENTRAL_SCMM_PASSWORD_DESCRIPTION)
-        @JsonPropertyDescription(CENTRAL_SCMM_PASSWORD_DESCRIPTION)
+        @Option(names = ['--central-scmm-root-path'], description = CENTRAL_SCMM_PATH_DESCRIPTION)
+        @JsonPropertyDescription(CENTRAL_SCMM_PATH_DESCRIPTION)
         String rootPath
 
-        @Option(names = ['--central-scmm-namespace'], description = 'Namespace where the central scm resides in')
-        @JsonPropertyDescription(CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
+        @Option(names = ['--central-scmm-namespace'], description = CENTRAL_SCMM_NAMESPACE_DESCRIPTION)
+        @JsonPropertyDescription(CENTRAL_SCMM_NAMESPACE_DESCRIPTION)
         String namespace = 'scm-manager'
 
         @Override
         String getIngress() {
-            return null
+            return null //Needed for setup
         }
 
         @Override
         Config.HelmConfigWithValues getHelm() {
-            return null
+            return null //Needed for setup
         }
 
         Credentials getCredentials() {
