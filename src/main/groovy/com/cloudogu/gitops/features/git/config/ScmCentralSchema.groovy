@@ -38,8 +38,6 @@ class ScmCentralSchema {
         Credentials getCredentials() {
             return new Credentials(username, password)
         }
-
-        String gitOpsUsername = ''
     }
 
     static class ScmManagerCentralConfig implements ScmManagerConfig {
@@ -69,7 +67,7 @@ class ScmCentralSchema {
 
         @Option(names = ['--central-scmm-root-path'], description = CENTRAL_SCMM_PATH_DESCRIPTION)
         @JsonPropertyDescription(CENTRAL_SCMM_PATH_DESCRIPTION)
-        String rootPath
+        String rootPath = 'repo'
 
         @Option(names = ['--central-scmm-namespace'], description = CENTRAL_SCMM_NAMESPACE_DESCRIPTION)
         @JsonPropertyDescription(CENTRAL_SCMM_NAMESPACE_DESCRIPTION)

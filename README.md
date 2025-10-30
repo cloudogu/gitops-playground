@@ -324,17 +324,6 @@ That is, if you pass a param via CLI, for example, it will overwrite the corresp
 | - | `jenkins.helm.version` | `'5.8.43'` | String | The version of the Helm chart to be installed |
 | - | `jenkins.helm.values` | `[:]` | Map | Helm values of the chart |
 
-###### Multitenant
-###### MultiTenantSchema
-
-| CLI                  | Config                     | Default | Type             | Description                                                                                                |
-|----------------------|----------------------------|---------|------------------|------------------------------------------------------------------------------------------------------------|
-| `--dedicated-instance`          | `multiTenant.enabled`      | `false` | Boolean          | Indicates whether multi-tenancy is enabled.                                                               |
-|                      | `multiTenant.centralArgocdNamespace`  | `''`    | String           | Specifies the default tenant name for a multi-tenant system.                                               |
-|                      | `multiTenant.useDedicatedInstance` | `false` | Boolean          | Determines whether the default tenant logic is used.                                                       |
-|                      | `multiTenant.scm`          | `''`    | ScmTenantSchema  | Contains the SCM tenant configuration, referencing SCM provider type, GitLab setup, and SCM manager setup. |
-|                      | `multiTenant.gitlab`       | `''`    | GitlabTenantSchema | Includes GitLab-specific multi-tenancy configurations, such as URL, user, tokens, and group IDs.           |
-
 ###### Scm(Tenant)
 
 | CLI              | Config                          | Default      | Type                    | Description                                                           |
@@ -354,7 +343,6 @@ That is, if you pass a param via CLI, for example, it will overwrite the corresp
 | `--scmm-username` | `scmm.username` | `'admin'` | String | Mandatory when scmm-url is set |
 | `--scmm-password` | `scmm.password` | `'admin'` | String | Mandatory when scmm-url is set |
 | `--scm-root-path` | `scmm.rootPath` | `'repo'` | String | Sets the root path for the Git Repositories |
-| `--scm-provider` | `scmm.provider` | `'scm-manager'` | String | Sets the scm Provider. Possible Options are "scm-manager" and "gitlab" |
 | - | `scmm.helm.chart` | `'scm-manager'` | String | Name of the Helm chart |
 | - | `scmm.helm.repoURL` | `'https://packages.scm-manager.org/repository/helm-v2-releases/'` | String | Repository url from which the Helm chart should be obtained |
 | - | `scmm.helm.version` | `'3.10.2'` | String | The version of the Helm chart to be installed |
@@ -523,6 +511,37 @@ That is, if you pass a param via CLI, for example, it will overwrite the corresp
 | - | `content.repos[].target` | `''` | String | Target repo for the repository in the form of namespace/name |
 | - | `content.repos[].overwriteMode` | `INIT` | OverwriteMode | How customer repos will be updated (INIT, RESET, UPGRADE) |
 | - | `content.repos[].createJenkinsJob` | `false` | Boolean | If true, creates a Jenkins job |
+
+###### MultiTenant
+
+| CLI                          | Config                              | Default       | Type                     | Description                                                    |
+|------------------------------|-------------------------------------|---------------|--------------------------|----------------------------------------------------------------|
+| `--dedicated-instance`       | `multiTenant.useDedicatedInstance`  | `false`       | Boolean                  | Toggles the Dedicated Instances Mode. See docs for more info   |
+| `--central-argocd-namespace` | `multiTenant.centralArgocdNamespace`| `'argocd'`    | String                   | Namespace for the centralized Argocd                           |
+| `--central-scm-provider`     | `multiTenant.scmProviderType`       | `SCM_MANAGER` | ScmProviderType          | The SCM provider type. Possible values: `SCM_MANAGER`, `GITLAB`|
+|                              | `multiTenant.gitlab`                | ``        | GitlabCentralConfig      | Config for GITLAB                                              |
+|                              | `multiTenant.scmManager`            | ``        | ScmManagerCentralConfig  | Config for SCM Manager                                         |
+
+###### Gitlab(Central)
+
+| CLI                          | Config                         | Default     | Type    | Description                                                      |
+|------------------------------|--------------------------------|-------------|---------|------------------------------------------------------------------|
+| `--central-gitlab-url`       | `multiTenant.gitlab.url`       | `''`        | String  | URL for external Gitlab                                          |
+| `--central-gitlab-username`  | `multiTenant.gitlab.username`  | `'oauth2.0'`| String  | Username for GitLab authentication                               |
+| `--central-gitlab-token`     | `multiTenant.gitlab.password`  | `''`        | String  | Password for SCM Manager authentication                          |
+| `--central-gitlab-group-id`  | `multiTenant.gitlab.parentGroupId` | `''`    | String  | Main Group for Gitlab where the GOP creates it's groups/repos    |
+|                              | `multiTenant.gitlab.internal`  | `false`     | Boolean | SCM is running on the same cluster (only external supported now) |
+
+###### Scm-Manager(Central)
+
+| CLI                          | Config                              | Default         | Type    | Description                                                                          |
+|------------------------------|-------------------------------------|-----------------|---------|--------------------------------------------------------------------------------------|
+| `--central-scmm-internal`    | `multiTenant.scmManager.internal`   | `false`         | Boolean | SCM for Central Management is running on the same cluster, so k8s internal URLs can be used for access |
+| `--central-scmm-url`         | `multiTenant.scmManager.url`        | `''`            | String  | URL for the centralized Management Repo                                              |
+| `--central-scmm-username`    | `multiTenant.scmManager.username`   | `''`            | String  | CENTRAL SCMM USERNAME                                                                |
+| `--central-scmm-password`    | `multiTenant.scmManager.password`   | `''`            | String  | CENTRAL SCMM Password                                                                |
+| `--central-scmm-root-path`   | `multiTenant.scmManager.rootPath`   | `'repo'`        | String  | Root path for SCM Manager                                                            |
+| `--central-scmm-namespace`   | `multiTenant.scmManager.namespace`  | `'scm-manager'` | String  | Namespace where to find the Central SCMM                                             |
 
 ##### Configuration file
 
