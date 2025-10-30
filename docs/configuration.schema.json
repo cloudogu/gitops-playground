@@ -730,19 +730,19 @@
           "properties" : {
             "parentGroupId" : {
               "type" : [ "string", "null" ],
-              "description" : "Mandatory when scmm-url is set"
+              "description" : "Main Group for Gitlab where the GOP creates it's groups/repos"
             },
             "password" : {
               "type" : [ "string", "null" ],
-              "description" : "Mandatory when scmm-url is set"
+              "description" : "Password for SCM Manager authentication"
             },
             "url" : {
               "type" : [ "string", "null" ],
-              "description" : "The host of your external scm-manager"
+              "description" : "URL for external Gitlab"
             },
             "username" : {
               "type" : [ "string", "null" ],
-              "description" : "Mandatory when scmm-url is set"
+              "description" : "GitLab username for API access. Must be 'oauth2' when using Personal Access Token (PAT) authentication"
             }
           },
           "additionalProperties" : false,
@@ -757,15 +757,15 @@
             },
             "namespace" : {
               "type" : [ "string", "null" ],
-              "description" : "CENTRAL Argocd Repo Namespace"
+              "description" : "Namespace where to find the Central SCMM"
             },
             "password" : {
               "type" : [ "string", "null" ],
-              "description" : "CENTRAL SCMM Password"
+              "description" : "CENTRAL SCMM password"
             },
             "rootPath" : {
               "type" : [ "string", "null" ],
-              "description" : "CENTRAL SCMM Password"
+              "description" : "Root path for SCM Manager"
             },
             "url" : {
               "type" : [ "string", "null" ],
@@ -773,7 +773,7 @@
             },
             "username" : {
               "type" : [ "string", "null" ],
-              "description" : "CENTRAL SCMM USERNAME"
+              "description" : "CENTRAL SCMM username"
             }
           },
           "additionalProperties" : false,
@@ -876,10 +876,6 @@
     "scm" : {
       "type" : [ "object", "null" ],
       "properties" : {
-        "gitOpsUsername" : {
-          "type" : [ "string", "null" ],
-          "description" : "Username for the Gitops User"
-        },
         "gitlab" : {
           "type" : [ "object", "null" ],
           "properties" : {
