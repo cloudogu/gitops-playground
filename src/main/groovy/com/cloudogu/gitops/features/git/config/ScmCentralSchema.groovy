@@ -12,7 +12,7 @@ class ScmCentralSchema {
     static class GitlabCentralConfig implements GitlabConfig {
 
         public static final String CENTRAL_GITLAB_URL_DESCRIPTION = "URL for external Gitlab"
-        public static final String CENTRAL_GITLAB_USERNAME_DESCRIPTION = "S"
+        public static final String CENTRAL_GITLAB_USERNAME_DESCRIPTION = "GitLab username for API access. Must be 'oauth2' when using Personal Access Token (PAT) authentication"
         public static final String CENTRAL_GITLAB_PASSWORD_DESCRIPTION = "Password for SCM Manager authentication"
         public static final String CENTRAL_GITLAB_PARENTGROUP_ID_DESCRIPTION = "Main Group for Gitlab where the GOP creates it's groups/repos"
 
@@ -44,8 +44,8 @@ class ScmCentralSchema {
 
         public static final String CENTRAL_SCMM_INTERNAL_DESCRIPTION = 'SCM for Central Management is running on the same cluster, so k8s internal URLs can be used for access'
         public static final String CENTRAL_SCMM_URL_DESCRIPTION = 'URL for the centralized Management Repo'
-        public static final String CENTRAL_SCMM_USERNAME_DESCRIPTION = 'CENTRAL SCMM USERNAME'
-        public static final String CENTRAL_SCMM_PASSWORD_DESCRIPTION = 'CENTRAL SCMM Password'
+        public static final String CENTRAL_SCMM_USERNAME_DESCRIPTION = 'CENTRAL SCMM username'
+        public static final String CENTRAL_SCMM_PASSWORD_DESCRIPTION = 'CENTRAL SCMM password'
         public static final String CENTRAL_SCMM_PATH_DESCRIPTION = 'Root path for SCM Manager'
         public static final String CENTRAL_SCMM_NAMESPACE_DESCRIPTION = 'Namespace where to find the Central SCMM'
 

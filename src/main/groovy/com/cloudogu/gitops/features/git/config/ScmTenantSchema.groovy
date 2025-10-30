@@ -37,9 +37,6 @@ class ScmTenantSchema {
     @Mixin
     ScmManagerTenantConfig scmManager
 
-    @JsonPropertyDescription(GITOPSUSERNAME_DESCRIPTION)
-    String gitOpsUsername = ''
-
     @JsonIgnore
     Boolean internal = { ->
         return (gitlab.internal || scmManager.internal)

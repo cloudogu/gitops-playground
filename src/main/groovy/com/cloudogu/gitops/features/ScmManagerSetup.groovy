@@ -105,7 +105,7 @@ class ScmManagerSetup extends Feature {
             }
         }
 
-        //disabled setup for faster testing
+        //disable setup for faster testing
         commandExecutor.execute("${fileSystemUtils.rootDir}/scripts/scm-manager/init-scmm.sh", [
 
                 GIT_COMMITTER_NAME           : config.application.gitName,

@@ -57,6 +57,7 @@ class GitHandler extends Feature {
 
             // More internal fields are set lazily in ScmManger.groovy (after SCMM is deployed and ports are known)
         }
+        config.scm.scmManager.gitOpsUsername="${config.application.namePrefix}gitops"
 
         if (config.scm.gitlab.url) {
             config.scm.scmProviderType = ScmProviderType.GITLAB

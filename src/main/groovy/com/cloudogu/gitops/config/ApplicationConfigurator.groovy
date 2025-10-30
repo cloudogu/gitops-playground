@@ -114,8 +114,6 @@ class ApplicationConfigurator {
     private void addScmConfig(Config newConfig) {
         log.debug("Adding additional config for SCM")
 
-        newConfig.scm.gitOpsUsername = "${newConfig.application.namePrefix}gitops"
-
         if (newConfig.scm.scmManager.url) {
             log.debug("Setting external scmm config")
             newConfig.scm.scmManager.internal = false
