@@ -4,10 +4,10 @@ import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
-import com.cloudogu.gitops.scmm.ScmmRepo
-import com.cloudogu.gitops.scmm.ScmmRepoProvider
+import com.cloudogu.gitops.features.git.GitHandler
+import com.cloudogu.gitops.git.GitRepo
+import com.cloudogu.gitops.git.GitRepoFactory
 import com.cloudogu.gitops.utils.*
-import com.cloudogu.gitops.scmm.ScmUrlResolver
 import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
@@ -31,10 +31,11 @@ class PrometheusStack extends Feature implements FeatureWithImage {
     Config config
     K8sClient k8sClient
 
-    ScmmRepoProvider scmmRepoProvider
+    GitRepoFactory scmRepoProvider
     private FileSystemUtils fileSystemUtils
     private DeploymentStrategy deployer
     private AirGappedUtils airGappedUtils
+    private GitHandler gitHandler
 
     PrometheusStack(
             Config config,
@@ -42,14 +43,16 @@ class PrometheusStack extends Feature implements FeatureWithImage {
             DeploymentStrategy deployer,
             K8sClient k8sClient,
             AirGappedUtils airGappedUtils,
-            ScmmRepoProvider scmmRepoProvider
+            GitRepoFactory scmRepoProvider,
+            GitHandler gitHandler
     ) {
         this.deployer = deployer
         this.config = config
         this.fileSystemUtils = fileSystemUtils
         this.k8sClient = k8sClient
         this.airGappedUtils = airGappedUtils
-        this.scmmRepoProvider = scmmRepoProvider
+        this.scmRepoProvider = scmRepoProvider
+        this.gitHandler = gitHandler
     }
 
     @Override
@@ -68,7 +71,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
 
         Map<String, Object> templateModel = buildTemplateValues(config, uid)
 
-        def values    = templateToMap(HELM_VALUES_PATH, templateModel)
+        def values = templateToMap(HELM_VALUES_PATH, templateModel)
 
         def helmConfig = config.features.monitoring.helm
         def mergedMap = MapUtils.deepMerge(helmConfig.values, values)
@@ -99,7 +102,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
         }
 
         if (config.application.namespaceIsolation || config.application.netpols) {
-            ScmmRepo clusterResourcesRepo = scmmRepoProvider.getRepo('argocd/cluster-resources', config.multiTenant.useDedicatedInstance)
+            GitRepo clusterResourcesRepo = scmRepoProvider.getRepo('argocd/cluster-resources', this.gitHandler.resourcesScm)
             clusterResourcesRepo.cloneRepo()
             for (String currentNamespace : config.application.namespaces.activeNamespaces) {
 
@@ -134,7 +137,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
                             'Chart.yaml'))['version']
 
             deployer.deployFeature(
-                    ScmUrlResolver.scmmRepoUrl(config, repoNamespaceAndName),
+                    this.gitHandler.resourcesScm.repoUrl(repoNamespaceAndName),
                     'prometheusstack',
                     '.',
                     prometheusVersion,
@@ -154,27 +157,27 @@ class PrometheusStack extends Feature implements FeatureWithImage {
         }
     }
 
-    private Map<String, Object> buildTemplateValues(Config config, String uid){
+    private Map<String, Object> buildTemplateValues(Config config, String uid) {
         def model = [
                 monitoring: [grafana: [host: config.features.monitoring.grafanaUrl ? new URL(config.features.monitoring.grafanaUrl).host : ""]],
                 namespaces: (config.application.namespaces.activeNamespaces ?: []) as LinkedHashSet<String>,
-                scmm      : scmConfigurationMetrics(),
+                scm      : scmConfigurationMetrics(),
                 jenkins   : jenkinsConfigurationMetrics(),
                 uid       : uid,
                 config    : config,
                 // Allow for using static classes inside the templates
-                statics : new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
+                statics   : new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
         ] as Map<String, Object>
 
         return model
     }
 
     private Map scmConfigurationMetrics() {
-        def uri = ScmUrlResolver.scmmBaseUri(config).resolve("api/v2/metrics/prometheus")
+        def uri = this.gitHandler.resourcesScm.prometheusMetricsEndpoint()
         [
-                protocol: uri.scheme ?: "",
-                host    : uri.authority ?: "",
-                path    : uri.path ?: ""
+                protocol: uri?.scheme ?: "",
+                host    : uri?.authority ?: "",
+                path    : uri?.path ?: ""
         ]
     }
 

@@ -1,15 +1,18 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Config
-
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
+import com.cloudogu.gitops.features.git.GitHandler
+import com.cloudogu.gitops.utils.git.ScmManagerMock
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.utils.git.GitHandlerForTests
 import com.cloudogu.gitops.utils.K8sClientForTest
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
+
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -19,19 +22,24 @@ import static org.mockito.Mockito.*
 
 class MailhogTest {
 
-    Config config = new Config(
-            application: new Config.ApplicationSchema(
-                    namePrefix: "foo-"),
-            features: new Config.FeaturesSchema(
-                    mail: new Config.MailSchema(
-                            mailhog: true)
-            ))
+    Config config = Config.fromMap([
+            application: [
+                    namePrefix: "foo-"
+            ],
+            features   : [
+                    mail: [
+                            mailhog: true
+                    ]
+            ]
+    ])
+
 
     DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
     AirGappedUtils airGappedUtils = mock(AirGappedUtils)
     Path temporaryYamlFile = null
     FileSystemUtils fileSystemUtils = new FileSystemUtils()
     K8sClientForTest k8sClient = new K8sClientForTest(config)
+    GitHandler gitHandler = new GitHandlerForTests(config, new ScmManagerMock())
 
     @Test
     void "is disabled via active flag"() {
@@ -183,7 +191,7 @@ class MailhogTest {
         assertThat(helmConfig.value.repoURL).isEqualTo('https://codecentric.github.io/helm-charts')
         assertThat(helmConfig.value.version).isEqualTo('5.0.1')
         verify(deploymentStrategy).deployFeature(
-                'http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
+                'http://scmm.scm-manager.svc.cluster.local/scm/repo/a/b',
                 'mailhog', '.', '1.2.3', 'foo-monitoring',
                 'mailhog', temporaryYamlFile, DeploymentStrategy.RepoType.GIT)
     }
@@ -223,7 +231,7 @@ class MailhogTest {
                 // Path after template invocation
                 return ret
             }
-        }, deploymentStrategy, k8sClient, airGappedUtils)
+        }, deploymentStrategy, k8sClient, airGappedUtils, gitHandler)
     }
 
     private Map parseActualYaml() {

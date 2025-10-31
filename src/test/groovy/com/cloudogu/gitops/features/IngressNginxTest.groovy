@@ -1,14 +1,19 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Config
-
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
+import com.cloudogu.gitops.features.git.GitHandler
+import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.utils.AirGappedUtils
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClientForTest
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.ArgumentCaptor
+import org.mockito.Mock
+import org.mockito.junit.jupiter.MockitoExtension
+
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -16,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*
 
+@ExtendWith(MockitoExtension.class)
 class IngressNginxTest {
 
     // setting default config values with ingress nginx active
@@ -28,10 +34,17 @@ class IngressNginxTest {
             ))
     Path temporaryYamlFile
     FileSystemUtils fileSystemUtils = new FileSystemUtils()
-    DeploymentStrategy deploymentStrategy = mock(DeploymentStrategy)
-    AirGappedUtils airGappedUtils = mock(AirGappedUtils)
+
     K8sClientForTest k8sClient = new K8sClientForTest(config)
 
+    @Mock
+    DeploymentStrategy deploymentStrategy
+    @Mock
+    AirGappedUtils airGappedUtils
+    @Mock
+    GitHandler gitHandler
+    @Mock
+    GitProvider gitProvider
 
     @Test
     void 'Helm release is installed'() {
@@ -42,7 +55,7 @@ class IngressNginxTest {
         assertThat(actual['controller']['replicaCount']).isEqualTo(2)
 
         verify(deploymentStrategy).deployFeature(config.features.ingressNginx.helm.repoURL, 'ingress-nginx',
-                config.features.ingressNginx.helm.chart, config.features.ingressNginx.helm.version,'foo-ingress-nginx',
+                config.features.ingressNginx.helm.chart, config.features.ingressNginx.helm.version, 'foo-ingress-nginx',
                 'ingress-nginx', temporaryYamlFile)
         assertThat(parseActualYaml()['controller']['resources']).isNull()
         assertThat(parseActualYaml()['controller']['metrics']).isNull()
@@ -74,8 +87,8 @@ class IngressNginxTest {
         config.features.ingressNginx.helm.values = [
                 controller: [
                         replicaCount: 42,
-                        span: '7,5',
-                   ]
+                        span        : '7,5',
+                ]
         ]
 
         createIngressNginx().install()
@@ -88,8 +101,11 @@ class IngressNginxTest {
 
     @Test
     void 'helm release is installed in air-gapped mode'() {
-        config.application.mirrorRepos = true
+        when(gitHandler.getResourcesScm()).thenReturn(gitProvider)
+        when(gitProvider.repoUrl(any())).thenReturn("http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b")
         when(airGappedUtils.mirrorHelmRepoToGit(any(Config.HelmConfig))).thenReturn('a/b')
+
+        config.application.mirrorRepos = true
 
         Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
         config.application.localHelmChartFolder = rootChartsFolder.toString()
@@ -97,7 +113,7 @@ class IngressNginxTest {
         Path SourceChart = rootChartsFolder.resolve('ingress-nginx')
         Files.createDirectories(SourceChart)
 
-        Map ChartYaml = [ version     : '1.2.3' ]
+        Map ChartYaml = [version: '1.2.3']
         fileSystemUtils.writeYaml(ChartYaml, SourceChart.resolve('Chart.yaml').toFile())
 
         createIngressNginx().install()
@@ -109,7 +125,7 @@ class IngressNginxTest {
         assertThat(helmConfig.value.version).isEqualTo('4.12.1')
         verify(deploymentStrategy).deployFeature(
                 'http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
-                'ingress-nginx', '.', '1.2.3','foo-ingress-nginx',
+                'ingress-nginx', '.', '1.2.3', 'foo-ingress-nginx',
                 'ingress-nginx', temporaryYamlFile, DeploymentStrategy.RepoType.GIT)
     }
 
@@ -128,7 +144,7 @@ class IngressNginxTest {
     }
 
     @Test
-    void 'Activates network policies'(){
+    void 'Activates network policies'() {
         config.application.netpols = true
 
         createIngressNginx().install()
@@ -171,7 +187,7 @@ class IngressNginxTest {
         config.features.ingressNginx.active = false
         assertThat(createIngressNginx().getActiveNamespaceFromFeature()).isEqualTo(null)
     }
-    
+
     private IngressNginx createIngressNginx() {
         // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
         new IngressNginx(config, new FileSystemUtils() {
@@ -182,7 +198,7 @@ class IngressNginxTest {
                 // Path after template invocation
                 return ret
             }
-        }, deploymentStrategy, k8sClient, airGappedUtils)
+        }, deploymentStrategy, k8sClient, airGappedUtils, gitHandler)
     }
 
     private Map parseActualYaml() {

@@ -19,7 +19,7 @@ spec:
   project: argocd
   source:
     path: ${config.features.argocd.operator?string("operator/", "argocd/")}
-    repoURL: ${scmm.repoUrl}argocd/argocd<#if config.scmm.provider == "gitlab">.git</#if>
+    repoURL: ${scm.repoUrl}argocd/argocd.git
     targetRevision: main
     # needed to sync the operator/rbac folder
     <#if config.features.argocd.operator>

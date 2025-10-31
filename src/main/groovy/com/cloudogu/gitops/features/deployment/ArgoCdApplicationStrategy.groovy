@@ -1,8 +1,9 @@
 package com.cloudogu.gitops.features.deployment
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.scmm.ScmmRepo
-import com.cloudogu.gitops.scmm.ScmmRepoProvider
+import com.cloudogu.gitops.features.git.GitHandler
+import com.cloudogu.gitops.git.GitRepo
+import com.cloudogu.gitops.git.GitRepoFactory
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
@@ -16,16 +17,20 @@ import java.nio.file.Path
 class ArgoCdApplicationStrategy implements DeploymentStrategy {
     private FileSystemUtils fileSystemUtils
     private Config config
-    private final ScmmRepoProvider scmmRepoProvider
+    private final GitRepoFactory gitRepoProvider
+
+    private GitHandler gitHandler
 
     ArgoCdApplicationStrategy(
             Config config,
             FileSystemUtils fileSystemUtils,
-            ScmmRepoProvider scmmRepoProvider
+            GitRepoFactory gitRepoProvider,
+            GitHandler gitHandler
     ) {
-        this.scmmRepoProvider = scmmRepoProvider
+        this.gitRepoProvider = gitRepoProvider
         this.fileSystemUtils = fileSystemUtils
         this.config = config
+        this.gitHandler = gitHandler
     }
 
     @Override
@@ -37,7 +42,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
         def namePrefix = config.application.namePrefix
         def shallCreateNamespace = config.features['argocd']['operator'] ? "CreateNamespace=false" : "CreateNamespace=true"
 
-        ScmmRepo clusterResourcesRepo = scmmRepoProvider.getRepo('argocd/cluster-resources', config.multiTenant.useDedicatedInstance)
+        GitRepo clusterResourcesRepo = gitRepoProvider.getRepo('argocd/cluster-resources', this.gitHandler.resourcesScm)
         clusterResourcesRepo.cloneRepo()
 
         // Inline values from tmpHelmValues file into ArgoCD Application YAML
@@ -72,10 +77,10 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
                         ],
                         project    : project,
                         sources    : [[
-                                              repoURL                         : repoURL,
+                                              repoURL                            : repoURL,
                                               "${chooseKeyChartOrPath(repoType)}": chartOrPath,
-                                              targetRevision                  : version,
-                                              helm                            : [
+                                              targetRevision                     : version,
+                                              helm                               : [
                                                       releaseName: releaseName,
                                                       values     : inlineValues
                                               ]

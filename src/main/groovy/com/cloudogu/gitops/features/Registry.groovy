@@ -15,7 +15,7 @@ import java.nio.file.Path
 
 @Slf4j
 @Singleton
-@Order(50)
+@Order(40)
 class Registry extends Feature {
 
     /**

@@ -1027,4 +1027,3 @@ helm repo update
 
 ### Disclaimer
 The GitLab integration is for **experimental use only** and is **not fully implemented**. Features may be incomplete, unstable, or subject to change. Use at your own discretion.  
-

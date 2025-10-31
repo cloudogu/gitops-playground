@@ -19,7 +19,7 @@ abstract class KubenetesApiTestSetup {
     static String kubeConfigPath
     CoreV1Api api
     int TIME_TO_WAIT = 12
-    int RETRY_SECONDS = 15
+    int RETRY_SECONDS = 30
 
     /**
      * Gets path to kubeconfig
@@ -32,6 +32,7 @@ abstract class KubenetesApiTestSetup {
         }
         assertThat(kubeConfigPath) isNotBlank()
     }
+
     /**
      * establish connection to kubernetes and create API to use.
      */

@@ -1,8 +1,9 @@
 package com.cloudogu.gitops.destroy
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.scmm.ScmmRepo
-import com.cloudogu.gitops.scmm.ScmmRepoProvider
+import com.cloudogu.gitops.features.git.GitHandler
+import com.cloudogu.gitops.git.GitRepo
+import com.cloudogu.gitops.git.GitRepoFactory
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.HelmClient
 import com.cloudogu.gitops.utils.K8sClient
@@ -15,29 +16,31 @@ import java.nio.file.Path
 @Order(100)
 class ArgoCDDestructionHandler implements DestructionHandler {
     private K8sClient k8sClient
-    private ScmmRepoProvider repoProvider
+    private GitRepoFactory repoProvider
     private HelmClient helmClient
     private Config config
     private FileSystemUtils fileSystemUtils
-
+    private GitHandler gitHandler
     ArgoCDDestructionHandler(
             Config config,
             K8sClient k8sClient,
-            ScmmRepoProvider repoProvider,
+            GitRepoFactory repoProvider,
             HelmClient helmClient,
-            FileSystemUtils fileSystemUtils
+            FileSystemUtils fileSystemUtils,
+            GitHandler gitHandler
     ) {
         this.k8sClient = k8sClient
         this.repoProvider = repoProvider
         this.helmClient = helmClient
         this.config = config
         this.fileSystemUtils = fileSystemUtils
+        this.gitHandler = gitHandler
     }
 
     @Override
     void destroy() {
 
-        def repo = repoProvider.getRepo("argocd/argocd")
+        def repo = repoProvider.getRepo("argocd/argocd", gitHandler.resourcesScm)
         repo.cloneRepo()
 
         for (def app in k8sClient.getCustomResource("app")) {
@@ -82,10 +85,10 @@ class ArgoCDDestructionHandler implements DestructionHandler {
         k8sClient.delete("app", 'argocd', "argocd")
 
         k8sClient.delete('secret', 'default', 'jenkins-credentials')
-        k8sClient.delete('secret', 'default', 'argocd-repo-creds-scmm')
+        k8sClient.delete('secret', 'default', 'argocd-repo-creds-scm')
     }
 
-    void installArgoCDViaHelm(ScmmRepo repo) {
+    void installArgoCDViaHelm(GitRepo repo) {
         // this is a hack to be able to uninstall using helm
         def namePrefix = config.application.namePrefix
 

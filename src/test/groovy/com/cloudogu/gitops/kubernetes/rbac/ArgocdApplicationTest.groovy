@@ -1,8 +1,8 @@
 package com.cloudogu.gitops.kubernetes.rbac
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.kubernetes.argocd.ArgoApplication
-import com.cloudogu.gitops.scmm.ScmmRepo
 import com.cloudogu.gitops.utils.FileSystemUtils
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
@@ -13,13 +13,16 @@ class ArgocdApplicationTest {
 
 
     Config config = Config.fromMap([
-            scmm       : [
-                    username: 'user',
-                    password: 'pass',
-                    protocol: 'http',
-                    host    : 'localhost',
-                    provider: 'scm-manager',
-                    rootPath: 'scm'
+            scm        : [
+                    scmManager: [username: 'user',
+                                 password: 'pass',
+                                 host    : 'localhost',
+                                 rootPath: 'scm'
+                    ],
+                    gitlab    : [username: 'user',
+                                 password: 'pass',
+
+                    ]
             ],
             application: [
                     namePrefix: '',
@@ -29,11 +32,10 @@ class ArgocdApplicationTest {
             ]
     ])
 
-
     @Test
     void 'simple ArgoCD Application with common values'() {
 
-        ScmmRepo repo = new ScmmRepo(config, "my-repo", new FileSystemUtils())
+        GitRepo repo = new GitRepo(config, null, "my-repo", new FileSystemUtils())
 
         new ArgoApplication(
                 'example-apps',
