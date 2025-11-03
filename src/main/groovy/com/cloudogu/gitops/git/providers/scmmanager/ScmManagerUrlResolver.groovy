@@ -33,34 +33,29 @@ class ScmManagerUrlResolver {
     /** Client API base …/scm/api/ */
     URI clientApiBase() { withSlash(clientBase()).resolve("api/") }
 
-    /** Client repo base …/scm/<root> (no trailing slash) */
+    /** Client repo base …/scm/repo (no trailing slash) */
     URI clientRepoBase() { noTrailSlash(withSlash(clientBase()).resolve("${root()}/")) }
 
 
     /** In-cluster base …/scm (no trailing slash) */
     URI inClusterBase() { noTrailSlash(ensureScm(inClusterBaseRaw())) }
 
-    /** In-cluster repo prefix …/scm/<root>/[<namePrefix>] */
+    /** In-cluster repo prefix …/scm/repo/[<namePrefix>] */
     String inClusterRepoPrefix() {
         def prefix = (config.application.namePrefix ?: "").strip()
-
         def base = withSlash(inClusterBase())
         def url = withSlash(base.resolve(root()))
 
-        //TODO Anna i had to inject this if no namespace is given
-        if(!prefix){
-            return URI.create(url.toString() + prefix).toString()
-        }
-        return noTrailSlash(URI.create(url.toString() + prefix)).toString()
+        return URI.create(url.toString() + prefix).toString()
     }
 
-    /** In-cluster repo URL …/scm/<root>/<ns>/<name> */
+    /** In-cluster repo URL …/scm/repo/<ns>/<name> */
     String inClusterRepoUrl(String repoTarget) {
         def repo = repoTarget.strip()
         noTrailSlash(withSlash(inClusterBase()).resolve("${root()}/${repo}/")).toString()
     }
 
-    /** Client repo URL …/scm/<root>/<ns>/<name> (no trailing slash) */
+    /** Client repo URL …/scm/repo/<ns>/<name> (no trailing slash) */
     String clientRepoUrl(String repoTarget) {
         def repo = repoTarget.strip()
         noTrailSlash(withSlash(clientRepoBase()).resolve("${repo}/")).toString()
