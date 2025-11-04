@@ -78,7 +78,7 @@ class GitopsPlaygroundCliMainScripted {
 
                 def jenkins = new Jenkins(config, executor, fileSystemUtils, new GlobalPropertyManager(jenkinsApiClient),
                         new JobManager(jenkinsApiClient), new UserManager(jenkinsApiClient),
-                        new PrometheusConfigurator(jenkinsApiClient), helmStrategy, k8sClient, networkingUtils)
+                        new PrometheusConfigurator(jenkinsApiClient), helmStrategy, k8sClient, networkingUtils,gitHandler)
 
                 // make sure the order of features is in same order as the @Order values
                 context.registerSingleton(new Application(config, [

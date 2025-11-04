@@ -2,6 +2,7 @@ package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.HelmStrategy
+import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.jenkins.GlobalPropertyManager
 import com.cloudogu.gitops.jenkins.JobManager
 import com.cloudogu.gitops.jenkins.PrometheusConfigurator
@@ -10,6 +11,8 @@ import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.NetworkingUtils
+import com.cloudogu.gitops.utils.git.GitHandlerForTests
+import com.cloudogu.gitops.utils.git.ScmManagerMock
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -40,6 +43,7 @@ class JenkinsTest {
     Path temporaryYamlFile
     NetworkingUtils networkingUtils = mock(NetworkingUtils.class)
     K8sClient k8sClient = mock(K8sClient)
+    GitHandler gitHandler = new GitHandlerForTests(config, new ScmManagerMock())
 
     @BeforeEach
     void setup() {
@@ -162,8 +166,7 @@ me:x:1000:''')
         config.application.trace = true
         config.features.argocd.active = true
         config.content.examples = true
-        config.scm.scmManager.url = 'http://scmm'
-        config.scm.scmManager.urlForJenkins = 'http://scmm/scm'
+        config.scm.scmManager.url = 'http://scmm.scm-manager.svc.cluster.local/scm'
         config.scm.scmManager.username = 'scmm-usr'
         config.scm.scmManager.password = 'scmm-pw'
         config.application.namePrefix = 'my-prefix-'
@@ -202,7 +205,7 @@ me:x:1000:''')
         assertThat(env['NAME_PREFIX']).isEqualTo('my-prefix-')
         assertThat(env['INSECURE']).isEqualTo('false')
 
-        assertThat(env['SCMM_URL']).isEqualTo('http://scmm/scm')
+        assertThat(env['SCMM_URL']).isEqualTo('http://scmm.scm-manager.svc.cluster.local/scm')
         assertThat(env['SCMM_PASSWORD']).isEqualTo('scmm-pw')
         assertThat(env['INSTALL_ARGOCD']).isEqualTo('true')
 
@@ -294,13 +297,6 @@ me:x:1000:''')
         verify(globalPropertyManager).setGlobalProperty(eq('MY_PREFIX_REGISTRY_URL'), anyString())
         verify(globalPropertyManager).setGlobalProperty(eq('MY_PREFIX_REGISTRY_PATH'), anyString())
 
-        //TODO @Niklas should it removed, because we don't have example apps?
-//        verify(jobManger).createCredential('my-prefix-example-apps', 'registry-user',
-//                'reg-usr', 'reg-pw',
-//                'credentials for accessing the docker-registry for writing images built on jenkins')
-//        verify(jobManger).createCredential('my-prefix-example-apps', 'registry-proxy-user',
-//                'reg-proxy-usr', 'reg-proxy-pw',
-//                'credentials for accessing the docker-registry that contains 3rd party or base images')
     }
 
     @Test
@@ -368,7 +364,7 @@ me:x:1000:''')
                 // Path after template invocation
                 return ret
             }
-        }, globalPropertyManager, jobManger, userManager, prometheusConfigurator, deploymentStrategy, k8sClient, networkingUtils)
+        }, globalPropertyManager, jobManger, userManager, prometheusConfigurator, deploymentStrategy, k8sClient, networkingUtils, gitHandler)
     }
 
     private Map parseActualYaml() {
