@@ -59,29 +59,15 @@ interface ConfigConstants {
 
     // group scmm
     String SCM_DESCRIPTION = 'Config parameters for Scm'
-    String SCMM_SKIP_RESTART_DESCRIPTION = 'Skips restarting SCM-Manager after plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades.\''
-    String SCMM_SKIP_PLUGINS_DESCRIPTION = 'Skips plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades.'
-    String SCMM_URL_DESCRIPTION = 'The host of your external scm-manager'
-    String SCMM_USERNAME_DESCRIPTION = 'Mandatory when scmm-url is set'
-    String SCMM_PASSWORD_DESCRIPTION = 'Mandatory when scmm-url is set'
     String GIT_NAME_DESCRIPTION = 'Sets git author and committer name used for initial commits'
     String GIT_EMAIL_DESCRIPTION = 'Sets git author and committer email used for initial commits'
-    String SCM_ROOT_PATH_DESCRIPTION = 'Sets the root path for the Git Repositories. In SCM-Manager it is always "repo"'
-    String SCM_PROVIDER_DESCRIPTION = 'Sets the scm Provider. Possible Options are "scm-manager" and "gitlab"'
 
     //MutliTentant
-    String CENTRAL_USEDEDICATED_DESCRIPTION = "Toggles the Dedicated Instances Mode"  //TODO better decription, what is dedicated mode?
-    String CENTRAL_SCM_INTERNAL_DESCRIPTION = 'SCM for Central Management is running on the same cluster, so k8s internal URLs can be used for access'
     String MULTITENANT_DESCRIPTION =   'Multi Tenant Configs'
-    String CENTRAL_MGMT_REPO_DESCRIPTION = 'URL for the centralized Management Repo'
-    String CENTRAL_SCMM_USERNAME_DESCRIPTION = 'CENTRAL SCMM USERNAME'
-    String CENTRAL_SCMM_PASSWORD_DESCRIPTION = 'CENTRAL SCMM Password'
-    String CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION = 'CENTRAL Argocd Repo Namespace'
 
     // group remote
     String REMOTE_DESCRIPTION = 'Expose services as LoadBalancers'
     String INSECURE_DESCRIPTION = 'Sets insecure-mode in cURL which skips cert validation'
-    String LOCAL_HELM_CHART_FOLDER_DESCRIPTION = 'A local folder (within the GOP image mostly) where the local mirrors of all helm charts are loaded from when mirror-Repos is active. This is mostly needed for development.'
 
     // group tool configuration
     String APPLICATION_DESCRIPTION = 'Application configuration parameter for GOP'
