@@ -17,6 +17,7 @@ import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
+import org.mockito.Mock
 
 import java.nio.file.Path
 
@@ -43,7 +44,10 @@ class JenkinsTest {
     Path temporaryYamlFile
     NetworkingUtils networkingUtils = mock(NetworkingUtils.class)
     K8sClient k8sClient = mock(K8sClient)
-    GitHandler gitHandler = new GitHandlerForTests(config, new ScmManagerMock())
+
+    @Mock
+    ScmManagerMock scmManagerMock = new ScmManagerMock()
+    GitHandler gitHandler = new GitHandlerForTests(config, scmManagerMock)
 
     @BeforeEach
     void setup() {
@@ -206,13 +210,13 @@ me:x:1000:''')
         assertThat(env['INSECURE']).isEqualTo('false')
 
         assertThat(env['SCMM_URL']).isEqualTo('http://scmm.scm-manager.svc.cluster.local/scm')
-        assertThat(env['SCMM_PASSWORD']).isEqualTo('scmm-pw')
+        assertThat(env['SCMM_PASSWORD']).isEqualTo(scmManagerMock.credentials.password)
         assertThat(env['INSTALL_ARGOCD']).isEqualTo('true')
 
         assertThat(env['SKIP_PLUGINS']).isEqualTo('true')
         assertThat(env['SKIP_RESTART']).isEqualTo('true')
 
-        verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_SCMM_URL', 'http://scmm/scm')
+        verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_SCM_URL', 'http://scmm.scm-manager.svc.cluster.local/scm')
         verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_K8S_VERSION', Config.K8S_VERSION)
 
         verify(globalPropertyManager).setGlobalProperty('MY_PREFIX_REGISTRY_URL', 'reg-url')
