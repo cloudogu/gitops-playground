@@ -151,13 +151,13 @@ class ApplicationConfigurator {
             log.debug("Setting external jenkins config")
             newConfig.jenkins.active = true
             newConfig.jenkins.internal = false
-            newConfig.jenkins.urlForScmm = newConfig.jenkins.url
+            newConfig.jenkins.urlForScm = newConfig.jenkins.url
         } else if (newConfig.jenkins.active) {
             log.debug("Setting configs for internal jenkins")
             // We use the K8s service as default name here, because it is the only option:
             // "jenkins.localhost" will not work inside the Pods and k3d-container IP + Port (e.g. 172.x.y.z:9090)
             // will not work on Windows and MacOS.
-            newConfig.jenkins.urlForScmm = "http://jenkins.${newConfig.application.namePrefix}jenkins.svc.cluster.local"
+            newConfig.jenkins.urlForScm = "http://jenkins.${newConfig.application.namePrefix}jenkins.svc.cluster.local"
 
             // More internal fields are set lazily in Jenkins.groovy (after Jenkins is deployed and ports are known)
         } else {

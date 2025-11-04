@@ -119,7 +119,7 @@ class ScmManagerSetup extends Feature {
                 SCMM_PASSWORD                : config.scm.scmManager.password,
                 JENKINS_URL                  : config.jenkins.url,
                 INTERNAL_SCMM                : config.scm.scmManager.internal,
-                JENKINS_URL_FOR_SCMM         : config.jenkins.urlForScmm,
+                JENKINS_URL_FOR_SCMM         : config.jenkins.urlForScm,
                 SCMM_URL_FOR_JENKINS         : config.scm.scmManager.urlForJenkins,
                 // Used indirectly in utils.sh 😬
                 REMOTE_CLUSTER               : config.application.remote,

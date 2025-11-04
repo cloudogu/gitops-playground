@@ -2,8 +2,6 @@ package com.cloudogu.gitops
 
 import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.config.MultiTenantSchema
-import com.cloudogu.gitops.features.git.config.ScmCentralSchema
 import com.cloudogu.gitops.features.git.config.ScmTenantSchema
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TestLogger
@@ -107,7 +105,7 @@ class ApplicationConfiguratorTest {
         testConfig.jenkins.active = false
 
         def actualConfig = applicationConfigurator.initConfig(testConfig)
-        assertThat(actualConfig.jenkins.urlForScmm).isEmpty()
+        assertThat(actualConfig.jenkins.urlForScm).isEmpty()
     }
 
     @Test

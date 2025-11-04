@@ -55,7 +55,7 @@ class ScmManagerSetupTest {
             jenkins: new Config.JenkinsSchema(
                     internal: true,
                     url: 'http://jenkins',
-                    urlForScmm: 'http://jenkins4scm'
+                    urlForScm: 'http://jenkins4scm'
             ),
             repositories: new Config.RepositoriesSchema(
                     springBootHelmChart: new Config.RepositorySchemaWithRef(

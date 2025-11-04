@@ -1,7 +1,6 @@
 package com.cloudogu.gitops.config
 
 import com.cloudogu.gitops.features.git.config.ScmTenantSchema
-import com.cloudogu.gitops.utils.NetworkingUtils
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import com.fasterxml.jackson.core.JsonGenerator
@@ -230,7 +229,7 @@ class Config {
            
            This is the URL configured in SCMM inside the Jenkins Plugin, e.g. at http://scmm.localhost/scm/admin/settings/jenkins
            See addJenkinsConfig() and the comment at scmm.urlForJenkins */
-        String urlForScmm = ''
+        String urlForScm = ''
         String ingress = ''
         // Bash image used with internal Jenkins only 
         String internalBashImage = 'bash:5'

@@ -42,6 +42,7 @@ class ScmTenantSchema {
         return (gitlab.internal || scmManager.internal)
     }
 
+
     static class GitlabTenantConfig implements GitlabConfig {
 
         static final String GITLAB_INTERNAL_DESCRIPTION = 'True if Gitlab is running in the same K8s cluster. For now we only support access by external URL'

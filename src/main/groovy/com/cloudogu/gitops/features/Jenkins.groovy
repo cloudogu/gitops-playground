@@ -4,16 +4,13 @@ import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.deployment.HelmStrategy
+import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.features.git.config.util.ScmProviderType
 import com.cloudogu.gitops.jenkins.GlobalPropertyManager
 import com.cloudogu.gitops.jenkins.JobManager
 import com.cloudogu.gitops.jenkins.PrometheusConfigurator
 import com.cloudogu.gitops.jenkins.UserManager
-import com.cloudogu.gitops.utils.CommandExecutor
-import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.K8sClient
-import com.cloudogu.gitops.utils.MapUtils
-import com.cloudogu.gitops.utils.NetworkingUtils
+import com.cloudogu.gitops.utils.*
 import freemarker.template.Configuration
 import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
@@ -38,6 +35,7 @@ class Jenkins extends Feature {
     private DeploymentStrategy deployer
     private K8sClient k8sClient
     private NetworkingUtils networkingUtils
+    private GitHandler gitHandler
 
     Jenkins(
             Config config,
@@ -49,7 +47,8 @@ class Jenkins extends Feature {
             PrometheusConfigurator prometheusConfigurator,
             HelmStrategy deployer,
             K8sClient k8sClient,
-            NetworkingUtils networkingUtils
+            NetworkingUtils networkingUtils,
+            GitHandler gitHandler
     ) {
         this.config = config
         this.commandExecutor = commandExecutor
@@ -61,8 +60,9 @@ class Jenkins extends Feature {
         this.deployer = deployer
         this.k8sClient = k8sClient
         this.networkingUtils = networkingUtils
+        this.gitHandler = gitHandler
 
-        if(config.jenkins.internal) {
+        if (config.jenkins.internal) {
             this.namespace = "${config.application.namePrefix}jenkins"
         }
     }
@@ -137,8 +137,8 @@ class Jenkins extends Feature {
                 JENKINS_PASSWORD          : config.jenkins.password,
                 // Used indirectly in utils.sh 😬
                 REMOTE_CLUSTER            : config.application.remote,
-                SCMM_URL                  : config.scm.scmManager.urlForJenkins,
-                SCMM_PASSWORD             : config.scm.scmManager.password,
+                SCMM_URL                  : this.gitHandler.tenant.get,
+                SCMM_PASSWORD             : this.gitHandler.tenant.credentials.password,
                 SCM_PROVIDER              : config.scm.scmProviderType,
                 INSTALL_ARGOCD            : config.features.argocd.active,
                 NAME_PREFIX               : config.application.namePrefix,
@@ -147,7 +147,7 @@ class Jenkins extends Feature {
                 SKIP_PLUGINS              : config.jenkins.skipPlugins
         ])
 
-        globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}SCMM_URL", config.scm.scmManager.urlForJenkins)
+        globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}SCM_URL", this.gitHandler.tenant.url)
 
         if (config.jenkins.additionalEnvs) {
             for (entry in (config.jenkins.additionalEnvs as Map).entrySet()) {
@@ -189,13 +189,16 @@ class Jenkins extends Feature {
     }
 
     void createJenkinsjob(String namespace, String repoName) {
-        def credentialId = "scmm-user"
+        def credentialId = "scm-user"
         String prefixedNamespace = "${config.application.namePrefix}${namespace}"
         String jobName = "${config.application.namePrefix}${repoName}"
+
         jobManager.createJob(jobName,
-                config.scm.getScmManager().urlForJenkins,
+                this.gitHandler.tenant.url,
                 prefixedNamespace,
                 credentialId)
+
+
         if (config.scm.scmProviderType == ScmProviderType.SCM_MANAGER) {
             jobManager.createCredential(
                     jobName,
@@ -209,8 +212,8 @@ class Jenkins extends Feature {
             jobManager.createCredential(
                     jobName,
                     credentialId,
-                    "${config.scm.getScmManager().username}",
-                    "${config.scm.getScmManager().password}",
+                    "${config.scm.getGitlab().username}",
+                    "${config.scm.getGitlab().password}",
                     'credentials for accessing gitlab')
         }
 
