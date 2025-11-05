@@ -45,7 +45,7 @@ interface GitProvider {
 
     String getProtocol()
 
-    String getHost() //TODO? can we maybe get this via helper and config?
+    String getHost()
 
     String getGitOpsUsername()
 

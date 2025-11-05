@@ -176,17 +176,6 @@ class ArgoCD extends Feature {
             FileSystemUtils.deleteFile clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + MONITORING_RESOURCES_PATH + 'ingress-nginx-dashboard-requests-handling.yaml'
         }
 
-        //TODO Anna do we need this? Or just pass the correct URL directly?
-        /*if (!config.scm.isInternal) {
-            String externalScmUrl = ScmmRepo.createScmmUrl(config)
-            log.debug("Configuring all yaml files in gitops repos to use the external scm url: ${externalScmUrl}")
-            replaceFileContentInYamls(new File(clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()), scmmUrlInternal, externalScmUrl)
-
-            if (config.content.examples) {
-                replaceFileContentInYamls(new File(exampleAppsInitializationAction.repo.getAbsoluteLocalRepoTmpDir()), scmmUrlInternal, externalScmUrl)
-            }
-        } */
-
     }
 
     private void deployWithHelm() {
@@ -397,14 +386,6 @@ class ArgoCD extends Feature {
             log.debug("Deleting unnecessary multiTenant folder from argocd repo: ${argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
             FileSystemUtils.deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/multiTenant'
         }
-
-        /* TODO do we need this?
-        if (!config.scmm.internal) {
-            String externalScmmUrl = ScmUrlResolver.externalHost(config)
-            log.debug("Configuring all yaml files in argocd repo to use the external scmm url: ${externalScmmUrl}")
-            replaceFileContentInYamls(new File(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()), scmmUrlInternal, externalScmmUrl)
-        }
-        */
 
         if (!config.application.netpols) {
             log.debug("Deleting argocd netpols.")

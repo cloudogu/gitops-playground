@@ -39,7 +39,7 @@ class RepoInitializationAction {
     private Map<String, Object> buildTemplateValues(Config config) {
         def model = [
                 tenantName: config.application.tenantName,
-                argocd    : [host: config.features.argocd.url ? new URL(config.features.argocd.url).host : ""], //TODO move this to argocd class and get the url from there
+                argocd    : [host: config.features.argocd.url ? new URL(config.features.argocd.url).host : ""],
                 scm      : [
                         baseUrl : this.repo.gitProvider.url,
                         host    : this.repo.gitProvider.host,

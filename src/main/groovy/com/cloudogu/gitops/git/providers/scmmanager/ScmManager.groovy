@@ -206,7 +206,7 @@ void setupInternalScm(String namespace) {
     setInternalUrl()
 }
 
-//TODO URL handling by object
+//TO DO URL handling by object
 String setInternalUrl() {
     this.url="http://scmm.${namespace}.svc.cluster.local/scm"
 }
@@ -237,7 +237,7 @@ void setupHelm() {
     waitForScmmAvailable()
 }
 
-//TODO System.env to config Object
+//TO DO System.env to config Object
 def installScmmPlugins(Boolean restart = true) {
 
     if (System.getenv('SKIP_PLUGINS')?.toLowerCase() == 'true') {
