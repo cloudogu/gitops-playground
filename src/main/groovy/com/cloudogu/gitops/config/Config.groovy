@@ -218,8 +218,8 @@ class Config {
         @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
         HelmConfigWithValues helm = new HelmConfigWithValues(
                 chart: 'docker-registry',
-                repoURL: 'https://helm.twun.io',
-                version: '2.2.3')
+                repoURL: 'https://twuni.github.io/docker-registry.helm',
+                version: '3.0.0')
     }
 
     static class JenkinsSchema {
