@@ -57,23 +57,6 @@ class ScmManager implements GitProvider {
     }
 
 
-    //TODO implement
-    @Override
-    void setDefaultBranch(String repoTarget, String branch) {
-
-    }
-
-    //TODO implement
-    @Override
-    void deleteRepository(String namespace, String repository, boolean prefixNamespace) {
-
-    }
-    //TODO implement
-    @Override
-    void deleteUser(String name) {
-
-    }
-
     @Override
     String getGitOpsUsername() {
         return scmmConfig.gitOpsUsername
@@ -116,11 +99,35 @@ class ScmManager implements GitProvider {
         return urls.inClusterBase().host // e.g. "scmm.ns.svc.cluster.local"
     }
 
-
     /** …/scm/api/v2/metrics/prometheus — client-side, typically scraped externally */
     @Override
     URI prometheusMetricsEndpoint() {
         return urls.prometheusEndpoint()
+    }
+
+    /**
+     * No-op by design. Not used: ScmmDestructionHandler deletes repositories via ScmManagerApiClient.
+     * Kept for interface compatibility only. */
+    @Override
+    void deleteRepository(String namespace, String repository, boolean prefixNamespace) {
+        // intentionally left blank
+    }
+
+    /**
+     * No-op by design. Not used: ScmmDestructionHandler deletes users via ScmManagerApiClient.
+     * Kept for interface compatibility only. */
+    @Override
+    void deleteUser(String name) {
+        // intentionally left blank
+    }
+
+    /**
+     * No-op by design. Default branch management is not implemented via this abstraction.
+     * Kept for interface compatibility only.
+     */
+    @Override
+    void setDefaultBranch(String repoTarget, String branch) {
+        // intentionally left blank
     }
 
     // --- helpers ---

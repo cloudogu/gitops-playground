@@ -100,7 +100,7 @@ class Gitlab implements GitProvider {
 
     }
 
-    //TODo getCredentials
+
     @Override
     Credentials getCredentials() {
         return this.gitlabConfig.credentials
@@ -125,30 +125,42 @@ class Gitlab implements GitProvider {
         return this.gitlabConfig.url
     }
 
-    //TODO do we dee
+
+    /**
+    * Prometheus integration is only required for SCM-Manager.
+    * GitLab provides its own built-in Prometheus metrics, so we don't expose an endpoint here.
+    */
     @Override
     URI prometheusMetricsEndpoint() {
         return null
     }
 
-    //TODO implement
+    /**
+     * No-op by design. GitLab repository deletion is not managed through this abstraction.
+     * Kept for interface compatibility only.
+     */
     @Override
     void deleteRepository(String namespace, String repository, boolean prefixNamespace) {
-
+        // intentionally left blank
     }
 
-    //TODO implement
+    /**
+     * No-op by design. User deletion is not supported or handled through this provider.
+     * Kept for interface compatibility only.
+     */
     @Override
     void deleteUser(String name) {
-
+        // intentionally left blank
     }
 
-    //TODO implement
+    /**
+     * No-op by design. Default branch management is not implemented via this abstraction.
+     * Kept for interface compatibility only.
+     */
     @Override
     void setDefaultBranch(String repoTarget, String branch) {
-
+        // intentionally left blank
     }
-
 
     private Group parentGroup() {
         try {
