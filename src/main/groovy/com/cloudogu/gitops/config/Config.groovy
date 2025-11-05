@@ -119,7 +119,7 @@ class Config {
 
             @JsonPropertyDescription(CONTENT_REPO_REF_DESCRIPTION)
             String ref = ''
-            
+
             @JsonPropertyDescription(CONTENT_REPO_TARGET_REF_DESCRIPTION)
             String targetRef = ''
 
@@ -139,7 +139,8 @@ class Config {
             String target = ''
 
             @JsonPropertyDescription(CONTENT_REPO_TARGET_OVERWRITE_MODE_DESCRIPTION)
-            OverwriteMode overwriteMode = OverwriteMode.INIT // Defensively use init to not override existing files by default
+            OverwriteMode overwriteMode = OverwriteMode.INIT
+            // Defensively use init to not override existing files by default
 
             @JsonPropertyDescription(CONTENT_REPO_CREATE_JENKINS_JOB_DESCRIPTION)
             Boolean createJenkinsJob = false
@@ -218,8 +219,9 @@ class Config {
         @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
         HelmConfigWithValues helm = new HelmConfigWithValues(
                 chart: 'docker-registry',
-                repoURL: 'https://helm.twun.io',
+                repoURL: 'https://twuni.github.io/docker-registry.helm',
                 version: '2.2.3')
+
     }
 
     static class JenkinsSchema {
@@ -398,7 +400,7 @@ class Config {
         }
 
         @JsonIgnore
-        String getTenantName(){
+        String getTenantName() {
             return namePrefix.replaceAll(/-$/, "")
         }
     }
