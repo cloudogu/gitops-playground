@@ -6,11 +6,11 @@ import com.cloudogu.gitops.config.Config.OverwriteMode
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.GitRepoFactory
+import com.cloudogu.gitops.utils.AllowListFreemarkerObjectWrapper
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.TemplatingEngine
 import freemarker.template.Configuration
-import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
@@ -230,12 +230,13 @@ class ContentLoader extends Feature {
     }
 
     private void applyTemplatingIfApplicable(ContentRepositorySchema repoConfig, File srcPath) {
+        Set<String> allowList = config.content.getAllowedStaticsWhitelist()
         if (repoConfig.templating) {
             def engine = getTemplatingEngine()
             engine.replaceTemplates(srcPath, [
                     config : config,
                     // Allow for using static classes inside the templates
-                    statics: new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels()
+                    statics: new AllowListFreemarkerObjectWrapper(Configuration.VERSION_2_3_32, allowList).getStaticModels()
             ])
         }
     }

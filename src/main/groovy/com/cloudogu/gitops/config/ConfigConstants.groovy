@@ -43,7 +43,7 @@ interface ConfigConstants {
     String CONTENT_REPO_TARGET_OVERWRITE_MODE_DESCRIPTION = "This defines, how customer repos will be updated.\nINIT - push only if repo does not exist.\nRESET - delete all files after cloning source - files not in content are deleted\nUPGRADE - clone and copy - existing files will be overwritten, files not in content are kept. For type: MIRROR reset and upgrade have same result: in both cases source repo will be force pushed to target repo."
     String CONTENT_REPO_CREATE_JENKINS_JOB_DESCRIPTION = "If true, creates a Jenkins job, if jenkinsfile exists in one of the content repo's branches."
     String CONTENT_VARIABLES_DESCRIPTION = "Additional variables to use in custom templates."
-
+    String CONTENT_STATICSWHITELIST_DESCRIPTION = 'Whitelist for Statics freemarker is allowing in user templates'
     // group jenkins
     String JENKINS_ENABLE_DESCRIPTION = 'Installs Jenkins as CI server'
     String JENKINS_SKIP_RESTART_DESCRIPTION = 'Skips restarting Jenkins after plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades.'
