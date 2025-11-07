@@ -27,7 +27,12 @@ class Gitlab implements GitProvider {
     Gitlab(Config config, GitlabConfig gitlabConfig) {
         this.config = config
         this.gitlabConfig = gitlabConfig
-        this.api = new GitLabApi(gitlabConfig.url, credentials.password)
+
+        String url = Objects.requireNonNull(gitlabConfig.getUrl(), "Missing gitlab url in config.scm.gitlab.url").trim()
+        String pat = Objects.requireNonNull(gitlabConfig.getCredentials()?.password, "Missing gitlab token").trim()
+        def jf = Class.forName("org.glassfish.jersey.jackson.JacksonFeature")
+        log.info("JacksonFeature from: ${jf.protectionDomain.codeSource.location}")
+        this.api = new GitLabApi(url, pat)
         this.api.enableRequestResponseLogging(Level.ALL)
     }
 
@@ -127,9 +132,9 @@ class Gitlab implements GitProvider {
 
 
     /**
-    * Prometheus integration is only required for SCM-Manager.
-    * GitLab provides its own built-in Prometheus metrics, so we don't expose an endpoint here.
-    */
+     * Prometheus integration is only required for SCM-Manager.
+     * GitLab provides its own built-in Prometheus metrics, so we don't expose an endpoint here.
+     */
     @Override
     URI prometheusMetricsEndpoint() {
         return null
@@ -163,14 +168,18 @@ class Gitlab implements GitProvider {
     }
 
     private Group parentGroup() {
-        try {
-            return api.groupApi.getGroup(gitlabConfig.parentGroupId as Long)
-        } catch (GitLabApiException e) {
-            throw new IllegalStateException(
-                    "Parent group '${gitlabConfig.parentGroupId}' not found or inaccessible: ${e.message}", e)
+        String raw = gitlabConfig?.parentGroupId?.trim()
+        if (!raw) throw new IllegalArgumentException("--gitlab-parent-id is required")
+
+        boolean isNumeric = raw ==~ /\d+/
+
+        def groupApi = api.getGroupApi()
+        if (isNumeric) {
+            return groupApi.getGroup(Long.parseLong(raw))
+        } else {
+            return groupApi.getGroup(raw.replaceAll('^/+', ''))
         }
     }
-
 
     private String parentFullPath() {
         parentGroup().fullPath

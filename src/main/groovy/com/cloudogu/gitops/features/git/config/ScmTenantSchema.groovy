@@ -56,7 +56,7 @@ class ScmTenantSchema {
 
         @Option(names = ['--gitlab-url'], description = GITLAB_URL_DESCRIPTION)
         @JsonPropertyDescription(GITLAB_URL_DESCRIPTION)
-        String url = ''
+        String url
 
         @Option(names = ['--gitlab-username'], description = GITLAB_USERNAME_DESCRIPTION)
         @JsonPropertyDescription(GITLAB_USERNAME_DESCRIPTION)
@@ -64,15 +64,19 @@ class ScmTenantSchema {
 
         @Option(names = ['--gitlab-token'], description = GITLAB_TOKEN_DESCRIPTION)
         @JsonPropertyDescription(GITLAB_TOKEN_DESCRIPTION)
-        String password = ''
+        String password
 
         @Option(names = ['--gitlab-parent-id'], description = GITLAB_PARENT_GROUP_ID)
         @JsonPropertyDescription(GITLAB_PARENT_GROUP_ID)
         String parentGroupId = ''
 
+        @JsonIgnore
         Credentials getCredentials() {
             return new Credentials(username, password)
         }
+
+        String gitOpsUsername = ''
+        String defaultVisibility = ''
 
     }
 
@@ -148,6 +152,7 @@ class ScmTenantSchema {
 
         String gitOpsUsername = ''
 
+        @JsonIgnore
         Credentials getCredentials() {
             return new Credentials(username, password)
         }

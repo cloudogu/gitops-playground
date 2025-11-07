@@ -38,6 +38,9 @@ class ScmCentralSchema {
         Credentials getCredentials() {
             return new Credentials(username, password)
         }
+
+        String gitOpsUsername = ''
+        String defaultVisibility = ''
     }
 
     static class ScmManagerCentralConfig implements ScmManagerConfig {
@@ -46,7 +49,7 @@ class ScmCentralSchema {
         public static final String CENTRAL_SCMM_URL_DESCRIPTION = 'URL for the centralized Management Repo'
         public static final String CENTRAL_SCMM_USERNAME_DESCRIPTION = 'CENTRAL SCMM username'
         public static final String CENTRAL_SCMM_PASSWORD_DESCRIPTION = 'CENTRAL SCMM password'
-        public static final String CENTRAL_SCMM_PATH_DESCRIPTION = 'Root path for SCM Manager'
+        public static final String CENTRAL_SCMM_PATH_DESCRIPTION = 'Root path for SCM Manager. In SCM-Manager it is always "repo"'
         public static final String CENTRAL_SCMM_NAMESPACE_DESCRIPTION = 'Namespace where to find the Central SCMM'
 
         @Option(names = ['--central-scmm-internal'], description = CENTRAL_SCMM_INTERNAL_DESCRIPTION)
