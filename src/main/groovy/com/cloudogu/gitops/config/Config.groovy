@@ -104,6 +104,22 @@ class Config {
         @JsonPropertyDescription(CONTENT_VARIABLES_DESCRIPTION)
         Map<String, Object> variables = [:]
 
+        @Option(names = ['--content-whitelist'], description = CONTENT_STATICSWHITELIST_ENABLED_DESCRIPTION)
+        @JsonPropertyDescription(CONTENT_STATICSWHITELIST_ENABLED_DESCRIPTION)
+        Boolean useWhitelist = false
+
+        @JsonPropertyDescription(CONTENT_STATICSWHITELIST_DESCRIPTION)
+        Set<String> allowedStaticsWhitelist = [
+                'java.lang.String',
+                'java.lang.Integer',
+                'java.lang.Long',
+                'java.lang.Double',
+                'java.lang.Float',
+                'java.lang.Boolean',
+                'java.lang.Math',
+                'com.cloudogu.gitops.utils.DockerImageParser'
+        ] as Set<String>
+
         static class ContentRepositorySchema {
             static final String DEFAULT_PATH = '.'
             // This is controversial. Forcing users to explicitly choose a type requires them to understand the concept
