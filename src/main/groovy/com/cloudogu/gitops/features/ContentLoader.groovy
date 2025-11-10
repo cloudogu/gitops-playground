@@ -11,6 +11,7 @@ import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.TemplatingEngine
 import freemarker.template.Configuration
+import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
@@ -230,13 +231,14 @@ class ContentLoader extends Feature {
     }
 
     private void applyTemplatingIfApplicable(ContentRepositorySchema repoConfig, File srcPath) {
-        Set<String> allowList = config.content.getAllowedStaticsWhitelist()
         if (repoConfig.templating) {
             def engine = getTemplatingEngine()
             engine.replaceTemplates(srcPath, [
                     config : config,
                     // Allow for using static classes inside the templates
-                    statics: new AllowListFreemarkerObjectWrapper(Configuration.VERSION_2_3_32, allowList).getStaticModels()
+                    statics: !config.content.useWhitelist ? new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels() :
+                            new AllowListFreemarkerObjectWrapper(Configuration.VERSION_2_3_32, config.content.getAllowedStaticsWhitelist()).getStaticModels()
+
             ])
         }
     }
@@ -304,7 +306,7 @@ class ContentLoader extends Feature {
     private void pushTargetRepos(List<RepoCoordinate> repoCoordinates) {
         repoCoordinates.each { repoCoordinate ->
 
-            GitRepo targetRepo = repoProvider.getRepo(repoCoordinate.fullRepoName,this.gitHandler.tenant)
+            GitRepo targetRepo = repoProvider.getRepo(repoCoordinate.fullRepoName, this.gitHandler.tenant)
             boolean isNewRepo = targetRepo.createRepositoryAndSetPermission(repoCoordinate.fullRepoName, "", false)
 
             if (isValidForPush(isNewRepo, repoCoordinate)) {

@@ -104,6 +104,10 @@ class Config {
         @JsonPropertyDescription(CONTENT_VARIABLES_DESCRIPTION)
         Map<String, Object> variables = [:]
 
+        @Option(names = ['--content-whitelist'], description = CONTENT_STATICSWHITELIST_ENABLED_DESCRIPTION)
+        @JsonPropertyDescription(CONTENT_STATICSWHITELIST_ENABLED_DESCRIPTION)
+        Boolean useWhitelist = false
+
         @JsonPropertyDescription(CONTENT_STATICSWHITELIST_DESCRIPTION)
         Set<String> allowedStaticsWhitelist = [
                 'java.lang.String',
