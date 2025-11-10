@@ -1,22 +1,53 @@
 [
   {
-    "name":"java.util.function.Consumer",
-    "allPublicMethods":true
+    "name": "java.util.function.Consumer",
+    "allPublicMethods": true
   },
   {
-    "name":"java.util.function.Function",
-    "allPublicMethods":true
+    "name": "java.util.function.Function",
+    "allPublicMethods": true
   },
   {
-    "name":"java.util.function.Predicate",
-    "allPublicMethods":true
+    "name": "java.util.function.Predicate",
+    "allPublicMethods": true
   },
   {
-    "name":"java.util.function.Supplier",
-    "allPublicMethods":true
+    "name": "java.util.function.Supplier",
+    "allPublicMethods": true
   },
   {
     "name": "java.util.stream.BaseStream",
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.glassfish.jersey.jackson.JacksonFeature",
+    "allDeclaredConstructors": true
+  },
+  {
+    "name": "org.glassfish.jersey.ext.entityfiltering.EntityFilteringFeature",
+    "allDeclaredConstructors": true
+  },
+  {
+    "name": "org.glassfish.jersey.media.multipart.MultiPartFeature",
+    "allDeclaredConstructors": true
+  },
+  {
+    "name": "org.gitlab4j.api.utils.JacksonJson",
+    "allDeclaredConstructors": true
+  },
+  {
+    "name": "com.cloudogu.gitops.features.git.GitHandler",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.cloudogu.gitops.git.providers.gitlab.Gitlab",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.gitlab4j.api.GitLabApi",
+    "allDeclaredConstructors": true,
     "allPublicMethods": true
   }
 ]
