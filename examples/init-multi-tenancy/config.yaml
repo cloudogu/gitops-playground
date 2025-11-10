@@ -6,7 +6,7 @@ application:
   "yes": true
   namePrefix: ""
   namespaceIsolation: false
-  skipCrds: false
+  skipCrds: true
   clusterAdmin: true
 jenkins:
   active: false
@@ -25,7 +25,7 @@ content:
     - url: https://github.com/cloudogu/gop-helm
       target: 3rd-party-dependencies/gop-helm
       overwriteMode: RESET
-    - url: file:///home/pmarkiewka/gitops-playground
+    - url: file:///home/cloudogu/develop/workspace/gitops-playground
       path: examples/init-multi-tenancy
       ref: feature/init-multi-tenancy
       templating: true
@@ -33,5 +33,5 @@ content:
       overwriteMode: UPGRADE
 
   namespaces:
-
+    - tenant1-argocd
   variables:
