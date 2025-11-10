@@ -765,7 +765,7 @@
             },
             "rootPath" : {
               "type" : [ "string", "null" ],
-              "description" : "Root path for SCM Manager"
+              "description" : "Root path for SCM Manager. In SCM-Manager it is always \"repo\""
             },
             "url" : {
               "type" : [ "string", "null" ],
