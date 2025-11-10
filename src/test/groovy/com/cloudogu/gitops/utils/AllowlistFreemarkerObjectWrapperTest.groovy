@@ -1,11 +1,7 @@
 package com.cloudogu.gitops.utils
 
-
 import freemarker.template.Configuration
-import freemarker.template.DefaultObjectWrapperBuilder
-import freemarker.template.Template
 import org.junit.jupiter.api.Test
-import freemarker.template.TemplateException
 
 import static org.junit.jupiter.api.Assertions.*
 
@@ -41,16 +37,47 @@ class AllowlistFreemarkerObjectWrapperTest {
     }
 
     @Test
-    void 'templating in ftl files works correctly with whitelist'(){
+    void 'templating only works for whitelisted statics'() {
+        def templateText = '''
+     <#assign DockerImageParser=statics['com.cloudogu.gitops.utils.DockerImageParser']>
+    <#assign imageObject = DockerImageParser.parse('test:latest')>
+
+  <#assign staticsTests=statics['System']>
+  <#assign imageObject = staticsTests.exit()>
+    '''.stripIndent()
 
         def model = [
-                config    : 'testconfig',
-                // Allow for using static classes inside the templates
-                statics   : new AllowListFreemarkerObjectWrapper(Configuration.VERSION_2_3_32, [] as Set).getStaticModels()
+                statics: new AllowListFreemarkerObjectWrapper(Configuration.VERSION_2_3_32, ['com.cloudogu.gitops.utils.DockerImageParser'] as Set).getStaticModels()
         ] as Map<String, Object>
-        def filePath = getClass().getResource("/test.ftl.yaml")
-        new TemplatingEngine().replaceTemplates(new File(filePath as String), model)
+        // create a temporary file to simulate an actual file input
+        def tempInputFile = File.createTempFile("test", ".ftl.yaml")
+        tempInputFile.text = templateText
 
-        assertNull(new File('test.yaml').text)
+        def exception = assertThrows(freemarker.core.InvalidReferenceException) {
+            new TemplatingEngine().replaceTemplates(tempInputFile, model)
+        }
+
+        assert exception.message.contains("System") : "Exception message should mention 'System'"
+    }
+
+    @Test
+    void 'templating in ftl files works correctly with whitelisted static models'() {
+        def templateText = '''
+<#assign DockerImageParser=statics['com.cloudogu.gitops.utils.DockerImageParser']>
+<#assign imageObject = DockerImageParser.parse('test:latest')>
+
+<#assign staticsTests=statics['java.lang.Math']>
+<#assign number = staticsTests.round(3.14)>
+    '''.stripIndent()
+
+        def model = [
+                statics: new AllowListFreemarkerObjectWrapper(Configuration.VERSION_2_3_32, ['java.lang.Math', 'com.cloudogu.gitops.utils.DockerImageParser'] as Set).getStaticModels()
+        ] as Map<String, Object>
+        // create a temporary file to simulate an actual file input
+        def tempInputFile = File.createTempFile("test", ".ftl.yaml")
+        tempInputFile.text = templateText
+
+        new TemplatingEngine().replaceTemplates(tempInputFile, model)
+
     }
 }
