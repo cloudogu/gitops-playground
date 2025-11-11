@@ -15,7 +15,7 @@ features:
     active: false
   argocd:
     active: true
-    operator: false
+    operator: true
     env: []
     resourceInclusionsCluster: "https://10.43.0.1:443"
   ingressNginx:
@@ -25,7 +25,7 @@ content:
     - url: https://github.com/cloudogu/gop-helm
       target: 3rd-party-dependencies/gop-helm
       overwriteMode: RESET
-    - url: file:///home/cloudogu/develop/workspace/gitops-playground
+    - url: file:///home/pmarkiewka/gitops-playground
       path: examples/init-multi-tenancy
       ref: feature/init-multi-tenancy
       templating: true
