@@ -127,61 +127,6 @@ RUN mkdir -p /dist/root/.config/jgit
 RUN touch /dist/root/.config/jgit/config
 RUN chmod +r /dist/root/ && chmod g+rw /dist/root/.config/jgit/
 
-# This stage builds a static binary using graal VM. For details see docs/developers.md#GraalVM
-FROM graal AS native-image
-ENV MAVEN_OPTS='-Dmaven.repo.local=/mvn'
-RUN microdnf install gnupg
-
-# Provide binaries used by apply-ng, so our runs with native-image-agent dont fail
-# with "java.io.IOException: Cannot run program "kubectl"..." etc.
-RUN microdnf install iproute
-
-WORKDIR /app
-
-# Copy only binaries, not jenkins plugins. Avoids having to rebuild native image only plugin changes
-COPY --from=downloader /dist/usr/ /usr/
-COPY --from=downloader /dist/app/ /app/
-# copy only resources that we need to compile the binary
-COPY --from=maven-build /app/gitops-playground.jar /app/
-
-# Create Graal native image config
-RUN java -agentlib:native-image-agent=config-output-dir=conf/ -jar gitops-playground.jar || true
-# Run again with different params in order to avoid NoSuchMethodException with config file
-RUN printf 'registry:\n  active: true\njenkins:\n  active: true\ncontent:\n  examples: true\napplication:\n  "yes": true\nfeatures:\n  argocd:\n    active: true\n    env:\n      - name: mykey\n        value: myValue\n  secrets:\n    vault:\n      mode: "dev"\n  exampleApps:\n    petclinic:\n      baseDomain: "base"' > config.yaml && \
-    java -agentlib:native-image-agent=config-merge-dir=conf/ -jar gitops-playground.jar \
-      --trace --config-file=config.yaml || true
-# Run again with different params in order to avoid NoSuchMethodException with output-config file
-RUN java -agentlib:native-image-agent=config-merge-dir=conf/ -jar gitops-playground.jar \
-      --yes  --output-config-file || true
-RUN native-image -Dgroovy.grape.enable=false \
-    -H:+ReportExceptionStackTraces \
-    -H:ConfigurationFileDirectories=conf/ \
-    -H:IncludeResourceBundles=org.eclipse.jgit.internal.JGitText \
-    -H:DynamicProxyConfigurationFiles=conf/proxy-config.json \
-    -H:DynamicProxyConfigurationResources=proxy-config.json \
-    -H:ReflectionConfigurationFiles=conf/reflect-config.json \
-    -H:ReflectionConfigurationResources=reflect-config.json \
-    --features=com.cloudogu.gitops.graal.groovy.GroovyApplicationRegistrationFeature,com.cloudogu.gitops.graal.groovy.GroovyDgmClassesRegistrationFeature,com.cloudogu.gitops.graal.jgit.JGitReflectionFeature,com.cloudogu.gitops.graal.okhttp.OkHttpReflectionFeature \
-    --static \
-    --allow-incomplete-classpath \
-    --report-unsupported-elements-at-runtime \
-    --diagnostics-mode \
-    --initialize-at-run-time=org.codehaus.groovy.control.XStreamUtils,groovy.grape.GrapeIvy,org.codehaus.groovy.vmplugin.v8.Java8\$LookupHolder,org.eclipse.jgit.lib.RepositoryCache,org.eclipse.jgit.internal.storage.file.WindowCache,org.eclipse.jgit.transport.HttpAuthMethod\$Digest,org.eclipse.jgit.lib.GpgSigner,io.micronaut.context.env.exp.RandomPropertyExpressionResolver\$LazyInit \
-    --initialize-at-build-time \
-    --no-fallback \
-    --libc=musl \
-    --install-exit-handlers \
-    -jar gitops-playground.jar \
-    apply-ng
-
-
-
-FROM alpine AS prod
-# copy groovy cli binary from native-image stage
-COPY --from=native-image /app/apply-ng app/apply-ng
-ENTRYPOINT ["/app/apply-ng"]
-
-
 FROM eclipse-temurin:${JDK_VERSION}-jre-alpine AS dev
 
 # apply-ng.sh is part of the dev image and allows trying changing groovy code inside the image for debugging
@@ -204,7 +149,7 @@ ENTRYPOINT [ "java", \
     "/app/src/main/groovy/com/cloudogu/gitops/cli/GitopsPlaygroundCliMainScripted.groovy" ]
 
 # Pick final image according to build-arg
-FROM ${ENV}
+FROM dev
 ENV HOME=/home \
     HELM_CACHE_HOME=/home/.cache/helm \
     HELM_CONFIG_HOME=/home/.config/helm \
