@@ -63,22 +63,18 @@ node('high-cpu') {
                         'Build images': {
                             stage('Build images') {
                                 imageNames += createImageName(git.commitHashShort)
-                                imageNames += createImageName(git.commitHashShort) + '-dev'
 
-                                images += buildImage(imageNames[0])
-                                images += buildImage(imageNames[1], '--build-arg ENV=dev')
+                                images += buildImage(imageNames[0], '--build-arg ENV=dev')
                             }
                         }
                   )
                 parallel(
                         'Scan image': {
                             stage('Scan image') {
-
                                 scanForCriticalVulns(imageNames[0],"prod-criticals")
-                                scanForCriticalVulns(imageNames[1], "dev-criticals")
 
                                 scanForAllVulns(imageNames[0], "prod-all")
-                                scanForAllVulns(imageNames[1], "dev-all")
+
                             }
                         },
 
@@ -95,12 +91,25 @@ node('high-cpu') {
                                 ).trim()
 
                                 docker.image(imageNames[0])
-                                        .inside("-e KUBECONFIG=${env.WORKSPACE}/.kube/config " +
-                                                " --network=host --entrypoint=''") {
-                                            sh "/app/apply-ng --yes --trace --internal-registry-port=${registryPort} " +
-                                                    "--registry --jenkins --content-examples " + 
-                                                    "--argocd --monitoring --vault=dev --ingress-nginx --mailhog --base-url=http://localhost --cert-manager"
-                                        }
+                                    .inside("--network=host -e KUBECONFIG=${env.WORKSPACE}/.kube/config --entrypoint=''") {
+                                        sh """
+                                            /app/scripts/apply-ng.sh \
+                                                --yes \
+                                                --trace \
+                                                --argocd \
+                                                --monitoring \
+                                                --vault=dev \
+                                                --ingress-nginx \
+                                                --mailhog \
+                                                --base-url=http://localhost \
+                                                --cert-manager \
+                                                --registry \
+                                                --jenkins \
+                                                --content-examples
+                                        """
+                                    }
+
+
                             }
                         }
                 )
@@ -158,12 +167,7 @@ node('high-cpu') {
                             
                             if (git.isTag() && env.BRANCH_NAME == 'main') {
                                 // Build tags only on main to avoid human errors
-                                
-                                images[1].push()
-                                images[1].push(git.tag + '-dev')
-                                images[1].push('dev')
-                                images[1].push('latest-dev')
-                                images[1].push('main-dev')
+
                                 images[0].push()
                                 images[0].push('latest')
                                 images[0].push('main')
@@ -173,20 +177,15 @@ node('high-cpu') {
                                 currentBuild.description += "\n${imageNames[0]}"
 
                             } else if (env.BRANCH_NAME == 'main') {
-                                images[1].push()
-                                images[1].push('main-dev')
                                 images[0].push()
                                 images[0].push('main')
                                 currentBuild.description = "${imageNames[0]}"
                             } else if (env.BRANCH_NAME == 'test') {
-                                images[1].push()
-                                images[1].push('test-dev')
                                 images[0].push()
                                 images[0].push('test')
                                 currentBuild.description = createImageName('test')
                                 currentBuild.description += "\n${imageNames[0]}"
                             } else if (params.forcePushImage) {
-                                images[1].push()
                                 images[0].push()
                                 currentBuild.description = imageNames[0]
                             } else {
