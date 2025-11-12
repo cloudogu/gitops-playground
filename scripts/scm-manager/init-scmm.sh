@@ -34,13 +34,6 @@ function initSCMM() {
   if [[ ${SCM_PROVIDER} == "scm-manager" ]]; then
       configureScmmManager
   fi
-
-  if [[ $CONTENT_EXAMPLES == true ]]; then
-    pushHelmChartRepo "3rd-party-dependencies/spring-boot-helm-chart"
-    pushHelmChartRepoWithDependency "3rd-party-dependencies/spring-boot-helm-chart-with-dependency"
-    pushRepoMirror "${GITOPS_BUILD_LIB_REPO}" "3rd-party-dependencies/gitops-build-lib"
-    pushRepoMirror "${CES_BUILD_LIB_REPO}" "3rd-party-dependencies/ces-build-lib" 'develop'
-  fi
 }
 
 
@@ -197,43 +190,6 @@ function configureScmmManager() {
     addRepo "${NAME_PREFIX}argocd" "argocd" "Bootstrap repo for applications"
     setPermission "${NAME_PREFIX}argocd" "argocd" "${GITOPS_USERNAME}" "WRITE"
    fi
-  fi
-
-  if [[ $CONTENT_EXAMPLES == true ]]; then
-    addRepo "${NAME_PREFIX}argocd" "nginx-helm-jenkins" "3rd Party app (NGINX) with helm, templated in Jenkins (gitops-build-lib)"
-    setPermission "${NAME_PREFIX}argocd" "nginx-helm-jenkins" "${GITOPS_USERNAME}" "WRITE"
-    
-    addRepo "${NAME_PREFIX}argocd" "petclinic-plain" "Java app with plain k8s resources"
-    setPermission "${NAME_PREFIX}argocd" "petclinic-plain" "${GITOPS_USERNAME}" "WRITE"
-  
-    addRepo "${NAME_PREFIX}argocd" "petclinic-helm" "Java app with custom helm chart"
-    setPermission "${NAME_PREFIX}argocd" "petclinic-helm" "${GITOPS_USERNAME}" "WRITE"
-
-    addRepo "${NAME_PREFIX}argocd" "example-apps" "GitOps repo for examples of end-user applications"
-    setPermission "${NAME_PREFIX}argocd" "example-apps" "${GITOPS_USERNAME}" "WRITE"
-
-    ### Repos with replicated dependencies
-    addRepo "3rd-party-dependencies" "spring-boot-helm-chart"
-    setPermission "3rd-party-dependencies" "spring-boot-helm-chart" "${GITOPS_USERNAME}" "WRITE"
-
-    addRepo "3rd-party-dependencies" "spring-boot-helm-chart-with-dependency"
-    setPermission "3rd-party-dependencies" "spring-boot-helm-chart-with-dependency" "${GITOPS_USERNAME}" "WRITE"
-
-    addRepo "3rd-party-dependencies" "gitops-build-lib" "Jenkins pipeline shared library for automating deployments via GitOps "
-    setPermission "3rd-party-dependencies" "gitops-build-lib" "${GITOPS_USERNAME}" "WRITE"
-
-    addRepo "3rd-party-dependencies" "ces-build-lib" "Jenkins pipeline shared library adding features for Maven, Gradle, Docker, SonarQube, Git and others"
-    setPermission "3rd-party-dependencies" "ces-build-lib" "${GITOPS_USERNAME}" "WRITE"
-
-    ### Exercise Repos
-    addRepo "${NAME_PREFIX}exercises" "petclinic-helm"
-    setPermission "${NAME_PREFIX}exercises" "petclinic-helm" "${GITOPS_USERNAME}" "WRITE"
-
-    addRepo "${NAME_PREFIX}exercises" "nginx-validation"
-    setPermission "${NAME_PREFIX}exercises" "nginx-validation" "${GITOPS_USERNAME}" "WRITE"
-
-    addRepo "${NAME_PREFIX}exercises" "broken-application"
-    setPermission "${NAME_PREFIX}exercises" "broken-application" "${GITOPS_USERNAME}" "WRITE"
   fi
 
   # Install necessary plugins
