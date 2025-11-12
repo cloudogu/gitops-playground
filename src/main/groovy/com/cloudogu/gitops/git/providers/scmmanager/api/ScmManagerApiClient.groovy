@@ -29,14 +29,6 @@ class ScmManagerApiClient {
         return retrofit().create(RepositoryApi)
     }
 
-    ScmManagerApi generalApi() {
-        return retrofit().create(ScmManagerApi)
-    }
-
-    PluginApi pluginApi() {
-        return retrofit().create(PluginApi)
-    }
-
     protected Retrofit retrofit() {
         return new Retrofit.Builder()
                 .baseUrl(this.url)
