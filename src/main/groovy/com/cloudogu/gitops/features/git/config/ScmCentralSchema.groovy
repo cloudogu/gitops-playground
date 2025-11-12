@@ -21,7 +21,7 @@ class ScmCentralSchema {
 
         @Option(names = ['--central-gitlab-url'], description = CENTRAL_GITLAB_URL_DESCRIPTION)
         @JsonPropertyDescription(CENTRAL_GITLAB_URL_DESCRIPTION)
-        String url = ''
+        String url = 'https://gitlab.com/'
 
         @Option(names = ['--central-gitlab-username'], description = CENTRAL_GITLAB_USERNAME_DESCRIPTION)
         @JsonPropertyDescription(CENTRAL_GITLAB_USERNAME_DESCRIPTION)
