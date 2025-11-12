@@ -2,3 +2,5 @@ config:
   application:
     baseUrl: "http://tenant1.localhost"
     namePrefix: "tenant1"
+  content:
+    examples: true
