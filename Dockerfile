@@ -120,7 +120,7 @@ RUN mv /dist/app/src /dist-dev/src && \
 COPY --from=maven-build /app/gitops-playground.jar /dist-dev/gitops-playground.jar
 # Remove compiled GOP code from jar to avoid duplicate in dev image, allowing for scripting.
 # Keep generated class Version, to avoid ClassNotFoundException.
-RUN zip -d /dist-dev/gitops-playground.jar 'com/cloudogu/gitops/*' -x com/cloudogu/gitops/cli/Version.class
+# RUN zip -d /dist-dev/gitops-playground.jar 'com/cloudogu/gitops/*' -x com/cloudogu/gitops/cli/Version.class
 
 # Required to prevent Java exceptions resulting from AccessDeniedException by jgit when running arbitrary user
 RUN mkdir -p /dist/root/.config/jgit
