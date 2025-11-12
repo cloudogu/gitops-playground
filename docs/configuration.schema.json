@@ -879,6 +879,10 @@
         "gitlab" : {
           "type" : [ "object", "null" ],
           "properties" : {
+            "gitOpsUsername" : {
+              "type" : [ "string", "null" ],
+              "description" : "Username for the Gitops User"
+            },
             "internal" : {
               "type" : [ "boolean", "null" ],
               "description" : "True if Gitlab is running in the same K8s cluster. For now we only support access by external URL"
@@ -906,6 +910,10 @@
         "scmManager" : {
           "type" : [ "object", "null" ],
           "properties" : {
+            "gitOpsUsername" : {
+              "type" : [ "string", "null" ],
+              "description" : "Username for the Gitops User"
+            },
             "helm" : {
               "$ref" : "#/$defs/HelmConfigWithValues-nullable",
               "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."

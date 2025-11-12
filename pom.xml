@@ -33,6 +33,7 @@
     <retrofitVersion>2.9.0</retrofitVersion>
     <groovy.version>4.0.12</groovy.version>
     <jsonschema.version>4.35.0</jsonschema.version>
+    <kubernetes.client.java.version>24.0.0</kubernetes.client.java.version>
   </properties>
 
   <scm>
@@ -235,7 +236,7 @@
     <dependency>
     <groupId>io.kubernetes</groupId>
     <artifactId>client-java</artifactId>
-    <version>24.0.0</version>
+    <version>${kubernetes.client.java.version}</version>
   </dependency>
 
     <dependency>
