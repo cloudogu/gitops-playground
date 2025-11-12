@@ -189,10 +189,12 @@ class GitopsPlaygroundCli {
         String configFilePath = cliParams.application.configFile
         String configMapName = cliParams.application.configMap
         Boolean contentExamples = cliParams.content.examples
+        Boolean multiTenancyExamples = cliParams.content.multitenancyExamples
 
         Map configFile = [:]
         Map configMap = [:]
         Map contentExamplesFile = [:]
+        Map multiTenancyContentExamplesFile = [:]
 
         if (configFilePath) {
             log.debug("Reading config file ${configFilePath}")
@@ -205,14 +207,20 @@ class GitopsPlaygroundCli {
             configMap = validateConfig(configValues)
         }
 
-        if(contentExamples) {
+        if (contentExamples) {
             String contentExamplesConfigPath = "examples/example-apps-via-content-loader/config.yaml"
             log.debug("Adding example-apps-via-content-loader configuration from '${contentExamplesConfigPath}'")
             contentExamplesFile = validateConfig(new File(contentExamplesConfigPath).text)
         }
 
+        if (multiTenancyExamples) {
+            String multiTenancyContentExamplesConfigPath = "examples/init-multi-tenancy/managementConfig.yaml"
+            log.debug("Adding multi tenancy example-apps config loader from '${multiTenancyContentExamplesConfigPath}'")
+            multiTenancyContentExamplesFile = validateConfig(new File(multiTenancyContentExamplesConfigPath).text)
+        }
+
         // Last one takes precedence
-        def configPrecedence = [configMap, configFile, contentExamplesFile]
+        def configPrecedence = [configMap, configFile, contentExamplesFile, multiTenancyContentExamplesFile]
         Map mergedConfigs = [:]
         configPrecedence.each {
             deepMerge(it, mergedConfigs)

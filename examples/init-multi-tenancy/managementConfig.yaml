@@ -25,7 +25,8 @@ content:
     - url: https://github.com/cloudogu/gop-helm
       target: 3rd-party-dependencies/gop-helm
       overwriteMode: RESET
-    - url: file:///home/cl-pc-0087/src/gitops-playground
+    - url: https://github.com/cloudogu/gitops-playground
+#    - url: file:///home/cl-pc-0087/src/gitops-playground
       path: examples/init-multi-tenancy
       ref: feature/init-multi-tenancy
       templating: true

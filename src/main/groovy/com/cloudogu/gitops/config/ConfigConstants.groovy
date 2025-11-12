@@ -29,6 +29,8 @@ interface ConfigConstants {
 
     // ContentLoader
     String CONTENT_EXAMPLES_DESCRIPTION = 'Deploy example content: source repos, GitOps repos, Jenkins Job, Argo CD apps/project'
+    String CONTENT_MULTI_TENANCY_EXAMPLES_DESCRIPTION = "Deploy multi tenancy example content: source repos, GitOps repos, Jenkins Job, Argo CD apps/project"
+
     String CONTENT_NAMESPACES_DESCRIPTION = 'Additional kubernetes namespaces. These are authorized to Argo CD, supplied with image pull secrets, monitored by prometheus, etc. Namespaces can be templates, e.g. ${config.application.namePrefix}staging'
     String CONTENT_REPO_DESCRIPTION = "ContentLoader repos to push into target environment"
     String CONTENT_REPO_URL_DESCRIPTION = "URL of the content repo. Mandatory for each type."
