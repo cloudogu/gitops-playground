@@ -220,7 +220,7 @@ class Config {
         HelmConfigWithValues helm = new HelmConfigWithValues(
                 chart: 'docker-registry',
                 repoURL: 'https://twuni.github.io/docker-registry.helm',
-                version: '2.2.3')
+                version: '3.0.0')
 
     }
 
