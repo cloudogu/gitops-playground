@@ -1022,8 +1022,3 @@ If the helm repos are not present or up-to-date:
 helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
 helm repo update
 ```
-
-## Gitlab (Experimental)
-
-### Disclaimer
-The GitLab integration is for **experimental use only** and is **not fully implemented**. Features may be incomplete, unstable, or subject to change. Use at your own discretion.  
