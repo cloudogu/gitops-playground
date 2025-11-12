@@ -17,15 +17,9 @@ import jakarta.inject.Singleton
 import org.apache.commons.io.FileUtils
 import org.eclipse.jgit.api.CloneCommand
 import org.eclipse.jgit.api.Git
-import org.eclipse.jgit.api.ListBranchCommand
-import org.eclipse.jgit.lib.ObjectId
 import org.eclipse.jgit.lib.Ref
 import org.eclipse.jgit.lib.Repository
-import org.eclipse.jgit.revwalk.RevCommit
-import org.eclipse.jgit.revwalk.RevWalk
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
-import org.eclipse.jgit.treewalk.TreeWalk
-import org.eclipse.jgit.treewalk.filter.PathFilter
 
 import static com.cloudogu.gitops.config.Config.ContentRepoType
 import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositorySchema
@@ -167,12 +161,12 @@ class ContentLoader extends Feature {
         String repoName = repoConfig.target.split('/')[1]
 
         def repoCoordinate = mergeRepoDirs(contentRepoDir, namespace, repoName, mergedReposFolder, repoConfig)
-        repoCoordinate.refIsTag = isTag(repoTmpDir, repoConfig.ref)
+        repoCoordinate.refIsTag = GitRepo.isTag(repoTmpDir, repoConfig.ref)
         addRepoCoordinates(repoCoordinates, repoCoordinate)
     }
 
     private static void createRepoCoordinatesForTypeFolderBased(ContentRepositorySchema repoConfig, File repoTmpDir, File contentRepoDir, File mergedReposFolder, List<RepoCoordinate> repoCoordinates) {
-        boolean refIsTag = isTag(repoTmpDir, repoConfig.ref)
+        boolean refIsTag = GitRepo.isTag(repoTmpDir, repoConfig.ref)
         findRepoDirectories(contentRepoDir)
                 .each { contentRepoNamespaceDir ->
                     findRepoDirectories(contentRepoNamespaceDir)
@@ -196,7 +190,7 @@ class ContentLoader extends Feature {
                 repoName: repoName,
                 clonedContentRepo: repoTmpDir,
                 repoConfig: repoConfig,
-                refIsTag: isTag(repoTmpDir, repoConfig.ref)
+                refIsTag: GitRepo.isTag(repoTmpDir, repoConfig.ref)
         )
         addRepoCoordinates(repoCoordinates, repoCoordinate)
     }
@@ -417,7 +411,7 @@ class ContentLoader extends Feature {
     }
 
     private static void validateCommitReferences(RepoCoordinate repoCoordinate) {
-        if (isCommit(repoCoordinate.clonedContentRepo, repoCoordinate.repoConfig.ref)) {
+        if (GitRepo.isCommit(repoCoordinate.clonedContentRepo, repoCoordinate.repoConfig.ref)) {
             // Mirroring detached commits does not make a lot of sense and is complicated
             // We would have to branch, push, delete remote branch. Considering this an edge case at the moment!
             throw new RuntimeException("Mirroring commit references is not supported for content repos at the moment. content repository '${repoCoordinate.repoConfig.url}', ref: ${repoCoordinate.repoConfig.ref}")
@@ -426,7 +420,7 @@ class ContentLoader extends Feature {
 
     private void createJenkinsJobIfApplicable(RepoCoordinate repoCoordinate, GitRepo repo) {
         if (repoCoordinate.repoConfig.createJenkinsJob && jenkins.isEnabled()) {
-            if (existFileInSomeBranch(repo.absoluteLocalRepoTmpDir, 'Jenkinsfile')) {
+            if (GitRepo.existFileInSomeBranch(repo.absoluteLocalRepoTmpDir, 'Jenkinsfile')) {
                 jenkins.createJenkinsjob(repoCoordinate.namespace, repoCoordinate.namespace)
             }
         }
@@ -459,87 +453,6 @@ class ContentLoader extends Feature {
         repoCoordinates << newRepoCoordinate
     }
 
-    static boolean isCommit(File repoPath, String ref) {
-        if (!ref) {
-            return false
-        }
-
-        try (Git git = Git.open(repoPath)) {
-            // Get all branch and tag names
-            def allRefs = []
-
-            // Add all branch names (without refs/heads/ prefix)
-            git.branchList().call().each { branch ->
-                allRefs.add(branch.name.replaceFirst('refs/heads/', ''))
-            }
-
-            // Add all tag names (without refs/tags/ prefix)
-            git.tagList().call().each { tag ->
-                allRefs.add(tag.name.replaceFirst('refs/tags/', ''))
-            }
-
-            // If the ref matches any branch or tag name, it's not a commit hash
-            if (allRefs.contains(ref)) {
-                return false
-            }
-
-            // If it's not a branch or tag, try to resolve it as a commit
-            def objectId = git.repository.resolve(ref)
-            return objectId != null
-
-        }
-    }
-
-    /**
-     * checks, if file exists in repo in some branch.
-     * @param pathToRepo
-     * @param filename
-     */
-    static boolean existFileInSomeBranch(String repo, String filename) {
-        String filenameToSearch = filename
-        File repoPath = new File(repo + '/.git')
-
-        try (def git = Git.open(repoPath)) {
-            List<Ref> branches = git
-                    .branchList()
-                    .setListMode(ListBranchCommand.ListMode.ALL)
-                    .call()
-
-            for (Ref branch : branches) {
-                String branchName = branch.getName()
-
-                ObjectId commitId = git.repository.resolve(branchName)
-                if (commitId == null) {
-                    continue
-                }
-                try (RevWalk revWalk = new RevWalk(git.repository)) {
-                    RevCommit commit = revWalk.parseCommit(commitId)
-                    try (TreeWalk treeWalk = new TreeWalk(git.repository)) {
-
-                        treeWalk.addTree(commit.getTree())
-                        treeWalk.setFilter(PathFilter.create(filenameToSearch))
-
-                        if (treeWalk.next()) {
-                            log.debug("File ${filename} found in branch ${branchName}")
-
-                            return true
-                        }
-                    }
-                }
-            }
-        }
-        log.debug("File ${filename} not found in repository ${repoPath}")
-        return false
-    }
-
-    static boolean isTag(File repo, String ref) {
-        if (!ref) {
-            return false
-        }
-        try (def git = Git.open(repo)) {
-            git.tagList().call().any { it.name.endsWith("/" + ref) || it.name == ref }
-        }
-    }
     /**
      * Checks whether the repo already exists and overwrite Mode matches.
      */

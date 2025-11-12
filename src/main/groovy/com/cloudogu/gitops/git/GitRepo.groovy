@@ -10,11 +10,18 @@ import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
 import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.api.ListBranchCommand
 import org.eclipse.jgit.api.PushCommand
+import org.eclipse.jgit.lib.ObjectId
+import org.eclipse.jgit.lib.Ref
+import org.eclipse.jgit.revwalk.RevCommit
+import org.eclipse.jgit.revwalk.RevWalk
 import org.eclipse.jgit.transport.ChainingCredentialsProvider
 import org.eclipse.jgit.transport.CredentialsProvider
 import org.eclipse.jgit.transport.RefSpec
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
+import org.eclipse.jgit.treewalk.TreeWalk
+import org.eclipse.jgit.treewalk.filter.PathFilter
 
 @Slf4j
 class GitRepo {
@@ -184,16 +191,100 @@ class GitRepo {
         new TemplatingEngine().replaceTemplates(new File(absoluteLocalRepoTmpDir), parameters)
     }
 
+
+
+    String getGitRepositoryUrl() {
+        return this.gitProvider.repoUrl(repoTarget, RepoUrlScope.CLIENT)
+    }
+
+    static boolean isCommit(File repoPath, String ref) {
+        if (!ref) {
+            return false
+        }
+
+        try (Git git = Git.open(repoPath)) {
+            // Get all branch and tag names
+            def allRefs = []
+
+            // Add all branch names (without refs/heads/ prefix)
+            git.branchList().call().each { branch ->
+                allRefs.add(branch.name.replaceFirst('refs/heads/', ''))
+            }
+
+            // Add all tag names (without refs/tags/ prefix)
+            git.tagList().call().each { tag ->
+                allRefs.add(tag.name.replaceFirst('refs/tags/', ''))
+            }
+
+            // If the ref matches any branch or tag name, it's not a commit hash
+            if (allRefs.contains(ref)) {
+                return false
+            }
+
+            // If it's not a branch or tag, try to resolve it as a commit
+            def objectId = git.repository.resolve(ref)
+            return objectId != null
+
+        }
+    }
+
+    /**
+     * checks, if file exists in repo in some branch.
+     * @param pathToRepo
+     * @param filename
+     */
+    static boolean existFileInSomeBranch(String repo, String filename) {
+        String filenameToSearch = filename
+        File repoPath = new File(repo + '/.git')
+
+        try (def git = Git.open(repoPath)) {
+            List<Ref> branches = git
+                    .branchList()
+                    .setListMode(ListBranchCommand.ListMode.ALL)
+                    .call()
+
+            for (Ref branch : branches) {
+                String branchName = branch.getName()
+
+                ObjectId commitId = git.repository.resolve(branchName)
+                if (commitId == null) {
+                    continue
+                }
+                try (RevWalk revWalk = new RevWalk(git.repository)) {
+                    RevCommit commit = revWalk.parseCommit(commitId)
+                    try (TreeWalk treeWalk = new TreeWalk(git.repository)) {
+
+                        treeWalk.addTree(commit.getTree())
+                        treeWalk.setFilter(PathFilter.create(filenameToSearch))
+
+                        if (treeWalk.next()) {
+                            log.debug("File ${filename} found in branch ${branchName}")
+
+                            return true
+                        }
+                    }
+                }
+            }
+        }
+        log.debug("File ${filename} not found in repository ${repoPath}")
+        return false
+    }
+
+    static boolean isTag(File repo, String ref) {
+        if (!ref) {
+            return false
+        }
+        try (def git = Git.open(repo)) {
+            git.tagList().call().any { it.name.endsWith("/" + ref) || it.name == ref }
+        }
+    }
+
     private PushCommand createPushCommand(String refSpec) {
         getGit()
                 .push()
                 .setRemote(getGitRepositoryUrl())
                 .setRefSpecs(new RefSpec(refSpec))
                 .setCredentialsProvider(getCredentialProvider())
-    }
-
-    String getGitRepositoryUrl() {
-        return this.gitProvider.repoUrl(repoTarget, RepoUrlScope.CLIENT)
     }
 
     private Git getGit() {
