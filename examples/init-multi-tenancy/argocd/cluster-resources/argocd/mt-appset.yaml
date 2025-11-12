@@ -27,7 +27,7 @@ spec:
           targetRevision: HEAD
           helm:
             valueFiles:
-              - $valuesRef/tenants/values.yaml
+              - $valuesRef/tenants/globalValues.yaml
               - $valuesRef/{{ .path.path }}/config.yaml
       destination:
         server: https://kubernetes.default.svc
