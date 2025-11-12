@@ -19,6 +19,9 @@ spec:
     spec:
       project: argocd
       sources:
+        - repoURL: http://scmm.scm-manager.svc.cluster.local/scm/repo/argocd/tenant-configs
+          targetRevision: HEAD
+          ref: valuesRef
         - repoURL: http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/gop-helm
           path: .
           targetRevision: HEAD
@@ -26,9 +29,6 @@ spec:
             valueFiles:
               - $valuesRef/tenants/values.yaml
               - $valuesRef/{{ .path.path }}/config.yaml
-        - repoURL: http://scmm.scm-manager.svc.cluster.local/scm/repo/argocd/tenant-configs
-          targetRevision: HEAD
-          ref: valuesRef
       destination:
         server: https://kubernetes.default.svc
         namespace: argocd
