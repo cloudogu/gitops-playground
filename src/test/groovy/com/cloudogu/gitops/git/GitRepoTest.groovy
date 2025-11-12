@@ -49,7 +49,7 @@ class GitRepoTest {
 
     @Test
     void "writes file"() {
-        def repo = createRepo("", scmManagerMock)
+        def repo = getRepo("", scmManagerMock)
         repo.writeFile("test.txt", "the file's content")
 
         def expectedFile = new File("$repo.absoluteLocalRepoTmpDir/test.txt")
@@ -58,7 +58,7 @@ class GitRepoTest {
 
     @Test
     void "overwrites file"() {
-        def repo = createRepo("", scmManagerMock)
+        def repo = getRepo("", scmManagerMock)
         def tempDir = repo.absoluteLocalRepoTmpDir
 
         def existingFile = new File("$tempDir/already-exists.txt")
@@ -73,7 +73,7 @@ class GitRepoTest {
 
     @Test
     void "writes file and creates subdirectory"() {
-        def repo = createRepo("", scmManagerMock)
+        def repo = getRepo("", scmManagerMock)
         def tempDir = repo.absoluteLocalRepoTmpDir
         repo.writeFile("subdirectory/test.txt", "the file's content")
 
@@ -83,7 +83,7 @@ class GitRepoTest {
 
     @Test
     void "throws error when directory conflicts with existing file"() {
-        def repo = createRepo("", scmManagerMock)
+        def repo = getRepo("", scmManagerMock)
         def tempDir = repo.absoluteLocalRepoTmpDir
         new File("$tempDir/test.txt").mkdir()
 
@@ -94,14 +94,14 @@ class GitRepoTest {
 
     @Test
     void 'Creates repo with empty name-prefix'() {
-        def repo = createRepo('expectedRepoTarget', scmManagerMock)
+        def repo = getRepo('expectedRepoTarget', scmManagerMock)
         assertThat(repo.repoTarget).isEqualTo('expectedRepoTarget')
     }
 
     @Test
     void 'Creates repo with name-prefix'() {
         config.application.namePrefix = 'abc-'
-        def repo = createRepo('expectedRepoTarget', scmManagerMock)
+        def repo = getRepo('expectedRepoTarget', scmManagerMock)
         assertThat(repo.repoTarget).isEqualTo('abc-expectedRepoTarget')
     }
 
@@ -109,13 +109,13 @@ class GitRepoTest {
     void 'Creates repo without name-prefix when in namespace 3rd-party-deps'() {
 
         config.application.namePrefix = 'abc-'
-        def repo = createRepo("${GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/foo", scmManagerMock)
+        def repo = getRepo("${GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/foo", scmManagerMock)
         assertThat(repo.repoTarget).isEqualTo("${GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/foo".toString())
     }
 
     @Test
     void 'Clones and checks out main'() {
-        def repo = createRepo("", scmManagerMock)
+        def repo = getRepo("", scmManagerMock)
 
         repo.cloneRepo()
         def HEAD = new File(repo.absoluteLocalRepoTmpDir, '.git/HEAD')
@@ -125,7 +125,7 @@ class GitRepoTest {
 
     @Test
     void 'pushes changes to remote directory'() {
-        def repo = createRepo("", scmManagerMock)
+        def repo = getRepo("", scmManagerMock)
 
         repo.cloneRepo()
         def readme = new File(repo.absoluteLocalRepoTmpDir, 'README.md')
@@ -146,7 +146,7 @@ class GitRepoTest {
 
     @Test
     void 'pushes changes to remote directory with tag'() {
-        def repo = createRepo("", scmManagerMock)
+        def repo = getRepo("", scmManagerMock)
         def expectedTag = '1.0'
 
         repo.cloneRepo()
@@ -172,11 +172,11 @@ class GitRepoTest {
     void 'creates repository and sets permission when new and username present'() {
 
         def repoTarget = "foo/bar"
-        def repo = createRepo(repoTarget, scmManagerMock)
+        def repo = getRepo(repoTarget, scmManagerMock)
         scmManagerMock.nextCreateResults = [true]            // simulate "new repo"
         scmManagerMock.gitOpsUsername = 'foo-gitops'         // username available
 
-        def created = repo.createRepositoryAndSetPermission(repoTarget, 'testdescription', true)
+        def created = repo.createRepositoryAndSetPermission('testdescription', true)
 
         assertThat(created).isTrue()
 
@@ -196,12 +196,12 @@ class GitRepoTest {
     @Test
     void 'does not set permission when repository already exists'() {
         def repoTarget = "foo/bar"
-        def repo = createRepo(repoTarget, scmManagerMock)
+        def repo = getRepo(repoTarget, scmManagerMock)
 
         scmManagerMock.nextCreateResults = [false]           // simulate "already exists"
         scmManagerMock.gitOpsUsername = 'foo-gitops'         // even with username, no permission should be set
 
-        def created = repo.createRepositoryAndSetPermission(repoTarget, 'desc', true)
+        def created = repo.createRepositoryAndSetPermission('desc', true)
 
         assertThat(created).isFalse()
 
@@ -217,12 +217,12 @@ class GitRepoTest {
     void 'does not set permission when no GitOps username is configured'() {
         def repoTarget = "foo/bar"
         def scmManagerMock = new ScmManagerMock()
-        def repo = createRepo(repoTarget, scmManagerMock)
+        def repo = getRepo(repoTarget, scmManagerMock)
 
         scmManagerMock.nextCreateResults = [true]            // repo is new
         scmManagerMock.gitOpsUsername = null                 // no username
 
-        def created = repo.createRepositoryAndSetPermission(repoTarget, 'desc', true)
+        def created = repo.createRepositoryAndSetPermission('desc', true)
 
         assertThat(created).isTrue()
 
@@ -234,7 +234,7 @@ class GitRepoTest {
     }
 
 
-    private GitRepo createRepo(String repoTarget = "${expectedNamespace}/${expectedRepo}", ScmManagerMock scmManagerMock) {
+    private GitRepo getRepo(String repoTarget = "${expectedNamespace}/${expectedRepo}", ScmManagerMock scmManagerMock) {
         return repoProvider.getRepo(repoTarget, scmManagerMock)
     }
 }

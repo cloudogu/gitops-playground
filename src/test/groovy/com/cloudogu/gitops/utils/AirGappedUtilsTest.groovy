@@ -184,7 +184,6 @@ class AirGappedUtilsTest {
                 'Source: https://kube-prometheus-stack-repo-url\nDependencies localized to run in air-gapped environments')
 
         verify(prometheusRepo).createRepositoryAndSetPermission(
-                eq("${GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/kube-prometheus-stack".toString()),
                 eq("Mirror of Helm chart kube-prometheus-stack from https://kube-prometheus-stack-repo-url"),
                 eq(false)
         )

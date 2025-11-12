@@ -582,17 +582,16 @@ class ContentLoaderTest {
 
         ]
         def expectedRepo = 'common/repo'
-        scmManagerMock.initOnceRepo('common/repo')
-        createContent().install()
-
         def repo = scmmRepoProvider.getRepo(expectedRepo, scmManagerMock)
+        scmManagerMock.initOnceRepo(repo.repoTarget)
+        createContent().install()
 
         String url = repo.getGitRepositoryUrl()
         // clone repo, to ensure, changes in remote repo.
         try (def git = Git.cloneRepository().setURI(url).setBranch('main').setDirectory(tmpDir).call()) {
 
 
-            verify(repo).createRepositoryAndSetPermission(eq(expectedRepo), any(String.class), eq(false))
+            verify(repo).createRepositoryAndSetPermission(any(String.class), eq(false))
 
             def commitMsg = git.log().call().iterator().next().getFullMessage()
             assertThat(commitMsg).isEqualTo("Initialize content repo ${expectedRepo}".toString())
@@ -655,7 +654,7 @@ class ContentLoaderTest {
         try (def git = Git.cloneRepository().setURI(url).setBranch('main').setDirectory(tmpDir).call()) {
 
 
-            verify(repo).createRepositoryAndSetPermission(eq(expectedRepo), any(String.class), eq(false))
+            verify(repo).createRepositoryAndSetPermission(any(String.class), eq(false))
 
             def commitMsg = git.log().call().iterator().next().getFullMessage()
             assertThat(commitMsg).isEqualTo("Initialize content repo ${expectedRepo}".toString())
@@ -706,16 +705,15 @@ class ContentLoaderTest {
 
         ]
         def expectedRepo = 'common/repo'
-        scmManagerMock.initOnceRepo('common/repo')
-        createContent().install()
-
         def repo = scmmRepoProvider.getRepo(expectedRepo, scmManagerMock)
+        scmManagerMock.initOnceRepo(repo.repoTarget)
+        createContent().install()
 
         def url = repo.getGitRepositoryUrl()
         // clone repo, to ensure, changes in remote repo.
         try (def git = Git.cloneRepository().setURI(url).setBranch('main').setDirectory(tmpDir).call()) {
 
-            verify(repo).createRepositoryAndSetPermission(eq(expectedRepo), any(String.class), eq(false))
+            verify(repo).createRepositoryAndSetPermission(any(String.class), eq(false))
 
             def commitMsg = git.log().call().iterator().next().getFullMessage()
             assertThat(commitMsg).isEqualTo("Initialize content repo ${expectedRepo}".toString())

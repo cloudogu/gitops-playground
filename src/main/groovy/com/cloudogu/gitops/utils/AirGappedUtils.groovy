@@ -46,7 +46,7 @@ class AirGappedUtils {
 
         GitRepo repo = repoProvider.getRepo(repoNamespaceAndName, gitHandler.tenant)
 
-        repo.createRepositoryAndSetPermission(repoNamespaceAndName, "Mirror of Helm chart $repoName from ${helmConfig.repoURL}", false)
+        repo.createRepositoryAndSetPermission("Mirror of Helm chart $repoName from ${helmConfig.repoURL}", false)
 
         repo.cloneRepo()
 
