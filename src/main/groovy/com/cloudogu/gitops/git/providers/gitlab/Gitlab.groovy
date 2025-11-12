@@ -30,8 +30,6 @@ class Gitlab implements GitProvider {
 
         String url = Objects.requireNonNull(gitlabConfig.getUrl(), "Missing gitlab url in config.scm.gitlab.url").trim()
         String pat = Objects.requireNonNull(gitlabConfig.getCredentials()?.password, "Missing gitlab token").trim()
-        def jf = Class.forName("org.glassfish.jersey.jackson.JacksonFeature")
-        log.info("JacksonFeature from: ${jf.protectionDomain.codeSource.location}")
         this.api = new GitLabApi(url, pat)
         this.api.enableRequestResponseLogging(Level.ALL)
     }
