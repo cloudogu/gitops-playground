@@ -14,7 +14,6 @@ import com.cloudogu.gitops.destroy.Destroyer
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
-import com.cloudogu.gitops.utils.NetworkingUtils
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 import io.micronaut.context.ApplicationContext
@@ -22,7 +21,8 @@ import org.slf4j.LoggerFactory
 import picocli.CommandLine
 
 import static com.cloudogu.gitops.config.ConfigConstants.APP_NAME
-import static com.cloudogu.gitops.utils.MapUtils.deepMerge 
+import static com.cloudogu.gitops.utils.MapUtils.deepMerge
+
 /**
  * Provides the entrypoint to the application as well as all config parameters.
  * When changing parameters, make sure to update the Config for the config file as well

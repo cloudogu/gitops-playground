@@ -63,7 +63,7 @@ class GitHandler extends Feature {
             config.scm.scmProviderType = ScmProviderType.GITLAB
             config.scm.scmManager = null
             if (!config.scm.gitlab.password || !config.scm.gitlab.parentGroupId) {
-                throw new RuntimeException('SCMProviderType is Gitlab but no PAT Token is given')
+                throw new RuntimeException('GitLab configuration incomplete: please provide both password (PAT) and parentGroupId')
             }
         }
     }
