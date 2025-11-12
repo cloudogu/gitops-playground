@@ -75,6 +75,7 @@ class ScmTenantSchema {
             return new Credentials(username, password)
         }
 
+        @JsonPropertyDescription(GITOPSUSERNAME_DESCRIPTION)
         String gitOpsUsername = ''
         String defaultVisibility = ''
 
@@ -150,6 +151,7 @@ class ScmTenantSchema {
         @JsonPropertyDescription(SCMM_SKIP_PLUGINS_DESCRIPTION)
         Boolean skipPlugins = false
 
+        @JsonPropertyDescription(GITOPSUSERNAME_DESCRIPTION)
         String gitOpsUsername = ''
 
         @JsonIgnore
