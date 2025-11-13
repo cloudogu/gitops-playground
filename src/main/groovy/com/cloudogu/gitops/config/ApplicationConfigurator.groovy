@@ -4,9 +4,6 @@ package com.cloudogu.gitops.config
 import com.cloudogu.gitops.utils.FileSystemUtils
 import groovy.util.logging.Slf4j
 
-import static com.cloudogu.gitops.config.Config.ContentRepoType
-import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositorySchema
-
 @Slf4j
 class ApplicationConfigurator {
 

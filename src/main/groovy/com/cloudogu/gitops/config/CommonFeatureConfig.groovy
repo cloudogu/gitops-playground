@@ -15,16 +15,7 @@ class CommonFeatureConfig extends Feature {
      * Throws RuntimeException which meaningful message, if invalid.
      */
     void validateConfig(Config configToSet) {
-        validateScmmAndJenkinsAreBothSet(configToSet)
         validateMirrorReposHelmChartFolderSet(configToSet)
-    }
-
-    private void validateScmmAndJenkinsAreBothSet(Config configToSet) {
-        if (configToSet.jenkins.active &&
-                (configToSet.scmm.url && !configToSet.jenkins.url ||
-                        !configToSet.scmm.url && configToSet.jenkins.url)) {
-            throw new RuntimeException('When setting jenkins URL, scmm URL must also be set and the other way round')
-        }
     }
 
     private void validateMirrorReposHelmChartFolderSet(Config configToSet) {
