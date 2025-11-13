@@ -21,7 +21,8 @@ content:
       targetRef: main
       overwriteMode: UPGRADE
       createJenkinsJob: true
-    - url: https://github.com/cloudogu/gitops-playground
+    - url: file:///home/cl-pc-0087/src/gitops-playground
+    #  url: https://github.com/cloudogu/gitops-playground
       path: examples/example-apps-via-content-loader/
       ref: feature/extract-example-apps
       templating: true
