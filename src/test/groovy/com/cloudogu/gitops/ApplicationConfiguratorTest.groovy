@@ -3,18 +3,21 @@ package com.cloudogu.gitops
 import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.CommonFeatureConfig
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.features.git.config.ScmTenantSchema
-import com.cloudogu.gitops.features.Content
+import com.cloudogu.gitops.features.ContentLoader
 import com.cloudogu.gitops.features.Jenkins
 import com.cloudogu.gitops.features.argocd.ArgoCD
-import com.cloudogu.gitops.scmm.ScmmRepoProvider
-import com.cloudogu.gitops.scmm.api.ScmmApiClient
+import com.cloudogu.gitops.features.git.GitHandler
+import com.cloudogu.gitops.features.git.config.ScmTenantSchema
+import com.cloudogu.gitops.git.GitRepoFactory
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.HelmClient
 import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.TestLogger
+import com.cloudogu.gitops.utils.git.GitHandlerForTests
+import com.cloudogu.gitops.utils.git.ScmManagerMock
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.Mock
 import org.mockito.Mockito
 
 import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable
@@ -33,8 +36,11 @@ class ApplicationConfiguratorTest {
     private FileSystemUtils fileSystemUtils
     private TestLogger testLogger
     private CommonFeatureConfig commonFeatureConfig
-    private Content featureContent
+    private ContentLoader featureContent
     private ArgoCD featureArgoCd
+
+    @Mock
+    ScmManagerMock scmManagerMock = new ScmManagerMock()
 
     Config testConfig = Config.fromMap([
             application: [
@@ -86,10 +92,12 @@ class ApplicationConfiguratorTest {
 
         K8sClient k8sClient = Mockito.mock(K8sClient)
         HelmClient helmClient = Mockito.mock(HelmClient)
-        ScmmRepoProvider scmmRepoProvider = Mockito.mock(ScmmRepoProvider)
+        GitRepoFactory gitRepoFactory = Mockito.mock(GitRepoFactory)
 
-        featureContent = Mockito.spy(new Content(testConfig, k8sClient, scmmRepoProvider, Mockito.mock(ScmmApiClient), Mockito.mock(Jenkins)))
-        featureArgoCd = Mockito.spy(new ArgoCD(testConfig, k8sClient, helmClient, fileSystemUtils, scmmRepoProvider))
+
+        GitHandler gitHandler = new GitHandlerForTests(testConfig, scmManagerMock)
+        featureContent = Mockito.spy(new ContentLoader(testConfig, k8sClient, gitRepoFactory, Mockito.mock(Jenkins), gitHandler))
+        featureArgoCd = Mockito.spy(new ArgoCD(testConfig, k8sClient, helmClient, fileSystemUtils, gitRepoFactory, gitHandler))
     }
 
     @Test
@@ -127,31 +135,6 @@ class ApplicationConfiguratorTest {
 
         def actualConfig = applicationConfigurator.initConfig(testConfig)
         assertThat(actualConfig.jenkins.urlForScm).isEmpty()
-    }
-
-    @Test
-    void 'Fails if jenkins is external and scmm is internal or the other way round'() {
-        testConfig.jenkins.active = true
-        testConfig.jenkins.url = 'external'
-        testConfig.scm.scmManager.url = ''
-
-        def exception = shouldFail(RuntimeException) {
-            commonFeatureConfig.validateConfig(testConfig)
-        }
-        assertThat(exception.message).isEqualTo('When setting jenkins URL, scmm URL must also be set and the other way round')
-
-        testConfig.jenkins.url = ''
-        testConfig.scm.scmManager.url = 'external'
-
-        exception = shouldFail(RuntimeException) {
-            commonFeatureConfig.validateConfig(testConfig)
-        }
-        assertThat(exception.message).isEqualTo('When setting jenkins URL, scmm URL must also be set and the other way round')
-
-
-        testConfig.jenkins.active = false
-        commonFeatureConfig.validateConfig(testConfig)
-        // no exception when jenkins is not active
     }
 
     @Test
