@@ -249,18 +249,6 @@ class ApplicationConfiguratorTest {
     }
 
     @Test
-    void "Certain properties are read from env"() {
-        withEnvironmentVariable('GITOPS_BUILD_LIB_REPO', 'value3').execute {
-            def actualConfig = new ApplicationConfigurator(fileSystemUtils).initConfig(minimalConfig())
-            assertThat(actualConfig.repositories.gitopsBuildLib.url).isEqualTo('value3')
-        }
-        withEnvironmentVariable('CES_BUILD_LIB_REPO', 'value4').execute {
-            def actualConfig = new ApplicationConfigurator(fileSystemUtils).initConfig(minimalConfig())
-            assertThat(actualConfig.repositories.cesBuildLib.url).isEqualTo('value4')
-        }
-    }
-
-    @Test
     void "base url: evaluates for all tools"() {
         testConfig.application.baseUrl = 'http://localhost'
 

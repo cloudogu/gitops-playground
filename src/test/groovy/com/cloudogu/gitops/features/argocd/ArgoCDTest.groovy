@@ -64,15 +64,6 @@ class ArgoCDTest {
                     ],
                     useDedicatedInstance: false
             ],
-            images: buildImages + [petclinic: 'petclinic-value'],
-            repositories: [
-                    gitopsBuildLib: [
-                            url: "https://github.com/cloudogu/gitops-build-lib.git",
-                    ],
-                    cesBuildLib   : [
-                            url: 'https://github.com/cloudogu/ces-build-lib.git',
-                    ]
-            ],
             content: [
                     examples: true
             ],
@@ -613,34 +604,6 @@ class ArgoCDTest {
     }
 
     @Test
-    void 'use custom maven image'() {
-        config.images.maven = 'maven:latest'
-
-        createArgoCD().install()
-
-        for (def petclinicRepo : petClinicRepos) {
-            if (petclinicRepo.repoTarget.contains('argocd/petclinic-plain')) {
-                assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).contains('mvn = cesBuildLib.MavenInDocker.new(this, \'maven:latest\')')
-            }
-        }
-    }
-
-    @Test
-    void 'use maven with proxy registry and credentials'() {
-        config.images.maven = 'latest'
-        config.registry.twoRegistries = true
-
-        createArgoCD().install()
-
-        for (def petclinicRepo : petClinicRepos) {
-            if (petclinicRepo.repoTarget.contains('argocd/petclinic-plain')) {
-                assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).contains('mvn = cesBuildLib.MavenInDocker.new(this, \'latest\', dockerRegistryProxyCredentials)')
-            }
-        }
-    }
-
-
-    @Test
     void 'ArgoCD with active network policies'() {
         config.application.netpols = true
 
@@ -656,16 +619,6 @@ class ArgoCDTest {
         assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir(), '/argocd/templates/allow-namespaces.yaml').text.contains("namespace: monitoring"))
         assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir(), '/argocd/templates/allow-namespaces.yaml').text.contains("namespace: default"))
     }
-
-    @Test
-    void 'set credentials for BuildImages'() {
-        config.registry.twoRegistries = true
-
-        createArgoCD().install()
-
-        assertPetClinicRepos('ClusterIP', 'LoadBalancer', '')
-    }
-
 
     private static Map parseBuildImagesMapFromString(String text) {
         def startIndex = text.indexOf('buildImages')
@@ -703,7 +656,7 @@ class ArgoCDTest {
 
     private void assertArgoCdYamlPrefixes(String scmmUrl, String expectedPrefix) {
 
-        assertAllYamlFiles(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), 'projects', 4) { Path file ->
+        assertAllYamlFiles(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), 'projects', 3) { Path file ->
             def yaml = parseActualYaml(file.toString())
             List<String> sourceRepos = yaml['spec']['sourceRepos'] as List<String>
             // Some projects might not have sourceRepos
@@ -798,29 +751,6 @@ class ArgoCDTest {
         assertThat(nFiles).isEqualTo(numberOfFiles)
     }
 
-    private void assertJenkinsEnvironmentVariablesPrefixes(String prefix) {
-        List defaultRegistryEnvVars = ["env.${prefix}REGISTRY_URL", "env.${prefix}REGISTRY_PATH"]
-        List twoRegistriesEnvVars = ["env.${prefix}REGISTRY_PROXY_URL"]
-
-        assertThat(new File(nginxHelmJenkinsRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).contains("env.${prefix}K8S_VERSION")
-
-        for (def petclinicRepo : petClinicRepos) {
-            defaultRegistryEnvVars.each { expectedEnvVar ->
-                assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).contains(expectedEnvVar)
-            }
-
-            if (config.registry['twoRegistries']) {
-                twoRegistriesEnvVars.each { expectedEnvVar ->
-                    assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).contains(expectedEnvVar)
-                }
-            } else {
-                twoRegistriesEnvVars.each { expectedEnvVar ->
-                    assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).doesNotContain(expectedEnvVar)
-                }
-            }
-        }
-    }
-
     private static List findFilesContaining(File folder, String stringToSearch) {
         List result = []
         folder.eachFileRecurse(FileType.FILES) {
@@ -834,139 +764,6 @@ class ArgoCDTest {
     ArgoCD createArgoCD() {
         def argoCD = ArgoCDForTest.newWithAutoProviders(config, k8sCommands, helmCommands)
         return argoCD
-    }
-
-    void assertBuildImagesInJenkinsfileReplaced(File jenkinsfile) {
-        def actualBuildImages = parseBuildImagesMapFromString(jenkinsfile.text)
-        if (!actualBuildImages) {
-            fail("Missing build images in Jenkinsfile ${jenkinsfile}")
-        }
-
-        if (config.registry.twoRegistries) {
-            for (Map.Entry image : actualBuildImages as Map) {
-                assertThat(image.value['image']).isEqualTo(buildImages[image.key])
-                assertThat(image.value['credentialsId']).isEqualTo('dockerRegistryProxyCredentials')
-            }
-        } else {
-
-            assertThat(buildImages.keySet()).containsExactlyInAnyOrderElementsOf(actualBuildImages.keySet())
-            for (Map.Entry image : buildImages as Map) {
-                assertThat(image.value).isEqualTo(actualBuildImages[image.key])
-            }
-        }
-
-    }
-
-    void assertPetClinicRepos(String expectedServiceType, String unexpectedServiceType, String ingressUrl) {
-        boolean separatorHyphen = config.application.urlSeparatorHyphen
-        boolean podResources = config.application.podResources
-
-        for (GitRepo repo : petClinicRepos) {
-
-            def tmpDir = repo.absoluteLocalRepoTmpDir
-            def jenkinsfile = new File(tmpDir, 'Jenkinsfile')
-            assertThat(jenkinsfile).exists()
-            assertJenkinsfileRegistryCredentials()
-
-            if (repo.repoTarget == 'argocd/petclinic-plain') {
-                assertBuildImagesInJenkinsfileReplaced(jenkinsfile)
-
-                assertThat(new File(tmpDir, 'Dockerfile').text).startsWith('FROM petclinic-value')
-
-                assertThat(new File(tmpDir, 'k8s/production/service.yaml').text).contains("type: ${expectedServiceType}")
-                assertThat(new File(tmpDir, 'k8s/staging/service.yaml').text).contains("type: ${expectedServiceType}")
-
-                assertThat(new File(tmpDir, 'k8s/production/service.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
-                assertThat(new File(tmpDir, 'k8s/staging/service.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
-
-                if (podResources) {
-                    assertThat((parseActualYaml(tmpDir + '/k8s/production/deployment.yaml')['spec']['template']['spec']['containers'] as List)[0]['resources'] as Map)
-                            .containsKeys('limits', 'requests')
-                    assertThat((parseActualYaml(tmpDir + '/k8s/staging/deployment.yaml')['spec']['template']['spec']['containers'] as List)[0]['resources'] as Map)
-                            .containsKeys('limits', 'requests')
-                } else {
-                    assertThat((parseActualYaml(tmpDir + '/k8s/production/deployment.yaml')['spec']['template']['spec']['containers'] as List)[0] as Map)
-                            .doesNotContainKey('resources')
-                    assertThat((parseActualYaml(tmpDir + '/k8s/staging/deployment.yaml')['spec']['template']['spec']['containers'] as List)[0] as Map)
-                            .doesNotContainKey('resources')
-                }
-
-                if (!ingressUrl) {
-                    assertThat(new File(tmpDir, 'k8s/staging/ingress.yaml')).doesNotExist()
-                    assertThat(new File(tmpDir, 'k8s/production/ingress.yaml')).doesNotExist()
-                } else {
-                    String ingressHostProduction = (parseActualYaml(tmpDir + '/k8s/production/ingress.yaml')['spec']['rules'] as List)[0]['host']
-                    String ingressHostStaging = (parseActualYaml(tmpDir + '/k8s/staging/ingress.yaml')['spec']['rules'] as List)[0]['host']
-                    if (separatorHyphen) {
-                        assertThat(ingressHostStaging).isEqualTo("staging-petclinic-plain-$ingressUrl".toString())
-                        assertThat(ingressHostProduction).isEqualTo("production-petclinic-plain-$ingressUrl".toString())
-                    } else {
-                        assertThat(ingressHostStaging).isEqualTo("staging.petclinic-plain.$ingressUrl".toString())
-                        assertThat(ingressHostProduction).isEqualTo("production.petclinic-plain.$ingressUrl".toString())
-                    }
-                }
-
-            } else if (repo.repoTarget == 'argocd/petclinic-helm') {
-                assertBuildImagesInJenkinsfileReplaced(jenkinsfile)
-                assertThat(new File(tmpDir, 'k8s/values-shared.yaml').text).contains("type: ${expectedServiceType}")
-                assertThat(new File(tmpDir, 'k8s/values-shared.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
-
-                if (podResources) {
-                    assertThat(parseActualYaml(tmpDir + '/k8s/values-shared.yaml')['resources'] as Map).containsKeys('limits', 'requests')
-                } else {
-                    assertThat(parseActualYaml(tmpDir + '/k8s/values-shared.yaml')['resources']).isNull()
-                }
-
-                if (!ingressUrl) {
-                    assertThat(parseActualYaml(tmpDir + '/k8s/values-shared.yaml')['ingress']['enabled']).isEqualTo(false)
-                    assertThat(parseActualYaml(tmpDir + '/k8s/values-production.yaml')).doesNotContainKey('ingress')
-                    assertThat(parseActualYaml(tmpDir + '/k8s/values-staging.yaml')).doesNotContainKey('ingress')
-                } else {
-                    String ingressHostProduction = (parseActualYaml(tmpDir + '/k8s/values-production.yaml')['ingress']['hosts'] as List)[0]['host']
-                    String ingressHostStaging = (parseActualYaml(tmpDir + '/k8s/values-staging.yaml')['ingress']['hosts'] as List)[0]['host']
-
-                    assertThat(parseActualYaml(tmpDir + '/k8s/values-shared.yaml')['ingress']['enabled']).isEqualTo(true)
-                    if (separatorHyphen) {
-                        assertThat(ingressHostProduction).isEqualTo("production-petclinic-helm-$ingressUrl".toString())
-                        assertThat(ingressHostStaging).isEqualTo("staging-petclinic-helm-$ingressUrl".toString())
-                    } else {
-                        assertThat(ingressHostProduction).isEqualTo("production.petclinic-helm.$ingressUrl".toString())
-                        assertThat(ingressHostStaging).isEqualTo("staging.petclinic-helm.$ingressUrl".toString())
-                    }
-                }
-
-            } else if (repo.repoTarget == 'exercises/petclinic-helm') {
-                // Does not contain the gitops build lib call, so no build images to replace
-                assertThat(new File(tmpDir, 'k8s/values-shared.yaml').text).contains("type: ${expectedServiceType}")
-                assertThat(new File(tmpDir, 'k8s/values-shared.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
-
-                if (podResources) {
-                    assertThat(parseActualYaml(tmpDir + '/k8s/values-shared.yaml')['resources'] as Map).containsKeys('limits', 'requests')
-                } else {
-                    assertThat(parseActualYaml(tmpDir + '/k8s/values-shared.yaml')['resources']).isNull()
-                }
-
-                if (!ingressUrl) {
-                    assertThat(parseActualYaml(tmpDir + '/k8s/values-shared.yaml')['ingress']['enabled']).isEqualTo(false)
-                    assertThat(parseActualYaml(tmpDir + '/k8s/values-production.yaml')).doesNotContainKey('ingress')
-                    assertThat(parseActualYaml(tmpDir + '/k8s/values-staging.yaml')).doesNotContainKey('ingress')
-                } else {
-                    String ingressHostProduction = (parseActualYaml(tmpDir + '/k8s/values-production.yaml')['ingress']['hosts'] as List)[0]['host']
-                    String ingressHostStaging = (parseActualYaml(tmpDir + '/k8s/values-staging.yaml')['ingress']['hosts'] as List)[0]['host']
-
-                    assertThat(parseActualYaml(tmpDir + '/k8s/values-shared.yaml')['ingress']['enabled']).isEqualTo(true)
-                    if (separatorHyphen) {
-                        assertThat(ingressHostProduction).isEqualTo("production-exercise-petclinic-helm-$ingressUrl".toString())
-                        assertThat(ingressHostStaging).isEqualTo("staging-exercise-petclinic-helm-$ingressUrl".toString())
-                    } else {
-                        assertThat(ingressHostProduction).isEqualTo("production.exercise-petclinic-helm.$ingressUrl".toString())
-                        assertThat(ingressHostStaging).isEqualTo("staging.exercise-petclinic-helm.$ingressUrl".toString())
-                    }
-                }
-            } else {
-                fail("Unkown petclinic repo: $repo")
-            }
-        }
     }
 
     void assertJenkinsfileRegistryCredentials() {
@@ -1852,10 +1649,6 @@ class ArgoCDTest {
 
         GitRepo getClusterResourcesRepo() {
             return this.clusterResourcesInitializationAction?.repo
-        }
-
-        GitRepo getTenantBootstrapRepo() {
-            return this.tenantBootstrapInitializationAction?.repo
         }
 
         @Override
