@@ -4,6 +4,9 @@ metadata:
   name: example-apps
   namespace: ${config.application.namePrefix}argocd
   annotations:
+<#if config.features.mail.active?? && config.features.mail.active>
+     notifications.argoproj.io/subscribe.email: ${config.features.argocd.emailToUser}
+</#if>
 spec:
   description: Contains examples of end-user applications
   destinations:
@@ -12,15 +15,17 @@ spec:
   - namespace: ${config.application.namePrefix}example-apps-staging
     server: https://kubernetes.default.svc
   sourceRepos:
-  - http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm/repo/${config.application.namePrefix}argocd/example-apps
-  - http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm/repo/${config.application.namePrefix}argocd/nginx-helm-umbrella
+  - ${scm.repoUrl}argocd/example-apps.git
+  - ${scm.repoUrl}argocd/nginx-helm-umbrella.git
   
   
   # allow to only see application resources from the specified namespace
   sourceNamespaces:
-    - ${config.application.namePrefix}example-apps-staging
-    - ${config.application.namePrefix}example-apps-production
-    - ${config.application.namePrefix}argocd
+    - '${config.application.namePrefix}example-apps-staging'
+    - '${config.application.namePrefix}example-apps-production'
+    <#if config.features.argocd.operator>
+    - '${config.application.namePrefix}argocd'
+    </#if>
 
 
   # Allow all namespaced-scoped resources to be created

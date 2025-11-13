@@ -5,6 +5,8 @@ import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.destroy.Destroyer
 import com.cloudogu.gitops.destroy.DestructionHandler
+import com.cloudogu.gitops.features.git.config.ScmTenantSchema
+import com.cloudogu.gitops.features.git.config.ScmTenantSchema.ScmManagerTenantConfig
 import io.github.classgraph.ClassGraph
 import io.github.classgraph.ClassInfo
 import io.micronaut.context.ApplicationContext
@@ -27,7 +29,8 @@ class GitopsPlaygroundCliMainScriptedTest {
     GitopsPlaygroundCliScriptedForTest gitopsPlaygroundCliScripted = new GitopsPlaygroundCliScriptedForTest()
     Config config = new Config(
             jenkins: new JenkinsSchema(url: 'http://jenkins'),
-            scmm: new ScmmSchema(url: 'http://scmm')
+            scm: new ScmTenantSchema(
+                    scmManager: new ScmManagerTenantConfig(url: 'http://scmm'))
     )
 
     /**
@@ -80,6 +83,14 @@ class GitopsPlaygroundCliMainScriptedTest {
 
                 if (classInfo.extendsSuperclass(parentClass) ||
                         (parentIsInterface && classInfo.implementsInterface(parentClass))) {
+
+                    // ignore test classes
+                    String location = classInfo.loadClass().protectionDomain?.codeSource?.location?.path ?: ""
+                    if (location == null) location = ""
+                    if (location =~ /[\\/]test-classes[\\/]/ || location =~ /[\\/]classes[\\/]java[\\/]test[\\/]/) {
+                        return
+                    }
+
                     def orderAnnotation = classInfo.getAnnotationInfo(Order)
                     if (orderAnnotation) {
                         def orderValue = orderAnnotation.getParameterValues().getValue('value') as int

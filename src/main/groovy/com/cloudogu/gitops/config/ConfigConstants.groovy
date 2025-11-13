@@ -27,10 +27,10 @@ interface ConfigConstants {
 
     String CONTENT_DESCRIPTION = 'Config parameters for content, i.e. end-user or tenant applications as opposed to cluster-resources'
 
-    // Content
+    // ContentLoader
     String CONTENT_EXAMPLES_DESCRIPTION = 'Deploy example content: source repos, GitOps repos, Jenkins Job, Argo CD apps/project'
     String CONTENT_NAMESPACES_DESCRIPTION = 'Additional kubernetes namespaces. These are authorized to Argo CD, supplied with image pull secrets, monitored by prometheus, etc. Namespaces can be templates, e.g. ${config.application.namePrefix}staging'
-    String CONTENT_REPO_DESCRIPTION = "Content repos to push into target environment"
+    String CONTENT_REPO_DESCRIPTION = "ContentLoader repos to push into target environment"
     String CONTENT_REPO_URL_DESCRIPTION = "URL of the content repo. Mandatory for each type."
     String CONTENT_REPO_PATH_DESCRIPTION = "Path within the content repo to process"
     String CONTENT_REPO_REF_DESCRIPTION = "Reference for a specific branch, tag, or commit. Emtpy defaults to default branch of the repo. With type MIRROR: ref must not be a commit hash; Choosing a ref only mirrors the ref but does not delete other branches/tags!"
@@ -38,7 +38,7 @@ interface ConfigConstants {
     String CONTENT_REPO_USERNAME_DESCRIPTION = "Username to authenticate against content repo"
     String CONTENT_REPO_PASSWORD_DESCRIPTION = "Password to authenticate against content repo"
     String CONTENT_REPO_TEMPLATING_DESCRIPTION = "When true, template all files ending in .ftl within the repo"
-    String CONTENT_REPO_TYPE_DESCRIPTION = "Content Repos can either be:\ncopied (only the files, starting on ref, starting at path within the repo. Requires target)\n, mirrored (FORCE pushes ref or the whole git repo if no ref set). Requires target, does not allow path and template.)\nfolderBased (folder structure is interpreted as repos. That is, root folder becomes namespace in SCM, sub folders become repository names in SCM, files are copied. Requires target.)"
+    String CONTENT_REPO_TYPE_DESCRIPTION = "ContentLoader Repos can either be:\ncopied (only the files, starting on ref, starting at path within the repo. Requires target)\n, mirrored (FORCE pushes ref or the whole git repo if no ref set). Requires target, does not allow path and template.)\nfolderBased (folder structure is interpreted as repos. That is, root folder becomes namespace in SCM, sub folders become repository names in SCM, files are copied. Requires target.)"
     String CONTENT_REPO_TARGET_DESCRIPTION = "Target repo for the repository in the for of namespace/name. Must contain one slash to separate namespace from name."
     String CONTENT_REPO_TARGET_OVERWRITE_MODE_DESCRIPTION = "This defines, how customer repos will be updated.\nINIT - push only if repo does not exist.\nRESET - delete all files after cloning source - files not in content are deleted\nUPGRADE - clone and copy - existing files will be overwritten, files not in content are kept. For type: MIRROR reset and upgrade have same result: in both cases source repo will be force pushed to target repo."
     String CONTENT_REPO_CREATE_JENKINS_JOB_DESCRIPTION = "If true, creates a Jenkins job, if jenkinsfile exists in one of the content repo's branches."
@@ -58,30 +58,16 @@ interface ConfigConstants {
     String JENKINS_ADDITIONAL_ENVS_DESCRIPTION = 'Set additional environments to Jenkins'
 
     // group scmm
-    String SCMM_DESCRIPTION = 'Config parameters for SCMManager (Git repository Server, https://scm-manager.org/)'
-    String SCMM_SKIP_RESTART_DESCRIPTION = 'Skips restarting SCM-Manager after plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades.\''
-    String SCMM_SKIP_PLUGINS_DESCRIPTION = 'Skips plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades.'
-    String SCMM_URL_DESCRIPTION = 'The host of your external scm-manager'
-    String SCMM_USERNAME_DESCRIPTION = 'Mandatory when scmm-url is set'
-    String SCMM_PASSWORD_DESCRIPTION = 'Mandatory when scmm-url is set'
+    String SCM_DESCRIPTION = 'Config parameters for Scm'
     String GIT_NAME_DESCRIPTION = 'Sets git author and committer name used for initial commits'
     String GIT_EMAIL_DESCRIPTION = 'Sets git author and committer email used for initial commits'
-    String SCM_ROOT_PATH_DESCRIPTION = 'Sets the root path for the Git Repositories. In SCM-Manager it is always "repo"'
-    String SCM_PROVIDER_DESCRIPTION = 'Sets the scm Provider. Possible Options are "scm-manager" and "gitlab"'
 
     //MutliTentant
-    String CENTRAL_USEDEDICATED_DESCRIPTION = "Toggles the Dedicated Instances Mode"
-    String CENTRAL_SCM_INTERNAL_DESCRIPTION = 'SCM for Central Management is running on the same cluster, so k8s internal URLs can be used for access'
     String MULTITENANT_DESCRIPTION =   'Multi Tenant Configs'
-    String CENTRAL_MGMT_REPO_DESCRIPTION = 'URL for the centralized Management Repo'
-    String CENTRAL_SCMM_USERNAME_DESCRIPTION = 'CENTRAL SCMM USERNAME'
-    String CENTRAL_SCMM_PASSWORD_DESCRIPTION = 'CENTRAL SCMM Password'
-    String CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION = 'CENTRAL Argocd Repo Namespace'
 
     // group remote
     String REMOTE_DESCRIPTION = 'Expose services as LoadBalancers'
     String INSECURE_DESCRIPTION = 'Sets insecure-mode in cURL which skips cert validation'
-    String LOCAL_HELM_CHART_FOLDER_DESCRIPTION = 'A local folder (within the GOP image mostly) where the local mirrors of all helm charts are loaded from when mirror-Repos is active. This is mostly needed for development.'
 
     // group tool configuration
     String APPLICATION_DESCRIPTION = 'Application configuration parameter for GOP'

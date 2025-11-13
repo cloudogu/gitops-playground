@@ -33,6 +33,7 @@ class PrometheusStackTestIT extends KubenetesApiTestSetup {
         }
         return false;
     }
+
     @BeforeAll
     static void labelTest() {
         println "###### PROMETHEUS ######"

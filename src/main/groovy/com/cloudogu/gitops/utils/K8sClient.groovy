@@ -193,7 +193,7 @@ class K8sClient {
     }
 
     String getArgoCDNamespacesSecret(String name, String namespace = '') {
-        String[] command = ["kubectl", "get", 'secret',name,"-n${namespace}", '-ojsonpath={.data.namespaces}']
+        String[] command = ["kubectl", "get", 'secret', name, "-n", "${namespace}", '-ojsonpath={.data.namespaces}']
         String output = waitForOutput(
                 command,
                 "Getting Secret from Cluster",

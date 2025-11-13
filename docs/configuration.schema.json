@@ -1,6 +1,16 @@
 {
   "$schema" : "https://json-schema.org/draft/2020-12/schema",
   "$defs" : {
+    "ExampleAppSchema-nullable" : {
+      "type" : [ "object", "null" ],
+      "properties" : {
+        "baseDomain" : {
+          "type" : [ "string", "null" ],
+          "description" : "The domain under which a subdomain these applications will be made available"
+        }
+      },
+      "additionalProperties" : false
+    },
     "HelmConfigWithValues-nullable" : {
       "type" : [ "object", "null" ],
       "properties" : {
@@ -31,6 +41,38 @@
       "additionalProperties" : {
         "type" : "string"
       }
+    },
+    "RepositorySchema-nullable" : {
+      "type" : [ "object", "null" ],
+      "properties" : {
+        "url" : {
+          "type" : [ "string", "null" ],
+          "description" : "HTTP URL of the repo"
+        }
+      },
+      "additionalProperties" : false
+    },
+    "RepositorySchemaWithRef-nullable" : {
+      "type" : [ "object", "null" ],
+      "properties" : {
+        "ref" : {
+          "type" : [ "string", "null" ],
+          "description" : "Ref of the repo to use, e.g. a tag, commit or branch"
+        },
+        "url" : {
+          "type" : [ "string", "null" ],
+          "description" : "HTTP URL of the repo"
+        }
+      },
+      "additionalProperties" : false
+    },
+    "ScmProviderType-nullable" : {
+      "anyOf" : [ {
+        "type" : "null"
+      }, {
+        "type" : "string",
+        "enum" : [ "GITLAB", "SCM_MANAGER" ]
+      } ]
     }
   },
   "type" : "object",
@@ -125,7 +167,7 @@
           }
         },
         "repos" : {
-          "description" : "Content repos to push into target environment",
+          "description" : "ContentLoader repos to push into target environment",
           "type" : [ "array", "null" ],
           "items" : {
             "type" : "object",
@@ -174,7 +216,7 @@
                   "type" : "string",
                   "enum" : [ "FOLDER_BASED", "COPY", "MIRROR" ]
                 } ],
-                "description" : "Content Repos can either be:\ncopied (only the files, starting on ref, starting at path within the repo. Requires target)\n, mirrored (FORCE pushes ref or the whole git repo if no ref set). Requires target, does not allow path and template.)\nfolderBased (folder structure is interpreted as repos. That is, root folder becomes namespace in SCM, sub folders become repository names in SCM, files are copied. Requires target.)"
+                "description" : "ContentLoader Repos can either be:\ncopied (only the files, starting on ref, starting at path within the repo. Requires target)\n, mirrored (FORCE pushes ref or the whole git repo if no ref set). Requires target, does not allow path and template.)\nfolderBased (folder structure is interpreted as repos. That is, root folder becomes namespace in SCM, sub folders become repository names in SCM, files are copied. Requires target.)"
               },
               "url" : {
                 "type" : [ "string", "null" ],
@@ -301,6 +343,21 @@
           },
           "additionalProperties" : false,
           "description" : "Config parameters for the Cert Manager"
+        },
+        "exampleApps" : {
+          "type" : [ "object", "null" ],
+          "properties" : {
+            "nginx" : {
+              "$ref" : "#/$defs/ExampleAppSchema-nullable",
+              "description" : "Config parameters for the NGINX example apps apps and exercises"
+            },
+            "petclinic" : {
+              "$ref" : "#/$defs/ExampleAppSchema-nullable",
+              "description" : "Config parameters for the petclinic example apps apps and exercises"
+            }
+          },
+          "additionalProperties" : false,
+          "description" : "Config parameters for the example apps and exercises"
         },
         "ingressNginx" : {
           "type" : [ "object", "null" ],
@@ -564,6 +621,45 @@
       "additionalProperties" : false,
       "description" : "Config parameters for features or tools"
     },
+    "images" : {
+      "type" : [ "object", "null" ],
+      "properties" : {
+        "helm" : {
+          "type" : [ "string", "null" ],
+          "description" : "Sets image for helm"
+        },
+        "helmKubeval" : {
+          "type" : [ "string", "null" ],
+          "description" : "Sets image for helmkubeval"
+        },
+        "kubectl" : {
+          "type" : [ "string", "null" ],
+          "description" : "Sets image for kubectl"
+        },
+        "kubeval" : {
+          "type" : [ "string", "null" ],
+          "description" : "Sets image for kubeval"
+        },
+        "maven" : {
+          "type" : [ "string", "null" ],
+          "description" : "Sets image for maven"
+        },
+        "nginx" : {
+          "type" : [ "string", "null" ],
+          "description" : "Sets image for nginx used in various applications"
+        },
+        "petclinic" : {
+          "type" : [ "string", "null" ],
+          "description" : "Sets image for petclinic used in various applications"
+        },
+        "yamllint" : {
+          "type" : [ "string", "null" ],
+          "description" : "Sets image for yamllint"
+        }
+      },
+      "additionalProperties" : false,
+      "description" : "Config params for images that do not belong to specific features"
+    },
     "jenkins" : {
       "type" : [ "object", "null" ],
       "properties" : {
@@ -627,31 +723,69 @@
       "properties" : {
         "centralArgocdNamespace" : {
           "type" : [ "string", "null" ],
-          "description" : "CENTRAL Argocd Repo Namespace"
+          "description" : "Namespace for the centralized Argocd"
         },
-        "centralSCMamespace" : {
-          "type" : [ "string", "null" ],
-          "description" : "CENTRAL Argocd Repo Namespace"
+        "gitlab" : {
+          "type" : [ "object", "null" ],
+          "properties" : {
+            "parentGroupId" : {
+              "type" : [ "string", "null" ],
+              "description" : "Main Group for Gitlab where the GOP creates it's groups/repos"
+            },
+            "password" : {
+              "type" : [ "string", "null" ],
+              "description" : "Password for SCM Manager authentication"
+            },
+            "url" : {
+              "type" : [ "string", "null" ],
+              "description" : "URL for external Gitlab"
+            },
+            "username" : {
+              "type" : [ "string", "null" ],
+              "description" : "GitLab username for API access. Must be 'oauth2' when using Personal Access Token (PAT) authentication"
+            }
+          },
+          "additionalProperties" : false,
+          "description" : "Config for GITLAB"
         },
-        "centralScmUrl" : {
-          "type" : [ "string", "null" ],
-          "description" : "URL for the centralized Management Repo"
+        "scmManager" : {
+          "type" : [ "object", "null" ],
+          "properties" : {
+            "internal" : {
+              "type" : [ "boolean", "null" ],
+              "description" : "SCM for Central Management is running on the same cluster, so k8s internal URLs can be used for access"
+            },
+            "namespace" : {
+              "type" : [ "string", "null" ],
+              "description" : "Namespace where to find the Central SCMM"
+            },
+            "password" : {
+              "type" : [ "string", "null" ],
+              "description" : "CENTRAL SCMM password"
+            },
+            "rootPath" : {
+              "type" : [ "string", "null" ],
+              "description" : "Root path for SCM Manager. In SCM-Manager it is always \"repo\""
+            },
+            "url" : {
+              "type" : [ "string", "null" ],
+              "description" : "URL for the centralized Management Repo"
+            },
+            "username" : {
+              "type" : [ "string", "null" ],
+              "description" : "CENTRAL SCMM username"
+            }
+          },
+          "additionalProperties" : false,
+          "description" : "Config for GITLAB"
         },
-        "internal" : {
-          "type" : [ "boolean", "null" ],
-          "description" : "SCM for Central Management is running on the same cluster, so k8s internal URLs can be used for access"
-        },
-        "password" : {
-          "type" : [ "string", "null" ],
-          "description" : "CENTRAL SCMM Password"
+        "scmProviderType" : {
+          "$ref" : "#/$defs/ScmProviderType-nullable",
+          "description" : "The SCM provider type. Possible values: SCM_MANAGER, GITLAB"
         },
         "useDedicatedInstance" : {
           "type" : [ "boolean", "null" ],
-          "description" : "Toggles the Dedicated Instances Mode"
-        },
-        "username" : {
-          "type" : [ "string", "null" ],
-          "description" : "CENTRAL SCMM USERNAME"
+          "description" : "Toggles the Dedicated Instances Mode. See docs for more info"
         }
       },
       "additionalProperties" : false,
@@ -716,44 +850,113 @@
       "additionalProperties" : false,
       "description" : "Config parameters for Registry"
     },
-    "scmm" : {
+    "repositories" : {
       "type" : [ "object", "null" ],
       "properties" : {
-        "helm" : {
-          "$ref" : "#/$defs/HelmConfigWithValues-nullable",
-          "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
+        "cesBuildLib" : {
+          "$ref" : "#/$defs/RepositorySchema-nullable",
+          "description" : "Repo to pull the ces-build-lib, used in examples and exercises as depedency of the gitops-build-lib"
         },
-        "password" : {
-          "type" : [ "string", "null" ],
-          "description" : "Mandatory when scmm-url is set"
+        "gitopsBuildLib" : {
+          "$ref" : "#/$defs/RepositorySchema-nullable",
+          "description" : "Repo to pull the gitops-build-lib, used in examples and exercises"
         },
-        "provider" : {
-          "type" : [ "string", "null" ],
-          "description" : "Sets the scm Provider. Possible Options are \"scm-manager\" and \"gitlab\""
+        "springBootHelmChart" : {
+          "$ref" : "#/$defs/RepositorySchemaWithRef-nullable",
+          "description" : "Repo to pull the generic Spring Boot Helm chart, used in examples and exercises"
         },
-        "rootPath" : {
-          "type" : [ "string", "null" ],
-          "description" : "Sets the root path for the Git Repositories. In SCM-Manager it is always \"repo\""
-        },
-        "skipPlugins" : {
-          "type" : [ "boolean", "null" ],
-          "description" : "Skips plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades."
-        },
-        "skipRestart" : {
-          "type" : [ "boolean", "null" ],
-          "description" : "Skips restarting SCM-Manager after plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades.'"
-        },
-        "url" : {
-          "type" : [ "string", "null" ],
-          "description" : "The host of your external scm-manager"
-        },
-        "username" : {
-          "type" : [ "string", "null" ],
-          "description" : "Mandatory when scmm-url is set"
+        "springPetclinic" : {
+          "$ref" : "#/$defs/RepositorySchemaWithRef-nullable",
+          "description" : "Repo to pull the Spring Petclinic, used in examples and exercises"
         }
       },
       "additionalProperties" : false,
-      "description" : "Config parameters for SCMManager (Git repository Server, https://scm-manager.org/)"
+      "description" : "Config params for repositories used within GOP"
+    },
+    "scm" : {
+      "type" : [ "object", "null" ],
+      "properties" : {
+        "gitlab" : {
+          "type" : [ "object", "null" ],
+          "properties" : {
+            "gitOpsUsername" : {
+              "type" : [ "string", "null" ],
+              "description" : "Username for the Gitops User"
+            },
+            "internal" : {
+              "type" : [ "boolean", "null" ],
+              "description" : "True if Gitlab is running in the same K8s cluster. For now we only support access by external URL"
+            },
+            "parentGroupId" : {
+              "type" : [ "string", "null" ],
+              "description" : "Number for the Gitlab Group where the repos and subgroups should be created"
+            },
+            "password" : {
+              "type" : [ "string", "null" ],
+              "description" : "PAT Token for the account. Needs read/write repo permissions. See docs for mor information"
+            },
+            "url" : {
+              "type" : [ "string", "null" ],
+              "description" : "Base URL for the Gitlab instance"
+            },
+            "username" : {
+              "type" : [ "string", "null" ],
+              "description" : "Defaults to: oauth2.0 when PAT token is given."
+            }
+          },
+          "additionalProperties" : false,
+          "description" : "Config for GITLAB"
+        },
+        "scmManager" : {
+          "type" : [ "object", "null" ],
+          "properties" : {
+            "gitOpsUsername" : {
+              "type" : [ "string", "null" ],
+              "description" : "Username for the Gitops User"
+            },
+            "helm" : {
+              "$ref" : "#/$defs/HelmConfigWithValues-nullable",
+              "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
+            },
+            "namespace" : {
+              "type" : [ "string", "null" ],
+              "description" : "Namespace where SCM-Manager should run"
+            },
+            "password" : {
+              "type" : [ "string", "null" ],
+              "description" : "Mandatory when scmm-url is set"
+            },
+            "rootPath" : {
+              "type" : [ "string", "null" ],
+              "description" : "Sets the root path for the Git Repositories. In SCM-Manager it is always \"repo\""
+            },
+            "skipPlugins" : {
+              "type" : [ "boolean", "null" ],
+              "description" : "Skips plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades."
+            },
+            "skipRestart" : {
+              "type" : [ "boolean", "null" ],
+              "description" : "Skips restarting SCM-Manager after plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades.'"
+            },
+            "url" : {
+              "type" : [ "string", "null" ],
+              "description" : "The host of your external scm-manager"
+            },
+            "username" : {
+              "type" : [ "string", "null" ],
+              "description" : "Mandatory when scmm-url is set"
+            }
+          },
+          "additionalProperties" : false,
+          "description" : "Config for GITLAB"
+        },
+        "scmProviderType" : {
+          "$ref" : "#/$defs/ScmProviderType-nullable",
+          "description" : "The SCM provider type. Possible values: SCM_MANAGER, GITLAB"
+        }
+      },
+      "additionalProperties" : false,
+      "description" : "Config parameters for Scm"
     }
   },
   "additionalProperties" : false

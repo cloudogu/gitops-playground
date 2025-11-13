@@ -84,7 +84,9 @@ We recommend running this command as an unprivileged user, that is inside the [d
     - [Why not use argocd-autopilot?](#why-not-use-argocd-autopilot)
     - [cluster-resources](#cluster-resources)
   - [Jenkins](#jenkins)
-  - [SCM-Manager](#scm-manager)
+  - [SCMs](#scms)
+    - [SCM-Manager](#scm-manager)
+    - [Gitlab](#gitlab)
   - [Monitoring tools](#monitoring-tools)
   - [Secrets Management Tools](#secrets-management-tools)
     - [dev mode](#dev-mode)
@@ -266,21 +268,54 @@ You can also find a list of all CLI/config options [here](#overview-of-all-cli-a
 That is, if you pass a param via CLI, for example, it will overwrite the corresponding value in the configuration.
 
 ##### Overview of all CLI and config options
-
+- [Application](#application)
 - [Registry](#registry)
 - [Jenkins](#jenkins)
-- [Multitenant](#multitenant)
-- [SCMM](#scmm)
-- [Application](#application)
+- [SCM](#scmtenant)
+  - [SCMM](#scmmtenant)
+  - [GITLAB](#gitlabtenant)
 - [Images](#images)
-- [Features](#features)
-  - [ArgoCD](#argocd)
-  - [Mail](#mail)
-  - [Monitoring](#monitoring)
-  - [Secrets](#secrets)
-  - [Ingress Nginx](#ingress-nginx)
-  - [Cert Manager](#cert-manager)
+- [Features](#argocd)
+    - [ArgoCD](#argocd)
+    - [Mail](#mail)
+    - [Monitoring](#monitoring)
+    - [Secrets](#secrets)
+    - [Ingress Nginx](#ingress-nginx)
+    - [Cert Manager](#cert-manager)
 - [Content](#content)
+- [Multitenant](#multitenant)
+  - [SCMM](#scm-managercentral)
+  - [GITLAB](#gitlabcentral)
+
+###### Application
+
+| CLI | Config | Default | Type | Description |
+|-----|--------|---------|------|-------------|
+| `--config-file` | - | `''` | String | Config file path |
+| `--config-map` | - | `''` | String | Config map name |
+| `-d, --debug` | `application.debug` | - | Boolean | Enable debug mode |
+| `-x, --trace` | `application.trace` | - | Boolean | Enable trace mode |
+| `--output-config-file` | `application.outputConfigFile` | `false` | Boolean | Output configuration file |
+| `-v, --version` | `application.versionInfoRequested` | `false` | Boolean | Display version and license info |
+| `-h, --help` | `application.usageHelpRequested` | `false` | Boolean | Display help message |
+| `--remote` | `application.remote` | `false` | Boolean | Expose services as LoadBalancers |
+| `--insecure` | `application.insecure` | `false` | Boolean | Sets insecure-mode in cURL which skips cert validation |
+| `--openshift` | `application.openshift` | `false` | Boolean | When set, openshift specific resources and configurations are applied |
+| `--username` | `application.username` | `'admin'` | String | Set initial admin username |
+| `--password` | `application.password` | `'admin'` | String | Set initial admin passwords |
+| `-y, --yes` | `application.yes` | `false` | Boolean | Skip confirmation |
+| `--name-prefix` | `application.namePrefix` | `''` | String | Set name-prefix for repos, jobs, namespaces |
+| `--destroy` | `application.destroy` | `false` | Boolean | Unroll playground |
+| `--pod-resources` | `application.podResources` | `false` | Boolean | Write kubernetes resource requests and limits on each pod |
+| `--git-name` | `application.gitName` | `'Cloudogu'` | String | Sets git author and committer name used for initial commits |
+| `--git-email` | `application.gitEmail` | `'hello@cloudogu.com'` | String | Sets git author and committer email used for initial commits |
+| `--base-url` | `application.baseUrl` | `''` | String | The external base url (TLD) for all tools |
+| `--url-separator-hyphen` | `application.urlSeparatorHyphen` | `false` | Boolean | Use hyphens instead of dots to separate application name from base-url |
+| `--mirror-repos` | `application.mirrorRepos` | `false` | Boolean | Changes the sources of deployed tools so they work in air-gapped environments |
+| `--skip-crds` | `application.skipCrds` | `false` | Boolean | Skip installation of CRDs |
+| `--namespace-isolation` | `application.namespaceIsolation` | `false` | Boolean | Configure tools to work with given namespaces only |
+| `--netpols` | `application.netpols` | `false` | Boolean | Sets Network Policies |
+
 
 ###### Registry
 
@@ -322,19 +357,16 @@ That is, if you pass a param via CLI, for example, it will overwrite the corresp
 | - | `jenkins.helm.version` | `'5.8.43'` | String | The version of the Helm chart to be installed |
 | - | `jenkins.helm.values` | `[:]` | Map | Helm values of the chart |
 
-###### Multitenant
+###### Scm(Tenant)
 
-| CLI | Config | Default | Type | Description |
-|-----|--------|---------|------|-------------|
-| `--dedicated-internal` | `multiTenant.internal` | `false` | Boolean | SCM for Central Management is running on the same cluster |
-| `--dedicated-instance` | `multiTenant.useDedicatedInstance` | `false` | Boolean | Toggles the Dedicated Instances Mode |
-| `--central-scm-url` | `multiTenant.centralScmUrl` | `''` | String | URL for the centralized Management Repo |
-| `--central-scm-username` | `multiTenant.username` | `''` | String | CENTRAL SCMM USERNAME |
-| `--central-scm-password` | `multiTenant.password` | `''` | String | CENTRAL SCMM Password |
-| `--central-argocd-namespace` | `multiTenant.centralArgocdNamespace` | `'argocd'` | String | CENTRAL Argocd Repo Namespace |
-| `--central-scm-namespace` | `multiTenant.centralSCMamespace` | `'scm-manager'` | String | Central SCM namespace |
+| CLI              | Config                          | Default      | Type                    | Description                                                           |
+|------------------|---------------------------------|--------------|-------------------------|-----------------------------------------------------------------------|
+| `--scm-provider` | `scmTenant.scmProviderType`     | `SCM_MANAGER` | ScmProviderType         | Specifies the SCM provider type. Possible values: `SCM_MANAGER`, `GITLAB`. |
+|                  | `scmTenant.gitOpsUsername`      | `''`         | String                  | The username for the GitOps user.                                      |
+|                  | `scmTenant.gitlab`              | `''`         | GitlabTenantConfig      | Configuration for GitLab, including URL, username, token, and parent group ID. |
+|                  | `scmTenant.scmManager`          | `''`         | ScmManagerTenantConfig  | Configuration for SCM Manager, such as internal setup or plugin handling. |
 
-###### SCMM
+###### SCMM(Tenant)
 
 | CLI | Config | Default | Type | Description |
 |-----|--------|---------|------|-------------|
@@ -344,40 +376,22 @@ That is, if you pass a param via CLI, for example, it will overwrite the corresp
 | `--scmm-username` | `scmm.username` | `'admin'` | String | Mandatory when scmm-url is set |
 | `--scmm-password` | `scmm.password` | `'admin'` | String | Mandatory when scmm-url is set |
 | `--scm-root-path` | `scmm.rootPath` | `'repo'` | String | Sets the root path for the Git Repositories |
-| `--scm-provider` | `scmm.provider` | `'scm-manager'` | String | Sets the scm Provider. Possible Options are "scm-manager" and "gitlab" |
 | - | `scmm.helm.chart` | `'scm-manager'` | String | Name of the Helm chart |
 | - | `scmm.helm.repoURL` | `'https://packages.scm-manager.org/repository/helm-v2-releases/'` | String | Repository url from which the Helm chart should be obtained |
 | - | `scmm.helm.version` | `'3.10.2'` | String | The version of the Helm chart to be installed |
 | - | `scmm.helm.values` | `[:]` | Map | Helm values of the chart |
 
-###### Application
 
-| CLI | Config | Default | Type | Description |
-|-----|--------|---------|------|-------------|
-| `--config-file` | - | `''` | String | Config file path |
-| `--config-map` | - | `''` | String | Config map name |
-| `-d, --debug` | `application.debug` | - | Boolean | Enable debug mode |
-| `-x, --trace` | `application.trace` | - | Boolean | Enable trace mode |
-| `--output-config-file` | `application.outputConfigFile` | `false` | Boolean | Output configuration file |
-| `-v, --version` | `application.versionInfoRequested` | `false` | Boolean | Display version and license info |
-| `-h, --help` | `application.usageHelpRequested` | `false` | Boolean | Display help message |
-| `--remote` | `application.remote` | `false` | Boolean | Expose services as LoadBalancers |
-| `--insecure` | `application.insecure` | `false` | Boolean | Sets insecure-mode in cURL which skips cert validation |
-| `--openshift` | `application.openshift` | `false` | Boolean | When set, openshift specific resources and configurations are applied |
-| `--username` | `application.username` | `'admin'` | String | Set initial admin username |
-| `--password` | `application.password` | `'admin'` | String | Set initial admin passwords |
-| `-y, --yes` | `application.yes` | `false` | Boolean | Skip confirmation |
-| `--name-prefix` | `application.namePrefix` | `''` | String | Set name-prefix for repos, jobs, namespaces |
-| `--destroy` | `application.destroy` | `false` | Boolean | Unroll playground |
-| `--pod-resources` | `application.podResources` | `false` | Boolean | Write kubernetes resource requests and limits on each pod |
-| `--git-name` | `application.gitName` | `'Cloudogu'` | String | Sets git author and committer name used for initial commits |
-| `--git-email` | `application.gitEmail` | `'hello@cloudogu.com'` | String | Sets git author and committer email used for initial commits |
-| `--base-url` | `application.baseUrl` | `''` | String | The external base url (TLD) for all tools |
-| `--url-separator-hyphen` | `application.urlSeparatorHyphen` | `false` | Boolean | Use hyphens instead of dots to separate application name from base-url |
-| `--mirror-repos` | `application.mirrorRepos` | `false` | Boolean | Changes the sources of deployed tools so they work in air-gapped environments |
-| `--skip-crds` | `application.skipCrds` | `false` | Boolean | Skip installation of CRDs |
-| `--namespace-isolation` | `application.namespaceIsolation` | `false` | Boolean | Configure tools to work with given namespaces only |
-| `--netpols` | `application.netpols` | `false` | Boolean | Sets Network Policies |
+###### Gitlab(Tenant)
+
+| CLI               | Config             | Default   | Type   | Description                                                                                                |
+|-------------------|--------------------|-----------|--------|------------------------------------------------------------------------------------------------------------|
+| `--gitlab-url`    | `gitlabTenant.url` | `''`      | String | Base URL for the GitLab instance.                                                                          |
+| `--gitlab-username` | `gitlabTenant.username` | `'oauth2.0'` | String | Defaults to: `oauth2.0` when a PAT token is provided.                                                      |
+| `--gitlab-token`  | `gitlabTenant.password` | `''`      | String | PAT token for the account.                                                                                 |
+| `--gitlab-parent-id` | `gitlabTenant.parentGroupId` | `''`  | String | The numeric ID for the GitLab Group where repositories and subgroups should be created.                    |
+|                   | `gitlabTenant.internal` | `false`  | Boolean | Indicates if GitLab is running in the same Kubernetes cluster. Currently only external URLs are supported. |
+
 
 ###### Images
 
@@ -502,6 +516,37 @@ That is, if you pass a param via CLI, for example, it will overwrite the corresp
 | - | `content.repos[].target` | `''` | String | Target repo for the repository in the form of namespace/name |
 | - | `content.repos[].overwriteMode` | `INIT` | OverwriteMode | How customer repos will be updated (INIT, RESET, UPGRADE) |
 | - | `content.repos[].createJenkinsJob` | `false` | Boolean | If true, creates a Jenkins job |
+
+###### MultiTenant
+
+| CLI                          | Config                              | Default       | Type                     | Description                                                    |
+|------------------------------|-------------------------------------|---------------|--------------------------|----------------------------------------------------------------|
+| `--dedicated-instance`       | `multiTenant.useDedicatedInstance`  | `false`       | Boolean                  | Toggles the Dedicated Instances Mode. See docs for more info   |
+| `--central-argocd-namespace` | `multiTenant.centralArgocdNamespace`| `'argocd'`    | String                   | Namespace for the centralized Argocd                           |
+| `--central-scm-provider`     | `multiTenant.scmProviderType`       | `SCM_MANAGER` | ScmProviderType          | The SCM provider type. Possible values: `SCM_MANAGER`, `GITLAB`|
+|                              | `multiTenant.gitlab`                | ``        | GitlabCentralConfig      | Config for GITLAB                                              |
+|                              | `multiTenant.scmManager`            | ``        | ScmManagerCentralConfig  | Config for SCM Manager                                         |
+
+###### Gitlab(Central)
+
+| CLI                          | Config                         | Default     | Type    | Description                                                      |
+|------------------------------|--------------------------------|-------------|---------|------------------------------------------------------------------|
+| `--central-gitlab-url`       | `multiTenant.gitlab.url`       | `''`        | String  | URL for external Gitlab                                          |
+| `--central-gitlab-username`  | `multiTenant.gitlab.username`  | `'oauth2.0'`| String  | Username for GitLab authentication                               |
+| `--central-gitlab-token`     | `multiTenant.gitlab.password`  | `''`        | String  | Password for SCM Manager authentication                          |
+| `--central-gitlab-group-id`  | `multiTenant.gitlab.parentGroupId` | `''`    | String  | Main Group for Gitlab where the GOP creates it's groups/repos    |
+|                              | `multiTenant.gitlab.internal`  | `false`     | Boolean | SCM is running on the same cluster (only external supported now) |
+
+###### Scm-Manager(Central)
+
+| CLI                          | Config                              | Default         | Type    | Description                                                                          |
+|------------------------------|-------------------------------------|-----------------|---------|--------------------------------------------------------------------------------------|
+| `--central-scmm-internal`    | `multiTenant.scmManager.internal`   | `false`         | Boolean | SCM for Central Management is running on the same cluster, so k8s internal URLs can be used for access |
+| `--central-scmm-url`         | `multiTenant.scmManager.url`        | `''`            | String  | URL for the centralized Management Repo                                              |
+| `--central-scmm-username`    | `multiTenant.scmManager.username`   | `''`            | String  | CENTRAL SCMM USERNAME                                                                |
+| `--central-scmm-password`    | `multiTenant.scmManager.password`   | `''`            | String  | CENTRAL SCMM Password                                                                |
+| `--central-scmm-root-path`   | `multiTenant.scmManager.rootPath`   | `'repo'`        | String  | Root path for SCM Manager                                                            |
+| `--central-scmm-namespace`   | `multiTenant.scmManager.namespace`  | `'scm-manager'` | String  | Namespace where to find the Central SCMM                                             |
 
 ##### Configuration file
 
@@ -669,8 +714,8 @@ To use them locally,
 * `--argocd` - deploy Argo CD GitOps operator
 
 > ⚠️ **Note** that switching between operators is not supported.  
-That is, expect errors (for example with cluster-resources) if you apply the playground once with Argo CD and the next
-time without it. We recommend resetting the cluster with `init-cluster.sh` beforehand.
+> That is, expect errors (for example with cluster-resources) if you apply the playground once with Argo CD and the next
+> time without it. We recommend resetting the cluster with `init-cluster.sh` beforehand.
 
 ##### Deploy with local Cloudogu Ecosystem
 
@@ -1104,6 +1149,24 @@ To apply additional global environments for jenkins you can use `--jenkins-addit
 Note that the [example applications](#example-applications) pipelines will only run on a Jenkins that uses agents that provide
 a docker host. That is, Jenkins must be able to run e.g. `docker ps` successfully on the agent.
 
+## SCMs
+
+You can choose between the following Git providers:
+
+- SCM-Manager
+- GitLab
+
+For configuration details, see the CLI or configuration parameters above ([SCM](#scmtenant)).
+
+### GitLab
+
+When using GitLab, you must provide a valid **parent group ID**.
+This group will serve as the main group for the GOP to create and manage all required repositories.
+
+[![gitlab ParentID](docs/gitlab-parentid.png)](https://docs.gitlab.com/user/group/#find-the-group-id)
+
+To authenticate with Gitlab provide a token token as password. More information can be found [here](https://docs.gitlab.com/api/rest/authentication/)  or [here](https://docs.gitlab.com/user/profile/personal_access_tokens/)
+The username should remain 'oauth2.0' to access the API, unless stated otherwise by GitLab documentation.
 ### SCM-Manager
 
 You can set an external SCM-Manager via the following parameters when applying the playground.

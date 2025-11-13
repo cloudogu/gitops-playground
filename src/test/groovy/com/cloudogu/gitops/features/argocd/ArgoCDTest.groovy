@@ -1,14 +1,17 @@
 package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.scmm.ScmmRepo
+import com.cloudogu.gitops.git.GitRepo
+import com.cloudogu.gitops.utils.git.GitHandlerForTests
+import com.cloudogu.gitops.utils.git.TestGitProvider
+import com.cloudogu.gitops.utils.git.TestGitRepoFactory
+import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.utils.*
 import groovy.io.FileType
 import groovy.json.JsonSlurper
 import groovy.yaml.YamlSlurper
-import org.eclipse.jgit.api.CheckoutCommand
-import org.eclipse.jgit.api.CloneCommand
 import org.junit.jupiter.api.Test
+import org.mockito.Spy
 import org.springframework.security.crypto.bcrypt.BCrypt
 
 import java.nio.file.Files
@@ -19,9 +22,6 @@ import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironment
 import static org.assertj.core.api.Assertions.assertThat
 import static org.assertj.core.api.Assertions.fail
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode
-import static org.mockito.ArgumentMatchers.any
-import static org.mockito.ArgumentMatchers.anyString
-import static org.mockito.Mockito.*
 
 class ArgoCDTest {
     Map buildImages = [
@@ -48,17 +48,33 @@ class ArgoCDTest {
                             tenantNamespaces   : ["example-apps-staging", "example-apps-production"]
                     ]
             ],
-            scmm: [
-                    internal: true,
-                    url     : 'https://abc'
+            scm: [
+                    scmManager: [
+                            internal: true],
+                    gitlab    : [
+                            url: ''
+                    ]
+            ],
+            multiTenant: [
+                    scmManager          : [
+                            url: ''
+                    ],
+                    gitlab              : [
+                            url: ''
+                    ],
+                    useDedicatedInstance: false
+            ],
+            images: buildImages + [petclinic: 'petclinic-value'],
+            repositories: [
+                    gitopsBuildLib: [
+                            url: "https://github.com/cloudogu/gitops-build-lib.git",
+                    ],
+                    cesBuildLib   : [
+                            url: 'https://github.com/cloudogu/ces-build-lib.git',
+                    ]
             ],
             content: [
-                    examples: true,
-                    variables: [
-                            images: [
-                                    buildImages + [petclinic: 'petclinic-value']
-                            ]
-                    ]
+                    examples: true
             ],
             features: [
                     argocd      : [
@@ -90,25 +106,31 @@ class ArgoCDTest {
             ]
     )
 
+    @Spy
+    CommandExecutor test = new CommandExecutor()
+
     CommandExecutorForTest k8sCommands = new CommandExecutorForTest()
     CommandExecutorForTest helmCommands = new CommandExecutorForTest()
-    ScmmRepo argocdRepo
+    GitRepo argocdRepo
     String actualHelmValuesFile
-    ScmmRepo clusterResourcesRepo
-    ScmmRepo tenantBootstrap
-    List<ScmmRepo> petClinicRepos = []
-    CloneCommand gitCloneMock = mock(CloneCommand.class, RETURNS_DEEP_STUBS)
+    GitRepo clusterResourcesRepo
+    GitRepo nginxHelmJenkinsRepo
+    GitRepo tenantBootstrap
+    List<GitRepo> petClinicRepos = []
     String prefixPathCentral = '/multiTenant/central/'
     ArgoCD argocd
 
     @Test
     void 'Installs argoCD'() {
-        def argocd = createArgoCD()
-
         // Simulate argocd Namespace does not exist
         k8sCommands.enqueueOutput(new CommandExecutor.Output('namespace not found', '', 1))
 
+        def argocd = createArgoCD()
         argocd.install()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
+        this.actualHelmValuesFile = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(),
+                ArgoCD.HELM_VALUES_PATH
+        )
 
         k8sCommands.assertExecuted('kubectl create namespace argocd')
 
@@ -125,8 +147,8 @@ class ArgoCDTest {
         assertThat(parseActualYaml(actualHelmValuesFile)['global']).isNull()
 
         // check repoTemplateSecretName
-        k8sCommands.assertExecuted('kubectl create secret generic argocd-repo-creds-scmm -n argocd')
-        k8sCommands.assertExecuted('kubectl label secret argocd-repo-creds-scmm -n argocd')
+        k8sCommands.assertExecuted('kubectl create secret generic argocd-repo-creds-scm -n argocd')
+        k8sCommands.assertExecuted('kubectl label secret argocd-repo-creds-scm -n argocd')
 
         // Check dependency build and helm install
         assertThat(helmCommands.actualCommands[0].trim()).isEqualTo('helm repo add argo https://argoproj.github.io/argo-helm')
@@ -169,17 +191,23 @@ class ArgoCDTest {
         def argocdYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'applications/argocd.yaml')
         assertThat(argocdYaml['spec']['source']['directory']).isNull()
         assertThat(argocdYaml['spec']['source']['path']).isEqualTo('argocd/')
-        // The other application files should be validated here as well!
     }
 
     @Test
     void 'Installs argoCD for remote and external Scmm'() {
         config.application.remote = true
-        config.scmm.internal = false
+        config.scm.scmManager.internal = false
+        config.scm.scmManager.url = "https://abc"
         config.features.argocd.url = 'https://argo.cd'
 
         def argocd = createArgoCD()
         argocd.install()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
+        this.actualHelmValuesFile = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(),
+                ArgoCD.HELM_VALUES_PATH
+        )
+
+
         List filesWithInternalSCMM = findFilesContaining(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), argocd.scmmUrlInternal)
         assertThat(filesWithInternalSCMM).isEmpty()
         List filesWithExternalSCMM = findFilesContaining(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), "https://abc")
@@ -196,7 +224,9 @@ class ArgoCDTest {
     void 'When monitoring disabled: Does not push path monitoring to cluster resources'() {
         config.features.monitoring.active = false
 
-        createArgoCD().install()
+        def argocd = createArgoCD()
+        argocd.install()
+        this.clusterResourcesRepo = (argocd as ArgoCDForTest).clusterResourcesRepo
 
         assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + ArgoCD.MONITORING_RESOURCES_PATH)).doesNotExist()
     }
@@ -205,7 +235,9 @@ class ArgoCDTest {
     void 'When monitoring enabled: Does push path monitoring to cluster resources'() {
         config.features.monitoring.active = true
 
-        createArgoCD().install()
+        def argo = createArgoCD()
+        argo.install()
+        this.clusterResourcesRepo = (argo as ArgoCDForTest).clusterResourcesRepo
 
         assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + ArgoCD.MONITORING_RESOURCES_PATH)).exists()
 
@@ -234,7 +266,10 @@ class ArgoCDTest {
     void 'When ingressNginx disabled: Does not push monitoring dashboard resources'() {
         config.features.monitoring.active = true
         config.features.ingressNginx.active = false
-        createArgoCD().install()
+        def argocd = createArgoCD()
+        argocd.install()
+        this.clusterResourcesRepo = (argocd as ArgoCDForTest).clusterResourcesRepo
+
         assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + ArgoCD.MONITORING_RESOURCES_PATH)).exists()
         assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + "/misc/ingress-nginx-dashboard.yaml")).doesNotExist()
         assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + "/misc/ingress-nginx-dashboard-requests-handling.yaml")).doesNotExist()
@@ -242,10 +277,15 @@ class ArgoCDTest {
 
     @Test
     void 'When mailhog disabled: Does not include mail configurations into cluster resources'() {
-
         config.features.mail.active = false
         config.features.mail.mailhog = false
-        createArgoCD().install()
+        def argocd = createArgoCD()
+        argocd.install()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
+        this.actualHelmValuesFile = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(),
+                ArgoCD.HELM_VALUES_PATH
+        )
+
         def valuesYaml = parseActualYaml(actualHelmValuesFile)
         assertThat(valuesYaml['argo-cd']['notifications']['enabled']).isEqualTo(false)
         assertThat(valuesYaml['argo-cd']['notifications']['notifiers']).isNull()
@@ -254,7 +294,13 @@ class ArgoCDTest {
     @Test
     void 'When mailhog enabled: Includes mail configurations into cluster resources'() {
         config.features.mail.active = true
-        createArgoCD().install()
+        def argocd = createArgoCD()
+        argocd.install()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
+        this.actualHelmValuesFile = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(),
+                ArgoCD.HELM_VALUES_PATH
+        )
+
         def valuesYaml = parseActualYaml(actualHelmValuesFile)
         assertThat(valuesYaml['argo-cd']['notifications']['enabled']).isEqualTo(true)
         assertThat(valuesYaml['argo-cd']['notifications']['notifiers']).isNotNull()
@@ -266,7 +312,15 @@ class ArgoCDTest {
         config.features.argocd.emailFrom = 'argocd@example.com'
         config.features.argocd.emailToUser = 'app-team@example.com'
         config.features.argocd.emailToAdmin = 'argocd@example.com'
-        createArgoCD().install()
+        def argocd = createArgoCD()
+        argocd.install()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
+
+        this.actualHelmValuesFile = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(),
+                ArgoCD.HELM_VALUES_PATH
+        )
+
+
         def valuesYaml = parseActualYaml(actualHelmValuesFile)
         def clusterRessourcesYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/cluster-resources.yaml')
         def argocdYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'applications/argocd.yaml')
@@ -282,7 +336,14 @@ class ArgoCDTest {
     void 'When emailaddress is NOT set: Use default email addresses in configurations'() {
         config.features.mail.active = true
 
-        createArgoCD().install()
+        def argocd = createArgoCD()
+        argocd.install()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
+
+        this.actualHelmValuesFile = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(),
+                ArgoCD.HELM_VALUES_PATH
+        )
+
         def valuesYaml = parseActualYaml(actualHelmValuesFile)
         def clusterRessourcesYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/cluster-resources.yaml')
         def argocdYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'applications/argocd.yaml')
@@ -302,7 +363,13 @@ class ArgoCDTest {
         config.features.mail.smtpUser = 'argo@example.com'
         config.features.mail.smtpPassword = '1101:ABCabc&/+*~'
 
-        createArgoCD().install()
+        def argocd = createArgoCD()
+        argocd.install()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
+        this.actualHelmValuesFile = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(),
+                ArgoCD.HELM_VALUES_PATH
+        )
+
         def serviceEmail = new YamlSlurper().parseText(
                 parseActualYaml(actualHelmValuesFile)['argo-cd']['notifications']['notifiers']['service.email'] as String)
 
@@ -347,7 +414,13 @@ class ArgoCDTest {
         config.features.mail.active = true
         config.features.mail.smtpAddress = 'smtp.example.com'
 
-        createArgoCD().install()
+        def argocd = createArgoCD()
+        argocd.install()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
+        this.actualHelmValuesFile = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(),
+                ArgoCD.HELM_VALUES_PATH
+        )
+
         def serviceEmail = new YamlSlurper().parseText(
                 parseActualYaml(actualHelmValuesFile)['argo-cd']['notifications']['notifiers']['service.email'] as String)
 
@@ -362,7 +435,13 @@ class ArgoCDTest {
     @Test
     void 'When external Mailserver is NOT set'() {
         config.features.mail.active = true
-        createArgoCD().install()
+        def argocd = createArgoCD()
+        argocd.install()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
+        this.actualHelmValuesFile = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(),
+                ArgoCD.HELM_VALUES_PATH
+        )
+
         def valuesYaml = parseActualYaml(actualHelmValuesFile)
 
         assertThat(new YamlSlurper().parseText(valuesYaml['argo-cd']['notifications']['notifiers']['service.email'] as String)['host']) doesNotHaveToString('mailhog.*monitoring.svc.cluster.local')
@@ -374,7 +453,10 @@ class ArgoCDTest {
     @Test
     void 'When vault disabled: Does not push path "secrets" to cluster resources'() {
         config.features.secrets.active = false
-        createArgoCD().install()
+        def argocd = createArgoCD()
+        argocd.install()
+        this.clusterResourcesRepo = (argocd as ArgoCDForTest).clusterResourcesRepo
+
         assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + "/misc/secrets")).doesNotExist()
     }
 
@@ -383,7 +465,10 @@ class ArgoCDTest {
         config.features.monitoring.active = false
         config.application.mirrorRepos = true
 
-        createArgoCD().install()
+        def argocd = createArgoCD()
+        argocd.install()
+
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
 
         def clusterRessourcesYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/cluster-resources.yaml')
         assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains(
@@ -421,15 +506,21 @@ class ArgoCDTest {
     void 'For internal SCMM: Use service address in gitops repos'() {
         def argocd = createArgoCD()
         argocd.install()
+        this.clusterResourcesRepo = (argocd as ArgoCDForTest).clusterResourcesRepo
+
         List filesWithInternalSCMM = findFilesContaining(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), argocd.scmmUrlInternal)
         assertThat(filesWithInternalSCMM).isNotEmpty()
     }
 
     @Test
     void 'For external SCMM: Use external address in gitops repos'() {
-        config.scmm.internal = false
+        config.scm.internal = false
+        config.scm.scmManager.url = "https://abc"
         def argocd = createArgoCD()
         argocd.install()
+
+        this.clusterResourcesRepo = (argocd as ArgoCDForTest).clusterResourcesRepo
+
         List filesWithInternalSCMM = findFilesContaining(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), argocd.scmmUrlInternal)
         assertThat(filesWithInternalSCMM).isEmpty()
 
@@ -441,6 +532,8 @@ class ArgoCDTest {
     void 'Pushes repos with empty name-prefix'() {
         def argocd = createArgoCD()
         argocd.install()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
+        this.clusterResourcesRepo = (argocd as ArgoCDForTest).clusterResourcesRepo
 
         assertArgoCdYamlPrefixes(argocd.scmmUrlInternal, '')
     }
@@ -456,12 +549,15 @@ class ArgoCDTest {
     @Test
     void 'Pushes repos with name-prefix'() {
         config.application.namePrefix = 'abc-'
-        config.application.namePrefixForEnvVars = 'ABC_'
 
         def argocd = createArgoCD()
         argocd.install()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
+        this.clusterResourcesRepo = (argocd as ArgoCDForTest).clusterResourcesRepo
+
 
         assertArgoCdYamlPrefixes(argocd.scmmUrlInternal, 'abc-')
+
     }
 
     @Test
@@ -470,11 +566,11 @@ class ArgoCDTest {
         createArgoCD().install()
 
         for (def petclinicRepo : petClinicRepos) {
-            if (petclinicRepo.scmmRepoTarget.contains('argocd/petclinic-plain')) {
+            if (petclinicRepo.repoTarget.contains('argocd/petclinic-plain')) {
                 assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, '/k8s/staging/deployment.yaml').text).contains('runAsUser: null')
                 assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, '/k8s/staging/deployment.yaml').text).contains('runAsGroup: null')
             }
-            if (petclinicRepo.scmmRepoTarget.contains('argocd/petclinic-helm')) {
+            if (petclinicRepo.repoTarget.contains('argocd/petclinic-helm')) {
                 assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, '/k8s/values-shared.yaml').text).contains('runAsUser: null')
                 assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, '/k8s/values-shared.yaml').text).contains('runAsGroup: null')
             }
@@ -485,7 +581,12 @@ class ArgoCDTest {
     void 'Skips CRDs for argo cd'() {
         config.application.skipCrds = true
 
-        createArgoCD().install()
+        def argocd = createArgoCD()
+        argocd.install()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
+        this.actualHelmValuesFile = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(),
+                ArgoCD.HELM_VALUES_PATH
+        )
 
         assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['crds']['install']).isEqualTo(false)
     }
@@ -512,10 +613,43 @@ class ArgoCDTest {
     }
 
     @Test
+    void 'use custom maven image'() {
+        config.images.maven = 'maven:latest'
+
+        createArgoCD().install()
+
+        for (def petclinicRepo : petClinicRepos) {
+            if (petclinicRepo.repoTarget.contains('argocd/petclinic-plain')) {
+                assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).contains('mvn = cesBuildLib.MavenInDocker.new(this, \'maven:latest\')')
+            }
+        }
+    }
+
+    @Test
+    void 'use maven with proxy registry and credentials'() {
+        config.images.maven = 'latest'
+        config.registry.twoRegistries = true
+
+        createArgoCD().install()
+
+        for (def petclinicRepo : petClinicRepos) {
+            if (petclinicRepo.repoTarget.contains('argocd/petclinic-plain')) {
+                assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).contains('mvn = cesBuildLib.MavenInDocker.new(this, \'latest\', dockerRegistryProxyCredentials)')
+            }
+        }
+    }
+
+
+    @Test
     void 'ArgoCD with active network policies'() {
         config.application.netpols = true
 
-        createArgoCD().install()
+        def argocd = createArgoCD()
+        argocd.install()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
+        this.actualHelmValuesFile = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(),
+                ArgoCD.HELM_VALUES_PATH
+        )
 
         assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['global']['networkPolicy']['create']).isEqualTo(true)
         assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir(), '/argocd/values.yaml').text.contains("namespace: monitoring"))
@@ -568,7 +702,8 @@ class ArgoCDTest {
     }
 
     private void assertArgoCdYamlPrefixes(String scmmUrl, String expectedPrefix) {
-        assertAllYamlFiles(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), 'projects', 3) { Path file ->
+
+        assertAllYamlFiles(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), 'projects', 4) { Path file ->
             def yaml = parseActualYaml(file.toString())
             List<String> sourceRepos = yaml['spec']['sourceRepos'] as List<String>
             // Some projects might not have sourceRepos
@@ -663,6 +798,29 @@ class ArgoCDTest {
         assertThat(nFiles).isEqualTo(numberOfFiles)
     }
 
+    private void assertJenkinsEnvironmentVariablesPrefixes(String prefix) {
+        List defaultRegistryEnvVars = ["env.${prefix}REGISTRY_URL", "env.${prefix}REGISTRY_PATH"]
+        List twoRegistriesEnvVars = ["env.${prefix}REGISTRY_PROXY_URL"]
+
+        assertThat(new File(nginxHelmJenkinsRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).contains("env.${prefix}K8S_VERSION")
+
+        for (def petclinicRepo : petClinicRepos) {
+            defaultRegistryEnvVars.each { expectedEnvVar ->
+                assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).contains(expectedEnvVar)
+            }
+
+            if (config.registry['twoRegistries']) {
+                twoRegistriesEnvVars.each { expectedEnvVar ->
+                    assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).contains(expectedEnvVar)
+                }
+            } else {
+                twoRegistriesEnvVars.each { expectedEnvVar ->
+                    assertThat(new File(petclinicRepo.absoluteLocalRepoTmpDir, 'Jenkinsfile').text).doesNotContain(expectedEnvVar)
+                }
+            }
+        }
+    }
+
     private static List findFilesContaining(File folder, String stringToSearch) {
         List result = []
         folder.eachFileRecurse(FileType.FILES) {
@@ -674,7 +832,7 @@ class ArgoCDTest {
     }
 
     ArgoCD createArgoCD() {
-        def argoCD = new ArgoCDForTest(config, k8sCommands, helmCommands)
+        def argoCD = ArgoCDForTest.newWithAutoProviders(config, k8sCommands, helmCommands)
         return argoCD
     }
 
@@ -703,14 +861,14 @@ class ArgoCDTest {
         boolean separatorHyphen = config.application.urlSeparatorHyphen
         boolean podResources = config.application.podResources
 
-        for (ScmmRepo repo : petClinicRepos) {
+        for (GitRepo repo : petClinicRepos) {
 
             def tmpDir = repo.absoluteLocalRepoTmpDir
             def jenkinsfile = new File(tmpDir, 'Jenkinsfile')
             assertThat(jenkinsfile).exists()
             assertJenkinsfileRegistryCredentials()
 
-            if (repo.scmmRepoTarget == 'argocd/petclinic-plain') {
+            if (repo.repoTarget == 'argocd/petclinic-plain') {
                 assertBuildImagesInJenkinsfileReplaced(jenkinsfile)
 
                 assertThat(new File(tmpDir, 'Dockerfile').text).startsWith('FROM petclinic-value')
@@ -748,7 +906,7 @@ class ArgoCDTest {
                     }
                 }
 
-            } else if (repo.scmmRepoTarget == 'argocd/petclinic-helm') {
+            } else if (repo.repoTarget == 'argocd/petclinic-helm') {
                 assertBuildImagesInJenkinsfileReplaced(jenkinsfile)
                 assertThat(new File(tmpDir, 'k8s/values-shared.yaml').text).contains("type: ${expectedServiceType}")
                 assertThat(new File(tmpDir, 'k8s/values-shared.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
@@ -777,7 +935,7 @@ class ArgoCDTest {
                     }
                 }
 
-            } else if (repo.scmmRepoTarget == 'exercises/petclinic-helm') {
+            } else if (repo.repoTarget == 'exercises/petclinic-helm') {
                 // Does not contain the gitops build lib call, so no build images to replace
                 assertThat(new File(tmpDir, 'k8s/values-shared.yaml').text).contains("type: ${expectedServiceType}")
                 assertThat(new File(tmpDir, 'k8s/values-shared.yaml').text).doesNotContain("type: ${unexpectedServiceType}")
@@ -843,6 +1001,7 @@ class ArgoCDTest {
         def argocd = setupOperatorTest()
 
         argocd.install()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
 
         def argocdConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH)
         def rbacConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_RBAC_PATH)
@@ -857,7 +1016,9 @@ class ArgoCDTest {
 
     @Test
     void 'No files for operator when operator is false'() {
-        createArgoCD().install()
+        def argocd = createArgoCD()
+        argocd.install()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
 
         def argocdConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH)
         def rbacConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_RBAC_PATH)
@@ -868,9 +1029,10 @@ class ArgoCDTest {
 
     @Test
     void 'Deploys with operator without OpenShift configuration'() {
-        def argoCD = setupOperatorTest(openshift: false)
+        def argocd = setupOperatorTest(openshift: false)
+        argocd.install()
 
-        argoCD.install()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
 
         def argocdConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH)
         k8sCommands.assertExecuted("kubectl apply -f ${argocdConfigPath}")
@@ -905,8 +1067,9 @@ class ArgoCDTest {
                 "example-apps-production"
         ])
 
-        def argoCD = setupOperatorTest(openshift: false)
-        argoCD.install()
+        def argocd = setupOperatorTest(openshift: false)
+        argocd.install()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
 
         File rbacPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_RBAC_PATH).toFile()
 
@@ -949,9 +1112,10 @@ class ArgoCDTest {
 
     @Test
     void 'Deploys with operator with OpenShift configuration'() {
-        def argoCD = setupOperatorTest(openshift: true)
+        def argocd = setupOperatorTest(openshift: true)
 
-        argoCD.install()
+        argocd.install()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
 
         def argocdConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH)
         k8sCommands.assertExecuted("kubectl apply -f ${argocdConfigPath}")
@@ -968,12 +1132,13 @@ class ArgoCDTest {
 
     @Test
     void 'Correctly sets resourceInclusions from config'() {
-        def argoCD = setupOperatorTest()
+        def argocd = setupOperatorTest()
 
         // Set the config to a custom resourceInclusionsCluster value
         config.features.argocd.resourceInclusionsCluster = 'https://192.168.0.1:6443'
 
-        argoCD.install()
+        argocd.install()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
 
         def argocdConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH)
         def yaml = parseActualYaml(argocdConfigPath.toFile().toString())
@@ -993,7 +1158,7 @@ class ArgoCDTest {
 
     @Test
     void 'resourceInclusionsCluster from config file trumps ENVs'() {
-        def argoCD = setupOperatorTest()
+        def argocd = setupOperatorTest()
 
         // Set the config to a custom internalKubernetesApiUrl value
         config.application.internalKubernetesApiUrl = 'https://192.168.0.1:6443'
@@ -1002,8 +1167,10 @@ class ArgoCDTest {
         withEnvironmentVariable("KUBERNETES_SERVICE_HOST", "100.125.0.1")
                 .and("KUBERNETES_SERVICE_PORT", "443")
                 .execute {
-                    argoCD.install()
+                    argocd.install()
                 }
+
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
 
         def argocdConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH)
         def yaml = parseActualYaml(argocdConfigPath.toFile().toString())
@@ -1025,7 +1192,7 @@ class ArgoCDTest {
 
     @Test
     void 'Sets env variables in ArgoCD components when provided'() {
-        def argoCD = setupOperatorTest()
+        def argocd = setupOperatorTest()
 
         // Set environment variables for ArgoCD
         config.features.argocd.env = [
@@ -1033,7 +1200,8 @@ class ArgoCDTest {
                 [name: "ENV_VAR_2", value: "value2"]
         ] as List<Map>
 
-        argoCD.install()
+        argocd.install()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
 
         def argocdConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH)
         def yaml = parseActualYaml(argocdConfigPath.toFile().toString())
@@ -1053,12 +1221,13 @@ class ArgoCDTest {
 
     @Test
     void 'Does not set env variables when none are provided'() {
-        def argoCD = setupOperatorTest()
+        def argocd = setupOperatorTest()
 
         // Ensure env is an empty list (default)
         config.features.argocd.env = []
 
-        argoCD.install()
+        argocd.install()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
 
         def argocdConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH)
         def yaml = parseActualYaml(argocdConfigPath.toFile().toString())
@@ -1074,14 +1243,15 @@ class ArgoCDTest {
 
     @Test
     void 'Sets single env variable in ArgoCD components when provided'() {
-        def argoCD = setupOperatorTest()
+        def argocd = setupOperatorTest()
 
         // Set a single environment variable for ArgoCD
         config.features.argocd.env = [
                 [name: "ENV_VAR_SINGLE", value: "singleValue"]
         ] as List<Map>
 
-        argoCD.install()
+        argocd.install()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
 
         def argocdConfigPath = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH)
         def yaml = parseActualYaml(argocdConfigPath.toFile().toString())
@@ -1112,9 +1282,10 @@ class ArgoCDTest {
     @Test
     void 'Operator config sets server insecure to true when insecure is set'() {
         config.application.insecure = true
-        def argoCD = setupOperatorTest()
+        def argocd = setupOperatorTest()
 
-        argoCD.install()
+        argocd.install()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
 
         def yaml = parseActualYaml(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH).toString())
         assertThat(yaml['spec']['server']['insecure']).isEqualTo(true)
@@ -1122,9 +1293,10 @@ class ArgoCDTest {
 
     @Test
     void 'Operator config sets server_insecure to false when insecure is not set'() {
-        def argoCD = setupOperatorTest()
+        def argocd = setupOperatorTest()
 
-        argoCD.install()
+        argocd.install()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
 
         def yaml = parseActualYaml(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_CONFIG_PATH).toString())
         assertThat(yaml['spec']['server']['insecure']).isEqualTo(false)
@@ -1134,9 +1306,10 @@ class ArgoCDTest {
     void 'Generates correct ingress yaml with expected host when insecure is true and not on OpenShift'() {
         config.application.insecure = true
         config.features.argocd.url = "http://argocd.localhost"
-        def argoCD = setupOperatorTest(openshift: false)
+        def argocd = setupOperatorTest(openshift: false)
 
-        argoCD.install()
+        argocd.install()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
 
         def ingressFile = new File(argocdRepo.getAbsoluteLocalRepoTmpDir(), "operator/ingress.yaml")
         assertThat(ingressFile)
@@ -1155,9 +1328,9 @@ class ArgoCDTest {
     @Test
     void 'Does not generate ingress yaml when insecure is false'() {
         config.application.insecure = false
-        def argoCD = setupOperatorTest(openshift: false)
-
-        argoCD.install()
+        def argocd = setupOperatorTest(openshift: false)
+        argocd.install()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
 
         def ingressFile = new File(argocdRepo.getAbsoluteLocalRepoTmpDir(), "operator/ingress.yaml")
         assertThat(ingressFile)
@@ -1168,9 +1341,10 @@ class ArgoCDTest {
     @Test
     void 'Does not generate ingress yaml when running on OpenShift'() {
         config.application.insecure = true
-        def argoCD = setupOperatorTest(openshift: true)
+        def argocd = setupOperatorTest(openshift: true)
 
-        argoCD.install()
+        argocd.install()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
 
         def ingressFile = new File(argocdRepo.getAbsoluteLocalRepoTmpDir(), "operator/ingress.yaml")
         assertThat(ingressFile)
@@ -1181,9 +1355,10 @@ class ArgoCDTest {
     @Test
     void 'Does not generate ingress yaml when insecure is false and OpenShift is true'() {
         config.application.insecure = false
-        def argoCD = setupOperatorTest(openshift: true)
+        def argocd = setupOperatorTest(openshift: true)
+        argocd.install()
 
-        argoCD.install()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
 
         def ingressFile = new File(argocdRepo.getAbsoluteLocalRepoTmpDir(), "operator/ingress.yaml")
         assertThat(ingressFile)
@@ -1193,17 +1368,17 @@ class ArgoCDTest {
 
     @Test
     void 'Central Bootstrapping for Tenant Applications'() {
-        setup()
+        setupDedicatedInstanceMode()
+//        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
         def ingressFile = new File(argocdRepo.getAbsoluteLocalRepoTmpDir(), "operator/ingress.yaml")
         assertThat(ingressFile)
                 .as("Ingress file should not be generated when both flags are false")
                 .doesNotExist()
     }
 
-
     @Test
     void 'GOP DedicatedInstances Central templating works correctly'() {
-        setup()
+        setupDedicatedInstanceMode()
         //Central Applications
         assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir() + "${prefixPathCentral}applications/argocd.yaml")).exists()
         assertThat(new File(argocdRepo.getAbsoluteLocalRepoTmpDir() + "${prefixPathCentral}applications/bootstrap.yaml")).exists()
@@ -1223,7 +1398,7 @@ class ArgoCDTest {
         assertThat(bootstrapYaml['metadata']['name']).isEqualTo('testPrefix-bootstrap')
         assertThat(bootstrapYaml['metadata']['namespace']).isEqualTo('argocd')
         assertThat(bootstrapYaml['spec']['project']).isEqualTo('testPrefix')
-        assertThat(bootstrapYaml['spec']['source']['repoURL']).isEqualTo("scmm.testhost/scm/repo/testPrefix-argocd/argocd")
+        assertThat(bootstrapYaml['spec']['source']['repoURL']).isEqualTo("scmm.testhost/scm/repo/testPrefix-argocd/argocd.git")
 
         assertThat(clusterResourcesYaml['metadata']['name']).isEqualTo('testPrefix-cluster-resources')
         assertThat(clusterResourcesYaml['metadata']['namespace']).isEqualTo('argocd')
@@ -1241,13 +1416,14 @@ class ArgoCDTest {
         assertThat(tenantProject['metadata']['name']).isEqualTo('testPrefix')
         assertThat(tenantProject['metadata']['namespace']).isEqualTo('argocd')
         def sourceRepos = (List<String>) tenantProject['spec']['sourceRepos']
-        assertThat(sourceRepos[0]).isEqualTo('scmm.testhost/scm/repo/testPrefix-argocd/argocd')
-        assertThat(sourceRepos[1]).isEqualTo('scmm.testhost/scm/repo/testPrefix-argocd/cluster-resources')
+        assertThat(sourceRepos[0]).isEqualTo('scmm.testhost/scm/repo/testPrefix-argocd/argocd.git')
+        assertThat(sourceRepos[1]).isEqualTo('scmm.testhost/scm/repo/testPrefix-argocd/cluster-resources.git')
     }
 
     @Test
     void 'Cluster Resource Misc templating'() {
-        setup()
+        setupDedicatedInstanceMode()
+        this.clusterResourcesRepo = (argocd as ArgoCDForTest).clusterResourcesRepo
         assertThat(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir() + "/argocd/misc.yaml")).exists()
         def miscYaml = new YamlSlurper().parse(Path.of clusterResourcesRepo.getAbsoluteLocalRepoTmpDir(), "/argocd/misc.yaml")
         assertThat(miscYaml['metadata']['name']).isEqualTo('testPrefix-misc')
@@ -1258,11 +1434,10 @@ class ArgoCDTest {
     void 'Append namespaces to Argocd argocd-default-cluster-config secrets'() {
         config.application.namespaces.dedicatedNamespaces = new LinkedHashSet(['dedi-test1', 'dedi-test2', 'dedi-test3'])
         config.application.namespaces.tenantNamespaces = new LinkedHashSet(['tenant-test1', 'tenant-test2', 'tenant-test3'])
-        setup()
-        k8sCommands.assertExecuted('kubectl get secret argocd-default-cluster-config -nargocd -ojsonpath={.data.namespaces}')
+        setupDedicatedInstanceMode()
+        k8sCommands.assertExecuted('kubectl get secret argocd-default-cluster-config -n argocd -ojsonpath={.data.namespaces}')
         k8sCommands.assertExecuted('kubectl patch secret argocd-default-cluster-config -n argocd --patch-file=/tmp/gitops-playground-patch-')
     }
-
 
     @Test
     void 'multiTenant folder gets deleted correctly if not in dedicated mode'() {
@@ -1270,10 +1445,10 @@ class ArgoCDTest {
 
         def argocd = createArgoCD()
         argocd.install()
-
-        assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'multiTenant/')).doesNotExist()
-        assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'applications/')).exists()
-        assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/')).exists()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
+        assertThat(Path.of(this.argocdRepo.getAbsoluteLocalRepoTmpDir(), 'multiTenant/')).doesNotExist()
+        assertThat(Path.of(this.argocdRepo.getAbsoluteLocalRepoTmpDir(), 'applications/')).exists()
+        assertThat(Path.of(this.argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/')).exists()
     }
 
     @Test
@@ -1282,15 +1457,16 @@ class ArgoCDTest {
 
         def argocd = createArgoCD()
         argocd.install()
-        assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'multiTenant/')).exists()
-        assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'applications/')).doesNotExist()
-        assertThat(Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/')).doesNotExist()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
+        assertThat(Path.of(this.argocdRepo.getAbsoluteLocalRepoTmpDir(), 'multiTenant/')).exists()
+        assertThat(Path.of(this.argocdRepo.getAbsoluteLocalRepoTmpDir(), 'applications/')).doesNotExist()
+        assertThat(Path.of(this.argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/')).doesNotExist()
     }
 
     @Test
     void 'RBACs generated correctly'() {
         config.application.namespaces.tenantNamespaces = new LinkedHashSet(['testprefix-tenant-test1', 'testprefix-tenant-test2', 'testprefix-tenant-test3'])
-        setup()
+        setupDedicatedInstanceMode()
 
         File rbacFolder = new File(argocdRepo.getAbsoluteLocalRepoTmpDir() + "/operator/rbac")
         File rbacTenantFolder = new File(argocdRepo.getAbsoluteLocalRepoTmpDir() + "/operator/rbac/tenant")
@@ -1329,8 +1505,9 @@ class ArgoCDTest {
     void 'Operator RBAC includes node access rules when not on OpenShift'() {
         config.application.namePrefix = "testprefix-"
 
-        def argoCD = setupOperatorTest(openshift: false)
-        argoCD.install()
+        def argocd = setupOperatorTest(openshift: false)
+        argocd.install()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
 
         print config.toMap()
 
@@ -1350,8 +1527,9 @@ class ArgoCDTest {
     void 'Operator RBAC does not include node access rules when on OpenShift'() {
         config.application.namePrefix = "testprefix-"
 
-        def argoCD = setupOperatorTest(openshift: true)
-        argoCD.install()
+        def argocd = setupOperatorTest(openshift: true)
+        argocd.install()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
 
         File rbacDir = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), ArgoCD.OPERATOR_RBAC_PATH).toFile()
         File roleFile = new File(rbacDir, "role-argocd-testprefix-monitoring.yaml")
@@ -1370,7 +1548,12 @@ class ArgoCDTest {
     void 'If not using mirror, ensure source repos in cluster-resources got right URL'() {
         config.application.mirrorRepos = false
 
-        createArgoCD().install()
+        def argocd = createArgoCD()
+        argocd.install()
+
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
+        this.clusterResourcesRepo = (argocd as ArgoCDForTest).clusterResourcesRepo
+
 
         def clusterRessourcesYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/cluster-resources.yaml')
         clusterRessourcesYaml['spec']['sourceRepos']
@@ -1406,7 +1589,11 @@ class ArgoCDTest {
     void 'If using mirror, ensure source repos in cluster-resources got right URL'() {
         config.application.mirrorRepos = true
 
-        createArgoCD().install()
+        def argocd = createArgoCD()
+        argocd.install()
+
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
+        this.clusterResourcesRepo = (argocd as ArgoCDForTest).clusterResourcesRepo
 
         def clusterRessourcesYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/cluster-resources.yaml')
         clusterRessourcesYaml['spec']['sourceRepos']
@@ -1433,50 +1620,46 @@ class ArgoCDTest {
     @Test
     void 'If using mirror with GitLab, ensure source repos in cluster-resources got right URL'() {
         config.application.mirrorRepos = true
-        config.scmm.provider = 'gitlab'
-
-        createArgoCD().install()
+        config.scm.scmProviderType = 'GITLAB'
+        config.scm.gitlab.url = 'https://testGitLab.com/testgroup'
+        def argocd = createArgoCD()
+        argocd.install()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
 
         def clusterRessourcesYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/cluster-resources.yaml')
         clusterRessourcesYaml['spec']['sourceRepos']
 
         assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains(
-                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/kube-prometheus-stack.git',
-                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/mailhog.git',
-                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/ingress-nginx.git',
-                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/external-secrets.git',
-                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/vault.git',
-                'http://scmm.scm-manager.svc.cluster.local/scm/3rd-party-dependencies/cert-manager.git'
-        )
-        assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain(
-                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/kube-prometheus-stack',
-                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/mailhog',
-                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/ingress-nginx',
-                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/external-secrets',
-                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/vault',
-                'http://scmm.test1-scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/cert-manager'
+                'https://testGitLab.com/testgroup/3rd-party-dependencies/kube-prometheus-stack.git',
+                'https://testGitLab.com/testgroup/3rd-party-dependencies/mailhog.git',
+                'https://testGitLab.com/testgroup/3rd-party-dependencies/ingress-nginx.git',
+                'https://testGitLab.com/testgroup/3rd-party-dependencies/external-secrets.git',
+                'https://testGitLab.com/testgroup/3rd-party-dependencies/vault.git',
+                'https://testGitLab.com/testgroup/3rd-party-dependencies/cert-manager.git'
         )
     }
-
 
     @Test
     void 'If using mirror with GitLab with prefix, ensure source repos in cluster-resources got right URL'() {
         config.application.mirrorRepos = true
-        config.scmm.provider = 'gitlab'
+        config.scm.scmProviderType = 'GITLAB'
+        config.scm.gitlab.url = "https://testGitLab.com/testgroup"
         config.application.namePrefix = 'test1-'
 
-        createArgoCD().install()
+        def argocd = createArgoCD()
+        argocd.install()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
 
         def clusterRessourcesYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/cluster-resources.yaml')
         clusterRessourcesYaml['spec']['sourceRepos']
 
         assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).contains(
-                'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/kube-prometheus-stack.git',
-                'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/mailhog.git',
-                'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/ingress-nginx.git',
-                'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/external-secrets.git',
-                'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/vault.git',
-                'http://scmm.test1-scm-manager.svc.cluster.local/scm/3rd-party-dependencies/cert-manager.git'
+                'https://testGitLab.com/testgroup/3rd-party-dependencies/kube-prometheus-stack.git',
+                'https://testGitLab.com/testgroup/3rd-party-dependencies/mailhog.git',
+                'https://testGitLab.com/testgroup/3rd-party-dependencies/ingress-nginx.git',
+                'https://testGitLab.com/testgroup/3rd-party-dependencies/external-secrets.git',
+                'https://testGitLab.com/testgroup/3rd-party-dependencies/vault.git',
+                'https://testGitLab.com/testgroup/3rd-party-dependencies/cert-manager.git'
         )
 
         assertThat(clusterRessourcesYaml['spec']['sourceRepos'] as List).doesNotContain(
@@ -1494,7 +1677,9 @@ class ArgoCDTest {
         config.application.mirrorRepos = true
         config.application.namePrefix = 'test1-'
 
-        createArgoCD().install()
+        def argocd = createArgoCD()
+        argocd.install()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
 
         def clusterRessourcesYaml = new YamlSlurper().parse(Path.of argocdRepo.getAbsoluteLocalRepoTmpDir(), 'projects/cluster-resources.yaml')
         clusterRessourcesYaml['spec']['sourceRepos']
@@ -1519,16 +1704,17 @@ class ArgoCDTest {
         )
     }
 
-
-    void setup() {
+    void setupDedicatedInstanceMode() {
         config.application.namePrefix = 'testPrefix-'
-        config.multiTenant.centralScmUrl = 'scmm.testhost/scm'
-        config.multiTenant.username = 'testUserName'
-        config.multiTenant.password = 'testPassword'
+        config.multiTenant.scmManager.url = 'scmm.testhost/scm'
+        config.multiTenant.scmManager.username = 'testUserName'
+        config.multiTenant.scmManager.password = 'testPassword'
         config.multiTenant.useDedicatedInstance = true
-
         this.argocd = setupOperatorTest()
         argocd.install()
+        this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
+        this.clusterResourcesRepo = (argocd as ArgoCDForTest).clusterResourcesRepo
+
     }
 
     protected ArgoCD setupOperatorTest(Map options = [:]) {
@@ -1623,34 +1809,68 @@ class ArgoCDTest {
     }
 
 
-    class ArgoCDForTest extends ArgoCD {
-        ArgoCDForTest(Config config, CommandExecutorForTest k8sCommands, CommandExecutorForTest helmCommands) {
-            super(config, new K8sClientForTest(config, k8sCommands), new HelmClient(helmCommands), new FileSystemUtils(),
-                    new TestScmmRepoProvider(config, new FileSystemUtils()))
-            mockPrefixActiveNamespaces(config)
+    static class ArgoCDForTest extends ArgoCD {
+        final Config cfg
+        GitProvider tenantMock
+
+        // **Factory**
+        static ArgoCDForTest newWithAutoProviders(Config cfg,
+                                                  CommandExecutorForTest k8sCommands,
+                                                  CommandExecutorForTest helmCommands) {
+
+            def prov = TestGitProvider.buildProviders(cfg)
+            return new ArgoCDForTest(
+                    cfg,
+                    k8sCommands,
+                    helmCommands,
+                    prov.tenant as GitProvider,
+                    prov.central as GitProvider)
+        }
+
+        // ---- Only keep the real constructor ----
+        ArgoCDForTest(Config cfg,
+                      CommandExecutorForTest k8sCommands,
+                      CommandExecutorForTest helmCommands,
+                      GitProvider tenantProvider,
+                      GitProvider centralProvider) {
+            super(
+                    cfg,
+                    new K8sClientForTest(cfg, k8sCommands),
+                    new HelmClient(helmCommands),
+                    new FileSystemUtils(),
+                    new TestGitRepoFactory(cfg, new FileSystemUtils()),
+                    new GitHandlerForTests(cfg, tenantProvider, centralProvider)
+            )
+            this.cfg = cfg
+            this.tenantMock = tenantProvider
+            mockPrefixActiveNamespaces(cfg)
+        }
+
+        GitRepo getArgocdRepo() {
+            return this.argocdRepoInitializationAction?.repo
+        }
+
+        GitRepo getClusterResourcesRepo() {
+            return this.clusterResourcesInitializationAction?.repo
+        }
+
+        GitRepo getTenantBootstrapRepo() {
+            return this.tenantBootstrapInitializationAction?.repo
         }
 
         @Override
-        protected initRepos() {
-            super.initRepos()
-
-            argocdRepo = argocdRepoInitializationAction.repo
-            actualHelmValuesFile = Path.of(argocdRepo.getAbsoluteLocalRepoTmpDir(), HELM_VALUES_PATH)
-            clusterResourcesRepo = clusterResourcesInitializationAction.repo
-            if (config.multiTenant.useDedicatedInstance) {
-                tenantBootstrap = tenantBootstrapInitializationAction.repo
-            }
+        protected initCentralRepos() {
+            super.initCentralRepos()
         }
+
 
         @Override
-        protected CloneCommand gitClone() {
-            return gitCloneMock
+        protected initTenantRepos() {
+            super.initTenantRepos()
         }
+
     }
 
-    private Map parseActualYaml(File folder, String file) {
-        return parseActualYaml(Path.of(folder.absolutePath, file).toString())
-    }
 
     private Map parseActualYaml(String pathToYamlFile) {
         File yamlFile = new File(pathToYamlFile)

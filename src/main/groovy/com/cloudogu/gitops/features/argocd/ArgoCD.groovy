@@ -2,20 +2,17 @@ package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.kubernetes.argocd.ArgoApplication
+import com.cloudogu.gitops.features.git.GitHandler
+import com.cloudogu.gitops.git.GitRepoFactory
+import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.kubernetes.rbac.RbacDefinition
 import com.cloudogu.gitops.kubernetes.rbac.Role
-import com.cloudogu.gitops.scmm.ScmUrlResolver
-import com.cloudogu.gitops.scmm.ScmmRepoProvider
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.HelmClient
 import com.cloudogu.gitops.utils.K8sClient
-import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
-import org.eclipse.jgit.api.CloneCommand
-import org.eclipse.jgit.api.Git
 import org.springframework.security.crypto.bcrypt.BCrypt
 
 import java.nio.file.Path
@@ -42,26 +39,30 @@ class ArgoCD extends Feature {
     protected RepoInitializationAction argocdRepoInitializationAction
     protected RepoInitializationAction clusterResourcesInitializationAction
     protected RepoInitializationAction tenantBootstrapInitializationAction
+    protected File remotePetClinicRepoTmpDir
 
     protected K8sClient k8sClient
     protected HelmClient helmClient
 
     protected FileSystemUtils fileSystemUtils
-    private ScmmRepoProvider repoProvider
+    private GitRepoFactory repoProvider
+
+    GitHandler gitHandler
 
     ArgoCD(
             Config config,
             K8sClient k8sClient,
             HelmClient helmClient,
             FileSystemUtils fileSystemUtils,
-            ScmmRepoProvider repoProvider
+            GitRepoFactory repoProvider,
+            GitHandler gitHandler
     ) {
         this.repoProvider = repoProvider
         this.config = config
         this.k8sClient = k8sClient
         this.helmClient = helmClient
         this.fileSystemUtils = fileSystemUtils
-
+        this.gitHandler = gitHandler
         this.password = this.config.application.password
     }
 
@@ -72,8 +73,10 @@ class ArgoCD extends Feature {
 
     @Override
     void enable() {
-        initRepos()
-        
+
+        initTenantRepos()
+        initCentralRepos()
+
         log.debug('Cloning Repositories')
 
         gitRepos.forEach(repoInitializationAction -> {
@@ -137,24 +140,25 @@ class ArgoCD extends Feature {
                 new Tuple2('owner', 'helm'), new Tuple2('name', 'argocd'))
     }
 
-    protected initRepos() {
-        argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd', config.multiTenant.useDedicatedInstance)
+    protected initTenantRepos() {
+        if (!config.multiTenant.useDedicatedInstance) {
+            argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd', this.gitHandler.tenant)
 
-        clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources', config.multiTenant.useDedicatedInstance)
-        gitRepos += clusterResourcesInitializationAction
-
-        if (config.multiTenant.useDedicatedInstance) {
-            tenantBootstrapInitializationAction = createRepoInitializationAction('argocd/argocd/multiTenant/tenant', 'argocd/argocd')
+            clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources', this.gitHandler.tenant)
+            gitRepos += clusterResourcesInitializationAction
+        } else {
+            tenantBootstrapInitializationAction = createRepoInitializationAction('argocd/argocd/multiTenant/tenant', 'argocd/argocd', this.gitHandler.tenant)
             gitRepos += tenantBootstrapInitializationAction
         }
-
     }
 
-    /**
-     * Overwrite for testing purposes
-     */
-    protected CloneCommand gitClone() {
-        Git.cloneRepository()
+    protected initCentralRepos() {
+        if (config.multiTenant.useDedicatedInstance) {
+            argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd', true)
+
+            clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources', true)
+            gitRepos += clusterResourcesInitializationAction
+        }
     }
 
     private void prepareGitOpsRepos() {
@@ -172,12 +176,6 @@ class ArgoCD extends Feature {
             FileSystemUtils.deleteFile clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + MONITORING_RESOURCES_PATH + 'ingress-nginx-dashboard-requests-handling.yaml'
         }
 
-        if (!config.scmm.internal) {
-            String externalScmmUrl = ScmUrlResolver.externalHost(config)
-            log.debug("Configuring all yaml files in gitops repos to use the external scmm url: ${externalScmmUrl}")
-            replaceFileContentInYamls(new File(clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()), scmmUrlInternal, externalScmmUrl)
-
-        }
     }
 
     private void deployWithHelm() {
@@ -336,33 +334,32 @@ class ArgoCD extends Feature {
 
     protected void createSCMCredentialsSecret() {
 
-        log.debug('Creating repo credential secret that is used by argocd to access repos in SCM-Manager')
+        log.debug("Creating repo credential secret that is used by argocd to access repos in ${config.scm.scmProviderType.toString()}")
         // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo
-        def repoTemplateSecretName = 'argocd-repo-creds-scmm'
+        def repoTemplateSecretName = 'argocd-repo-creds-scm'
 
-        String scmmUrlForArgoCD = config.scmm.internal ? scmmUrlInternal : ScmUrlResolver.externalHost(config)
         k8sClient.createSecret('generic', repoTemplateSecretName, namespace,
-                new Tuple2('url', scmmUrlForArgoCD),
-                new Tuple2('username', config.scmm.username),
-                new Tuple2('password', config.scmm.password)
+                new Tuple2('url', this.gitHandler.tenant.url),
+                new Tuple2('username', this.gitHandler.tenant.credentials.username),
+                new Tuple2('password', this.gitHandler.tenant.credentials.password)
         )
 
         k8sClient.label('secret', repoTemplateSecretName, namespace,
-                new Tuple2(' argocd.argoproj.io/secret-type', 'repo-creds'))
+                new Tuple2('argocd.argoproj.io/secret-type', 'repo-creds'))
 
         if (config.multiTenant.useDedicatedInstance) {
-            log.debug('Creating central repo credential secret that is used by argocd to access repos in SCM-Manager')
+            log.debug("Creating central repo credential secret that is used by argocd to access repos in ${config.scm.scmProviderType.toString()}")
             // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo
-            def centralRepoTemplateSecretName = 'argocd-repo-creds-central-scmm'
+            def centralRepoTemplateSecretName = 'argocd-repo-creds-central-scm'
 
             k8sClient.createSecret('generic', centralRepoTemplateSecretName, config.multiTenant.centralArgocdNamespace,
-                    new Tuple2('url', config.multiTenant.centralScmUrl),
-                    new Tuple2('username', config.multiTenant.username),
-                    new Tuple2('password', config.multiTenant.password)
+                    new Tuple2('url', this.gitHandler.central.url),
+                    new Tuple2('username', this.gitHandler.central.credentials.username),
+                    new Tuple2('password', this.gitHandler.central.credentials.password)
             )
 
             k8sClient.label('secret', centralRepoTemplateSecretName, config.multiTenant.centralArgocdNamespace,
-                    new Tuple2(' argocd.argoproj.io/secret-type', 'repo-creds'))
+                    new Tuple2('argocd.argoproj.io/secret-type', 'repo-creds'))
         }
     }
 
@@ -390,12 +387,6 @@ class ArgoCD extends Feature {
             FileSystemUtils.deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/multiTenant'
         }
 
-        if (!config.scmm.internal) {
-            String externalScmmUrl = ScmUrlResolver.externalHost(config)
-            log.debug("Configuring all yaml files in argocd repo to use the external scmm url: ${externalScmmUrl}")
-            replaceFileContentInYamls(new File(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()), scmmUrlInternal, externalScmmUrl)
-        }
-
         if (!config.application.netpols) {
             log.debug("Deleting argocd netpols.")
             FileSystemUtils.deleteFile argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/argocd/templates/allow-namespaces.yaml'
@@ -404,14 +395,14 @@ class ArgoCD extends Feature {
         argocdRepoInitializationAction.repo.commitAndPush("Initial Commit")
     }
 
-    protected RepoInitializationAction createRepoInitializationAction(String localSrcDir, String scmmRepoTarget) {
-        new RepoInitializationAction(config, repoProvider.getRepo(scmmRepoTarget), localSrcDir)
+    protected RepoInitializationAction createRepoInitializationAction(String localSrcDir, String scmRepoTarget, Boolean isCentral) {
+        GitProvider provider = (Boolean.TRUE == isCentral) ? gitHandler.central : gitHandler.tenant
+        new RepoInitializationAction(config, repoProvider.getRepo(scmRepoTarget, provider), this.gitHandler, localSrcDir)
     }
 
-    protected RepoInitializationAction createRepoInitializationAction(String localSrcDir, String scmmRepoTarget, Boolean isCentralRepo) {
-        new RepoInitializationAction(config, repoProvider.getRepo(scmmRepoTarget, isCentralRepo), localSrcDir)
+    protected RepoInitializationAction createRepoInitializationAction(String localSrcDir, String scmRepoTarget, GitProvider gitProvider) {
+        new RepoInitializationAction(config, repoProvider.getRepo(scmRepoTarget, gitProvider), this.gitHandler, localSrcDir)
     }
-
 
     private void replaceFileContentInYamls(File folder, String from, String to) {
         fileSystemUtils.getAllFilesFromDirectoryWithEnding(folder.absolutePath, ".yaml").forEach(file -> {

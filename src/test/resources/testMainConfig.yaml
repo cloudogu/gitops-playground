@@ -23,14 +23,16 @@ jenkins:
   mavenCentralMirror: ""
   helm:
     values: {}
-scmm:
-  url: "http://172.18.0.2:9091/scm"
-  username: "admin"
-  password: "admin"
-  helm:
-    chart: "scm-manager"
-    repoURL: "https://packages.scm-manager.org/repository/helm-v2-releases/"
-    version: "3.2.1"
+scm:
+  scmProviderType: "SCM_MANAGER"
+  scmManager:
+    url: "http://172.18.0.2:9091/scm"
+    username: "admin"
+    password: "admin"
+    helm:
+      chart: "scm-manager"
+      repoURL: "https://packages.scm-manager.org/repository/helm-v2-releases/"
+      version: "3.2.1"
 application:
   remote: false
   insecure: false

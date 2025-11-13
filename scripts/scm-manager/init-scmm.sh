@@ -36,7 +36,6 @@ function initSCMM() {
   fi
 }
 
-
 function pushHelmChartRepo() {
   TARGET_REPO_SCMM="$1"
 
@@ -171,26 +170,6 @@ function configureScmmManager() {
   addUser "${GITOPS_USERNAME}" "${GITOPS_PASSWORD}" "changeme@test.local"
   addUser "${METRICS_USERNAME}" "${METRICS_PASSWORD}" "changeme@test.local"
   setPermissionForUser "${METRICS_USERNAME}" "metrics:read"
-
- USE_CENTRAL_SCM=$([[ -n "${CENTRAL_SCM_URL// /}" ]] && echo true || echo false)
- echo "Using central SCM: ${USE_CENTRAL_SCM}, URL: '${CENTRAL_SCM_URL}'"
-
-  ### ArgoCD Repos
-  if [[ $INSTALL_ARGOCD == true ]]; then
-
-   addRepo "${NAME_PREFIX}argocd" "argocd" "GitOps repo for administration of ArgoCD" "$USE_CENTRAL_SCM"
-   setPermission "${NAME_PREFIX}argocd" "argocd" "${GITOPS_USERNAME}" "WRITE"
-
-   addRepo "${NAME_PREFIX}argocd" "cluster-resources" "GitOps repo for basic cluster-resources" "$USE_CENTRAL_SCM"
-   setPermission "${NAME_PREFIX}argocd" "cluster-resources" "${GITOPS_USERNAME}" "WRITE"
-
-   setPermissionForNamespace "${NAME_PREFIX}argocd" "${GITOPS_USERNAME}" "CI-SERVER"
-
-   if [[ $USE_CENTRAL_SCM == true ]]; then
-    addRepo "${NAME_PREFIX}argocd" "argocd" "Bootstrap repo for applications"
-    setPermission "${NAME_PREFIX}argocd" "argocd" "${GITOPS_USERNAME}" "WRITE"
-   fi
-  fi
 
   # Install necessary plugins
   installScmmPlugins
