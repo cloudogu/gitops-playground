@@ -21,7 +21,8 @@ import org.slf4j.LoggerFactory
 import picocli.CommandLine
 
 import static com.cloudogu.gitops.config.ConfigConstants.APP_NAME
-import static com.cloudogu.gitops.utils.MapUtils.deepMerge 
+import static com.cloudogu.gitops.utils.MapUtils.deepMerge
+
 /**
  * Provides the entrypoint to the application as well as all config parameters.
  * When changing parameters, make sure to update the Config for the config file as well

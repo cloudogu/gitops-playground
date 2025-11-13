@@ -1,19 +1,21 @@
 package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.scmm.ScmUrlResolver
-import com.cloudogu.gitops.scmm.ScmmRepo
+import com.cloudogu.gitops.features.git.GitHandler
+import com.cloudogu.gitops.git.GitRepo
 import freemarker.template.DefaultObjectWrapperBuilder
 
 class RepoInitializationAction {
-    private ScmmRepo repo
+    private GitRepo repo
     private String copyFromDirectory
     private Config config
+    private GitHandler gitHandler
 
-    RepoInitializationAction(Config config, ScmmRepo repo, String copyFromDirectory) {
+    RepoInitializationAction(Config config, GitRepo repo,GitHandler gitHandler, String copyFromDirectory) {
         this.config = config
         this.repo = repo
         this.copyFromDirectory = copyFromDirectory
+        this.gitHandler = gitHandler
     }
 
     /**
@@ -30,32 +32,27 @@ class RepoInitializationAction {
         repo.replaceTemplates(templateModel)
     }
 
-    ScmmRepo getRepo() {
+    GitRepo getRepo() {
         return repo
     }
 
-    private static Map<String, Object> buildTemplateValues(Config config){
+    private Map<String, Object> buildTemplateValues(Config config) {
         def model = [
-                tenantName: tenantName(config.application.namePrefix),
+                tenantName: config.application.tenantName,
                 argocd    : [host: config.features.argocd.url ? new URL(config.features.argocd.url).host : ""],
-                scmm      : [
-                        baseUrl       : config.scmm.internal ? "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm" : ScmUrlResolver.externalHost(config),
-                        host          : config.scmm.internal ? "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local" : config.scmm.host,
-                        protocol      : config.scmm.internal ? 'http' : config.scmm.protocol,
-                        repoUrl       : ScmUrlResolver.tenantBaseUrl(config),
-                        centralScmmUrl: !config.multiTenant.internal ? config.multiTenant.centralScmUrl : "http://scmm.scm-manager.svc.cluster.local/scm"
+                scm      : [
+                        baseUrl : this.repo.gitProvider.url,
+                        host    : this.repo.gitProvider.host,
+                        protocol: this.repo.gitProvider.protocol,
+                        repoUrl : this.repo.gitProvider.repoPrefix(),
+                        centralScmUrl: this.gitHandler.central?.repoPrefix() ?: ''
                 ],
                 config    : config,
                 // Allow for using static classes inside the templates
-                statics : new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
+                statics   : new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
         ] as Map<String, Object>
 
         return model
-    }
-
-    private static String tenantName(String namePrefix) {
-        if (!namePrefix) return ""
-        return namePrefix.replaceAll(/-$/, "")
     }
 
 }

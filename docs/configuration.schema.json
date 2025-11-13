@@ -65,6 +65,14 @@
         }
       },
       "additionalProperties" : false
+    },
+    "ScmProviderType-nullable" : {
+      "anyOf" : [ {
+        "type" : "null"
+      }, {
+        "type" : "string",
+        "enum" : [ "GITLAB", "SCM_MANAGER" ]
+      } ]
     }
   },
   "type" : "object",
@@ -159,7 +167,7 @@
           }
         },
         "repos" : {
-          "description" : "Content repos to push into target environment",
+          "description" : "ContentLoader repos to push into target environment",
           "type" : [ "array", "null" ],
           "items" : {
             "type" : "object",
@@ -208,7 +216,7 @@
                   "type" : "string",
                   "enum" : [ "FOLDER_BASED", "COPY", "MIRROR" ]
                 } ],
-                "description" : "Content Repos can either be:\ncopied (only the files, starting on ref, starting at path within the repo. Requires target)\n, mirrored (FORCE pushes ref or the whole git repo if no ref set). Requires target, does not allow path and template.)\nfolderBased (folder structure is interpreted as repos. That is, root folder becomes namespace in SCM, sub folders become repository names in SCM, files are copied. Requires target.)"
+                "description" : "ContentLoader Repos can either be:\ncopied (only the files, starting on ref, starting at path within the repo. Requires target)\n, mirrored (FORCE pushes ref or the whole git repo if no ref set). Requires target, does not allow path and template.)\nfolderBased (folder structure is interpreted as repos. That is, root folder becomes namespace in SCM, sub folders become repository names in SCM, files are copied. Requires target.)"
               },
               "url" : {
                 "type" : [ "string", "null" ],
@@ -715,31 +723,69 @@
       "properties" : {
         "centralArgocdNamespace" : {
           "type" : [ "string", "null" ],
-          "description" : "CENTRAL Argocd Repo Namespace"
+          "description" : "Namespace for the centralized Argocd"
         },
-        "centralSCMamespace" : {
-          "type" : [ "string", "null" ],
-          "description" : "CENTRAL Argocd Repo Namespace"
+        "gitlab" : {
+          "type" : [ "object", "null" ],
+          "properties" : {
+            "parentGroupId" : {
+              "type" : [ "string", "null" ],
+              "description" : "Main Group for Gitlab where the GOP creates it's groups/repos"
+            },
+            "password" : {
+              "type" : [ "string", "null" ],
+              "description" : "Password for SCM Manager authentication"
+            },
+            "url" : {
+              "type" : [ "string", "null" ],
+              "description" : "URL for external Gitlab"
+            },
+            "username" : {
+              "type" : [ "string", "null" ],
+              "description" : "GitLab username for API access. Must be 'oauth2' when using Personal Access Token (PAT) authentication"
+            }
+          },
+          "additionalProperties" : false,
+          "description" : "Config for GITLAB"
         },
-        "centralScmUrl" : {
-          "type" : [ "string", "null" ],
-          "description" : "URL for the centralized Management Repo"
+        "scmManager" : {
+          "type" : [ "object", "null" ],
+          "properties" : {
+            "internal" : {
+              "type" : [ "boolean", "null" ],
+              "description" : "SCM for Central Management is running on the same cluster, so k8s internal URLs can be used for access"
+            },
+            "namespace" : {
+              "type" : [ "string", "null" ],
+              "description" : "Namespace where to find the Central SCMM"
+            },
+            "password" : {
+              "type" : [ "string", "null" ],
+              "description" : "CENTRAL SCMM password"
+            },
+            "rootPath" : {
+              "type" : [ "string", "null" ],
+              "description" : "Root path for SCM Manager. In SCM-Manager it is always \"repo\""
+            },
+            "url" : {
+              "type" : [ "string", "null" ],
+              "description" : "URL for the centralized Management Repo"
+            },
+            "username" : {
+              "type" : [ "string", "null" ],
+              "description" : "CENTRAL SCMM username"
+            }
+          },
+          "additionalProperties" : false,
+          "description" : "Config for GITLAB"
         },
-        "internal" : {
-          "type" : [ "boolean", "null" ],
-          "description" : "SCM for Central Management is running on the same cluster, so k8s internal URLs can be used for access"
-        },
-        "password" : {
-          "type" : [ "string", "null" ],
-          "description" : "CENTRAL SCMM Password"
+        "scmProviderType" : {
+          "$ref" : "#/$defs/ScmProviderType-nullable",
+          "description" : "The SCM provider type. Possible values: SCM_MANAGER, GITLAB"
         },
         "useDedicatedInstance" : {
           "type" : [ "boolean", "null" ],
-          "description" : "Toggles the Dedicated Instances Mode"
-        },
-        "username" : {
-          "type" : [ "string", "null" ],
-          "description" : "CENTRAL SCMM USERNAME"
+          "description" : "Toggles the Dedicated Instances Mode. See docs for more info"
         }
       },
       "additionalProperties" : false,
@@ -827,44 +873,90 @@
       "additionalProperties" : false,
       "description" : "Config params for repositories used within GOP"
     },
-    "scmm" : {
+    "scm" : {
       "type" : [ "object", "null" ],
       "properties" : {
-        "helm" : {
-          "$ref" : "#/$defs/HelmConfigWithValues-nullable",
-          "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
+        "gitlab" : {
+          "type" : [ "object", "null" ],
+          "properties" : {
+            "gitOpsUsername" : {
+              "type" : [ "string", "null" ],
+              "description" : "Username for the Gitops User"
+            },
+            "internal" : {
+              "type" : [ "boolean", "null" ],
+              "description" : "True if Gitlab is running in the same K8s cluster. For now we only support access by external URL"
+            },
+            "parentGroupId" : {
+              "type" : [ "string", "null" ],
+              "description" : "Number for the Gitlab Group where the repos and subgroups should be created"
+            },
+            "password" : {
+              "type" : [ "string", "null" ],
+              "description" : "PAT Token for the account. Needs read/write repo permissions. See docs for mor information"
+            },
+            "url" : {
+              "type" : [ "string", "null" ],
+              "description" : "Base URL for the Gitlab instance"
+            },
+            "username" : {
+              "type" : [ "string", "null" ],
+              "description" : "Defaults to: oauth2.0 when PAT token is given."
+            }
+          },
+          "additionalProperties" : false,
+          "description" : "Config for GITLAB"
         },
-        "password" : {
-          "type" : [ "string", "null" ],
-          "description" : "Mandatory when scmm-url is set"
+        "scmManager" : {
+          "type" : [ "object", "null" ],
+          "properties" : {
+            "gitOpsUsername" : {
+              "type" : [ "string", "null" ],
+              "description" : "Username for the Gitops User"
+            },
+            "helm" : {
+              "$ref" : "#/$defs/HelmConfigWithValues-nullable",
+              "description" : "Common Config parameters for the Helm package manager: Name of Chart (chart), URl of Helm-Repository (repoURL) and Chart Version (version). Note: These config is intended to obtain the chart from a different source (e.g. in air-gapped envs), not to use a different version of a helm chart. Using a different helm chart or version to the one used in the GOP version will likely cause errors."
+            },
+            "namespace" : {
+              "type" : [ "string", "null" ],
+              "description" : "Namespace where SCM-Manager should run"
+            },
+            "password" : {
+              "type" : [ "string", "null" ],
+              "description" : "Mandatory when scmm-url is set"
+            },
+            "rootPath" : {
+              "type" : [ "string", "null" ],
+              "description" : "Sets the root path for the Git Repositories. In SCM-Manager it is always \"repo\""
+            },
+            "skipPlugins" : {
+              "type" : [ "boolean", "null" ],
+              "description" : "Skips plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades."
+            },
+            "skipRestart" : {
+              "type" : [ "boolean", "null" ],
+              "description" : "Skips restarting SCM-Manager after plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades.'"
+            },
+            "url" : {
+              "type" : [ "string", "null" ],
+              "description" : "The host of your external scm-manager"
+            },
+            "username" : {
+              "type" : [ "string", "null" ],
+              "description" : "Mandatory when scmm-url is set"
+            }
+          },
+          "additionalProperties" : false,
+          "description" : "Config for GITLAB"
         },
-        "provider" : {
-          "type" : [ "string", "null" ],
-          "description" : "Sets the scm Provider. Possible Options are \"scm-manager\" and \"gitlab\""
-        },
-        "rootPath" : {
-          "type" : [ "string", "null" ],
-          "description" : "Sets the root path for the Git Repositories. In SCM-Manager it is always \"repo\""
-        },
-        "skipPlugins" : {
-          "type" : [ "boolean", "null" ],
-          "description" : "Skips plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades."
-        },
-        "skipRestart" : {
-          "type" : [ "boolean", "null" ],
-          "description" : "Skips restarting SCM-Manager after plugin installation. Use with caution! If the plugins are not installed up front, the installation will likely fail. The intended use case for this is after the first installation, for config changes only. Do not use on first installation or upgrades.'"
-        },
-        "url" : {
-          "type" : [ "string", "null" ],
-          "description" : "The host of your external scm-manager"
-        },
-        "username" : {
-          "type" : [ "string", "null" ],
-          "description" : "Mandatory when scmm-url is set"
+        "scmProviderType" : {
+          "$ref" : "#/$defs/ScmProviderType-nullable",
+          "description" : "The SCM provider type. Possible values: SCM_MANAGER, GITLAB"
         }
       },
       "additionalProperties" : false,
-      "description" : "Config parameters for SCMManager (Git repository Server, https://scm-manager.org/)"
+      "description" : "Config parameters for Scm"
     }
   },
   "additionalProperties" : false

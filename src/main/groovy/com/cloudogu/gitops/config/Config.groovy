@@ -1,6 +1,6 @@
 package com.cloudogu.gitops.config
 
-import com.cloudogu.gitops.utils.NetworkingUtils
+import com.cloudogu.gitops.features.git.config.ScmTenantSchema
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import com.fasterxml.jackson.core.JsonGenerator
@@ -65,11 +65,11 @@ class Config {
 
     @JsonPropertyDescription(MULTITENANT_DESCRIPTION)
     @Mixin
-    MultiTentantSchema multiTenant = new MultiTentantSchema()
+    MultiTenantSchema multiTenant = new MultiTenantSchema()
 
-    @JsonPropertyDescription(SCMM_DESCRIPTION)
+    @JsonPropertyDescription(SCM_DESCRIPTION)
     @Mixin
-    ScmmSchema scmm = new ScmmSchema()
+    ScmTenantSchema scm = new ScmTenantSchema()
 
     @JsonPropertyDescription(APPLICATION_DESCRIPTION)
     @Mixin
@@ -119,7 +119,7 @@ class Config {
 
             @JsonPropertyDescription(CONTENT_REPO_REF_DESCRIPTION)
             String ref = ''
-            
+
             @JsonPropertyDescription(CONTENT_REPO_TARGET_REF_DESCRIPTION)
             String targetRef = ''
 
@@ -139,7 +139,8 @@ class Config {
             String target = ''
 
             @JsonPropertyDescription(CONTENT_REPO_TARGET_OVERWRITE_MODE_DESCRIPTION)
-            OverwriteMode overwriteMode = OverwriteMode.INIT // Defensively use init to not override existing files by default
+            OverwriteMode overwriteMode = OverwriteMode.INIT
+            // Defensively use init to not override existing files by default
 
             @JsonPropertyDescription(CONTENT_REPO_CREATE_JENKINS_JOB_DESCRIPTION)
             Boolean createJenkinsJob = false
@@ -220,6 +221,7 @@ class Config {
                 chart: 'docker-registry',
                 repoURL: 'https://twuni.github.io/docker-registry.helm',
                 version: '3.0.0')
+
     }
 
     static class JenkinsSchema {
@@ -229,7 +231,7 @@ class Config {
            
            This is the URL configured in SCMM inside the Jenkins Plugin, e.g. at http://scmm.localhost/scm/admin/settings/jenkins
            See addJenkinsConfig() and the comment at scmm.urlForJenkins */
-        String urlForScmm = ''
+        String urlForScm = ''
         String ingress = ''
         // Bash image used with internal Jenkins only 
         String internalBashImage = 'bash:5'
@@ -287,94 +289,6 @@ class Config {
                 chart: 'jenkins',
                 repoURL: 'https://charts.jenkins.io',
                 version: '5.8.43')
-    }
-
-    static class ScmmSchema {
-        Boolean internal = true
-        String gitOpsUsername = ''
-        /* When installing from via Docker we have to distinguish scmm.url (which is a local IP address) from 
-           the SCMM URL used by jenkins.
-           
-           This is necessary to make the build on push feature (webhooks from SCMM to Jenkins that trigger builds) work 
-           in k3d.
-           The webhook contains repository URLs that start with the "Base URL" Setting of SCMM.
-           Jenkins checks these repo URLs and triggers all builds that match repo URLs.
-           
-           This value is set as "Base URL" in SCMM Settings and in Jenkins Job.
-
-           See ApplicationConfigurator.addScmmConfig() and the comment at jenkins.urlForScmm */
-        String urlForJenkins = ''
-        @JsonIgnore String getHost() { return NetworkingUtils.getHost(url)}
-        @JsonIgnore String getProtocol() { return NetworkingUtils.getProtocol(url)}
-        String ingress = ''
-
-        @Option(names = ['--scmm-skip-restart'], description = SCMM_SKIP_RESTART_DESCRIPTION)
-        @JsonPropertyDescription(SCMM_SKIP_RESTART_DESCRIPTION)
-        Boolean skipRestart = false
-
-        @Option(names = ['--scmm-skip-plugins'], description = SCMM_SKIP_PLUGINS_DESCRIPTION)
-        @JsonPropertyDescription(SCMM_SKIP_PLUGINS_DESCRIPTION)
-        Boolean skipPlugins = false
-
-        @Option(names = ['--scmm-url'], description = SCMM_URL_DESCRIPTION)
-        @JsonPropertyDescription(SCMM_URL_DESCRIPTION)
-        String url = ''
-
-        @Option(names = ['--scmm-username'], description = SCMM_USERNAME_DESCRIPTION)
-        @JsonPropertyDescription(SCMM_USERNAME_DESCRIPTION)
-        String username = DEFAULT_ADMIN_USER
-
-        @Option(names = ['--scmm-password'], description = SCMM_PASSWORD_DESCRIPTION)
-        @JsonPropertyDescription(SCMM_PASSWORD_DESCRIPTION)
-        String password = DEFAULT_ADMIN_PW
-
-        @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
-        HelmConfigWithValues helm = new HelmConfigWithValues(
-                chart: 'scm-manager',
-                repoURL: 'https://packages.scm-manager.org/repository/helm-v2-releases/',
-                version: '3.11.0',
-                values: [:]
-        )
-
-        @Option(names = ['--scm-root-path'], description = SCM_ROOT_PATH_DESCRIPTION)
-        @JsonPropertyDescription(SCM_ROOT_PATH_DESCRIPTION)
-        String rootPath = 'repo'
-
-        @Option(names = ['--scm-provider'], description = SCM_PROVIDER_DESCRIPTION)
-        @JsonPropertyDescription(SCM_PROVIDER_DESCRIPTION)
-        String provider = 'scm-manager'
-
-    }
-
-    static class MultiTentantSchema {
-
-        @Option(names = ['--dedicated-internal'], description = CENTRAL_SCM_INTERNAL_DESCRIPTION)
-        @JsonPropertyDescription(CENTRAL_SCM_INTERNAL_DESCRIPTION)
-        Boolean internal = false
-
-        @Option(names = ['--dedicated-instance'], description = CENTRAL_USEDEDICATED_DESCRIPTION)
-        @JsonPropertyDescription(CENTRAL_USEDEDICATED_DESCRIPTION)
-        Boolean useDedicatedInstance = false
-
-        @Option(names = ['--central-scm-url'], description = CENTRAL_MGMT_REPO_DESCRIPTION)
-        @JsonPropertyDescription(CENTRAL_MGMT_REPO_DESCRIPTION)
-        String centralScmUrl = ''
-
-        @Option(names = ['--central-scm-username'], description = CENTRAL_SCMM_USERNAME_DESCRIPTION)
-        @JsonPropertyDescription(CENTRAL_SCMM_USERNAME_DESCRIPTION)
-        String username = ''
-
-        @Option(names = ['--central-scm-password'], description = CENTRAL_SCMM_PASSWORD_DESCRIPTION)
-        @JsonPropertyDescription(CENTRAL_SCMM_PASSWORD_DESCRIPTION)
-        String password = ''
-
-        @Option(names = ['--central-argocd-namespace'], description = CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
-        @JsonPropertyDescription(CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
-        String centralArgocdNamespace = 'argocd'
-
-        @Option(names = ['--central-scm-namespace'], description = CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
-        @JsonPropertyDescription(CENTRAL_ARGOCD_NAMESPACE_DESCRIPTION)
-        String centralSCMamespace = 'scm-manager'
     }
 
     static class ApplicationSchema {
@@ -486,7 +400,7 @@ class Config {
         }
 
         @JsonIgnore
-        String getTenantName(){
+        String getTenantName() {
             return namePrefix.replaceAll(/-$/, "")
         }
     }

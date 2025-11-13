@@ -1,10 +1,14 @@
 package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.scmm.ScmmRepo
-import com.cloudogu.gitops.scmm.api.Permission
-import com.cloudogu.gitops.scmm.api.Repository
-import com.cloudogu.gitops.scmm.api.ScmmApiClient
+import com.cloudogu.gitops.features.git.GitHandler
+import com.cloudogu.gitops.git.GitRepo
+import com.cloudogu.gitops.utils.git.GitHandlerForTests
+import com.cloudogu.gitops.utils.git.TestGitRepoFactory
+import com.cloudogu.gitops.git.providers.scmmanager.Permission
+import com.cloudogu.gitops.utils.git.ScmManagerMock
+import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
+import com.cloudogu.gitops.utils.git.TestScmManagerApiClient
 import groovy.yaml.YamlSlurper
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Ref
@@ -21,25 +25,29 @@ import static org.mockito.Mockito.*
 
 class AirGappedUtilsTest {
 
-    Config config = new Config(
-            application: new Config.ApplicationSchema(
-                    localHelmChartFolder : '',
-                    gitName : 'Cloudogu',
-                    gitEmail : 'hello@cloudogu.com',
-            )
-    )
+    Config config = Config.fromMap([
+            application: [
+                    localHelmChartFolder: '',
+                    gitName             : 'Cloudogu',
+                    gitEmail            : 'hello@cloudogu.com'],
+            scm        : [
+                    scmManager: [
+                            url: '']
+            ]
+    ])
 
-    Config.HelmConfig helmConfig = new Config.HelmConfig( [
+    Config.HelmConfig helmConfig = new Config.HelmConfig([
             chart  : 'kube-prometheus-stack',
             repoURL: 'https://kube-prometheus-stack-repo-url',
             version: '58.2.1'
     ])
-    
+
     Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
-    TestScmmRepoProvider scmmRepoProvider = new TestScmmRepoProvider(config, new FileSystemUtils())
+    TestGitRepoFactory gitRepoFactory = new TestGitRepoFactory(config, new FileSystemUtils())
     FileSystemUtils fileSystemUtils = new FileSystemUtils()
-    TestScmmApiClient scmmApiClient = new TestScmmApiClient(config)
+    TestScmManagerApiClient scmmApiClient = new TestScmManagerApiClient(config)
     HelmClient helmClient = mock(HelmClient)
+    GitHandler gitHandler = new GitHandlerForTests(config, new ScmManagerMock())
 
     @BeforeEach
     void setUp() {
@@ -48,15 +56,15 @@ class AirGappedUtilsTest {
         when(scmmApiClient.repositoryApi.createPermission(anyString(), anyString(), any(Permission))).thenReturn(response)
 
     }
-    
+
     @Test
     void 'Prepares repos for air-gapped use'() {
         setupForAirgappedUse()
 
         def actualRepoNamespaceAndName = createAirGappedUtils().mirrorHelmRepoToGit(helmConfig)
-        
+
         assertThat(actualRepoNamespaceAndName).isEqualTo(
-                "${ScmmRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/kube-prometheus-stack".toString())
+                "${GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/kube-prometheus-stack".toString())
         assertAirGapped()
     }
 
@@ -78,13 +86,13 @@ class AirGappedUtilsTest {
         setupForAirgappedUse(null, [])
         createAirGappedUtils().mirrorHelmRepoToGit(helmConfig)
 
-        ScmmRepo prometheusRepo = scmmRepoProvider.repos['3rd-party-dependencies/kube-prometheus-stack']
+        GitRepo prometheusRepo = gitRepoFactory.repos['3rd-party-dependencies/kube-prometheus-stack']
         def actualPrometheusChartYaml = new YamlSlurper().parse(Path.of(prometheusRepo.absoluteLocalRepoTmpDir, 'Chart.yaml'))
 
-        def dependencies = actualPrometheusChartYaml['dependencies'] 
+        def dependencies = actualPrometheusChartYaml['dependencies']
         assertThat(dependencies).isNull()
     }
-    
+
     @Test
     void 'Fails for invalid helm charts'() {
         setupForAirgappedUse()
@@ -95,7 +103,7 @@ class AirGappedUtilsTest {
         def exception = shouldFail(RuntimeException) {
             createAirGappedUtils().mirrorHelmRepoToGit(helmConfig)
         }
-        
+
         assertThat(exception.getMessage()).isEqualTo(
                 "Helm chart in folder ${rootChartsFolder}/kube-prometheus-stack seems invalid.".toString())
         assertThat(exception.getCause()).isSameAs(expectedException)
@@ -109,10 +117,10 @@ class AirGappedUtilsTest {
                 name        : 'kube-prometheus-stack-chart',
                 dependencies: [
                         [
-                                condition: 'crds.enabled',
-                                name: 'crds',
+                                condition : 'crds.enabled',
+                                name      : 'crds',
                                 repository: '',
-                                version: '0.0.0'
+                                version   : '0.0.0'
                         ],
                         [
                                 condition : 'grafana.enabled',
@@ -122,7 +130,7 @@ class AirGappedUtilsTest {
                         ]
                 ]
         ]
-        
+
         if (dependencies != null) {
             if (dependencies.isEmpty()) {
                 prometheusChartYaml.remove('dependencies')
@@ -130,21 +138,21 @@ class AirGappedUtilsTest {
                 prometheusChartYaml.dependencies = dependencies
             }
         }
-        
+
         fileSystemUtils.writeYaml(prometheusChartYaml, sourceChart.resolve('Chart.yaml').toFile())
 
-        if(chartLock == null) {
+        if (chartLock == null) {
             chartLock = [
                     dependencies: [
                             [
-                                    name: 'crds',
+                                    name      : 'crds',
                                     repository: "",
-                                    version: '0.0.0'
+                                    version   : '0.0.0'
                             ],
                             [
-                                    name: 'grafana',
+                                    name      : 'grafana',
                                     repository: 'https://grafana.github.io/helm-charts',
-                                    version: '7.3.9'
+                                    version   : '7.3.9'
                             ]
                     ]
             ]
@@ -155,7 +163,7 @@ class AirGappedUtilsTest {
     }
 
     protected void assertAirGapped() {
-        ScmmRepo prometheusRepo = scmmRepoProvider.repos['3rd-party-dependencies/kube-prometheus-stack']
+        GitRepo prometheusRepo = gitRepoFactory.repos['3rd-party-dependencies/kube-prometheus-stack']
         assertThat(prometheusRepo).isNotNull()
         assertThat(Path.of(prometheusRepo.absoluteLocalRepoTmpDir, 'Chart.lock')).doesNotExist()
 
@@ -175,11 +183,14 @@ class AirGappedUtilsTest {
         assertHelmRepoCommits(prometheusRepo, '1.2.3', 'Chart kube-prometheus-stack-chart, version: 1.2.3\n\n' +
                 'Source: https://kube-prometheus-stack-repo-url\nDependencies localized to run in air-gapped environments')
 
-        verify(prometheusRepo).create(eq('Mirror of Helm chart kube-prometheus-stack from https://kube-prometheus-stack-repo-url'), any(ScmmApiClient))
+        verify(prometheusRepo).createRepositoryAndSetPermission(
+                eq("Mirror of Helm chart kube-prometheus-stack from https://kube-prometheus-stack-repo-url"),
+                eq(false)
+        )
     }
 
 
-    void assertHelmRepoCommits(ScmmRepo repo, String expectedTag, String expectedCommitMessage) {
+    void assertHelmRepoCommits(GitRepo repo, String expectedTag, String expectedCommitMessage) {
         def commits = Git.open(new File(repo.absoluteLocalRepoTmpDir)).log().setMaxCount(1).all().call().collect()
         assertThat(commits.size()).isEqualTo(1)
         assertThat(commits[0].fullMessage).isEqualTo(expectedCommitMessage)
@@ -190,6 +201,6 @@ class AirGappedUtilsTest {
     }
 
     AirGappedUtils createAirGappedUtils() {
-        new AirGappedUtils(config, scmmRepoProvider, scmmApiClient, fileSystemUtils, helmClient)
+        new AirGappedUtils(config, gitRepoFactory, fileSystemUtils, helmClient, gitHandler)
     }
 }

@@ -25,7 +25,6 @@ class ArgoCdTestIT extends KubenetesApiTestSetup {
         assertThat(namespaces.getItems().isEmpty()).isFalse()
         def namespace = namespaces.getItems().find { namespace.equals(it.getMetadata().name) }
         assertThat(namespace).isNotNull()
-
     }
 
     /**

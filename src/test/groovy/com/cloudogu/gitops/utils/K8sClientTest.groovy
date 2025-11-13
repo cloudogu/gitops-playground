@@ -59,7 +59,7 @@ class K8sClientTest {
         k8sClient.getArgoCDNamespacesSecret('my-secret', 'my-ns')
 
         assertThat(commandExecutor.actualCommands[0]).isEqualTo(
-                "kubectl get secret my-secret -nmy-ns -ojsonpath={.data.namespaces}")
+                "kubectl get secret my-secret -n my-ns -ojsonpath={.data.namespaces}")
     }
 
     @Test

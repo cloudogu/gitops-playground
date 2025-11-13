@@ -1,13 +1,12 @@
 package com.cloudogu.gitops.dependencyinjection
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.config.Credentials
+import com.cloudogu.gitops.git.providers.scmmanager.api.AuthorizationInterceptor
 import com.cloudogu.gitops.okhttp.RetryInterceptor
-import com.cloudogu.gitops.scmm.api.AuthorizationInterceptor
 import groovy.transform.TupleConstructor
 import io.micronaut.context.annotation.Factory
-import io.micronaut.context.annotation.Prototype
 import jakarta.inject.Named
-import jakarta.inject.Provider
 import jakarta.inject.Singleton
 import okhttp3.JavaNetCookieJar
 import okhttp3.OkHttpClient
@@ -24,40 +23,38 @@ import java.security.cert.X509Certificate
 
 @Factory
 class HttpClientFactory {
+
+    static OkHttpClient buildOkHttpClient(Credentials credentials, Boolean isInsecure) {
+        def builder = new OkHttpClient.Builder()
+                .addInterceptor(new AuthorizationInterceptor(credentials.username, credentials.password))
+                .addInterceptor(createLoggingInterceptor())
+                .addInterceptor(new RetryInterceptor())
+
+        if (isInsecure) {
+            def context = insecureSslContext()
+            builder.sslSocketFactory(context.socketFactory, context.trustManager)
+        }
+
+        return builder.build()
+    }
+
     @Singleton
     @Named("jenkins")
-    OkHttpClient okHttpClientJenkins(HttpLoggingInterceptor httpLoggingInterceptor, Config config, Provider<InsecureSslContext> insecureSslContextProvider) {
+    OkHttpClient okHttpClientJenkins(Config config) {
         def builder = new OkHttpClient.Builder()
                 .cookieJar(new JavaNetCookieJar(new CookieManager()))
-                .addInterceptor(httpLoggingInterceptor)
+                .addInterceptor(createLoggingInterceptor())
                 .addInterceptor(new RetryInterceptor())
 
         if (config.application.insecure) {
-            def context = insecureSslContextProvider.get()
-            builder.sslSocketFactory(context.socketFactory, context.trustManager)
-        }
-
-        return builder.build()
-    }
-    
-    @Singleton
-    @Named("scmm")
-    OkHttpClient okHttpClientScmm(HttpLoggingInterceptor loggingInterceptor, Config config, Provider<HttpClientFactory.InsecureSslContext> insecureSslContext) {
-        def builder = new OkHttpClient.Builder()
-                .addInterceptor(new AuthorizationInterceptor(config.scmm.username, config.scmm.password))
-                .addInterceptor(loggingInterceptor)
-                .addInterceptor(new RetryInterceptor())
-
-        if (config.application.insecure) {
-            def context = insecureSslContext.get()
+            def context = insecureSslContext()
             builder.sslSocketFactory(context.socketFactory, context.trustManager)
         }
 
         return builder.build()
     }
 
-    @Singleton
-    HttpLoggingInterceptor createLoggingInterceptor() {
+    static HttpLoggingInterceptor createLoggingInterceptor() {
         def logger = LoggerFactory.getLogger("com.cloudogu.gitops.HttpClient")
 
         def ret = new HttpLoggingInterceptor(new HttpLoggingInterceptor.Logger() {
@@ -73,8 +70,7 @@ class HttpClientFactory {
         return ret
     }
 
-    @Prototype
-    InsecureSslContext insecureSslContext() {
+    static InsecureSslContext insecureSslContext() {
         def noCheckTrustManager = new X509TrustManager() {
             @Override
             void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {

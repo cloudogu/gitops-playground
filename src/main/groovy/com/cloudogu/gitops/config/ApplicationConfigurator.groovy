@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.config
 
+
 import com.cloudogu.gitops.utils.FileSystemUtils
 import groovy.util.logging.Slf4j
 
@@ -23,7 +24,7 @@ class ApplicationConfigurator {
         addAdditionalApplicationConfig(newConfig)
         addNamePrefix(newConfig)
 
-        addScmmConfig(newConfig)
+        addScmConfig(newConfig)
 
         addRegistryConfig(newConfig)
 
@@ -55,13 +56,6 @@ class ApplicationConfigurator {
 
         if (newConfig.features.ingressNginx.active && !newConfig.application.baseUrl) {
             log.warn("Ingress-controller is activated without baseUrl parameter. Services will not be accessible by hostnames. To avoid this use baseUrl with ingress. ")
-        }
-        if (newConfig.content.examples) {
-            if (!newConfig.registry.active) {
-                throw new RuntimeException("content.examples requires either registry.active or registry.url")
-            }
-            String prefix = newConfig.application.namePrefix
-            newConfig.content.namespaces += [prefix + "example-apps-staging", prefix + "example-apps-production"]
         }
     }
 
@@ -117,39 +111,36 @@ class ApplicationConfigurator {
         }
     }
 
-    private void addScmmConfig(Config newConfig) {
-        log.debug("Adding additional config for SCM-Manager")
+    private void addScmConfig(Config newConfig) {
+        log.debug("Adding additional config for SCM")
 
-        newConfig.scmm.gitOpsUsername = "${newConfig.application.namePrefix}gitops"
-
-        if (newConfig.scmm.url) {
+        if (newConfig.scm.scmManager.url) {
             log.debug("Setting external scmm config")
-            newConfig.scmm.internal = false
-            newConfig.scmm.urlForJenkins = newConfig.scmm.url
+            newConfig.scm.scmManager.internal = false
+            newConfig.scm.scmManager.urlForJenkins = newConfig.scm.scmManager.url
         } else {
             log.debug("Setting configs for internal SCM-Manager")
             // We use the K8s service as default name here, because it is the only option:
-            // "scmm.localhost" will not work inside the Pods and k3d-container IP + Port (e.g. 172.x.y.z:9091) 
+            // "scmm.localhost" will not work inside the Pods and k3d-container IP + Port (e.g. 172.x.y.z:9091)
             // will not work on Windows and MacOS.
-            newConfig.scmm.urlForJenkins =
+            newConfig.scm.scmManager.urlForJenkins =
                     "http://scmm.${newConfig.application.namePrefix}scm-manager.svc.cluster.local/scm"
 
-            // More internal fields are set lazily in ScmManger.groovy (after SCMM is deployed and ports are known) 
+            // More internal fields are set lazily in ScmManger.groovy (after SCMM is deployed and ports are known)
         }
 
         // We probably could get rid of some of the complexity by refactoring url, host and ingress into a single var
         if (newConfig.application.baseUrl) {
-            newConfig.scmm.ingress = new URL(injectSubdomain("scmm",
+            newConfig.scm.scmManager.ingress = new URL(injectSubdomain("scmm",
                     newConfig.application.baseUrl as String, newConfig.application.urlSeparatorHyphen as Boolean)).host
         }
         // When specific user/pw are not set, set them to global values
-        if (newConfig.scmm.password === Config.DEFAULT_ADMIN_PW) {
-            newConfig.scmm.password = newConfig.application.password
+        if (newConfig.scm.scmManager.password === Config.DEFAULT_ADMIN_PW) {
+            newConfig.scm.scmManager.password = newConfig.application.password
         }
-        if (newConfig.scmm.username === Config.DEFAULT_ADMIN_USER) {
-            newConfig.scmm.username = newConfig.application.username
+        if (newConfig.scm.scmManager.username === Config.DEFAULT_ADMIN_USER) {
+            newConfig.scm.scmManager.username = newConfig.application.username
         }
-
 
     }
 
@@ -159,13 +150,13 @@ class ApplicationConfigurator {
             log.debug("Setting external jenkins config")
             newConfig.jenkins.active = true
             newConfig.jenkins.internal = false
-            newConfig.jenkins.urlForScmm = newConfig.jenkins.url
+            newConfig.jenkins.urlForScm = newConfig.jenkins.url
         } else if (newConfig.jenkins.active) {
             log.debug("Setting configs for internal jenkins")
             // We use the K8s service as default name here, because it is the only option:
             // "jenkins.localhost" will not work inside the Pods and k3d-container IP + Port (e.g. 172.x.y.z:9090)
             // will not work on Windows and MacOS.
-            newConfig.jenkins.urlForScmm = "http://jenkins.${newConfig.application.namePrefix}jenkins.svc.cluster.local"
+            newConfig.jenkins.urlForScm = "http://jenkins.${newConfig.application.namePrefix}jenkins.svc.cluster.local"
 
             // More internal fields are set lazily in Jenkins.groovy (after Jenkins is deployed and ports are known)
         } else {
@@ -215,18 +206,6 @@ class ApplicationConfigurator {
             log.debug("Setting Vault URL ${vault.url}")
         }
 
-        if (!newConfig.features.exampleApps.petclinic.baseDomain) {
-            // This param only requires the host / domain
-            newConfig.features.exampleApps.petclinic.baseDomain =
-                    new URL(injectSubdomain('petclinic', baseUrl, urlSeparatorHyphen)).host
-            log.debug("Setting Petclinic URL ${newConfig.features.exampleApps.petclinic.baseDomain}")
-        }
-        if (!newConfig.features.exampleApps.nginx.baseDomain) {
-            // This param only requires the host / domain
-            newConfig.features.exampleApps.nginx.baseDomain =
-                    new URL(injectSubdomain('nginx', baseUrl, urlSeparatorHyphen)).host
-            log.debug("Setting Nginx URL ${newConfig.features.exampleApps.nginx.baseDomain}")
-        }
     }
 
     void setMultiTenantModeConfig(Config newConfig) {
@@ -235,21 +214,17 @@ class ApplicationConfigurator {
                 throw new RuntimeException('To enable Central Multi-Tenant mode, you must define a name prefix to distinguish between instances.')
             }
 
-            if (!newConfig.multiTenant.username || !newConfig.multiTenant.password) {
-                throw new RuntimeException('To use Central Multi Tenant mode define the username and password for the central SCM instance.')
-            }
-
             if (!newConfig.features.argocd.operator) {
                 newConfig.features.argocd.operator = true
             }
 
             // Removes trailing slash from the input URL to avoid duplicated slashes in further URL handling
-            if (newConfig.multiTenant.centralScmUrl) {
-                String urlString = newConfig.multiTenant.centralScmUrl.toString()
+            if (newConfig.multiTenant.scmManager.url) {
+                String urlString = newConfig.multiTenant.scmManager.url.toString()
                 if (urlString.endsWith("/")) {
                     urlString = urlString[0..-2]
                 }
-                newConfig.multiTenant.centralScmUrl= urlString
+                newConfig.multiTenant.scmManager.url = urlString
             }
 
             //Disabling IngressNginx in DedicatedInstances Mode for now.
@@ -304,7 +279,7 @@ class ApplicationConfigurator {
 
     static void validateContent(Config config) {
         config.content.repos.each { repo ->
-            
+
             if (!repo.url) {
                 throw new RuntimeException("content.repos requires a url parameter.")
             }
@@ -345,8 +320,8 @@ class ApplicationConfigurator {
 
     private void validateScmmAndJenkinsAreBothSet(Config configToSet) {
         if (configToSet.jenkins.active &&
-                (configToSet.scmm.url && !configToSet.jenkins.url ||
-                        !configToSet.scmm.url && configToSet.jenkins.url)) {
+                (configToSet.scm.scmManager.url && !configToSet.jenkins.url ||
+                        !configToSet.scm.scmManager.url && configToSet.jenkins.url)) {
             throw new RuntimeException('When setting jenkins URL, scmm URL must also be set and the other way round')
         }
     }
