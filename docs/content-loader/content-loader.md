@@ -252,7 +252,8 @@ image:
   tag       : ${operatorImageObject.tag}
   </#if>
 ```
-
+By default, Freemarker grants access to all static resources within the project. To add an extra layer of security, set the content.useWhitelist property to true in the GOP configuration, or use the --content-whitelist CLI flag to enable the static resources whitelist.
+To specify which static resources should be accessible, add them to the allowedStaticsWhitelist in the configuration. A default set of static resources is already provided as an example.
 # TL;DR
 
 How to get started with content loader?
@@ -324,4 +325,3 @@ Reminder: no type means `MIRROR` (default).
       type: FOLDER_BASED
       overrideMode: UPGRADE
 ```
-
