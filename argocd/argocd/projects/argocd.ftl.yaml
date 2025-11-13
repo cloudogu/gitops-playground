@@ -11,7 +11,7 @@ spec:
   description: AppProject for ArgoCD-specific applications.
   destinations:
     - namespace: '*'
-      server: https://kubernetes.default.svc
+      server: '*' # Allow all clusters for hub and spoke. For standalone this would suffice: https://kubernetes.default.svc
   clusterResourceWhitelist:
     - group: '*'
       kind: '*'

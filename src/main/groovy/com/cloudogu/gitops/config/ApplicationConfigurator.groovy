@@ -239,10 +239,6 @@ class ApplicationConfigurator {
                 throw new RuntimeException('To use Central Multi Tenant mode define the username and password for the central SCM instance.')
             }
 
-            if (!newConfig.features.argocd.operator) {
-                newConfig.features.argocd.operator = true
-            }
-
             // Removes trailing slash from the input URL to avoid duplicated slashes in further URL handling
             if (newConfig.multiTenant.centralScmUrl) {
                 String urlString = newConfig.multiTenant.centralScmUrl.toString()
@@ -251,12 +247,6 @@ class ApplicationConfigurator {
                 }
                 newConfig.multiTenant.centralScmUrl= urlString
             }
-
-            //Disabling IngressNginx in DedicatedInstances Mode for now.
-            //Ingress has to be handled by Cluster, not by this tenant.
-            //Ingress has to be handled manually for local dev.
-            //See /scripts/local/ for local dev.
-            newConfig.features.ingressNginx.active = false
         }
     }
 
