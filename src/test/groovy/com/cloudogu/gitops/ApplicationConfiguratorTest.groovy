@@ -3,6 +3,7 @@ package com.cloudogu.gitops
 import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.CommonFeatureConfig
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.features.git.config.ScmTenantSchema
 import com.cloudogu.gitops.features.Content
 import com.cloudogu.gitops.features.Jenkins
 import com.cloudogu.gitops.features.argocd.ArgoCD
@@ -37,37 +38,44 @@ class ApplicationConfiguratorTest {
 
     Config testConfig = Config.fromMap([
             application: [
-                    localHelmChartFolder : 'someValue',
-                    namePrefix : ''
+                    localHelmChartFolder: 'someValue',
+                    namePrefix          : ''
             ],
             registry   : [
-                    url         : EXPECTED_REGISTRY_URL,
-                    proxyUrl: "proxy-$EXPECTED_REGISTRY_URL",
+                    url          : EXPECTED_REGISTRY_URL,
+                    proxyUrl     : "proxy-$EXPECTED_REGISTRY_URL",
                     proxyUsername: "proxy-user",
                     proxyPassword: "proxy-pw",
-                    internalPort: EXPECTED_REGISTRY_INTERNAL_PORT,
+                    internalPort : EXPECTED_REGISTRY_INTERNAL_PORT,
             ],
             jenkins    : [
-                    url     : EXPECTED_JENKINS_URL
+                    url: EXPECTED_JENKINS_URL
             ],
-            scmm       : [
-                    url     : EXPECTED_SCMM_URL,
+            scm        : [
+                    scmManager: [
+                            url: EXPECTED_SCMM_URL
+                    ],
             ],
-            features    : [
-                    secrets : [
-                            vault : [
-                                    mode : EXPECTED_VAULT_MODE
+            multiTenant: [
+                    scmManager: [
+                            url: ''
+                    ]
+            ],
+            features   : [
+                    secrets: [
+                            vault: [
+                                    mode: EXPECTED_VAULT_MODE
                             ]
                     ],
             ]
     ])
 
-    // We have to set this value using env vars, which makes tests complicated, so ignore it
-    Config almostEmptyConfig = Config.fromMap([
-            application: [
-                    localHelmChartFolder : 'someValue',
-            ],
-    ])
+//    // We have to set this value using env vars, which makes tests complicated, so ignore it
+//    Config almostEmptyConfig = Config.fromMap([
+//            application: [
+//                    localHelmChartFolder: 'someValue',
+//            ],
+//    ])
 
     @BeforeEach
     void setup() {
@@ -104,28 +112,28 @@ class ApplicationConfiguratorTest {
             assertThat(actualConfig.application.runningInsideK8s).isEqualTo(true)
         }
     }
-    
+
     @Test
     void 'Sets jenkins active if external url is set'() {
         testConfig.jenkins.url = 'external'
         def actualConfig = applicationConfigurator.initConfig(testConfig)
         assertThat(actualConfig.jenkins.active).isEqualTo(true)
     }
-    
+
     @Test
     void 'Leaves Jenkins urlForScmm empty, if not active'() {
         testConfig.jenkins.url = ''
         testConfig.jenkins.active = false
-        
+
         def actualConfig = applicationConfigurator.initConfig(testConfig)
-        assertThat(actualConfig.jenkins.urlForScmm).isEmpty()
+        assertThat(actualConfig.jenkins.urlForScm).isEmpty()
     }
-    
+
     @Test
     void 'Fails if jenkins is external and scmm is internal or the other way round'() {
         testConfig.jenkins.active = true
         testConfig.jenkins.url = 'external'
-        testConfig.scmm.url = ''
+        testConfig.scm.scmManager.url = ''
 
         def exception = shouldFail(RuntimeException) {
             commonFeatureConfig.validateConfig(testConfig)
@@ -133,14 +141,14 @@ class ApplicationConfiguratorTest {
         assertThat(exception.message).isEqualTo('When setting jenkins URL, scmm URL must also be set and the other way round')
 
         testConfig.jenkins.url = ''
-        testConfig.scmm.url = 'external'
+        testConfig.scm.scmManager.url = 'external'
 
         exception = shouldFail(RuntimeException) {
             commonFeatureConfig.validateConfig(testConfig)
         }
         assertThat(exception.message).isEqualTo('When setting jenkins URL, scmm URL must also be set and the other way round')
-        
-        
+
+
         testConfig.jenkins.active = false
         commonFeatureConfig.validateConfig(testConfig)
         // no exception when jenkins is not active
@@ -179,8 +187,8 @@ class ApplicationConfiguratorTest {
             featureContent.preConfigInit(testConfig)
         }
         assertThat(exception.message).isEqualTo('content.repos requires a url parameter.')
-        
-        
+
+
         testConfig.content.repos = [
                 new Config.ContentSchema.ContentRepositorySchema(url: 'abc', type: Config.ContentRepoType.COPY, target: "missing_slash"),
         ]
@@ -200,7 +208,7 @@ class ApplicationConfiguratorTest {
         }
         assertThat(exception.message).isEqualTo('content.repos.type COPY requires content.repos.target to be set. Repo: abc')
     }
-    
+
     @Test
     void 'Fails if FOLDER_BASED repo has target parameter'() {
         testConfig.content.repos = [
@@ -210,8 +218,8 @@ class ApplicationConfiguratorTest {
             featureContent.preConfigInit(testConfig)
         }
         assertThat(exception.message).isEqualTo('content.repos.type FOLDER_BASED does not support target parameter. Repo: abc')
-        
-        
+
+
         testConfig.content.repos = [
                 new Config.ContentSchema.ContentRepositorySchema(url: 'abc', type: Config.ContentRepoType.FOLDER_BASED, targetRef: 'someRef'),
         ]
@@ -254,29 +262,6 @@ class ApplicationConfiguratorTest {
     }
 
     @Test
-    void 'Adds content example namespaces'() {
-        testConfig.content.examples = true
-
-        def actualConfig = applicationConfigurator.initConfig(testConfig)
-
-        assertThat(actualConfig.content.namespaces).containsExactlyInAnyOrder('example-apps-staging', 'example-apps-production')
-    }
-
-
-    @Test
-    void 'Fails if example Content is active but registry is not active'() {
-        testConfig.content.examples = true
-        testConfig.registry.internal = false
-        testConfig.registry.url = ''
-        
-        
-        def exception = shouldFail(RuntimeException) {
-            applicationConfigurator.initConfig(testConfig)
-        }
-        assertThat(exception.message).isEqualTo('content.examples requires either registry.active or registry.url')
-    }
-
-    @Test
     void 'Ignores empty localHemlChartFolder, if mirrorRepos is not set'() {
         testConfig.application.mirrorRepos = false
         testConfig.application.localHelmChartFolder = ''
@@ -287,20 +272,12 @@ class ApplicationConfiguratorTest {
 
     @Test
     void "Certain properties are read from env"() {
-        withEnvironmentVariable('SPRING_BOOT_HELM_CHART_REPO', 'value1').execute {
-            def actualConfig = new ApplicationConfigurator(fileSystemUtils).initConfig(new Config())
-            assertThat(actualConfig.repositories.springBootHelmChart.url).isEqualTo('value1')
-        }
-        withEnvironmentVariable('SPRING_PETCLINIC_REPO', 'value2').execute {
-            def actualConfig = new ApplicationConfigurator(fileSystemUtils).initConfig(new Config())
-            assertThat(actualConfig.repositories.springPetclinic.url).isEqualTo('value2')
-        }
         withEnvironmentVariable('GITOPS_BUILD_LIB_REPO', 'value3').execute {
-            def actualConfig = new ApplicationConfigurator(fileSystemUtils).initConfig(new Config())
+            def actualConfig = new ApplicationConfigurator(fileSystemUtils).initConfig(minimalConfig())
             assertThat(actualConfig.repositories.gitopsBuildLib.url).isEqualTo('value3')
         }
         withEnvironmentVariable('CES_BUILD_LIB_REPO', 'value4').execute {
-            def actualConfig = new ApplicationConfigurator(fileSystemUtils).initConfig(new Config())
+            def actualConfig = new ApplicationConfigurator(fileSystemUtils).initConfig(minimalConfig())
             assertThat(actualConfig.repositories.cesBuildLib.url).isEqualTo('value4')
         }
     }
@@ -320,9 +297,7 @@ class ApplicationConfiguratorTest {
         assertThat(actualConfig.features.mail.mailhogUrl).isEqualTo("http://mailhog.localhost")
         assertThat(actualConfig.features.monitoring.grafanaUrl).isEqualTo("http://grafana.localhost")
         assertThat(actualConfig.features.secrets.vault.url).isEqualTo("http://vault.localhost")
-        assertThat(actualConfig.features.exampleApps.petclinic.baseDomain).isEqualTo("petclinic.localhost")
-        assertThat(actualConfig.features.exampleApps.nginx.baseDomain).isEqualTo("nginx.localhost")
-        assertThat(actualConfig.scmm.ingress).isEqualTo("scmm.localhost")
+        assertThat(actualConfig.scm.scmManager.ingress).isEqualTo("scmm.localhost")
         assertThat(actualConfig.jenkins.ingress).isEqualTo("jenkins.localhost")
     }
 
@@ -342,9 +317,7 @@ class ApplicationConfiguratorTest {
         assertThat(actualConfig.features.mail.mailhogUrl).isEqualTo("http://mailhog-localhost")
         assertThat(actualConfig.features.monitoring.grafanaUrl).isEqualTo("http://grafana-localhost")
         assertThat(actualConfig.features.secrets.vault.url).isEqualTo("http://vault-localhost")
-        assertThat(actualConfig.features.exampleApps.petclinic.baseDomain).isEqualTo("petclinic-localhost")
-        assertThat(actualConfig.features.exampleApps.nginx.baseDomain).isEqualTo("nginx-localhost")
-        assertThat(actualConfig.scmm.ingress).isEqualTo("scmm-localhost")
+        assertThat(actualConfig.scm.scmManager.ingress).isEqualTo("scmm-localhost")
         assertThat(actualConfig.jenkins.ingress).isEqualTo("jenkins-localhost")
     }
 
@@ -399,8 +372,6 @@ class ApplicationConfiguratorTest {
         testConfig.features.mail.mailhogUrl = 'mailhog'
         testConfig.features.monitoring.grafanaUrl = 'grafana'
         testConfig.features.secrets.vault.url = 'vault'
-        testConfig.features.exampleApps.petclinic.baseDomain = 'petclinic'
-        testConfig.features.exampleApps.nginx.baseDomain = 'nginx'
 
         def actualConfig = applicationConfigurator.initConfig(testConfig)
 
@@ -408,8 +379,6 @@ class ApplicationConfiguratorTest {
         assertThat(actualConfig.features.mail.mailhogUrl).isEqualTo("mailhog")
         assertThat(actualConfig.features.monitoring.grafanaUrl).isEqualTo("grafana")
         assertThat(actualConfig.features.secrets.vault.url).isEqualTo("vault")
-        assertThat(actualConfig.features.exampleApps.petclinic.baseDomain).isEqualTo("petclinic")
-        assertThat(actualConfig.features.exampleApps.nginx.baseDomain).isEqualTo("nginx")
     }
 
     @Test
@@ -469,7 +438,7 @@ class ApplicationConfiguratorTest {
         testConfig.features.argocd.operator = true
         testConfig.features.argocd.resourceInclusionsCluster = 'https://100.125.0.1:443'
         testConfig.features.argocd.env = [
-                [name: "ENV_VAR_1", value: "value1"] ,
+                [name: "ENV_VAR_1", value: "value1"],
                 [name: "ENV_VAR_2", value: "value2"]
         ] as List<Map<String, String>>
 
@@ -606,13 +575,12 @@ class ApplicationConfiguratorTest {
                 }
     }
 
-
     @Test
-    void "MultiTenant Mode Central SCM Url"(){
-        testConfig.multiTenant.centralScmUrl="scmm.localhost/scm"
-        testConfig.application.namePrefix="foo"
+    void "MultiTenant Mode Central SCM Url"() {
+        testConfig.multiTenant.scmManager.url = "scmm.localhost/scm"
+        testConfig.application.namePrefix = "foo"
         applicationConfigurator.initConfig(testConfig)
-        assertThat(testConfig.multiTenant.centralScmUrl).toString() == "scmm.localhost/scm/"
+        assertThat(testConfig.multiTenant.scmManager.url).toString() == "scmm.localhost/scm/"
     }
 
     @Test
@@ -686,5 +654,19 @@ class ApplicationConfiguratorTest {
             }
         }
         return keysList
+    }
+
+    private static Config minimalConfig() {
+        def config = new Config()
+        config.application = new Config.ApplicationSchema(
+                localHelmChartFolder: 'someValue',
+                namePrefix: ''
+        )
+        config.scm = new ScmTenantSchema(
+                scmManager: new ScmTenantSchema.ScmManagerTenantConfig(
+                        url: ''
+                )
+        )
+        return config
     }
 }

@@ -1,9 +1,15 @@
 package com.cloudogu.gitops.features.deployment
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.scmm.ScmmRepo
+import com.cloudogu.gitops.features.git.GitHandler
+import com.cloudogu.gitops.features.git.config.ScmTenantSchema
+import com.cloudogu.gitops.features.git.config.ScmTenantSchema.ScmManagerTenantConfig
+import com.cloudogu.gitops.git.GitRepo
+import com.cloudogu.gitops.git.providers.GitProvider
+import com.cloudogu.gitops.utils.git.ScmManagerMock
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.TestScmmRepoProvider
+import com.cloudogu.gitops.utils.git.GitHandlerForTests
+import com.cloudogu.gitops.utils.git.TestGitRepoFactory
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 
@@ -11,6 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat
 
 class ArgoCdApplicationStrategyTest {
     private File localTempDir
+    GitHandler gitHandler = new GitHandlerForTests(new Config(), new ScmManagerMock())
 
     @Test
     void 'deploys feature using argo CD'() {
@@ -106,9 +113,11 @@ spec:
                         gitName: 'Cloudogu',
                         gitEmail: 'hello@cloudogu.com'
                 ),
-                scmm: new Config.ScmmSchema(
-                        username: "dont-care-username",
-                        password: "dont-care-password",
+                scm: new ScmTenantSchema(
+                        scmManager: new ScmManagerTenantConfig(
+                                username: "dont-care-username",
+                                password: "dont-care-password"
+                        )
                 ),
                 features: new Config.FeaturesSchema(
                         argocd: new Config.ArgoCDSchema(
@@ -117,25 +126,16 @@ spec:
                 )
         )
 
-
-        def repoProvider = new TestScmmRepoProvider(config, new FileSystemUtils()) {
+        def repoProvider = new TestGitRepoFactory(config, new FileSystemUtils()) {
             @Override
-            ScmmRepo getRepo(String repoTarget) {
-                def repo = super.getRepo(repoTarget)
-                localTempDir = new File(repo.getAbsoluteLocalRepoTmpDir())
-
-                return repo
-            }
-
-            @Override
-            ScmmRepo getRepo(String repoTarget, Boolean isCentralRepo) {
-                def repo = super.getRepo(repoTarget, isCentralRepo)
+            GitRepo getRepo(String repoTarget, GitProvider gitProvider) {
+                def repo = super.getRepo(repoTarget, gitProvider)
                 localTempDir = new File(repo.getAbsoluteLocalRepoTmpDir())
 
                 return repo
             }
         }
 
-        return new ArgoCdApplicationStrategy(config, new FileSystemUtils(), repoProvider)
+        return new ArgoCdApplicationStrategy(config, new FileSystemUtils(), repoProvider, gitHandler)
     }
 }

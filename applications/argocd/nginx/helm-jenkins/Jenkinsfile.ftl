@@ -10,7 +10,7 @@ String getCesBuildLibRepo() { configRepositoryPRBaseUrl+"/repo/3rd-party-depende
 String getGitOpsBuildLibRepo() { configRepositoryPRBaseUrl+"/repo/3rd-party-dependencies/gitops-build-lib" }
 
 String getCesBuildLibVersion() { '2.5.0' }
-String getGitOpsBuildLibVersion() { '0.7.0'}
+String getGitOpsBuildLibVersion() { '0.8.0'}
 
 String getHelmChartRepository() { "https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami" }
 String getHelmChartName() { "nginx" }

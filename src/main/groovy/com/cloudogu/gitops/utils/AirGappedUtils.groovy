@@ -1,13 +1,13 @@
 package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.scmm.ScmmRepo
-import com.cloudogu.gitops.scmm.ScmmRepoProvider
-import com.cloudogu.gitops.scmm.api.ScmmApiClient
+import com.cloudogu.gitops.config.Config.HelmConfig
+import com.cloudogu.gitops.features.git.GitHandler
+import com.cloudogu.gitops.git.GitRepo
+import com.cloudogu.gitops.git.GitRepoFactory
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 import jakarta.inject.Singleton
-
 import java.nio.file.Path
 
 @Slf4j
@@ -15,37 +15,39 @@ import java.nio.file.Path
 class AirGappedUtils {
 
     private Config config
-    private ScmmRepoProvider repoProvider
-    private ScmmApiClient scmmApiClient
+    private GitRepoFactory repoProvider
     private FileSystemUtils fileSystemUtils
     private HelmClient helmClient
+    private GitHandler gitHandler
 
-    AirGappedUtils(Config config, ScmmRepoProvider repoProvider, ScmmApiClient scmmApiClient,
-                   FileSystemUtils fileSystemUtils, HelmClient helmClient) {
+    AirGappedUtils(Config config, GitRepoFactory repoProvider,
+                   FileSystemUtils fileSystemUtils, HelmClient helmClient, GitHandler gitHandler) {
         this.config = config
         this.repoProvider = repoProvider
-        this.scmmApiClient = scmmApiClient
         this.fileSystemUtils = fileSystemUtils
         this.helmClient = helmClient
+        this.gitHandler = gitHandler
     }
 
     /**
      * In air-gapped mode, the chart's dependencies can't be resolved.
      * As helm does not provide an option for changing them interactively, we push the charts into a separate repo. 
      * We alter these repos to resolve dependencies locally from SCM.
-     * 
+     *
      * @return the repo namespace and name
      */
-    String mirrorHelmRepoToGit(Config.HelmConfig helmConfig) {
+    String mirrorHelmRepoToGit(HelmConfig helmConfig) {
         String repoName = helmConfig.chart
-        String namespace = ScmmRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES
-        def repoNamespaceAndName = "${namespace}/${repoName}"
-        def localHelmChartFolder = "${config.application.localHelmChartFolder}/${repoName}"
+        String namespace = GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES
+        String repoNamespaceAndName = "${namespace}/${repoName}"
+        String localHelmChartFolder = "${config.application.localHelmChartFolder}/${repoName}"
 
         validateChart(repoNamespaceAndName, localHelmChartFolder, repoName)
 
-        ScmmRepo repo = repoProvider.getRepo(repoNamespaceAndName)
-        repo.create("Mirror of Helm chart $repoName from ${helmConfig.repoURL}", scmmApiClient)
+        GitRepo repo = repoProvider.getRepo(repoNamespaceAndName, gitHandler.tenant)
+
+        repo.createRepositoryAndSetPermission("Mirror of Helm chart $repoName from ${helmConfig.repoURL}", false)
+
         repo.cloneRepo()
 
         repo.copyDirectoryContents(localHelmChartFolder)
@@ -72,17 +74,17 @@ class AirGappedUtils {
         }
     }
 
-    private Map localizeChartYaml(ScmmRepo scmmRepo) {
-        log.debug("Preparing repo ${scmmRepo.scmmRepoTarget} for air-gapped use: Changing Chart.yaml to resolve depencies locally")
+    private Map localizeChartYaml(GitRepo gitRepo) {
+        log.debug("Preparing repo ${gitRepo.repoTarget} for air-gapped use: Changing Chart.yaml to resolve depencies locally")
 
-        def chartYamlPath = Path.of(scmmRepo.absoluteLocalRepoTmpDir, 'Chart.yaml')
+        def chartYamlPath = Path.of(gitRepo.absoluteLocalRepoTmpDir, 'Chart.yaml')
 
         Map chartYaml = new YamlSlurper().parse(chartYamlPath) as Map
-        Map chartLock = parseChartLockIfExists(scmmRepo)
+        Map chartLock = parseChartLockIfExists(gitRepo)
 
         List<Map> dependencies = chartYaml.dependencies as List<Map> ?: []
         for (Map chartYamlDep : dependencies) {
-            resolveDependencyVersion(chartLock, chartYamlDep, scmmRepo)
+            resolveDependencyVersion(chartLock, chartYamlDep, gitRepo)
 
             // Remove link to external repo, to force using local one
             chartYamlDep.repository = ''
@@ -91,7 +93,7 @@ class AirGappedUtils {
         return chartYaml
     }
 
-    private static Map parseChartLockIfExists(ScmmRepo scmmRepo) {
+    private static Map parseChartLockIfExists(GitRepo scmmRepo) {
         def chartLock = Path.of(scmmRepo.absoluteLocalRepoTmpDir, 'Chart.lock')
         if (!chartLock.toFile().exists()) {
             return [:]
@@ -102,13 +104,13 @@ class AirGappedUtils {
     /**
      * Resolve proper dependency version from Chart.lock, e.g. 5.18.* -> 5.18.1
      */
-    private void resolveDependencyVersion(Map chartLock, Map chartYamlDep, ScmmRepo scmmRepo) {
+    private void resolveDependencyVersion(Map chartLock, Map chartYamlDep, GitRepo gitRepo) {
         def chartLockDep = findByName(chartLock.dependencies as List, chartYamlDep.name as String)
         if (chartLockDep) {
             chartYamlDep.version = chartLockDep.version
         } else if ((chartYamlDep.version as String).contains('*')) {
             throw new RuntimeException("Unable to determine proper version for dependency " +
-                    "${chartYamlDep.name} (version: ${chartYamlDep.version}) from repo ${scmmRepo.scmmRepoTarget}")
+                    "${chartYamlDep.name} (version: ${chartYamlDep.version}) from repo ${gitRepo.repoTarget}")
         }
     }
 

@@ -263,39 +263,40 @@ class GitopsPlaygroundCliTest {
 
     @Test
     void 'ensure helm defaults are used, if not set'() {
-    // this test sets only a few values for helm configuration and expect, that defaults are used.
+        // this test sets only a few values for helm configuration and expect, that defaults are used.
 
         def fileConfig = [
-                jenkins: [
+                jenkins : [
                         helm: [
-                                    version: '5.8.1'
+                                version: '5.8.1'
                         ]
                 ],
-                scmm: [
-                        helm: [
-                            values: [
-                                    initialDelaySeconds: 120
-                            ]
-                        ]
-                ]
-                ,
-                features: [
-                        monitoring: [
+                scm     : [
+                        scmManager: [
                                 helm: [
-                                        version: '66.2.1',
+                                        values: [
+                                                initialDelaySeconds: 120
+                                        ]
+                                ]
+                        ]
+                ],
+                features: [
+                        monitoring : [
+                                helm: [
+                                        version     : '66.2.1',
                                         grafanaImage: 'localhost:30000/proxy/grafana:latest'
                                 ]
                         ],
-                        secrets: [
+                        secrets    : [
                                 externalSecrets: [
-                                    helm: [
-                                            chart: 'my-secrets'
-                                    ]
+                                        helm: [
+                                                chart: 'my-secrets'
+                                        ]
                                 ],
-                                vault: [
-                                    helm: [
-                                            repoURL: 'localhost:3000/proxy/vault:latest'
-                                    ]
+                                vault          : [
+                                        helm: [
+                                                repoURL: 'localhost:3000/proxy/vault:latest'
+                                        ]
                                 ],
                         ],
                         certManager: [
@@ -311,17 +312,16 @@ class GitopsPlaygroundCliTest {
 
         configFile.text = toYaml(fileConfig)
 
-        cli.run("--config-file=${configFile}","--yes")
+        cli.run("--config-file=${configFile}", "--yes")
         def myconfig = cli.lastSchema;
         assertThat(myconfig.jenkins.helm.chart).isEqualTo('jenkins')
         assertThat(myconfig.jenkins.helm.repoURL).isEqualTo('https://charts.jenkins.io')
         assertThat(myconfig.jenkins.helm.version).isEqualTo('5.8.1') // overridden
 
-
-        assertThat(myconfig.scmm.helm.chart).isEqualTo('scm-manager')
-        assertThat(myconfig.scmm.helm.repoURL).isEqualTo('https://packages.scm-manager.org/repository/helm-v2-releases/')
-        assertThat(myconfig.scmm.helm.version).isEqualTo('3.10.2')
-        assertThat(myconfig.scmm.helm.values.initialDelaySeconds).isEqualTo(120) // overridden
+        assertThat(myconfig.scm.scmManager.helm.chart).isEqualTo('scm-manager')
+        assertThat(myconfig.scm.scmManager.helm.repoURL).isEqualTo('https://packages.scm-manager.org/repository/helm-v2-releases/')
+        assertThat(myconfig.scm.scmManager.helm.version).isEqualTo('3.11.0')
+        assertThat(myconfig.scm.scmManager.helm.values.initialDelaySeconds).isEqualTo(120) // overridden
 
         assertThat(cli.lastSchema.features.monitoring.helm.chart).isEqualTo('kube-prometheus-stack')
         assertThat(cli.lastSchema.features.monitoring.helm.repoURL).isEqualTo('https://prometheus-community.github.io/helm-charts')
@@ -349,6 +349,7 @@ class GitopsPlaygroundCliTest {
         assertThat(cli.lastSchema.features.certManager.helm.acmeSolverImage).isEqualTo('')
         assertThat(cli.lastSchema.features.certManager.helm.image).isEqualTo('localhost:30000/proxy/cert-manager-controller:latest')
     }
+
     static String getLoggingPattern() {
         loggingEncoder.pattern
     }

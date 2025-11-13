@@ -1,19 +1,16 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.Feature
-import com.cloudogu.gitops.config.ApplicationConfigurator
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.deployment.HelmStrategy
+import com.cloudogu.gitops.features.git.GitHandler
+import com.cloudogu.gitops.features.git.config.util.ScmProviderType
 import com.cloudogu.gitops.jenkins.GlobalPropertyManager
 import com.cloudogu.gitops.jenkins.JobManager
 import com.cloudogu.gitops.jenkins.PrometheusConfigurator
 import com.cloudogu.gitops.jenkins.UserManager
-import com.cloudogu.gitops.utils.CommandExecutor
-import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.K8sClient
-import com.cloudogu.gitops.utils.MapUtils
-import com.cloudogu.gitops.utils.NetworkingUtils
+import com.cloudogu.gitops.utils.*
 import freemarker.template.Configuration
 import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
@@ -38,6 +35,7 @@ class Jenkins extends Feature {
     private DeploymentStrategy deployer
     private K8sClient k8sClient
     private NetworkingUtils networkingUtils
+    private GitHandler gitHandler
 
     Jenkins(
             Config config,
@@ -49,7 +47,8 @@ class Jenkins extends Feature {
             PrometheusConfigurator prometheusConfigurator,
             HelmStrategy deployer,
             K8sClient k8sClient,
-            NetworkingUtils networkingUtils
+            NetworkingUtils networkingUtils,
+            GitHandler gitHandler
     ) {
         this.config = config
         this.commandExecutor = commandExecutor
@@ -61,8 +60,9 @@ class Jenkins extends Feature {
         this.deployer = deployer
         this.k8sClient = k8sClient
         this.networkingUtils = networkingUtils
+        this.gitHandler = gitHandler
 
-        if(config.jenkins.internal) {
+        if (config.jenkins.internal) {
             this.namespace = "${config.application.namePrefix}jenkins"
         }
     }
@@ -71,6 +71,7 @@ class Jenkins extends Feature {
     boolean isEnabled() {
         return config.jenkins.active
     }
+
 
     @Override
     void enable() {
@@ -84,7 +85,6 @@ class Jenkins extends Feature {
             k8sClient.labelRemove('node', '--all', '', 'node')
             def nodeName = k8sClient.waitForNode().replace('node/', '')
             k8sClient.label('node', nodeName, new Tuple2('node', 'jenkins'))
-
 
             k8sClient.createSecret('generic', 'jenkins-credentials', namespace,
                     new Tuple2('jenkins-admin-user', config.jenkins.username),
@@ -137,9 +137,9 @@ class Jenkins extends Feature {
                 JENKINS_PASSWORD          : config.jenkins.password,
                 // Used indirectly in utils.sh 😬
                 REMOTE_CLUSTER            : config.application.remote,
-                SCMM_URL                  : config.scmm.urlForJenkins,
-                SCMM_PASSWORD             : config.scmm.password,
-                SCM_PROVIDER              : config.scmm.provider,
+                SCMM_URL                  : this.gitHandler.tenant.url,
+                SCMM_PASSWORD             : this.gitHandler.tenant.credentials.password,
+                SCM_PROVIDER              : config.scm.scmProviderType,
                 INSTALL_ARGOCD            : config.features.argocd.active,
                 NAME_PREFIX               : config.application.namePrefix,
                 INSECURE                  : config.application.insecure,
@@ -147,7 +147,7 @@ class Jenkins extends Feature {
                 SKIP_PLUGINS              : config.jenkins.skipPlugins
         ])
 
-        globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}SCMM_URL", config.scmm.urlForJenkins)
+        globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}SCM_URL", this.gitHandler.tenant.url)
 
         if (config.jenkins.additionalEnvs) {
             for (entry in (config.jenkins.additionalEnvs as Map).entrySet()) {
@@ -186,40 +186,34 @@ class Jenkins extends Feature {
             prometheusConfigurator.enableAuthentication()
         }
 
-        if (config.content.examples) {
-
-            String jobName = "example-apps"
-            String namespace = "argocd"
-            createJenkinsjob(namespace, jobName)
-
-        }
-
     }
 
     void createJenkinsjob(String namespace, String repoName) {
-        def credentialId = "scmm-user"
+        def credentialId = "scm-user"
         String prefixedNamespace = "${config.application.namePrefix}${namespace}"
         String jobName = "${config.application.namePrefix}${repoName}"
+
         jobManager.createJob(jobName,
-                config.scmm.urlForJenkins,
+                this.gitHandler.tenant.url,
                 prefixedNamespace,
                 credentialId)
 
-        if (config.scmm.provider == 'scm-manager') {
+
+        if (config.scm.scmProviderType == ScmProviderType.SCM_MANAGER) {
             jobManager.createCredential(
                     jobName,
                     credentialId,
                     "${config.application.namePrefix}gitops",
-                    "${config.scmm.password}",
+                    "${config.scm.getScmManager().password}",
                     'credentials for accessing scm-manager')
         }
 
-        if (config.scmm.provider == 'gitlab') {
+        if (config.scm.scmProviderType == ScmProviderType.GITLAB) {
             jobManager.createCredential(
                     jobName,
                     credentialId,
-                    "${config.scmm.username}",
-                    "${config.scmm.password}",
+                    "${config.scm.getGitlab().username}",
+                    "${config.scm.getGitlab().password}",
                     'credentials for accessing gitlab')
         }
 

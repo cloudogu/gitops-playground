@@ -20,7 +20,7 @@ String getCesBuildLibRepo() { configRepositoryPRBaseUrl+"/repo/3rd-party-depende
 String getGitOpsBuildLibRepo() { configRepositoryPRBaseUrl+"/repo/3rd-party-dependencies/gitops-build-lib" }
 
 String getCesBuildLibVersion() { '2.5.0' }
-String getGitOpsBuildLibVersion() { '0.7.0'}
+String getGitOpsBuildLibVersion() { '0.8.0'}
 
 loadLibraries()
 
