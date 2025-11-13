@@ -121,6 +121,13 @@
     "content" : {
       "type" : [ "object", "null" ],
       "properties" : {
+        "allowedStaticsWhitelist" : {
+          "description" : "Whitelist for Statics freemarker is allowing in user templates",
+          "type" : [ "array", "null" ],
+          "items" : {
+            "type" : "string"
+          }
+        },
         "examples" : {
           "type" : [ "boolean", "null" ],
           "description" : "Deploy example content: source repos, GitOps repos, Jenkins Job, Argo CD apps/project"
@@ -195,6 +202,10 @@
             },
             "additionalProperties" : false
           }
+        },
+        "useWhitelist" : {
+          "type" : [ "boolean", "null" ],
+          "description" : "Enables the whitelist for statics in content templating"
         },
         "variables" : {
           "$ref" : "#/$defs/Map(String,Object)-nullable",
