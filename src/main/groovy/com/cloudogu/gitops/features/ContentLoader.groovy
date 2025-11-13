@@ -30,7 +30,6 @@ import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositoryS
 @Order(999)
 // We want to evaluate content last, to allow for changing all other repos
 class ContentLoader extends Feature {
-
     private Config config
     private K8sClient k8sClient
     private GitRepoFactory repoProvider
@@ -40,7 +39,6 @@ class ContentLoader extends Feature {
     // used to clone repos in validation phase
     private List<RepoCoordinate> cachedRepoCoordinates = new ArrayList<>()
     private File mergedReposFolder
-
     private GitHandler gitHandler
 
     ContentLoader(
@@ -229,6 +227,12 @@ class ContentLoader extends Feature {
             def engine = getTemplatingEngine()
             engine.replaceTemplates(srcPath, [
                     config : config,
+                    scm      : [
+                            baseUrl : this.gitHandler.getResourcesScm().url,
+                            host    : this.gitHandler.getResourcesScm().host,
+                            protocol: this.gitHandler.getResourcesScm().protocol,
+                            repoUrl : this.gitHandler.getResourcesScm().repoPrefix(),
+                    ],
                     // Allow for using static classes inside the templates
                     statics: !config.content.useWhitelist ? new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels() :
                             new AllowListFreemarkerObjectWrapper(Configuration.VERSION_2_3_32, config.content.getAllowedStaticsWhitelist()).getStaticModels()
