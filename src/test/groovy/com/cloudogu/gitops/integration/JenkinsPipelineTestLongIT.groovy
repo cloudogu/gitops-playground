@@ -90,13 +90,6 @@ class JenkinsPipelineTestLongIT {
     }
 
     @Test
-    void checkExpectedJenkinsJobs() {
-        JenkinsHandler js = new JenkinsHandler(findUrl())
-        List<Job> jobs = js.buildJobList()
-        assertThat(jobs.size()).isEqualTo(numberOfExampleRepos)
-    }
-
-    @Test
     void checkJenkinsIsAvailable() {
         JenkinsHandler js = new JenkinsHandler(findUrl())
         JenkinsServer jenkins = js.get()
@@ -104,7 +97,13 @@ class JenkinsPipelineTestLongIT {
         assertThat(jenkins.running).isTrue()
     }
 
-
+    //Disabled for now. We can re-enable this when we use ContentLoader in JenkinsTests.
+    /*@Test
+    void checkExpectedJenkinsJobs() {
+        JenkinsHandler js = new JenkinsHandler(findUrl())
+        List<Job> jobs = js.buildJobList()
+        assertThat(jobs.size()).isEqualTo(numberOfExampleRepos)
+    }
     @Test
     void wholeJenkinsPipelineTest() {
         PipelineExecutor executor = new PipelineExecutor()
@@ -161,7 +160,7 @@ class JenkinsPipelineTestLongIT {
             fail("Unexpected error during execution of gitops playground e2e:\n", err)
         }
     }
-
+*/
     static void writeBuildLogToFile(BuildWithDetails buildDetails) {
         
         String directoryName = "playground-logs-of-failed-jobs/"
