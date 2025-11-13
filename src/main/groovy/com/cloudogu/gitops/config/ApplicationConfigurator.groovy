@@ -214,10 +214,6 @@ class ApplicationConfigurator {
                 throw new RuntimeException('To enable Central Multi-Tenant mode, you must define a name prefix to distinguish between instances.')
             }
 
-            if (!newConfig.features.argocd.operator) {
-                newConfig.features.argocd.operator = true
-            }
-
             // Removes trailing slash from the input URL to avoid duplicated slashes in further URL handling
             if (newConfig.multiTenant.scmManager.url) {
                 String urlString = newConfig.multiTenant.scmManager.url.toString()
