@@ -1,12 +1,24 @@
 package com.cloudogu.gitops
 
 import com.cloudogu.gitops.config.ApplicationConfigurator
+import com.cloudogu.gitops.config.CommonFeatureConfig
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.features.ContentLoader
+import com.cloudogu.gitops.features.Jenkins
+import com.cloudogu.gitops.features.argocd.ArgoCD
+import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.features.git.config.ScmTenantSchema
+import com.cloudogu.gitops.git.GitRepoFactory
 import com.cloudogu.gitops.utils.FileSystemUtils
+import com.cloudogu.gitops.utils.HelmClient
+import com.cloudogu.gitops.utils.K8sClient
 import com.cloudogu.gitops.utils.TestLogger
+import com.cloudogu.gitops.utils.git.GitHandlerForTests
+import com.cloudogu.gitops.utils.git.ScmManagerMock
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.Mock
+import org.mockito.Mockito
 
 import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable
 import static groovy.test.GroovyAssert.shouldFail
@@ -23,6 +35,13 @@ class ApplicationConfiguratorTest {
     private ApplicationConfigurator applicationConfigurator
     private FileSystemUtils fileSystemUtils
     private TestLogger testLogger
+    private CommonFeatureConfig commonFeatureConfig
+    private ContentLoader featureContent
+    private ArgoCD featureArgoCd
+
+    @Mock
+    ScmManagerMock scmManagerMock = new ScmManagerMock()
+
     Config testConfig = Config.fromMap([
             application: [
                     localHelmChartFolder: 'someValue',
@@ -69,6 +88,16 @@ class ApplicationConfiguratorTest {
         fileSystemUtils = new FileSystemUtils()
         applicationConfigurator = new ApplicationConfigurator(fileSystemUtils)
         testLogger = new TestLogger(applicationConfigurator.getClass())
+        commonFeatureConfig = new CommonFeatureConfig()
+
+        K8sClient k8sClient = Mockito.mock(K8sClient)
+        HelmClient helmClient = Mockito.mock(HelmClient)
+        GitRepoFactory gitRepoFactory = Mockito.mock(GitRepoFactory)
+
+
+        GitHandler gitHandler = new GitHandlerForTests(testConfig, scmManagerMock)
+        featureContent = Mockito.spy(new ContentLoader(testConfig, k8sClient, gitRepoFactory, Mockito.mock(Jenkins), gitHandler))
+        featureArgoCd = Mockito.spy(new ArgoCD(testConfig, k8sClient, helmClient, fileSystemUtils, gitRepoFactory, gitHandler))
     }
 
     @Test
@@ -109,37 +138,12 @@ class ApplicationConfiguratorTest {
     }
 
     @Test
-    void 'Fails if jenkins is external and scmm is internal or the other way round'() {
-        testConfig.jenkins.active = true
-        testConfig.jenkins.url = 'external'
-        testConfig.scm.scmManager.url = ''
-
-        def exception = shouldFail(RuntimeException) {
-            applicationConfigurator.validateConfig(testConfig)
-        }
-        assertThat(exception.message).isEqualTo('When setting jenkins URL, scmm URL must also be set and the other way round')
-
-        testConfig.jenkins.url = ''
-        testConfig.scm.scmManager.url = 'external'
-
-        exception = shouldFail(RuntimeException) {
-            applicationConfigurator.validateConfig(testConfig)
-        }
-        assertThat(exception.message).isEqualTo('When setting jenkins URL, scmm URL must also be set and the other way round')
-
-
-        testConfig.jenkins.active = false
-        applicationConfigurator.validateConfig(testConfig)
-        // no exception when jenkins is not active
-    }
-
-    @Test
     void 'Fails if monitoring local is not set'() {
         testConfig.application.mirrorRepos = true
         testConfig.application.localHelmChartFolder = ''
 
         def exception = shouldFail(RuntimeException) {
-            applicationConfigurator.validateConfig(testConfig)
+            commonFeatureConfig.validateConfig(testConfig)
         }
         assertThat(exception.message).isEqualTo('Missing config for localHelmChartFolder.\n' +
                 'Either run inside the official container image or setting env var LOCAL_HELM_CHART_FOLDER=\'charts\' ' +
@@ -158,11 +162,12 @@ class ApplicationConfiguratorTest {
 
     @Test
     void 'Fails if content repo is set without mandatory params'() {
+
         testConfig.content.repos = [
                 new Config.ContentSchema.ContentRepositorySchema(url: ''),
         ]
         def exception = shouldFail(RuntimeException) {
-            applicationConfigurator.validateConfig(testConfig)
+            featureContent.preConfigInit(testConfig)
         }
         assertThat(exception.message).isEqualTo('content.repos requires a url parameter.')
 
@@ -171,7 +176,7 @@ class ApplicationConfiguratorTest {
                 new Config.ContentSchema.ContentRepositorySchema(url: 'abc', type: Config.ContentRepoType.COPY, target: "missing_slash"),
         ]
         exception = shouldFail(RuntimeException) {
-            applicationConfigurator.validateConfig(testConfig)
+            featureContent.preConfigInit(testConfig)
         }
         assertThat(exception.message).isEqualTo('content.target needs / to separate namespace/group from repo name. Repo: abc')
     }
@@ -182,7 +187,7 @@ class ApplicationConfiguratorTest {
                 new Config.ContentSchema.ContentRepositorySchema(url: 'abc', type: Config.ContentRepoType.COPY),
         ]
         def exception = shouldFail(RuntimeException) {
-            applicationConfigurator.validateConfig(testConfig)
+            featureContent.preConfigInit(testConfig)
         }
         assertThat(exception.message).isEqualTo('content.repos.type COPY requires content.repos.target to be set. Repo: abc')
     }
@@ -193,7 +198,7 @@ class ApplicationConfiguratorTest {
                 new Config.ContentSchema.ContentRepositorySchema(url: 'abc', type: Config.ContentRepoType.FOLDER_BASED, target: 'namespace/repo'),
         ]
         def exception = shouldFail(RuntimeException) {
-            applicationConfigurator.validateConfig(testConfig)
+            featureContent.preConfigInit(testConfig)
         }
         assertThat(exception.message).isEqualTo('content.repos.type FOLDER_BASED does not support target parameter. Repo: abc')
 
@@ -202,7 +207,7 @@ class ApplicationConfiguratorTest {
                 new Config.ContentSchema.ContentRepositorySchema(url: 'abc', type: Config.ContentRepoType.FOLDER_BASED, targetRef: 'someRef'),
         ]
         exception = shouldFail(RuntimeException) {
-            applicationConfigurator.validateConfig(testConfig)
+            featureContent.preConfigInit(testConfig)
         }
         assertThat(exception.message).isEqualTo('content.repos.type FOLDER_BASED does not support targetRef parameter. Repo: abc')
     }
@@ -214,7 +219,7 @@ class ApplicationConfiguratorTest {
                 new Config.ContentSchema.ContentRepositorySchema(url: 'abc', type: Config.ContentRepoType.MIRROR),
         ]
         def exception = shouldFail(RuntimeException) {
-            applicationConfigurator.validateConfig(testConfig)
+            featureContent.preConfigInit(testConfig)
         }
         assertThat(exception.message).isEqualTo('content.repos.type MIRROR requires content.repos.target to be set. Repo: abc')
 
@@ -224,7 +229,7 @@ class ApplicationConfiguratorTest {
                         target: 'namespace/repo', path: 'non-default-path'),
         ]
         exception = shouldFail(RuntimeException) {
-            applicationConfigurator.validateConfig(testConfig)
+            featureContent.preConfigInit(testConfig)
         }
         assertThat(exception.message).isEqualTo("content.repos.type MIRROR does not support path. Current path: non-default-path. Repo: abc")
 
@@ -234,7 +239,7 @@ class ApplicationConfiguratorTest {
                         target: 'namespace/repo', templating: true),
         ]
         exception = shouldFail(RuntimeException) {
-            applicationConfigurator.validateConfig(testConfig)
+            featureContent.preConfigInit(testConfig)
         }
         assertThat(exception.message).isEqualTo('content.repos.type MIRROR does not support templating. Repo: abc')
     }
@@ -435,6 +440,7 @@ class ApplicationConfiguratorTest {
 
         def exception = shouldFail(IllegalArgumentException) {
             applicationConfigurator.initConfig(testConfig)
+            featureArgoCd.postConfigInit(testConfig)
         }
 
         assertThat(exception.message).contains("Each env variable in features.argocd.env must be a map with 'name' and 'value'. Invalid entry found: [value:value2]")
@@ -451,6 +457,7 @@ class ApplicationConfiguratorTest {
 
         def exception = shouldFail(IllegalArgumentException) {
             applicationConfigurator.initConfig(testConfig)
+            featureArgoCd.postConfigInit(testConfig)
         }
 
         assertThat(exception.message).contains("Each env variable in features.argocd.env must be a map with 'name' and 'value'. Invalid entry found: [name:ENV_VAR_2]")
@@ -467,6 +474,7 @@ class ApplicationConfiguratorTest {
 
         def exception = shouldFail(IllegalArgumentException) {
             applicationConfigurator.initConfig(testConfig)
+            featureArgoCd.postConfigInit(testConfig)
         }
 
         assertThat(exception.message).contains("Each env variable in features.argocd.env must be a map with 'name' and 'value'. Invalid entry found: invalid_entry")
