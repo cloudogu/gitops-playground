@@ -51,26 +51,6 @@ application:
   skipCrds: false
   namespaceIsolation: false
   netpols: false
-images:
-  kubectl: "bitnamilegacy/kubectl:1.29"
-  helm: "ghcr.io/cloudogu/helm:3.15.4-1"
-  kubeval: "ghcr.io/cloudogu/helm:3.15.4-1"
-  helmKubeval: "ghcr.io/cloudogu/helm:3.15.4-1"
-  yamllint: "cytopia/yamllint:1.25-0.7"
-  nginx: ""
-  petclinic: "eclipse-temurin:11-jre-alpine"
-  maven: ""
-repositories:
-  springBootHelmChart:
-    url: "/gitops/repos/spring-boot-helm-chart.git"
-    ref: "0.3.2"
-  springPetclinic:
-    url: "/gitops/repos/spring-petclinic.git"
-    ref: "b0e0d18"
-  gitopsBuildLib:
-    url: "/gitops/repos/gitops-build-lib.git"
-  cesBuildLib:
-    url: "/gitops/repos/ces-build-lib.git"
 features:
   argocd:
     active: false
@@ -130,11 +110,6 @@ features:
       version: "4.11.3"
       values: {}
       image: ""
-  exampleApps:
-    petclinic:
-      baseDomain: ""
-    nginx:
-      baseDomain: ""
   certManager:
     active: false
     helm:

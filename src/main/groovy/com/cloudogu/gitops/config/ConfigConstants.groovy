@@ -73,14 +73,6 @@ interface ConfigConstants {
 
     // group tool configuration
     String APPLICATION_DESCRIPTION = 'Application configuration parameter for GOP'
-    String IMAGES_DESCRIPTION = 'Config params for images that do not belong to specific features'
-    String REPOSITORIES_DESCRIPTION = 'Config params for repositories used within GOP'
-    String KUBECTL_IMAGE_DESCRIPTION = 'Sets image for kubectl'
-    String HELM_IMAGE_DESCRIPTION = 'Sets image for helm'
-    String KUBEVAL_IMAGE_DESCRIPTION = 'Sets image for kubeval'
-    String HELMKUBEVAL_IMAGE_DESCRIPTION = 'Sets image for helmkubeval'
-    String YAMLLINT_IMAGE_DESCRIPTION = 'Sets image for yamllint'
-    String MAVEN_IMAGE_DESCRIPTION = 'Sets image for maven'
     String GRAFANA_IMAGE_DESCRIPTION = 'Sets image for grafana'
     String GRAFANA_SIDECAR_IMAGE_DESCRIPTION = 'Sets image for grafana\'s sidecar'
     String PROMETHEUS_IMAGE_DESCRIPTION = 'Sets image for prometheus'
@@ -90,19 +82,11 @@ interface ConfigConstants {
     String EXTERNAL_SECRETS_CERT_CONTROLLER_IMAGE_DESCRIPTION = 'Sets image for external secrets operator\'s controller'
     String EXTERNAL_SECRETS_WEBHOOK_IMAGE_DESCRIPTION = 'Sets image for external secrets operator\'s webhook'
     String VAULT_IMAGE_DESCRIPTION = 'Sets image for vault'
-    String NGINX_IMAGE_DESCRIPTION = 'Sets image for nginx used in various applications'
-    String PETCLINIC_IMAGE_DESCRIPTION = 'Sets image for petclinic used in various applications'
     String BASE_URL_DESCRIPTION = 'the external base url (TLD) for all tools, e.g. https://example.com or http://localhost:8080. The individual -url params for argocd, grafana, vault and mailhog take precedence.'
     String URL_SEPARATOR_HYPHEN_DESCRIPTION = 'Use hyphens instead of dots to separate application name from base-url'
     String SKIP_CRDS_DESCRIPTION = 'Skip installation of CRDs. This requires prior installation of CRDs'
     String NAMESPACE_ISOLATION_DESCRIPTION = 'Configure tools to explicitly work with the given namespaces only, and not cluster-wide. This way GOP can be installed without having cluster-admin permissions.'
     String MIRROR_REPOS_DESCRIPTION = 'Changes the sources of deployed tools so they are not pulled from the internet, but are pulled from git and work in air-gapped environments.'
-    String SPRING_BOOT_HELM_CHART_DESCRIPTION = 'Repo to pull the generic Spring Boot Helm chart, used in examples and exercises'
-    String SPRING_PETCLINIC_DESCRIPTION = 'Repo to pull the Spring Petclinic, used in examples and exercises'
-    String GITOPS_BUILD_LIB_DESCRIPTION = 'Repo to pull the gitops-build-lib, used in examples and exercises'
-    String CES_BUILD_LIB_DESCRIPTION = 'Repo to pull the ces-build-lib, used in examples and exercises as depedency of the gitops-build-lib'
-    String REPO_URL_DESCRIPTION = 'HTTP URL of the repo'
-    String REPO_REF_DESCRIPTION = 'Ref of the repo to use, e.g. a tag, commit or branch'
     String NETPOLS_DESCRIPTION = 'Sets Network Policies'
     String OPENSHIFT_DESCRIPTION = 'When set, openshift specific resources and configurations are applied'
 
@@ -157,10 +141,6 @@ interface ConfigConstants {
     String ARGOCD_RESOURCE_INCLUSIONS_CLUSTER = 'Internal Kubernetes API Server URL https://IP:PORT (kubernetes.default.svc). Needed in argocd-operator resourceInclusions. Use this parameter if argocd.operator=true and NOT running inside a Pod (remote mode). Full URL needed, for example: https://100.125.0.1:443'
     String ARGOCD_CUSTOM_NAMESPACE_DESCRIPTION= 'Defines the kubernetes namespace for ArgoCD'
     // group example apps
-    String EXAMPLE_APPS_DESCRIPTION = 'Config parameters for the example apps and exercises'
-    String BASE_DOMAIN_DESCRIPTION = 'The domain under which a subdomain these applications will be made available'
-    String PETCLINIC_DESCRIPTION = 'Config parameters for the petclinic example apps apps and exercises'
-    String NGINX_DESCRIPTION = 'Config parameters for the NGINX example apps apps and exercises'
 
     // group ingress-class
     String INGRESS_NGINX_DESCRIPTION = 'Config parameters for the NGINX Ingress Controller'

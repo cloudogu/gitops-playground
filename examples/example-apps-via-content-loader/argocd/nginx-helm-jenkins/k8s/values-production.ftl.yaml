@@ -1,0 +1,12 @@
+namespaceOverride: ${config.application.namePrefix}example-apps-production
+
+<#if config.content.variables.nginx.baseDomain?has_content>
+ingress:
+  enabled: true
+  pathType: Prefix
+  <#if config.application.urlSeparatorHyphen>
+  hostname: production-nginx-helm-${config.content.variables.nginx.baseDomain}
+  <#else>
+  hostname: production.nginx-helm.${config.content.variables.nginx.baseDomain}
+  </#if>
+</#if>

@@ -13,6 +13,9 @@ Example for a GOP content repository:
 
 This document will use the short for "repo" from here on, for brevity.
 
+In case for two registries or airgapped mode, you have to specify the registry sources via own config.yaml settings
+unter the content.variables.images section. 
+
 # Table of contents
 <!-- Update with `doctoc --notitle docs/content-loader/content-loader.md --maxlevel 2`. See https://github.com/thlorenz/doctoc -->
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
