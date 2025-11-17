@@ -6,6 +6,7 @@ import com.cloudogu.gitops.config.Config.OverwriteMode
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.GitRepoFactory
+import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.utils.AllowListFreemarkerObjectWrapper
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
@@ -269,13 +270,17 @@ class ContentLoader extends Feature {
     private void applyTemplatingIfApplicable(ContentRepositorySchema repoConfig, File srcPath) {
         if (repoConfig.templating) {
             def engine = getTemplatingEngine()
-            engine.replaceTemplates(srcPath, [
-                    scm    : [
-                            baseUrl : this.gitHandler.getResourcesScm().url,
-                            host    : this.gitHandler.getResourcesScm().host,
-                            protocol: this.gitHandler.getResourcesScm().protocol,
-                            repoUrl: this.gitHandler.getResourcesScm().repoPrefix(),
 
+            GitProvider gitProvider = this.gitHandler.resourcesScm
+            GitRepo repo = this.repoProvider.getRepo(repoConfig.target, gitProvider )
+
+            engine.replaceTemplates(srcPath, [
+                    config : config,
+                    scm      : [
+                            baseUrl : repo.gitProvider.url,
+                            host    : repo.gitProvider.host,
+                            protocol: repo.gitProvider.protocol,
+                            repoUrl : repo.gitProvider.repoPrefix(),
                     ],
                     config : config,
                     // Allow for using static classes inside the templates
