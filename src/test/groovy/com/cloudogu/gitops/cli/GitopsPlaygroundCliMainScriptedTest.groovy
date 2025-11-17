@@ -77,7 +77,7 @@ class GitopsPlaygroundCliMainScriptedTest {
                 .enableAnnotationInfo()
                 .scan().withCloseable { scanResult ->
             scanResult.getAllClasses().each { ClassInfo classInfo ->
-                if (classInfo.name.endsWith("Test") || classInfo.isAbstract()) {
+                if (classInfo.name.endsWith("Test") || classInfo.isAbstract() || !classInfo.hasAnnotation(jakarta.inject.Singleton)) {
                     return
                 }
 

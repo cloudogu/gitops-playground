@@ -7,7 +7,9 @@ import ch.qos.logback.classic.encoder.PatternLayoutEncoder
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.ConsoleAppender
 import com.cloudogu.gitops.Application
+import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.ApplicationConfigurator
+import com.cloudogu.gitops.config.CommonFeatureConfig
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.schema.JsonSchemaValidator
 import com.cloudogu.gitops.destroy.Destroyer
@@ -60,7 +62,12 @@ class GitopsPlaygroundCli {
             return ReturnCode.SUCCESS
         }
 
+        def context = createApplicationContext()
+        Application app = context.getBean(Application)
+
         def config = readConfigs(args)
+        runHook(app, 'preConfigInit', config)
+
         if (config.application.outputConfigFile) {
             println(config.toYaml(false))
             return ReturnCode.SUCCESS
@@ -70,8 +77,9 @@ class GitopsPlaygroundCli {
         // eg a simple docker run .. --help should not fail with connection refused
         config = applicationConfigurator.initConfig(config)
         log.debug("Actual config: ${config.toYaml(true)}")
+        runHook(app, 'postConfigInit', config)
 
-        def context = createApplicationContext()
+        context = createApplicationContext()
         register(config, context)
 
         if (config.application.destroy) {
@@ -87,7 +95,7 @@ class GitopsPlaygroundCli {
             if (!confirm("Applying gitops playground to kubernetes cluster '${k8sClient.currentContext}'.", config)) {
                 return ReturnCode.NOT_CONFIRMED
             }
-            Application app = context.getBean(Application)
+            app = context.getBean(Application)
             app.start()
 
             printWelcomeScreen()
@@ -216,8 +224,6 @@ class GitopsPlaygroundCli {
         log.debug("Writing CLI params into config")
         Config mergedConfig = Config.fromMap(mergedConfigs)
         new CommandLine(mergedConfig).parseArgs(args)
-
-        applicationConfigurator.validateConfig(mergedConfig)
         
         return mergedConfig
     }
@@ -248,5 +254,16 @@ class GitopsPlaygroundCli {
   | Please be aware, Jenkins and Argo CD may take some time to build and deploy all apps.
   |----------------------------------------------------------------------------------------------|
 '''
+    }
+
+    static void runHook(Application app, String methodName, def config) {
+        ([new CommonFeatureConfig(), *app.features]).each { feature ->
+            // Executing only the method if the derived feature class has implemented the passed methodName
+            def mm = feature.metaClass.getMetaMethod(methodName, config)
+            if (mm && mm.declaringClass.theClass != Feature) {
+                log.debug("Executing ${methodName} hook on feature ${feature.class.name}")
+                mm.invoke(feature, config)
+            }
+        }
     }
 }

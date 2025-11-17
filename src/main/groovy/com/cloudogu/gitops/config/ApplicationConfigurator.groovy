@@ -3,9 +3,6 @@ package com.cloudogu.gitops.config
 import com.cloudogu.gitops.utils.FileSystemUtils
 import groovy.util.logging.Slf4j
 
-import static com.cloudogu.gitops.config.Config.ContentRepoType
-import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositorySchema
-
 @Slf4j
 class ApplicationConfigurator {
 
@@ -30,8 +27,6 @@ class ApplicationConfigurator {
         addJenkinsConfig(newConfig)
 
         addFeatureConfig(newConfig)
-
-        validateEnvConfigForArgoCDOperator(newConfig)
 
         evaluateBaseUrl(newConfig)
 
@@ -263,95 +258,6 @@ class ApplicationConfigurator {
         }
         newUrl += url.getPath()
         return newUrl
-    }
-
-    /**
-     * Make sure that config does not contain contradictory values.
-     * Throws RuntimeException which meaningful message, if invalid.
-     */
-    void validateConfig(Config configToSet) {
-        validateScmmAndJenkinsAreBothSet(configToSet)
-        validateMirrorReposHelmChartFolderSet(configToSet)
-        validateContent(configToSet)
-    }
-
-    private void validateMirrorReposHelmChartFolderSet(Config configToSet) {
-        if (configToSet.application.mirrorRepos && !configToSet.application.localHelmChartFolder) {
-            // This should only happen when run outside the image, i.e. during development
-            throw new RuntimeException("Missing config for localHelmChartFolder.\n" +
-                    "Either run inside the official container image or setting env var " +
-                    "LOCAL_HELM_CHART_FOLDER='charts' after running 'scripts/downloadHelmCharts.sh' from the repo")
-        }
-    }
-
-    static void validateContent(Config config) {
-        config.content.repos.each { repo ->
-
-            if (!repo.url) {
-                throw new RuntimeException("content.repos requires a url parameter.")
-            }
-            if (repo.target) {
-                if (repo.target.count('/') == 0) {
-                    throw new RuntimeException("content.target needs / to separate namespace/group from repo name. Repo: ${repo.url}")
-                }
-            }
-
-            switch (repo.type) {
-                case ContentRepoType.COPY:
-                    if (!repo.target) {
-                        throw new RuntimeException("content.repos.type ${ContentRepoType.COPY} requires content.repos.target to be set. Repo: ${repo.url}")
-                    }
-                    break
-                case ContentRepoType.FOLDER_BASED:
-                    if (repo.target) {
-                        throw new RuntimeException("content.repos.type ${ContentRepoType.FOLDER_BASED} does not support target parameter. Repo: ${repo.url}")
-                    }
-                    if (repo.targetRef) {
-                        throw new RuntimeException("content.repos.type ${ContentRepoType.FOLDER_BASED} does not support targetRef parameter. Repo: ${repo.url}")
-                    }
-                    break
-                case ContentRepoType.MIRROR:
-                    if (!repo.target) {
-                        throw new RuntimeException("content.repos.type ${ContentRepoType.MIRROR} requires content.repos.target to be set. Repo: ${repo.url}")
-                    }
-                    if (repo.path != ContentRepositorySchema.DEFAULT_PATH) {
-                        throw new RuntimeException("content.repos.type ${ContentRepoType.MIRROR} does not support path. Current path: ${repo.path}. Repo: ${repo.url}")
-                    }
-                    if (repo.templating) {
-                        throw new RuntimeException("content.repos.type ${ContentRepoType.MIRROR} does not support templating. Repo: ${repo.url}")
-                    }
-                    break
-            }
-        }
-    }
-
-    private void validateScmmAndJenkinsAreBothSet(Config configToSet) {
-        if (configToSet.jenkins.active &&
-                (configToSet.scm.scmManager.url && !configToSet.jenkins.url ||
-                        !configToSet.scm.scmManager.url && configToSet.jenkins.url)) {
-            throw new RuntimeException('When setting jenkins URL, scmm URL must also be set and the other way round')
-        }
-    }
-
-    // Validate that the env list has proper maps with 'name' and 'value'
-    private static void validateEnvConfigForArgoCDOperator(Config configToSet) {
-        // Exit early if not in operator mode or if env list is empty
-        if (!configToSet.features.argocd.operator || !configToSet.features.argocd.env) {
-            log.debug("Skipping features.argocd.env validation: operator mode is disabled or env list is empty.")
-            return
-        }
-
-        List<Map> env = configToSet.features.argocd.env as List<Map<String, String>>
-
-        log.info("Validating env list in features.argocd.env with {} entries.", env.size())
-
-        env.each { map ->
-            if (!(map instanceof Map) || !map.containsKey('name') || !map.containsKey('value')) {
-                throw new IllegalArgumentException("Each env variable in features.argocd.env must be a map with 'name' and 'value'. Invalid entry found: $map")
-            }
-        }
-
-        log.info("Env list validation for features.argocd.env completed successfully.")
     }
 
     private void setResourceInclusionsCluster(Config configToSet) {

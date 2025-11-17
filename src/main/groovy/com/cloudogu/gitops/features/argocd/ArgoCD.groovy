@@ -72,6 +72,27 @@ class ArgoCD extends Feature {
     }
 
     @Override
+    void postConfigInit(Config configToSet) {
+        // Exit early if not in operator mode or if env list is empty
+        if (!configToSet.features.argocd.operator || !configToSet.features.argocd.env) {
+            log.debug("Skipping features.argocd.env validation: operator mode is disabled or env list is empty.")
+            return
+        }
+
+        List<Map> env = configToSet.features.argocd.env as List<Map<String, String>>
+
+        log.info("Validating env list in features.argocd.env with {} entries.", env.size())
+
+        env.each { map ->
+            if (!(map instanceof Map) || !map.containsKey('name') || !map.containsKey('value')) {
+                throw new IllegalArgumentException("Each env variable in features.argocd.env must be a map with 'name' and 'value'. Invalid entry found: $map")
+            }
+        }
+
+        log.info("Env list validation for features.argocd.env completed successfully.")
+    }
+
+    @Override
     void enable() {
 
         initTenantRepos()
