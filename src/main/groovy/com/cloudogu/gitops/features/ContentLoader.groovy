@@ -271,7 +271,11 @@ class ContentLoader extends Feature {
             def engine = getTemplatingEngine()
             engine.replaceTemplates(srcPath, [
                     scm    : [
-                            repoUrl: this.gitHandler.getResourcesScm().repoPrefix()
+                            baseUrl : this.gitHandler.getResourcesScm().url,
+                            host    : this.gitHandler.getResourcesScm().host,
+                            protocol: this.gitHandler.getResourcesScm().protocol,
+                            repoUrl: this.gitHandler.getResourcesScm().repoPrefix(),
+
                     ],
                     config : config,
                     // Allow for using static classes inside the templates
