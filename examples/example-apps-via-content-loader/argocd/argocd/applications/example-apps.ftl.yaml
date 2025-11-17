@@ -13,7 +13,7 @@ spec:
   project: argocd
   source:
     path: argocd/
-    repoURL: "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm/repo/${config.application.namePrefix}argocd/example-apps"
+    repoURL: ${scm.repoUrl}argocd/example-apps.git
     targetRevision: main
     directory:
       recurse: true
