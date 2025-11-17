@@ -6,7 +6,6 @@ import com.cloudogu.gitops.config.Config.OverwriteMode
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.GitRepoFactory
-import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.utils.AllowListFreemarkerObjectWrapper
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
@@ -267,13 +266,12 @@ class ContentLoader extends Feature {
     }
 
 
-
     private void applyTemplatingIfApplicable(ContentRepositorySchema repoConfig, File srcPath) {
         if (repoConfig.templating) {
             def engine = getTemplatingEngine()
             engine.replaceTemplates(srcPath, [
-                    scm      : [
-                                repoUrl : this.gitHandler.getResourcesScm().repoPrefix()
+                    scm    : [
+                            repoUrl: this.gitHandler.getResourcesScm().repoPrefix()
                     ],
                     config : config,
                     // Allow for using static classes inside the templates
@@ -346,8 +344,8 @@ class ContentLoader extends Feature {
     private void pushTargetRepos(List<RepoCoordinate> repoCoordinates) {
         repoCoordinates.each { repoCoordinate ->
 
-            GitRepo targetRepo = repoProvider.getRepo(repoCoordinate.fullRepoName,this.gitHandler.tenant)
-            boolean isNewRepo = targetRepo.createRepositoryAndSetPermission( "", false)
+            GitRepo targetRepo = repoProvider.getRepo(repoCoordinate.fullRepoName, this.gitHandler.tenant)
+            boolean isNewRepo = targetRepo.createRepositoryAndSetPermission("", false)
 
             if (isValidForPush(isNewRepo, repoCoordinate)) {
                 targetRepo.cloneRepo()
