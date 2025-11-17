@@ -229,21 +229,11 @@ class ContentLoader extends Feature {
     private void applyTemplatingIfApplicable(ContentRepositorySchema repoConfig, File srcPath) {
         if (repoConfig.templating) {
             def engine = getTemplatingEngine()
-
-            GitProvider gitProvider = this.gitHandler.resourcesScm
-            GitRepo repo = this.repoProvider.getRepo(repoConfig.target, gitProvider )
-
             engine.replaceTemplates(srcPath, [
                     scm      : [
-                            repoUrl : repo.gitProvider.repoPrefix()
+                                repoUrl : this.gitHandler.getResourcesScm().repoPrefix()
                     ],
                     config : config,
-                    scm      : [
-                            baseUrl : this.gitHandler.getResourcesScm().url,
-                            host    : this.gitHandler.getResourcesScm().host,
-                            protocol: this.gitHandler.getResourcesScm().protocol,
-                            repoUrl : this.gitHandler.getResourcesScm().repoPrefix(),
-                    ],
                     // Allow for using static classes inside the templates
                     statics: !config.content.useWhitelist ? new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels() :
                             new AllowListFreemarkerObjectWrapper(Configuration.VERSION_2_3_32, config.content.getAllowedStaticsWhitelist()).getStaticModels()
