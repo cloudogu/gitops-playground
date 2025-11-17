@@ -147,7 +147,7 @@ class Jenkins extends Feature {
                 SKIP_PLUGINS              : config.jenkins.skipPlugins
         ])
 
-        globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}SCM_URL", this.gitHandler.tenant.url)
+        globalPropertyManager.setGlobalProperty("${config.application.namePrefixForEnvVars}SCMM_URL", this.gitHandler.tenant.url)
 
         if (config.jenkins.additionalEnvs) {
             for (entry in (config.jenkins.additionalEnvs as Map).entrySet()) {
