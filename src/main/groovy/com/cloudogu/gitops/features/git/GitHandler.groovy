@@ -67,6 +67,23 @@ class GitHandler extends Feature {
             }
         }
 
+
+
+    }
+
+    //Retrieves the appropriate SCM for cluster resources depending on whether the environment is multi-tenant or not.
+    GitProvider getResourcesScm() {
+        if (central) {
+            return central
+        } else if (tenant) {
+            return tenant
+        } else {
+            throw new IllegalStateException("No SCM provider found.")
+        }
+    }
+
+    @Override
+    void enable() {
         //TenantSCM
         switch (config.scm.scmProviderType) {
             case ScmProviderType.GITLAB:
@@ -94,22 +111,6 @@ class GitHandler extends Feature {
                     throw new IllegalArgumentException("Unsupported SCM-Central provider: ${config.scm.scmProviderType}")
             }
         }
-
-    }
-
-    //Retrieves the appropriate SCM for cluster resources depending on whether the environment is multi-tenant or not.
-    GitProvider getResourcesScm() {
-        if (central) {
-            return central
-        } else if (tenant) {
-            return tenant
-        } else {
-            throw new IllegalStateException("No SCM provider found.")
-        }
-    }
-
-    @Override
-    void enable() {
 
         //can be removed if we combine argocd and cluster-resources
         final String namePrefix = (config?.application?.namePrefix ?: "").trim()

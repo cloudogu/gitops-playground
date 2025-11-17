@@ -61,6 +61,11 @@ class ContentLoader extends Feature {
 
     @Override
     void enable() {
+        // ensure cache is cleaned
+        clearCache()
+        // clones repo to check valid configuration and reuse result for further step.
+        cachedRepoCoordinates = cloneContentRepos()
+
         createImagePullSecrets()
 
         createContentRepos()
@@ -68,10 +73,6 @@ class ContentLoader extends Feature {
 
     @Override
     void validate() {
-        // ensure cache is cleaned
-        clearCache()
-        // clones repo to check valid configuration and reuse result for further step.
-        cachedRepoCoordinates = cloneContentRepos()
 
     }
 
