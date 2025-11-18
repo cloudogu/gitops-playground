@@ -189,7 +189,7 @@ class Jenkins extends Feature {
     }
 
     void createJenkinsjob(String namespace, String repoName) {
-        def credentialId = "scm-user"
+        def credentialId = "scmm-user"
         String prefixedNamespace = "${config.application.namePrefix}${namespace}"
         String jobName = "${config.application.namePrefix}${repoName}"
 
