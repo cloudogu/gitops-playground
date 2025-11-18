@@ -49,7 +49,7 @@ class ScmManagerTest {
         )
 
         lenient().when(scmmCfg.getCredentials()).thenReturn(new Credentials("user","password"))
-        lenient(). when(scmmCfg.getGitOpsUsername()).thenReturn("gitops-bot")
+        lenient().when(scmmCfg.getGitOpsUsername()).thenReturn("gitops-bot")
 
         lenient().when(urls.inClusterBase()).thenReturn(new URI("http://scmm.ns.svc.cluster.local/scm"))
         lenient().when(urls.inClusterRepoPrefix()).thenReturn("http://scmm.ns.svc.cluster.local/scm/repo/fv40-")
@@ -126,7 +126,6 @@ class ScmManagerTest {
         verify(repoApi, atLeastOnce())
                 .createPermission(eq("namespace"), eq("repo1"), argThat { Permission p -> p.groupPermission && p.role == Permission.Role.WRITE })
     }
-
 
     @Test
     void 'url, repoPrefix, repoUrl variants, protocol and host come from UrlResolver'() {

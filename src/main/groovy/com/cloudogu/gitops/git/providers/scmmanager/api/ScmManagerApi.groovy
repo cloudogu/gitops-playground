@@ -8,10 +8,10 @@ import retrofit2.http.PUT
 
 interface ScmManagerApi {
 
-    @GET("api/v2")
+    @GET("v2")
     Call<Void> checkScmmAvailable()
 
-    @PUT("api/v2/config")
+    @PUT("v2/config")
     @Headers("Content-Type: application/vnd.scmm-config+json;v=2")
     Call<Void> setConfig(@Body Map<String, Object> config)
 }

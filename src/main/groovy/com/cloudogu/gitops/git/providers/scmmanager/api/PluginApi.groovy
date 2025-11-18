@@ -13,7 +13,7 @@ interface PluginApi {
     @POST("v2/plugins/available/{name}/install")
     Call<ResponseBody> install(@Path("name") String name, @Query("restart") Boolean restart)
 
-    @PUT("api/v2/config/jenkins/")
+    @PUT("v2/config/jenkins/")
     @Headers("Content-Type: application/json")
     Call<Void> configureJenkinsPlugin(@Body Map<String, Object> config)
 }

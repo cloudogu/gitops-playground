@@ -49,7 +49,8 @@ class ScmManagerSetup extends Feature {
 
     @Override
     boolean isEnabled() {
-        return config.scm.scmProviderType == ScmProviderType.SCM_MANAGER
+        // return config.scm.scmProviderType == ScmProviderType.SCM_MANAGER
+        return false
     }
 
     @Override
@@ -86,7 +87,6 @@ class ScmManagerSetup extends Feature {
             // Update scmm.url after it is deployed (and ports are known)
             // Defined here: https://github.com/scm-manager/scm-manager/blob/3.2.1/scm-packaging/helm/src/main/chart/templates/_helpers.tpl#L14-L25
             String contentPath = "/scm"
-
 
             if (config.application.runningInsideK8s) {
                 log.debug("Setting scmm url to k8s service, since installation is running inside k8s")
