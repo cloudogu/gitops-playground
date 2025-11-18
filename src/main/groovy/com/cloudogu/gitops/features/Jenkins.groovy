@@ -138,7 +138,7 @@ class Jenkins extends Feature {
                 // Used indirectly in utils.sh 😬
                 REMOTE_CLUSTER            : config.application.remote,
                 SCM_URL                 : this.gitHandler.tenant.url,
-                SCMM_PASSWORD             : this.gitHandler.tenant.credentials.password,
+                SCM_PASSWORD             : this.gitHandler.tenant.credentials.password,
                 SCM_PROVIDER              : config.scm.scmProviderType,
                 INSTALL_ARGOCD            : config.features.argocd.active,
                 NAME_PREFIX               : config.application.namePrefix,
