@@ -1,8 +1,8 @@
 #!groovy
 
 String getApplication() { "spring-petclinic-helm" }
-String getScmManagerCredentials() { 'scmm-user' }
-String getConfigRepositoryPRBaseUrl() { env.${config.application.namePrefixForEnvVars}SCMM_URL }
+String getScmManagerCredentials() { 'scm-user' }
+String getConfigRepositoryPRBaseUrl() { env.${config.application.namePrefixForEnvVars}SCM_URL}
 String getConfigRepositoryPRRepo() { '${config.application.namePrefix}argocd/example-apps' }
 
 String getDockerRegistryBaseUrl() { env.${config.application.namePrefixForEnvVars}REGISTRY_URL }

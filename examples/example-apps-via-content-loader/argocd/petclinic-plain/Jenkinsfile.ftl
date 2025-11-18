@@ -2,8 +2,8 @@
 
 String getApplication() { 'spring-petclinic-plain' }
 String getConfigRepositoryPRRepo() { '${config.application.namePrefix}argocd/example-apps' }
-String getScmManagerCredentials() { 'scmm-user' }
-String getConfigRepositoryPRBaseUrl() { env.${config.application.namePrefixForEnvVars}SCMM_URL }
+String getScmManagerCredentials() { 'scm-user' }
+String getConfigRepositoryPRBaseUrl() { env.${config.application.namePrefixForEnvVars}SCM_URL}
 
 String getDockerRegistryBaseUrl() { env.${config.application.namePrefixForEnvVars}REGISTRY_URL }
 String getDockerRegistryPath() { env.${config.application.namePrefixForEnvVars}REGISTRY_PATH }

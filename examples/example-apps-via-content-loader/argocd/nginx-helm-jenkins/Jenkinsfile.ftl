@@ -1,8 +1,8 @@
 #!groovy
 
 String getApplication() { "nginx-helm-jenkins" }
-String getScmManagerCredentials() { 'scmm-user' }
-String getConfigRepositoryPRBaseUrl() { env.${config.application.namePrefixForEnvVars}SCMM_URL }
+String getScmManagerCredentials() { 'scm-user' }
+String getConfigRepositoryPRBaseUrl() { env.${config.application.namePrefixForEnvVars}SCM_URL}
 String getConfigRepositoryPRRepo() { '${config.application.namePrefix}argocd/example-apps' }
 <#noparse>
 
