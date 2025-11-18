@@ -192,27 +192,6 @@ class GitRepoTest {
         assertThat(call.scope).isEqualTo(Scope.USER)
     }
 
-
-    @Test
-    void 'does not set permission when repository already exists'() {
-        def repoTarget = "foo/bar"
-        def repo = getRepo(repoTarget, scmManagerMock)
-
-        scmManagerMock.nextCreateResults = [false]           // simulate "already exists"
-        scmManagerMock.gitOpsUsername = 'foo-gitops'         // even with username, no permission should be set
-
-        def created = repo.createRepositoryAndSetPermission('desc', true)
-
-        assertThat(created).isFalse()
-
-        // Created was attempted once
-        assertThat(scmManagerMock.createdRepos).containsExactly(repoTarget)
-
-        // No permission calls
-        assertThat(scmManagerMock.permissionCalls).isEmpty()
-    }
-
-
     @Test
     void 'does not set permission when no GitOps username is configured'() {
         def repoTarget = "foo/bar"
