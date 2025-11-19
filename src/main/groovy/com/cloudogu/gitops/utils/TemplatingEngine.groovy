@@ -3,6 +3,7 @@ package com.cloudogu.gitops.utils
 import freemarker.template.Configuration
 import freemarker.template.Template
 import freemarker.template.Version
+import groovy.yaml.YamlSlurper
 
 import java.nio.file.Files
 import java.nio.file.Path
@@ -45,6 +46,16 @@ class TemplatingEngine {
         Files.walk(path.toPath())
                 .filter { filepathMatches.matcher(it.toString()).find() }
                 .each { Path it -> replaceTemplate(it.toFile(), parameters) }
+    }
+
+    static Map templateToMap(String filePath, Map parameters) {
+        def hydratedString = new TemplatingEngine().template(new File(filePath), parameters)
+
+        if (hydratedString.trim().isEmpty()) {
+            // Otherwise YamlSlurper returns an empty array, whereas we expect a Map
+            return [:]
+        }
+        return new YamlSlurper().parseText(hydratedString) as Map
     }
 
     /**

@@ -83,7 +83,6 @@ class GitopsPlaygroundCliMainScripted {
                 // make sure the order of features is in same order as the @Order values
                 context.registerSingleton(new Application(config, [
                         new Registry(config, fileSystemUtils, k8sClient, helmStrategy),
-                        new ScmManagerSetup(config, executor, fileSystemUtils, helmStrategy, k8sClient, networkingUtils),
                         gitHandler,
                         jenkins,
                         new ArgoCD(config, k8sClient, helmClient, fileSystemUtils, gitRepoFactory, gitHandler),
