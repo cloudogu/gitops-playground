@@ -92,7 +92,7 @@ class GitHandler extends Feature {
             case ScmProviderType.SCM_MANAGER:
                 def prefixedNamespace = "${config.application.namePrefix}scm-manager".toString()
                 config.scm.scmManager.namespace = prefixedNamespace
-                this.tenant = new ScmManager(this.config, config.scm.scmManager, k8sClient, networkingUtils)
+                this.tenant = new ScmManager(this.config, config.scm.scmManager, helmStrategy,k8sClient, networkingUtils)
                 // this.tenant.setup() setup will be here in future
                 break
             default:
@@ -105,7 +105,7 @@ class GitHandler extends Feature {
                     this.central = new Gitlab(this.config, this.config.multiTenant.gitlab)
                     break
                 case ScmProviderType.SCM_MANAGER:
-                    this.central = new ScmManager(this.config, config.multiTenant.scmManager, k8sClient, networkingUtils)
+                    this.central = new ScmManager(this.config, config.multiTenant.scmManager, helmStrategy,k8sClient, networkingUtils)
                     break
                 default:
                     throw new IllegalArgumentException("Unsupported SCM-Central provider: ${config.scm.scmProviderType}")
