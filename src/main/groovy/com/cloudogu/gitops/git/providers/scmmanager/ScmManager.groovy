@@ -10,8 +10,10 @@ import com.cloudogu.gitops.git.providers.RepoUrlScope
 import com.cloudogu.gitops.git.providers.Scope
 import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
 import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
+import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerUser
 import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
+import okhttp3.RequestBody
 import retrofit2.Response
 
 @Slf4j
@@ -183,7 +185,6 @@ class ScmManager implements GitProvider {
         )
     }
 
-
     void waitForScmmAvailable(int timeoutSeconds = 60, int intervalMillis = 2000) {
         log.info("Restarting SCM-Manager!")
         long startTime = System.currentTimeMillis()
@@ -212,6 +213,7 @@ class ScmManager implements GitProvider {
         installScmmPlugins()
         setSetupConfigs()
         configureJenkinsPlugin()
+        addDefaultUsers()
     }
 
     void setupHelm() {
@@ -265,8 +267,7 @@ class ScmManager implements GitProvider {
                 "scm-metrics-prometheus-plugin"
         ]
 
-        def jenkinsUrl = System.getenv('JENKINS_URL_FOR_SCMM')
-        if (jenkinsUrl) {
+        if (this.config.jenkins.active) {
             pluginNames.add("scm-jenkins-plugin")
         }
 
@@ -316,8 +317,46 @@ class ScmManager implements GitProvider {
         log.debug("Successfully added SCMM Setup Configs")
     }
 
-    void configureJenkinsPlugin(){
-        ScmManagerApiClient.handleApiResponse(this.apiClient.generalApi().setConfig(setupConfigs))
+    void configureJenkinsPlugin() {
+
+        def jenkinsPluginConfig = [
+                disableRepositoryConfiguration: false,
+                disableMercurialTrigger       : false,
+                disableGitTrigger             : false,
+                disableEventTrigger           : false,
+                url                           : this.url
+        ]
+
+        ScmManagerApiClient.handleApiResponse(this.apiClient.pluginApi().configureJenkinsPlugin(jenkinsPluginConfig))
         log.debug("Successfully configured JenkinsPlugin in SCM-Manager.")
+    }
+
+    void addDefaultUsers() {
+        def metricsUsername = "${this.config.application.namePrefix}metrics"
+        addUser(this.scmmConfig.gitOpsUsername, this.scmmConfig.password)
+        addUser(metricsUsername, this.scmmConfig.password)
+        grantUserPermissions(metricsUsername, ["metrics:read"])
+    }
+
+    void addUser(String username, String password, String email = 'changeme@test.local') {
+        ScmManagerUser userRequest = [
+                name       : username,
+                displayName: username,
+                mail       : email,
+                external   : false,
+                password   : password,
+                active     : true,
+                _links     : [:]
+        ]
+        ScmManagerApiClient.handleApiResponse(this.apiClient.usersApi().addUser(userRequest))
+        log.debug("Successfully created SCM-Manager User.")
+    }
+
+    void grantUserPermissions(String username,List<String> permissions){
+        def permissionBody = [
+                permissions: permissions
+        ]
+        ScmManagerApiClient.handleApiResponse(this.apiClient.usersApi().setPermissionForUser(username, permissionBody))
+        log.debug("Granted permissions ${permissions} to user ${username}.")
     }
 }

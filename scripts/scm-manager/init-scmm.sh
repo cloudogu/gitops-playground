@@ -160,85 +160,16 @@ function setDefaultBranch() {
 function configureScmmManager() {
   GITOPS_PASSWORD=${SCMM_PASSWORD}
 
-  METRICS_USERNAME="${NAME_PREFIX}metrics"
-  METRICS_PASSWORD=${SCMM_PASSWORD}
 
   waitForScmManager
 
   setConfig
 
-  addUser "${GITOPS_USERNAME}" "${GITOPS_PASSWORD}" "changeme@test.local"
-  addUser "${METRICS_USERNAME}" "${METRICS_PASSWORD}" "changeme@test.local"
-  setPermissionForUser "${METRICS_USERNAME}" "metrics:read"
 
   # Install necessary plugins
   installScmmPlugins
 
   configJenkins
-}
-
-function installScmmPlugins() {
-  if [[ "${SKIP_PLUGINS:-false}" == "true" ]]; then
-    echo "Skipping SCM plugin installation due to SKIP_PLUGINS=true"
-    return
-  fi
-
-  if [ -n "${JENKINS_URL_FOR_SCMM}" ]; then
-    installScmmPlugin "scm-jenkins-plugin" "false"
-  fi
-
-  local restart_flag="true"
-  [[ "${SKIP_RESTART}" == "true" ]] && {
-    echo "Skipping SCMM restart due to SKIP_RESTART=true"
-    restart_flag="false"
-  }
-
-  installScmmPlugin "scm-mail-plugin" "false"
-  installScmmPlugin "scm-review-plugin" "false"
-  installScmmPlugin "scm-code-editor-plugin" "false"
-  installScmmPlugin "scm-editor-plugin" "false"
-  installScmmPlugin "scm-landingpage-plugin" "false"
-  installScmmPlugin "scm-el-plugin" "false"
-  installScmmPlugin "scm-readme-plugin" "false"
-  installScmmPlugin "scm-webhook-plugin" "false"
-  installScmmPlugin "scm-ci-plugin" "false"
-  # Last plugin usually triggers restart
-  installScmmPlugin "scm-metrics-prometheus-plugin" "$restart_flag"
-  # Wait for SCM-Manager to restart
-  if [[ "$restart_flag" == "true" ]]; then
-    sleep 1
-    waitForScmManager
-  fi
-}
-
-function addRepo() {
-  NAMESPACE="${1}"
-  NAME="${2}"
-  DESCRIPTION="${3:-}"
-  local PARAM="${4:-false}"
-  if [[ "${PARAM,,}" == "true" ]]; then
-    HOST=$(getHost "${CENTRAL_SCM_URL%/}")  # Remove trailing slash if present, we already got this in the api requests: /api
-    USERNAME="${CENTRAL_SCM_USERNAME}"
-    PASSWORD="${CENTRAL_SCM_PASSWORD}"
-  else
-    HOST="${SCMM_HOST}"
-    USERNAME="${SCMM_USERNAME}"
-    PASSWORD="${SCMM_PASSWORD}"
-  fi
-
-  printf 'Adding Repo %s/%s ... ' "${NAMESPACE}" "${NAME}"
-
-  STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X POST \
-    -H "Content-Type: application/vnd.scmm-repository+json;v=2" \
-    --data "{\"name\":\"${NAME}\",\"namespace\":\"${NAMESPACE}\",\"type\":\"git\",\"description\":\"${DESCRIPTION}\",\"contextEntries\":{},\"_links\":{}}" \
-    "${SCMM_PROTOCOL}://${USERNAME}:${PASSWORD}@${HOST}/api/v2/repositories/?initialize=true") && EXIT_STATUS=$? || EXIT_STATUS=$?
-
-  if [ $EXIT_STATUS -ne 0 ]; then
-    echo "Adding Repo failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
-    exit $EXIT_STATUS
-  fi
-
-  printStatus "${STATUS}"
 }
 
 function addUser() {
@@ -283,93 +214,5 @@ function setPermissionForNamespace() {
   printStatus "${STATUS}"
 }
 
-function setPermissionForUser() {
-  printf 'Setting permission %s for %s... ' "${2}" "${1}"
-
-  STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X PUT -H "Content-Type: application/vnd.scmm-permissionCollection+json;v=2" \
-    --data "{\"permissions\":[\"${2}\"]}" \
-    "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/api/v2/users/${1}/permissions") && EXIT_STATUS=$? || EXIT_STATUS=$?
-  if [ $EXIT_STATUS != 0 ]; then
-    echo "Setting Permission failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
-    exit $EXIT_STATUS
-  fi
-
-  printStatus "${STATUS}"
-}
-
-function installScmmPlugin() {
-  DO_RESTART="?restart=false"
-  if [[ "${2}" == true ]]; then
-    DO_RESTART="?restart=true"
-  fi
-
-  printf 'Installing Plugin %s ... ' "${1}"
-
-  STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X POST -H "accept: */*" --data "" \
-    "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/api/v2/plugins/available/${1}/install${DO_RESTART}") && EXIT_STATUS=$? || EXIT_STATUS=$?
-  if [ $EXIT_STATUS != 0 ]; then
-    echo "Installing Plugin failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
-    exit $EXIT_STATUS
-  fi
-
-  printStatus "${STATUS}"
-}
-
-function configJenkins() {
-
-  if [ -n "${JENKINS_URL_FOR_SCMM}" ]; then
-    printf 'Configuring Jenkins plugin in SCM-Manager ... '
-
-    STATUS=$(curl -i -s -L -o /dev/null --write-out '%{http_code}' -X PUT -H 'Content-Type: application/json' \
-      --data-raw "{\"disableRepositoryConfiguration\":false,\"disableMercurialTrigger\":false,\"disableGitTrigger\":false,\"disableEventTrigger\":false,\"url\":\"${JENKINS_URL_FOR_SCMM}\"}" \
-      "${SCMM_PROTOCOL}://${SCMM_USERNAME}:${SCMM_PASSWORD}@${SCMM_HOST}/api/v2/config/jenkins/") && EXIT_STATUS=$? || EXIT_STATUS=$?
-    if [ $EXIT_STATUS != 0 ]; then
-      echo "Configuring Jenkins failed with exit code: curl: ${EXIT_STATUS}, HTTP Status: ${STATUS}"
-      exit $EXIT_STATUS
-    fi
-
-    printStatus "${STATUS}"
-  fi
-}
-
-function waitForScmManager() {
-
-  echo -n "Waiting for Scmm to become available at ${SCMM_PROTOCOL}://${SCMM_HOST}/api/v2"
-
-  HTTP_CODE="0"
-  while [[ "${HTTP_CODE}" -ne "200" ]]; do
-    HTTP_CODE="$(curl -s -L -o /dev/null --max-time 10 -w ''%{http_code}'' "${SCMM_PROTOCOL}://${SCMM_HOST}/api/v2")" || true
-    echo -n "."
-    sleep 2
-  done
-  echo ""
-}
-
-function getHost() {
-  local SCMM_URL="$1"
-
-  local CLEANED_URL="${SCMM_URL#http://}"
-  CLEANED_URL="${CLEANED_URL#https://}"
-
-  echo "${CLEANED_URL}"
-}
-
-function getProtocol() {
-  local SCMM_URL="$1"
-  if [[ "${SCMM_URL}" == https://* ]]; then
-    echo "https"
-  elif [[ "${SCMM_URL}" == http://* ]]; then
-    echo "http"
-  fi
-}
-
-function printStatus() {
-  STATUS_CODE=${1}
-  if [ "${STATUS_CODE}" -eq 200 ] || [ "${STATUS_CODE}" -eq 201 ] || [ "${STATUS_CODE}" -eq 302 ] || [ "${STATUS_CODE}" -eq 204 ] || [ "${STATUS_CODE}" -eq 409 ]; then
-    echo -e ' \u2705'
-  else
-    echo -e ' \u274c ' "(status code: $STATUS_CODE)"
-  fi
-}
 
 initSCMM "$@"

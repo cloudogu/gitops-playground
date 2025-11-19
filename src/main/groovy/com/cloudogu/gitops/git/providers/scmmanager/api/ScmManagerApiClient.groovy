@@ -5,6 +5,7 @@ import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.dependencyinjection.HttpClientFactory
 import groovy.util.logging.Slf4j
 import okhttp3.OkHttpClient
+import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.jackson.JacksonConverterFactory
 
@@ -39,11 +40,13 @@ class ScmManagerApiClient {
         return retrofit().create(PluginApi)
     }
 
-    static handleApiResponse(apiCall,String additionalMessage = "") {
+    static handleApiResponse(apiCall, String additionalMessage = "") {
         try {
-            def response = apiCall.execute()
+            Response<Void> response = apiCall.execute()
 
-            if (!response.isSuccessful()) {
+            if (!response.isSuccessful() &&
+                    response.code() != 409 &&
+                    response.code() != 201) {
                 def errorMessage = "API call failed!'. HTTP Status: ${response.code()} - ${response.message()}"
                 if (additionalMessage) {
                     errorMessage += " Additional Info: ${additionalMessage}"
