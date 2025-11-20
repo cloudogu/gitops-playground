@@ -10,26 +10,22 @@ import com.cloudogu.gitops.git.providers.RepoUrlScope
 import com.cloudogu.gitops.git.providers.Scope
 import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
 import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
-import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerUser
 import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
-import okhttp3.RequestBody
 import retrofit2.Response
 
 @Slf4j
 class ScmManager implements GitProvider {
 
-    static final String HELM_VALUES_PATH = "scm-manager/values.ftl.yaml"
+    ScmManagerUrlResolver urls
+    ScmManagerApiClient apiClient
+    ScmManagerConfig scmmConfig
 
-    private final ScmManagerUrlResolver urls
-    private final ScmManagerApiClient apiClient
-    private final ScmManagerConfig scmmConfig
-
-
-    private final NetworkingUtils networkingUtils
-    private final HelmStrategy helmStrategy
-    private final K8sClient k8sClient
-    private final Config config
+    NetworkingUtils networkingUtils
+    HelmStrategy helmStrategy
+    K8sClient k8sClient
+    Config config
+    ScmManagerSetup scmManagerSetup
 
     ScmManager(Config config, ScmManagerConfig scmmConfig, HelmStrategy helmStrategy, K8sClient k8sClient, NetworkingUtils networkingUtils) {
         this.scmmConfig = scmmConfig
@@ -37,11 +33,12 @@ class ScmManager implements GitProvider {
         this.helmStrategy = helmStrategy
         this.k8sClient = k8sClient
         this.networkingUtils = networkingUtils
-        setupHelm()
+        this.scmManagerSetup = new ScmManagerSetup(this)
+        this.scmManagerSetup.setupHelm()
         this.urls = new ScmManagerUrlResolver(this.config, this.scmmConfig, this.k8sClient, this.networkingUtils)
         this.apiClient = new ScmManagerApiClient(this.urls.clientApiBase().toString(), this.scmmConfig.credentials, this.config.application.insecure)
-        waitForScmmAvailable()
-        setup()
+        this.scmManagerSetup.waitForScmmAvailable()
+        this.scmManagerSetup.setup()
     }
 
     // --- Git operations ---
@@ -183,180 +180,5 @@ class ScmManager implements GitProvider {
                 scmmConfig.credentials,
                 Objects.requireNonNull(config, "config must not be null").application.insecure
         )
-    }
-
-    void waitForScmmAvailable(int timeoutSeconds = 60, int intervalMillis = 2000) {
-        log.info("Restarting SCM-Manager!")
-        long startTime = System.currentTimeMillis()
-        long timeoutMillis = timeoutSeconds * 1000L
-
-        while (System.currentTimeMillis() - startTime < timeoutMillis) {
-            try {
-                def call = this.apiClient.generalApi().checkScmmAvailable()
-                def response = call.execute()
-
-                if (response.successful) {
-                    return
-                } else {
-                    println "SCM-Manager not ready yet: HTTP ${response.code()}"
-                }
-            } catch (Exception e) {
-                println "Waiting for SCM-Manager... Error: ${e.message}"
-            }
-
-            sleep(intervalMillis)
-        }
-        throw new RuntimeException("Timeout: SCM-Manager did not respond with 200 OK within ${timeoutSeconds} seconds")
-    }
-
-    void setup() {
-        installScmmPlugins()
-        setSetupConfigs()
-        configureJenkinsPlugin()
-        addDefaultUsers()
-    }
-
-    void setupHelm() {
-        def releaseName = 'scmm'
-
-        def templatedMap = TemplatingEngine.templateToMap(HELM_VALUES_PATH, [
-                host       : this.scmmConfig.ingress,
-                remote     : this.config.application.remote,
-                username   : this.scmmConfig.credentials.username,
-                password   : this.scmmConfig.credentials.password,
-                helm       : this.scmmConfig.helm,
-                releaseName: releaseName
-        ])
-
-        def helmConfig = this.scmmConfig.helm
-        def mergedMap = MapUtils.deepMerge(helmConfig.values, templatedMap)
-        def tempValuesPath = new FileSystemUtils().writeTempFile(mergedMap)
-        this.helmStrategy.deployFeature(
-                helmConfig.repoURL,
-                'scm-manager',
-                helmConfig.chart,
-                helmConfig.version,
-                this.scmmConfig.namespace,
-                releaseName,
-                tempValuesPath
-        )
-    }
-
-    def installScmmPlugins(Boolean restart = true) {
-
-        if (System.getenv('SKIP_PLUGINS')?.toLowerCase() == 'true') {
-            log.info("Skipping SCM plugin installation due to SKIP_PLUGINS=true")
-            return
-        }
-
-        if (System.getenv('SKIP_RESTART')?.toLowerCase() == 'true') {
-            log.info("Skipping SCMM restart due to SKIP_RESTART=true")
-            restart = false
-        }
-
-        def pluginNames = [
-                "scm-mail-plugin",
-                "scm-review-plugin",
-                "scm-code-editor-plugin",
-                "scm-editor-plugin",
-                "scm-landingpage-plugin",
-                "scm-el-plugin",
-                "scm-readme-plugin",
-                "scm-webhook-plugin",
-                "scm-ci-plugin",
-                "scm-metrics-prometheus-plugin"
-        ]
-
-        if (this.config.jenkins.active) {
-            pluginNames.add("scm-jenkins-plugin")
-        }
-
-        Boolean restartForThisPlugin = true
-
-        pluginNames.each { String pluginName ->
-            log.info("Installing Plugin ${pluginName} ...")
-            restartForThisPlugin = restart && pluginName == pluginNames.last()
-            ScmManagerApiClient.handleApiResponse(this.apiClient.pluginApi().install(pluginName, restartForThisPlugin))
-        }
-
-        log.info("SCM-Manager plugin installation finished successfully!")
-        if (restartForThisPlugin) {
-            waitForScmmAvailable()
-        }
-    }
-
-    void setSetupConfigs() {
-        def setupConfigs = [
-                enableProxy             : false,
-                proxyPort               : 8080,
-                proxyServer             : "proxy.mydomain.com",
-                proxyUser               : null,
-                proxyPassword           : null,
-                realmDescription        : "SONIA :: SCM Manager",
-                disableGroupingGrid     : false,
-                dateFormat              : "YYYY-MM-DD HH:mm:ss",
-                anonymousAccessEnabled  : false,
-                anonymousMode           : "OFF",
-                baseUrl                 : this.url,
-                forceBaseUrl            : false,
-                loginAttemptLimit       : -1,
-                proxyExcludes           : [],
-                skipFailedAuthenticators: false,
-                pluginUrl               : "https://plugin-center-api.scm-manager.org/api/v1/plugins/{version}?os={os}&arch={arch}",
-                loginAttemptLimitTimeout: 300,
-                enabledXsrfProtection   : true,
-                namespaceStrategy       : "CustomNamespaceStrategy",
-                loginInfoUrl            : "https://login-info.scm-manager.org/api/v1/login-info",
-                releaseFeedUrl          : "https://scm-manager.org/download/rss.xml",
-                mailDomainName          : "scm-manager.local",
-                adminGroups             : [],
-                adminUsers              : []
-        ]
-
-        ScmManagerApiClient.handleApiResponse(this.apiClient.generalApi().setConfig(setupConfigs))
-        log.debug("Successfully added SCMM Setup Configs")
-    }
-
-    void configureJenkinsPlugin() {
-
-        def jenkinsPluginConfig = [
-                disableRepositoryConfiguration: false,
-                disableMercurialTrigger       : false,
-                disableGitTrigger             : false,
-                disableEventTrigger           : false,
-                url                           : this.url
-        ]
-
-        ScmManagerApiClient.handleApiResponse(this.apiClient.pluginApi().configureJenkinsPlugin(jenkinsPluginConfig))
-        log.debug("Successfully configured JenkinsPlugin in SCM-Manager.")
-    }
-
-    void addDefaultUsers() {
-        def metricsUsername = "${this.config.application.namePrefix}metrics"
-        addUser(this.scmmConfig.gitOpsUsername, this.scmmConfig.password)
-        addUser(metricsUsername, this.scmmConfig.password)
-        grantUserPermissions(metricsUsername, ["metrics:read"])
-    }
-
-    void addUser(String username, String password, String email = 'changeme@test.local') {
-        ScmManagerUser userRequest = [
-                name       : username,
-                displayName: username,
-                mail       : email,
-                external   : false,
-                password   : password,
-                active     : true,
-                _links     : [:]
-        ]
-        ScmManagerApiClient.handleApiResponse(this.apiClient.usersApi().addUser(userRequest))
-        log.debug("Successfully created SCM-Manager User.")
-    }
-
-    void grantUserPermissions(String username,List<String> permissions){
-        def permissionBody = [
-                permissions: permissions
-        ]
-        ScmManagerApiClient.handleApiResponse(this.apiClient.usersApi().setPermissionForUser(username, permissionBody))
-        log.debug("Granted permissions ${permissions} to user ${username}.")
     }
 }
