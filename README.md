@@ -1124,7 +1124,7 @@ Here are some thoughts why we deem it not a good fit for production:
 #### cluster-resources
 
 The playground installs cluster-resources (like prometheus, grafana, vault, external secrets operator, etc.) via the repo  
-`argocd/cluster-resources`. See [ADR](docs/architecture-decision-records.md#deploying-cluster-resources-with-argo-cd-using-inline-yaml) for more details.
+`argocd/cluster-resources`.
 
 When installing without Argo CD, the tools are installed using helm imperatively.
 We fall back to using imperative helm installation as a kind of neutral ground.
