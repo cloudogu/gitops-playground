@@ -106,11 +106,10 @@ class GitRepoTest {
     }
 
     @Test
-    void 'Creates repo without name-prefix when in namespace 3rd-party-deps'() {
-
+    void 'Creates repo with name-prefix when in namespace 3rd-party-deps'() {
         config.application.namePrefix = 'abc-'
         def repo = getRepo("${GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/foo", scmManagerMock)
-        assertThat(repo.repoTarget).isEqualTo("${GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/foo".toString())
+        assertThat(repo.repoTarget).isEqualTo("${config.application.namePrefix}${GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/foo".toString())
     }
 
     @Test

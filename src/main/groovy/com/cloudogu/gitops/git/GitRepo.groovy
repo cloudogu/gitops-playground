@@ -51,8 +51,7 @@ class GitRepo {
         this.gitProvider = gitProvider
         this.fileSystemUtils = fileSystemUtils
 
-        this.repoTarget = repoTarget.startsWith(NAMESPACE_3RD_PARTY_DEPENDENCIES) ? repoTarget :
-                "${config.application.namePrefix}${repoTarget}"
+        this.repoTarget = "${config.application.namePrefix}${repoTarget}"
 
         this.insecure = config.application.insecure
         this.gitName = config.application.gitName
