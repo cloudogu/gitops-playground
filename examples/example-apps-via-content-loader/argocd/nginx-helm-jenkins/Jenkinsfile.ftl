@@ -3,11 +3,12 @@
 String getApplication() { "nginx-helm-jenkins" }
 String getScmManagerCredentials() { 'scm-user' }
 String getConfigRepositoryPRBaseUrl() { env.${config.application.namePrefixForEnvVars}SCM_URL}
+String getConfigRepositoryPRPrefixedUrl() { env.${config.application.namePrefixForEnvVars}PREFIXED_SCM_URL}
 String getConfigRepositoryPRRepo() { '${config.application.namePrefix}argocd/example-apps' }
 <#noparse>
 
-String getCesBuildLibRepo() { configRepositoryPRBaseUrl+"3rd-party-dependencies/ces-build-lib/" }
-String getGitOpsBuildLibRepo() { configRepositoryPRBaseUrl+"3rd-party-dependencies/gitops-build-lib" }
+String getCesBuildLibRepo() { configRepositoryPRPrefixedUrl+"3rd-party-dependencies/ces-build-lib/" }
+String getGitOpsBuildLibRepo() { configRepositoryPRPrefixedUrl+"3rd-party-dependencies/gitops-build-lib" }
 
 String getCesBuildLibVersion() { '2.5.0' }
 String getGitOpsBuildLibVersion() { '0.8.0'}

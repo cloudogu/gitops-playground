@@ -3,6 +3,7 @@
 String getApplication() { "spring-petclinic-helm" }
 String getScmManagerCredentials() { 'scm-user' }
 String getConfigRepositoryPRBaseUrl() { env.${config.application.namePrefixForEnvVars}SCM_URL}
+String getConfigRepositoryPRPrefixedUrl() { env.${config.application.namePrefixForEnvVars}PREFIXED_SCM_URL}
 String getConfigRepositoryPRRepo() { '${config.application.namePrefix}argocd/example-apps' }
 
 String getDockerRegistryBaseUrl() { env.${config.application.namePrefixForEnvVars}REGISTRY_URL }
@@ -16,11 +17,11 @@ String getDockerRegistryProxyCredentials() { 'registry-proxy-user' }
 
 <#noparse>
 
-String getCesBuildLibRepo() { configRepositoryPRBaseUrl+"3rd-party-dependencies/ces-build-lib/" }
+String getCesBuildLibRepo() { configRepositoryPRPrefixedUrl+"3rd-party-dependencies/ces-build-lib/" }
 String getCesBuildLibVersion() { '2.5.0' }
-String getGitOpsBuildLibRepo() { configRepositoryPRBaseUrl+"3rd-party-dependencies/gitops-build-lib" }
+String getGitOpsBuildLibRepo() { configRepositoryPRPrefixedUrl+"3rd-party-dependencies/gitops-build-lib" }
 String getGitOpsBuildLibVersion() { '0.8.0'}
-String getHelmChartRepository() { configRepositoryPRBaseUrl+"3rd-party-dependencies/spring-boot-helm-chart" }
+String getHelmChartRepository() { configRepositoryPRPrefixedUrl+"3rd-party-dependencies/spring-boot-helm-chart" }
 String getHelmChartVersion() { "0.4.0" }
 String getMainBranch() { 'main' }
 
