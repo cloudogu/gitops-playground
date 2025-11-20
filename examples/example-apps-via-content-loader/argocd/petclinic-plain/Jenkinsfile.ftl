@@ -16,8 +16,8 @@ String getDockerRegistryProxyCredentials() { 'registry-proxy-user' }
 
 <#noparse>
 
-String getCesBuildLibRepo() { configRepositoryPRBaseUrl+"/repo/3rd-party-dependencies/ces-build-lib/" }
-String getGitOpsBuildLibRepo() { configRepositoryPRBaseUrl+"/repo/3rd-party-dependencies/gitops-build-lib" }
+String getCesBuildLibRepo() { configRepositoryPRBaseUrl+"3rd-party-dependencies/ces-build-lib/" }
+String getGitOpsBuildLibRepo() { configRepositoryPRBaseUrl+"3rd-party-dependencies/gitops-build-lib" }
 
 String getCesBuildLibVersion() { '2.5.0' }
 String getGitOpsBuildLibVersion() { '0.8.0'}
