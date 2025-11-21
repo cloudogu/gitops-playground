@@ -271,8 +271,7 @@ class ContentLoader extends Feature {
         if (repoConfig.templating) {
             def engine = getTemplatingEngine()
 
-            GitProvider gitProvider = this.gitHandler.resourcesScm
-            GitRepo repo = this.repoProvider.getRepo(repoConfig.target, gitProvider )
+            GitRepo repo = this.repoProvider.getRepo(repoConfig.target, this.gitHandler.tenant)
 
             engine.replaceTemplates(srcPath, [
                     config : config,
