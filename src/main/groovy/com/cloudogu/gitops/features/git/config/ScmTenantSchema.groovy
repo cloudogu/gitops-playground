@@ -66,7 +66,7 @@ class ScmTenantSchema {
         @JsonPropertyDescription(GITLAB_TOKEN_DESCRIPTION)
         String password
 
-        @Option(names = ['--gitlab-parent-id'], description = GITLAB_PARENT_GROUP_ID)
+        @Option(names = ['--gitlab-group-id'], description = GITLAB_PARENT_GROUP_ID)
         @JsonPropertyDescription(GITLAB_PARENT_GROUP_ID)
         String parentGroupId = ''
 
