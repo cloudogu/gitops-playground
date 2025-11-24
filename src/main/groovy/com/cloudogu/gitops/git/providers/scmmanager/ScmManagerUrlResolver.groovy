@@ -77,10 +77,7 @@ class ScmManagerUrlResolver {
     }
 
     private URI serviceDnsBase() {
-        System.out.println("serviceDnsBase  namespace: " + scmm.namespace)
         def namespace = (scmm.namespace ?: "scm-manager").strip()
-
-
         URI.create("http://scmm.${namespace}.svc.cluster.local")
     }
 
