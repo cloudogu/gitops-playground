@@ -197,12 +197,6 @@ class ArgoCD extends Feature {
             FileSystemUtils.deleteFile clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + MONITORING_RESOURCES_PATH + 'ingress-nginx-dashboard-requests-handling.yaml'
         }
 
-        if (!config.scmm.internal) {
-            String externalScmmUrl = ScmUrlResolver.externalHost(config)
-            log.debug("Configuring all yaml files in gitops repos to use the external scmm url: ${externalScmmUrl}")
-            replaceFileContentInYamls(new File(clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()), scmmUrlInternal, externalScmmUrl)
-
-        }
     }
 
     private void deployWithHelm() {

@@ -19,10 +19,10 @@ spec:
     spec:
       project: argocd
       sources:
-        - repoURL: http://scmm.scm-manager.svc.cluster.local/scm/repo/argocd/tenant-configs
+        - repoURL: ${scm.repoUrl}argocd/tenant-configs.git
           targetRevision: HEAD
           ref: valuesRef
-        - repoURL: http://scmm.scm-manager.svc.cluster.local/scm/repo/3rd-party-dependencies/gop-helm
+        - repoURL: ${scm.repoUrl}3rd-party-dependencies/gop-helm.git
           path: .
           targetRevision: HEAD
           helm:
