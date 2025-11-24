@@ -6,6 +6,7 @@ import com.cloudogu.gitops.config.Config.OverwriteMode
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.GitRepoFactory
+import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.utils.AllowListFreemarkerObjectWrapper
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
@@ -30,7 +31,6 @@ import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositoryS
 @Order(999)
 // We want to evaluate content last, to allow for changing all other repos
 class ContentLoader extends Feature {
-
     private Config config
     private K8sClient k8sClient
     private GitRepoFactory repoProvider
@@ -40,7 +40,6 @@ class ContentLoader extends Feature {
     // used to clone repos in validation phase
     private List<RepoCoordinate> cachedRepoCoordinates = new ArrayList<>()
     private File mergedReposFolder
-
     private GitHandler gitHandler
 
     ContentLoader(
@@ -60,6 +59,11 @@ class ContentLoader extends Feature {
 
     @Override
     void enable() {
+        // ensure cache is cleaned
+        clearCache()
+        // clones repo to check valid configuration and reuse result for further step.
+        cachedRepoCoordinates = cloneContentRepos()
+
         createImagePullSecrets()
 
         createContentRepos()
@@ -67,10 +71,6 @@ class ContentLoader extends Feature {
 
     @Override
     void validate() {
-        // ensure cache is cleaned
-        clearCache()
-        // clones repo to check valid configuration and reuse result for further step.
-        cachedRepoCoordinates = cloneContentRepos()
 
     }
 
@@ -266,10 +266,21 @@ class ContentLoader extends Feature {
         }
     }
 
+
     private void applyTemplatingIfApplicable(ContentRepositorySchema repoConfig, File srcPath) {
         if (repoConfig.templating) {
             def engine = getTemplatingEngine()
+
+            GitRepo repo = this.repoProvider.getRepo(repoConfig.target, this.gitHandler.tenant)
+
             engine.replaceTemplates(srcPath, [
+                    config : config,
+                    scm      : [
+                            baseUrl : repo.gitProvider.url,
+                            host    : repo.gitProvider.host,
+                            protocol: repo.gitProvider.protocol,
+                            repoUrl : repo.gitProvider.repoPrefix(),
+                    ],
                     config : config,
                     // Allow for using static classes inside the templates
                     statics: !config.content.useWhitelist ? new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels() :
@@ -341,8 +352,8 @@ class ContentLoader extends Feature {
     private void pushTargetRepos(List<RepoCoordinate> repoCoordinates) {
         repoCoordinates.each { repoCoordinate ->
 
-            GitRepo targetRepo = repoProvider.getRepo(repoCoordinate.fullRepoName,this.gitHandler.tenant)
-            boolean isNewRepo = targetRepo.createRepositoryAndSetPermission( "", false)
+            GitRepo targetRepo = repoProvider.getRepo(repoCoordinate.fullRepoName, this.gitHandler.tenant)
+            boolean isNewRepo = targetRepo.createRepositoryAndSetPermission("", false)
 
             if (isValidForPush(isNewRepo, repoCoordinate)) {
                 targetRepo.cloneRepo()

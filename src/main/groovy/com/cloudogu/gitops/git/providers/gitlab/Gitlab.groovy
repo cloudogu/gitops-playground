@@ -167,7 +167,7 @@ class Gitlab implements GitProvider {
 
     private Group parentGroup() {
         String raw = gitlabConfig?.parentGroupId?.trim()
-        if (!raw) throw new IllegalArgumentException("--gitlab-parent-id is required")
+        if (!raw) throw new IllegalArgumentException("--gitlab-group-id is required")
 
         boolean isNumeric = raw ==~ /\d+/
 

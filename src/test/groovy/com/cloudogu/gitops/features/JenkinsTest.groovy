@@ -209,8 +209,8 @@ me:x:1000:''')
         assertThat(env['NAME_PREFIX']).isEqualTo('my-prefix-')
         assertThat(env['INSECURE']).isEqualTo('false')
 
-        assertThat(env['SCMM_URL']).isEqualTo('http://scmm.scm-manager.svc.cluster.local/scm')
-        assertThat(env['SCMM_PASSWORD']).isEqualTo(scmManagerMock.credentials.password)
+        assertThat(env['SCM_URL']).isEqualTo('http://scmm.scm-manager.svc.cluster.local/scm')
+        assertThat(env['SCM_PASSWORD']).isEqualTo(scmManagerMock.credentials.password)
         assertThat(env['INSTALL_ARGOCD']).isEqualTo('true')
 
         assertThat(env['SKIP_PLUGINS']).isEqualTo('true')

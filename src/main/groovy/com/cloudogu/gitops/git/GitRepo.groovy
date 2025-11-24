@@ -51,8 +51,7 @@ class GitRepo {
         this.gitProvider = gitProvider
         this.fileSystemUtils = fileSystemUtils
 
-        this.repoTarget = repoTarget.startsWith(NAMESPACE_3RD_PARTY_DEPENDENCIES) ? repoTarget :
-                "${config.application.namePrefix}${repoTarget}"
+        this.repoTarget = "${config.application.namePrefix}${repoTarget}"
 
         this.insecure = config.application.insecure
         this.gitName = config.application.gitName
@@ -65,7 +64,7 @@ class GitRepo {
     
     boolean createRepositoryAndSetPermission(String description, boolean initialize = true) {
         def isNewRepo = this.gitProvider.createRepository(repoTarget, description, initialize)
-        if (isNewRepo && gitProvider.getGitOpsUsername()) {
+        if (gitProvider.getGitOpsUsername()) {
             gitProvider.setRepositoryPermission(
                     repoTarget,
                     gitProvider.getGitOpsUsername(),

@@ -16,7 +16,7 @@ spec:
   project: example-tenant
   source:
     path: apps/nginx-helm-umbrella
-    repoURL: http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm/repo/${config.application.namePrefix}example-tenant/gitops
+    repoURL: ${scm.repoUrl}example-tenant/gitops.git
     targetRevision: main
 
   syncPolicy:

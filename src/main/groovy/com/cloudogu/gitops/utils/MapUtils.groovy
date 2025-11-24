@@ -5,25 +5,14 @@ class MapUtils {
     static Map deepMerge(Map src, Map target) {
         src.each { key, value ->
             if (value == null) {
-                // If the value in src is null, set the key in target to null
                 target[key] = null
+                return
+            }
+            def oldVal = target.containsKey(key) ? target[key] : null
+            if (oldVal instanceof Map && value instanceof Map) {
+                target[key] = deepMerge((Map) value, (Map) oldVal)
             } else {
-                target.merge(key, value) { oldVal, newVal ->
-                    // Case 1: If both values are Maps, perform a deep merge
-                    if (oldVal instanceof Map && newVal instanceof Map) {
-                        return deepMerge(newVal, oldVal)  // Recursively merge the maps
-                    }
-                    // Case 2: If newVal is null, set the key to null in target
-                    if (newVal == null) {
-                        return null
-                    }
-                    // Case 3: If oldVal is null, use newVal
-                    if (oldVal == null) {
-                        return newVal
-                    }
-                    // Case 4: Default, return the new value (newVal takes priority)
-                    return newVal
-                }
+                target[key] = value
             }
         }
         return target

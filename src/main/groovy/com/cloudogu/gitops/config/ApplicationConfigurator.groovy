@@ -1,6 +1,5 @@
 package com.cloudogu.gitops.config
 
-
 import com.cloudogu.gitops.utils.FileSystemUtils
 import groovy.util.logging.Slf4j
 
@@ -51,6 +50,13 @@ class ApplicationConfigurator {
 
         if (newConfig.features.ingressNginx.active && !newConfig.application.baseUrl) {
             log.warn("Ingress-controller is activated without baseUrl parameter. Services will not be accessible by hostnames. To avoid this use baseUrl with ingress. ")
+        }
+        if (newConfig.content.examples) {
+            if (!newConfig.registry.active) {
+                throw new RuntimeException("content.examples requires either registry.active or registry.url")
+            }
+            String prefix = newConfig.application.namePrefix
+            newConfig.content.namespaces += [prefix + "example-apps-staging", prefix + "example-apps-production"]
         }
     }
 
@@ -136,6 +142,7 @@ class ApplicationConfigurator {
         if (newConfig.scm.scmManager.username === Config.DEFAULT_ADMIN_USER) {
             newConfig.scm.scmManager.username = newConfig.application.username
         }
+
 
     }
 

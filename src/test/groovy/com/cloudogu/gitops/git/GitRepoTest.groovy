@@ -106,11 +106,10 @@ class GitRepoTest {
     }
 
     @Test
-    void 'Creates repo without name-prefix when in namespace 3rd-party-deps'() {
-
+    void 'Creates repo with name-prefix when in namespace 3rd-party-deps'() {
         config.application.namePrefix = 'abc-'
         def repo = getRepo("${GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/foo", scmManagerMock)
-        assertThat(repo.repoTarget).isEqualTo("${GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/foo".toString())
+        assertThat(repo.repoTarget).isEqualTo("${config.application.namePrefix}${GitRepo.NAMESPACE_3RD_PARTY_DEPENDENCIES}/foo".toString())
     }
 
     @Test
@@ -191,27 +190,6 @@ class GitRepoTest {
         assertThat(call.role).isEqualTo(AccessRole.WRITE)
         assertThat(call.scope).isEqualTo(Scope.USER)
     }
-
-
-    @Test
-    void 'does not set permission when repository already exists'() {
-        def repoTarget = "foo/bar"
-        def repo = getRepo(repoTarget, scmManagerMock)
-
-        scmManagerMock.nextCreateResults = [false]           // simulate "already exists"
-        scmManagerMock.gitOpsUsername = 'foo-gitops'         // even with username, no permission should be set
-
-        def created = repo.createRepositoryAndSetPermission('desc', true)
-
-        assertThat(created).isFalse()
-
-        // Created was attempted once
-        assertThat(scmManagerMock.createdRepos).containsExactly(repoTarget)
-
-        // No permission calls
-        assertThat(scmManagerMock.permissionCalls).isEmpty()
-    }
-
 
     @Test
     void 'does not set permission when no GitOps username is configured'() {

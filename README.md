@@ -384,13 +384,13 @@ That is, if you pass a param via CLI, for example, it will overwrite the corresp
 
 ###### Gitlab(Tenant)
 
-| CLI               | Config             | Default   | Type   | Description                                                                                                |
-|-------------------|--------------------|-----------|--------|------------------------------------------------------------------------------------------------------------|
-| `--gitlab-url`    | `gitlabTenant.url` | `''`      | String | Base URL for the GitLab instance.                                                                          |
+| CLI                 | Config             | Default   | Type   | Description                                                                                                |
+|---------------------|--------------------|-----------|--------|------------------------------------------------------------------------------------------------------------|
+| `--gitlab-url`      | `gitlabTenant.url` | `''`      | String | Base URL for the GitLab instance.                                                                          |
 | `--gitlab-username` | `gitlabTenant.username` | `'oauth2.0'` | String | Defaults to: `oauth2.0` when a PAT token is provided.                                                      |
-| `--gitlab-token`  | `gitlabTenant.password` | `''`      | String | PAT token for the account.                                                                                 |
-| `--gitlab-parent-id` | `gitlabTenant.parentGroupId` | `''`  | String | The numeric ID for the GitLab Group where repositories and subgroups should be created.                    |
-|                   | `gitlabTenant.internal` | `false`  | Boolean | Indicates if GitLab is running in the same Kubernetes cluster. Currently only external URLs are supported. |
+| `--gitlab-token`    | `gitlabTenant.password` | `''`      | String | PAT token for the account.                                                                                 |
+| `--gitlab-group-id` | `gitlabTenant.parentGroupId` | `''`  | String | The numeric ID for the GitLab Group where repositories and subgroups should be created.                    |
+|                     | `gitlabTenant.internal` | `false`  | Boolean | Indicates if GitLab is running in the same Kubernetes cluster. Currently only external URLs are supported. |
 
 
 ###### Images

@@ -15,7 +15,7 @@ spec:
   project: example-tenant
   source:
     path: apps/spring-petclinic-helm/staging
-    repoURL: http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm/repo/${config.application.namePrefix}example-tenant/gitops
+    repoURL: ${scm.repoUrl}example-tenant/gitops.git
     targetRevision: main
     directory:
       recurse: true
@@ -42,7 +42,7 @@ spec:
   project: example-tenant
   source:
     path: apps/spring-petclinic-helm/production
-    repoURL: http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm/repo/${config.application.namePrefix}example-tenant/gitops
+    repoURL: ${scm.repoUrl}example-tenant/gitops.git
     targetRevision: main
     directory:
       recurse: true

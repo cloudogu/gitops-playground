@@ -50,6 +50,7 @@ class ScmManagerSetup extends Feature {
     @Override
     boolean isEnabled() {
         return config.scm.scmProviderType == ScmProviderType.SCM_MANAGER
+//        false
     }
 
     @Override
@@ -124,10 +125,6 @@ class ScmManagerSetup extends Feature {
                 // Used indirectly in utils.sh 😬
                 REMOTE_CLUSTER               : config.application.remote,
                 INSTALL_ARGOCD               : config.features.argocd.active,
-                SPRING_BOOT_HELM_CHART_COMMIT: config.repositories.springBootHelmChart.ref,
-                SPRING_BOOT_HELM_CHART_REPO  : config.repositories.springBootHelmChart.url,
-                GITOPS_BUILD_LIB_REPO        : config.repositories.gitopsBuildLib.url,
-                CES_BUILD_LIB_REPO           : config.repositories.cesBuildLib.url,
                 NAME_PREFIX                  : config.application.namePrefix,
                 INSECURE                     : config.application.insecure,
                 SCM_ROOT_PATH                : config.scm.scmManager.rootPath,

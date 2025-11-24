@@ -66,6 +66,9 @@ class GitHandler extends Feature {
                 throw new RuntimeException('GitLab configuration incomplete: please provide both password (PAT) and parentGroupId')
             }
         }
+
+
+
     }
 
     //Retrieves the appropriate SCM for cluster resources depending on whether the environment is multi-tenant or not.
