@@ -9,7 +9,7 @@ spec:
     - missingkey=error
   generators:
     - git:
-        repoURL: http://scmm.scm-manager.svc.cluster.local/scm/repo/argocd/tenant-configs
+        repoURL: ${scm.repoUrl}argocd/tenant-configs.git
         revision: HEAD
         files:
           - path: "tenants/*/config.yaml"
@@ -31,7 +31,7 @@ spec:
               - $valuesRef/{{ .path.path }}/config.yaml
       destination:
         server: https://kubernetes.default.svc
-        namespace: argocd
+        namespace: ${config.application.namePrefix}argocd
       syncPolicy:
         automated:
           selfHeal: true
