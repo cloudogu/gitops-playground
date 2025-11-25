@@ -43,7 +43,7 @@ class ScmManagerSetup {
     }
 
     void configure() {
-        installScmmPlugins()
+        installScmmPlugins(this.scmManager.config.scm.scmManager.skipPlugins)
         setSetupConfigs()
         configureJenkinsPlugin()
         addDefaultUsers()
@@ -77,6 +77,10 @@ class ScmManagerSetup {
     }
 
     def installScmmPlugins(Boolean restart = true) {
+
+        if(this.scmManager.config.scm.scmManager.skipPlugins) {
+            return
+        }
 
         if (System.getenv('SKIP_PLUGINS')?.toLowerCase() == 'true') {
             log.info("Skipping SCM plugin installation due to SKIP_PLUGINS=true")

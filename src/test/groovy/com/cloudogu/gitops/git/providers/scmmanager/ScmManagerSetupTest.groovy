@@ -85,7 +85,6 @@ class ScmManagerSetupTest {
         ScmManagerSetup scmManagerSetup = new ScmManagerSetup(scmManager)
         scmManagerSetup.installScmmPlugins()
         verify(pluginApi,atLeast(10)).install(any(),any())
-
     }
 
 }

@@ -38,7 +38,7 @@ class ScmManager implements GitProvider {
     }
 
     void init() {
-        //Setup for ScmManager
+        // --- Init Setup ---
         if (this.scmmConfig.internal) {
             this.scmManagerSetup = new ScmManagerSetup(this)
             this.scmManagerSetup.setupHelm()
