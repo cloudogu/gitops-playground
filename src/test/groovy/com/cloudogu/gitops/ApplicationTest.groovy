@@ -39,7 +39,6 @@ class ApplicationTest {
                 "test1-example-apps-production",
                 "test1-ingress-nginx",
                 "test1-monitoring",
-                "test1-scm-manager",
                 "test1-registry",
                 "test1-jenkins"
         ))
@@ -70,7 +69,6 @@ class ApplicationTest {
                 "test1-example-apps-production",
                 "test1-ingress-nginx",
                 "test1-monitoring",
-                "test1-scm-manager",
                 "test1-registry",
                 "test1-jenkins"
         ))

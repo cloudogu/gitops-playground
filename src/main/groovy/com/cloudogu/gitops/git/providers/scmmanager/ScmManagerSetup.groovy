@@ -163,7 +163,7 @@ class ScmManagerSetup {
                 disableGitTrigger             : false,
                 disableEventTrigger           : false,
                 url                           : this.scmManager.url
-        ] as Map<String, String>
+        ] as Map<String, Object>
 
         ScmManagerApiClient.handleApiResponse(this.scmManager.apiClient.pluginApi().configureJenkinsPlugin(jenkinsPluginConfig))
         log.debug("Successfully configured JenkinsPlugin in SCM-Manager.")
