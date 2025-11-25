@@ -42,11 +42,12 @@ class ScmManagerSetup {
         throw new RuntimeException("Timeout: SCM-Manager did not respond with 200 OK within ${timeoutSeconds} seconds")
     }
 
-    void setup() {
+    void configure() {
         installScmmPlugins()
         setSetupConfigs()
         configureJenkinsPlugin()
         addDefaultUsers()
+        log.info("ScmManager Setup finished!")
     }
 
     void setupHelm() {
@@ -158,9 +159,9 @@ class ScmManagerSetup {
                 disableGitTrigger             : false,
                 disableEventTrigger           : false,
                 url                           : this.scmManager.url
-        ]
+        ] as Map<String, String>
 
-        ScmManagerApiClient.handleApiResponse(scmManager.apiClient.pluginApi().configureJenkinsPlugin(jenkinsPluginConfig))
+        ScmManagerApiClient.handleApiResponse(this.scmManager.apiClient.pluginApi().configureJenkinsPlugin(jenkinsPluginConfig))
         log.debug("Successfully configured JenkinsPlugin in SCM-Manager.")
     }
 

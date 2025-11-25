@@ -5,6 +5,7 @@ import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.dependencyinjection.HttpClientFactory
 import groovy.util.logging.Slf4j
 import okhttp3.OkHttpClient
+import retrofit2.Call
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.jackson.JacksonConverterFactory
@@ -40,7 +41,7 @@ class ScmManagerApiClient {
         return retrofit().create(PluginApi)
     }
 
-    static handleApiResponse(apiCall, String additionalMessage = "") {
+    static handleApiResponse(Call<Void> apiCall, String additionalMessage = "") {
         try {
             Response<Void> response = apiCall.execute()
 

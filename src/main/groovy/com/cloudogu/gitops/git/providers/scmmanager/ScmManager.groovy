@@ -10,7 +10,8 @@ import com.cloudogu.gitops.git.providers.RepoUrlScope
 import com.cloudogu.gitops.git.providers.Scope
 import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
 import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
-import com.cloudogu.gitops.utils.*
+import com.cloudogu.gitops.utils.K8sClient
+import com.cloudogu.gitops.utils.NetworkingUtils
 import groovy.util.logging.Slf4j
 import retrofit2.Response
 
@@ -33,12 +34,22 @@ class ScmManager implements GitProvider {
         this.helmStrategy = helmStrategy
         this.k8sClient = k8sClient
         this.networkingUtils = networkingUtils
-        this.scmManagerSetup = new ScmManagerSetup(this)
-        this.scmManagerSetup.setupHelm()
-        this.urls = new ScmManagerUrlResolver(this.config, this.scmmConfig, this.k8sClient, this.networkingUtils)
-        this.apiClient = new ScmManagerApiClient(this.urls.clientApiBase().toString(), this.scmmConfig.credentials, this.config.application.insecure)
-        this.scmManagerSetup.waitForScmmAvailable()
-        this.scmManagerSetup.setup()
+        init()
+    }
+
+    void init() {
+        //Setup for ScmManager
+        if (this.scmmConfig.internal) {
+            this.scmManagerSetup = new ScmManagerSetup(this)
+            this.scmManagerSetup.setupHelm()
+            this.urls = new ScmManagerUrlResolver(this.config, this.scmmConfig, this.k8sClient, this.networkingUtils)
+            this.apiClient = new ScmManagerApiClient(this.urls.clientApiBase().toString(), this.scmmConfig.credentials, this.config.application.insecure)
+            this.scmManagerSetup.waitForScmmAvailable()
+            this.scmManagerSetup.configure()
+        } else {
+            this.urls = new ScmManagerUrlResolver(this.config, this.scmmConfig, this.k8sClient, this.networkingUtils)
+            this.apiClient = new ScmManagerApiClient(this.urls.clientApiBase().toString(), this.scmmConfig.credentials, this.config.application.insecure)
+        }
     }
 
     // --- Git operations ---
