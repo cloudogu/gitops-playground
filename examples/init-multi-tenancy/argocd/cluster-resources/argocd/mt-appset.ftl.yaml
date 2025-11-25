@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
   name: gop-multi-tenancy
-  namespace: argocd
+  namespace: ${config.application.namePrefix}argocd
 spec:
   goTemplate: true
   goTemplateOptions:
