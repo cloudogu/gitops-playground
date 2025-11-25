@@ -14,5 +14,5 @@ interface PluginApi {
 
     @PUT("v2/config/jenkins/")
     @Headers("Content-Type: application/json")
-    Call<Void> configureJenkinsPlugin(@Body Map<String, String> config)
+    Call<Void> configureJenkinsPlugin(@Body Map<String, Object> config)
 }
