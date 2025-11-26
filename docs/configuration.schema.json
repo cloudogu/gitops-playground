@@ -50,6 +50,10 @@
           "type" : [ "string", "null" ],
           "description" : "the external base url (TLD) for all tools, e.g. https://example.com or http://localhost:8080. The individual -url params for argocd, grafana, vault and mailhog take precedence."
         },
+        "clusterAdmin" : {
+          "type" : [ "boolean", "null" ],
+          "description" : "Binds ArgoCD controllers to cluster-admin ClusterRole"
+        },
         "destroy" : {
           "type" : [ "boolean", "null" ],
           "description" : "Unroll playground"
@@ -131,6 +135,10 @@
         "examples" : {
           "type" : [ "boolean", "null" ],
           "description" : "Deploy example content: source repos, GitOps repos, Jenkins Job, Argo CD apps/project"
+        },
+        "multitenancyExamples" : {
+          "type" : [ "boolean", "null" ],
+          "description" : "Deploy multi tenancy example content: source repos, GitOps repos, Jenkins Job, Argo CD apps/project"
         },
         "namespaces" : {
           "description" : "Additional kubernetes namespaces. These are authorized to Argo CD, supplied with image pull secrets, monitored by prometheus, etc. Namespaces can be templates, e.g. ${config.application.namePrefix}staging",

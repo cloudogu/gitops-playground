@@ -88,6 +88,10 @@ class Config {
         @JsonPropertyDescription(CONTENT_EXAMPLES_DESCRIPTION)
         Boolean examples = false
 
+        @Option(names = ['--multi-tenancy-examples'], description = CONTENT_MULTI_TENANCY_EXAMPLES_DESCRIPTION)
+        @JsonPropertyDescription(CONTENT_MULTI_TENANCY_EXAMPLES_DESCRIPTION)
+        Boolean multitenancyExamples = false
+
         @JsonPropertyDescription(CONTENT_NAMESPACES_DESCRIPTION)
         List<String> namespaces = []
 
@@ -398,6 +402,10 @@ class Config {
         @Option(names = ['--netpols'], description = NETPOLS_DESCRIPTION)
         @JsonPropertyDescription(NETPOLS_DESCRIPTION)
         Boolean netpols = false
+
+        @Option(names = ['--cluster-admin'], description = CLUSTER_ADMIN_DESCRIPTION)
+        @JsonPropertyDescription(CLUSTER_ADMIN_DESCRIPTION)
+        Boolean clusterAdmin = false
 
         static class NamespaceSchema {
             LinkedHashSet<String> dedicatedNamespaces = new LinkedHashSet<>()

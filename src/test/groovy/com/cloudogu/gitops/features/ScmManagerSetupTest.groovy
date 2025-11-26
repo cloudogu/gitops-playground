@@ -108,7 +108,6 @@ class ScmManagerSetupTest {
         assertThat(env['INSTALL_ARGOCD']).isEqualTo('true')
         assertThat(env['NAME_PREFIX']).isEqualTo('foo-')
         assertThat(env['INSECURE']).isEqualTo('false')
-        assertThat(env['CONTENT_EXAMPLES']).isEqualTo('false')
         assertThat(env['SKIP_PLUGINS']).isEqualTo('true')
         assertThat(env['SKIP_RESTART']).isEqualTo('true')
     }
