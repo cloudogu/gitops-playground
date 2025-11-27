@@ -151,6 +151,7 @@ spec:
     - name: bitnami
       type: helm
       url: https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami
+<#if !config.application.clusterAdmin>
   resourceInclusions: |
     - apiGroups:
       - "batch"
@@ -251,3 +252,4 @@ spec:
       clusters:
       - "https://kubernetes.default.svc"
       - "${config.features.argocd.resourceInclusionsCluster}"
+</#if>

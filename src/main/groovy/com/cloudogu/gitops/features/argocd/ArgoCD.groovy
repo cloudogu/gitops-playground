@@ -328,6 +328,20 @@ class ArgoCD extends Feature {
                         .withSubfolder(OPERATOR_RBAC_PATH)
                         .generate()
             }
+
+            if(config.application.clusterAdmin) {
+                new RbacDefinition(Role.Variant.CLUSTER_ADMIN)
+                        .withName("argocd-cluster-admin")
+                        .withNamespace(namespace)
+                        .withServiceAccountsFrom(
+                                namespace,
+                                ["argocd-argocd-server", "argocd-argocd-application-controller", "argocd-applicationset-controller"]
+                        )
+                        .withConfig(config)
+                        .withRepo(argocdRepoInitializationAction.repo)
+                        .withSubfolder(OPERATOR_RBAC_PATH)
+                        .generate()
+            }
         }
     }
 

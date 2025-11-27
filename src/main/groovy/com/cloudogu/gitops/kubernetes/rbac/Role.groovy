@@ -21,7 +21,8 @@ class Role {
     }
 
     enum Variant {
-        ARGOCD("templates/kubernetes/rbac/argocd-role.ftl.yaml")
+        ARGOCD("templates/kubernetes/rbac/argocd-role.ftl.yaml"),
+        CLUSTER_ADMIN("")
 
         final String templatePath
 
@@ -39,10 +40,16 @@ class Role {
     }
 
     File getTemplateFile() {
+        if(variant == Variant.CLUSTER_ADMIN) {
+            throw new IllegalStateException("cluster-admin role shall not be created")
+        }
         return new File(variant.getTemplatePath())
     }
 
     File getOutputFile(File outputDir) {
+        if(variant == Variant.CLUSTER_ADMIN) {
+            throw new IllegalStateException("cluster-admin role shall not be created")
+        }
         String filename = "role-${name}-${namespace}.yaml"
         return new File(outputDir, filename)
     }

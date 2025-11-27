@@ -1,0 +1,8 @@
+config:
+  application:
+    baseUrl: "http://tenant1.localhost"
+    namePrefix: "tenant1"
+  registry:
+    active: true
+  content:
+    examples: true
