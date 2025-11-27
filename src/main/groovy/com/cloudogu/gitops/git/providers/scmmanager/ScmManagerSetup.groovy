@@ -14,15 +14,14 @@ class ScmManagerSetup {
 
     static final String HELM_VALUES_PATH = "scm-manager/values.ftl.yaml"
 
-    ScmManagerSetup(ScmManager scmManager){
-        this.scmManager= scmManager
+    ScmManagerSetup(ScmManager scmManager) {
+        this.scmManager = scmManager
     }
 
-    void waitForScmmAvailable(int timeoutSeconds = 60, int intervalMillis = 2000) {
-        log.info("Restarting SCM-Manager!")
+    void waitForScmmAvailable(int timeoutSeconds = 60, int intervalMillis = 5000, int startDelay = 0) {
         long startTime = System.currentTimeMillis()
         long timeoutMillis = timeoutSeconds * 1000L
-
+        sleep(startDelay)
         while (System.currentTimeMillis() - startTime < timeoutMillis) {
             try {
                 def call = scmManager.apiClient.generalApi().checkScmmAvailable()
@@ -30,8 +29,6 @@ class ScmManagerSetup {
 
                 if (response.successful) {
                     return
-                } else {
-                    println "SCM-Manager not ready yet: HTTP ${response.code()}"
                 }
             } catch (Exception e) {
                 println "Waiting for SCM-Manager... Error: ${e.message}"
@@ -43,7 +40,7 @@ class ScmManagerSetup {
     }
 
     void configure() {
-        installScmmPlugins(this.scmManager.config.scm.scmManager.skipPlugins)
+        installScmmPlugins()
         setSetupConfigs()
         configureJenkinsPlugin()
         addDefaultUsers()
@@ -76,20 +73,11 @@ class ScmManagerSetup {
         )
     }
 
-    def installScmmPlugins(Boolean restart = true) {
+    def installScmmPlugins() {
 
-        if(this.scmManager.config.scm.scmManager.skipPlugins) {
+        if (this.scmManager.config.scm.scmManager.skipPlugins) {
+            log.info("Skipping SCM plugin installation")
             return
-        }
-
-        if (System.getenv('SKIP_PLUGINS')?.toLowerCase() == 'true') {
-            log.info("Skipping SCM plugin installation due to SKIP_PLUGINS=true")
-            return
-        }
-
-        if (System.getenv('SKIP_RESTART')?.toLowerCase() == 'true') {
-            log.info("Skipping SCMM restart due to SKIP_RESTART=true")
-            restart = false
         }
 
         def pluginNames = [
@@ -108,18 +96,16 @@ class ScmManagerSetup {
         if (this.scmManager.config.jenkins.active) {
             pluginNames.add("scm-jenkins-plugin")
         }
-
-        Boolean restartForThisPlugin = true
-
+        Boolean restartForThisPlugin = false
         pluginNames.each { String pluginName ->
             log.info("Installing Plugin ${pluginName} ...")
-            restartForThisPlugin = restart && pluginName == pluginNames.last()
+            restartForThisPlugin = !this.scmManager.config.scm.scmManager.skipRestart && pluginName == pluginNames.last()
             ScmManagerApiClient.handleApiResponse(scmManager.apiClient.pluginApi().install(pluginName, restartForThisPlugin))
         }
 
         log.info("SCM-Manager plugin installation finished successfully!")
         if (restartForThisPlugin) {
-            waitForScmmAvailable()
+            waitForScmmAvailable(60,2000,100)
         }
     }
 
@@ -190,7 +176,7 @@ class ScmManagerSetup {
         log.debug("Successfully created SCM-Manager User.")
     }
 
-    void grantUserPermissions(String username,List<String> permissions){
+    void grantUserPermissions(String username, List<String> permissions) {
         def permissionBody = [
                 permissions: permissions
         ]
