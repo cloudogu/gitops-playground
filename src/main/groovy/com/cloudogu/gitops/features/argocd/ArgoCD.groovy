@@ -3,6 +3,7 @@ package com.cloudogu.gitops.features.argocd
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.git.GitHandler
+import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.GitRepoFactory
 import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.kubernetes.rbac.RbacDefinition
@@ -21,11 +22,20 @@ import java.nio.file.Path
 @Singleton
 @Order(100)
 class ArgoCD extends Feature {
-    static final String HELM_VALUES_PATH = 'argocd/values.yaml'
-    static final String OPERATOR_CONFIG_PATH = 'operator/argocd.yaml'
-    static final String OPERATOR_RBAC_PATH = 'operator/rbac'
-    static final String CHART_YAML_PATH = 'argocd/Chart.yaml'
-    static final String DEDICATED_INSTANCE_PATH = 'multiTenant/central/'
+    static final String ARGOCD_SUBDIR = 'argocd'          // subfolder within repo
+    static final String OPERATOR_DIR = 'operator'
+    static final String MULTITENANT_DIR = 'multiTenant'
+    static final String ARGOCD_HELM_DIR = 'argocd'
+    static final String APPLICATIONS_DIR = 'applications'
+    static final String PROJECTS_DIR = 'projects'
+
+    static final String HELM_VALUES_PATH = "${ARGOCD_SUBDIR}/values.yaml"
+    static final String CHART_YAML_PATH = "${ARGOCD_SUBDIR}/Chart.yaml"
+    static final String DEDICATED_INSTANCE_PATH = "${ARGOCD_SUBDIR}/${MULTITENANT_DIR}/central/"
+    static final String OPERATOR_CONFIG_PATH = "${ARGOCD_SUBDIR}/${OPERATOR_DIR}/argocd.yaml"
+    static final String OPERATOR_RBAC_PATH = "${ARGOCD_SUBDIR}/${OPERATOR_DIR}/rbac"
+    static final String ARGOCD_NETPOL_FILE = "${ARGOCD_SUBDIR}/templates/allow-namespaces.yaml"
+
     static final String MONITORING_RESOURCES_PATH = '/misc/monitoring/'
 
     private String namespace = "${config.application.namePrefix}${config.features.argocd.namespace}"
@@ -39,7 +49,6 @@ class ArgoCD extends Feature {
     protected RepoInitializationAction argocdRepoInitializationAction
     protected RepoInitializationAction clusterResourcesInitializationAction
     protected RepoInitializationAction tenantBootstrapInitializationAction
-    protected File remotePetClinicRepoTmpDir
 
     protected K8sClient k8sClient
     protected HelmClient helmClient
@@ -150,8 +159,8 @@ class ArgoCD extends Feature {
             k8sClient.applyYaml(Path.of(tenantBootstrapInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'applications/bootstrap.yaml').toString())
         } else {
             // Bootstrap root application
-            k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'projects/argocd.yaml').toString())
-            k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'applications/bootstrap.yaml').toString())
+            k8sClient.applyYaml(argocdPath('projects/argocd.yaml'))
+            k8sClient.applyYaml(argocdPath('applications/bootstrap.yaml'))
         }
 
         // Delete helm-argo secrets to decouple from helm.
@@ -163,10 +172,12 @@ class ArgoCD extends Feature {
 
     protected initTenantRepos() {
         if (!config.multiTenant.useDedicatedInstance) {
-            argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd', this.gitHandler.tenant)
-
             clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources', this.gitHandler.tenant)
             gitRepos += clusterResourcesInitializationAction
+
+            argocdRepoInitializationAction = clusterResourcesInitializationAction
+
+
         } else {
             tenantBootstrapInitializationAction = createRepoInitializationAction('argocd/argocd/multiTenant/tenant', 'argocd/argocd', this.gitHandler.tenant)
             gitRepos += tenantBootstrapInitializationAction
@@ -175,10 +186,10 @@ class ArgoCD extends Feature {
 
     protected initCentralRepos() {
         if (config.multiTenant.useDedicatedInstance) {
-            argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd', true)
-
             clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources', true)
             gitRepos += clusterResourcesInitializationAction
+
+            argocdRepoInitializationAction = clusterResourcesInitializationAction
         }
     }
 
@@ -201,11 +212,11 @@ class ArgoCD extends Feature {
 
     private void deployWithHelm() {
         // Install umbrella chart from folder
-        String umbrellaChartPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'argocd/')
+        String umbrellaChartPath = argocdPath()
         // Even if the Chart.lock already contains the repo, we need to add it before resolving it
         // See https://github.com/helm/helm/issues/8036#issuecomment-872502901
         List helmDependencies = fileSystemUtils.readYaml(
-                Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), CHART_YAML_PATH))['dependencies']
+                Path.of(getRepoRootDir(), CHART_YAML_PATH))['dependencies']
         helmClient.addRepo('argo', helmDependencies[0]['repository'] as String)
         helmClient.dependencyBuild(umbrellaChartPath)
         helmClient.upgrade('argocd', umbrellaChartPath, [namespace: "${namespace}"])
@@ -225,7 +236,7 @@ class ArgoCD extends Feature {
 
     private void deployWithOperator() {
         // Apply argocd yaml from operator folder
-        String argocdConfigPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), OPERATOR_CONFIG_PATH)
+        String argocdConfigPath = repoPath(OPERATOR_CONFIG_PATH)
         k8sClient.applyYaml(argocdConfigPath)
 
         // ArgoCD is not installed until the ArgoCD-Operator did his job.
@@ -248,7 +259,7 @@ class ArgoCD extends Feature {
 
         log.debug("Apply RBAC permissions for ArgoCD in all managed namespaces imperatively")
         // Apply rbac yamls from operator/rbac folder
-        String argocdRbacPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), OPERATOR_RBAC_PATH)
+        String argocdRbacPath = Path.of(repoPath(OPERATOR_RBAC_PATH))
         k8sClient.applyYaml("${argocdRbacPath} --recursive")
     }
 
@@ -400,31 +411,31 @@ class ArgoCD extends Feature {
 
     protected void prepareArgoCdRepo() {
 
-        argocdRepoInitializationAction.initLocalRepo()
+//        argocdRepoInitializationAction.initLocalRepo()
 
         if (config.features.argocd.operator) {
-            log.debug("Deleting unnecessary argocd (argocd helm variant) folder from argocd repo: ${argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
-            FileSystemUtils.deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/argocd'
-            log.debug("Deleting unnecessary namespaces resources from clusterResources repo: ${clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
-            FileSystemUtils.deleteFile clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/misc/namespaces.yaml'
+            log.debug("Deleting unnecessary argocd (argocd helm variant) folder from argocd repo: ${argocdPath(ARGOCD_HELM_DIR)}")
+            FileSystemUtils.deleteDir argocdPath(ARGOCD_HELM_DIR)
+            log.debug("Deleting unnecessary namespaces resources from clusterResources repo: ${repoPath('misc/namespaces.yaml')}")
+            FileSystemUtils.deleteFile repoPath('misc/namespaces.yaml')
             generateRBAC()
         } else {
-            log.debug("Deleting unnecessary operator (argocd operator variant) folder from argocd repo: ${argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
-            FileSystemUtils.deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/operator'
+            log.debug("Deleting unnecessary operator (argocd operator variant) folder from argocd repo: ${argocdPath(OPERATOR_DIR)}")
+            FileSystemUtils.deleteDir argocdPath(OPERATOR_DIR)
         }
 
         if (config.multiTenant.useDedicatedInstance) {
-            log.debug("Deleting unnecessary non dedicated instances folders from argocd repo: ${argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
-            FileSystemUtils.deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/applications'
-            FileSystemUtils.deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/projects'
+            log.debug("Deleting unnecessary non dedicated instances folders from argocd repo: ${argocdPath(APPLICATIONS_DIR)}")
+            FileSystemUtils.deleteDir argocdPath(APPLICATIONS_DIR)
+            FileSystemUtils.deleteDir argocdPath(PROJECTS_DIR)
         } else {
-            log.debug("Deleting unnecessary multiTenant folder from argocd repo: ${argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
-            FileSystemUtils.deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/multiTenant'
+            log.debug("Deleting unnecessary multiTenant folder from argocd repo: ${repoPath(MULTITENANT_DIR)}")
+            FileSystemUtils.deleteDir argocdPath(MULTITENANT_DIR)
         }
 
         if (!config.application.netpols) {
             log.debug("Deleting argocd netpols.")
-            FileSystemUtils.deleteFile argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/argocd/templates/allow-namespaces.yaml'
+            FileSystemUtils.deleteFile repoPath(ARGOCD_NETPOL_FILE)
         }
 
         argocdRepoInitializationAction.repo.commitAndPush("Initial Commit")
@@ -439,9 +450,19 @@ class ArgoCD extends Feature {
         new RepoInitializationAction(config, repoProvider.getRepo(scmRepoTarget, gitProvider), this.gitHandler, localSrcDir)
     }
 
-    private void replaceFileContentInYamls(File folder, String from, String to) {
-        fileSystemUtils.getAllFilesFromDirectoryWithEnding(folder.absolutePath, ".yaml").forEach(file -> {
-            fileSystemUtils.replaceFileContent(file.absolutePath, from, to)
-        })
+
+    private String getRepoRootDir() {
+        return argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()
     }
+    private String argocdPath(String relative = '') {
+        return relative ?
+                Path.of(getRepoRootDir(), ARGOCD_SUBDIR, relative).toString() :
+                Path.of(getRepoRootDir(), ARGOCD_SUBDIR).toString()
+    }
+
+    private String repoPath(String relative) {
+        return Path.of(getRepoRootDir(), relative).toString()
+    }
+
+
 }

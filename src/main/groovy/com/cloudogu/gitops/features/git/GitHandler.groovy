@@ -125,10 +125,6 @@ class GitHandler extends Feature {
 
     // includeClusterResources = true => also create the argocd/cluster-resources repository
     static void setupRepos(GitProvider gitProvider, String namePrefix = "", boolean includeClusterResources = true) {
-        gitProvider.createRepository(
-                withOrgPrefix(namePrefix, "argocd/argocd"),
-                "GitOps repo for administration of ArgoCD"
-        )
         if (includeClusterResources) {
             gitProvider.createRepository(
                     withOrgPrefix(namePrefix, "argocd/cluster-resources"),

@@ -1047,7 +1047,7 @@ From there, everything is managed via GitOps. This diagram shows how it works.
    ingresses) via the `templates` folder. The actual ArgoCD chart is declared in the `Chart.yaml`
 3. The `Chart.yaml` contains the Argo CD helm chart as `dependency`. It points to a deterministic version of the Chart
    (pinned via `Chart.lock`) that is pulled from the Chart repository on the internet.  
-   This mechanism can be used to upgrade Argo CD via GitOps. See the [Readme of the argocd repository](argocd/argocd/README.md)
+   This mechanism can be used to upgrade Argo CD via GitOps. See the [Readme of the argocd repository](argocd/cluster-resources/argocd/README.md)
    for details.
 4. The `projects` application manages the `projects` folder, that contains the following `AppProjects`:
     * the `argocd` project, used for bootstrapping
@@ -1078,7 +1078,7 @@ From there, everything is managed via GitOps. This diagram shows how it works.
     * Two applications in the same YAML (implemented in the playground, see e.g. [`petclinic-plain.yaml`](argocd/example-apps/argocd/petclinic-plain.ftl.yaml))
     * Two application with the same name in different namespaces, when ArgoCD is enabled to search for applications
       within different namespaces (implemented in the playground, see
-      [Argo CD's values.yaml](argocd/argocd/argocd/values.ftl.yaml) - `application.namespaces` setting)
+      [Argo CD's values.yaml](argocd/cluster-resources/argocd/argocd/values.ftl.yaml) - `application.namespaces` setting)
     * One `ApplicationSet`, using the [`git` generator for directories](https://github.com/argoproj/argo-cd/blob/v2.7.1/docs/operator-manual/applicationset/Generators-Git.md#git-generator-directories)
       (not used in GitOps playground, yet)
 
