@@ -23,3 +23,7 @@ config:
       active: false
   multiTenant:
     useDedicatedInstance: true
+    scmManager:
+      internal: true
+
+
