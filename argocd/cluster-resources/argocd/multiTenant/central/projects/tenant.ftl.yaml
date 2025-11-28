@@ -9,7 +9,7 @@ spec:
     - namespace: '*'
       server: https://kubernetes.default.svc
   sourceRepos:
-    - ${scm.centralScmUrl}argocd/argocd.git
+    - ${scm.centralScmUrl}cluster-resources/argocd/argocd.git
     - ${scm.centralScmUrl}argocd/cluster-resources.git
 <#if config.application.mirrorRepos>
     - ${scm.repoUrl}3rd-party-dependencies/kube-prometheus-stack.git

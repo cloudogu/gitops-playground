@@ -19,7 +19,7 @@ spec:
   project: ${tenantName}
   source:
     path: ${config.features.argocd.operator?string("operator/", "argocd/")}
-    repoURL: ${scm.centralScmUrl}argocd/argocd.git
+    repoURL: ${scm.centralScmUrl}cluster-resources/argocd/argocd.git
     targetRevision: main
     # needed to sync the operator/rbac folder
     <#if config.features.argocd.operator??>
