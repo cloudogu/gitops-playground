@@ -25,5 +25,7 @@ config:
     useDedicatedInstance: true
     scmManager:
       internal: true
+      username: admin
+      password: admin
 
 
