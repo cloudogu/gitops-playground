@@ -115,9 +115,11 @@ class GitHandler extends Feature {
         //can be removed if we combine argocd and cluster-resources
         final String namePrefix = (config?.application?.namePrefix ?: "").trim()
         if (this.central) {
+            println(" ======================== GitHandler: CENTRAL setup ${this.central} ")
             setupRepos(this.central, namePrefix)
             setupRepos(this.tenant, namePrefix, false)
         } else {
+            println(" ======================== GitHandler: TENANT setup ${this.tenant} ")
             setupRepos(this.tenant, namePrefix, true)
         }
         create3thPartyDependencies(this.tenant, namePrefix)

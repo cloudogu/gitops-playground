@@ -162,19 +162,24 @@ class ArgoCD extends Feature {
     }
 
     protected initTenantRepos() {
+        println("================================= INIT TENANT REPOS")
         if (!config.multiTenant.useDedicatedInstance) {
+            println(" NOT  DEDICATED: ${config.multiTenant.useDedicatedInstance}")
             argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd', this.gitHandler.tenant)
 
             clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources', this.gitHandler.tenant)
             gitRepos += clusterResourcesInitializationAction
         } else {
+            println(" DEDICATED instance: ${config.multiTenant.useDedicatedInstance}")
             tenantBootstrapInitializationAction = createRepoInitializationAction('argocd/argocd/multiTenant/tenant', 'argocd/argocd', this.gitHandler.tenant)
             gitRepos += tenantBootstrapInitializationAction
         }
     }
 
     protected initCentralRepos() {
+        println("================================= INIT CENTRAL REPOS")
         if (config.multiTenant.useDedicatedInstance) {
+            println(" DEDICATED instance: ${config.multiTenant.useDedicatedInstance}")
             argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd', true)
 
             clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources', true)
