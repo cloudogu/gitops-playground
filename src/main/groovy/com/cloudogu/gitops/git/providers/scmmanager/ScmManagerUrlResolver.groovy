@@ -24,7 +24,6 @@ class ScmManagerUrlResolver {
         this.net = net
     }
 
-
     // ---------- Public API used by ScmManager ----------
 
     /** Client base …/scm (no trailing slash) */

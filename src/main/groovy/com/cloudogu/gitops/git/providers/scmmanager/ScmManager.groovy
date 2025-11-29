@@ -2,6 +2,7 @@ package com.cloudogu.gitops.git.providers.scmmanager
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Credentials
+import com.cloudogu.gitops.features.deployment.HelmStrategy
 import com.cloudogu.gitops.features.git.config.util.ScmManagerConfig
 import com.cloudogu.gitops.git.providers.AccessRole
 import com.cloudogu.gitops.git.providers.GitProvider
@@ -17,16 +18,39 @@ import retrofit2.Response
 @Slf4j
 class ScmManager implements GitProvider {
 
-    private final ScmManagerUrlResolver urls
-    private final ScmManagerApiClient apiClient
-    private final ScmManagerConfig scmmConfig
+    ScmManagerUrlResolver urls
+    ScmManagerApiClient apiClient
+    ScmManagerConfig scmmConfig
 
-    ScmManager(Config config, ScmManagerConfig scmmConfig, K8sClient k8sClient, NetworkingUtils networkingUtils) {
+    NetworkingUtils networkingUtils
+    HelmStrategy helmStrategy
+    K8sClient k8sClient
+    Config config
+    ScmManagerSetup scmManagerSetup
+
+    ScmManager(Config config, ScmManagerConfig scmmConfig, HelmStrategy helmStrategy, K8sClient k8sClient, NetworkingUtils networkingUtils) {
         this.scmmConfig = scmmConfig
-        this.urls = new ScmManagerUrlResolver(config, scmmConfig, k8sClient, networkingUtils)
-        this.apiClient = new ScmManagerApiClient(urls.clientApiBase().toString(), scmmConfig.credentials, config.application.insecure)
+        this.config = config
+        this.helmStrategy = helmStrategy
+        this.k8sClient = k8sClient
+        this.networkingUtils = networkingUtils
+        init()
     }
 
+    void init() {
+        // --- Init Setup ---
+        if (this.scmmConfig.internal) {
+            this.scmManagerSetup = new ScmManagerSetup(this)
+            this.scmManagerSetup.setupHelm()
+            this.urls = new ScmManagerUrlResolver(this.config, this.scmmConfig, this.k8sClient, this.networkingUtils)
+            this.apiClient = new ScmManagerApiClient(this.urls.clientApiBase().toString(), this.scmmConfig.credentials, this.config.application.insecure)
+            this.scmManagerSetup.waitForScmmAvailable()
+            this.scmManagerSetup.configure()
+        } else {
+            this.urls = new ScmManagerUrlResolver(this.config, this.scmmConfig, this.k8sClient, this.networkingUtils)
+            this.apiClient = new ScmManagerApiClient(this.urls.clientApiBase().toString(), this.scmmConfig.credentials, this.config.application.insecure)
+        }
+    }
 
     // --- Git operations ---
     @Override

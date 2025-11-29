@@ -49,7 +49,7 @@ class ScmManagerTest {
         )
 
         lenient().when(scmmCfg.getCredentials()).thenReturn(new Credentials("user","password"))
-        lenient(). when(scmmCfg.getGitOpsUsername()).thenReturn("gitops-bot")
+        lenient().when(scmmCfg.getGitOpsUsername()).thenReturn("gitops-bot")
 
         lenient().when(urls.inClusterBase()).thenReturn(new URI("http://scmm.ns.svc.cluster.local/scm"))
         lenient().when(urls.inClusterRepoPrefix()).thenReturn("http://scmm.ns.svc.cluster.local/scm/repo/fv40-")
