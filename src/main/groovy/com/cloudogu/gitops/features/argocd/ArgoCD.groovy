@@ -29,8 +29,8 @@ class ArgoCD extends Feature {
     static final String APPLICATIONS_DIR = 'applications'
     static final String PROJECTS_DIR = 'projects'
 
-    static final String HELM_VALUES_PATH = "${ARGOCD_SUBDIR}/values.yaml"
-    static final String CHART_YAML_PATH = "${ARGOCD_SUBDIR}/Chart.yaml"
+    static final String HELM_VALUES_PATH = "${ARGOCD_SUBDIR}/${ARGOCD_SUBDIR}/values.yaml"
+    static final String CHART_YAML_PATH = "${ARGOCD_SUBDIR}/${ARGOCD_SUBDIR}/Chart.yaml"
     static final String DEDICATED_INSTANCE_PATH = "${ARGOCD_SUBDIR}/${MULTITENANT_DIR}/central/"
     static final String OPERATOR_CONFIG_PATH = "${ARGOCD_SUBDIR}/${OPERATOR_DIR}/argocd.yaml"
     static final String OPERATOR_RBAC_PATH = "${ARGOCD_SUBDIR}/${OPERATOR_DIR}/rbac"
@@ -152,8 +152,8 @@ class ArgoCD extends Feature {
 
         if (config.multiTenant.useDedicatedInstance) {
             //Bootstrapping dedicated instance
-            k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), "${DEDICATED_INSTANCE_PATH}projects/tenant.yaml").toString())
-            k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), "${DEDICATED_INSTANCE_PATH}applications/bootstrap.yaml").toString())
+            k8sClient.applyYaml(repoPath("${DEDICATED_INSTANCE_PATH}projects/tenant.yaml"))
+            k8sClient.applyYaml(repoPath("${DEDICATED_INSTANCE_PATH}applications/bootstrap.yaml"))
             //Bootstrapping tenant Argocd projects
             k8sClient.applyYaml(Path.of(tenantBootstrapInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'projects/argocd.yaml').toString())
             k8sClient.applyYaml(Path.of(tenantBootstrapInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'applications/bootstrap.yaml').toString())
@@ -212,11 +212,11 @@ class ArgoCD extends Feature {
 
     private void deployWithHelm() {
         // Install umbrella chart from folder
-        String umbrellaChartPath = argocdPath()
+        String umbrellaChartPath = argocdPath(ARGOCD_SUBDIR)
         // Even if the Chart.lock already contains the repo, we need to add it before resolving it
         // See https://github.com/helm/helm/issues/8036#issuecomment-872502901
         List helmDependencies = fileSystemUtils.readYaml(
-                Path.of(getRepoRootDir(), CHART_YAML_PATH))['dependencies']
+                Path.of(repoPath(CHART_YAML_PATH)))['dependencies']
         helmClient.addRepo('argo', helmDependencies[0]['repository'] as String)
         helmClient.dependencyBuild(umbrellaChartPath)
         helmClient.upgrade('argocd', umbrellaChartPath, [namespace: "${namespace}"])
@@ -435,7 +435,7 @@ class ArgoCD extends Feature {
 
         if (!config.application.netpols) {
             log.debug("Deleting argocd netpols.")
-            FileSystemUtils.deleteFile repoPath(ARGOCD_NETPOL_FILE)
+            FileSystemUtils.deleteFile argocdPath(ARGOCD_NETPOL_FILE)
         }
 
         argocdRepoInitializationAction.repo.commitAndPush("Initial Commit")
