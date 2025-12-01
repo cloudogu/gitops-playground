@@ -155,8 +155,8 @@ class ArgoCD extends Feature {
             k8sClient.applyYaml(repoPath("${DEDICATED_INSTANCE_PATH}projects/tenant.yaml"))
             k8sClient.applyYaml(repoPath("${DEDICATED_INSTANCE_PATH}applications/bootstrap.yaml"))
             //Bootstrapping tenant Argocd projects
-            k8sClient.applyYaml(Path.of(tenantBootstrapInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'projects/argocd.yaml').toString())
-            k8sClient.applyYaml(Path.of(tenantBootstrapInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'applications/bootstrap.yaml').toString())
+            k8sClient.applyYaml(Path.of(tenantBootstrapInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), "${ARGOCD_SUBDIR}/projects/argocd.yaml").toString())
+            k8sClient.applyYaml(Path.of(tenantBootstrapInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), "${ARGOCD_SUBDIR}/applications/bootstrap.yaml").toString())
         } else {
             // Bootstrap root application
             k8sClient.applyYaml(argocdPath('projects/argocd.yaml'))
@@ -179,7 +179,14 @@ class ArgoCD extends Feature {
 
 
         } else {
+            //TODO fix here the multitenant/tenant get pusht direct into cluster-Resources, but it shouöld be pusht in argocd/cluster-resoruces/argocd
+
+
             tenantBootstrapInitializationAction = createRepoInitializationAction('argocd/cluster-resources/argocd/multiTenant/tenant', 'argocd/cluster-resources', this.gitHandler.tenant)
+
+            println("=====================================")
+            println(tenantBootstrapInitializationAction.repo.getAbsoluteLocalRepoTmpDir())
+
             gitRepos += tenantBootstrapInitializationAction
         }
     }

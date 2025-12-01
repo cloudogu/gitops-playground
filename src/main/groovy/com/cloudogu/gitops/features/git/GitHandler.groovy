@@ -123,9 +123,15 @@ class GitHandler extends Feature {
         create3thPartyDependencies(this.tenant, namePrefix)
     }
 
+    //TODO remove includeClusterResourcers check --> everything lies wihtin cloud-resources
     // includeClusterResources = true => also create the argocd/cluster-resources repository
     static void setupRepos(GitProvider gitProvider, String namePrefix = "", boolean includeClusterResources = true) {
         if (includeClusterResources) {
+            gitProvider.createRepository(
+                    withOrgPrefix(namePrefix, "argocd/cluster-resources"),
+                    "GitOps repo for basic cluster-resources"
+            )
+        }else{
             gitProvider.createRepository(
                     withOrgPrefix(namePrefix, "argocd/cluster-resources"),
                     "GitOps repo for basic cluster-resources"
