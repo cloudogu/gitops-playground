@@ -12,7 +12,7 @@ spec:
     server: https://kubernetes.default.svc
   project: argocd
   source:
-    path: argocd/
+    path: apps
     repoURL: ${scm.repoUrl}argocd/cluster-resources.git
     targetRevision: main
     directory:

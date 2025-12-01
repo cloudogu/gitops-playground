@@ -129,7 +129,7 @@ spec:
   initialRepositories: |
 <#if !(scm.centralScmUrl?has_content)>
     - name: argocd
-      url: ${scm.repoUrl}cluster-resources/argocd/argocd.git
+      url: ${scm.repoUrl}argocd/cluster-resources.git
     - name: cluster-resources
       url: ${scm.repoUrl}argocd/cluster-resources.git
     - name: prometheus-community

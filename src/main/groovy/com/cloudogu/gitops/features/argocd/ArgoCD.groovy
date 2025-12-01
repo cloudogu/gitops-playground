@@ -179,7 +179,7 @@ class ArgoCD extends Feature {
 
 
         } else {
-            tenantBootstrapInitializationAction = createRepoInitializationAction('argocd/argocd/multiTenant/tenant', 'argocd/argocd', this.gitHandler.tenant)
+            tenantBootstrapInitializationAction = createRepoInitializationAction('argocd/cluster-resources/argocd/multiTenant/tenant', 'argocd/cluster-resources', this.gitHandler.tenant)
             gitRepos += tenantBootstrapInitializationAction
         }
     }

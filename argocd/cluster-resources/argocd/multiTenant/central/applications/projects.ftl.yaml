@@ -12,8 +12,8 @@ spec:
     namespace: ${config.application.namePrefix}argocd
   project: ${tenantName}
   source:
-    path: multiTenant/central/projects/
-    repoURL: ${scm.centralScmUrl}cluster-resources/argocd/argocd.git
+    path: argocd/multiTenant/central/projects/
+    repoURL: ${scm.centralScmUrl}argocd/cluster-resources.git
     targetRevision: main
     directory:
       recurse: true
