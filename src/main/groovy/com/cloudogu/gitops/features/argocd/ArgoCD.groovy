@@ -366,33 +366,28 @@ class ArgoCD extends Feature {
     }
 
     protected void createSCMCredentialsSecret() {
-
         log.debug("Creating repo credential secret that is used by argocd to access repos in ${config.scm.scmProviderType.toString()}")
+
         // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo
-        def repoTemplateSecretName = 'argocd-repo-creds-scm'
-
-        k8sClient.createSecret('generic', repoTemplateSecretName, namespace,
-                new Tuple2('url', this.gitHandler.tenant.url),
-                new Tuple2('username', this.gitHandler.tenant.credentials.username),
-                new Tuple2('password', this.gitHandler.tenant.credentials.password)
+        createRepoCredentialsSecret(
+                'argocd-repo-creds-scm',
+                namespace,
+                gitHandler.tenant.url,
+                gitHandler.tenant.credentials.username,
+                gitHandler.tenant.credentials.password
         )
-
-        k8sClient.label('secret', repoTemplateSecretName, namespace,
-                new Tuple2('argocd.argoproj.io/secret-type', 'repo-creds'))
 
         if (config.multiTenant.useDedicatedInstance) {
             log.debug("Creating central repo credential secret that is used by argocd to access repos in ${config.scm.scmProviderType.toString()}")
+
             // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo
-            def centralRepoTemplateSecretName = 'argocd-repo-creds-central-scm'
-
-            k8sClient.createSecret('generic', centralRepoTemplateSecretName, config.multiTenant.centralArgocdNamespace,
-                    new Tuple2('url', this.gitHandler.central.url),
-                    new Tuple2('username', this.gitHandler.central.credentials.username),
-                    new Tuple2('password', this.gitHandler.central.credentials.password)
+            createRepoCredentialsSecret(
+                    'argocd-repo-creds-central-scm',
+                    config.multiTenant.centralArgocdNamespace,
+                    gitHandler.central.url,
+                    gitHandler.central.credentials.username,
+                    gitHandler.central.credentials.password
             )
-
-            k8sClient.label('secret', centralRepoTemplateSecretName, config.multiTenant.centralArgocdNamespace,
-                    new Tuple2('argocd.argoproj.io/secret-type', 'repo-creds'))
         }
     }
 
@@ -434,6 +429,15 @@ class ArgoCD extends Feature {
         new RepoInitializationAction(config, repoProvider.getRepo(scmRepoTarget, gitProvider), this.gitHandler, localSrcDir)
     }
 
+    private void createRepoCredentialsSecret(String secretName, String ns, String url, String username, String password) {
+        k8sClient.createSecret('generic', secretName, ns,
+                new Tuple2('url', url),
+                new Tuple2('username', username),
+                new Tuple2('password', password)
+        )
+        k8sClient.label('secret', secretName, ns,
+                new Tuple2('argocd.argoproj.io/secret-type', 'repo-creds'))
+    }
 
     private String getRepoRootDir() {
         return clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()
