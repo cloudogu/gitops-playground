@@ -44,8 +44,6 @@ class ArgoCD extends Feature {
 
     private String password
 
-    protected final String scmmUrlInternal = "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm"
-
     protected RepoInitializationAction clusterResourcesInitializationAction
     protected RepoInitializationAction tenantBootstrapInitializationAction
 

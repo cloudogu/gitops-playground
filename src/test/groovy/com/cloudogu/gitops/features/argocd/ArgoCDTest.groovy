@@ -131,7 +131,7 @@ class ArgoCDTest {
         k8sCommands.assertExecuted('kubectl create namespace argocd')
 
         // check values.yaml
-        List filesWithInternalSCMM = findFilesContaining(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), argocd.scmmUrlInternal)
+        List filesWithInternalSCMM = findFilesContaining(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), argocdRepo.gitProvider.url)
         assertThat(filesWithInternalSCMM).isNotEmpty()
         assertThat(parseActualYaml(actualHelmValuesFile)['argo-cd']['server']['service']['type'])
                 .isEqualTo('ClusterIP')
@@ -204,7 +204,7 @@ class ArgoCDTest {
         )
 
 
-        List filesWithInternalSCMM = findFilesContaining(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), argocd.scmmUrlInternal)
+        List filesWithInternalSCMM = findFilesContaining(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), argocdRepo.gitProvider.url)
         assertThat(filesWithInternalSCMM).isEmpty()
         List filesWithExternalSCMM = findFilesContaining(new File(argocdRepo.getAbsoluteLocalRepoTmpDir()), "https://abc")
         assertThat(filesWithExternalSCMM).isNotEmpty()
@@ -504,7 +504,7 @@ class ArgoCDTest {
         argocd.install()
         this.clusterResourcesRepo = (argocd as ArgoCDForTest).clusterResourcesRepo
 
-        List filesWithInternalSCMM = findFilesContaining(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), argocd.scmmUrlInternal)
+        List filesWithInternalSCMM = findFilesContaining(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), argocdRepo.gitProvider.url)
         assertThat(filesWithInternalSCMM).isNotEmpty()
     }
 
@@ -517,7 +517,7 @@ class ArgoCDTest {
 
         this.clusterResourcesRepo = (argocd as ArgoCDForTest).clusterResourcesRepo
 
-        List filesWithInternalSCMM = findFilesContaining(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), argocd.scmmUrlInternal)
+        List filesWithInternalSCMM = findFilesContaining(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), argocdRepo.gitProvider.url)
         assertThat(filesWithInternalSCMM).isEmpty()
 
         List filesWithExternalSCMM = findFilesContaining(new File(clusterResourcesRepo.getAbsoluteLocalRepoTmpDir()), "https://abc")
@@ -531,7 +531,7 @@ class ArgoCDTest {
         this.argocdRepo = (argocd as ArgoCDForTest).argocdRepo
         this.clusterResourcesRepo = (argocd as ArgoCDForTest).clusterResourcesRepo
 
-        assertArgoCdYamlPrefixes(argocd.scmmUrlInternal, '')
+        assertArgoCdYamlPrefixes(argocdRepo.gitProvider.url, '')
     }
 
     @Test
@@ -552,7 +552,7 @@ class ArgoCDTest {
         this.clusterResourcesRepo = (argocd as ArgoCDForTest).clusterResourcesRepo
 
 
-        assertArgoCdYamlPrefixes(argocd.scmmUrlInternal, 'abc-')
+        assertArgoCdYamlPrefixes(argocdRepo.gitProvider.url, 'abc-')
 
     }
 
