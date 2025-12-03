@@ -46,7 +46,6 @@ class ArgoCD extends Feature {
 
     protected final String scmmUrlInternal = "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm"
 
-    protected RepoInitializationAction argocdRepoInitializationAction
     protected RepoInitializationAction clusterResourcesInitializationAction
     protected RepoInitializationAction tenantBootstrapInitializationAction
 
@@ -175,18 +174,8 @@ class ArgoCD extends Feature {
             clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources', this.gitHandler.tenant)
             gitRepos += clusterResourcesInitializationAction
 
-            argocdRepoInitializationAction = clusterResourcesInitializationAction
-
-
         } else {
-            //TODO fix here the multitenant/tenant get pusht direct into cluster-Resources, but it shouöld be pusht in argocd/cluster-resoruces/argocd
-
-
             tenantBootstrapInitializationAction = createRepoInitializationAction('argocd/cluster-resources/argocd/multiTenant/tenant', 'argocd/cluster-resources', this.gitHandler.tenant)
-
-            println("=====================================")
-            println(tenantBootstrapInitializationAction.repo.getAbsoluteLocalRepoTmpDir())
-
             gitRepos += tenantBootstrapInitializationAction
         }
     }
@@ -195,8 +184,6 @@ class ArgoCD extends Feature {
         if (config.multiTenant.useDedicatedInstance) {
             clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources', true)
             gitRepos += clusterResourcesInitializationAction
-
-            argocdRepoInitializationAction = clusterResourcesInitializationAction
         }
     }
 
@@ -312,7 +299,7 @@ class ArgoCD extends Feature {
                                 ["argocd-argocd-server", "argocd-argocd-application-controller", "argocd-applicationset-controller"]
                         )
                         .withConfig(config)
-                        .withRepo(argocdRepoInitializationAction.repo)
+                        .withRepo(clusterResourcesInitializationAction.repo)
                         .withSubfolder("${OPERATOR_RBAC_PATH}/tenant")
                         .generate()
             }
@@ -328,7 +315,7 @@ class ArgoCD extends Feature {
                                 ["argocd-argocd-server", "argocd-argocd-application-controller", "argocd-applicationset-controller"]
                         )
                         .withConfig(config)
-                        .withRepo(argocdRepoInitializationAction.repo)
+                        .withRepo(clusterResourcesInitializationAction.repo)
                         .withSubfolder(OPERATOR_RBAC_PATH)
                         .generate()
             }
@@ -342,7 +329,7 @@ class ArgoCD extends Feature {
                                 ["argocd-argocd-server", "argocd-argocd-application-controller", "argocd-applicationset-controller"]
                         )
                         .withConfig(config)
-                        .withRepo(argocdRepoInitializationAction.repo)
+                        .withRepo(clusterResourcesInitializationAction.repo)
                         .withSubfolder(OPERATOR_RBAC_PATH)
                         .generate()
             }
@@ -356,7 +343,7 @@ class ArgoCD extends Feature {
                                 ["argocd-argocd-server", "argocd-argocd-application-controller", "argocd-applicationset-controller"]
                         )
                         .withConfig(config)
-                        .withRepo(argocdRepoInitializationAction.repo)
+                        .withRepo(clusterResourcesInitializationAction.repo)
                         .withSubfolder(OPERATOR_RBAC_PATH)
                         .generate()
             }
@@ -417,9 +404,6 @@ class ArgoCD extends Feature {
     }
 
     protected void prepareArgoCdRepo() {
-
-//        argocdRepoInitializationAction.initLocalRepo()
-
         if (config.features.argocd.operator) {
             log.debug("Deleting unnecessary argocd (argocd helm variant) folder from argocd repo: ${argocdPath(ARGOCD_HELM_DIR)}")
             FileSystemUtils.deleteDir argocdPath(ARGOCD_HELM_DIR)
@@ -445,7 +429,7 @@ class ArgoCD extends Feature {
             FileSystemUtils.deleteFile argocdPath(ARGOCD_NETPOL_FILE)
         }
 
-        argocdRepoInitializationAction.repo.commitAndPush("Initial Commit")
+        clusterResourcesInitializationAction.repo.commitAndPush("Initial Commit")
     }
 
     protected RepoInitializationAction createRepoInitializationAction(String localSrcDir, String scmRepoTarget, Boolean isCentral) {
@@ -459,7 +443,7 @@ class ArgoCD extends Feature {
 
 
     private String getRepoRootDir() {
-        return argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()
+        return clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()
     }
     private String argocdPath(String relative = '') {
         return relative ?
