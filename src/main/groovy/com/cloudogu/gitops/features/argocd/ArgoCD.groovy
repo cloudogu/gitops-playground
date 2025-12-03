@@ -36,25 +36,24 @@ class ArgoCD extends Feature {
     static final String HELM_VALUES_PATH = "${ARGOCD_HELM_DIR}/values.yaml"
     static final String CHART_YAML_PATH = "${ARGOCD_HELM_DIR}/Chart.yaml"
     static final String ARGOCD_NETPOL_FILE = "${ARGOCD_HELM_DIR}/templates/allow-namespaces.yaml"
-
     static final String MONITORING_RESOURCES_PATH = '/misc/monitoring/'
+
 
     private final String namespace
     private final Config config
-    private List<RepoInitializationAction> gitRepos = []
+    private final K8sClient k8sClient
+    private final HelmClient helmClient
+    private final FileSystemUtils fileSystemUtils
+    private final GitRepoFactory repoProvider
+    private final GitHandler gitHandler
+    private final List<RepoInitializationAction> gitRepos = []
 
-    private String password
+    private final String password
 
-    protected RepoInitializationAction clusterResourcesInitializationAction
-    protected RepoInitializationAction tenantBootstrapInitializationAction
+    private RepoInitializationAction clusterResourcesInitializationAction
+    private RepoInitializationAction tenantBootstrapInitializationAction
 
-    protected K8sClient k8sClient
-    protected HelmClient helmClient
 
-    protected FileSystemUtils fileSystemUtils
-    private GitRepoFactory repoProvider
-
-    GitHandler gitHandler
 
     ArgoCD(
             Config config,
@@ -108,13 +107,13 @@ class ArgoCD extends Feature {
 
         log.debug('Cloning Repositories')
 
-        gitRepos.forEach(repoInitializationAction -> {
+        this.gitRepos.forEach(repoInitializationAction -> {
             repoInitializationAction.initLocalRepo()
         })
 
         prepareGitOpsRepos()
 
-        gitRepos.forEach(repoInitializationAction -> {
+        this.gitRepos.forEach(repoInitializationAction -> {
             repoInitializationAction.repo.commitAndPush('Initial Commit')
         })
 
@@ -172,34 +171,34 @@ class ArgoCD extends Feature {
     protected initTenantRepos() {
         if (!config.multiTenant.useDedicatedInstance) {
             clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources', this.gitHandler.tenant)
-            gitRepos += clusterResourcesInitializationAction
+            this.gitRepos.add(clusterResourcesInitializationAction)
 
         } else {
             tenantBootstrapInitializationAction = createRepoInitializationAction('argocd/cluster-resources/argocd/multiTenant/tenant', 'argocd/cluster-resources', this.gitHandler.tenant)
-            gitRepos += tenantBootstrapInitializationAction
+            this.gitRepos.add(tenantBootstrapInitializationAction)
         }
     }
 
     protected initCentralRepos() {
         if (config.multiTenant.useDedicatedInstance) {
             clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources', true)
-            gitRepos += clusterResourcesInitializationAction
+            this.gitRepos.add(clusterResourcesInitializationAction)
         }
     }
 
     private void prepareGitOpsRepos() {
 
         if (!config.features.secrets.active) {
-            log.debug("Deleting unnecessary secrets folder from cluster resources: ${clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
-            FileSystemUtils.deleteDir clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/misc/secrets'
+            log.debug("Deleting unnecessary secrets folder from cluster resources: ${repoRootDir}")
+            FileSystemUtils.deleteDir repoPath("/misc/secrets")
         }
 
         if (!config.features.monitoring.active) {
-            log.debug("Deleting unnecessary monitoring folder from cluster resources: ${clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
-            FileSystemUtils.deleteDir clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + MONITORING_RESOURCES_PATH
+            log.debug("Deleting unnecessary monitoring folder from cluster resources: ${repoRootDir}")
+            FileSystemUtils.deleteDir repoPath(MONITORING_RESOURCES_PATH)
         } else if (!config.features.ingressNginx.active) {
-            FileSystemUtils.deleteFile clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + MONITORING_RESOURCES_PATH + 'ingress-nginx-dashboard.yaml'
-            FileSystemUtils.deleteFile clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + MONITORING_RESOURCES_PATH + 'ingress-nginx-dashboard-requests-handling.yaml'
+            FileSystemUtils.deleteFile repoPath(MONITORING_RESOURCES_PATH + "ingress-nginx-dashboard.yaml")
+            FileSystemUtils.deleteFile repoPath(MONITORING_RESOURCES_PATH + "ingress-nginx-dashboard-requests-handling.yaml")
         }
 
     }
@@ -214,12 +213,6 @@ class ArgoCD extends Feature {
         helmClient.addRepo('argo', helmDependencies[0]['repository'] as String)
         helmClient.dependencyBuild(umbrellaChartPath)
         helmClient.upgrade('argocd', umbrellaChartPath, [namespace: "${namespace}"])
-
-        // Delete helm-argo secrets to decouple from helm.
-        // This does not delete Argo from the cluster, but you can no longer modify argo directly with helm
-        // For development keeping it in helm makes it easier (e.g. for helm uninstall).
-        k8sClient.delete('secret', namespace,
-                new Tuple2('owner', 'helm'), new Tuple2('name', 'argocd'))
 
         log.debug("Setting new argocd admin password")
         // Set admin password imperatively here instead of values.yaml, because we don't want it to show in git repo
