@@ -713,7 +713,6 @@ class Config {
         INIT, RESET, UPGRADE
     }
 
-
     private static final ObjectMapper objectMapper = new ObjectMapper()
             .registerModule(new SimpleModule().addSerializer(GString, new JsonSerializer<GString>() {
                 @Override
