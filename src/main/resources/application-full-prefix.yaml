@@ -1,0 +1,24 @@
+# $schema: https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/configuration.schema.json
+application:
+  "yes": true
+  baseUrl: http://my-prefix.localhost
+  namePrefix: my-prefix
+features:
+  certManager:
+    active: true
+  argocd:
+    active: true
+    operator: false
+  ingressNginx:
+    active: true
+  monitoring:
+    active: true
+  secrets:
+    vault:
+      mode: "dev"
+content:
+  examples: true
+jenkins:
+  active: true
+registry:
+  active: true

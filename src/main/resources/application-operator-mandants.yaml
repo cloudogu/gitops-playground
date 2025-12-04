@@ -1,0 +1,4 @@
+# $schema: https://raw.githubusercontent.com/cloudogu/gitops-playground/main/docs/configuration.schema.json
+content:
+  multitenancyExamples: true
+
