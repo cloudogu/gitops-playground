@@ -4,10 +4,13 @@ import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepo
 import freemarker.template.DefaultObjectWrapperBuilder
+import groovy.util.logging.Slf4j
 
+@Slf4j
 class RepoInitializationAction {
     private GitRepo repo
     private String copyFromDirectory
+    Set<String> subDirsToCopy = [] as Set<String>
     private Config config
     private GitHandler gitHandler
 
@@ -23,7 +26,10 @@ class RepoInitializationAction {
      */
     void initLocalRepo() {
         repo.cloneRepo()
-        repo.copyDirectoryContents(copyFromDirectory)
+
+        log.debug("Initializing repo ${repo.repoTarget} from ${copyFromDirectory} with subdirs: ${subDirsToCopy}")
+        repo.copyDirectoryContents(copyFromDirectory, createSubdirFilter())
+
         replaceTemplates()
     }
 
@@ -34,6 +40,40 @@ class RepoInitializationAction {
 
     GitRepo getRepo() {
         return repo
+    }
+
+    /**
+     * Erzeugt einen FileFilter, der nur Dateien unterhalb der gewünschten
+     * Subdirs (z.B. "argocd/", "apps/monitoring/") durchlässt.
+     * Die Verzeichnisstruktur relativ zu copyFromDirectory bleibt dabei erhalten.
+     */
+    private FileFilter createSubdirFilter() {
+        File srcRoot = new File(copyFromDirectory).canonicalFile
+
+        // "argocd" -> "argocd/", "apps/monitoring" -> "apps/monitoring/"
+        Set<String> prefixes = subDirsToCopy.collect { String s ->
+            s.endsWith('/') ? s : s + '/'
+        } as Set<String>
+
+        return { File f ->
+            // Verzeichnisse immer kopieren, sonst bricht die Baumstruktur auseinander
+            if (f.isDirectory()) {
+                return true
+            }
+
+            File canon = f.canonicalFile
+            String rel = srcRoot.toURI().relativize(canon.toURI()).toString()
+            rel = rel.replace('\\', '/')
+
+            // rel sieht z.B. so aus:
+            // "argocd/operator/argocd.yaml" oder "apps/monitoring/rbac/...yaml"
+            for (String p : prefixes) {
+                if (rel.startsWith(p)) {
+                    return true   // Datei gehört zu einem gewünschten Subtree
+                }
+            }
+            return false            // alle anderen Dateien werden nicht kopiert
+        } as FileFilter
     }
 
     private Map<String, Object> buildTemplateValues(Config config) {

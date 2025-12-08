@@ -84,14 +84,10 @@ class ArgoCD extends Feature {
     @Override
     void enable() {
 
-        initTenantRepos()
-        initCentralRepos()
+        initGitOpsRepos()
 
-        log.debug('Cloning Repositories')
-
-        this.gitRepos.forEach(repoInitializationAction -> {
-            repoInitializationAction.initLocalRepo()
-        })
+        // Init aller Repos (clusterResources, tenantBootstrap, etc.)
+        gitRepos.each { it.initLocalRepo() }
 
         prepareGitOpsRepos()
 
@@ -101,6 +97,26 @@ class ArgoCD extends Feature {
 
         log.debug('Installing Argo CD')
         installArgoCd()
+    }
+
+    private void initGitOpsRepos() {
+        initTenantRepos()
+        initCentralRepos()
+
+        // Ab hier existiert clusterResourcesInitializationAction
+        Set<String> clusterResourceSubDirs = new LinkedHashSet<>()
+
+        // Basis: der argocd-Ordner unter argocd/cluster-resources
+        clusterResourceSubDirs.add('argocd')
+        clusterResourceSubDirs.add('misc')
+
+        // Monitoring nur, wenn Feature aktiv
+        if (config.features.monitoring.active) {
+            clusterResourceSubDirs.add(ArgoCDRepoLayout.monitoringSubdirRel())   // "apps/monitoring"
+        }
+
+        // direkt auf die eine bekannte Action setzen
+        clusterResourcesInitializationAction.subDirsToCopy = clusterResourceSubDirs
     }
 
     private void installArgoCd() {
@@ -131,15 +147,16 @@ class ArgoCD extends Feature {
         }
 
         ArgoCDRepoLayout repoLayout = repoLayout()
+
         if (config.multiTenant.useDedicatedInstance) {
             //Bootstrapping dedicated instance
             k8sClient.applyYaml(repoLayout.dedicatedTenantProject())
             k8sClient.applyYaml(repoLayout.dedicatedBootstrapApp())
 
             //Bootstrapping tenant Argocd projects
-            String tenantRoot = tenantBootstrapInitializationAction.repo.getAbsoluteLocalRepoTmpDir()
-            k8sClient.applyYaml(Path.of(tenantRoot, "argocd/projects/argocd.yaml").toString())
-            k8sClient.applyYaml(Path.of(tenantRoot, "argocd/applications/bootstrap.yaml").toString())
+            ArgoCDRepoLayout tenantRepoLayout = tenantRepoLayout()
+            k8sClient.applyYaml(Path.of(tenantRepoLayout.projectsDir(), "argocd.yaml").toString())
+            k8sClient.applyYaml(Path.of(tenantRepoLayout.applicationsDir(), "bootstrap.yaml").toString())
         } else {
             // Bootstrap root application
             k8sClient.applyYaml(Path.of(repoLayout.projectsDir(), "argocd.yaml").toString())
@@ -181,10 +198,7 @@ class ArgoCD extends Feature {
             FileSystemUtils.deleteDir root + '/misc/secrets'
         }
 
-        if (!config.features.monitoring.active) {
-            log.debug("Deleting unnecessary monitoring folder from cluster resources: ${monitoringRoot}")
-            FileSystemUtils.deleteDir monitoringRoot
-        } else if (!config.features.ingressNginx.active) {
+        if (!config.features.ingressNginx.active) {
             FileSystemUtils.deleteFile monitoringRoot + '/ingress-nginx-dashboard.yaml'
             FileSystemUtils.deleteFile monitoringRoot + '/ingress-nginx-dashboard-requests-handling.yaml'
         }
@@ -437,11 +451,11 @@ class ArgoCD extends Feature {
     }
 
     private ArgoCDRepoLayout repoLayout() {
-        new ArgoCDRepoLayout(getRepoRootDir())
+        new ArgoCDRepoLayout(clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir())
     }
 
-    private String getRepoRootDir() {
-        return clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()
+    private ArgoCDRepoLayout tenantRepoLayout() {
+        new ArgoCDRepoLayout(tenantBootstrapInitializationAction.repo.getAbsoluteLocalRepoTmpDir())
     }
 
 }

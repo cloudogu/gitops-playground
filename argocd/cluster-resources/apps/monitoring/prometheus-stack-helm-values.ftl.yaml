@@ -160,8 +160,8 @@ grafana:
   adminPassword: ${config.application["password"]}
   service:
     type: <#if config.application.remote>LoadBalancer<#else>ClusterIP</#if>
-<#if monitoring.grafana.host?has_content>
-  ingress:
+<#if monitoring?? && monitoring?is_hash && monitoring.grafana?? && monitoring.grafana.host?has_content>
+    ingress:
     enabled: true
     hosts: [${monitoring.grafana.host}]
 </#if>
@@ -341,7 +341,10 @@ prometheus:
       - prometheus-metrics-creds-scmm
       - prometheus-metrics-creds-jenkins
     additionalScrapeConfigs:
-<#if config.scm.scmProviderType?lower_case == "scm_manager">
+<#if config.scm.scmProviderType?lower_case == "scm_manager"
+  && scm.host?has_content
+  && scm.protocol?has_content
+  && scm.path?has_content>
       - job_name: 'scm-manager'
         static_configs:
           - targets: [ '${scm.host}' ]
@@ -351,6 +354,7 @@ prometheus:
           username: '${config.application.namePrefix}metrics'
           password_file: '/etc/prometheus/secrets/prometheus-metrics-creds-scmm/password'
 </#if>
+<#if jenkins?? && jenkins?is_hash>
       - job_name: 'jenkins'
         static_configs:
           - targets: [ '${jenkins.host}' ]
@@ -359,3 +363,4 @@ prometheus:
         basic_auth:
           username: '${jenkins.metricsUsername}'
           password_file: '/etc/prometheus/secrets/prometheus-metrics-creds-jenkins/password'
+</#if>

@@ -2,7 +2,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: kube-prometheus-stack-prometheus
-  namespace: ${namespace}
+  namespace: ${config.application.namePrefix}monitoring
 rules:
   - apiGroups:
       - ""
@@ -39,7 +39,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: kube-prometheus-stack-operator
-  namespace: ${namespace}
+  namespace: ${config.application.namePrefix}monitoring
 rules:
   - verbs:
       - get
@@ -132,11 +132,11 @@ kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: kube-prometheus-stack-operator
-  namespace: ${namespace}
+  namespace: ${config.application.namePrefix}monitoring
 subjects:
   - kind: ServiceAccount
     name: kube-prometheus-stack-operator
-    namespace: ${namePrefix}monitoring
+    namespace: ${config.application.namePrefix}monitoring
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -146,11 +146,11 @@ kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: kube-prometheus-stack-prometheus
-  namespace: ${namespace}
+  namespace: ${config.application.namePrefix}monitoring
 subjects:
   - kind: ServiceAccount
     name: kube-prometheus-stack-prometheus
-    namespace: ${namePrefix}monitoring
+    namespace: ${config.application.namePrefix}monitoring
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -160,7 +160,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: kube-prometheus-stack-grafana
-  namespace: ${namespace}
+  namespace: ${config.application.namePrefix}monitoring
 rules:
   - apiGroups:
       - ""
@@ -176,7 +176,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: kube-prometheus-stack-grafana
-  namespace: ${namespace}
+  namespace: ${config.application.namePrefix}monitoring
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -184,4 +184,4 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: kube-prometheus-stack-grafana
-    namespace: ${namePrefix}monitoring
+    namespace: ${config.application.namePrefix}monitoring

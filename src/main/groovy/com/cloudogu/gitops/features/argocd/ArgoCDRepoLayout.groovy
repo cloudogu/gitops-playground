@@ -12,7 +12,7 @@ class ArgoCDRepoLayout {
     private static final String HELM_DIR           = 'argocd'          // argocd/argocd
     private static final String NETPOL_REL         = 'templates/allow-namespaces.yaml'
     private static final String NAMESPACES_YAML    = 'misc/namespaces.yaml'
-    private static final String MONITORING_REL     = 'misc/monitoring'
+    private static final String MONITORING_REL     = 'apps/monitoring'
 
     private final String repoRootDir
 
@@ -62,6 +62,10 @@ class ArgoCDRepoLayout {
 
     String monitoringDir() {
         Path.of(repoRootDir, MONITORING_REL).toString()
+    }
+
+    static String monitoringSubdirRel() {
+        MONITORING_REL   // z.B. "apps/monitoring"
     }
 
     // --- files ---
