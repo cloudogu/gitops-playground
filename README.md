@@ -645,7 +645,7 @@ features:
 In this Example we override the default `controller.replicaCount` (GOP's default is 2).
 
 This config file is merged with precedence over the defaults set by 
-* [the GOP](applications/cluster-resources/ingress-nginx-helm-values.ftl.yaml) and
+* [the GOP](argocd/cluster-resources/apps/ingress/ingress-nginx-helm-values.ftl.yaml) and
 * [the charts itself](https://github.com/kubernetes/ingress-nginx/blob/main/charts/ingress-nginx/values.yaml).
 
 ##### Deploy Ingresses

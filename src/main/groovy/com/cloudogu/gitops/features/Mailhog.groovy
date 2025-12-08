@@ -23,7 +23,7 @@ import java.nio.file.Path
 @Order(200)
 class Mailhog extends Feature implements FeatureWithImage {
 
-    static final String HELM_VALUES_PATH = "applications/cluster-resources/mailhog-helm-values.ftl.yaml"
+    static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/mailhog/mailhog-helm-values.ftl.yaml"
 
     String namespace = "${config.application.namePrefix}monitoring"
     Config config

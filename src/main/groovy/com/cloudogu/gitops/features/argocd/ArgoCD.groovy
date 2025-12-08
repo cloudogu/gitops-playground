@@ -89,8 +89,6 @@ class ArgoCD extends Feature {
         // Init aller Repos (clusterResources, tenantBootstrap, etc.)
         gitRepos.each { it.initLocalRepo() }
 
-        prepareGitOpsRepos()
-
         this.gitRepos.forEach(repoInitializationAction -> {
             repoInitializationAction.repo.commitAndPush('Initial Commit')
         })
@@ -108,11 +106,51 @@ class ArgoCD extends Feature {
 
         // Basis: der argocd-Ordner unter argocd/cluster-resources
         clusterResourceSubDirs.add('argocd')
-        clusterResourceSubDirs.add('misc')
 
-        // Monitoring nur, wenn Feature aktiv
+        if (config.features.certManager.active) {
+            clusterResourceSubDirs.add(ArgoCDRepoLayout.certManagerSubdirRel())   // "apps/cert-manager"
+            clusterResourceSubDirs.add('misc') //TODO change later
+        }
+        if (config.features.ingressNginx.active) {
+            clusterResourceSubDirs.add(ArgoCDRepoLayout.ingressSubdirRel())
+            clusterResourceSubDirs.add('misc') //TODO change later
+        }
+
+        if (config.jenkins.active) {
+            clusterResourceSubDirs.add(ArgoCDRepoLayout.jenkinsSubdirRel())
+            clusterResourceSubDirs.add('misc') //TODO change later
+        }
+        if (config.features.mail.active) {
+            clusterResourceSubDirs.add(ArgoCDRepoLayout.mailhogSubdirRel())
+            clusterResourceSubDirs.add('misc') //TODO change later
+        }
+
         if (config.features.monitoring.active) {
             clusterResourceSubDirs.add(ArgoCDRepoLayout.monitoringSubdirRel())   // "apps/monitoring"
+            clusterResourceSubDirs.add('misc')   //TODO change later
+
+            ArgoCDRepoLayout repoLayout = repoLayout()
+            String monitoringRoot = repoLayout.monitoringDir()
+            if (!config.features.ingressNginx.active) {
+                FileSystemUtils.deleteFile monitoringRoot + '/ingress-nginx-dashboard.yaml'
+                FileSystemUtils.deleteFile monitoringRoot + '/ingress-nginx-dashboard-requests-handling.yaml'
+            }
+            if (!config.jenkins.active) {
+                FileSystemUtils.deleteFile monitoringRoot + '/jenkins-dashboard.ftl.yaml'
+            }
+            if (!config.scm.scmManager?.url) {
+                FileSystemUtils.deleteFile monitoringRoot + '/scmm-dashboard.ftl.yaml'
+            }
+        }
+
+        if (config.scm.scmManager?.url) {
+            clusterResourceSubDirs.add(ArgoCDRepoLayout.scmManagerSubdirRel())
+            clusterResourceSubDirs.add('misc') //TODO change later
+        }
+
+        if (config.features.secrets.active) {
+            clusterResourceSubDirs.add(ArgoCDRepoLayout.secretsSubdirRel())
+            clusterResourceSubDirs.add('misc') //TODO change later
         }
 
         // direkt auf die eine bekannte Action setzen
@@ -120,7 +158,6 @@ class ArgoCD extends Feature {
     }
 
     private void installArgoCd() {
-
         prepareArgoCdRepo()
 
         log.debug("Creating namespaces")
@@ -185,22 +222,6 @@ class ArgoCD extends Feature {
         if (config.multiTenant.useDedicatedInstance) {
             clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources', true)
             this.gitRepos.add(clusterResourcesInitializationAction)
-        }
-    }
-
-    private void prepareGitOpsRepos() {
-        ArgoCDRepoLayout repoLayout = repoLayout()
-        String root = repoLayout.rootDir()
-        String monitoringRoot = repoLayout.monitoringDir()
-
-        if (!config.features.secrets.active) {
-            log.debug("Deleting unnecessary secrets folder from cluster resources: ${root}")
-            FileSystemUtils.deleteDir root + '/misc/secrets'
-        }
-
-        if (!config.features.ingressNginx.active) {
-            FileSystemUtils.deleteFile monitoringRoot + '/ingress-nginx-dashboard.yaml'
-            FileSystemUtils.deleteFile monitoringRoot + '/ingress-nginx-dashboard-requests-handling.yaml'
         }
     }
 

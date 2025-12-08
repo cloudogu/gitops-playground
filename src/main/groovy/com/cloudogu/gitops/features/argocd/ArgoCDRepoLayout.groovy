@@ -12,7 +12,14 @@ class ArgoCDRepoLayout {
     private static final String HELM_DIR           = 'argocd'          // argocd/argocd
     private static final String NETPOL_REL         = 'templates/allow-namespaces.yaml'
     private static final String NAMESPACES_YAML    = 'misc/namespaces.yaml'
-    private static final String MONITORING_REL     = 'apps/monitoring'
+    
+    private static final String APPS_MONITORING_REL     = 'apps/monitoring'
+    private static final String APPS_SECRETS_REL        = 'apps/secrets'
+    private static final String APPS_CERTMANAGER_REL    = 'apps/cert-manager'
+    private static final String APPS_JENKINS_REL        = 'apps/jenkins'
+    private static final String APPS_INGRESS_REL        = 'apps/ingress'
+    private static final String APPS_MAILHOG_REL         = 'apps/mailhog'
+    private static final String APPS_SCMMANAGER_REL     = 'apps/scm-manager'
 
     private final String repoRootDir
 
@@ -61,11 +68,33 @@ class ArgoCDRepoLayout {
     }
 
     String monitoringDir() {
-        Path.of(repoRootDir, MONITORING_REL).toString()
+        Path.of(repoRootDir, APPS_MONITORING_REL).toString()
     }
 
     static String monitoringSubdirRel() {
-        MONITORING_REL   // z.B. "apps/monitoring"
+        APPS_MONITORING_REL   // "apps/monitoring"
+    }
+
+    static String secretsSubdirRel() {
+        APPS_SECRETS_REL   // "apps/secrets"
+    }
+
+    static String certManagerSubdirRel() {
+        APPS_CERTMANAGER_REL
+    }
+
+    static String jenkinsSubdirRel() {
+        APPS_JENKINS_REL
+    }
+
+    static String ingressSubdirRel() {
+        APPS_INGRESS_REL
+    }
+    static String mailhogSubdirRel() {
+        APPS_MAILHOG_REL 
+    }
+    static String scmManagerSubdirRel() {
+        APPS_SCMMANAGER_REL
     }
 
     // --- files ---

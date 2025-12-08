@@ -84,7 +84,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
                                                       releaseName: releaseName,
                                                       values     : inlineValues
                                               ]
-                                      ]],
+                                      ]], //TODO add here deployment over misc folder of each feature
                         syncPolicy : [
                                 automated  : [
                                         prune   : true,
@@ -100,7 +100,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
                 ]
         ])
 
-        clusterResourcesRepo.writeFile("argocd/${releaseName}.yaml", yamlResult)
+        clusterResourcesRepo.writeFile("misc/${releaseName}.yaml", yamlResult)
 
         log.debug("Deploying helm release ${releaseName} basing on chart ${chartOrPath} from ${repoURL}, version " +
                 "${version}, into namespace ${namespace}. Using Argo CD application:\n${yamlResult}")
