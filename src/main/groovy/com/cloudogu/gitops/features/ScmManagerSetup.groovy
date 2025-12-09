@@ -139,6 +139,6 @@ class ScmManagerSetup extends Feature {
     }
 
     String getActiveNamespaceFromFeature() {
-        return isEnabled() && config.scm.scmManager.internal ? getNamespace() : null
+        return isEnabled() && config?.scm?.scmManager?.internal ? getNamespace() : null
     }
 }
