@@ -137,4 +137,8 @@ class ScmManagerSetup extends Feature {
                 CENTRAL_SCM_PASSWORD         : config.multiTenant.scmManager.password
         ])
     }
+
+    String getActiveNamespaceFromFeature() {
+        return isEnabled() && config.scm.scmManager.internal ? getNamespace() : null
+    }
 }
