@@ -74,6 +74,8 @@ class RepoInitializationAction {
             return norm + '/'
         } as Set<String>
 
+        boolean hasPrefixes = !prefixes.isEmpty()
+
         return { File f ->
             File canon = f.canonicalFile
             String rel = srcRoot.toURI().relativize(canon.toURI()).toString()
@@ -84,9 +86,20 @@ class RepoInitializationAction {
                 return true
             }
 
+            // Global excludes for feature templates:
+            // do NOT copy anything under apps/**/templates/** into the SCM repo
+            if (rel.startsWith('apps/') && rel.contains('/templates/')) {
+                return false
+            }
+
             boolean isDir = f.isDirectory()
             // For directories, always compare using a trailing slash
             String relDir = rel.endsWith('/') ? rel : rel + '/'
+
+            // If no prefixes are configured, copy everything (except templates)
+            if (!hasPrefixes) {
+                return true
+            }
 
             if (isDir) {
                 // Allow a directory if it is:

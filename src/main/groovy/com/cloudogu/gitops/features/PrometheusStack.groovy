@@ -24,8 +24,8 @@ import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.RepoTyp
 class PrometheusStack extends Feature implements FeatureWithImage {
 
     static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/prometheusstack/templates/prometheus-stack-helm-values.ftl.yaml"
-    static final String RBAC_NAMESPACE_ISOLATION_TEMPLATE = "argocd/cluster-resources/apps/prometheusstack/rbac/namespace-isolation-rbac.ftl.yaml"
-    static final String NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE = "argocd/cluster-resources/apps/prometheusstack/netpols/prometheus-allow-scraping.ftl.yaml"
+    static final String RBAC_NAMESPACE_ISOLATION_TEMPLATE = "argocd/cluster-resources/apps/prometheusstack/templates/rbac/namespace-isolation-rbac.ftl.yaml"
+    static final String NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE = "argocd/cluster-resources/apps/prometheusstack/templates/netpols/prometheus-allow-scraping.ftl.yaml"
 
     String namespace = "${config.application.namePrefix}monitoring"
     Config config
