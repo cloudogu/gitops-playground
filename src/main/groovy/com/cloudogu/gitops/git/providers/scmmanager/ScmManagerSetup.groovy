@@ -18,7 +18,7 @@ class ScmManagerSetup {
         this.scmManager = scmManager
     }
 
-    void waitForScmmAvailable(int timeoutSeconds = 60, int intervalMillis = 5000, int startDelay = 0) {
+    void waitForScmmAvailable(int timeoutSeconds = 120, int intervalMillis = 5000, int startDelay = 0) {
         long startTime = System.currentTimeMillis()
         long timeoutMillis = timeoutSeconds * 1000L
         sleep(startDelay)
@@ -33,6 +33,7 @@ class ScmManagerSetup {
             } catch (Exception e) {
                 println "Waiting for SCM-Manager... Error: ${e.message}"
             }
+
 
             sleep(intervalMillis)
         }
@@ -148,7 +149,7 @@ class ScmManagerSetup {
                 disableMercurialTrigger       : false,
                 disableGitTrigger             : false,
                 disableEventTrigger           : false,
-                url                           : this.scmManager.url
+                url                           : this.scmManager.config.jenkins.urlForScm
         ] as Map<String, Object>
 
         ScmManagerApiClient.handleApiResponse(this.scmManager.apiClient.pluginApi().configureJenkinsPlugin(jenkinsPluginConfig))
