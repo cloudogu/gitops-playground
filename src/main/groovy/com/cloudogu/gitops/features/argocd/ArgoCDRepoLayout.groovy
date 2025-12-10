@@ -13,7 +13,7 @@ class ArgoCDRepoLayout {
     private static final String NETPOL_REL         = 'templates/allow-namespaces.yaml'
     private static final String NAMESPACES_YAML    = 'misc/namespaces.yaml'
     
-    private static final String APPS_MONITORING_REL     = 'apps/monitoring'
+    private static final String APPS_MONITORING_REL     = 'apps/prometheusstack'
     private static final String APPS_SECRETS_REL        = 'apps/secrets'
     private static final String APPS_CERTMANAGER_REL    = 'apps/cert-manager'
     private static final String APPS_JENKINS_REL        = 'apps/jenkins'

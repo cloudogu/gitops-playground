@@ -45,9 +45,6 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
         GitRepo clusterResourcesRepo = gitRepoProvider.getRepo('argocd/cluster-resources', this.gitHandler.resourcesScm)
         clusterResourcesRepo.cloneRepo()
 
-        // Inline values from tmpHelmValues file into ArgoCD Application YAML
-        def inlineValues = helmValuesPath.toFile().text
-
         String project = "cluster-resources"
         String namespaceName = "${namePrefix}argocd"
 
@@ -57,6 +54,45 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
             namespaceName = "argocd"
             project = config.application.namePrefix.replaceFirst(/-$/, "")
         }
+
+        // Feature-Name -> Ordner unter apps/<feature>/misc
+        // z.B. repoName = "prometheus" → apps/prometheus/misc
+        String featureName = repoName
+        String miscPath    = "apps/${featureName}/misc"
+        String valuesRelPath = "${miscPath}/values.yaml"   // relativ zum Repo-Root
+
+        // Inline values from tmpHelmValues file into ArgoCD Application YAML
+        def inlineValues = helmValuesPath.toFile().text
+        clusterResourcesRepo.writeFile(valuesRelPath, inlineValues)
+
+        // 1) Helm-Source (externe Chart-Quelle)
+        def helmSource = [
+                repoURL                          : repoURL,
+                (chooseKeyChartOrPath(repoType)) : chartOrPath,
+                targetRevision                   : version,
+                helm                             : [
+                        releaseName: releaseName,
+                        // $values kommt aus ref: values in der zweiten Source
+                        valueFiles : [
+                                "\$values/${valuesRelPath}".toString()
+                        ]
+                ]
+        ]
+
+        // 2) Git-Source für misc + values
+        //   - repoURL: cluster-resources-Repo
+        //   - ref: values  → wird in valueFiles als $values verwendet
+        //   - path: apps/<feature>/misc → zusätzliche Manifeste
+
+        def miscRepoUrl = "${clusterResourcesRepo.gitProvider.repoPrefix()}argocd/cluster-resources.git".toString()
+        def miscSource = [
+                repoURL       :  miscRepoUrl,
+                targetRevision: "main",
+                ref           : "values",
+//                path          : miscPath
+        ]
+
+        def sources = [helmSource, miscSource]
 
         // Prepare ArgoCD Application YAML
         def yamlMapper = YAMLMapper.builder()
@@ -76,15 +112,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
                                 namespace: namespace
                         ],
                         project    : project,
-                        sources    : [[
-                                              repoURL                            : repoURL,
-                                              "${chooseKeyChartOrPath(repoType)}": chartOrPath,
-                                              targetRevision                     : version,
-                                              helm                               : [
-                                                      releaseName: releaseName,
-                                                      values     : inlineValues
-                                              ]
-                                      ]], //TODO add here deployment over misc folder of each feature
+                        sources    : sources,
                         syncPolicy : [
                                 automated  : [
                                         prune   : true,
@@ -100,7 +128,9 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
                 ]
         ])
 
-        clusterResourcesRepo.writeFile("misc/${releaseName}.yaml", yamlResult)
+        String featureFolder = "apps/${featureName}"
+        String appManifestPath = "${featureFolder}/${releaseName}.yaml"
+        clusterResourcesRepo.writeFile(appManifestPath, yamlResult)
 
         log.debug("Deploying helm release ${releaseName} basing on chart ${chartOrPath} from ${repoURL}, version " +
                 "${version}, into namespace ${namespace}. Using Argo CD application:\n${yamlResult}")

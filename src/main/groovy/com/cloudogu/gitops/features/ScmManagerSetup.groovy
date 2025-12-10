@@ -15,7 +15,7 @@ import jakarta.inject.Singleton
 @Order(50)
 class ScmManagerSetup extends Feature {
 
-    static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/scm-manager/values.ftl.yaml"
+    static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/scm-manager/misc/values.ftl.yaml"
 
     String namespace
     private Config config
@@ -56,19 +56,14 @@ class ScmManagerSetup extends Feature {
     @Override
     void enable() {
         if (config.scm.scmManager.internal) {
-            String releaseName = 'scmm'
+            String releaseName = config.scm.scmManager.releaseName
 
             k8sClient.createNamespace(namespace)
 
             def helmConfig = config.scm.scmManager.helm
 
             def templatedMap = templateToMap(HELM_VALUES_PATH, [
-                    host       : config.scm.scmManager.ingress,
-                    remote     : config.application.remote,
-                    username   : config.scm.scmManager.username,
-                    password   : config.scm.scmManager.password,
-                    helm       : config.scm.scmManager.helm,
-                    releaseName: releaseName
+                    config     : config
             ])
 
             def mergedMap = MapUtils.deepMerge(helmConfig.values, templatedMap)

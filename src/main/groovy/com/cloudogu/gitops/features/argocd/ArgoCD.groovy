@@ -83,11 +83,11 @@ class ArgoCD extends Feature {
 
     @Override
     void enable() {
-
         initGitOpsRepos()
 
-        // Init aller Repos (clusterResources, tenantBootstrap, etc.)
-        gitRepos.each { it.initLocalRepo() }
+        // init all repos (clusterResources, tenantBootstrap, etc.)
+        gitRepos.each { RepoInitializationAction repoInitializationAction -> repoInitializationAction.initLocalRepo() }
+        prepareGitOpsRepos()
 
         this.gitRepos.forEach(repoInitializationAction -> {
             repoInitializationAction.repo.commitAndPush('Initial Commit')
@@ -97,68 +97,8 @@ class ArgoCD extends Feature {
         installArgoCd()
     }
 
-    private void initGitOpsRepos() {
-        initTenantRepos()
-        initCentralRepos()
-
-        // Ab hier existiert clusterResourcesInitializationAction
-        Set<String> clusterResourceSubDirs = new LinkedHashSet<>()
-
-        // Basis: der argocd-Ordner unter argocd/cluster-resources
-        clusterResourceSubDirs.add('argocd')
-
-        if (config.features.certManager.active) {
-            clusterResourceSubDirs.add(ArgoCDRepoLayout.certManagerSubdirRel())   // "apps/cert-manager"
-            clusterResourceSubDirs.add('misc') //TODO change later
-        }
-        if (config.features.ingressNginx.active) {
-            clusterResourceSubDirs.add(ArgoCDRepoLayout.ingressSubdirRel())
-            clusterResourceSubDirs.add('misc') //TODO change later
-        }
-
-        if (config.jenkins.active) {
-            clusterResourceSubDirs.add(ArgoCDRepoLayout.jenkinsSubdirRel())
-            clusterResourceSubDirs.add('misc') //TODO change later
-        }
-        if (config.features.mail.active) {
-            clusterResourceSubDirs.add(ArgoCDRepoLayout.mailhogSubdirRel())
-            clusterResourceSubDirs.add('misc') //TODO change later
-        }
-
-        if (config.features.monitoring.active) {
-            clusterResourceSubDirs.add(ArgoCDRepoLayout.monitoringSubdirRel())   // "apps/monitoring"
-            clusterResourceSubDirs.add('misc')   //TODO change later
-
-            ArgoCDRepoLayout repoLayout = repoLayout()
-            String monitoringRoot = repoLayout.monitoringDir()
-            if (!config.features.ingressNginx.active) {
-                FileSystemUtils.deleteFile monitoringRoot + '/ingress-nginx-dashboard.yaml'
-                FileSystemUtils.deleteFile monitoringRoot + '/ingress-nginx-dashboard-requests-handling.yaml'
-            }
-            if (!config.jenkins.active) {
-                FileSystemUtils.deleteFile monitoringRoot + '/jenkins-dashboard.ftl.yaml'
-            }
-            if (!config.scm.scmManager?.url) {
-                FileSystemUtils.deleteFile monitoringRoot + '/scmm-dashboard.ftl.yaml'
-            }
-        }
-
-        if (config.scm.scmManager?.url) {
-            clusterResourceSubDirs.add(ArgoCDRepoLayout.scmManagerSubdirRel())
-            clusterResourceSubDirs.add('misc') //TODO change later
-        }
-
-        if (config.features.secrets.active) {
-            clusterResourceSubDirs.add(ArgoCDRepoLayout.secretsSubdirRel())
-            clusterResourceSubDirs.add('misc') //TODO change later
-        }
-
-        // direkt auf die eine bekannte Action setzen
-        clusterResourcesInitializationAction.subDirsToCopy = clusterResourceSubDirs
-    }
 
     private void installArgoCd() {
-        prepareArgoCdRepo()
 
         log.debug("Creating namespaces")
         k8sClient.createNamespaces(config.application.namespaces.activeNamespaces.toList())
@@ -207,6 +147,43 @@ class ArgoCD extends Feature {
                 new Tuple2('owner', 'helm'), new Tuple2('name', 'argocd'))
     }
 
+
+    private void initGitOpsRepos() {
+        initTenantRepos()
+        initCentralRepos()
+
+        Set<String> clusterResourceSubDirs = new LinkedHashSet<>()
+
+        clusterResourceSubDirs.add('argocd')
+
+        if (config.features.certManager.active) {
+            clusterResourceSubDirs.add(ArgoCDRepoLayout.certManagerSubdirRel())   // "apps/cert-manager"
+        }
+        if (config.features.ingressNginx.active) {
+            clusterResourceSubDirs.add(ArgoCDRepoLayout.ingressSubdirRel())
+        }
+
+        if (config.jenkins.active) {
+            clusterResourceSubDirs.add(ArgoCDRepoLayout.jenkinsSubdirRel())
+        }
+        if (config.features.mail.active) {
+            clusterResourceSubDirs.add(ArgoCDRepoLayout.mailhogSubdirRel())
+        }
+
+        if (config.features.monitoring.active) {
+            clusterResourceSubDirs.add(ArgoCDRepoLayout.monitoringSubdirRel())
+        }
+        if (config.scm.scmManager?.url) {
+            clusterResourceSubDirs.add(ArgoCDRepoLayout.scmManagerSubdirRel())
+        }
+
+        if (config.features.secrets.active) {
+            clusterResourceSubDirs.add(ArgoCDRepoLayout.secretsSubdirRel())
+        }
+
+        clusterResourcesInitializationAction.subDirsToCopy = clusterResourceSubDirs
+    }
+
     private void initTenantRepos() {
         if (!config.multiTenant.useDedicatedInstance) {
             clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources', this.gitHandler.tenant)
@@ -222,6 +199,49 @@ class ArgoCD extends Feature {
         if (config.multiTenant.useDedicatedInstance) {
             clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources', true)
             this.gitRepos.add(clusterResourcesInitializationAction)
+        }
+    }
+
+    private void prepareGitOpsRepos() {
+        ArgoCDRepoLayout repoLayout = repoLayout()
+
+        if (config.features.argocd.operator) {
+            log.debug("Deleting unnecessary argocd (argocd helm variant) folder from argocd repo: ${repoLayout.helmDir()}")
+            FileSystemUtils.deleteDir repoLayout.helmDir()
+            log.debug("Deleting unnecessary namespaces resources from clusterResources repo: ${repoLayout.namespacesYaml()}")
+            FileSystemUtils.deleteFile repoLayout.namespacesYaml()
+            generateRBAC()
+        } else {
+            log.debug("Deleting unnecessary operator (argocd operator variant) folder from argocd repo: ${repoLayout.operatorDir()}")
+            FileSystemUtils.deleteDir repoLayout.operatorDir()
+        }
+
+        if (config.multiTenant.useDedicatedInstance) {
+            log.debug("Deleting unnecessary non dedicated instances folders from argocd repo: applications=${repoLayout.applicationsDir()}, projects=${repoLayout.projectsDir()}")
+            FileSystemUtils.deleteDir repoLayout.applicationsDir()
+            FileSystemUtils.deleteDir repoLayout.projectsDir()
+        } else {
+            log.debug("Deleting unnecessary multiTenant folder from argocd repo: ${repoLayout.multiTenantDir()}")
+            FileSystemUtils.deleteDir repoLayout.multiTenantDir()
+        }
+
+        if (!config.application.netpols) {
+            log.debug("Deleting argocd netpols at ${repoLayout.netpolFile()}")
+            FileSystemUtils.deleteFile repoLayout.netpolFile()
+        }
+
+        if (config.features.monitoring.active) {
+            String monitoringRootDashboard = "${repoLayout.monitoringDir()}/misc/dashboard"
+            if (!config.features.ingressNginx.active) {
+                FileSystemUtils.deleteFile monitoringRootDashboard + '/ingress-nginx-dashboard.yaml'
+                FileSystemUtils.deleteFile monitoringRootDashboard + '/ingress-nginx-dashboard-requests-handling.yaml'
+            }
+            if (!config.jenkins.active) {
+                FileSystemUtils.deleteFile monitoringRootDashboard + '/jenkins-dashboard.yaml'
+            }
+            if (!config.scm.scmManager?.url) {
+                FileSystemUtils.deleteFile monitoringRootDashboard + '/scmm-dashboard.yaml'
+            }
         }
     }
 
@@ -421,37 +441,6 @@ class ArgoCD extends Feature {
         }
     }
 
-    protected void prepareArgoCdRepo() {
-        ArgoCDRepoLayout repoLayout = repoLayout()
-
-        if (config.features.argocd.operator) {
-            log.debug("Deleting unnecessary argocd (argocd helm variant) folder from argocd repo: ${repoLayout.helmDir()}")
-            FileSystemUtils.deleteDir repoLayout.helmDir()
-            log.debug("Deleting unnecessary namespaces resources from clusterResources repo: ${repoLayout.namespacesYaml()}")
-            FileSystemUtils.deleteFile repoLayout.namespacesYaml()
-            generateRBAC()
-        } else {
-            log.debug("Deleting unnecessary operator (argocd operator variant) folder from argocd repo: ${repoLayout.operatorDir()}")
-            FileSystemUtils.deleteDir repoLayout.operatorDir()
-        }
-
-        if (config.multiTenant.useDedicatedInstance) {
-            log.debug("Deleting unnecessary non dedicated instances folders from argocd repo: applications=${repoLayout.applicationsDir()}, projects=${repoLayout.projectsDir()}")
-            FileSystemUtils.deleteDir repoLayout.applicationsDir()
-            FileSystemUtils.deleteDir repoLayout.projectsDir()
-        } else {
-            log.debug("Deleting unnecessary multiTenant folder from argocd repo: ${repoLayout.multiTenantDir()}")
-            FileSystemUtils.deleteDir repoLayout.multiTenantDir()
-        }
-
-        if (!config.application.netpols) {
-            log.debug("Deleting argocd netpols at ${repoLayout.netpolFile()}")
-            FileSystemUtils.deleteFile repoLayout.netpolFile()
-        }
-
-        clusterResourcesInitializationAction.repo.commitAndPush("Initial Commit")
-    }
-
     protected RepoInitializationAction createRepoInitializationAction(String localSrcDir, String scmRepoTarget, Boolean isCentral) {
         GitProvider provider = (Boolean.TRUE == isCentral) ? gitHandler.central : gitHandler.tenant
         new RepoInitializationAction(config, repoProvider.getRepo(scmRepoTarget, provider), this.gitHandler, localSrcDir)
@@ -471,7 +460,7 @@ class ArgoCD extends Feature {
                 new Tuple2('argocd.argoproj.io/secret-type', 'repo-creds'))
     }
 
-    private ArgoCDRepoLayout repoLayout() {
+    protected ArgoCDRepoLayout repoLayout() {
         new ArgoCDRepoLayout(clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir())
     }
 

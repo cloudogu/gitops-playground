@@ -23,9 +23,9 @@ import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.RepoTyp
 @Order(300)
 class PrometheusStack extends Feature implements FeatureWithImage {
 
-    static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/monitoring/prometheus-stack-helm-values.ftl.yaml"
-    static final String RBAC_NAMESPACE_ISOLATION_TEMPLATE = "argocd/cluster-resources/apps/monitoring/rbac/namespace-isolation-rbac.ftl.yaml"
-    static final String NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE = "argocd/cluster-resources/apps/monitoring/netpols/prometheus-allow-scraping.ftl.yaml"
+    static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/prometheusstack/templates/prometheus-stack-helm-values.ftl.yaml"
+    static final String RBAC_NAMESPACE_ISOLATION_TEMPLATE = "argocd/cluster-resources/apps/prometheusstack/rbac/namespace-isolation-rbac.ftl.yaml"
+    static final String NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE = "argocd/cluster-resources/apps/prometheusstack/netpols/prometheus-allow-scraping.ftl.yaml"
 
     String namespace = "${config.application.namePrefix}monitoring"
     Config config
@@ -111,7 +111,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
                              namePrefix: namePrefix,
                              config    : config])
                     clusterResourcesRepo.writeFile(
-                            "apps/monitoring/misc/rbac/${currentNamespace}.yaml",
+                            "apps/prometheusstack/misc/rbac/${currentNamespace}.yaml",
                             rbacYaml
                     )
                 }
@@ -122,7 +122,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
                              namePrefix: namePrefix])
 
                     clusterResourcesRepo.writeFile(
-                            "apps/monitoring/misc/netpols/${currentNamespace}.yaml",
+                            "apps/prometheusstack/misc/netpols/${currentNamespace}.yaml",
                             netpolsYaml
                     )
                 }

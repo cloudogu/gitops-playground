@@ -9,7 +9,7 @@ spec:
     server: https://kubernetes.default.svc
     namespace: ${config.application.namePrefix}argocd
   source:
-    path: apps/monitoring/misc
+    path: apps/prometheusstack/misc
     repoURL: ${scm.repoUrl}argocd/cluster-resources.git
     targetRevision: main
     directory:

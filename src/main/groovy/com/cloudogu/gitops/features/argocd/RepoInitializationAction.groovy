@@ -3,6 +3,7 @@ package com.cloudogu.gitops.features.argocd
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepo
+import com.cloudogu.gitops.utils.FileSystemUtils
 import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
 
@@ -14,6 +15,8 @@ class RepoInitializationAction {
     private Config config
     private GitHandler gitHandler
 
+    Closure afterCopyHook
+
     RepoInitializationAction(Config config, GitRepo repo,GitHandler gitHandler, String copyFromDirectory) {
         this.config = config
         this.repo = repo
@@ -22,14 +25,14 @@ class RepoInitializationAction {
     }
 
     /**
-     * Clone repo from SCM and initialize it with default basic files. Afterwards we can edit these files.
+     * Clone repo from SCM and initialize it by copying only the configured subdirectories.
+     * Afterwards we can edit these files.
      */
     void initLocalRepo() {
         repo.cloneRepo()
 
         log.debug("Initializing repo ${repo.repoTarget} from ${copyFromDirectory} with subdirs: ${subDirsToCopy}")
         repo.copyDirectoryContents(copyFromDirectory, createSubdirFilter())
-
         replaceTemplates()
     }
 
@@ -40,40 +43,6 @@ class RepoInitializationAction {
 
     GitRepo getRepo() {
         return repo
-    }
-
-    /**
-     * Erzeugt einen FileFilter, der nur Dateien unterhalb der gewünschten
-     * Subdirs (z.B. "argocd/", "apps/monitoring/") durchlässt.
-     * Die Verzeichnisstruktur relativ zu copyFromDirectory bleibt dabei erhalten.
-     */
-    private FileFilter createSubdirFilter() {
-        File srcRoot = new File(copyFromDirectory).canonicalFile
-
-        // "argocd" -> "argocd/", "apps/monitoring" -> "apps/monitoring/"
-        Set<String> prefixes = subDirsToCopy.collect { String s ->
-            s.endsWith('/') ? s : s + '/'
-        } as Set<String>
-
-        return { File f ->
-            // Verzeichnisse immer kopieren, sonst bricht die Baumstruktur auseinander
-            if (f.isDirectory()) {
-                return true
-            }
-
-            File canon = f.canonicalFile
-            String rel = srcRoot.toURI().relativize(canon.toURI()).toString()
-            rel = rel.replace('\\', '/')
-
-            // rel sieht z.B. so aus:
-            // "argocd/operator/argocd.yaml" oder "apps/monitoring/rbac/...yaml"
-            for (String p : prefixes) {
-                if (rel.startsWith(p)) {
-                    return true   // Datei gehört zu einem gewünschten Subtree
-                }
-            }
-            return false            // alle anderen Dateien werden nicht kopiert
-        } as FileFilter
     }
 
     private Map<String, Object> buildTemplateValues(Config config) {
@@ -94,5 +63,53 @@ class RepoInitializationAction {
 
         return model
     }
+
+    private FileFilter createSubdirFilter() {
+        File srcRoot = new File(copyFromDirectory).canonicalFile
+
+        // Normalize entries like "argocd", "apps/monitoring" to "argocd/" or "apps/monitoring/"
+        Set<String> prefixes = subDirsToCopy.collect { String s ->
+            def norm = s.replace('\\', '/')
+            norm = norm.replaceAll('^/+', '').replaceAll('/+$', '')
+            return norm + '/'
+        } as Set<String>
+
+        return { File f ->
+            File canon = f.canonicalFile
+            String rel = srcRoot.toURI().relativize(canon.toURI()).toString()
+            rel = rel.replace('\\', '/')
+
+            // Always copy the root (copyFromDirectory itself), otherwise we can't build up the directory structure
+            if (rel == '' || rel == '.') {
+                return true
+            }
+
+            boolean isDir = f.isDirectory()
+            // For directories, always compare using a trailing slash
+            String relDir = rel.endsWith('/') ? rel : rel + '/'
+
+            if (isDir) {
+                // Allow a directory if it is:
+                // - exactly one of the requested subdirs, or
+                // - inside one of them, or
+                // - a parent of one of them (needed to keep the tree structure).
+                //
+                // Example (subDirsToCopy = ["argocd", "apps/monitoring"]):
+                //   relDir = "argocd/"          → allowed
+                //   relDir = "argocd/operator/" → allowed
+                //   relDir = "apps/"            → allowed (parent of "apps/monitoring/")
+                //   relDir = "apps/secrets/"    → rejected
+                return prefixes.any { String p ->
+                    relDir == p || relDir.startsWith(p) || p.startsWith(relDir)
+                }
+            } else {
+                // Only copy files that are directly under one of the allowed subtrees
+                return prefixes.any { String p ->
+                    rel.startsWith(p)
+                }
+            }
+        } as FileFilter
+    }
+
 
 }

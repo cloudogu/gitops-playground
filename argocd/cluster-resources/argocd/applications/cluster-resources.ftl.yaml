@@ -12,11 +12,14 @@ spec:
     server: https://kubernetes.default.svc
   project: argocd
   source:
-    path: misc
+    path: apps
     repoURL: ${scm.repoUrl}argocd/cluster-resources.git
     targetRevision: main
     directory:
       recurse: true
+      exclude: |
+        **/misc/**
+        **/templates/**
   syncPolicy:
     automated:
       prune: false # is set to false to prevent projects to be deleted by accident

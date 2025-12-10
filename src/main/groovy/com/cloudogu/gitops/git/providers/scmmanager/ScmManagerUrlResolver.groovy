@@ -14,7 +14,6 @@ class ScmManagerUrlResolver {
     private final K8sClient k8s
     private final NetworkingUtils net
 
-    private final String releaseName = 'scmm'
     private URI cachedClusterBind
 
     ScmManagerUrlResolver(Config config, ScmManagerConfig scmm, K8sClient k8s, NetworkingUtils net) {
@@ -95,7 +94,7 @@ class ScmManagerUrlResolver {
 
         def namespace = (scmm.namespace ?: "scm-manager").strip()
 
-        final def port = k8s.waitForNodePort(releaseName, namespace)
+        final def port = k8s.waitForNodePort(config.scm.scmManager.releaseName, namespace)
         final def host = net.findClusterBindAddress()
         cachedClusterBind = new URI("http://${host}:${port}")
         return cachedClusterBind

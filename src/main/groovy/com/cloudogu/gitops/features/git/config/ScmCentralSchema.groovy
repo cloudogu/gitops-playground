@@ -17,8 +17,6 @@ class ScmCentralSchema {
         public static final String CENTRAL_GITLAB_PARENTGROUP_ID_DESCRIPTION = "Main Group for Gitlab where the GOP creates it's groups/repos"
 
         // Only supports external Gitlab for now
-        Boolean internal = false
-
         @Option(names = ['--central-gitlab-url'], description = CENTRAL_GITLAB_URL_DESCRIPTION)
         @JsonPropertyDescription(CENTRAL_GITLAB_URL_DESCRIPTION)
         String url = 'https://gitlab.com/'
@@ -51,6 +49,8 @@ class ScmCentralSchema {
         public static final String CENTRAL_SCMM_PASSWORD_DESCRIPTION = 'CENTRAL SCMM password'
         public static final String CENTRAL_SCMM_PATH_DESCRIPTION = 'Root path for SCM Manager. In SCM-Manager it is always "repo"'
         public static final String CENTRAL_SCMM_NAMESPACE_DESCRIPTION = 'Namespace where to find the Central SCMM'
+
+        String releaseName = "scmm"
 
         @Option(names = ['--central-scmm-internal'], description = CENTRAL_SCMM_INTERNAL_DESCRIPTION)
         @JsonPropertyDescription(CENTRAL_SCMM_INTERNAL_DESCRIPTION)

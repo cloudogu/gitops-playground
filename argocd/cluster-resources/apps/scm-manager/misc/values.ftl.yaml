@@ -1,0 +1,27 @@
+persistence:
+  size: 1Gi
+
+#increased startup time for slower devices
+livenessProbe:
+  initialDelaySeconds: 120
+
+fullnameOverride : ${config.scm.scmManager.releaseName}
+
+extraEnv: |
+    - name: SCM_WEBAPP_INITIALUSER
+      value: "${config.scm.scmManager.username}"
+    - name: SCM_WEBAPP_INITIALPASSWORD
+      value: "${config.scm.scmManager.password}"
+
+<#if config.application.remote?? && !config.application.remote>
+service:
+  type: NodePort
+</#if>
+ 
+<#if config.scm.scmManager.ingress?has_content>
+ingress:
+  enabled: true
+  path: /
+  hosts:
+    - ${config.scm.scmManager.ingress}
+</#if>
