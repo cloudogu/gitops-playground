@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat
  * This tests can only be successfull, if one of theses profiles used.
  */
 
-@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full|small|operator-full|petclinic|operator-small")
+@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full|minimal|operator-full|petclinic|operator-minimal")
 class ArgoCDProfileTest extends KubenetesApiTestSetup {
 
     String namespace = 'argocd'
