@@ -220,7 +220,7 @@ class GitopsPlaygroundCli {
         }
 
         // Last one takes precedence
-        def configPrecedence = [configMap, configFile, contentExamplesFile, multiTenancyContentExamplesFile]
+        def configPrecedence = [multiTenancyContentExamplesFile, contentExamplesFile, configMap, configFile ]
         Map mergedConfigs = [:]
         configPrecedence.each {
             deepMerge(it, mergedConfigs)
