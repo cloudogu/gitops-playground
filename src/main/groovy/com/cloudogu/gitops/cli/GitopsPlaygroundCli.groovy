@@ -226,7 +226,7 @@ class GitopsPlaygroundCli {
 
 
         // Last one takes precedence
-        def configPrecedence = [profileConfig.toMap(), configMap, configFile, contentExamplesFile, multiTenancyContentExamplesFile]
+        def configPrecedence = [profileConfig.toMap(), multiTenancyContentExamplesFile, contentExamplesFile, configMap, configFile]
         Map mergedConfigs = [:]
         configPrecedence.each {
             deepMerge(it, mergedConfigs)
