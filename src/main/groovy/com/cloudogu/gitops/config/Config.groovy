@@ -407,6 +407,9 @@ class Config {
         @JsonPropertyDescription(CLUSTER_ADMIN_DESCRIPTION)
         Boolean clusterAdmin = false
 
+        @Option(names = ["-p", "--profile"], description = APPLICATION_PROFIL)
+        String profile
+
         static class NamespaceSchema {
             LinkedHashSet<String> dedicatedNamespaces = new LinkedHashSet<>()
             LinkedHashSet<String> tenantNamespaces = new LinkedHashSet<>()
