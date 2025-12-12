@@ -440,21 +440,21 @@ That is, if you pass a param via CLI, for example, it will overwrite the corresp
 
 ###### Monitoring
 
-| CLI | Config | Default | Type | Description |
-|-----|--------|---------|------|-------------|
-| `--metrics, --monitoring` | `features.monitoring.active` | `false` | Boolean | Installs monitoring stack (Prometheus, Grafana) |
-| `--grafana-url` | `features.monitoring.grafanaUrl` | `''` | String | The url of your external grafana |
-| `--grafana-email-from` | `features.monitoring.grafanaEmailFrom` | `'grafana@example.org'` | String | Email from address for Grafana notifications |
-| `--grafana-email-to` | `features.monitoring.grafanaEmailTo` | `'infra@example.org'` | String | Email to address for Grafana notifications |
-| `--grafana-image` | `features.monitoring.helm.grafanaImage` | `''` | String | Grafana container image |
-| `--grafana-sidecar-image` | `features.monitoring.helm.grafanaSidecarImage` | `''` | String | Grafana sidecar container image |
-| `--prometheus-image` | `features.monitoring.helm.prometheusImage` | `''` | String | Prometheus container image |
-| `--prometheus-operator-image` | `features.monitoring.helm.prometheusOperatorImage` | `''` | String | Prometheus operator container image |
-| `--prometheus-config-reloader-image` | `features.monitoring.helm.prometheusConfigReloaderImage` | `''` | String | Prometheus config reloader container image |
-| - | `features.monitoring.helm.chart` | `'kube-prometheus-stack'` | String | Name of the Helm chart |
-| - | `features.monitoring.helm.repoURL` | `'https://prometheus-community.github.io/helm-charts'` | String | Repository url from which the Helm chart should be obtained |
-| - | `features.monitoring.helm.version` | `'69.7.4'` | String | The version of the Helm chart to be installed |
-| - | `features.monitoring.helm.values` | `[:]` | Map | Helm values of the chart |
+| CLI                                  | Config                                                   | Default                                                | Type    | Description                                                 |
+|--------------------------------------|----------------------------------------------------------|--------------------------------------------------------|---------|-------------------------------------------------------------|
+| `--metrics, --monitoring`            | `features.monitoring.active`                             | `false`                                                | Boolean | Installs monitoring stack (Prometheus, Grafana)             |
+| `--grafana-url`                      | `features.monitoring.grafanaUrl`                         | `''`                                                   | String  | The url of your external grafana                            |
+| `--grafana-email-from`               | `features.monitoring.grafanaEmailFrom`                   | `'grafana@example.org'`                                | String  | Email from address for Grafana notifications                |
+| `--grafana-email-to`                 | `features.monitoring.grafanaEmailTo`                     | `'infra@example.org'`                                  | String  | Email to address for Grafana notifications                  |
+| `--grafana-image`                    | `features.monitoring.helm.grafanaImage`                  | `''`                                                   | String  | Grafana container image                                     |
+| `--grafana-sidecar-image`            | `features.monitoring.helm.grafanaSidecarImage`           | `''`                                                   | String  | Grafana sidecar container image                             |
+| `--prometheus-image`                 | `features.monitoring.helm.prometheusImage`               | `''`                                                   | String  | Prometheus container image                                  |
+| `--prometheus-operator-image`        | `features.monitoring.helm.prometheusOperatorImage`       | `''`                                                   | String  | Prometheus operator container image                         |
+| `--prometheus-config-reloader-image` | `features.monitoring.helm.prometheusConfigReloaderImage` | `''`                                                   | String  | Prometheus config reloader container image                  |
+| -                                    | `features.monitoring.helm.chart`                         | `'kube-prometheus-stack'`                              | String  | Name of the Helm chart                                      |
+| -                                    | `features.monitoring.helm.repoURL`                       | `'https://prometheus-community.github.io/helm-charts'` | String  | Repository url from which the Helm chart should be obtained |
+| -                                    | `features.monitoring.helm.version`                       | `'80.2.2'`                                             | String  | The version of the Helm chart to be installed               |
+| -                                    | `features.monitoring.helm.values`                        | `[:]`                                                  | Map     | Helm values of the chart                                    |
 
 ###### Secrets
 

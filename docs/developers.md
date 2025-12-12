@@ -806,11 +806,11 @@ docker run -it -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-airgapped-playground.yaml:/home/.kube/config \
     --net=host gitops-playground:dev --argocd --yes -x \
       --vault=dev --metrics \
-      --grafana-image localhost:30002/library/grafana:11.5.2 \
-      --grafana-sidecar-image localhost:30002/library/k8s-sidecar:1.30.0 \
-      --prometheus-image localhost:30002/library/prometheus:v3.2.1 \
-      --prometheus-operator-image localhost:30002/library/prometheus-operator:v0.80.1 \
-      --prometheus-config-reloader-image localhost:30002/library/prometheus-config-reloader:v0.80.1 \
+      --grafana-image localhost:30002/library/grafana:12.3.0 \
+      --grafana-sidecar-image localhost:30002/library/k8s-sidecar:2.1.2 \
+      --prometheus-image localhost:30002/library/prometheus:v3.8.0 \
+      --prometheus-operator-image localhost:30002/library/prometheus-operator:v0.87.1 \
+      --prometheus-config-reloader-image localhost:30002/library/prometheus-config-reloader:v0.87.1 \
       --external-secrets-image localhost:30002/library/external-secrets:v0.6.1 \
       --external-secrets-certcontroller-image localhost:30002/library/external-secrets:v0.6.1 \
       --external-secrets-webhook-image localhost:30002/library/external-secrets:v0.6.1 \
