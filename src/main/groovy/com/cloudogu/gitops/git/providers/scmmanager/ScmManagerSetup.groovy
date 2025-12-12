@@ -43,7 +43,9 @@ class ScmManagerSetup {
     void configure() {
         installScmmPlugins()
         setSetupConfigs()
-        configureJenkinsPlugin()
+        if (this.scmManager.config.jenkins.active) {
+            configureJenkinsPlugin()
+        }
         addDefaultUsers()
         log.info("ScmManager Setup finished!")
     }
