@@ -6,6 +6,11 @@ import okhttp3.Request
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
 
+import javax.net.ssl.HostnameVerifier
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManager
+import javax.net.ssl.X509TrustManager
+import java.security.cert.X509Certificate
 import java.util.concurrent.TimeUnit
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*
@@ -18,7 +23,7 @@ class RetryInterceptorTest {
     static WireMockExtension wireMock = WireMockExtension.newInstance()
             .options(wireMockConfig()
                     .dynamicPort()
-                    .dynamicHttpsPort()) // Enable HTTPS with self-signed cert
+            .dynamicHttpsPort())
             .build()
 
     @Test
@@ -47,6 +52,35 @@ class RetryInterceptorTest {
 
         assertThat(response.body().string()).isEqualTo("Successful Result")
         wireMock.verify(3, getRequestedFor(urlEqualTo("/")))
+    }
+
+    @Test
+    void 'retries three times on 500 with HTTPS'() {
+        wireMock.stubFor(get(urlEqualTo("/secure"))
+                .inScenario("HTTPS Retry Scenario")
+                .whenScenarioStateIs("Started")
+                .willReturn(aResponse().withStatus(500))
+                .willSetStateTo("First Retry"))
+
+        wireMock.stubFor(get(urlEqualTo("/secure"))
+                .inScenario("HTTPS Retry Scenario")
+                .whenScenarioStateIs("First Retry")
+                .willReturn(aResponse().withStatus(500))
+                .willSetStateTo("Second Retry"))
+
+        wireMock.stubFor(get(urlEqualTo("/secure"))
+                .inScenario("HTTPS Retry Scenario")
+                .whenScenarioStateIs("Second Retry")
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withBody("Successful Result")))
+
+        def client = createClient()
+        def httpsUrl = "https://localhost:${wireMock.httpsPort}/secure"
+        def response = client.newCall(new Request.Builder().url(httpsUrl).build()).execute()
+
+        assertThat(response.body().string()).isEqualTo("Successful Result")
+        wireMock.verify(3, getRequestedFor(urlEqualTo("/secure")))
     }
 
     @Test
@@ -86,9 +120,23 @@ class RetryInterceptorTest {
     }
 
     private OkHttpClient createClient() {
+        // 1. Create a TrustManager that trusts everyone
+        def trustAllCerts = [
+                new X509TrustManager() {
+                    void checkClientTrusted(X509Certificate[] chain, String authType) {}
+                    void checkServerTrusted(X509Certificate[] chain, String authType) {}
+                    X509Certificate[] getAcceptedIssuers() { return new X509Certificate[0] }
+                }
+        ] as TrustManager[]
+
+        def sslContext = SSLContext.getInstance("TLS")
+        sslContext.init(null, trustAllCerts, new java.security.SecureRandom())
+
         new OkHttpClient.Builder()
                 .addInterceptor(new RetryInterceptor(retries: 3, waitPeriodInMs: 0))
                 .readTimeout(50, TimeUnit.MILLISECONDS)
+                .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
+                .hostnameVerifier({ hostname, session -> true } as HostnameVerifier)
                 .build()
     }
 }
