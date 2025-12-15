@@ -581,11 +581,11 @@ skopeo copy docker://registry.k8s.io/ingress-nginx/controller:v1.12.1 --dest-cre
 # Using latest will lead to failure with
 # k describe prometheus -n monitoring
 #  Message:               initializing PrometheusRules failed: failed to parse version: Invalid character(s) found in major number "0latest"
-skopeo copy docker://quay.io/prometheus/prometheus:v3.2.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/prometheus:v3.2.1
-skopeo copy docker://quay.io/prometheus-operator/prometheus-operator:v0.80.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/prometheus-operator
-skopeo copy docker://quay.io/prometheus-operator/prometheus-config-reloader:v0.80.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/prometheus-config-reloader
-skopeo copy docker://docker.io/grafana/grafana:11.5.2 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/grafana
-skopeo copy docker://quay.io/kiwigrid/k8s-sidecar:1.30.0 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/k8s-sidecar
+skopeo copy docker://quay.io/prometheus/prometheus:v3.8.0 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/prometheus
+skopeo copy docker://quay.io/prometheus-operator/prometheus-operator:v0.87.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/prometheus-operator
+skopeo copy docker://quay.io/prometheus-operator/prometheus-config-reloader:v0.87.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/prometheus-config-reloader
+skopeo copy docker://docker.io/grafana/grafana:12.3.0 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/grafana
+skopeo copy docker://quay.io/kiwigrid/k8s-sidecar:2.1.2 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/k8s-sidecar
 
 # Cert Manager images
 skopeo copy docker://quay.io/jetstack/cert-manager-controller:v1.16.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/cert-manager-controller
@@ -632,12 +632,11 @@ docker run --rm -t -u $(id -u) \
     --external-secrets-image=localhost:30000/proxy/external-secrets:latest \
     --external-secrets-certcontroller-image=localhost:30000/proxy/external-secrets:latest \
     --external-secrets-webhook-image=localhost:30000/proxy/external-secrets:latest \
-    --nginx-image=localhost:30000/proxy/nginx:latest \
     --ingress-nginx-image=localhost:30000/proxy/ingress-nginx:latest \
     --cert-manager-image=localhost:30000/proxy/cert-manager-controller:latest \
     --cert-manager-webhook-image=localhost:30000/proxy/cert-manager-webhook:latest \
     --cert-manager-cainjector-image=localhost:30000/proxy/cert-manager-cainjector:latest \
-    --prometheus-image=localhost:30000/proxy/prometheus:v3.2.1 \
+    --prometheus-image=localhost:30000/proxy/prometheus:latest \
     --prometheus-operator-image=localhost:30000/proxy/prometheus-operator:latest \
     --prometheus-config-reloader-image=localhost:30000/proxy/prometheus-config-reloader:latest \
     --grafana-image=localhost:30000/proxy/grafana:latest \
@@ -806,16 +805,16 @@ docker run -it -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-airgapped-playground.yaml:/home/.kube/config \
     --net=host gitops-playground:dev --argocd --yes -x \
       --vault=dev --metrics \
-      --grafana-image localhost:30002/library/grafana:11.5.2 \
-      --grafana-sidecar-image localhost:30002/library/k8s-sidecar:1.30.0 \
-      --prometheus-image localhost:30002/library/prometheus:v3.2.1 \
-      --prometheus-operator-image localhost:30002/library/prometheus-operator:v0.80.1 \
-      --prometheus-config-reloader-image localhost:30002/library/prometheus-config-reloader:v0.80.1 \
+      --grafana-image localhost:30002/library/grafana:12.3.0 \
+      --grafana-sidecar-image localhost:30002/library/k8s-sidecar:2.1.2 \
+      --prometheus-image localhost:30002/library/prometheus:v3.8.0 \
+      --prometheus-operator-image localhost:30002/library/prometheus-operator:v0.87.1 \
+      --prometheus-config-reloader-image localhost:30002/library/prometheus-config-reloader:v0.87.1 \
       --external-secrets-image localhost:30002/library/external-secrets:v0.6.1 \
       --external-secrets-certcontroller-image localhost:30002/library/external-secrets:v0.6.1 \
       --external-secrets-webhook-image localhost:30002/library/external-secrets:v0.6.1 \
       --vault-image localhost:30002/library/vault:1.12.0 \
-      --nginx-image localhost:30002/library/nginx:1.23.3-debian-11-r8
+      --ingress-nginx-image localhost:30002/library/nginx:1.23.3-debian-11-r8
 ```
 
 In a different shell start this script, that waits for Argo CD and then goes offline.
