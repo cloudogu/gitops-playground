@@ -16,9 +16,15 @@ properties([
 
         parameters([
                 booleanParam(defaultValue: false, name: 'forcePushImage', description: 'Pushes the image with the current git commit as tag, even when it is on a branch'),
-                booleanParam(defaultValue: false, name: 'longRunningTests', description: 'Executes long running async integrationtests like testing ArgoCD feature deployment')
+                booleanParam(defaultValue: false, name: 'longRunningTests', description: 'Executes long running async integrationtests like testing ArgoCD feature deployment'),
+                booleanParam(name: 'runAllProfileTests', defaultValue: true, description: 'Run tests for all profiles or only the specified one'),
+                stringParam(defaultValue: '', name: 'oneOrAllProfiles', description: 'Starts GOP with given profil only or with all profiles and execute tests which belongs to profile.'),
         ])
 ])
+
+// definition of profiles
+def predefinedProfiles = ['full', 'minimal', 'full-prefix']
+def profiles = params.oneOrAllProfiles ? [ params.oneOrAllProfiles ] : predefinedProfiles
 
 node('high-cpu') {
 
@@ -40,25 +46,7 @@ node('high-cpu') {
                 }
                 parallel (
                         'Build cli': {
-                            stage('Build cli') {
-                                // Read Java version from Dockerfile (DRY)
-                                String jdkVersion = sh(returnStdout: true, script:
-                                        'grep -r \'ARG JDK_VERSION\' Dockerfile | sed "s/.*JDK_VERSION=\'\\(.*\\)\'.*/\\1/" ').trim()
-                                // Groovy version is defined by micronaut version. Get it from there.
-                                String groovyVersion = sh(returnStdout: true, script:
-                                        'MICRONAUT_VERSION=$(cat pom.xml | sed -n \'/<parent>/,/<\\/parent>/p\' | ' +
-                                                'sed -n \'s/.*<version>\\(.*\\)<\\/version>.*/\\1/p\'); ' +
-                                                'curl -s https://repo1.maven.org/maven2/io/micronaut/micronaut-core-bom/${MICRONAUT_VERSION}/micronaut-core-bom-${MICRONAUT_VERSION}.pom | ' +
-                                                'sed -n \'s/.*<groovy.version>\\(.*\\)<\\/groovy.version>.*/\\1/p\'').trim()
-                                groovyImage = "groovy:${groovyVersion}-jdk${jdkVersion}"
-                                // Re-use groovy image here, even though we only need JDK
-                                mvn = new MavenWrapperInDocker(this, groovyImage)
-                                // Faster builds because mvn local repo is reused between build, unit and integration tests
-                                mvn.useLocalRepoFromJenkins = true
-
-                                mvn 'clean test -Dmaven.test.failure.ignore=true'
-                                 junit testResults: '**/target/surefire-reports/TEST-*.xml'
-                            }
+                            stageBuildClI()
                         },
                         'Build images': {
                             stage('Build images') {
@@ -78,93 +66,25 @@ node('high-cpu') {
                             }
                         },
 
-                        'Start gitops playground': {
-                            stage('start gitops playground') {
-                                clusterName = createClusterName()
-                                startK3d(clusterName)
-
-                                String registryPort = sh(
-                                        script: 'docker inspect ' +
-                                                '--format=\'{{ with (index .NetworkSettings.Ports "30000/tcp") }}{{ (index . 0).HostPort }}{{ end }}\' ' +
-                                                " k3d-${clusterName}-serverlb",
-                                        returnStdout: true
-                                ).trim()
-
-                                docker.image(imageNames[0])
-                                    .inside("--network=host -e KUBECONFIG=${env.WORKSPACE}/.kube/config --entrypoint=''") {
-                                        sh """
-                                            /app/scripts/apply-ng.sh \
-                                                --yes \
-                                                --trace \
-                                                --argocd \
-                                                --monitoring \
-                                                --vault=dev \
-                                                --ingress-nginx \
-                                                --mailhog \
-                                                --base-url=http://localhost \
-                                                --cert-manager \
-                                                --registry \
-                                                --jenkins \
-                                                --content-examples
-                                        """
-                                    }
-
-
+                        'Integration tests depends on configuration': {
+                            if (params.runAllProfileTests) {
+                                executeProfileTestStages(profiles)
+                            } else {
+                                if (env.BRANCH_NAME == 'main') {
+                                    // on main run full profile tests with profile full to ensure stability
+                                    executeProfileTestStages('full')
+                                } else {
+                                    echo "Skipping profile tests as runAllProfileTests is set to false an not on main branch."
+                                }
                             }
                         }
                 )
-
-                stage('Integration test') {
-
-                    String k3dAddress = sh(
-                            script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' k3d-${clusterName}-server-0",
-                            returnStdout: true
-                    ).trim()
-
-                    String k3dNetwork = sh(
-                            script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.NetworkID}}{{end}}' k3d-${clusterName}-server-0",
-                            returnStdout: true
-                    ).trim()
-
-                    int ret = 0
-
-
-                    // long running can switch on for every branch but should run everytime on MAIN.
-                    if (params.longRunningTests || (env.BRANCH_NAME == 'main')) {
-                        withEnv([ "KUBECONFIG=${env.WORKSPACE}/.kube/config", "ADDITIONAL_DOCKER_RUN_ARGS=--network=host","K3D_ADDRESS=${k3dAddress}"]) {
-                            mvn.useLocalRepoFromJenkins = true
-                            mvn 'failsafe:integration-test -Dmaven.test.failure.ignore=true -Plong-running'
-                            // Archive test results. Makes build unstable on failed tests.
-                            junit testResults: '**/target/failsafe-reports/TEST-*.xml'
-                        }
-                    } else {
-
-                        withEnv([ "KUBECONFIG=${env.WORKSPACE}/.kube/config", "ADDITIONAL_DOCKER_RUN_ARGS=--network=host","K3D_ADDRESS=${k3dAddress}"]) {
-                            mvn.useLocalRepoFromJenkins = true
-                            mvn 'failsafe:integration-test -Dmaven.test.failure.ignore=true'
-                            // Archive test results. Makes build unstable on failed tests.
-                            junit testResults: '**/target/failsafe-reports/TEST-*.xml'
-                            }
-                    }
-
-                    if (ret > 0 || currentBuild.result == 'UNSTABLE') {
-                        if (fileExists('playground-logs-of-failed-jobs')) {
-                            archiveArtifacts artifacts: 'playground-logs-of-failed-jobs/*.log'
-                        }
-                        unstable "Integration tests failed, see logs appended to jobs and cluster status in logs"
-                        
-                        kubectlToFile(clusterName,"allPods.txt","get all -A")
-                        
-                        printIntegrationTestLogs(clusterName,'app=scm-manager')
-                        printIntegrationTestLogs(clusterName,'app.kubernetes.io/name=jenkins')
-                    }
-                }
 
                 stage('Push image') {
                     if (isBuildSuccessful()) {
                         docker.withRegistry("https://${dockerRegistryBaseUrl}", 'cesmarvin-ghcr') {
                             // Push prod image last, because last pushed image is listed on top in GitHub
-                            
+
                             if (git.isTag() && env.BRANCH_NAME == 'main') {
                                 // Build tags only on main to avoid human errors
 
@@ -197,19 +117,8 @@ node('high-cpu') {
             }
         }
 
-        stage('Stop k3d') {
-            if (clusterName) {
-                // Don't fail build if cleaning up fails
-                withEnv(["PATH=${WORKSPACE}/.local/bin:${PATH}"]) {
-                    sh "if k3d cluster ls ${clusterName} > /dev/null; " +
-                            "then k3d cluster delete ${clusterName}; " +
-                        "fi"
-                }
-            }
-        }
-
         mailIfStatusChanged(git.commitAuthorEmail)
-        
+
         if (env.BRANCH_NAME == 'main' && env.GOP_DEVELOPERS) {
             mailIfStatusChanged(env.GOP_DEVELOPERS)
         }
@@ -278,7 +187,7 @@ void kubectlToFile(String clusterName, String filename, String command) {
 }
 
 def startK3d(clusterName) {
-    
+
     // Download latest version of static curl, needed insight the container bellow.
     sh "mkdir -p $WORKSPACE/.local/bin"
     sh(returnStdout: true, script: 'curl -sLo .local/bin/curl ' +
@@ -287,7 +196,7 @@ def startK3d(clusterName) {
                 '| sed "s/tag/download/")/curl-amd64 && ' +
             'chmod +x .local/bin/curl'
        ).trim()
-    
+
     // Start k3d in a bash3 container to make sure we're OSX compatible 😞
     new Docker(this).image('bash:3')
             .mountDockerSocket()
@@ -315,6 +224,112 @@ String createImageName(String tag) {
     return "${dockerRegistryBaseUrl}/${dockerImageName}:${tag}"
 }
 
+def executeProfileTestStages(def profiles) {
+    // This method is reprentes stage for execute profile tests.
+    // Currently all profile specific tests are executed in the 'profile tests' stage
+    // Loop over all profiles
+    echo "Loop over ${profiles.size()} profiles to test."
+    int ret = 0
+    for (int i = 0; i < profiles.size(); i++) {
+        def profile = profiles[i]
+        def profileClusterName = ''
+
+        stage("Starting GitOps Playground - ${profile}") {
+            echo "=========================================="
+            echo "Starting profile: ${profile}"
+            echo "=========================================="
+
+            clusterName = createClusterName()
+            startK3d(clusterName)
+
+            String registryPort = sh(
+                    script: 'docker inspect ' +
+                            '--format=\'{{ with (index .NetworkSettings.Ports "30000/tcp") }}{{ (index . 0).HostPort }}{{ end }}\' ' +
+                            " k3d-${clusterName}-serverlb",
+                    returnStdout: true
+            ).trim()
+
+            docker.image(imageNames[0])
+                    .inside("--network=host -e KUBECONFIG=${env.WORKSPACE}/.kube/config --entrypoint=''") {
+                        sh """
+                        /app/scripts/apply-ng.sh \
+                            --yes=true \
+                            --trace=true \
+                            --profile=${profile}
+                    """
+                    }
+        }
+
+
+        stage("Integration test-${profile}") {
+
+            String k3dAddress = sh(
+                    script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' k3d-${clusterName}-server-0",
+                    returnStdout: true
+            ).trim()
+
+            String k3dNetwork = sh(
+                    script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.NetworkID}}{{end}}' k3d-${clusterName}-server-0",
+                    returnStdout: true
+            ).trim()
+
+
+
+            withEnv(["KUBECONFIG=${env.WORKSPACE}/.kube/config", "ADDITIONAL_DOCKER_RUN_ARGS=--network=host", "K3D_ADDRESS=${k3dAddress}"]) {
+                mvn.useLocalRepoFromJenkins = true
+                mvn "failsafe:integration-test -Dmaven.test.failure.ignore=true -Dmicronaut.environments=${profile} -Dsurefire.reportNameSuffix=${profile}"
+
+                junit testResults: "**/target/failsafe-reports/TEST-*${profile}.xml"
+            }
+
+
+        }
+        stage('Stop k3d') {
+            if (clusterName) {
+                // Don't fail build if cleaning up fails
+                withEnv(["PATH=${WORKSPACE}/.local/bin:${PATH}"]) {
+                    sh "if k3d cluster ls ${clusterName} > /dev/null; " +
+                            "then k3d cluster delete ${clusterName}; " +
+                            "fi"
+                }
+            }
+        }
+    }
+    if (ret > 0 || currentBuild.result == 'UNSTABLE') {
+        if (fileExists('playground-logs-of-failed-jobs')) {
+            archiveArtifacts artifacts: 'playground-logs-of-failed-jobs/*.log'
+        }
+        unstable "Integration tests failed, see logs appended to jobs and cluster status in logs"
+
+        kubectlToFile(clusterName,"allPods.txt","get all -A")
+
+        printIntegrationTestLogs(clusterName,'app=scm-manager')
+        printIntegrationTestLogs(clusterName,'app.kubernetes.io/name=jenkins')
+    }
+}
+
+def stageBuildClI() {
+
+    stage('run unit tests') {
+        // Read Java version from Dockerfile (DRY)
+        String jdkVersion = sh(returnStdout: true, script:
+                'grep -r \'ARG JDK_VERSION\' Dockerfile | sed "s/.*JDK_VERSION=\'\\(.*\\)\'.*/\\1/" ').trim()
+        // Groovy version is defined by micronaut version. Get it from there.
+        String groovyVersion = sh(returnStdout: true, script:
+                'MICRONAUT_VERSION=$(cat pom.xml | sed -n \'/<parent>/,/<\\/parent>/p\' | ' +
+                        'sed -n \'s/.*<version>\\(.*\\)<\\/version>.*/\\1/p\'); ' +
+                        'curl -s https://repo1.maven.org/maven2/io/micronaut/micronaut-core-bom/${MICRONAUT_VERSION}/micronaut-core-bom-${MICRONAUT_VERSION}.pom | ' +
+                        'sed -n \'s/.*<groovy.version>\\(.*\\)<\\/groovy.version>.*/\\1/p\'').trim()
+        groovyImage = "groovy:${groovyVersion}-jdk${jdkVersion}"
+        // Re-use groovy image here, even though we only need JDK
+        mvn = new MavenWrapperInDocker(this, groovyImage)
+        // Faster builds because mvn local repo is reused between build, unit and integration tests
+        mvn.useLocalRepoFromJenkins = true
+
+        mvn 'clean test -Dmaven.test.failure.ignore=true'
+        junit testResults: '**/target/surefire-reports/TEST-*.xml'
+    }
+}
 def images
 def imageNames
 String clusterName

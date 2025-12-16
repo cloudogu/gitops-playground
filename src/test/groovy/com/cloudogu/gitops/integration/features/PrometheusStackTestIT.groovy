@@ -4,6 +4,7 @@ package com.cloudogu.gitops.integration.features
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty
 
 import static org.assertj.core.api.Assertions.assertThat
 
@@ -14,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat
  *  - Operator
  *  - prometheus-stack
  */
+@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full|operator-full")
 class PrometheusStackTestIT extends KubenetesApiTestSetup {
 
     String namespace = 'monitoring'

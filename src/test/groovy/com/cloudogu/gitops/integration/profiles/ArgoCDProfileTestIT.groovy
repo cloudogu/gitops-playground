@@ -3,8 +3,6 @@ package com.cloudogu.gitops.integration.profiles
 import com.cloudogu.gitops.integration.features.KubenetesApiTestSetup
 import io.kubernetes.client.openapi.models.V1Pod
 import io.kubernetes.client.openapi.models.V1PodList
-import io.micronaut.context.annotation.Requires
-import io.micronaut.test.extensions.junit5.annotation.MicronautTest
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty
@@ -15,8 +13,8 @@ import static org.assertj.core.api.Assertions.assertThat
  * This tests can only be successfull, if one of theses profiles used.
  */
 
-@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full|minimal|operator-full|petclinic|operator-minimal")
-class ArgoCDProfileTest extends KubenetesApiTestSetup {
+@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full|minimal|operator-full|content-examples|operator-minimal|operator-content-examples")
+class ArgoCDProfileTestIT extends KubenetesApiTestSetup {
 
     String namespace = 'argocd'
 
