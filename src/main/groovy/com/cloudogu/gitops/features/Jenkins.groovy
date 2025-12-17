@@ -296,4 +296,8 @@ class Jenkins extends Feature {
                 ]
         ]
     }
+    @Override
+    String getActiveNamespaceFromFeature() {
+        return isEnabled() && config?.jenkins?.internal ? getNamespace() : null
+    }
 }
