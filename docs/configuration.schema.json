@@ -270,6 +270,10 @@
             "url" : {
               "type" : [ "string", "null" ],
               "description" : "The URL where argocd is accessible. It has to be the full URL with http:// or https://"
+            },
+            "values" : {
+              "$ref" : "#/$defs/Map(String,Object)-nullable",
+              "description" : "Helm values of the chart, allows overriding defaults and setting values that are not exposed as explicit configuration"
             }
           },
           "additionalProperties" : false,

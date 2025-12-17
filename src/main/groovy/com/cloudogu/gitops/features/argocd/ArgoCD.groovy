@@ -10,9 +10,11 @@ import com.cloudogu.gitops.kubernetes.rbac.Role
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.HelmClient
 import com.cloudogu.gitops.utils.K8sClient
+import com.cloudogu.gitops.utils.MapUtils
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
 import jakarta.inject.Singleton
+
 import org.springframework.security.crypto.bcrypt.BCrypt
 
 import java.nio.file.Path
@@ -226,6 +228,19 @@ class ArgoCD extends Feature {
     private void deployWithOperator() {
         // Apply argocd yaml from operator folder
         String argocdConfigPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), OPERATOR_CONFIG_PATH)
+        if (this.config.features.argocd?.values) {
+            log.debug("extend Argocd.yaml with ${this.config.features.argocd.values}")
+            def argocdYaml = fileSystemUtils.readYaml(
+                    Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), OPERATOR_CONFIG_PATH))
+
+            def result = MapUtils.deepMerge(this.config.features.argocd.values, argocdYaml)
+            fileSystemUtils.writeYaml(result, new File (argocdConfigPath))
+            log.debug("Argocd.yaml for operator contains ${result}")
+            // reload file
+            argocdConfigPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), OPERATOR_CONFIG_PATH)
+
+        }
+
         k8sClient.applyYaml(argocdConfigPath)
 
         // ArgoCD is not installed until the ArgoCD-Operator did his job.

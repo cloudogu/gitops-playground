@@ -410,17 +410,18 @@ That is, if you pass a param via CLI, for example, it will overwrite the corresp
 
 ###### ArgoCD
 
-| CLI | Config | Default | Type | Description |
-|-----|--------|---------|------|-------------|
-| `--argocd` | `features.argocd.active` | `false` | Boolean | Installs ArgoCD as GitOps CD tool |
-| `--argocd-operator` | `features.argocd.operator` | `false` | Boolean | Install ArgoCD operator |
-| `--argocd-url` | `features.argocd.url` | `''` | String | The url of your external argocd |
-| `--argocd-email-from` | `features.argocd.emailFrom` | `'argocd@example.org'` | String | Email from address for ArgoCD notifications |
-| `--argocd-email-to-user` | `features.argocd.emailToUser` | `'app-team@example.org'` | String | Email to address for user notifications |
-| `--argocd-email-to-admin` | `features.argocd.emailToAdmin` | `'infra@example.org'` | String | Email to address for admin notifications |
-| `--argocd-resource-inclusions-cluster` | `features.argocd.resourceInclusionsCluster` | `''` | String | ArgoCD resource inclusions for cluster |
-| `--argocd-namespace` | `features.argocd.namespace` | `'argocd'` | String | ArgoCD namespace |
-| - | `features.argocd.env` | - | List | Environment variables for ArgoCD |
+| CLI | Config                                      | Default | Type    | Description                                 |
+|-----|---------------------------------------------|---------|---------|---------------------------------------------|
+| `--argocd` | `features.argocd.active`                    | `false` | Boolean | Installs ArgoCD as GitOps CD tool           |
+| `--argocd-operator` | `features.argocd.operator`                  | `false` | Boolean | Install ArgoCD operator                     |
+| `--argocd-url` | `features.argocd.url`                       | `''` | String  | The url of your external argocd             |
+| `--argocd-email-from` | `features.argocd.emailFrom`                 | `'argocd@example.org'` | String  | Email from address for ArgoCD notifications |
+| `--argocd-email-to-user` | `features.argocd.emailToUser`               | `'app-team@example.org'` | String  | Email to address for user notifications     |
+| `--argocd-email-to-admin` | `features.argocd.emailToAdmin`              | `'infra@example.org'` | String  | Email to address for admin notifications    |
+| `--argocd-resource-inclusions-cluster` | `features.argocd.resourceInclusionsCluster` | `''` | String  | ArgoCD resource inclusions for cluster      |
+| `--argocd-namespace` | `features.argocd.namespace`                 | `'argocd'` | String  | ArgoCD namespace                            |
+| - | `features.argocd.env`                       | - | List    | Environment variables for ArgoCD            |
+| - | `features.argocd.values`                    | - | Map     | To override ArgoCD Operator file            |
 
 ###### Mail
 
