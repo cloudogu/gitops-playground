@@ -316,7 +316,7 @@ That is, if you pass a param via CLI, for example, it will overwrite the corresp
 | `--skip-crds`            | `application.skipCrds`             | `false` | Boolean  | Skip installation of CRDs                                                     |
 | `--namespace-isolation`  | `application.namespaceIsolation`   | `false` | Boolean  | Configure tools to work with given namespaces only                            |
 | `--netpols`              | `application.netpols`              | `false` | Boolean  | Sets Network Policies                                                         |
-| `-p, --profiles`         | `application.profile`              | `''` | String   | Sets a profile for pre-defined parameter                                      |
+| `-p, --profile`         | `application.profile`              | `''` | String   | Sets a profile for pre-defined parameter                                      |
 
 
 ###### Registry
