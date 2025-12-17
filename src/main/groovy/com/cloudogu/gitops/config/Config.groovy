@@ -489,6 +489,9 @@ class Config {
         @Option(names = ['--argocd-namespace'], description = ARGOCD_CUSTOM_NAMESPACE_DESCRIPTION)
         @JsonPropertyDescription(ARGOCD_CUSTOM_NAMESPACE_DESCRIPTION)
         String namespace = 'argocd'
+
+        @JsonPropertyDescription(HELM_CONFIG_VALUES_DESCRIPTION)
+        Map<String, Object> values = [:]
     }
 
     static class MailSchema {
