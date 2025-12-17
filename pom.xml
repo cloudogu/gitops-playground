@@ -34,6 +34,7 @@
     <groovy.version>4.0.12</groovy.version>
     <jsonschema.version>4.35.0</jsonschema.version>
     <kubernetes.client.java.version>24.0.0</kubernetes.client.java.version>
+    <wiremock.version>3.13.2</wiremock.version>
   </properties>
 
   <scm>
@@ -205,9 +206,9 @@
     </dependency>
 
     <dependency>
-      <groupId>com.squareup.okhttp3</groupId>
-      <artifactId>mockwebserver</artifactId>
-      <version>${okhttpVersion}</version>
+      <groupId>org.wiremock</groupId>
+      <artifactId>wiremock</artifactId>
+      <version>${wiremock.version}</version>
       <scope>test</scope>
     </dependency>
 
