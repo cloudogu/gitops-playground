@@ -3,6 +3,7 @@ package com.cloudogu.gitops.okhttp
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
 
@@ -25,6 +26,11 @@ class RetryInterceptorTest {
                     .dynamicPort()
             .dynamicHttpsPort())
             .build()
+
+    @BeforeEach
+    void resetWireMock() {
+        wireMock.resetAll()
+    }
 
     @Test
     void 'retries three times on 500'() {

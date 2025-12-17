@@ -6,6 +6,7 @@ import io.micronaut.context.ApplicationContext
 import okhttp3.FormBody
 import okhttp3.JavaNetCookieJar
 import okhttp3.OkHttpClient
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
 
@@ -29,6 +30,12 @@ class JenkinsApiClientTest {
                     .dynamicPort()
                     .dynamicHttpsPort())
             .build()
+
+
+    @BeforeEach
+    void resetWireMock() {
+        wireMock.resetAll()
+    }
 
     @Test
     void 'runs script with crumb'() {

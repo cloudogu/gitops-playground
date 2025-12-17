@@ -2,6 +2,7 @@ package com.cloudogu.gitops.git.providers.scmmanager.api
 
 import com.cloudogu.gitops.config.Credentials
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
 
@@ -22,6 +23,12 @@ class UsersApiTest {
             .build()
 
     private Credentials credentials = new Credentials("user", "pass")
+
+
+    @BeforeEach
+    void resetWireMock() {
+        wireMock.resetAll()
+    }
 
     @Test
     void 'allows self-signed certificates when using insecure option'() {
