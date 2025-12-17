@@ -31,7 +31,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
     Config config
     K8sClient k8sClient
 
-    GitRepoFactory scmRepoProvider
+    private GitRepoFactory scmRepoProvider
     private FileSystemUtils fileSystemUtils
     private DeploymentStrategy deployer
     private AirGappedUtils airGappedUtils

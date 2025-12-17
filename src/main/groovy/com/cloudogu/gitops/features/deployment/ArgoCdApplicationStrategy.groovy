@@ -59,11 +59,16 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
         // z.B. repoName = "prometheus" → apps/prometheus/misc
         String featureName = repoName
         String miscPath    = "apps/${featureName}/misc"
-        String valuesRelPath = "${miscPath}/values.yaml"   // relativ zum Repo-Root
 
+
+        String valuesRelPath = "${miscPath}/${featureName}-gop-helm.yaml"   // relativ zum Repo-Root
         // Inline values from tmpHelmValues file into ArgoCD Application YAML
         def inlineValues = helmValuesPath.toFile().text
         clusterResourcesRepo.writeFile(valuesRelPath, inlineValues)
+
+        //TODO GOP soll diese Datei nicht überschreiben
+        String userValuesRelPath = "${miscPath}/${featureName}-user-values.yaml"
+        clusterResourcesRepo.writeFile(userValuesRelPath, "")
 
         // 1) Helm-Source (externe Chart-Quelle)
         def helmSource = [
@@ -74,7 +79,8 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
                         releaseName: releaseName,
                         // $values kommt aus ref: values in der zweiten Source
                         valueFiles : [
-                                "\$values/${valuesRelPath}".toString()
+                                "\$values/${valuesRelPath}".toString(),
+                                "\$values/${userValuesRelPath}".toString()
                         ]
                 ]
         ]
@@ -89,7 +95,8 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
                 repoURL       :  miscRepoUrl,
                 targetRevision: "main",
                 ref           : "values",
-//                path          : miscPath
+                path          : miscPath,
+                directory     : [recurse: true]
         ]
 
         def sources = [helmSource, miscSource]
@@ -128,8 +135,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
                 ]
         ])
 
-        String featureFolder = "apps/${featureName}"
-        String appManifestPath = "${featureFolder}/${releaseName}.yaml"
+        String appManifestPath = "argocd/applications/${releaseName}.yaml"
         clusterResourcesRepo.writeFile(appManifestPath, yamlResult)
 
         log.debug("Deploying helm release ${releaseName} basing on chart ${chartOrPath} from ${repoURL}, version " +

@@ -15,7 +15,7 @@ import jakarta.inject.Singleton
 @Order(50)
 class ScmManagerSetup extends Feature {
 
-    static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/scm-manager/misc/values.ftl.yaml"
+    static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/scm-manager/templates/values.ftl.yaml"
 
     String namespace
     private Config config

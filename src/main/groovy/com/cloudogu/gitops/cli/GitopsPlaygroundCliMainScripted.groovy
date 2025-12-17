@@ -54,7 +54,7 @@ class GitopsPlaygroundCliMainScripted {
 
             def httpClientFactory = new HttpClientFactory()
 
-            def scmmRepoProvider = new GitRepoFactory(config, fileSystemUtils)
+            def scmRepoProvider = new GitRepoFactory(config, fileSystemUtils)
 
             def helmStrategy = new HelmStrategy(config, helmClient)
 
@@ -67,14 +67,14 @@ class GitopsPlaygroundCliMainScripted {
 
             if (config.application.destroy) {
                 context.registerSingleton(new Destroyer([
-                        new ArgoCDDestructionHandler(config, k8sClient, scmmRepoProvider, helmClient, fileSystemUtils, gitHandler),
+                        new ArgoCDDestructionHandler(config, k8sClient, scmRepoProvider, helmClient, fileSystemUtils, gitHandler),
                         new ScmmDestructionHandler(config),
                         new JenkinsDestructionHandler(new JobManager(jenkinsApiClient), config, new GlobalPropertyManager(jenkinsApiClient))
                 ]))
             } else {
-                def deployer = new Deployer(config, new ArgoCdApplicationStrategy(config, fileSystemUtils, scmmRepoProvider, gitHandler), helmStrategy)
+                def deployer = new Deployer(config, new ArgoCdApplicationStrategy(config, fileSystemUtils, scmRepoProvider, gitHandler), helmStrategy)
 
-                def airGappedUtils = new AirGappedUtils(config, scmmRepoProvider, fileSystemUtils, helmClient, gitHandler)
+                def airGappedUtils = new AirGappedUtils(config, scmRepoProvider, fileSystemUtils, helmClient, gitHandler)
 
                 def jenkins = new Jenkins(config, executor, fileSystemUtils, new GlobalPropertyManager(jenkinsApiClient),
                         new JobManager(jenkinsApiClient), new UserManager(jenkinsApiClient),
@@ -86,14 +86,14 @@ class GitopsPlaygroundCliMainScripted {
                         new ScmManagerSetup(config, executor, fileSystemUtils, helmStrategy, k8sClient, networkingUtils),
                         gitHandler,
                         jenkins,
-                        new ArgoCD(config, k8sClient, helmClient, fileSystemUtils, scmmRepoProvider, gitHandler),
+                        new ArgoCD(config, k8sClient, helmClient, fileSystemUtils, scmRepoProvider, gitHandler),
                         new IngressNginx(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
                         new CertManager(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
                         new Mailhog(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
-                        new PrometheusStack(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, scmmRepoProvider, gitHandler),
+                        new PrometheusStack(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, scmRepoProvider, gitHandler),
                         new ExternalSecretsOperator(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
                         new Vault(config, fileSystemUtils, k8sClient, deployer, airGappedUtils, gitHandler),
-                        new ContentLoader(config, k8sClient, scmmRepoProvider, jenkins, gitHandler),
+                        new ContentLoader(config, k8sClient, scmRepoProvider, jenkins, gitHandler),
                 ]))
             }
         }

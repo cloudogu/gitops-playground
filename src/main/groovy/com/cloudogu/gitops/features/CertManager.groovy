@@ -22,7 +22,7 @@ import java.nio.file.Path
 @Order(160)
 class CertManager extends Feature implements FeatureWithImage {
 
-    static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/cert-manager/certManager-helm-values.ftl.yaml"
+    static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/cert-manager/templates/certManager-helm-values.ftl.yaml"
 
     private FileSystemUtils fileSystemUtils
     private DeploymentStrategy deployer

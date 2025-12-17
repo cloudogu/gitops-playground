@@ -14,7 +14,8 @@ class ArgoCDRepoLayout {
     private static final String NAMESPACES_YAML    = 'misc/namespaces.yaml'
     
     private static final String APPS_MONITORING_REL     = 'apps/prometheusstack'
-    private static final String APPS_SECRETS_REL        = 'apps/secrets'
+    private static final String APPS_SECRETS_REL        = 'apps/external-secrets'
+    private static final String APPS_VAULT_REL        = 'apps/vault'
     private static final String APPS_CERTMANAGER_REL    = 'apps/cert-manager'
     private static final String APPS_JENKINS_REL        = 'apps/jenkins'
     private static final String APPS_INGRESS_REL        = 'apps/ingress'
@@ -77,6 +78,9 @@ class ArgoCDRepoLayout {
 
     static String secretsSubdirRel() {
         APPS_SECRETS_REL   // "apps/secrets"
+    }
+    static String vaultSubdirRel() {
+        APPS_VAULT_REL   // "apps/secrets"
     }
 
     static String certManagerSubdirRel() {

@@ -22,7 +22,7 @@ import java.nio.file.Path
 @Order(400)
 class ExternalSecretsOperator extends Feature implements FeatureWithImage {
 
-    static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/secrets/external-secrets/values.ftl.yaml"
+    static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/external-secrets/templates/values.ftl.yaml"
 
     String namespace = "${config.application.namePrefix}secrets"
     Config config

@@ -179,6 +179,7 @@ class ArgoCD extends Feature {
 
         if (config.features.secrets.active) {
             clusterResourceSubDirs.add(ArgoCDRepoLayout.secretsSubdirRel())
+            clusterResourceSubDirs.add(ArgoCDRepoLayout.vaultSubdirRel())
         }
 
         clusterResourcesInitializationAction.subDirsToCopy = clusterResourceSubDirs

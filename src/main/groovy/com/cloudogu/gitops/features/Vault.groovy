@@ -18,8 +18,8 @@ import java.nio.file.Path
 @Singleton
 @Order(500)
 class Vault extends Feature implements FeatureWithImage {
-    static final String VAULT_START_SCRIPT_PATH = "argocd/cluster-resources/apps/secrets/vault/dev-post-start.ftl.sh"
-    static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/secrets/vault/values.ftl.yaml"
+    static final String VAULT_START_SCRIPT_PATH = "argocd/cluster-resources/apps/vault/templates/dev-post-start.ftl.sh"
+    static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/vault/templates/values.ftl.yaml"
 
     String namespace = "${config.application.namePrefix}secrets"
     Config config
