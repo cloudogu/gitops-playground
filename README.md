@@ -1328,7 +1328,7 @@ The `.petlinic.` part can be overridden using
 
 #### PetClinic with plain k8s resources
 
-[Jenkinsfile](applications/petclinic/argocd/plain-k8s/Jenkinsfile) for `plain` deployment
+[Jenkinsfile](examples/example-apps-via-content-loader/argocd/petclinic-plain/Jenkinsfile) for `plain` deployment
 
 * Staging: http://staging.petclinic-plain.petclinic.localhost/
 * Production: http://production.petclinic-plain.petclinic.localhost/  
@@ -1336,7 +1336,7 @@ The `.petlinic.` part can be overridden using
 
 #### PetClinic with helm
 
-[Jenkinsfile](applications/petclinic/argocd/helm/Jenkinsfile) for `helm` deployment
+[Jenkinsfile](examples/example-apps-via-content-loader/argocd/petclinic-helm/Jenkinsfile) for `helm` deployment
 
 * Staging: http://staging.petclinic-helm.petclinic.localhost/
 * Production: http://production.petclinic-helm.petclinic.localhost/  
