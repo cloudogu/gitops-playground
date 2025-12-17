@@ -137,7 +137,7 @@ class GitRepoTest {
         assertThat(commits[0].authorIdent.emailAddress).isEqualTo('hello@cloudogu.com')
         assertThat(commits[0].authorIdent.name).isEqualTo('Cloudogu')
         assertThat(commits[0].committerIdent.emailAddress).isEqualTo('hello@cloudogu.com')
-        assertThat(commits[0].committerIdent.name).isEqualTo("Cloudogu")
+        assertThat(commits[0].committerIdent.name).contains("Cloudogu - GOP v")
 
         List<Ref> tags = Git.open(new File(repo.absoluteLocalRepoTmpDir)).tagList().call()
         assertThat(tags.size()).isEqualTo(0)

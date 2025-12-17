@@ -1,5 +1,6 @@
 package com.cloudogu.gitops.git
 
+import com.cloudogu.gitops.cli.Version
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.git.jgit.helpers.InsecureCredentialProvider
 import com.cloudogu.gitops.git.providers.AccessRole
@@ -106,7 +107,7 @@ class GitRepo {
                     .setSign(false)
                     .setMessage(commitMessage)
                     .setAuthor(gitName, gitEmail)
-                    .setCommitter(gitName, gitEmail)
+                    .setCommitter("${gitName} - GOP v${Version.NAME.split(',')[0].replace('(','')}", gitEmail) //parsing the Versions from the full text in Version.Name. In local Dev there is no Tag->Version is empty
                     .call()
 
             def pushCommand = createPushCommand(refSpec)
