@@ -33,8 +33,8 @@ class ArgoCD extends Feature {
 
     private final String password
 
-    private RepoInitializationAction clusterResourcesInitializationAction
-    private RepoInitializationAction tenantBootstrapInitializationAction
+    protected RepoInitializationAction clusterResourcesInitializationAction
+    protected RepoInitializationAction tenantBootstrapInitializationAction
 
 
     ArgoCD(
