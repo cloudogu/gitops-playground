@@ -5,23 +5,23 @@ persistence:
 livenessProbe:
   initialDelaySeconds: 120
 
-fullnameOverride : ${config.scm.scmManager.releaseName}
+fullnameOverride : ${releaseName}
 
 extraEnv: |
-    - name: SCM_WEBAPP_INITIALUSER
-      value: "${config.scm.scmManager.username}"
-    - name: SCM_WEBAPP_INITIALPASSWORD
-      value: "${config.scm.scmManager.password}"
+  - name: SCM_WEBAPP_INITIALUSER
+    value: "${username}"
+  - name: SCM_WEBAPP_INITIALPASSWORD
+    value: "${password}"
 
-<#if config.application.remote?? && !config.application.remote>
+<#if remote?? && !remote>
 service:
   type: NodePort
-</#if>
- 
-<#if config.scm.scmManager.ingress?has_content>
+  </#if>
+  
+  <#if host?has_content>
 ingress:
   enabled: true
   path: /
   hosts:
-    - ${config.scm.scmManager.ingress}
+    - ${host}
 </#if>

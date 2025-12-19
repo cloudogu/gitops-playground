@@ -256,14 +256,13 @@ class ArgoCD extends Feature {
         if (this.config.features.argocd?.values) {
             log.debug("extend Argocd.yaml with ${this.config.features.argocd.values}")
             def argocdYaml = fileSystemUtils.readYaml(
-                    Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), OPERATOR_CONFIG_PATH))
+                    Path.of(repoLayout.operatorConfigFile()))
 
             def result = MapUtils.deepMerge(this.config.features.argocd.values, argocdYaml)
             fileSystemUtils.writeYaml(result, new File (argocdConfigPath))
             log.debug("Argocd.yaml for operator contains ${result}")
             // reload file
-            argocdConfigPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), OPERATOR_CONFIG_PATH)
-
+            argocdConfigPath = repoLayout.operatorConfigFile()
         }
         k8sClient.applyYaml(argocdConfigPath)
 
