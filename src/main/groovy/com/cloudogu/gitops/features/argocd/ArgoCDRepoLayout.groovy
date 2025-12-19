@@ -3,8 +3,16 @@ package com.cloudogu.gitops.features.argocd
 import java.nio.file.Path
 
 class ArgoCDRepoLayout {
+    private static final String APPS_MONITORING_REL     = 'apps/prometheusstack'
+    private static final String APPS_SECRETS_REL        = 'apps/external-secrets'
+    private static final String APPS_VAULT_REL          = 'apps/vault'
+    private static final String APPS_CERTMANAGER_REL    = 'apps/cert-manager'
+    private static final String APPS_JENKINS_REL        = 'apps/jenkins'
+    private static final String APPS_INGRESS_REL        = 'apps/ingress'
+    private static final String APPS_MAILHOG_REL        = 'apps/mailhog'
+    private static final String APPS_SCMMANAGER_REL     = 'apps/scm-manager'
+    private static final String APPS_ARGOCD_REL         = 'apps/argocd'
 
-    private static final String ARGOCD_SUBDIR      = 'argocd'
     private static final String OPERATOR_DIR       = 'operator'
     private static final String MULTITENANT_DIR    = 'multiTenant'
     private static final String APPLICATIONS_DIR   = 'applications'
@@ -12,15 +20,6 @@ class ArgoCDRepoLayout {
     private static final String HELM_DIR           = 'argocd'          // argocd/argocd
     private static final String NETPOL_REL         = 'templates/allow-namespaces.yaml'
     private static final String NAMESPACES_YAML    = 'misc/namespaces.yaml'
-    
-    private static final String APPS_MONITORING_REL     = 'apps/prometheusstack'
-    private static final String APPS_SECRETS_REL        = 'apps/external-secrets'
-    private static final String APPS_VAULT_REL        = 'apps/vault'
-    private static final String APPS_CERTMANAGER_REL    = 'apps/cert-manager'
-    private static final String APPS_JENKINS_REL        = 'apps/jenkins'
-    private static final String APPS_INGRESS_REL        = 'apps/ingress'
-    private static final String APPS_MAILHOG_REL         = 'apps/mailhog'
-    private static final String APPS_SCMMANAGER_REL     = 'apps/scm-manager'
 
     private final String repoRootDir
 
@@ -33,7 +32,7 @@ class ArgoCDRepoLayout {
     }
 
     String argocdRoot() {
-        Path.of(repoRootDir, ARGOCD_SUBDIR).toString()
+        Path.of(repoRootDir, APPS_ARGOCD_REL).toString()
     }
 
     // --- folder ---
@@ -77,14 +76,14 @@ class ArgoCDRepoLayout {
     }
 
     static String monitoringSubdirRel() {
-        APPS_MONITORING_REL   // "apps/monitoring"
+        APPS_MONITORING_REL
     }
 
     static String secretsSubdirRel() {
-        APPS_SECRETS_REL   // "apps/secrets"
+        APPS_SECRETS_REL
     }
     static String vaultSubdirRel() {
-        APPS_VAULT_REL   // "apps/secrets"
+        APPS_VAULT_REL
     }
 
     static String certManagerSubdirRel() {
@@ -103,6 +102,9 @@ class ArgoCDRepoLayout {
     }
     static String scmManagerSubdirRel() {
         APPS_SCMMANAGER_REL
+    }
+    static String argocdSubdirRel() {
+        APPS_ARGOCD_REL
     }
 
     // --- files ---
@@ -133,7 +135,7 @@ class ArgoCDRepoLayout {
     // --- relative subfolders for RBAC (passed to RbacDefinition.withSubfolder) ---
     static String operatorRbacSubfolder() {
         // "argocd/operator/rbac"
-        "${ARGOCD_SUBDIR}/${OPERATOR_DIR}/rbac"
+        "${APPS_ARGOCD_REL}/${OPERATOR_DIR}/rbac"
     }
 
     static String operatorRbacTenantSubfolder() {

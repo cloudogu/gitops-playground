@@ -156,7 +156,7 @@ class ArgoCD extends Feature {
 
         Set<String> clusterResourceSubDirs = new LinkedHashSet<>()
 
-        clusterResourceSubDirs.add('argocd')
+        clusterResourceSubDirs.add(ArgoCDRepoLayout.argocdSubdirRel())
 
         if (config.features.certManager.active) {
             clusterResourceSubDirs.add(ArgoCDRepoLayout.certManagerSubdirRel())   // "apps/cert-manager"
@@ -193,7 +193,7 @@ class ArgoCD extends Feature {
             this.gitRepos.add(clusterResourcesInitializationAction)
 
         } else {
-            tenantBootstrapInitializationAction = createRepoInitializationAction('argocd/cluster-resources/argocd/multiTenant/tenant', 'argocd/cluster-resources', this.gitHandler.tenant)
+            tenantBootstrapInitializationAction = createRepoInitializationAction('argocd/cluster-resources/apps/argocd/multiTenant/tenant', 'argocd/cluster-resources', this.gitHandler.tenant)
             this.gitRepos.add(tenantBootstrapInitializationAction)
         }
     }
@@ -211,8 +211,6 @@ class ArgoCD extends Feature {
         if (config.features.argocd.operator) {
             log.debug("Deleting unnecessary argocd (argocd helm variant) folder from argocd repo: ${repoLayout.helmDir()}")
             FileSystemUtils.deleteDir repoLayout.helmDir()
-            log.debug("Deleting unnecessary namespaces resources from clusterResources repo: ${repoLayout.namespacesYaml()}")
-            FileSystemUtils.deleteFile repoLayout.namespacesYaml()
             generateRBAC()
         } else {
             log.debug("Deleting unnecessary operator (argocd operator variant) folder from argocd repo: ${repoLayout.operatorDir()}")

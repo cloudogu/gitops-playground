@@ -1,19 +1,20 @@
+# This is the root Applications, which manages all other applications with the app-of-apps-pattern.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: ${config.application.namePrefix}cluster-resources
-  namespace: ${config.multiTenant.centralArgocdNamespace}
+  name: bootstrap
+  namespace: ${config.application.namePrefix}argocd
 # finalizer disabled, because otherwise everything under this Application would be deleted as well, if this Application is deleted by accident
 #  finalizers:
 #    - resources-finalizer.argocd.argoproj.io
 spec:
   destination:
-    namespace: ${config.application.namePrefix}argocd
     server: https://kubernetes.default.svc
-  project: ${tenantName}
+    namespace: ${config.application.namePrefix}argocd
+  project: argocd
   source:
-    path: apps
-    repoURL: ${scm.centralScmUrl}argocd/cluster-resources.git
+    path: apps/argocd/applications/
+    repoURL: ${scm.repoUrl}argocd/cluster-resources.git
     targetRevision: main
     directory:
       recurse: true

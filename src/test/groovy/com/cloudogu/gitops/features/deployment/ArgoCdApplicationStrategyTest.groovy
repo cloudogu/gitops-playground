@@ -26,7 +26,7 @@ class ArgoCdApplicationStrategyTest {
         strategy.deployFeature("repoURL", "repoName", "chartName", "version",
                 "foo-namespace", "releaseName", valuesYaml.toPath())
 
-        def argoCdApplicationYaml = new File("$localTempDir/argocd/applications/releaseName.yaml")
+        def argoCdApplicationYaml = new File("$localTempDir/apps/argocd/applications/releaseName.yaml")
         assertThat(argoCdApplicationYaml.text).isEqualTo("""---
 apiVersion: "argoproj.io/v1alpha1"
 kind: "Application"
@@ -71,7 +71,7 @@ spec:
         strategy.deployFeature("repoURL", "repoName", "chartName", "version",
                 "namespace", "releaseName", valuesYaml.toPath(), DeploymentStrategy.RepoType.GIT)
 
-        def argoCdApplicationYaml = new File("$localTempDir/argocd/applications/releaseName.yaml")
+        def argoCdApplicationYaml = new File("$localTempDir/apps/argocd/applications/releaseName.yaml")
         def result = new YamlSlurper().parse(argoCdApplicationYaml)
         def sources = result['spec']['sources'] as List
         assertThat(sources[0] as Map).containsKey('path')
@@ -89,7 +89,7 @@ spec:
         strategy.deployFeature("repoURL", "repoName", "chartName", "version",
                 "namespace", "releaseName", valuesYaml.toPath())
 
-        def argoCdApplicationYaml = new File("$localTempDir/argocd/applications/releaseName.yaml")
+        def argoCdApplicationYaml = new File("$localTempDir/apps/argocd/applications/releaseName.yaml")
         assertThat(argoCdApplicationYaml.text).contains("CreateNamespace=false")
     }
 
@@ -104,7 +104,7 @@ spec:
         strategy.deployFeature("repoURL", "repoName", "chartName", "version",
                 "namespace", "releaseName", valuesYaml.toPath())
 
-        def argoCdApplicationYaml = new File("$localTempDir/argocd/applications/releaseName.yaml")
+        def argoCdApplicationYaml = new File("$localTempDir/apps/argocd/applications/releaseName.yaml")
         assertThat(argoCdApplicationYaml.text).contains("CreateNamespace=true")
     }
 

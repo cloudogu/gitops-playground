@@ -136,7 +136,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
                 ]
         ])
 
-        String appManifestPath = "argocd/applications/${releaseName}.yaml"
+        String appManifestPath = "apps/argocd/applications/${releaseName}.yaml"
         clusterResourcesRepo.writeFile(appManifestPath, yamlResult)
 
         log.debug("Deploying helm release ${releaseName} basing on chart ${chartOrPath} from ${repoURL}, version " +

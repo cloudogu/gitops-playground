@@ -76,6 +76,11 @@ class RepoInitializationAction {
 
         boolean hasPrefixes = !prefixes.isEmpty()
 
+        // Templates that MUST be copied (chart templates), even though they match the global templates-exclude
+        Set<String> templateIncludePrefixes = [
+                'apps/argocd/argocd/templates/'
+        ] as Set<String>
+
         return { File f ->
             File canon = f.canonicalFile
             String rel = srcRoot.toURI().relativize(canon.toURI()).toString()
@@ -86,15 +91,23 @@ class RepoInitializationAction {
                 return true
             }
 
-            // Global excludes for feature templates:
-            // do NOT copy anything under apps/**/templates/** into the SCM repo
-            if (rel.startsWith('apps/') && rel.contains('/templates/')) {
-                return false
-            }
-
             boolean isDir = f.isDirectory()
             // For directories, always compare using a trailing slash
             String relDir = rel.endsWith('/') ? rel : rel + '/'
+
+            // --- Exception: keep required chart templates (e.g., ArgoCD chart templates) ---
+            // If the current path is inside an explicitly allowed templates subtree, always allow it.
+            if (templateIncludePrefixes.any { String p ->
+                (isDir ? relDir : rel).startsWith(p)
+            }) {
+                return true
+            }
+
+            // --- Global excludes for feature templates ---
+            // do NOT copy anything under apps/**/templates/** into the SCM repo
+            if (rel.startsWith('apps/') && relDir.contains('/templates/')) {
+                return false
+            }
 
             // If no prefixes are configured, copy everything (except templates)
             if (!hasPrefixes) {
@@ -106,12 +119,6 @@ class RepoInitializationAction {
                 // - exactly one of the requested subdirs, or
                 // - inside one of them, or
                 // - a parent of one of them (needed to keep the tree structure).
-                //
-                // Example (subDirsToCopy = ["argocd", "apps/monitoring"]):
-                //   relDir = "argocd/"          → allowed
-                //   relDir = "argocd/operator/" → allowed
-                //   relDir = "apps/"            → allowed (parent of "apps/monitoring/")
-                //   relDir = "apps/secrets/"    → rejected
                 return prefixes.any { String p ->
                     relDir == p || relDir.startsWith(p) || p.startsWith(relDir)
                 }
@@ -123,6 +130,7 @@ class RepoInitializationAction {
             }
         } as FileFilter
     }
+
 
 
 }

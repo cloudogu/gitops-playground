@@ -146,7 +146,7 @@ class ArgoCDTest {
         k8sCommands.assertExecuted('kubectl create secret generic argocd-repo-creds-scm -n argocd')
         k8sCommands.assertExecuted('kubectl label secret argocd-repo-creds-scm -n argocd')
 
-        // Check dependency build and helm install (Chart liegt jetzt unter argocd/argocd)
+        // Check dependency build and helm install (Chart liegt jetzt unter apps/argocd/argocd)
         assertThat(helmCommands.actualCommands[0].trim())
                 .isEqualTo('helm repo add argo https://argoproj.github.io/argo-helm')
         assertThat(helmCommands.actualCommands[1].trim())
@@ -191,7 +191,7 @@ class ArgoCDTest {
 
         // Neuer Pfad: Chart liegt unter argocd/argocd (nicht mehr nur argocd/)
         assertThat(argocdYaml['spec']['source']['path'] as String)
-                .isIn('argocd/argocd', 'argocd/argocd/')
+                .isIn('apps/argocd/argocd', 'apps/argocd/argocd/')
     }
 
 
@@ -639,11 +639,12 @@ class ArgoCDTest {
                     .isEqualTo("${expectedPrefix}argocd".toString())
         }
 
-        assertAllYamlFiles(new File(repoLayout.rootDir()), 'apps', 7) { Path it ->
+        assertAllYamlFiles(new File(repoLayout.rootDir()), 'apps', 7,
+                [ '/apps/argocd/' ]) { Path it ->
+
             def yaml = parseActualYaml(it.toString())
             List yamlDocuments = yaml instanceof List ? yaml : [yaml]
             for (def document in yamlDocuments) {
-                // Check all YAMLs objects for proper namespace, but namespaces because they dont have namespace attributes
                 if (document && document['kind'] != 'Namespace') {
                     def metadataNamespace = document['metadata']['namespace'] as String
                     assertThat(metadataNamespace)
@@ -654,14 +655,31 @@ class ArgoCDTest {
         }
     }
 
-    private static void assertAllYamlFiles(File rootDir, String childDir, Integer numberOfFiles, Closure cl) {
-        def nFiles = Files.walk(Path.of(rootDir.absolutePath, childDir))
-                .filter { it.toString() ==~ /.*\.yaml/ }
+    private static void assertAllYamlFiles(
+            File rootDir,
+            String childDir,
+            Integer numberOfFiles,
+            List<String> excludeContains = [],
+            Closure cl
+    ) {
+        def rootPath = Path.of(rootDir.absolutePath, childDir)
+
+        def yamlFiles = Files.walk(rootPath)
+                .filter { Files.isRegularFile(it) }
+                .filter { Path p ->
+                    def s = p.toString().replace('\\', '/')
+                    (s.endsWith('.yaml') || s.endsWith('.yml')) &&
+                            !excludeContains.any { ex -> s.contains(ex) }
+                }
                 .collect(Collectors.toList())
-                .each(cl)
-                .size()
-        assertThat(nFiles).isEqualTo(numberOfFiles)
+
+        yamlFiles.each(cl)
+
+        assertThat(yamlFiles.size()).isEqualTo(numberOfFiles)
     }
+
+
+
 
     private static List findFilesContaining(File folder, String stringToSearch) {
         List result = []
@@ -753,7 +771,7 @@ class ArgoCDTest {
 
         def argocdYaml = new YamlSlurper().parse(Path.of repoLayout.applicationsDir(), 'argocd.yaml')
         assertThat(argocdYaml['spec']['source']['directory']['recurse'] as Boolean).isTrue()
-        assertThat(argocdYaml['spec']['source']['path']).isEqualTo('argocd/operator/')
+        assertThat(argocdYaml['spec']['source']['path']).isEqualTo('apps/argocd/operator/')
         // Here we should assert all <#if argocd.isOperator> in YAML 😐️
     }
 
@@ -1089,22 +1107,17 @@ class ArgoCDTest {
 
         def argocdYaml = new YamlSlurper().parse(Path.of repoLayout.argocdRoot(), "${prefixPathCentral}applications/argocd.yaml")
         def bootstrapYaml = new YamlSlurper().parse(Path.of repoLayout.argocdRoot(), "${prefixPathCentral}applications/bootstrap.yaml")
-        def clusterResourcesYaml = new YamlSlurper().parse(Path.of repoLayout.argocdRoot(), "${prefixPathCentral}applications/cluster-resources.yaml")
         def projectsYaml = new YamlSlurper().parse(Path.of repoLayout.argocdRoot(), "${prefixPathCentral}applications/projects.yaml")
 
         assertThat(argocdYaml['metadata']['name']).isEqualTo('testPrefix-argocd')
         assertThat(argocdYaml['metadata']['namespace']).isEqualTo('argocd')
         assertThat(argocdYaml['spec']['project']).isEqualTo('testPrefix')
-        assertThat(argocdYaml['spec']['source']['path']).isEqualTo('argocd/operator/')
+        assertThat(argocdYaml['spec']['source']['path']).isEqualTo('apps/argocd/operator/')
 
         assertThat(bootstrapYaml['metadata']['name']).isEqualTo('testPrefix-bootstrap')
         assertThat(bootstrapYaml['metadata']['namespace']).isEqualTo('argocd')
         assertThat(bootstrapYaml['spec']['project']).isEqualTo('testPrefix')
         assertThat(bootstrapYaml['spec']['source']['repoURL']).isEqualTo("scmm.testhost/scm/repo/testPrefix-argocd/cluster-resources.git")
-
-        assertThat(clusterResourcesYaml['metadata']['name']).isEqualTo('testPrefix-cluster-resources')
-        assertThat(clusterResourcesYaml['metadata']['namespace']).isEqualTo('argocd')
-        assertThat(clusterResourcesYaml['spec']['project']).isEqualTo('testPrefix')
 
         assertThat(projectsYaml['metadata']['name']).isEqualTo('testPrefix-projects')
         assertThat(projectsYaml['metadata']['namespace']).isEqualTo('argocd')
