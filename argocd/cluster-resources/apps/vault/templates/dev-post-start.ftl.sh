@@ -85,7 +85,7 @@ EOF
     vault write auth/kubernetes/role/${STAGE} \
          bound_service_account_names=external-secrets-vault-reader \
 </#noparse>
-         bound_service_account_namespaces=${config.application.namePrefix}example-apps-${r"${STAGE}"} \
+         bound_service_account_namespaces=${namePrefix}example-apps-${r"${STAGE}"} \
 <#noparse>
          policies=${POLICY} \
          ttl=24h

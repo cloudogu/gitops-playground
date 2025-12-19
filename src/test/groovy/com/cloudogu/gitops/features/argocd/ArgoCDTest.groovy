@@ -2,19 +2,16 @@ package com.cloudogu.gitops.features.argocd
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.git.GitRepo
+import com.cloudogu.gitops.git.providers.GitProvider
+import com.cloudogu.gitops.utils.*
 import com.cloudogu.gitops.utils.git.GitHandlerForTests
 import com.cloudogu.gitops.utils.git.TestGitProvider
 import com.cloudogu.gitops.utils.git.TestGitRepoFactory
-import com.cloudogu.gitops.git.providers.GitProvider
-import com.cloudogu.gitops.utils.*
 import groovy.io.FileType
 import groovy.json.JsonSlurper
 import groovy.yaml.YamlSlurper
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito
 import org.mockito.Spy
-import org.mockito.junit.jupiter.MockitoExtension
 import org.springframework.security.crypto.bcrypt.BCrypt
 
 import java.nio.file.Files
@@ -23,9 +20,7 @@ import java.util.stream.Collectors
 
 import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable
 import static org.assertj.core.api.Assertions.assertThat
-import static org.assertj.core.api.Assertions.fail
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode
-
 
 class ArgoCDTest {
     Map buildImages = [
@@ -155,9 +150,9 @@ class ArgoCDTest {
         assertThat(helmCommands.actualCommands[0].trim())
                 .isEqualTo('helm repo add argo https://argoproj.github.io/argo-helm')
         assertThat(helmCommands.actualCommands[1].trim())
-                .isEqualTo("helm dependency build ${repoLayout.helmDir()}")
+                .isEqualTo("helm dependency build ${repoLayout.helmDir()}".toString())
         assertThat(helmCommands.actualCommands[2].trim())
-                .isEqualTo("helm upgrade -i argocd ${repoLayout.helmDir()} --create-namespace --namespace argocd")
+                .isEqualTo("helm upgrade -i argocd ${repoLayout.helmDir()} --create-namespace --namespace argocd".toString())
 
         // Check patched PW
         def patchCommand = k8sCommands.assertExecuted('kubectl patch secret argocd-secret -n argocd')

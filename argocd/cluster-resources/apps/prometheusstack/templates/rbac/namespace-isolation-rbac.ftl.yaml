@@ -2,7 +2,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: kube-prometheus-stack-prometheus
-  namespace: ${config.application.namePrefix}monitoring
+  namespace: ${namespace}
 rules:
   - apiGroups:
       - ""
@@ -39,7 +39,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: kube-prometheus-stack-operator
-  namespace: ${config.application.namePrefix}monitoring
+  namespace: ${namespace}
 rules:
   - verbs:
       - get
@@ -132,7 +132,7 @@ kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: kube-prometheus-stack-operator
-  namespace: ${config.application.namePrefix}monitoring
+  namespace: ${namespace}
 subjects:
   - kind: ServiceAccount
     name: kube-prometheus-stack-operator
@@ -146,7 +146,7 @@ kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: kube-prometheus-stack-prometheus
-  namespace: ${config.application.namePrefix}monitoring
+  namespace: ${namespace}
 subjects:
   - kind: ServiceAccount
     name: kube-prometheus-stack-prometheus
@@ -160,7 +160,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: kube-prometheus-stack-grafana
-  namespace: ${config.application.namePrefix}monitoring
+  namespace: ${namespace}
 rules:
   - apiGroups:
       - ""
@@ -176,7 +176,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: kube-prometheus-stack-grafana
-  namespace: ${config.application.namePrefix}monitoring
+  namespace: ${namespace}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role

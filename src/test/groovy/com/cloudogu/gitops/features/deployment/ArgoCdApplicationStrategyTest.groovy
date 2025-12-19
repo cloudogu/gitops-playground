@@ -23,14 +23,10 @@ class ArgoCdApplicationStrategyTest {
     void 'deploys feature using argo CD'() {
         def strategy = createStrategy()
         File valuesYaml = File.createTempFile('values', 'yaml')
-        valuesYaml.text = """
-param1: value1
-param2: value2
-"""
         strategy.deployFeature("repoURL", "repoName", "chartName", "version",
                 "foo-namespace", "releaseName", valuesYaml.toPath())
 
-        def argoCdApplicationYaml = new File("$localTempDir/argocd/releaseName.yaml")
+        def argoCdApplicationYaml = new File("$localTempDir/argocd/applications/releaseName.yaml")
         assertThat(argoCdApplicationYaml.text).isEqualTo("""---
 apiVersion: "argoproj.io/v1alpha1"
 kind: "Application"
@@ -48,10 +44,16 @@ spec:
     targetRevision: "version"
     helm:
       releaseName: "releaseName"
-      values: |2
-
-        param1: value1
-        param2: value2
+      valueFiles:
+      - "\$values/apps/repoName/misc/repoName-gop-helm.yaml"
+      - "\$values/apps/repoName/misc/repoName-user-values.yaml"
+      ignoreMissingValueFiles: true
+  - repoURL: "http://scmm.scm-manager.svc.cluster.local/scm/repo/argocd/cluster-resources.git"
+    targetRevision: "main"
+    ref: "values"
+    path: "apps/repoName/misc"
+    directory:
+      recurse: true
   syncPolicy:
     automated:
       prune: true
@@ -69,7 +71,7 @@ spec:
         strategy.deployFeature("repoURL", "repoName", "chartName", "version",
                 "namespace", "releaseName", valuesYaml.toPath(), DeploymentStrategy.RepoType.GIT)
 
-        def argoCdApplicationYaml = new File("$localTempDir/argocd/releaseName.yaml")
+        def argoCdApplicationYaml = new File("$localTempDir/argocd/applications/releaseName.yaml")
         def result = new YamlSlurper().parse(argoCdApplicationYaml)
         def sources = result['spec']['sources'] as List
         assertThat(sources[0] as Map).containsKey('path')
@@ -87,7 +89,7 @@ spec:
         strategy.deployFeature("repoURL", "repoName", "chartName", "version",
                 "namespace", "releaseName", valuesYaml.toPath())
 
-        def argoCdApplicationYaml = new File("$localTempDir/argocd/releaseName.yaml")
+        def argoCdApplicationYaml = new File("$localTempDir/argocd/applications/releaseName.yaml")
         assertThat(argoCdApplicationYaml.text).contains("CreateNamespace=false")
     }
 
@@ -102,7 +104,7 @@ spec:
         strategy.deployFeature("repoURL", "repoName", "chartName", "version",
                 "namespace", "releaseName", valuesYaml.toPath())
 
-        def argoCdApplicationYaml = new File("$localTempDir/argocd/releaseName.yaml")
+        def argoCdApplicationYaml = new File("$localTempDir/argocd/applications/releaseName.yaml")
         assertThat(argoCdApplicationYaml.text).contains("CreateNamespace=true")
     }
 

@@ -73,7 +73,7 @@ class Vault extends Feature implements FeatureWithImage {
             def vaultPostStartConfigMap = 'vault-dev-post-start'
             def vaultPostStartVolume = 'dev-post-start'
 
-            def templatedFile = fileSystemUtils.copyToTempDir(fileSystemUtils.getRootDir() + VAULT_START_SCRIPT_PATH)
+            def templatedFile = fileSystemUtils.copyToTempDir(fileSystemUtils.getRootDir() + "/"+VAULT_START_SCRIPT_PATH)
             def postStartScript = new TemplatingEngine().replaceTemplate(templatedFile.toFile(), [namePrefix: config.application.namePrefix])
 
             log.debug('Creating namespace for vault, so it can add its secrets there')
