@@ -81,7 +81,8 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
                         valueFiles : [
                                 "\$values/${valuesRelPath}".toString(),
                                 "\$values/${userValuesRelPath}".toString()
-                        ]
+                        ],
+                        ignoreMissingValueFiles: true
                 ]
         ]
 
