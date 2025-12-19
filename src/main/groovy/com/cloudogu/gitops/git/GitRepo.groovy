@@ -186,12 +186,9 @@ class GitRepo {
         file.text = content
     }
 
-
     void replaceTemplates(Map parameters) {
         new TemplatingEngine().replaceTemplates(new File(absoluteLocalRepoTmpDir), parameters)
     }
-
-
 
     String getGitRepositoryUrl() {
         return this.gitProvider.repoUrl(repoTarget, RepoUrlScope.CLIENT)

@@ -93,6 +93,8 @@ class ScmTenantSchema {
 
         Boolean internal = true
 
+        String releaseName = "scmm"
+
         @Option(names = ['--scmm-url'], description = SCMM_URL_DESCRIPTION)
         @JsonPropertyDescription(SCMM_URL_DESCRIPTION)
         String url = ''

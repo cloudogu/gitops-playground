@@ -22,7 +22,7 @@ import java.nio.file.Path
 @Order(150)
 class IngressNginx extends Feature implements FeatureWithImage {
 
-    static final String HELM_VALUES_PATH = "applications/cluster-resources/ingress-nginx-helm-values.ftl.yaml"
+    static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/ingress/templates/ingress-nginx-helm-values.ftl.yaml"
 
     String namespace = "${config.application.namePrefix}ingress-nginx"
     Config config

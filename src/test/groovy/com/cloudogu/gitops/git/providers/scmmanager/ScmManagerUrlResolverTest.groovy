@@ -31,6 +31,11 @@ class ScmManagerUrlResolverTest {
                 application: new Config.ApplicationSchema(
                         namePrefix: 'fv40-',
                         runningInsideK8s: false
+                ),
+                scm: new ScmTenantSchema(
+                        scmManager: new ScmTenantSchema.ScmManagerTenantConfig(
+                                releaseName: 'scmm',
+                        )
                 )
         )
     }
@@ -66,11 +71,11 @@ class ScmManagerUrlResolverTest {
 
     @Test
     void "clientApiBase(): appends 'api' to the client base"() {
-        when(k8s.waitForNodePort("scmm", "scm-manager")).thenReturn("30080")
+        when(k8s.waitForNodePort(config.scm.scmManager.releaseName, "scm-manager")).thenReturn("30080")
         when(net.findClusterBindAddress()).thenReturn("10.0.0.1")
 
-        var r = resolverWith()
-        assertEquals("http://10.0.0.1:30080/scm/api/", r.clientApiBase().toString())
+        var urlResolver = resolverWith()
+        assertEquals("http://10.0.0.1:30080/scm/api/", urlResolver.clientApiBase().toString())
     }
 
     // ---------- Repo base & URLs ----------
@@ -79,9 +84,9 @@ class ScmManagerUrlResolverTest {
         when(k8s.waitForNodePort("scmm", "scm-manager")).thenReturn("30080")
         when(net.findClusterBindAddress()).thenReturn("10.0.0.1")
 
-        var r = resolverWith()
+        var urlResolver = resolverWith()
         assertEquals("http://10.0.0.1:30080/scm/repo/ns/project",
-                r.clientRepoUrl("  ns/project  "))
+                urlResolver.clientRepoUrl("  ns/project  "))
     }
 
     // ---------- In-cluster base & URLs ----------
@@ -101,9 +106,9 @@ class ScmManagerUrlResolverTest {
 
     @Test
     void "inClusterRepoUrl(): builds full in-cluster repo URL without trailing slash"() {
-        var r = resolverWith()
+        var urlResolver = resolverWith()
         assertEquals("http://scmm.scm-manager.svc.cluster.local/scm/repo/admin/admin",
-                r.inClusterRepoUrl("admin/admin"))
+                urlResolver.inClusterRepoUrl("admin/admin"))
     }
 
     @Test

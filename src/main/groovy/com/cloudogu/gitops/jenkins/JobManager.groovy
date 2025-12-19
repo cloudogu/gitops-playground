@@ -49,7 +49,7 @@ class JobManager {
             return false
         } else {
             // Note for development: the XML representation of an existing job can be exporting by adding /config.xml to the URL
-            String payloadXml = new TemplatingEngine().template(new File('jenkins/namespaceJobTemplate.xml.ftl'),
+            String payloadXml = new TemplatingEngine().template(new File('argocd/cluster-resources/apps/jenkins/templates/namespaceJobTemplate.xml.ftl'),
                     [
                             SCMM_NAMESPACE_JOB_SERVER_URL    : serverUrl,
                             SCMM_NAMESPACE_JOB_NAMESPACE     : jobNamespace,
