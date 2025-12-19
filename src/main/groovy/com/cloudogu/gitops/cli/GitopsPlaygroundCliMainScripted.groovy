@@ -54,7 +54,7 @@ class GitopsPlaygroundCliMainScripted {
 
             def httpClientFactory = new HttpClientFactory()
 
-            def scmRepoProvider = new GitRepoFactory(config, fileSystemUtils)
+            def gitRepoFactory = new GitRepoFactory(config, fileSystemUtils)
 
             def helmStrategy = new HelmStrategy(config, helmClient)
 
@@ -67,14 +67,14 @@ class GitopsPlaygroundCliMainScripted {
 
             if (config.application.destroy) {
                 context.registerSingleton(new Destroyer([
-                        new ArgoCDDestructionHandler(config, k8sClient, scmRepoProvider, helmClient, fileSystemUtils, gitHandler),
+                        new ArgoCDDestructionHandler(config, k8sClient, gitRepoFactory, helmClient, fileSystemUtils, gitHandler),
                         new ScmmDestructionHandler(config),
                         new JenkinsDestructionHandler(new JobManager(jenkinsApiClient), config, new GlobalPropertyManager(jenkinsApiClient))
                 ]))
             } else {
-                def deployer = new Deployer(config, new ArgoCdApplicationStrategy(config, fileSystemUtils, scmRepoProvider, gitHandler), helmStrategy)
+                def deployer = new Deployer(config, new ArgoCdApplicationStrategy(config, fileSystemUtils, gitRepoFactory, gitHandler), helmStrategy)
 
-                def airGappedUtils = new AirGappedUtils(config, scmRepoProvider, fileSystemUtils, helmClient, gitHandler)
+                def airGappedUtils = new AirGappedUtils(config, gitRepoFactory, fileSystemUtils, helmClient, gitHandler)
 
                 def jenkins = new Jenkins(config, executor, fileSystemUtils, new GlobalPropertyManager(jenkinsApiClient),
                         new JobManager(jenkinsApiClient), new UserManager(jenkinsApiClient),
@@ -83,17 +83,16 @@ class GitopsPlaygroundCliMainScripted {
                 // make sure the order of features is in same order as the @Order values
                 context.registerSingleton(new Application(config, [
                         new Registry(config, fileSystemUtils, k8sClient, helmStrategy),
-                        new ScmManagerSetup(config, executor, fileSystemUtils, helmStrategy, k8sClient, networkingUtils),
                         gitHandler,
                         jenkins,
-                        new ArgoCD(config, k8sClient, helmClient, fileSystemUtils, scmRepoProvider, gitHandler),
+                        new ArgoCD(config, k8sClient, helmClient, fileSystemUtils, gitRepoFactory, gitHandler),
                         new IngressNginx(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
                         new CertManager(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
                         new Mailhog(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
-                        new PrometheusStack(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, scmRepoProvider, gitHandler),
+                        new PrometheusStack(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitRepoFactory, gitHandler),
                         new ExternalSecretsOperator(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
                         new Vault(config, fileSystemUtils, k8sClient, deployer, airGappedUtils, gitHandler),
-                        new ContentLoader(config, k8sClient, scmRepoProvider, jenkins, gitHandler),
+                        new ContentLoader(config, k8sClient, gitRepoFactory, jenkins, gitHandler),
                 ]))
             }
         }

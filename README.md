@@ -74,6 +74,7 @@ We recommend running this command as an unprivileged user, that is inside the [d
       - [External Mailserver](#external-mailserver)
       - [Secrets Management](#secrets-management)
       - [Certificate Management](#certificate-management)
+    - [Profiles](#profiles)
   - [Remove playground](#remove-playground)
   - [Running on Windows or Mac](#running-on-windows-or-mac)
     - [Mac and Windows WSL](#mac-and-windows-wsl)
@@ -289,32 +290,33 @@ That is, if you pass a param via CLI, for example, it will overwrite the corresp
 
 ###### Application
 
-| CLI | Config | Default | Type | Description |
-|-----|--------|---------|------|-------------|
-| `--config-file` | - | `''` | String | Config file path |
-| `--config-map` | - | `''` | String | Config map name |
-| `-d, --debug` | `application.debug` | - | Boolean | Enable debug mode |
-| `-x, --trace` | `application.trace` | - | Boolean | Enable trace mode |
-| `--output-config-file` | `application.outputConfigFile` | `false` | Boolean | Output configuration file |
-| `-v, --version` | `application.versionInfoRequested` | `false` | Boolean | Display version and license info |
-| `-h, --help` | `application.usageHelpRequested` | `false` | Boolean | Display help message |
-| `--remote` | `application.remote` | `false` | Boolean | Expose services as LoadBalancers |
-| `--insecure` | `application.insecure` | `false` | Boolean | Sets insecure-mode in cURL which skips cert validation |
-| `--openshift` | `application.openshift` | `false` | Boolean | When set, openshift specific resources and configurations are applied |
-| `--username` | `application.username` | `'admin'` | String | Set initial admin username |
-| `--password` | `application.password` | `'admin'` | String | Set initial admin passwords |
-| `-y, --yes` | `application.yes` | `false` | Boolean | Skip confirmation |
-| `--name-prefix` | `application.namePrefix` | `''` | String | Set name-prefix for repos, jobs, namespaces |
-| `--destroy` | `application.destroy` | `false` | Boolean | Unroll playground |
-| `--pod-resources` | `application.podResources` | `false` | Boolean | Write kubernetes resource requests and limits on each pod |
-| `--git-name` | `application.gitName` | `'Cloudogu'` | String | Sets git author and committer name used for initial commits |
-| `--git-email` | `application.gitEmail` | `'hello@cloudogu.com'` | String | Sets git author and committer email used for initial commits |
-| `--base-url` | `application.baseUrl` | `''` | String | The external base url (TLD) for all tools |
-| `--url-separator-hyphen` | `application.urlSeparatorHyphen` | `false` | Boolean | Use hyphens instead of dots to separate application name from base-url |
-| `--mirror-repos` | `application.mirrorRepos` | `false` | Boolean | Changes the sources of deployed tools so they work in air-gapped environments |
-| `--skip-crds` | `application.skipCrds` | `false` | Boolean | Skip installation of CRDs |
-| `--namespace-isolation` | `application.namespaceIsolation` | `false` | Boolean | Configure tools to work with given namespaces only |
-| `--netpols` | `application.netpols` | `false` | Boolean | Sets Network Policies |
+| CLI                      | Config                             | Default | Type     | Description                                                                   |
+|--------------------------|------------------------------------|---------|----------|-------------------------------------------------------------------------------|
+| `--config-file`          | -                                  | `''` | String   | Config file path                                                              |
+| `--config-map`           | -                                  | `''` | String   | Config map name                                                               |
+| `-d, --debug`            | `application.debug`                | - | Boolean  | Enable debug mode                                                             |
+| `-x, --trace`            | `application.trace`                | - | Boolean  | Enable trace mode                                                             |
+| `--output-config-file`   | `application.outputConfigFile`     | `false` | Boolean  | Output configuration file                                                     |
+| `-v, --version`          | `application.versionInfoRequested` | `false` | Boolean  | Display version and license info                                              |
+| `-h, --help`             | `application.usageHelpRequested`   | `false` | Boolean  | Display help message                                                          |
+| `--remote`               | `application.remote`               | `false` | Boolean  | Expose services as LoadBalancers                                              |
+| `--insecure`             | `application.insecure`             | `false` | Boolean  | Sets insecure-mode in cURL which skips cert validation                        |
+| `--openshift`            | `application.openshift`            | `false` | Boolean  | When set, openshift specific resources and configurations are applied         |
+| `--username`             | `application.username`             | `'admin'` | String   | Set initial admin username                                                    |
+| `--password`             | `application.password`             | `'admin'` | String   | Set initial admin passwords                                                   |
+| `-y, --yes`              | `application.yes`                  | `false` | Boolean  | Skip confirmation                                                             |
+| `--name-prefix`          | `application.namePrefix`           | `''` | String   | Set name-prefix for repos, jobs, namespaces                                   |
+| `--destroy`              | `application.destroy`              | `false` | Boolean  | Unroll playground                                                             |
+| `--pod-resources`        | `application.podResources`         | `false` | Boolean  | Write kubernetes resource requests and limits on each pod                     |
+| `--git-name`             | `application.gitName`              | `'Cloudogu'` | String   | Sets git author and committer name used for initial commits                   |
+| `--git-email`            | `application.gitEmail`             | `'hello@cloudogu.com'` | String   | Sets git author and committer email used for initial commits                  |
+| `--base-url`             | `application.baseUrl`              | `''` | String   | The external base url (TLD) for all tools                                     |
+| `--url-separator-hyphen` | `application.urlSeparatorHyphen`   | `false` | Boolean  | Use hyphens instead of dots to separate application name from base-url        |
+| `--mirror-repos`         | `application.mirrorRepos`          | `false` | Boolean  | Changes the sources of deployed tools so they work in air-gapped environments |
+| `--skip-crds`            | `application.skipCrds`             | `false` | Boolean  | Skip installation of CRDs                                                     |
+| `--namespace-isolation`  | `application.namespaceIsolation`   | `false` | Boolean  | Configure tools to work with given namespaces only                            |
+| `--netpols`              | `application.netpols`              | `false` | Boolean  | Sets Network Policies                                                         |
+| `-p, --profile`         | `application.profile`              | `''` | String   | Sets a profile for pre-defined parameter                                      |
 
 
 ###### Registry
@@ -408,17 +410,18 @@ That is, if you pass a param via CLI, for example, it will overwrite the corresp
 
 ###### ArgoCD
 
-| CLI | Config | Default | Type | Description |
-|-----|--------|---------|------|-------------|
-| `--argocd` | `features.argocd.active` | `false` | Boolean | Installs ArgoCD as GitOps CD tool |
-| `--argocd-operator` | `features.argocd.operator` | `false` | Boolean | Install ArgoCD operator |
-| `--argocd-url` | `features.argocd.url` | `''` | String | The url of your external argocd |
-| `--argocd-email-from` | `features.argocd.emailFrom` | `'argocd@example.org'` | String | Email from address for ArgoCD notifications |
-| `--argocd-email-to-user` | `features.argocd.emailToUser` | `'app-team@example.org'` | String | Email to address for user notifications |
-| `--argocd-email-to-admin` | `features.argocd.emailToAdmin` | `'infra@example.org'` | String | Email to address for admin notifications |
-| `--argocd-resource-inclusions-cluster` | `features.argocd.resourceInclusionsCluster` | `''` | String | ArgoCD resource inclusions for cluster |
-| `--argocd-namespace` | `features.argocd.namespace` | `'argocd'` | String | ArgoCD namespace |
-| - | `features.argocd.env` | - | List | Environment variables for ArgoCD |
+| CLI | Config                                      | Default | Type    | Description                                 |
+|-----|---------------------------------------------|---------|---------|---------------------------------------------|
+| `--argocd` | `features.argocd.active`                    | `false` | Boolean | Installs ArgoCD as GitOps CD tool           |
+| `--argocd-operator` | `features.argocd.operator`                  | `false` | Boolean | Install ArgoCD operator                     |
+| `--argocd-url` | `features.argocd.url`                       | `''` | String  | The url of your external argocd             |
+| `--argocd-email-from` | `features.argocd.emailFrom`                 | `'argocd@example.org'` | String  | Email from address for ArgoCD notifications |
+| `--argocd-email-to-user` | `features.argocd.emailToUser`               | `'app-team@example.org'` | String  | Email to address for user notifications     |
+| `--argocd-email-to-admin` | `features.argocd.emailToAdmin`              | `'infra@example.org'` | String  | Email to address for admin notifications    |
+| `--argocd-resource-inclusions-cluster` | `features.argocd.resourceInclusionsCluster` | `''` | String  | ArgoCD resource inclusions for cluster      |
+| `--argocd-namespace` | `features.argocd.namespace`                 | `'argocd'` | String  | ArgoCD namespace                            |
+| - | `features.argocd.env`                       | - | List    | Environment variables for ArgoCD            |
+| - | `features.argocd.values`                    | - | Map     | To override ArgoCD Operator file            |
 
 ###### Mail
 
@@ -438,21 +441,21 @@ That is, if you pass a param via CLI, for example, it will overwrite the corresp
 
 ###### Monitoring
 
-| CLI | Config | Default | Type | Description |
-|-----|--------|---------|------|-------------|
-| `--metrics, --monitoring` | `features.monitoring.active` | `false` | Boolean | Installs monitoring stack (Prometheus, Grafana) |
-| `--grafana-url` | `features.monitoring.grafanaUrl` | `''` | String | The url of your external grafana |
-| `--grafana-email-from` | `features.monitoring.grafanaEmailFrom` | `'grafana@example.org'` | String | Email from address for Grafana notifications |
-| `--grafana-email-to` | `features.monitoring.grafanaEmailTo` | `'infra@example.org'` | String | Email to address for Grafana notifications |
-| `--grafana-image` | `features.monitoring.helm.grafanaImage` | `''` | String | Grafana container image |
-| `--grafana-sidecar-image` | `features.monitoring.helm.grafanaSidecarImage` | `''` | String | Grafana sidecar container image |
-| `--prometheus-image` | `features.monitoring.helm.prometheusImage` | `''` | String | Prometheus container image |
-| `--prometheus-operator-image` | `features.monitoring.helm.prometheusOperatorImage` | `''` | String | Prometheus operator container image |
-| `--prometheus-config-reloader-image` | `features.monitoring.helm.prometheusConfigReloaderImage` | `''` | String | Prometheus config reloader container image |
-| - | `features.monitoring.helm.chart` | `'kube-prometheus-stack'` | String | Name of the Helm chart |
-| - | `features.monitoring.helm.repoURL` | `'https://prometheus-community.github.io/helm-charts'` | String | Repository url from which the Helm chart should be obtained |
-| - | `features.monitoring.helm.version` | `'69.7.4'` | String | The version of the Helm chart to be installed |
-| - | `features.monitoring.helm.values` | `[:]` | Map | Helm values of the chart |
+| CLI                                  | Config                                                   | Default                                                | Type    | Description                                                 |
+|--------------------------------------|----------------------------------------------------------|--------------------------------------------------------|---------|-------------------------------------------------------------|
+| `--metrics, --monitoring`            | `features.monitoring.active`                             | `false`                                                | Boolean | Installs monitoring stack (Prometheus, Grafana)             |
+| `--grafana-url`                      | `features.monitoring.grafanaUrl`                         | `''`                                                   | String  | The url of your external grafana                            |
+| `--grafana-email-from`               | `features.monitoring.grafanaEmailFrom`                   | `'grafana@example.org'`                                | String  | Email from address for Grafana notifications                |
+| `--grafana-email-to`                 | `features.monitoring.grafanaEmailTo`                     | `'infra@example.org'`                                  | String  | Email to address for Grafana notifications                  |
+| `--grafana-image`                    | `features.monitoring.helm.grafanaImage`                  | `''`                                                   | String  | Grafana container image                                     |
+| `--grafana-sidecar-image`            | `features.monitoring.helm.grafanaSidecarImage`           | `''`                                                   | String  | Grafana sidecar container image                             |
+| `--prometheus-image`                 | `features.monitoring.helm.prometheusImage`               | `''`                                                   | String  | Prometheus container image                                  |
+| `--prometheus-operator-image`        | `features.monitoring.helm.prometheusOperatorImage`       | `''`                                                   | String  | Prometheus operator container image                         |
+| `--prometheus-config-reloader-image` | `features.monitoring.helm.prometheusConfigReloaderImage` | `''`                                                   | String  | Prometheus config reloader container image                  |
+| -                                    | `features.monitoring.helm.chart`                         | `'kube-prometheus-stack'`                              | String  | Name of the Helm chart                                      |
+| -                                    | `features.monitoring.helm.repoURL`                       | `'https://prometheus-community.github.io/helm-charts'` | String  | Repository url from which the Helm chart should be obtained |
+| -                                    | `features.monitoring.helm.version`                       | `'80.2.2'`                                             | String  | The version of the Helm chart to be installed               |
+| -                                    | `features.monitoring.helm.values`                        | `[:]`                                                  | Map     | Helm values of the chart                                    |
 
 ###### Secrets
 
@@ -882,6 +885,23 @@ i.e.
 ```
 --cert-manager-image someRegistry/cert-manager-controller:latest
 ``` 
+#### Profiles
+GOP includes some pre-defined profiles for easy usage.
+e.g. set `--profile=full` to start GOP with all features enabled.
+
+
+Current existing profiles for argocd in non-operator mode:
+- `full` - all features enabled     
+- `minimal` - starts only with ArgoCD and SCM-Manger
+- `content-examples` - starts with ArgoCD, Jenkins, SCM-Manager and Petclinic
+
+Follow profils for ArgoCD in Operator mode which has to be installed first:
+- `operator-full` - all features enabled
+- `operator-minimal` - starts only with ArgoCD and SCM-Manger
+- `operator-petclinic` - starts with ArgoCD, Jenkins, SCM-Manager and Petclinic
+- `operator-mandant` - starts mandant/tenant example
+
+
 ### Remove playground
 
 For k3d, you can just `k3d cluster delete gitops-playground`. This will delete the whole cluster.

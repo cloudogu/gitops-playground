@@ -14,6 +14,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import org.jetbrains.annotations.NotNull
 import org.slf4j.LoggerFactory
 
+import javax.net.ssl.HostnameVerifier
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLSocketFactory
 import javax.net.ssl.X509TrustManager
@@ -34,6 +35,8 @@ class HttpClientFactory {
             def context = insecureSslContext()
             builder.sslSocketFactory(context.socketFactory, context.trustManager)
         }
+
+        builder.hostnameVerifier({ hostname, session -> true } as HostnameVerifier)
 
         return builder.build()
     }

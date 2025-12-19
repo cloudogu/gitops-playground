@@ -1,221 +1,275 @@
 package com.cloudogu.gitops.jenkins
 
-import com.cloudogu.gitops.common.MockWebServerHttpsFactory
 import com.cloudogu.gitops.config.Config
-
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension
 import io.micronaut.context.ApplicationContext
 import okhttp3.FormBody
 import okhttp3.JavaNetCookieJar
 import okhttp3.OkHttpClient
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.RegisterExtension
 
-import java.nio.charset.Charset
+import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLSocketFactory
+import javax.net.ssl.TrustManager
+import javax.net.ssl.X509TrustManager
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
 
+import static com.github.tomakehurst.wiremock.client.WireMock.*
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import static groovy.test.GroovyAssert.shouldFail
 import static org.assertj.core.api.Assertions.assertThat
 
 class JenkinsApiClientTest {
-    private MockWebServer webServer = new MockWebServer()
 
-    @AfterEach
-    void tearDown() {
-        webServer.shutdown()
-    }
+    @RegisterExtension
+    static WireMockExtension wireMock = WireMockExtension.newInstance()
+            .options(wireMockConfig()
+                    .dynamicPort()
+                    .dynamicHttpsPort())
+            .build()
 
     @Test
     void 'runs script with crumb'() {
-        webServer.setDispatcher { request ->
-            switch (request.path) {
-                case "/jenkins/crumbIssuer/api/json":
-                    return new MockResponse().setBody('{"crumb": "the-crumb", "crumbRequestField": "Jenkins-Crumb"}')
-                case "/jenkins/scriptText":
-                    return new MockResponse().setBody("ok")
-                default:
-                    return new MockResponse().setStatus("404")
-            }
-        }
-        webServer.start()
+        wireMock.stubFor(get(urlPathEqualTo("/jenkins/crumbIssuer/api/json"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withBody('{"crumb": "the-crumb", "crumbRequestField": "Jenkins-Crumb"}')))
 
-        def httpClient = new OkHttpClient.Builder().cookieJar(new JavaNetCookieJar(new CookieManager())).build()
+        wireMock.stubFor(post(urlPathEqualTo("/jenkins/scriptText"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withBody("ok")))
+
+        def httpClient = getUnsafeOkHttpClient().newBuilder().cookieJar(new JavaNetCookieJar(new CookieManager())).build()
         def apiClient = new JenkinsApiClient(
-                new Config(jenkins: new Config.JenkinsSchema(url: webServer.url("jenkins").toString())),
+                new Config(jenkins: new Config.JenkinsSchema(url: "${wireMock.baseUrl()}/jenkins")),
                 httpClient)
 
         def result = apiClient.runScript("println('ok')")
         assertThat(result).isEqualTo("ok")
 
-        def crumbRequest = webServer.takeRequest()
-        assertThat(crumbRequest.path).isEqualTo("/jenkins/crumbIssuer/api/json")
-        assertThat(crumbRequest.getHeader('Authorization')).startsWith("Basic ")
+        wireMock.verify(1, getRequestedFor(urlPathEqualTo("/jenkins/crumbIssuer/api/json"))
+                .withHeader("Authorization", matching("Basic .*")))
 
-        def runScriptRequest = webServer.takeRequest()
-        assertThat(runScriptRequest.path).isEqualTo("/jenkins/scriptText")
-        assertThat(runScriptRequest.getHeader('Authorization')).startsWith("Basic ")
-        assertThat(runScriptRequest.getHeader('Jenkins-Crumb')).startsWith("the-crumb")
+        wireMock.verify(1, postRequestedFor(urlPathEqualTo("/jenkins/scriptText"))
+                .withHeader("Authorization", matching("Basic .*"))
+                .withHeader("Jenkins-Crumb", equalTo("the-crumb")))
     }
 
     @Test
     void 'adds crumb to sendRequest'() {
-        webServer.enqueue(new MockResponse().setBody('{"crumb": "the-crumb", "crumbRequestField": "Jenkins-Crumb"}'))
-        webServer.enqueue(new MockResponse())
+        wireMock.stubFor(get(urlPathEqualTo("/jenkins/crumbIssuer/api/json"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withBody('{"crumb": "the-crumb", "crumbRequestField": "Jenkins-Crumb"}')))
+
+        wireMock.stubFor(post(urlPathEqualTo("/jenkins/foobar"))
+                .willReturn(aResponse().withStatus(200)))
 
         def client = new JenkinsApiClient(
-                new Config(jenkins: new Config.JenkinsSchema(url: webServer.url("jenkins").toString())), 
-                new OkHttpClient())
+                new Config(jenkins: new Config.JenkinsSchema(url: "${wireMock.baseUrl()}/jenkins")),
+                getUnsafeOkHttpClient())
         client.postRequestWithCrumb("foobar")
 
-        assertThat(webServer.requestCount).isEqualTo(2)
-        webServer.takeRequest() // crumb
-        def request = webServer.takeRequest()
-        assertThat(request.method).isEqualTo("POST")
-        assertThat(request.headers.get("Jenkins-Crumb")).isEqualTo("the-crumb")
+        wireMock.verify(1, getRequestedFor(urlPathEqualTo("/jenkins/crumbIssuer/api/json")))
+        wireMock.verify(1, postRequestedFor(urlPathEqualTo("/jenkins/foobar"))
+                .withHeader("Jenkins-Crumb", equalTo("the-crumb")))
     }
 
     @Test
     void 'adds crumb and post data to sendRequest'() {
-        webServer.enqueue(new MockResponse().setBody('{"crumb": "the-crumb", "crumbRequestField": "Jenkins-Crumb"}'))
-        webServer.enqueue(new MockResponse())
+        wireMock.stubFor(get(urlPathEqualTo("/jenkins/crumbIssuer/api/json"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withBody('{"crumb": "the-crumb", "crumbRequestField": "Jenkins-Crumb"}')))
+
+        wireMock.stubFor(post(urlPathEqualTo("/jenkins/foobar"))
+                .willReturn(aResponse().withStatus(200)))
 
         def client = new JenkinsApiClient(
-                new Config(jenkins: new Config.JenkinsSchema(url: webServer.url("jenkins").toString())),
-                new OkHttpClient())
+                new Config(jenkins: new Config.JenkinsSchema(url: "${wireMock.baseUrl()}/jenkins")),
+                getUnsafeOkHttpClient())
         client.postRequestWithCrumb("foobar", new FormBody.Builder().add('key', 'value with spaces').build())
 
-        assertThat(webServer.requestCount).isEqualTo(2)
-        webServer.takeRequest() // crumb
-        def request = webServer.takeRequest()
-        assertThat(request.method).isEqualTo("POST")
-        assertThat(request.headers.get("Jenkins-Crumb")).isEqualTo("the-crumb")
-        assertThat(request.body.readString(Charset.defaultCharset())).isEqualTo("key=value%20with%20spaces")
+        wireMock.verify(1, getRequestedFor(urlPathEqualTo("/jenkins/crumbIssuer/api/json")))
+        wireMock.verify(1, postRequestedFor(urlPathEqualTo("/jenkins/foobar"))
+                .withHeader("Jenkins-Crumb", equalTo("the-crumb"))
+                .withRequestBody(equalTo("key=value%20with%20spaces")))
     }
 
     @Test
     void 'allows self-signed certificates when using insecure'() {
-        webServer.useHttps(MockWebServerHttpsFactory.createSocketFactory().sslSocketFactory(), false)
-        webServer.setDispatcher { request ->
-            switch (request.path) {
-                case "/jenkins/crumbIssuer/api/json":
-                    return new MockResponse().setBody('{"crumb": "the-crumb", "crumbRequestField": "Jenkins-Crumb"}')
-                case "/jenkins/scriptText":
-                    return new MockResponse().setBody("ok")
-                default:
-                    return new MockResponse().setStatus("404")
-            }
-        }
-        webServer.start()
+        wireMock.stubFor(get(urlPathEqualTo("/jenkins/crumbIssuer/api/json"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withBody('{"crumb": "the-crumb", "crumbRequestField": "Jenkins-Crumb"}')))
+
+        wireMock.stubFor(post(urlPathEqualTo("/jenkins/scriptText"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withBody("ok")))
 
         def apiClient = ApplicationContext.run()
                 .registerSingleton(new Config(
                         application: new Config.ApplicationSchema(
                                 insecure: true),
                         jenkins: new Config.JenkinsSchema(
-                                url: webServer.url("jenkins"))
+                                url: "${wireMock.baseUrl().replace('http://', 'https://')}/jenkins")
                 ))
                 .getBean(JenkinsApiClient)
 
         def result = apiClient.runScript("println('ok')")
         assertThat(result).isEqualTo("ok")
 
-        def crumbRequest = webServer.takeRequest()
-        assertThat(crumbRequest.path).isEqualTo("/jenkins/crumbIssuer/api/json")
-        assertThat(crumbRequest.getHeader('Authorization')).startsWith("Basic ")
+        wireMock.verify(1, getRequestedFor(urlPathEqualTo("/jenkins/crumbIssuer/api/json"))
+                .withHeader("Authorization", matching("Basic .*")))
 
-        def runScriptRequest = webServer.takeRequest()
-        assertThat(runScriptRequest.path).isEqualTo("/jenkins/scriptText")
-        assertThat(runScriptRequest.getHeader('Authorization')).startsWith("Basic ")
-        assertThat(runScriptRequest.getHeader('Jenkins-Crumb')).startsWith("the-crumb")
+        wireMock.verify(1, postRequestedFor(urlPathEqualTo("/jenkins/scriptText"))
+                .withHeader("Authorization", matching("Basic .*"))
+                .withHeader("Jenkins-Crumb", equalTo("the-crumb")))
     }
 
     @Test
     void 'retries on invalid crumb'() {
-        Queue<String> crumbQueue = new ArrayDeque<String>()
-        crumbQueue.add("the-invalid-crumb")
-        crumbQueue.add("the-second-crumb")
-        webServer.setDispatcher { request ->
-            switch (request.path) {
-                case "/jenkins/crumbIssuer/api/json":
-                    return new MockResponse().setBody('{"crumb": "'+crumbQueue.poll()+'", "crumbRequestField": "Jenkins-Crumb"}')
-                case "/jenkins/scriptText":
-                    def isInvalidCrumb = request.getHeader('Jenkins-Crumb') == 'the-invalid-crumb'
-                    def body = !isInvalidCrumb ? 'ok' : '{"servlet":"Stapler", "message":"No valid crumb was included in the request", "url":"/scriptText", "status":"403"}'
-                    return new MockResponse().setBody(body).setResponseCode(isInvalidCrumb ? 403 : 200)
-                default:
-                    return new MockResponse().setStatus("404")
-            }
-        }
-        webServer.start()
+        wireMock.stubFor(get(urlPathEqualTo("/jenkins/crumbIssuer/api/json"))
+                .inScenario("Invalid Crumb Retry")
+                .whenScenarioStateIs("Started")
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withBody('{"crumb": "the-invalid-crumb", "crumbRequestField": "Jenkins-Crumb"}'))
+                .willSetStateTo("First Crumb"))
 
-        def httpClient = new OkHttpClient()
+        wireMock.stubFor(post(urlPathEqualTo("/jenkins/scriptText"))
+                .inScenario("Invalid Crumb Retry")
+                .whenScenarioStateIs("First Crumb")
+                .withHeader("Jenkins-Crumb", equalTo("the-invalid-crumb"))
+                .willReturn(aResponse()
+                        .withStatus(403)
+                        .withBody('{"servlet":"Stapler", "message":"No valid crumb was included in the request", "url":"/scriptText", "status":"403"}'))
+                .willSetStateTo("Invalid Crumb Response"))
+
+        wireMock.stubFor(get(urlPathEqualTo("/jenkins/crumbIssuer/api/json"))
+                .inScenario("Invalid Crumb Retry")
+                .whenScenarioStateIs("Invalid Crumb Response")
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withBody('{"crumb": "the-second-crumb", "crumbRequestField": "Jenkins-Crumb"}'))
+                .willSetStateTo("Second Crumb"))
+
+        wireMock.stubFor(post(urlPathEqualTo("/jenkins/scriptText"))
+                .inScenario("Invalid Crumb Retry")
+                .whenScenarioStateIs("Second Crumb")
+                .withHeader("Jenkins-Crumb", equalTo("the-second-crumb"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withBody("ok")))
+
+        def httpClient = getUnsafeOkHttpClient()
         def apiClient = new JenkinsApiClient(
-                new Config(jenkins: new Config.JenkinsSchema(url: webServer.url("jenkins").toString())),
+                new Config(jenkins: new Config.JenkinsSchema(url: "${wireMock.baseUrl()}/jenkins")),
                 httpClient)
         apiClient.setMaxRetries(3)
         apiClient.setWaitPeriodInMs(0)
 
         def result = apiClient.runScript("println('ok')")
         assertThat(result).isEqualTo("ok")
-        assertThat(crumbQueue.size()).isEqualTo(0)
+
+        wireMock.verify(2, getRequestedFor(urlPathEqualTo("/jenkins/crumbIssuer/api/json")))
+        wireMock.verify(2, postRequestedFor(urlPathEqualTo("/jenkins/scriptText")))
     }
 
     @Test
     void 'retries on invalid crumb are limited'() {
-        webServer.setDispatcher { request ->
-            switch (request.path) {
-                case "/jenkins/crumbIssuer/api/json":
-                    return new MockResponse().setBody('{"crumb": "the-invalid-crumb", "crumbRequestField": "Jenkins-Crumb"}')
-                case "/jenkins/scriptText":
-                    def body = '{"servlet":"Stapler", "message":"No valid crumb was included in the request", "url":"/scriptText", "status":"403"}'
-                    return new MockResponse().setBody(body).setResponseCode(403)
-                default:
-                    return new MockResponse().setStatus("404")
-            }
-        }
-        webServer.start()
+        wireMock.stubFor(get(urlPathEqualTo("/jenkins/crumbIssuer/api/json"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withBody('{"crumb": "the-invalid-crumb", "crumbRequestField": "Jenkins-Crumb"}')))
 
-        def httpClient = new OkHttpClient()
+        wireMock.stubFor(post(urlPathEqualTo("/jenkins/scriptText"))
+                .willReturn(aResponse()
+                        .withStatus(403)
+                        .withBody('{"servlet":"Stapler", "message":"No valid crumb was included in the request", "url":"/scriptText", "status":"403"}')))
+
+        def httpClient = getUnsafeOkHttpClient()
         def apiClient = new JenkinsApiClient(
-                new Config(jenkins: new Config.JenkinsSchema(url: webServer.url("jenkins").toString())),
+                new Config(jenkins: new Config.JenkinsSchema(url: "${wireMock.baseUrl()}/jenkins")),
                 httpClient)
         apiClient.setMaxRetries(3)
         apiClient.setWaitPeriodInMs(0)
-        
+
         shouldFail(RuntimeException) {
             apiClient.runScript("println('ok')")
         }
-        assertThat(webServer.requestCount).isEqualTo(3 /* fetch crumb */ + 3 /* call scriptText */)
+
+        wireMock.verify(3, getRequestedFor(urlPathEqualTo("/jenkins/crumbIssuer/api/json")))
+        wireMock.verify(3, postRequestedFor(urlPathEqualTo("/jenkins/scriptText")))
     }
 
     @Test
     void 'retries when fetching crumb fails'() {
-        def crumbRequestCounter = 0
-        webServer.setDispatcher { request ->
-            switch (request.path) {
-                case "/jenkins/crumbIssuer/api/json":
-                    if (++crumbRequestCounter > 1) {
-                        return new MockResponse().setBody('{"crumb": "the-invalid-crumb", "crumbRequestField": "Jenkins-Crumb"}')
-                    } else {
-                        return new MockResponse().setBody('error').setResponseCode(401)
-                    }
-                case "/jenkins/scriptText":
-                    return new MockResponse().setBody("ok")
-                default:
-                    return new MockResponse().setStatus("404")
-            }
-        }
-        webServer.start()
+        wireMock.stubFor(get(urlPathEqualTo("/jenkins/crumbIssuer/api/json"))
+                .inScenario("Crumb Fetch Retry")
+                .whenScenarioStateIs("Started")
+                .willReturn(aResponse()
+                        .withStatus(401)
+                        .withBody("error"))
+                .willSetStateTo("First Attempt Failed"))
 
-        def httpClient = new OkHttpClient()
+        wireMock.stubFor(get(urlPathEqualTo("/jenkins/crumbIssuer/api/json"))
+                .inScenario("Crumb Fetch Retry")
+                .whenScenarioStateIs("First Attempt Failed")
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withBody('{"crumb": "the-invalid-crumb", "crumbRequestField": "Jenkins-Crumb"}')))
+
+        wireMock.stubFor(post(urlPathEqualTo("/jenkins/scriptText"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withBody("ok")))
+
+        def httpClient = getUnsafeOkHttpClient()
         def apiClient = new JenkinsApiClient(
-                new Config(jenkins: new Config.JenkinsSchema(url: webServer.url("jenkins").toString())),
+                new Config(jenkins: new Config.JenkinsSchema(url: "${wireMock.baseUrl()}/jenkins")),
                 httpClient)
         apiClient.setMaxRetries(3)
         apiClient.setWaitPeriodInMs(0)
 
         def result = apiClient.runScript("println('ok')")
         assertThat(result).isEqualTo("ok")
-        assertThat(webServer.requestCount).isEqualTo(2 /* fetch crumb */ + 1 /* call scriptText */)
+
+        wireMock.verify(2, getRequestedFor(urlPathEqualTo("/jenkins/crumbIssuer/api/json")))
+        wireMock.verify(1, postRequestedFor(urlPathEqualTo("/jenkins/scriptText")))
+    }
+
+    private static OkHttpClient getUnsafeOkHttpClient() {
+        try {
+            // Create a trust manager that does not validate certificate chains
+            final TrustManager[] trustAllCerts = [
+                    new X509TrustManager() {
+                        @Override
+                        void checkClientTrusted(X509Certificate[] chain, String authType) {}
+                        @Override
+                        void checkServerTrusted(X509Certificate[] chain, String authType) {}
+                        @Override
+                        X509Certificate[] getAcceptedIssuers() {
+                            return new X509Certificate[0]
+                        }
+                    }
+            ] as TrustManager[]
+
+            // Install the all-trusting trust manager
+            final SSLContext sslContext = SSLContext.getInstance("SSL")
+            sslContext.init(null, trustAllCerts, new SecureRandom())
+            final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory()
+
+            return new OkHttpClient.Builder()
+                    .sslSocketFactory(sslSocketFactory, (X509TrustManager)trustAllCerts[0])
+                    .hostnameVerifier { hostname, session -> true }
+                    .build()
+        } catch (Exception e) {
+            throw new RuntimeException(e)
+        }
     }
 }

@@ -21,5 +21,3 @@ config:
       resourceInclusionsCluster: "https://10.43.0.1:443"
     ingressNginx:
       active: false
-multiTenant:
-  useDedicatedInstance: true

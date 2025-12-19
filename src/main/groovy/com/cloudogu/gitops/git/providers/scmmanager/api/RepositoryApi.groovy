@@ -7,7 +7,7 @@ import retrofit2.http.*
 
 interface RepositoryApi {
     @DELETE("v2/repositories/{namespace}/{name}")
-    Call<ResponseBody> delete(@Path("namespace") String namespace, @Path("name") String name)
+    Call<Void> delete(@Path("namespace") String namespace, @Path("name") String name)
 
     @POST("v2/repositories/")
     @Headers("Content-Type: application/vnd.scmm-repository+json;v=2")

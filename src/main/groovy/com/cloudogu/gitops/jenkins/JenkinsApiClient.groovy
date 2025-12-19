@@ -22,7 +22,14 @@ class JenkinsApiClient {
             Config config,
             @Named("jenkins") OkHttpClient client
     ) {
-        this.client = client
+
+        if (config.application.insecure) {
+            this.client = client.newBuilder()
+                    .hostnameVerifier({ hostname, session -> true })
+                    .build()
+        } else {
+            this.client = client
+        }
         this.config = config
     }
 

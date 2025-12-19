@@ -55,7 +55,7 @@ class GitopsPlaygroundCli {
             new CommandLine(cliParams).execute(args)
             return ReturnCode.SUCCESS
         }
-        
+
         def version = createVersionOutput()
         if (cliParams.application.versionInfoRequested) {
             println version
@@ -72,7 +72,7 @@ class GitopsPlaygroundCli {
             println(config.toYaml(false))
             return ReturnCode.SUCCESS
         }
-        
+
         // Set internal values in config after help/version/output because these should work without connecting to k8s
         // eg a simple docker run .. --help should not fail with connection refused
         config = applicationConfigurator.initConfig(config)
@@ -186,10 +186,15 @@ class GitopsPlaygroundCli {
         def cliParams = new Config()
         new CommandLine(cliParams).parseArgs(args)
 
+        // first evaluate profile for setting predefined values e.g. examples, if applicable
+        Config profileConfig = extractProfile(cliParams)
+
+
+
         String configFilePath = cliParams.application.configFile
         String configMapName = cliParams.application.configMap
-        Boolean contentExamples = cliParams.content.examples
-        Boolean multiTenancyExamples = cliParams.content.multitenancyExamples
+        Boolean contentExamples = cliParams.content.examples || profileConfig.content.examples
+        Boolean multiTenancyExamples = cliParams.content.multitenancyExamples || profileConfig.content.multitenancyExamples
 
         Map configFile = [:]
         Map configMap = [:]
@@ -219,20 +224,21 @@ class GitopsPlaygroundCli {
             multiTenancyContentExamplesFile = validateConfig(new File(multiTenancyContentExamplesConfigPath).text)
         }
 
+
         // Last one takes precedence
-        def configPrecedence = [configMap, configFile, contentExamplesFile, multiTenancyContentExamplesFile]
+        def configPrecedence = [profileConfig.toMap(), multiTenancyContentExamplesFile, contentExamplesFile, configMap, configFile]
         Map mergedConfigs = [:]
         configPrecedence.each {
             deepMerge(it, mergedConfigs)
         }
 
         // DeepMerge with default Config values to keep the default values defined in Config.groovy
-        mergedConfigs = deepMerge(mergedConfigs,new Config().toMap())
+        mergedConfigs = deepMerge(mergedConfigs, new Config().toMap())
 
         log.debug("Writing CLI params into config")
         Config mergedConfig = Config.fromMap(mergedConfigs)
         new CommandLine(mergedConfig).parseArgs(args)
-        
+
         return mergedConfig
     }
 
@@ -273,5 +279,26 @@ class GitopsPlaygroundCli {
                 mm.invoke(feature, config)
             }
         }
+    }
+
+    private static Config extractProfile(Config newConfig) {
+
+        String profile = newConfig.application.profile
+
+        Config profileConfig = new Config()
+        if (profile) {
+            String profileName = "src/main/resources/application-${profile}.yaml"
+            log.debug("Loading profile '${profileName}'")
+            def file
+            try {
+                file = new File(profileName)
+
+            } catch (Exception e) {
+                throw new RuntimeException("Profile '${profileName}' does not exist.")
+            }
+            Map profileFile = validateConfig(file.text)
+            profileConfig =  Config.fromMap(profileFile)
+        }
+        return profileConfig
     }
 }

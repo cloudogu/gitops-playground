@@ -407,6 +407,9 @@ class Config {
         @JsonPropertyDescription(CLUSTER_ADMIN_DESCRIPTION)
         Boolean clusterAdmin = false
 
+        @Option(names = ["-p", "--profile"], description = APPLICATION_PROFIL)
+        String profile
+
         static class NamespaceSchema {
             LinkedHashSet<String> dedicatedNamespaces = new LinkedHashSet<>()
             LinkedHashSet<String> tenantNamespaces = new LinkedHashSet<>()
@@ -486,6 +489,9 @@ class Config {
         @Option(names = ['--argocd-namespace'], description = ARGOCD_CUSTOM_NAMESPACE_DESCRIPTION)
         @JsonPropertyDescription(ARGOCD_CUSTOM_NAMESPACE_DESCRIPTION)
         String namespace = 'argocd'
+
+        @JsonPropertyDescription(HELM_CONFIG_VALUES_DESCRIPTION)
+        Map<String, Object> values = [:]
     }
 
     static class MailSchema {
@@ -555,7 +561,7 @@ class Config {
                 chart: 'kube-prometheus-stack',
                 repoURL: 'https://prometheus-community.github.io/helm-charts',
                 /* When updating this make sure to also test if air-gapped mode still works */
-                version: '69.7.4',
+                version: '80.2.2',
                 values: [:] // Otherwise values is null 🤷‍♂️
         )
         static class MonitoringHelmSchema extends HelmConfigWithValues {
@@ -712,7 +718,6 @@ class Config {
     static enum OverwriteMode {
         INIT, RESET, UPGRADE
     }
-
 
     private static final ObjectMapper objectMapper = new ObjectMapper()
             .registerModule(new SimpleModule().addSerializer(GString, new JsonSerializer<GString>() {
