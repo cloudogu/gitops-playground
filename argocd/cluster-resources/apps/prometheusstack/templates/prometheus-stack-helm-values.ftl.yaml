@@ -321,7 +321,7 @@ prometheus:
           { }
           </#if>
     probeSelectorNilUsesHelmValues: false
-  <#if config.application.podResources == true>
+<#if config.application.podResources == true>
     resources:
       limits:
         cpu: 500m
@@ -354,7 +354,7 @@ prometheus:
           username: '${config.application.namePrefix}metrics'
           password_file: '/etc/prometheus/secrets/prometheus-metrics-creds-scmm/password'
 </#if>
-<#if jenkins?? && jenkins?is_hash>
+<#if config.jenkins.active == true>
       - job_name: 'jenkins'
         static_configs:
           - targets: [ '${jenkins.host}' ]
