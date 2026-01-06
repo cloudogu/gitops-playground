@@ -1,6 +1,7 @@
 package com.cloudogu.gitops
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.features.git.config.ScmTenantSchema
 import io.micronaut.context.ApplicationContext
 import org.junit.jupiter.api.Test
 
@@ -102,5 +103,36 @@ class ApplicationTest {
                 .getBean(Application)
         application.setNamespaceListToConfig(config)
         // No exception == happy
+    }
+    @Test
+    void 'get active namespaces correctly in Openshift if jenkins and scm are external'() {
+        config.registry.active = true
+        config.jenkins.active = true
+        config.jenkins.internal = false
+        config.scm.scmManager = new ScmTenantSchema.ScmManagerTenantConfig()
+        config.scm.scmManager.internal = false
+        config.features.monitoring.active = true
+        config.features.argocd.active = true
+        config.content.examples = true
+        config.features.ingressNginx.active = true
+        config.application.namePrefix = 'test1-'
+        config.application.openshift = true
+        config.content.namespaces = [
+                '${config.application.namePrefix}example-apps-staging',
+                '${config.application.namePrefix}example-apps-production'
+        ]
+        List<String> namespaceList = new ArrayList<>(Arrays.asList(
+                "test1-argocd",
+                "test1-example-apps-staging",
+                "test1-example-apps-production",
+                "test1-ingress-nginx",
+                "test1-monitoring",
+                "test1-registry",
+        ))
+        def application = ApplicationContext.run()
+                .registerSingleton(config)
+                .getBean(Application)
+        application.setNamespaceListToConfig(config)
+        assertThat(config.application.namespaces.getActiveNamespaces()).containsExactlyInAnyOrderElementsOf(namespaceList)
     }
 }
