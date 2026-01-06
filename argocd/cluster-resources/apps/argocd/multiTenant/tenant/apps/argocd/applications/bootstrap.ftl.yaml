@@ -38,7 +38,7 @@ spec:
     namespace: ${config.application.namePrefix}argocd
   project: argocd
   source:
-    path: argocd/projects/
+    path: apps/argocd/projects/
     repoURL: ${scm.repoUrl}argocd/cluster-resources.git
     targetRevision: main
     directory:

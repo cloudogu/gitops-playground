@@ -50,8 +50,6 @@ class ScmCentralSchema {
         public static final String CENTRAL_SCMM_PATH_DESCRIPTION = 'Root path for SCM Manager. In SCM-Manager it is always "repo"'
         public static final String CENTRAL_SCMM_NAMESPACE_DESCRIPTION = 'Namespace where to find the Central SCMM'
 
-        String releaseName = "scmm"
-
         @Option(names = ['--central-scmm-internal'], description = CENTRAL_SCMM_INTERNAL_DESCRIPTION)
         @JsonPropertyDescription(CENTRAL_SCMM_INTERNAL_DESCRIPTION)
         Boolean internal = false

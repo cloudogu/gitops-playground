@@ -28,18 +28,18 @@ class ScmManager implements GitProvider {
     Config config
     ScmManagerSetup scmManagerSetup
 
-    ScmManager(Config config, ScmManagerConfig scmmConfig, HelmStrategy helmStrategy, K8sClient k8sClient, NetworkingUtils networkingUtils) {
+    ScmManager(Config config, ScmManagerConfig scmmConfig, HelmStrategy helmStrategy, K8sClient k8sClient, NetworkingUtils networkingUtils, Boolean installNeeded = false) {
         this.scmmConfig = scmmConfig
         this.config = config
         this.helmStrategy = helmStrategy
         this.k8sClient = k8sClient
         this.networkingUtils = networkingUtils
-        init()
+        init(installNeeded)
     }
 
-    void init() {
+    void init(installNeeded) {
         // --- Init Setup ---
-        if (this.scmmConfig.internal) {
+        if (this.scmmConfig.internal && installNeeded) {
             this.scmManagerSetup = new ScmManagerSetup(this)
             this.scmManagerSetup.setupHelm()
             this.urls = new ScmManagerUrlResolver(this.config, this.scmmConfig, this.k8sClient, this.networkingUtils)

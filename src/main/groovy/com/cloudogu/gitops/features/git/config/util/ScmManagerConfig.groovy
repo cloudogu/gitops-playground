@@ -15,6 +15,5 @@ interface ScmManagerConfig {
     String getRootPath()
     String getGitOpsUsername()
 
-
     Credentials getCredentials()
 }

@@ -92,7 +92,7 @@ class GitHandler extends Feature {
             case ScmProviderType.SCM_MANAGER:
                 def prefixedNamespace = "${config.application.namePrefix}scm-manager".toString()
                 config.scm.scmManager.namespace = prefixedNamespace
-                this.tenant = new ScmManager(this.config, config.scm.scmManager, helmStrategy,k8sClient, networkingUtils)
+                this.tenant = new ScmManager(this.config, config.scm.scmManager, helmStrategy,k8sClient, networkingUtils, true)
                 // this.tenant.setup() setup will be here in future
                 break
             default:
