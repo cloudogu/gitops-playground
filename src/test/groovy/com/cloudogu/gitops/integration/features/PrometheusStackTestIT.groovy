@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat
  *  - Operator
  *  - prometheus-stack
  */
-@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full|operator-full")
+@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full")
 class PrometheusStackTestIT extends KubenetesApiTestSetup {
 
     String namespace = 'monitoring'

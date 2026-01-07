@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat
  * This tests can only be successfull, if one of theses profiles used.
  */
 @EnabledIfSystemProperty(named = "micronaut.environments", matches = "full|content-examples")
-class PetclincProfileTestIT extends KubenetesApiTestSetup {
+class PetclinicProfileTestIT extends KubenetesApiTestSetup {
 
     String namespace1 = 'example-apps-staging'
     String namespace2 = 'example-apps-production'

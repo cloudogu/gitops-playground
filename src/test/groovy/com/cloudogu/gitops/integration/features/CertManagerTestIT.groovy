@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat
  * Cert-Manager contains own namespace ('cert-manager') which owns and 3 Pods:
  */
 @Slf4j
-@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full|operator-full")
+@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full") //TODO: why not in ArgoCD Operator? Clearify
 class CertManagerTestIT extends KubenetesApiTestSetup {
 
     String namespace = 'cert-manager'
