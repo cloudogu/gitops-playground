@@ -65,6 +65,10 @@ class RepoInitializationAction {
     }
 
     private FileFilter createSubdirFilter() {
+        if (!subDirsToCopy || subDirsToCopy.isEmpty()) {
+            return { File f -> true } as FileFilter
+        }
+
         File srcRoot = new File(copyFromDirectory).canonicalFile
 
         // Normalize entries like "argocd", "apps/monitoring" to "argocd/" or "apps/monitoring/"
