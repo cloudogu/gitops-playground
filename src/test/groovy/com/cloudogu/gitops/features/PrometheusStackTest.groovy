@@ -34,8 +34,9 @@ class PrometheusStackTest {
             ],
             jenkins: [
                     internal       : true,
+                    active: true,
                     metricsUsername: 'metrics',
-                    metricsPassword: 'metrics'
+                    metricsPassword: 'metrics',
             ],
             application: [
                     username          : 'abc',
@@ -638,9 +639,6 @@ matchExpressions:
         new PrometheusStack(configuration, new FileSystemUtils() {
             @Override
             Path writeTempFile(Map mapValues) {
-                println "TOP-LEVEL KEYS: ${mapValues.keySet()}"
-                println "GRAFANA NODE: ${mapValues.grafana}"
-
                 def ret = super.writeTempFile(mapValues)
                 temporaryYamlFilePrometheus = Path.of(ret.toString().replace(".ftl", ""))
                 return ret
