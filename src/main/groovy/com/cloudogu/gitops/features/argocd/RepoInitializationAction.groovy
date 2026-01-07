@@ -15,8 +15,6 @@ class RepoInitializationAction {
     private Config config
     private GitHandler gitHandler
 
-    Closure afterCopyHook
-
     RepoInitializationAction(Config config, GitRepo repo,GitHandler gitHandler, String copyFromDirectory) {
         this.config = config
         this.repo = repo
