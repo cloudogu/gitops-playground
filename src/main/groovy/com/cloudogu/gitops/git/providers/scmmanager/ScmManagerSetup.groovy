@@ -31,7 +31,7 @@ class ScmManagerSetup {
                     return
                 }
             } catch (Exception e) {
-                println "Waiting for SCM-Manager... Error: ${e.message}"
+               log.debug("Waiting for SCM-Manager... Error: ${e.message}")
             }
 
 
@@ -79,7 +79,7 @@ class ScmManagerSetup {
     def installScmmPlugins() {
 
         if (this.scmManager.config.scm.scmManager.skipPlugins) {
-            log.info("Skipping SCM plugin installation")
+            log.debug("Skipping SCM plugin installation")
             return
         }
 
@@ -101,12 +101,12 @@ class ScmManagerSetup {
         }
         Boolean restartForThisPlugin = false
         pluginNames.each { String pluginName ->
-            log.info("Installing Plugin ${pluginName} ...")
+            log.debug("Installing Plugin ${pluginName} ...")
             restartForThisPlugin = !this.scmManager.config.scm.scmManager.skipRestart && pluginName == pluginNames.last()
             ScmManagerApiClient.handleApiResponse(scmManager.apiClient.pluginApi().install(pluginName, restartForThisPlugin))
         }
 
-        log.info("SCM-Manager plugin installation finished successfully!")
+        log.debug("SCM-Manager plugin installation finished successfully!")
         if (restartForThisPlugin) {
             waitForScmmAvailable(60,2000,100)
         }

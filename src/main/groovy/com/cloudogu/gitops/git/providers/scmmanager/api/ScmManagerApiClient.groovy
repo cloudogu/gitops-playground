@@ -55,7 +55,7 @@ class ScmManagerApiClient {
                 log.error(errorMessage)
                 throw new RuntimeException(errorMessage)
             } else {
-                log.info("Successfully completed ${apiCall}")
+                log.debug("Successfully completed ${apiCall}")
             }
         } catch (Exception e) {
             def errorMessage = "Error executing API: ${e.message}"
