@@ -12,7 +12,7 @@ spec:
     server: https://kubernetes.default.svc
   project: argocd
   source:
-    path: apps/argocd/
+    path: argocd/
     repoURL: ${scm.repoUrl}argocd/example-apps.git
     targetRevision: main
     directory:
