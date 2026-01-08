@@ -51,33 +51,32 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
         //DedicatedInstances
         if (config.multiTenant.useDedicatedInstance) {
             repoName = "${config.application.namePrefix}${repoName}"
-            namespaceName = "argocd"
+            namespaceName = "${config.multiTenant.centralArgocdNamespace}"
             project = config.application.namePrefix.replaceFirst(/-$/, "")
         }
 
-        // Feature-Name -> Ordner unter apps/<feature>/misc
-        // z.B. repoName = "prometheus" → apps/prometheus/misc
+        // Feature-Name -> Ordner underapps/<feature>/misc
+        // e.g. repoName = "prometheus" → apps/prometheus/misc
         String featureName = repoName
         String miscPath    = "apps/${featureName}/misc"
 
 
-        String valuesRelPath = "${miscPath}/${featureName}-gop-helm.yaml"   // relativ zum Repo-Root
-        // Inline values from tmpHelmValues file into ArgoCD Application YAML
+        String valuesRelPath = "${miscPath}/${featureName}-gop-helm.yaml"   // relative to repo-root
+        // inline values from tmpHelmValues file into ArgoCD Application YAML
         def inlineValues = helmValuesPath.toFile().text
         clusterResourcesRepo.writeFile(valuesRelPath, inlineValues)
 
-        //TODO GOP soll diese Datei nicht überschreiben
+        //GOP should not overwrite this file
         String userValuesRelPath = "${miscPath}/${featureName}-user-values.yaml"
         clusterResourcesRepo.writeFile(userValuesRelPath, "")
 
-        // 1) Helm-Source (externe Chart-Quelle)
+        // 1) helm source (external chart source)
         def helmSource = [
                 repoURL                          : repoURL,
                 (chooseKeyChartOrPath(repoType)) : chartOrPath,
                 targetRevision                   : version,
                 helm                             : [
                         releaseName: releaseName,
-                        // $values kommt aus ref: values in der zweiten Source
                         valueFiles : [
                                 "\$values/${valuesRelPath}".toString(),
                                 "\$values/${userValuesRelPath}".toString()
@@ -86,11 +85,10 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
                 ]
         ]
 
-        // 2) Git-Source für misc + values
-        //   - repoURL: cluster-resources-Repo
-        //   - ref: values  → wird in valueFiles als $values verwendet
-        //   - path: apps/<feature>/misc → zusätzliche Manifeste
-
+        // 2) Git source for misc + values
+        //   - repoURL: cluster-resources repo
+        //   - ref: values → used in valueFiles as $values
+        //   - path: apps/<feature>/misc → additional manifests
         def miscRepoUrl = "${clusterResourcesRepo.gitProvider.repoPrefix()}argocd/cluster-resources.git".toString()
         def miscSource = [
                 repoURL       :  miscRepoUrl,
