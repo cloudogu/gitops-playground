@@ -218,9 +218,10 @@ class ArgoCD extends Feature {
         }
 
         if (config.multiTenant.useDedicatedInstance) {
-            log.debug("Deleting unnecessary non dedicated instances folders from argocd repo: applications=${repoLayout.applicationsDir()}, projects=${repoLayout.projectsDir()}")
+            log.debug("Deleting unnecessary non dedicated instances folders from argocd repo: applications=${repoLayout.applicationsDir()}, projects=${repoLayout.projectsDir()}, tenant=${repoLayout.multiTenantDir()}/tenant")
             FileSystemUtils.deleteDir repoLayout.applicationsDir()
             FileSystemUtils.deleteDir repoLayout.projectsDir()
+            FileSystemUtils.deleteDir repoLayout.multiTenantDir() + "/tenant"
         } else {
             log.debug("Deleting unnecessary multiTenant folder from argocd repo: ${repoLayout.multiTenantDir()}")
             FileSystemUtils.deleteDir repoLayout.multiTenantDir()
