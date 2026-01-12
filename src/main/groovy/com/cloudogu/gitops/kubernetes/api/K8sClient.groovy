@@ -1,12 +1,14 @@
 package com.cloudogu.gitops.kubernetes.api
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.FileSystemUtils
 import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
 import groovy.transform.Immutable
 import groovy.util.logging.Slf4j
+import io.kubernetes.client.openapi.models.V1Secret
 import jakarta.inject.Provider
 import jakarta.inject.Singleton
 
@@ -21,6 +23,7 @@ class K8sClient {
     private CommandExecutor commandExecutor
     private FileSystemUtils fileSystemUtils
     private Provider<Config> configProvider
+    private KubernetesApiClient kubernetesApi
 
     K8sClient(
             CommandExecutor commandExecutor,
@@ -30,6 +33,7 @@ class K8sClient {
         this.fileSystemUtils = fileSystemUtils
         this.commandExecutor = commandExecutor
         this.configProvider = configProvider
+        this.kubernetesApi = new KubernetesApiClient()
     }
 
 
@@ -192,6 +196,21 @@ class K8sClient {
                 .build()
 
         commandExecutor.execute(command1, APPLY_FROM_STDIN)
+    }
+
+    /**
+     * Gets login credentials from a K8s secret
+     */
+    Credentials getCredentialsFromSecret(String secretname, String namespace) {
+        try {
+            V1Secret secret = this.kubernetesApi.getApi().readNamespacedSecret(secretname, namespace).execute()
+            def secretData = secret.getData()
+            String username = new String(Base64.getDecoder().decode(secretData['username']))
+            String password = new String(Base64.getDecoder().decode(secretData['password']))
+            return new Credentials(username, password)
+        } catch (Exception e) {
+            throw new RuntimeException("Couldn't parse credentials from K8s secret: ${secretname} in namespace ${namespace}", e)
+        }
     }
 
     String getArgoCDNamespacesSecret(String name, String namespace = '') {

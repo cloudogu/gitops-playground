@@ -108,7 +108,7 @@ class ScmManagerSetup {
 
         log.debug("SCM-Manager plugin installation finished successfully!")
         if (restartForThisPlugin) {
-            waitForScmmAvailable(60,2000,100)
+            waitForScmmAvailable(120,2000,100)
         }
     }
 
