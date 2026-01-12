@@ -1,6 +1,8 @@
-package com.cloudogu.gitops.utils
+package com.cloudogu.gitops.kubernetes.api
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.utils.CommandExecutor
+import com.cloudogu.gitops.utils.FileSystemUtils
 import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
 import groovy.transform.Immutable

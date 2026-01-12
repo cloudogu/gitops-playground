@@ -15,7 +15,7 @@ import com.cloudogu.gitops.config.schema.JsonSchemaValidator
 import com.cloudogu.gitops.destroy.Destroyer
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.K8sClient
+import com.cloudogu.gitops.kubernetes.api.K8sClient
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 import io.micronaut.context.ApplicationContext
