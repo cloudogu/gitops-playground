@@ -34,8 +34,9 @@ class PrometheusStackTest {
             ],
             jenkins: [
                     internal       : true,
+                    active: true,
                     metricsUsername: 'metrics',
-                    metricsPassword: 'metrics'
+                    metricsPassword: 'metrics',
             ],
             application: [
                     username          : 'abc',
@@ -294,12 +295,12 @@ policies:
     @Test
     void 'uses ingress if enabled'() {
         config.features.monitoring.grafanaUrl = 'http://grafana.local'
+
         createStack(scmManagerMock).install()
 
-
-        def ingressYaml = parseActualYaml()['grafana']['ingress']
-        assertThat(ingressYaml['enabled']).isEqualTo(true)
-        assertThat((ingressYaml['hosts'] as List)[0]).isEqualTo('grafana.local')
+        def serviceYaml = parseActualYaml()['grafana']['service']
+        assertThat(serviceYaml['enabled']).isEqualTo(true)
+        assertThat((serviceYaml['hosts'] as List)[0]).isEqualTo('grafana.local')
     }
 
     @Test
@@ -511,7 +512,7 @@ policies:
         assertThat(yaml['global']['rbac']['create']).isEqualTo(false)
 
         for (String namespace : config.application.namespaces.getActiveNamespaces()) {
-            def rbacYaml = new File("$clusterResourcesRepoDir/misc/monitoring/rbac/${namespace}.yaml")
+            def rbacYaml = new File("$clusterResourcesRepoDir/apps/prometheusstack/misc/rbac/${namespace}.yaml")
             assertThat(rbacYaml.text).contains("namespace: ${namespace}")
             assertThat(rbacYaml.text).contains("    namespace: foo-monitoring")
         }
@@ -534,7 +535,7 @@ policies:
         prometheusStack.install()
 
         for (String namespace : config.application.namespaces.getActiveNamespaces()) {
-            def netPolsYaml = new File("$clusterResourcesRepoDir/misc/monitoring/netpols/${namespace}.yaml")
+            def netPolsYaml = new File("$clusterResourcesRepoDir/apps/prometheusstack/misc/netpols/${namespace}.yaml")
             assertThat(netPolsYaml.text).contains("namespace: ${namespace}")
         }
     }

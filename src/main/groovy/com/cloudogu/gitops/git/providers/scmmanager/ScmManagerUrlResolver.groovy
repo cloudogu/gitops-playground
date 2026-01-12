@@ -14,8 +14,9 @@ class ScmManagerUrlResolver {
     private final K8sClient k8s
     private final NetworkingUtils net
 
-    private final String releaseName = 'scmm'
     private URI cachedClusterBind
+
+    private final String releaseName = 'scmm'
 
     ScmManagerUrlResolver(Config config, ScmManagerConfig scmm, K8sClient k8s, NetworkingUtils net) {
         this.config = config

@@ -25,6 +25,7 @@ class ScmManagerUrlResolverTest {
     @Mock
     private NetworkingUtils net
 
+
     @BeforeEach
     void setUp() {
         config = new Config(
@@ -69,8 +70,8 @@ class ScmManagerUrlResolverTest {
         when(k8s.waitForNodePort("scmm", "scm-manager")).thenReturn("30080")
         when(net.findClusterBindAddress()).thenReturn("10.0.0.1")
 
-        var r = resolverWith()
-        assertEquals("http://10.0.0.1:30080/scm/api/", r.clientApiBase().toString())
+        var urlResolver = resolverWith()
+        assertEquals("http://10.0.0.1:30080/scm/api/", urlResolver.clientApiBase().toString())
     }
 
     // ---------- Repo base & URLs ----------
@@ -79,9 +80,9 @@ class ScmManagerUrlResolverTest {
         when(k8s.waitForNodePort("scmm", "scm-manager")).thenReturn("30080")
         when(net.findClusterBindAddress()).thenReturn("10.0.0.1")
 
-        var r = resolverWith()
+        var urlResolver = resolverWith()
         assertEquals("http://10.0.0.1:30080/scm/repo/ns/project",
-                r.clientRepoUrl("  ns/project  "))
+                urlResolver.clientRepoUrl("  ns/project  "))
     }
 
     // ---------- In-cluster base & URLs ----------
@@ -101,9 +102,9 @@ class ScmManagerUrlResolverTest {
 
     @Test
     void "inClusterRepoUrl(): builds full in-cluster repo URL without trailing slash"() {
-        var r = resolverWith()
+        var urlResolver = resolverWith()
         assertEquals("http://scmm.scm-manager.svc.cluster.local/scm/repo/admin/admin",
-                r.inClusterRepoUrl("admin/admin"))
+                urlResolver.inClusterRepoUrl("admin/admin"))
     }
 
     @Test

@@ -35,9 +35,9 @@ class GitHandlerForTests extends GitHandler {
         final String namePrefix = (config?.application?.namePrefix ?: "").trim()
         if (this.central) {
             setupRepos(this.central, namePrefix)
-            setupRepos(this.tenant, namePrefix, false)
+            setupRepos(this.tenant, namePrefix)
         } else {
-            setupRepos(this.tenant, namePrefix, true)
+            setupRepos(this.tenant, namePrefix)
         }
         create3thPartyDependencies(this.tenant, namePrefix)
 

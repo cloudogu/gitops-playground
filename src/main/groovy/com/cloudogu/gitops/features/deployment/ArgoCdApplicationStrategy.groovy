@@ -45,18 +45,60 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
         GitRepo clusterResourcesRepo = gitRepoProvider.getRepo('argocd/cluster-resources', this.gitHandler.resourcesScm)
         clusterResourcesRepo.cloneRepo()
 
-        // Inline values from tmpHelmValues file into ArgoCD Application YAML
-        def inlineValues = helmValuesPath.toFile().text
-
         String project = "cluster-resources"
         String namespaceName = "${namePrefix}argocd"
 
         //DedicatedInstances
         if (config.multiTenant.useDedicatedInstance) {
             repoName = "${config.application.namePrefix}${repoName}"
-            namespaceName = "argocd"
+            namespaceName = "${config.multiTenant.centralArgocdNamespace}"
             project = config.application.namePrefix.replaceFirst(/-$/, "")
         }
+
+        // Feature-Name -> Ordner underapps/<feature>/misc
+        // e.g. repoName = "prometheus" → apps/prometheus/misc
+        String featureName = repoName
+        String miscPath    = "apps/${featureName}/misc"
+
+
+        String valuesRelPath = "${miscPath}/${featureName}-gop-helm.yaml"   // relative to repo-root
+        // inline values from tmpHelmValues file into ArgoCD Application YAML
+        def inlineValues = helmValuesPath.toFile().text
+        clusterResourcesRepo.writeFile(valuesRelPath, inlineValues)
+
+        //GOP should not overwrite this file
+        String userValuesRelPath = "${miscPath}/${featureName}-user-values.yaml"
+        clusterResourcesRepo.writeFile(userValuesRelPath, "")
+
+        // 1) helm source (external chart source)
+        def helmSource = [
+                repoURL                          : repoURL,
+                (chooseKeyChartOrPath(repoType)) : chartOrPath,
+                targetRevision                   : version,
+                helm                             : [
+                        releaseName: releaseName,
+                        valueFiles : [
+                                "\$values/${valuesRelPath}".toString(),
+                                "\$values/${userValuesRelPath}".toString()
+                        ],
+                        ignoreMissingValueFiles: true
+                ]
+        ]
+
+        // 2) Git source for misc + values
+        //   - repoURL: cluster-resources repo
+        //   - ref: values → used in valueFiles as $values
+        //   - path: apps/<feature>/misc → additional manifests
+        def miscRepoUrl = "${clusterResourcesRepo.gitProvider.repoPrefix()}argocd/cluster-resources.git".toString()
+        def miscSource = [
+                repoURL       :  miscRepoUrl,
+                targetRevision: "main",
+                ref           : "values",
+                path          : miscPath,
+                directory     : [recurse: true]
+        ]
+
+        def sources = [helmSource, miscSource]
 
         // Prepare ArgoCD Application YAML
         def yamlMapper = YAMLMapper.builder()
@@ -76,15 +118,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
                                 namespace: namespace
                         ],
                         project    : project,
-                        sources    : [[
-                                              repoURL                            : repoURL,
-                                              "${chooseKeyChartOrPath(repoType)}": chartOrPath,
-                                              targetRevision                     : version,
-                                              helm                               : [
-                                                      releaseName: releaseName,
-                                                      values     : inlineValues
-                                              ]
-                                      ]],
+                        sources    : sources,
                         syncPolicy : [
                                 automated  : [
                                         prune   : true,
@@ -100,7 +134,14 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
                 ]
         ])
 
-        clusterResourcesRepo.writeFile("argocd/${releaseName}.yaml", yamlResult)
+        String appManifestPath="apps/argocd"
+        if (config.multiTenant.useDedicatedInstance) {
+            appManifestPath += "/multiTenant/central/applications/${releaseName}.yaml"
+        }else{
+            appManifestPath += "/applications/${releaseName}.yaml"
+        }
+
+        clusterResourcesRepo.writeFile(appManifestPath, yamlResult)
 
         log.debug("Deploying helm release ${releaseName} basing on chart ${chartOrPath} from ${repoURL}, version " +
                 "${version}, into namespace ${namespace}. Using Argo CD application:\n${yamlResult}")

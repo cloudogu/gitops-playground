@@ -92,7 +92,7 @@ class GitHandler extends Feature {
             case ScmProviderType.SCM_MANAGER:
                 def prefixedNamespace = "${config.application.namePrefix}scm-manager".toString()
                 config.scm.scmManager.namespace = prefixedNamespace
-                this.tenant = new ScmManager(this.config, config.scm.scmManager, helmStrategy,k8sClient, networkingUtils)
+                this.tenant = new ScmManager(this.config, config.scm.scmManager, helmStrategy,k8sClient, networkingUtils, true)
                 // this.tenant.setup() setup will be here in future
                 break
             default:
@@ -116,25 +116,18 @@ class GitHandler extends Feature {
         final String namePrefix = (config?.application?.namePrefix ?: "").trim()
         if (this.central) {
             setupRepos(this.central, namePrefix)
-            setupRepos(this.tenant, namePrefix, false)
+            setupRepos(this.tenant, namePrefix)
         } else {
-            setupRepos(this.tenant, namePrefix, true)
+            setupRepos(this.tenant, namePrefix)
         }
         create3thPartyDependencies(this.tenant, namePrefix)
     }
 
-    // includeClusterResources = true => also create the argocd/cluster-resources repository
-    static void setupRepos(GitProvider gitProvider, String namePrefix = "", boolean includeClusterResources = true) {
+    static void setupRepos(GitProvider gitProvider, String namePrefix = "") {
         gitProvider.createRepository(
-                withOrgPrefix(namePrefix, "argocd/argocd"),
-                "GitOps repo for administration of ArgoCD"
+                withOrgPrefix(namePrefix, "argocd/cluster-resources"),
+                "GitOps repo for basic cluster-resources"
         )
-        if (includeClusterResources) {
-            gitProvider.createRepository(
-                    withOrgPrefix(namePrefix, "argocd/cluster-resources"),
-                    "GitOps repo for basic cluster-resources"
-            )
-        }
     }
 
     static create3thPartyDependencies(GitProvider gitProvider, String namePrefix = "") {

@@ -17,8 +17,6 @@ class ScmCentralSchema {
         public static final String CENTRAL_GITLAB_PARENTGROUP_ID_DESCRIPTION = "Main Group for Gitlab where the GOP creates it's groups/repos"
 
         // Only supports external Gitlab for now
-        Boolean internal = false
-
         @Option(names = ['--central-gitlab-url'], description = CENTRAL_GITLAB_URL_DESCRIPTION)
         @JsonPropertyDescription(CENTRAL_GITLAB_URL_DESCRIPTION)
         String url = 'https://gitlab.com/'

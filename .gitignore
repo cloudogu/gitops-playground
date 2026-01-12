@@ -19,7 +19,7 @@ terraform/account.json
 **/.terraform/*
 /.mvn/wrapper/maven-wrapper.jar
 # Is created on "helm dep update ." but not needed in repo
-/argocd/argocd/argocd/charts/
+/argocd/cluster-resources/apps/argocd/argocd/charts/
 
 gitops-playground.jar
 jenkins-plugins

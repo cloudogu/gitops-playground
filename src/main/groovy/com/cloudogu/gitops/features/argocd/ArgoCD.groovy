@@ -23,33 +23,21 @@ import java.nio.file.Path
 @Singleton
 @Order(100)
 class ArgoCD extends Feature {
-    static final String HELM_VALUES_PATH = 'argocd/values.yaml'
-    static final String OPERATOR_CONFIG_PATH = 'operator/argocd.yaml'
-    static final String OPERATOR_RBAC_PATH = 'operator/rbac'
-    static final String CHART_YAML_PATH = 'argocd/Chart.yaml'
-    static final String DEDICATED_INSTANCE_PATH = 'multiTenant/central/'
-    static final String MONITORING_RESOURCES_PATH = '/misc/monitoring/'
 
-    private String namespace = "${config.application.namePrefix}${config.features.argocd.namespace}"
-    private Config config
-    private List<RepoInitializationAction> gitRepos = []
+    private final String namespace
+    private final Config config
+    private final K8sClient k8sClient
+    private final HelmClient helmClient
+    private final FileSystemUtils fileSystemUtils
+    private final GitRepoFactory repoProvider
+    private final GitHandler gitHandler
+    private final List<RepoInitializationAction> gitRepos = []
 
-    private String password
+    private final String password
 
-    protected final String scmmUrlInternal = "http://scmm.${config.application.namePrefix}scm-manager.svc.cluster.local/scm"
-
-    protected RepoInitializationAction argocdRepoInitializationAction
     protected RepoInitializationAction clusterResourcesInitializationAction
     protected RepoInitializationAction tenantBootstrapInitializationAction
-    protected File remotePetClinicRepoTmpDir
 
-    protected K8sClient k8sClient
-    protected HelmClient helmClient
-
-    protected FileSystemUtils fileSystemUtils
-    private GitRepoFactory repoProvider
-
-    GitHandler gitHandler
 
     ArgoCD(
             Config config,
@@ -65,7 +53,8 @@ class ArgoCD extends Feature {
         this.helmClient = helmClient
         this.fileSystemUtils = fileSystemUtils
         this.gitHandler = gitHandler
-        this.password = this.config.application.password
+        this.password = config.application.password
+        this.namespace = "${config.application.namePrefix}${config.features.argocd.namespace}"
     }
 
     @Override
@@ -96,19 +85,13 @@ class ArgoCD extends Feature {
 
     @Override
     void enable() {
+        initGitOpsRepos()
 
-        initTenantRepos()
-        initCentralRepos()
-
-        log.debug('Cloning Repositories')
-
-        gitRepos.forEach(repoInitializationAction -> {
-            repoInitializationAction.initLocalRepo()
-        })
-
+        // init all repos (clusterResources, tenantBootstrap, etc.)
+        gitRepos.each { RepoInitializationAction repoInitializationAction -> repoInitializationAction.initLocalRepo() }
         prepareGitOpsRepos()
 
-        gitRepos.forEach(repoInitializationAction -> {
+        this.gitRepos.forEach(repoInitializationAction -> {
             repoInitializationAction.repo.commitAndPush('Initial Commit')
         })
 
@@ -116,9 +99,8 @@ class ArgoCD extends Feature {
         installArgoCd()
     }
 
-    private void installArgoCd() {
 
-        prepareArgoCdRepo()
+    private void installArgoCd() {
 
         log.debug("Creating namespaces")
         k8sClient.createNamespaces(config.application.namespaces.activeNamespaces.toList())
@@ -143,17 +125,21 @@ class ArgoCD extends Feature {
             deployWithHelm()
         }
 
+        ArgoCDRepoLayout repoLayout = repoLayout()
+
         if (config.multiTenant.useDedicatedInstance) {
             //Bootstrapping dedicated instance
-            k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), "${DEDICATED_INSTANCE_PATH}projects/tenant.yaml").toString())
-            k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), "${DEDICATED_INSTANCE_PATH}applications/bootstrap.yaml").toString())
+            k8sClient.applyYaml(repoLayout.dedicatedTenantProject())
+            k8sClient.applyYaml(repoLayout.dedicatedBootstrapApp())
+
             //Bootstrapping tenant Argocd projects
-            k8sClient.applyYaml(Path.of(tenantBootstrapInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'projects/argocd.yaml').toString())
-            k8sClient.applyYaml(Path.of(tenantBootstrapInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'applications/bootstrap.yaml').toString())
+            ArgoCDRepoLayout tenantRepoLayout = tenantRepoLayout()
+            k8sClient.applyYaml(Path.of(tenantRepoLayout.projectsDir(), "argocd.yaml").toString())
+            k8sClient.applyYaml(Path.of(tenantRepoLayout.applicationsDir(), "bootstrap.yaml").toString())
         } else {
             // Bootstrap root application
-            k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'projects/argocd.yaml').toString())
-            k8sClient.applyYaml(Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'applications/bootstrap.yaml').toString())
+            k8sClient.applyYaml(Path.of(repoLayout.projectsDir(), "argocd.yaml").toString())
+            k8sClient.applyYaml(Path.of(repoLayout.applicationsDir(), "bootstrap.yaml").toString())
         }
 
         // Delete helm-argo secrets to decouple from helm.
@@ -163,84 +149,120 @@ class ArgoCD extends Feature {
                 new Tuple2('owner', 'helm'), new Tuple2('name', 'argocd'))
     }
 
-    protected initTenantRepos() {
-        if (!config.multiTenant.useDedicatedInstance) {
-            argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd', this.gitHandler.tenant)
 
+    private void initGitOpsRepos() {
+        initTenantRepos()
+        initCentralRepos()
+
+        Set<String> clusterResourceSubDirs = new LinkedHashSet<>()
+
+        clusterResourceSubDirs.add(ArgoCDRepoLayout.argocdSubdirRel())
+
+        if (config.features.certManager.active) {
+            clusterResourceSubDirs.add(ArgoCDRepoLayout.certManagerSubdirRel())   // "apps/cert-manager"
+        }
+        if (config.features.ingressNginx.active) {
+            clusterResourceSubDirs.add(ArgoCDRepoLayout.ingressSubdirRel())
+        }
+
+        if (config.jenkins.active) {
+            clusterResourceSubDirs.add(ArgoCDRepoLayout.jenkinsSubdirRel())
+        }
+        if (config.features.mail.active) {
+            clusterResourceSubDirs.add(ArgoCDRepoLayout.mailhogSubdirRel())
+        }
+
+        if (config.features.monitoring.active) {
+            clusterResourceSubDirs.add(ArgoCDRepoLayout.monitoringSubdirRel())
+        }
+        if (config.scm.scmManager?.url) {
+            clusterResourceSubDirs.add(ArgoCDRepoLayout.scmManagerSubdirRel())
+        }
+
+        if (config.features.secrets.active) {
+            clusterResourceSubDirs.add(ArgoCDRepoLayout.secretsSubdirRel())
+            clusterResourceSubDirs.add(ArgoCDRepoLayout.vaultSubdirRel())
+        }
+
+        clusterResourcesInitializationAction.subDirsToCopy = clusterResourceSubDirs
+    }
+
+    private void initTenantRepos() {
+        if (!config.multiTenant.useDedicatedInstance) {
             clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources', this.gitHandler.tenant)
-            gitRepos += clusterResourcesInitializationAction
+            this.gitRepos.add(clusterResourcesInitializationAction)
+
         } else {
-            tenantBootstrapInitializationAction = createRepoInitializationAction('argocd/argocd/multiTenant/tenant', 'argocd/argocd', this.gitHandler.tenant)
-            gitRepos += tenantBootstrapInitializationAction
+            tenantBootstrapInitializationAction = createRepoInitializationAction('argocd/cluster-resources/apps/argocd/multiTenant/tenant', 'argocd/cluster-resources', this.gitHandler.tenant)
+            this.gitRepos.add(tenantBootstrapInitializationAction)
         }
     }
 
-    protected initCentralRepos() {
+    private void initCentralRepos() {
         if (config.multiTenant.useDedicatedInstance) {
-            argocdRepoInitializationAction = createRepoInitializationAction('argocd/argocd', 'argocd/argocd', true)
-
             clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources', true)
-            gitRepos += clusterResourcesInitializationAction
+            this.gitRepos.add(clusterResourcesInitializationAction)
         }
     }
 
     private void prepareGitOpsRepos() {
+        ArgoCDRepoLayout repoLayout = repoLayout()
 
-        if (!config.features.secrets.active) {
-            log.debug("Deleting unnecessary secrets folder from cluster resources: ${clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
-            FileSystemUtils.deleteDir clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/misc/secrets'
+        if (config.features.argocd.operator) {
+            log.debug("Deleting unnecessary argocd (argocd helm variant) folder from argocd repo: ${repoLayout.helmDir()}")
+            FileSystemUtils.deleteDir repoLayout.helmDir()
+            generateRBAC()
+        } else {
+            log.debug("Deleting unnecessary operator (argocd operator variant) folder from argocd repo: ${repoLayout.operatorDir()}")
+            FileSystemUtils.deleteDir repoLayout.operatorDir()
         }
 
-        if (!config.features.monitoring.active) {
-            log.debug("Deleting unnecessary monitoring folder from cluster resources: ${clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
-            FileSystemUtils.deleteDir clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + MONITORING_RESOURCES_PATH
-        } else if (!config.features.ingressNginx.active) {
-            FileSystemUtils.deleteFile clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + MONITORING_RESOURCES_PATH + 'ingress-nginx-dashboard.yaml'
-            FileSystemUtils.deleteFile clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + MONITORING_RESOURCES_PATH + 'ingress-nginx-dashboard-requests-handling.yaml'
+        if (config.multiTenant.useDedicatedInstance) {
+            log.debug("Deleting unnecessary non dedicated instances folders from argocd repo: applications=${repoLayout.applicationsDir()}, projects=${repoLayout.projectsDir()}, tenant=${repoLayout.multiTenantDir()}/tenant")
+            FileSystemUtils.deleteDir repoLayout.applicationsDir()
+            FileSystemUtils.deleteDir repoLayout.projectsDir()
+            FileSystemUtils.deleteDir repoLayout.multiTenantDir() + "/tenant"
+        } else {
+            log.debug("Deleting unnecessary multiTenant folder from argocd repo: ${repoLayout.multiTenantDir()}")
+            FileSystemUtils.deleteDir repoLayout.multiTenantDir()
         }
 
-    }
+        if (!config.application.netpols) {
+            log.debug("Deleting argocd netpols at ${repoLayout.netpolFile()}")
+            FileSystemUtils.deleteFile repoLayout.netpolFile()
+        }
 
-    private void deployWithHelm() {
-        // Install umbrella chart from folder
-        String umbrellaChartPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), 'argocd/')
-        // Even if the Chart.lock already contains the repo, we need to add it before resolving it
-        // See https://github.com/helm/helm/issues/8036#issuecomment-872502901
-        List helmDependencies = fileSystemUtils.readYaml(
-                Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), CHART_YAML_PATH))['dependencies']
-        helmClient.addRepo('argo', helmDependencies[0]['repository'] as String)
-        helmClient.dependencyBuild(umbrellaChartPath)
-        helmClient.upgrade('argocd', umbrellaChartPath, [namespace: "${namespace}"])
-
-        // Delete helm-argo secrets to decouple from helm.
-        // This does not delete Argo from the cluster, but you can no longer modify argo directly with helm
-        // For development keeping it in helm makes it easier (e.g. for helm uninstall).
-        k8sClient.delete('secret', namespace,
-                new Tuple2('owner', 'helm'), new Tuple2('name', 'argocd'))
-
-        log.debug("Setting new argocd admin password")
-        // Set admin password imperatively here instead of values.yaml, because we don't want it to show in git repo
-        String bcryptArgoCDPassword = BCrypt.hashpw(password, BCrypt.gensalt(4))
-        k8sClient.patch('secret', 'argocd-secret', namespace,
-                [stringData: ['admin.password': bcryptArgoCDPassword]])
+        if (config.features.monitoring.active) {
+            String monitoringRootDashboard = "${repoLayout.monitoringDir()}/misc/dashboard"
+            if (!config.features.ingressNginx.active) {
+                FileSystemUtils.deleteFile monitoringRootDashboard + '/ingress-nginx-dashboard.yaml'
+                FileSystemUtils.deleteFile monitoringRootDashboard + '/ingress-nginx-dashboard-requests-handling.yaml'
+            }
+            if (!config.jenkins.active) {
+                FileSystemUtils.deleteFile monitoringRootDashboard + '/jenkins-dashboard.yaml'
+            }
+            if (!config.scm.scmManager?.url) {
+                FileSystemUtils.deleteFile monitoringRootDashboard + '/scmm-dashboard.yaml'
+            }
+        }
     }
 
     private void deployWithOperator() {
+        ArgoCDRepoLayout repoLayout = repoLayout()
+
         // Apply argocd yaml from operator folder
-        String argocdConfigPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), OPERATOR_CONFIG_PATH)
+        String argocdConfigPath = repoLayout.operatorConfigFile()
         if (this.config.features.argocd?.values) {
             log.debug("extend Argocd.yaml with ${this.config.features.argocd.values}")
             def argocdYaml = fileSystemUtils.readYaml(
-                    Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), OPERATOR_CONFIG_PATH))
+                    Path.of(repoLayout.operatorConfigFile()))
 
             def result = MapUtils.deepMerge(this.config.features.argocd.values, argocdYaml)
             fileSystemUtils.writeYaml(result, new File (argocdConfigPath))
             log.debug("Argocd.yaml for operator contains ${result}")
             // reload file
-            argocdConfigPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), OPERATOR_CONFIG_PATH)
-
+            argocdConfigPath = repoLayout.operatorConfigFile()
         }
-
         k8sClient.applyYaml(argocdConfigPath)
 
         // ArgoCD is not installed until the ArgoCD-Operator did his job.
@@ -252,19 +274,41 @@ class ArgoCD extends Feature {
         // The Operator uses an extra secret to store the admin Password, which is not bcrypted
         k8sClient.patch('secret', 'argocd-cluster', namespace,
                 [stringData: ['admin.password': password]])
+
         // In newer Versions ArgoCD Operator uses the password in argocd-cluster secret only as generated initial password
         // but we want to set our own admin password so we set the password in both Secrets for consistency
         String bcryptArgoCDPassword = BCrypt.hashpw(password, BCrypt.gensalt(4))
         k8sClient.patch('secret', 'argocd-secret', namespace,
                 [stringData: ['admin.password': bcryptArgoCDPassword]])
 
-
         updatingArgoCDManagedNamespaces()
 
         log.debug("Apply RBAC permissions for ArgoCD in all managed namespaces imperatively")
         // Apply rbac yamls from operator/rbac folder
-        String argocdRbacPath = Path.of(argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir(), OPERATOR_RBAC_PATH)
+        String argocdRbacPath = repoLayout.operatorRbacDir()
         k8sClient.applyYaml("${argocdRbacPath} --recursive")
+    }
+
+
+    private void deployWithHelm() {
+        ArgoCDRepoLayout repoLayout = repoLayout()
+
+        // Install umbrella chart from argocd/argocd
+        String umbrellaChartPath = repoLayout.helmDir()
+        // Even if the Chart.lock already contains the repo, we need to add it before resolving it
+        // See https://github.com/helm/helm/issues/8036#issuecomment-872502901
+        List helmDependencies = fileSystemUtils.readYaml(
+                Path.of(repoLayout.chartYaml()))['dependencies']
+        helmClient.addRepo('argo', helmDependencies[0]['repository'] as String)
+        helmClient.dependencyBuild(umbrellaChartPath)
+        helmClient.upgrade('argocd', umbrellaChartPath, [namespace: namespace])
+
+        log.debug("Setting new argocd admin password")
+        // Set admin password imperatively here instead of values.yaml, because we don't want it to show in git repo
+        String bcryptArgoCDPassword = BCrypt.hashpw(password, BCrypt.gensalt(4))
+        k8sClient.patch('secret', 'argocd-secret', namespace,
+                [stringData: ['admin.password': bcryptArgoCDPassword]])
+
     }
 
     // The ArgoCD instance installed via an operator only manages its deployment namespace.
@@ -298,6 +342,8 @@ class ArgoCD extends Feature {
     private void generateRBAC() {
 
         log.debug("Generate RBAC permissions for ArgoCD in all managed namespaces")
+        ArgoCDRepoLayout repoLayout = repoLayout()
+
         if (config.multiTenant.useDedicatedInstance) {
             //Generating Tenant Namespace RBACs for Tenant Argocd
             for (String ns : config.application.namespaces.tenantNamespaces) {
@@ -309,8 +355,8 @@ class ArgoCD extends Feature {
                                 ["argocd-argocd-server", "argocd-argocd-application-controller", "argocd-applicationset-controller"]
                         )
                         .withConfig(config)
-                        .withRepo(argocdRepoInitializationAction.repo)
-                        .withSubfolder("${OPERATOR_RBAC_PATH}/tenant")
+                        .withRepo(clusterResourcesInitializationAction.repo)
+                        .withSubfolder(repoLayout.operatorRbacTenantSubfolder())
                         .generate()
             }
 
@@ -325,8 +371,8 @@ class ArgoCD extends Feature {
                                 ["argocd-argocd-server", "argocd-argocd-application-controller", "argocd-applicationset-controller"]
                         )
                         .withConfig(config)
-                        .withRepo(argocdRepoInitializationAction.repo)
-                        .withSubfolder(OPERATOR_RBAC_PATH)
+                        .withRepo(clusterResourcesInitializationAction.repo)
+                        .withSubfolder(repoLayout.operatorRbacSubfolder())
                         .generate()
             }
         } else {
@@ -339,12 +385,12 @@ class ArgoCD extends Feature {
                                 ["argocd-argocd-server", "argocd-argocd-application-controller", "argocd-applicationset-controller"]
                         )
                         .withConfig(config)
-                        .withRepo(argocdRepoInitializationAction.repo)
-                        .withSubfolder(OPERATOR_RBAC_PATH)
+                        .withRepo(clusterResourcesInitializationAction.repo)
+                        .withSubfolder(repoLayout.operatorRbacSubfolder())
                         .generate()
             }
 
-            if(config.application.clusterAdmin) {
+            if (config.application.clusterAdmin) {
                 new RbacDefinition(Role.Variant.CLUSTER_ADMIN)
                         .withName("argocd-cluster-admin")
                         .withNamespace(namespace)
@@ -353,8 +399,8 @@ class ArgoCD extends Feature {
                                 ["argocd-argocd-server", "argocd-argocd-application-controller", "argocd-applicationset-controller"]
                         )
                         .withConfig(config)
-                        .withRepo(argocdRepoInitializationAction.repo)
-                        .withSubfolder(OPERATOR_RBAC_PATH)
+                        .withRepo(clusterResourcesInitializationAction.repo)
+                        .withSubfolder(repoLayout.operatorRbacSubfolder())
                         .generate()
             }
         }
@@ -383,66 +429,29 @@ class ArgoCD extends Feature {
     }
 
     protected void createSCMCredentialsSecret() {
-
         log.debug("Creating repo credential secret that is used by argocd to access repos in ${config.scm.scmProviderType.toString()}")
+
         // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo
-        def repoTemplateSecretName = 'argocd-repo-creds-scm'
-
-        k8sClient.createSecret('generic', repoTemplateSecretName, namespace,
-                new Tuple2('url', this.gitHandler.tenant.url),
-                new Tuple2('username', this.gitHandler.tenant.credentials.username),
-                new Tuple2('password', this.gitHandler.tenant.credentials.password)
+        createRepoCredentialsSecret(
+                'argocd-repo-creds-scm',
+                namespace,
+                gitHandler.tenant.url,
+                gitHandler.tenant.credentials.username,
+                gitHandler.tenant.credentials.password
         )
-
-        k8sClient.label('secret', repoTemplateSecretName, namespace,
-                new Tuple2('argocd.argoproj.io/secret-type', 'repo-creds'))
 
         if (config.multiTenant.useDedicatedInstance) {
             log.debug("Creating central repo credential secret that is used by argocd to access repos in ${config.scm.scmProviderType.toString()}")
+
             // Create secret imperatively here instead of values.yaml, because we don't want it to show in git repo
-            def centralRepoTemplateSecretName = 'argocd-repo-creds-central-scm'
-
-            k8sClient.createSecret('generic', centralRepoTemplateSecretName, config.multiTenant.centralArgocdNamespace,
-                    new Tuple2('url', this.gitHandler.central.url),
-                    new Tuple2('username', this.gitHandler.central.credentials.username),
-                    new Tuple2('password', this.gitHandler.central.credentials.password)
+            createRepoCredentialsSecret(
+                    'argocd-repo-creds-central-scm',
+                    config.multiTenant.centralArgocdNamespace,
+                    gitHandler.central.url,
+                    gitHandler.central.credentials.username,
+                    gitHandler.central.credentials.password
             )
-
-            k8sClient.label('secret', centralRepoTemplateSecretName, config.multiTenant.centralArgocdNamespace,
-                    new Tuple2('argocd.argoproj.io/secret-type', 'repo-creds'))
         }
-    }
-
-    protected void prepareArgoCdRepo() {
-
-        argocdRepoInitializationAction.initLocalRepo()
-
-        if (config.features.argocd.operator) {
-            log.debug("Deleting unnecessary argocd (argocd helm variant) folder from argocd repo: ${argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
-            FileSystemUtils.deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/argocd'
-            log.debug("Deleting unnecessary namespaces resources from clusterResources repo: ${clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
-            FileSystemUtils.deleteFile clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/misc/namespaces.yaml'
-            generateRBAC()
-        } else {
-            log.debug("Deleting unnecessary operator (argocd operator variant) folder from argocd repo: ${argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
-            FileSystemUtils.deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/operator'
-        }
-
-        if (config.multiTenant.useDedicatedInstance) {
-            log.debug("Deleting unnecessary non dedicated instances folders from argocd repo: ${argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
-            FileSystemUtils.deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/applications'
-            FileSystemUtils.deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/projects'
-        } else {
-            log.debug("Deleting unnecessary multiTenant folder from argocd repo: ${argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir()}")
-            FileSystemUtils.deleteDir argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/multiTenant'
-        }
-
-        if (!config.application.netpols) {
-            log.debug("Deleting argocd netpols.")
-            FileSystemUtils.deleteFile argocdRepoInitializationAction.repo.getAbsoluteLocalRepoTmpDir() + '/argocd/templates/allow-namespaces.yaml'
-        }
-
-        argocdRepoInitializationAction.repo.commitAndPush("Initial Commit")
     }
 
     protected RepoInitializationAction createRepoInitializationAction(String localSrcDir, String scmRepoTarget, Boolean isCentral) {
@@ -454,9 +463,22 @@ class ArgoCD extends Feature {
         new RepoInitializationAction(config, repoProvider.getRepo(scmRepoTarget, gitProvider), this.gitHandler, localSrcDir)
     }
 
-    private void replaceFileContentInYamls(File folder, String from, String to) {
-        fileSystemUtils.getAllFilesFromDirectoryWithEnding(folder.absolutePath, ".yaml").forEach(file -> {
-            fileSystemUtils.replaceFileContent(file.absolutePath, from, to)
-        })
+    private void createRepoCredentialsSecret(String secretName, String ns, String url, String username, String password) {
+        k8sClient.createSecret('generic', secretName, ns,
+                new Tuple2('url', url),
+                new Tuple2('username', username),
+                new Tuple2('password', password)
+        )
+        k8sClient.label('secret', secretName, ns,
+                new Tuple2('argocd.argoproj.io/secret-type', 'repo-creds'))
     }
+
+    protected ArgoCDRepoLayout repoLayout() {
+        new ArgoCDRepoLayout(clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir())
+    }
+
+    private ArgoCDRepoLayout tenantRepoLayout() {
+        new ArgoCDRepoLayout(tenantBootstrapInitializationAction.repo.getAbsoluteLocalRepoTmpDir())
+    }
+
 }

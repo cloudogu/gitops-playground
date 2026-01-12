@@ -141,13 +141,12 @@ class GitHandlerTest {
 
         assertEquals('scm-manager', cfg.scm.scmManager.namespace)
 
-        assertTrue(tenant.createdRepos.contains('argocd/argocd'))
         assertTrue(tenant.createdRepos.contains('argocd/cluster-resources'))
         assertTrue(tenant.createdRepos.contains('3rd-party-dependencies/spring-boot-helm-chart'))
         assertTrue(tenant.createdRepos.contains('3rd-party-dependencies/spring-boot-helm-chart-with-dependency'))
         assertTrue(tenant.createdRepos.contains('3rd-party-dependencies/gitops-build-lib'))
         assertTrue(tenant.createdRepos.contains('3rd-party-dependencies/ces-build-lib'))
-        assertEquals(6, tenant.createdRepos.size())
+        assertEquals(5, tenant.createdRepos.size())
 
         // No central provider in tenant-only scenario
         assertNull(gitHandler.getCentral())
@@ -176,13 +175,11 @@ class GitHandlerTest {
         gitHandler.enable()
 
         // Central: argocd + cluster-resources = 2
-        assertTrue(central.createdRepos.contains('fv40-argocd/argocd'))
         assertTrue(central.createdRepos.contains('fv40-argocd/cluster-resources'))
-        assertEquals(2, central.createdRepos.size())
+        assertEquals(1, central.createdRepos.size())
 
         // Tenant: only argocd + 4 dependencies = 5 (no cluster-resources)
-        assertTrue(tenant.createdRepos.contains('fv40-argocd/argocd'))
-        assertFalse(tenant.createdRepos.contains('fv40-argocd/cluster-resources'))
+        assertTrue(tenant.createdRepos.contains('fv40-argocd/cluster-resources'))
         assertTrue(tenant.createdRepos.contains('fv40-3rd-party-dependencies/spring-boot-helm-chart'))
         assertTrue(tenant.createdRepos.contains('fv40-3rd-party-dependencies/spring-boot-helm-chart-with-dependency'))
         assertTrue(tenant.createdRepos.contains('fv40-3rd-party-dependencies/gitops-build-lib'))
@@ -214,13 +211,11 @@ class GitHandlerTest {
         gitHandler.enable()
 
         // Central: argocd + cluster-resources
-        assertTrue(central.createdRepos.contains('fv40-argocd/argocd'))
         assertTrue(central.createdRepos.contains('fv40-argocd/cluster-resources'))
-        assertEquals(2, central.createdRepos.size())
+        assertEquals(1, central.createdRepos.size())
 
         // Tenant: argocd only + 4 dependencies
-        assertTrue(tenant.createdRepos.contains('fv40-argocd/argocd'))
-        assertFalse(tenant.createdRepos.contains('fv40-argocd/cluster-resources'))
+        assertTrue(tenant.createdRepos.contains('fv40-argocd/cluster-resources'))
         assertTrue(tenant.createdRepos.contains('fv40-3rd-party-dependencies/spring-boot-helm-chart'))
         assertTrue(tenant.createdRepos.contains('fv40-3rd-party-dependencies/spring-boot-helm-chart-with-dependency'))
         assertTrue(tenant.createdRepos.contains('fv40-3rd-party-dependencies/gitops-build-lib'))

@@ -23,15 +23,15 @@ import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.RepoTyp
 @Order(300)
 class PrometheusStack extends Feature implements FeatureWithImage {
 
-    static final String HELM_VALUES_PATH = "applications/cluster-resources/monitoring/prometheus-stack-helm-values.ftl.yaml"
-    static final String RBAC_NAMESPACE_ISOLATION_TEMPLATE = 'applications/cluster-resources/monitoring/rbac/namespace-isolation-rbac.ftl.yaml'
-    static final String NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE = 'applications/cluster-resources/monitoring/netpols/prometheus-allow-scraping.ftl.yaml'
+    static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/prometheusstack/templates/prometheus-stack-helm-values.ftl.yaml"
+    static final String RBAC_NAMESPACE_ISOLATION_TEMPLATE = "argocd/cluster-resources/apps/prometheusstack/templates/rbac/namespace-isolation-rbac.ftl.yaml"
+    static final String NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE = "argocd/cluster-resources/apps/prometheusstack/templates/netpols/prometheus-allow-scraping.ftl.yaml"
 
     String namespace = "${config.application.namePrefix}monitoring"
     Config config
     K8sClient k8sClient
 
-    GitRepoFactory scmRepoProvider
+    private GitRepoFactory scmRepoProvider
     private FileSystemUtils fileSystemUtils
     private DeploymentStrategy deployer
     private AirGappedUtils airGappedUtils
@@ -72,7 +72,6 @@ class PrometheusStack extends Feature implements FeatureWithImage {
         Map<String, Object> templateModel = buildTemplateValues(config, uid)
 
         def values = templateToMap(HELM_VALUES_PATH, templateModel)
-
         def helmConfig = config.features.monitoring.helm
         def mergedMap = MapUtils.deepMerge(helmConfig.values, values)
 
@@ -111,7 +110,10 @@ class PrometheusStack extends Feature implements FeatureWithImage {
                             [namespace : currentNamespace,
                              namePrefix: namePrefix,
                              config    : config])
-                    clusterResourcesRepo.writeFile("misc/monitoring/rbac/${currentNamespace}.yaml", rbacYaml)
+                    clusterResourcesRepo.writeFile(
+                            "apps/prometheusstack/misc/rbac/${currentNamespace}.yaml",
+                            rbacYaml
+                    )
                 }
 
                 if (config.application.netpols) {
@@ -119,7 +121,10 @@ class PrometheusStack extends Feature implements FeatureWithImage {
                             [namespace : currentNamespace,
                              namePrefix: namePrefix])
 
-                    clusterResourcesRepo.writeFile("misc/monitoring/netpols/${currentNamespace}.yaml", netpolsYaml)
+                    clusterResourcesRepo.writeFile(
+                            "apps/prometheusstack/misc/netpols/${currentNamespace}.yaml",
+                            netpolsYaml
+                    )
                 }
             }
             clusterResourcesRepo.commitAndPush('Adding namespace-isolated RBAC and network policies if enabled.')
