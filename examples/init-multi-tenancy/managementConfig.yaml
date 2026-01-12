@@ -27,7 +27,7 @@ content:
       overwriteMode: RESET
     - url: https://github.com/cloudogu/gitops-playground
       path: examples/init-multi-tenancy
-      ref: feature/optimize-repo-structure
+      ref: main
       templating: true
       type: FOLDER_BASED
       overwriteMode: UPGRADE
