@@ -23,10 +23,9 @@ import static com.cloudogu.gitops.features.deployment.DeploymentStrategy.RepoTyp
 @Order(300)
 class PrometheusStack extends Feature implements FeatureWithImage {
 
-    static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/prometheusstack/templates/prometheus-stack-helm-values.ftl.yaml"
     static final String RBAC_NAMESPACE_ISOLATION_TEMPLATE = "argocd/cluster-resources/apps/prometheusstack/templates/rbac/namespace-isolation-rbac.ftl.yaml"
     static final String NETWORK_POLICIES_PROMETHEUS_ALLOW_TEMPLATE = "argocd/cluster-resources/apps/prometheusstack/templates/netpols/prometheus-allow-scraping.ftl.yaml"
-
+    String name = 'prometheusstack'
     String namespace = "${config.application.namePrefix}monitoring"
     Config config
     K8sClient k8sClient
@@ -71,7 +70,7 @@ class PrometheusStack extends Feature implements FeatureWithImage {
 
         Map<String, Object> templateModel = buildTemplateValues(config, uid)
 
-        def values = templateToMap(HELM_VALUES_PATH, templateModel)
+        def values = templateToMap(getFeatureHelmValuesPath(), templateModel)
         def helmConfig = config.features.monitoring.helm
         def mergedMap = MapUtils.deepMerge(helmConfig.values, values)
 

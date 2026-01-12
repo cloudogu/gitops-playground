@@ -22,9 +22,8 @@ import java.nio.file.Path
 @Order(150)
 class IngressNginx extends Feature implements FeatureWithImage {
 
-    static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/ingress/templates/ingress-nginx-helm-values.ftl.yaml"
-
-    String namespace = "${config.application.namePrefix}ingress-nginx"
+    String name = 'ingress-nginx'
+    String namespace = "${config.application.namePrefix}${name}"
     Config config
     K8sClient k8sClient
 
@@ -56,16 +55,15 @@ class IngressNginx extends Feature implements FeatureWithImage {
 
     @Override
     void enable() {
-
-        def templatedMap = templateToMap(HELM_VALUES_PATH, [
+        def templatedMap = templateToMap(getFeatureHelmValuesPath(), [
                 config : config,
                 // Allow for using static classes inside the templates
                 statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()
         ])
+
         def helmConfig = config.features.ingressNginx.helm
         def mergedMap = MapUtils.deepMerge(helmConfig.values, templatedMap)
         def tempValuesPath = fileSystemUtils.writeTempFile(mergedMap)
-
 
         if (config.application.mirrorRepos) {
             log.debug("Mirroring repos: Deploying IngressNginx from local git repo")

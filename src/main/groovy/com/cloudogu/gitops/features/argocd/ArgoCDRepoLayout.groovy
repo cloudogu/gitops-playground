@@ -3,14 +3,18 @@ package com.cloudogu.gitops.features.argocd
 import java.nio.file.Path
 
 class ArgoCDRepoLayout {
-    private static final String APPS_MONITORING_REL     = 'apps/prometheusstack'
-    private static final String APPS_SECRETS_REL        = 'apps/external-secrets'
-    private static final String APPS_VAULT_REL          = 'apps/vault'
-    private static final String APPS_CERTMANAGER_REL    = 'apps/cert-manager'
-    private static final String APPS_JENKINS_REL        = 'apps/jenkins'
-    private static final String APPS_INGRESS_REL        = 'apps/ingress'
-    private static final String APPS_MAILHOG_REL        = 'apps/mailhog'
-    private static final String APPS_SCMMANAGER_REL     = 'apps/scm-manager'
+
+    static final String BASE_PATH = 'argocd/cluster-resources/apps'
+    static final String HELM_FILE_NAME = 'helm-values.yaml'
+
+    private static final String APPS_MONITORING_REL     = 'prometheusstack'
+    private static final String APPS_SECRETS_REL        = 'external-secrets'
+    private static final String APPS_VAULT_REL          = 'vault'
+    private static final String APPS_CERTMANAGER_REL    = 'cert-manager'
+    private static final String APPS_JENKINS_REL        = 'jenkins'
+    private static final String APPS_INGRESS_REL        = 'ingress'
+    private static final String APPS_MAILHOG_REL        = 'mailhog'
+    private static final String APPS_SCMMANAGER_REL     = 'scm-manager'
     private static final String APPS_ARGOCD_REL         = 'apps/argocd'
 
     private static final String OPERATOR_DIR       = 'operator'

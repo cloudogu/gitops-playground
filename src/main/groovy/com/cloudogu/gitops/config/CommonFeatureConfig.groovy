@@ -5,6 +5,9 @@ import groovy.util.logging.Slf4j
 
 @Slf4j
 class CommonFeatureConfig extends Feature {
+
+    String name= 'common-feature'
+
     @Override
     void preConfigInit(Config configToSet) {
         validateConfig(configToSet)

@@ -31,6 +31,7 @@ import static com.cloudogu.gitops.config.Config.ContentSchema.ContentRepositoryS
 @Order(999)
 // We want to evaluate content last, to allow for changing all other repos
 class ContentLoader extends Feature {
+    String name = 'contentloader'
     private Config config
     private K8sClient k8sClient
     private GitRepoFactory repoProvider

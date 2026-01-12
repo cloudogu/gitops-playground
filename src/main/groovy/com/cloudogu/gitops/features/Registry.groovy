@@ -22,7 +22,7 @@ class Registry extends Feature {
      * Local container port of the registry within the pod
      */
     public static final String CONTAINER_PORT = '5000'
-
+    String name = 'registry'
     String namespace
     private Config config
     private DeploymentStrategy deployer

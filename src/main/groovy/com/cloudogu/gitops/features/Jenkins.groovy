@@ -22,8 +22,7 @@ import jakarta.inject.Singleton
 @Order(70)
 class Jenkins extends Feature {
 
-    static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/jenkins/values.ftl.yaml"
-
+    String name = 'jenkins'
     String namespace
     private Config config
     private CommandExecutor commandExecutor
@@ -61,7 +60,6 @@ class Jenkins extends Feature {
         this.k8sClient = k8sClient
         this.networkingUtils = networkingUtils
         this.gitHandler = gitHandler
-
         if (config.jenkins.internal) {
             this.namespace = "${config.application.namePrefix}jenkins"
         }
@@ -71,7 +69,6 @@ class Jenkins extends Feature {
     boolean isEnabled() {
         return config.jenkins.active
     }
-
 
     @Override
     void enable() {
@@ -91,7 +88,7 @@ class Jenkins extends Feature {
                     new Tuple2('jenkins-admin-password', config.jenkins.password))
 
             def helmConfig = config.jenkins.helm
-            def templatedMap = templateToMap(HELM_VALUES_PATH,
+            def templatedMap = templateToMap(this.getFeatureHelmValuesPath(),
                     [
                             dockerGid: findDockerGid(),
                             config   : config,
@@ -137,9 +134,9 @@ class Jenkins extends Feature {
                 JENKINS_PASSWORD          : config.jenkins.password,
                 // Used indirectly in utils.sh 😬
                 REMOTE_CLUSTER            : config.application.remote,
-                SCM_URL                 : this.gitHandler.tenant.url,
-                PREFIXED_SCM_URL : this.gitHandler.tenant.repoPrefix(),
-                SCM_PASSWORD             : this.gitHandler.tenant.credentials.password,
+                SCM_URL                   : this.gitHandler.tenant.url,
+                PREFIXED_SCM_URL          : this.gitHandler.tenant.repoPrefix(),
+                SCM_PASSWORD              : this.gitHandler.tenant.credentials.password,
                 SCM_PROVIDER              : config.scm.scmProviderType,
                 INSTALL_ARGOCD            : config.features.argocd.active,
                 NAME_PREFIX               : config.application.namePrefix,
@@ -296,6 +293,7 @@ class Jenkins extends Feature {
                 ]
         ]
     }
+
     @Override
     String getActiveNamespaceFromFeature() {
         return isEnabled() && config?.jenkins?.internal ? getNamespace() : null

@@ -1,6 +1,7 @@
 package com.cloudogu.gitops
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.features.argocd.ArgoCDRepoLayout
 import com.cloudogu.gitops.utils.TemplatingEngine
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
@@ -58,7 +59,12 @@ abstract class Feature {
         return null
     }
 
-    static Map templateToMap(String filePath, Map parameters) {
+    String getFeatureHelmValuesPath(){
+        return "${ArgoCDRepoLayout.BASE_PATH}/${getName()}/${getName()}-${ArgoCDRepoLayout.HELM_FILE_NAME}"
+    }
+
+
+    static Map  templateToMap(String filePath, Map parameters) {
         def hydratedString = new TemplatingEngine().template(new File(filePath), parameters)
 
         if (hydratedString.trim().isEmpty()) {
@@ -68,8 +74,10 @@ abstract class Feature {
         return new YamlSlurper().parseText(hydratedString) as Map
     }
 
-    abstract boolean isEnabled()
 
+
+    abstract boolean isEnabled()
+    abstract String getName()
 
 
     /*
@@ -95,4 +103,6 @@ abstract class Feature {
      * Feature should throw RuntimeException to stop immediately.
      */
     void postConfigInit(Config configToSet) { }
+
+
 }

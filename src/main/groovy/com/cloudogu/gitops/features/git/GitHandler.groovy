@@ -20,7 +20,7 @@ import jakarta.inject.Singleton
 class GitHandler extends Feature {
 
     Config config
-
+    String name = 'gitHandler'
     NetworkingUtils networkingUtils
     HelmStrategy helmStrategy
     FileSystemUtils fileSystemUtils
@@ -57,7 +57,7 @@ class GitHandler extends Feature {
 
             // More internal fields are set lazily in ScmManger.groovy (after SCMM is deployed and ports are known)
         }
-        config.scm.scmManager.gitOpsUsername="${config.application.namePrefix}gitops"
+        config.scm.scmManager.gitOpsUsername = "${config.application.namePrefix}gitops"
 
         if (config.scm.gitlab.url) {
             config.scm.scmProviderType = ScmProviderType.GITLAB
@@ -66,7 +66,6 @@ class GitHandler extends Feature {
                 throw new RuntimeException('GitLab configuration incomplete: please provide both password (PAT) and parentGroupId')
             }
         }
-
 
 
     }
@@ -92,7 +91,7 @@ class GitHandler extends Feature {
             case ScmProviderType.SCM_MANAGER:
                 def prefixedNamespace = "${config.application.namePrefix}scm-manager".toString()
                 config.scm.scmManager.namespace = prefixedNamespace
-                this.tenant = new ScmManager(this.config, config.scm.scmManager, helmStrategy,k8sClient, networkingUtils, true)
+                this.tenant = new ScmManager(this.config, config.scm.scmManager, helmStrategy, k8sClient, networkingUtils, true)
                 // this.tenant.setup() setup will be here in future
                 break
             default:
@@ -105,7 +104,7 @@ class GitHandler extends Feature {
                     this.central = new Gitlab(this.config, this.config.multiTenant.gitlab)
                     break
                 case ScmProviderType.SCM_MANAGER:
-                    this.central = new ScmManager(this.config, config.multiTenant.scmManager, helmStrategy,k8sClient, networkingUtils)
+                    this.central = new ScmManager(this.config, config.multiTenant.scmManager, helmStrategy, k8sClient, networkingUtils)
                     break
                 default:
                     throw new IllegalArgumentException("Unsupported SCM-Central provider: ${config.scm.scmProviderType}")

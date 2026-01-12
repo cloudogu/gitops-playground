@@ -19,8 +19,7 @@ import java.nio.file.Path
 @Order(500)
 class Vault extends Feature implements FeatureWithImage {
     static final String VAULT_START_SCRIPT_PATH = "argocd/cluster-resources/apps/vault/templates/dev-post-start.ftl.sh"
-    static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/vault/templates/values.ftl.yaml"
-
+    String name = 'vault'
     String namespace = "${config.application.namePrefix}secrets"
     Config config
     K8sClient k8sClient
@@ -56,7 +55,7 @@ class Vault extends Feature implements FeatureWithImage {
         // Note that some specific configuration steps are implemented in ArgoCD
         def helmConfig = config.features.secrets.vault.helm
 
-        def templatedMap = templateToMap(HELM_VALUES_PATH, [
+        def templatedMap = templateToMap(getFeatureHelmValuesPath(), [
                 host   : config.features.secrets.vault.url ? new URL(config.features.secrets.vault.url as String).host : '',
                 config : config,
                 // Allow for using static classes inside the templates

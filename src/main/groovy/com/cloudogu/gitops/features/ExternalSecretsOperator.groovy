@@ -24,6 +24,8 @@ class ExternalSecretsOperator extends Feature implements FeatureWithImage {
 
     static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/external-secrets/templates/values.ftl.yaml"
 
+    String name ='external-secrets'
+
     String namespace = "${config.application.namePrefix}secrets"
     Config config
     K8sClient k8sClient
@@ -54,10 +56,11 @@ class ExternalSecretsOperator extends Feature implements FeatureWithImage {
         return config.features.secrets.active
     }
 
+
     @Override
     void enable() {
 
-        def templatedMap = templateToMap(HELM_VALUES_PATH, [
+        def templatedMap = templateToMap(getFeatureHelmValuesPath(), [
                 config : config,
                 // Allow for using static classes inside the templates
                 statics: new DefaultObjectWrapperBuilder(freemarker.template.Configuration.VERSION_2_3_32).build().getStaticModels()

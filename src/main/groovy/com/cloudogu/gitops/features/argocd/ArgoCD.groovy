@@ -24,6 +24,8 @@ import java.nio.file.Path
 @Order(100)
 class ArgoCD extends Feature {
 
+    String name= 'argocd'
+
     private final String namespace
     private final Config config
     private final K8sClient k8sClient
@@ -99,7 +101,6 @@ class ArgoCD extends Feature {
         installArgoCd()
     }
 
-
     private void installArgoCd() {
 
         log.debug("Creating namespaces")
@@ -148,7 +149,6 @@ class ArgoCD extends Feature {
         k8sClient.delete('secret', namespace,
                 new Tuple2('owner', 'helm'), new Tuple2('name', 'argocd'))
     }
-
 
     private void initGitOpsRepos() {
         initTenantRepos()
@@ -288,7 +288,6 @@ class ArgoCD extends Feature {
         String argocdRbacPath = repoLayout.operatorRbacDir()
         k8sClient.applyYaml("${argocdRbacPath} --recursive")
     }
-
 
     private void deployWithHelm() {
         ArgoCDRepoLayout repoLayout = repoLayout()

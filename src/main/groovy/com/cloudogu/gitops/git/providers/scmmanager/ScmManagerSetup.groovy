@@ -12,7 +12,7 @@ class ScmManagerSetup {
 
     private ScmManager scmManager
 
-    static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/scm-manager/templates/values.ftl.yaml"
+    static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/scm-manager/scm-manager-helm-values.yaml"
 
     ScmManagerSetup(ScmManager scmManager) {
         this.scmManager = scmManager

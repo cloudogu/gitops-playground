@@ -23,8 +23,7 @@ import java.nio.file.Path
 @Order(200)
 class Mailhog extends Feature implements FeatureWithImage {
 
-    static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/mailhog/templates/mailhog-helm-values.ftl.yaml"
-
+    String name = 'mailhog'
     String namespace = "${config.application.namePrefix}monitoring"
     Config config
     K8sClient k8sClient
@@ -53,7 +52,6 @@ class Mailhog extends Feature implements FeatureWithImage {
         this.gitHandler = gitHandler
     }
 
-
     @Override
     boolean isEnabled() {
         return config.features.mail.mailhog
@@ -63,7 +61,7 @@ class Mailhog extends Feature implements FeatureWithImage {
     void enable() {
         String bcryptMailhogPassword = BCrypt.hashpw(password, BCrypt.gensalt(4))
 
-        def templatedMap = templateToMap(HELM_VALUES_PATH, [
+        def templatedMap = templateToMap(getFeatureHelmValuesPath(), [
                 mail         : [
                         // Note that passing the URL object here leads to problems in Graal Native image, see Git history
                         host: config.features.mail.mailhogUrl ? new URL(config.features.mail.mailhogUrl).host : "",
@@ -78,7 +76,6 @@ class Mailhog extends Feature implements FeatureWithImage {
         def mergedMap = MapUtils.deepMerge(helmConfig.values, templatedMap)
 
         def tempValuesPath = fileSystemUtils.writeTempFile(mergedMap)
-
 
         if (config.application.mirrorRepos) {
             log.debug("Mirroring repos: Deploying mailhog from local git repo")

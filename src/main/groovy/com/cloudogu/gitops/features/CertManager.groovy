@@ -22,8 +22,7 @@ import java.nio.file.Path
 @Order(160)
 class CertManager extends Feature implements FeatureWithImage {
 
-    static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/cert-manager/templates/certManager-helm-values.ftl.yaml"
-
+    String name ='cert-manager'
     private FileSystemUtils fileSystemUtils
     private DeploymentStrategy deployer
     private AirGappedUtils airGappedUtils
@@ -56,7 +55,7 @@ class CertManager extends Feature implements FeatureWithImage {
     @Override
     void enable() {
 
-        def templatedMap = templateToMap(HELM_VALUES_PATH,
+        def templatedMap = templateToMap(getFeatureHelmValuesPath(),
                 [
                         config : config,
                         // Allow for using static classes inside the templates
