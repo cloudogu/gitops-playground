@@ -189,27 +189,23 @@ class GitopsPlaygroundCli {
         // first evaluate profile for setting predefined values e.g. examples, if applicable
         Config profileConfig = extractProfile(cliParams)
 
-
-
-        String configFilePath = cliParams.application.configFile
-        String configMapName = cliParams.application.configMap
         Boolean contentExamples = cliParams.content.examples || profileConfig.content.examples
         Boolean multiTenancyExamples = cliParams.content.multitenancyExamples || profileConfig.content.multitenancyExamples
 
-        Map configFile = [:]
-        Map configMap = [:]
+        List<Map> configFile = []
+        List<Map> configMap = []
         Map contentExamplesFile = [:]
         Map multiTenancyContentExamplesFile = [:]
 
-        if (configFilePath) {
-            log.debug("Reading config file ${configFilePath}")
-            configFile = validateConfig(new File(configFilePath).text)
+        for(String configFileItem : cliParams.application.configFiles) {
+            log.debug("Reading config file ${configFileItem}")
+            configFile.add(validateConfig(new File(configFileItem).text))
         }
 
-        if (configMapName) {
-            log.debug("Reading config map ${configMapName}")
-            def configValues = k8sClient.getConfigMap(configMapName, 'config.yaml')
-            configMap = validateConfig(configValues)
+        for (String configMapItem : cliParams.application.configMaps) {
+            log.debug("Reading config map ${configMapItem}")
+            def configValues = k8sClient.getConfigMap(configMapItem, 'config.yaml')
+            configMap.add(validateConfig(configValues))
         }
 
         if (contentExamples) {
@@ -228,8 +224,8 @@ class GitopsPlaygroundCli {
         // Last one takes precedence
         def configPrecedence = [profileConfig.toMap(), multiTenancyContentExamplesFile, contentExamplesFile, configMap, configFile]
         Map mergedConfigs = [:]
-        configPrecedence.each {
-            deepMerge(it, mergedConfigs)
+        configPrecedence.flatten().each { element ->
+            deepMerge(element as Map, mergedConfigs)
         }
 
         // DeepMerge with default Config values to keep the default values defined in Config.groovy
