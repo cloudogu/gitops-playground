@@ -21,6 +21,8 @@ import static org.assertj.core.api.Assertions.assertThat
 
 class RetryInterceptorTest {
 
+    public static final int OKHTTPCLIENT_TIMEOUT = 1000
+
     @RegisterExtension
     static WireMockExtension wireMock = WireMockExtension.newInstance()
             .options(wireMockConfig()
@@ -126,7 +128,7 @@ class RetryInterceptorTest {
         wireMock.verify(4, getRequestedFor(urlEqualTo("/"))) // Initial request + 3 retries
     }
 
-    private OkHttpClient createClient(int timeout = 1000) {
+    private OkHttpClient createClient(int timeout = OKHTTPCLIENT_TIMEOUT) {
         // 1. Create a TrustManager that trusts everyone
         def trustAllCerts = [
                 new X509TrustManager() {
