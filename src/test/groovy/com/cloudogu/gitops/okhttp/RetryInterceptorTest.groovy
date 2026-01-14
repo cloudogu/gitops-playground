@@ -3,6 +3,7 @@ package com.cloudogu.gitops.okhttp
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
 
@@ -10,6 +11,7 @@ import javax.net.ssl.HostnameVerifier
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
+import java.security.SecureRandom
 import java.security.cert.X509Certificate
 import java.util.concurrent.TimeUnit
 
@@ -23,8 +25,13 @@ class RetryInterceptorTest {
     static WireMockExtension wireMock = WireMockExtension.newInstance()
             .options(wireMockConfig()
                     .dynamicPort()
-            .dynamicHttpsPort())
+                    .dynamicHttpsPort())
             .build()
+
+    @BeforeEach
+    void 'resetWireMock'() {
+        wireMock.resetAll()
+    }
 
     @Test
     void 'retries three times on 500'() {
@@ -100,7 +107,7 @@ class RetryInterceptorTest {
                         .withStatus(200)
                         .withBody("Successful Result")))
 
-        def client = createClient()
+        def client = createClient(50)
         def response = client.newCall(new Request.Builder().url(wireMock.baseUrl()).build()).execute()
 
         assertThat(response.body().string()).isEqualTo("Successful Result")
@@ -119,7 +126,7 @@ class RetryInterceptorTest {
         wireMock.verify(4, getRequestedFor(urlEqualTo("/"))) // Initial request + 3 retries
     }
 
-    private OkHttpClient createClient() {
+    private OkHttpClient createClient(int timeout = 1000) {
         // 1. Create a TrustManager that trusts everyone
         def trustAllCerts = [
                 new X509TrustManager() {
@@ -130,11 +137,12 @@ class RetryInterceptorTest {
         ] as TrustManager[]
 
         def sslContext = SSLContext.getInstance("TLS")
-        sslContext.init(null, trustAllCerts, new java.security.SecureRandom())
+        sslContext.init(null, trustAllCerts, new SecureRandom())
 
         new OkHttpClient.Builder()
                 .addInterceptor(new RetryInterceptor(retries: 3, waitPeriodInMs: 0))
-                .readTimeout(50, TimeUnit.MILLISECONDS)
+                .connectTimeout(timeout, TimeUnit.MILLISECONDS)
+                .readTimeout(timeout, TimeUnit.MILLISECONDS)
                 .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
                 .hostnameVerifier({ hostname, session -> true } as HostnameVerifier)
                 .build()
