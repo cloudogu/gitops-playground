@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat
  */
 @Slf4j
 @EnabledIfSystemProperty(named = "micronaut.environments", matches = "full")
-class CertManagerProfileTest extends KubenetesApiTestSetup {
+class CertManagerProfileTestIT extends KubenetesApiTestSetup {
 
     String namespace = 'cert-manager'
     int sumOfPods = 3

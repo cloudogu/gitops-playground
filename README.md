@@ -898,7 +898,7 @@ Current existing profiles for argocd in non-operator mode:
 Follow profils for ArgoCD in Operator mode which has to be installed first:
 - `operator-full` - all features enabled
 - `operator-minimal` - starts only with ArgoCD and SCM-Manger
-- `operator-petclinic` - starts with ArgoCD, Jenkins, SCM-Manager and Petclinic
+- `operator-content-examples` - starts with ArgoCD, Jenkins, SCM-Manager and Petclinic
 - `operator-mandant` - starts mandant/tenant example
 
 
