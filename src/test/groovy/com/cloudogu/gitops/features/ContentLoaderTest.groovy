@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.features
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepoFactory
 import com.cloudogu.gitops.kubernetes.api.K8sClient
@@ -34,7 +35,7 @@ import static org.mockito.Mockito.*
 
 @Slf4j
 class ContentLoaderTest {
-    // bareRepo
+
     static List<File> foldersToDelete = new ArrayList<File>()
 
     Config config = new Config([
@@ -215,6 +216,27 @@ class ContentLoaderTest {
         verify(content.cloneSpy).setCredentialsProvider(captor.capture())
 
 
+        def value = captor.value
+        assertThat(value.properties.username).isEqualTo('user')
+        assertThat(value.properties.password).isEqualTo('pw'.toCharArray())
+    }
+
+    @Test
+    void 'Authenticates content Repos with secret'() {
+
+        config.content.repos = [
+                new ContentRepositorySchema(
+                        url: createContentRepo('copyRepo1'),
+                        ref: 'main', type: ContentRepoType.COPY,
+                        target: 'common/repo',
+                        credentials: new Credentials(null,'','secret-test-name','testnamespace'))
+        ]
+
+        def content = createContent()
+        content.cloneContentRepos()
+
+        ArgumentCaptor<UsernamePasswordCredentialsProvider> captor = ArgumentCaptor.forClass(UsernamePasswordCredentialsProvider)
+        verify(content.cloneSpy).setCredentialsProvider(captor.capture())
         def value = captor.value
         assertThat(value.properties.username).isEqualTo('user')
         assertThat(value.properties.password).isEqualTo('pw'.toCharArray())
