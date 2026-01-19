@@ -127,15 +127,16 @@ class ArgoCD extends Feature {
 
         ArgoCDRepoLayout repoLayout = repoLayout()
 
-        k8sClient.applyYaml(Path.of(repoLayout.applicationsDir(), "bootstrap.yaml").toString())
-
         if (config.multiTenant.useDedicatedInstance) {
             k8sClient.applyYaml(Path.of(repoLayout.projectsDir(), "tenant.yaml").toString())
+            k8sClient.applyYaml(Path.of(repoLayout.applicationsDir(), "bootstrap.yaml").toString())
 
             ArgoCDRepoLayout tenantRepoLayout = tenantRepoLayout()
             k8sClient.applyYaml(Path.of(tenantRepoLayout.projectsDir(), "argocd.yaml").toString())
+            k8sClient.applyYaml(Path.of(tenantRepoLayout.applicationsDir(), "bootstrap.yaml").toString())
         } else {
             k8sClient.applyYaml(Path.of(repoLayout.projectsDir(), "argocd.yaml").toString())
+            k8sClient.applyYaml(Path.of(repoLayout.applicationsDir(), "bootstrap.yaml").toString())
         }
 
         // Delete helm-argo secrets to decouple from helm.
