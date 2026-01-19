@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ser.BeanSerializerModifier
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 import groovy.transform.MapConstructor
 import jakarta.inject.Singleton
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 import picocli.CommandLine.Command
 import picocli.CommandLine.Mixin
 import picocli.CommandLine.Option
@@ -124,6 +125,8 @@ class Config {
             // COPY and FOLDER_BASED are more advanced use cases. So we choose MIRROR as the default.
             static final ContentRepoType DEFAULT_TYPE = ContentRepoType.MIRROR
 
+            UsernamePasswordCredentialsProvider credentialsProvider
+
             @JsonPropertyDescription(CONTENT_REPO_URL_DESCRIPTION)
             String url = ''
 
@@ -136,11 +139,8 @@ class Config {
             @JsonPropertyDescription(CONTENT_REPO_TARGET_REF_DESCRIPTION)
             String targetRef = ''
 
-            @JsonPropertyDescription(CONTENT_REPO_USERNAME_DESCRIPTION)
-            String username = ''
-
-            @JsonPropertyDescription(CONTENT_REPO_PASSWORD_DESCRIPTION)
-            String password = ''
+            @JsonPropertyDescription(CONTENT_REPO_CREDENTIALS_DESCRIPTION)
+            Credentials credentials
 
             @JsonPropertyDescription(CONTENT_REPO_TEMPLATING_DESCRIPTION)
             Boolean templating = false
@@ -190,9 +190,11 @@ class Config {
         @JsonPropertyDescription(REGISTRY_URL_DESCRIPTION)
         String url = ''
 
-        @Option(names = ['--registry-path'], description = REGISTRY_PATH_DESCRIPTION)
+        @Option(names = ['--registry-path'], description = REGISTRY_PATH_DESCRIPTION,'config.scm.password')
         @JsonPropertyDescription(REGISTRY_PATH_DESCRIPTION)
         String path = ''
+
+        Credentials credentials
 
         @Option(names = ['--registry-username'], description = REGISTRY_USERNAME_DESCRIPTION)
         @JsonPropertyDescription(REGISTRY_USERNAME_DESCRIPTION)

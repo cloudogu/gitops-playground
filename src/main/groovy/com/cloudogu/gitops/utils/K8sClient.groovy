@@ -1,10 +1,12 @@
 package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.config.Credentials
 import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
 import groovy.transform.Immutable
 import groovy.util.logging.Slf4j
+import io.kubernetes.client.openapi.models.V1Secret
 import jakarta.inject.Provider
 import jakarta.inject.Singleton
 
@@ -202,6 +204,17 @@ class K8sClient {
         return output
     }
 
+    Credentials getCredentialsFromSecret(Credentials credentials) {
+        try {
+            V1Secret secret = this.kubernetesApi.getApi().readNamespacedSecret(credentials.secretName, credentials.secretNamespace).execute()
+            def secretData = secret.getData()
+            credentials.username = new String(Base64.getDecoder().decode(secretData[credentials.usernameKey]))
+            credentials.password = new String(Base64.getDecoder().decode(secretData[credentials.passwordKey]))
+            return credentials
+        } catch (Exception e) {
+            throw new RuntimeException("Couldn't parse credentials from K8s secret: ${credentials.secretName} in namespace ${credentials.secretNamespace}", e)
+        }
+    }
 
     /**
      * Idempotent create, i.e. overwrites if exists.

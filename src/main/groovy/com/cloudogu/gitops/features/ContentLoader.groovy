@@ -6,7 +6,6 @@ import com.cloudogu.gitops.config.Config.OverwriteMode
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.GitRepoFactory
-import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.utils.AllowListFreemarkerObjectWrapper
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.utils.K8sClient
@@ -176,6 +175,14 @@ class ContentLoader extends Feature {
         def repoTmpDir = File.createTempDir('gitops-playground-content-repo-')
         log.debug("Cloning content repo, ${repoConfig.url}, revision ${repoConfig.ref}, path ${repoConfig.path}, overwriteMode ${repoConfig.overwriteMode}")
 
+
+        if (repoConfig.credentials.username != null && repoConfig.credentials.password != null) {
+            repoConfig.credentialsProvider = new UsernamePasswordCredentialsProvider(repoConfig.credentials.username, repoConfig.credentials.password)
+        }else if(repoConfig.credentials.secretName && repoConfig.credentials.secretNamespace) {
+            this.k8sClient.getCredentialsFromSecret(repoConfig.credentials)
+            repoConfig.credentialsProvider = new UsernamePasswordCredentialsProvider(repoConfig.credentials.username, repoConfig.credentials.password)
+        }
+
         cloneToLocalFolder(repoConfig, repoTmpDir)
 
         def contentRepoDir = new File(repoTmpDir, repoConfig.path)
@@ -281,7 +288,6 @@ class ContentLoader extends Feature {
                             protocol: repo.gitProvider.protocol,
                             repoUrl : repo.gitProvider.repoPrefix(),
                     ],
-                    config : config,
                     // Allow for using static classes inside the templates
                     statics: !config.content.useWhitelist ? new DefaultObjectWrapperBuilder(Configuration.VERSION_2_3_32).build().getStaticModels() :
                             new AllowListFreemarkerObjectWrapper(Configuration.VERSION_2_3_32, config.content.getAllowedStaticsWhitelist()).getStaticModels()
@@ -291,23 +297,23 @@ class ContentLoader extends Feature {
 
     private void cloneToLocalFolder(ContentRepositorySchema repoConfig, File repoTmpDir) {
 
+
         def cloneCommand = gitClone()
                 .setURI(repoConfig.url)
                 .setDirectory(repoTmpDir)
-                .setNoCheckout(false) // Checkout default branch
+                .setNoCheckout(false)// Checkout default branch
 
-        if (repoConfig.username != null && repoConfig.password != null) {
-            cloneCommand.setCredentialsProvider(
-                    new UsernamePasswordCredentialsProvider(repoConfig.username, repoConfig.password))
+        if (repoConfig.credentialsProvider) {
+            cloneCommand.setCredentialsProvider(repoConfig.credentialsProvider)
         }
 
         def git = cloneCommand.call()
 
         if (ContentRepoType.MIRROR == repoConfig.type) {
             def fetch = git.fetch()
-            if (repoConfig.username != null && repoConfig.password != null) {
-                // fetch also needs CredentialProvider, jgit behaviour.
-                fetch.setCredentialsProvider(new UsernamePasswordCredentialsProvider(repoConfig.username, repoConfig.password))
+
+            if (repoConfig.credentialsProvider) {
+                fetch.setCredentialsProvider(repoConfig.credentialsProvider)
             }
             fetch.setRefSpecs("+refs/*:refs/*").call() // Fetch all branches and tags
         }
@@ -331,10 +337,10 @@ class ContentLoader extends Feature {
                 .setHeads(true)
                 .setTags(true)
 
-        if (repoConfig.username != null && repoConfig.password != null) {
-            remoteCommand.setCredentialsProvider(
-                    new UsernamePasswordCredentialsProvider(repoConfig.username, repoConfig.password))
+        if (repoConfig.credentialsProvider) {
+            remoteCommand.setCredentialsProvider(repoConfig.credentialsProvider)
         }
+
         Collection<Ref> refs = remoteCommand.call()
         String potentialRef = refs.find { it.name.endsWith(repoConfig.ref) }?.name
 
