@@ -167,7 +167,7 @@ EOF
       --format='{{ with (index .NetworkSettings.Ports "80/tcp") }}{{ (index . 0).HostPort }}{{ end }}' \
        k3d-${CLUSTER_NAME}-serverlb)
     echo "Bound ingress port to localhost:${ingressPort}."
-    echoHightlighted "Make sure to pass a base-url, e.g. --ingress-nginx --base-url=http://localhost$(if [ "${ingressPort}" -ne 80 ]; then echo ":${ingressPort}"; fi) when applying the playground."
+    echoHightlighted "Make sure to pass a base-url, e.g. --ingress --base-url=http://localhost$(if [ "${ingressPort}" -ne 80 ]; then echo ":${ingressPort}"; fi) when applying the playground."
   fi
 
   # Write ~/.config/k3d/kubeconfig-${CLUSTER_NAME}.yaml

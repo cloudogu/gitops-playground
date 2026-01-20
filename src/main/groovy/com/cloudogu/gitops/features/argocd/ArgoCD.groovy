@@ -161,7 +161,7 @@ class ArgoCD extends Feature {
         if (config.features.certManager.active) {
             clusterResourceSubDirs.add(ArgoCDRepoLayout.certManagerSubdirRel())   // "apps/cert-manager"
         }
-        if (config.features.ingressNginx.active) {
+        if (config.features.ingress.active) {
             clusterResourceSubDirs.add(ArgoCDRepoLayout.ingressSubdirRel())
         }
 
@@ -234,9 +234,10 @@ class ArgoCD extends Feature {
 
         if (config.features.monitoring.active) {
             String monitoringRootDashboard = "${repoLayout.monitoringDir()}/misc/dashboard"
-            if (!config.features.ingressNginx.active) {
-                FileSystemUtils.deleteFile monitoringRootDashboard + '/ingress-nginx-dashboard.yaml'
-                FileSystemUtils.deleteFile monitoringRootDashboard + '/ingress-nginx-dashboard-requests-handling.yaml'
+            if (!config.features.ingress.active) {
+// TODO: Need for the dashboard for traefik
+//                FileSystemUtils.deleteFile monitoringRootDashboard + '/ingress-nginx-dashboard.yaml'
+//                FileSystemUtils.deleteFile monitoringRootDashboard + '/ingress-nginx-dashboard-requests-handling.yaml'
             }
             if (!config.jenkins.active) {
                 FileSystemUtils.deleteFile monitoringRootDashboard + '/jenkins-dashboard.yaml'

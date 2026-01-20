@@ -82,7 +82,7 @@ class PrometheusStackTest {
                     secrets     : [
                             active: true
                     ],
-                    ingressNginx: [
+                    ingress: [
                             active: true
                     ],
                     mail        : [

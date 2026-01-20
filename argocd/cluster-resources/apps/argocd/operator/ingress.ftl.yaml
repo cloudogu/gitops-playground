@@ -7,8 +7,11 @@
     labels:
       app: argocd-server
     annotations:
-      nginx.ingress.kubernetes.io/ssl-redirect: "false"
-      nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+      #TODO
+      #traefik.ingress.kubernetes.io/router.entrypoints: web
+      #traefik.ingress.kubernetes.io/router.middlewares: <namespace>-redirect@kubernetescrd
+      #nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      #nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
   spec:
     rules:
       - host: "${argocd.host}"

@@ -22,14 +22,14 @@ import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*
 
 @ExtendWith(MockitoExtension.class)
-class IngressNginxTest {
+class IngressTest {
 
     // setting default config values with ingress nginx active
     Config config = new Config(
             application: new Config.ApplicationSchema(
                     namePrefix: 'foo-'),
             features: new Config.FeaturesSchema(
-                    ingressNginx: new Config.IngressNginxSchema(
+                    ingress: new Config.IngressSchema(
                             active: true)
             ))
     Path temporaryYamlFile
@@ -54,9 +54,9 @@ class IngressNginxTest {
         def actual = parseActualYaml()
         assertThat(actual['controller']['replicaCount']).isEqualTo(2)
 
-        verify(deploymentStrategy).deployFeature(config.features.ingressNginx.helm.repoURL, 'ingress-nginx',
-                config.features.ingressNginx.helm.chart, config.features.ingressNginx.helm.version, 'foo-ingress-nginx',
-                'ingress-nginx', temporaryYamlFile)
+        verify(deploymentStrategy).deployFeature(config.features.ingress.helm.repoURL, 'traefik',
+                config.features.ingress.helm.chart, config.features.ingress.helm.version, 'foo-traefik',
+                'traefik', temporaryYamlFile)
         assertThat(parseActualYaml()['controller']['resources']).isNull()
         assertThat(parseActualYaml()['controller']['metrics']).isNull()
         assertThat(parseActualYaml()['controller']['networkPolicy']).isNull()
@@ -74,8 +74,8 @@ class IngressNginxTest {
     }
 
     @Test
-    void 'When Ingress-Nginx is not enabled, ingress-nginx-helm-values yaml has no content'() {
-        config.features.ingressNginx.active = false
+    void 'When Ingress is not enabled, ingress-helm-values yaml has no content'() {
+        config.features.ingress.active = false
 
         createIngressNginx().install()
 
@@ -84,7 +84,7 @@ class IngressNginxTest {
 
     @Test
     void 'additional helm values merged with default values'() {
-        config.features.ingressNginx.helm.values = [
+        config.features.ingress.helm.values = [
                 controller: [
                         replicaCount: 42,
                         span        : '7,5',

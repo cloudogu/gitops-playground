@@ -1,0 +1,74 @@
+  <#assign DockerImageParser=statics['com.cloudogu.gitops.utils.DockerImageParser']>
+    <#if config.registry.createImagePullSecrets == true>
+  imagePullSecrets:
+    - name: proxy-registry
+    </#if>
+    
+    <#if config.features.ingress.helm.image?has_content>
+    <#assign imageObject = DockerImageParser.parse(config.features.ingress.helm.image)>
+  image:
+    repository: ${imageObject.registryAndRepositoryAsString}
+    tag: ${imageObject.tag}
+    </#if>
+
+  # Traefik's equivalent to 'watchIngressWithoutClass' and 'is-default-class'
+  providers:
+    kubernetesIngress:
+      enabled: true
+      # Allows Traefik to handle Ingresses without an explicit ingressClassName
+      publishedService:
+        enabled: true
+
+  deployment:
+    kind: Deployment
+    replicas: 2
+    <#if config.application.podResources == true>
+  resources:
+    limits:
+      cpu: '1'
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 90Mi
+    <#else>
+  resources: {}
+    </#if>
+
+  service:
+    # Preserve client ip address
+    externalTrafficPolicy: Local
+
+    <#if config.application.netpols == true>
+  networkPolicy:
+    enabled: true
+    </#if>
+
+  # Traefik uses "Logs" and "AccessLogs" for the log format configurations
+  logs:
+    general:
+      level: INFO
+    access:
+      enabled: true
+      # Traefik access logs include host and duration by default in Common Log Format (CLF) or JSON
+      format: json
+
+  # Configuration for Compression (Equivalent to gzip/brotli in NGINX)
+  # In Traefik, this is often handled via Middleware, but can be enabled globally
+  globalArguments:
+    - "--global.checknewversion=false"
+    - "--global.sendanonymoususage=false"
+
+  additionalArguments:
+    # Enable compression equivalent to use-gzip
+    - "--entrypoints.web.http.compress=true"
+    - "--entrypoints.websecure.http.compress=true"
+
+    <#if config.features.monitoring.active == true>
+  metrics:
+    prometheus:
+      enabled: true
+      entryPoint: metrics
+  serviceMonitor:
+    enabled: true
+    namespace: ${config.application.namePrefix}monitoring
+    </#if>

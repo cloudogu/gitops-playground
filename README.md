@@ -8,7 +8,7 @@ Kubernetes clusters:
 * Secrets Management:  [Vault and External Secrets Operator](#secrets-management-tools)
 * Notifications/Alerts: Grafana and ArgoCD can be predefined with either an external mailserver or [MailHog](https://github.com/mailhog/MailHog) for demo purposes.
 * Pipelines: Example applications using [Jenkins](#jenkins) with the [gitops-build-lib](https://github.com/cloudogu/gitops-build-lib) and [SCM-Manager](#scm-manager)
-* Ingress Controller: [ingress-nginx](https://github.com/kubernetes/ingress-nginx/)
+* Ingress Controller: [ingress](https://github.com/traefik/traefik-helm-chart)
 * Certificate Management: [cert-manager](#certificate-management)
 * [Content Loader](docs/content-loader/content-loader.md): Completely customize what is pushed to Git during installation.
   This allows for adding your own end-user or IDP apps, creating repos, adding Argo CD tenants, etc.
@@ -32,7 +32,7 @@ bash <(curl -s \
   && docker run --rm -t --pull=always -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     --net=host \
-    ghcr.io/cloudogu/gitops-playground --yes --argocd --ingress-nginx --base-url=http://localhost
+    ghcr.io/cloudogu/gitops-playground --yes --argocd --ingress --base-url=http://localhost
 # More IDP-features: --mailhog --monitoring --vault=dev --cert-manager
 # More features for developers: --jenkins --registry --content-examples
 ```
@@ -238,7 +238,7 @@ kubectl create clusterrolebinding gitops-playground-job-executer \
   --serviceaccount=default:gitops-playground-job-executer
 
 # Then start apply the playground with the following command:
-# To access services on remote clusters, add either --remote or --ingress-nginx --base-url=$yourdomain
+# To access services on remote clusters, add either --remote or --ingress --base-url=$yourdomain
 kubectl run gitops-playground -i --tty --restart=Never \
   --overrides='{ "spec": { "serviceAccount": "gitops-playground-job-executer" } }' \
   --image ghcr.io/cloudogu/gitops-playground \
@@ -281,7 +281,7 @@ That is, if you pass a param via CLI, for example, it will overwrite the corresp
     - [Mail](#mail)
     - [Monitoring](#monitoring)
     - [Secrets](#secrets)
-    - [Ingress Nginx](#ingress-nginx)
+    - [Ingress](#ingress)
     - [Cert Manager](#cert-manager)
 - [Content](#content)
 - [Multitenant](#multitenant)
@@ -474,16 +474,16 @@ That is, if you pass a param via CLI, for example, it will overwrite the corresp
 | - | `features.secrets.externalSecrets.helm.repoURL` | `'https://charts.external-secrets.io'` | String | Repository url from which the Helm chart should be obtained |
 | - | `features.secrets.externalSecrets.helm.version` | `'0.9.16'` | String | The version of the Helm chart to be installed |
 
-###### Ingress Nginx
+###### Ingress
 
-| CLI | Config | Default | Type | Description |
-|-----|--------|---------|------|-------------|
-| `--ingress-nginx` | `features.ingressNginx.active` | `false` | Boolean | Install Ingress Nginx controller |
-| `--ingress-nginx-image` | `features.ingressNginx.helm.image` | `''` | String | Ingress Nginx controller image |
-| - | `features.ingressNginx.helm.chart` | `'ingress-nginx'` | String | Name of the Helm chart |
-| - | `features.ingressNginx.helm.repoURL` | `'https://kubernetes.github.io/ingress-nginx'` | String | Repository url from which the Helm chart should be obtained |
-| - | `features.ingressNginx.helm.version` | `'4.12.1'` | String | The version of the Helm chart to be installed |
-| - | `features.ingressNginx.helm.values` | `[:]` | Map | Helm values of the chart |
+| CLI | Config | Default                              | Type | Description |
+|-----|--------|--------------------------------------|------|-------------|
+| `--ingress` | `features.ingress.active` | `false`                              | Boolean | Install Ingress controller |
+| `--ingress-image` | `features.ingress.helm.image` | `''`                                 | String | Ingress controller image |
+| - | `features.ingress.helm.chart` | `'traefik'`                          | String | Name of the Helm chart |
+| - | `features.ingress.helm.repoURL` | `'https://traefik.github.io/charts'` | String | Repository url from which the Helm chart should be obtained |
+| - | `features.ingress.helm.version` | `'38.0.2'`                      | String | The version of the Helm chart to be installed |
+| - | `features.ingress.helm.values` | `[:]`                                | Map | Helm values of the chart |
 
 ###### Cert Manager
 
@@ -626,19 +626,19 @@ docker run -t --rm ghcr.io/cloudogu/gitops-playground --help
 
 In the default installation the GitOps-Playground comes without an Ingress-Controller.  
 
-We use Nginx as default Ingress-Controller.
-It can be enabled via the configfile or parameter `--ingress-nginx`.
+We use Traefik as default Ingress-Controller.
+It can be enabled via the configfile or parameter `--ingress`.
 
 In order to make use of the ingress controller, it is recommended to use it in conjunction with [`--base-url`](#deploy-ingresses), which will create `Ingress` objects for all components of the GitOps playground.
 
-The ingress controller is based on the helm chart [`ingress-nginx`](https://kubernetes.github.io/ingress-nginx).
+The ingress controller is based on the helm chart [`ingress`](https://traefik.github.io/charts/).
 
 Additional parameters from this chart's values.yaml file can be added to the installation through the gitops-playground [configuration file](#configuration-file).
 
 Example:
 ```yaml
 features:
-  ingressNginx:
+  ingress:
     active: true
     helm:
       values:
@@ -648,8 +648,8 @@ features:
 In this Example we override the default `controller.replicaCount` (GOP's default is 2).
 
 This config file is merged with precedence over the defaults set by 
-* [the GOP](argocd/cluster-resources/apps/ingress/templates/ingress-nginx-helm-values.ftl.yaml) and
-* [the charts itself](https://github.com/kubernetes/ingress-nginx/blob/main/charts/ingress-nginx/values.yaml).
+* [the GOP](argocd/cluster-resources/apps/ingress/templates/ingress-helm-values.ftl.yaml) and
+* [the charts itself](https://github.com/traefik/traefik-helm-chart/blob/master/traefik/values.yaml).
 
 ##### Deploy Ingresses
 
@@ -670,7 +670,7 @@ It is possible to deploy `Ingress` objects for all components. You can either
 Note: 
 * `jenkins-url` and `scmm-url` are for external services and do not lead to ingresses, but you can set them via `--base-url` for now.
 * In order to make use of the `Ingress` you need an ingress controller.
-  If your cluster does not provide one, the Playground can deploy one for you, via the [`--ingress-nginx` parameter](#deploy-ingress-controller).
+  If your cluster does not provide one, the Playground can deploy one for you, via the [`--ingress` parameter](#deploy-ingress-controller).
 * For this to work, you need to set an `*.example.com` DNS record to the externalIP of the ingress controller.
 
 Alternatively, [hyphen-separated ingresses](#subdomains-vs-hyphen-separated-ingresses) can be created,
@@ -915,7 +915,7 @@ Note that this option has limitations. It does not remove CRDs, namespaces, loca
 ### Running on Windows or Mac
 
 * In general: We cannot use the `host` network, so it's easiest to access via [ingress controller](#deploy-ingress-controller) and [ingresses](#local-ingresses).
-* `--base-url=http://localhost --ingress-nginx` should work on both Windows and Mac.
+* `--base-url=http://localhost --ingress` should work on both Windows and Mac.
 * In case of problems resolving e.g. `jenkins.localhost`, you could try using `--base-url=http://local.gd` or similar, as described in [local ingresses](#local-ingresses).
 
 #### Mac and Windows WSL
@@ -933,7 +933,7 @@ bash <(curl -s \
   && docker run --rm -t --pull=always -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     --net=host \
-    ghcr.io/cloudogu/gitops-playground --yes --argocd --ingress-nginx --base-url=http://localhost
+    ghcr.io/cloudogu/gitops-playground --yes --argocd --ingress --base-url=http://localhost
 # If you want to try all features, you might want to add these params: --mail --monitoring --vault=dev
 ```
 
@@ -996,7 +996,7 @@ k3d kubeconfig write gitops-playground
 docker run --rm -t --pull=always `
     -v $HOME/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config `
     --net=host `
-    ghcr.io/cloudogu/gitops-playground --yes --argocd --ingress-nginx --base-url=http://localhost:$ingress_port # more params go here
+    ghcr.io/cloudogu/gitops-playground --yes --argocd --ingress --base-url=http://localhost:$ingress_port # more params go here
 ```
 
 ## Stack
@@ -1010,14 +1010,14 @@ The stack is composed of multiple applications, where some of them can be access
 * Jenkins
 * SCM-Manager
 * Vault
-* Ingress-nginx
+* Ingress
 * Cert-Manager
 
 In addition, there are example applications that provide a turnkey solution for GitOps-Pipelines from a developer's
 point of view.
 See [Example Applications](#example-applications).
 
-We recommend using the `--ingress-nginx` and `--base-url` Parameters.
+We recommend using the `--ingress` and `--base-url` Parameters.
 With these, the applications are made available as subdomains of `base-url`.
 
 For example, `--base-url=http://localhost` leads to `
@@ -1336,7 +1336,7 @@ deploying.
 Alternatively, you can trigger the deployment via ArgoCD's UI or CLI.
 
 
-We recommend using the `--ingress-nginx` and `--base-url` Parameters.
+We recommend using the `--ingress` and `--base-url` Parameters.
 With these, the applications are made available as subdomains of `base-url`.
 
 For example, `--base-url=http://localhost` leads to 

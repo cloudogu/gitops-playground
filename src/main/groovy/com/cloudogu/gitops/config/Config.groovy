@@ -444,8 +444,8 @@ class Config {
         SecretsSchema secrets = new SecretsSchema()
 
         @Mixin
-        @JsonPropertyDescription(INGRESS_NGINX_DESCRIPTION)
-        IngressNginxSchema ingressNginx = new IngressNginxSchema()
+        @JsonPropertyDescription(INGRESS_DESCRIPTION)
+        IngressSchema ingress = new IngressSchema()
 
         @Mixin
         @JsonPropertyDescription(CERTMANAGER_DESCRIPTION)
@@ -646,21 +646,21 @@ class Config {
         }
     }
 
-    static class IngressNginxSchema {
+    static class IngressSchema {
 
-        @Option(names = ['--ingress-nginx'], description = INGRESS_NGINX_ENABLE_DESCRIPTION)
-        @JsonPropertyDescription(INGRESS_NGINX_ENABLE_DESCRIPTION)
+        @Option(names = ['--ingress'], description = INGRESS_ENABLE_DESCRIPTION)
+        @JsonPropertyDescription(INGRESS_ENABLE_DESCRIPTION)
         Boolean active = false
 
         @Mixin
         @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
-        IngressNginxHelmSchema helm = new IngressNginxHelmSchema(
-                chart: 'ingress-nginx',
-                repoURL: 'https://kubernetes.github.io/ingress-nginx',
-                version: '4.12.1'
+        IngressHelmSchema helm = new IngressHelmSchema(
+                chart: 'ingress-traefik',
+                repoURL: 'https://github.com/traefik/traefik-helm-chart',
+                version: '38.0.2'
         )
-        static class IngressNginxHelmSchema extends HelmConfigWithValues {
-            @Option(names = ['--ingress-nginx-image'], description = HELM_CONFIG_IMAGE_DESCRIPTION)
+        static class IngressHelmSchema extends HelmConfigWithValues {
+            @Option(names = ['--ingress-image'], description = HELM_CONFIG_IMAGE_DESCRIPTION)
             @JsonPropertyDescription(HELM_CONFIG_IMAGE_DESCRIPTION)
             String image = ''
         }

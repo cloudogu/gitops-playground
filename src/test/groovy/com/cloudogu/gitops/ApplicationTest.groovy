@@ -18,7 +18,7 @@ class ApplicationTest {
                 .getBean(Application)
         def features = application.features.collect { it.class.simpleName }
 
-        assertThat(features).isEqualTo(["Registry", "GitHandler" ,"Jenkins", "ArgoCD", "IngressNginx", "CertManager", "Mailhog", "PrometheusStack", "ExternalSecretsOperator", "Vault", "ContentLoader"])
+        assertThat(features).isEqualTo(["Registry", "GitHandler" ,"Jenkins", "ArgoCD", "Ingress", "CertManager", "Mailhog", "PrometheusStack", "ExternalSecretsOperator", "Vault", "ContentLoader"])
     }
 
     @Test
@@ -28,7 +28,7 @@ class ApplicationTest {
         config.features.monitoring.active = true
         config.features.argocd.active = true
         config.content.examples = true
-        config.features.ingressNginx.active = true
+        config.features.ingress.active = true
         config.application.namePrefix = 'test1-'
         config.content.namespaces = [
                 '${config.application.namePrefix}example-apps-staging',
@@ -57,7 +57,7 @@ class ApplicationTest {
         config.features.monitoring.active = true
         config.features.argocd.active = true
         config.content.examples = true
-        config.features.ingressNginx.active = true
+        config.features.ingress.active = true
         config.application.namePrefix = 'test1-'
         config.application.openshift = true
         config.content.namespaces = [
@@ -114,7 +114,7 @@ class ApplicationTest {
         config.features.monitoring.active = true
         config.features.argocd.active = true
         config.content.examples = true
-        config.features.ingressNginx.active = true
+        config.features.ingress.active = true
         config.application.namePrefix = 'test1-'
         config.application.openshift = true
         config.content.namespaces = [

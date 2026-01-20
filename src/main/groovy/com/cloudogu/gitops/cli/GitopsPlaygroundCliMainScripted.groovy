@@ -86,7 +86,7 @@ class GitopsPlaygroundCliMainScripted {
                         gitHandler,
                         jenkins,
                         new ArgoCD(config, k8sClient, helmClient, fileSystemUtils, gitRepoFactory, gitHandler),
-                        new IngressNginx(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
+                        new Ingress(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
                         new CertManager(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
                         new Mailhog(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitHandler),
                         new PrometheusStack(config, fileSystemUtils, deployer, k8sClient, airGappedUtils, gitRepoFactory, gitHandler),
