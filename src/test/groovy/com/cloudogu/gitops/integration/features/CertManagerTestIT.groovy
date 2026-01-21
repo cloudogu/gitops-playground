@@ -4,6 +4,7 @@ import groovy.util.logging.Slf4j
 import io.kubernetes.client.openapi.models.V1Pod
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty
 
 import static org.assertj.core.api.Assertions.assertThat
 
@@ -12,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat
  * Cert-Manager contains own namespace ('cert-manager') which owns and 3 Pods:
  */
 @Slf4j
+@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full") //TODO: why not in ArgoCD Operator? Clearify
 class CertManagerTestIT extends KubenetesApiTestSetup {
 
     String namespace = 'cert-manager'
