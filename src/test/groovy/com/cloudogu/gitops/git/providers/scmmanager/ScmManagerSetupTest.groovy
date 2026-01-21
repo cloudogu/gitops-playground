@@ -37,7 +37,7 @@ class ScmManagerSetupTest {
                             helm          : [
                                     chart  : "scm-manager",
                                     repoURL: "https://packages.scm-manager.org/repository/helm-v2-releases/",
-                                    version: "3.11.0",
+                                    version: "3.11.2",
                                     values : [:]
                             ],
                             rootPath      : "repo",
@@ -61,7 +61,7 @@ class ScmManagerSetupTest {
                 eq( "https://packages.scm-manager.org/repository/helm-v2-releases/"),
                 eq("scm-manager"),
                 any(),
-                eq("3.11.0"),
+                eq("3.11.2"),
                 eq("scm-manager"),
                 eq("scmm"),
                 any()
