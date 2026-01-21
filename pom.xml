@@ -305,19 +305,6 @@
       <version>6.2.0</version>
     </dependency>
 
-    <!-- Fix NoClassDefFoundError: jakarta/xml/bind/annotation/XmlElement on Java 17 -->
-    <dependency>
-      <groupId>jakarta.xml.bind</groupId>
-      <artifactId>jakarta.xml.bind-api</artifactId>
-      <version>4.0.2</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glassfish.jaxb</groupId>
-      <artifactId>jaxb-runtime</artifactId>
-      <version>4.0.5</version>
-      <scope>runtime</scope>
-    </dependency>
-
     <dependency>
       <groupId>com.github.victools</groupId>
       <artifactId>jsonschema-generator</artifactId>
