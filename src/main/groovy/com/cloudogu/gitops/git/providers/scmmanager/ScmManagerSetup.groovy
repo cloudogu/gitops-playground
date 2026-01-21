@@ -18,7 +18,7 @@ class ScmManagerSetup {
         this.scmManager = scmManager
     }
 
-    void waitForScmmAvailable(int timeoutSeconds = 120, int intervalMillis = 5000, int startDelay = 0) {
+    void waitForScmmAvailable(int timeoutSeconds = 180, int intervalMillis = 5000, int startDelay = 0) {
         long startTime = System.currentTimeMillis()
         long timeoutMillis = timeoutSeconds * 1000L
         sleep(startDelay)
@@ -108,7 +108,7 @@ class ScmManagerSetup {
 
         log.debug("SCM-Manager plugin installation finished successfully!")
         if (restartForThisPlugin) {
-            waitForScmmAvailable(60,2000,100)
+            waitForScmmAvailable(180,2000,100)
         }
     }
 
