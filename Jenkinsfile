@@ -16,15 +16,14 @@ properties([
 
         parameters([
                 booleanParam(defaultValue: false, name: 'forcePushImage', description: 'Pushes the image with the current git commit as tag, even when it is on a branch'),
-                booleanParam(name: 'enable_IT_tests', defaultValue: false, description: 'Enable IT tests otherwise minimal profile test is executed'),
-                choice(name: 'chooseProfile', choices: ['all profiles', 'full', 'full-prefix', 'minimal', 'content-examples', 'operator-full', 'operator-content-examples', 'operator-minimal'], description: 'Starts GOP with given profile only and execute tests which belongs to profile.')
+                choice(name: 'chooseProfile', choices: ['minimal', 'all profiles', 'full', 'full-prefix', 'content-examples', 'operator-full', 'operator-minimal'], description: 'Starts GOP with given profile only and execute tests which belongs to profile.')
         ])
 ])
 
 // definition of profiles, without 'all'
-def predefinedProfiles = ['full', 'full-prefix', 'minimal', 'content-examples', 'operator-full', 'operator-content-examples', 'operator-minimal']
-def profiles = predefinedProfiles.contains(params.chooseProfile) ? [ params.chooseProfile ] : predefinedProfiles
-echo "current profiles to test ${profiles}"
+def predefinedProfiles = ['full', 'full-prefix', 'content-examples', 'minimal',  'operator-full',  'operator-minimal']
+def profilesToTest = predefinedProfiles.contains(params.chooseProfile) ? [ params.chooseProfile ] : predefinedProfiles
+echo "current profiles to test ${profilesToTest}"
 node('high-cpu') {
 
     git = new Git(this)
@@ -64,25 +63,20 @@ node('high-cpu') {
 
                             }
                         },
-
-                        'start and test GOP minimal': {
-                            executeProfileTestStages(['minimal'])
-
-                        }
-                )
-                stage ('Integrationtests depends on configuration') {
-                    if (params.enable_IT_tests == true) {
-                        executeProfileTestStages(profiles)
-                    } else {
-                        if (env.BRANCH_NAME == 'main') {
-                            // on main all IT test has to run to ensure stability
-                            echo "main branch, testing with full-prefix profile"
-                            executeProfileTestStages(predefinedProfiles)
-                        } else {
-                            echo "Skipping profile tests as enable_IT_tests is set to false an not on main branch."
+                        'Integrationtests': {
+                            stage('Integrationtests depends on configuraton') {
+                                if (env.BRANCH_NAME == 'main') {
+                                    // on main all IT test has to run to ensure stability
+                                    echo "main branch, testing with full-prefix profile"
+                                    executeProfileTestStages(predefinedProfiles)
+                                } else {
+                                    // this is default!
+                                    executeProfileTestStages(profilesToTest)
+                                }
+                            }
                         }
                     }
-                }
+                )
                 stage('Push image') {
                     if (isBuildSuccessful()) {
                         docker.withRegistry("https://${dockerRegistryBaseUrl}", 'cesmarvin-ghcr') {
@@ -212,7 +206,7 @@ def startK3d(clusterName) {
                          "PATH=${WORKSPACE}/.local/bin:${PATH}"]) {
 
                     // Start k3d cluster, binding to an arbitrary registry port
-                    sh "yes | ./scripts/init-cluster.sh --bind-ingress-port=0 --cluster-name=${clusterName} --bind-registry-port=0"
+                    sh "yes | ./scripts/init-cluster.sh --cluster-name=${clusterName} "
                 }
             }
 }
@@ -275,92 +269,85 @@ def executeProfileTestStages(def profiles) {
     * @param profile Profile to execute tests for.
     */
 def stageIntegrationTests(String clusterName, String profile) {
-    stage("Integration test-${profile}") {
 
-        String k3dAddress = sh(
-                script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' k3d-${clusterName}-server-0",
-                returnStdout: true
-        ).trim()
+    String k3dAddress = sh(
+            script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' k3d-${clusterName}-server-0",
+            returnStdout: true
+    ).trim()
 
-        String k3dNetwork = sh(
-                script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.NetworkID}}{{end}}' k3d-${clusterName}-server-0",
-                returnStdout: true
-        ).trim()
-
-
-        withEnv(["KUBECONFIG=${env.WORKSPACE}/.kube/config", "ADDITIONAL_DOCKER_RUN_ARGS=--network=host", "K3D_ADDRESS=${k3dAddress}"]) {
-            mvn.useLocalRepoFromJenkins = true
-            mvn "failsafe:integration-test -Dmaven.test.failure.ignore=true -Dmicronaut.environments=${profile} -Dsurefire.reportNameSuffix=${profile}"
-
-            junit testResults: "**/target/failsafe-reports/TEST-*${profile}.xml"
-        }
+    String k3dNetwork = sh(
+            script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.NetworkID}}{{end}}' k3d-${clusterName}-server-0",
+            returnStdout: true
+    ).trim()
 
 
-    } // end of stage integration test
+    withEnv(["KUBECONFIG=${env.WORKSPACE}/.kube/config", "ADDITIONAL_DOCKER_RUN_ARGS=--network=host", "K3D_ADDRESS=${k3dAddress}"]) {
+        mvn.useLocalRepoFromJenkins = true
+        mvn "failsafe:integration-test -Dmaven.test.failure.ignore=true -Dmicronaut.environments=${profile} -Dsurefire.reportNameSuffix=${profile}"
+
+        junit testResults: "**/target/failsafe-reports/TEST-*${profile}.xml"
+    }
+
 }
 
 
 def stageStartGOPWithProfile(String clusterName, String profile) {
-    stage("Starting GitOps Playground - ${profile}") {
-        echo "=========================================="
-        echo "Starting profile: ${profile}"
-        echo "=========================================="
+    echo "=========================================="
+    echo "Starting profile: ${profile}"
+    echo "=========================================="
 
 
 
-        String registryPort = sh(
-                script: 'docker inspect ' +
-                        '--format=\'{{ with (index .NetworkSettings.Ports "30000/tcp") }}{{ (index . 0).HostPort }}{{ end }}\' ' +
-                        " k3d-${clusterName}-serverlb",
-                returnStdout: true
-        ).trim()
+    String registryPort = sh(
+            script: 'docker inspect ' +
+                    '--format=\'{{ with (index .NetworkSettings.Ports "30000/tcp") }}{{ (index . 0).HostPort }}{{ end }}\' ' +
+                    " k3d-${clusterName}-serverlb",
+            returnStdout: true
+    ).trim()
 
-        docker.image(imageNames[0])
-                .inside("--network=host -e KUBECONFIG=${env.WORKSPACE}/.kube/config --entrypoint=''") {
-                    sh """
-                    /app/scripts/apply-ng.sh \
-                        --yes=true \
-                        --trace=true \
-                        --profile=${profile}
-                """
-        }
+    docker.image(imageNames[0])
+            .inside("--network=host -e KUBECONFIG=${env.WORKSPACE}/.kube/config --entrypoint=''") {
+                sh """
+                /app/scripts/apply-ng.sh \
+                    --yes=true \
+                    --trace=true \
+                    --profile=${profile}
+            """
     }
 }
 
 
+
 def stageDeleteK3dCluster(String clusterName) {
-    stage("Stop k3d - ${clusterName}")
-        if (clusterName) {
-            // Don't fail build if cleaning up fails
-            withEnv(["PATH=${WORKSPACE}/.local/bin:${PATH}"]) {
-                sh "if k3d cluster ls ${clusterName} > /dev/null; " +
-                        "then k3d cluster delete ${clusterName}; " +
-                        "fi"
-            }
+    if (clusterName) {
+        // Don't fail build if cleaning up fails
+        withEnv(["PATH=${WORKSPACE}/.local/bin:${PATH}"]) {
+            sh "if k3d cluster ls ${clusterName} > /dev/null; " +
+                    "then k3d cluster delete ${clusterName}; " +
+                    "fi"
         }
     }
+}
 
 def stageBuildClI() {
 
-    stage('build and run unit tests') {
-        // Read Java version from Dockerfile (DRY)
-        String jdkVersion = sh(returnStdout: true, script:
-                'grep -r \'ARG JDK_VERSION\' Dockerfile | sed "s/.*JDK_VERSION=\'\\(.*\\)\'.*/\\1/" ').trim()
-        // Groovy version is defined by micronaut version. Get it from there.
-        String groovyVersion = sh(returnStdout: true, script:
-                'MICRONAUT_VERSION=$(cat pom.xml | sed -n \'/<parent>/,/<\\/parent>/p\' | ' +
-                        'sed -n \'s/.*<version>\\(.*\\)<\\/version>.*/\\1/p\'); ' +
-                        'curl -s https://repo1.maven.org/maven2/io/micronaut/micronaut-core-bom/${MICRONAUT_VERSION}/micronaut-core-bom-${MICRONAUT_VERSION}.pom | ' +
-                        'sed -n \'s/.*<groovy.version>\\(.*\\)<\\/groovy.version>.*/\\1/p\'').trim()
-        groovyImage = "groovy:${groovyVersion}-jdk${jdkVersion}"
-        // Re-use groovy image here, even though we only need JDK
-        mvn = new MavenWrapperInDocker(this, groovyImage)
-        // Faster builds because mvn local repo is reused between build, unit and integration tests
-        mvn.useLocalRepoFromJenkins = true
+    // Read Java version from Dockerfile (DRY)
+    String jdkVersion = sh(returnStdout: true, script:
+            'grep -r \'ARG JDK_VERSION\' Dockerfile | sed "s/.*JDK_VERSION=\'\\(.*\\)\'.*/\\1/" ').trim()
+    // Groovy version is defined by micronaut version. Get it from there.
+    String groovyVersion = sh(returnStdout: true, script:
+            'MICRONAUT_VERSION=$(cat pom.xml | sed -n \'/<parent>/,/<\\/parent>/p\' | ' +
+                    'sed -n \'s/.*<version>\\(.*\\)<\\/version>.*/\\1/p\'); ' +
+                    'curl -s https://repo1.maven.org/maven2/io/micronaut/micronaut-core-bom/${MICRONAUT_VERSION}/micronaut-core-bom-${MICRONAUT_VERSION}.pom | ' +
+                    'sed -n \'s/.*<groovy.version>\\(.*\\)<\\/groovy.version>.*/\\1/p\'').trim()
+    groovyImage = "groovy:${groovyVersion}-jdk${jdkVersion}"
+    // Re-use groovy image here, even though we only need JDK
+    mvn = new MavenWrapperInDocker(this, groovyImage)
+    // Faster builds because mvn local repo is reused between build, unit and integration tests
+    mvn.useLocalRepoFromJenkins = true
 
-        mvn 'clean test -Dmaven.test.failure.ignore=true'
-        junit testResults: '**/target/surefire-reports/TEST-*.xml'
-    }
+    mvn 'clean test -Dmaven.test.failure.ignore=true'
+    junit testResults: '**/target/surefire-reports/TEST-*.xml'
 }
 /**
     * Stage for installing ArgoCD Operator in the k3d cluster.
@@ -369,28 +356,28 @@ def stageBuildClI() {
     */
 def stageInstallArgoCDOperator(String clusterName, String profile) {
 
-            stage("setup argocd operator-${profile}") {
 
-                String k3dAddress = sh(
-                    script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' k3d-${clusterName}-server-0",
-                    returnStdout: true
-                ).trim()
 
-                // Install Argocd operator
-                echo "install argocd operator"
-                withEnv(["KUBECONFIG=${env.WORKSPACE}/.kube/config", "ADDITIONAL_DOCKER_RUN_ARGS=--network=host", "K3D_ADDRESS=${k3dAddress}"]) {
+        String k3dAddress = sh(
+            script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' k3d-${clusterName}-server-0",
+            returnStdout: true
+        ).trim()
 
-                    docker.image('golang:1.25-alpine').inside('--user root --network=host') {
-                        sh '''
-                        apk add --no-cache make bash curl git kubectl
-                        chmod  +x ./scripts/local/install-argocd-operator.sh
-                        ./scripts/local/install-argocd-operator.sh
-                        '''
-                    }
-                }
+        // Install Argocd operator
+        echo "install argocd operator"
+        withEnv(["KUBECONFIG=${env.WORKSPACE}/.kube/config", "ADDITIONAL_DOCKER_RUN_ARGS=--network=host", "K3D_ADDRESS=${k3dAddress}"]) {
 
-                echo "install argocd operator is ready"
+            docker.image('golang:1.25-alpine').inside('--user root --network=host') {
+                sh '''
+                apk add --no-cache make bash curl git kubectl
+                chmod  +x ./scripts/local/install-argocd-operator.sh
+                ./scripts/local/install-argocd-operator.sh
+                '''
+            }
         }
+
+        echo "install argocd operator is ready"
+
 }
 def images
 def imageNames
