@@ -655,7 +655,7 @@ class Config {
         @Mixin
         @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
         IngressHelmSchema helm = new IngressHelmSchema(
-                chart: 'ingress-traefik',
+                chart: 'traefik',
                 repoURL: 'https://github.com/traefik/traefik-helm-chart',
                 version: '38.0.2'
         )

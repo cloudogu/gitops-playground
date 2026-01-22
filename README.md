@@ -1342,7 +1342,7 @@ With these, the applications are made available as subdomains of `base-url`.
 For example, `--base-url=http://localhost` leads to 
 http://staging.petclinic-plain.petclinic.localhost/.
 
-The `.petlinic.` part can be overridden using
+The `.petlinic.` part can be overridden usingdr
 `--petclinic-base-domain` (for the petlinic examples/exercises), or 
 `--nginx-base-domain` (for the nginx examples/exercises).
 

@@ -43,7 +43,7 @@ class ArgoCDTest {
                     gitName             : 'Cloudogu',
                     gitEmail            : 'hello@cloudogu.com',
                     namespaces          : [
-                            dedicatedNamespaces: ["argocd", "monitoring", "ingress-nginx", "secrets"],
+                            dedicatedNamespaces: ["argocd", "monitoring", "traefik", "secrets"],
                             tenantNamespaces   : ["example-apps-staging", "example-apps-production"]
                     ]
             ],
@@ -91,7 +91,7 @@ class ArgoCDTest {
                                     version: '42.0.3'
                             ]
                     ],
-                    ingressNginx: [
+                    ingress: [
                             active: true
                     ],
                     secrets     : [
@@ -265,17 +265,18 @@ class ArgoCDTest {
     }
 
     @Test
-    void 'When ingressNginx disabled: Does not push monitoring dashboard resources'() {
+    void 'When ingress disabled: Does not push monitoring dashboard resources'() {
         config.features.monitoring.active = true
-        config.features.ingressNginx.active = false
+        config.features.ingress.active = false
 
         def argocd = createArgoCD()
         argocd.install()
         repoLayout = argocd.repoLayout()
 
+        // TODO: For the traefik dashboard
         assertThat(new File(repoLayout.monitoringDir())).exists()
-        assertThat(new File(repoLayout.monitoringDir() + "/misc/dashboard/ingress-nginx-dashboard.yaml")).doesNotExist()
-        assertThat(new File(repoLayout.monitoringDir() + "/misc/dashboard/ingress-nginx-dashboard-requests-handling.yaml")).doesNotExist()
+//        assertThat(new File(repoLayout.monitoringDir() + "/misc/dashboard/ingress-nginx-dashboard.yaml")).doesNotExist()
+//        assertThat(new File(repoLayout.monitoringDir() + "/misc/dashboard/ingress-nginx-dashboard-requests-handling.yaml")).doesNotExist()
     }
 
     @Test

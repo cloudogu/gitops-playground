@@ -24,7 +24,7 @@ class Ingress extends Feature implements FeatureWithImage {
 
     static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/ingress/templates/ingress-helm-values.ftl.yaml"
 
-    String namespace = "${config.application.namePrefix}ingress-traefik"
+    String namespace = "${config.application.namePrefix}traefik"
     Config config
     K8sClient k8sClient
 
@@ -78,20 +78,20 @@ class Ingress extends Feature implements FeatureWithImage {
 
             deployer.deployFeature(
                     gitHandler.resourcesScm.repoUrl(repoNamespaceAndName),
-                    'ingress-traefik',
+                    'traefik',
                     '.',
                     ingressVersion,
                     namespace,
-                    'ingress-traefik',
+                    'traefik',
                     tempValuesPath, DeploymentStrategy.RepoType.GIT)
         } else {
             deployer.deployFeature(
                     helmConfig.repoURL as String,
-                    'ingress-traefik',
+                    'traefik',
                     helmConfig.chart as String,
                     helmConfig.version as String,
                     namespace,
-                    'ingress-traefik',
+                    'traefik',
                     tempValuesPath
             )
         }

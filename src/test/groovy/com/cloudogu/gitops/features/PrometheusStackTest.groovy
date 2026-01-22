@@ -595,7 +595,7 @@ policies:
         config.application.namePrefix = "test1-"
         config.features.argocd.active = true
         config.features.secrets.active = true
-        config.features.ingressNginx.active = false
+        config.features.ingress.active = false
         LinkedHashSet<String> namespaceList = [
                 "test1-argocd",
                 "test1-monitoring",

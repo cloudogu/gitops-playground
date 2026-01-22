@@ -24,7 +24,7 @@ import static org.mockito.Mockito.*
 @ExtendWith(MockitoExtension.class)
 class IngressTest {
 
-    // setting default config values with ingress nginx active
+    // setting default config values with ingress active
     Config config = new Config(
             application: new Config.ApplicationSchema(
                     namePrefix: 'foo-'),
@@ -48,7 +48,7 @@ class IngressTest {
 
     @Test
     void 'Helm release is installed'() {
-        createIngressNginx().install()
+        createIngress().install()
 
         /* Assert one default value */
         def actual = parseActualYaml()
@@ -68,7 +68,7 @@ class IngressTest {
     void 'Sets pod resource limits and requests'() {
         config.application.podResources = true
 
-        createIngressNginx().install()
+        createIngress().install()
 
         assertThat(parseActualYaml()['controller']['resources'] as Map).containsKeys('limits', 'requests')
     }
@@ -77,7 +77,7 @@ class IngressTest {
     void 'When Ingress is not enabled, ingress-helm-values yaml has no content'() {
         config.features.ingress.active = false
 
-        createIngressNginx().install()
+        createIngress().install()
 
         assertThat(temporaryYamlFile).isNull()
     }
@@ -91,7 +91,7 @@ class IngressTest {
                 ]
         ]
 
-        createIngressNginx().install()
+        createIngress().install()
         def actual = parseActualYaml()
 
         assertThat(actual['controller']['replicaCount']).isEqualTo(42)
@@ -110,23 +110,24 @@ class IngressTest {
         Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
         config.application.localHelmChartFolder = rootChartsFolder.toString()
 
-        Path SourceChart = rootChartsFolder.resolve('ingress-nginx')
+        Path SourceChart = rootChartsFolder.resolve('ingress-traefik')
         Files.createDirectories(SourceChart)
 
         Map ChartYaml = [version: '1.2.3']
         fileSystemUtils.writeYaml(ChartYaml, SourceChart.resolve('Chart.yaml').toFile())
 
-        createIngressNginx().install()
+        createIngress().install()
 
         def helmConfig = ArgumentCaptor.forClass(Config.HelmConfig)
         verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
-        assertThat(helmConfig.value.chart).isEqualTo('ingress-nginx')
-        assertThat(helmConfig.value.repoURL).isEqualTo('https://kubernetes.github.io/ingress-nginx')
-        assertThat(helmConfig.value.version).isEqualTo('4.12.1')
+        assertThat(helmConfig.value.chart).isEqualTo('ingress-traefik')
+
+        assertThat(helmConfig.value.repoURL).isEqualTo('https://traefik.github.io/charts/')
+        assertThat(helmConfig.value.version).isEqualTo('38.0.2')
         verify(deploymentStrategy).deployFeature(
                 'http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
-                'ingress-nginx', '.', '1.2.3', 'foo-ingress-nginx',
-                'ingress-nginx', temporaryYamlFile, DeploymentStrategy.RepoType.GIT)
+                'ingress-traefik', '.', '1.2.3', 'foo-ingress-traefik',
+                'ingress-traefik', temporaryYamlFile, DeploymentStrategy.RepoType.GIT)
     }
 
     @Test
@@ -134,7 +135,7 @@ class IngressTest {
         config.features.monitoring.active = true
         config.application.namePrefix = "heliosphere"
 
-        createIngressNginx().install()
+        createIngress().install()
 
         def actual = parseActualYaml()
 
@@ -147,7 +148,7 @@ class IngressTest {
     void 'Activates network policies'() {
         config.application.netpols = true
 
-        createIngressNginx().install()
+        createIngress().install()
 
         def actual = parseActualYaml()
 
@@ -161,19 +162,19 @@ class IngressTest {
         config.registry.proxyUsername = 'proxy-user'
         config.registry.proxyPassword = 'proxy-pw'
 
-        createIngressNginx().install()
+        createIngress().install()
 
         k8sClient.commandExecutorForTest.assertExecuted(
-                'kubectl create secret docker-registry proxy-registry -n foo-ingress-nginx' +
+                'kubectl create secret docker-registry proxy-registry -n foo-ingress-traefik' +
                         ' --docker-server proxy-url --docker-username proxy-user --docker-password proxy-pw')
         assertThat(parseActualYaml()['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
     }
 
     @Test
     void 'Allows overriding the image'() {
-        config.features.ingressNginx.helm.image = 'localhost/abc:v42'
+        config.features.ingress.helm.image = 'localhost/abc:v42'
 
-        createIngressNginx().install()
+        createIngress().install()
 
         def yaml = parseActualYaml()
         assertThat(yaml['controller']['image']['repository']).isEqualTo('localhost/abc')
@@ -183,14 +184,14 @@ class IngressTest {
 
     @Test
     void 'get namespace from feature'() {
-        assertThat(createIngressNginx().getActiveNamespaceFromFeature()).isEqualTo('foo-ingress-nginx')
-        config.features.ingressNginx.active = false
-        assertThat(createIngressNginx().getActiveNamespaceFromFeature()).isEqualTo(null)
+        assertThat(createIngress().getActiveNamespaceFromFeature()).isEqualTo('foo-ingress-traefik')
+        config.features.ingress.active = false
+        assertThat(createIngress().getActiveNamespaceFromFeature()).isEqualTo(null)
     }
 
-    private IngressNginx createIngressNginx() {
+    private Ingress createIngress() {
         // We use the real FileSystemUtils and not a mock to make sure file editing works as expected
-        new IngressNginx(config, new FileSystemUtils() {
+        new Ingress(config, new FileSystemUtils() {
             @Override
             Path writeTempFile(Map mergeMap) {
                 def ret = super.writeTempFile(mergeMap)
