@@ -235,10 +235,18 @@
     </dependency>
 
     <dependency>
-    <groupId>io.kubernetes</groupId>
-    <artifactId>client-java</artifactId>
-    <version>${kubernetes.client.java.version}</version>
-  </dependency>
+      <groupId>io.kubernetes</groupId>
+      <artifactId>client-java</artifactId>
+      <version>${kubernetes.client.java.version}</version>
+    </dependency>
+
+    <!-- Source: https://mvnrepository.com/artifact/io.fabric8/kubernetes-client -->
+    <dependency>
+      <groupId>io.fabric8</groupId>
+      <artifactId>kubernetes-client</artifactId>
+      <version>7.5.1</version>
+      <scope>compile</scope>
+    </dependency>
 
     <dependency>
       <groupId>io.micronaut</groupId>
@@ -276,13 +284,6 @@
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
       <version>3.23.1</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-        <groupId>com.offbytwo.jenkins</groupId>
-        <artifactId>jenkins-client</artifactId>
-        <version>0.3.8</version>
       <scope>test</scope>
     </dependency>
 
@@ -345,6 +346,13 @@
       <scope>provided</scope>
     </dependency>
 
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <version>4.3.0</version>
+      <scope>test</scope>
+    </dependency>
+
     <!-- GraalVM only -->
     <dependency>
       <groupId>org.graalvm.nativeimage</groupId>
@@ -357,13 +365,27 @@
       <artifactId>classgraph</artifactId>
       <version>4.8.141</version>
     </dependency>
+
+    <!-- Fix NoClassDefFoundError: jakarta/xml/bind/annotation/XmlElement on Java 17 -->
+    <dependency>
+      <groupId>jakarta.xml.bind</groupId>
+      <artifactId>jakarta.xml.bind-api</artifactId>
+      <version>4.0.2</version>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.jaxb</groupId>
+      <artifactId>jaxb-runtime</artifactId>
+      <version>4.0.5</version>
+      <scope>runtime</scope>
+    </dependency>
+
   </dependencies>
 
   <build>
     <plugins>
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.22.2</version>
+        <version>3.2.5</version>
         <configuration>
           <!-- Needed to allow unit tests to do reflection, e.g. for SystemLambda's withEnvironmentVariable -->
           <argLine>--add-opens java.base/java.util=ALL-UNNAMED</argLine>

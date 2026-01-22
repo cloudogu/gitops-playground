@@ -59,7 +59,6 @@ class JobManager {
             RequestBody body = RequestBody.create(payloadXml, MediaType.get("text/xml"))
 
             def response = apiClient.postRequestWithCrumb("createItem?name=$name", body)
-
             if (response.code() != 200) {
                 throw new RuntimeException("Could not create job '${name}'. StatusCode: ${response.code()}")
             }
