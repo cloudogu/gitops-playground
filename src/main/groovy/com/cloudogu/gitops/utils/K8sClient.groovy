@@ -206,11 +206,11 @@ class K8sClient {
 
     Credentials getCredentialsFromSecret(Credentials credentials) {
         try {
-            V1Secret secret = this.kubernetesApi.getApi().readNamespacedSecret(credentials.secretName, credentials.secretNamespace).execute()
+            /*V1Secret secret = this.kubernetesApi.getApi().readNamespacedSecret(credentials.secretName, credentials.secretNamespace).execute()
             def secretData = secret.getData()
             credentials.username = new String(Base64.getDecoder().decode(secretData[credentials.usernameKey]))
-            credentials.password = new String(Base64.getDecoder().decode(secretData[credentials.passwordKey]))
-            return credentials
+            credentials.password = new String(Base64.getDecoder().decode(secretData[credentials.passwordKey])) */
+            return new Credentials()
         } catch (Exception e) {
             throw new RuntimeException("Couldn't parse credentials from K8s secret: ${credentials.secretName} in namespace ${credentials.secretNamespace}", e)
         }

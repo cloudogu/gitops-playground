@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ser.BeanSerializerModifier
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 import groovy.transform.MapConstructor
 import jakarta.inject.Singleton
+import org.apache.http.client.CredentialsProvider
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 import picocli.CommandLine.Command
 import picocli.CommandLine.Mixin
@@ -157,6 +158,7 @@ class Config {
 
             @JsonPropertyDescription(CONTENT_REPO_CREATE_JENKINS_JOB_DESCRIPTION)
             Boolean createJenkinsJob = false
+
         }
     }
 
@@ -190,11 +192,9 @@ class Config {
         @JsonPropertyDescription(REGISTRY_URL_DESCRIPTION)
         String url = ''
 
-        @Option(names = ['--registry-path'], description = REGISTRY_PATH_DESCRIPTION,'config.scm.password')
+        @Option(names = ['--registry-path'], description = REGISTRY_PATH_DESCRIPTION)
         @JsonPropertyDescription(REGISTRY_PATH_DESCRIPTION)
         String path = ''
-
-        Credentials credentials
 
         @Option(names = ['--registry-username'], description = REGISTRY_USERNAME_DESCRIPTION)
         @JsonPropertyDescription(REGISTRY_USERNAME_DESCRIPTION)
