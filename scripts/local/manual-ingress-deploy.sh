@@ -25,8 +25,8 @@ controller:
       \$upstream_response_length \$upstream_response_time \$upstream_status \$req_id
 EOF
 
-helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
-  --version 4.12.1 \
-  --namespace ingress-nginx \
+helm upgrade --install traefik traefik/traefik \
+  --version 38.0.2 \
+  --namespace traefik \
   --create-namespace \
   -f values.yaml && rm ./values.yaml
