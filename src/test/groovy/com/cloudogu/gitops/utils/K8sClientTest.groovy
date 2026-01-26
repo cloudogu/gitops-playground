@@ -16,6 +16,11 @@ class K8sClientTest {
     CommandExecutorForTest commandExecutor =  k8sClient.commandExecutorForTest
 
     @Test
+    void 'getCredentialsFromSecret'(){
+
+    }
+
+    @Test
     void 'Gets internal nodeIp'() {
         // waitForNode()
         k8sClient.commandExecutorForTest.enqueueOutput(new CommandExecutor.Output('', 'node/k3d-gitops-playground-server-0', 0))

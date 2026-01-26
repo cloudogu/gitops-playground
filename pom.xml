@@ -34,6 +34,7 @@
         <groovy.version>4.0.12</groovy.version>
         <jsonschema.version>4.35.0</jsonschema.version>
         <kubernetes.client.java.version>25.0.0</kubernetes.client.java.version>
+        <kubernetes.fabric8.java.version>7.5.2</kubernetes.fabric8.java.version>
         <wiremock.version>3.13.2</wiremock.version>
     </properties>
 
@@ -234,10 +235,26 @@
             <version>2.3.32</version>
         </dependency>
 
+        <!-- Source: https://mvnrepository.com/artifact/io.fabric8/openshift-client -->
+        <dependency>
+            <groupId>io.fabric8</groupId>
+            <artifactId>openshift-client</artifactId>
+            <version>${kubernetes.fabric8.java.version}</version>
+        </dependency>
+
+        <!-- Source: https://mvnrepository.com/artifact/io.fabric8/kubernetes-server-mock -->
+        <dependency>
+            <groupId>io.fabric8</groupId>
+            <artifactId>kubernetes-server-mock</artifactId>
+            <version>${kubernetes.fabric8.java.version}</version>
+            <scope>test</scope>
+        </dependency>
+
         <dependency>
             <groupId>io.kubernetes</groupId>
             <artifactId>client-java</artifactId>
             <version>${kubernetes.client.java.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>

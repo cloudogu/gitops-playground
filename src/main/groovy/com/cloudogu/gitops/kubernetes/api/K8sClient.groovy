@@ -8,7 +8,9 @@ import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
 import groovy.transform.Immutable
 import groovy.util.logging.Slf4j
-import io.kubernetes.client.openapi.models.V1Secret
+import io.fabric8.kubernetes.api.model.Secret
+import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.KubernetesClientBuilder
 import jakarta.inject.Provider
 import jakarta.inject.Singleton
 
@@ -23,7 +25,8 @@ class K8sClient {
     private CommandExecutor commandExecutor
     private FileSystemUtils fileSystemUtils
     private Provider<Config> configProvider
-    private KubernetesApiClient kubernetesApi
+
+    private KubernetesClient client = new KubernetesClientBuilder().build()
 
     K8sClient(
             CommandExecutor commandExecutor,
@@ -33,9 +36,7 @@ class K8sClient {
         this.fileSystemUtils = fileSystemUtils
         this.commandExecutor = commandExecutor
         this.configProvider = configProvider
-        this.kubernetesApi = new KubernetesApiClient()
     }
-
 
     private String waitForOutput(String[] command, String[] additionalCommand, String logMessage, String failureMessage, int maxTries = DEFAULT_RETRIES) {
         int tryCount = 0
@@ -147,7 +148,6 @@ class K8sClient {
             }
         }
 
-
     }
 
     private boolean exists(String namespace) {
@@ -203,7 +203,11 @@ class K8sClient {
      */
     Credentials getCredentialsFromSecret(String secretname, String namespace) {
         try {
-            V1Secret secret = this.kubernetesApi.getApi().readNamespacedSecret(secretname, namespace).execute()
+            Secret secret = this.client.secrets()
+                    .inNamespace(namespace)
+                    .withName(secretname)
+                    .get()
+
             def secretData = secret.getData()
             String username = new String(Base64.getDecoder().decode(secretData['username']))
             String password = new String(Base64.getDecoder().decode(secretData['password']))
