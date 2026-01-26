@@ -656,7 +656,7 @@ class Config {
         @JsonPropertyDescription(HELM_CONFIG_DESCRIPTION)
         IngressHelmSchema helm = new IngressHelmSchema(
                 chart: 'traefik',
-                repoURL: 'https://github.com/traefik/traefik-helm-chart',
+                repoURL: 'https://traefik.github.io/charts',
                 version: '38.0.2'
         )
         static class IngressHelmSchema extends HelmConfigWithValues {

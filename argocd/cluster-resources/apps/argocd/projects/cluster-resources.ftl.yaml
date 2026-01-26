@@ -26,7 +26,6 @@ spec:
   - https://prometheus-community.github.io/helm-charts
   - https://codecentric.github.io/helm-charts
   - https://traefik.github.io/charts
-  - https://github.com/traefik/traefik-helm-chart
   - https://helm.releases.hashicorp.com
   - https://charts.external-secrets.io
   - https://charts.jetstack.io

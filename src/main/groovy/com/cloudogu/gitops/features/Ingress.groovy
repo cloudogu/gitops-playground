@@ -82,7 +82,7 @@ class Ingress extends Feature implements FeatureWithImage {
                     '.',
                     ingressVersion,
                     namespace,
-                    'traefik-helm-chart',
+                    'traefik',
                     tempValuesPath, DeploymentStrategy.RepoType.GIT)
         } else {
             deployer.deployFeature(
@@ -91,7 +91,7 @@ class Ingress extends Feature implements FeatureWithImage {
                     helmConfig.chart as String,
                     helmConfig.version as String,
                     namespace,
-                    'traefik-helm-chart',
+                    'traefik',
                     tempValuesPath
             )
         }

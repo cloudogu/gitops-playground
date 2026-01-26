@@ -1,28 +1,29 @@
+<#if config.features.ingress.helm.image?has_content>  
+<#assign imageObject = DockerImageParser.parse(config.features.ingress.helm.image)>
+image:
+  repository: ${imageObject.registryAndRepositoryAsString}
+  tag: ${imageObject.tag}
+  # Changing the image will change digest, so don't use the default.
+  # A digest can also be appended to the tag
+  digest: null
+</#if>
+
+deployment:
+  kind: Deployment
   <#assign DockerImageParser=statics['com.cloudogu.gitops.utils.DockerImageParser']>
     <#if config.registry.createImagePullSecrets == true>
   imagePullSecrets:
     - name: proxy-registry
-    
-    </#if>
-  controller:
-    <#if config.features.ingress.helm.image?has_content>
-    <#assign imageObject = DockerImageParser.parse(config.features.ingress.helm.image)>
-  image:
-    repository: ${imageObject.registryAndRepositoryAsString}
-    tag: ${imageObject.tag}
-    # Changing the image will change digest, so don't use the default.
-    # A digest can also be appended to the tag
-    digest: null
-    </#if>
-  annotations:
-    # Probably not needed anymore
+  </#if>
+
+  podAnnotations:
     ingressclass.kubernetes.io/is-default-class: "true"
-  labels:
-    - "traefik.http.middlewares.gzip.compress=true"
-  watchIngressWithoutClass: true
+  podLbels:
+    traefik.http.middlewares.gzip.compress: "true"
+
   admissionWebhooks:
     enabled: false
-  kind: Deployment
+
     <#if config.application.netpols == true>
   networkPolicy:
     enabled: true

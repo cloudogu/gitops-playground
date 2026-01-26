@@ -8,7 +8,7 @@ Kubernetes clusters:
 * Secrets Management:  [Vault and External Secrets Operator](#secrets-management-tools)
 * Notifications/Alerts: Grafana and ArgoCD can be predefined with either an external mailserver or [MailHog](https://github.com/mailhog/MailHog) for demo purposes.
 * Pipelines: Example applications using [Jenkins](#jenkins) with the [gitops-build-lib](https://github.com/cloudogu/gitops-build-lib) and [SCM-Manager](#scm-manager)
-* Ingress Controller: [ingress](https://github.com/traefik/traefik-helm-chart)
+* Ingress Controller: [ingress](https://traefik.github.io/charts
 * Certificate Management: [cert-manager](#certificate-management)
 * [Content Loader](docs/content-loader/content-loader.md): Completely customize what is pushed to Git during installation.
   This allows for adding your own end-user or IDP apps, creating repos, adding Argo CD tenants, etc.
