@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test
 class K8sJavaApiTest {
 
     //https://github.com/fabric8io/kubernetes-client?tab=readme-ov-file#mocking-kubernetes
-    KubernetesClient client //Client to set mock data
+    KubernetesClient client //Client to set mock data, gets injected by Annotation
     K8sJavaApiClient k8sJavaApiClient
     KubernetesMockServer server //Use server for non CRUD
 
