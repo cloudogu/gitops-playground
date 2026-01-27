@@ -312,11 +312,11 @@ class Config {
 
         NamespaceSchema namespaces = new NamespaceSchema()
 
-        @Option(names = ['--config-file'], description = CONFIG_FILE_DESCRIPTION)
-        String configFile = ''
+        @Option(names = ['--config-file'], description = CONFIG_FILE_DESCRIPTION, split = ',')
+        List<String> configFiles = []
 
-        @Option(names = ['--config-map'], description = CONFIG_MAP_DESCRIPTION)
-        String configMap = ''
+        @Option(names = ['--config-map'], description = CONFIG_MAP_DESCRIPTION, split = ',')
+        List<String> configMaps = []
 
         @Option(names = ['-d', '--debug'], description = DEBUG_DESCRIPTION, scope = ScopeType.INHERIT)
         Boolean debug

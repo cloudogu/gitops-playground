@@ -5,5 +5,5 @@ application:
 features:
   argocd:
     active: true
-    operator:
+    operator: true
     resourceInclusionsCluster: "https://10.43.0.1:443"

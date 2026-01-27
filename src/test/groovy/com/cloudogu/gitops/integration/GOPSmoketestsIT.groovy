@@ -4,12 +4,14 @@ import com.cloudogu.gitops.integration.features.KubenetesApiTestSetup
 import io.kubernetes.client.openapi.models.*
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty
 
 import static org.assertj.core.api.Assertions.assertThat
 
 /**
  * This test ensures all Pods and Namespaces are available, runnning at a startet GOP with - more or less - defaulöt values.
  */
+@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full|operator-full")
 class GOPSmoketestsIT extends KubenetesApiTestSetup {
 
     /**
