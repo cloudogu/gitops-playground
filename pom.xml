@@ -11,9 +11,9 @@
         <groupId>io.micronaut.platform</groupId>
         <artifactId>micronaut-parent</artifactId>
         <!-- When updating, also update and graal version in dockerfile -->
-        <!-- See "graal.version" here https://central.sonatype.com/artifact/io.micronaut.platform/micronaut-platform/4.0.1 -->
+        <!-- See "graal.version" here https://central.sonatype.com/artifact/io.micronaut.platform/micronaut-platform/4.10.7 -->
         <!-- ON NEXT GROOVY UPDATE: check if we can get rid of explicit jackson-dataformat-yaml without critical CVE -->
-        <version>4.0.1</version>
+        <version>4.10.7</version>
     </parent>
 
     <properties>
@@ -235,19 +235,19 @@
             <version>2.3.32</version>
         </dependency>
 
-        <!-- Source: https://mvnrepository.com/artifact/io.fabric8/openshift-client -->
-        <dependency>
-            <groupId>io.fabric8</groupId>
-            <artifactId>openshift-client</artifactId>
-            <version>${kubernetes.fabric8.java.version}</version>
-        </dependency>
-
         <!-- Source: https://mvnrepository.com/artifact/io.fabric8/kubernetes-server-mock -->
         <dependency>
             <groupId>io.fabric8</groupId>
             <artifactId>kubernetes-server-mock</artifactId>
             <version>${kubernetes.fabric8.java.version}</version>
             <scope>test</scope>
+        </dependency>
+
+        <!-- Source: https://mvnrepository.com/artifact/io.fabric8/kubernetes-client -->
+        <dependency>
+            <groupId>io.fabric8</groupId>
+            <artifactId>kubernetes-client</artifactId>
+            <version>7.5.2</version>
         </dependency>
 
         <dependency>
