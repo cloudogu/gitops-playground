@@ -196,25 +196,6 @@ class K8sClient {
         commandExecutor.execute(command1, APPLY_FROM_STDIN)
     }
 
-    /**
-     * Gets login credentials from a K8s secret
-     */
-    Credentials getCredentialsFromSecret(String secretname, String namespace) {
-        try {
-            Secret secret = this.client.secrets()
-                    .inNamespace(namespace)
-                    .withName(secretname)
-                    .get()
-
-            def secretData = secret.getData()
-            String username = new String(Base64.getDecoder().decode(secretData['username']))
-            String password = new String(Base64.getDecoder().decode(secretData['password']))
-            return new Credentials(username, password)
-        } catch (Exception e) {
-            throw new RuntimeException("Couldn't parse credentials from K8s secret: ${secretname} in namespace ${namespace}", e)
-        }
-    }
-
     String getArgoCDNamespacesSecret(String name, String namespace = '') {
         String[] command = ["kubectl", "get", 'secret', name, "-n", "${namespace}", '-ojsonpath={.data.namespaces}']
         String output = waitForOutput(
