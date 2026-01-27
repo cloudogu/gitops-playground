@@ -296,9 +296,9 @@
     </dependency>
 
     <dependency>
-      <groupId>com.offbytwo.jenkins</groupId>
-      <artifactId>jenkins-client</artifactId>
-      <version>0.3.8</version>
+        <groupId>com.offbytwo.jenkins</groupId>
+        <artifactId>jenkins-client</artifactId>
+        <version>0.3.8</version>
       <scope>test</scope>
     </dependency>
 
