@@ -7,11 +7,8 @@
     labels:
       app: argocd-server
     annotations:
-      #TODO
-      #traefik.ingress.kubernetes.io/router.entrypoints: web
-      #traefik.ingress.kubernetes.io/router.middlewares: <namespace>-redirect@kubernetescrd
-      #nginx.ingress.kubernetes.io/ssl-redirect: "false"
-      #nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+      traefik.ingress.kubernetes.io/router.entrypoints: web # Only reachable via HTTP
+      traefik.ingress.kubernetes.io/router.tls: "false" # Disable tls for router
   spec:
     rules:
       - host: "${argocd.host}"

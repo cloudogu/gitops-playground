@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: kube-prometheus-stack-ingress-nginx-request-handling-dashboard
+  name: kube-prometheus-stack-traefik-request-handling-dashboard
   namespace: ${config.application.namePrefix}monitoring
   labels:
     grafana_dashboard: "1"
   <#noparse>
 data:
-  ingress-nginx-request-handling-dashboard.json: |-
+  traefik-request-handling-dashboard.json: |-
     {
     "annotations": {
       "list": [
@@ -128,7 +128,7 @@ data:
               "type": "prometheus",
               "uid": "prometheus"
             },
-            "expr": "histogram_quantile(\n  0.5,\n  sum by (le)(\n    rate(\n      nginx_ingress_controller_request_duration_seconds_bucket{\n        ingress =~ \"$ingress\"\n      }[5m]\n    )\n  )\n)",
+            "expr": "histogram_quantile(\n  0.5,\n  sum by (le)(\n    rate(\n      traefik_ingress_controller_request_duration_seconds_bucket{\n        ingress =~ \"$ingress\"\n      }[5m]\n    )\n  )\n)",
             "interval": "",
             "legendFormat": ".5",
             "refId": "D"
@@ -138,7 +138,7 @@ data:
               "type": "prometheus",
               "uid": "prometheus"
             },
-            "expr": "histogram_quantile(\n  0.95,\n  sum by (le)(\n    rate(\n    nginx_ingress_controller_request_duration_seconds_bucket{\n        ingress =~ \"$ingress\"\n      }[5m]\n    )\n  )\n)",
+            "expr": "histogram_quantile(\n  0.95,\n  sum by (le)(\n    rate(\n    traefik_ingress_controller_request_duration_seconds_bucket{\n        ingress =~ \"$ingress\"\n      }[5m]\n    )\n  )\n)",
             "interval": "",
             "legendFormat": ".95",
             "refId": "B"
@@ -148,7 +148,7 @@ data:
               "type": "prometheus",
               "uid": "prometheus"
             },
-            "expr": "histogram_quantile(\n  0.99,\n  sum by (le)(\n    rate(\n      nginx_ingress_controller_request_duration_seconds_bucket{\n        ingress =~ \"$ingress\"\n      }[5m]\n    )\n  )\n)",
+            "expr": "histogram_quantile(\n  0.99,\n  sum by (le)(\n    rate(\n      traefik_ingress_controller_request_duration_seconds_bucket{\n        ingress =~ \"$ingress\"\n      }[5m]\n    )\n  )\n)",
             "interval": "",
             "legendFormat": ".99",
             "refId": "A"
@@ -245,7 +245,7 @@ data:
               "type": "prometheus",
               "uid": "prometheus"
             },
-            "expr": "histogram_quantile(\n  0.5,\n  sum by (le)(\n    rate(\n      nginx_ingress_controller_response_duration_seconds_bucket{\n        ingress =~ \"$ingress\"\n      }[5m]\n    )\n  )\n)",
+            "expr": "histogram_quantile(\n  0.5,\n  sum by (le)(\n    rate(\n      traefik_ingress_controller_response_duration_seconds_bucket{\n        ingress =~ \"$ingress\"\n      }[5m]\n    )\n  )\n)",
             "instant": false,
             "interval": "",
             "intervalFactor": 1,
@@ -257,7 +257,7 @@ data:
               "type": "prometheus",
               "uid": "prometheus"
             },
-            "expr": "histogram_quantile(\n  0.95,\n  sum by (le)(\n    rate(\n    nginx_ingress_controller_response_duration_seconds_bucket{\n        ingress =~ \"$ingress\"\n      }[5m]\n    )\n  )\n)",
+            "expr": "histogram_quantile(\n  0.95,\n  sum by (le)(\n    rate(\n    traefik_ingress_controller_response_duration_seconds_bucket{\n        ingress =~ \"$ingress\"\n      }[5m]\n    )\n  )\n)",
             "interval": "",
             "legendFormat": ".95",
             "refId": "B"
@@ -267,7 +267,7 @@ data:
               "type": "prometheus",
               "uid": "prometheus"
             },
-            "expr": "histogram_quantile(\n  0.99,\n  sum by (le)(\n    rate(\n      nginx_ingress_controller_response_duration_seconds_bucket{\n        ingress =~ \"$ingress\"\n      }[5m]\n    )\n  )\n)",
+            "expr": "histogram_quantile(\n  0.99,\n  sum by (le)(\n    rate(\n      traefik_ingress_controller_response_duration_seconds_bucket{\n        ingress =~ \"$ingress\"\n      }[5m]\n    )\n  )\n)",
             "interval": "",
             "legendFormat": ".99",
             "refId": "A"
@@ -363,7 +363,7 @@ data:
               "type": "prometheus",
               "uid": "prometheus"
             },
-            "expr": "  sum by (method, host, path)(\n    rate(\n      nginx_ingress_controller_request_duration_seconds_count{\n        ingress =~ \"$ingress\"\n      }[5m]\n    )\n  )\n",
+            "expr": "  sum by (method, host, path)(\n    rate(\n      traefik_ingress_controller_request_duration_seconds_count{\n        ingress =~ \"$ingress\"\n      }[5m]\n    )\n  )\n",
             "interval": "",
             "intervalFactor": 1,
             "legendFormat": "{{ method }} {{ host }}{{path }}",
@@ -461,7 +461,7 @@ data:
               "type": "prometheus",
               "uid": "prometheus"
             },
-            "expr": "histogram_quantile(\n  .5,\n  sum by (le, method, host, path)(\n    rate(\n      nginx_ingress_controller_response_duration_seconds_bucket{\n        ingress =~ \"$ingress\"\n      }[5m]\n    )\n  )\n)",
+            "expr": "histogram_quantile(\n  .5,\n  sum by (le, method, host, path)(\n    rate(\n      traefik_ingress_controller_response_duration_seconds_bucket{\n        ingress =~ \"$ingress\"\n      }[5m]\n    )\n  )\n)",
             "interval": "",
             "intervalFactor": 1,
             "legendFormat": "{{ method }} {{ host }}{{path }}",
@@ -559,7 +559,7 @@ data:
               "type": "prometheus",
               "uid": "prometheus"
             },
-            "expr": "sum by (method, host, path) (rate(nginx_ingress_controller_request_duration_seconds_count{\n  ingress =~ \"$ingress\",\n  status =~ \"[4-5].*\"\n}[5m])) / sum by (method, host, path) (rate(nginx_ingress_controller_request_duration_seconds_count{\n  ingress =~ \"$ingress\",\n}[5m]))",
+            "expr": "sum by (method, host, path) (rate(traefik_ingress_controller_request_duration_seconds_count{\n  ingress =~ \"$ingress\",\n  status =~ \"[4-5].*\"\n}[5m])) / sum by (method, host, path) (rate(traefik_ingress_controller_request_duration_seconds_count{\n  ingress =~ \"$ingress\",\n}[5m]))",
             "interval": "",
             "intervalFactor": 1,
             "legendFormat": "{{ method }} {{ host }}{{path }}",
@@ -657,7 +657,7 @@ data:
               "type": "prometheus",
               "uid": "prometheus"
             },
-            "expr": "sum by (method, host, path) (rate(nginx_ingress_controller_response_duration_seconds_sum{ingress =~ \"$ingress\"}[5m]))",
+            "expr": "sum by (method, host, path) (rate(traefik_ingress_controller_response_duration_seconds_sum{ingress =~ \"$ingress\"}[5m]))",
             "interval": "",
             "intervalFactor": 1,
             "legendFormat": "{{ method }} {{ host }}{{path }}",
@@ -754,7 +754,7 @@ data:
               "type": "prometheus",
               "uid": "prometheus"
             },
-            "expr": "  sum (\n    rate(\n      nginx_ingress_controller_request_duration_seconds_count{\n        ingress =~ \"$ingress\",\n        status =~\"[4-5].*\",\n      }[5m]\n    )\n  ) by(method, host, path, status)\n",
+            "expr": "  sum (\n    rate(\n      traefik_ingress_controller_request_duration_seconds_count{\n        ingress =~ \"$ingress\",\n        status =~\"[4-5].*\",\n      }[5m]\n    )\n  ) by(method, host, path, status)\n",
             "interval": "",
             "intervalFactor": 1,
             "legendFormat": "{{ method }} {{ host }}{{path }} {{ status }}",
@@ -851,7 +851,7 @@ data:
               "type": "prometheus",
               "uid": "prometheus"
             },
-            "expr": "sum (\n  rate (\n      nginx_ingress_controller_response_size_sum {\n        ingress =~ \"$ingress\",\n      }[5m]\n  )\n)  by (method, host, path) / sum (\n  rate(\n      nginx_ingress_controller_response_size_count {\n        ingress =~ \"$ingress\",\n      }[5m]\n  )\n) by (method, host, path)\n",
+            "expr": "sum (\n  rate (\n      traefik_ingress_controller_response_size_sum {\n        ingress =~ \"$ingress\",\n      }[5m]\n  )\n)  by (method, host, path) / sum (\n  rate(\n      traefik_ingress_controller_response_size_count {\n        ingress =~ \"$ingress\",\n      }[5m]\n  )\n) by (method, host, path)\n",
             "hide": false,
             "instant": false,
             "interval": "",
@@ -864,7 +864,7 @@ data:
               "type": "prometheus",
               "uid": "prometheus"
             },
-            "expr": "    sum (rate(nginx_ingress_controller_response_size_bucket{\n        ingress =~ \"$ingress\",\n    }[5m])) by (le)\n",
+            "expr": "    sum (rate(traefik_ingress_controller_response_size_bucket{\n        ingress =~ \"$ingress\",\n    }[5m])) by (le)\n",
             "hide": true,
             "legendFormat": "{{le}}",
             "refId": "A"
@@ -960,7 +960,7 @@ data:
               "type": "prometheus",
               "uid": "prometheus"
             },
-            "expr": "sum (\n  rate(\n      nginx_ingress_controller_ingress_upstream_latency_seconds_sum {\n        ingress =~ \"$ingress\",\n      }[5m]\n)) / sum (\n  rate(\n      nginx_ingress_controller_ingress_upstream_latency_seconds_count {\n        ingress =~ \"$ingress\",\n      }[5m]\n  )\n)\n",
+            "expr": "sum (\n  rate(\n      traefik_ingress_controller_ingress_upstream_latency_seconds_sum {\n        ingress =~ \"$ingress\",\n      }[5m]\n)) / sum (\n  rate(\n      traefik_ingress_controller_ingress_upstream_latency_seconds_count {\n        ingress =~ \"$ingress\",\n      }[5m]\n  )\n)\n",
             "hide": false,
             "instant": false,
             "interval": "",
@@ -976,7 +976,7 @@ data:
     "refresh": "30s",
     "schemaVersion": 39,
     "tags": [
-      "nginx"
+      "traefik"
     ],
     "templating": {
       "list": [
@@ -1009,7 +1009,7 @@ data:
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "definition": "label_values(nginx_ingress_controller_requests, ingress) ",
+          "definition": "label_values(traefik_ingress_controller_requests, ingress) ",
           "hide": 0,
           "includeAll": true,
           "label": "Service Ingress",
@@ -1017,7 +1017,7 @@ data:
           "name": "ingress",
           "options": [],
           "query": {
-            "query": "label_values(nginx_ingress_controller_requests, ingress) ",
+            "query": "label_values(traefik_ingress_controller_requests, ingress) ",
             "refId": "Prometheus-ingress-Variable-Query"
           },
           "refresh": 1,

@@ -52,14 +52,13 @@ class IngressTest {
 
         /* Assert one default value */
         def actual = parseActualYaml()
-        assertThat(actual['controller']['replicaCount']).isEqualTo(2)
+        assertThat(actual['deployment']['replicaCount']).isEqualTo(2)
 
         verify(deploymentStrategy).deployFeature(config.features.ingress.helm.repoURL, 'traefik',
                 config.features.ingress.helm.chart, config.features.ingress.helm.version, 'foo-traefik',
                 'traefik', temporaryYamlFile)
-        assertThat(parseActualYaml()['controller']['resources']).isNull()
-        assertThat(parseActualYaml()['controller']['metrics']).isNull()
-        assertThat(parseActualYaml()['controller']['networkPolicy']).isNull()
+        assertThat(parseActualYaml()['deployment']['metrics']).isNull()
+        assertThat(parseActualYaml()['deployment']['networkPolicy']).isNull()
         assertThat(parseActualYaml()).doesNotContainKey('imagePullSecrets')
 
     }
@@ -70,7 +69,7 @@ class IngressTest {
 
         createIngress().install()
 
-        assertThat(parseActualYaml()['controller']['resources'] as Map).containsKeys('limits', 'requests')
+        assertThat(parseActualYaml()['deployment']['resources'] as Map).containsKeys('limits', 'requests')
     }
 
     @Test
@@ -110,7 +109,7 @@ class IngressTest {
         Path rootChartsFolder = Files.createTempDirectory(this.class.getSimpleName())
         config.application.localHelmChartFolder = rootChartsFolder.toString()
 
-        Path SourceChart = rootChartsFolder.resolve('ingress-traefik')
+        Path SourceChart = rootChartsFolder.resolve('traefik')
         Files.createDirectories(SourceChart)
 
         Map ChartYaml = [version: '1.2.3']
@@ -120,14 +119,14 @@ class IngressTest {
 
         def helmConfig = ArgumentCaptor.forClass(Config.HelmConfig)
         verify(airGappedUtils).mirrorHelmRepoToGit(helmConfig.capture())
-        assertThat(helmConfig.value.chart).isEqualTo('ingress-traefik')
+        assertThat(helmConfig.value.chart).isEqualTo('traefik')
 
-        assertThat(helmConfig.value.repoURL).isEqualTo('https://traefik.github.io/charts/')
+        assertThat(helmConfig.value.repoURL).isEqualTo('https://traefik.github.io/charts')
         assertThat(helmConfig.value.version).isEqualTo('38.0.2')
         verify(deploymentStrategy).deployFeature(
                 'http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
-                'ingress-traefik', '.', '1.2.3', 'foo-ingress-traefik',
-                'ingress-traefik', temporaryYamlFile, DeploymentStrategy.RepoType.GIT)
+                'traefik', '.', '1.2.3', 'foo-traefik',
+                'traefik', temporaryYamlFile, DeploymentStrategy.RepoType.GIT)
     }
 
     @Test
@@ -139,9 +138,9 @@ class IngressTest {
 
         def actual = parseActualYaml()
 
-        assertThat(actual['controller']['metrics']['enabled']).isEqualTo(true)
-        assertThat(actual['controller']['metrics']['serviceMonitor']['enabled']).isEqualTo(true)
-        assertThat(actual['controller']['metrics']['serviceMonitor']['namespace']).isEqualTo("heliospheremonitoring")
+        assertThat(actual['deployment']['metrics']['enabled']).isEqualTo(true)
+        assertThat(actual['deployment']['metrics']['serviceMonitor']['enabled']).isEqualTo(true)
+        assertThat(actual['deployment']['metrics']['serviceMonitor']['namespace']).isEqualTo("heliospheremonitoring")
     }
 
     @Test
@@ -152,7 +151,7 @@ class IngressTest {
 
         def actual = parseActualYaml()
 
-        assertThat(actual['controller']['networkPolicy']['enabled']).isEqualTo(true)
+        assertThat(actual['deployment']['networkPolicy']['enabled']).isEqualTo(true)
     }
 
     @Test
@@ -165,9 +164,10 @@ class IngressTest {
         createIngress().install()
 
         k8sClient.commandExecutorForTest.assertExecuted(
-                'kubectl create secret docker-registry proxy-registry -n foo-ingress-traefik' +
+                'kubectl create secret docker-registry proxy-registry -n foo-traefik' +
                         ' --docker-server proxy-url --docker-username proxy-user --docker-password proxy-pw')
-        assertThat(parseActualYaml()['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
+
+        assertThat(parseActualYaml()['deployment']['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
     }
 
     @Test
@@ -177,14 +177,14 @@ class IngressTest {
         createIngress().install()
 
         def yaml = parseActualYaml()
-        assertThat(yaml['controller']['image']['repository']).isEqualTo('localhost/abc')
-        assertThat(yaml['controller']['image']['tag']).isEqualTo('v42')
-        assertThat(yaml['controller']['image']['digest']).isNull()
+        assertThat(yaml['image']['repository']).isEqualTo('localhost/abc')
+        assertThat(yaml['image']['tag']).isEqualTo('v42')
+        assertThat(yaml['image']['digest']).isNull()
     }
 
     @Test
     void 'get namespace from feature'() {
-        assertThat(createIngress().getActiveNamespaceFromFeature()).isEqualTo('foo-ingress-traefik')
+        assertThat(createIngress().getActiveNamespaceFromFeature()).isEqualTo('foo-traefik')
         config.features.ingress.active = false
         assertThat(createIngress().getActiveNamespaceFromFeature()).isEqualTo(null)
     }

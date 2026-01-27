@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: kube-prometheus-stack-ingress-nginx-dashboard
+  name: kube-prometheus-stack-traefik-dashboard
   namespace: ${config.application.namePrefix}monitoring
   labels:
     grafana_dashboard: "1"
 <#noparse>
 data:
-  ingress-nginx-dashboard.json: |-
+  traefik-dashboard.json: |-
     {
     "annotations": {
       "list": [
@@ -29,7 +29,7 @@ data:
             "uid": "prometheus"
           },
           "enable": true,
-          "expr": "sum(changes(nginx_ingress_controller_config_last_reload_successful_timestamp_seconds{instance!=\"unknown\",controller_class=~\"$controller_class\",namespace=~\"$namespace\"}[30s])) by (controller_class)",
+          "expr": "sum(changes(traefik_controller_config_last_reload_successful_timestamp_seconds{instance!=\"unknown\",controller_class=~\"$controller_class\",namespace=~\"$namespace\"}[30s])) by (controller_class)",
           "hide": false,
           "iconColor": "rgba(255, 96, 96, 1)",
           "limit": 100,
@@ -113,7 +113,7 @@ data:
               "type": "prometheus",
               "uid": "prometheus"
             },
-            "expr": "round(sum(irate(nginx_ingress_controller_requests{controller_pod=~\"$controller\",controller_class=~\"$controller_class\",namespace=~\"$namespace\"}[2m])), 0.001)",
+            "expr": "round(sum(irate(traefik_controller_requests{controller_pod=~\"$controller\",controller_class=~\"$controller_class\",namespace=~\"$namespace\"}[2m])), 0.001)",
             "format": "time_series",
             "intervalFactor": 1,
             "refId": "A",
@@ -193,7 +193,7 @@ data:
               "type": "prometheus",
               "uid": "prometheus"
             },
-            "expr": "sum(avg_over_time(nginx_ingress_controller_nginx_process_connections{controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\",state=\"active\"}[2m]))",
+            "expr": "sum(avg_over_time(traefik_controller_traefik_process_connections{controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\",state=\"active\"}[2m]))",
             "format": "time_series",
             "instant": false,
             "intervalFactor": 1,
@@ -278,7 +278,7 @@ data:
               "type": "prometheus",
               "uid": "prometheus"
             },
-            "expr": "sum(rate(nginx_ingress_controller_requests{controller_pod=~\"$controller\",controller_class=~\"$controller_class\",namespace=~\"$namespace\",status!~\"[4-5].*\"}[2m])) / sum(rate(nginx_ingress_controller_requests{controller_pod=~\"$controller\",controller_class=~\"$controller_class\",namespace=~\"$namespace\"}[2m]))",
+            "expr": "sum(rate(traefik_controller_requests{controller_pod=~\"$controller\",controller_class=~\"$controller_class\",namespace=~\"$namespace\",status!~\"[4-5].*\"}[2m])) / sum(rate(traefik_controller_requests{controller_pod=~\"$controller\",controller_class=~\"$controller_class\",namespace=~\"$namespace\"}[2m]))",
             "format": "time_series",
             "intervalFactor": 1,
             "refId": "A",
@@ -359,7 +359,7 @@ data:
               "type": "prometheus",
               "uid": "prometheus"
             },
-            "expr": "avg(irate(nginx_ingress_controller_success{controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\"}[1m])) * 60",
+            "expr": "avg(irate(traefik_controller_success{controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\"}[1m])) * 60",
             "format": "time_series",
             "instant": false,
             "intervalFactor": 1,
@@ -441,7 +441,7 @@ data:
               "type": "prometheus",
               "uid": "prometheus"
             },
-            "expr": "count(nginx_ingress_controller_config_last_reload_successful{controller_pod=~\"$controller\",controller_namespace=~\"$namespace\"} == 0)",
+            "expr": "count(traefik_controller_config_last_reload_successful{controller_pod=~\"$controller\",controller_namespace=~\"$namespace\"} == 0)",
             "format": "time_series",
             "instant": true,
             "intervalFactor": 1,
@@ -562,7 +562,7 @@ data:
               "type": "prometheus",
               "uid": "prometheus"
             },
-            "expr": "round(sum(irate(nginx_ingress_controller_requests{controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\",exported_namespace=~\"$exported_namespace\",ingress=~\"$ingress\"}[2m])) by (ingress), 0.001)",
+            "expr": "round(sum(irate(traefik_controller_requests{controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\",exported_namespace=~\"$exported_namespace\",ingress=~\"$ingress\"}[2m])) by (ingress), 0.001)",
             "format": "time_series",
             "hide": false,
             "instant": false,
@@ -731,7 +731,7 @@ data:
               "type": "prometheus",
               "uid": "prometheus"
             },
-            "expr": "sum(rate(nginx_ingress_controller_requests{controller_pod=~\"$controller\",controller_class=~\"$controller_class\",namespace=~\"$namespace\",exported_namespace=~\"$exported_namespace\",ingress=~\"$ingress\",status!~\"[4-5].*\"}[2m])) by (ingress) / sum(rate(nginx_ingress_controller_requests{controller_pod=~\"$controller\",controller_class=~\"$controller_class\",namespace=~\"$namespace\",exported_namespace=~\"$exported_namespace\",ingress=~\"$ingress\"}[2m])) by (ingress)",
+            "expr": "sum(rate(traefik_controller_requests{controller_pod=~\"$controller\",controller_class=~\"$controller_class\",namespace=~\"$namespace\",exported_namespace=~\"$exported_namespace\",ingress=~\"$ingress\",status!~\"[4-5].*\"}[2m])) by (ingress) / sum(rate(traefik_controller_requests{controller_pod=~\"$controller\",controller_class=~\"$controller_class\",namespace=~\"$namespace\",exported_namespace=~\"$exported_namespace\",ingress=~\"$ingress\"}[2m])) by (ingress)",
             "format": "time_series",
             "instant": false,
             "interval": "10s",
@@ -835,7 +835,7 @@ data:
               "type": "prometheus",
               "uid": "prometheus"
             },
-            "expr": "sum (irate (nginx_ingress_controller_request_size_sum{controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\"}[2m]))",
+            "expr": "sum (irate (traefik_controller_request_size_sum{controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\"}[2m]))",
             "format": "time_series",
             "instant": false,
             "interval": "10s",
@@ -850,7 +850,7 @@ data:
               "type": "prometheus",
               "uid": "prometheus"
             },
-            "expr": "- sum (irate (nginx_ingress_controller_response_size_sum{controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\"}[2m]))",
+            "expr": "- sum (irate (traefik_controller_response_size_sum{controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\"}[2m]))",
             "format": "time_series",
             "hide": false,
             "interval": "10s",
@@ -1000,12 +1000,12 @@ data:
               "type": "prometheus",
               "uid": "prometheus"
             },
-            "expr": "avg(nginx_ingress_controller_nginx_process_resident_memory_bytes{controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\"}) ",
+            "expr": "avg(traefik_controller_traefik_process_resident_memory_bytes{controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\"}) ",
             "format": "time_series",
             "instant": false,
             "interval": "10s",
             "intervalFactor": 1,
-            "legendFormat": "nginx",
+            "legendFormat": "traefik",
             "metric": "container_memory_usage:sort_desc",
             "refId": "A",
             "step": 10
@@ -1099,11 +1099,11 @@ data:
               "type": "prometheus",
               "uid": "prometheus"
             },
-            "expr": "avg (rate (nginx_ingress_controller_nginx_process_cpu_seconds_total{controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\"}[2m])) ",
+            "expr": "avg (rate (traefik_controller_traefik_process_cpu_seconds_total{controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\"}[2m])) ",
             "format": "time_series",
             "interval": "10s",
             "intervalFactor": 1,
-            "legendFormat": "nginx",
+            "legendFormat": "traefik",
             "metric": "container_cpu",
             "refId": "A",
             "step": 10
@@ -1340,7 +1340,7 @@ data:
               "type": "prometheus",
               "uid": "prometheus"
             },
-            "expr": "histogram_quantile(0.50, sum(rate(nginx_ingress_controller_request_duration_seconds_bucket{ingress!=\"\",controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\",ingress=~\"$ingress\",exported_namespace=~\"$exported_namespace\"}[2m])) by (le, ingress))",
+            "expr": "histogram_quantile(0.50, sum(rate(traefik_controller_request_duration_seconds_bucket{ingress!=\"\",controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\",ingress=~\"$ingress\",exported_namespace=~\"$exported_namespace\"}[2m])) by (le, ingress))",
             "format": "table",
             "hide": false,
             "instant": true,
@@ -1353,7 +1353,7 @@ data:
               "type": "prometheus",
               "uid": "prometheus"
             },
-            "expr": "histogram_quantile(0.90, sum(rate(nginx_ingress_controller_request_duration_seconds_bucket{ingress!=\"\",controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\",ingress=~\"$ingress\",exported_namespace=~\"$exported_namespace\"}[2m])) by (le, ingress))",
+            "expr": "histogram_quantile(0.90, sum(rate(traefik_controller_request_duration_seconds_bucket{ingress!=\"\",controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\",ingress=~\"$ingress\",exported_namespace=~\"$exported_namespace\"}[2m])) by (le, ingress))",
             "format": "table",
             "hide": false,
             "instant": true,
@@ -1366,7 +1366,7 @@ data:
               "type": "prometheus",
               "uid": "prometheus"
             },
-            "expr": "histogram_quantile(0.99, sum(rate(nginx_ingress_controller_request_duration_seconds_bucket{ingress!=\"\",controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\",ingress=~\"$ingress\",exported_namespace=~\"$exported_namespace\"}[2m])) by (le, ingress))",
+            "expr": "histogram_quantile(0.99, sum(rate(traefik_controller_request_duration_seconds_bucket{ingress!=\"\",controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\",ingress=~\"$ingress\",exported_namespace=~\"$exported_namespace\"}[2m])) by (le, ingress))",
             "format": "table",
             "hide": false,
             "instant": true,
@@ -1379,7 +1379,7 @@ data:
               "type": "prometheus",
               "uid": "prometheus"
             },
-            "expr": "sum(irate(nginx_ingress_controller_request_size_sum{ingress!=\"\",controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\",ingress=~\"$ingress\",exported_namespace=~\"$exported_namespace\"}[2m])) by (ingress)",
+            "expr": "sum(irate(traefik_controller_request_size_sum{ingress!=\"\",controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\",ingress=~\"$ingress\",exported_namespace=~\"$exported_namespace\"}[2m])) by (ingress)",
             "format": "table",
             "hide": false,
             "instant": true,
@@ -1393,7 +1393,7 @@ data:
               "type": "prometheus",
               "uid": "prometheus"
             },
-            "expr": "sum(irate(nginx_ingress_controller_response_size_sum{ingress!=\"\",controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\",ingress=~\"$ingress\",exported_namespace=~\"$exported_namespace\"}[2m])) by (ingress)",
+            "expr": "sum(irate(traefik_controller_response_size_sum{ingress!=\"\",controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\",ingress=~\"$ingress\",exported_namespace=~\"$exported_namespace\"}[2m])) by (ingress)",
             "format": "table",
             "instant": true,
             "intervalFactor": 1,
@@ -1501,7 +1501,7 @@ data:
               "uid": "prometheus"
             },
             "exemplar": true,
-            "expr": "histogram_quantile(0.80, sum(rate(nginx_ingress_controller_request_duration_seconds_bucket{ingress!=\"\",controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\",ingress=~\"$ingress\",exported_namespace=~\"$exported_namespace\"}[2m])) by (le))",
+            "expr": "histogram_quantile(0.80, sum(rate(traefik_controller_request_duration_seconds_bucket{ingress!=\"\",controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\",ingress=~\"$ingress\",exported_namespace=~\"$exported_namespace\"}[2m])) by (le))",
             "format": "time_series",
             "hide": false,
             "instant": false,
@@ -1516,7 +1516,7 @@ data:
               "uid": "prometheus"
             },
             "exemplar": true,
-            "expr": "histogram_quantile(0.90, sum(rate(nginx_ingress_controller_request_duration_seconds_bucket{ingress!=\"\",controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\",ingress=~\"$ingress\",exported_namespace=~\"$exported_namespace\"}[2m])) by (le))",
+            "expr": "histogram_quantile(0.90, sum(rate(traefik_controller_request_duration_seconds_bucket{ingress!=\"\",controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\",ingress=~\"$ingress\",exported_namespace=~\"$exported_namespace\"}[2m])) by (le))",
             "format": "time_series",
             "hide": false,
             "instant": false,
@@ -1532,7 +1532,7 @@ data:
             },
             "editorMode": "code",
             "exemplar": true,
-            "expr": "histogram_quantile(0.99, sum(rate(nginx_ingress_controller_request_duration_seconds_bucket{ingress!=\"\",controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\",ingress=~\"$ingress\",exported_namespace=~\"$exported_namespace\"}[2m])) by (le))",
+            "expr": "histogram_quantile(0.99, sum(rate(traefik_controller_request_duration_seconds_bucket{ingress!=\"\",controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\",ingress=~\"$ingress\",exported_namespace=~\"$exported_namespace\"}[2m])) by (le))",
             "format": "time_series",
             "hide": false,
             "instant": false,
@@ -1635,7 +1635,7 @@ data:
               "uid": "prometheus"
             },
             "exemplar": true,
-            "expr": "sum(increase(nginx_ingress_controller_request_duration_seconds_bucket{ingress!=\"\",controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\",ingress=~\"$ingress\",exported_namespace=~\"$exported_namespace\"}[2m])) by (le)",
+            "expr": "sum(increase(traefik_controller_request_duration_seconds_bucket{ingress!=\"\",controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\",ingress=~\"$ingress\",exported_namespace=~\"$exported_namespace\"}[2m])) by (le)",
             "format": "heatmap",
             "interval": "",
             "legendFormat": "{{le}}",
@@ -1777,7 +1777,7 @@ data:
               "type": "prometheus",
               "uid": "prometheus"
             },
-            "expr": "avg(nginx_ingress_controller_ssl_expire_time_seconds{kubernetes_pod_name=~\"$controller\",namespace=~\"$namespace\",ingress=~\"$ingress\"}) by (host) - time()",
+            "expr": "avg(traefik_controller_ssl_expire_time_seconds{kubernetes_pod_name=~\"$controller\",namespace=~\"$namespace\",ingress=~\"$ingress\"}) by (host) - time()",
             "format": "time_series",
             "intervalFactor": 1,
             "legendFormat": "{{ host }}",
@@ -1805,7 +1805,7 @@ data:
     "refresh": "5s",
     "schemaVersion": 39,
     "tags": [
-      "nginx"
+      "traefik"
     ],
     "templating": {
       "list": [
@@ -1846,7 +1846,7 @@ data:
           "multi": false,
           "name": "namespace",
           "options": [],
-          "query": "label_values(nginx_ingress_controller_config_hash, controller_namespace)",
+          "query": "label_values(traefik_controller_config_hash, controller_namespace)",
           "refresh": 1,
           "regex": "",
           "skipUrlSync": false,
@@ -1874,7 +1874,7 @@ data:
           "multi": false,
           "name": "controller_class",
           "options": [],
-          "query": "label_values(nginx_ingress_controller_config_hash{namespace=~\"$namespace\"}, controller_class) ",
+          "query": "label_values(traefik_controller_config_hash{namespace=~\"$namespace\"}, controller_class) ",
           "refresh": 1,
           "regex": "",
           "skipUrlSync": false,
@@ -1902,7 +1902,7 @@ data:
           "multi": false,
           "name": "controller",
           "options": [],
-          "query": "label_values(nginx_ingress_controller_config_hash{namespace=~\"$namespace\",controller_class=~\"$controller_class\"}, controller_pod) ",
+          "query": "label_values(traefik_controller_config_hash{namespace=~\"$namespace\",controller_class=~\"$controller_class\"}, controller_pod) ",
           "refresh": 1,
           "regex": "",
           "skipUrlSync": false,
@@ -1930,7 +1930,7 @@ data:
           "multi": false,
           "name": "exported_namespace",
           "options": [],
-          "query": "label_values(nginx_ingress_controller_requests{namespace=~\"$namespace\",controller_class=~\"$controller_class\",controller_pod=~\"$controller\"}, exported_namespace) ",
+          "query": "label_values(traefik_controller_requests{namespace=~\"$namespace\",controller_class=~\"$controller_class\",controller_pod=~\"$controller\"}, exported_namespace) ",
           "refresh": 1,
           "regex": "",
           "skipUrlSync": false,
@@ -1958,7 +1958,7 @@ data:
           "multi": false,
           "name": "ingress",
           "options": [],
-          "query": "label_values(nginx_ingress_controller_requests{namespace=~\"$namespace\",controller_class=~\"$controller_class\",controller_pod=~\"$controller\",exported_namespace=~\"$exported_namespace\"}, ingress) ",
+          "query": "label_values(traefik_controller_requests{namespace=~\"$namespace\",controller_class=~\"$controller_class\",controller_pod=~\"$controller\",exported_namespace=~\"$exported_namespace\"}, ingress) ",
           "refresh": 1,
           "regex": "",
           "skipUrlSync": false,
@@ -2001,7 +2001,7 @@ data:
     },
     "timezone": "browser",
     "title": "NGINX Ingress controller",
-    "uid": "nginx",
+    "uid": "traefik",
     "version": 1,
     "weekStart": ""
     }

@@ -235,9 +235,8 @@ class ArgoCD extends Feature {
         if (config.features.monitoring.active) {
             String monitoringRootDashboard = "${repoLayout.monitoringDir()}/misc/dashboard"
             if (!config.features.ingress.active) {
-// TODO: Need for the dashboard for traefik
-//                FileSystemUtils.deleteFile monitoringRootDashboard + '/ingress-nginx-dashboard.yaml'
-//                FileSystemUtils.deleteFile monitoringRootDashboard + '/ingress-nginx-dashboard-requests-handling.yaml'
+                FileSystemUtils.deleteFile monitoringRootDashboard + '/traefik-dashboard.yaml'
+                FileSystemUtils.deleteFile monitoringRootDashboard + '/traefik-dashboard-requests-handling.yaml'
             }
             if (!config.jenkins.active) {
                 FileSystemUtils.deleteFile monitoringRootDashboard + '/jenkins-dashboard.yaml'

@@ -791,7 +791,7 @@ class ArgoCDTest {
         config.application.namespaces.dedicatedNamespaces = new LinkedHashSet<String>([
                 "monitoring",
                 "secrets",
-                "ingress-traefik",
+                "traefik",
                 "example-apps-staging",
                 "example-apps-production"
         ])
