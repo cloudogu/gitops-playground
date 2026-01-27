@@ -194,7 +194,6 @@ class ArgoCDTest {
                 .isIn('apps/argocd/argocd', 'apps/argocd/argocd/')
     }
 
-
     @Test
     void 'Installs argoCD for remote and external Scmm'() {
         config.application.remote = true
@@ -221,6 +220,19 @@ class ArgoCDTest {
         assertThat(valuesYaml['argo-cd']['notifications']['argocdUrl']).isEqualTo('https://argo.cd')
         assertThat(valuesYaml['argo-cd']['server']['ingress']['enabled']).isEqualTo(true)
         assertThat(valuesYaml['argo-cd']['server']['ingress']['hostname']).isEqualTo('argo.cd')
+    }
+
+    @Test
+    void 'Installs Argo CD with custom values'() {
+        config.features.argocd.values = ['argo-cd': [key: 'value']]
+
+        def argocd = createArgoCD()
+        argocd.install()
+        repoLayout = argocd.repoLayout()
+
+        this.actualHelmValuesFile = "${repoLayout.helmDir()}/values.yaml"
+        def valuesYaml = parseActualYaml(actualHelmValuesFile)
+        assertThat(valuesYaml['argo-cd']['key']).isEqualTo('value')
     }
 
     @Test
@@ -1013,6 +1025,18 @@ class ArgoCDTest {
 
         def yaml = parseActualYaml(Path.of(repoLayout.operatorConfigFile()).toString())
         assertThat(yaml['spec']['server']['insecure']).isEqualTo(true)
+    }
+
+    @Test
+    void 'Operator config sets custom values'() {
+        config.features.argocd.values = [key: 'value']
+        config.features.argocd.values = [ spec: [ key: 'value']]
+        def argocd = setupOperatorTest()
+        argocd.install()
+        repoLayout = argocd.repoLayout()
+
+        def yaml = parseActualYaml(Path.of(repoLayout.operatorConfigFile()).toString())
+        assertThat(yaml['spec']['key']).isEqualTo('value')
     }
 
     @Test
