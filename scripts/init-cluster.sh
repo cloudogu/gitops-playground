@@ -187,7 +187,7 @@ function printParameters() {
   echo "    | --bind-localhost=BOOLEAN   >> Bind the k3d container to host network. Exposes all k8s nodePorts to localhost. Defaults to true."
   echo "    | --bind-ingress-port=INT   >> Bind the ingress controller to this localhost port. Defaults to 80. Set to - to disable."
   echo "    | --bind-registry-port=INT   >> Specify a custom port for the container registry to bind to localhost port. Only use this when port 30000 is blocked and --bind-localhost=true. Defaults to 30000 (default used by the playground)."
-  echo "    | --bind-portBindings=STRING   >> A comma separated list of additional port bindings like 443:443,9090:9090. Ignored when --bind-localhost."
+  echo "    | --bind-ports=STRING   >> A comma separated list of additional port bindings like 443:443,9090:9090. Ignored when --bind-localhost."
   
   echo "    | --docker-io-registry-mirror=STRING   >> the hostname of a registry that mirrors DockerHub. Useful when encountering rate limits"
   echo
