@@ -247,7 +247,7 @@ docker run --rm -t -u $(id -u) \
  -v "$HOME/.config/k3d/kubeconfig-gitops-playground$INSTANCE.yaml:/home/.kube/config" \
     --net=host \
     ghcr.io/cloudogu/gitops-playground --yes --internal-registry-port="3000$INSTANCE" -x \
-      --base-url="http://localhost:808$INSTANCE" --argocd --ingress-nginx
+      --base-url="http://localhost:808$INSTANCE" --argocd --ingress
 
 echo "Once Argo CD has deployed the nginx-ingress. you cn reach your instance at http://scmm.localhost:808$INSTANCE for example"
 ```
@@ -291,7 +291,7 @@ repository so need to be upgraded regularly.
   * ArgoCD Helm Chart
   * Grafana + Prometheus Helm Charts
   * Vault + ExternalSerets Operator Helm Charts
-  * Ingress-nginx Helm Charts
+  * Ingress Helm Charts
   * Cert-Manager
   * Mailhog
 * Applications
@@ -396,7 +396,7 @@ docker run --rm -t  -u $(id -u) \
     -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     -v $(pwd)/gitops-playground.yaml:/config/gitops-playground.yaml \
     --net=host \
-   gitops-playground:dev --yes --argocd --base-url=http://localhost  --ingress-nginx --mail --monitoring --vault=dev --url-separator-hyphen
+   gitops-playground:dev --yes --argocd --base-url=http://localhost  --ingress --mail --monitoring --vault=dev --url-separator-hyphen
 
 # Create localhost entries with hyphens
 echo 127.0.0.1 $(kubectl get ingress -A  -o jsonpath='{.items[*].spec.rules[*].host}') | sudo tee -a /etc/hosts
@@ -632,7 +632,7 @@ docker run --rm -t -u $(id -u) \
     --external-secrets-image=localhost:30000/proxy/external-secrets:latest \
     --external-secrets-certcontroller-image=localhost:30000/proxy/external-secrets:latest \
     --external-secrets-webhook-image=localhost:30000/proxy/external-secrets:latest \
-    --ingress-nginx-image=localhost:30000/proxy/ingress-nginx:latest \
+    --ingress-image=localhost:30000/proxy/ingress-nginx:latest \
     --cert-manager-image=localhost:30000/proxy/cert-manager-controller:latest \
     --cert-manager-webhook-image=localhost:30000/proxy/cert-manager-webhook:latest \
     --cert-manager-cainjector-image=localhost:30000/proxy/cert-manager-cainjector:latest \

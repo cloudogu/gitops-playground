@@ -333,12 +333,12 @@
           "additionalProperties" : false,
           "description" : "Config parameters for the Cert Manager"
         },
-        "ingressNginx" : {
+        "ingress" : {
           "type" : [ "object", "null" ],
           "properties" : {
             "active" : {
               "type" : [ "boolean", "null" ],
-              "description" : "Sets and enables Nginx Ingress Controller"
+              "description" : "Sets and enables Ingress Controller"
             },
             "helm" : {
               "type" : [ "object", "null" ],
@@ -369,7 +369,7 @@
             }
           },
           "additionalProperties" : false,
-          "description" : "Config parameters for the NGINX Ingress Controller"
+          "description" : "Config parameters for the Ingress Controller"
         },
         "mail" : {
           "type" : [ "object", "null" ],

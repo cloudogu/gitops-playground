@@ -10,7 +10,7 @@ features:
     active: true
     operator: true
     resourceInclusionsCluster: "https://10.43.0.1:443"
-  ingressNginx:
+  ingress:
     active: true
   monitoring:
     active: true

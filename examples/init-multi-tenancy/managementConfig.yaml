@@ -18,7 +18,7 @@ features:
     operator: false
     env: []
     resourceInclusionsCluster: "https://10.43.0.1:443"
-  ingressNginx:
+  ingress:
     active: true
 content:
   repos:

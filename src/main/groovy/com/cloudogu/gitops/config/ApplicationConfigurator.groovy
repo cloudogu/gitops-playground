@@ -48,7 +48,7 @@ class ApplicationConfigurator {
             log.warn("Enabled both external Mailserver and MailHog! Implicitly deactivating MailHog")
         }
 
-        if (newConfig.features.ingressNginx.active && !newConfig.application.baseUrl) {
+        if (newConfig.features.ingress.active && !newConfig.application.baseUrl) {
             log.warn("Ingress-controller is activated without baseUrl parameter. Services will not be accessible by hostnames. To avoid this use baseUrl with ingress. ")
         }
         if (newConfig.content.examples) {
@@ -229,11 +229,11 @@ class ApplicationConfigurator {
                 newConfig.multiTenant.scmManager.url = urlString
             }
 
-            //Disabling IngressNginx in DedicatedInstances Mode for now.
+            //Disabling Ingress in DedicatedInstances Mode for now.
             //Ingress has to be handled by Cluster, not by this tenant.
             //Ingress has to be handled manually for local dev.
             //See /scripts/local/ for local dev.
-            newConfig.features.ingressNginx.active = false
+            newConfig.features.ingress.active = false
         }
     }
 

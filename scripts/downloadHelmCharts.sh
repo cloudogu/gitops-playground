@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #execute from root folder
 set -o errexit -o nounset -o pipefail
-charts=( 'kube-prometheus-stack' 'external-secrets' 'vault' 'mailhog' 'ingress-nginx' 'cert-manager')
+charts=( 'kube-prometheus-stack' 'external-secrets' 'vault' 'mailhog' 'traefik' 'cert-manager')
 CONFIG="${1:-src/main/groovy/com/cloudogu/gitops/config/Config.groovy}"
 
 tmpRepoFile="$(mktemp)"
