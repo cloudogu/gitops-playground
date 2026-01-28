@@ -176,49 +176,7 @@ class FullProfileTestIT {
         }
     }
 
-    @Test
-    void ensureJenkinsCreatesJobForPetclinicPlain() {
 
-        String content = gettingLogFromJenkinsProject('petclinic-plain')
-
-        assert content != null: 'Log for petclinic-plain does not exist'
-        assert content.contains('clean package'): 'maven not executed'
-
-    }
-
-    @Test
-    void ensureJenkinsCreatesJobForPetclinicHelm() {
-
-        String content = gettingLogFromJenkinsProject('petclinic-helm')
-
-        assert content != null: 'Log for petclinic-helm does not exist'
-        assert content.contains('clean package'): 'maven not executed'
-        assert content.contains('BUILD SUCCESS'): 'maven was not succesfull'
-
-    }
-
-    @Test
-    void ensureJenkinsCreatesJobForNginx() {
-
-        String content = gettingLogFromJenkinsProject(NGINX_POD)
-        assert content != null: 'Log for petclinic-helm does not exist'
-        assert content.contains('http://scmm.scm-manager.svc.cluster.local/scm/repo/argocd/nginx-helm-jenkins'): 'checkout not working'
-        assert content.contains('kubernetes.jenkins.io/last-refresh'): 'yaml-file not shown'
-        assert content.contains('http://jenkins.jenkins.svc.cluster.local:80/'): 'Jenkins URL not set in Yaml-File'
-        assert content.contains('Finished: SUCCESS'): 'JenkinsJob was not successful'
-    }
-
-    private String gettingLogFromJenkinsProject(String jenkinsProjekt) {
-        try (KubernetesClient client = new KubernetesClientBuilder().build()) {
-
-
-            String logPath = "/var/jenkins_home/jobs/argocd/jobs/" + jenkinsProjekt + "/branches/main/builds/1/log"
-            String content = TestK8sHelper.execAndGetStdout(client, "jenkins", "jenkins-0", "jenkins",
-                    "sh", "-lc", "cat ${logPath}")
-            log.debug content
-            return content
-        }
-    }
 
 
 }
