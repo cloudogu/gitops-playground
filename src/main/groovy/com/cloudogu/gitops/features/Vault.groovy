@@ -5,6 +5,7 @@ import com.cloudogu.gitops.FeatureWithImage
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.deployment.DeploymentStrategy
 import com.cloudogu.gitops.features.git.GitHandler
+import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.*
 import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j

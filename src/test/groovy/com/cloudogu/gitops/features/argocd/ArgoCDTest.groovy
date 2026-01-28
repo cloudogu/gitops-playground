@@ -3,6 +3,7 @@ package com.cloudogu.gitops.features.argocd
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.providers.GitProvider
+import com.cloudogu.gitops.kubernetes.api.HelmClient
 import com.cloudogu.gitops.utils.*
 import com.cloudogu.gitops.utils.git.GitHandlerForTests
 import com.cloudogu.gitops.utils.git.TestGitProvider

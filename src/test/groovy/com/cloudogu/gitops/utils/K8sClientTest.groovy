@@ -1,6 +1,7 @@
 package com.cloudogu.gitops.utils
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.kubernetes.api.K8sClient
 import groovy.yaml.YamlSlurper
 import org.junit.jupiter.api.Test
 

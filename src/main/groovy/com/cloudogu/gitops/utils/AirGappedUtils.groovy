@@ -5,6 +5,7 @@ import com.cloudogu.gitops.config.Config.HelmConfig
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.GitRepoFactory
+import com.cloudogu.gitops.kubernetes.api.HelmClient
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
 import jakarta.inject.Singleton

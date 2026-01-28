@@ -1,10 +1,14 @@
-package com.cloudogu.gitops.utils
+package com.cloudogu.gitops.kubernetes.api
 
 import com.cloudogu.gitops.config.Config
+import com.cloudogu.gitops.config.Credentials
+import com.cloudogu.gitops.utils.CommandExecutor
+import com.cloudogu.gitops.utils.FileSystemUtils
 import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
 import groovy.transform.Immutable
 import groovy.util.logging.Slf4j
+import io.fabric8.kubernetes.api.model.Secret
 import jakarta.inject.Provider
 import jakarta.inject.Singleton
 
@@ -19,6 +23,7 @@ class K8sClient {
     private CommandExecutor commandExecutor
     private FileSystemUtils fileSystemUtils
     private Provider<Config> configProvider
+    public K8sJavaApiClient k8sJavaApiClient
 
     K8sClient(
             CommandExecutor commandExecutor,
@@ -28,8 +33,8 @@ class K8sClient {
         this.fileSystemUtils = fileSystemUtils
         this.commandExecutor = commandExecutor
         this.configProvider = configProvider
+        this.k8sJavaApiClient = new K8sJavaApiClient()
     }
-
 
     private String waitForOutput(String[] command, String[] additionalCommand, String logMessage, String failureMessage, int maxTries = DEFAULT_RETRIES) {
         int tryCount = 0
@@ -140,7 +145,6 @@ class K8sClient {
                 throw new RuntimeException("Failed to create namespace ${name} (possibly due to insufficient permissions)", e)
             }
         }
-
 
     }
 
