@@ -39,7 +39,6 @@ class GitHandlerForTests extends GitHandler {
         } else {
             setupRepos(this.tenant, namePrefix)
         }
-        create3thPartyDependencies(this.tenant, namePrefix)
 
     }
 
