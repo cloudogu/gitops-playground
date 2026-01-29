@@ -53,7 +53,7 @@ node('high-cpu') {
                                 images += buildImage(imageNames[0], '--build-arg ENV=dev')
                             }
                         }
-                  )
+                )
                 parallel(
                         'Scan image': {
                             stage('Scan image') {
@@ -75,7 +75,6 @@ node('high-cpu') {
                                 }
                             }
                         }
-                    }
                 )
                 stage('Push image') {
                     if (isBuildSuccessful()) {
