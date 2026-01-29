@@ -128,7 +128,7 @@ class GitHandlerTest {
 
     // ---------- enable(): SCM_MANAGER tenant only ------------------------------------
     @Test
-    void 'ScmManager tenant-only: tenant gets 6 repositories'() {
+    void 'ScmManager tenant-only: tenant gets 1 repository'() {
         def cfg = new Config().fromMap([
                 scm:[scmManager:[internal:true], gitlab:[url:'']],
                 multiTenant:[useDedicatedInstance:false]
@@ -142,18 +142,14 @@ class GitHandlerTest {
         assertEquals('scm-manager', cfg.scm.scmManager.namespace)
 
         assertTrue(tenant.createdRepos.contains('argocd/cluster-resources'))
-        assertTrue(tenant.createdRepos.contains('3rd-party-dependencies/spring-boot-helm-chart'))
-        assertTrue(tenant.createdRepos.contains('3rd-party-dependencies/spring-boot-helm-chart-with-dependency'))
-        assertTrue(tenant.createdRepos.contains('3rd-party-dependencies/gitops-build-lib'))
-        assertTrue(tenant.createdRepos.contains('3rd-party-dependencies/ces-build-lib'))
-        assertEquals(5, tenant.createdRepos.size())
+        assertEquals(1, tenant.createdRepos.size())
 
         // No central provider in tenant-only scenario
         assertNull(gitHandler.getCentral())
     }
 
     @Test
-    void 'ScmManager dedicated:  central gets 2 repos: tenant gets 1 and 4 dependencies'() {
+    void 'ScmManager dedicated: central gets 1 repo, tenant gets 1 repo'() {
         def cfg = config([
                 application: [namePrefix: 'fv40-'],
                 scm        : [
@@ -174,17 +170,13 @@ class GitHandlerTest {
 
         gitHandler.enable()
 
-        // Central: argocd + cluster-resources = 2
+        // Central: argocd/cluster-resources
         assertTrue(central.createdRepos.contains('fv40-argocd/cluster-resources'))
         assertEquals(1, central.createdRepos.size())
 
-        // Tenant: only argocd + 4 dependencies = 5 (no cluster-resources)
+        // Tenant: argocd/cluster-resources
         assertTrue(tenant.createdRepos.contains('fv40-argocd/cluster-resources'))
-        assertTrue(tenant.createdRepos.contains('fv40-3rd-party-dependencies/spring-boot-helm-chart'))
-        assertTrue(tenant.createdRepos.contains('fv40-3rd-party-dependencies/spring-boot-helm-chart-with-dependency'))
-        assertTrue(tenant.createdRepos.contains('fv40-3rd-party-dependencies/gitops-build-lib'))
-        assertTrue(tenant.createdRepos.contains('fv40-3rd-party-dependencies/ces-build-lib'))
-        assertEquals(5, tenant.createdRepos.size())
+        assertEquals(1, tenant.createdRepos.size())
     }
 
     @Test
@@ -210,17 +202,13 @@ class GitHandlerTest {
 
         gitHandler.enable()
 
-        // Central: argocd + cluster-resources
+        // Central: argocd/cluster-resources
         assertTrue(central.createdRepos.contains('fv40-argocd/cluster-resources'))
         assertEquals(1, central.createdRepos.size())
 
-        // Tenant: argocd only + 4 dependencies
+        // Tenant: argocd/cluster-resources
         assertTrue(tenant.createdRepos.contains('fv40-argocd/cluster-resources'))
-        assertTrue(tenant.createdRepos.contains('fv40-3rd-party-dependencies/spring-boot-helm-chart'))
-        assertTrue(tenant.createdRepos.contains('fv40-3rd-party-dependencies/spring-boot-helm-chart-with-dependency'))
-        assertTrue(tenant.createdRepos.contains('fv40-3rd-party-dependencies/gitops-build-lib'))
-        assertTrue(tenant.createdRepos.contains('fv40-3rd-party-dependencies/ces-build-lib'))
-        assertEquals(5, tenant.createdRepos.size())
+        assertEquals(1, tenant.createdRepos.size())
     }
 
     @Test
