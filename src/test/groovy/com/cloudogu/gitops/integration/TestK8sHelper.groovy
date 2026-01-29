@@ -25,7 +25,7 @@ class TestK8sHelper {
      * This method logs Namespace and contining Pods to namespace.
      */
     static void dumpNamespacesAndPods() {
-        StringBuffer sb = new StringBuffer('##### K8s Dump ##### \\n')
+        StringBuffer sb = new StringBuffer('##### K8s Dump ##### \n')
         try (KubernetesClient client = new KubernetesClientBuilder().build()) {
             def pods = client.pods().inAnyNamespace().list().getItems()
 
@@ -38,7 +38,7 @@ class TestK8sHelper {
             def podsByNs = pods.groupBy { it.metadata?.namespace ?: "<no-namespace>" }
 
             podsByNs.each { ns, nsPods ->
-                sb.append("\n=== Namespace: ${ns} (${nsPods.size()}) ===\\n")
+                sb.append("\n=== Namespace: ${ns} (${nsPods.size()}) ===\n")
                 nsPods.each { pod ->
                     def name = pod.metadata?.name
                     def phase = pod.status?.phase
@@ -48,7 +48,7 @@ class TestK8sHelper {
 
                     sb.append(String.format("  %-60s  phase=%-10s restarts=%-3s node=%-25s start=%s",
                             name, phase, restarts, node, startTime))
-                    sb.append("\\n")
+                    sb.append("\n")
                 }
             }
         }

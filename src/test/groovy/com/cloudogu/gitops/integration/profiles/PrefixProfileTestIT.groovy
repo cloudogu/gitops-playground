@@ -22,27 +22,18 @@ import static org.assertj.core.api.Assertions.fail
  */
 @Slf4j
 @EnabledIfSystemProperty(named = "micronaut.environments", matches = "full-prefix")
-class PrefixProfileTestIT {
+class PrefixProfileTestIT extends ProfileTestSetup {
     // is used for pre-condition
     static String exampleStagingNs = 'my-prefix-example-apps-staging'
     static String argocdNs = 'my-prefix-argocd'
     String scmManagerNs = 'my-prefix-scm-manager'
     String registryNs = 'my-prefix-registry'
-//    String ingressNginxNs = 'my-prefix-ingress-nginx' /* Jenking can not start ingress*/
-    String certManagerNs = 'my-prefix-cert-manager'
+    String ingressNginxNs = 'my-prefix-ingress-nginx' /* Jenking can not start ingress*/
+    static String certManagerNs = 'my-prefix-cert-manager'
     String jenkinsNs = 'my-prefix-jenkins'
     String monitoringNs = 'my-prefix-monitoring'
     String secretsNs = 'my-prefix-secrets'
     String exampleProductionNs = 'my-prefix-example-apps-production'
-
-    @AfterAll
-    static void afterAllOnlyOnFailure() {
-        log.info "##################################################################"
-        // if one test fails, logging is necessary
-        TestK8sHelper.dumpNamespacesAndPods()
-
-    }
-
 
     @BeforeAll
     static void labelTest() {
@@ -53,7 +44,7 @@ class PrefixProfileTestIT {
                     .atMost(20, TimeUnit.MINUTES)
                     .pollInterval(5, TimeUnit.SECONDS)
                     .untilAsserted {
-                        waitUntilArgoCDIsRunning()
+                        waitUntilCertManagerIsRunning()
                     }
         } catch (ConditionTimeoutException timeoutEx) {
             TestK8sHelper.dumpNamespacesAndPods()
@@ -61,15 +52,15 @@ class PrefixProfileTestIT {
         }
     }
 
-    private static void waitUntilArgoCDIsRunning() {
+    private static void waitUntilCertManagerIsRunning() {
         // Check Pod
         try (KubernetesClient client = new KubernetesClientBuilder().build()) {
-            def actualPods = client.pods().inNamespace(argocdNs).list().getItems()
-            assert !actualPods.isEmpty(): "No pods found - namespace: ${argocdNs}"
+            def actualPods = client.pods().inNamespace(certManagerNs).list().getItems()
+            assert !actualPods.isEmpty(): "No pods found - namespace: ${certManagerNs}"
             def notRunningPods = actualPods.findAll { pod ->
                 pod.getStatus().getPhase() != "Running"
             }
-            assert notRunningPods.isEmpty(): "These pods in ${exampleStagingNs} are not yet running: ${notRunningPods.collect { it.getMetadata().getName() + ':' + it.getStatus().getPhase() }}"
+            assert notRunningPods.isEmpty(): "These pods in ${certManagerNs} are not yet running: ${notRunningPods.collect { it.getMetadata().getName() + ':' + it.getStatus().getPhase() }}"
         }
         catch (KubernetesClientException ex) {
             fail("Unexpected Kubernetes exception", ex)

@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.fail
  */
 
 @EnabledIfSystemProperty(named = "micronaut.environments", matches = "operator-full|operator-minimal")
-class ArgoCDOperatorProfileTestIT {
+class ArgoCDOperatorProfileTestIT extends ProfileTestSetup {
 
     static String namespaceOperator = 'argocd-operator-system'
     static String namespaceArgocd = 'argocd'

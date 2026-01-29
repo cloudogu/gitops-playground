@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.fail
  */
 
 @EnabledIfSystemProperty(named = "micronaut.environments", matches = "full|minimal|operator-full|content-examples|operator-minimal|operator-content-examples")
-class ArgoCDProfileTestIT {
+class ArgoCDProfileTestIT extends ProfileTestSetup{
 
     String namespace = 'argocd'
 
@@ -47,7 +47,7 @@ class ArgoCDProfileTestIT {
     }
 
     /**
-     * ArgoCD uses 6 pods. All have to run*/
+     * chechs that ArgoCD pods running **/
     @Test
     void ensureArgoCDIsOnlineAndPodsAreRunning() {
         String expectedPod1 = "argocd-application-controller"

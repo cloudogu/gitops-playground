@@ -12,6 +12,9 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty
+import org.junit.jupiter.api.extension.ExtensionContext
+import org.junit.jupiter.api.extension.RegisterExtension
+import org.junit.jupiter.api.extension.TestWatcher
 
 import java.util.concurrent.TimeUnit
 
@@ -25,17 +28,9 @@ import static org.assertj.core.api.Assertions.fail
  */
 @Slf4j
 @EnabledIfSystemProperty(named = "micronaut.environments", matches = "full|operator-full|content-examples")
-class PetclinicProfileTestIT  {
+class PetclinicProfileTestIT extends ProfileTestSetup {
 
     static String exampleStagingNs = 'example-apps-staging'
-
-    @AfterAll
-    static void afterAllOnlyOnFailure() {
-        log.info "##################################################################"
-        // if one test fails, logging is necessary
-        TestK8sHelper.dumpNamespacesAndPods()
-    }
-
 
     @BeforeAll
     static void labelTest() {
@@ -70,7 +65,6 @@ class PetclinicProfileTestIT  {
     }
 
 
-
     @Test
     void ensurePetclinicIsRunningOnStages() {
         try (KubernetesClient client = new KubernetesClientBuilder().build()) {
@@ -90,11 +84,13 @@ class PetclinicProfileTestIT  {
             fail("Unexpected Kubernetes exception", ex)
         }
     }
-    @DisabledIfSystemProperty(named = "micronaut.environments", matches = "full|operator-full|content-examples")// operator can not install nginx
+
+    @DisabledIfSystemProperty(named = "micronaut.environments", matches = "full|operator-full|content-examples")
+// operator can not install nginx
     @Test
     void ensurePetclinicIngressIsOnline() {
         try (KubernetesClient client = new KubernetesClientBuilder().build()) {
-            def nameOfServiceAndIngress="spring-petclinic-plain"
+            def nameOfServiceAndIngress = "spring-petclinic-plain"
             // check Ingress
             def ingress = client.network()
                     .v1()
@@ -114,9 +110,11 @@ class PetclinicProfileTestIT  {
             fail("Unexpected Kubernetes exception", ex)
         }
     }
-    @DisabledIfSystemProperty(named = "micronaut.environments", matches = "full|operator-full|content-examples")// operator can not install nginx
+
+    @DisabledIfSystemProperty(named = "micronaut.environments", matches = "full|operator-full|content-examples")
+// operator can not install nginx
     @Test
-    void ensurePetclinicServiceIsOnline() {
+    void ensurePetclinicServidsdsdceIsOnline() {
         try (KubernetesClient client = new KubernetesClientBuilder().build()) {
 
             // Check Service
@@ -133,4 +131,5 @@ class PetclinicProfileTestIT  {
             fail("Unexpected Kubernetes exception", ex)
         }
     }
+
 }

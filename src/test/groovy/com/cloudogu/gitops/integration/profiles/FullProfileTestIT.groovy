@@ -20,8 +20,9 @@ import static org.assertj.core.api.Assertions.fail
  * * To run locally: add -Dmicronaut.environments=full to your execute configuration
  **/
 @Slf4j
-@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full") // operator can not load nginx
-class FullProfileTestIT {
+@EnabledIfSystemProperty(named = "micronaut.environments", matches = "full")
+// operator can not load nginx
+class FullProfileTestIT extends ProfileTestSetup {
 
     /**
      * Gets path to kubeconfig */
@@ -31,7 +32,7 @@ class FullProfileTestIT {
 
     @BeforeAll
     static void labelMyTest() {
-        log.info  '########### K8S SMOKE TESTS PROFILE full ###########'
+        log.info '########### K8S SMOKE TESTS PROFILE full ###########'
         waitUntilAllPodsRunning()
     }
 
@@ -175,8 +176,6 @@ class FullProfileTestIT {
             fail("Unexpected Kubernetes exception", ex)
         }
     }
-
-
 
 
 }
