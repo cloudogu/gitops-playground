@@ -352,7 +352,7 @@ def stageBuildClI() {
                         'sed -n \'s/.*<version>\\(.*\\)<\\/version>.*/\\1/p\'); ' +
                         'curl -s https://repo1.maven.org/maven2/io/micronaut/micronaut-core-bom/${MICRONAUT_VERSION}/micronaut-core-bom-${MICRONAUT_VERSION}.pom | ' +
                         'sed -n \'s/.*<groovy.version>\\(.*\\)<\\/groovy.version>.*/\\1/p\'').trim()
-        groovyImage = "groovy:${groovyVersion}-jdk${jdkVersion}"
+        groovyImage = "groovy:jdk17-alpine"
         // Re-use groovy image here, even though we only need JDK
         mvn = new MavenWrapperInDocker(this, groovyImage)
         // Faster builds because mvn local repo is reused between build, unit and integration tests

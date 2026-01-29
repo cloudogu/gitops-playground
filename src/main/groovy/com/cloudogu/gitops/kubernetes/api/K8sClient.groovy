@@ -1,14 +1,12 @@
 package com.cloudogu.gitops.kubernetes.api
 
 import com.cloudogu.gitops.config.Config
-import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.utils.CommandExecutor
 import com.cloudogu.gitops.utils.FileSystemUtils
 import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
 import groovy.transform.Immutable
 import groovy.util.logging.Slf4j
-import io.fabric8.kubernetes.api.model.Secret
 import jakarta.inject.Provider
 import jakarta.inject.Singleton
 
