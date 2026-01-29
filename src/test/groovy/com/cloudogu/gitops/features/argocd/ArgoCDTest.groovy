@@ -110,7 +110,6 @@ class ArgoCDTest {
     String actualHelmValuesFile
     GitRepo clusterResourcesRepo
     List<GitRepo> petClinicRepos = []
-    String prefixPathCentral = '/multiTenant/central/'
     ArgoCD argocd
     ArgoCDRepoLayout repoLayout
 
@@ -1100,14 +1099,14 @@ class ArgoCDTest {
     void 'GOP DedicatedInstances Central templating works correctly'() {
         setupDedicatedInstanceMode()
         //Central Applications
-        assertThat(new File(repoLayout.argocdRoot() + "${prefixPathCentral}applications/argocd.yaml")).exists()
-        assertThat(new File(repoLayout.argocdRoot() + "${prefixPathCentral}applications/bootstrap.yaml")).exists()
-        assertThat(new File(repoLayout.argocdRoot() + "${prefixPathCentral}applications/projects.yaml")).exists()
-        assertThat(new File(repoLayout.argocdRoot() + "${prefixPathCentral}applications/example-apps.yaml")).doesNotExist()
+        assertThat(new File(repoLayout.argocdRoot() + "/applications/argocd.yaml")).exists()
+        assertThat(new File(repoLayout.argocdRoot() + "/applications/bootstrap.yaml")).exists()
+        assertThat(new File(repoLayout.argocdRoot() + "/applications/projects.yaml")).exists()
+        assertThat(new File(repoLayout.argocdRoot() + "/applications/example-apps.yaml")).doesNotExist()
 
-        def argocdYaml = new YamlSlurper().parse(Path.of repoLayout.argocdRoot(), "${prefixPathCentral}applications/argocd.yaml")
-        def bootstrapYaml = new YamlSlurper().parse(Path.of repoLayout.argocdRoot(), "${prefixPathCentral}applications/bootstrap.yaml")
-        def projectsYaml = new YamlSlurper().parse(Path.of repoLayout.argocdRoot(), "${prefixPathCentral}applications/projects.yaml")
+        def argocdYaml = new YamlSlurper().parse(Path.of repoLayout.argocdRoot(), "/applications/argocd.yaml")
+        def bootstrapYaml = new YamlSlurper().parse(Path.of repoLayout.argocdRoot(), "/applications/bootstrap.yaml")
+        def projectsYaml = new YamlSlurper().parse(Path.of repoLayout.argocdRoot(), "/applications/projects.yaml")
 
         assertThat(argocdYaml['metadata']['name']).isEqualTo('testPrefix-argocd')
         assertThat(argocdYaml['metadata']['namespace']).isEqualTo('argocd')
@@ -1124,9 +1123,9 @@ class ArgoCDTest {
         assertThat(projectsYaml['spec']['project']).isEqualTo('testPrefix')
 
         //Central Project
-        assertThat(new File(repoLayout.argocdRoot() + "${prefixPathCentral}projects/tenant.yaml")).exists()
+        assertThat(new File(repoLayout.argocdRoot() + "/projects/tenant.yaml")).exists()
 
-        def tenantProject = new YamlSlurper().parse(Path.of repoLayout.argocdRoot(), "${prefixPathCentral}projects/tenant.yaml")
+        def tenantProject = new YamlSlurper().parse(Path.of repoLayout.argocdRoot(), "/projects/tenant.yaml")
 
         assertThat(tenantProject['metadata']['name']).isEqualTo('testPrefix')
         assertThat(tenantProject['metadata']['namespace']).isEqualTo('argocd')
@@ -1164,9 +1163,9 @@ class ArgoCDTest {
         argocd.install()
         repoLayout = argocd.repoLayout()
 
-        assertThat(Path.of(repoLayout.argocdRoot(), 'multiTenant/')).exists()
-        assertThat(Path.of(repoLayout.argocdRoot(), 'applications/')).doesNotExist()
-        assertThat(Path.of(repoLayout.argocdRoot(), 'projects/')).doesNotExist()
+        assertThat(Path.of(repoLayout.argocdRoot(), 'multiTenant/')).doesNotExist()
+        assertThat(Path.of(repoLayout.argocdRoot(), 'applications/')).exists()
+        assertThat(Path.of(repoLayout.argocdRoot(), 'projects/')).exists()
     }
 
     @Test
