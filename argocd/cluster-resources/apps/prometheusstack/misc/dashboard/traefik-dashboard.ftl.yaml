@@ -9,2000 +9,1313 @@ metadata:
 data:
   traefik-dashboard.json: |-
     {
-    "annotations": {
-      "list": [
-        {
-          "builtIn": 1,
-          "datasource": {
-            "type": "datasource",
-            "uid": "grafana"
-          },
-          "enable": true,
-          "hide": true,
-          "iconColor": "rgba(0, 211, 255, 1)",
-          "name": "Annotations & Alerts",
-          "type": "dashboard"
-        },
+      "annotations": {
+        "list": [
+          {
+            "builtIn": 1,
+            "datasource": {
+              "uid": "-- Grafana --"
+            },
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "type": "dashboard"
+          }
+        ]
+      },
+      "description": "Simple dashboard for Traefik 2",
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 0,
+      "id": 6,
+      "links": [],
+      "panels": [
         {
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "enable": true,
-          "expr": "sum(changes(traefik_controller_config_last_reload_successful_timestamp_seconds{instance!=\"unknown\",controller_class=~\"$controller_class\",namespace=~\"$namespace\"}[30s])) by (controller_class)",
-          "hide": false,
-          "iconColor": "rgba(255, 96, 96, 1)",
-          "limit": 100,
-          "name": "Config Reloads",
-          "showIn": 0,
-          "step": "30s",
-          "tagKeys": "controller_class",
-          "tags": [],
-          "titleFormat": "Config Reloaded",
-          "type": "tags"
-        }
-      ]
-    },
-    "editable": true,
-    "fiscalYearStartMonth": 0,
-    "graphTooltip": 0,
-    "id": 4,
-    "links": [],
-    "panels": [
-      {
-        "datasource": {
-          "type": "prometheus",
-          "uid": "prometheus"
-        },
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "fixedColor": "rgb(31, 120, 193)",
-              "mode": "fixed"
-            },
-            "mappings": [
-              {
-                "options": {
-                  "match": "null",
-                  "result": {
-                    "text": "N/A"
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [
+                {
+                  "options": {
+                    "match": "null",
+                    "result": {
+                      "text": "N/A"
+                    }
+                  },
+                  "type": "special"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
                   }
-                },
-                "type": "special"
-              }
-            ],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "green",
-                  "value": null
-                },
-                {
-                  "color": "red",
-                  "value": 80
-                }
-              ]
-            },
-            "unit": "ops"
-          },
-          "overrides": []
-        },
-        "id": 20,
-        "maxDataPoints": 100,
-        "options": {
-          "colorMode": "none",
-          "graphMode": "area",
-          "justifyMode": "auto",
-          "orientation": "horizontal",
-          "reduceOptions": {
-            "calcs": [
-              "mean"
-            ],
-            "fields": "",
-            "values": false
-          },
-          "showPercentChange": false,
-          "textMode": "auto",
-          "wideLayout": true
-        },
-        "pluginVersion": "10.4.1",
-        "targets": [
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "prometheus"
-            },
-            "expr": "round(sum(irate(traefik_controller_requests{controller_pod=~\"$controller\",controller_class=~\"$controller_class\",namespace=~\"$namespace\"}[2m])), 0.001)",
-            "format": "time_series",
-            "intervalFactor": 1,
-            "refId": "A",
-            "step": 4
-          }
-        ],
-        "title": "Controller Request Volume",
-        "type": "stat"
-      },
-      {
-        "datasource": {
-          "type": "prometheus",
-          "uid": "prometheus"
-        },
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "fixedColor": "rgb(31, 120, 193)",
-              "mode": "fixed"
-            },
-            "mappings": [
-              {
-                "options": {
-                  "match": "null",
-                  "result": {
-                    "text": "N/A"
-                  }
-                },
-                "type": "special"
-              }
-            ],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "green",
-                  "value": null
-                },
-                {
-                  "color": "red",
-                  "value": 80
-                }
-              ]
-            },
-            "unit": "none"
-          },
-          "overrides": []
-        },
-        "gridPos": {
-          "h": 3,
-          "w": 6,
-          "x": 6,
-          "y": 0
-        },
-        "id": 82,
-        "maxDataPoints": 100,
-        "options": {
-          "colorMode": "none",
-          "graphMode": "area",
-          "justifyMode": "auto",
-          "orientation": "horizontal",
-          "reduceOptions": {
-            "calcs": [
-              "mean"
-            ],
-            "fields": "",
-            "values": false
-          },
-          "showPercentChange": false,
-          "textMode": "auto",
-          "wideLayout": true
-        },
-        "pluginVersion": "10.4.1",
-        "targets": [
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "prometheus"
-            },
-            "expr": "sum(avg_over_time(traefik_controller_traefik_process_connections{controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\",state=\"active\"}[2m]))",
-            "format": "time_series",
-            "instant": false,
-            "intervalFactor": 1,
-            "refId": "A",
-            "step": 4
-          }
-        ],
-        "title": "Controller Connections",
-        "type": "stat"
-      },
-      {
-        "datasource": {
-          "type": "prometheus",
-          "uid": "prometheus"
-        },
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "fixedColor": "rgb(31, 120, 193)",
-              "mode": "fixed"
-            },
-            "mappings": [
-              {
-                "options": {
-                  "match": "null",
-                  "result": {
-                    "text": "N/A"
-                  }
-                },
-                "type": "special"
-              }
-            ],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "rgba(245, 54, 54, 0.9)",
-                  "value": null
-                },
-                {
-                  "color": "rgba(237, 129, 40, 0.89)",
-                  "value": 95
-                },
-                {
-                  "color": "rgba(50, 172, 45, 0.97)",
-                  "value": 99
-                }
-              ]
-            },
-            "unit": "percentunit"
-          },
-          "overrides": []
-        },
-        "gridPos": {
-          "h": 3,
-          "w": 6,
-          "x": 12,
-          "y": 0
-        },
-        "id": 21,
-        "maxDataPoints": 100,
-        "options": {
-          "colorMode": "none",
-          "graphMode": "area",
-          "justifyMode": "auto",
-          "orientation": "horizontal",
-          "reduceOptions": {
-            "calcs": [
-              "mean"
-            ],
-            "fields": "",
-            "values": false
-          },
-          "showPercentChange": false,
-          "textMode": "auto",
-          "wideLayout": true
-        },
-        "pluginVersion": "10.4.1",
-        "targets": [
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "prometheus"
-            },
-            "expr": "sum(rate(traefik_controller_requests{controller_pod=~\"$controller\",controller_class=~\"$controller_class\",namespace=~\"$namespace\",status!~\"[4-5].*\"}[2m])) / sum(rate(traefik_controller_requests{controller_pod=~\"$controller\",controller_class=~\"$controller_class\",namespace=~\"$namespace\"}[2m]))",
-            "format": "time_series",
-            "intervalFactor": 1,
-            "refId": "A",
-            "step": 4
-          }
-        ],
-        "title": "Controller Success Rate (non-4|5xx responses)",
-        "type": "stat"
-      },
-      {
-        "datasource": {
-          "type": "prometheus",
-          "uid": "prometheus"
-        },
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "fixedColor": "rgb(31, 120, 193)",
-              "mode": "fixed"
-            },
-            "decimals": 0,
-            "mappings": [
-              {
-                "options": {
-                  "match": "null",
-                  "result": {
-                    "text": "N/A"
-                  }
-                },
-                "type": "special"
-              }
-            ],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "green",
-                  "value": null
-                },
-                {
-                  "color": "red",
-                  "value": 80
-                }
-              ]
-            },
-            "unit": "none"
-          },
-          "overrides": []
-        },
-        "gridPos": {
-          "h": 3,
-          "w": 3,
-          "x": 18,
-          "y": 0
-        },
-        "id": 81,
-        "maxDataPoints": 100,
-        "options": {
-          "colorMode": "none",
-          "graphMode": "area",
-          "justifyMode": "auto",
-          "orientation": "horizontal",
-          "reduceOptions": {
-            "calcs": [
-              "sum"
-            ],
-            "fields": "",
-            "values": false
-          },
-          "showPercentChange": false,
-          "textMode": "auto",
-          "wideLayout": true
-        },
-        "pluginVersion": "10.4.1",
-        "targets": [
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "prometheus"
-            },
-            "expr": "avg(irate(traefik_controller_success{controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\"}[1m])) * 60",
-            "format": "time_series",
-            "instant": false,
-            "intervalFactor": 1,
-            "refId": "A",
-            "step": 4
-          }
-        ],
-        "title": "Config Reloads",
-        "type": "stat"
-      },
-      {
-        "datasource": {
-          "type": "prometheus",
-          "uid": "prometheus"
-        },
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "fixedColor": "rgb(31, 120, 193)",
-              "mode": "fixed"
-            },
-            "decimals": 0,
-            "mappings": [
-              {
-                "options": {
-                  "match": "null",
-                  "result": {
-                    "text": "N/A"
-                  }
-                },
-                "type": "special"
-              }
-            ],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "green",
-                  "value": null
-                },
-                {
-                  "color": "red",
-                  "value": 80
-                }
-              ]
-            },
-            "unit": "none"
-          },
-          "overrides": []
-        },
-        "gridPos": {
-          "h": 3,
-          "w": 3,
-          "x": 21,
-          "y": 0
-        },
-        "id": 83,
-        "maxDataPoints": 100,
-        "options": {
-          "colorMode": "none",
-          "graphMode": "area",
-          "justifyMode": "auto",
-          "orientation": "horizontal",
-          "reduceOptions": {
-            "calcs": [
-              "mean"
-            ],
-            "fields": "",
-            "values": false
-          },
-          "showPercentChange": false,
-          "textMode": "auto",
-          "wideLayout": true
-        },
-        "pluginVersion": "10.4.1",
-        "targets": [
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "prometheus"
-            },
-            "expr": "count(traefik_controller_config_last_reload_successful{controller_pod=~\"$controller\",controller_namespace=~\"$namespace\"} == 0)",
-            "format": "time_series",
-            "instant": true,
-            "intervalFactor": 1,
-            "refId": "A",
-            "step": 4
-          }
-        ],
-        "title": "Last Config Failed",
-        "type": "stat"
-      },
-      {
-        "datasource": {
-          "type": "prometheus",
-          "uid": "prometheus"
-        },
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "palette-classic"
-            },
-            "custom": {
-              "axisBorderShow": false,
-              "axisCenteredZero": false,
-              "axisColorMode": "text",
-              "axisLabel": "",
-              "axisPlacement": "auto",
-              "barAlignment": 0,
-              "drawStyle": "line",
-              "fillOpacity": 10,
-              "gradientMode": "none",
-              "hideFrom": {
-                "legend": false,
-                "tooltip": false,
-                "viz": false
+                ]
               },
-              "insertNulls": false,
-              "lineInterpolation": "linear",
-              "lineWidth": 2,
-              "pointSize": 5,
-              "scaleDistribution": {
-                "type": "linear"
-              },
-              "showPoints": "never",
-              "spanNulls": true,
-              "stacking": {
-                "group": "A",
-                "mode": "none"
-              },
-              "thresholdsStyle": {
-                "mode": "off"
-              }
+              "unit": "s"
             },
-            "mappings": [],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "green",
-                  "value": null
-                },
-                {
-                  "color": "red",
-                  "value": 80
-                }
-              ]
-            },
-            "unit": "reqps"
+            "overrides": []
           },
-          "overrides": [
-            {
-              "matcher": {
-                "id": "byValue",
-                "options": {
-                  "op": "gte",
-                  "reducer": "allIsZero",
-                  "value": 0
-                }
-              },
-              "properties": [
-                {
-                  "id": "custom.hideFrom",
-                  "value": {
-                    "legend": true,
-                    "tooltip": true,
-                    "viz": false
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        "gridPos": {
-          "h": 7,
-          "w": 12,
-          "x": 0,
-          "y": 3
-        },
-        "id": 86,
-        "options": {
-          "legend": {
-            "calcs": [
-              "mean"
-            ],
-            "displayMode": "table",
-            "placement": "right",
-            "showLegend": true
+          "gridPos": {
+            "h": 6,
+            "w": 3,
+            "x": 0,
+            "y": 0
           },
-          "tooltip": {
-            "mode": "multi",
-            "sort": "none"
-          }
-        },
-        "pluginVersion": "10.4.3",
-        "repeatDirection": "h",
-        "targets": [
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "prometheus"
-            },
-            "expr": "round(sum(irate(traefik_controller_requests{controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\",exported_namespace=~\"$exported_namespace\",ingress=~\"$ingress\"}[2m])) by (ingress), 0.001)",
-            "format": "time_series",
-            "hide": false,
-            "instant": false,
-            "interval": "",
-            "intervalFactor": 1,
-            "legendFormat": "{{ ingress }}",
-            "metric": "network",
-            "refId": "A",
-            "step": 10
-          }
-        ],
-        "title": "Ingress Request Volume",
-        "type": "timeseries"
-      },
-      {
-        "datasource": {
-          "type": "prometheus",
-          "uid": "prometheus"
-        },
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "palette-classic"
-            },
-            "custom": {
-              "axisBorderShow": false,
-              "axisCenteredZero": false,
-              "axisColorMode": "text",
-              "axisLabel": "",
-              "axisPlacement": "auto",
-              "barAlignment": 0,
-              "drawStyle": "line",
-              "fillOpacity": 0,
-              "gradientMode": "none",
-              "hideFrom": {
-                "legend": false,
-                "tooltip": false,
-                "viz": false
-              },
-              "insertNulls": false,
-              "lineInterpolation": "linear",
-              "lineWidth": 2,
-              "pointSize": 5,
-              "scaleDistribution": {
-                "type": "linear"
-              },
-              "showPoints": "never",
-              "spanNulls": true,
-              "stacking": {
-                "group": "A",
-                "mode": "none"
-              },
-              "thresholdsStyle": {
-                "mode": "off"
-              }
-            },
-            "mappings": [],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "green",
-                  "value": null
-                },
-                {
-                  "color": "red",
-                  "value": 80
-                }
-              ]
-            },
-            "unit": "percentunit"
-          },
-          "overrides": [
-            {
-              "matcher": {
-                "id": "byName",
-                "options": "max - istio-proxy"
-              },
-              "properties": [
-                {
-                  "id": "color",
-                  "value": {
-                    "fixedColor": "#890f02",
-                    "mode": "fixed"
-                  }
-                }
-              ]
-            },
-            {
-              "matcher": {
-                "id": "byName",
-                "options": "max - master"
-              },
-              "properties": [
-                {
-                  "id": "color",
-                  "value": {
-                    "fixedColor": "#bf1b00",
-                    "mode": "fixed"
-                  }
-                }
-              ]
-            },
-            {
-              "matcher": {
-                "id": "byName",
-                "options": "max - prometheus"
-              },
-              "properties": [
-                {
-                  "id": "color",
-                  "value": {
-                    "fixedColor": "#bf1b00",
-                    "mode": "fixed"
-                  }
-                }
-              ]
-            },
-            {
-              "matcher": {
-                "id": "byValue",
-                "options": {
-                  "op": "gte",
-                  "reducer": "allIsNull",
-                  "value": 0
-                }
-              },
-              "properties": [
-                {
-                  "id": "custom.hideFrom",
-                  "value": {
-                    "legend": true,
-                    "tooltip": true,
-                    "viz": false
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        "gridPos": {
-          "h": 7,
-          "w": 12,
-          "x": 12,
-          "y": 3
-        },
-        "id": 87,
-        "options": {
-          "legend": {
-            "calcs": [
-              "mean"
-            ],
-            "displayMode": "table",
-            "placement": "right",
-            "showLegend": true
-          },
-          "tooltip": {
-            "mode": "multi",
-            "sort": "asc"
-          }
-        },
-        "pluginVersion": "10.4.3",
-        "targets": [
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "prometheus"
-            },
-            "expr": "sum(rate(traefik_controller_requests{controller_pod=~\"$controller\",controller_class=~\"$controller_class\",namespace=~\"$namespace\",exported_namespace=~\"$exported_namespace\",ingress=~\"$ingress\",status!~\"[4-5].*\"}[2m])) by (ingress) / sum(rate(traefik_controller_requests{controller_pod=~\"$controller\",controller_class=~\"$controller_class\",namespace=~\"$namespace\",exported_namespace=~\"$exported_namespace\",ingress=~\"$ingress\"}[2m])) by (ingress)",
-            "format": "time_series",
-            "instant": false,
-            "interval": "10s",
-            "intervalFactor": 1,
-            "legendFormat": "{{ ingress }}",
-            "metric": "container_memory_usage:sort_desc",
-            "refId": "A",
-            "step": 10
-          }
-        ],
-        "title": "Ingress Success Rate (non-4|5xx responses)",
-        "type": "timeseries"
-      },
-      {
-        "datasource": {
-          "type": "prometheus",
-          "uid": "prometheus"
-        },
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "palette-classic"
-            },
-            "custom": {
-              "axisBorderShow": false,
-              "axisCenteredZero": false,
-              "axisColorMode": "text",
-              "axisLabel": "",
-              "axisPlacement": "auto",
-              "barAlignment": 0,
-              "drawStyle": "line",
-              "fillOpacity": 10,
-              "gradientMode": "none",
-              "hideFrom": {
-                "legend": false,
-                "tooltip": false,
-                "viz": false
-              },
-              "insertNulls": false,
-              "lineInterpolation": "linear",
-              "lineWidth": 2,
-              "pointSize": 5,
-              "scaleDistribution": {
-                "type": "linear"
-              },
-              "showPoints": "never",
-              "spanNulls": true,
-              "stacking": {
-                "group": "A",
-                "mode": "none"
-              },
-              "thresholdsStyle": {
-                "mode": "off"
-              }
-            },
-            "mappings": [],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "green",
-                  "value": null
-                },
-                {
-                  "color": "red",
-                  "value": 80
-                }
-              ]
-            },
-            "unit": "Bps"
-          },
-          "overrides": []
-        },
-        "gridPos": {
-          "h": 6,
-          "w": 8,
-          "x": 0,
-          "y": 10
-        },
-        "id": 32,
-        "options": {
-          "legend": {
-            "calcs": [
-              "mean",
-              "lastNotNull"
-            ],
-            "displayMode": "list",
-            "placement": "bottom",
-            "showLegend": false,
-            "width": 200
-          },
-          "tooltip": {
-            "mode": "multi",
-            "sort": "none"
-          }
-        },
-        "pluginVersion": "10.4.3",
-        "targets": [
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "prometheus"
-            },
-            "expr": "sum (irate (traefik_controller_request_size_sum{controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\"}[2m]))",
-            "format": "time_series",
-            "instant": false,
-            "interval": "10s",
-            "intervalFactor": 1,
-            "legendFormat": "Received",
-            "metric": "network",
-            "refId": "A",
-            "step": 10
-          },
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "prometheus"
-            },
-            "expr": "- sum (irate (traefik_controller_response_size_sum{controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\"}[2m]))",
-            "format": "time_series",
-            "hide": false,
-            "interval": "10s",
-            "intervalFactor": 1,
-            "legendFormat": "Sent",
-            "metric": "network",
-            "refId": "B",
-            "step": 10
-          }
-        ],
-        "title": "Network I/O pressure",
-        "type": "timeseries"
-      },
-      {
-        "datasource": {
-          "type": "prometheus",
-          "uid": "prometheus"
-        },
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "palette-classic"
-            },
-            "custom": {
-              "axisBorderShow": false,
-              "axisCenteredZero": false,
-              "axisColorMode": "text",
-              "axisLabel": "",
-              "axisPlacement": "auto",
-              "barAlignment": 0,
-              "drawStyle": "line",
-              "fillOpacity": 0,
-              "gradientMode": "none",
-              "hideFrom": {
-                "legend": false,
-                "tooltip": false,
-                "viz": false
-              },
-              "insertNulls": false,
-              "lineInterpolation": "linear",
-              "lineWidth": 2,
-              "pointSize": 5,
-              "scaleDistribution": {
-                "type": "linear"
-              },
-              "showPoints": "never",
-              "spanNulls": true,
-              "stacking": {
-                "group": "A",
-                "mode": "none"
-              },
-              "thresholdsStyle": {
-                "mode": "off"
-              }
-            },
-            "mappings": [],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "green",
-                  "value": null
-                },
-                {
-                  "color": "red",
-                  "value": 80
-                }
-              ]
-            },
-            "unit": "bytes"
-          },
-          "overrides": [
-            {
-              "matcher": {
-                "id": "byName",
-                "options": "max - istio-proxy"
-              },
-              "properties": [
-                {
-                  "id": "color",
-                  "value": {
-                    "fixedColor": "#890f02",
-                    "mode": "fixed"
-                  }
-                }
-              ]
-            },
-            {
-              "matcher": {
-                "id": "byName",
-                "options": "max - master"
-              },
-              "properties": [
-                {
-                  "id": "color",
-                  "value": {
-                    "fixedColor": "#bf1b00",
-                    "mode": "fixed"
-                  }
-                }
-              ]
-            },
-            {
-              "matcher": {
-                "id": "byName",
-                "options": "max - prometheus"
-              },
-              "properties": [
-                {
-                  "id": "color",
-                  "value": {
-                    "fixedColor": "#bf1b00",
-                    "mode": "fixed"
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        "gridPos": {
-          "h": 6,
-          "w": 8,
-          "x": 8,
-          "y": 10
-        },
-        "id": 77,
-        "options": {
-          "legend": {
-            "calcs": [
-              "mean",
-              "lastNotNull"
-            ],
-            "displayMode": "list",
-            "placement": "bottom",
-            "showLegend": false,
-            "width": 200
-          },
-          "tooltip": {
-            "mode": "multi",
-            "sort": "desc"
-          }
-        },
-        "pluginVersion": "10.4.3",
-        "targets": [
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "prometheus"
-            },
-            "expr": "avg(traefik_controller_traefik_process_resident_memory_bytes{controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\"}) ",
-            "format": "time_series",
-            "instant": false,
-            "interval": "10s",
-            "intervalFactor": 1,
-            "legendFormat": "traefik",
-            "metric": "container_memory_usage:sort_desc",
-            "refId": "A",
-            "step": 10
-          }
-        ],
-        "title": "Average Memory Usage",
-        "type": "timeseries"
-      },
-      {
-        "datasource": {
-          "type": "prometheus",
-          "uid": "prometheus"
-        },
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "palette-classic"
-            },
-            "custom": {
-              "axisBorderShow": false,
-              "axisCenteredZero": false,
-              "axisColorMode": "text",
-              "axisLabel": "cores",
-              "axisPlacement": "auto",
-              "barAlignment": 0,
-              "drawStyle": "line",
-              "fillOpacity": 0,
-              "gradientMode": "none",
-              "hideFrom": {
-                "legend": false,
-                "tooltip": false,
-                "viz": false
-              },
-              "insertNulls": false,
-              "lineInterpolation": "linear",
-              "lineWidth": 2,
-              "pointSize": 5,
-              "scaleDistribution": {
-                "type": "linear"
-              },
-              "showPoints": "never",
-              "spanNulls": true,
-              "stacking": {
-                "group": "A",
-                "mode": "none"
-              },
-              "thresholdsStyle": {
-                "mode": "line+area"
-              }
-            },
-            "mappings": [],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "transparent",
-                  "value": null
-                }
-              ]
-            },
-            "unit": "none"
-          },
-          "overrides": []
-        },
-        "gridPos": {
-          "h": 6,
-          "w": 8,
-          "x": 16,
-          "y": 10
-        },
-        "id": 79,
-        "options": {
-          "legend": {
-            "calcs": [
-              "mean",
-              "lastNotNull"
-            ],
-            "displayMode": "list",
-            "placement": "bottom",
-            "showLegend": false
-          },
-          "tooltip": {
-            "mode": "multi",
-            "sort": "desc"
-          }
-        },
-        "pluginVersion": "10.4.3",
-        "targets": [
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "prometheus"
-            },
-            "expr": "avg (rate (traefik_controller_traefik_process_cpu_seconds_total{controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\"}[2m])) ",
-            "format": "time_series",
-            "interval": "10s",
-            "intervalFactor": 1,
-            "legendFormat": "traefik",
-            "metric": "container_cpu",
-            "refId": "A",
-            "step": 10
-          }
-        ],
-        "title": "Average CPU Usage",
-        "type": "timeseries"
-      },
-      {
-        "datasource": {
-          "type": "prometheus",
-          "uid": "prometheus"
-        },
-        "description": "This data is real time, independent of dashboard time range",
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "thresholds"
-            },
-            "custom": {
-              "align": "auto",
-              "cellOptions": {
-                "type": "auto"
-              },
-              "inspect": false
-            },
-            "mappings": [],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "green",
-                  "value": null
-                },
-                {
-                  "color": "red",
-                  "value": 80
-                }
-              ]
-            }
-          },
-          "overrides": [
-            {
-              "matcher": {
-                "id": "byName",
-                "options": "ingress"
-              },
-              "properties": [
-                {
-                  "id": "displayName",
-                  "value": "Ingress"
-                },
-                {
-                  "id": "unit",
-                  "value": "short"
-                },
-                {
-                  "id": "decimals",
-                  "value": 2
-                },
-                {
-                  "id": "custom.align"
-                }
-              ]
-            },
-            {
-              "matcher": {
-                "id": "byName",
-                "options": "Value #A"
-              },
-              "properties": [
-                {
-                  "id": "displayName",
-                  "value": "P50 Latency"
-                },
-                {
-                  "id": "unit",
-                  "value": "dtdurations"
-                },
-                {
-                  "id": "custom.align"
-                }
-              ]
-            },
-            {
-              "matcher": {
-                "id": "byName",
-                "options": "Value #B"
-              },
-              "properties": [
-                {
-                  "id": "displayName",
-                  "value": "P90 Latency"
-                },
-                {
-                  "id": "unit",
-                  "value": "dtdurations"
-                },
-                {
-                  "id": "custom.align"
-                }
-              ]
-            },
-            {
-              "matcher": {
-                "id": "byName",
-                "options": "Value #C"
-              },
-              "properties": [
-                {
-                  "id": "displayName",
-                  "value": "P99 Latency"
-                },
-                {
-                  "id": "unit",
-                  "value": "dtdurations"
-                },
-                {
-                  "id": "custom.align"
-                }
-              ]
-            },
-            {
-              "matcher": {
-                "id": "byName",
-                "options": "Value #D"
-              },
-              "properties": [
-                {
-                  "id": "displayName",
-                  "value": "IN"
-                },
-                {
-                  "id": "unit",
-                  "value": "Bps"
-                },
-                {
-                  "id": "decimals",
-                  "value": 2
-                },
-                {
-                  "id": "custom.align"
-                },
-                {
-                  "id": "thresholds",
-                  "value": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "rgba(245, 54, 54, 0.9)",
-                        "value": null
-                      },
-                      {
-                        "color": "rgba(237, 129, 40, 0.89)"
-                      }
-                    ]
-                  }
-                }
-              ]
-            },
-            {
-              "matcher": {
-                "id": "byName",
-                "options": "Time"
-              },
-              "properties": [
-                {
-                  "id": "unit",
-                  "value": "short"
-                },
-                {
-                  "id": "decimals",
-                  "value": 2
-                },
-                {
-                  "id": "custom.align"
-                },
-                {
-                  "id": "custom.hidden",
-                  "value": true
-                }
-              ]
-            },
-            {
-              "matcher": {
-                "id": "byName",
-                "options": "Value #E"
-              },
-              "properties": [
-                {
-                  "id": "displayName",
-                  "value": "OUT"
-                },
-                {
-                  "id": "unit",
-                  "value": "Bps"
-                },
-                {
-                  "id": "decimals",
-                  "value": 2
-                },
-                {
-                  "id": "custom.align"
-                }
-              ]
-            }
-          ]
-        },
-        "gridPos": {
-          "h": 8,
-          "w": 24,
-          "x": 0,
-          "y": 16
-        },
-        "hideTimeOverride": false,
-        "id": 75,
-        "options": {
-          "cellHeight": "sm",
-          "footer": {
-            "countRows": false,
-            "fields": "",
-            "reducer": [
-              "sum"
-            ],
-            "show": false
-          },
-          "showHeader": true
-        },
-        "pluginVersion": "10.4.1",
-        "repeatDirection": "h",
-        "targets": [
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "prometheus"
-            },
-            "expr": "histogram_quantile(0.50, sum(rate(traefik_controller_request_duration_seconds_bucket{ingress!=\"\",controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\",ingress=~\"$ingress\",exported_namespace=~\"$exported_namespace\"}[2m])) by (le, ingress))",
-            "format": "table",
-            "hide": false,
-            "instant": true,
-            "intervalFactor": 1,
-            "legendFormat": "{{ ingress }}",
-            "refId": "A"
-          },
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "prometheus"
-            },
-            "expr": "histogram_quantile(0.90, sum(rate(traefik_controller_request_duration_seconds_bucket{ingress!=\"\",controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\",ingress=~\"$ingress\",exported_namespace=~\"$exported_namespace\"}[2m])) by (le, ingress))",
-            "format": "table",
-            "hide": false,
-            "instant": true,
-            "intervalFactor": 1,
-            "legendFormat": "{{ ingress }}",
-            "refId": "B"
-          },
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "prometheus"
-            },
-            "expr": "histogram_quantile(0.99, sum(rate(traefik_controller_request_duration_seconds_bucket{ingress!=\"\",controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\",ingress=~\"$ingress\",exported_namespace=~\"$exported_namespace\"}[2m])) by (le, ingress))",
-            "format": "table",
-            "hide": false,
-            "instant": true,
-            "intervalFactor": 1,
-            "legendFormat": "{{ destination_service }}",
-            "refId": "C"
-          },
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "prometheus"
-            },
-            "expr": "sum(irate(traefik_controller_request_size_sum{ingress!=\"\",controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\",ingress=~\"$ingress\",exported_namespace=~\"$exported_namespace\"}[2m])) by (ingress)",
-            "format": "table",
-            "hide": false,
-            "instant": true,
-            "interval": "",
-            "intervalFactor": 1,
-            "legendFormat": "{{ ingress }}",
-            "refId": "D"
-          },
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "prometheus"
-            },
-            "expr": "sum(irate(traefik_controller_response_size_sum{ingress!=\"\",controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\",ingress=~\"$ingress\",exported_namespace=~\"$exported_namespace\"}[2m])) by (ingress)",
-            "format": "table",
-            "instant": true,
-            "intervalFactor": 1,
-            "legendFormat": "{{ ingress }}",
-            "refId": "E"
-          }
-        ],
-        "title": "Ingress Percentile Response Times and Transfer Rates",
-        "transformations": [
-          {
-            "id": "merge",
-            "options": {
-              "reducers": []
-            }
-          }
-        ],
-        "type": "table"
-      },
-      {
-        "datasource": {
-          "type": "prometheus",
-          "uid": "prometheus"
-        },
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "palette-classic"
-            },
-            "custom": {
-              "axisBorderShow": false,
-              "axisCenteredZero": false,
-              "axisColorMode": "text",
-              "axisLabel": "",
-              "axisPlacement": "auto",
-              "barAlignment": 0,
-              "drawStyle": "line",
-              "fillOpacity": 0,
-              "gradientMode": "none",
-              "hideFrom": {
-                "legend": false,
-                "tooltip": false,
-                "viz": false
-              },
-              "insertNulls": false,
-              "lineInterpolation": "linear",
-              "lineWidth": 1,
-              "pointSize": 5,
-              "scaleDistribution": {
-                "type": "linear"
-              },
-              "showPoints": "auto",
-              "spanNulls": false,
-              "stacking": {
-                "group": "A",
-                "mode": "none"
-              },
-              "thresholdsStyle": {
-                "mode": "off"
-              }
-            },
-            "mappings": [],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "green",
-                  "value": null
-                },
-                {
-                  "color": "red",
-                  "value": 80
-                }
-              ]
-            },
-            "unit": "s"
-          },
-          "overrides": []
-        },
-        "gridPos": {
-          "h": 7,
-          "w": 12,
-          "x": 0,
-          "y": 24
-        },
-        "hideTimeOverride": false,
-        "id": 91,
-        "options": {
-          "legend": {
-            "calcs": [],
-            "displayMode": "list",
-            "placement": "bottom",
-            "showLegend": true
-          },
-          "tooltip": {
-            "mode": "multi",
-            "sort": "none"
-          }
-        },
-        "pluginVersion": "8.3.4",
-        "repeatDirection": "h",
-        "targets": [
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "prometheus"
-            },
-            "exemplar": true,
-            "expr": "histogram_quantile(0.80, sum(rate(traefik_controller_request_duration_seconds_bucket{ingress!=\"\",controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\",ingress=~\"$ingress\",exported_namespace=~\"$exported_namespace\"}[2m])) by (le))",
-            "format": "time_series",
-            "hide": false,
-            "instant": false,
-            "interval": "",
-            "intervalFactor": 1,
-            "legendFormat": "P80",
-            "refId": "C"
-          },
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "prometheus"
-            },
-            "exemplar": true,
-            "expr": "histogram_quantile(0.90, sum(rate(traefik_controller_request_duration_seconds_bucket{ingress!=\"\",controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\",ingress=~\"$ingress\",exported_namespace=~\"$exported_namespace\"}[2m])) by (le))",
-            "format": "time_series",
-            "hide": false,
-            "instant": false,
-            "interval": "",
-            "intervalFactor": 1,
-            "legendFormat": "P90",
-            "refId": "D"
-          },
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "prometheus"
-            },
-            "editorMode": "code",
-            "exemplar": true,
-            "expr": "histogram_quantile(0.99, sum(rate(traefik_controller_request_duration_seconds_bucket{ingress!=\"\",controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\",ingress=~\"$ingress\",exported_namespace=~\"$exported_namespace\"}[2m])) by (le))",
-            "format": "time_series",
-            "hide": false,
-            "instant": false,
-            "interval": "",
-            "intervalFactor": 1,
-            "legendFormat": "P99",
-            "refId": "E"
-          }
-        ],
-        "title": "Ingress Percentile Response Times (Ingress Namespaces)",
-        "type": "timeseries"
-      },
-      {
-        "cards": {},
-        "color": {
-          "cardColor": "#b4ff00",
-          "colorScale": "sqrt",
-          "colorScheme": "interpolateWarm",
-          "exponent": 0.5,
-          "mode": "spectrum"
-        },
-        "dataFormat": "tsbuckets",
-        "datasource": {
-          "type": "prometheus",
-          "uid": "prometheus"
-        },
-        "description": "",
-        "fieldConfig": {
-          "defaults": {
-            "custom": {
-              "hideFrom": {
-                "legend": false,
-                "tooltip": false,
-                "viz": false
-              },
-              "scaleDistribution": {
-                "type": "linear"
-              }
-            }
-          },
-          "overrides": []
-        },
-        "gridPos": {
-          "h": 7,
-          "w": 12,
-          "x": 12,
-          "y": 24
-        },
-        "heatmap": {},
-        "hideZeroBuckets": false,
-        "highlightCards": true,
-        "id": 89,
-        "legend": {
-          "show": true
-        },
-        "options": {
-          "calculate": false,
-          "calculation": {},
-          "cellGap": 2,
-          "cellValues": {},
-          "color": {
-            "exponent": 0.5,
-            "fill": "#b4ff00",
-            "mode": "scheme",
-            "reverse": false,
-            "scale": "exponential",
-            "scheme": "Warm",
-            "steps": 128
-          },
-          "exemplars": {
-            "color": "rgba(255,0,255,0.7)"
-          },
-          "filterValues": {
-            "le": 1e-9
-          },
-          "legend": {
-            "show": true
-          },
-          "rowsFrame": {
-            "layout": "auto"
-          },
-          "showValue": "never",
-          "tooltip": {
-            "mode": "single",
-            "showColorScale": false,
-            "yHistogram": true
-          },
-          "yAxis": {
-            "axisPlacement": "left",
-            "reverse": false,
-            "unit": "s"
-          }
-        },
-        "pluginVersion": "10.4.1",
-        "reverseYBuckets": false,
-        "targets": [
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "prometheus"
-            },
-            "exemplar": true,
-            "expr": "sum(increase(traefik_controller_request_duration_seconds_bucket{ingress!=\"\",controller_pod=~\"$controller\",controller_class=~\"$controller_class\",controller_namespace=~\"$namespace\",ingress=~\"$ingress\",exported_namespace=~\"$exported_namespace\"}[2m])) by (le)",
-            "format": "heatmap",
-            "interval": "",
-            "legendFormat": "{{le}}",
-            "refId": "A"
-          }
-        ],
-        "title": "Ingress Request Latency Heatmap (Ingress Namespaces)",
-        "tooltip": {
-          "show": true,
-          "showHistogram": true
-        },
-        "type": "heatmap",
-        "xAxis": {
-          "show": true
-        },
-        "yAxis": {
-          "format": "s",
-          "logBase": 1,
-          "show": true
-        },
-        "yBucketBound": "auto"
-      },
-      {
-        "datasource": {
-          "type": "prometheus",
-          "uid": "prometheus"
-        },
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "thresholds"
-            },
-            "custom": {
-              "align": "auto",
-              "cellOptions": {
-                "type": "auto"
-              },
-              "inspect": false
-            },
-            "decimals": 2,
-            "displayName": "",
-            "mappings": [],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "green",
-                  "value": null
-                },
-                {
-                  "color": "red",
-                  "value": 80
-                }
-              ]
-            },
-            "unit": "short"
-          },
-          "overrides": [
-            {
-              "matcher": {
-                "id": "byName",
-                "options": "Last *"
-              },
-              "properties": [
-                {
-                  "id": "displayName",
-                  "value": "TTL"
-                },
-                {
-                  "id": "unit",
-                  "value": "s"
-                },
-                {
-                  "id": "custom.cellOptions",
-                  "value": {
-                    "type": "color-background"
-                  }
-                },
-                {
-                  "id": "thresholds",
-                  "value": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "rgba(245, 54, 54, 0.9)",
-                        "value": null
-                      },
-                      {
-                        "color": "rgba(237, 129, 40, 0.89)",
-                        "value": 0
-                      },
-                      {
-                        "color": "rgba(50, 172, 45, 0.97)",
-                        "value": 691200
-                      }
-                    ]
-                  }
-                }
-              ]
-            },
-            {
-              "matcher": {
-                "id": "byName",
-                "options": "Field"
-              },
-              "properties": [
-                {
-                  "id": "displayName",
-                  "value": "Host"
-                }
-              ]
-            }
-          ]
-        },
-        "gridPos": {
-          "h": 8,
-          "w": 24,
-          "x": 0,
-          "y": 31
-        },
-        "id": 85,
-        "options": {
-          "cellHeight": "sm",
-          "footer": {
-            "countRows": false,
-            "enablePagination": false,
-            "fields": "",
-            "reducer": [
-              "sum"
-            ],
-            "show": false
-          },
-          "showHeader": true
-        },
-        "pluginVersion": "10.4.1",
-        "targets": [
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "prometheus"
-            },
-            "expr": "avg(traefik_controller_ssl_expire_time_seconds{kubernetes_pod_name=~\"$controller\",namespace=~\"$namespace\",ingress=~\"$ingress\"}) by (host) - time()",
-            "format": "time_series",
-            "intervalFactor": 1,
-            "legendFormat": "{{ host }}",
-            "metric": "gke_letsencrypt_cert_expiration",
-            "refId": "A",
-            "step": 1
-          }
-        ],
-        "title": "Ingress Certificate Expiry",
-        "transformations": [
-          {
-            "id": "reduce",
-            "options": {
-              "includeTimeField": false,
-              "labelsToFields": false,
-              "reducers": [
+          "id": 22,
+          "maxDataPoints": 100,
+          "options": {
+            "colorMode": "none",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "horizontal",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
                 "lastNotNull"
-              ]
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "12.3.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "time() - process_start_time_seconds{job=\"$job\"}",
+              "format": "time_series",
+              "intervalFactor": 2,
+              "refId": "A"
             }
-          }
-        ],
-        "type": "table"
-      }
-    ],
-    "refresh": "5s",
-    "schemaVersion": 39,
-    "tags": [
-      "traefik"
-    ],
-    "templating": {
-      "list": [
-        {
-          "current": {
-            "selected": false,
-            "text": "Prometheus",
-            "value": "prometheus"
-          },
-          "hide": 0,
-          "includeAll": false,
-          "label": "datasource",
-          "multi": false,
-          "name": "DS_PROMETHEUS",
-          "options": [],
-          "query": "prometheus",
-          "queryValue": "",
-          "refresh": 1,
-          "regex": "",
-          "skipUrlSync": false,
-          "type": "datasource"
+          ],
+          "title": "Uptime",
+          "type": "stat"
         },
         {
-          "allValue": ".*",
-          "current": {
-            "selected": false,
-            "text": "All",
-            "value": "$__all"
-          },
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "definition": "",
-          "hide": 0,
-          "includeAll": true,
-          "label": "Namespace",
-          "multi": false,
-          "name": "namespace",
-          "options": [],
-          "query": "label_values(traefik_controller_config_hash, controller_namespace)",
-          "refresh": 1,
-          "regex": "",
-          "skipUrlSync": false,
-          "sort": 0,
-          "tagValuesQuery": "",
-          "tagsQuery": "",
-          "type": "query",
-          "useTags": false
+          "fieldConfig": {
+            "defaults": {
+              "decimals": 0,
+              "mappings": [
+                {
+                  "options": {
+                    "match": "null",
+                    "result": {
+                      "text": "N/A"
+                    }
+                  },
+                  "type": "special"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "#37872D",
+                    "value": 0
+                  },
+                  {
+                    "color": "#37872D",
+                    "value": 0
+                  },
+                  {
+                    "color": "#C4162A",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 3,
+            "x": 3,
+            "y": 0
+          },
+          "id": 26,
+          "maxDataPoints": 100,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "horizontal",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "max"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "12.3.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(increase(traefik_service_requests_total{code=\"404\",protocol=~\"$protocol\"}[$interval]))",
+              "format": "time_series",
+              "intervalFactor": 2,
+              "legendFormat": "",
+              "metric": "traefik_requests_total",
+              "refId": "A",
+              "step": 60
+            }
+          ],
+          "title": "404 Error Count",
+          "type": "stat"
         },
         {
-          "allValue": ".*",
-          "current": {
-            "selected": false,
-            "text": "All",
-            "value": "$__all"
-          },
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "definition": "",
-          "hide": 0,
-          "includeAll": true,
-          "label": "Controller Class",
-          "multi": false,
-          "name": "controller_class",
-          "options": [],
-          "query": "label_values(traefik_controller_config_hash{namespace=~\"$namespace\"}, controller_class) ",
-          "refresh": 1,
-          "regex": "",
-          "skipUrlSync": false,
-          "sort": 0,
-          "tagValuesQuery": "",
-          "tagsQuery": "",
-          "type": "query",
-          "useTags": false
+          "fieldConfig": {
+            "defaults": {
+              "decimals": 0,
+              "mappings": [
+                {
+                  "options": {
+                    "match": "null",
+                    "result": {
+                      "text": "N/A"
+                    }
+                  },
+                  "type": "special"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "#37872D",
+                    "value": 0
+                  },
+                  {
+                    "color": "#C4162A",
+                    "value": 0
+                  },
+                  {
+                    "color": "#C4162A",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 3,
+            "x": 6,
+            "y": 0
+          },
+          "id": 32,
+          "maxDataPoints": 100,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "horizontal",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "max"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "12.3.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(increase(traefik_service_requests_total{code=\"503\",protocol=~\"$protocol\"}[$interval]))",
+              "refId": "A"
+            }
+          ],
+          "title": "503 Error count",
+          "type": "stat"
         },
         {
-          "allValue": ".*",
-          "current": {
-            "selected": false,
-            "text": "All",
-            "value": "$__all"
-          },
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "definition": "",
-          "hide": 0,
-          "includeAll": true,
-          "label": "Controller",
-          "multi": false,
-          "name": "controller",
-          "options": [],
-          "query": "label_values(traefik_controller_config_hash{namespace=~\"$namespace\",controller_class=~\"$controller_class\"}, controller_pod) ",
-          "refresh": 1,
-          "regex": "",
-          "skipUrlSync": false,
-          "sort": 1,
-          "tagValuesQuery": "",
-          "tagsQuery": "",
-          "type": "query",
-          "useTags": false
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                }
+              },
+              "decimals": 0,
+              "mappings": [],
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 4,
+            "x": 9,
+            "y": 0
+          },
+          "id": 18,
+          "maxDataPoints": 3,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true,
+              "values": [
+                "value",
+                "percent"
+              ]
+            },
+            "pieType": "pie",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "sort": "desc",
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.3.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "topk(5, sum(traefik_service_requests_total{protocol=~\"$protocol\"}) by (code))",
+              "format": "time_series",
+              "intervalFactor": 2,
+              "legendFormat": "{{code}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Top 5 $protocol return code",
+          "type": "piechart"
         },
         {
-          "allValue": ".*",
-          "current": {
-            "selected": false,
-            "text": "All",
-            "value": "$__all"
-          },
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "definition": "",
-          "hide": 0,
-          "includeAll": true,
-          "label": "Ingress Namespace",
-          "multi": false,
-          "name": "exported_namespace",
-          "options": [],
-          "query": "label_values(traefik_controller_requests{namespace=~\"$namespace\",controller_class=~\"$controller_class\",controller_pod=~\"$controller\"}, exported_namespace) ",
-          "refresh": 1,
-          "regex": "",
-          "skipUrlSync": false,
-          "sort": 1,
-          "tagValuesQuery": "",
-          "tagsQuery": "",
-          "type": "query",
-          "useTags": false
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "fixedColor": "rgb(31, 120, 193)",
+                "mode": "fixed"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "match": "null",
+                    "result": {
+                      "text": "N/A"
+                    }
+                  },
+                  "type": "special"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "ms"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 4,
+            "x": 13,
+            "y": 0
+          },
+          "id": 20,
+          "maxDataPoints": 100,
+          "options": {
+            "colorMode": "none",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "horizontal",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "mean"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "12.3.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(traefik_entrypoint_request_duration_seconds_sum) / sum(traefik_entrypoint_requests_total) * 1000",
+              "format": "time_series",
+              "intervalFactor": 2,
+              "refId": "A"
+            }
+          ],
+          "title": "Average response time",
+          "type": "stat"
         },
         {
-          "allValue": ".*",
-          "current": {
-            "selected": false,
-            "text": "All",
-            "value": "$__all"
-          },
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "definition": "",
-          "hide": 0,
-          "includeAll": true,
-          "label": "Ingress",
-          "multi": false,
-          "name": "ingress",
-          "options": [],
-          "query": "label_values(traefik_controller_requests{namespace=~\"$namespace\",controller_class=~\"$controller_class\",controller_pod=~\"$controller\",exported_namespace=~\"$exported_namespace\"}, ingress) ",
-          "refresh": 1,
-          "regex": "",
-          "skipUrlSync": false,
-          "sort": 1,
-          "tagValuesQuery": "",
-          "tagsQuery": "",
-          "type": "query",
-          "useTags": false
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "log": 10,
+                  "type": "log"
+                },
+                "showPoints": "never",
+                "showValues": false,
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "ms"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 7,
+            "x": 17,
+            "y": 0
+          },
+          "id": 14,
+          "options": {
+            "dataLinks": [],
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.3.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(traefik_service_request_duration_seconds_sum{protocol=~\"$protocol\"}) / sum(traefik_entrypoint_requests_total{protocol=~\"$protocol\"}) * 1000",
+              "format": "time_series",
+              "intervalFactor": 2,
+              "legendFormat": "Average response time (ms)",
+              "refId": "A",
+              "step": 240
+            }
+          ],
+          "title": "Average response time",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "showValues": false,
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "decimals": 0,
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 12,
+            "x": 0,
+            "y": 6
+          },
+          "id": 10,
+          "options": {
+            "dataLinks": [],
+            "legend": {
+              "calcs": [],
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.3.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(increase(traefik_service_requests_total{code=\"404\",method=\"GET\",protocol=~\"$protocol\"}[$interval])) by (service)",
+              "format": "time_series",
+              "interval": "",
+              "intervalFactor": 2,
+              "legendFormat": "{{service}} ",
+              "refId": "A",
+              "step": 240
+            }
+          ],
+          "title": "Bad Status Code Count",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "bars",
+                "fillOpacity": 100,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "showValues": false,
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "decimals": 0,
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 12,
+            "x": 12,
+            "y": 6
+          },
+          "id": 4,
+          "options": {
+            "dataLinks": [],
+            "legend": {
+              "calcs": [
+                "mean",
+                "max",
+                "min"
+              ],
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.3.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(rate(traefik_service_requests_total[$interval]))",
+              "format": "time_series",
+              "intervalFactor": 2,
+              "legendFormat": "Total requests",
+              "refId": "A"
+            }
+          ],
+          "title": "Total requests",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "showValues": false,
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "normal"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 10,
+            "x": 0,
+            "y": 12
+          },
+          "id": 8,
+          "options": {
+            "dataLinks": [],
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.3.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "process_open_fds{job=~\"$job\"}",
+              "format": "time_series",
+              "interval": "",
+              "intervalFactor": 2,
+              "legendFormat": "{{ instance }}",
+              "refId": "A",
+              "step": 240
+            }
+          ],
+          "title": "Used sockets",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "showValues": false,
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "decimals": 0,
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 14,
+            "x": 10,
+            "y": 12
+          },
+          "id": 24,
+          "options": {
+            "dataLinks": [],
+            "legend": {
+              "calcs": [
+                "mean",
+                "lastNotNull",
+                "sum"
+              ],
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.3.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(rate(traefik_service_requests_total{protocol=~\"http|https\"}[$interval])) by (service)",
+              "format": "time_series",
+              "interval": "",
+              "intervalFactor": 2,
+              "legendFormat": "{{service}} ",
+              "refId": "A",
+              "step": 240
+            }
+          ],
+          "title": "Access to services",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 70,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "showValues": false,
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "normal"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "decimals": 0,
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 0,
+            "y": 18
+          },
+          "id": 30,
+          "options": {
+            "dataLinks": [],
+            "legend": {
+              "calcs": [
+                "mean",
+                "lastNotNull",
+                "max"
+              ],
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.3.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(traefik_entrypoint_open_connections) by (method)",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "legendFormat": "{{ method }}",
+              "refId": "A"
+            }
+          ],
+          "title": "ENTRYPOINT - Open Connections",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 70,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "showValues": false,
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "normal"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "decimals": 0,
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 12,
+            "y": 18
+          },
+          "id": 28,
+          "options": {
+            "dataLinks": [],
+            "legend": {
+              "calcs": [
+                "mean",
+                "lastNotNull",
+                "max"
+              ],
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.3.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(traefik_service_open_connections) by (method)",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "legendFormat": "{{ method }}",
+              "refId": "A"
+            }
+          ],
+          "title": "SERVICE - Open Connections",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 24,
+            "x": 0,
+            "y": 25
+          },
+          "id": 12,
+          "options": {
+            "dataLinks": []
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(increase(traefik_service_requests_total{protocol=~\"$protocol\"}[$interval])) by (code)",
+              "format": "time_series",
+              "intervalFactor": 2,
+              "legendFormat": "{{code}}",
+              "refId": "A",
+              "step": 120
+            }
+          ],
+          "title": "Status Code Count ",
+          "type": "timeseries"
         }
-      ]
-    },
-    "time": {
-      "from": "now-1h",
-      "to": "now"
-    },
-    "timepicker": {
-      "refresh_intervals": [
-        "5s",
-        "10s",
-        "30s",
-        "2m",
-        "5m",
-        "15m",
-        "30m",
-        "1h",
-        "2h",
-        "1d"
       ],
-      "time_options": [
-        "5m",
-        "15m",
-        "1h",
-        "6h",
-        "12h",
-        "24h",
-        "2d",
-        "7d",
-        "30d"
-      ]
-    },
-    "timezone": "browser",
-    "title": "NGINX Ingress controller",
-    "uid": "traefik",
-    "version": 1,
-    "weekStart": ""
+      "preload": false,
+      "refresh": "",
+      "schemaVersion": 42,
+      "tags": [
+        "traefik",
+        "load-balancer",
+        "docker",
+        "prometheus"
+      ],
+      "templating": {
+        "list": [
+          {
+            "current": {
+              "text": "traefik-metrics",
+              "value": "traefik-metrics"
+            },
+            "datasource": "prometheus",
+            "definition": "",
+            "includeAll": false,
+            "label": "Job:",
+            "name": "job",
+            "options": [],
+            "query": "label_values(job)",
+            "refresh": 1,
+            "regex": "",
+            "sort": 2,
+            "type": "query"
+          },
+          {
+            "current": {
+              "text": [
+                "All"
+              ],
+              "value": [
+                "$__all"
+              ]
+            },
+            "datasource": "prometheus",
+            "definition": "label_values(traefik_service_requests_total, protocol)",
+            "includeAll": true,
+            "label": "Service:",
+            "multi": true,
+            "name": "protocol",
+            "options": [],
+            "query": "label_values(traefik_service_requests_total, protocol)",
+            "refresh": 1,
+            "regex": "",
+            "type": "query"
+          },
+          {
+            "auto": true,
+            "auto_count": 30,
+            "auto_min": "10s",
+            "current": {
+              "text": "$__auto",
+              "value": "$__auto"
+            },
+            "label": "Interval",
+            "name": "interval",
+            "options": [
+              {
+                "selected": false,
+                "text": "1m",
+                "value": "1m"
+              },
+              {
+                "selected": false,
+                "text": "10m",
+                "value": "10m"
+              },
+              {
+                "selected": false,
+                "text": "30m",
+                "value": "30m"
+              },
+              {
+                "selected": false,
+                "text": "1h",
+                "value": "1h"
+              },
+              {
+                "selected": false,
+                "text": "6h",
+                "value": "6h"
+              },
+              {
+                "selected": false,
+                "text": "12h",
+                "value": "12h"
+              },
+              {
+                "selected": false,
+                "text": "1d",
+                "value": "1d"
+              },
+              {
+                "selected": false,
+                "text": "7d",
+                "value": "7d"
+              },
+              {
+                "selected": false,
+                "text": "14d",
+                "value": "14d"
+              },
+              {
+                "selected": false,
+                "text": "30d",
+                "value": "30d"
+              }
+            ],
+            "query": "1m,10m,30m,1h,6h,12h,1d,7d,14d,30d",
+            "refresh": 2,
+            "type": "interval"
+          }
+        ]
+      },
+      "time": {
+        "from": "now-3h",
+        "to": "now"
+      },
+      "timepicker": {},
+      "timezone": "",
+      "title": "Traefik 2",
+      "uid": "3ipsWfViz",
+      "version": 1
     }
 </#noparse>

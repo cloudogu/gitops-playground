@@ -657,7 +657,7 @@ class Config {
         IngressHelmSchema helm = new IngressHelmSchema(
                 chart: 'traefik',
                 repoURL: 'https://traefik.github.io/charts',
-                version: '38.0.2'
+                version: '39.0.0'
         )
         static class IngressHelmSchema extends HelmConfigWithValues {
             @Option(names = ['--ingress-image'], description = HELM_CONFIG_IMAGE_DESCRIPTION)

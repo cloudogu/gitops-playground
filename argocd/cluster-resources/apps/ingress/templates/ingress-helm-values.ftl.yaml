@@ -66,11 +66,17 @@ deployment:
     sendAnonymousUsage: false
 
 <#if config.features.monitoring.active == true>
-  metrics:
+metrics:
+  enabled: true
+  prometheus:
     enabled: true
+    service:
+      enabled: true
     serviceMonitor:
       enabled: true
       namespace: ${config.application.namePrefix}monitoring
+      additionalLabels:
+        release: kube-prometheus-stack
 </#if>
 
 # Enable Kubernetes Gateway API

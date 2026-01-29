@@ -105,9 +105,9 @@ features:
   ingress:
     active: false
     helm:
-      chart: "traefik-helm-chart"
-      repoURL: "https://github.com/traefik/traefik-helm-chart"
-      version: "38.0.2"
+      chart: "traefik"
+      repoURL: "https://traefik.github.io/charts"
+      version: "39.0.0"
       values: {}
       image: ""
   certManager:

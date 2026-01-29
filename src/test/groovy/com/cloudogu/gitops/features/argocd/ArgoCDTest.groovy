@@ -273,10 +273,9 @@ class ArgoCDTest {
         argocd.install()
         repoLayout = argocd.repoLayout()
 
-        // TODO: For the traefik dashboard
         assertThat(new File(repoLayout.monitoringDir())).exists()
-//        assertThat(new File(repoLayout.monitoringDir() + "/misc/dashboard/ingress-nginx-dashboard.yaml")).doesNotExist()
-//        assertThat(new File(repoLayout.monitoringDir() + "/misc/dashboard/ingress-nginx-dashboard-requests-handling.yaml")).doesNotExist()
+        assertThat(new File(repoLayout.monitoringDir() + "/misc/dashboard/traefik-dashboard.yaml")).doesNotExist()
+        assertThat(new File(repoLayout.monitoringDir() + "/misc/dashboard/traefik-dashboard-requests-handling.yaml")).doesNotExist()
     }
 
     @Test

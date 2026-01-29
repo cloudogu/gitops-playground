@@ -249,7 +249,7 @@ docker run --rm -t -u $(id -u) \
     ghcr.io/cloudogu/gitops-playground --yes --internal-registry-port="3000$INSTANCE" -x \
       --base-url="http://localhost:808$INSTANCE" --argocd --ingress
 
-echo "Once Argo CD has deployed the nginx-ingress. you cn reach your instance at http://scmm.localhost:808$INSTANCE for example"
+echo "Once Argo CD has deployed the traefik-ingress. you cn reach your instance at http://scmm.localhost:808$INSTANCE for example"
 ```
 
 ### Access local docker network
@@ -298,7 +298,7 @@ repository so need to be upgraded regularly.
   * GitOps-build-lib + `buildImages`
   * ces-build-lib
   * Spring PetClinic
-  * NGINX Helm Chart
+  * Traefik Helm Chart
 * Dockerfile
   * Alpine
   * GraalVM
@@ -609,7 +609,7 @@ docker run --rm -t -u $(id -u) \
    -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
     --net=host \
     ${GOP_IMAGE} -x \
-    --yes --argocd --ingress-nginx --base-url=http://localhost \
+    --yes --argocd --ingress --base-url=http://localhost \
     --vault=dev --monitoring --mailhog --cert-manager \
     --create-image-pull-secrets \
     --registry-url=localhost:30000 \
@@ -632,7 +632,7 @@ docker run --rm -t -u $(id -u) \
     --external-secrets-image=localhost:30000/proxy/external-secrets:latest \
     --external-secrets-certcontroller-image=localhost:30000/proxy/external-secrets:latest \
     --external-secrets-webhook-image=localhost:30000/proxy/external-secrets:latest \
-    --ingress-image=localhost:30000/proxy/ingress-nginx:latest \
+    --ingress-image=localhost:30000/proxy/traefik:latest \
     --cert-manager-image=localhost:30000/proxy/cert-manager-controller:latest \
     --cert-manager-webhook-image=localhost:30000/proxy/cert-manager-webhook:latest \
     --cert-manager-cainjector-image=localhost:30000/proxy/cert-manager-cainjector:latest \
@@ -676,12 +676,12 @@ spec:
     - from:
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: ${prefix}ingress-nginx
+              kubernetes.io/metadata.name: ${prefix}traefik
         - podSelector:
             matchLabels:
               app.kubernetes.io/component: controller
-              app.kubernetes.io/instance: ingress-nginx
-              app.kubernetes.io/name: ingress-nginx
+              app.kubernetes.io/instance: traefik
+              app.kubernetes.io/name: traefik
 ---
 kind: NetworkPolicy
 apiVersion: networking.k8s.io/v1
@@ -764,7 +764,7 @@ IMAGE_PATTERNS=('external-secrets' \
   'prometheus' \
   'grafana' \
   'sidecar' \
-  'nginx')
+  'traefik')
 BASIC_SRC_IMAGES=$(
   kubectl get pods --all-namespaces -o jsonpath="{range .items[*]}{range .spec.containers[*]}{'\n'}{.image}{end}{end}" \
   | grep -Ff <(printf "%s\n" "${IMAGE_PATTERNS[@]}") \
@@ -814,7 +814,7 @@ docker run -it -u $(id -u) \
       --external-secrets-certcontroller-image localhost:30002/library/external-secrets:v0.6.1 \
       --external-secrets-webhook-image localhost:30002/library/external-secrets:v0.6.1 \
       --vault-image localhost:30002/library/vault:1.12.0 \
-      --ingress-nginx-image localhost:30002/library/nginx:1.23.3-debian-11-r8
+      --ingress-image localhost:30002/library/traefik:3.6.7
 ```
 
 In a different shell start this script, that waits for Argo CD and then goes offline.
@@ -985,39 +985,19 @@ We have to install the ingress-controller manually:
 
 
 ```shell
-cat <<'EOF' | helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+cat <<'EOF' | helm upgrade --install traefik traefik/traefik \
   --version 4.12.1 \
-  --namespace ingress-nginx \
+  --namespace traefik \
   --create-namespace \
-  -f -
-controller:
-  annotations:
-    ingressclass.kubernetes.io/is-default-class: "true"
-  watchIngressWithoutClass: true
-  admissionWebhooks:
-    enabled: false
-  kind: Deployment
-  service:
-    externalTrafficPolicy: Local
-  replicaCount: 2
-  resources: null
-  ingressClassResource:
-    enabled: true
-    default: true
-  config:
-    use-gzip: "true"
-    enable-brotli: "true"
-    log-format-upstream: >
-      $remote_addr - $remote_user [$time_local] "$request" $status $body_bytes_sent
-      "$http_referer" "$http_user_agent" "$host" $request_length $request_time
-      [$proxy_upstream_name] [$proxy_alternative_upstream_name] $upstream_addr
-      $upstream_response_length $upstream_response_time $upstream_status $req_id
+  -f -  
+  
 EOF
 ```
 
 If the helm repos are not present or up-to-date:
 
 ```shell
-helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm repo add traefik https://traefik.github.io/charts
 helm repo update
+helm install traefik traefik/traefik --version 39.0.0
 ```

@@ -122,7 +122,7 @@ class IngressTest {
         assertThat(helmConfig.value.chart).isEqualTo('traefik')
 
         assertThat(helmConfig.value.repoURL).isEqualTo('https://traefik.github.io/charts')
-        assertThat(helmConfig.value.version).isEqualTo('38.0.2')
+        assertThat(helmConfig.value.version).isEqualTo('39.0.0')
         verify(deploymentStrategy).deployFeature(
                 'http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
                 'traefik', '.', '1.2.3', 'foo-traefik',

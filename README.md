@@ -482,7 +482,7 @@ That is, if you pass a param via CLI, for example, it will overwrite the corresp
 | `--ingress-image` | `features.ingress.helm.image` | `''`                                 | String | Ingress controller image |
 | - | `features.ingress.helm.chart` | `'traefik'`                          | String | Name of the Helm chart |
 | - | `features.ingress.helm.repoURL` | `'https://traefik.github.io/charts'` | String | Repository url from which the Helm chart should be obtained |
-| - | `features.ingress.helm.version` | `'38.0.2'`                      | String | The version of the Helm chart to be installed |
+| - | `features.ingress.helm.version` | `'39.0.0'`                           | String | The version of the Helm chart to be installed |
 | - | `features.ingress.helm.values` | `[:]`                                | Map | Helm values of the chart |
 
 ###### Cert Manager
