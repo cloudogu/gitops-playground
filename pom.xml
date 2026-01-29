@@ -87,6 +87,7 @@
       </exclusions>
     </dependency>
 
+    <!-- not included in groovy-all -->
     <dependency>
       <groupId>org.apache.groovy</groupId>
       <artifactId>groovy-yaml</artifactId>
