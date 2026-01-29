@@ -1209,7 +1209,7 @@ Set the parameter `--monitoring` so the [kube-prometheus-stack](https://github.c
 via its [helm-chart](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack)
 is being deployed including dashboards for 
 - ArgoCD
-- Ingress Nginx Controller
+- Traefik Ingress Controller
 - Prometheus
 - SCMManager
 - Jenkins.
