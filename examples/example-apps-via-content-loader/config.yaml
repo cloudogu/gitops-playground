@@ -23,7 +23,7 @@ content:
       createJenkinsJob: true
     - url: https://github.com/cloudogu/gitops-playground
       path: examples/example-apps-via-content-loader/
-      ref: feature/example-apps-repo-structure
+      ref: main
       templating: true
       type: FOLDER_BASED
       overwriteMode: UPGRADE
