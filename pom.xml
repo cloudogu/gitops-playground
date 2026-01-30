@@ -28,7 +28,6 @@
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
     
     <versionNameVersion>2.2.0</versionNameVersion>
-    <mockitoVersion>4.8.0</mockitoVersion>
     <okhttpVersion>4.11.0</okhttpVersion>
     <retrofitVersion>2.9.0</retrofitVersion>
     <groovy.version>4.0.12</groovy.version>
@@ -60,6 +59,7 @@
   </organization>
 
 
+    <!-- Wiremock requires Jetty 11 in Tests. Micronaut brings Jetty12. Forcing Jetty11 here to run tests -->
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -77,6 +77,11 @@
       <groupId>io.micronaut</groupId>
       <artifactId>micronaut-inject-groovy</artifactId>
       <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+        <groupId>io.micronaut</groupId>
+        <artifactId>micronaut-inject-aop</artifactId>
     </dependency>
 
     <dependency>
@@ -158,7 +163,7 @@
       <dependency>
         <groupId>org.springframework.security</groupId>
         <artifactId>spring-security-crypto</artifactId>
-        <version>6.3.8</version>
+        <version>7.0.2</version>
       </dependency>
 
       <dependency>
@@ -271,14 +276,12 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <version>${mockitoVersion}</version>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-junit-jupiter</artifactId>
-      <version>${mockitoVersion}</version>
       <scope>test</scope>
     </dependency>
 
