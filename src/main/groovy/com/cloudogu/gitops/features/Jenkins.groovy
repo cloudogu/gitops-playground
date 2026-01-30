@@ -246,7 +246,7 @@ class Jenkins extends Feature {
                 '--restart=Never', '-ti', '--rm', '--quiet')
         // --quiet is necessary to avoid 'pod deleted' output
 
-        def lines = etcGroup.split('\n')
+        def lines = etcGroup?.split('\n')
         for (String it : lines) {
             def parts = it.split(":")
             if (parts[0] == 'docker') {
