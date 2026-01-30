@@ -58,7 +58,6 @@
     <url>https://www.cloudogu.com/</url>
   </organization>
 
-
     <!-- Wiremock requires Jetty 11 in Tests. Micronaut brings Jetty12. Forcing Jetty11 here to run tests -->
     <dependencyManagement>
         <dependencies>
@@ -79,9 +78,12 @@
       <scope>provided</scope>
     </dependency>
 
+    <!-- Source: https://mvnrepository.com/artifact/io.micronaut.reactor/micronaut-reactor -->
     <dependency>
-        <groupId>io.micronaut</groupId>
-        <artifactId>micronaut-inject-aop</artifactId>
+        <groupId>io.micronaut.reactor</groupId>
+        <artifactId>micronaut-reactor</artifactId>
+        <version>3.9.1</version>
+        <scope>runtime</scope>
     </dependency>
 
     <dependency>
