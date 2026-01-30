@@ -59,6 +59,19 @@
     <url>https://www.cloudogu.com/</url>
   </organization>
 
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-bom</artifactId>
+                <version>11.0.26</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
   <dependencies>
     <dependency>
       <groupId>io.micronaut</groupId>
