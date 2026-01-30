@@ -75,7 +75,6 @@
     <dependency>
       <groupId>io.micronaut</groupId>
       <artifactId>micronaut-inject-groovy</artifactId>
-      <scope>provided</scope>
     </dependency>
 
     <!-- Source: https://mvnrepository.com/artifact/io.micronaut.reactor/micronaut-reactor -->
