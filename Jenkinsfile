@@ -16,12 +16,12 @@ properties([
 
         parameters([
                 booleanParam(defaultValue: false, name: 'forcePushImage', description: 'Pushes the image with the current git commit as tag, even when it is on a branch'),
-                choice(name: 'chooseProfile', choices: ['minimal', 'all profiles', 'full', 'full-prefix', 'content-examples', 'operator-full', 'operator-minimal'], description: 'Starts GOP with given profile only and execute tests which belongs to profile.')
+                choice(name: 'chooseProfile', choices: ['minimal', 'all profiles', 'full', 'full-prefix', 'content-examples', 'operator-full','operator-mandants'], description: 'Starts GOP with given profile only and execute tests which belongs to profile.')
         ])
 ])
 
 // definition of profiles, without 'all'
-def predefinedProfiles = ['full', 'full-prefix', 'content-examples', 'minimal',  'operator-full',  'operator-minimal']
+def predefinedProfiles = ['full', 'full-prefix', 'content-examples', 'minimal',  'operator-full',  'operator-mandants']
 def profilesToTest = predefinedProfiles.contains(params.chooseProfile) ? [ params.chooseProfile ] : predefinedProfiles
 echo "current profiles to test ${profilesToTest}"
 node('high-cpu') {
