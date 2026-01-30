@@ -31,7 +31,7 @@ class PrefixProfileTestIT extends ProfileTestSetup {
     String ingressNginxNs = 'my-prefix-ingress-nginx' /* Jenking can not start ingress*/
     static String certManagerNs = 'my-prefix-cert-manager'
     String jenkinsNs = 'my-prefix-jenkins'
-    String monitoringNs = 'my-prefix-monitoring'
+    static String monitoringNs = 'my-prefix-monitoring'
     String secretsNs = 'my-prefix-secrets'
     String exampleProductionNs = 'my-prefix-example-apps-production'
 
@@ -57,6 +57,20 @@ class PrefixProfileTestIT extends ProfileTestSetup {
         try (KubernetesClient client = new KubernetesClientBuilder().build()) {
             def actualPods = client.pods().inNamespace(certManagerNs).list().getItems()
             assert !actualPods.isEmpty(): "No pods found - namespace: ${certManagerNs}"
+            def notRunningPods = actualPods.findAll { pod ->
+                pod.getStatus().getPhase() != "Running"
+            }
+            assert notRunningPods.isEmpty(): "These pods in ${certManagerNs} are not yet running: ${notRunningPods.collect { it.getMetadata().getName() + ':' + it.getStatus().getPhase() }}"
+        }
+        catch (KubernetesClientException ex) {
+            fail("Unexpected Kubernetes exception", ex)
+        }
+    }
+    private static void waitUntilMonitoringIsRunning() {
+        // Check Pod
+        try (KubernetesClient client = new KubernetesClientBuilder().build()) {
+            def actualPods = client.pods().inNamespace(monitoringNs).list().getItems()
+            assert !actualPods.isEmpty(): "No pods found - namespace: ${monitoringNs}"
             def notRunningPods = actualPods.findAll { pod ->
                 pod.getStatus().getPhase() != "Running"
             }

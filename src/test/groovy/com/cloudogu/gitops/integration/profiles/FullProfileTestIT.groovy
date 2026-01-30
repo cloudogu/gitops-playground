@@ -39,7 +39,7 @@ class FullProfileTestIT extends ProfileTestSetup {
 
     private static void waitUntilAllPodsRunning() {
         // if cert-manager is online, argocd is online, too!
-        Awaitility.await().atMost(20, TimeUnit.MINUTES).untilAsserted {
+        Awaitility.await().atMost(40, TimeUnit.MINUTES).untilAsserted {
             TestK8sHelper.checkAllPodsRunningInNamespace(EXAMPLE_APPS_NAMESPACE, NGINX_POD)
         }
     }

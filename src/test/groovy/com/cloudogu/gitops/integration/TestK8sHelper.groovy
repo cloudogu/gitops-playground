@@ -124,7 +124,7 @@ class TestK8sHelper {
         try (KubernetesClient client = new KubernetesClientBuilder().build()) {
             // Check Pod
             def actualPods = client.pods().inNamespace(namespace).list().getItems().findAll { it.metadata.name.startsWith(podNameStartsWith) }
-            assert !actualPods.isEmpty(): "No pods found in namespace: ${namespace}"
+            assert !actualPods.isEmpty(): "No pods found in namespace: ${namespace} with name ${podNameStartsWith}"
             def notRunningPods = actualPods.findAll { pod -> pod.getStatus().getPhase() != running }
 
             assert notRunningPods.isEmpty(): "These pods in ${namespace} are not yet running: ${notRunningPods.collect { it.getMetadata().getName() + ':' + it.getStatus().getPhase() }}"
