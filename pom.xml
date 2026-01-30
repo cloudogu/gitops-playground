@@ -35,7 +35,7 @@
     <jsonschema.version>4.35.0</jsonschema.version>
     <kubernetes.client.java.version>24.0.0</kubernetes.client.java.version>
     <kubernetes.fabric8.java.version>7.5.2</kubernetes.fabric8.java.version>
-    <wiremock.version>4.0.0-beta.27</wiremock.version>
+    <wiremock.version>3.13.2</wiremock.version>
   </properties>
 
   <scm>
