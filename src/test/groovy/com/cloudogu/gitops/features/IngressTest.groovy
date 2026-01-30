@@ -138,9 +138,9 @@ class IngressTest {
 
         def actual = parseActualYaml()
 
-        assertThat(actual['deployment']['metrics']['enabled']).isEqualTo(true)
-        assertThat(actual['deployment']['metrics']['serviceMonitor']['enabled']).isEqualTo(true)
-        assertThat(actual['deployment']['metrics']['serviceMonitor']['namespace']).isEqualTo("heliospheremonitoring")
+        assertThat(actual['metrics']['enabled']).isEqualTo(true)
+        assertThat(actual['metrics']['prometheus']['serviceMonitor']['enabled']).isEqualTo(true)
+        assertThat(actual['metrics']['prometheus']wF['serviceMonitor']['namespace']).isEqualTo("heliospheremonitoring")
     }
 
     @Test
