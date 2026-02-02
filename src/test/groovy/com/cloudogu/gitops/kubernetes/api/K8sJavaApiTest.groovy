@@ -1,7 +1,6 @@
-package com.cloudogu.gitops.utils
+package com.cloudogu.gitops.kubernetes.api
 
 import com.cloudogu.gitops.config.Credentials
-import com.cloudogu.gitops.kubernetes.api.K8sJavaApiClient
 import io.fabric8.kubernetes.api.model.Secret
 import io.fabric8.kubernetes.api.model.SecretBuilder
 import io.fabric8.kubernetes.client.KubernetesClient
@@ -15,7 +14,7 @@ import org.junit.jupiter.api.Test
 class K8sJavaApiTest {
 
     //https://github.com/fabric8io/kubernetes-client?tab=readme-ov-file#mocking-kubernetes
-    KubernetesClient client //Client to set mock data, gets injected by Annotation
+    KubernetesClient client //Client to set mock data, gets injected by annotation
     K8sJavaApiClient k8sJavaApiClient
     KubernetesMockServer server //Use server for non CRUD
 
