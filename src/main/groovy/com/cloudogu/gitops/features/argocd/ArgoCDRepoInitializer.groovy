@@ -23,15 +23,15 @@ class ArgoCDRepoInitializer {
         ArgoCDRepoContext ctx = new ArgoCDRepoContext()
 
         if (!config.multiTenant.useDedicatedInstance) {
-            // Single-Instance: nur ein cluster-resources Repo (Tenant-Provider)
-            def cluster = createRepoInitializationAction(
+            // Single-Instance: single cluster-resources repo (tenant provider)
+            def clusterResourcesRepo = createRepoInitializationAction(
                     'argocd/cluster-resources',
                     'argocd/cluster-resources',
                     gitHandler.tenant
             )
-            ctx.addClusterResources(cluster)
+            ctx.addClusterResources(clusterResourcesRepo)
         } else {
-            // Dedicated: Tenant-Bootstrap-Repo + zentrales cluster-resources Repo
+            // Dedicated: a tenant bootstrap repo and a centralized cluster-resources repo
 
             def tenantBootstrap = createRepoInitializationAction(
                     'argocd/cluster-resources/apps/argocd/multiTenant/tenant',
@@ -48,7 +48,6 @@ class ArgoCDRepoInitializer {
             ctx.addClusterResources(cluster)
         }
 
-        // welche Subdirs werden überhaupt nach cluster-resources gespiegelt?
         ctx.clusterResources.subDirsToCopy = determineClusterResourceSubDirs()
 
         return ctx
