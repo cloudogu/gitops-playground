@@ -31,12 +31,10 @@ class ArgoCD extends Feature {
     private final FileSystemUtils fileSystemUtils
     private final GitRepoFactory repoProvider
     private final GitHandler gitHandler
-    private final List<RepoInitializationAction> gitRepos = []
-
     private final String password
 
-    protected RepoInitializationAction clusterResourcesInitializationAction
-    protected RepoInitializationAction tenantBootstrapInitializationAction
+    private final ArgoCDRepoInitializer repoInitializer
+    private ArgoCDRepoContext repoContext
 
 
     ArgoCD(
@@ -55,6 +53,7 @@ class ArgoCD extends Feature {
         this.gitHandler = gitHandler
         this.password = config.application.password
         this.namespace = "${config.application.namePrefix}${config.features.argocd.namespace}"
+        this.repoInitializer = new ArgoCDRepoInitializer(config, repoProvider, gitHandler)
     }
 
     @Override
@@ -85,15 +84,14 @@ class ArgoCD extends Feature {
 
     @Override
     void enable() {
-        initGitOpsRepos()
-
         // init all repos (clusterResources, tenantBootstrap, etc.)
-        gitRepos.each { RepoInitializationAction repoInitializationAction -> repoInitializationAction.initLocalRepo() }
-        prepareGitOpsRepos()
+        this.repoContext = repoInitializer.initRepos()
 
-        this.gitRepos.forEach(repoInitializationAction -> {
-            repoInitializationAction.repo.commitAndPush('Initial Commit')
-        })
+        log.debug('Cloning Repositories')
+        repoContext.allRepos.each { it.initLocalRepo() }
+
+        prepareGitOpsRepos()
+        repoContext.allRepos.each { it.repo.commitAndPush('Initial Commit') }
 
         log.debug('Installing Argo CD')
         installArgoCd()
@@ -133,7 +131,7 @@ class ArgoCD extends Feature {
             k8sClient.applyYaml(repoLayout.dedicatedBootstrapApp())
 
             //Bootstrapping tenant Argocd projects
-            ArgoCDRepoLayout tenantRepoLayout = tenantRepoLayout()
+            ArgoCDRepoLayout tenantRepoLayout = new ArgoCDRepoLayout(repoContext.tenantBootstrap.repo.getAbsoluteLocalRepoTmpDir())
             k8sClient.applyYaml(Path.of(tenantRepoLayout.projectsDir(), "argocd.yaml").toString())
             k8sClient.applyYaml(Path.of(tenantRepoLayout.applicationsDir(), "bootstrap.yaml").toString())
         } else {
@@ -147,62 +145,6 @@ class ArgoCD extends Feature {
         // For development keeping it in helm makes it easier (e.g. for helm uninstall).
         k8sClient.delete('secret', namespace,
                 new Tuple2('owner', 'helm'), new Tuple2('name', 'argocd'))
-    }
-
-
-    private void initGitOpsRepos() {
-        initTenantRepos()
-        initCentralRepos()
-
-        Set<String> clusterResourceSubDirs = new LinkedHashSet<>()
-
-        clusterResourceSubDirs.add(ArgoCDRepoLayout.argocdSubdirRel())
-
-        if (config.features.certManager.active) {
-            clusterResourceSubDirs.add(ArgoCDRepoLayout.certManagerSubdirRel())   // "apps/cert-manager"
-        }
-        if (config.features.ingressNginx.active) {
-            clusterResourceSubDirs.add(ArgoCDRepoLayout.ingressSubdirRel())
-        }
-
-        if (config.jenkins.active) {
-            clusterResourceSubDirs.add(ArgoCDRepoLayout.jenkinsSubdirRel())
-        }
-        if (config.features.mail.active) {
-            clusterResourceSubDirs.add(ArgoCDRepoLayout.mailhogSubdirRel())
-        }
-
-        if (config.features.monitoring.active) {
-            clusterResourceSubDirs.add(ArgoCDRepoLayout.monitoringSubdirRel())
-        }
-        if (config.scm.scmManager?.url) {
-            clusterResourceSubDirs.add(ArgoCDRepoLayout.scmManagerSubdirRel())
-        }
-
-        if (config.features.secrets.active) {
-            clusterResourceSubDirs.add(ArgoCDRepoLayout.secretsSubdirRel())
-            clusterResourceSubDirs.add(ArgoCDRepoLayout.vaultSubdirRel())
-        }
-
-        clusterResourcesInitializationAction.subDirsToCopy = clusterResourceSubDirs
-    }
-
-    private void initTenantRepos() {
-        if (!config.multiTenant.useDedicatedInstance) {
-            clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources', this.gitHandler.tenant)
-            this.gitRepos.add(clusterResourcesInitializationAction)
-
-        } else {
-            tenantBootstrapInitializationAction = createRepoInitializationAction('argocd/cluster-resources/apps/argocd/multiTenant/tenant', 'argocd/cluster-resources', this.gitHandler.tenant)
-            this.gitRepos.add(tenantBootstrapInitializationAction)
-        }
-    }
-
-    private void initCentralRepos() {
-        if (config.multiTenant.useDedicatedInstance) {
-            clusterResourcesInitializationAction = createRepoInitializationAction('argocd/cluster-resources', 'argocd/cluster-resources', true)
-            this.gitRepos.add(clusterResourcesInitializationAction)
-        }
     }
 
     private void prepareGitOpsRepos() {
@@ -366,12 +308,12 @@ class ArgoCD extends Feature {
                                 ["argocd-argocd-server", "argocd-argocd-application-controller", "argocd-applicationset-controller"]
                         )
                         .withConfig(config)
-                        .withRepo(clusterResourcesInitializationAction.repo)
+                        .withRepo(repoContext.clusterResources.repo)
                         .withSubfolder(repoLayout.operatorRbacTenantSubfolder())
                         .generate()
             }
 
-            //Generating Central ArgoCD RBACs for mananged namespaces
+            //Generating Central ArgoCD RBACs for managed namespaces
             for (String ns : config.application.namespaces.activeNamespaces) {
                 log.debug("Generate RBAC permissions for centralized ArgoCD to access tenant ArgoCDs")
                 new RbacDefinition(Role.Variant.ARGOCD)
@@ -382,7 +324,7 @@ class ArgoCD extends Feature {
                                 ["argocd-argocd-server", "argocd-argocd-application-controller", "argocd-applicationset-controller"]
                         )
                         .withConfig(config)
-                        .withRepo(clusterResourcesInitializationAction.repo)
+                        .withRepo(repoContext.clusterResources.repo)
                         .withSubfolder(repoLayout.operatorRbacSubfolder())
                         .generate()
             }
@@ -396,7 +338,7 @@ class ArgoCD extends Feature {
                                 ["argocd-argocd-server", "argocd-argocd-application-controller", "argocd-applicationset-controller"]
                         )
                         .withConfig(config)
-                        .withRepo(clusterResourcesInitializationAction.repo)
+                        .withRepo(repoContext.clusterResources.repo)
                         .withSubfolder(repoLayout.operatorRbacSubfolder())
                         .generate()
             }
@@ -410,7 +352,7 @@ class ArgoCD extends Feature {
                                 ["argocd-argocd-server", "argocd-argocd-application-controller", "argocd-applicationset-controller"]
                         )
                         .withConfig(config)
-                        .withRepo(clusterResourcesInitializationAction.repo)
+                        .withRepo(repoContext.clusterResources.repo)
                         .withSubfolder(repoLayout.operatorRbacSubfolder())
                         .generate()
             }
@@ -465,15 +407,6 @@ class ArgoCD extends Feature {
         }
     }
 
-    protected RepoInitializationAction createRepoInitializationAction(String localSrcDir, String scmRepoTarget, Boolean isCentral) {
-        GitProvider provider = (Boolean.TRUE == isCentral) ? gitHandler.central : gitHandler.tenant
-        new RepoInitializationAction(config, repoProvider.getRepo(scmRepoTarget, provider), this.gitHandler, localSrcDir)
-    }
-
-    protected RepoInitializationAction createRepoInitializationAction(String localSrcDir, String scmRepoTarget, GitProvider gitProvider) {
-        new RepoInitializationAction(config, repoProvider.getRepo(scmRepoTarget, gitProvider), this.gitHandler, localSrcDir)
-    }
-
     private void createRepoCredentialsSecret(String secretName, String ns, String url, String username, String password) {
         k8sClient.createSecret('generic', secretName, ns,
                 new Tuple2('url', url),
@@ -485,11 +418,10 @@ class ArgoCD extends Feature {
     }
 
     protected ArgoCDRepoLayout repoLayout() {
-        new ArgoCDRepoLayout(clusterResourcesInitializationAction.repo.getAbsoluteLocalRepoTmpDir())
+        new ArgoCDRepoLayout(getRepoRootDir())
     }
 
-    private ArgoCDRepoLayout tenantRepoLayout() {
-        new ArgoCDRepoLayout(tenantBootstrapInitializationAction.repo.getAbsoluteLocalRepoTmpDir())
+    private String getRepoRootDir() {
+        return repoContext.clusterResources.repo.getAbsoluteLocalRepoTmpDir()
     }
-
 }

@@ -15,7 +15,7 @@ controller:
   ingressClassResource:
     enabled: true
     default: true
-  config:
+  config:K
     use-gzip: "true"
     enable-brotli: "true"
     log-format-upstream: >
