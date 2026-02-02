@@ -664,6 +664,8 @@ class Config {
             @JsonPropertyDescription(HELM_CONFIG_IMAGE_DESCRIPTION)
             String image = ''
         }
+
+        String ingressNamespace = 'ingress'
     }
 
     static class CertManagerSchema {

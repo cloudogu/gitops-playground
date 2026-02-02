@@ -38,7 +38,7 @@ class ApplicationTest {
                 "test1-argocd",
                 "test1-example-apps-staging",
                 "test1-example-apps-production",
-                "test1-traefik",
+                "test1-" + config.features.ingress.ingressNamespace,
                 "test1-monitoring",
                 "test1-registry",
                 "test1-jenkins"
@@ -68,7 +68,7 @@ class ApplicationTest {
                 "test1-argocd",
                 "test1-example-apps-staging",
                 "test1-example-apps-production",
-                "test1-traefik",
+                "test1-" + config.features.ingress.ingressNamespace,
                 "test1-monitoring",
                 "test1-registry",
                 "test1-jenkins"
@@ -125,7 +125,7 @@ class ApplicationTest {
                 "test1-argocd",
                 "test1-example-apps-staging",
                 "test1-example-apps-production",
-                "test1-traefik",
+                "test1-" + config.features.ingress.ingressNamespace,
                 "test1-monitoring",
                 "test1-registry",
         ))

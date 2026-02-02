@@ -1,6 +1,7 @@
 #!/bin/bash
 
-cat <<EOF > values.yamldeployment:
+cat <<EOF > values.yaml
+deployment:
   kind: Deployment
   podAnnotations:
     ingressclass.kubernetes.io/is-default-class: "true"
@@ -21,7 +22,7 @@ cat <<EOF > values.yamldeployment:
           - "127.0.0.1/32"
           - "172.18.0.0/12"
   replicaCount: 2
-  resources: null
+  resources:
     general:
       level: INFO
     access:
@@ -41,6 +42,6 @@ EOF
 
 helm upgrade --install traefik traefik/traefik \
   --version 39.0.0 \
-  --namespace traefik \
+  --namespace ingress \
   --create-namespace \
   -f values.yaml && rm ./values.yaml

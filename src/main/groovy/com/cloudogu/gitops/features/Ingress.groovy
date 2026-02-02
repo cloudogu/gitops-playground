@@ -24,7 +24,7 @@ class Ingress extends Feature implements FeatureWithImage {
 
     static final String HELM_VALUES_PATH = "argocd/cluster-resources/apps/ingress/templates/ingress-helm-values.ftl.yaml"
 
-    String namespace = "${config.application.namePrefix}traefik"
+    String namespace = "${config.application.namePrefix}" + config.features.ingress.ingressNamespace
     Config config
     K8sClient k8sClient
 

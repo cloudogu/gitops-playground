@@ -55,7 +55,7 @@ class IngressTest {
         assertThat(actual['deployment']['replicaCount']).isEqualTo(2)
 
         verify(deploymentStrategy).deployFeature(config.features.ingress.helm.repoURL, 'traefik',
-                config.features.ingress.helm.chart, config.features.ingress.helm.version, 'foo-traefik',
+                config.features.ingress.helm.chart, config.features.ingress.helm.version, 'foo-' + config.features.ingress.ingressNamespace,
                 'traefik', temporaryYamlFile)
         assertThat(parseActualYaml()['deployment']['metrics']).isNull()
         assertThat(parseActualYaml()['deployment']['networkPolicy']).isNull()
@@ -125,7 +125,7 @@ class IngressTest {
         assertThat(helmConfig.value.version).isEqualTo('39.0.0')
         verify(deploymentStrategy).deployFeature(
                 'http://scmm.foo-scm-manager.svc.cluster.local/scm/repo/a/b',
-                'traefik', '.', '1.2.3', 'foo-traefik',
+                'traefik', '.', '1.2.3', 'foo-' + config.features.ingress.ingressNamespace,
                 'traefik', temporaryYamlFile, DeploymentStrategy.RepoType.GIT)
     }
 
@@ -164,7 +164,7 @@ class IngressTest {
         createIngress().install()
 
         k8sClient.commandExecutorForTest.assertExecuted(
-                'kubectl create secret docker-registry proxy-registry -n foo-traefik' +
+                'kubectl create secret docker-registry proxy-registry -n foo-ingress' +
                         ' --docker-server proxy-url --docker-username proxy-user --docker-password proxy-pw')
 
         assertThat(parseActualYaml()['deployment']['imagePullSecrets']).isEqualTo([[name: 'proxy-registry']])
@@ -184,7 +184,7 @@ class IngressTest {
 
     @Test
     void 'get namespace from feature'() {
-        assertThat(createIngress().getActiveNamespaceFromFeature()).isEqualTo('foo-traefik')
+        assertThat(createIngress().getActiveNamespaceFromFeature()).isEqualTo('foo-' + config.features.ingress.ingressNamespace)
         config.features.ingress.active = false
         assertThat(createIngress().getActiveNamespaceFromFeature()).isEqualTo(null)
     }
