@@ -205,7 +205,7 @@ def startK3d(clusterName) {
                          "PATH=${WORKSPACE}/.local/bin:${PATH}"]) {
 
                     // Start k3d cluster, binding to an arbitrary registry port
-                    sh "yes | ./scripts/init-cluster.sh --cluster-name=${clusterName} "
+                    sh "yes | ./scripts/init-cluster.sh --cluster-name=${clusterName} --bind-registry-port=0"
                 }
             }
 }
@@ -307,7 +307,8 @@ def stageStartGOPWithProfile(String clusterName, String profile) {
     docker.image(imageNames[0])
             .inside("--network=host -e KUBECONFIG=${env.WORKSPACE}/.kube/config --entrypoint=''") {
                 sh """
-                /app/scripts/apply-ng.sh \
+                /app/scripts/apply-ng.sh  \
+                    --internal-registry-port=${registryPort} "\
                     --yes=true \
                     --trace=true \
                     --profile=${profile}
