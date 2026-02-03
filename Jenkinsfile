@@ -308,7 +308,7 @@ def stageStartGOPWithProfile(String clusterName, String profile) {
             .inside("--network=host -e KUBECONFIG=${env.WORKSPACE}/.kube/config --entrypoint=''") {
                 sh """
                 /app/scripts/apply-ng.sh  \
-                    --internal-registry-port=${registryPort} "\
+                    --internal-registry-port=${registryPort} \
                     --yes=true \
                     --trace=true \
                     --profile=${profile}
