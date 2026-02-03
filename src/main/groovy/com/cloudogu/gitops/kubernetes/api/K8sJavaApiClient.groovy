@@ -86,7 +86,7 @@ class K8sJavaApiClient {
 
             return credentialsNew
         } catch (Exception e) {
-            throw new RuntimeException("Couldn't parse credentials from K8s secret: ${secretname} in namespace ${namespace}", e)
+            throw new RuntimeException("Couldn't parse credentials from K8s secret: ${credentials.secretName} in namespace ${credentials.secretNamespace}", e)
         }
     }
 }
