@@ -3,6 +3,7 @@ package com.cloudogu.gitops.features
 import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.config.Config.OverwriteMode
+import com.cloudogu.gitops.config.Credentials
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.GitRepoFactory
@@ -10,6 +11,7 @@ import com.cloudogu.gitops.utils.AllowListFreemarkerObjectWrapper
 import com.cloudogu.gitops.utils.FileSystemUtils
 import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.TemplatingEngine
+import com.fasterxml.jackson.annotation.JsonIgnore
 import freemarker.template.Configuration
 import freemarker.template.DefaultObjectWrapperBuilder
 import groovy.util.logging.Slf4j
@@ -40,6 +42,10 @@ class ContentLoader extends Feature {
     private List<RepoCoordinate> cachedRepoCoordinates = new ArrayList<>()
     private File mergedReposFolder
     private GitHandler gitHandler
+
+    //For security reasons we safe the credentialsProvider for each repo here and not in config pro each repo
+    @JsonIgnore
+    UsernamePasswordCredentialsProvider credentialsProvider
 
     ContentLoader(
             Config config, K8sClient k8sClient, GitRepoFactory repoProvider, Jenkins jenkins, GitHandler gitHandler
@@ -177,10 +183,10 @@ class ContentLoader extends Feature {
 
 
         if (repoConfig.credentials.username != null && repoConfig.credentials.password != null) {
-            repoConfig.credentialsProvider = new UsernamePasswordCredentialsProvider(repoConfig.credentials.username, repoConfig.credentials.password)
+            this.credentialsProvider = new UsernamePasswordCredentialsProvider(repoConfig.credentials.username, repoConfig.credentials.password)
         }else if(repoConfig.credentials.secretName && repoConfig.credentials.secretNamespace) {
-            this.k8sClient.getCredentialsFromSecret(repoConfig.credentials)
-            repoConfig.credentialsProvider = new UsernamePasswordCredentialsProvider(repoConfig.credentials.username, repoConfig.credentials.password)
+            Credentials credentials= this.k8sClient.getCredentialsFromSecret(repoConfig.credentials)
+            this.credentialsProvider = new UsernamePasswordCredentialsProvider(credentials.username,credentials.password)
         }
 
         cloneToLocalFolder(repoConfig, repoTmpDir)
@@ -303,8 +309,8 @@ class ContentLoader extends Feature {
                 .setDirectory(repoTmpDir)
                 .setNoCheckout(false)// Checkout default branch
 
-        if (repoConfig.credentialsProvider) {
-            cloneCommand.setCredentialsProvider(repoConfig.credentialsProvider)
+        if (this.credentialsProvider) {
+            cloneCommand.setCredentialsProvider(this.credentialsProvider)
         }
 
         def git = cloneCommand.call()
@@ -312,8 +318,8 @@ class ContentLoader extends Feature {
         if (ContentRepoType.MIRROR == repoConfig.type) {
             def fetch = git.fetch()
 
-            if (repoConfig.credentialsProvider) {
-                fetch.setCredentialsProvider(repoConfig.credentialsProvider)
+            if (this.credentialsProvider) {
+                fetch.setCredentialsProvider(this.credentialsProvider)
             }
             fetch.setRefSpecs("+refs/*:refs/*").call() // Fetch all branches and tags
         }
@@ -337,8 +343,8 @@ class ContentLoader extends Feature {
                 .setHeads(true)
                 .setTags(true)
 
-        if (repoConfig.credentialsProvider) {
-            remoteCommand.setCredentialsProvider(repoConfig.credentialsProvider)
+        if (this.credentialsProvider) {
+            remoteCommand.setCredentialsProvider(this.credentialsProvider)
         }
 
         Collection<Ref> refs = remoteCommand.call()

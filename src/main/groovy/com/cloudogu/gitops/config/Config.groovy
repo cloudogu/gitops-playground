@@ -126,8 +126,6 @@ class Config {
             // COPY and FOLDER_BASED are more advanced use cases. So we choose MIRROR as the default.
             static final ContentRepoType DEFAULT_TYPE = ContentRepoType.MIRROR
 
-            UsernamePasswordCredentialsProvider credentialsProvider
-
             @JsonPropertyDescription(CONTENT_REPO_URL_DESCRIPTION)
             String url = ''
 
