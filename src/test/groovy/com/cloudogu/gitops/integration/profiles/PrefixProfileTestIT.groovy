@@ -41,10 +41,10 @@ class PrefixProfileTestIT extends ProfileTestSetup {
 
         try {
             Awaitility.await()
-                    .atMost(20, TimeUnit.MINUTES)
+                    .atMost(40, TimeUnit.MINUTES)
                     .pollInterval(5, TimeUnit.SECONDS)
                     .untilAsserted {
-                        waitUntilCertManagerIsRunning()
+                        waitUntilPetclinicIsRunning()
                     }
         } catch (ConditionTimeoutException timeoutEx) {
             TestK8sHelper.dumpNamespacesAndPods()
@@ -52,34 +52,22 @@ class PrefixProfileTestIT extends ProfileTestSetup {
         }
     }
 
-    private static void waitUntilCertManagerIsRunning() {
+    // Start condition
+    private static void waitUntilPetclinicIsRunning() {
         // Check Pod
         try (KubernetesClient client = new KubernetesClientBuilder().build()) {
-            def actualPods = client.pods().inNamespace(certManagerNs).list().getItems()
-            assert !actualPods.isEmpty(): "No pods found - namespace: ${certManagerNs}"
+            def actualPods = client.pods().inNamespace(exampleStagingNs).list().getItems()
+            assert !actualPods.isEmpty(): "No pods found in petclinc - namespace: ${exampleStagingNs}"
             def notRunningPods = actualPods.findAll { pod ->
                 pod.getStatus().getPhase() != "Running"
             }
-            assert notRunningPods.isEmpty(): "These pods in ${certManagerNs} are not yet running: ${notRunningPods.collect { it.getMetadata().getName() + ':' + it.getStatus().getPhase() }}"
+            assert !actualPods.isEmpty() && notRunningPods.isEmpty(): "These pods in ${exampleStagingNs} are not yet running: ${notRunningPods.collect { it.getMetadata().getName() + ':' + it.getStatus().getPhase() }}"
         }
         catch (KubernetesClientException ex) {
             fail("Unexpected Kubernetes exception", ex)
         }
     }
-    private static void waitUntilMonitoringIsRunning() {
-        // Check Pod
-        try (KubernetesClient client = new KubernetesClientBuilder().build()) {
-            def actualPods = client.pods().inNamespace(monitoringNs).list().getItems()
-            assert !actualPods.isEmpty(): "No pods found - namespace: ${monitoringNs}"
-            def notRunningPods = actualPods.findAll { pod ->
-                pod.getStatus().getPhase() != "Running"
-            }
-            assert notRunningPods.isEmpty(): "These pods in ${certManagerNs} are not yet running: ${notRunningPods.collect { it.getMetadata().getName() + ':' + it.getStatus().getPhase() }}"
-        }
-        catch (KubernetesClientException ex) {
-            fail("Unexpected Kubernetes exception", ex)
-        }
-    }
+
 
     @Test
     void ensureNamespacesExistWithPrefix() {
