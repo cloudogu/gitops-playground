@@ -13,7 +13,7 @@
     <!-- When updating, also update and graal version in dockerfile -->
     <!-- See "graal.version" here https://central.sonatype.com/artifact/io.micronaut.platform/micronaut-platform/4.0.1 -->
     <!-- ON NEXT GROOVY UPDATE: check if we can get rid of explicit jackson-dataformat-yaml without critical CVE -->
-    <version>4.0.1</version>
+    <version>4.10.7</version>
   </parent>
 
   <properties>
@@ -28,12 +28,12 @@
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
     
     <versionNameVersion>2.2.0</versionNameVersion>
-    <mockitoVersion>4.8.0</mockitoVersion>
     <okhttpVersion>4.11.0</okhttpVersion>
     <retrofitVersion>2.9.0</retrofitVersion>
     <groovy.version>4.0.12</groovy.version>
     <jsonschema.version>4.35.0</jsonschema.version>
     <kubernetes.client.java.version>24.0.0</kubernetes.client.java.version>
+    <kubernetes.fabric8.java.version>7.5.2</kubernetes.fabric8.java.version>
     <wiremock.version>3.13.2</wiremock.version>
   </properties>
 
@@ -58,24 +58,31 @@
     <url>https://www.cloudogu.com/</url>
   </organization>
 
-
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>io.micronaut</groupId>
-        <artifactId>micronaut-core-bom</artifactId>
-        <version>${micronaut.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
+    <!-- Wiremock requires Jetty 11 in Tests. Micronaut brings Jetty12. Forcing Jetty11 here to run tests -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-bom</artifactId>
+                <version>11.0.26</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
   <dependencies>
     <dependency>
       <groupId>io.micronaut</groupId>
       <artifactId>micronaut-inject-groovy</artifactId>
-      <scope>provided</scope>
+    </dependency>
+
+    <!-- Source: https://mvnrepository.com/artifact/io.micronaut.reactor/micronaut-reactor -->
+    <dependency>
+        <groupId>io.micronaut.reactor</groupId>
+        <artifactId>micronaut-reactor</artifactId>
+        <version>3.9.1</version>
+        <scope>runtime</scope>
     </dependency>
 
     <dependency>
@@ -99,6 +106,7 @@
       </exclusions>
     </dependency>
 
+    <!-- not included in groovy-all -->
     <dependency>
       <groupId>org.apache.groovy</groupId>
       <artifactId>groovy-yaml</artifactId>
@@ -110,67 +118,59 @@
       <artifactId>jackson-dataformat-yaml</artifactId>
       <version>2.15.0-rc2</version>
     </dependency>
-    
+
     <dependency>
       <groupId>info.picocli</groupId>
       <artifactId>picocli</artifactId>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>io.micronaut.groovy</groupId>
       <artifactId>micronaut-runtime-groovy</artifactId>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>io.micronaut.picocli</groupId>
       <artifactId>micronaut-picocli</artifactId>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>info.picocli</groupId>
       <artifactId>picocli-codegen</artifactId>
-      <scope>provided</scope>
     </dependency>
 
     <dependency>
       <groupId>io.micronaut</groupId>
       <artifactId>micronaut-inject</artifactId>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>io.micronaut.validation</groupId>
       <artifactId>micronaut-validation</artifactId>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
       <version>2.14.0</version>
-      <scope>compile</scope>
     </dependency>
 
-    <dependency>
-      <groupId>org.springframework.security</groupId>
-      <artifactId>spring-security-crypto</artifactId>
-      <version>6.3.8</version>
-      <scope>compile</scope>
-    </dependency>
+      <!--Used for BCrypt functions-->
+      <dependency>
+        <groupId>org.springframework.security</groupId>
+        <artifactId>spring-security-crypto</artifactId>
+        <version>7.0.2</version>
+      </dependency>
 
-    <dependency>
-      <groupId>org.eclipse.jgit</groupId>
-      <artifactId>org.eclipse.jgit</artifactId>
-      <!-- JGit is known to cause trouble with GraalVM. So when updating, keep calm and read the developers.md#JGit docs -->
+      <dependency>
+        <groupId>org.eclipse.jgit</groupId>
+        <artifactId>org.eclipse.jgit</artifactId>
+        <!-- JGit is known to cause trouble with GraalVM. So when updating, keep calm and read the developers.md#JGit docs -->
       <version>7.2.1.202505142326-r</version>
     </dependency>
 
@@ -197,7 +197,7 @@
       <artifactId>retrofit</artifactId>
       <version>${retrofitVersion}</version>
     </dependency>
-    
+
     <dependency>
       <!-- Converts HTTP body objects from groovy to JSON -->
       <groupId>com.squareup.retrofit2</groupId>
@@ -234,10 +234,26 @@
       <version>2.3.32</version>
     </dependency>
 
+    <!-- Source: https://mvnrepository.com/artifact/io.fabric8/kubernetes-server-mock -->
+    <dependency>
+        <groupId>io.fabric8</groupId>
+        <artifactId>kubernetes-server-mock</artifactId>
+        <version>${kubernetes.fabric8.java.version}</version>
+        <scope>test</scope>
+    </dependency>
+
+    <!-- Source: https://mvnrepository.com/artifact/io.fabric8/kubernetes-client -->
+    <dependency>
+        <groupId>io.fabric8</groupId>
+        <artifactId>kubernetes-client</artifactId>
+        <version>${kubernetes.fabric8.java.version}</version>
+    </dependency>
+
     <dependency>
     <groupId>io.kubernetes</groupId>
     <artifactId>client-java</artifactId>
     <version>${kubernetes.client.java.version}</version>
+    <scope>test</scope>
   </dependency>
 
     <dependency>
@@ -261,14 +277,12 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <version>${mockitoVersion}</version>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-junit-jupiter</artifactId>
-      <version>${mockitoVersion}</version>
       <scope>test</scope>
     </dependency>
 
@@ -292,6 +306,7 @@
       <scope>test</scope>
     </dependency>
 
+    <!-- provides withEnvironmentVariable in Tests -->
     <dependency>
       <groupId>com.github.stefanbirkner</groupId>
       <artifactId>system-lambda</artifactId>
@@ -305,7 +320,6 @@
       <version>2.3.1</version>
       <scope>test</scope>
     </dependency>
-
 
     <dependency>
       <groupId>org.gitlab4j</groupId>

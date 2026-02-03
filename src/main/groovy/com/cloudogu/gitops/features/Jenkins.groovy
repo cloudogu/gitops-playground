@@ -10,6 +10,7 @@ import com.cloudogu.gitops.jenkins.GlobalPropertyManager
 import com.cloudogu.gitops.jenkins.JobManager
 import com.cloudogu.gitops.jenkins.PrometheusConfigurator
 import com.cloudogu.gitops.jenkins.UserManager
+import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.*
 import freemarker.template.Configuration
 import freemarker.template.DefaultObjectWrapperBuilder
@@ -245,7 +246,7 @@ class Jenkins extends Feature {
                 '--restart=Never', '-ti', '--rm', '--quiet')
         // --quiet is necessary to avoid 'pod deleted' output
 
-        def lines = etcGroup.split('\n')
+        def lines = etcGroup?.split('\n')
         for (String it : lines) {
             def parts = it.split(":")
             if (parts[0] == 'docker') {
