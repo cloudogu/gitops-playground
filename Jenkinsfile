@@ -232,8 +232,6 @@ def executeProfileTestStages(def profiles) {
 
     echo "Loop over ${profiles} to test."
 
-    int ret = 0
-
     profiles.each  { profile ->
         clusterName = createClusterName()
 
@@ -249,17 +247,6 @@ def executeProfileTestStages(def profiles) {
 
         stageDeleteK3dCluster(clusterName)
 
-    }
-    if (ret > 0 || currentBuild.result == 'UNSTABLE') {
-        if (fileExists('playground-logs-of-failed-jobs')) {
-            archiveArtifacts artifacts: 'playground-logs-of-failed-jobs/*.log'
-        }
-        unstable "Integration tests failed, see logs appended to jobs and cluster status in logs"
-
-        kubectlToFile(clusterName,"allPods.txt","get all -A")
-
-        printIntegrationTestLogs(clusterName,'app=scm-manager')
-        printIntegrationTestLogs(clusterName,'app.kubernetes.io/name=jenkins')
     }
 }
 /**
@@ -278,7 +265,6 @@ def stageIntegrationTests(String clusterName, String profile) {
             script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.NetworkID}}{{end}}' k3d-${clusterName}-server-0",
             returnStdout: true
     ).trim()
-
 
     withEnv(["KUBECONFIG=${env.WORKSPACE}/.kube/config", "ADDITIONAL_DOCKER_RUN_ARGS=--network=host", "K3D_ADDRESS=${k3dAddress}"]) {
         mvn.useLocalRepoFromJenkins = true
@@ -309,6 +295,7 @@ def stageStartGOPWithProfile(String clusterName, String profile) {
                 sh """
                 /app/scripts/apply-ng.sh  \
                     --internal-registry-port=${registryPort} \
+                    --insecure \
                     --yes=true \
                     --trace=true \
                     --profile=${profile}
