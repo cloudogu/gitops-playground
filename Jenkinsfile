@@ -205,7 +205,7 @@ def startK3d(clusterName) {
                          "PATH=${WORKSPACE}/.local/bin:${PATH}"]) {
 
                     // Start k3d cluster, binding to an arbitrary registry port
-                    sh "yes | ./scripts/init-cluster.sh --cluster-name=${clusterName} --bind-registry-port=0"
+                    sh "yes | ./scripts/init-cluster.sh --cluster-name=${clusterName} --bind-registry-port=0 --bind-ingress-port=0"
                 }
             }
 }
