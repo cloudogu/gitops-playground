@@ -575,7 +575,7 @@ skopeo copy docker://ghcr.io/cloudogu/mailhog:v1.0.1 --dest-creds Proxy:Proxy123
 skopeo copy docker://ghcr.io/external-secrets/external-secrets:v0.9.16 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/external-secrets
 skopeo copy docker://hashicorp/vault:1.14.0 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/vault
 skopeo copy docker://bitnamilegacy/nginx:1.23.3-debian-11-r8 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/nginx
-skopeo copy docker://registry.k8s.io/ingress-nginx/controller:v1.12.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/ingress-nginx
+skopeo copy docker://docker.io/library/traefik:v3.3.3 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/traefik
 
 # Monitoring
 # Using latest will lead to failure with
@@ -600,13 +600,40 @@ skopeo copy docker://cytopia/yamllint:1.25-0.7  --dest-creds Proxy:Proxy12345 --
 
 ```
 
+* Creating a specific example config file for two registries 
+```
+# Copy content of config.yaml from line one till the last list element under namespaces
+awk '1; /example-apps-staging/ {exit}' examples/example-apps-via-content-loader/config.yaml > examples/example-apps-via-content-loader/two-registries.yaml
+# Append following lines to the config file file
+cat <<EOF >> examples/example-apps-via-content-loader/two-registries.yaml
+  variables:
+    petclinic:
+      baseDomain: "petclinic.localhost"
+    nginx:
+      baseDomain: "nginx.localhost"
+    images:
+      kubectl: "localhost:30000/proxy/kubectl:1.29"
+      helm: "localhost:30000/proxy/helm:3.16.4-1"
+      kubeval: "localhost:30000/proxy/helm:3.16.4-1"
+      helmKubeval: "localhost:30000/proxy/helm:3.16.4-1"
+      yamllint: "localhost:30000/proxy/cytopia/yamllint:1.25-0.7"
+      nginx: ""
+      petclinic: "localhost:30000/proxy/eclipse-temurin:17-jre-alpine"
+      maven: "localhost:30000/proxy/eclipse-temurin:17-jre-alpine"
+EOF
+```
+
 * Deploy playground:
 
 ```bash
-GOP_IMAGE=gitops-playground:dev # Non-local alternative: ghcr.io/cloudogu/gitops-playground
+# Create a docker container or use an available immage from a registry
+# docker build -t gop:dev .
+GOP_IMAGE=gop:ingress
+PATH_TWO_REGISTRIES=$PWD/examples/example-apps-via-content-loader/two-registries.yaml
 
 docker run --rm -t -u $(id -u) \
    -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
+   -v ${PATH_TWO_REGISTRIES}:/home/two-registries.yaml \
     --net=host \
     ${GOP_IMAGE} -x \
     --yes --argocd --ingress --base-url=http://localhost \
@@ -620,28 +647,12 @@ docker run --rm -t -u $(id -u) \
     --registry-proxy-username=Proxy \
     --registry-proxy-password=Proxy12345 \
     --registry-username-read-only=RegistryRead \
-    --registry-password-read-only=RegistryRead12345 \
-    --kubectl-image=localhost:30000/proxy/bitnamilegacy/kubectl:1.29 \
-    --helm-image=localhost:30000/proxy/helm:latest \
-    --helmkubeval-image=localhost:30000/proxy/helm:latest \
-    --kubeval-image=localhost:30000/proxy/helm:latest \
-    --yamllint-image=localhost:30000/proxy/yamllint:latest \
-    --petclinic-image=localhost:30000/proxy/eclipse-temurin:17-jre-alpine \
+    --registry-password-read-only=RegistryRead12345 
     --mailhog-image=localhost:30000/proxy/mailhog:latest \
     --vault-image=localhost:30000/proxy/vault:latest \
-    --external-secrets-image=localhost:30000/proxy/external-secrets:latest \
-    --external-secrets-certcontroller-image=localhost:30000/proxy/external-secrets:latest \
-    --external-secrets-webhook-image=localhost:30000/proxy/external-secrets:latest \
-    --ingress-image=localhost:30000/proxy/traefik:latest \
-    --cert-manager-image=localhost:30000/proxy/cert-manager-controller:latest \
-    --cert-manager-webhook-image=localhost:30000/proxy/cert-manager-webhook:latest \
-    --cert-manager-cainjector-image=localhost:30000/proxy/cert-manager-cainjector:latest \
-    --prometheus-image=localhost:30000/proxy/prometheus:latest \
-    --prometheus-operator-image=localhost:30000/proxy/prometheus-operator:latest \
-    --prometheus-config-reloader-image=localhost:30000/proxy/prometheus-config-reloader:latest \
-    --grafana-image=localhost:30000/proxy/grafana:latest \
-    --grafana-sidecar-image=localhost:30000/proxy/k8s-sidecar:latest \
-# Or with config file --config-file=/config/gitops-playground.yaml 
+    --config-file=/home/two-registries.yaml
+    
+    # Or with config file --config-file=/config/gitops-playground.yaml
 ```
 
 ## Testing Network Policies locally
