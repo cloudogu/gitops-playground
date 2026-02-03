@@ -34,4 +34,12 @@ class Credentials {
         this.passwordKey = passwordKey
     }
 
+    Credentials(Credentials unsafeCredentials) {
+        this.secretNamespace = unsafeCredentials.secretNamespace
+        this.secretName = unsafeCredentials.secretName
+        this.usernameKey = unsafeCredentials.usernameKey
+        this.passwordKey = unsafeCredentials.passwordKey
+    }
+
+
 }

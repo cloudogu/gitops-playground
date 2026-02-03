@@ -183,10 +183,10 @@ class ContentLoader extends Feature {
 
 
         if (repoConfig.credentials.username != null && repoConfig.credentials.password != null) {
-            this.credentialsProvider = new UsernamePasswordCredentialsProvider(repoConfig.credentials.username, repoConfig.credentials.password)
+            credentialsProvider = new UsernamePasswordCredentialsProvider(repoConfig.credentials.username, repoConfig.credentials.password)
         }else if(repoConfig.credentials.secretName && repoConfig.credentials.secretNamespace) {
-            Credentials credentials= this.k8sClient.getCredentialsFromSecret(repoConfig.credentials)
-            this.credentialsProvider = new UsernamePasswordCredentialsProvider(credentials.username,credentials.password)
+            Credentials credentials= this.k8sClient.k8sJavaApiClient.getCredentialsFromSecret(repoConfig.credentials)
+            credentialsProvider = new UsernamePasswordCredentialsProvider(credentials.username,credentials.password)
         }
 
         cloneToLocalFolder(repoConfig, repoTmpDir)
@@ -309,8 +309,8 @@ class ContentLoader extends Feature {
                 .setDirectory(repoTmpDir)
                 .setNoCheckout(false)// Checkout default branch
 
-        if (this.credentialsProvider) {
-            cloneCommand.setCredentialsProvider(this.credentialsProvider)
+        if (credentialsProvider) {
+            cloneCommand.setCredentialsProvider(credentialsProvider)
         }
 
         def git = cloneCommand.call()
@@ -318,8 +318,8 @@ class ContentLoader extends Feature {
         if (ContentRepoType.MIRROR == repoConfig.type) {
             def fetch = git.fetch()
 
-            if (this.credentialsProvider) {
-                fetch.setCredentialsProvider(this.credentialsProvider)
+            if (credentialsProvider) {
+                fetch.setCredentialsProvider(credentialsProvider)
             }
             fetch.setRefSpecs("+refs/*:refs/*").call() // Fetch all branches and tags
         }
@@ -330,7 +330,7 @@ class ContentLoader extends Feature {
         }
     }
 
-    private static String findRef(ContentRepositorySchema repoConfig, Repository gitRepo) {
+    private String findRef(ContentRepositorySchema repoConfig, Repository gitRepo) {
         // Check if ref exists first to avoid InvalidRefNameException
         // Note that this works for commits and shortname tags but not shortname branches 🙄
         if (gitRepo.resolve(repoConfig.ref)) {
@@ -343,8 +343,8 @@ class ContentLoader extends Feature {
                 .setHeads(true)
                 .setTags(true)
 
-        if (this.credentialsProvider) {
-            remoteCommand.setCredentialsProvider(this.credentialsProvider)
+        if (credentialsProvider) {
+            remoteCommand.setCredentialsProvider(credentialsProvider)
         }
 
         Collection<Ref> refs = remoteCommand.call()

@@ -1,10 +1,7 @@
 package com.cloudogu.gitops.kubernetes.api
 
 import com.cloudogu.gitops.config.Credentials
-import io.fabric8.kubernetes.api.model.IntOrString
 import io.fabric8.kubernetes.api.model.Secret
-import io.fabric8.kubernetes.api.model.Service
-import io.fabric8.kubernetes.api.model.ServiceBuilder
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientBuilder
 
@@ -65,5 +62,31 @@ class K8sJavaApiClient {
                 .inNamespace(namespace)
                 .resource(service)
                 .create()
+    }
+
+    /**
+     * Gets login credentials from a K8s secret
+     */
+    Credentials getCredentialsFromSecret(Credentials credentials) {
+        try {
+            Secret secret = this.client.secrets()
+                    .inNamespace(credentials.secretNamespace)
+                    .withName(credentials.secretName)
+                    .get()
+
+            def secretData = secret.getData()
+            def usernameEncoded = secretData[credentials.usernameKey]
+            String username = usernameEncoded != null
+                    ? new String(Base64.decoder.decode(usernameEncoded))
+                    : credentials.username
+            String password = new String(Base64.getDecoder().decode(secretData[credentials.passwordKey]))
+            Credentials credentialsNew = new Credentials(credentials)
+            credentialsNew.username = username
+            credentialsNew.password = password
+
+            return credentialsNew
+        } catch (Exception e) {
+            throw new RuntimeException("Couldn't parse credentials from K8s secret: ${secretname} in namespace ${namespace}", e)
+        }
     }
 }
