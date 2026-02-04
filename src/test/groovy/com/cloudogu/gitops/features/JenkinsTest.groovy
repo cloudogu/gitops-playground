@@ -9,7 +9,7 @@ import com.cloudogu.gitops.jenkins.PrometheusConfigurator
 import com.cloudogu.gitops.jenkins.UserManager
 import com.cloudogu.gitops.utils.CommandExecutorForTest
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.K8sClient
+import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.NetworkingUtils
 import com.cloudogu.gitops.utils.git.GitHandlerForTests
 import com.cloudogu.gitops.utils.git.ScmManagerMock
@@ -69,7 +69,7 @@ class JenkinsTest {
         config.jenkins.internalBashImage = 'bash:42'
         config.jenkins.internalDockerClientVersion = '23'
 
-        when(k8sClient.run(anyString(), anyString(), anyString(), anyMap(), any())).thenReturn('''
+        when(k8sClient.run(anyString(), anyString(), anyString(), anyMap(), any(String[].class))).thenReturn('''
 root:x:0:
 daemon:x:1:
 docker:x:42:me
@@ -103,7 +103,7 @@ me:x:1000:''')
 
         ArgumentCaptor<String> nameCaptor = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<Map> overridesCaptor = ArgumentCaptor.forClass(Map.class);
-        verify(k8sClient).run(nameCaptor.capture(), anyString(), eq(jenkins.namespace), overridesCaptor.capture(), any())
+        verify(k8sClient).run(nameCaptor.capture(), anyString(), eq(jenkins.namespace), overridesCaptor.capture(), any(String[].class))
         assertThat(nameCaptor.value).startsWith('tmp-docker-gid-grepper-')
         List containers = overridesCaptor.value['spec']['containers'] as List
         assertThat(containers[0]['image'].toString()).isEqualTo('bash:42')

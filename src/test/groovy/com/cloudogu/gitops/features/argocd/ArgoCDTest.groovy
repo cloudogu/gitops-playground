@@ -3,6 +3,7 @@ package com.cloudogu.gitops.features.argocd
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.git.GitRepo
 import com.cloudogu.gitops.git.providers.GitProvider
+import com.cloudogu.gitops.kubernetes.api.HelmClient
 import com.cloudogu.gitops.utils.*
 import com.cloudogu.gitops.utils.git.GitHandlerForTests
 import com.cloudogu.gitops.utils.git.TestGitProvider
@@ -64,7 +65,7 @@ class ArgoCDTest {
                     useDedicatedInstance: false
             ],
             content: [
-                    examples: true,
+                    examples : true,
                     variables: [
                             images: [
                                     buildImages + [petclinic: 'petclinic-value']
@@ -651,7 +652,7 @@ class ArgoCDTest {
         }
 
         assertAllYamlFiles(new File(repoLayout.rootDir()), 'apps', 7,
-                [ '/apps/argocd/' ]) { Path it ->
+                ['/apps/argocd/']) { Path it ->
 
             def yaml = parseActualYaml(it.toString())
             List yamlDocuments = yaml instanceof List ? yaml : [yaml]
@@ -688,8 +689,6 @@ class ArgoCDTest {
 
         assertThat(yamlFiles.size()).isEqualTo(numberOfFiles)
     }
-
-
 
 
     private static List findFilesContaining(File folder, String stringToSearch) {
@@ -869,6 +868,49 @@ class ArgoCDTest {
     }
 
     @Test
+    void 'check if external_secrets_io and monitoring_coreos_com is set'() {
+
+        config.features.monitoring.active = true
+        config.features.secrets.active = true
+
+        String expectedMonitoring = 'monitoring.coreos.com'
+        String expectedExternalSecret = 'external-secrets.io'
+
+        def argocd = setupOperatorTest(openshift: true)
+        argocd.install()
+        repoLayout = argocd.repoLayout()
+
+        def yaml = parseActualYaml(Path.of(repoLayout.operatorConfigFile()).toString())
+
+        def resourceInclusionsString = yaml['spec']['resourceInclusions'] as String
+
+        assertThat(resourceInclusionsString.contains(expectedMonitoring)).isTrue()
+        assertThat(resourceInclusionsString.contains(expectedExternalSecret)).isTrue()
+    }
+
+    @Test
+    void 'check if external_secrets_io and monitoring_coreos_com is not set'() {
+
+        config.features.monitoring.active = false
+        config.features.secrets.active = false
+
+        String expectedMonitoring = 'monitoring.coreos.com'
+        String expectedExternalSecret = 'external-secrets.io'
+
+        def argocd = setupOperatorTest(openshift: true)
+        argocd.install()
+        repoLayout = argocd.repoLayout()
+
+        def yaml = parseActualYaml(Path.of(repoLayout.operatorConfigFile()).toString())
+
+        def resourceInclusionsString = yaml['spec']['resourceInclusions'] as String
+
+        assertThat(resourceInclusionsString.contains(expectedMonitoring)).isFalse()
+        assertThat(resourceInclusionsString.contains(expectedExternalSecret)).isFalse()
+    }
+
+
+    @Test
     void 'Correctly sets resourceInclusions from config'() {
         def argocd = setupOperatorTest()
 
@@ -1029,7 +1071,7 @@ class ArgoCDTest {
     @Test
     void 'Operator config sets custom values'() {
         config.features.argocd.values = [key: 'value']
-        config.features.argocd.values = [ spec: [ key: 'value']]
+        config.features.argocd.values = [spec: [key: 'value']]
         def argocd = setupOperatorTest()
         argocd.install()
         repoLayout = argocd.repoLayout()
@@ -1594,7 +1636,6 @@ class ArgoCDTest {
             return getClusterRepoLayout()?.argocdRoot()
         }
     }
-
 
 
     private Map parseActualYaml(String pathToYamlFile) {

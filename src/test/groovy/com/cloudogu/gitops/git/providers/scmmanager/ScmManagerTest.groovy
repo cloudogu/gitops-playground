@@ -9,7 +9,7 @@ import com.cloudogu.gitops.git.providers.Scope
 import com.cloudogu.gitops.git.providers.scmmanager.api.Repository
 import com.cloudogu.gitops.git.providers.scmmanager.api.RepositoryApi
 import com.cloudogu.gitops.git.providers.scmmanager.api.ScmManagerApiClient
-import com.cloudogu.gitops.utils.K8sClient
+import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.NetworkingUtils
 import okhttp3.internal.http.RealResponseBody
 import okio.BufferedSource
