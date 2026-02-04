@@ -240,45 +240,12 @@ class FileSystemUtils {
         }
     }
 
-
-
-
     /**
      * Moves all direct children of sourceDir into an existing targetDir.
      * Conflicts are overwritten.
      * Directories are merged recursively.
      */
-    void moveChildrenIntoExistingDirOverwrite(String sourceDir, String targetDir) {
-        Path source = Path.of(sourceDir).normalize()
-        Path target = Path.of(targetDir).normalize()
-
-        if (!Files.isDirectory(source)) {
-            throw new IllegalArgumentException("Source is not a directory: ${source}")
-        }
-        if (!Files.isDirectory(target)) {
-            throw new IllegalArgumentException("Target is not an existing directory: ${target}")
-        }
-
-        Files.list(source).forEach { Path child ->
-            Path dest = target.resolve(child.fileName.toString())
-            if (Files.isDirectory(child)) {
-                moveDirectoryMergeOverwrite(child, dest)
-            } else {
-                moveFileOverwrite(child, dest)
-            }
-        }
-
-        // delete source dir if empty afterwards
-        try {
-            if (Files.list(source).findAny().isEmpty()) {
-                Files.deleteIfExists(source)
-            }
-        } catch (IOException ignored) {
-            // not critical
-        }
-    }
-
-    private void moveDirectoryMergeOverwrite(Path sourceDir, Path targetDir) {
+    void moveDirectoryMergeOverwrite(Path sourceDir, Path targetDir) {
         if (!Files.exists(targetDir)) {
             Files.createDirectories(targetDir.parent)
             // fast path: try moving the whole directory

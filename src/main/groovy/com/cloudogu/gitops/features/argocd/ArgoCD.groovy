@@ -229,10 +229,7 @@ class ArgoCD extends Feature {
             log.debug("Deleting unnecessary non dedicated instances folders from argocd repo: applications=${repoLayout.applicationsDir()}, projects=${repoLayout.projectsDir()}, tenant=${repoLayout.multiTenantDir()}/tenant")
             FileSystemUtils.deleteDir repoLayout.applicationsDir()
             FileSystemUtils.deleteDir repoLayout.projectsDir()
-            fileSystemUtils.moveChildrenIntoExistingDirOverwrite(
-                    repoLayout.multiTenantDir()  + "/central",
-                    repoLayout.argocdRoot()
-            )
+            fileSystemUtils.moveDirectoryMergeOverwrite(Path.of(repoLayout.multiTenantDir()  + "/central"), Path.of(repoLayout.argocdRoot()))
             FileSystemUtils.deleteDir repoLayout.multiTenantDir()
         } else {
             log.debug("Deleting unnecessary multiTenant folder from argocd repo: ${repoLayout.multiTenantDir()}")
