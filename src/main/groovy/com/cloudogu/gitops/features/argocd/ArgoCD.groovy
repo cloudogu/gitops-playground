@@ -115,8 +115,20 @@ class ArgoCD extends Feature {
         }
 
         if (config.features.argocd.operator) {
+            generateRBAC()
             deployWithOperator()
         } else {
+            if (this.config.features.argocd?.values) {
+                RepoLayout repoLayout = repoLayout()
+                String argocdConfigPath = repoLayout.helmValuesFile()
+                log.debug("extend Argocd values.yaml with ${this.config.features.argocd.values}")
+                def argocdYaml = fileSystemUtils.readYaml(
+                        Path.of(argocdConfigPath))
+
+                def result = MapUtils.deepMerge(this.config.features.argocd.values, argocdYaml)
+                fileSystemUtils.writeYaml(result, new File (argocdConfigPath))
+                log.debug("Argocd values.yaml contains ${result}")
+            }
             deployWithHelm()
         }
 
@@ -150,21 +162,10 @@ class ArgoCD extends Feature {
         if (config.features.argocd.operator) {
             log.debug("Deleting unnecessary argocd (argocd helm variant) folder from argocd repo: ${repoLayout.helmDir()}")
             FileSystemUtils.deleteDir repoLayout.helmDir()
-            generateRBAC()
+
         } else {
             log.debug("Deleting unnecessary operator (argocd operator variant) folder from argocd repo: ${repoLayout.operatorDir()}")
             FileSystemUtils.deleteDir repoLayout.operatorDir()
-
-            if (this.config.features.argocd?.values) {
-                String argocdConfigPath = repoLayout.helmValuesFile()
-                log.debug("extend Argocd values.yaml with ${this.config.features.argocd.values}")
-                def argocdYaml = fileSystemUtils.readYaml(
-                        Path.of(argocdConfigPath))
-
-                def result = MapUtils.deepMerge(this.config.features.argocd.values, argocdYaml)
-                fileSystemUtils.writeYaml(result, new File (argocdConfigPath))
-                log.debug("Argocd values.yaml contains ${result}")
-            }
         }
 
         if (config.multiTenant.useDedicatedInstance) {
