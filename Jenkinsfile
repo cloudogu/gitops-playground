@@ -343,16 +343,7 @@ def stageDeleteK3dCluster(String clusterName) {
 def stageBuildClI() {
 
     stage('build and run unit tests') {
-        // Read Java version from Dockerfile (DRY)
-        String jdkVersion = sh(returnStdout: true, script:
-                'grep -r \'ARG JDK_VERSION\' Dockerfile | sed "s/.*JDK_VERSION=\'\\(.*\\)\'.*/\\1/" ').trim()
-        // Groovy version is defined by micronaut version. Get it from there.
-        String groovyVersion = sh(returnStdout: true, script:
-                'MICRONAUT_VERSION=$(cat pom.xml | sed -n \'/<parent>/,/<\\/parent>/p\' | ' +
-                        'sed -n \'s/.*<version>\\(.*\\)<\\/version>.*/\\1/p\'); ' +
-                        'curl -s https://repo1.maven.org/maven2/io/micronaut/micronaut-core-bom/${MICRONAUT_VERSION}/micronaut-core-bom-${MICRONAUT_VERSION}.pom | ' +
-                        'sed -n \'s/.*<groovy.version>\\(.*\\)<\\/groovy.version>.*/\\1/p\'').trim()
-        groovyImage = "groovy:${groovyVersion}-jdk${jdkVersion}"
+        groovyImage = "groovy:jdk17-alpine"
         // Re-use groovy image here, even though we only need JDK
         mvn = new MavenWrapperInDocker(this, groovyImage)
         // Faster builds because mvn local repo is reused between build, unit and integration tests

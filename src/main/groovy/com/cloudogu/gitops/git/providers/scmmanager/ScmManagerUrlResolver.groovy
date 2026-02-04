@@ -2,7 +2,7 @@ package com.cloudogu.gitops.git.providers.scmmanager
 
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.git.config.util.ScmManagerConfig
-import com.cloudogu.gitops.utils.K8sClient
+import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.NetworkingUtils
 import groovy.util.logging.Slf4j
 

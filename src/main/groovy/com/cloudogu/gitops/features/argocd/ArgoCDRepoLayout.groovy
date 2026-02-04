@@ -45,6 +45,11 @@ class ArgoCDRepoLayout {
         // "cluster-resources/argocd/operator/argocd.yaml"
         Path.of(operatorDir(), "argocd.yaml").toString()
     }
+    
+    String helmValuesFile() {
+        // "cluster-resources/apps/argocd/argocd/values.yaml"
+        Path.of(helmDir(), "values.yaml").toString()
+    }
 
     String operatorRbacDir() {
         // "cluster-resources/argocd/operator/rbac"

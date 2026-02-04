@@ -8,8 +8,8 @@ import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.kubernetes.rbac.RbacDefinition
 import com.cloudogu.gitops.kubernetes.rbac.Role
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.HelmClient
-import com.cloudogu.gitops.utils.K8sClient
+import com.cloudogu.gitops.kubernetes.api.HelmClient
+import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.MapUtils
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
@@ -215,6 +215,17 @@ class ArgoCD extends Feature {
         } else {
             log.debug("Deleting unnecessary operator (argocd operator variant) folder from argocd repo: ${repoLayout.operatorDir()}")
             FileSystemUtils.deleteDir repoLayout.operatorDir()
+
+            if (this.config.features.argocd?.values) {
+                String argocdConfigPath = repoLayout.helmValuesFile()
+                log.debug("extend Argocd values.yaml with ${this.config.features.argocd.values}")
+                def argocdYaml = fileSystemUtils.readYaml(
+                        Path.of(argocdConfigPath))
+
+                def result = MapUtils.deepMerge(this.config.features.argocd.values, argocdYaml)
+                fileSystemUtils.writeYaml(result, new File (argocdConfigPath))
+                log.debug("Argocd values.yaml contains ${result}")
+            }
         }
 
         if (config.multiTenant.useDedicatedInstance) {

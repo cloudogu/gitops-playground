@@ -8,7 +8,7 @@ import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.git.providers.gitlab.Gitlab
 import com.cloudogu.gitops.git.providers.scmmanager.ScmManager
 import com.cloudogu.gitops.utils.FileSystemUtils
-import com.cloudogu.gitops.utils.K8sClient
+import com.cloudogu.gitops.kubernetes.api.K8sClient
 import com.cloudogu.gitops.utils.NetworkingUtils
 import groovy.util.logging.Slf4j
 import io.micronaut.core.annotation.Order
@@ -120,7 +120,6 @@ class GitHandler extends Feature {
         } else {
             setupRepos(this.tenant, namePrefix)
         }
-        create3thPartyDependencies(this.tenant, namePrefix)
     }
 
     static void setupRepos(GitProvider gitProvider, String namePrefix = "") {
@@ -128,13 +127,6 @@ class GitHandler extends Feature {
                 withOrgPrefix(namePrefix, "argocd/cluster-resources"),
                 "GitOps repo for basic cluster-resources"
         )
-    }
-
-    static create3thPartyDependencies(GitProvider gitProvider, String namePrefix = "") {
-        gitProvider.createRepository(withOrgPrefix(namePrefix, "3rd-party-dependencies/spring-boot-helm-chart"), "spring-boot-helm-chart")
-        gitProvider.createRepository(withOrgPrefix(namePrefix, "3rd-party-dependencies/spring-boot-helm-chart-with-dependency"), "spring-boot-helm-chart-with-dependency")
-        gitProvider.createRepository(withOrgPrefix(namePrefix, "3rd-party-dependencies/gitops-build-lib"), "Jenkins pipeline shared library for automating deployments via GitOps")
-        gitProvider.createRepository(withOrgPrefix(namePrefix, "3rd-party-dependencies/ces-build-lib"), "Jenkins pipeline shared library adding features for Maven, Gradle, Docker, SonarQube, Git and others")
     }
 
     /**
