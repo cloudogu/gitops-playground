@@ -5,22 +5,22 @@ import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepoFactory
 import com.cloudogu.gitops.git.providers.GitProvider
 
-class ArgoCDRepoInitializer {
+class RepoInitializer {
 
     private final Config config
     private final GitRepoFactory repoFactory
     private final GitHandler gitHandler
 
-    ArgoCDRepoInitializer(Config config,
-                          GitRepoFactory repoFactory,
-                          GitHandler gitHandler) {
+    RepoInitializer(Config config,
+                    GitRepoFactory repoFactory,
+                    GitHandler gitHandler) {
         this.config = config
         this.repoFactory = repoFactory
         this.gitHandler = gitHandler
     }
 
-    ArgoCDRepoContext initRepos() {
-        ArgoCDRepoContext ctx = new ArgoCDRepoContext()
+    RepoContext initRepos() {
+        RepoContext ctx = new RepoContext()
 
         if (!config.multiTenant.useDedicatedInstance) {
             // Single-Instance: single cluster-resources repo (tenant provider)
@@ -56,29 +56,29 @@ class ArgoCDRepoInitializer {
     private Set<String> determineClusterResourceSubDirs() {
         Set<String> clusterResourceSubDirs = new LinkedHashSet<>()
 
-        clusterResourceSubDirs.add(ArgoCDRepoLayout.argocdSubdirRel())
+        clusterResourceSubDirs.add(RepoLayout.argocdSubdirRel())
 
         if (config.features.certManager.active) {
-            clusterResourceSubDirs.add(ArgoCDRepoLayout.certManagerSubdirRel())
+            clusterResourceSubDirs.add(RepoLayout.certManagerSubdirRel())
         }
         if (config.features.ingressNginx.active) {
-            clusterResourceSubDirs.add(ArgoCDRepoLayout.ingressSubdirRel())
+            clusterResourceSubDirs.add(RepoLayout.ingressSubdirRel())
         }
         if (config.jenkins.active) {
-            clusterResourceSubDirs.add(ArgoCDRepoLayout.jenkinsSubdirRel())
+            clusterResourceSubDirs.add(RepoLayout.jenkinsSubdirRel())
         }
         if (config.features.mail.active) {
-            clusterResourceSubDirs.add(ArgoCDRepoLayout.mailhogSubdirRel())
+            clusterResourceSubDirs.add(RepoLayout.mailhogSubdirRel())
         }
         if (config.features.monitoring.active) {
-            clusterResourceSubDirs.add(ArgoCDRepoLayout.monitoringSubdirRel())
+            clusterResourceSubDirs.add(RepoLayout.monitoringSubdirRel())
         }
         if (config.scm.scmManager?.url) {
-            clusterResourceSubDirs.add(ArgoCDRepoLayout.scmManagerSubdirRel())
+            clusterResourceSubDirs.add(RepoLayout.scmManagerSubdirRel())
         }
         if (config.features.secrets.active) {
-            clusterResourceSubDirs.add(ArgoCDRepoLayout.secretsSubdirRel())
-            clusterResourceSubDirs.add(ArgoCDRepoLayout.vaultSubdirRel())
+            clusterResourceSubDirs.add(RepoLayout.secretsSubdirRel())
+            clusterResourceSubDirs.add(RepoLayout.vaultSubdirRel())
         }
 
         return clusterResourceSubDirs
