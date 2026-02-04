@@ -102,8 +102,6 @@ class ArgoCD extends Feature {
         log.debug("Creating namespaces")
         k8sClient.createNamespaces(config.application.namespaces.activeNamespaces.toList())
 
-        createMonitoringCrd()
-
         createSCMCredentialsSecret()
 
         if (config.features.mail.smtpUser || config.features.mail.smtpPassword) {
@@ -340,28 +338,6 @@ class ArgoCD extends Feature {
                         .withRepo(repoContext.clusterResources.repo)
                         .withSubfolder(repoLayout.operatorRbacSubfolder())
                         .generate()
-            }
-        }
-    }
-
-    protected void createMonitoringCrd() {
-        if (config.features.monitoring.active) {
-            if (!config.application.skipCrds) {
-                def serviceMonitorCrdYaml
-                if (config.application.mirrorRepos) {
-                    serviceMonitorCrdYaml = Path.of(
-                            "${config.application.localHelmChartFolder}/${config.features.monitoring.helm.chart}/charts/crds/crds/crd-servicemonitors.yaml"
-                    ).toString()
-                } else {
-                    serviceMonitorCrdYaml =
-                            "https://raw.githubusercontent.com/prometheus-community/helm-charts/" +
-                                    "kube-prometheus-stack-${config.features.monitoring.helm.version}/" +
-                                    "charts/kube-prometheus-stack/charts/crds/crds/crd-servicemonitors.yaml"
-                }
-
-                log.debug("Applying ServiceMonitor CRD; Argo CD fails if it is not there. Chicken-egg-problem.\n" +
-                        "Applying from path ${serviceMonitorCrdYaml}")
-                k8sClient.applyYaml(serviceMonitorCrdYaml)
             }
         }
     }
