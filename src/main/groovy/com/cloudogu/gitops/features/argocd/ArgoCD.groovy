@@ -4,7 +4,6 @@ import com.cloudogu.gitops.Feature
 import com.cloudogu.gitops.config.Config
 import com.cloudogu.gitops.features.git.GitHandler
 import com.cloudogu.gitops.git.GitRepoFactory
-import com.cloudogu.gitops.git.providers.GitProvider
 import com.cloudogu.gitops.kubernetes.rbac.RbacDefinition
 import com.cloudogu.gitops.kubernetes.rbac.Role
 import com.cloudogu.gitops.utils.FileSystemUtils
@@ -33,8 +32,8 @@ class ArgoCD extends Feature {
     private final GitHandler gitHandler
     private final String password
 
-    private final ArgoCDRepoInitializer repoInitializer
-    private ArgoCDRepoContext repoContext
+    private final RepoInitializer repoInitializer
+    private RepoContext repoContext
 
 
     ArgoCD(
@@ -53,7 +52,7 @@ class ArgoCD extends Feature {
         this.gitHandler = gitHandler
         this.password = config.application.password
         this.namespace = "${config.application.namePrefix}${config.features.argocd.namespace}"
-        this.repoInitializer = new ArgoCDRepoInitializer(config, repoProvider, gitHandler)
+        this.repoInitializer = new RepoInitializer(config, repoProvider, gitHandler)
     }
 
     @Override
@@ -123,7 +122,7 @@ class ArgoCD extends Feature {
             deployWithHelm()
         }
 
-        ArgoCDRepoLayout repoLayout = repoLayout()
+        RepoLayout repoLayout = repoLayout()
 
         if (config.multiTenant.useDedicatedInstance) {
             //Bootstrapping dedicated instance
@@ -131,7 +130,7 @@ class ArgoCD extends Feature {
             k8sClient.applyYaml(repoLayout.dedicatedBootstrapApp())
 
             //Bootstrapping tenant Argocd projects
-            ArgoCDRepoLayout tenantRepoLayout = new ArgoCDRepoLayout(repoContext.tenantBootstrap.repo.getAbsoluteLocalRepoTmpDir())
+            RepoLayout tenantRepoLayout = new RepoLayout(repoContext.tenantBootstrap.repo.getAbsoluteLocalRepoTmpDir())
             k8sClient.applyYaml(Path.of(tenantRepoLayout.projectsDir(), "argocd.yaml").toString())
             k8sClient.applyYaml(Path.of(tenantRepoLayout.applicationsDir(), "bootstrap.yaml").toString())
         } else {
@@ -148,7 +147,7 @@ class ArgoCD extends Feature {
     }
 
     private void prepareGitOpsRepos() {
-        ArgoCDRepoLayout repoLayout = repoLayout()
+        RepoLayout repoLayout = repoLayout()
 
         if (config.features.argocd.operator) {
             log.debug("Deleting unnecessary argocd (argocd helm variant) folder from argocd repo: ${repoLayout.helmDir()}")
@@ -184,24 +183,10 @@ class ArgoCD extends Feature {
             log.debug("Deleting argocd netpols at ${repoLayout.netpolFile()}")
             FileSystemUtils.deleteFile repoLayout.netpolFile()
         }
-
-        if (config.features.monitoring.active) {
-            String monitoringRootDashboard = "${repoLayout.monitoringDir()}/misc/dashboard"
-            if (!config.features.ingressNginx.active) {
-                FileSystemUtils.deleteFile monitoringRootDashboard + '/ingress-nginx-dashboard.yaml'
-                FileSystemUtils.deleteFile monitoringRootDashboard + '/ingress-nginx-dashboard-requests-handling.yaml'
-            }
-            if (!config.jenkins.active) {
-                FileSystemUtils.deleteFile monitoringRootDashboard + '/jenkins-dashboard.yaml'
-            }
-            if (!config.scm.scmManager?.url) {
-                FileSystemUtils.deleteFile monitoringRootDashboard + '/scmm-dashboard.yaml'
-            }
-        }
     }
 
     private void deployWithOperator() {
-        ArgoCDRepoLayout repoLayout = repoLayout()
+        RepoLayout repoLayout = repoLayout()
 
         // Apply argocd yaml from operator folder
         String argocdConfigPath = repoLayout.operatorConfigFile()
@@ -244,7 +229,7 @@ class ArgoCD extends Feature {
 
 
     private void deployWithHelm() {
-        ArgoCDRepoLayout repoLayout = repoLayout()
+        RepoLayout repoLayout = repoLayout()
 
         // Install umbrella chart from argocd/argocd
         String umbrellaChartPath = repoLayout.helmDir()
@@ -295,7 +280,7 @@ class ArgoCD extends Feature {
     private void generateRBAC() {
 
         log.debug("Generate RBAC permissions for ArgoCD in all managed namespaces")
-        ArgoCDRepoLayout repoLayout = repoLayout()
+        RepoLayout repoLayout = repoLayout()
 
         if (config.multiTenant.useDedicatedInstance) {
             //Generating Tenant Namespace RBACs for Tenant Argocd
@@ -417,8 +402,8 @@ class ArgoCD extends Feature {
                 new Tuple2('argocd.argoproj.io/secret-type', 'repo-creds'))
     }
 
-    protected ArgoCDRepoLayout repoLayout() {
-        new ArgoCDRepoLayout(getRepoRootDir())
+    protected RepoLayout repoLayout() {
+        new RepoLayout(getRepoRootDir())
     }
 
     private String getRepoRootDir() {

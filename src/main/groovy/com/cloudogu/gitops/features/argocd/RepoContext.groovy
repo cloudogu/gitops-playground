@@ -1,6 +1,6 @@
 package com.cloudogu.gitops.features.argocd
 
-class ArgoCDRepoContext {
+class RepoContext {
     RepoInitializationAction clusterResources
     RepoInitializationAction tenantBootstrap
 

@@ -47,7 +47,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 
         String project = "cluster-resources"
         String namespaceName = "${namePrefix}argocd"
-
+        String featureName = repoName
         //DedicatedInstances
         if (config.multiTenant.useDedicatedInstance) {
             repoName = "${config.application.namePrefix}${repoName}"
@@ -57,7 +57,6 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
 
         // Feature-Name -> Ordner underapps/<feature>/misc
         // e.g. repoName = "prometheus" → apps/prometheus/misc
-        String featureName = repoName
         String miscPath    = "apps/${featureName}/misc"
 
 

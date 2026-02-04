@@ -112,7 +112,7 @@ class ArgoCDTest {
     List<GitRepo> petClinicRepos = []
     String prefixPathCentral = '/multiTenant/central/'
     ArgoCD argocd
-    ArgoCDRepoLayout repoLayout
+    RepoLayout repoLayout
 
     @Test
     void 'Installs argoCD'() {
@@ -601,7 +601,7 @@ class ArgoCDTest {
         assertThat(new File(repoLayout.argocdRoot(), '/argocd/templates/allow-namespaces.yaml').text.contains("namespace: default"))
     }
 
-    private void assertArgoCdYamlPrefixes(String scmmUrl, String expectedPrefix, ArgoCDRepoLayout repoLayout) {
+    private void assertArgoCdYamlPrefixes(String scmmUrl, String expectedPrefix, RepoLayout repoLayout) {
 
         assertAllYamlFiles(new File(repoLayout.argocdRoot()), 'projects', 3) { Path file ->
             def yaml = parseActualYaml(file.toString())
@@ -1580,14 +1580,14 @@ class ArgoCDTest {
             return this.tenantBootstrapInitializationAction?.repo
         }
 
-        ArgoCDRepoLayout getClusterRepoLayout() {
+        RepoLayout getClusterRepoLayout() {
             def root = getClusterResourcesRepo()?.getAbsoluteLocalRepoTmpDir()
-            return root ? new ArgoCDRepoLayout(root.toString()) : null
+            return root ? new RepoLayout(root.toString()) : null
         }
 
-        ArgoCDRepoLayout getTenantRepoLayout() {
+        RepoLayout getTenantRepoLayout() {
             def root = getTenantBootstrapRepo()?.getAbsoluteLocalRepoTmpDir()
-            return root ? new ArgoCDRepoLayout(root.toString()) : null
+            return root ? new RepoLayout(root.toString()) : null
         }
 
         // Convenience: argocd-Unterordner im cluster-resources Repo
