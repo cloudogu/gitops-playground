@@ -40,6 +40,4 @@ class Credentials {
         this.usernameKey = unsafeCredentials.usernameKey
         this.passwordKey = unsafeCredentials.passwordKey
     }
-
-
 }

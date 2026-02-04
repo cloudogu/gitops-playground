@@ -56,7 +56,6 @@ class ContentLoaderTest {
             ]
     ])
 
-
     CommandExecutorForTest k8sCommands = new CommandExecutorForTest()
     K8sClientForTest k8sClient = new K8sClientForTest(config, k8sCommands)
     TestGitRepoFactory scmmRepoProvider = new TestGitRepoFactory(config, new FileSystemUtils())
@@ -206,7 +205,7 @@ class ContentLoaderTest {
     @Test
     void 'Authenticates content Repos'() {
         config.content.repos = [
-                new ContentRepositorySchema(url: createContentRepo('copyRepo1'), ref: 'main', type: ContentRepoType.COPY, target: 'common/repo', username: 'user', password: 'pw')
+                new ContentRepositorySchema(url: createContentRepo('copyRepo1'), ref: 'main', type: ContentRepoType.COPY, target: 'common/repo',  credentials: new Credentials('user', 'pw'))
         ]
 
         def content = createContent()

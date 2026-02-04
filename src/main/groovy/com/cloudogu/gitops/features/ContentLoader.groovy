@@ -40,8 +40,9 @@ class ContentLoader extends Feature {
     private TemplatingEngine templatingEngine
     // used to clone repos in validation phase
     private List<RepoCoordinate> cachedRepoCoordinates = new ArrayList<>()
-    private File mergedReposFolder
     private GitHandler gitHandler
+
+    protected File mergedReposFolder
 
     //For security reasons we safe the credentialsProvider for each repo here and not in config pro each repo
     @JsonIgnore
@@ -330,7 +331,7 @@ class ContentLoader extends Feature {
         }
     }
 
-    private String findRef(ContentRepositorySchema repoConfig, Repository gitRepo) {
+    private  static String findRef(ContentRepositorySchema repoConfig, Repository gitRepo) {
         // Check if ref exists first to avoid InvalidRefNameException
         // Note that this works for commits and shortname tags but not shortname branches 🙄
         if (gitRepo.resolve(repoConfig.ref)) {
@@ -342,10 +343,6 @@ class ContentLoader extends Feature {
                 .setRemote(repoConfig.url)
                 .setHeads(true)
                 .setTags(true)
-
-        if (credentialsProvider) {
-            remoteCommand.setCredentialsProvider(credentialsProvider)
-        }
 
         Collection<Ref> refs = remoteCommand.call()
         String potentialRef = refs.find { it.name.endsWith(repoConfig.ref) }?.name
