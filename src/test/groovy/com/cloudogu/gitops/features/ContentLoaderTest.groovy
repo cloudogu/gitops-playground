@@ -244,7 +244,7 @@ class ContentLoaderTest {
                 .build()
 
 
-        client.secrets()
+        this.k8sClient.k8sJavaApiClient.client.secrets()
                 .inNamespace("default")
                 .resource(secret)
                 .create()

@@ -159,6 +159,28 @@
               },
               "credentials" : {
                 "type" : [ "object", "null" ],
+                "properties" : {
+                  "passwordKey" : {
+                    "type" : [ "string", "null" ],
+                    "description" : "Credentials Object to authenticate against content repo. Allows using a K8s Secret"
+                  },
+                  "secretName" : {
+                    "type" : [ "string", "null" ],
+                    "description" : "Credentials Object to authenticate against content repo. Allows using a K8s Secret"
+                  },
+                  "secretNamespace" : {
+                    "type" : [ "string", "null" ],
+                    "description" : "Credentials Object to authenticate against content repo. Allows using a K8s Secret"
+                  },
+                  "username" : {
+                    "type" : [ "string", "null" ],
+                    "description" : "Credentials Object to authenticate against content repo. Allows using a K8s Secret"
+                  },
+                  "usernameKey" : {
+                    "type" : [ "string", "null" ],
+                    "description" : "Credentials Object to authenticate against content repo. Allows using a K8s Secret"
+                  }
+                },
                 "additionalProperties" : false,
                 "description" : "Credentials Object to authenticate against content repo. Allows using a K8s Secret"
               },
