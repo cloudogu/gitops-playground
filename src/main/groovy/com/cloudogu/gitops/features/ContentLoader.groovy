@@ -183,11 +183,11 @@ class ContentLoader extends Feature {
         log.debug("Cloning content repo, ${repoConfig.url}, revision ${repoConfig.ref}, path ${repoConfig.path}, overwriteMode ${repoConfig.overwriteMode}")
 
 
-        if (repoConfig.credentials.username != null && repoConfig.credentials.password != null) {
+        if (repoConfig.credentials?.username != null && repoConfig.credentials?.password != null) {
             credentialsProvider = new UsernamePasswordCredentialsProvider(repoConfig.credentials.username, repoConfig.credentials.password)
-        }else if(repoConfig.credentials.secretName && repoConfig.credentials.secretNamespace) {
-            Credentials credentials= this.k8sClient.k8sJavaApiClient.getCredentialsFromSecret(repoConfig.credentials)
-            credentialsProvider = new UsernamePasswordCredentialsProvider(credentials.username,credentials.password)
+        } else if (repoConfig.credentials?.secretName && repoConfig.credentials?.secretNamespace) {
+            Credentials credentials = this.k8sClient.k8sJavaApiClient.getCredentialsFromSecret(repoConfig.credentials)
+            credentialsProvider = new UsernamePasswordCredentialsProvider(credentials.username, credentials.password)
         }
 
         cloneToLocalFolder(repoConfig, repoTmpDir)

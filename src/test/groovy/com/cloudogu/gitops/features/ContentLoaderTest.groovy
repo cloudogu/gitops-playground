@@ -12,6 +12,10 @@ import com.cloudogu.gitops.utils.git.TestScmManagerApiClient
 import com.cloudogu.gitops.utils.*
 import groovy.util.logging.Slf4j
 import groovy.yaml.YamlSlurper
+import io.fabric8.kubernetes.api.model.Secret
+import io.fabric8.kubernetes.api.model.SecretBuilder
+import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient
 import org.apache.commons.io.FileUtils
 import org.eclipse.jgit.api.CloneCommand
 import org.eclipse.jgit.api.Git
@@ -19,6 +23,7 @@ import org.eclipse.jgit.lib.Ref
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 import org.eclipse.jgit.util.SystemReader
 import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.mockito.ArgumentCaptor
@@ -34,6 +39,7 @@ import static org.mockito.ArgumentMatchers.eq
 import static org.mockito.Mockito.*
 
 @Slf4j
+@EnableKubernetesMockClient(crud=true)
 class ContentLoaderTest {
 
     static List<File> foldersToDelete = new ArrayList<File>()
@@ -56,6 +62,7 @@ class ContentLoaderTest {
             ]
     ])
 
+    KubernetesClient client
     CommandExecutorForTest k8sCommands = new CommandExecutorForTest()
     K8sClientForTest k8sClient = new K8sClientForTest(config, k8sCommands)
     TestGitRepoFactory scmmRepoProvider = new TestGitRepoFactory(config, new FileSystemUtils())
@@ -221,14 +228,33 @@ class ContentLoaderTest {
     }
 
     @Test
-    void 'Authenticates content Repos with secret'() {
+    @DisplayName("Authenticates content Repos with secret")
+    void authenticatesContentReposWithSecret() {
+
+        Secret secret = new SecretBuilder()
+                .withNewMetadata()
+                .withName("secret-test-name")
+                .withNamespace("default")
+                .endMetadata()
+                .withType("Opaque")
+                .withData(Map.of(
+                        "username", "YWRtaW4=",
+                        "password", "czNjcjN0"
+                ))
+                .build()
+
+
+        client.secrets()
+                .inNamespace("default")
+                .resource(secret)
+                .create()
 
         config.content.repos = [
                 new ContentRepositorySchema(
                         url: createContentRepo('copyRepo1'),
                         ref: 'main', type: ContentRepoType.COPY,
                         target: 'common/repo',
-                        credentials: new Credentials(null,'','secret-test-name','testnamespace'))
+                        credentials: new Credentials(null,null,'secret-test-name','default'))
         ]
 
         def content = createContent()
@@ -237,8 +263,8 @@ class ContentLoaderTest {
         ArgumentCaptor<UsernamePasswordCredentialsProvider> captor = ArgumentCaptor.forClass(UsernamePasswordCredentialsProvider)
         verify(content.cloneSpy).setCredentialsProvider(captor.capture())
         def value = captor.value
-        assertThat(value.properties.username).isEqualTo('user')
-        assertThat(value.properties.password).isEqualTo('pw'.toCharArray())
+        assertThat(value.properties.username).isEqualTo('admin')
+        assertThat(value.properties.password).isEqualTo('s3cr3t'.toCharArray())
     }
 
     @Test
@@ -283,6 +309,7 @@ class ContentLoaderTest {
         def exception = shouldFail(RuntimeException) {
             createContent().cloneContentRepos()
         }
+
         assertThat(exception.message).startsWith("Reference 'does/not/exist' not found in content repository")
     }
 
