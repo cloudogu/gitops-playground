@@ -629,7 +629,7 @@ EOF
 # Create a docker container or use an available immage from a registry
 # docker build -t gop:dev .
 GOP_IMAGE=gop:ingress
-PATH_TWO_REGISTRIES=$PWD/examples/example-apps-via-content-loader/two-registries.yaml
+PATH_TWO_REGISTRIES=examples/example-apps-via-content-loader/two-registries.yaml #Adjust to path above
 
 docker run --rm -t -u $(id -u) \
    -v ~/.config/k3d/kubeconfig-gitops-playground.yaml:/home/.kube/config \
@@ -647,7 +647,7 @@ docker run --rm -t -u $(id -u) \
     --registry-proxy-username=Proxy \
     --registry-proxy-password=Proxy12345 \
     --registry-username-read-only=RegistryRead \
-    --registry-password-read-only=RegistryRead12345 
+    --registry-password-read-only=RegistryRead12345 \
     --mailhog-image=localhost:30000/proxy/mailhog:latest \
     --vault-image=localhost:30000/proxy/vault:latest \
     --config-file=/home/two-registries.yaml
