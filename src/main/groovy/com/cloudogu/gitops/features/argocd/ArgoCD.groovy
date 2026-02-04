@@ -32,8 +32,7 @@ class ArgoCD extends Feature {
     private final GitHandler gitHandler
     private final String password
 
-    private final RepoInitializer repoInitializer
-    private RepoContext repoContext
+    private ArgoCDRepoContext repoContext
     private RepoLayout clusterResourcesRepo
 
 
@@ -53,7 +52,6 @@ class ArgoCD extends Feature {
         this.gitHandler = gitHandler
         this.password = config.application.password
         this.namespace = "${config.application.namePrefix}${config.features.argocd.namespace}"
-        this.repoInitializer = new RepoInitializer(config, repoProvider, gitHandler)
     }
 
     @Override
@@ -84,15 +82,15 @@ class ArgoCD extends Feature {
 
     @Override
     void enable() {
-        // init all repos (clusterResources, tenantBootstrap, etc.)
-        this.repoContext = repoInitializer.initRepos()
-        this.clusterResourcesRepo = new RepoLayout(repoContext.clusterResources.repo.getAbsoluteLocalRepoTmpDir())
+        this.repoContext = ArgoCDRepoContext.create(config, repoProvider, gitHandler)
+        this.clusterResourcesRepo = repoContext.clusterRepoLayout()
 
         log.debug('Cloning Repositories')
-        repoContext.allRepos.each { it.initLocalRepo() }
+        repoContext.initLocalRepos()
 
         prepareGitOpsRepos()
-        repoContext.allRepos.each { it.repo.commitAndPush('Initial Commit') }
+
+        repoContext.commitAndPushAll('Initial Commit')
 
         log.debug('Installing Argo CD')
         installArgoCd()
@@ -139,7 +137,7 @@ class ArgoCD extends Feature {
             k8sClient.applyYaml(clusterResourcesRepo.dedicatedBootstrapApp())
 
             //Bootstrapping tenant Argocd projects
-            RepoLayout tenantRepoLayout = new RepoLayout(repoContext.tenantBootstrap.repo.getAbsoluteLocalRepoTmpDir())
+            RepoLayout tenantRepoLayout = repoContext.tenantRepoLayout()
             k8sClient.applyYaml(Path.of(tenantRepoLayout.projectsDir(), "argocd.yaml").toString())
             k8sClient.applyYaml(Path.of(tenantRepoLayout.applicationsDir(), "bootstrap.yaml").toString())
         } else {
