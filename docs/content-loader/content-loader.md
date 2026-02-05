@@ -231,6 +231,43 @@ With `MIRROR`, `RESET` does not reset the entire repo. Specific effect: Branches
 **Important**  
 If existing repos of GOP are to be extended, e.g., `cluster-resources`, the `overrideMode` must be set to `UPGRADE`.
 
+## Repo Credentials
+For private Repositories you can specify credentials via the `username` and `password` fields under credendials. See CLI Params for more details.
+You can also use a Kubernetes secret for the credentials.
+
+```yaml
+content:
+  repos:
+    - url: 'https://...'
+      path: 'a/b'
+      ref: branch
+      templating: true
+      type: FOLDER_BASED
+      overwriteMode: UPGRADE
+      createJenkinsJob: true
+      crededeials:
+        username: 'abc'
+        password: 'ey...'
+```
+or with kubernetes secret
+
+```yaml
+content:
+  repos:
+    - url: 'https://...'
+      path: 'a/b'
+      ref: branch
+      templating: true
+      type: FOLDER_BASED
+      overwriteMode: UPGRADE
+      createJenkinsJob: true
+      credentials:
+        secretName: 'testsecret'
+        secretNamespace: 'testnamespace' <- GOP needs permissions to read this secret
+        userNameKey: 'username' <- optional if secret uses a different key
+        passwordKey: 'password' <- optional 
+```
+
 ## Templating
 When `templating` is enabled, all files ending in `.ftl` are rendered using [Freemarker](https://freemarker.apache.org/) during GOP installation and the result is created under the same name without the `.ftl` extension.  
 Example`values.yam;.ftl` is written to `values.yaml`. 
