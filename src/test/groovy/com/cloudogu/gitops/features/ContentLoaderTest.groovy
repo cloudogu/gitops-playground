@@ -230,7 +230,7 @@ class ContentLoaderTest {
     @Test
     @DisplayName("Authenticates content Repos with secret")
     void authenticatesContentReposWithSecret() {
-
+        this.k8sClient.k8sJavaApiClient.client=client
         Secret secret = new SecretBuilder()
                 .withNewMetadata()
                 .withName("secret-test-name")
