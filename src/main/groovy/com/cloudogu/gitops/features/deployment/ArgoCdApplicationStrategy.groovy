@@ -89,7 +89,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
         //   - ref: values → used in valueFiles as $values
         //   - path: apps/<feature> → additional manifests
         def featureRepoUrl = "${clusterResourcesRepo.gitProvider.repoPrefix()}argocd/cluster-resources.git".toString()
-        def featureSource = [
+        def gitSource = [
                 repoURL       :  featureRepoUrl,
                 targetRevision: "main",
                 ref           : "values",
@@ -97,7 +97,7 @@ class ArgoCdApplicationStrategy implements DeploymentStrategy {
                 directory     : [recurse: true]
         ]
 
-        def sources = [helmSource, featureSource]
+        def sources = [helmSource, gitSource]
 
         // Prepare ArgoCD Application YAML
         def yamlMapper = YAMLMapper.builder()
