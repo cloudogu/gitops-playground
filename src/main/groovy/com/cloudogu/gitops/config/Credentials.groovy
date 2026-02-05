@@ -19,9 +19,9 @@ class Credentials {
     @JsonPropertyDescription(CONTENT_REPO_CREDENTIALS_DESCRIPTION)
     String secretName
     @JsonPropertyDescription(CONTENT_REPO_CREDENTIALS_DESCRIPTION)
-    String usernameKey
+    String usernameKey = 'username'
     @JsonPropertyDescription(CONTENT_REPO_CREDENTIALS_DESCRIPTION)
-    String passwordKey
+    String passwordKey = 'password'
 
     Credentials() {}
 
