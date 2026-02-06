@@ -54,16 +54,17 @@ deployment:
       cpu: 100m
       memory: 90Mi
 
-    general:
-      level: INFO
+logs:
+  general:
+    level: INFO
     access:
       enabled: true
       # Traefik default access log format format: "common"
       # <remote_IP_address> - <client_user_name_if_available> [<timestamp>] "<request_method> <request_path> <request_protocol>" <HTTP_status> <content-length>  "<request_referrer>" "<request_user_agent>" <number_of_requests_received_since_Traefik_started>  "<Traefik_router_name>" "<Traefik_server_URL>" <request_duration_in_ms>ms  logs:
 
-  global:
-    checknewversion: false
-    sendAnonymousUsage: false
+global:
+  checknewversion: false
+  sendAnonymousUsage: false
 
 <#if config.features.monitoring.active == true>
 metrics:
