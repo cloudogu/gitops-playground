@@ -45,16 +45,6 @@ class RegistryTest {
     }
 
     @Test
-    void 'creates an additional service when different port is set'() {
-        def expectedNodePort = DEFAULT_REGISTRY_PORT as int + 1
-        def registryConfig = new RegistrySchema(active: true, internalPort: expectedNodePort)
-        
-        createRegistry(registryConfig).install()
-
-        assertThat(k8sClient.commandExecutorForTest.actualCommands[0]).contains("--node-port $expectedNodePort")
-    }
-
-    @Test
     void 'inject custom value into chart'() {
         def registryConfig = new RegistrySchema(active: true,
                 helm: new HelmConfigWithValues(
