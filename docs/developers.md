@@ -592,6 +592,33 @@ skopeo copy docker://quay.io/jetstack/cert-manager-controller:v1.16.1 --dest-cre
 skopeo copy docker://quay.io/jetstack/cert-manager-cainjector:v1.16.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/cert-manager-cainjector
 skopeo copy docker://quay.io/jetstack/cert-manager-webhook:v1.16.1 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false docker://localhost:30000/proxy/cert-manager-webhook
 
+# Jenkins
+mkdir /tmp/gop-jenkins-two-registries && cd "$_"
+
+cat <<EOF > Dockerfile
+FROM jenkins/jenkins:2.479.1-lts-jdk17
+
+# Skip the initial setup wizard for a smoother automated experience
+ENV JAVA_OPTS="-Djenkins.install.runSetupWizard=false"
+
+# Install plugins without hardcoded versions to avoid 404s and dependency conflicts
+RUN jenkins-plugin-cli --plugins \
+    git \
+    workflow-aggregator \
+    blueocean \
+    kubernetes \
+    configuration-as-code
+EOF
+
+docker build -t jenkins-custom:latest .
+# Because of version mismatch of docker registry and harbor we do a trick here and export a tar file
+# and use it for skopoe copy
+docker save localhost:30000/proxy/jenkins-custom:latest -o jenkins-custom.tar
+skopeo copy docker-archive:jenkins-custom.tar \
+    --dest-creds Proxy:Proxy12345 \
+    --dest-tls-verify=false \
+    docker://localhost:30000/proxy/jenkins:2.479.1-lts-jdk17
+
 # Needed for the builds to work with proxy-registry
 skopeo copy docker://bitnamilegacy/kubectl:1.29 --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/bitnami/kubectl:1.29
 skopeo copy docker://eclipse-temurin:17-jre-alpine --dest-creds Proxy:Proxy12345 --dest-tls-verify=false  docker://localhost:30000/proxy/eclipse-temurin:17-jre-alpine

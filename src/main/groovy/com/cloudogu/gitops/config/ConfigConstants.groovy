@@ -60,6 +60,7 @@ interface ConfigConstants {
     String JENKINS_METRICS_PASSWORD_DESCRIPTION = 'Mandatory when jenkins-url is set and monitoring enabled'
     String MAVEN_CENTRAL_MIRROR_DESCRIPTION = 'URL for maven mirror, used by applications built in Jenkins'
     String JENKINS_ADDITIONAL_ENVS_DESCRIPTION = 'Set additional environments to Jenkins'
+    String JENKINS_IMAGE_DESCRIPTION = 'Sets image for Jenkins'
 
     // group scmm
     String SCM_DESCRIPTION = 'Config parameters for Scm'

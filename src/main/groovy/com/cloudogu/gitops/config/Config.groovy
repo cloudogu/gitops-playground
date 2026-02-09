@@ -302,6 +302,10 @@ class Config {
                 chart: 'jenkins',
                 repoURL: 'https://charts.jenkins.io',
                 version: '5.8.43')
+
+        @Option(names = ['--jenkins-image'], description = JENKINS_IMAGE_DESCRIPTION)
+        @JsonPropertyDescription(JENKINS_IMAGE_DESCRIPTION)
+        String jenkinsImage = ''
     }
 
     static class ApplicationSchema {
@@ -711,7 +715,7 @@ class Config {
         dev, prod
     }
 
-    /**
+    /**J
      * This defines, how customer repos will be updated.
      * See {@link ConfigConstants#CONTENT_REPO_TARGET_OVERWRITE_MODE_DESCRIPTION}
      */
