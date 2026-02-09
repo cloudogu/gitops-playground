@@ -1112,6 +1112,7 @@ For some features, the GitOps Playground Operator (GOP):
        * `ref`: set to `values` so the Helm source can reference `$values/...`
        * `path`: `apps/<feature>`
        *  `directory.recurse: true` to pick up additional manifests in the feature folder
+       
           If users create a `misc` subfolder under `apps/<feature>` (for example `apps/<feature>/misc`) and add additional Kubernetes manifests there, these manifests are automatically included and deployed as part of the feature.
 
 Argo CD merges these sources, so each feature application is defined by:
