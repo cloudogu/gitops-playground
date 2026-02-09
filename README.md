@@ -1104,8 +1104,8 @@ For some features, the GitOps Playground Operator (GOP):
        * chart or path: the chart to deploy
        * targetRevision: the chart version
        * helm.valueFiles: includes the values from the cluster-resources repo via $values/...
-         (for example $values/apps/<feature>/<feature>-gop-helm.yaml and
-         $values/apps/<feature>/<feature>-user-values.yaml)
+         (for example ```$values/apps/<feature>/<feature>-gop-helm.yaml``` and
+         ```$values/apps/<feature>/<feature>-user-values.yaml```)
      * Git source (values and additional manifests)
        * repoURL: the cluster-resources repo
        * targetRevision: typically main
