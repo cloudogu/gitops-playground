@@ -1122,12 +1122,9 @@ This multi-source pattern replaces the previous App-of-Apps based approach for f
 #### Application repo: example-apps
 The example-apps repository demonstrates how application teams can structure their own GitOps repositories. Its layout looks like this:
 
-![example of example-apps repo structure](docs/examples.png)
+![example of example-apps repo structure](docs/example.png)
 
   * The folder apps/argocd/applications contains Argo CD Application manifests for the example workloads:
-    * nginx-helm-jenkins.yaml
-    * nginx-helm-umbrella.yaml
-    * petclinic-helm.yaml
     * petclinic-plain.yaml
   * Each application implements the [Environment per App Pattern](https://github.com/cloudogu/gitops-patterns/tree/8e1056f#global-vs-env-per-app)::
     * separate folders for staging and production
@@ -1136,8 +1133,6 @@ The example-apps repository demonstrates how application teams can structure the
 For example:
 * apps/spring-petclinic-plain/production and apps/spring-petclinic-plain/staging contain 
   plain Kubernetes manifests (deployment.yaml, service.yaml, ingress.yaml) plus generated resources.
-* apps/nginx-helm-jenkins shows how Helm-based applications can be combined with generated resources 
-  and release metadata (applicationRelease.yaml).
 
 The `example-apps` repo is thus a reference for how product teams can structure their GitOps repositories while
 still integrating cleanly with Argo CD and the multi-source pattern used by the platform.
